@@ -10,7 +10,7 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 - **It is read at session start, at every run of the orchestrating session's recurring check (about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
 - **A quick note to the inbox can be written in the board's `## Quick notes` section**, which each recurring check captures into the inbox word for word and then clears (inbox #1626 in dappled-bison).
-- **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). A question is never asked on an issue.
+- **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). A question, about a note or an issue the player opened included, goes on the board (inbox #1639 in gentle-penguin).
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
 - **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.

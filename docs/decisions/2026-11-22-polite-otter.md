@@ -13,8 +13,8 @@ skill and the **inbox** skill (with its filing steps) now send every question th
 it is about, and capture the player's answer on the board into the note.
 
 **What was not taken.** Keeping the issue as a second place for a question about a note was the
-exception the answer removes; the orchestrator's pick on the board was board only, and the player's
-words agree.
+exception the answer removes; the orchestrator's pick on the board was board only, and the player answered
+the question with the board as where questions and answers live, and said they will primarily use it.
 
 **What stays.** The `ask` subcommand of `tools/inbox.py` and its test in `tools/test_rules_hooks.sh`
 are untouched, since a change to the tool is code and outside this change; no rule sends a question

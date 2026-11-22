@@ -192,17 +192,16 @@ notes into the repository fast, and most questions need exploring once the task 
 Every note is filed as it stands, and a question it leaves open is written into its queue entry,
 marked open, for whoever picks the task up.
 
-**A question about a note goes on the board, never on its issue** (inbox #1639 in gentle-penguin),
-when the filer has one before the batch is filed, and an issue the player opened directly is no
-exception: the follow-up goes on the board too. Its Question line or its Context names the note
+**A question about a note goes on the board** (inbox #1639 in gentle-penguin), when the filer has
+one before the batch is filed; an issue the player opened directly is included: the follow-up goes
+on the board too. Its Question line or its Context names the note
 (**board** has the layout); the answer is filed with the note, and the batch does not wait for it.
 The question carries all the context the answer needs, as `CLAUDE.md`'s rule on questions says,
-since the player answers from the board and not from the issue. **The player's answer on the board
-is captured into the note it is about** (`append`, above, with the context naming the board
-question), or as a note of its own when no open captured note exists. **When the note is filed,
+since the player answers from the board and not from the issue. **When the note is filed,
 each answer is recorded with the question it answers**, as **playtest-feedback** asks for words said
 in conversation: the playtest file states the question before the answer it quotes. `show` prints
-the player's own comments on an issue they opened, which are read as they stand.
+the player's own comments on an issue they opened, which are read as they stand. No rule asks
+through `tools/inbox.py ask` now; retiring it is a follow-up the orchestrator files.
 
 ## Filing a batch
 
@@ -235,3 +234,7 @@ corrects them:
   the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin), and that checks
   cover the inbox as well as the board (inbox #1623 in dappled-bison); the beat of every run, for
   the listing and the filing, is the filer's reading.
+- **That the player's answer on the board is captured into the note it is about** (`append`, above,
+  with the context naming the board question), or as a note of its own when no open captured note
+  exists ("Asking about a note"): the player's words (inbox #1639 in gentle-penguin) say where
+  questions are asked, not how an answer reaches the repository; this is how a board answer does.
