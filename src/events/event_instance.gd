@@ -353,7 +353,8 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := BodyStance.stands_at(_map, definition, at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self, definition, _surroundings.drawer(), not _surroundings.draws(),
+	look = EventLooks.for_row(self, definition.look(), definition.body(),
+			definition.takes_a_victim_by(), _surroundings.drawer(), not _surroundings.draws(),
 			barrier_post)
 	look.face(face)
 	if look is SpreadLook:
@@ -462,7 +463,7 @@ func warning_rect() -> Rect2:
 	if barrier_post:
 		return EventFootprints.warning_guard_rect(_body.runs_vertically(), body_position(),
 				_where.at())
-	var size := EventFootprints.warning_picture_size(_def)
+	var size := EventFootprints.warning_picture_size(_def.look())
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
 
 ## How far a figure's body reaches round its feet when the row's own shape is the solid it stands
@@ -1546,6 +1547,35 @@ func field_shape() -> GroundShape:
 func ground_shape() -> GroundShape:
 	return _def.ground_shape()
 
+## Everything the row can put on the screen about its feet, caret included
+## (`EventFootprints.footprint_of()`). Asked by the look, which merges the run its street gives a
+## spread into it.
+func footprint() -> Rect2:
+	return EventFootprints.footprint_of(_def)
+
+## Whether it moves along a route of its own (`EventDef.moves()`).
+func moves() -> bool:
+	return _def.moves()
+
+## How fast it comes at her under its own steam, in px/s: its chase speed for a pursuer, otherwise
+## its route's speed (`EventDef.approach_speed()`). What a figure's bob follows.
+func approach_speed() -> float:
+	return _def.approach_speed()
+
+## The peak rate of its field at its centre, or 0 for a row with no field (`EventDef.peak()`): what
+## the share it emits now is measured against.
+func peak() -> float:
+	return _def.peak()
+
+## How many seconds one beat of its field's pulse lasts, or 0 for a row that does not pulse
+## (`EventDef.pulses_every()`).
+func pulses_every() -> float:
+	return _def.pulses_every()
+
+## Its notice radius, or 0 for a row with no wait (`EventDef.notice_within()`).
+func notice_within() -> float:
+	return _def.notice_within()
+
 ## A flock is its birds, summed.
 ##
 ## The same shape as `WorldContext.excitement_sources_at` one level down: nothing is pushed anywhere, the
@@ -1777,9 +1807,10 @@ func rim() -> EntityHalo:
 
 # ------------------------------------------------------------------ the look ---
 
-## How this instance looks (`EventLooks.for_row()`, handed its row and its drawer in `setup()`): it
-## draws the instance from what it asks it and, in the family looks, from some of its public state,
-## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
+## How this instance looks (`EventLooks.for_row()`, handed its row's look part, its body part and its
+## drawer in `setup()`): it draws the instance from what it asks it and, in the family looks, from
+## some of its public state, decides when it is drawn again, and holds the drawing nodes a long
+## picture is drawn in.
 ## Public because suites read it: no game file outside this one does, so the CI list of test-only
 ## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
 var look: EventLook

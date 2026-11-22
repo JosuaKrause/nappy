@@ -553,10 +553,10 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## one on each sidewalk. would that cover everything?")* Three bodies at a street's width are
 ## sidewalk, road, sidewalk — the same order `RegionPlanner._add_door_bodies` reads its own
 ## `road_index` from — and a crossing's two sidewalk bodies keep the row's own default two guards
-## each (`EventDef.guard_sides`) while the road body between them draws none, so a crossing posts
+## each (`LookSpec.guard_sides()`) while the road body between them draws none, so a crossing posts
 ## four rather than six. The choice is carried on the placement: `_no_wall_guards` duplicates the
-## shared def once more (a copy shares the row's body), with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
-## position back out of where it happens to stand.
+## shared def once more (a copy shares the row's body), with its look's guard sides emptied —
+## `_draw_roadblock()` never has to guess a body's position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventPlan]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
@@ -574,12 +574,12 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 	return planned
 
 ## `def` with its posted guards removed on both sides — the region wall's own road body, standing
-## between two sidewalk bodies that keep `def`'s own `guard_sides` unchanged. A plain duplicate
+## between two sidewalk bodies that keep `def`'s own guard sides unchanged. A plain duplicate
 ## rather than a mutation of `def` itself: the two sidewalk positions above still hand out the same
 ## shared def, and giving it no guards would take theirs too.
 static func _no_wall_guards(def: EventDef) -> EventDef:
 	var variant: EventDef = def.duplicate()
-	variant.guard_sides = [] as Array[int]
+	variant.use_look(variant.look().guarded_on([] as Array[int]))
 	return variant
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row

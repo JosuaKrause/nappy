@@ -4,7 +4,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.BIRDS:
 			_draw_birds(canvas)
 

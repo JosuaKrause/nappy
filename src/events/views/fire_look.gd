@@ -5,7 +5,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 
@@ -45,7 +45,7 @@ var _fire_facade_found := false
 ## statement 12) and *"the fire should be on the whole building not only the door"*
 ## (sandy-egret), which has no body and no shadow to draw, only the picture.
 func _draw_fire(canvas: CanvasItem) -> void:
-	if _row.has_a_body():
+	if _body.has_a_body():
 		_draw_fire_where_it_stands(canvas)
 		return
 	var against_the_wall := _wall_offset()
@@ -77,7 +77,7 @@ func _fire_facade_runs() -> PackedVector2Array:
 ## reaches past it. Empty for anything but a fire with no body, whose drawing is its picture. Read
 ## by `_drawn_reach()` and `drawn_rect_now()`; a sited fire never moves, so neither changes.
 func _fire_front_box() -> Rect2:
-	if _row.picture() != EventDef.Look.BURNING_BUILDING or _row.has_a_body():
+	if _look.picture() != EventDef.Look.BURNING_BUILDING or _body.has_a_body():
 		return Rect2()
 	var top := -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL) - _SMOKE_SIZE.y
 	var box := Rect2()

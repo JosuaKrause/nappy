@@ -4,9 +4,20 @@ extends EventLook
 ## fire engine, drawn over their own bodies on wheels that stay on the ground), the van that takes
 ## a victim, and the stationary wrecks and moving van.
 
+## What it takes a victim by (`AbductionSpec`): how long its victim walks to it and where they stand to
+## be taken, or null for a row that takes nobody. Handed when the look is made, as the abduction
+## behaviour is its own.
+var _abduction: AbductionSpec
+
+## Handed, as its event is set up, what every look is handed and the abduction part of its row.
+func _init(owner: EventInstance, look: LookSpec, body: BodySpec, abduction: AbductionSpec,
+		drawer: EventDrawer, skip_draw: bool) -> void:
+	super(owner, look, body, drawer, skip_draw)
+	_abduction = abduction
+
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.DELIVERY_VAN:
 			# Always sited facing east — `AT_THE_KERB` never overrides `EventPlan.
 			# facing`'s own default — and `delivery_van.svg` faces west, so `side_faces_west`
@@ -52,11 +63,11 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(EventPictures.ARMY_TRUCK_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, _row.body().drawn_width(),
+			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, _body.drawn_width(),
 					canvas)
 		EventDef.Look.BURNT_OUT_CAR:
 			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
-					_row.body().drawn_width(), canvas)
+					_body.drawn_width(), canvas)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -95,7 +106,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 func _draw_abduction(canvas: CanvasItem) -> void:
 	if event.is_taking_a_victim():
 		var through := _victim_walk_share()
-		var offset := _row.abduction.standing_offset()
+		var offset := _abduction.standing_offset()
 		var standing := Vector2(-offset if _heading_is_west() else offset, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
@@ -115,7 +126,7 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 ## the time it has walked (`EventInstance.how_long_its_victim_has_walked()`) over the walk's length
 ## (`AbductionSpec.taken_over()`). The one place the two are divided.
 func _victim_walk_share() -> float:
-	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over()
+	return event.how_long_its_victim_has_walked() / _abduction.taken_over()
 
 ## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
 ## `age` rather than anything that touches the ground travelled, so it gets its own derived stride
@@ -130,5 +141,5 @@ func _victim_walk_share() -> float:
 func victim_gait_is_stepping() -> bool:
 	if not event.is_taking_a_victim():
 		return false
-	var covered := _victim_walk_share() * _row.abduction.standing_offset()
+	var covered := _victim_walk_share() * _abduction.standing_offset()
 	return sin(covered * EventInstance.GAIT_RATE * 2.0) > 0.0

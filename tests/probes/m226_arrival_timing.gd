@@ -189,7 +189,7 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var wheels: Dictionary = EventPictures.WHEELS_BY_LOOK.get(def.picture(), {})
 	if not wheels.is_empty():
 		parts.append(_picture_rect(wheels[view], 0.0))
-	if def.casts_a_shadow():
+	if def.look().casts_a_shadow():
 		for piece in def.body().pieces():
 			var points: PackedVector2Array = piece.ground_shape().shadow_outline(Vector2.ZERO)
 			var shadow := Rect2(points[0], Vector2.ZERO)

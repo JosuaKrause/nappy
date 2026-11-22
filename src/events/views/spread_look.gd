@@ -7,7 +7,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.ROADWORKS:
 			_draw_the_spread(canvas)
 		EventDef.Look.STALL:
@@ -49,7 +49,7 @@ func _update_scenery() -> void:
 		return
 	var shown := _shows_anything()
 	var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD \
-			if _row.picture() == EventDef.Look.CAR_ACCIDENT \
+			if _look.picture() == EventDef.Look.CAR_ACCIDENT \
 			else EventPictures.BURST_MAIN_SPLASH_PERIOD
 	var frame_b := idle_is_stepping(period)
 	for scenery in _sceneries:
@@ -128,10 +128,9 @@ func _spread_slice_count(segment_picture: String) -> int:
 ## (`solid_footprint_of()`, `DrawLayer.run_of()`), the ground its body closes. A spread with no body
 ## covers `BodySpec.drawn_width()`'s narrowest either side of its origin, as `drawn_box()` reserves.
 func _spread_run() -> PackedVector2Array:
-	if _row.has_a_body() and _row.ground_shape() != null:
-		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_row.body(), event.spread_axis(),
-				event.runs_vertically()),
-				Vector2.ZERO)
+	if _body.has_a_body() and event.ground_shape() != null:
+		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_body, event.spread_axis(),
+				event.runs_vertically()), Vector2.ZERO)
 	var half := _half_run()
 	return PackedVector2Array([event.spread_at(-half), event.spread_at(half)])
 
@@ -140,12 +139,12 @@ func _spread_run() -> PackedVector2Array:
 ## reserves). The café's tables, the protest's ranks, the firefight's two halves and a wide scene are
 ## each laid over it.
 func _half_run() -> float:
-	return _row.body().drawn_width() * 0.5
+	return _body.drawn_width() * 0.5
 
 ## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an
 ## empty list for a look that is not drawn as a spread.
 func _spread_pictures() -> PackedStringArray:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.ROADWORKS:
 			return PackedStringArray([EventPictures.roadwork_segment_texture(event.runs_vertically()),
 					EventPictures.BARRIER_END])
@@ -216,7 +215,7 @@ func _drawn_by_its_slices(canvas: CanvasItem) -> bool:
 ## Where each slice of this look's picture stands its feet, from the body, in draw order; empty for
 ## a look drawn on the event's node alone.
 func _slice_plan() -> PackedVector2Array:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:
 			var run := _wide_scene_run()
 			return DrawLayer.slice_feet(run[0], run[1], _wide_scene_slice_count())
@@ -230,7 +229,7 @@ func _slice_plan() -> PackedVector2Array:
 ## (`DrawLayer.run_of()`), the whole ground the scene is drawn over — for the crash, both cars and
 ## the debris between them, of which its solid footprint is the cars alone.
 func _wide_scene_run() -> PackedVector2Array:
-	return DrawLayer.run_of(Footprint.of(_row.ground_shape(), event.spread_axis()), Vector2.ZERO)
+	return DrawLayer.run_of(Footprint.of(event.ground_shape(), event.spread_axis()), Vector2.ZERO)
 
 ## A wide scene is cut into one slice per tile of its run.
 func _wide_scene_slice_count() -> int:
@@ -273,9 +272,9 @@ func _build_the_slices() -> void:
 ## The scenery of a crash's or a burst main's slice, slice `index`: the part of every span over the
 ## slice's band, standing at the instance's origin, the first slice's with the contact shadow whole.
 func _build_the_scenery_of(slice: Slice, index: int) -> void:
-	if _row.picture() not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+	if _look.picture() not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
 		return
-	var picture := EventPictures.wide_scene_texture(_row.picture(), event.runs_vertically())
+	var picture := EventPictures.wide_scene_texture(_look.picture(), event.runs_vertically())
 	var half := _half_run()
 	var size := EventPictures.native_size(picture)
 	var thickness := size.x if event.runs_vertically() else size.y
@@ -307,7 +306,7 @@ func _attach_the_slices() -> void:
 func _move_the_slices(redraw := false) -> void:
 	if _slices.is_empty() or not _slices[0].is_inside_tree():
 		return
-	if redraw and _row.picture() == EventDef.Look.PROTEST:
+	if redraw and _look.picture() == EventDef.Look.PROTEST:
 		var plan := _slice_plan()
 		if plan.size() != _slice_feet.size():
 			_release_the_slices()
@@ -330,9 +329,9 @@ func _move_the_slices(redraw := false) -> void:
 ## nothing itself: its scenery does.
 func draw_the_slice(canvas: CanvasItem, index: int) -> void:
 	var origin := -_slice_feet[index]
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.FALLEN_TREE:
-			_draw_wide_scene(EventPictures.wide_scene_texture(_row.picture(),
+			_draw_wide_scene(EventPictures.wide_scene_texture(_look.picture(),
 					event.runs_vertically()), canvas, index,
 					origin)
 		EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:

@@ -229,7 +229,7 @@ static func building_fire() -> EventDef:
 		var variant := without_its_aftermath(by_id("burning_building"))
 		variant.use_body(BodySpec.solid(GroundShape.point(30.0)).unmet().parked())
 		variant.use_field(variant.field().at_peak(18.0).pulsing_every(3.0))
-		variant.draws_body_shadow = true
+		variant.use_look(variant.look().casting_a_shadow())
 		variant.on_her_way = null
 		# The building's own row, placed by its plan and nothing else: `SCRIPTED` on day 0, the day
 		# nobody plays, like the escape's other rows, so no day's dawn reaches it and the rule that
@@ -436,7 +436,7 @@ static func _neighbor() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.NEIGHBOR
+	def.use_look(LookSpec.of(EventDef.Look.NEIGHBOR))
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -483,7 +483,7 @@ static func _playground() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
-	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
+	def.use_look(LookSpec.none())  # The park's swing frame already draws it.
 	def.use_body(BodySpec.none().unmet().parked())
 	# Kept at their size for the debug field overlay, which still draws a disc here, although
 	# `Field.falloff` answers zero at every distance and nothing else reads them.
@@ -517,7 +517,7 @@ static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.CAT
+	def.use_look(LookSpec.of(EventDef.Look.CAT))
 	def.use_body(BodySpec.footprint(GroundShape.point(7.0)).walked_through().going_on())
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
@@ -598,7 +598,7 @@ static func _alley_mouse() -> EventDef:
 	# outside the telegraph contract.
 	def.use_warning(WarningSpec.lasting(1.4).holding_still().unannounced())
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.MOUSE
+	def.use_look(LookSpec.of(EventDef.Look.MOUSE))
 	def.use_body(BodySpec.footprint(GroundShape.point(4.0)).walked_through().going_on())
 	def.placement = [GameEnums.TileType.ALLEY]
 	# **Priced against the cat on each row's own ground, which is not the same ground.** A cat is
@@ -682,7 +682,7 @@ static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.YELLER
+	def.use_look(LookSpec.of(EventDef.Look.YELLER))
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(5.0))
@@ -736,7 +736,7 @@ static func _dog_walker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "dog_walker"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.DOG_WALKER
+	def.use_look(LookSpec.of(EventDef.Look.DOG_WALKER))
 	def.use_body(BodySpec.footprint(GroundShape.point(8.0)).walked_through().going_on())
 	# The walker's own point, not the dog's: the dog on its lead is a per-part shadow drawn at its
 	# own literal radius, as the abduction's victim or the checkpoint hut's guard, since a two-body
@@ -782,7 +782,7 @@ static func _cafe_tables() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cafe_tables"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.CAFE
+	def.use_look(LookSpec.of(EventDef.Look.CAFE))
 	def.use_body(BodySpec.solid(GroundShape.band(24.0)).walked_round().parked().as_a_spread())
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(12.0, 38.0, 64.0).pulsing_every(6.0))
@@ -817,7 +817,7 @@ static func _delivery_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "delivery_van"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.DELIVERY_VAN
+	def.use_look(LookSpec.of(EventDef.Look.DELIVERY_VAN))
 	def.use_body(BodySpec.solid(GroundShape.band(VEHICLE_BODY)).walked_round().parked())
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -859,7 +859,7 @@ static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.BUSKER
+	def.use_look(LookSpec.of(EventDef.Look.BUSKER))
 	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
@@ -887,7 +887,7 @@ static func _construction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "construction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.ROADWORKS
+	def.use_look(LookSpec.of(EventDef.Look.ROADWORKS))
 	def.use_body(BodySpec.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 			.walked_round()
 			.parked()
@@ -920,7 +920,7 @@ static func _fire_truck() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.FIRE_ENGINE
+	def.use_look(LookSpec.of(EventDef.Look.FIRE_ENGINE))
 	def.use_body(BodySpec.footprint(GroundShape.segment(16.0, 13.0)).walked_round().parked())
 	# **The body is the drawing's ground contact**: 58px long (`fire_engine.svg`, x 2 to 60, bumper
 	# to bumper) and 26px wide (`fire_engine_front.svg`, x 4 to 30, flank to flank), a capsule laid
@@ -958,8 +958,8 @@ static func _fire_truck() -> EventDef:
 ## 12): the challenge is the fire truck, not the fire. peak is 0.0 and it carries no
 ## solid body (`BodySpec.footprint()`: a look that does not obstruct is a shape alone), so
 ## `FireLook._draw_fire()` paints the flames and smoke on the facade of the building it stands
-## against rather than leaving a body on the sidewalk, and `draws_body_shadow` is off so nothing
-## casts a shadow at the ground point. inner radius/outer radius (60/260) and the 2.2s telegraph
+## against rather than leaving a body on the sidewalk, and its look casts no shadow, so nothing
+## is put down at the ground point. inner radius/outer radius (60/260) and the 2.2s telegraph
 ## keep the row's geometry inside the fairness contract (`Tuning.validate_event()`), which checks
 ## every row the same way whether or not the field emits (`(outer radius - inner radius) /
 ## WALK_SPEED` = 2.17s). The `burnt_shell` scar it leaves is the
@@ -982,7 +982,9 @@ static func _burning_building() -> EventDef:
 	def.id = "burning_building"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.ONE_SHOT
-	def.look = EventDef.Look.BURNING_BUILDING
+	def.use_look(LookSpec.of(EventDef.Look.BURNING_BUILDING).casting_no_shadow())
+	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
+	# look to draw, but nothing stands here to be solid.
 	def.use_body(BodySpec.footprint(GroundShape.point(30.0)).unmet().parked())
 	def.first_day = 3
 	def.last_day = 3
@@ -991,9 +993,6 @@ static func _burning_building() -> EventDef:
 	def.on_her_way = OnHerWay.on_its_ground()
 	def.use_field(FieldSpec.of(0.0, 60.0, 260.0))
 	def.use_warning(WarningSpec.lasting(2.2))
-	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
-	# look to draw, but nothing stands here to be solid, and no shadow is drawn (`draws_body_shadow`).
-	def.draws_body_shadow = false
 	def.aftermath = Aftermath.none().scarring(BURNT_SHELL_ID).calling_in("fire_truck")
 	return def
 
@@ -1018,11 +1017,10 @@ static func _burnt_shell() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.BURNT_SHELL
+	def.use_look(LookSpec.of(EventDef.Look.BURNT_SHELL).casting_no_shadow())
 	def.use_body(BodySpec.footprint(GroundShape.band(36.0)).unmet().parked().as_a_spread())
 	def.use_field(FieldSpec.of(2.5, 24.0, 78.0))
 	def.use_warning(WarningSpec.lasting(0.7))
-	def.draws_body_shadow = false
 	return def
 
 # ----------------------------------------- Act I: variety, and two with teeth ---
@@ -1077,9 +1075,8 @@ static func _loose_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loose_dog"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.LOOSE_DOG
+	def.use_look(LookSpec.of(EventDef.Look.LOOSE_DOG).trailing_a_lead())
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
-	def.trails_a_lead = true
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.use_field(FieldSpec.of(39.0, 30.0, 140.0).pulsing_every(2.2))
@@ -1111,7 +1108,7 @@ static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.STALL
+	def.use_look(LookSpec.of(EventDef.Look.STALL))
 	def.use_body(BodySpec.solid(GroundShape.band(28.0)).walked_round().parked().as_a_spread())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(14.0, 38.0, 64.0).pulsing_every(8.0))
@@ -1156,7 +1153,7 @@ static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
 	def.id = "leaf_blower"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.LEAF_BLOWER
+	def.use_look(LookSpec.of(EventDef.Look.LEAF_BLOWER))
 	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.PARK,
 			GameEnums.TileType.SQUARE]
@@ -1271,7 +1268,7 @@ static func _pigeon_flock() -> EventDef:
 	# contract.
 	def.use_warning(WarningSpec.lasting(1.7).unannounced())
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.BIRDS
+	def.use_look(LookSpec.of(EventDef.Look.BIRDS))
 	def.use_body(BodySpec.footprint(GroundShape.point(5.0)).walked_through().going_on())
 	# A flock has no single body (each bird casts its own shadow at its own faded radius, see
 	# `FlockLook._draw_birds`), so this is a nominal point at one bird's base radius (5.0, before the
@@ -1352,9 +1349,8 @@ static func _cyclist() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cyclist"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.CYCLIST
+	def.use_look(LookSpec.of(EventDef.Look.CYCLIST).maybe_a_pelican())
 	def.use_body(BodySpec.footprint(GroundShape.point(12.0)).walked_through().going_on())
-	def.may_be_a_pelican = true
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
@@ -1396,7 +1392,7 @@ static func _ice_cream_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "ice_cream_van"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.ICE_CREAM_VAN
+	def.use_look(LookSpec.of(EventDef.Look.ICE_CREAM_VAN))
 	def.use_body(BodySpec.solid(GroundShape.point(24.0)).walked_round().parked())
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1433,7 +1429,7 @@ static func _reversing_lorry() -> EventDef:
 	var def := EventDef.new()
 	def.id = "reversing_lorry"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.LORRY
+	def.use_look(LookSpec.of(EventDef.Look.LORRY))
 	def.use_body(BodySpec.solid(GroundShape.point(28.0)).walked_round().parked())
 	def.first_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1487,7 +1483,7 @@ static func _chatting_mother() -> EventDef:
 	var def := EventDef.new()
 	def.id = "chatting_mother"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.CHATTING_MOTHER
+	def.use_look(LookSpec.of(EventDef.Look.CHATTING_MOTHER))
 	def.use_body(BodySpec.footprint(GroundShape.point(14.0)).walked_through().going_on())
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1553,9 +1549,9 @@ static func _charging_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "charging_dog"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.CHARGING_DOG
+	def.use_look(LookSpec.of(EventDef.Look.CHARGING_DOG)
+			.warning_as(LookSpec.WarningPicture.DOG_ALERT))
 	def.use_body(BodySpec.footprint(GroundShape.point(13.0)).walked_through().going_on())
-	def.warning_picture = EventDef.WarningPicture.DOG_ALERT
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	# No `last_day`: the dog recurs after the teaching day rather than being spent by it. On
@@ -1639,7 +1635,7 @@ static func _police_patrol() -> EventDef:
 	# car and the investigating one at heat) carry it with them.
 	def.use_warning(WarningSpec.lasting(1.97).unannounced())
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.POLICE_CAR
+	def.use_look(LookSpec.of(EventDef.Look.POLICE_CAR))
 	def.use_body(BodySpec.footprint(GroundShape.segment(9.0, 12.0)).walked_round().going_on())
 	# **The body is its drawn ground contact**: 42px long, the side view's body from bumper to
 	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
@@ -1691,7 +1687,7 @@ static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.POSTER_CREW
+	def.use_look(LookSpec.of(EventDef.Look.POSTER_CREW))
 	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.first_day = 4
 	def.act_tag = 2
@@ -1727,7 +1723,7 @@ static func _poster_crew_square() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew_square"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.POSTER_CREW_SQUARE
+	def.use_look(LookSpec.of(EventDef.Look.POSTER_CREW_SQUARE))
 	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.first_day = 4
 	def.act_tag = 2
@@ -1758,7 +1754,7 @@ static func _loudspeaker() -> EventDef:
 	def.role = EventDef.Role.MAST
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.LOUDSPEAKER_MAST
+	def.use_look(LookSpec.of(EventDef.Look.LOUDSPEAKER_MAST))
 	def.use_body(BodySpec.solid(GroundShape.point(MAST_BODY)).walked_round().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(22.0))
@@ -1783,7 +1779,7 @@ static func _curfew_announce() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.NONE
+	def.use_look(LookSpec.none())
 	def.use_body(BodySpec.none().unmet().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(30.0, 45.0, 210.0).swelling_by(0.2))
@@ -1875,7 +1871,7 @@ static func _roadblock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "roadblock"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.ROADBLOCK
+	def.use_look(LookSpec.of(EventDef.Look.ROADBLOCK))
 	def.use_body(BodySpec.solid(GroundShape.band(ROADBLOCK_REACH))
 			.walked_round()
 			.going_on()
@@ -1927,7 +1923,7 @@ static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.UNMARKED_VAN
+	def.use_look(LookSpec.of(EventDef.Look.UNMARKED_VAN))
 	def.use_body(BodySpec.solid(GroundShape.point(VEHICLE_BODY)).walked_round().parked())
 	def.abduction = AbductionSpec.standard()
 	def.first_day = 8
@@ -1980,9 +1976,9 @@ static func _alley_robbery() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_robbery"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.ROBBER
+	def.use_look(LookSpec.of(EventDef.Look.ROBBER)
+			.warning_as(LookSpec.WarningPicture.ROBBER_ALERT))
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
-	def.warning_picture = EventDef.WarningPicture.ROBBER_ALERT
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.ALLEY]
@@ -2082,7 +2078,7 @@ static func _robber_giving_chase() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.ROBBER_GIVING_CHASE
+	def.use_look(LookSpec.of(EventDef.Look.ROBBER_GIVING_CHASE))
 	def.use_body(BodySpec.footprint(alley.ground_shape()).walked_through().going_on())
 	def.act_tag = 2
 	def.use_field(alley.field())
@@ -2129,7 +2125,7 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.VAN_GUARD_GIVING_CHASE
+	def.use_look(LookSpec.of(EventDef.Look.VAN_GUARD_GIVING_CHASE))
 	def.use_body(BodySpec.footprint(guard.ground_shape()).walked_through().going_on())
 	def.act_tag = 2
 	def.use_field(guard.field())
@@ -2167,7 +2163,7 @@ static func _policeman_giving_chase() -> EventDef:
 	def.use_body(def.body().walked_through().going_on())
 	def.id = "policeman_giving_chase"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
+	def.use_look(LookSpec.of(EventDef.Look.POLICEMAN_GIVING_CHASE))
 	def.noun = "policeman"
 	def.noun_plural = "policemen"
 	return def
@@ -2181,7 +2177,7 @@ static func _guardsman_giving_chase() -> EventDef:
 	var def := _policeman_giving_chase()
 	def.id = "guardsman_giving_chase"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
+	def.use_look(LookSpec.of(EventDef.Look.GUARDSMAN_GIVING_CHASE))
 	def.use_body(def.body().walked_through().going_on())
 	def.noun = "guardsman"
 	def.noun_plural = "guardsmen"
@@ -2284,7 +2280,7 @@ static func _night_raid() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 10
-	def.look = EventDef.Look.RIOT_VAN
+	def.use_look(LookSpec.of(EventDef.Look.RIOT_VAN))
 	def.use_body(BodySpec.solid(GroundShape.point(44.0)).walked_round().parked())
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -2304,7 +2300,7 @@ static func _military_convoy() -> EventDef:
 	var def := EventDef.new()
 	def.id = "military_convoy"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.ARMY_TRUCK
+	def.use_look(LookSpec.of(EventDef.Look.ARMY_TRUCK))
 	def.use_body(BodySpec.footprint(GroundShape.point(26.0)).walked_round().going_on())
 	def.first_day = 13
 	def.act_tag = 4
@@ -2337,7 +2333,7 @@ static func _barricade() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.BARRICADE
+	def.use_look(LookSpec.of(EventDef.Look.BARRICADE))
 	def.use_body(BodySpec.solid(GroundShape.band(62.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
@@ -2367,7 +2363,7 @@ static func _protest() -> EventDef:
 	var def := EventDef.new()
 	def.id = "protest"
 	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.PROTEST
+	def.use_look(LookSpec.of(EventDef.Look.PROTEST))
 	def.use_body(BodySpec.solid(GroundShape.band(55.0))
 			.walked_through()
 			.parked()
@@ -2416,7 +2412,7 @@ static func _firefight() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 13
-	def.look = EventDef.Look.FIREFIGHT
+	def.use_look(LookSpec.of(EventDef.Look.FIREFIGHT))
 	def.use_body(BodySpec.solid(GroundShape.band(30.0))
 			.walked_through()
 			.parked()
@@ -2453,7 +2449,7 @@ static func _fallen_tree() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.FALLEN_TREE
+	def.use_look(LookSpec.of(EventDef.Look.FALLEN_TREE))
 	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
@@ -2485,7 +2481,7 @@ static func _car_accident() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.CAR_ACCIDENT
+	def.use_look(LookSpec.of(EventDef.Look.CAR_ACCIDENT))
 	def.use_body(BodySpec.solid(GroundShape.band(96.0))
 			.in_pieces(_car_accident_parts())
 			.walked_round()
@@ -2533,7 +2529,7 @@ static func _skip() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.SKIP
+	def.use_look(LookSpec.of(EventDef.Look.SKIP))
 	def.use_body(BodySpec.solid(GroundShape.point(VEHICLE_BODY)).walked_round().parked())
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -2549,7 +2545,7 @@ static func _scaffolding() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.SCAFFOLDING
+	def.use_look(LookSpec.of(EventDef.Look.SCAFFOLDING))
 	def.use_body(BodySpec.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 			.walked_round()
 			.parked()
@@ -2569,15 +2565,13 @@ static func _burst_water_main() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.BURST_MAIN
+	# The crater is sunk into the road, not standing above it, so the body and the barriers keep
+	# their ordinary geometry and only the shadow patch is refused (its look casts none).
+	def.use_look(LookSpec.of(EventDef.Look.BURST_MAIN).casting_no_shadow())
 	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.use_warning(WarningSpec.lasting(0.9))
-	# The crater is sunk into the road, not standing above it, so the body and the barriers keep
-	# their ordinary geometry and only the shadow patch
-	# is refused.
-	def.draws_body_shadow = false
 	return def
 
 ## A soft seal, both bodies the same row: a moving van with its ramp down on each sidewalk, the
@@ -2593,7 +2587,7 @@ static func _moving_van() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.MOVING_VAN
+	def.use_look(LookSpec.of(EventDef.Look.MOVING_VAN))
 	def.use_body(BodySpec.solid(GroundShape.band(28.0)).walked_round().parked())
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -2613,7 +2607,7 @@ static func _burnt_out_car() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.BURNT_OUT_CAR
+	def.use_look(LookSpec.of(EventDef.Look.BURNT_OUT_CAR))
 	def.use_body(BodySpec.solid(GroundShape.band(24.0))
 			.walked_round()
 			.parked()
@@ -2634,7 +2628,7 @@ static func _collapsed_frontage() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.COLLAPSED_FRONTAGE
+	def.use_look(LookSpec.of(EventDef.Look.COLLAPSED_FRONTAGE))
 	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
@@ -2684,7 +2678,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.CHECKPOINT_HUT
+	def.use_look(LookSpec.of(EventDef.Look.CHECKPOINT_HUT))
 	def.use_body(BodySpec.solid(GroundShape.point(32.0)).walked_round().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
@@ -2715,7 +2709,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.CHECKPOINT_GATE
+	def.use_look(LookSpec.of(EventDef.Look.CHECKPOINT_GATE))
 	def.use_body(BodySpec.solid(GroundShape.point(32.0))
 			.while_lowered()
 			.walked_round()
@@ -2736,9 +2730,8 @@ static func _checkpoint_post() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.CHECKPOINT_POST
+	def.use_look(LookSpec.of(EventDef.Look.CHECKPOINT_POST).hiding_in_its_hold())
 	def.use_body(BodySpec.solid(GroundShape.point(32.0)).walked_through().parked())
-	def.hides_in_its_hold = true
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
 	def.use_warning(WarningSpec.lasting(1.0))
@@ -2775,7 +2768,7 @@ static func _door_guard() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.DOOR_GUARD
+	def.use_look(LookSpec.of(EventDef.Look.DOOR_GUARD))
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 3
 	def.use_field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
@@ -2824,7 +2817,7 @@ static func _finale_explosion() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.NONE
+	def.use_look(LookSpec.none())
 	def.use_body(BodySpec.none().unmet().parked())
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
@@ -2858,7 +2851,7 @@ static func _impact_crater() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.IMPACT_CRATER
+	def.use_look(LookSpec.of(EventDef.Look.IMPACT_CRATER))
 	def.use_body(BodySpec.solid(GroundShape.point(32.0)).unmet().parked())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
@@ -2890,7 +2883,7 @@ static func _masked_pursuer() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.MASKED_PURSUER
+	def.use_look(LookSpec.of(EventDef.Look.MASKED_PURSUER))
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
@@ -2963,7 +2956,7 @@ static func _basement_steam() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.STEAM
+	def.use_look(LookSpec.of(EventDef.Look.STEAM))
 	def.use_body(BodySpec.solid(GroundShape.point(STEAM_VENT_BODY))
 			.once_it_starts()
 			.unmet()

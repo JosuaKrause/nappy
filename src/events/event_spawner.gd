@@ -150,7 +150,7 @@ var _pelican_bag_seed := 0
 ## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by `SimulationBuilder`) answers yes for every one
 ## without changing what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
-	if not def.may_be_drawn_as_a_pelican():
+	if not def.look().may_be_drawn_as_a_pelican():
 		return false
 	var drew: bool = _the_pelican_bag().draw()
 	world.run().pelican().count_a_draw()
@@ -310,7 +310,7 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 	instance.arrive_from_its_warning()
 	if not def.pursues() or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.restore(EventSave.aged(age_when_warned(def)))
-	if pelican and def.may_be_drawn_as_a_pelican():
+	if pelican and def.look().may_be_drawn_as_a_pelican():
 		_ride_as_a_pelican(instance)
 	return instance
 

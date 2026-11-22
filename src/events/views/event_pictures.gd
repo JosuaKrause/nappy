@@ -954,7 +954,7 @@ static func icon_wheels_for(look: EventDef.Look) -> String:
 ## The spread axis remap only relabels which texture dimension is "along" the obstruction; it never
 ## turns pixels. `wide_scene_texture` therefore supplies an authored composition for each street
 ## axis, so cars keep the right projection and people and barriers remain upright. Repeatable
-## segments are close enough to square for the dimension swap itself. `EventDef.look` and
+## segments are close enough to square for the dimension swap itself. `EventDef.look()` and
 ## `EventInstance.runs_vertically()` together pick the texture, with no field on the def.
 ##
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst

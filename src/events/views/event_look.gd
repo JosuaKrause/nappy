@@ -5,12 +5,13 @@ extends RefCounted
 ## its own (`EventLooks.for_row()` picks it by the row's picture); this base holds what they share.
 ##
 ## **A look never writes the event.** It is handed what never changes under it when it is made: its
-## event, the event's row, the drawer it paints through and whether nothing of it is drawn. This
-## base asks the row what the row is (its picture, its shape, its shadow, its peak) and the live
-## event what changes, through the questions any caller asks; the family looks still read some of
-## the event's and the row's fields as well. It holds the eight-view sector last
-## drawn, the redraw key, the caret's cache and the drawing nodes a long picture is drawn in, and
-## draws on the event's own canvas. What the event does is its behaviours'
+## event, its look (`LookSpec`: the picture, the warning picture, whether it casts a shadow,
+## whether it trails a lead), its body (`BodySpec`), the drawer it paints through and whether
+## nothing of it is drawn. This base asks the look what the row is drawn as, the body what stands
+## there and the live event the rest (its shape, its peak and what changes), through the questions
+## any caller asks; the family looks still read some of the event's fields as well. It holds the
+## eight-view sector last drawn, the redraw key, the caret's cache and the drawing nodes a long
+## picture is drawn in, and draws on the event's own canvas. What the event does is its behaviours'
 ## (`src/events/behaviours/`); nothing here decides it.
 ##
 ## The event calls its look. In `setup()` it makes it (`EventLooks.for_row()`) and faces it
@@ -25,8 +26,12 @@ extends RefCounted
 ## The event this look draws.
 var event: EventInstance
 
-## The row the event is a live one of, asked what it is.
-var _row: EventDef
+## What the event is drawn as: its picture and what the drawing owes (`LookSpec`).
+var _look: LookSpec
+
+## What stands where the event is, solid or not (`BodySpec`): whether it has a body, how wide it is
+## drawn, how far it obstructs and how its pieces lie.
+var _body: BodySpec
 
 ## What the look paints its pictures through (`EventDrawer`).
 var _drawer: EventDrawer
@@ -41,9 +46,11 @@ var _shadow_pieces: Array[StandingPiece] = []
 var _shadow_axis := Vector2.ZERO
 var _shadow_vertical := false
 
-func _init(owner: EventInstance, row: EventDef, drawer: EventDrawer, skip_draw: bool) -> void:
+func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDrawer,
+		skip_draw: bool) -> void:
 	event = owner
-	_row = row
+	_look = look
+	_body = body
 	_drawer = drawer
 	_skip_draw = skip_draw
 
@@ -124,7 +131,7 @@ func _in_the_drawn_view() -> bool:
 func _drawn_reach() -> Rect2:
 	if not _drawn_reach_known:
 		_drawn_reach_known = true
-		_drawn_reach_box = EventFootprints.footprint_of(_row).merge(event.drawn_box()) \
+		_drawn_reach_box = event.footprint().merge(event.drawn_box()) \
 				.merge(EventPictures.largest_mark_rect())
 		var front := _front_box()
 		if front.has_area():
@@ -158,8 +165,8 @@ func _picture_never_settles() -> bool:
 		return true
 	if event.is_taking_a_victim():
 		return true
-	return _row.picture() == EventDef.Look.BURNING_BUILDING \
-			or _row.picture() == EventDef.Look.FIREFIGHT
+	return _look.picture() == EventDef.Look.BURNING_BUILDING \
+			or _look.picture() == EventDef.Look.FIREFIGHT
 
 ## Which heading the next draw would pick the event's eight-view sector from.
 ##
@@ -171,7 +178,7 @@ func _picture_never_settles() -> bool:
 ## without the body moving would never reach the screen. And a roadblock guard still standing at his
 ## band, who is drawn facing out from his post (`RoadblockLook.drawn_heading()`).
 func drawn_heading() -> Vector2:
-	if _row.picture() == EventDef.Look.ROBBER and event.is_waiting():
+	if _look.picture() == EventDef.Look.ROBBER and event.is_waiting():
 		return robber_waiting_heading()
 	return event.facing_now()
 
@@ -181,7 +188,7 @@ func drawn_heading() -> Vector2:
 ## task step is completed, which is the only thing about a protest's picture that changes while
 ## nothing about the protest does.
 func _protest_pose() -> int:
-	if _row.picture() != EventDef.Look.PROTEST:
+	if _look.picture() != EventDef.Look.PROTEST:
 		return 0
 	return EventPictures.POINTING_POSES.find(EventPictures.protester_texture(event.global_position,
 			_protest_objective())) + 2
@@ -199,7 +206,7 @@ func _picture_key() -> Vector4i:
 	# (`ExcitementSource.caret_strength()`) and was already asked once per draw through
 	# `_wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
 	var caret := event.source().caret_strength()
-	var picture := _row.picture()
+	var picture := _look.picture()
 	var swell := 0.0
 	var flashed_off := false
 	if caret > 0:
@@ -252,7 +259,7 @@ func _picture_key() -> Vector4i:
 	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
 	var turn := posmod(roundi(rad_to_deg(event.facing_now().angle())),
-			360) if _row.drives() else 0
+			360) if event.drives() else 0
 	return Vector4i(
 			flags,
 			sector + 8 * caret + 32 * _protest_pose() + 320 * turn,
@@ -299,12 +306,12 @@ func draw() -> void:
 ## body alone — see `_draw_eight_view()` for the wheels it leaves on the ground — and sits still the
 ## tick it stops.
 func current_bob() -> float:
-	if EventPictures.WHEELS_BY_LOOK.has(_row.picture()):
+	if EventPictures.WHEELS_BY_LOOK.has(_look.picture()):
 		return WheelBob.lift(event.path_travelled()) if event.gait_is_moving() else 0.0
 	if event.pursues() or event.is_on_its_way_out():
 		return -absf(sin(event.path_travelled() * EventPictures.BOB_PER_PX)) \
 				* EventPictures.BOB_HEIGHT
-	if _row.moves() and _row.approach_speed() > 0.0 and event.walks().size() > 1 \
+	if event.moves() and event.approach_speed() > 0.0 and event.walks().size() > 1 \
 			and not event.is_telegraphing_still():
 		return -absf(sin(event.path_travelled() * EventPictures.BOB_PER_PX)) \
 				* EventPictures.BOB_HEIGHT
@@ -375,12 +382,12 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## patches under two cars for the one row that does, so the ground under a crash is dark where the
 ## cars are and lit where the picture leaves a way through.
 ##
-## A row that casts none (`EventDef.casts_a_shadow()`; the doc of `draws_body_shadow` names which)
-## is left out entirely, its body and its picture untouched: this is the one function that puts a
-## shadow patch down, so refusing here is the whole of "no shadow" rather than a special case at
-## each call site.
+## A row whose look casts none (`LookSpec.casts_a_shadow()`: the crater sunk into the road and the
+## two drawn on the building they stand against) is left out entirely, its body and its picture
+## untouched: this is the one function that puts a shadow patch down, so refusing here is the whole
+## of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
-	if not _row.casts_a_shadow():
+	if not _look.casts_a_shadow():
 		return
 	if canvas == event.rim():
 		return
@@ -389,7 +396,7 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if _shadow_pieces.is_empty() or axis != _shadow_axis or vertical != _shadow_vertical:
 		_shadow_axis = axis
 		_shadow_vertical = vertical
-		_shadow_pieces = BodyStance.pieces_laid_out(_row.body(), Vector2.ZERO, axis, vertical)
+		_shadow_pieces = BodyStance.pieces_laid_out(_body, Vector2.ZERO, axis, vertical)
 	for piece in _shadow_pieces:
 		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
 
@@ -409,17 +416,17 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 func _wants_a_mark() -> bool:
 	return event.source().caret_strength() > 0
 
-## The share of its peak (`EventDef.peak()`) the event emits right now, 0..1, or 1 for a row with
-## no field: how hard the mark is breathing, and what a family's own picture swells with.
+## The share of its peak (`EventInstance.peak()`) the event emits right now, 0..1, or 1 for a row
+## with no field: how hard the mark is breathing, and what a family's own picture swells with.
 ##
 ## **The mark breathing is the one thing the ring did that a symbol does not get for free**, and it
 ## is load-bearing: a pulsing event can be timed and slipped past between beats, and a mark that
 ## sat there at a constant size would turn the pulse envelope from something to play against
 ## into something random.
 func _share_of_its_peak_now() -> float:
-	if _row.peak() <= 0.0:
+	if event.peak() <= 0.0:
 		return 1.0
-	return clampf(event.current_intensity() / _row.peak(), 0.0, 1.0)
+	return clampf(event.current_intensity() / event.peak(), 0.0, 1.0)
 
 ## Whether the mark is off the screen for this part of its flash: **the flash is the phase**, and
 ## it runs while the event is telegraphing and takes the mark off the screen for part of every beat
@@ -508,15 +515,15 @@ func mark_rect() -> Rect2:
 ## pieces (`_drawn_reach()`, `mark_rect()`).
 func drawn_rect_now() -> Rect2:
 	var rect := event.drawn_box()
-	for picture in EventPictures.family_sources(_row.picture()):
+	for picture in EventPictures.family_sources(_look.picture()):
 		var size := EventPictures.native_size(picture)
 		if size.x > 0.0 and size.y > 0.0:
 			rect = rect.merge(Rect2(-size.x * 0.5, -size.y, size.x, size.y))
-	var shape := _row.ground_shape()
-	if _row.casts_a_shadow() and shape != null:
-		var r := _row.obstructs_within() if _row.has_a_body() else shape.rounding_radius()
+	var shape := event.ground_shape()
+	if _look.casts_a_shadow() and shape != null:
+		var r := _body.obstructs_within() if _body.has_a_body() else shape.rounding_radius()
 		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if _row.picture() == EventDef.Look.LOOSE_DOG:
+	if _look.picture() == EventDef.Look.LOOSE_DOG:
 		var behind := EventFootprints.LOOSE_LEAD_REACH if _heading_is_west() \
 				else -EventFootprints.LOOSE_LEAD_REACH
 		rect = rect.merge(Rect2(Vector2(minf(behind, 0.0), -8.0),
@@ -571,22 +578,22 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 ## car rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
 ## caret over it is lowered by the same amount (`_picture_drop_now()`).
 func body_anchor(view: String) -> Vector2:
-	var shape := _row.ground_shape()
+	var shape := event.ground_shape()
 	var south := shape.spine_half_length() * absf(event.solid_axis().y) + shape.rounding_radius()
-	return Vector2(0.0, south + float(EventPictures.canvas_margins(_row.picture()).get(view, 0.0)))
+	return Vector2(0.0, south + float(EventPictures.canvas_margins(_look.picture()).get(view, 0.0)))
 
 ## How far below its own node the event's picture is drawn this frame — a car's
 ## `body_anchor()`, zero for every other row — so the caret over it stands the same height
 ## above the picture as it does over anything else.
 func _picture_drop_now() -> float:
-	if not EventPictures.is_anchored_over_its_body(_row.picture()) or _row.ground_shape() == null:
+	if not EventPictures.is_anchored_over_its_body(_look.picture()) or event.ground_shape() == null:
 		return 0.0
 	return body_anchor(EventPictures.EIGHT_VIEW_BY_SECTOR[_view_sector]).y
 
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true,
 		at := Vector2.ZERO) -> void:
-	var wheels_by_view: Dictionary = EventPictures.WHEELS_BY_LOOK.get(_row.picture(), {})
+	var wheels_by_view: Dictionary = EventPictures.WHEELS_BY_LOOK.get(_look.picture(), {})
 	var grounded := at
 	if not wheels_by_view.is_empty():
 		grounded = at + Vector2(0.0, -current_bob())
@@ -628,9 +635,9 @@ func robber_waiting_heading() -> Vector2:
 ## same phase of it. `current_intensity()`'s own cosine pulse is untouched by this — the field
 ## keeps swelling and fading on the same clock; this only decides the lamp and the arcs.
 func mast_is_telegraphing_now() -> bool:
-	if _row.pulses_every() <= 0.0:
+	if event.pulses_every() <= 0.0:
 		return false
-	return fmod(event.age(), _row.pulses_every()) < _row.telegraphs_for()
+	return fmod(event.age(), event.pulses_every()) < event.telegraphs_for()
 
 ## Where a protest points (`EventInstance.where_its_placards_point()`), or `Vector2.INF`, nothing
 ## to point at.

@@ -6,7 +6,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.CHECKPOINT_HUT:
 			_draw_checkpoint_hut(canvas)
 		EventDef.Look.CHECKPOINT_GATE:
