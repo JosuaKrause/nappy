@@ -45,7 +45,5 @@ This is the smell designing-classes names: a fact derived in more than one place
 
 **What it collides with.**
 
-- Row 4b's twelfth pull request (the composer's writes of the live event's behaviour slots): line-level in `EventInstance.setup()`.
 - minty-newt, the events' looks are handed the drawn view: it rewrites the same look constructors, so one follows the other.
 - Row 5's live-event and drawing suites: this lands before them, so they are written once.
-- The row 3b change (amber-dolphin, what the events are set up in is built once) touches `setup()` too: either order, one after the other.

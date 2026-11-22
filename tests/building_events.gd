@@ -1,9 +1,9 @@
 extends RefCounted
 ## **The escape's building with its events, as the game runs them**: the day's own `EventManager`
-## handed the building's map (`EventManager.setup_world()`), the whole plan in the world at once, and
+## over the building's map (`EventSurroundings.on()`), the whole plan in the world at once, and
 ## the building's walk started on it (`EventManager.start_day()` with the building's spec, which
-## plans the building's own placements, `BuildingPlan.plan()`), from the seed `rng` draws, as `main`
-## draws it from the run's. Shared by `tests/test_interior.gd`,
+## plans the building's own placements, `BuildingPlan.plan()`), from the seed `rng` draws, as
+## `main` draws it from the run's. Shared by `tests/test_interior.gd`,
 ## `tests/test_wall_shield.gd`, `tests/basement_walk_rig.gd` and the probes that walk the building.
 
 ## The building's events in `scene`, added under `parent`, started from `rng`'s next draw. The seed
@@ -12,14 +12,15 @@ extends RefCounted
 ## holds them (a manager handed none makes its own on entering the tree).
 static func events_in(parent: Node, scene: InteriorScene,
 		rng: RandomNumberGenerator, run: RunState, atlas: AtlasLibrary = null) -> EventManager:
-	var events := EventManager.new()
-	events.use_bus(EventBus)
+	var surroundings := EventSurroundings.new().on(scene.map()).moving_by(scene.navigator()) \
+			.drawn_in(scene)
 	if atlas != null:
-		events.use_atlas(atlas)
+		surroundings.drawn_from(atlas)
+	var events := EventManager.new(surroundings)
+	events.use_bus(EventBus)
 	events.stream_within(INF)
 	parent.add_child(events)
-	events.draw_in(scene)
-	events.setup_world(scene.map(), run, scene.navigator())
+	events.setup(run)
 	var sets: Array[ExcitementSources] = [events.excitement_sources()]
 	scene.use_excitement_sources(sets)
 	events.set_meta(&"building_seed", rng.randi())

@@ -21,8 +21,9 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 var _trace := RunTrace.new()
 ## The baked atlas pages every part draws from; a part handed none makes its own.
 var _atlas: AtlasLibrary = null
-## Where the events charge their time to the frame record; the null sink until handed another.
-var _timing := FrameTiming.new()
+## Where the events charge their time to the frame record; none until handed, and until then the
+## events charge it to the null sink their surroundings hold.
+var _timing: FrameTiming = null
 ## The bus the events, the crowd, the poster walls and the blackout report on; none, and they tell
 ## nobody.
 var _bus: _BUS = null
@@ -112,10 +113,10 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 	posters.setup(buildings, map, run, streets)
 	world.day_dressed.connect(posters.dress_for)
 
-	var events := _new_events()
+	var events := _new_events(_the_events_surroundings(world).in_the_city(map)
+			.moving_by(navigator).stopping_at(signals))
 	simulation.add_child(events)
-	events.draw_in(world)
-	events.setup(map, streets, signals, run, navigator, posters)
+	events.setup(run, streets, posters)
 	events.force(_forced_row, _forced_interval)
 	posters.watch_events(events)
 
@@ -152,11 +153,10 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 func in_the_building(world: WorldContext, map: WorldMap, navigator: Navigator,
 		run: RunState) -> WorldSimulation:
 	var simulation := _stand_under(world)
-	var events := _new_events()
+	var events := _new_events(_the_events_surroundings(world).on(map).moving_by(navigator))
 	events.stream_within(INF)
 	simulation.add_child(events)
-	events.draw_in(world)
-	events.setup_world(map, run, navigator)
+	events.setup(run)
 	simulation.hold_the_events(events)
 	world.use_excitement_sources(simulation.excitement_sources())
 	return simulation
@@ -171,17 +171,24 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 	world.add_child(simulation)
 	return simulation
 
-## **An event manager, equipped the one way for every world**: its trace, its atlas, its frame
-## timing, whether its instances skip their drawing, the bus it reports on, and the pelican rig,
-## which only a cyclist asks. Not yet in the tree: it takes its atlas page as it enters.
-func _new_events() -> EventManager:
-	var events := EventManager.new()
-	events.name = "Events"
-	events.use_trace(_trace)
+## **What the events of a world are set up in, the one way for every world**: its trace, its
+## atlas, its frame timing, and whether they skip their drawing, drawn in `world`. The caller adds
+## the map and what it moves by.
+func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
+	var surroundings := EventSurroundings.new().drawn_in(world).tracing_to(_trace) \
+			.drawn_from(_atlas)
+	if _timing != null:
+		surroundings.timed_by(_timing)
 	if _skip_event_drawing:
-		events.draw_nothing()
-	events.use_timing(_timing)
-	events.use_atlas(_atlas)
+		surroundings.drawing_nothing()
+	return surroundings
+
+## **An event manager over `surroundings`, equipped the one way for every world**: the bus it
+## reports on, and the pelican rig, which only a cyclist asks. Not yet in the tree: it takes its
+## atlas page as it enters.
+func _new_events(surroundings: EventSurroundings) -> EventManager:
+	var events := EventManager.new(surroundings)
+	events.name = "Events"
 	events.use_bus(_bus)
 	if _every_cyclist_a_pelican:
 		events.rig_the_pelican(EventSpawner.PelicanRig.ALWAYS)

@@ -28,7 +28,10 @@ func run(t: TestRunner) -> void:
 func _instance(_t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
+	var surroundings := EventSurroundings.new()
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
 	return instance
 
 func _advance(instance: EventInstance, seconds: float) -> void:
@@ -320,11 +323,10 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var world := WorldContext.new()
 	t.add_child(world)
-	var manager := EventManager.new()
 	var map := WorldMap.open_ground()
 	var run := RunState.new()
-	manager.draw_in(world)
-	manager.setup_world(map, run)
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	manager.setup(run)
 	t.add_child(manager)
 	var plan := EventPlan.new(def, at)
 	manager.streaming.add(plan)

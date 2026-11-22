@@ -173,11 +173,11 @@ class Stage extends RefCounted:
 		if t != null:
 			t.add_child(world)
 		var run := RunState.new()
-		manager = EventManager.new()
-		manager.draw_in(world)
-		manager.setup_world(map, run)
+		var surroundings := EventSurroundings.new().on(map).drawn_in(world)
 		if atlas != null:
-			manager.use_atlas(atlas)
+			surroundings.drawn_from(atlas)
+		manager = EventManager.new(surroundings)
+		manager.setup(run)
 		world.add_child(manager)
 		manager.set_physics_process(false)
 

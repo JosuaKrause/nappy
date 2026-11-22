@@ -45,15 +45,15 @@ func run(t: TestRunner) -> void:
 		await test.call(t)
 		_teardown()
 
-## **A world keeps the navigator it was handed** (`EventManager.setup_world()`), whichever map that
-## navigator walks: a manager set up on a street map and handed a navigator over open ground answers
-## that same object, never one built over its own map in its place.
+## **A world keeps the navigator it was handed** (`EventSurroundings.moving_by()`), whichever map
+## that navigator walks: a manager set up on a street map and handed a navigator over open ground
+## answers that same object, never one built over its own map in its place.
 func _test_a_world_keeps_the_navigator_it_was_handed(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(1)
 	var handed := Navigator.new()
-	var events := EventManager.new()
-	events.setup_world(_city.map, run, handed)
+	var events := EventManager.new(EventSurroundings.new().on(_city.map).moving_by(handed))
+	events.setup(run)
 	t.check(events.world.navigator() == handed,
 			"the events' world answers the navigator it was handed, not one over its map")
 	events.free()

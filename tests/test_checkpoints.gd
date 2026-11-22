@@ -9,12 +9,12 @@ extends RefCounted
 ## real tiles the same way that suite's own flood check does.
 ##
 ## **The holds are played on real physics ticks** (`PhysicsTicks`, one tick a frame): the manager is
-## in the tree over open ground drawn in a world, and a run of its own (`EventManager.setup_world()`, the entry `main`
-## hands the escape's building its world through), so its own tick hands every instance where she
-## is, steps them, starts the hold and releases it, and hers runs the input lock down and moves
-## her camera; a finger is a touch pushed through the viewport. The street-door rigs further down
-## stand a real city's door and call the controller's public frame methods
-## (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
+## in the tree over open ground drawn in a world, and a run of its own (`EventSurroundings.on()`,
+## then `EventManager.setup()`, as the escape's building is set up), so its own tick hands every
+## instance where she is, steps them, starts the hold and releases it, and hers runs the input
+## lock down and moves her camera; a finger is a touch pushed through the viewport. The
+## street-door rigs further down stand a real city's door and call the controller's public frame
+## methods (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
 
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const HaloRig := preload("res://tests/halo_rig.gd")
@@ -510,9 +510,10 @@ func _placed_count(plans: Array[EventPlan]) -> int:
 	return total
 
 # ------------------------------------------------------------------- the detention ---
-# A manager over open ground and a run of its own, handed in as the escape's building is handed its
-# world (`EventManager.setup_world()`), in the tree, so its own physics tick hands every instance
-# where she is, steps them, starts the hold and releases it, in the order the game runs them. The
+# A manager over open ground and a run of its own, set up as the escape's building is
+# (`EventSurroundings.on()`, then `EventManager.setup()`), in the tree, so its own physics tick
+# hands every instance where she is, steps them, starts the hold and releases it, in the order the
+# game runs them. The
 # stroller is the *real* scene rather than a bare `Stroller.new()`, so `global_position` — what
 # the teleport actually moves — is meaningful: a bare rig has no `CollisionShape2D`, so
 # `move_and_slide()` never moves it and only `velocity` is trustworthy. Its `Baby` child needs
@@ -530,9 +531,8 @@ func _manager(t: TestRunner) -> EventManager:
 	# hands it), so a plan put in by `_door_instance()` stays in however far a test walks her.
 	var world := WorldContext.new()
 	var map := WorldMap.open_ground()
-	var manager := EventManager.new()
-	manager.draw_in(world)
-	manager.setup_world(map, run)
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	manager.setup(run)
 	manager.stream_within(INF)
 	manager.add_child(world)
 	t.add_child(manager)
@@ -1999,7 +1999,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	RunCity.events(city).use_trace(RecordingTrace.new(walks_told))
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(walks_told))
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -2059,7 +2059,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	RunCity.events(city).use_trace(RecordingTrace.new(walks_told))
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(walks_told))
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])

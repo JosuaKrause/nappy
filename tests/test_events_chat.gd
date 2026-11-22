@@ -2,9 +2,9 @@ extends RefCounted
 ## The one row whose whole mechanic is time under compulsion rather than a field: entering
 ## `detain_distance()` locks the player's own movement input, and what she is charged while it holds
 ## depends on the baby's state rather than on anything the def can see. An `EventManager` is built
-## by hand and handed a bare map and a run of its own (`setup_world()`, the entry the escape's building
-## is handed its world through) -- nothing here needs a real `City` -- and put in the tree with her:
-## its own physics ticks hand every instance where she is and start the hold
+## by hand and handed a bare map and a run of its own (`EventSurroundings.on()`, then `setup()`, as
+## the escape's building is set up) -- nothing here needs a real `City` -- and put in the tree with
+## her: its own physics ticks hand every instance where she is and start the hold
 ## (`CheckpointController.check_detentions()`), and hers run the lock down, on real frames of one
 ## tick each (`PhysicsTicks`).
 ##
@@ -42,7 +42,9 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null,
 		trace: RunTrace = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new().hearing(where)
+	var surroundings := EventSurroundings.new()
+	if where != null:
+		surroundings.hearing(where)
 	if trace:
 		surroundings.tracing_to(trace)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -54,10 +56,10 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
-## world (`EventManager.setup_world()`), and in the tree: its own physics tick hands every instance
-## where she is and starts the hold. Added to the tree before the stroller, so on every tick it
-## runs first. `_free_manager()` frees it.
+## A manager over a bare map and a run of its own, set up as the escape's building is
+## (`EventSurroundings.on()`, then `EventManager.setup()`), and in the tree: its own physics tick
+## hands every instance where she is and starts the hold. Added to the tree before the stroller,
+## so on every tick it runs first. `_free_manager()` frees it.
 func _chat_manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
@@ -67,9 +69,8 @@ func _chat_manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new()
-	manager.draw_in(holder)
-	manager.setup_world(map, run)
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	manager.setup(run)
 	t.add_child(manager)
 	return manager
 

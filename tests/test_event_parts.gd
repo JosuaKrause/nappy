@@ -18,18 +18,17 @@ func run(t: TestRunner) -> void:
 	_test_a_door_says_what_it_does_to_her_and_moves_nobody(t)
 	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
 
-## A manager handed a map drawn in a world node and a run of its own (`EventManager.setup_world()`,
-## the entry the escape's building is handed its world through), out of the tree so that nothing
-## ticks it: the parts under test are its own (`streaming`, `spawner`, `warnings`) and its `world`
-## is the one every part is handed. `_free_manager()` frees it with the node.
+## A manager handed a map drawn in a world node and a run of its own (`EventSurroundings.on()`,
+## then `EventManager.setup()`, as the escape's building is set up), out of the tree so that
+## nothing ticks it: the parts under test are its own (`streaming`, `spawner`, `warnings`) and its
+## `world` is the one every part is handed. `_free_manager()` frees it with the node.
 func _manager(t: TestRunner) -> EventManager:
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var map := CityMap.new()
 	var run := RunState.new()
-	var manager := EventManager.new()
-	manager.draw_in(holder)
-	manager.setup_world(map, run)
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	manager.setup(run)
 	return manager
 
 ## A Stroller with the camera it looks up by path, in the tree, its physics stepped by nobody.
@@ -153,7 +152,7 @@ func _test_the_pelican_bag_is_the_handed_runs(t: TestRunner) -> void:
 	var manager := EventManager.new()
 	var run := RunState.new()
 	run.header().use_seed(4242)
-	manager.use_run(run)
+	manager.setup(run)
 	var spawner := manager.spawner
 	var cyclist := EventCatalogue.by_id("cyclist")
 	for _i in 5:
@@ -210,9 +209,8 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	t.add_child(holder)
 	var map := CityMap.new()
 	var run := RunState.new()
-	var manager := EventManager.new()
-	manager.draw_in(holder)
-	manager.setup_world(map, run)
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	manager.setup(run)
 	t.add_child(manager)
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)

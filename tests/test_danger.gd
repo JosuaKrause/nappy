@@ -904,18 +904,17 @@ func _test_the_carried_babys_cue_stays_over_her_head(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- helpers ---
 
-## A manager over open ground and a run of its own, handed in as the escape's building is handed its
-## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
-## its map is drawn in, a child of the manager. `_free_manager()` frees it.
+## A manager over open ground and a run of its own, set up as the escape's building is
+## (`EventSurroundings.on()`, then `EventManager.setup()`), in the tree; the events it spawns stand
+## in the world node its map is drawn in, a child of the manager. `_free_manager()` frees it.
 func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(1)
 	var map := WorldMap.open_ground()
-	var manager := EventManager.new()
 	var holder := WorldContext.new()
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
 	manager.add_child(holder)
-	manager.draw_in(holder)
-	manager.setup_world(map, run)
+	manager.setup(run)
 	t.add_child(manager)
 	return manager
 
@@ -950,10 +949,11 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 func _instance(def: EventDef, route := PackedVector2Array(),
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT,
-			EventSurroundings.new().hearing(where) \
-				.drawn_from(_atlas) \
-				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas))))
+	var surroundings := EventSurroundings.new().drawn_from(_atlas) \
+			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas)))
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT, surroundings)
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`

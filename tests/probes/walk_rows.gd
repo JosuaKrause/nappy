@@ -419,8 +419,7 @@ func _walk_every_day(reach: float) -> void:
 			# The walk's sitings are judged against the walk itself, as the game's are, and lay a
 			# beat on the locations the units draw into: made by the game's maker, over a world
 			# that holds this probe's city and a run of its own.
-			var world := EventWorld.new()
-			world.use_map(WorldMap.open_ground(), map)
+			var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
 			world.use_run(RunState.new())
 			world.use_plan_builder(GamePlanBuilder.over(map))
 			var siting := SitingMaker.new(world, walk).make(day, tree, EventScheduler.row_ground(map))

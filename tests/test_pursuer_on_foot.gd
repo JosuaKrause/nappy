@@ -221,7 +221,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	EventBus.poster_pursuit_sent.connect(on_sent)
 	var before := RunCity.events(city).instances().size()
 	var account: Array[String] = []
-	RunCity.events(city).use_trace(RecordingTrace.new(account))
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(account))
 	RunCity.events(city).send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	var warnings := RunCity.events(city).pending_warnings()
@@ -721,7 +721,7 @@ const ENCOUNTER_MARGIN := 10.0
 func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 		route: PackedVector2Array) -> float:
 	var events := RunCity.events(city)
-	events.world.use_lights(null)
+	events.world.surroundings().stopping_at(null)
 	var car := events.spawn_extra(hot, route[0], route)
 	events.use_player(her)
 	var landed := 0.0

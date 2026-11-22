@@ -16,6 +16,8 @@ request is, and Fable then reviews the built pull request against its design bef
 
 **Item:** `body-stance-value.md`, Fable's design as written.
 
-**When it runs** (the filer's ordering, proposed; Fable named the collisions). After row 4b's twelfth pull request (the live event is handed its behaviours), since both change `EventInstance.setup()`; before or after minty-newt (the events' looks are handed the drawn view) and amber-dolphin (what the events are set up in is built once), one after the other, as the item says; before row 5's live-event and drawing suites.
+**When it runs** (the filer's ordering, proposed; Fable named the collisions). Before or after minty-newt (the events'
+looks are handed the drawn view), one after the other, since both change the look's constructors and
+`EventInstance.setup()`; before row 5's live-event and drawing suites.
 
 **Proposed, not asked for:** the band `now` (the refactor's own kind of work).

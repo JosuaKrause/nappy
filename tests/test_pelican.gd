@@ -75,7 +75,7 @@ func run(t: TestRunner) -> void:
 ## the manager hands the real one, so a check reads the pictures an event was drawn with.
 func _record_the_drawing() -> void:
 	_recorded = RecordingEventDrawer.new()
-	_events.world.use_drawer(_recorded)
+	_events.world.surroundings().drawing_through(_recorded)
 
 func _day_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -126,7 +126,7 @@ func _test_the_seed_decides_which_cyclist_is_the_pelican(t: TestRunner) -> void:
 func _test_the_bag_follows_the_run_and_the_count(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var manager := EventManager.new()
-	manager.use_run(_run)
+	manager.setup(_run)
 	_new_run(11)
 	var first: Array[bool] = []
 	for _i in 400:
@@ -240,7 +240,7 @@ func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
 		rig := EventSpawner.PelicanRig.BAG) -> Array[bool]:
 	_new_run(run_seed)
 	var manager := EventManager.new()
-	manager.use_run(_run)
+	manager.setup(_run)
 	manager.rig_the_pelican(rig)
 	var answers: Array[bool] = []
 	for i in count:
@@ -252,7 +252,7 @@ func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
 func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 	_run.header().use_seed(run_seed)
 	var manager := EventManager.new()
-	manager.use_run(_run)
+	manager.setup(_run)
 	var answers: Array[bool] = []
 	for _i in count:
 		answers.append(manager.spawner.rolls_a_pelican(def))
@@ -392,7 +392,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	run_log.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
 	# The manager's own lines reach the run log through the trace a booted run hands it
 	# (`SimulationBuilder.equip()`).
-	events.use_trace(RunTrace.new(run_log.note))
+	events.world.surroundings().tracing_to(RunTrace.new(run_log.note))
 	# The observer is handed what `main` hands it, and hears the pelican's moments as they happen.
 	var baby := stroller.get_node("Baby") as Baby
 	var clock := DayController.new()
@@ -516,7 +516,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 
 	# A new day, as the game starts one: the kid's reach names the cyclist and tells nothing of a
 	# pelican. Silent now, so the day's own plan lines are not read as the pelican's.
-	events.use_trace(RunTrace.new())
+	events.world.surroundings().tracing_to(RunTrace.new())
 	_quiet_day(events)
 	var kid_again := events.spawn_warned(def, _ride(), false)
 	stroller.reset_at(kid_again.global_position)
@@ -539,7 +539,7 @@ func _quiet_day(events: EventManager) -> void:
 func _untangle(events: EventManager, stroller: Stroller, listeners: Array,
 		observer: TelemetryObserver, clock: DayController, run_log: Telemetry) -> void:
 	run_log.free()
-	events.use_trace(RunTrace.new())
+	events.world.surroundings().tracing_to(RunTrace.new())
 	events.use_player(null)
 	observer.free()
 	clock.free()

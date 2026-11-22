@@ -40,8 +40,8 @@ with the step's own `grants_progress`, a day's give-back through `ResistanceRunS
 a map's tile state through `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()` and
 `obstruct_tiles()` with `release_obstruction()`, events through `EventManager.spawn_extra()`,
 `spawn_warned()` or an `EventPlan` handed to `EventStreaming.add()`, and an `EventWorld` through
-`setup_world()`, `setup()`, `use_run()` and `use_player()`. What stays is fixture state on public
-fields no game writer reaches alone:
+`setup()` and `use_player()`. What stays is fixture state on public fields no game writer
+reaches alone:
 
 - `run.attempt_spend.consumed_one_shots.append("burning_building")` (`test_day_loop.gd`): the
   scheduler appends it as it places the one-shot, and a test of the give-back needs it spent without

@@ -229,9 +229,8 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 		facing := Vector2.RIGHT, gate: GateState = null) -> EventInstance:
 	show_the_bang(def)
 	var instance := EventInstance.new(world.reports())
-	var surroundings := world.surroundings()
-	instance.setup(def, at, path, facing, surroundings, gate)
-	surroundings.world_drawn_in().add_entity(instance)
+	instance.setup(def, at, path, facing, world.surroundings(), gate)
+	world.drawn_in().add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.

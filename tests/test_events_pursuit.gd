@@ -55,10 +55,11 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), map: CityMap = null,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	instance.setup(def, at, path, Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
-				.moving_by(Navigator.new(map) if map else null) \
-				.hearing(where))
+	var surroundings := EventSurroundings.new().on(map) \
+			.moving_by(Navigator.new(map) if map else null)
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -94,10 +95,10 @@ class _CountingBoard extends WarningBoard:
 func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> void:
 	# An empty city map: the director owes its retry the same way with nothing on the ground.
 	var map := CityMap.new()
-	var manager := EventManager.new()
-	manager.setup(map)
 	var told: Array[String] = []
-	manager.use_trace(RecordingTrace.new(told))
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map)
+			.tracing_to(RecordingTrace.new(told)))
+	manager.setup(null)
 	var board := _CountingBoard.new(manager.world)
 	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board,
 			manager.walk_events())
@@ -566,16 +567,15 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var run := RunState.new()
-	var manager := EventManager.new()
-	manager.draw_in(holder)
-	manager.setup(map, null, null, run)
-	var player := Node2D.new()
-	t.add_child(player)
-	player.global_position = her
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	# The page every event made here is drawn from, as `main` hands the manager its library.
-	manager.use_atlas(atlas)
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map).drawn_in(holder)
+			.drawn_from(atlas))
+	manager.setup(run)
+	var player := Node2D.new()
+	t.add_child(player)
+	player.global_position = her
 	var edge := DangerEdge.new()
 	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)
