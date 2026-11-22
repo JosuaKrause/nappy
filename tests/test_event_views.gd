@@ -1077,11 +1077,11 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t: TestRunner) -> voi
 					% [name, view, FOOTPRINT_TOLERANCE_PX, gap])
 
 ## `burst_water_main`'s crater is sunk into the road rather than standing on it, so the player
-## asked for no shadow under it — `EventDef.draws_body_shadow` is the query `_draw_body_shadow()`
-## reads, and this pins the query the same way the rest of this file pins one rather than calling
-## a `_draw_*` function directly. `fallen_tree` shares the row's single-body geometry
-## (`docs/EVENTS.md`, "Seal pictures") and keeps the ordinary shadow, so the flag is the only
-## difference between the two.
+## asked for no shadow under it — the row's look says whether a shadow goes under its body
+## (`EventDef.casts_a_shadow()`), the question `_draw_body_shadow()` reads, and this pins that
+## answer the same way the rest of this file pins one rather than calling a `_draw_*` function
+## directly. `fallen_tree` shares the row's single-body geometry (`docs/EVENTS.md`, "Seal
+## pictures") and keeps the ordinary shadow, so that answer is the only difference between the two.
 func _test_burst_water_main_draws_no_body_shadow(t: TestRunner) -> void:
 	t.check(not EventCatalogue.by_id("burst_water_main").casts_a_shadow(),
 			"burst_water_main opts out of the body shadow every other seal draws")
