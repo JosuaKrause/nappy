@@ -226,20 +226,19 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 # -------------------------------------------------- the list of moves keeps up ---
 
 ## An event manager over a bare map, with `alley_robbery` planned at `at` and streamed in: the rig
-## `test_event_behaviours.gd` streams a plan with. The manager is handed its world as the escape's
-## building is (`EventManager.setup_world()`: a map and a run of its own, here a fresh `RunState`), the
-## plan joins the day's as one planned after dawn does (`EventStreaming.add()`, which the events
-## ahead of her call) and is streamed in around `at`. `move` is the one move the streamed-in event put
-## on the map's list.
+## `test_event_behaviours.gd` streams a plan with. The manager is set up as the escape's building
+## is (`EventSurroundings.on()` a map, then `EventManager.setup()` a run of its own, here a fresh
+## `RunState`), the plan joins the day's as one planned after dawn does (`EventStreaming.add()`,
+## which the events ahead of her call) and is streamed in around `at`. `move` is the one move
+## the streamed-in event put on the map's list.
 func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var run := RunState.new()
 	run.start_run(SEED)
 	var map := CityMap.new()
-	var manager := EventManager.new()
-	manager.draw_in(world)
-	manager.setup_world(map, run)
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	manager.setup(run)
 	t.add_child(manager)
 	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
 	manager.streaming.add(plan)

@@ -6,9 +6,10 @@ extends RefCounted
 ## writes to, the lights a car of it stops at and where a protest of it points its placards.
 ## **One value for a world's whole life**, built where the world is built and handed to its manager
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
-## handed the same one (`EventWorld.surroundings()`), so one made before a hand-in is set up in
-## what one made after it is. Nothing is handed to it after the manager is set up but where a protest
-## points (`pointing_protests_with()`), since the resistance that answers is built over the events.
+## handed the same one (`EventWorld.surroundings()`), so a hand-in made after an event is set up
+## reaches it too. The game hands it nothing after the manager is set up but where a protest
+## points (`pointing_protests_with()`), since the resistance that answers is built over the
+## events.
 ##
 ## **Built by chaining**: `EventSurroundings.new().on(map).hearing(where)` and so on, each call
 ## returning the same object. It is the one place each default is stated: what is not handed is

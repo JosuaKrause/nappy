@@ -111,7 +111,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## `tests/test_pelican.gd` does: a look is handed its drawer as it is made.
 func _record_the_drawing() -> void:
 	_recorded = RecordingEventDrawer.new()
-	RunCity.events(_city).world.use_drawer(_recorded)
+	RunCity.events(_city).world.surroundings().drawing_through(_recorded)
 
 ## The pictures a protest the city's events made stands its rank in, drawn: it was handed the
 ## recording drawer its manager's spawner hands every instance (`_record_the_drawing()`), and real

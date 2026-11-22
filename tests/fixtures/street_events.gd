@@ -13,12 +13,11 @@ extends RefCounted
 ## freed with `free()`, which frees the world node and every instance with it.
 static func over(t: TestRunner, map: CityMap, run: RunState, streets: DayStreets,
 		stream_radius := Tuning.EVENT_STREAM_RADIUS) -> EventManager:
-	var manager := EventManager.new()
-	manager.use_bus(EventBus)
 	var holder := WorldContext.new()
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map).drawn_in(holder))
+	manager.use_bus(EventBus)
 	manager.add_child(holder)
-	manager.draw_in(holder)
-	manager.setup(map, streets, null, run)
+	manager.setup(run, streets)
 	manager.stream_within(stream_radius)
 	t.add_child(manager)
 	return manager

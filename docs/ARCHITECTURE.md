@@ -192,8 +192,9 @@ src/
 	                       by its event and told what happens to it
 	event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
 	                       map and navigator, where she is, the world it is drawn in, its drawer,
-	                       its timing sink, its trace, the car's lights and where a protest points;
-	                       built by the events' world for each live event, handed to the one
+	                       its timing sink, its trace, its atlas, the car's lights and where a
+	                       protest points; built once where the world is (`SimulationBuilder`),
+	                       handed to the manager as it is made and to every live event's one
 	                       `EventInstance.setup()` call, which takes the shared boom state last
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
 	                       present rate cached on its age, the walls it does not pass, its live
@@ -372,9 +373,11 @@ src/
 	                      ruled ground
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
-	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the
-	                       run and the player; starts every walk the one way, `start_day(spec)`,
-	                       a day, the escape's city or its building; holds one reference on the `events`
+	event_manager.gd      a day's events as the rest of the game sees them: made over what its
+	                       events are set up in (`EventSurroundings`), then handed the run,
+	                       today's streets, the poster walls and the player; starts every walk
+	                       the one way, `start_day(spec)`, a day, the escape's city or its
+	                       building; holds one reference on the `events`
 	                       atlas page; steps the live instances once a physics tick in a fixed
 	                       order (tells them where she is, steps them, then the catches and hard
 	                       fails); hands the world its events as one set of things that charge
@@ -1160,9 +1163,9 @@ is the navigator's (`Navigator`, over a map, which whoever builds a world builds
 city holds its own, `City.navigator()`, `SimulationBuilder` hands it to the events and the crowd and
 `main` to the resistance; the building holds its own, `InteriorScene.navigator()`, which `main` hands
 to the builder as it hands the city's), and what is drawn in the world is the world's
-(`WorldContext`, handed to the event manager by `EventManager.draw_in()`, which hands it to each
-event it makes). Which world a day spec is walked in is the run flow's
-choice (`main`), which hands that world's map down.
+(`WorldContext`, handed to the event manager in the surroundings it is made over,
+`EventSurroundings.drawn_in()`, which every event it makes is set up in). Which world a day spec
+is walked in is the run flow's choice (`main`), which hands that world's map down.
 
 ## WorldContext
 

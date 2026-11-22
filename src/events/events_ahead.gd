@@ -142,7 +142,7 @@ func clear() -> void:
 	_sent_warning = null
 
 ## What sites rows ahead of her on a day, over the city (`EventDirector`); none in a world with no
-## city (`EventManager.setup_world()`), where nothing is sited while she walks.
+## city (`EventSurroundings.city_map()` is null), where nothing is sited while she walks.
 var _director: EventDirector
 ## Where something sent at her may start (`SpawnSiting`): the city's, handed in with the director;
 ## none in a world with no city, where no torn poster sends anybody.

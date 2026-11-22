@@ -59,8 +59,9 @@ func _clear() -> void:
 	_influenced.clear()
 	_ran.clear()
 
-## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
-## world (`EventManager.setup_world()`), in the tree. `_free_manager()` frees it.
+## A manager over a bare map and a run of its own, set up as the escape's building is
+## (`EventSurroundings.on()`, then `EventManager.setup()`), in the tree. `_free_manager()` frees
+## it.
 func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(SEED)
@@ -69,11 +70,10 @@ func _manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new()
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
 	# The game's bus, which this suite listens on, as whoever stands a manager hands it.
 	manager.use_bus(EventBus)
-	manager.draw_in(holder)
-	manager.setup_world(map, run)
+	manager.setup(run)
 	t.add_child(manager)
 	return manager
 

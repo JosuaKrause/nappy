@@ -378,15 +378,14 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	# The page the badge's picture and the engine's are drawn from, as `main` hands the edge it.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
-	# Handed open ground drawn in a node it holds and a run of its own (`EventManager.setup_world()`,
-	# as the escape's building is handed its world).
+	# Handed open ground drawn in a node it holds and a run of its own (`EventSurroundings.on()`,
+	# then `EventManager.setup()`, as the escape's building is set up).
 	var run := RunState.new()
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var manager := EventManager.new()
+	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
 	manager.add_child(holder)
-	manager.draw_in(holder)
-	manager.setup_world(map, run)
+	manager.setup(run)
 	t.add_child(manager)
 	# After it enters the tree: entering turns on the tick of a node that defines one.
 	manager.set_physics_process(false)

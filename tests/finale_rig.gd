@@ -795,16 +795,15 @@ func _watch_them_walk_off(t: TestRunner, map: CityMap, told: WhereSheIs,
 ## nobody: he never notices her or charges again, so it raises nothing, or the walk past a band
 ## that costs nothing would be made under a warning of a catch that cannot come.
 func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
-	# A manager handed open ground drawn in a node of its own and a run (`EventManager.setup_world()`,
-	# as the building is handed its world), with the band a plan the escape would have planned
-	# (`EventStreaming.add()`), streamed in by the streaming the day runs.
+	# A manager handed open ground drawn in a node of its own and a run (`EventSurroundings.on()`,
+	# then `EventManager.setup()`, as the building is set up), with the band a plan the escape
+	# would have planned (`EventStreaming.add()`), streamed in by the streaming the day runs.
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var open_ground := WorldMap.open_ground()
 	var run := RunState.new()
-	var manager := EventManager.new()
-	manager.draw_in(holder)
-	manager.setup_world(open_ground, run)
+	var manager := EventManager.new(EventSurroundings.new().on(open_ground).drawn_in(holder))
+	manager.setup(run)
 	t.add_child(manager)
 	var band_plan := EventPlan.new(EventCatalogue.escape_roadblock(),
 			Vector2(1000.0, 1000.0))

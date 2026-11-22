@@ -73,13 +73,12 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	clock.start(300.0)
 	clock.tick(180.0)
 	# The events' world: open ground drawn in a node the manager holds, and the run's own state
-	# (`EventManager.setup_world()`, as the escape's building is handed its world).
-	var events := EventManager.new()
+	# (`EventSurroundings.on()`, then `EventManager.setup()`, as the escape's building is set up).
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
+	var events := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
 	events.add_child(holder)
-	events.draw_in(holder)
-	events.setup_world(map, _run)
+	events.setup(_run)
 	t.add_child(events)
 	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
 	# A world with no city: the open ground and its events, nobody in it.
