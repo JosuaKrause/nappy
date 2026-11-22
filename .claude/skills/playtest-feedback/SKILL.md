@@ -56,8 +56,9 @@ becomes a queue entry, and only then does it get implemented.
 says something in a session that should outlive it, the agent captures it verbatim into the inbox on
 GitHub Issues, in one call, before going on with anything else, so the words are safe even if the
 session is cleared; which words to capture is the agent's judgment. The notes the player writes
-there directly are the same. A note becomes a playtest file and its queue entries when the player
-asks for its batch to be filed, exactly as this skill says below — **inbox** has the capture, the
+there directly are the same. A note becomes a playtest file and its queue entries when the orchestrating session files its
+batch, on its own periodically or when the player asks (inbox #1619 in teal-dolphin), exactly as
+this skill says below — **inbox** has the capture, the
 filing pull request and the closing of the notes.
 
 **Words said in conversation are recorded with what they answered** (bouncy-heron 16), since the

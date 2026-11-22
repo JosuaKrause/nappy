@@ -5,8 +5,8 @@ the steps in order, from reading the notes to closing them, with what `tools/inb
 and what it leaves for a hand fix. The rules that hold at every other moment (what a note is,
 capturing, asking) are in `SKILL.md`.
 
-**A batch is filed when the player asks, never on the agent's own initiative.** One filing pull
-request carries the whole batch:
+**The orchestrating session files the open notes on its own, periodically, as well as when the
+player asks** (inbox #1619 in teal-dolphin); a session the player asks to file a batch files it too. One filing pull request carries the whole batch:
 
 - **List and read every note** with `list` and `show`, and settle what is unclear by asking on the
   issue first.
