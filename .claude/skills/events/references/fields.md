@@ -1,7 +1,7 @@
 # The fields that are decisions, and the ones that are not
 
 Read this before adding a row, or before changing a row's `spawn_mode`, `on_her_way`, `lethal()`,
-`pavement_side`, `departs_at` or `flock_size`, or what `EventScheduler.role_for()` answers.
+`pavement_side`, `departs_at` or `flock()`, or what `EventScheduler.role_for()` answers.
 
 **`spawn_mode` is a decision.** `MAP` is the default and is right for anything the player could plan
 around: it is a place, and finding out it is there is what walking a street is for.
@@ -22,8 +22,8 @@ she must meet exists wherever she goes (`docs/CITY.md`, "A set piece has to be m
 `EventDef.validate()` refuses a one-shot without `on_her_way`; a row that ends the day, a `walk_through_cost()`
 at or over `EventScheduler.WALL_WORTH_OF_COST` (a share of the meter), or a reach that leaves no
 line past it along a sidewalk makes a **wall** (zero copies on any cell a route runs along);
-anything else is **friction** (weighted onto the corridor). A `paces` row's role depends on where
-its beat runs, so `StreetInvalidation._a_pacing_beat_walls_a_sidewalk()` decides it in the
+anything else is **friction** (weighted onto the corridor). The role of a row with a pacing route
+(`RouteSpec.pacing()`) depends on where its beat runs, so `StreetInvalidation._a_pacing_beat_walls_a_sidewalk()` decides it in the
 candidate loop, where the beat exists. A row that wants a role its data does not imply needs a
 change to `EventScheduler.role_for()`, not a new field.
 
@@ -49,6 +49,6 @@ its silhouette.
 **`departs_at` is only a decision for a stationary event with a `duration`.** Anything mobile
 already leaves at its own speed, and anything without a duration never ends.
 
-**`flock_size` changes what a row *is* rather than what it does.** Reach for it only when the event
-genuinely is a number of creatures, and set `flock_spread` out of the outer radius rather than on top
-of it.
+**A flock (`FlockSpec.of(count, spread)`) changes what a row *is* rather than what it does.** Reach
+for it only when the event genuinely is a number of creatures, and set its spread out of the outer
+radius rather than on top of it.

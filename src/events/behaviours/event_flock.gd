@@ -16,9 +16,11 @@ extends EventBehaviour
 ##   flock *dangerous* in the way a route-planning game can use: the middle of it stacks four or five
 ##   overlapping fields and the edge of it stacks one, so walking round it is cheap and walking
 ##   through it is the most expensive thing on an act I pavement.
-## - **The birds stay inside `flock_spread` of the middle**, which is what keeps the telegraph
+## - **The birds stay inside the flock's spread of the middle**, which is what keeps the
+## telegraph
 ##   fairness contract true. The contract is stated over `outer radius` from the instance's own
-##   position; `flock_spread + bird_outer()` is `outer radius`, so the union of eleven moving fields
+##   position; the spread plus `bird_outer()` is the outer radius, so the union of eleven moving
+## fields
 ##   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
 ##   the per-bird radius would quietly move the field the contract was written about.
 ## - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
@@ -182,7 +184,8 @@ func _fly(delta: float) -> void:
 		if not _figure.is_on_its_way_out() and bird.at().length() > _flock.spread():
 			# The steering above is what a bird turning back *looks* like; this is the line that
 			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
-			# `bird_outer()` is `outer radius - flock_spread` precisely so that a bird at the rim
+			# `bird_outer()` is the outer radius less the spread precisely so that a bird at the
+			# rim
 			# reaches exactly as far as the event was validated to. Steering from half way out means
 			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
 			bird.place(bird.at().normalized() * _flock.spread())

@@ -785,7 +785,8 @@ enum Pavement {
 ## the capture has to sit strictly inside the field she is already fully charged for.
 ## `chatting_mother` carries no body (nothing mobile may), so her 48px is a radius from her centre,
 ## chosen against the **32px** spacing between the two lanes of a sidewalk (`Tuning.TILE_SIZE`):
-## under that, the far lane of a two-tile sidewalk is never inside it, whatever `paces` does, and
+## under that, the far lane of a two-tile sidewalk is never inside it, whatever a pacing route
+## does, and
 ## distance stays the counterplay.
 @export var _hold := HoldSpec.none()
 

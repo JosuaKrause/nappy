@@ -7,7 +7,8 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m205_note_handover.gd
 ##
-## **The rig.** A real `homeless_yeller` `EventInstance`, given a long straight path so `paces`
+## **The rig.** A real `homeless_yeller` `EventInstance`, given a long straight path so the
+## pacing route
 ## moves it exactly as `EventScheduler` would. She starts `LEAD` px away and walks straight at its
 ## *current* position every tick, the way a player closing on a moving rider actually does --
 ## unlike `M174Pass`'s "the pass", which walks a fixed line past a row, this walks *up to* one and

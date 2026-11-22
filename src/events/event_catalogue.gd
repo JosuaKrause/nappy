@@ -453,7 +453,8 @@ const NEIGHBOR_WALK_SPEED := 46.0
 const NEIGHBOR_RUN_SPEED := 150.0
 
 ## The day-10 neighbor: the same row walking home from out in the city along a path the director
-## gives it, who **stops at the door** (`stops_where_it_arrives`), walked home into the vans, which
+## gives it, who **stops at the door** (its route parks where it arrives), walked home into the
+## vans, which
 ## is the task lost, and who, warned first, runs (`departs_at`), which
 ## `EventInstance.leave_for_a_completed_task()` turns away from her. A copy rather than a second
 ## row, since it is the same person in the same picture.
@@ -675,7 +676,7 @@ static func _alley_mouse() -> EventDef:
 ## passes that she can **leave** by. A junction box is one (she takes the crosswalk while he is at
 ## the far end of his loop) and a side route off the sidewalk's own side is the other, so he is
 ## friction and stays on the route. A beat that passes neither leaves her nothing but walking
-## through him, and that placement is a wall. `path_length_tiles` (8) against a block of
+## through him, and that placement is a wall. His beat of eight tiles against a block of
 ## `Tuning.BLOCK_SIZE` (8) is why the first is the ordinary case: a beat runs into a junction unless
 ## a closure, a calm zone's absorbed corridor or the map's own margin cuts it short.
 ## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk` decides it, per placement.
@@ -693,7 +694,8 @@ static func _homeless_yeller() -> EventDef:
 	# Eight tiles of footway, walked in about eight seconds each way: long enough that where he is
 	# now is worth looking at, short enough that it is still *a place he is*.
 	def.use_route(RouteSpec.at(30.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(8).pacing())
-	# `paces` never reaches the end of its own path and he carries no `duration`, so he leaves only
+	# His pacing route never reaches the end of its path and he carries no `duration`, so he
+	# leaves only
 	# when the resistance hands him a note (`EventInstance.leave_for_a_completed_task()`); this is
 	# that departure's speed, not his pacing shuffle. Faster than the shuffle, so the note visibly
 	# changes what he is doing, and well under her `Tuning.WALK_SPEED` (92px/s), so following him
@@ -1214,7 +1216,8 @@ static func _leaf_blower() -> EventDef:
 ##
 ## **The birds go up when she reaches them, which a clock cannot know.** They are on the ground for
 ## the whole telegraph by construction, so under the clock alone a walk straight in put them up
-## about 84px past her. `EventNoticeRun` fires the burst at `flock_spread` plus her own body, the
+## about 84px past her. `EventNoticeRun` fires the burst at the flock's spread plus her own
+## body, the
 ## distance at which she is among the birds rather than near them, as a pursuer's lunge is fired by
 ## her reaching its stand-off.
 ##
@@ -1253,14 +1256,15 @@ static func _leaf_blower() -> EventDef:
 ## - The **birds** have to move, not just the event. Copies of one sprite at fixed offsets sharing a
 ##   single `rise` term go up in one movement and hang in the air for the whole burst.
 ##
-## So it is `flock_size` birds, each with its own heading, speed, height and wingbeat, each an
+## So it is eleven birds, each with its own heading, speed, height and wingbeat, each an
 ## emitter in its own right (see `EventInstance`, "the flock"):
 ##
 ## - **The intensity is a total to be shared out**, so it buys eleven overlapping fields rather than
 ##   one: walking round the edge meets one bird, through the middle five. It is the third loudest
 ##   thing on an act I sidewalk at the centre and nearly free at the rim.
-## - **`flock_spread` comes out of outer radius, not on top of it.** A bird emits over
-##   `outer radius - flock_spread`, so the union of eleven moving fields is inside the one disc the
+## - **The spread comes out of the outer radius, not on top of it.** A bird emits over
+##   the outer radius less the spread, so the union of eleven moving fields is inside the one
+## disc the
 ##   fairness contract was checked against. The telegraph is still measured against 168px.
 ## - **It fades as they climb.** swell is the burst being loudest at the instant they go
 ##   up, which also earns it a caret for the whole burst rather than only the telegraph: a flock is

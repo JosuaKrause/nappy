@@ -1258,7 +1258,7 @@ the event is the flock going up. With the flag, the top two rows of the table ab
 
 **And what ends a telegraph is her, wherever a clock cannot know when the thing started.** The
 lunge of a pursuer that comes for her through its telegraph (the day-3 dog) fires when she reaches
-its stand-off rather than when its clock runs out, and a flock's flush fires when she reaches the birds — `flock_spread` plus her own body — for the same
+its stand-off rather than when its clock runs out, and a flock's flush fires when she reaches the birds — the flock's spread plus her own body — for the same
 reason: the birds are on the ground for the whole telegraph, so its length is the wait between her
 walking into them and them reacting, and a fixed wait puts them up behind whoever walked in.
 `telegraphs_for()` is then the backstop for a flock she came near and never reached, and the

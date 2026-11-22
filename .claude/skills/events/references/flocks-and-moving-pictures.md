@@ -1,17 +1,17 @@
 # Flocks, and pictures that move
 
-Read this before touching `EventDef.flock_size`, `EventFlock`, a look that moves, or a picture only
+Read this before touching `EventDef.flock()`, `FlockSpec`, `EventFlock`, a look that moves, or a picture only
 part of which is animated.
 
 ## A thing made of several bodies has to be made of several bodies
 
-`EventDef.flock_size`, and three things about it are worth copying:
+`EventDef.flock()` (a `FlockSpec`: how many birds and how far they spread), and three things about it are worth copying:
 
 - **The excitement stays a pure query, one level down.** `Baby` sums what each
   source answers from `contribution_at()`; a flock sums over its birds. That is what makes the middle of a flock cost more than
   the rim, which is a *route* decision where one disc could only ever be a price.
-- **The birds are held inside `flock_spread`, and `flock_spread` comes out of the outer radius.** A
-  bird emits over `outer radius - flock_spread`, so the union of the moving fields is inside the
+- **The birds are held inside the flock's spread, and the spread comes out of the outer radius.** A
+  bird emits over the outer radius less the spread, so the union of the moving fields is inside the
   one disc `validate_event` checked. A moving emitter is only legal while that is true.
 - **`lerp` cannot turn a vector round.** Interpolating a unit vector toward its opposite runs down
   the same line to zero and back out the way it came, so normalising gives the heading it started

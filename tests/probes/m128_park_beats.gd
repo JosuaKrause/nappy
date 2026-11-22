@@ -255,7 +255,7 @@ func _busker_street_side(t: TestRunner) -> void:
 	print("\n== busker contribution on the pavement beside its lot, top of the beat ==")
 	print("  %-8s %10s %10s %10s %10s" % ["seed", "to street", "before", "after", "ratio"])
 	# A plain `EventDef`, not the catalogue's own — `emission_at()` only reads `intensity`,
-	# inner radius, outer radius and `flock_size` (0 by default), so this is the M117 busker
+	# inner radius, outer radius and flock (none by default), so this is the M117 busker
 	# in every field the comparison cares about.
 	var before_def := EventDef.new()
 	before_def.use_field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))

@@ -1,7 +1,8 @@
 class_name EventRouteWalk
 extends EventBehaviour
 ## **Following a route, or pacing a beat**: a mobile row walks its `path` at its `speed`, every step
-## through the navigator, and leaves from the end of a journey; a row that `paces` folds its walk
+## through the navigator, and leaves from the end of a journey; a row with a pacing route folds
+## its walk
 ## back and forth over the route for ever. The route and how far along it the event is are the
 ## event's own, asked of the figure it moves (`EventInstance.Figure.walks()`, `travelled()`), and
 ## streaming carries them; this is how it moves along it.
