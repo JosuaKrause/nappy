@@ -29,7 +29,10 @@ body does not. Sweep the continuous quantity in a test and assert the key moved 
 
 **A gate that skips off screen is a promise about everything the drawing covers, and it redraws on
 its first frame back.** `DrawnView` (`src/world/drawn_view.gd`) is the one box, the view grown by two
-tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of. The
+tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of. It is
+handed to each of them (the crowd's view and every live event's surroundings), never fetched: a rig
+hands a `DrawnView` of its own, `DrawnView.new()` for no screen at all (everything is drawn) or a
+stand-in that overrides `has_screen()` and `box()`. The
 box a thing is tested against has to hold every pixel its drawing can reach, not the picture at its
 own point: a street fire's flames run the whole burning front, hundreds of pixels from where it
 stands, and a box of its point alone freezes them on screen. And it redraws on the first frame back

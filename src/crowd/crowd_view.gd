@@ -4,7 +4,7 @@ extends RefCounted
 ## which world the viewport shows, so neither the agent nor the crowd reaches for the viewport or
 ## names a view-layer class. **The crowd's own idea of "the screen"**, two reads and the rule built
 ## on them; the answers come from whoever implements it (`ScreenCrowdView`, `src/ui/`, which reads
-## the viewport's camera and `DrawnView`), handed to `City` by `main._new_city()`.
+## the viewport's camera and the `DrawnView` it is handed), handed to `City` by `main._new_city()`.
 ##
 ## **Handed to every agent the crowd makes**, the way it hands them `field` and `traffic`. An agent
 ## built by hand has none, and then keeps the rules a rig without a screen wants: no camera to be
@@ -15,7 +15,7 @@ extends RefCounted
 ## order, and the box an agent redraws against is the one the camera shows when the crowd's tick
 ## reaches that agent; a value written once a frame at some other point could be a tick behind for
 ## the agents on one side of the camera. So the implementation answers at the moment of the ask
-## (`DrawnView` keeps its own once-a-process-frame box): the first agent asked in a frame sees the
+## (the `DrawnView` it is handed keeps its own once-a-process-frame box): the first agent asked in a frame sees the
 ## camera as it stands then.
 ## **The box can be a tick old when it is drawn**: an agent is redrawn on the tick against the box
 ## the camera showed then, and is then drawn for the frames up to the next tick, in which the camera
