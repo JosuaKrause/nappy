@@ -5,8 +5,8 @@ priority: now
 **The finding.** Fable's review of #1569 (`DrawnView` stands in the world beside `VisibleView`), a pull request of the fable-only entry polite-tapir whose
 design an Opus agent wrote in Fable's place while Fable's quota was out and which merged without Fable's review
 (inbox #1571 in teal-quail). The player asked Fable, once back, to review those merged designs so it can request
-follow-up changes (inbox #1610 in teal-dolphin); the entry calm-lemur (Fable looks over the work that merged without it) holds that
-work, and its record lists every verdict. Fable judged the merged design to stand in its main shape and wants the
+follow-up changes (inbox #1610 in teal-dolphin); the record calm-lemur lists Fable's six
+verdicts on polite-tapir's designs. Fable judged the merged design to stand in its main shape and wants the
 change the item describes, written as Fable's design.
 
 **The player's go-ahead.** Shown Fable's six verdicts in the session of 2026-11-21, the player: "yes, fables complaints
