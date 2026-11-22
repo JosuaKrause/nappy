@@ -172,6 +172,7 @@ enum SpawnMode {
 ## way a row is made. A part is a value nothing changes, so the row holds the draft's by
 ## reference, and a copy of the row is a `redraft()`.
 func _init(draft: EventDraft) -> void:
+	_draft = draft
 	id = draft.drafted_id()
 	kind = draft.drafted_kind()
 	ambient_source = draft.drafted_ambient_source()
@@ -214,84 +215,39 @@ func _init(draft: EventDraft) -> void:
 	abduction = draft.drafted_abduction()
 	aftermath = draft.drafted_aftermath()
 
-## **A new draft holding every setting and part of this row**: how every copy of a row is made,
-## since only the row can read its own settings. The copy changes the parts it differs in on the
-## draft and builds it again (`draft.field(def.field().at_peak(rate))`); the parts it keeps are
-## the row's own values, shared, which nothing changes. A row is never changed after it is built.
+## **A new draft holding every setting and part of this row**: how every copy of a row is made.
+## The row keeps the draft it was built from (`_draft`), so a copy is a copy of that draft: one list
+## of settings (`EventDraft.copy()`) and none to keep in step here. The copy changes the parts it
+## differs in on the draft and builds it again (`draft.field(def.field().at_peak(rate))`); the parts
+## it keeps are the row's own values, shared, which nothing changes. A row is never changed after it
+## is built.
 func redraft() -> EventDraft:
-	var draft := EventDraft.new(id)
-	match kind:
-		GameEnums.EventKind.ONE_SHOT:
-			draft.one_shot()
-		GameEnums.EventKind.SCRIPTED:
-			draft.scripted_on(scripted_day)
-		GameEnums.EventKind.AMBIENT:
-			draft.ambient(ambient_source)
-		_:
-			draft.recurring()
-	draft.from_day(first_day, act_tag)
-	draft.until_day(last_day)
-	draft.ground(placement)
-	for on_ground: int in _ground_weights:
-		var times: float = _ground_weights[on_ground]
-		draft.weighed_on(on_ground as PlacementGround.Kind, times)
-	draft.in_the_lane(pavement_side)
-	if _spans_the_street:
-		draft.spanning_the_street()
-	if _drawn_to_sack_piles:
-		draft.drawn_to_sack_piles()
-	draft.drawn(weight, max_per_day)
-	draft.counted_as(noun, noun_plural)
-	draft.charges_counted_as(counts_charges_as)
-	draft.lasts(duration)
-	draft.leaves_at(departs_at)
-	draft.comes_again(repeat_every, repeat_after)
-	draft.sited(spawn_mode)
-	if from_day_after != null:
-		draft.switching_after(from_day_after.after_day(), from_day_after.spawn_mode(),
-				from_day_after.notice())
-	if on_her_way != null:
-		draft.sited_from_her_walk(on_her_way.pastes_a_front())
-	draft.sent_ahead(_sent_ahead)
-	draft.plays(role)
-	draft.look(_look)
-	draft.body(_body)
-	draft.field(_field)
-	draft.warning(_warning)
-	draft.route(_route)
-	draft.flock(_flock)
-	draft.hold(_hold)
-	draft.lethal(_lethal)
-	draft.pursuit(pursuit)
-	draft.notice(notice)
-	draft.hunt(hunts)
-	draft.hunting(hunting)
-	draft.vehicle(vehicle)
-	draft.abduction(abduction)
-	draft.aftermath(aftermath)
-	return draft
+	return _draft.copy()
 
-var id := ""
-var kind := GameEnums.EventKind.RECURRING
+## The draft this row was built from: `EventDraft.build()` hands it a copy no other draft shares.
+var _draft: EventDraft
+
+var id: String
+var kind: GameEnums.EventKind
 ## **How it is drawn** (`LookSpec`): its picture, the picture it warns in, whether it casts a
 ## shadow, whether it trails a lead, whether its hold hides all of it, whether a rider of it may be
 ## the pelican and the sides its guards stand on. Written by the draft (`EventDraft.look()`); asked
 ## through `look()` and the questions below. Every visible row states its own picture;
 ## `tests/test_events.gd` names the three that are legitimately invisible.
 ## `LookSpec.none()` is a row with no picture.
-var _look := LookSpec.none()
+var _look: LookSpec
 
 ## How it is drawn, for the code inside the events folder that runs one look (`LookSpec`).
 func look() -> LookSpec:
 	return _look
 
-var ambient_source := AmbientSource.NONE
+var ambient_source: AmbientSource
 
 ## What the run log calls one of it and several of it, for a pursuer on foot whose line names him
 ## ("a policeman", "two guardsmen"): `EventsAhead`'s poster-tear and vehicle notes. Empty for any
 ## other row.
-var noun := ""
-var noun_plural := ""
+var noun: String
+var noun_plural: String
 
 ## What the run log calls `count` of it: `noun` for one, `noun_plural` for more.
 func noun_for(count: int) -> String:
@@ -302,7 +258,7 @@ func noun_for(count: int) -> String:
 ## (`BodySpec`). Written by the draft (`EventDraft.body()`); asked through `body()` and the
 ## questions below that forward to it. A row that says nothing has none: no shape, nothing solid,
 ## and not yet saying what it stands as or whether it parks, which `validate()` refuses.
-var _body := BodySpec.none()
+var _body: BodySpec
 
 ## Its body (`BodySpec`), for the code in the events folder that runs one ability: a copy that
 ## changes it asks it for a new value (`draft.body(def.body().reshaped(shape))`).
@@ -334,16 +290,16 @@ func speed() -> float:
 	return _route.speed()
 
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.
-var first_day := 1
-var last_day := 0
+var first_day: int
+var last_day: int
 ## For SCRIPTED events: the exact day it fires.
-var scripted_day := 0
+var scripted_day: int
 
 ## Relative likelihood: how often the row is drawn against the others, in a unit's bag (before
 ## the view's own weight for its role and the row's weight on the unit's ground, `UnitFills`), in
 ## the moments (`DawnMoments`) and in her route's bag (`EventDirector`). Read through
 ## `drawn_as_often()`.
-var weight := 1.0
+var weight: float
 
 ## **How often the row is drawn against the others**, its `weight`: in a unit's bag, before the
 ## view's own weight for its role and the row's weight on the unit's ground (`UnitFills`).
@@ -354,7 +310,7 @@ func drawn_as_often() -> float:
 ## (`PlacementGround.Kind` -> times), set by the catalogue (`EventDraft.weighed_on()`). A copy of
 ## the row keeps it, since a copy is a draft started from the row (`redraft()`) and the draft
 ## carries it.
-var _ground_weights := {}
+var _ground_weights: Dictionary
 
 ## **How many times its `weight` the row weighs on `ground`** (`UnitFills`): what the catalogue
 ## set (`EventDraft.weighed_on()`), else one where the row's `placement` holds a tile of that ground
@@ -388,15 +344,15 @@ func is_weighed_on_ground_it_cannot_stand_on() -> bool:
 ## it holds one of a row in the unit (`MarbleDraw`).
 func most_in_a_day() -> int:
 	return max_per_day
-var max_per_day := 1
+var max_per_day: int
 
 ## Tile types an instance may be placed on.
-var placement: Array[int] = []
+var placement: Array[int]
 
 ## **The noise it adds**: the field of excitement the baby is charged for, as one value (`FieldSpec`).
 ## Written by the draft (`EventDraft.field()`); asked through `field()` and the questions below that
 ## forward to it. A row that says nothing has the catalogue's plain field.
-var _field := FieldSpec.of(6.0, 40.0, 150.0)
+var _field: FieldSpec
 
 ## Its field (`FieldSpec`), for the code in the events folder that runs one ability: a copy that
 ## changes it asks it for a new value (`draft.field(def.field().at_peak(rate))`).
@@ -407,20 +363,20 @@ func field() -> FieldSpec:
 ## of its instances coming to the next coming, kept on the clock whatever the last one did. 0 for a
 ## row that comes once. A plan may carry its own (`EventPlan.comes_again_every()`), as each of
 ## the basement's vents keeps its own period.
-var repeat_every := 0.0
+var repeat_every: float
 ## Seconds from one of a planned row's instances being done — finished, or leaving the end of its
 ## route — to the next coming: the masked man, another of whom comes up the shaft this long after
 ## the last has run out of the top of it. 0 for a row that does not wait on its last one.
-var repeat_after := 0.0
+var repeat_after: float
 
 ## Seconds at full strength. 0 means it lasts the whole day.
-var duration := 0.0
-var spawn_mode := SpawnMode.MAP
+var duration: float
+var spawn_mode: SpawnMode
 
 ## **How the row is sited and noticed from the day after its first appearance**, or null for a row
 ## that is the same every day (see `DaySwitch`). `charging_dog` is the one row that carries it. Read
 ## through `spawn_mode_on()` and `_notice_on()`, never by hand.
-var from_day_after: DaySwitch = null
+var from_day_after: DaySwitch
 
 ## Which `SpawnMode` this row is sited in on `day`: `spawn_mode` through `from_day_after.after_day()`,
 ## the switch's own past it. Every reader that sites an event by its day asks this.
@@ -455,14 +411,14 @@ func for_day(day: int) -> EventDef:
 	return draft.build()
 
 ## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
-var on_her_way: OnHerWay = null
+var on_her_way: OnHerWay
 
 ## **How the director sends this row ahead of her on an ordinary day**, or null for a row it does
 ## not send (`SentAhead`): the dog walker, the police patrol and the military convoy. A row with one
 ## is drawn by no unit (`is_drawn_by_units()`), is a marble of her route's bag (`EventDirector`) and
 ## counts among the moments the dawn owes her (`DawnMoments`). Whatever else places the row (the
 ## escape's bag, a scene recipe, a happening) reads none of it. Written by the draft (`EventDraft.sent_ahead()`).
-var _sent_ahead: SentAhead = null
+var _sent_ahead: SentAhead
 
 ## Whether the director sends it ahead of her on an ordinary day (`EventDraft.sent_ahead()`).
 func is_sent_ahead() -> bool:
@@ -518,7 +474,7 @@ func as_sent_ahead() -> EventDef:
 ## A non-pursuer warned of before it exists (`cyclist`, the fire engine, day 13's column) does not
 ## read it: its badge is its telegraph (`warned_for()`). Nothing but the part's own factory and the
 ## row's copies write it.
-var _warning := WarningSpec.lasting(WarningSpec.DEFAULT_SECONDS)
+var _warning: WarningSpec
 
 ## How the row warns of its coming, for the code inside the events folder that runs it
 ## (`WarningSpec`).
@@ -528,7 +484,7 @@ func warning() -> WarningSpec:
 ## **How the row travels** (`RouteSpec`): whether it moves along a route of its own, how fast, how
 ## the route is built and how long, whether it paces a beat on it, and whether it stops where it
 ## arrives. Written by the draft (`EventDraft.route()`); asked through the questions below. `RouteSpec.none()` stays where it is placed, which is every row that does not move.
-var _route := RouteSpec.none()
+var _route: RouteSpec
 
 ## How the row travels, for the code inside the events folder that walks it (`RouteSpec`).
 func route() -> RouteSpec:
@@ -540,12 +496,12 @@ func route() -> RouteSpec:
 ## speed. This field is for the rest: a flock that has to fly off, a dog that has lost interest and
 ## trots away. Zero means it simply ends, which is right for a *place* rather than a moment: a cafe
 ## does not walk home.
-var departs_at := 0.0
+var departs_at: float
 
 ## **How many creatures the row is and how far they spread** (`FlockSpec`): a row that is several
 ## bodies rather than one thing drawn several times. Written by the draft (`EventDraft.flock()`);
 ## `FlockSpec.none()` is every row that is one body.
-var _flock := FlockSpec.none()
+var _flock: FlockSpec
 
 ## How many creatures the row is and how far they spread, for the code inside the events folder that
 ## wheels them (`FlockSpec`).
@@ -565,24 +521,24 @@ func departure_speed() -> float:
 ## is lethal, faster than a walk and slower than a run. One kind is a cost rather than the end of the
 ## day: the man an investigating patrol car lets out, whose catch is a stop
 ## (`PursuitSpec.stop_excitement()`).
-var pursuit: PursuitSpec = null
+var pursuit: PursuitSpec
 
 ## **How it notices her**, or null for a row with no wait (see `NoticeSpec`). A row with none is a
 ## moment from the frame it exists (`charging_dog` sited ahead of her on the day it teaches the
 ## run); a row with one is a place that becomes a moment when she walks up to it. Read off the def
 ## an instance was handed; a row whose notice changes by day says so with `from_day_after`
 ## (`_notice_on()`).
-var notice: NoticeSpec = null
+var notice: NoticeSpec
 
 ## **How this row hunts her once the resistance has heated it** (`HuntSpec`): a vehicle that lets
 ## men out, or a man who pursues her himself. Authored on the cold row of every `PRESSES` and `HUNTS`
 ## row; `at_heat()` attaches it to the copy (`hunting`) at and past its rung's threshold. Null for a
 ## row that answers to nothing.
-var hunts: HuntSpec = null
+var hunts: HuntSpec
 
 ## **The hunting behaviour this copy carries**: the row's `hunts`, attached by `at_heat()` at and
 ## past its rung's threshold, or null on every cold row and on a heated copy below its threshold.
-var hunting: HuntSpec = null
+var hunting: HuntSpec
 
 ## Whether this copy is a vehicle that stops for her and lets men out (`hunting` with
 ## `HuntSpec.lets_out()`), which `EventInvestigation` runs.
@@ -777,7 +733,7 @@ func hunts_for_her() -> bool:
 
 ## **A car that drives**, or null for anything else — see `VehicleSpec`: `police_patrol` and every
 ## copy of it, and `fire_truck`.
-var vehicle: VehicleSpec = null
+var vehicle: VehicleSpec
 
 ## Which lane of a two-tile sidewalk an event wants. Almost nothing cares, and `ANY` is the default.
 ## Two things do, because the lane makes sense of the thing: a parked van belongs at the kerb rather
@@ -796,7 +752,7 @@ enum Pavement {
 	AT_THE_FRONT,
 }
 
-var pavement_side := Pavement.ANY
+var pavement_side: Pavement
 
 ## **What the row holds her for when she comes to it** (`HoldSpec`): the seconds her controls are
 ## taken, how far past its own solid edge she has to come, and whether it takes her again. Written
@@ -816,7 +772,7 @@ var pavement_side := Pavement.ANY
 ## chosen against the **32px** spacing between the two lanes of a sidewalk (`Tuning.TILE_SIZE`):
 ## under that, the far lane of a two-tile sidewalk is never inside it, whatever a pacing route does,
 ## and distance stays the counterplay.
-var _hold := HoldSpec.none()
+var _hold: HoldSpec
 
 ## What the row holds her for, for the code inside the events folder that runs a hold (`HoldSpec`).
 func hold() -> HoldSpec:
@@ -832,11 +788,11 @@ func detain_distance() -> float:
 ## Whether a placement of this row takes a whole section of its street rather than one sidewalk
 ## location (inbox #1185 in gentle-owl: "events that span the street get placed in a section (eg roadblock in the
 ## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
-var _spans_the_street := false
+var _spans_the_street: bool
 
 ## Whether the row stands by a garbage-sack pile when the ground lets it (`is_drawn_to_sack_piles()`):
 ## the alley mouse alone. Read through that method.
-var _drawn_to_sack_piles := false
+var _drawn_to_sack_piles: bool
 
 ## **Whether this row would rather stand beside a garbage-sack pile** (`GarbageSacks.alley_pile_tiles()`):
 ## where the location it is drawn at reaches a pile, the location weighs more (`LocationGround.scale()`)
@@ -871,7 +827,7 @@ func takes_of_a_street() -> StreetShare:
 ## lethal radius ends the day immediately. Written by the draft (`EventDraft.lethal()`); asked
 ## through `ends_the_day()` and `lethal_reach()`. `LethalSpec.none()` is a row that cannot end
 ## her day.
-var _lethal := LethalSpec.none()
+var _lethal: LethalSpec
 
 ## The row's catch, for the code inside the events folder that runs it (`LethalSpec`).
 func lethal() -> LethalSpec:
@@ -914,11 +870,11 @@ enum Role {
 	MAST,
 }
 
-var role := Role.NONE
+var role: Role
 
 ## **It takes a bystander first**, or null for a row that takes nobody — see `AbductionSpec`:
 ## `abduction`, the unmarked van.
-var abduction: AbductionSpec = null
+var abduction: AbductionSpec
 
 ## How it takes a victim (`AbductionSpec`), or null for a row that takes nobody: what the van's look
 ## draws the walk and the standing place from.
@@ -928,16 +884,16 @@ func takes_a_victim_by() -> AbductionSpec:
 ## The name its charges are counted under when it is not its own id
 ## (`EventInstance._charger_name()`): `task_guard` for the task guard sent from out of her view,
 ## whose charges are the task guard's. `""` for every other row.
-var counts_charges_as := ""
+var counts_charges_as: String
 
 ## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
-var aftermath := Aftermath.none()
+var aftermath: Aftermath
 
 ## Which act the row belongs to, narratively. Only `own_first_day()` reads it, for a `SCRIPTED` row,
 ## whose own day is the first day of its act (`first_day` decides when any other row can appear);
 ## `tests/test_acts.gd` asserts every row's `act_tag` against the act its
 ## `first_day` falls in. It is where a per-act palette or sound would key off.
-var act_tag := 1
+var act_tag: int
 
 ## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
 ##
