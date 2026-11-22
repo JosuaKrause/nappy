@@ -144,11 +144,6 @@ func until_day(last: int) -> void:
 	_last_day = last
 
 
-## A row that comes on a roll: the default, written where a copy says it again.
-func recurring() -> void:
-	_kind = GameEnums.EventKind.RECURRING
-
-
 ## A set piece a day owes once, which `validate()` requires to be sited from her walk.
 func one_shot() -> void:
 	_kind = GameEnums.EventKind.ONE_SHOT

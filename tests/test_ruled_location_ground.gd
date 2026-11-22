@@ -141,7 +141,6 @@ func _test_a_route_is_built_inside_its_run(t: TestRunner) -> void:
 ## on a kind of ground is in the bag's fill already (`UnitFills`) and is not counted again here.
 func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
 	var draft := EventDraft.new("light")
-	draft.recurring()
 	draft.plays(EventDef.Role.SCENERY)
 	draft.ground([GameEnums.TileType.SIDEWALK] as Array[int])
 	draft.weighed_on(PlacementGround.Kind.STREET, 0.5)

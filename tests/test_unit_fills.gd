@@ -48,7 +48,6 @@ static func _by_cost(ids: Array[String]) -> Callable:
 ## through, `"lethal"` one that ends the day.
 static func _row(id: String, placement: Array[int], role := "scenery") -> EventDef:
 	var draft := EventDraft.new(id)
-	draft.recurring()
 	draft.ground(placement)
 	draft.drawn(1.0, 1)
 	match role:
