@@ -9,7 +9,7 @@ capturing, asking) are in `SKILL.md`.
 player asks** (inbox #1619 in teal-dolphin); a session the player asks to file a batch files it too. One filing pull request carries the whole batch:
 
 - **List and read every note** with `list` and `show`, and settle what is unclear by asking on the
-  issue first.
+  board first (**inbox**, "Asking about a note").
 - **Draft each note's playtest section with `tools/inbox.py draft N M ...`** and put it in a
   playtest file made with `tools/new-name.sh playtest "<title>"`. The draft is the filed layout,
   every block labelled: the player's quote blocks in `> ` lines, the only lines that are the
@@ -74,7 +74,7 @@ player asks** (inbox #1619 in teal-dolphin); a session the player asks to file a
   any comment the player wrote on it or any words appended to it, is not word for word in one playtest file the pull request
   adds, so a note the player edited, or answered on, after it was copied stops the close rather
   than being filed half-read. A note with no body (a title alone) is refused the same way, as CI's
-  transcription check refuses it; it is asked about on its issue instead. `--dry-run` checks the same and writes
+  transcription check refuses it; it is asked about on the board instead. `--dry-run` checks the same and writes
   nothing. From then on the playtest file is the record, and a later thought is a new note.
 - **A filing pull request that is abandoned reopens its notes**:
   `uv run python tools/inbox.py --role claude-orchestrator reopen --pr P`, once the pull request is

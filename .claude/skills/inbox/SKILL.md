@@ -1,6 +1,6 @@
 ---
 name: inbox
-description: The player's inbox on GitHub Issues — where it is found at the start of a session, which issues count as the player's notes, capturing the player's words into it before anything else, asking the player about a note on its issue, and filing a batch of notes into the queue with one pull request that closes them. Load this at the start of a session, and before capturing, reading, asking on or filing a note.
+description: The player's inbox on GitHub Issues — where it is found at the start of a session, which issues count as the player's notes, capturing the player's words into it before anything else, where a question about a note is asked (on the board), and filing a batch of notes into the queue with one pull request that closes them. Load this at the start of a session, and before capturing, reading or filing a note, or asking about one.
 ---
 
 # The inbox
@@ -20,7 +20,7 @@ issue carrying the label `inbox`, and an issue without it is never filed (plaid-
 opened it: `tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
 `tools/ci_transcription.py` fails a filing pull request that names it. The player writes one at any
 time, edits it until it is filed, and posts new tasks there rather than on the board, which is
-where questions and answers live (inbox #1623 in dappled-bison). The orchestrating session checks
+where questions and answers live (inbox #1623 in dappled-bison). Things move board, then inbox, then repository (inbox #1639 in gentle-penguin): the player is asked and answers on the board, a note goes to the inbox, and its work to the repository. The player may also open an issue directly, which is a note like any other. The orchestrating session checks
 the inbox along with the board (**board**, "When it is read"; inbox #1623 in dappled-bison). The orchestrating session turns a batch of notes into a filing
 pull request on its own, periodically, and when the player asks (inbox #1619 in teal-dolphin). The
 queue, the review items, the playtest files and the decision records stay in the repository, because
@@ -73,7 +73,7 @@ that names any other issue.
 that pattern is never taken for a band. The entry filed from a note opens with its band; a note with
 no band label is filed as **playtest-feedback** says, `now` for a note from playing and otherwise a
 band the filer proposes and names in its report; a note with two band labels is filed under neither
-and asked about on its issue.
+and asked about on the board.
 
 ## Capturing the player's words
 
@@ -133,7 +133,7 @@ numbering, not a summary of it, since the player's answer may point at its order
 after the first", "2, 3 and 4").
 **And when it is not certain what the player's words refer to, the agent asks before recording any
 reading**, not a guess, even one marked as a reading (inbox #1074 in gentle-walrus). The question
-goes on the note's issue with `tools/inbox.py ask`, or on the board, per the **board** skill.
+goes on the board, naming the note, per the **board** skill (inbox #1639 in gentle-penguin).
 
 ```sh
 uv run python tools/inbox.py --role claude-orchestrator capture --band next \
@@ -192,18 +192,16 @@ notes into the repository fast, and most questions need exploring once the task 
 Every note is filed as it stands, and a question it leaves open is written into its queue entry,
 marked open, for whoever picks the task up.
 
-**A question about a note can still be asked on its issue** (dotted-quail 1), when the filer has one
-before the batch is filed; the answer is filed with the note, and the batch does not wait for it. Whether a question about an inbox note may still go on its issue is open, asked on the board as notes-questions-where; both rules stand until the player answers it.
-
-```sh
-uv run python tools/inbox.py --role claude-orchestrator ask N --body-file <dir>/question.md
-```
-
+**A question about a note goes on the board** (inbox #1639 in gentle-penguin), when the filer has
+one before the batch is filed; an issue the player opened directly is included: the follow-up goes
+on the board too. Its Question line or its Context names the note
+(**board** has the layout); the answer is filed with the note, and the batch does not wait for it.
 The question carries all the context the answer needs, as `CLAUDE.md`'s rule on questions says,
-since the player answers from the issue in front of them. The player answers in their own
-comments, and `show` prints both in order. **When the note is filed, each answer is recorded with
-the question it answers**, as **playtest-feedback** asks for words said in conversation: the
-playtest file states the question before the answer it quotes.
+since the player answers from the board and not from the issue. **When the note is filed,
+each answer is recorded with the question it answers**, as **playtest-feedback** asks for words said
+in conversation: the playtest file states the question before the answer it quotes. `show` prints
+the player's own comments on an issue they opened, which are read as they stand. No rule asks
+through `tools/inbox.py ask` now.
 
 ## Filing a batch
 
@@ -236,3 +234,7 @@ corrects them:
   the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin), and that checks
   cover the inbox as well as the board (inbox #1623 in dappled-bison); the beat of every run, for
   the listing and the filing, is the filer's reading.
+- **That the player's answer on the board is captured into the note it is about** (`append`, above,
+  with the context naming the board question), or as a note of its own when no open captured note
+  exists ("Asking about a note"): the player's words (inbox #1639 in gentle-penguin) say where
+  questions are asked, not how an answer reaches the repository; this is how a board answer does.
