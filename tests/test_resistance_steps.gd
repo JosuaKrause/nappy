@@ -1,6 +1,6 @@
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
-
+##
 ## Thirteen cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`),
 ## and set on that run what the day it asks about needs; none reads what another left. Two have
 ## a reason: placement being the same every time and the guard standing two-thirds through the
@@ -12,6 +12,7 @@ extends "res://tests/resistance_rig.gd"
 ## through the real manager, and planning a day is the dawn's), the mark activating the same day's
 ## task, the yeller step sending only its rider away, the lost-day retry, the rider-gone expiry,
 ## the timed step, the two package cases, the sabotage, and the two protesters' poses.
+
 func run(t: TestRunner) -> void:
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)

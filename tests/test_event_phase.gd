@@ -347,9 +347,9 @@ func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
 
 ## **A core is the disc of its row's core radius about where the event stands now**: day 6's note is
 ## delivered the moment she is inside the man shouting's core, which reaches past the ordinary
-## touch of the contact (`ContactPoint.REACH`), so a point a pixel inside the radius is reached, one
-## a pixel outside it is not, and the disc goes with him when he has moved. The core is a disc and not the
-## shape the field is priced in, so the point is tried on both sides of him.
+## touch of the contact (`ContactPoint.REACH`), so a point at the radius is reached, one a pixel
+## outside it is not, and the disc goes with him when he has moved. The core is a disc and not the
+## shape the field is priced in, so the points are tried in three directions about him.
 func _test_a_core_is_a_disc_about_where_the_man_shouting_stands_now(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var core := def.core_within()
