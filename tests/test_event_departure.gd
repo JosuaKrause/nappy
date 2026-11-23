@@ -191,7 +191,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 
 	var before := instance.global_position
 	var before_distance := before.distance_to(her)
-	instance.behaviours().departure().leave(EventDeparture.LEAVING_GIVES_UP)
+	instance.step(EventDeparture.LEAVING_GIVES_UP)
 	t.check(not instance.is_gone(),
 			"still leaving past the backstop's own six seconds, since she is still watching")
 	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
@@ -201,7 +201,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 
 	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears
 	# `Tuning.OUT_OF_SIGHT` (420px) in well under ten more seconds.
-	instance.behaviours().departure().leave(10.0)
+	instance.step(10.0)
 	t.check(instance.is_gone(), "gone once he is actually out of sight, not before")
 	instance.free()
 
@@ -222,8 +222,8 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) ->
 	instance.give_up_the_chase()
 	t.check(instance.is_on_its_way_out(), "an ordinary departure starts leaving the same way")
 
-	instance.behaviours().departure().leave(EventDeparture.LEAVING_GIVES_UP - 0.1)
+	instance.step(EventDeparture.LEAVING_GIVES_UP - 0.1)
 	t.check(not instance.is_gone(), "not gone yet, just under six seconds in")
-	instance.behaviours().departure().leave(0.2)
+	instance.step(0.2)
 	t.check(instance.is_gone(), "gone at the six-second backstop, watched or not")
 	instance.free()

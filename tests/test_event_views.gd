@@ -775,7 +775,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> voi
 	var guard := _drawn_at_the_origin(t, hot, guard_where)
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	_hold(guard, guard_where, her, STEP)
-	t.check(guard.behaviours().barrier_post().chaser_side() != 0
+	t.check(not guard.global_position.is_equal_approx(guard.body_position())
 			and guard.is_standing_for_its_notice(),
 			"the guard on her side has noticed her and stands for his notice")
 	t.check(_is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW), "hand raised")
@@ -786,7 +786,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> voi
 			"at his post, hand raised, through his warning")
 	# Out of his radius he is back at the band, and both guards stand at their posts again.
 	_hold(guard, guard_where, Vector2(0.0, hot.notice_within() + 10.0), STEP)
-	t.check(guard.is_waiting() and guard.behaviours().barrier_post().chaser_side() == 0 and not guard.behaviours().barrier_post().has_left_its_body()
+	t.check(guard.is_waiting() and guard.body_position().is_equal_approx(Vector2.ZERO)
 			and guard.global_position.is_equal_approx(Vector2.ZERO),
 			"out of his radius he stands at the band again, its body under him")
 	_hold(guard, guard_where, her, STEP)

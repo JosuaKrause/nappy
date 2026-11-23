@@ -590,9 +590,10 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 ## side starts to walk away, the one at the far post sets off from it the same way: away from her,
 ## at his partner's pace, gone once he is past `Tuning.OUT_OF_SIGHT` from her, his own node freed
 ## with him (the way he walks is over walkable ground, which
-## `_test_neither_guard_walks_off_over_a_building` walks on a real map); the band draws no posted
-## guard from that frame on, and one streamed back in after its guard was spent comes back with
-## neither. Walked on the hunting roadblock, which is a day's and the escape's alike.
+## `_test_neither_guard_walks_off_over_a_building` walks on a real map); who stands posted, where he
+## sets off from and how he paces are `tests/test_event_barrier_post.gd`'s, and one streamed back in
+## after its guard was spent comes back with no far guard walking. Walked on the hunting roadblock,
+## which is a day's and the escape's alike.
 func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	var step := 1.0 / 60.0
@@ -606,72 +607,43 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	var told := stage.manager.world.where_she_is()
 	guard.set_process(true)
 	await RoadblockRig.settle(t)
-	var posted_first := not guard.behaviours().barrier_post().sides_still_posted().is_empty()
 	told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 	guard.step(step)
 	var waited := 0
 	while guard.is_telegraphing() and waited < int((guard.notice_time() + 1.0) / step):
 		guard.step(step)
 		waited += 1
-	var posted_through_the_chase := true
 	var frames := 0
 	while not guard.is_on_its_way_out() and frames < int(10.0 / step):
 		told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(step)
-		if not guard.is_on_its_way_out():
-			posted_through_the_chase = posted_through_the_chase \
-					and not guard.behaviours().barrier_post().sides_still_posted().is_empty()
 		frames += 1
 	var her := told.at()
 	told.tell(her)
-	t.check(posted_first and posted_through_the_chase,
-			"the far guard stands at his post until his partner leaves")
 	t.check(guard.is_on_its_way_out(), "the guard on her side was shaken off and walks away")
-	var guard_post := guard.behaviours().barrier_post()
-	var set_off := guard_post.where_the_far_guard_walks()
-	t.check(set_off != Vector2.INF and guard_post.sides_still_posted().is_empty(),
-			"the far guard sets off from his post the frame his partner starts to leave")
-	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
-			"and he sets off from the far post, beyond the band from her")
 	# His node is the look's, made on the drawn frame after the step that sent him.
 	await RoadblockRig.settle(t)
 	var far_node := guard.get_parent().get_node_or_null("FarGuard")
 	t.check(far_node != null and far_node.is_inside_tree(),
-			"and walks on his own node beside the band's")
+			"and the far guard walks on his own node beside the band's")
 	# She has come back to stand beside the band, so he has a walk to make before he is out of
-	# her sight.
+	# her sight; where he stands and how he paces is `tests/test_event_barrier_post.gd`'s.
 	her = guard.body_position() + Vector2(0.0, 120.0)
-	var paced := true
-	var last := set_off
 	var walked := 0
-	while guard.behaviours().barrier_post().where_the_far_guard_walks() != Vector2.INF \
-			and walked < int(30.0 / step):
+	while guard.get_parent().get_node_or_null("FarGuard") != null and walked < int(30.0 / step):
 		told.tell(her)
 		guard.step(step)
 		await t.get_tree().process_frame
 		walked += 1
-		var now := guard.behaviours().barrier_post().where_the_far_guard_walks()
-		if now == Vector2.INF:
-			break
-		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
-				and is_equal_approx(
-						guard.behaviours().barrier_post().how_far_the_far_guard_has_walked(),
-						def.chase_speed() * step * walked)
-		last = now
-	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
-			"he walks away from her at his partner's pace (%d frames)" % walked)
-	t.check(guard.behaviours().barrier_post().where_the_far_guard_walks() == Vector2.INF
-			and guard.behaviours().barrier_post().sides_still_posted().is_empty(),
-			"and he is gone, and nobody stands at the band")
-	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.chase_speed() * step,
-			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
-	await RoadblockRig.settle(t)
-	t.check(guard.get_parent().get_node_or_null("FarGuard") == null, "his node goes with him")
+	t.check(guard.get_parent().get_node_or_null("FarGuard") == null,
+			"his node goes with him once he is out of her sight (%d frames)" % walked)
 	stage.manager.streaming.stream_out(plan)
 	stage.manager.streaming.stream_in(plan)
-	var streamed_post := stage.manager.event_of(plan).behaviours().barrier_post()
-	t.check(streamed_post.sides_still_posted().is_empty(),
-			"a band streamed back in after its guard was spent stands unmanned")
+	var streamed := stage.manager.event_of(plan)
+	await RoadblockRig.settle(t)
+	t.check(streamed.is_only_its_barrier()
+			and streamed.get_parent().get_node_or_null("FarGuard") == null,
+			"a band streamed back in after its guard was spent is only the barrier, nobody walking")
 	stage.close()
 	atlas.release(EventPictures.ATLAS_GROUP)
 
@@ -763,30 +735,40 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 	stage.close()
 
 ## Steps `instances` (one band, its guard on her side already walking away) with her standing at
-## `her` until both guards are gone, and checks every frame either guard walks that he stands on a
-## walkable tile of `map`; answers whether the far guard walked.
+## `her` until he is gone, and checks every frame he walks that he stands on a walkable tile of
+## `map`; then does the same for the guard at the far post, whose walk is the barrier post's own
+## (`RoadblockParts`, built on the band as the event builds it and sent off from `her`'s side the
+## way his partner's leaving sends him). Answers whether the far guard walked.
 func _watch_them_walk_off(t: TestRunner, map: CityMap, told: WhereSheIs,
 		instances: Array[EventInstance], her: Vector2,
 		where: String) -> bool:
 	var guard := instances[0]
-	var far_walked := false
 	var frames := 0
-	while (guard.is_on_its_way_out() or guard.behaviours().barrier_post().where_the_far_guard_walks() != Vector2.INF) \
-			and frames < int(30.0 / RoadblockRig.STEP):
+	while guard.is_on_its_way_out() and frames < int(30.0 / RoadblockRig.STEP):
 		RoadblockRig.tick(told, instances, her, false)
 		frames += 1
-		var at: Array[Vector2] = []
-		if guard.is_on_its_way_out():
-			at.append(guard.global_position)
-		if guard.behaviours().barrier_post().where_the_far_guard_walks() != Vector2.INF:
-			at.append(guard.behaviours().barrier_post().where_the_far_guard_walks())
-			far_walked = true
-		for point in at:
-			var tile := map.world_to_tile(point)
-			if not map.is_walkable(tile):
-				t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
-						% [where, tile])
-				return far_walked
+		var tile := map.world_to_tile(guard.global_position)
+		if guard.is_on_its_way_out() and not map.is_walkable(tile):
+			t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
+					% [where, tile])
+			return false
+	var far_where := WhereSheIs.nowhere()
+	far_where.tell(her)
+	var parts := RoadblockParts.on(t, guard.row(), guard.body_position(), map, far_where)
+	parts.lose_the_guard()
+	var far_walked := parts.post.where_the_far_guard_walks() != Vector2.INF
+	frames = 0
+	while parts.post.where_the_far_guard_walks() != Vector2.INF \
+			and frames < int(30.0 / RoadblockRig.STEP):
+		parts.tick(RoadblockRig.STEP)
+		frames += 1
+		var tile := map.world_to_tile(parts.post.where_the_far_guard_walks())
+		if parts.post.where_the_far_guard_walks() != Vector2.INF and not map.is_walkable(tile):
+			t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
+					% [where, tile])
+			parts.release()
+			return far_walked
+	parts.release()
 	return far_walked
 
 ## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so

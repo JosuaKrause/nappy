@@ -38,6 +38,7 @@ func run(t: TestRunner) -> void:
 			_test_the_cat_crossing_never_ends_in_a_lot,
 			_test_a_departure_leaves_round_a_building,
 			_test_every_row_that_moves_stays_off_blocked_ground,
+			_test_the_far_guard_of_a_roadblock_stays_off_blocked_ground,
 			_test_the_citys_events_move_by_the_navigator_the_city_built]:
 		_in_a_day(t, check)
 
@@ -517,7 +518,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 	var off := 0
 	var before := instance.global_position
 	for _frame in 120:
-		instance.behaviours().departure().leave(0.05)
+		instance.step(0.05)
 		if instance.is_gone():
 			break
 		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.layers_blocked())):
@@ -532,8 +533,9 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 ## **The walker**: every catalogue row that moves, on seed 4242's day 9, started on its own ground
 ## nearest her doorstep, given a route straight north through whatever stands there — her own
 ## building, from her street — and her standing north of it across the same, for
-## six seconds of its event and four of its departure. No step it takes, nor any step of a far
-## guard it sends off, enters ground its mover may not.
+## six seconds of its event and four of its departure. No step it takes enters ground its mover
+## may not. A far guard is the hunting roadblock's, which none of these rows is: his walk is the
+## case after.
 func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var walked := 0
@@ -556,19 +558,15 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 		var her := at + Vector2(0.0, -6.0 * TILE)
 		var asked := Mover.of(mover.layers_blocked())
 		var before := instance.global_position
-		var guard_before := Vector2.INF
 		var left_from := Vector2.INF
 		walked += 1
 		for frame in 200:
 			RunCity.events(city).world.where_she_is().tell(her)
 			if frame == 120 and not instance.is_on_its_way_out():
 				instance.give_up_the_chase()
-			if instance.is_on_its_way_out():
-				if left_from == Vector2.INF:
-					left_from = instance.global_position
-				instance.behaviours().departure().leave(0.05)
-			else:
-				instance.step(0.05)
+			if instance.is_on_its_way_out() and left_from == Vector2.INF:
+				left_from = instance.global_position
+			instance.step(0.05)
 			if instance.is_gone():
 				break
 			var now := instance.global_position
@@ -577,15 +575,6 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 				if not map.step_is_clear(before, now, asked):
 					bad.append("%s %s -> %s" % [def.id(), before, now])
 			before = now
-			var post := instance.behaviours().barrier_post()
-			if post and post.where_the_far_guard_walks() != Vector2.INF:
-				if guard_before != Vector2.INF \
-						and map.passable(map.world_to_tile(guard_before), asked) \
-						and not map.step_is_clear(guard_before,
-								post.where_the_far_guard_walks(), asked):
-					bad.append("%s's far guard %s -> %s" % [def.id(), guard_before,
-							post.where_the_far_guard_walks()])
-				guard_before = post.where_the_far_guard_walks()
 		if left_from != Vector2.INF and not instance.is_gone() \
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id())
@@ -597,6 +586,42 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 	t.check(walked >= 10, "the walker ran the rows that move (%d)" % walked)
 	t.check(steps > 1000, "and asked their steps (%d)" % steps)
 	t.check(bad.is_empty(), "no step entered ground its mover may not (%d did: %s)"
+			% [bad.size(), bad.slice(0, 5)])
+
+## **The far guard**: the hunting roadblock's, put on its own ground nearest her doorstep with his
+## partner sent off and her standing six tiles north of it, walked for ten seconds of his walk away
+## (`RoadblockParts`: the barrier post composed as the event composes it, driven a frame at a time). No
+## step of his enters ground his mover may not, and he walks.
+func _test_the_far_guard_of_a_roadblock_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
+	var map := city.map
+	var row := EventCatalogue.escape_roadblock()
+	var mover := EventInstance.mover_for(row)
+	var at := _a_start_for(map, row, mover, map.doorstep_world_position())
+	t.check(at != Vector2.INF, "there is ground to stand a roadblock on")
+	if at == Vector2.INF:
+		return
+	var where := WhereSheIs.nowhere()
+	where.tell(at + Vector2(0.0, -6.0 * TILE))
+	var parts := RoadblockParts.on(t, row, at, map, where)
+	parts.lose_the_guard()
+	var asked := Mover.of(mover.layers_blocked())
+	var before := parts.post.where_the_far_guard_walks()
+	t.check(before != Vector2.INF, "the far guard is sent off with his partner")
+	var steps := 0
+	var bad: Array[String] = []
+	for _frame in 200:
+		parts.tick(0.05)
+		var now := parts.post.where_the_far_guard_walks()
+		if now == Vector2.INF or before == Vector2.INF:
+			break
+		if map.passable(map.world_to_tile(before), asked):
+			steps += 1
+			if not map.step_is_clear(before, now, asked):
+				bad.append("%s -> %s" % [before, now])
+		before = now
+	parts.release()
+	t.check(steps > 20, "the far guard walked (%d steps asked)" % steps)
+	t.check(bad.is_empty(), "no step of his entered ground his mover may not (%d did: %s)"
 			% [bad.size(), bad.slice(0, 5)])
 
 ## The nearest tile to `anchor` of a ground the row is placed on, that its mover may stand on.
