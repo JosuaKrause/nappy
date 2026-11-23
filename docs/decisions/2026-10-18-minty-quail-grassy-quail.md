@@ -14,3 +14,4 @@ record, an event's behaviour, a flock and the warning are gone, their fields pri
 
 **Split.** The other readers of the look, about a dozen suites and five probes, are the next pull request, and the look
 goes private there; the crowd car's drawing suite is the crowd's, with the event halves held in other modules' suites.
+
