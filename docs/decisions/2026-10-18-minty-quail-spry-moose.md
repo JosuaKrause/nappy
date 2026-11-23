@@ -16,4 +16,4 @@ the match never passes on a guess. The look and director placement fingerprints 
 branch. Each rewritten check was shown going red with its part broken.
 
 **Measured.** Check counts move only with the moved far guard checks (the finale suite six fewer, the new suite
-twelve) and the two new cases; local suite times are within a second of main.
+seventeen) and the two new cases; local suite times are within a second of main.
