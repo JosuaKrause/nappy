@@ -17,9 +17,14 @@ extends RefCounted
 ##   mirrored, colour, band), a canvas named by what it is (`event`, `sliceN`, `band`, `far_guard`,
 ##   `sceneryN`) and never by an instance id;
 ## - one line of what a look made round a fake event that answers what the event answers
-##   (`FakeEvent.answering_as()`) answers (`drawn_rect_now()`, `mark_rect()`, `drawn_heading()`,
-##   `current_bob()`) and one of where each drawing node stands and whether it is shown, each only
-##   when it differs from the last sample's.
+##   (`FakeEvent.answering_as()`) answers (`drawn_rect_now()`, `mark_rect()`, `current_bob()`) and
+##   one of where each drawing node stands and whether it is shown, each only when it differs from
+##   the last sample's. **A look made round a copy is not the live look**: it is handed no barrier
+##   post, no stance and no view sector carried from frame to frame, so its `drawn_heading()` (a
+##   posted guard's heading at his band) is not printed; the heading the live look chose is in the
+##   `D` lines, as the picture it stood on each canvas. The `A` line proves what the copy answers
+##   for the drawn rectangle, the caret's rectangle and the bob, which no state the copy leaves out
+##   changes in this catalogue; it no longer proves the heading.
 ##
 ## Every float is the hex of its 64 bits. The drives: `never` (she is never near), `walk` (she walks
 ## up to it, stands beside it and walks on, told through the `WhereSheIs` once a tick as its manager
@@ -52,7 +57,7 @@ extends RefCounted
 ## `points_at`). By string, so a rename shows as a difference in the labels rather than hiding one: a
 ## slice's place among the slices the drawer saw drawn (`RecordingEventDrawer.slices()`) and the far
 ## guard's node found by its name `FarGuard`. Of the look made round a fake: `drawn_rect_now()`,
-## `mark_rect()`, `drawn_heading()`, `current_bob()`. Of the rows: `EventDef.id()`, `look`,
+## `mark_rect()`, `current_bob()`. Of the rows: `EventDef.id()`, `look`,
 ## `speed`, `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`,
 ## `out_of_the_car()`, `building_fire()`, `task_guard_sent()`. A later change which makes one
 ## of those private changes this probe with it.
@@ -336,8 +341,8 @@ func _sample(rig: Rig, tick: int, seen: Seen) -> void:
 				_canvas_name(rig, canvas), picture, _rect(entry.rect), 1 if mirrored else 0,
 				_colour(entry.colour), _rect(entry.band)])
 	drawer.draws.clear()
-	var answer := "%s %s %s %s" % [_rect(look.drawn_rect_now()), _rect(look.mark_rect()),
-			_vec(look.drawn_heading()), _h(look.current_bob())]
+	var answer := "%s %s %s" % [_rect(look.drawn_rect_now()), _rect(look.mark_rect()),
+			_h(look.current_bob())]
 	fake.free()
 	if answer != rig.last_answer:
 		rig.last_answer = answer
