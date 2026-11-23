@@ -170,8 +170,34 @@ src/
 	car_strike.gd         the box in front of a driving car that kills, from its centre forward
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
-	event_def.gd          authored event data
-	event_draft.gd        the one way a row is written: one statement per setting and part, then build()
+	data/                 what a row is written in: the catalogue, the row, the draft, the declared density
+	                      table and the settings of a row's parts
+	  event_def.gd          authored event data
+	  event_draft.gd        the one way a row is written: one statement per setting and part, then build()
+	  event_scenery_parts.gd registered bounds and atlas names for those source-art spans
+	  event_catalogue.gd    every event, defined in code
+	  placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
+	  placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
+	                        park or a square, and which tile types each holds for a row to stand on
+	  placement_density.gd  the declared table: the events a bag holds for every hundred draw
+	                        locations, by view, kind of ground and act, and the moments an act owes her
+	  parts/                the settings a row holds as values (private fields, a factory, refinements
+	                        that each return a new value):
+	    notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
+	    pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
+	    hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
+	    day_switch.gd         how a row is sited and noticed from the day after its first appearance
+	    on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	    sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
+	    aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
+	    vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
+	    abduction_spec.gd     the unmarked van's take of a bystander
+	    lethal_spec.gd        whether contact ends her day and the reach it is measured from
+	    hold_spec.gd          whether a row holds her when she comes to it: its seconds, its reach, whether it holds again
+	    warning_spec.gd       what a row does before it acts: its telegraph, whether it holds still, whether its coming is announced, whether it is warned first
+	    route_spec.gd         how a row travels: whether it moves, how fast, how its route is built and how long, whether it paces a beat, whether it parks where it arrives
+	    flock_spec.gd         how many creatures a row is and how far they spread
+	    look_spec.gd          how a row is drawn: its picture, its warning picture, its shadow, its lead, whether its hold hides it, the pelican, its guards' sides
 	way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
 	                      junction box to junction box by the walk's through roads, a walker
 	                      straight on; made once a walk and handed to the director
@@ -179,7 +205,6 @@ src/
 	                      box it draws, all it can put on the screen, its solid footprint and its
 	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
-	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `_transition()`), telegraph,
 	                       its field (`field_at()`), and the behaviours it is composed of, stepped
 	                       in order on its manager's physics tick (`step()`: proposed, checked, then
@@ -221,23 +246,6 @@ src/
 	                       (`views/event_drawer.gd`), which the manager builds over its atlas
 	                       and its world hands every instance in its surroundings
 	                       (`EventSurroundings.drawer()`) as `setup()` hands it to the look
-	parts/                the settings a row holds as values (private fields, a factory, refinements
-	                      that each return a new value):
-	  notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
-	  pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
-	  hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
-	  day_switch.gd         how a row is sited and noticed from the day after its first appearance
-	  on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
-	  sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
-	  aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
-	  vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
-	  abduction_spec.gd     the unmarked van's take of a bystander
-	  lethal_spec.gd        whether contact ends her day and the reach it is measured from
-	  hold_spec.gd          whether a row holds her when she comes to it: its seconds, its reach, whether it holds again
-	  warning_spec.gd       what a row does before it acts: its telegraph, whether it holds still, whether its coming is announced, whether it is warned first
-	  route_spec.gd         how a row travels: whether it moves, how fast, how its route is built and how long, whether it paces a beat, whether it parks where it arrives
-	  flock_spec.gd         how many creatures a row is and how far they spread
-	  look_spec.gd          how a row is drawn: its picture, its warning picture, its shadow, its lead, whether its hold hides it, the pelican, its guards' sides
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's
@@ -252,7 +260,6 @@ src/
 	checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
 	                      under a raised boom, the crossing's warning and the guard it sets on her;
 	                      what a door does to her it says as an intent the manager carries out
-	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, the escape
 	                      city's as well; a row's role, the walk's ground and the view bags
 	dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
@@ -295,11 +302,6 @@ src/
 	                      pieces laid out there, the one layout the walk, the record, the live body
 	                      and its look and the rig ask
 	standing_piece.gd     one solid piece of a body where it stands: its middle, shape and axis
-	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
-	placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
-	                      park or a square, and which tile types each holds for a row to stand on
-	placement_density.gd  the declared table: the events a bag holds for every hundred draw
-	                      locations, by view, kind of ground and act, and the moments an act owes her
 	day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
 	                      lots, junction boxes), laid out at dawn and handed round: each one's view,
 	                      what a fixed part holds, what is taken or drawn,
