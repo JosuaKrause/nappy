@@ -57,12 +57,14 @@ class _Dawn extends DawnContext:
 		return rows
 
 ## The dawn of the walk `spec` describes on `map`, its seed the one `rng` was made with.
+func _init(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap) -> void:
+	_spec = spec
+	_rng = rng
+	_map = map
+
+## The same dawn, said the way the suites read it: "the dawn of this day".
 static func of(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap) -> GameDawn:
-	var dawn := GameDawn.new()
-	dawn._spec = spec
-	dawn._rng = rng
-	dawn._map = map
-	return dawn
+	return GameDawn.new(spec, rng, map)
 
 ## The day's calm areas, where the test's are not `CalmAreas.of(map)`.
 func calm(areas: CalmAreas) -> GameDawn:
