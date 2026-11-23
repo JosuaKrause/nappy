@@ -121,7 +121,7 @@ var _lights: TrafficSignals
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
 		map: WorldMap, route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal,
 		lights: TrafficSignals) -> void:
-	steps_each_tick = false
+	_steps_each_tick = false
 	_figure = figure
 	_where = where
 	_row = row

@@ -75,8 +75,13 @@ class Bird extends RefCounted:
 	func flap_to(phase: float) -> void:
 		_phase = phase
 
+## Where each bird is, in the order it was scattered.
+var _birds: Array[Bird] = []
+
 ## Its birds, each its own body.
-var birds: Array[Bird] = []
+func birds() -> Array[Bird]:
+	return _birds
+
 ## How many birds and how far they spread (`FlockSpec`).
 var _flock: FlockSpec
 ## The field each bird's share is cut from (`FieldSpec`).
@@ -102,7 +107,7 @@ const DEPARTURE_GAIN := 2.1
 ## would then consume from it twice and move every event planned after it. A hash of where it stands
 ## gives the same flock every time the same flock is built, which is the property that matters.
 func build() -> void:
-	birds.clear()
+	_birds.clear()
 	var count: int = _flock.count()
 	for i in count:
 		var bird := Bird.new()
@@ -119,7 +124,7 @@ func build() -> void:
 		bird.climb = 34.0 + 40.0 * _roll(i, 6)
 		bird.beat = 6.0 + 5.0 * _roll(i, 7)
 		bird.flap_to(TAU * _roll(i, 8))
-		birds.append(bird)
+		_birds.append(bird)
 
 ## The oblique view: a circle on the ground is drawn as an ellipse, so the flock's footprint is
 ## squashed on Y exactly as every shadow in the game is.
@@ -144,10 +149,10 @@ func _roll(index: int, salt: int) -> float:
 ## the air — birds flying in place over a pavement for as long as it takes her to walk up to them,
 ## which is the frozen-flock bug with a longer fuse.
 func _fly(delta: float) -> void:
-	if birds.is_empty():
+	if _birds.is_empty():
 		return
 	var grounded: bool = _figure.is_waiting() or _figure.is_telegraphing()
-	for bird in birds:
+	for bird in _birds:
 		bird.flap_to(bird.phase() + bird.beat * TAU * delta)
 		if grounded:
 			# Pecking about. It has to move — a bird standing perfectly still is the bug being
@@ -224,14 +229,14 @@ func step_leaving(delta: float) -> void:
 ## Each live bird's own ground-plane offset from the event's origin.
 func offsets() -> Array[Vector2]:
 	var out: Array[Vector2] = []
-	for bird in birds:
+	for bird in _birds:
 		out.append(bird.at())
 	return out
 
 ## Each live bird's own `heading * speed`, parallel to `offsets()`.
 func velocities() -> Array[Vector2]:
 	var out: Array[Vector2] = []
-	for bird in birds:
+	for bird in _birds:
 		out.append(bird.heading() * bird.speed)
 	return out
 
@@ -240,7 +245,7 @@ func velocities() -> Array[Vector2]:
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	var out: Array = []
-	for bird in birds:
+	for bird in _birds:
 		out.append([bird.at(), bird.lift(), bird.heading(), bird.speed, bird.turn, bird.ceiling,
 				bird.climb, bird.beat, bird.phase()])
 	return {"birds": out}
@@ -253,7 +258,7 @@ func restore(state: Dictionary) -> void:
 	var saved: Array = state.get("birds", [])
 	if saved.is_empty():
 		return
-	birds.clear()
+	_birds.clear()
 	for one: Array in saved:
 		var bird := Bird.new()
 		bird.place(one[0])
@@ -265,4 +270,4 @@ func restore(state: Dictionary) -> void:
 		bird.climb = one[6]
 		bird.beat = one[7]
 		bird.flap_to(one[8])
-		birds.append(bird)
+		_birds.append(bird)

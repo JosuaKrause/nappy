@@ -17,9 +17,29 @@ var _name: Callable
 var _reports: EventReports
 
 ## Whether its warning has been said, its charge has begun, and its charge has ended.
-var warned := false
-var began := false
-var ended := false
+var _warned := false
+var _began := false
+var _ended := false
+
+## Whether its charge has begun, and whether it has ended.
+func has_begun() -> bool:
+	return _began
+
+func has_ended() -> bool:
+	return _ended
+
+## Its warning counted as not said yet, for a warning the task sets to give way to one of its
+## own.
+func take_back_its_warning() -> void:
+	_warned = false
+
+## A charger streamed back in: whether its charge had begun before it streamed out, and whether
+## its warning had been said, so neither is said again.
+func be_begun(on: bool) -> void:
+	_began = on
+
+func be_warned(on: bool) -> void:
+	_warned = on
 
 func _init(name_of: Callable, reports: EventReports) -> void:
 	_name = name_of
@@ -27,16 +47,16 @@ func _init(name_of: Callable, reports: EventReports) -> void:
 
 ## Its warning going up, said once.
 func warn() -> void:
-	if warned:
+	if _warned:
 		return
-	warned = true
+	_warned = true
 	_reports.tell_pursuit_warned(_name.call())
 
 ## It comes for her, said once.
 func begin() -> void:
-	if began:
+	if _began:
 		return
-	began = true
+	_began = true
 	_reports.tell_pursuit_began(_name.call())
 
 ## Its charge caught her.
@@ -47,9 +67,9 @@ func catch() -> void:
 ## Its warning, its start and its end were all said before, by its charger before it streamed out:
 ## counted as over, and none of them is said again.
 func count_as_over() -> void:
-	warned = true
-	began = true
-	ended = true
+	_warned = true
+	_began = true
+	_ended = true
 
 ## Its charge was still running when the day or the section ended some other way.
 func cut_short() -> void:
@@ -64,7 +84,7 @@ func end(shaken_off: bool) -> void:
 ## Whether a charge that began has not yet ended, marking it ended when it has not: the one gate
 ## all three endings pass, so whichever comes first is the only one said.
 func _may_end() -> bool:
-	if not began or ended:
+	if not _began or _ended:
 		return false
-	ended = true
+	_ended = true
 	return true

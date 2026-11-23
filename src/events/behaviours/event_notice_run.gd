@@ -34,8 +34,8 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, course: RouteSpec, f
 	_flock = flock
 	_spec = spec
 	_route = route
-	_line_warning.cancel_if = _she_has_left_his_notice
-	_line_warning.on_expired = _keep_warning_once_it_has_run
+	_line_warning.call_off_when(_she_has_left_his_notice)
+	_line_warning.run_when_it_runs_out(_keep_warning_once_it_has_run)
 
 ## One tick: notice her, warn on its line, go up among her, and walk its route once noticed.
 ##
@@ -123,7 +123,8 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 ##
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:
-	return {"line_warned_from": _line_warning.started_at(), "line_warning_for": _line_warning.length,
+	return {"line_warned_from": _line_warning.started_at(),
+			"line_warning_for": _line_warning.lasts_for(),
 			"noticed_inside": _noticed_inside}
 
 ## Overrides EventBehaviour.restore.

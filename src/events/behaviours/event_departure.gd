@@ -63,7 +63,7 @@ var _goes_on_by: WayOn = null
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
 		map: WorldMap, navigator: Navigator, mover: Mover, barrier_post: EventBarrierPost,
 		on_foot: EventOfficer) -> void:
-	steps_each_tick = false
+	_steps_each_tick = false
 	_figure = figure
 	_where = where
 	_row = row

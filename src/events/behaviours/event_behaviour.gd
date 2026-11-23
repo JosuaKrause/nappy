@@ -28,7 +28,11 @@ var _where := WhereSheIs.nowhere()
 ## Whether `step()` runs in the event's ordinary tick. False for one the event runs in a tick of
 ## its own (`EventHold`, which freezes everything else while it runs) or at a moment of its own
 ## (`EventCarDriving`, the check on its event's step).
-var steps_each_tick := true
+var _steps_each_tick := true
+
+## Whether its event's ordinary tick runs it (`step()`).
+func is_stepped_each_tick() -> bool:
+	return _steps_each_tick
 
 ## One tick of what it does while its event is neither leaving nor held in a conversation.
 func step(_delta: float) -> void:

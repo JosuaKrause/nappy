@@ -691,7 +691,7 @@ also shows a search for the field's old name read without parentheses, every rem
 | **3c** | **The resistance, the scene recipes and the rigs.** The resistance's part is built (the record minty-quail-curly-heron). Left in `src/resistance/`: the world map's reads. The route rig's part is built (the record minty-quail-woolly-magpie); left in `route_rig.gd` and `route_rig_planner.gd`: the world map's `obstructed_tiles` and `size`. The debug views' part is built (the record minty-quail-mossy-marten): the debug layers, the readout, the dev rig, the still watch and the auto screenshot; left in them: the world map's `size` in `dev_rig.gd` (the region plan's door bodies are asked through `RegionPlan.door_plans()`, the record bouncy-puffin). The scene recipes' part is built (the record minty-quail-plush-toad): the scene recipe runtime; left in `scene_recipe_runtime.gd`: the city's and the city map's fields and the world map's `size` (the scene recipes' own pass with `AuthoredScene`, `city-hand-ins.md`), the call to the private `ResistanceHappenings._bring_the_column()` (the director's `crossing_ahead_of()` is public, 3b), and its opt-out line, which goes with that pass. `src/city/city.gd` reads no event field. The row's reads of the events are all built; what is left waits for the rows and the pass named | `src/dev/*`, `src/city/city.gd` | Waits for no other row. Beside 3a and 3b |
 | **4a** | **The tests, the probes and the cost table read through the methods.** One scripted rewrite, each replacement a line of section 4's tables, the script in the description so a branch merging main reruns it; the fields the tests alone read go private in the same pull request, so a few `src/` lines change mechanically (the design's pick, open to the player's overturn). Built (the records minty-quail-busy-walrus, -grassy-elk and -frosty-wombat): the row asked where it has the answer, the live event and the warning read through their methods, and the plan read through its methods, the last two with their fields private | `tests/**`, `tools/cost_table.gd`, and the fields' own files (`event_plan.gd`, `event_instance.gd`, `pending_warning.gd`), streaming's and the spawner's three reads, the two lists and the comments naming a field made private | After 3a to 3c |
 | **4b** | **A row is written as its parts.** `EventDraft`, the eight new specs, the row with no public field and no `Resource` base, the catalogue rewritten row by row, every variant made from a draft, `validate()` without the pairings a part makes unwritable; the tests that build or change a row use a draft; the live body's own layouts ask its `BodyStance`'s `pieces_at()` (built: `standing_pieces()` on the body and the live event, the look's shadow laid out the same way, the route rig's stopgap gone; the records curly-stork and minty-quail-sandy-hare). `docs/EVENTS.md`'s "Adding a new event" and the events skill's "Adding a row" say the new form. Twelve pull requests, all built (the third, the nine settings classes as values in `src/events/parts/`, the record minty-quail-gray-ibis; the fourth, the field of noise as one part, `FieldSpec`, the record minty-quail-gray-marten; the fifth, the body as one part, `BodySpec`, the record minty-quail-frosty-ibis; the sixth, ending the day, a hold and the warning as parts, `LethalSpec`, `HoldSpec` and `WarningSpec`, the record minty-quail-freckled-badger; the seventh, a route and a flock as parts, `RouteSpec` and `FlockSpec`, the record minty-quail-freckled-lynx; the eighth, the look as a part, `LookSpec`, the record minty-quail-azure-goose; the ninth, a row written through `EventDraft` and every variant a redraft, the record minty-quail-fluffy-goose; the tenth, the row with no public field, every setting asked as a question and the act a scripted row's alone, the record minty-quail-velvet-hedgehog; the eleventh, what the events read of four world classes, `GroundShape`, `MoveProposal`, `Stroller` and `VisibleView`, asked through methods and their fields private, the record minty-quail-olive-chipmunk; the twelfth, the live event handed its behaviours by the composer as one value, `EventDef.effect()` and `EventHold.stop()` deleted, the record minty-quail-frosty-trout); the first, every row's every answer printed by `tests/probes/row_fingerprint.gd`, the parity proof the rest run on base and branch (the record minty-quail-sunny-puffin) | `event_def.gd`, `event_catalogue.gd`, `event_draft.gd` and the spec files, the variant sites in `seal_planner.gd`, `region_planner.gd`, `happenings.gd`, `event_director.gd`, `event_spawner.gd`, and `src/resistance/resistance_director.gd`'s `def.speed` and `EventCatalogue.mast().id` reads (in 4b); the tests that write a row | After 4a |
-| **5** | **The events' and the resistance's suites test one module each** (`tests-one-module.md`, entry 6), in the groups below; with them the folder's own field-read groups `[ChargeRecord]`, `[EventBehaviour]`, `[EventFlock]` and `[Warning]` (`field-reads.md`) and the live event's `behaviours()`, which only tests ask | `tests/**` | After 4b; its groups beside each other |
+| **5** | **The events' and the resistance's suites test one module each** (`tests-one-module.md`, entry 6), in the groups below; with them the live event's `behaviours()`, which only tests ask | `tests/**` | After 4b; its groups beside each other |
 
 **What runs beside the placement track**: 1, 2a and 2b. They own no file it owns; 1 and 2a add methods to `event_def.gd`, where placement has been
 adding its own, and such additions merge without a conflict of meaning. Everything from 3a on
@@ -730,21 +730,17 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
-  the live event's looks (the drawing suites `test_event_views`, `test_event_redraw`, `test_car_views`,
-  and every other suite or probe that reads the live event's `look`, found with
-  `rg -n "\.look\b" tests` (among them `test_event_strides`, `test_drawn_view`, `test_events_pursuit`,
+  the live event's looks' readers (`FakeEvent`, `tests/fake_event.gd`, and the redraw and view suites are
+  built, the record minty-quail-grassy-quail): every other suite or probe that reads the live event's `look`,
+  found with `rg -n "\.look\b" tests` (among them `test_event_strides`, `test_drawn_view`, whose
+  cyclist case needs `FakeEvent.look_for()` to take a drawn view, `test_events_pursuit`,
   `test_police_car`, `test_fire_truck_body`, `test_barrier_stays`, `test_no_pop_in`,
-  `test_scenery_animation`, `test_frame_record`, `test_halo_behind`, `test_draw_layers`,
-  `test_resistance_traps`, and five probes);
-  the live event's other suites build one real event on open ground or a hand-drawn map, the
-  record minty-quail-pebbly-plover): what a look shows read off a recording drawer handed to the event in its
-  setup call (`tests/recording_event_drawer.gd`) or, for a question no picture answers, off a look
-  the suite makes with `EventLooks.for_row()` round a `FakeEvent`, written here, and then the live
-  event's `look` private (*proposed, not asked for:* the plainer alternative is that the live event's
-  public `look` stays for them), with the field-read groups `[EventBehaviour]`, `[EventFlock]`,
-  `[Warning]` and `[ChargeRecord]` where every reader is one of these suites; the live event's
-  `behaviours()`, read by about fifteen suites across the groups, goes with the group that converts its
-  last reader; the event manager and its
+  `test_scenery_animation`, `test_frame_record`, which also assigns it, `test_halo_behind`,
+  `test_draw_layers`, `test_resistance_traps`, and six probes), what a look shows read off a
+  recording drawer or a look made round a `FakeEvent`, and then the live event's `look` private
+  (*proposed, not asked for:* the plainer alternative is that the live event's public `look` stays
+  for them); the live event's `behaviours()`, read by about fifteen suites across the groups, goes
+  with the group that converts its last reader; the event manager and its
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
   manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
   first, the spawner's question: the manager real, plans
@@ -753,7 +749,7 @@ written once, after it is final.
   cases that generate a city and plan a day, moved out of the row's suites (the record minty-quail-gentle-bison): rows and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
-  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front`, whose
+  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose
   subject is the crowd's cars and whose city hosts crowd agents); and the resistance
   (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
   `FakeEvent`).

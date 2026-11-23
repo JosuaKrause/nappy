@@ -25,11 +25,6 @@ src/dev/roof_scale_preview.gd atlas
 src/dev/roof_scale_preview.gd footprint
 src/dev/roof_scale_preview.gd roof_object_parent
 
-# [ChargeRecord] src/events/charge_record.gd
-src/events/event_instance.gd began
-src/events/event_instance.gd ended
-src/events/event_instance.gd warned
-
 # [City] src/city/city.gd
 src/dev/scene_recipe_draft.gd map
 src/dev/scene_recipe_runtime.gd atlas
@@ -66,12 +61,6 @@ src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
-# [EventBehaviour] src/events/behaviours/event_behaviour.gd
-src/events/event_instance.gd steps_each_tick
-
-# [EventFlock] src/events/behaviours/event_flock.gd
-src/events/event_instance.gd birds
-
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
 
@@ -90,11 +79,6 @@ src/main.gd trace
 
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd rotated
-
-# [Warning] src/events/warning.gd
-src/events/behaviours/event_notice_run.gd cancel_if
-src/events/behaviours/event_notice_run.gd length
-src/events/behaviours/event_notice_run.gd on_expired
 
 # [WorldMap] src/world/world_map.gd
 src/crowd/car_strategy.gd separation

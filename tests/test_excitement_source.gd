@@ -11,6 +11,7 @@ func run(t: TestRunner) -> void:
 	_test_the_nets_sum_to_the_bar_rise(t)
 	_test_an_event_caches_its_rate_on_its_age(t)
 	_test_an_event_caret_reads_where_its_instance_says_she_is(t)
+	_test_the_caret_strength_follows_her_place_and_motion(t)
 	_test_an_outranked_source_projects_nothing(t)
 	_test_a_crowd_body_is_never_cached(t)
 	_test_a_crowd_body_jolt_widens_its_set(t)
@@ -122,6 +123,9 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 			EventSurroundings.new().hearing(instance_where))
 	for _i in int(ceil(def.telegraphs_for() / 0.1)) + 1:
 		instance.step(0.1)
+	# Nobody has said where she is yet, so the caret is asked of `Vector2.INF`: an answer cached
+	# for this age against that must not be the one she is given once she is told.
+	t.check(instance.source().caret_strength() == 0, "with nobody to aim at there is no caret")
 	instance_where.tell(instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0))
 	t.check(instance.source().caret_strength() == 2,
 			"her place told to the instance by its manager is where the caret measures her from")
@@ -202,3 +206,36 @@ func _total_at_the_origin(world: WorldContext) -> float:
 	for pair: Array in world.excitement_sources_at(Vector2.ZERO):
 		total += pair[1]
 	return total
+
+## The caret's own 0/1/2 strength follows where she is and how she moves: a loose dog that ends
+## the day on contact (a copy of its row with lethal set) is amber when she is far off and
+## closing on it, doubled red with her on it, and nothing with her away and still.
+func _test_the_caret_strength_follows_her_place_and_motion(t: TestRunner) -> void:
+	var def := _made_lethal(EventCatalogue.by_id("loose_dog"))
+	var her := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
+	var here := instance.global_position
+	var states := [
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+		[Vector2(150.0, 0.0), Vector2(-100.0, 0.0), 1],
+		[Vector2.ZERO, Vector2.ZERO, 2],
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+	]
+	var strengths := []
+	for state: Array in states:
+		her.tell(here + state[0])
+		instance.source().set_her_motion(state[1])
+		strengths.append(instance.source().caret_strength())
+	t.check(strengths == [0, 1, 2, 0],
+			"she is far off, closing, on it and far off again (%s)" % [strengths])
+	instance.free()
+
+## A copy of `def` that ends the day at its core, the catalogue's own row left as it is, since
+## every suite shares it: made the way the game makes a derived row (`EventDef.at_heat()`,
+## `as_warned_first()`), a redraft, which shares the row's body value.
+static func _made_lethal(def: EventDef) -> EventDef:
+	var draft := def.redraft()
+	draft.lethal(LethalSpec.at_its_core())
+	return draft.build()
