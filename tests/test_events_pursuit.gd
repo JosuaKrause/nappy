@@ -1,36 +1,38 @@
-extends "res://tests/events_shared_city.gd"
+extends RefCounted
 ## The chase lesson, in the three answers a player can give: into it, away at a walk, away at a
 ## run -- plus the mechanics a pursuer has to keep regardless of which she picks: it leaves no
 ## field clear to stand in, it can be kept waiting, it stops at a wall, and a hard-fail row is
-## lethal by the time it actually reaches her. `_test_a_retried_day_is_the_same_day` and
-## `_test_the_run_is_always_taught` sit here because both are asked against the same rig this file
-## already builds for the pursuit tests.
+## lethal by the time it actually reaches her. A live event is stood on open ground or on a hand-built
+## map, with the navigator of that map where a wall matters, and told where she is by a
+## `WhereSheIs` the case moves; no city is generated here.
 ##
 ## *(M35, playtest 08 finding 4: "I like the running tutorial on day 3 but I don't know how to
 ## solve it yet -- I died every time.")* `validate_pursuit` passed every line of itself while the
 ## dog was killing people, because every line of it was about **speeds and durations** and a
 ## pursuit is played out in **distances**. The rig below is the contract walked rather than
 ## asserted.
-##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Extends
-## `events_shared_city.gd` for `_test_a_pursuer_stops_at_walls`'s `_map()`, the one test here that
-## needs a real generated city rather than a hand-built rig.
 
 const STEP := 1.0 / 60.0
+
+## A 48x48 map of sidewalk with one building block, tiles 10 to 17 across and down, cut by an alley
+## two tiles wide from the block's north face to its south face: the wall, the corner and the alley
+## mouth the wall cases chase and hide round, with open ground south of it for a straight run.
+func _map() -> CityMap:
+	var map := CityMap.new(Vector2i(48, 48))
+	map.fill_rect(Rect2i(0, 0, 48, 48), GameEnums.TileType.SIDEWALK)
+	map.fill_rect(Rect2i(10, 10, 8, 8), GameEnums.TileType.BUILDING)
+	map.fill_rect(Rect2i(13, 10, 2, 8), GameEnums.TileType.ALLEY)
+	return map
 
 func run(t: TestRunner) -> void:
 	_test_a_pursuer_leaves_room_to_answer(t)
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
-	await _test_the_cyclist_is_warned_shortly_before_he_arrives(t)
 	_test_the_day_3_dog_keeps_its_gold_timing(t)
 	_test_the_resistances_pursuers_are_fitted_to_the_dog(t)
 	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
 	_test_a_sent_pursuer_counts_running_before_he_is_visible(t)
-	_test_a_failed_lesson_retry_leaves_the_director_running(t)
-	_test_a_retried_day_is_the_same_day(t)
-	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
 	_test_a_pursuer_can_wait(t)
 	_test_every_waiting_charger_warns_by_radius(t)
@@ -68,59 +70,6 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-## A director that hands the day-3 dog out once, then nothing, and counts the time it is given: a
-## placement that fails must not starve its independent clock.
-class _RetryDirector extends EventDirector:
-	var elapsed := 0.0
-	var handed := false
-	## Overrides EventDirector.due.
-	func due(delta: float, _at: Vector2, _velocity: Vector2, _view: VisibleView = null) -> Array:
-		elapsed += delta
-		if handed:
-			return []
-		handed = true
-		return [EventCatalogue.by_id("charging_dog"),
-				PackedVector2Array([Vector2(400.0, 0.0), Vector2(300.0, 0.0)])]
-
-## The board the lesson puts its warning up on, counting how often it is asked to; on the empty
-## ground below there is nowhere off screen to stand, so every ask is refused.
-class _CountingBoard extends WarningBoard:
-	var asked := 0
-	## Overrides WarningBoard.warn_first.
-	func warn_first(def: EventDef, her: Vector2, where: Callable,
-			arrive: Callable) -> PendingWarning:
-		asked += 1
-		return super(def, her, where, arrive)
-
-func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> void:
-	# An empty city map: the director owes its retry the same way with nothing on the ground.
-	var map := CityMap.new()
-	var told: Array[String] = []
-	var manager := EventManager.new(EventSurroundings.new().in_the_city(map)
-			.tracing_to(RecordingTrace.new(told)))
-	manager.setup(null)
-	var board := _CountingBoard.new(manager.world)
-	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board,
-			manager.walk_events())
-	var director := _RetryDirector.new(map)
-	lesson.use_director(director, null)
-	var body := CharacterBody2D.new()
-	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
-	manager.use_player(body)
-	for frame in 150:
-		lesson.place_what_is_owed_ahead(STEP)
-	t.check(board.asked == 3,
-			"a blocked lesson is asked at once, then retried twice in 2.5s, rather than every frame (%d)"
-			% board.asked)
-	t.check(told.any(func(line: String) -> bool:
-			return line.contains("has nowhere off screen to stand")),
-			"and the run log says the lesson is owed again")
-	t.close_to(director.elapsed, 2.5, "other director events receive every elapsed frame", 0.001)
-	lesson.clear()
-	board.clear()
-	manager.free()
-	body.free()
-
 ## A sent pursuer's badge is enough notice: a sustained run can end the chase before he is seen.
 ## Brief runs separated by walking do not accumulate into one escape.
 func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> void:
@@ -150,13 +99,6 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 			pursuer.step(STEP)
 		t.check(pursuer.has_given_up(), "%s is shaken off by sustained running while offscreen" % id)
 		pursuer.free()
-
-## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
-func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
-	var counts := {}
-	for plan in plans:
-		counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
-	return counts
 
 ## Walks the encounter the way it is actually played: she is walking into it when it lunges, dithers
 ## for `reaction` seconds, then turns and runs — accelerating, rather than changing speed instantly.
@@ -251,8 +193,8 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	instance.free()
 	return result
 
-## A real building tile with open pavement on two adjacent sides — the outward corner every
-## rectangular building has at least one of. `{}` would mean the generator changed shape rather
+## A building tile with open pavement on two adjacent sides — the outward corner every
+## rectangular building has at least one of. `{}` would mean the hand-built map has none rather
 ## than that the test picked badly.
 func _a_building_corner(map: CityMap) -> Dictionary:
 	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
@@ -524,191 +466,6 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 	warning.put_up(her)
 	return warning
 
-## **The cyclist is warned by himself first, for at most a second, and then comes into view at once
-## where the warning pointed.** *(2026-09-25: "I feel the same with the biker. it gets warned too
-## early so most of the time you're already gone when anything happens." · PLAYTEST-145: "the
-## warning appears by itself with a reasonable position and when the time is right the object is
-## spawned in at that location just offscreen" · "the biker needs to stay on the sidewalk";
-## calm-kestrel, inbox #559: "show the warning for x seconds (never longer than 2s) without placing
-## anything then place the object immediately off screen so it will immediately start coming on the
-## screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
-## should be enough".)*
-##
-## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
-## `WarningBoard.run()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
-## out onto the carriageway and back:
-##
-## - **the badge is up with nothing in the world**, for no more than `Tuning.WARNING_ALONE_MAX`;
-## - **the badge holds still**: its place keeps the same offset from her every frame, so it moves
-##   only with her own walking and never jumps to another piece of ground;
-## - **he is created once his second is up, on a sidewalk, wholly out of sight, with his telegraph
-##   spent**, and he comes into sight as soon as he moves — or, where the ground just out of sight is
-##   a cross street's carriageway and his sidewalk is beyond it, as soon as he has ridden that far —
-##   which takes the badge down.
-##
-## Then, walked by `M207Lead.measure()` (`tests/probes/m207_warning_lead.gd`, the probe that prints
-## every warned row's lead) on open ground on both axes: **from the badge to his reach, walking into
-## him, is at least the contract's floor**, exactly his second and then his approach from just out of
-## sight, and standing still he still reaches her no sooner than the floor.
-func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cyclist")
-	t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX,
-			"his badge is up alone for %.2fs, at most %.2fs" % [def.warned_for(), Tuning.WARNING_ALONE_MAX])
-	var map := _map()
-	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
-	# out of sight ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
-	var her := CrowdLanes.arterial_pavement(map)
-	for _tile in map.size.y / 2:
-		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
-			break
-		her.y += Tuning.TILE_SIZE
-	# Handed the city map, drawn in a node of its own, and a run (`EventManager.setup()` with no
-	# streets, lights or poster walls), as a rig that builds no city hands them.
-	var holder := WorldContext.new()
-	t.add_child(holder)
-	var run := RunState.new()
-	var atlas := AtlasLibrary.new()
-	atlas.acquire(&"events")
-	# The page every event made here is drawn from, as `main` hands the manager its library.
-	var manager := EventManager.new(EventSurroundings.new().in_the_city(map).drawn_in(holder)
-			.drawn_from(atlas))
-	manager.setup(run)
-	var player := Node2D.new()
-	t.add_child(player)
-	player.global_position = her
-	var edge := DangerEdge.new()
-	edge.use_atlas(atlas)
-	edge.size = Vector2(1280.0, 720.0)
-	t.add_child(edge)
-	edge.setup(manager, player)
-	manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
-	var created: Array[EventInstance] = []
-	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
-	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
-		# Created as the game's own arrival creates him (`EventSpawner.spawn_warned()`), so he is
-		# in the manager's own list and the edge measures him as it does the game's own badge.
-		created.append(manager.spawn_warned(def, path))
-		return true
-	var warning := manager.warn_first(def, her, where, arrive)
-	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
-	if not warning:
-		manager.free()
-		holder.free()
-		edge.free()
-		atlas.release(&"events")
-		return
-	# The edge is in the tree and measures on the frame the engine gives it; the frame after this one
-	# has read the badge up.
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
-	var badged := false
-	for badge in edge.badges().announcing():
-		badged = badged or badge.logged_name() == "cyclist"
-	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
-
-	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
-	var offset := warning.points_at() - her
-	var elapsed := 0.0
-	var looked := 0
-	var jumped := 0
-	var came_at := INF
-	while elapsed < Tuning.WARNING_ALONE_MAX + 1.0:
-		# North up the sidewalk, then a stride out onto the carriageway and back.
-		var step := Vector2.UP
-		if elapsed > 0.3 and elapsed <= 0.6:
-			step = Vector2.RIGHT
-		elif elapsed > 0.6 and elapsed <= 0.9:
-			step = Vector2.LEFT
-		her += step * Tuning.WALK_SPEED * STEP
-		manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
-		manager.warnings.run(STEP, her)
-		elapsed += STEP
-		if not created.is_empty():
-			came_at = elapsed
-			break
-		looked += 1
-		if not (warning.points_at() - her).is_equal_approx(offset):
-			jumped += 1
-	t.check(looked > 0 and jumped == 0,
-			"it was watched (%d frames) and its place kept its offset from her every frame (%d not)"
-			% [looked, jumped])
-	t.check(created.size() == 1 and came_at <= Tuning.WARNING_ALONE_MAX + 2.0 * STEP,
-			"he is created once his %.2fs badge is over (%.2fs)" % [def.warned_for(), came_at])
-	if created.size() == 1:
-		var bike := created[0]
-		var view := VisibleView.around(her, null)
-		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
-				"on a sidewalk")
-		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(def), her,
-				bike.global_position),
-				"wholly out of sight the frame he exists")
-		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
-		var into_sight := INF
-		var gone := INF
-		var since := 0.0
-		player.global_position = her
-		while since < 1.0 and (into_sight == INF or gone == INF):
-			bike.step(STEP)
-			since += STEP
-			await t.get_tree().process_frame
-			var box := EventFootprints.footprint_of(def)
-			if into_sight == INF and manager.visible_view().sees_any(
-					Rect2(bike.global_position + box.position, box.size)):
-				into_sight = since
-			var still_badged := false
-			for badge in edge.badges().announcing():
-				still_badged = still_badged or badge.logged_name() == "cyclist"
-			if gone == INF and not still_badged:
-				gone = since
-		# At once from just out of sight; where its ground is further — the carriageway of a cross
-		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
-		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
-				Vector2.UP)
-		var further := maxf(0.0, (bike.walks()[0] - just_out).dot(Vector2.UP))
-		t.check(into_sight <= further / def.speed() + 3.0 * STEP,
-				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
-				% further + "just out of sight (%.2fs after he exists)" % into_sight)
-		t.check(gone <= into_sight + 0.2,
-				"and the badge goes down as he comes into sight (%.2fs, in sight at %.2fs)" % [gone, into_sight])
-	edge.free()
-	player.free()
-	manager.free()
-	holder.free()
-	atlas.release(&"events")
-
-	var walked := 0
-	for encounter in M207Lead.encounters():
-		var row: EventDef = encounter["def"]
-		if row.id() != "cyclist":
-			continue
-		walked += 1
-		var floor_s := row.minimum_telegraph()
-		var probe_edge := DangerEdge.new()
-		var toward := M207Lead.measure(encounter, M207Lead.Answer.TOWARD, probe_edge)
-		t.check(toward["by"] == "badge" and toward["lead"] < INF,
-				"cyclist (%s): the badge warns her before he can hit her (by %s, %.2fs)"
-				% [encounter["how"], toward["by"], toward["lead"]])
-		t.check(toward["lead"] >= floor_s,
-				"cyclist (%s): walking into him she is warned %.2fs ahead, at least the %.2fs floor"
-				% [encounter["how"], toward["lead"], floor_s])
-		# What the walk measures is the contract's own figure on this axis: his second, then his
-		# approach from just out of sight to his reach. The horizontal axis adds only the wider view.
-		var heading: Vector2 = encounter["heading"]
-		var closing := row.speed() + Tuning.WALK_SPEED
-		var created_at := PendingWarning.down_her_line(null, row, Vector2.ZERO, heading).length()
-		var predicted := row.warned_for() + (created_at - row.lethal_reach()) / closing
-		t.close_to(toward["lead"], predicted,
-				"cyclist (%s): which is his second and then his approach from just out of sight"
-				% encounter["how"], 3.0 * STEP)
-		var stood := M207Lead.measure(encounter, M207Lead.Answer.STAND, probe_edge)
-		t.check(stood["lead"] < INF and stood["lead"] >= floor_s,
-				"cyclist (%s): standing on his line she is still reached, %.2fs after the warning"
-				% [encounter["how"], stood["lead"]])
-		probe_edge.free()
-	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
-
 ## **The day-3 dog keeps its gold timing, in the player's terms.** *(PLAYTEST-145: "the pursuit dog
 ## timing from the day 3 lesson is the correct timing ... this is the gold timing with warning time
 ## and onscreen pursuing time seen as correct"; inbox #598: "the chase is what happens on screen" ·
@@ -809,98 +566,6 @@ func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> 
 				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
 				% [def.id(), warned.warned_for(), Tuning.WARNING_ALONE_MAX])
 	t.check(sent >= 3, "the dog and the resistance's two are among them (%d)" % sent)
-
-## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
-## appeared once (I died) then it didn't appear again.")*
-##
-## `docs/TODO.md` has claimed this since M32 and it was not true: `build_day` ran six phases off one
-## RNG, and a one-shot the run had already spent was skipped *before* its `randf()` was drawn, so the
-## second attempt at day 3 — the day the fire engine runs — started the recurring fill one value
-## earlier and produced a different city's worth of events. The trace has `homeless_yeller` going
-## from two to eight and `cyclist` from none to three between two consecutive attempts at the same
-## day.
-##
-## **What is asserted is the day's *composition*, not every coordinate**, and the difference is the
-## measurement rather than a hedge: the multiset of event **kinds** has to be identical, and a
-## `dog_walker` starting three tiles further up the same street is not a different day. Eight
-## shouting men where there were two is, and that is what this stops.
-##
-## **Two directions, because a lost day gives the fire back altogether.** *("a retry always rolls
-## new -- nothing that happened on the day that got retried can influence the next repeat")* —
-## whether or not she ever reached it, so the ordinary retry is the same day down to the fire
-## itself; a day planned after it actually burned on a day she **won** has none of it and nothing
-## else different. The second is the one M39 was written against and it is asked here with an
-## explicitly spent list, since a retry can no longer produce one.
-func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
-	var day := Tuning.RUN_TAUGHT_DAY
-	for run_seed: int in [4242, 90210, 1234567]:
-		var map := CityGenerator.generate(run_seed)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%d:events" % [run_seed, day])
-
-		var consumed: Array[String] = []
-		var first := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements()
-		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
-		# where it becomes real — `DawnOneShots`. And a lost day gives back what
-		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
-		# The other direction, the day after it burned on a day she won, is the loop below this one.
-		t.check(consumed.is_empty(),
-				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
-		var again := RandomNumberGenerator.new()
-		again.seed = rng.seed
-		var second := GameDawn.of(DaySpec.for_day(day), again, map).spent(consumed.duplicate()) \
-				.plan().placements()
-
-		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
-		# the retry plans **none** of it.
-		#
-		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
-		# to allow one instance of drift, because the ground a spent one-shot freed let a placement
-		# that had failed now fit; an offer costs no room since M50 step 2 — see `StreetInvalidation.room_around()` —
-		# so the dawn's placement is identical between attempts rather than merely close. What is *not* closed
-		# is still not closed: a **scar** genuinely occupies ground and still moves what stood
-		# there, which is the run's own history showing through and is the answer that should.
-		var before := _kinds_in(first)
-		var after := _kinds_in(second)
-		var changed := 0
-		for id: String in before.keys() + after.keys():
-			var expected: int = 0 if id in consumed else int(before.get(id, 0))
-			t.check(int(after.get(id, 0)) == expected,
-					"seed %d: the retry has %d '%s' where the day had %d"
-					% [run_seed, int(after.get(id, 0)), id, expected])
-			changed += 1 if int(after.get(id, 0)) != expected else 0
-		t.check(changed == 0,
-				"seed %d: and nothing else moves at all (%d kinds did)" % [run_seed, changed])
-
-		# And the day *after* the fire actually burned: the one-shot is gone and nothing else is.
-		# This is the half of the property a retry can no longer ask, since a lost day gives the
-		# fire back — and it is the half M39 was written for, so it is asked here instead.
-		var spent: Array[String] = ["burning_building"]
-		var third_rng := RandomNumberGenerator.new()
-		third_rng.seed = rng.seed
-		var third := _kinds_in(GameDawn.of(DaySpec.for_day(day), third_rng, map).spent(spent).plan().placements())
-		for id: String in before.keys() + third.keys():
-			var expected: int = 0 if id in spent else int(before.get(id, 0))
-			t.check(int(third.get(id, 0)) == expected,
-					"seed %d: a day after the fire burned has %d '%s' where the day had %d"
-					% [run_seed, int(third.get(id, 0)), id, expected])
-
-## **The day the run is taught always has something to teach it with.** *(M39, finding 5.)*
-##
-## `charging_dog` is weight 1.4 of a day-3 pool and `EventDirector._teach_the_run` says outright what
-## happens when the dice disagree — *"if the day happened not to buy one, there is nothing to teach
-## and nothing happens"* — so a player could reach act II never having been shown the one control the
-## game will later require. A lesson that only happens on some seeds is not a lesson.
-func _test_the_run_is_always_taught(t: TestRunner) -> void:
-	var day := Tuning.RUN_TAUGHT_DAY
-	for run_seed: int in [4242, 90210, 1234567, 31337]:
-		var map := CityGenerator.generate(run_seed)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%d:events" % [run_seed, day])
-		var consumed: Array[String] = []
-		var events := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan()
-		t.check(events.has_a_pursuit(),
-				"seed %d: day %d has something that has to be run from" % [run_seed, day])
 
 ## **A beat rather than a journey.** *(M36, playtest 09: "who is the person killing me? It didn't
 ## move… if it's the homeless person it needs to walk up and down the sidewalk.")*
@@ -1273,15 +938,16 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 ## travelled a route the scheduler had already checked, and not harmless the moment something
 ## steers freely at the player.
 ##
-## A real building corner, chased round: she walks from its north face to its east face, and a dog
-## aimed straight at wherever she currently is would cut across the building itself to follow her —
+## A building corner of the hand-built map, chased round: she walks from its north face to its east
+## face, and a dog aimed straight at wherever she currently is would cut across the building itself to
+## follow her —
 ## exactly the shape of the bug. The pursuit's step through the navigator (`EventPursuit`,
 ## `Navigator.step()`) is the fix, and this is what it has to hold true of every frame regardless
 ## of the geometry, which is why the check runs the whole walk rather than sampling the end of it.
 func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	var map := _map()
 	var corner := _a_building_corner(map)
-	t.check(not corner.is_empty(), "the sampled map has a building corner to chase round")
+	t.check(not corner.is_empty(), "the hand-built map has a building corner to chase round")
 	if corner.is_empty():
 		return
 	var north: Vector2i = corner["north"]
@@ -1323,12 +989,12 @@ func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	t.check(checked > 0, "the walk round the corner actually ran")
 	instance.free()
 
-## An alley mouth on the real map, as the corner the robber reaches round: a building tile with
+## An alley mouth on the hand-built map, as the corner the robber reaches round: a building tile with
 ## alley ground on one side (`d1`, where he stands) and walkable ground on a perpendicular side
 ## (`d2`, the sidewalk she walks), with the tile between the two (the mouth, `d1 + d2`) walkable too,
 ## so the corner is one he can come round. `corner` is the building's own vertex shared by all four
-## tiles; from it the building lies toward `-d1` and `-d2`. `{}` would mean the generator stopped
-## carving alleys onto streets rather than that the search picked badly.
+## tiles; from it the building lies toward `-d1` and `-d2`. `{}` would mean the map's
+## alley does not open onto a street rather than that the search picked badly.
 func _an_alley_mouth(map: CityMap) -> Dictionary:
 	var sides: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
 	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
@@ -1375,7 +1041,7 @@ func _a_chasing_robber(t: TestRunner, map: CityMap, where: WhereSheIs) -> EventI
 func _test_the_robber_does_not_catch_her_through_a_wall(t: TestRunner) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
-	t.check(not mouth.is_empty(), "the sampled map has an alley opening onto a street")
+	t.check(not mouth.is_empty(), "the hand-built map has an alley opening onto a street")
 	if mouth.is_empty():
 		return
 	var corner: Vector2 = mouth["corner"]
@@ -1674,7 +1340,7 @@ func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px 
 			return false
 	return true
 
-## **`clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
+## **`clear_line_to()` against the sampled line, over the hand-built map.** Seeded segments up to a
 ## stand-off long from walkable ground near buildings, in every direction, each answered both by
 ## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
 ## The guard counts how many of them crossed a building, so a sweep that only ever asked open

@@ -7,8 +7,13 @@ extends RefCounted
 ## of those are invisible to a data-level test and both happened. The one wiring the events and the
 ## crowd share, a body the events stand on a lane taking the car there away, is the builder's that
 ## makes it (`tests/test_simulation_builder.gd`).
+##
+## Two cases build no city and are run after the others on a map of their own (the generated map of
+## seed 4242): the cyclist's warning, which drives a manager of its own over a map, and the parked
+## fire engine's route guarantee, which reads the map's street network.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
+const STEP := 1.0 / 60.0
 
 var _city: City
 
@@ -44,6 +49,14 @@ func run(t: TestRunner) -> void:
 		_build_city(t)
 		await test.call(t)
 		_teardown()
+	# These two take a generated map and no city: the warning board and the street network are
+	# theirs, and the city node is not.
+	var map_tests: Array[Callable] = [
+		_test_the_cyclist_is_warned_shortly_before_he_arrives,
+		_test_a_parked_body_closes_no_street,
+	]
+	for test in map_tests:
+		await test.call(t)
 
 ## **A world keeps the navigator it was handed** (`EventSurroundings.moving_by()`), whichever map
 ## that navigator walks: a manager set up on a street map and handed a navigator over open ground
@@ -838,3 +851,318 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 ## The live event of `plan`, asked of the city's event manager.
 func _live(plan: EventPlan) -> EventInstance:
 	return RunCity.events(_city).event_of(plan)
+
+## **The cyclist is warned by himself first, for at most a second, and then comes into view at once
+## where the warning pointed.** *(2026-09-25: "I feel the same with the biker. it gets warned too
+## early so most of the time you're already gone when anything happens." · PLAYTEST-145: "the
+## warning appears by itself with a reasonable position and when the time is right the object is
+## spawned in at that location just offscreen" · "the biker needs to stay on the sidewalk";
+## calm-kestrel, inbox #559: "show the warning for x seconds (never longer than 2s) without placing
+## anything then place the object immediately off screen so it will immediately start coming on the
+## screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
+## should be enough".)*
+##
+## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
+## `WarningBoard.run()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
+## out onto the carriageway and back:
+##
+## - **the badge is up with nothing in the world**, for no more than `Tuning.WARNING_ALONE_MAX`;
+## - **the badge holds still**: its place keeps the same offset from her every frame, so it moves
+##   only with her own walking and never jumps to another piece of ground;
+## - **he is created once his second is up, on a sidewalk, wholly out of sight, with his telegraph
+##   spent**, and he comes into sight as soon as he moves — or, where the ground just out of sight is
+##   a cross street's carriageway and his sidewalk is beyond it, as soon as he has ridden that far —
+##   which takes the badge down.
+##
+## Then, walked by `M207Lead.measure()` (`tests/probes/m207_warning_lead.gd`, the probe that prints
+## every warned row's lead) on open ground on both axes: **from the badge to his reach, walking into
+## him, is at least the contract's floor**, exactly his second and then his approach from just out of
+## sight, and standing still he still reaches her no sooner than the floor.
+func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX,
+			"his badge is up alone for %.2fs, at most %.2fs" % [def.warned_for(), Tuning.WARNING_ALONE_MAX])
+	var map := CityGenerator.generate(4242)
+	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
+	# out of sight ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
+	var her := CrowdLanes.arterial_pavement(map)
+	for _tile in map.size.y / 2:
+		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
+			break
+		her.y += Tuning.TILE_SIZE
+	# Handed the city map, drawn in a node of its own, and a run (`EventManager.setup()` with no
+	# streets, lights or poster walls), as a rig that builds no city hands them.
+	var holder := WorldContext.new()
+	t.add_child(holder)
+	var run := RunState.new()
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	# The page every event made here is drawn from, as `main` hands the manager its library.
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map).drawn_in(holder)
+			.drawn_from(atlas))
+	manager.setup(run)
+	var player := Node2D.new()
+	t.add_child(player)
+	player.global_position = her
+	var edge := DangerEdge.new()
+	edge.use_atlas(atlas)
+	edge.size = Vector2(1280.0, 720.0)
+	t.add_child(edge)
+	edge.setup(manager, player)
+	manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
+	var created: Array[EventInstance] = []
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
+		# Created as the game's own arrival creates him (`EventSpawner.spawn_warned()`), so he is
+		# in the manager's own list and the edge measures him as it does the game's own badge.
+		created.append(manager.spawn_warned(def, path))
+		return true
+	var warning := manager.warn_first(def, her, where, arrive)
+	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
+	if not warning:
+		manager.free()
+		holder.free()
+		edge.free()
+		atlas.release(&"events")
+		return
+	# The edge is in the tree and measures on the frame the engine gives it; the frame after this one
+	# has read the badge up.
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	var badged := false
+	for badge in edge.badges().announcing():
+		badged = badged or badge.logged_name() == "cyclist"
+	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
+
+	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	var offset := warning.points_at() - her
+	var elapsed := 0.0
+	var looked := 0
+	var jumped := 0
+	var came_at := INF
+	while elapsed < Tuning.WARNING_ALONE_MAX + 1.0:
+		# North up the sidewalk, then a stride out onto the carriageway and back.
+		var step := Vector2.UP
+		if elapsed > 0.3 and elapsed <= 0.6:
+			step = Vector2.RIGHT
+		elif elapsed > 0.6 and elapsed <= 0.9:
+			step = Vector2.LEFT
+		her += step * Tuning.WALK_SPEED * STEP
+		manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
+		manager.warnings.run(STEP, her)
+		elapsed += STEP
+		if not created.is_empty():
+			came_at = elapsed
+			break
+		looked += 1
+		if not (warning.points_at() - her).is_equal_approx(offset):
+			jumped += 1
+	t.check(looked > 0 and jumped == 0,
+			"it was watched (%d frames) and its place kept its offset from her every frame (%d not)"
+			% [looked, jumped])
+	t.check(created.size() == 1 and came_at <= Tuning.WARNING_ALONE_MAX + 2.0 * STEP,
+			"he is created once his %.2fs badge is over (%.2fs)" % [def.warned_for(), came_at])
+	if created.size() == 1:
+		var bike := created[0]
+		var view := VisibleView.around(her, null)
+		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
+				"on a sidewalk")
+		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				bike.global_position),
+				"wholly out of sight the frame he exists")
+		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
+		var into_sight := INF
+		var gone := INF
+		var since := 0.0
+		player.global_position = her
+		while since < 1.0 and (into_sight == INF or gone == INF):
+			bike.step(STEP)
+			since += STEP
+			await t.get_tree().process_frame
+			var box := EventFootprints.footprint_of(def)
+			if into_sight == INF and manager.visible_view().sees_any(
+					Rect2(bike.global_position + box.position, box.size)):
+				into_sight = since
+			var still_badged := false
+			for badge in edge.badges().announcing():
+				still_badged = still_badged or badge.logged_name() == "cyclist"
+			if gone == INF and not still_badged:
+				gone = since
+		# At once from just out of sight; where its ground is further — the carriageway of a cross
+		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
+		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				Vector2.UP)
+		var further := maxf(0.0, (bike.walks()[0] - just_out).dot(Vector2.UP))
+		t.check(into_sight <= further / def.speed() + 3.0 * STEP,
+				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
+				% further + "just out of sight (%.2fs after he exists)" % into_sight)
+		t.check(gone <= into_sight + 0.2,
+				"and the badge goes down as he comes into sight (%.2fs, in sight at %.2fs)" % [gone, into_sight])
+	edge.free()
+	player.free()
+	manager.free()
+	holder.free()
+	atlas.release(&"events")
+
+	var walked := 0
+	for encounter in M207Lead.encounters():
+		var row: EventDef = encounter["def"]
+		if row.id() != "cyclist":
+			continue
+		walked += 1
+		var floor_s := row.minimum_telegraph()
+		var probe_edge := DangerEdge.new()
+		var toward := M207Lead.measure(encounter, M207Lead.Answer.TOWARD, probe_edge)
+		t.check(toward["by"] == "badge" and toward["lead"] < INF,
+				"cyclist (%s): the badge warns her before he can hit her (by %s, %.2fs)"
+				% [encounter["how"], toward["by"], toward["lead"]])
+		t.check(toward["lead"] >= floor_s,
+				"cyclist (%s): walking into him she is warned %.2fs ahead, at least the %.2fs floor"
+				% [encounter["how"], toward["lead"], floor_s])
+		# What the walk measures is the contract's own figure on this axis: his second, then his
+		# approach from just out of sight to his reach. The horizontal axis adds only the wider view.
+		var heading: Vector2 = encounter["heading"]
+		var closing := row.speed() + Tuning.WALK_SPEED
+		var created_at := PendingWarning.down_her_line(null, row, Vector2.ZERO, heading).length()
+		var predicted := row.warned_for() + (created_at - row.lethal_reach()) / closing
+		t.close_to(toward["lead"], predicted,
+				"cyclist (%s): which is his second and then his approach from just out of sight"
+				% encounter["how"], 3.0 * STEP)
+		var stood := M207Lead.measure(encounter, M207Lead.Answer.STAND, probe_edge)
+		t.check(stood["lead"] < INF and stood["lead"] >= floor_s,
+				"cyclist (%s): standing on his line she is still reached, %.2fs after the warning"
+				% [encounter["how"], stood["lead"]])
+		probe_edge.free()
+	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
+
+## **The route-redundancy guarantee with it parked** (the **city** skill: a day leaves distinct
+## routes from home to its calm areas, counted as a max flow, `StreetNetwork.route_count()`). The
+## engine parks on the carriageway's near tile across from the fire
+## (`EventSpawner._where_the_summoned_row_stops()`), its body a capsule along the street. On a real
+## city, at every such kerb tried, every tile the body overlaps at all is blocked; the street it
+## stands in counts as closed unless a way along it past the body is left inside its own corridor;
+## and every calm area must keep as many distinct routes from home, up to two, as it had without
+## it. The same check run with a body the street's whole width finds the street closed, which is
+## what shows it can fail; the lattice leaves every calm area its routes past most single closed
+## streets, so the count of routes lost is reported for it rather than required.
+func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
+	var map := CityGenerator.generate(4242)
+	var kerbs := _kerbs(map)
+	t.check(kerbs.size() >= 20, "enough kerbs were tried (%d)" % kerbs.size())
+	var truck := EventCatalogue.by_id("fire_truck").ground_shape()
+	var lost := _routes_lost(map, kerbs, truck)
+	t.check(lost.x == 0 and lost.y == 0,
+			"with the parked engine's tiles blocked, no street is closed (%d) and no calm area "
+			% lost.x + "loses a route from home (%d)" % lost.y)
+	var street := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	var wide := _routes_lost(map, kerbs, GroundShape.segment(truck.spine_half_length(), street))
+	t.check(wide.x > 0,
+			"and a body the street's whole width closes the street it stands in (%d of %d kerbs; "
+			% [wide.x, kerbs.size()] + "%d calm areas then lose a route)" % wide.y)
+
+## The kerbs a summoned engine can park at on `map`, as `[park, along]`: the near carriageway tile
+## across from every sidewalk tile beside a carriageway, sampled across the map, and the street's
+## own axis there.
+func _kerbs(map: CityMap) -> Array[Array]:
+	var kerbs: Array[Array] = []
+	var tile_count := map.size.x * map.size.y
+	var step := maxi(1, tile_count / 160)
+	for index in range(0, tile_count, step):
+		var tile := Vector2i(index % map.size.x, index / map.size.x)
+		var inward := map.pavement_inward(tile)
+		if inward == Vector2i.ZERO:
+			continue
+		var park := EventSpawner._where_the_summoned_row_stops(map, map.tile_to_world(tile))
+		if park == Vector2.INF or not Tile.is_road(map.tile_type_at_world(park)):
+			continue
+		kerbs.append([park, Vector2(absf(float(inward.y)), absf(float(inward.x)))])
+	return kerbs
+
+## With `body` parked at each of `kerbs`: how many times the street it stands in is closed, as
+## `x`, and how many calm areas have fewer distinct routes from home than without it, as `y`.
+func _routes_lost(map: CityMap, kerbs: Array[Array], body: GroundShape) -> Vector2i:
+	var home := ClosurePlanner.home_street(map)
+	var areas := ClosurePlanner.calm_areas(map)
+	var open := map.blocked_segments()
+	var before: Array[int] = []
+	for area in areas:
+		before.append(map.network.route_count(home, area.access, open, 2))
+	var lost := Vector2i.ZERO
+	for kerb: Array in kerbs:
+		var park: Vector2 = kerb[0]
+		var along: Vector2 = kerb[1]
+		var blocked := _tiles_touched(body, park, along)
+		var segment := map.network.segment_containing(map.world_to_tile(park))
+		if segment == null or _passes(map, park, along, body, blocked):
+			continue
+		lost.x += 1
+		var closed := open.duplicate()
+		closed[segment.key()] = true
+		for i in areas.size():
+			if map.network.route_count(home, areas[i].access, closed, 2) < before[i]:
+				lost.y += 1
+	return lost
+
+## Every tile `body`, parked at `at` along `along`, overlaps at all — not only the tiles whose
+## centres it covers, which for a 26px body is one tile in six across the street.
+func _tiles_touched(body: GroundShape, at: Vector2, along: Vector2) -> Dictionary:
+	var size := float(Tuning.TILE_SIZE)
+	var spine := Rect2(at - along * body.spine_half_length(), Vector2.ZERO).expand(at + along * body.spine_half_length())
+	var reach := ceili((body.spine_half_length() + body.rounding_radius()) / size) + 1
+	var centre := Vector2i(floori(at.x / size), floori(at.y / size))
+	var touched := {}
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var tile := centre + Vector2i(dx, dy)
+			var box := Rect2(Vector2(tile) * size, Vector2.ONE * size)
+			var gap := Vector2(
+					maxf(0.0, maxf(box.position.x - spine.end.x, spine.position.x - box.end.x)),
+					maxf(0.0, maxf(box.position.y - spine.end.y, spine.position.y - box.end.y)))
+			if gap.length() < body.rounding_radius():
+				touched[tile] = true
+	return touched
+
+## Whether, with `blocked` closed, she can still walk along the street at `at` past `body`, inside
+## the street's own corridor: from the walkable tiles across it a few tiles before the body to
+## those a few tiles after it.
+func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
+		blocked: Dictionary) -> bool:
+	var vertical := along.y > 0.5
+	var tile := map.world_to_tile(at)
+	var cross := tile.x if vertical else tile.y
+	var first := cross - CityMap.corridor_offset(cross)
+	var down := tile.y if vertical else tile.x
+	var span := ceili((body.spine_half_length() + body.rounding_radius())
+			/ float(Tuning.TILE_SIZE)) + 2
+	var make := func(a: int, c: int) -> Vector2i:
+		return Vector2i(c, a) if vertical else Vector2i(a, c)
+	var open := func(at_tile: Vector2i) -> bool:
+		return map.in_bounds(at_tile) and map.is_walkable(at_tile) and not blocked.has(at_tile)
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	for c in range(first, first + Tuning.STREET_WIDTH):
+		var start: Vector2i = make.call(down - span, c)
+		if open.call(start):
+			seen[start] = true
+			queue.append(start)
+	var head := 0
+	while head < queue.size():
+		var here := queue[head]
+		head += 1
+		var a := here.y if vertical else here.x
+		if a == down + span:
+			return true
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := here + step
+			var a_next := next.y if vertical else next.x
+			var c_next := next.x if vertical else next.y
+			if a_next < down - span or a_next > down + span or c_next < first \
+					or c_next >= first + Tuning.STREET_WIDTH:
+				continue
+			if seen.has(next) or not open.call(next):
+				continue
+			seen[next] = true
+			queue.append(next)
+	return false
