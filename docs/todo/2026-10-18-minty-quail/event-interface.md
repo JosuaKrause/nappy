@@ -735,9 +735,14 @@ written once, after it is final.
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
   `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose
-  subject is the crowd's cars and whose city hosts crowd agents); and the resistance
-  (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
-  `FakeEvent`).
+  subject is the crowd's cars and whose city hosts crowd agents); and what is left of the resistance's (the contact cases and the headers are
+  built, the record minty-quail-jolly-ibis): the director's cases over a real city in
+  `test_resistance_steps` (the rider-gone expiry, the timed step, the two package cases, sabotage),
+  `test_resistance_placement_kinds`' raid, market and column cases on a real manager, the cases of
+  `test_resistance_traps` and `test_resistance_arrow` that send real street yellers into a real
+  manager, and `test_day_loop`'s retry case, the director's placement answer: each takes
+  `FakeEventManager` and `FakeEvent` where its subject is not the city's siting, or keeps its city
+  under a header that says why.
 
 ## 6. What it costs per frame
 
