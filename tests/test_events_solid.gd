@@ -16,7 +16,6 @@ const STEP := 1.0 / 60.0
 func run(t: TestRunner) -> void:
 	_test_everything_that_stands_still_is_solid(t)
 	_test_a_lethal_thing_can_still_be_reached(t)
-	_test_the_pram_is_the_size_the_rules_think_it_is(t)
 	_test_a_parked_van_is_at_the_kerb(t)
 	_test_a_lorry_has_a_wall_to_back_into(t)
 	_test_nothing_stands_on_the_doorstep_street(t)
@@ -76,17 +75,6 @@ func _test_a_lethal_thing_can_still_be_reached(t: TestRunner) -> void:
 				"'%s' is solid to %.0f and lethal inside %.0f, so touching it still ends the day"
 				% [def.id(), def.obstructs_within(), def.core_within()])
 	t.check(lethal > 0, "and there are lethal solid things to check")
-
-## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule
-## above is arithmetic on it. A copy nothing checks is a lie waiting to happen.
-func _test_the_pram_is_the_size_the_rules_think_it_is(t: TestRunner) -> void:
-	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
-	var stroller: Node = scene.instantiate()
-	var shape := (stroller.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
-	t.check(shape != null and is_equal_approx(shape.radius, Tuning.PLAYER_BODY_RADIUS),
-			"the pram's own body is PLAYER_BODY_RADIUS (%.1f in the scene, %.1f in Tuning)"
-			% [shape.radius if shape else -1.0, Tuning.PLAYER_BODY_RADIUS])
-	stroller.free()
 
 ## Playtest 07, finding 7: *"there is also a car obstacle on the road that is basically a still
 ## car standing on the road doing nothing."* A parked van belongs against a kerb — on the

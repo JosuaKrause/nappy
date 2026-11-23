@@ -25,6 +25,7 @@ func run(t: TestRunner) -> void:
 	await _test_the_pram_has_its_own_trailing_body(t)
 	await _test_her_family_comes_from_its_baked_pages(t)
 	await _test_the_view_centre_is_her_camera_or_a_bodys_position(t)
+	_test_the_pram_is_the_size_the_rules_think_it_is(t)
 
 func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()
@@ -299,3 +300,15 @@ func _test_the_view_centre_is_her_camera_or_a_bodys_position(t: TestRunner) -> v
 	t.check(Stroller.view_centre_of(rig).distance_to(rig.global_position) > 100.0,
 			"she is viewed from her current camera's centre, which the limits hold off her")
 	rig.free()
+
+## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule
+## that a lethal thing can still be reached (`tests/test_events_solid.gd`) is arithmetic on it. A
+## copy nothing checks is a lie waiting to happen.
+func _test_the_pram_is_the_size_the_rules_think_it_is(t: TestRunner) -> void:
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var stroller: Node = scene.instantiate()
+	var shape := (stroller.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
+	t.check(shape != null and is_equal_approx(shape.radius, Tuning.PLAYER_BODY_RADIUS),
+			"the pram's own body is PLAYER_BODY_RADIUS (%.1f in the scene, %.1f in Tuning)"
+			% [shape.radius if shape else -1.0, Tuning.PLAYER_BODY_RADIUS])
+	stroller.free()
