@@ -1,18 +1,4 @@
 extends "res://tests/events_shared_city.gd"
-## **A seed's day planned on that day's routes**, memoized: the plan of a city's day from the
-## stream `_rng(day)` hands out, a fresh run (nothing spent) and the route tree the day grows, with
-## the city's mast sites. The callers read the plans and none writes to them. The `map` is the
-## caller's copy, repainted for `day` before its tree was grown; the plan is the same on every copy
-## of the seed painted for that day.
-func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
-		tree: RouteTree) -> Array[EventPlan]:
-	var key := "%d:%d" % [map.city_seed(), day]
-	if not _route_plans.has(key):
-		var consumed: Array[String] = []
-		_route_plans[key] = GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-				.masts(sites).spent(consumed).on(tree).plan().placements()
-	return _route_plans[key]
-
 ## The two halves of `EventScheduler.role_for`: a lethal event is a wall and a wall never stands
 ## on ground a route runs along, and friction is aimed at the route as a weight rather than a rule.
 ## Plus the placement rules a pinned or pacing row keeps on top of that: a pinned row is only
@@ -27,10 +13,10 @@ func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
 ## `events_shared_city.gd` for the cases that read the shared city's day plans (the parked van, the
 ## lorry, the doorstep street); every other case rolls its own seed on its own generated map.
 ##
-## **Where each case gets its city.** The held-ground, walked-sidewalk and corner-refusal cases
-## generate their own cities (`CityGenerator.generate()`), and the parked van, lorry and doorstep
-## street cases read the shared test city of `events_shared_city.gd`, which is generated outside the
-## cache. Every other case is handed a copy of its seed's city from the cache of generated cities
+## **Where each case gets its city.** The held-ground and walked-sidewalk cases generate their own
+## cities (`CityGenerator.generate()`), and the parked van, lorry, doorstep street, flock and
+## corner-refusal cases read the shared test city of `events_shared_city.gd`, which is generated
+## outside the cache. Every other case is handed a copy of its seed's city from the cache of generated cities
 ## (`tests/city_map_cache.gd`): each seed is generated once in the test process, and the copy is the
 ## same city `CityGenerator.generate()` builds for the seed. A case that plans a city over many
 ## days works the city's mast sites out once, on the city as built and before the first day repaints
@@ -40,7 +26,9 @@ func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
 ## among the ground a whole day's routes leave (which tiles a route holds, which sidewalks it
 ## walks, where a row's body fits), and the floors under their counts rest on what the generator
 ## produces across seeds, so a hand-drawn street shape would hold a different, smaller claim. The
-## cases that plan the same seed's day on its routes share one plan (`_planned_on_the_route()`).
+## four sweeps that plan the same seed's day on its routes share one plan
+## (`_planned_on_the_route()`), and the flock case and the corner-refusal case read the shared
+## city's days (`_planned()`), which the planning of a day leaves as it was (it spends nothing).
 ##
 ## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
@@ -49,10 +37,27 @@ func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
-## The plans of a seed's day on that day's routes (`_planned_on_the_route()`), planned once for the
-## suite: several cases ask exactly this of the same city and day, so the dawn is planned once and
-## each case reads it against its own repainted copy of the city.
+## **A seed's day planned on that day's routes**, once for the suite (`_planned_on_the_route()`):
+## the plan of a city's day from the stream `_rng(day)` hands out, a fresh run (nothing spent) and
+## the route tree the day grows, with the city's mast sites. The four sweeps that ask exactly this
+## of a seed's city (the pacing row's sweep, the junctions, the route's own sidewalk and the
+## pacing row's opening) read it, each against its own repainted copy of the city, and none writes
+## to a plan. The key is the seed, the day and how many segments the city has blocked (its absent
+## streets and today's closures), and the helper refuses a city with closed tiles: a case that
+## closes streets or holds segments before it plans (held ground, the walked sidewalk) plans its
+## own dawns, since the dawn's placement reads those and a plan made on another map state is
+## another answer.
 var _route_plans := {}
+
+func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
+		tree: RouteTree) -> Array[EventPlan]:
+	assert(map.closed_tiles.is_empty(), "a plan shared by the suite is planned on an open map")
+	var key := "%d:%d:%d" % [map.city_seed(), day, map.blocked_segments().size()]
+	if not _route_plans.has(key):
+		var consumed: Array[String] = []
+		_route_plans[key] = GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed).on(tree).plan().placements()
+	return _route_plans[key]
 
 func run(t: TestRunner) -> void:
 	_test_the_day_is_placed_by_role(t)
@@ -1068,16 +1073,10 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var on_corridor := 0
 	var off_corridor := 0
-	var map := MapCache.of(4242)
-	var sites := _sites_of(map)
-	var consumed: Array[String] = []
+	var map := _map()
 	for day: int in [1, 4, 8, 11, 14]:
-		var tree := RouteTree.for_day(map, day)
-		var corridor := Corridor.of(tree)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%d" % [4242, day])
-		for plan in GameDawn.of(DaySpec.for_day(day), rng, map) \
-				.masts(sites).spent(consumed).on(tree).plan().placements():
+		var corridor := Corridor.of(RouteTree.for_day(map, day))
+		for plan in _planned(day):
 			if plan.row_id() != "pigeon_flock" or not plan.is_placed():
 				continue
 			t.check(plan.role() == GameEnums.BlockerRole.NONE,
@@ -1310,7 +1309,9 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 						% [map.city_seed(), day, seal.row_id(), seal_tile])
 				checked_trees += 1
 
-			for plan in _planned_on_the_route(map, sites, day, tree):
+			var consumed: Array[String] = []
+			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+					.masts(sites).spent(consumed).on(tree).plan().placements():
 				if not plan.is_placed():
 					continue
 				checked += 1
@@ -1405,7 +1406,9 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 
 			var bodies: Array = []
-			for plan in _planned_on_the_route(map, sites, day, tree):
+			var consumed: Array[String] = []
+			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+					.masts(sites).spent(consumed).on(tree).plan().placements():
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
 				_add_a_physical_body(bodies, plan)
@@ -1440,14 +1443,9 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed: int in [4242]:
-		var map := CityGenerator.generate(run_seed)
-		var sites := _sites_of(map)
-		var consumed: Array[String] = []
+		var map := _map()
 		for day in range(1, 15):
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map) \
-					.masts(sites).spent(consumed).plan().placements():
+			for plan in _planned(day):
 				if not plan.is_placed() or not plan.row().lies_as_a_spread():
 					continue
 				checked += 1
