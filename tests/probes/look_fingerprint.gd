@@ -20,7 +20,7 @@ extends RefCounted
 ##   (`FakeEvent.answering_as()`) answers (`drawn_rect_now()`, `mark_rect()`, `current_bob()`) and
 ##   one of where each drawing node stands and whether it is shown, each only when it differs from
 ##   the last sample's. **A look made round a copy is not the live look**: it is handed no barrier
-##   post, no stance and no view sector carried from frame to frame, so its `drawn_heading()` (a
+##   post, no stance and no view sector carried from frame to frame, so its `_drawn_heading()` (a
 ##   posted guard's heading at his band) is not printed; the heading the live look chose is in the
 ##   `D` lines, as the picture it stood on each canvas. The `A` line proves what the copy answers
 ##   for the drawn rectangle, the caret's rectangle and the bob, which no state the copy leaves out

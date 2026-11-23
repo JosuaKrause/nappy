@@ -10,8 +10,9 @@ counting excitement source; the pursuit's robber what his look is handed; the po
 foot off the recording drawer on real frames; the barrier, draw layers, halo and scenery suites their slices, band and
 rim through the drawer (`RecordingEventDrawer.slices()` added); the no-pop-in and traps suites and the probes a look
 round `FakeEvent.answering_as(instance)`, a fake that copies what a real arrival answers; the frame record keeps the real
-look behind a counting drawn view. Then `EventInstance.look` is private, and `SpreadLook.slices()`, left with no reader, is gone. The look fingerprint
-probe's summary lines come from a look round a copy, so they drop the drawn heading, which only the live look answers
+look behind a counting drawn view. Then `EventInstance.look` is private, and `SpreadLook.slices()`, left with no
+reader, is gone, as is the public `EventLook.drawn_heading()`, which only its own file and an override read. The look
+fingerprint probe's summary lines come from a look round a copy, so they drop the drawn heading, which only the live look answers
 (a posted guard faces out from his post); its picture lines still show what the live look draws. A suite that copies a
 real arrival's answers into a fake says why and what the copy leaves out, and a suite fails when the fake gains an
 answer the copy does not take.

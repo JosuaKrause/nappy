@@ -184,8 +184,8 @@ func _picture_never_settles() -> bool:
 ## than from the alley he was
 ## sited facing, so the key has to read the same thing or the one turn in the game that happens
 ## without the body moving would never reach the screen. And a roadblock guard still standing at his
-## band, who is drawn facing out from his post (`RoadblockLook.drawn_heading()`).
-func drawn_heading() -> Vector2:
+## band, who is drawn facing out from his post (`RoadblockLook._drawn_heading()`).
+func _drawn_heading() -> Vector2:
 	if _look.picture() == EventDef.Look.ROBBER and event.is_waiting():
 		return robber_waiting_heading()
 	return event.facing_now()
@@ -262,7 +262,7 @@ func _picture_key() -> Vector4i:
 	var mast := picture == EventDef.Look.LOUDSPEAKER_MAST
 	flags = flags * 2 + (1 if mast and event.is_silenced() else 0)
 	flags = flags * 2 + (1 if mast and mast_is_telegraphing_now() else 0)
-	var sector := EightDirection.update(_view_sector, drawn_heading())
+	var sector := EightDirection.update(_view_sector, _drawn_heading())
 	# A car's picture is anchored on its live heading (`body_anchor()`), and its shadow and
 	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
