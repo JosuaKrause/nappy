@@ -28,46 +28,37 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first. Every entry has had its
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
--curly-hawk, -merry-goose and -dotted-pelican; for entry 6, row 5 of `event-interface.md`, the records
+-curly-hawk, -merry-goose and -dotted-pelican; for entry 5, row 5 of `event-interface.md`, the records
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
 -speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog and -spry-moose), and what each lists is what is left of it:
 
 1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;
-2. atlas and scenery: `test_events_scenery` waits for the events;
-3. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
+2. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
    `City`, so a stand-in can be handed in;
-4. the night group: `test_dark_spine` holds the scheduler's and the crowd's answers in a day-planning case,
+3. the night group: `test_dark_spine` holds the scheduler's and the crowd's answers in a day-planning case,
    to move to those modules' suites;
-5. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
+4. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
    ground, its header giving the wiring between the manager's record and a live event as its reason
    for a city; `test_wall_shield`'s fields layer cases keep a real street musician for the debug view,
    to move with the debug view's own suite pass;
-6. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
+5. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites):
-   - `test_events_scenery` extends `events_shared_city.gd` for one case, `_test_a_flock_is_a_place_she_can_see`,
-     which asks what the scheduler plans over the shared city's days: a question of the dawn, to move to the
-     scheduler's suite, after which the suite builds no city;
-   - `test_events_scheduler` and `test_events_placement` plan whole days on generated cities, each case with its
-     reason under "Why these cases keep generated cities", but a header sentence of each says the cases are "not
-     converted to stand-ins yet" and are built "until the dawn group converts them to mocked moments", which the
-     dawn's pass decided against (the record 2026-10-18-minty-quail-amber-elk): the two sentences are corrected with
-     the next change to either suite;
    - six suites call `EventInstance.transition()` to put a live event in a phase that sets a check up
      (`test_event_moves`, `test_event_route_lines`, `test_prediction_reuse`, `test_scenery_animation`,
      `test_resistance_replacement` and `test_resistance_placement_kinds`), and the live event's phase, behaviours and
      day 13 guard suites read its `phase`: each reaches the phase the way the game does or is handed a fake event,
      as `event-interface.md`'s section 4.2 says under `phase`;
-7. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
+6. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
    through `GameDawn` (the scheduler's dawn, on generated maps) only to hand `EventDirector.start_day()`
    its moments (`_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix`,
    `_test_day_one_hands_out_two_dog_walkers_among_the_first_three`,
    `_test_day_3s_lesson_is_first_and_a_bag_of_its_own`,
    `_test_a_place_that_cannot_be_sited_holds_nothing_up`) are handed moments read once off a real plan,
    committed as the mock (writing-tests: a realistic mock is made in two steps);
-8. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
+7. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
    fence round trip ends in the city map's repaint, to move to a map suite.
