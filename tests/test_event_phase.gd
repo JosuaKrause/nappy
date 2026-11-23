@@ -24,6 +24,7 @@ func run(t: TestRunner) -> void:
 	_test_a_live_crash_registers_a_collision_shape_per_car(t)
 	_test_telegraph_damps_emission(t)
 	_test_a_phase_damps_both_parts_of_a_two_part_field(t)
+	_test_a_live_protest_swells_over_its_life(t)
 	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
 	_test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t)
 	_test_duration_and_finish(t)
@@ -439,6 +440,33 @@ func _test_a_phase_damps_both_parts_of_a_two_part_field(t: TestRunner) -> void:
 	t.close_to(blower.source().contribution_at(near), leaf.field().core_rate() * fraction,
 			"the phase damps the core by exactly the fraction it damps the field by")
 	blower.free()
+
+## **A live protest swells over its life.** Its ramp runs on the time since it noticed her, not on
+## how old the event is, so this steps a real event: the peak it charges over one pulse right after its
+## telegraph, against the same pulse three quarters of the way through its life, and never past the
+## ceiling its row states. The row's own half of the swell (the peak it carries at each age) is
+## `tests/test_acts.gd`'s.
+func _test_a_live_protest_swells_over_its_life(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("protest")
+	var instance := _emission_instance(t, def)
+	_emission_advance(instance, def.telegraphs_for() + 0.05)
+
+	# Sample across whole pulse periods so the ramp, not the pulse, is what is compared.
+	var early := _emission_peak_over(instance, def.pulses_every())
+	_emission_advance(instance, def.lasts_for() * 0.75)
+	var late := _emission_peak_over(instance, def.pulses_every())
+	t.check(late > early * 1.3, "a live protest is markedly worse later than when you saw it")
+	t.check(late <= def.peak_through(0.0, def.lasts_for(), 1.0) + 0.01,
+			"and a live one never exceeds its stated ceiling")
+	instance.free()
+
+## The highest intensity `instance` charges over the next `seconds`, stepped through.
+func _emission_peak_over(instance: EventInstance, seconds: float) -> float:
+	var peak := 0.0
+	for i in int(round(seconds / EMISSION_STEP)):
+		instance.step(EMISSION_STEP)
+		peak = maxf(peak, instance.current_intensity())
+	return peak
 
 ## M174 item 3: PLAYTEST-115 overturned the walk-beside target above (standing still at
 ## inner radius) for **the pass** — she and the row moving different directions, at the fixed
