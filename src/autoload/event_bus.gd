@@ -52,34 +52,31 @@ signal run_mode_chosen(hard: bool, day: int)
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal went_back_to_a_checkpoint(day: int, lost_day: int)
 ## `GameSave.write()`'s own moment a save was actually written — never a refused write (a dev or
-## headless run, or a run that has already ended), which changes nothing. `result` is a
-## `GameSave.Result` passed as `int`, for the same cross-script-enum reason `save_deleted` below
-## passes its own: `PENDING` on the web while IndexedDB has not yet said whether it kept the save
-## (`save_write_settled` follows), `CONFIRMED` or `FAILED` otherwise. Emitted by `GameSave` itself,
-## which is what lets the save symbol answer a save that outlives the `main` that made it: a
-## callable bound to `main` is dropped once a scene reload frees it, and a symbol never told would
+## headless run, or a run that has already ended), which changes nothing. Emitted by `GameSave`
+## itself, which is what lets the save symbol answer a save that outlives the `main` that made it:
+## a callable bound to `main` is dropped once a scene reload frees it, and a symbol never told would
 ## stay fully shown for good. Heard by `SaveIndicator`. `operation` is the write's own id from
 ## `GameSave._new_operation()`, larger for every change begun later, and carried again on its answer:
 ## only the newest change decides what the symbol shows, and an answer is tied to its change by it.
-signal save_written(operation: int, result: int)
-## The browser's answer to a write `save_written` announced as `PENDING`, with that write's
-## `operation`: `kept` is whether IndexedDB kept the save. Emitted once per pending write, and only
-## for those.
+## What the write came to is not said here: `save_write_settled` says it, for every announced write.
+signal save_written(operation: int)
+## What a write `save_written` announced came to, with that write's `operation`: `kept` is whether
+## the save was kept. Emitted once for every announced write, in the same call as the announcement
+## where the file's closing is the answer (off the web, or a failure known at once), and later on the
+## web, when IndexedDB answers whether it kept the save.
 signal save_write_settled(operation: int, kept: bool)
 ## `GameSave.clear()`'s own moment a save file was actually deleted — never a refused deletion
-## (a dev or headless run, or no file left to delete), which changes nothing. `result` is a
-## `GameSave.Result` passed as `int`, since a cross-script enum is not the same type as itself
-## as a parameter (the **godot** skill): `PENDING` on the web while IndexedDB has not yet said
-## whether it dropped the file (`save_deletion_settled` follows), `CONFIRMED` or `FAILED`
-## otherwise. Emitted by `GameSave` itself, so the deletion a run's end makes (`GameSave` clears
-## on `run_ended`, with no way to reach `main`'s indicator) shows the save symbol exactly as the
-## held restart's does. Heard by `SaveIndicator`, which outlives the `main` that raised it when
-## the held restart reloads the scene. `operation` is the deletion's own id, drawn from the same
-## sequence a write's is — see `save_written`.
-signal save_deleted(operation: int, result: int)
-## The browser's answer to a deletion `save_deleted` announced as `PENDING`, with that deletion's
-## `operation`: `kept` is whether IndexedDB dropped the file. Emitted once per pending deletion, and
-## only for those.
+## (a dev or headless run, or no file left to delete), which changes nothing. Emitted by
+## `GameSave` itself, so the deletion a run's end makes (`GameSave` clears on `run_ended`, with no
+## way to reach `main`'s indicator) shows the save symbol exactly as the held restart's does. Heard
+## by `SaveIndicator`, which outlives the `main` that raised it when the held restart reloads the
+## scene. `operation` is the deletion's own id, drawn from the same sequence a write's is — see
+## `save_written`.
+signal save_deleted(operation: int)
+## What a deletion `save_deleted` announced came to, with that deletion's `operation`: `kept` is
+## whether the file was dropped. Emitted once for every announced deletion, in the same call as the
+## announcement where the file's removal is the answer (off the web, or a failure known at once),
+## and later on the web, when IndexedDB answers whether it dropped the file.
 signal save_deletion_settled(operation: int, kept: bool)
 
 # ------------------------------------------------------------------- events ---
