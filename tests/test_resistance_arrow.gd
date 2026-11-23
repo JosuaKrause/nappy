@@ -8,6 +8,10 @@ extends "res://tests/resistance_rig.gd"
 ## contact (`contact()`, `contact_position()`) and what it rides (`rider()`); its choosing and
 ## sweeping are driven by `tick()`, the step `main` runs on every physics
 ## tick (`_settle_the_arrow()` below); and her touch is a real physics frame (`_step_a_frame()`).
+##
+## **A real city, for a stated reason**: the arrow chooses among marks, masts and doors that stand on a
+## day's real ground, planned by the day's events, so what it points at is a property of the
+## director, the events' plan and the map together.
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const RecordingAtlas := preload("res://tests/recording_atlas.gd")

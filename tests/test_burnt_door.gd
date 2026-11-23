@@ -9,6 +9,10 @@ extends RefCounted
 ## The rig is the real day order (`CityState.begin_day()`, `City.start_day()`,
 ## `EventManager.start_day()`, then the director), on a seed whose fronts include ones whose door
 ## frontage lies on a held segment and one whose own frontage tile is under a body.
+##
+## **A real city, for a stated reason**: whether the door can be stood on rests on where the generator
+## put the fronts, which streets the day holds and which tiles the day's events put a body on, so
+## the guarantee spans the city, the day's events and the director, and no stand-in holds the three.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")

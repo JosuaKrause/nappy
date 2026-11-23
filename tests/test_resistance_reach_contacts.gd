@@ -1,5 +1,8 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: every mark and contact stands on ground she can reach, and a queued mast is never generated inside a lethal field.
+##
+## **A real city, for a stated reason**: reachability is the director's over the ground of a day's
+## real plan, the closures and the bodies the events stand, which a stand-in would restate.
 
 func run(t: TestRunner) -> void:
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)

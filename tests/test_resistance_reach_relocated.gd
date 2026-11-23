@@ -1,5 +1,8 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: a relocated mark is never placed in an alley she cannot reach, and day 11 puts up a mast near the mark when none is near.
+##
+## **A real city, for a stated reason**: reachability is the director's over the ground of a day's
+## real plan, the closures and the bodies the events stand, which a stand-in would restate.
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 

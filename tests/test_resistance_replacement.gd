@@ -1,5 +1,9 @@
 extends "res://tests/resistance_rig.gd"
 ## The resistance director's re-placement: an unseen mark moving to an alley she comes near, and what a relocation may never do.
+##
+## **A real city, for a stated reason**: moving an unseen mark to an alley she comes near is the
+## director's choice over a day's real streets, the bodies its events stand and what the day shows
+## of her view, and the raid and neighbor it hands the street are placed on the same streets.
 
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. A mark is

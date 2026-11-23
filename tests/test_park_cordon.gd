@@ -10,6 +10,11 @@ extends RefCounted
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
+##
+## **A real city, for a stated reason**: the cordon's guarantees (the police come from off screen,
+## being shut in ends the day, the park's people are walked out) are a property of the cordon, the
+## day's events, the walk's ground and the swing task the director offers, on streets a generator
+## made.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

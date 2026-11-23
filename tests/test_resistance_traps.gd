@@ -10,6 +10,10 @@ extends "res://tests/resistance_rig.gd"
 ## which the drawn rectangle or the caret reads. A question the looks start asking must be copied
 ## by `answering_as()` or the arrival is under-measured; `tests/test_fake_event.gd` fails until
 ## it is.
+##
+## **A real city, for a stated reason**: the guarded targets and the look-alike's ground are the
+## director's picks over a day's real streets and events; what is checked about the live events
+## they set on her is the arrival's as the game makes it.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots

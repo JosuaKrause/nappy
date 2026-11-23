@@ -7,6 +7,10 @@ extends "res://tests/resistance_rig.gd"
 ## guard and the robber among the city's live instances (`_guard_after_her()`, `_robber_after_her()`),
 ## the hand a gatehouse's guard raises (`_a_guard_warns_her()`) and `_a_guard_is_after_her()`. She is put down at the start of a walk the way the game puts her down
 ## (`Stroller.teleport_to()`: an outright move, which the next look at her compares nothing across).
+##
+## **A real city, for a stated reason**: the door's guard and hut stand in the street of a planned day
+## and answer her walk across it, so the guarantee spans the director, the checkpoints and the
+## day's events.
 
 func run(t: TestRunner) -> void:
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)

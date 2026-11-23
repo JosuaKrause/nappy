@@ -1,5 +1,10 @@
 extends "res://tests/resistance_rig.gd"
 ## The four placement kinds a perform step may use, each task's own site, and the days built in order.
+##
+## **A real city, for a stated reason**: each task's site is picked from the blocks, fronts and
+## sidewalks a generator made and the events the day plans there, so what is checked is the
+## director's placement over that ground, and the happenings it hands the street (the raid, the
+## market, the column) over the same streets and the city's own view of what she can see.
 
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
