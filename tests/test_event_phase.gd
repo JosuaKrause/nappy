@@ -60,8 +60,8 @@ func _test_a_warning_ticks_into_its_action_or_is_called_off(t: TestRunner) -> vo
 	var ran := [0]
 	var off := [false]
 	var warning := Warning.new()
-	warning.cancel_if = func() -> bool: return off[0]
-	warning.on_expired = func() -> void: ran[0] += 1
+	warning.call_off_when(func() -> bool: return off[0])
+	warning.run_when_it_runs_out(func() -> void: ran[0] += 1)
 	warning.start(0.0, 1.0)
 	t.check(warning.tick(0.5) == Warning.Outcome.RUNNING, "half way, it is running")
 	t.check(warning.tick(1.0) == Warning.Outcome.RAN_OUT and ran[0] == 1,

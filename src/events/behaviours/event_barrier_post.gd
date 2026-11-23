@@ -37,7 +37,7 @@ var _departure: WeakRef = null
 ## ground and how its guards move over it, which it hands on to the guard at the far post.
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, look: LookSpec,
 		map: WorldMap, navigator: Navigator, mover: Mover) -> void:
-	steps_each_tick = false
+	_steps_each_tick = false
 	_figure = figure
 	_where = where
 	_row = row

@@ -163,7 +163,7 @@ var _drawn_box_known := false
 ## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
 ## chase as an influence.
 func is_chasing() -> bool:
-	return _def.pursues() and _charge.began and not is_gone() and not is_on_its_way_out() \
+	return _def.pursues() and _charge.has_begun() and not is_gone() and not is_on_its_way_out() \
 			and not is_waiting()
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
@@ -173,7 +173,7 @@ func is_chasing() -> bool:
 ## approach rather than its smoothed one and raises its badge from outside the view proper, so it is
 ## up from the frame he runs.
 func has_charged() -> bool:
-	return _charge.began and not _charge.ended and not is_gone() and not is_on_its_way_out() \
+	return _charge.has_begun() and not _charge.has_ended() and not is_gone() and not is_on_its_way_out() \
 			and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
@@ -685,7 +685,7 @@ func _tick(delta: float) -> void:
 	# What it does, in the order it was composed (`EventBehaviours.compose()`): each behaviour
 	# decides for itself whether this tick is one it acts on.
 	for behaviour in _composed.in_tick_order():
-		if behaviour.steps_each_tick:
+		if behaviour.is_stepped_each_tick():
 			behaviour.step(delta)
 
 	# A car that drives keeps its body through a chase (`EventDef.drives()`): cars that drive
@@ -930,7 +930,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	# A warning of his own already under way gives way to the one the task sets: the lunge it held
 	# back (`EventPursuit.was_set_on_her()`) and the notice it held still start again from here.
 	if stand:
-		_charge.warned = false
+		_charge.take_back_its_warning()
 	if _chase_way == null:
 		_chase_way = _navigator.way_to(_mover, _sight)
 	_set_on_her = true
@@ -1077,9 +1077,9 @@ func _restore_the_moment(saved: EventSave) -> void:
 	# other, a row with no wait included, was chasing before it streamed out. **A row created where
 	# its warning pointed is not streamed back in**: `EventSpawner.spawn_warned()` sets
 	# `arrive_from_its_warning()` before restoring only to spend a telegraph the warning already ran.
-	_charge.began = not _came_under_a_warning and not is_waiting()
+	_charge.be_begun(not _came_under_a_warning and not is_waiting())
 	# A warning it had already given before it streamed out is not reported again.
-	_charge.warned = saved.noticed_at() != INF
+	_charge.be_warned(saved.noticed_at() != INF)
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a restored instance is
 	# a fresh object, so this is normally already true, but the rule is stated at both entry points
 	# rather than left to rely on that.
@@ -1141,7 +1141,7 @@ func flock_velocities() -> Array[Vector2]:
 
 ## Its birds (`EventFlock.birds`), or none for a row that is one body.
 func birds() -> Array[EventFlock.Bird]:
-	return _composed.flock().birds if _composed.flock() else _NO_BIRDS
+	return _composed.flock().birds() if _composed.flock() else _NO_BIRDS
 
 static var _NO_BIRDS: Array[EventFlock.Bird] = []
 

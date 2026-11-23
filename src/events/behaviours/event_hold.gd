@@ -10,7 +10,7 @@ var _hold: HoldSpec
 
 ## Handed, as its event is set up, the figure it moves and its row's hold.
 func _init(figure: EventInstance.Figure, hold: HoldSpec) -> void:
-	steps_each_tick = false
+	_steps_each_tick = false
 	_figure = figure
 	_hold = hold
 
