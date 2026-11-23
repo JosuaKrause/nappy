@@ -81,7 +81,7 @@ func _shown(hud: Hud) -> String:
 
 ## `line`, written with its button tokens, as the teaching line shows it (`_shown()`).
 static func _as_shown(line: String) -> String:
-	return line.replace(HelpText.PAUSE_TOKEN, " ").replace(HelpText.RUN_TOKEN, " ")
+	return line.replace(Texts.PAUSE_TOKEN, " ").replace(Texts.RUN_TOKEN, " ")
 
 func _label(hud: Hud, node_name: String) -> Label:
 	return hud.find_child(node_name, true, false) as Label

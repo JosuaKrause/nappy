@@ -1467,7 +1467,7 @@ func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t: TestRun
 	atlas.pictures_asked()
 	pause.open()
 	t.check(body.get_parsed_text().begins_with(
-			"Tap to walk, hold {run} or double tap to run.".replace(HelpText.RUN_TOKEN, " "))
+			"Tap to walk, hold {run} or double tap to run.".replace(Texts.RUN_TOKEN, " "))
 			and atlas.pictures_asked() == [&"ui/run"],
 			"joystick scheme: the line is read again on this open and shows the run button, got '%s'"
 			% body.get_parsed_text())

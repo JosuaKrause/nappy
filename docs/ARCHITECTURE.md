@@ -574,7 +574,8 @@ src/
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	texts.gd              `Texts`, every text the game shows on screen: one constant per line, grouped by
-	                      screen; callers read `Texts.<NAME>`, and tests/test_texts_catalogue.gd fails on a
+	                      screen, and the `{pause}` and `{run}` tokens `HelpText` draws as a button's symbol;
+	                      callers read `Texts.<NAME>`, and tests/test_texts_catalogue.gd fails on a
 	                      quoted sentence anywhere else under src/
 	meter_bar.gd
 	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home
