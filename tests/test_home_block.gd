@@ -10,6 +10,13 @@ extends RefCounted
 ## view with her facing, but in frame once she turns to face the building (PLAYTEST-134, statement
 ## 4 revisited).
 ##
+## The suite also holds what the city does with the resistance's story at her door: the street door
+## drawn sealed on a boot whose scars carry the seal and drawn ordinary again once a lost day 10
+## gives the scar back (`City._sync_home_door()`), and the neighbor's window unboarded until the
+## fronts are asked to board it (`CityFronts.board_neighbor_window()`), boarded once on one cell,
+## and on the same cell when asked again and on a fresh load. When the happenings ask for it is
+## `tests/test_resistance_happenings.gd`'s.
+##
 ## **The home block's own lot geometry was already seed-independent before this change** —
 ## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `CityGenerator.HOME_SIZE_TILES` and the fixed
 ## middle block alone, never from `map.city_seed()` — which is what makes `City._variant_for()` and

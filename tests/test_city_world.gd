@@ -9,6 +9,9 @@ extends RefCounted
 ## through the lot it lies in. Everything the baby asks of her
 ## world, a suite on `Baby` answers with a stand-in (`tests/test_baby_world.gd`); a stand-in cannot
 ## drop a line the city wires. What the meter does with the answers is `tests/test_meters.gd`'s.
+## The city's streets also decay at half speed while she carries the resistance's package
+## (`City.decay_multiplier()`), which is the city's own answer to the baby and held nowhere else;
+## the director's setting the flag is `tests/test_resistance_steps.gd`'s.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4216201080
