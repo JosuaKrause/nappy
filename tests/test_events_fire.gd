@@ -1,4 +1,4 @@
-extends "res://tests/events_shared_city.gd"
+extends RefCounted
 ## Day 3's fire: budgeted at dawn with no position and sited by `EventDirector` from the walk she
 ## turns out to take -- *"the fire should come first and be on your way guaranteed (a dynamic event
 ## dependent on the route you chose that day)"* (PLAYTEST-117).
@@ -8,18 +8,24 @@ extends "res://tests/events_shared_city.gd"
 ## question and it is asked in `tests/test_event_manager.gd`, against a real manager and a real
 ## player. What is asked here is the rule.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Extends
-## `events_shared_city.gd` since every helper below sites against the one shared generated city.
+## Split from `tests/test_events.gd` under M125, "the test suite is slow again". **No case builds a
+## city or plans a day**: the director is handed a hand-drawn street map (`StreetMap.full()`), the fire
+## a plan of its own and the walk a staircase of streets laid out here. What a planned day holds of
+## them, that day 3's fire and the crews are the only rows owed her walk and that a crew is handed to
+## it, is the dawn's, asked in `tests/test_events_scheduler.gd`.
 
 const STEP := 1.0 / 60.0
+## Where the staircase of her walk starts, past the director's reach of home on any map.
+const STAIR_START := Vector2(800.0, 800.0)
+## How long each run of the staircase is, and how many it has: about five seconds of walking a run.
+const STAIR_RUN := 480.0
+const STAIR_STEPS := 40
 
 func run(t: TestRunner) -> void:
 	_test_the_director_puts_it_in_front_of_her(t)
 	_test_the_fire_follows_her_walk_until_it_is_real(t)
 	_test_a_corner_is_not_a_change_of_mind(t)
 	_test_the_engine_parks_at_the_fire(t)
-	_test_the_fire_is_the_days_only_unsited_place(t)
-	_test_a_crew_drawn_is_handed_to_her_walk(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 
@@ -62,39 +68,40 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 			best = i
 	return best
 
-## The day's longest route as the line she walks — out from the doorstep to the calm area when
-## `outward`, home again when not. A route is grown from the area to the doorstep, so the walk out
-## is the array reversed.
-func _fire_route(day: int, outward := true) -> PackedVector2Array:
-	var tree := RouteTree.for_day(_map(), day)
-	var best: Array = []
-	for branch in tree.branches():
-		for route: Array in branch.routes:
-			if route.size() > best.size():
-				best = route
+## A walk of streets, as the line she walks: a staircase of `STAIR_STEPS` runs of `STAIR_RUN` east
+## and north in turn, out from a point beyond the director's reach of home
+## (`EventDirector.ON_HER_WAY_BEYOND_HOME`) when `outward`, back to it when not. Each turning is a
+## right angle, and the walk is longer than a minute of the director's looks.
+func _fire_route(outward := true) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	for i in best.size():
-		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(tree.cell_centre(cell))
+	var at := STAIR_START
+	points.append(at)
+	for step in STAIR_STEPS:
+		at += Vector2(STAIR_RUN, 0.0) if step % 2 == 0 else Vector2(0.0, STAIR_RUN)
+		points.append(at)
+	if not outward:
+		points.reverse()
 	return points
 
-## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
-## writes a position into the plan — and the memoized copy is shared with every other check in this
-## suite on the understanding that nothing writes to it.
+## Day 3's fire as the dawn hands it to her walk: one plan with no position, which these tests
+## site, so each builds it fresh. What the dawn plans of it is the scheduler's suite's question.
 func _fire_day_plans() -> Array[EventPlan]:
-	var consumed: Array[String] = []
-	return GameDawn.of(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _rng(Tuning.RUN_TAUGHT_DAY), _map()) \
-			.spent(consumed).plan().placements()
+	return [EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)]
 
-## The day-3 fire, and the whole rig it needs: the day's own plan, a stand-in for the placement
-## context (`FakeWalkSiting`, which lays the fire where a check says and answers whether it is still
+## The day-3 fire, and the whole rig it needs: its plan, a stand-in for the placement context
+## (`FakeWalkSiting`, which lays the fire where a check says and answers whether it is still
 ## ahead as a check sets), and a director started on both. What is checked here is what the director
 ## decides; that the fire stands on the tree, ahead on her branch and past the streaming band is
 ## `tests/test_event_manager_fire.gd`'s, on a real city.
 func _fire_director(day: int, plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
-	var director := EventDirector.new(_map())
+	var director := EventDirector.new(StreetMap.full())
 	director.start_day(day, plans, _rng(day), siting)
 	return director
+
+func _rng(day: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d" % [4242, day])
+	return rng
 
 func _fire_in(plans: Array[EventPlan]) -> EventPlan:
 	for plan in plans:
@@ -124,7 +131,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## the clock has to run on walking, not on wall time, or a player who stops in a park to let the
 ## meter recover comes back to the pavement owing four cats.
 func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
-	var map := _map()
+	var map: CityMap = StreetMap.full()
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
@@ -208,11 +215,7 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
 	var fire := _fire_in(plans)
-	t.check(fire != null and not fire.is_placed(),
-			"day 3 budgets the fire and leaves it with no position at all")
-	if not fire:
-		return
-	var out := _fire_route(day)
+	var out := _fire_route()
 	var first := out[out.size() - 1]
 	var second := out[out.size() / 2]
 	var siting := FakeWalkSiting.new().set_place(fire.row_id(), first)
@@ -234,7 +237,7 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	# the world, so it follows her: the whole of what a fork owes, and the one case a rule stated only
 	# over "is it behind her" cannot answer.
 	siting.set_still_ahead(false).set_place(fire.row_id(), second)
-	at = _walk_the_director(director, plans, at, _fire_route(day, false), 200.0,
+	at = _walk_the_director(director, plans, at, _fire_route(false), 200.0,
 			func() -> bool: return fire.placed_at() != first)
 	t.check(fire.placed_at() == second,
 			"it is moved once the siting says it is no longer ahead of her for long enough")
@@ -243,7 +246,7 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	var burning_at := fire.placed_at()
 	fire.enter_the_world(WhereItStands.nowhere())
 	siting.set_place(fire.row_id(), first)
-	_walk_the_director(director, plans, at, _fire_route(day), 30.0)
+	_walk_the_director(director, plans, at, _fire_route(), 30.0)
 	t.check(fire.placed_at() == burning_at,
 			"once it has been in the world, walking away from it for half a minute leaves it "
 			+ "exactly where it burned")
@@ -261,10 +264,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
 	var fire := _fire_in(plans)
-	if not fire:
-		t.check(false, "day 3 budgets a fire to turn a corner past")
-		return
-	var out := _fire_route(day)
+	var out := _fire_route()
 	var siting := FakeWalkSiting.new().set_place(fire.row_id(), out[out.size() - 1])
 	var director := _fire_director(day, plans, siting)
 	var at := _walk_the_director(director, plans, out[0], out, 120.0,
@@ -328,68 +328,6 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 			"and it is still standing there, for the rest of the day")
 	instance.free()
 
-## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
-## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
-## The only other rows left for the walk to site are the poster crews, drawn by a unit like any
-## recurring row and handed over with no position (`MarbleDraw.draw()`).
-func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
-	var owed := 0
-	var crews := 0
-	for day in range(1, 15):
-		for plan in _planned(day):
-			if not plan.row().is_sited_from_her_walk():
-				continue
-			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
-					% [day, plan.row_id()])
-			t.check(plan.row().is_placed_on_the_map() and not plan.row().moves(),
-					"day %d: and it is a place that stands still, not a director's moment" % day)
-			if not plan.row().is_a_one_shot():
-				crews += 1
-				t.check(plan.row_id() == "poster_crew" and plan.row().stands_at_a_front(),
-						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
-						% [day, plan.row_id()])
-				continue
-			owed += 1
-			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.row_id() == "burning_building",
-					"day %d: the only set piece the day leaves for her walk is day 3's fire, not '%s'"
-					% [day, plan.row_id()])
-	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
-	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
-
-## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every
-## crew the day draws has no position, for the director to site; with the crew row not sited from
-## her walk, the same day stands its crews placed. A unit's draw hands a crew on as it lays it out
-## (`MarbleDraw.draw()`), so the rows drawn after it are spaced without it and the two days
-## need not match beyond the crews.
-func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
-	var map := CityGenerator.generate(4242)
-	var crew_draft := EventCatalogue.by_id("poster_crew").redraft()
-	crew_draft.not_sited_from_her_walk()
-	var crew := crew_draft.build()
-	for day: int in [4, 8, 12]:
-		var tree := RouteTree.for_day(map, day)
-		var handed := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree).plan().placements()
-		var kept := GameDawn.of(DaySpec.for_day(day), _rng(day), map).with_row(crew).on(tree) \
-				.plan().placements()
-		var handed_crews := 0
-		var handed_placed := 0
-		for plan in handed:
-			if plan.row_id() == "poster_crew":
-				handed_crews += 1
-				handed_placed += 1 if plan.is_placed() else 0
-		var kept_crews := 0
-		var kept_placed := 0
-		for plan in kept:
-			if plan.row_id() == "poster_crew":
-				kept_crews += 1
-				kept_placed += 1 if plan.is_placed() else 0
-		t.check(handed_crews > 0 and handed_placed == 0,
-				"day %d: every crew drawn for her walk has no position (%d of %d placed)"
-				% [day, handed_placed, handed_crews])
-		t.check(kept_crews > 0 and kept_placed == kept_crews,
-				"day %d: not sited from her walk, every crew stands placed (%d of %d)"
-				% [day, kept_placed, kept_crews])
-
 ## **The three rows that never had an impact, meeting the rig they were designed for.** The bike,
 ## the loose dog and the cat were each sited in a way that meant she could walk the whole day
 ## without ever crossing paths with one — `cyclist` and `loose_dog` on a street the day chose at
@@ -403,7 +341,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 	for id: String in ["cat_dash", "cyclist", "loose_dog"]:
 		var def := EventCatalogue.by_id(id)
-		var map := _map()
+		var map: CityMap = StreetMap.full()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
