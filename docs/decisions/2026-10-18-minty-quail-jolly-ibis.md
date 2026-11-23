@@ -8,10 +8,13 @@ fake event manager and fake events for what they do not test, and build a city o
 event and an atlas each; the fake gained the solid reach and whether a point is in its core (answering what a case
 sets, and recording the points asked), and its copy of a real arrival takes the solid reach. Three departure cases that
 test the live event moved unchanged to the event departure suite. Thirteen suites that build a real city without
-saying why now name, in their header, the guarantee that spans modules.
+saying why now name, in their header, the guarantee that spans modules, and claim only the cases that guarantee
+covers, naming the rest as still to be judged. A case in the live event's phase suite holds the man shouting's core
+(within 45 px of where he stands now, the circle whose touch delivers day 6's note), which the contact cases on a fake
+no longer ask.
 
-**Split.** The director's cases over a real city, the happenings run on a real manager, the cases that send real
-yellers into a real manager, and the day loop's retry case are the group's next pull request.
+**Split.** The cases each header names as still to be judged, and the day loop's retry case, are the group's next
+pull request; the queue's line lists them.
 
-**Measured.** Check counts are unchanged in every suite but the three that moved cases between them (246 checks
-before, 250 after); in paired local runs the steps suite took 23.7 s on main and 22.8 s on the branch.
+**Measured.** Check counts are unchanged in every suite but the three that moved cases between them (435 checks
+before, 449 after); in paired local runs the steps suite took 21.1 s on main and on the branch.

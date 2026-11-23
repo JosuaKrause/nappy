@@ -738,13 +738,19 @@ written once, after it is final.
   a stand-in manager answering what each asks (for the badge's speed, a moved instance's approach
   speed; for the mark over her head, whether the event ends the day, its telegraph and its lethal
   reach); and what is left of the resistance's (the contact cases and the headers are
-  built, the record minty-quail-jolly-ibis): the director's cases over a real city in
-  `test_resistance_steps` (the rider-gone expiry, the timed step, the two package cases, sabotage),
-  `test_resistance_placement_kinds`' raid, market and column cases on a real manager, the cases of
-  `test_resistance_traps` and `test_resistance_arrow` that send real street yellers into a real
-  manager, and `test_day_loop`'s retry case, the director's placement answer: each takes
-  `FakeEventManager` and `FakeEvent` where its subject is not the city's siting, or keeps its city
-  under a header that says why.
+  built, the record minty-quail-jolly-ibis), each to take `FakeEventManager` and `FakeEvent` where its
+  subject is not the city's siting, to move to the suite of the module it tests, or to keep its
+  city under a header that says why: `test_resistance_steps`' eleven city cases its header names
+  as still to be judged (the dawn draws, the mark starting the same day's task, the yeller step
+  sending only its rider away, the lost day's retry, the perform and timed steps expiring, the two
+  package cases, the sabotage, and the two pose cases); `test_resistance_placement_kinds`' raid,
+  market and column cases, which run the happenings on a real manager; `test_resistance_traps`'
+  two look-alike cases; `test_resistance_arrow`'s three street yeller cases and its library case;
+  `test_resistance_reach_contacts`' queued mast kept out of a lethal field (the scheduler's
+  acceptance, which the events skill names this suite as holding), its `PlanBuilder.place_at()`
+  spacing case and its two cases of the director's draw (the dawn's); `test_resistance_reach_relocated`'s
+  day eleven mast; `test_park_cordon`'s siting and library cases; and `test_day_loop`'s retry
+  case, the director's placement answer.
 
 ## 6. What it costs per frame
 
