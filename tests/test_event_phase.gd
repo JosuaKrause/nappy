@@ -23,6 +23,7 @@ func run(t: TestRunner) -> void:
 	_test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t)
 	_test_a_mover_reaches_as_the_ellipse_its_field_is(t)
 	_test_a_flock_reaches_where_one_of_its_birds_does(t)
+	_test_a_core_is_a_disc_about_where_the_man_shouting_stands_now(t)
 	_test_a_live_event_leaves_its_rows_spread_classification_alone(t)
 	_test_a_live_crash_registers_a_collision_shape_per_car(t)
 	_test_telegraph_damps_emission(t)
@@ -342,6 +343,33 @@ func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
 	t.check(not covered_by_a_bird, "no bird's kernel covers a point just inside the flock's radius")
 	t.check(not instance.field_reaches(uncovered),
 			"so a flock does not reach it, though it is inside the disc its row is heard in")
+	instance.free()
+
+## **A core is the disc of its row's core radius about where the event stands now**: day 6's note is
+## delivered the moment she is inside the man shouting's core, which reaches past the ordinary
+## touch of the contact (`ContactPoint.REACH`), so a point a pixel inside the radius is reached, one
+## a pixel outside it is not, and the disc goes with him when he has moved. The core is a disc and not the
+## shape the field is priced in, so the point is tried on both sides of him.
+func _test_a_core_is_a_disc_about_where_the_man_shouting_stands_now(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("homeless_yeller")
+	var core := def.core_within()
+	t.check(core > ContactPoint.REACH,
+			"his core reaches past the contact's own touch, or the disc below proves nothing")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	for side: Vector2 in [Vector2.RIGHT, Vector2.UP, Vector2(-1.0, 1.0).normalized()]:
+		t.check(instance.core_reaches(side * core),
+				"his core reaches a point at its edge, direction %s" % side)
+		t.check(not instance.core_reaches(side * (core + 1.0)),
+				"and not one a pixel past it, direction %s" % side)
+	var moved_to := Vector2(300.0, -120.0)
+	instance.global_position = moved_to
+	t.check(instance.core_reaches(moved_to + Vector2.LEFT * core),
+			"once he has moved it reaches a point at the edge of the core about where he stands now")
+	t.check(not instance.core_reaches(moved_to + Vector2.LEFT * (core + 1.0)),
+			"and not one a pixel past it")
+	t.check(not instance.core_reaches(Vector2.RIGHT * core),
+			"and no longer the point at the edge of the core about where he stood")
 	instance.free()
 
 ## **A live event leaves its row's classification as a spread alone**: crossing a phase and
