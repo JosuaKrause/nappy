@@ -731,8 +731,11 @@ written once, after it is final.
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
   the live event's looks (the drawing suites `test_event_views`, `test_event_redraw`, `test_car_views`,
-  and every other suite that reads the live event's `look`: `test_event_strides`, `test_drawn_view`,
-  `test_events_pursuit`, `test_police_car`, `test_fire_truck_body`;
+  and every other suite or probe that reads the live event's `look`, found with
+  `rg -n "\.look\b" tests` (among them `test_event_strides`, `test_drawn_view`, `test_events_pursuit`,
+  `test_police_car`, `test_fire_truck_body`, `test_barrier_stays`, `test_no_pop_in`,
+  `test_scenery_animation`, `test_frame_record`, `test_halo_behind`, `test_draw_layers`,
+  `test_resistance_traps`, and five probes);
   the live event's other suites build one real event on open ground or a hand-drawn map, the
   record minty-quail-pebbly-plover): what a look shows read off a recording drawer handed to the event in its
   setup call (`tests/recording_event_drawer.gd`) or, for a question no picture answers, off a look

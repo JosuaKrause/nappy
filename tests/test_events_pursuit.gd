@@ -938,8 +938,9 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 ## travelled a route the scheduler had already checked, and not harmless the moment something
 ## steers freely at the player.
 ##
-## A building corner of the hand-built map, chased round: she walks from its north face to its east face, and a dog
-## aimed straight at wherever she currently is would cut across the building itself to follow her —
+## A building corner of the hand-built map, chased round: she walks from its north face to its east
+## face, and a dog aimed straight at wherever she currently is would cut across the building itself to
+## follow her —
 ## exactly the shape of the bug. The pursuit's step through the navigator (`EventPursuit`,
 ## `Navigator.step()`) is the fix, and this is what it has to hold true of every frame regardless
 ## of the geometry, which is why the check runs the whole walk rather than sampling the end of it.
