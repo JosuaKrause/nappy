@@ -9,14 +9,20 @@ moved their day-planning cases here (the records minty-quail-gentle-bison and mi
 
 **What was built.** Every dawn the scheduler and placement suites plan on a city is handed that city's mast sites,
 worked out once on the city as built; the spacing suite plans on one city of its own; placement's six sweeps that asked
-for the same plan share one plan per seed and day, each read against its own repainted copy of the city, and the
-scheduler's retried-day and taught-run cases share one plan of day 3 per seed. Each suite's header says what it builds
+for the same plan share one plan per seed and day, each read against its own repainted copy of the city, the
+scheduler's retried-day and taught-run cases share one plan of day 3 per seed; and the cases that planned a run of days
+the suite already held (the one-time events, the alley robbery, the calm areas left alone, the spread on a corner, the
+flock) read the suite's shared plans, since planning a dawn never spends a one-time event (only live play does), so a
+run carried from day to day is the same days. Each suite's header says what it builds
 and why. The day 6, 7 and 13 suites build a real city on purpose: they test the resistance's director and the event
 manager together, and their headers say so.
 
-**Rejected.** Moving the slow cases onto small hand-drawn maps: each asks what a whole planned day or run holds, or rests
-on counts the generator produces across seeds, which a few drawn streets would not hold without loosening the claim.
-Fewer seeds or days for the sweeps would change what they hold and was not attempted.
+**Rejected.** Moving the remaining slow cases (the pacing sweep, the spoiled park's thirteen days, the reachable park, the
+held ground) onto small hand-drawn maps: each asks what a whole planned day or run holds, or rests on counts the
+generator produces across seeds, which a few drawn streets would not hold without loosening the claim. Keeping a run of
+days planned again in a case: the first build did, on the premise that a run carries its spent one-time events from day
+to day, which the review showed false.
 
-**Measured.** On CI the scheduler's suite took 256 s on main and 222 s on the branch; placement 161 s and 172 s,
-within the run-to-run spread between shards (the unchanged day 13 suite read 87 s and 106 s).
+**Measured.** In paired local runs the scheduler's suite took 244 s on main and 174 s on the branch, and placement 176 s
+and 128 s. CI's shards did not show it: the branch's run was slower across the board (the unchanged day 13 suite read
+87 s on main and 113 s on the branch).
