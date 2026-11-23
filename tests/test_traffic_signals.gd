@@ -5,7 +5,7 @@ extends RefCounted
 ## street's is.
 ##
 ## Over a hand-drawn map of just the streets (`tests/fixtures/street_map.gd`); no city is built. What
-## the traffic then does at a dark junction is the crowd's (`tests/test_dark_spine.gd`).
+## the traffic then does at a dark junction is the crowd's (`tests/test_crowd_streets.gd`).
 
 const StreetMap := preload("res://tests/fixtures/street_map.gd")
 
