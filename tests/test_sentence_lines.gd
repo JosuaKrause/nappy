@@ -185,7 +185,7 @@ func _test_the_pause_screens_body_breaks_only_between_sentences(t: TestRunner) -
 			t.check(lines[i].ends_with(".") or lines[i].ends_with("?") or lines[i].ends_with("!"),
 					"the pause screen's instructions (joystick %s) break only after a sentence's end"
 							% joystick)
-		t.check(" ".join(lines) == source.replace(HelpText.RUN_TOKEN, " ")
+		t.check(" ".join(lines) == source.replace(Texts.RUN_TOKEN, " ")
 				and symbols == ([&"ui/run"] if joystick else []),
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
 		pause.close()
