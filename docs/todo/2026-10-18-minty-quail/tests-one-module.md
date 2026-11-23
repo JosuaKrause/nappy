@@ -46,8 +46,7 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
    for a city; `test_wall_shield`'s fields layer cases keep a real street musician for the debug view,
    to move with the debug view's own suite pass;
 6. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
-   `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
-   `park_cordon`, `burnt_door`);
+   `protest`, the day 6, 7 and 13 suites);
 7. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
    through `GameDawn` (the scheduler's dawn, on generated maps) only to hand `EventDirector.start_day()`
    its moments (`_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix`,
@@ -55,8 +54,6 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
    `_test_day_3s_lesson_is_first_and_a_bag_of_its_own`,
    `_test_a_place_that_cannot_be_sited_holds_nothing_up`) are handed moments read once off a real plan,
    committed as the mock (writing-tests: a realistic mock is made in two steps);
-8. run flow, save and pause: `test_day_loop`'s retry case (the same mark in the same alley from the
-   same seed) is the resistance director's placement answer, to move to the resistance suites
-   after placement by construction; `test_dev_rig`'s `--spawn` event, closure and door cases read
+8. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
    fence round trip ends in the city map's repaint, to move to a map suite.
