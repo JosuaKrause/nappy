@@ -117,6 +117,8 @@ src/
 	reachability_grid.gd  the tile graph contracted into two-tile cells; is there a walkable path
 	road_closure.gd       one street shut for one day, and what shut it
 	closure_planner.gd    picks the day's closures; enforces the two-routes invariant
+	narrow_target_pool.gd the tiles a narrow task's contact may stand on, which the closures keep
+	                      one of reachable and the director draws from
     closure_marker.gd     one barrier panel, sign or piece of wreckage
 	route_source.gd       the walk placement is stated against, as the questions it asks of it —
 	                      a day's route tree and the escape's two chains both answer them
@@ -178,7 +180,7 @@ src/
 	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
-	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
+	event_instance.gd     runtime node: position, its phase (one `_transition()`), telegraph,
 	                       its field (`field_at()`), and the behaviours it is composed of, stepped
 	                       in order on its manager's physics tick (`step()`: proposed, checked, then
 	                       committed, a car's by its own checks); drawn by its look,

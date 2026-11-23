@@ -81,7 +81,7 @@ and the day's route rules (`RouteLineRule`, her line followed from a route's jun
 sidewalks she walks, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteGroundRule`, no body or
 cost on a route's ground off the streets, and for the scars and the park spoilers no body on any
 route tile or the street she starts on) each keep
-at least one tile of the day's target pool (`ResistanceSteps.target_candidates()`, for the step
+at least one tile of the day's target pool (`NarrowTargetPool.tiles()`, for the step
 `ResistanceSteps.narrow_target_on()` names) reachable from home, checked before a closure or a body
 is accepted. Anything new that closes a street or stands a body on those days goes through the same
 checks; `docs/CITY.md`, "Guarantees", states what the guarantee does not cover, and

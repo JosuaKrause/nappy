@@ -424,13 +424,13 @@ static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[
 ## day sends her to, of which one tile has to stay reached — the candidate tiles of the day's
 ## narrow resistance target (`ResistanceSteps.narrow_target_on`) on days 9, 12 and the last night,
 ## whose target is the pavement in front of the power station's front door. The same pool
-## `ResistanceDirector` draws the contact from (`ResistanceSteps.target_candidates`). Empty on
+## `ResistanceDirector` draws the contact from (`NarrowTargetPool.tiles`). Empty on
 ## every other day, and a pool with no tiles in it is left out rather than failing every closure:
 ## a day with nothing to send her to asks nothing of the closures about it.
 static func places_to_reach_today(map: CityMap, day: int,
 		region_plan: RegionPlan) -> Array[Array]:
 	var places: Array[Array] = []
-	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map,
+	var target := NarrowTargetPool.tiles(ResistanceSteps.narrow_target_on(day), map,
 			region_plan)
 	if not target.is_empty():
 		places.append(target)

@@ -42,8 +42,8 @@ extends "res://tests/events_shared_city.gd"
 ## moved onto one. A dawn is planned once per city, day and calm areas for the suite and read by
 ## every case that asks it: the shared city's days (`_dawn()`: the one-shot and alley-robbery cases
 ## read them too), the taught day of each seed (`_the_taught_day()`) and the act walk
-## (`_the_act_walk()`), which the calm-left-alone case and the city's memory case both read. The dawn writes nothing a later dawn reads, so no case needs
-## a plan of its own for a run's later day.
+## (`_the_act_walk()`), which the calm-left-alone case and the city's memory case both read. The
+## dawn writes nothing a later dawn reads, so no case needs a plan of its own for a run's later day.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
@@ -864,7 +864,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	var map := CityGenerator.generate(_CHOICE_CITY_SEED)
 	var sites := _sites_of(map)
 	var day := ResistanceSteps.swing_day()
-	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map, null)
+	var target := NarrowTargetPool.tiles(ResistanceSteps.narrow_target_on(day), map, null)
 	var park := CityGenerator.swing_park(map)
 	var others: Array[Vector2i] = []
 	for block in map.calm_blocks:

@@ -128,5 +128,5 @@ func _name(step: ResistanceSteps.Step) -> String:
 
 ## The director's own candidate pool, asked of the one function planning and the director share.
 func _candidates(city: City, day: int) -> Array[Vector2i]:
-	return ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), city.map,
+	return NarrowTargetPool.tiles(ResistanceSteps.narrow_target_on(day), city.map,
 			city.streets().region_plan())

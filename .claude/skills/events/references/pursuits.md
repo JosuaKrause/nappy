@@ -35,7 +35,7 @@ on, and verifying escape with the actual Baby meter.
   alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for()` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
-  `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `EventPursuit` adds to
+  the private `_notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `EventPursuit` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to

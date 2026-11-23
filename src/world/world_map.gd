@@ -167,7 +167,7 @@ func is_obstructed(tile: Vector2i) -> bool:
 ## found by stepping from one tile boundary to the next along it rather than by sampling, so a line
 ## that clips a wall's corner by a pixel is blocked however short it is, and a line through a corner
 ## point exactly asks both tiles beside it. **The line a pursuer notices her along, lunges along and
-## catches her along** (`EventInstance.clear_line_to()`), and the line day 13's waiting guard is
+## catches her along** (`EventInstance.Figure.clear_line_to()`), and the line day 13's waiting guard is
 ## placed to have from the roadblock he guards (`ResistanceDirector._roadblock_guard_spot()`) — one
 ## walk, so a spot chosen for its line is one his notice sees from (leafy-puffin, inbox #648).
 ## Stricter than `wall_between()`, which asks how deep into a wall a line runs.
@@ -178,7 +178,7 @@ func is_obstructed(tile: Vector2i) -> bool:
 ## beside her. Everything between is asked: a pursuer neither notices nor reaches her through a café,
 ## a barrier or a seal.
 ##
-## **`own_tiles` are tiles the line's owner stands on** (a guard's own band, `EventInstance.clear_line_to()`):
+## **`own_tiles` are tiles the line's owner stands on** (a guard's own band, `EventInstance.Figure.clear_line_to()`):
 ## the day's solids are not asked there, so he sees out of the band he belongs to however far he has
 ## stepped from its middle, and only that band; another body, a building or a café still stops it.
 func clear_line(from: Vector2, to: Vector2, mover: Mover = null, own_tiles := {}) -> bool:

@@ -9,7 +9,7 @@ extends RefCounted
 ## **A behaviour is a part of its event, and asks it through one narrow interface**: what changes
 ## (its place, heading, way covered, clocks and phase) through the figure it moves
 ## (`EventInstance.Figure`), told what happened rather than written field by field, and the phase
-## changed only through `EventInstance.transition()`, which it asks for with `Figure.begin()`. What
+## changed only through `EventInstance._transition()`, which it asks for with `Figure.begin()`. What
 ## never changes under it — its settings (the row, where its part has no settings class of its
 ## own), the map, the navigator, what it walks as, where she is, the run log its event writes to,
 ## and the behaviours beside it it works with — it is handed by the composer and holds. It never
