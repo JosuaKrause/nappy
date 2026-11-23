@@ -23,9 +23,10 @@ extends RefCounted
 ## **No case builds a real `City`**: the observer is handed the run and the clock (`setup()`), and
 ## per walk the map she walks, its events, her and the baby, and in a city the city's map, today's
 ## streets and the crowd's sources (`watch()`), and the cases hand it a
-## `RunState`, a map, a `StandInEvents` (a `FakeEventManager` that answers a day's plans as the case
-## sets them), a `DayStreets` of no day (`DayStreets.new()`, which holds a null tree and no closures
-## as a day with none does) and the base `ExcitementSources`, which answers nothing. A map is a
+## `RunState`, a map, a `StandInEvents` (a `FakeEventManager` that answers a day's plans and their
+## live instances as the case sets them), a `DayStreets` of no day (`DayStreets.new()`, which holds
+## a null tree and no closures as a day with none does) and the base `ExcitementSources`, which
+## answers nothing. A map is a
 ## hand-drawn one (`StreetMap.full()`) for a case that needs only streets under her feet, and a
 ## generated one (`CityMapCache.of()`, a copy of a city built once per process, no `City` node) for
 ## the one case that plans a day from it.
@@ -47,6 +48,7 @@ const PlanSignature := preload("res://tests/plan_signature.gd")
 const CityMapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 const EndedClock := preload("res://tests/ended_clock.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 ## The seed of the run the observer is handed, a run of the test's own.
 const RUN_SEED := 2
 ## The seed of the generated city the one planning case runs on.
@@ -123,9 +125,9 @@ class WatchedDayParts extends RefCounted:
 				instance.free()
 		events.free()
 
-## A day's events as the observer asks them (`plans()`): the plans a case sets, each placed with its
-## instance live where the case put it. The base fake answers nothing else, and the real manager's
-## streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
+## A day's events as the observer asks them (`plans()` and `instances()`): the plans a case sets,
+## each placed with its instance live where the case put it. The base fake answers nothing else,
+## and the real manager's streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
 class StandInEvents extends FakeEventManager:
 	var placed: Array[EventPlan] = []
 	## The instance of each plan placed, which `free_all()` frees.
@@ -144,6 +146,10 @@ class StandInEvents extends FakeEventManager:
 	## Overrides EventManager.plans.
 	func plans() -> Array[EventPlan]:
 		return placed
+
+	## Overrides EventManager.instances.
+	func instances() -> Array[EventInstance]:
+		return made
 
 ## The recording log the case in hand writes into, made by `_fresh_log()` so no case reads another's
 ## lines. Freed with the suite.
@@ -201,6 +207,7 @@ func run(t: TestRunner) -> void:
 	await _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	await _test_the_observer_watches_its_frames_on_real_frames(t)
 	await _test_a_badge_it_is_handed_is_written_as_it_goes_up_and_comes_down(t)
+	await _test_the_log_names_the_patrol_for_its_mark(t)
 	for made in _made:
 		made.free()
 
@@ -675,3 +682,85 @@ func _badge_lines() -> Array[String]:
 		if line.contains("edge badge"):
 			found.append(line)
 	return found
+
+## The run log names the patrol for the mark it raises over her, not a crowd car's horn. The
+## observer is handed a day's parts on a street map (`WatchedDayParts`); the patrol is a live event
+## driving a carriageway lane of it, told where she is by a `WhereSheIs` the case moves, the mark is
+## raised over her head as the game raises it (`Stroller.warn()`), and real frames let the observer
+## write the cue.
+func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
+	var day := WatchedDayParts.new(StreetMap.full())
+	var kerb := _a_kerb(day.map)
+	t.check(kerb.size() == 3, "found a carriageway lane beside a sidewalk")
+	if kerb.size() != 3:
+		day.free_all()
+		return
+	var lane: Vector2 = kerb[0]
+	var outward: Vector2 = kerb[1]
+	var along: Vector2 = kerb[2]
+	var route := PackedVector2Array([lane - along * 150.0, lane + along * 650.0])
+	var where := WhereSheIs.nowhere()
+	var car := EventInstance.new()
+	car.setup(EventCatalogue.by_id("police_patrol"), route[0], route, along,
+			EventSurroundings.new().on(day.map).hearing(where) \
+			.drawing_through(RecordingEventDrawer.new()))
+	t.add_child(car)
+	car.set_process(false)
+	day.events.made.append(car)
+	# A car is created standing and drives off on its first step when nobody has been told where she
+	# is, so it takes that step before it is told about her.
+	car.step(1.0 / 60.0)
+	_fresh_log()
+	var rig := Rig.new(t, _log, null, day)
+	rig.player.global_position = lane
+	rig.player.facing = -along
+	where.tell(lane, lane - along * Tuning.PLAYER_BODY_RADIUS)
+	t.check(car.closes_on(lane), "the car is closing on her in its lane")
+	_log.begin_run(1, false)
+	_log.begin_day(1, 1, 1, 1, 180.0)
+	await rig.frame()
+	var in_lane := await _the_mark_cue(rig, _log)
+	t.check(in_lane.contains("| police_patrol "),
+			"the log names the patrol for the mark (%s)" % in_lane)
+	rig.player.global_position = lane + outward * float(Tuning.TILE_SIZE * 2)
+	where.tell(rig.player.global_position,
+			rig.player.global_position - along * Tuning.PLAYER_BODY_RADIUS)
+	var out_of_lane := await _the_mark_cue(rig, _log)
+	t.check(out_of_lane != "" and not out_of_lane.contains("| police_patrol"),
+			"and out of its lane it names nothing of it (%s)" % out_of_lane)
+	_log.end_run()
+	rig.free_all()
+	day.free_all()
+
+## `[lane centre, outward toward the sidewalk, along the street]` of the first east-west carriageway
+## lane on `map` with a sidewalk tile on its north side, or empty.
+func _a_kerb(map: CityMap) -> Array:
+	for y in range(1, map.size.y - 1):
+		for x in range(8, map.size.x - 8):
+			var tile := Vector2i(x, y)
+			if map.tile_at(tile) != GameEnums.TileType.ROAD:
+				continue
+			if map.tile_at(tile + Vector2i.UP) != GameEnums.TileType.SIDEWALK:
+				continue
+			var run := true
+			for dx in range(-3, 4):
+				run = run and map.tile_at(tile + Vector2i(dx, 0)) == GameEnums.TileType.ROAD \
+						and map.tile_at(tile + Vector2i(dx, -1)) == GameEnums.TileType.SIDEWALK
+			if run:
+				return [map.tile_to_world(tile), Vector2.UP, Vector2.RIGHT]
+	return []
+
+## Raises the mark over her head, lets a frame pass for the observer to see it go up, takes it down
+## and lets another pass for it to write the cue in `run_log`; returns the cue line the log gained,
+## or "".
+func _the_mark_cue(rig: Rig, run_log: CountingLog) -> String:
+	var before := run_log.lines.size()
+	rig.player.warn(Stroller.Alert.SOON, 5.0)
+	await rig.frame()
+	rig.player.stand_down(&"")
+	await rig.frame()
+	var lines: Array = run_log.lines
+	for i in range(before, lines.size()):
+		if String(lines[i]).contains("the mark over her head"):
+			return String(lines[i])
+	return ""

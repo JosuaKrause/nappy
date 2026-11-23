@@ -15,6 +15,8 @@ func run(t: TestRunner) -> void:
 	await _test_touching_completes_a_pickup(t)
 	await _test_walking_away_leaves_it_untouched(t)
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
+	_test_plain_pose_on_a_mark_step(t)
+	_test_pointing_pose_on_a_perform_step(t)
 	# The bare event instances the next tests stand in the tree are drawn on the real frames they let
 	# pass, so the events' pictures are held for them, on a library each is handed, as a city's
 	# `EventManager` holds them.
@@ -896,3 +898,40 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 # Day 8's burnt shell (`TargetKind.SCAR`), day 9's crossing (`TargetKind.DOOR`) and day 12's
 # swing (`TargetKind.PARK_SWING`) each find their own place rather than riding a freshly spawned
 # `EventInstance` the way an ordinary perform step does.
+
+## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
+## that.")* A pickup gives the protests' pointing hand-in (`EventManager.use_protest_target()`) nothing to hand back.
+func _test_plain_pose_on_a_mark_step(t: TestRunner) -> void:
+	_build_city_in_a_new_run(t)
+	var director := _director(t)
+	director.start_day(6, _rng(6, "resistance"), 300.0)
+	var step := director.current_step()
+	t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
+	t.check(RunCity.events(_city).world.surroundings().where_protests_point() == Vector2.INF,
+			"a mark step gives a protester nothing to point at")
+	t.check(EventPictures.protester_texture(Vector2.ZERO, RunCity.events(_city).world.surroundings().where_protests_point())
+			== EventPictures.PROTESTER,
+			"...so a protester anywhere in the city draws the plain rank")
+	director.free()
+
+## *(2026-09-11, the player: "but the other tasks are not as easy and need pointing.")* A perform
+## step activates the protester's objective the moment the mark it belongs to is touched rather
+## than waiting for a `start_day()` that does not come until tomorrow. Before the first arrow field
+## settles, that objective is the contact `_begin_step()` already placed.
+func _test_pointing_pose_on_a_perform_step(t: TestRunner) -> void:
+	_build_city_in_a_new_run(t)
+	var director := _director(t)
+	director.start_day(6, _rng(6, "resistance"), 300.0)
+	director.contact().complete_now()
+	var step := director.current_step()
+	t.check(step != null and not step.is_pickup, "the yeller perform is active")
+
+	var objective: Vector2 = RunCity.events(_city).world.surroundings().where_protests_point()
+	t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
+	t.check(objective == director.contact_position(),
+			"before its first arrow choice, it is the step's own contact")
+
+	var texture := EventPictures.protester_texture(objective + Vector2(0.0, 300.0), objective)
+	t.check(texture != EventPictures.PROTESTER,
+			"a protester standing away from the objective points rather than standing plain")
+	director.free()

@@ -15,17 +15,23 @@ extends "res://tests/events_shared_city.gd"
 ##
 ## **Why these checks build a city.** The suite's checks still build the shared city and are not
 ## converted to stand-ins yet: only as far as a pull request's change reaches is a suite converted
-## (inbox #1159 in gray-dolphin). One check builds a city for a reason of its own: the closed-streets
-## day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the integration check of
-## day 12's route to a clean calm area other than the swing's, on a real day planned through
-## `build_day()`, with the day's calm areas made the way `DayPlanner` makes them (`CalmAreas.of()`
-## from the day and its target, which is where the swing's park is set aside).
+## (inbox #1159 in gray-dolphin). Three checks build cities for a reason of their own: the
+## closed-streets day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the
+## integration check of day 12's route to a clean calm area other than the swing's, on a real day
+## planned through `build_day()`, with the day's calm areas made the way `DayPlanner` makes them
+## (`CalmAreas.of()` from the day and its target, which is where the swing's park is set aside);
+## and the retried day and the taught run (`_test_a_retried_day_is_the_same_day`,
+## `_test_the_run_is_always_taught`, moved in from the pursuit suite for the dawn's group to
+## convert) each generate the cities of their own seeds through `CityGenerator.generate()`, three
+## seeds and four.
 
 const STEP := 1.0 / 60.0
 const SEED := 4242
 
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
+	_test_a_retried_day_is_the_same_day(t)
+	_test_the_run_is_always_taught(t)
 	_test_scheduler_respects_placement_and_one_of_a_row_per_unit(t)
 	_test_the_dawn_draws_no_unit(t)
 	_test_one_shots_fire_once_per_run(t)
@@ -1341,3 +1347,102 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		t.check(not used_this_act.has(quietest),
 				"day %d sends her somewhere she has not used this act" % day)
 		used_this_act.append(quietest)
+
+## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
+func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
+	var counts := {}
+	for plan in plans:
+		counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
+	return counts
+
+## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
+## appeared once (I died) then it didn't appear again.")*
+##
+## `docs/TODO.md` has claimed this since M32 and it was not true: `build_day` ran six phases off one
+## RNG, and a one-shot the run had already spent was skipped *before* its `randf()` was drawn, so the
+## second attempt at day 3 — the day the fire engine runs — started the recurring fill one value
+## earlier and produced a different city's worth of events. The trace has `homeless_yeller` going
+## from two to eight and `cyclist` from none to three between two consecutive attempts at the same
+## day.
+##
+## **What is asserted is the day's *composition*, not every coordinate**, and the difference is the
+## measurement rather than a hedge: the multiset of event **kinds** has to be identical, and a
+## `dog_walker` starting three tiles further up the same street is not a different day. Eight
+## shouting men where there were two is, and that is what this stops.
+##
+## **Two directions, because a lost day gives the fire back altogether.** *("a retry always rolls
+## new -- nothing that happened on the day that got retried can influence the next repeat")* —
+## whether or not she ever reached it, so the ordinary retry is the same day down to the fire
+## itself; a day planned after it actually burned on a day she **won** has none of it and nothing
+## else different. The second is the one M39 was written against and it is asked here with an
+## explicitly spent list, since a retry can no longer produce one.
+func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	for run_seed: int in [4242, 90210, 1234567]:
+		var map := CityGenerator.generate(run_seed)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d:events" % [run_seed, day])
+
+		var consumed: Array[String] = []
+		var first := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements()
+		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
+		# where it becomes real — `DawnOneShots`. And a lost day gives back what
+		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
+		# The other direction, the day after it burned on a day she won, is the loop below this one.
+		t.check(consumed.is_empty(),
+				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
+		var again := RandomNumberGenerator.new()
+		again.seed = rng.seed
+		var second := GameDawn.of(DaySpec.for_day(day), again, map).spent(consumed.duplicate()) \
+				.plan().placements()
+
+		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
+		# the retry plans **none** of it.
+		#
+		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
+		# to allow one instance of drift, because the ground a spent one-shot freed let a placement
+		# that had failed now fit; an offer costs no room since M50 step 2 — see `StreetInvalidation.room_around()` —
+		# so the dawn's placement is identical between attempts rather than merely close. What is *not* closed
+		# is still not closed: a **scar** genuinely occupies ground and still moves what stood
+		# there, which is the run's own history showing through and is the answer that should.
+		var before := _kinds_in(first)
+		var after := _kinds_in(second)
+		var changed := 0
+		for id: String in before.keys() + after.keys():
+			var expected: int = 0 if id in consumed else int(before.get(id, 0))
+			t.check(int(after.get(id, 0)) == expected,
+					"seed %d: the retry has %d '%s' where the day had %d"
+					% [run_seed, int(after.get(id, 0)), id, expected])
+			changed += 1 if int(after.get(id, 0)) != expected else 0
+		t.check(changed == 0,
+				"seed %d: and nothing else moves at all (%d kinds did)" % [run_seed, changed])
+
+		# And the day *after* the fire actually burned: the one-shot is gone and nothing else is.
+		# This is the half of the property a retry can no longer ask, since a lost day gives the
+		# fire back — and it is the half M39 was written for, so it is asked here instead.
+		var spent: Array[String] = ["burning_building"]
+		var third_rng := RandomNumberGenerator.new()
+		third_rng.seed = rng.seed
+		var third := _kinds_in(GameDawn.of(DaySpec.for_day(day), third_rng, map).spent(spent).plan().placements())
+		for id: String in before.keys() + third.keys():
+			var expected: int = 0 if id in spent else int(before.get(id, 0))
+			t.check(int(third.get(id, 0)) == expected,
+					"seed %d: a day after the fire burned has %d '%s' where the day had %d"
+					% [run_seed, int(third.get(id, 0)), id, expected])
+
+## **The day the run is taught always has something to teach it with.** *(M39, finding 5.)*
+##
+## `charging_dog` is weight 1.4 of a day-3 pool and `EventDirector._teach_the_run` says outright what
+## happens when the dice disagree — *"if the day happened not to buy one, there is nothing to teach
+## and nothing happens"* — so a player could reach act II never having been shown the one control the
+## game will later require. A lesson that only happens on some seeds is not a lesson.
+func _test_the_run_is_always_taught(t: TestRunner) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	for run_seed: int in [4242, 90210, 1234567, 31337]:
+		var map := CityGenerator.generate(run_seed)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d:events" % [run_seed, day])
+		var consumed: Array[String] = []
+		var events := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan()
+		t.check(events.has_a_pursuit(),
+				"seed %d: day %d has something that has to be run from" % [run_seed, day])

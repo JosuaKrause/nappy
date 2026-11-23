@@ -9,7 +9,6 @@ extends RefCounted
 ## displacement per step, not `move_and_slide()`'s own), and the car is stepped by hand, a frame
 ## at a time, told where she and her pram are the way `EventManager` tells it.
 
-const RecordingLog := preload("res://tests/recording_log.gd")
 const STEP := 1.0 / 60.0
 const WALK := 2.0
 
@@ -30,7 +29,6 @@ func run(t: TestRunner) -> void:
 	_test_it_gives_way_at_a_zebra_she_waits_at(t)
 	_test_it_stops_at_a_red_light(t)
 	_test_a_far_zebra_holds_it_out_of_the_box(t)
-	await _test_the_log_names_the_patrol_for_its_mark(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -315,7 +313,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t: TestRunner) -> void:
 ## Off the carriageway nothing strikes her: a pram poking over the kerb into its lane is a car that
 ## stops for her. On the carriageway beside the same kerb, it strikes.
 func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
-	var map: CityMap = CityGenerator.generate(4242)
+	var map: CityMap = StreetMap.full()
 	var kerb := _a_kerb(map)
 	t.check(kerb.size() == 3, "found a carriageway lane beside a sidewalk")
 	if kerb.size() != 3:
@@ -429,7 +427,7 @@ func _test_the_car_never_drives_into_her(t: TestRunner) -> void:
 ## on the road every frame — and comes no nearer, and she walks away along the wall. It goes where
 ## its route goes and no further; a route drawn across a sidewalk would take it there.
 func _test_an_investigating_car_never_leaves_the_carriageway(t: TestRunner) -> void:
-	var map: CityMap = CityGenerator.generate(4242)
+	var map: CityMap = StreetMap.full()
 	var wall := _a_wall(map)
 	t.check(wall.size() == 2, "found a sidewalk against a building")
 	if wall.size() != 2:
@@ -688,7 +686,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 ## On a street whose traffic gives way, it stops short of the zebra she is on, never warns her and
 ## never strikes her there, and drives over once she has crossed.
 func _test_it_gives_way_at_a_zebra_she_waits_at(t: TestRunner) -> void:
-	var map: CityMap = CityGenerator.generate(4242)
+	var map: CityMap = StreetMap.full()
 	var zebra := _a_zebra(map)
 	t.check(zebra != Vector2.INF, "found a zebra on an east-west carriageway off the main road")
 	if zebra == Vector2.INF:
@@ -735,7 +733,7 @@ func _a_zebra(map: CityMap) -> Vector2:
 
 ## Driving east at the main road, it stops short of the junction on a red light and goes on green.
 func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
-	var map: CityMap = CityGenerator.generate(4242)
+	var map: CityMap = StreetMap.full()
 	var signals := TrafficSignals.new(map)
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
@@ -782,7 +780,7 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 ## of that zebra, in its lane or out beside it on the sidewalk (0, 64 and 96px out), which is
 ## further than the zebra's own 200px sight circle reaches from the box's entry line.
 func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
-	var map: CityMap = CityGenerator.generate(4242)
+	var map: CityMap = StreetMap.full()
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
@@ -851,71 +849,3 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 					car.free()
 	t.check(cases == 24, "every case ran (%d of 24; the furthest nose %.1fpx from the box)"
 			% [cases, worst])
-
-# ------------------------------------------------------------------ the log ---
-
-## The run log names the patrol for the mark it raises over her, not a crowd car's horn. The
-## observer is handed what `main` hands it (the run, the city, her, the baby, the day's clock); the
-## patrol drives a carriageway lane of a city in a run of its own, the mark is raised over her head
-## as the game raises it (`Stroller.warn()`), and real frames let the observer write the cue.
-func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
-	var city := RunCity.with_own_run(preload("res://scenes/world/city.tscn"), 4242)
-	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(4242))
-	var kerb := _a_kerb(city.map)
-	t.check(kerb.size() == 3, "found a carriageway lane beside a sidewalk")
-	if kerb.size() != 3:
-		city.free()
-		return
-	var lane: Vector2 = kerb[0]
-	var outward: Vector2 = kerb[1]
-	var along: Vector2 = kerb[2]
-	var car := RunCity.events(city).spawn_extra(_patrol(), lane - along * 150.0,
-			PackedVector2Array([lane - along * 150.0, lane + along * 650.0]))
-	_already_driving(car)
-	var player := _her(t, lane, -along)
-	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
-	_tell(RunCity.events(city).world.where_she_is(), player)
-	var baby := Baby.new()
-	baby.use_bus(EventBus)
-	var clock := DayController.new()
-	var run_log := RecordingLog.new()
-	var observer := TelemetryObserver.new(run_log)
-	observer.setup(city.run, clock, null, false)
-	observer.watch(city.map, RunCity.events(city), player, baby, city.map, city.streets(),
-			RunCity.crowd(city).sources(), "")
-	t.add_child(observer)
-	clock.start(180.0)
-	t.check(car.closes_on(player.global_position), "the car is closing on her in its lane")
-	run_log.begin_run(1, false)
-	run_log.begin_day(1, 1, 1, 1, 180.0)
-	await t.get_tree().process_frame
-	var in_lane := await _the_mark_cue(t, player, run_log)
-	t.check(in_lane.contains("| police_patrol "),
-			"the log names the patrol for the mark (%s)" % in_lane)
-	player.global_position = lane + outward * float(Tuning.TILE_SIZE * 2)
-	_tell(RunCity.events(city).world.where_she_is(), player)
-	var out_of_lane := await _the_mark_cue(t, player, run_log)
-	t.check(out_of_lane != "" and not out_of_lane.contains("| police_patrol"),
-			"and out of its lane it names nothing of it (%s)" % out_of_lane)
-	observer.free()
-	run_log.free()
-	clock.free()
-	baby.free()
-	player.free()
-	city.free()
-
-## Raises the mark over her head, lets a frame pass for the observer to see it go up, takes it down
-## and lets another pass for it to write the cue in `run_log`; returns the cue line the log gained,
-## or "".
-func _the_mark_cue(t: TestRunner, player: Stroller, run_log: RecordingLog) -> String:
-	var before := run_log.lines.size()
-	player.warn(Stroller.Alert.SOON, 5.0)
-	await t.get_tree().process_frame
-	player.stand_down(&"")
-	await t.get_tree().process_frame
-	var lines: Array = run_log.lines
-	for i in range(before, lines.size()):
-		if String(lines[i]).contains("the mark over her head"):
-			return String(lines[i])
-	return ""
