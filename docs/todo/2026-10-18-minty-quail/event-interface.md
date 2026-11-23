@@ -738,7 +738,9 @@ written once, after it is final.
   plain, a real city only in the suite whose header gives the reason); what is left of the event halves held in other modules' suites (the rest moved, the record
   minty-quail-speckled-hare): `test_danger`'s four cases that stand a real event manager on open ground (the cue
   over her head the warning board raises, and three screen-edge badge cases that spawn a fire engine or a
-  cat), which take a stand-in manager answering a moved instance's approach speed; and the resistance
+  cat), which take a stand-in manager answering what each asks (for the badge's speed, a moved
+  instance's approach speed; for the mark over her head, whether the event ends the day, its telegraph
+  and its lethal reach); and the resistance
   (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
   `FakeEvent`).
 
