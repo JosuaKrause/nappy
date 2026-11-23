@@ -1,7 +1,8 @@
 extends RefCounted
 ## **The cases behind `test_crowd_traffic.gd`, `test_crowd_field.gd` and `test_crowd_streets.gd`; not
 ## a suite itself.** Each part runs the cases it owns in a city of its own, so no suite runs two
-## minutes serial; the three together make every check the one suite made.
+## minutes serial; the three together make every check the one suite made, and the `streets` part
+## also holds the dark spine's case, which came from a suite of its own.
 ##
 ## The crowd as traffic: population, contact and the street hierarchy's own physics.
 ##
@@ -34,9 +35,11 @@ const FAST_SCALE := 8.0
 
 var _city: City
 var _rig: RIG = RIG.new()
+## How many car samples the last `_spine_traffic()` took.
+var _spine_samples := 0
 
 ## The three parts the suite is split into, each the cases it runs in the order the one suite ran
-## them. Each part stands in a city of its own, built over a run of its own.
+## them (the dark spine's last, which the suite it came from had alone). Each part stands in a city of its own, built over a run of its own.
 const PARTS := {
 	"traffic": [
 		"_test_population_follows_the_act",
@@ -2230,10 +2233,12 @@ func _test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once
 ## one is no car park by comparison. The lights are put out by the one flag the blackout sets
 ## (`TrafficSignals.use_power()`); that the blackout does so is `tests/test_blackout.gd`'s.
 ##
-## The city is day 14's as the game starts it, with the closures that day draws, and the day starts
-## no events: a protest the day's draw stands on the spine's crossings stops its cars lit or dark,
-## which is the density's question, not the lights'. The case is the last of its part, since it
-## leaves the city on day 14.
+## It has to come from a city the generator can produce, since what it asks is a measurement between
+## the signals and the crowd's junction rule over the cars on the spine's streets (writing-tests,
+## "Which map a test uses"). The city is day 14's as the game starts it, with the closures that day
+## draws, and the day starts no events: a protest the day's draw stands on the spine's crossings
+## stops its cars lit or dark, which is the density's question, not the lights'. The case is the
+## last of its part, since it leaves the city on day 14.
 func _test_a_dark_spine_keeps_moving(t: TestRunner) -> void:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var state := CityState.new()
@@ -2255,8 +2260,6 @@ func _test_a_dark_spine_keeps_moving(t: TestRunner) -> void:
 			% (dark.y * 100.0))
 	_city.traffic_signals().use_power(true)
 
-## How many car samples the last `_spine_traffic()` took.
-var _spine_samples := 0
 
 func _dark_spine_rng(label: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

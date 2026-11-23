@@ -1530,23 +1530,17 @@ func _test_the_run_is_always_taught(t: TestRunner) -> void:
 		t.check(events.has_a_pursuit(),
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])
 
-## Day 4 and every day after: the row is placed on the map at dawn, the way `alley_robbery` is,
-## rather than left for the director to site. Walked over the planned placements of several seeds
-## and every day the row is eligible on past the teaching day, the same reason `alley_robbery`'s own
-## required-alley test is over placements rather than the pool directly: a def whose field answers
-## `MAP` and a scheduler that still refuses to place it are two different bugs.
+## **The tutorial dog (`charging_dog`) past the teaching day is placed on a tile.** Day 3 sites it on
+## her heading; from day 4 on it is placed on the map at dawn, the way `alley_robbery` is, rather
+## than left for the director to site. Walked over the planned placements of several seeds and every
+## day it is eligible on past the teaching day, the same reason `alley_robbery`'s own required-alley
+## test is over placements rather than the pool directly: a def whose field answers `MAP` and a
+## scheduler that still refuses to place it are two different bugs.
 func _test_the_dog_past_the_teaching_day_is_a_map_placement(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed: int in [4242, 2102613802, 90210]:
-		var map := MapCache.of(run_seed)
-		var consumed: Array[String] = []
-		var masts := _sites_of(map)
 		for day in range(Tuning.RUN_TAUGHT_DAY + 1, 15):
-			var tree := RouteTree.for_day(map, day)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(masts).spent(consumed) \
-					.on(tree).plan().placements():
+			for plan in _the_days_plan_of_the_run(run_seed, day):
 				if plan.row_id() != "charging_dog":
 					continue
 				checked += 1

@@ -30,7 +30,8 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
 -curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, row 5 of `event-interface.md`, done, the records
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
--speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose and -frosty-tapir), and what each lists is what is left of it:
+-speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose, -frosty-tapir and
+-golden-finch), and what each lists is what is left of it:
 
 1. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
