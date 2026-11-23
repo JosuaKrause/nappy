@@ -1,6 +1,6 @@
 ---
 name: events
-description: Rules for adding or changing an event in the catalogue — the fairness contracts every row must satisfy, what obstructs_within() and spawn_mode and role actually mean, and the drawing a row owes. Load this BEFORE touching src/events/event_catalogue.gd, EventDef, EventInstance, EventScheduler, or anything about telegraphs, pursuits, lethal radii or event placement.
+description: Rules for adding or changing an event in the catalogue — the fairness contracts every row must satisfy, what obstructs_within() and spawn_mode and role actually mean, and the drawing a row owes. Load this BEFORE touching src/events/data/event_catalogue.gd, EventDef, EventInstance, EventScheduler, or anything about telegraphs, pursuits, lethal radii or event placement.
 ---
 
 # Events

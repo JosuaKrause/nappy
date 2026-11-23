@@ -1045,8 +1045,8 @@ assert_first_edit "src/sprites.gd -> cues" \
     "cues,godot,designing-classes,orchestrating," "src/sprites.gd"
 assert_first_edit "src/autoload/tuning.gd -> balance" \
     "balance,godot,designing-classes,orchestrating," "src/autoload/tuning.gd"
-assert_first_edit "src/events/event_catalogue.gd -> events + balance" \
-    "events,balance,godot,designing-classes,orchestrating," "src/events/event_catalogue.gd"
+assert_first_edit "src/events/data/event_catalogue.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/data/event_catalogue.gd"
 assert_first_edit "src/events/event_scheduler.gd -> events + balance" \
     "events,balance,godot,designing-classes,orchestrating," "src/events/event_scheduler.gd"
 assert_first_edit "src/crowd/crowd_lanes.gd -> crowd-traffic + balance" \
@@ -1059,6 +1059,8 @@ assert_first_edit "src/field.gd -> balance" \
     "balance,godot,designing-classes,orchestrating," "src/field.gd"
 assert_first_edit "src/events/dawn_phases/ruled_roadblock_ground.gd -> events + balance" \
     "events,balance,godot,designing-classes,orchestrating," "src/events/dawn_phases/ruled_roadblock_ground.gd"
+assert_first_edit "src/events/data/placement_density.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/data/placement_density.gd"
 assert_first_edit "src/events/ruled_location_ground.gd -> events + balance" \
     "events,balance,godot,designing-classes,orchestrating," "src/events/ruled_location_ground.gd"
 assert_first_edit "src/events/dawn_phases/dawn_masts.gd -> events + balance" \

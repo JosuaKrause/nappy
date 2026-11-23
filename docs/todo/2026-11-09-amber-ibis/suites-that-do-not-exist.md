@@ -4,7 +4,7 @@
 about a dozen doc sentences and about forty code comments still do: `docs/EVENTS.md` (nine places,
 among them the sentence that a suite "asserts it across a whole run" for the lethal field, and
 step 5 of "Adding a new event"), `docs/MECHANICS.md`, `docs/CITY.md`, and comments in
-`src/autoload/tuning.gd`, `src/events/event_catalogue.gd`, `event_def.gd`, `event_scheduler.gd`,
+`src/autoload/tuning.gd`, `src/events/data/event_catalogue.gd`, `event_def.gd`, `event_scheduler.gd`,
 `src/field.gd`, `src/player/baby.gd`, `stroller.gd`, `src/routes/closure_planner.gd` and
 `src/city/city_generator.gd`.
 

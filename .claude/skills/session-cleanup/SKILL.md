@@ -61,7 +61,7 @@ every image and video under `docs/evidence/`, which grows past gigabytes, and th
 
 ### 2b. The drift guard
 
-**If `src/autoload/tuning.gd` or `src/events/event_catalogue.gd` changed this session**, grep the
+**If `src/autoload/tuning.gd` or `src/events/data/event_catalogue.gd` changed this session**, grep the
 governed docs for the name of every constant or row that moved and re-check every quoted figure
 against it: when the code changes, nothing else rereads the sentence that quoted its old value.
 

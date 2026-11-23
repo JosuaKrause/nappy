@@ -170,7 +170,7 @@ def membership(metadata: CropMetadata) -> bytes:
 
 def runtime_outputs(staging: Path, metadata: CropMetadata) -> dict[Path, bytes]:
     outputs = {
-        PROJECT_ROOT / "src/events/event_scenery_parts.gd": scenery_parts(metadata),
+        PROJECT_ROOT / "src/events/data/event_scenery_parts.gd": scenery_parts(metadata),
         PROJECT_ROOT / "assets/atlases/membership.json": membership(metadata),
     }
     for generated in (staging / "art/events").glob("*.svg"):
