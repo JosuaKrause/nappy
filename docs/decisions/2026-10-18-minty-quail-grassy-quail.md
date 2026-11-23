@@ -9,7 +9,8 @@ private. Built as #1647 by a Sonnet agent.
 each override checked against the interface, answering what a test set; its answers were read off a real event first. A
 look is made round it with `EventLooks.for_row()`. The redraw and view suites ask a look round a fake, or read a real
 event's pictures through the recording drawer, and no longer read the live event's look; their cases about other
-modules moved unchanged to the phase, behaviours and excitement source suites. The field-read groups for the charge
+modules moved to the phase, behaviours and excitement source suites (the alley case unchanged; the robber's cases step
+one frame of their own, and the caret strength case asks the source without a drawn event). The field-read groups for the charge
 record, an event's behaviour, a flock and the warning are gone, their fields private behind methods.
 
 **Split.** The other readers of the look, about a dozen suites and six probes, are the next pull request, and the look
