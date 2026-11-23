@@ -5,10 +5,10 @@ extends RefCounted
 ## of them holds a sentence of its own.
 ##
 ## **What is in here** is every player-facing string: the title and the pause screen, the help
-## lines (a button's symbol is the token `HelpText` already uses, `{pause}` and `{run}`), the HUD's
-## lines, the day briefs, the loss and summary lines, the endings and the finale's body, the chalk
-## marks and the task line, and the escape's section lines. A text with a value in it (a day
-## number, a clock reading) is a format string here (`%d`, `%s`), filled where it is shown.
+## lines (a button's symbol is one of this file's tokens, `PAUSE_TOKEN` and `RUN_TOKEN`), the
+## HUD's lines, the day briefs, the loss and summary lines, the endings and the finale's body,
+## the chalk marks and the task line, and the escape's section lines. A text with a value in it
+## (a day number, a clock reading) is a format string here (`%d`, `%s`), filled where it is shown.
 ##
 ## **What is not** is a developer readout (the dev overlay, the debug HUD lines, a `?debug=1`
 ## panel) and a line written to a log or an error message: nobody plays those, so they stay at
@@ -83,9 +83,9 @@ const PAUSE_STANDING := "%s     ·     %s"
 ## **The run half names the run button in the joystick scheme only.** *(2026-10-04, the player, inbox
 ## #533: "joystick run should now say hold <run button> or double tap to run where it makes
 ## sense".)* The joystick scheme draws a run button from the first frame of play, so its line shows
-## it — `{run}` stands for the button's own symbol, see `HelpText` — and the tap scheme, which draws
-## none, keeps "double tap to run". That is the one place the body varies, and it varies by the
-## scheme the player chose, not by the device.
+## it — `{run}` (`RUN_TOKEN`, this file's) stands for the button's own symbol, which `HelpText`
+## draws — and the tap scheme, which draws none, keeps "double tap to run". That is the one place the
+## body varies, and it varies by the scheme the player chose, not by the device.
 ##
 ## `%s` is the run half, `RUN_TAP` or `RUN_JOYSTICK`.
 const WALKING_LESSON_PAUSE := "Tap to walk, %s. " \
@@ -96,10 +96,14 @@ const BUTTON_HOLD_TO_RESTART := "hold to restart"
 # ----------------------------------------------------------------- the lessons ---
 # Said by `HUD` on the day it teaches them, and by the pause screen's body.
 
+## A help line carries these where a button's symbol goes; `HelpText` draws the picture there.
+const PAUSE_TOKEN := "{pause}"
+const RUN_TOKEN := "{run}"
+
 ## The run half of a lesson in the tap scheme, which draws no run button.
 const RUN_TAP := "double tap to run"
 ## In the joystick scheme, whose run button is drawn: `{run}` is that button's symbol.
-const RUN_JOYSTICK := "hold " + HelpText.RUN_TOKEN + " or double tap to run"
+const RUN_JOYSTICK := "hold " + RUN_TOKEN + " or double tap to run"
 ## `%s` is the run half, `RUN_TAP` or `RUN_JOYSTICK`.
 const WALKING_LESSON := "Tap to walk, %s"
 ## `%s` is the pause button's symbol, `{pause}`.
