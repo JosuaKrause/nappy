@@ -24,6 +24,8 @@ extends RefCounted
 enum Kind { SIDEWALK, SECTION, ALLEY, OPEN, JUNCTION }
 
 var _segment: StreetNetwork.Segment
+## Which of its street's three sections the location is in, 0 to 2 along the street from its first
+## junction.
 var _section := 0
 var _tiles := Rect2i()
 var _centre := Vector2.ZERO
@@ -114,12 +116,7 @@ func is_open() -> bool:
 ## Whether `other` lies inside this location's section: the same street and the same section,
 ## whichever side. What `StreetLocations` takes along with a section.
 func shares_a_section_with(other: Location) -> bool:
-	return other.segment() == _segment and other.section() == _section
-
-## Which of its street's three sections the location is in, 0 to 2 along the street from its first
-## junction.
-func section() -> int:
-	return _section
+	return other.segment() == _segment and other._section == _section
 
 ## What ground the location is (`Kind`).
 func kind() -> int:

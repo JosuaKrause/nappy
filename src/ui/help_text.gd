@@ -5,10 +5,11 @@ extends RichTextLabel
 ## button> to pause where it uses the in-game symbol. Likewise joystick run should now say hold <run
 ## button> or double tap to run".)*
 ##
-## A line is plain text with two tokens in it, `{pause}` and `{run}`, each standing for the atlas
-## region `TouchControls` draws as that button (`ui/pause`, `ui/run`). `show_line()` lays the words
-## out and puts the picture at the token's place, one line tall, centred on the text, so the symbol
-## in the sentence is the glyph on the button rather than a word describing it.
+## A line is plain text with two tokens in it, `{pause}` and `{run}` (`Texts` owns them), each
+## standing for the atlas region `TouchControls` draws as that button (`ui/pause`, `ui/run`).
+## `show_line()` lays the words out and puts the picture at the token's place, one line tall,
+## centred on the text, so the symbol in the sentence is the glyph on the button rather than a
+## word describing it.
 ##
 ## **Why a `RichTextLabel` and not a `Label`:** a `Label` cannot hold an image in a line. The
 ## symbols are regions of the baked `ui` page, which `[img]` markup cannot name (it loads a path),
@@ -16,12 +17,9 @@ extends RichTextLabel
 ## acquired for as long as this node is in the tree — a region is valid only while its group is
 ## held, see `AtlasLibrary`.
 
-const PAUSE_TOKEN := "{pause}"
-const RUN_TOKEN := "{run}"
-
 const _ICONS := {
-	PAUSE_TOKEN: &"ui/pause",
-	RUN_TOKEN: &"ui/run",
+	Texts.PAUSE_TOKEN: &"ui/pause",
+	Texts.RUN_TOKEN: &"ui/run",
 }
 
 ## The baked atlas pages the line's symbols are drawn from (`AtlasLibrary`), handed by its screen
@@ -56,7 +54,7 @@ static func joystick_in_force(tree: SceneTree) -> bool:
 ## `text` with each token replaced by two letters' worth of width, for `SentenceLines` to measure
 ## the line by: the icon is one line tall and about as wide.
 static func measurable(text: String) -> String:
-	return text.replace(PAUSE_TOKEN, "MM").replace(RUN_TOKEN, "MM")
+	return text.replace(Texts.PAUSE_TOKEN, "MM").replace(Texts.RUN_TOKEN, "MM")
 
 ## Replaces what the label shows with `new_line`, centred, the symbols in place.
 func show_line(new_line: String) -> void:
