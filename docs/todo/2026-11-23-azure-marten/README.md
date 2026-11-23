@@ -1,6 +1,5 @@
 priority: later
 after: 2026-10-18-minty-quail
-after: 2026-11-11-polite-tapir
 
 # azure-marten — The simulation's five files that name nothing of it: whether each belongs a layer lower · filed 2026-11-23
 

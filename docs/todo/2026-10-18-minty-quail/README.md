@@ -24,14 +24,11 @@ hook, a general project script, or anything else of that kind) is the exception 
 (inbox #1305 in grassy-trout). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after the refactor closes.
 
-**The design review's items are polite-tapir** (the refactor's design review: the baseline
-measurements),
-an entry of their own that carries `fable-only: true` where this entry does not (inbox #1387 in mossy-bunny).
-*Read as, the filer's, open to the player's correction:* the review was of the refactor's design ("have a fable
-agent review the design of the refactor", inbox #1265 in olive-ferret), so its items are the refactor's work, the
-refactor is this entry and polite-tapir, and the rule above (inbox #1210 in gentle-owl) covers both; the two are
-worked side by side, their items interleaved as each item says; neither waits for the other to start, and this entry's remeasure
-(step 4 below) comes after the last item of both.
+**The design review's work is built.** The player had the refactor's design reviewed ("have a fable
+agent review the design of the refactor", inbox #1265 in olive-ferret). *Read as, the filer's, open to the
+player's correction:* its items are the refactor's work and the rule above (inbox #1210 in gentle-owl) covers them
+as it covers this entry's; their records are the ones named polite-tapir (`tools/decisions.sh polite-tapir`), and
+this entry's remeasure (step 4 below) comes after the last item here.
 
 ## The review this entry files
 
@@ -105,9 +102,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    typed with them or by a typing pass ahead of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **The design review's tracks are the entry polite-tapir** (the baseline readings; the other tracks
-     are closed, their records are polite-tapir's); its README gives their order and where each
-     meets the items here.
+   - **The design review's tracks are built**, their records the ones named polite-tapir; the baseline
+     readings they took are listed under step 4.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed
      but those `field-reads.md` lists, each with what it waits for, under "What is left of the
@@ -124,7 +120,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      looks, run beside the placement track; the dawn, the event manager's parts, the resistance
      and the scene recipes follow placement; then a row written as its
      parts, and the events' suites (what is left of `re-derived-cases.md`, the scene recipes' own ground scans, closes with
-     polite-tapir's placement or after it);
+     the design review's placement or after it);
      `system-map.md` once the redesign is complete.
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
@@ -147,8 +143,28 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    main's own route-adjacent walls from 30.54 to 19.41 a city a day, and
    `tests/probes/placement_view_mix.gd` still plans no closures or seals.
 
-   The "before" it compares with is the design review's baseline readings, on `v0.29.0`
-   (polite-tapir's `baseline-measurements.md`).
+   The "before" it compares with is the design review's baseline readings, on `v0.29.0`, in
+   `docs/evidence/minty-quail-baseline-2026-11-09/`: `v0.29.0` beside a mid-refactor `main` (the record
+   minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
+   fourth after the events' field-read conversion (the record polite-tapir-crisp-heron). Nothing is judged in the
+   readings: a number that moved is listed here for this remeasure, and no step waits on one. Three lists of
+   numbers are left for it:
+
+   - **What moved after the events' field-read conversion** (the fourth column against the third, the record
+     polite-tapir-crisp-heron): dawn planning (a copy of today's `placement_rows.gd` with the third column's
+     timers, set against the third column's own copy) inside `build_day()` 51.6 s to 44.1 s, inside
+     `draw_every_unit()` 345.6 to 334.3, the whole probe 568.6 to 505.2; the crowd tick's mean whole-mode
+     median about 2,466 µs to 2,351 µs; the frame profile's callback interval with `--invincible` 4.9 ms to 4.0
+     profiled and 7.5 to 6.3 with the profiler off; `test_acts`'s checks 349 to 45 (its sweep holds scripted rows
+     only) and `test_finale`'s 9,464 to 9,463; the unmodified frame-profile launcher's six runs all rejected by
+     the analyzer (an 8.3 ms callback interval), not looked into.
+   - **The escape's mix and walks** (step 5's switch, the record polite-tapir-coral-badger;
+     `tests/probes/escape_winnable.gd`, 24 seeds): main before the switch planned 0.66 dangers a street and 34%
+     of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44), and walked out to the tunnel on 13
+     walks and to the bridge on 10; after it, 0.66 and 34% (181, 178, 89, 46), 12 and 10.
+   - **Streaming's loop over every plan**: `EventStreaming.stream_around()`, which row 3b's design asked to be
+     measured and which was not (the record minty-quail-gray-koala; the paragraph above says what this step
+     measures of it).
 
 **The entry's list is frozen** (inbox #1268 in olive-ferret). The design review found that items had been added
 to this entry through three weeks with no stated end; shown "The entry has no stated end", the

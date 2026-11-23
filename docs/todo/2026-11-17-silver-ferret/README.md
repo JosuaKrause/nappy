@@ -1,6 +1,5 @@
 priority: now
 after: 2026-10-18-minty-quail
-after: 2026-11-11-polite-tapir
 
 # silver-ferret — The refactor's end remeasure judges the later days by how hard their events are as well as how many · filed 2026-11-17
 

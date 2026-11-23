@@ -56,8 +56,7 @@ types as Variant (an untyped array's element, what `back()` or `get()` returns),
 read through a typed name, and the check, not the engine, is what holds that. This paragraph is the
 design review's (inbox #1268 in olive-ferret), and its mechanism is built: `project.godot` makes the
 three typing warnings (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access`)
-errors. What remains is this item's own conversion, which predates the review, so the item stays in
-minty-quail rather than polite-tapir.
+errors. What remains is this item's own conversion, which predates the design review.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
 is the files open work rewrites, typed by that work or after it:
