@@ -9,6 +9,7 @@ extends RefCounted
 ## makes it (`tests/test_simulation_builder.gd`).
 
 const Rig := preload("res://tests/event_manager_rig.gd")
+const STEP := 1.0 / 60.0
 
 var _city: City
 
@@ -39,6 +40,7 @@ func run(t: TestRunner) -> void:
 		_test_a_drawn_body_is_told_to_whoever_listens,
 		_test_a_recipes_bodies_are_in_its_way_on,
 		_test_a_world_keeps_the_navigator_it_was_handed,
+		_test_the_cyclist_is_warned_shortly_before_he_arrives,
 	]
 	for test in tests:
 		_build_city(t)
@@ -838,3 +840,188 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 ## The live event of `plan`, asked of the city's event manager.
 func _live(plan: EventPlan) -> EventInstance:
 	return RunCity.events(_city).event_of(plan)
+
+## **The cyclist is warned by himself first, for at most a second, and then comes into view at once
+## where the warning pointed.** *(2026-09-25: "I feel the same with the biker. it gets warned too
+## early so most of the time you're already gone when anything happens." · PLAYTEST-145: "the
+## warning appears by itself with a reasonable position and when the time is right the object is
+## spawned in at that location just offscreen" · "the biker needs to stay on the sidewalk";
+## calm-kestrel, inbox #559: "show the warning for x seconds (never longer than 2s) without placing
+## anything then place the object immediately off screen so it will immediately start coming on the
+## screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
+## should be enough".)*
+##
+## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
+## `WarningBoard.run()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
+## out onto the carriageway and back:
+##
+## - **the badge is up with nothing in the world**, for no more than `Tuning.WARNING_ALONE_MAX`;
+## - **the badge holds still**: its place keeps the same offset from her every frame, so it moves
+##   only with her own walking and never jumps to another piece of ground;
+## - **he is created once his second is up, on a sidewalk, wholly out of sight, with his telegraph
+##   spent**, and he comes into sight as soon as he moves — or, where the ground just out of sight is
+##   a cross street's carriageway and his sidewalk is beyond it, as soon as he has ridden that far —
+##   which takes the badge down.
+##
+## Then, walked by `M207Lead.measure()` (`tests/probes/m207_warning_lead.gd`, the probe that prints
+## every warned row's lead) on open ground on both axes: **from the badge to his reach, walking into
+## him, is at least the contract's floor**, exactly his second and then his approach from just out of
+## sight, and standing still he still reaches her no sooner than the floor.
+func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX,
+			"his badge is up alone for %.2fs, at most %.2fs" % [def.warned_for(), Tuning.WARNING_ALONE_MAX])
+	var map := _city.map
+	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
+	# out of sight ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
+	var her := CrowdLanes.arterial_pavement(map)
+	for _tile in map.size.y / 2:
+		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
+			break
+		her.y += Tuning.TILE_SIZE
+	# Handed the city map, drawn in a node of its own, and a run (`EventManager.setup()` with no
+	# streets, lights or poster walls), as a rig that builds no city hands them.
+	var holder := WorldContext.new()
+	t.add_child(holder)
+	var run := RunState.new()
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	# The page every event made here is drawn from, as `main` hands the manager its library.
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map).drawn_in(holder)
+			.drawn_from(atlas))
+	manager.setup(run)
+	var player := Node2D.new()
+	t.add_child(player)
+	player.global_position = her
+	var edge := DangerEdge.new()
+	edge.use_atlas(atlas)
+	edge.size = Vector2(1280.0, 720.0)
+	t.add_child(edge)
+	edge.setup(manager, player)
+	manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
+	var created: Array[EventInstance] = []
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
+		# Created as the game's own arrival creates him (`EventSpawner.spawn_warned()`), so he is
+		# in the manager's own list and the edge measures him as it does the game's own badge.
+		created.append(manager.spawn_warned(def, path))
+		return true
+	var warning := manager.warn_first(def, her, where, arrive)
+	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
+	if not warning:
+		manager.free()
+		holder.free()
+		edge.free()
+		atlas.release(&"events")
+		return
+	# The edge is in the tree and measures on the frame the engine gives it; the frame after this one
+	# has read the badge up.
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	var badged := false
+	for badge in edge.badges().announcing():
+		badged = badged or badge.logged_name() == "cyclist"
+	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
+
+	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	var offset := warning.points_at() - her
+	var elapsed := 0.0
+	var looked := 0
+	var jumped := 0
+	var came_at := INF
+	while elapsed < Tuning.WARNING_ALONE_MAX + 1.0:
+		# North up the sidewalk, then a stride out onto the carriageway and back.
+		var step := Vector2.UP
+		if elapsed > 0.3 and elapsed <= 0.6:
+			step = Vector2.RIGHT
+		elif elapsed > 0.6 and elapsed <= 0.9:
+			step = Vector2.LEFT
+		her += step * Tuning.WALK_SPEED * STEP
+		manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
+		manager.warnings.run(STEP, her)
+		elapsed += STEP
+		if not created.is_empty():
+			came_at = elapsed
+			break
+		looked += 1
+		if not (warning.points_at() - her).is_equal_approx(offset):
+			jumped += 1
+	t.check(looked > 0 and jumped == 0,
+			"it was watched (%d frames) and its place kept its offset from her every frame (%d not)"
+			% [looked, jumped])
+	t.check(created.size() == 1 and came_at <= Tuning.WARNING_ALONE_MAX + 2.0 * STEP,
+			"he is created once his %.2fs badge is over (%.2fs)" % [def.warned_for(), came_at])
+	if created.size() == 1:
+		var bike := created[0]
+		var view := VisibleView.around(her, null)
+		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
+				"on a sidewalk")
+		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				bike.global_position),
+				"wholly out of sight the frame he exists")
+		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
+		var into_sight := INF
+		var gone := INF
+		var since := 0.0
+		player.global_position = her
+		while since < 1.0 and (into_sight == INF or gone == INF):
+			bike.step(STEP)
+			since += STEP
+			await t.get_tree().process_frame
+			var box := EventFootprints.footprint_of(def)
+			if into_sight == INF and manager.visible_view().sees_any(
+					Rect2(bike.global_position + box.position, box.size)):
+				into_sight = since
+			var still_badged := false
+			for badge in edge.badges().announcing():
+				still_badged = still_badged or badge.logged_name() == "cyclist"
+			if gone == INF and not still_badged:
+				gone = since
+		# At once from just out of sight; where its ground is further — the carriageway of a cross
+		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
+		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				Vector2.UP)
+		var further := maxf(0.0, (bike.walks()[0] - just_out).dot(Vector2.UP))
+		t.check(into_sight <= further / def.speed() + 3.0 * STEP,
+				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
+				% further + "just out of sight (%.2fs after he exists)" % into_sight)
+		t.check(gone <= into_sight + 0.2,
+				"and the badge goes down as he comes into sight (%.2fs, in sight at %.2fs)" % [gone, into_sight])
+	edge.free()
+	player.free()
+	manager.free()
+	holder.free()
+	atlas.release(&"events")
+
+	var walked := 0
+	for encounter in M207Lead.encounters():
+		var row: EventDef = encounter["def"]
+		if row.id() != "cyclist":
+			continue
+		walked += 1
+		var floor_s := row.minimum_telegraph()
+		var probe_edge := DangerEdge.new()
+		var toward := M207Lead.measure(encounter, M207Lead.Answer.TOWARD, probe_edge)
+		t.check(toward["by"] == "badge" and toward["lead"] < INF,
+				"cyclist (%s): the badge warns her before he can hit her (by %s, %.2fs)"
+				% [encounter["how"], toward["by"], toward["lead"]])
+		t.check(toward["lead"] >= floor_s,
+				"cyclist (%s): walking into him she is warned %.2fs ahead, at least the %.2fs floor"
+				% [encounter["how"], toward["lead"], floor_s])
+		# What the walk measures is the contract's own figure on this axis: his second, then his
+		# approach from just out of sight to his reach. The horizontal axis adds only the wider view.
+		var heading: Vector2 = encounter["heading"]
+		var closing := row.speed() + Tuning.WALK_SPEED
+		var created_at := PendingWarning.down_her_line(null, row, Vector2.ZERO, heading).length()
+		var predicted := row.warned_for() + (created_at - row.lethal_reach()) / closing
+		t.close_to(toward["lead"], predicted,
+				"cyclist (%s): which is his second and then his approach from just out of sight"
+				% encounter["how"], 3.0 * STEP)
+		var stood := M207Lead.measure(encounter, M207Lead.Answer.STAND, probe_edge)
+		t.check(stood["lead"] < INF and stood["lead"] >= floor_s,
+				"cyclist (%s): standing on his line she is still reached, %.2fs after the warning"
+				% [encounter["how"], stood["lead"]])
+		probe_edge.free()
+	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)

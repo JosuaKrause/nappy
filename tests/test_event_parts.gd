@@ -8,6 +8,8 @@ extends RefCounted
 ## manager seeing her once she is handed in, never by looking her up.
 
 const STEP := 0.1
+## One physics frame, the step the lesson's retry is driven at.
+const FRAME := 1.0 / 60.0
 
 func run(t: TestRunner) -> void:
 	_test_streaming_carries_a_plan_out_and_back_on_its_own(t)
@@ -16,6 +18,7 @@ func run(t: TestRunner) -> void:
 	_test_a_scar_is_recorded_once_however_often_it_streams_in(t)
 	_test_the_pelican_bag_is_the_handed_runs(t)
 	_test_a_door_says_what_it_does_to_her_and_moves_nobody(t)
+	_test_a_failed_lesson_retry_leaves_the_director_running(t)
 	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
 
 ## A manager handed a map drawn in a world node and a run of its own (`EventSurroundings.on()`,
@@ -249,3 +252,56 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 func _her_side(event: EventInstance, row: EventDef) -> float:
 	var door := event.door_for_its_officer(row) - event.global_position
 	return door.dot(Vector2.ONE)
+
+## A director that hands the day-3 dog out once, then nothing, and counts the time it is given: a
+## placement that fails must not starve its independent clock.
+class _RetryDirector extends EventDirector:
+	var elapsed := 0.0
+	var handed := false
+	## Overrides EventDirector.due.
+	func due(delta: float, _at: Vector2, _velocity: Vector2, _view: VisibleView = null) -> Array:
+		elapsed += delta
+		if handed:
+			return []
+		handed = true
+		return [EventCatalogue.by_id("charging_dog"),
+				PackedVector2Array([Vector2(400.0, 0.0), Vector2(300.0, 0.0)])]
+
+## The board the lesson puts its warning up on, counting how often it is asked to; on the empty
+## ground below there is nowhere off screen to stand, so every ask is refused.
+class _CountingBoard extends WarningBoard:
+	var asked := 0
+	## Overrides WarningBoard.warn_first.
+	func warn_first(def: EventDef, her: Vector2, where: Callable,
+			arrive: Callable) -> PendingWarning:
+		asked += 1
+		return super(def, her, where, arrive)
+
+func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> void:
+	# An empty city map: the director owes its retry the same way with nothing on the ground.
+	var map := CityMap.new()
+	var told: Array[String] = []
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map)
+			.tracing_to(RecordingTrace.new(told)))
+	manager.setup(null)
+	var board := _CountingBoard.new(manager.world)
+	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board,
+			manager.walk_events())
+	var director := _RetryDirector.new(map)
+	lesson.use_director(director, null)
+	var body := CharacterBody2D.new()
+	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
+	manager.use_player(body)
+	for frame in 150:
+		lesson.place_what_is_owed_ahead(FRAME)
+	t.check(board.asked == 3,
+			"a blocked lesson is asked at once, then retried twice in 2.5s, rather than every frame (%d)"
+			% board.asked)
+	t.check(told.any(func(line: String) -> bool:
+			return line.contains("has nowhere off screen to stand")),
+			"and the run log says the lesson is owed again")
+	t.close_to(director.elapsed, 2.5, "other director events receive every elapsed frame", 0.001)
+	lesson.clear()
+	board.clear()
+	manager.free()
+	body.free()
