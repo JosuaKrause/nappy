@@ -27,7 +27,8 @@ extends WorldContext
 ## **One map, seven parts, no loading.** `InteriorMap.build()` lays all seven parts at once, `64`
 ## tiles apart from each other — comfortably more than the 20×11.25 tiles a 640×360 view at zoom 2
 ## can ever show, so no part is in view from another. A door does not rebuild anything: it fades to
-## black, moves her to the counterpart door's own tile, and fades back in — see
+## black, says she arrived at the counterpart door's own tile (`arrived_through_a_door`, which whoever
+## builds the building connects to what puts her there), and fades back in — see
 ## `_start_door_transition()`. There is no "current part" in this class.
 ##
 ## **A door tile is both where she leaves from and where she arrives.** Nothing here makes the
