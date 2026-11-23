@@ -9,8 +9,7 @@ extends RefCounted
 ## day is read again by calling `CityState.begin_day()` and `CityMap.repaint()` on that map for the
 ## day, then `GameDawn.of(DaySpec.for_day(day), rng, map).on(RouteTree.for_day(map, day)).plan()`
 ## and `placements()` on the result, with `rng` seeded from the hash of `route-bag:<seed>` for
-## day 2, `route-bag:day-one:<seed>` for day 1, `route-bag:lesson:<seed>` for day 3 and
-## `route-bag:refused:<seed>` for day 11. A moment is the row of a plan the dawn left unsited
+## day 2, `route-bag:day-one:<seed>` for day 1 and `route-bag:lesson:<seed>` for day 3. A moment is the row of a plan the dawn left unsited
 ## (`EventPlan.row_id()`): the director reads its row and nothing else of it.
 ##
 ## **Placed plans are left out but one.** A walk reads a placed plan only to refuse a row sent
@@ -18,6 +17,11 @@ extends RefCounted
 ## Placed plans were taken out of each recorded day in halves, for as long as the rows the walk
 ## handed out and the seconds they came at stayed the same: `PLACED` is the one plan whose removal
 ## changed a walk (day 1 on seed 31337), at the place it was read.
+##
+## **When to read a day again:** when the rows, or their order, that the scheduler's plan leaves
+## unsited for one of these days and seeds change, since the cases then walk a day the dawn no
+## longer plans. Nothing fails when it does: no check compares the fixture with the dawn, and none
+## is cheap, because planning a day on a generated map is the slow setup this fixture replaces.
 
 ## The rows of each day's unsited plans, in the order planned, separated by a space.
 const MOMENTS := {
@@ -65,12 +69,6 @@ const MOMENTS := {
 			"cat_dash dog_walker dog_walker loose_dog cat_dash dog_walker cat_dash " +
 			"loose_dog cyclist cat_dash dog_walker dog_walker loose_dog cat_dash cyclist " +
 			"loose_dog cat_dash loose_dog dog_walker dog_walker loose_dog charging_dog",
-	"11:4242": "loose_dog cat_dash dog_walker police_patrol dog_walker cat_dash " +
-			"cat_dash cyclist loose_dog cat_dash police_patrol police_patrol cat_dash " +
-			"loose_dog loose_dog cyclist police_patrol police_patrol loose_dog dog_walker " +
-			"dog_walker cat_dash dog_walker cat_dash dog_walker cyclist cat_dash " +
-			"dog_walker dog_walker poster_crew poster_crew poster_crew poster_crew " +
-			"poster_crew poster_crew poster_crew poster_crew poster_crew",
 }
 
 ## The placed plans a recorded day's walk depends on: `[row id, placed_at]` each, every one a plan

@@ -430,7 +430,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
-	director.start_day(day, RouteBagMoments.plans(day, SEED), rng, siting)
+	# The day's own moments play no part: the return's patrols and the mast are owed below.
+	director.start_day(day, [] as Array[EventPlan], rng, siting)
 	director.owe_the_return(day, 0)
 	var mast: Array[String] = ["loudspeaker"]
 	director.rig_her_route(mast, 1, 0, siting)
