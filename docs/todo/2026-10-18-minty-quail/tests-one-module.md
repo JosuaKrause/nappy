@@ -28,9 +28,9 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first. Every entry has had its
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
--curly-hawk, -merry-goose and -dotted-pelican; for entry 5, row 5 of `event-interface.md`, the records
+-curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, row 5 of `event-interface.md`, done, the records
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
--speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog and -spry-moose), and what each lists is what is left of it:
+-speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose and -frosty-tapir), and what each lists is what is left of it:
 
 1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
@@ -45,11 +45,6 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
    ground, its header giving the wiring between the manager's record and a live event as its reason
    for a city; `test_wall_shield`'s fields layer cases keep a real street musician for the debug view,
    to move with the debug view's own suite pass;
-5. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
-   `protest`, the day 6, 7 and 13 suites):
-   - two suites call `EventInstance.transition()` to put a live event in a phase that sets a check up
-     (`test_resistance_replacement` and `test_resistance_placement_kinds`): each reaches the phase the way the game does or is handed a fake event,
-     as `event-interface.md`'s section 4.2 says under `phase`;
-6. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
+5. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
    fence round trip ends in the city map's repaint, to move to a map suite.
