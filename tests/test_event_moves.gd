@@ -96,8 +96,9 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 	t.check(engine_move != null and not engine_move.has_parked(),
 			"and nothing gone has parked")
 	engine_instance.free()
-	# A parked engine does not leave (`EventInstance.leave_for_a_completed_task()` refuses it), so
-	# the engine that leaves is one still driving, sent away as a finished task sends a figure.
+	# A fire engine in its parked phase never leaves (`EventInstance.leave_for_a_completed_task()`
+	# refuses it), so the engine that leaves here is one still driving, sent away as a finished task
+	# sends a figure.
 	var leaving := _a_row_on_a_map(t, "fire_truck", _a_short_route())
 	var leaving_move: MoveProposal = leaving["move"]
 	var leaving_instance: EventInstance = leaving["instance"]
@@ -105,13 +106,28 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 	t.check(leaving_instance.is_on_its_way_out() and leaving_move != null
 			and not leaving_move.has_parked(), "and nothing leaving has parked")
 	leaving_instance.free()
+	# A row parked from the start is not in its parked phase, so a person row of that kind can be
+	# sent off, as day 12's park cordon sends the park's people (`ParkCordon._send_off()`, through
+	# `EventInstance.leave_along()`), and its move stops reading as parked once it walks away.
+	var blower := _a_row_on_a_map(t, "leaf_blower")
+	var blower_move: MoveProposal = blower["move"]
+	var blower_instance: EventInstance = blower["instance"]
+	t.check(blower_move != null and blower_move.has_parked(),
+			"a leaf blower, parked from the start, reads as parked before it is sent off")
+	var away := PackedVector2Array([Vector2(100.0, 100.0), Vector2(160.0, 100.0)])
+	t.check(blower_instance.leave_along(away, 40.0) and blower_instance.is_on_its_way_out(),
+			"and the park cordon's way of sending it off sets it walking")
+	t.check(blower_move != null and not blower_move.has_parked(),
+			"and a figure walking away has not parked")
+	blower_instance.free()
 	for id: String in ["police_patrol", "charging_dog"]:
 		var rig := _a_row_on_a_map(t, id, _a_short_route() if id == "police_patrol" \
 				else PackedVector2Array())
 		var instance: EventInstance = rig["instance"]
 		var move: MoveProposal = rig["move"]
 		# The patrol runs its route out and leaves; the dog, with no route, is stepped a while and
-		# then ended. Neither parks, so neither move reads as parked at any of it.
+		# then ended. The game never parks either (only a row that parks where its route ends is
+		# parked when it is done), so neither move reads as parked at any of it.
 		var parked_ever := move != null and move.has_parked()
 		for tick in 30:
 			instance.step(TICK)
