@@ -15,5 +15,7 @@ it ends the day, how far it is heard, and the core radius the board measures her
 suite, its travel velocity in the carets and fire suites, and a lost guard in the behaviours suite. The mark over her
 head's case moved to the event parts suite, beside the board's other cases. No case of the danger suite builds an event manager.
 
-**Measured.** The danger suite's check count is unchanged; in paired local runs it took 18.1 s on main and 18.2 s on the
-branch, since every case waits on real frames, and 14.8 s on CI.
+**Measured.** Each suite alone, checks on main then on the head: danger 94 then 87, event parts 28 then 35 (the mark's
+case's seven), event phase 199 then 211 (three per row). In three paired local runs the medians were 18.7 s on main and
+17.7 s on the head for the danger suite, 1.53 s and 1.56 s for the parts suite, 2.93 s and 2.90 s for the phase suite; the
+danger suite's cases wait on real frames, so no saving is claimed. CI's times on the final head: 14.0 s for the danger suite, 0.20 s for the parts suite and 1.66 s for the phase suite.
