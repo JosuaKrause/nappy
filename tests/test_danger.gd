@@ -10,14 +10,11 @@ extends RefCounted
 ## in `tests/test_events_catalogue.gd`; that the edge asks it is checked here. The mark a live event
 ## carries on itself (its caret and the projection behind it) is `tests/test_event_carets.gd`'s.
 ##
-## **Nothing here stands a real `EventManager`.** The cue over her head is raised by the warning
-## board from the live events its world holds, so the case that asks which events raise it
-## (`_test_only_a_lethal_thing_puts_the_mark_over_her_head`) hands a board `FakeEvent`s that
-## answer, as their rows do, what the board asks of an event. The screen edge is handed the
-## manager and reads its live events, so the three badge cases that put a fire engine or a cat on
-## the street hand it a `FakeEventManager` holding what they spawn. The real event's phases are
-## `tests/test_event_phase.gd`'s, and the real manager's street, read by a real `DangerEdge`, is
-## `tests/test_event_manager.gd`'s.
+## **Nothing here stands a real `EventManager`.** The screen edge is handed the manager and reads
+## its live events, so the three badge cases that put a fire engine or a cat on the street hand it
+## a `FakeEventManager` holding what they spawn. The real manager's street, read by a real
+## `DangerEdge`, is `tests/test_event_manager.gd`'s. Which live events raise which level of the cue
+## over her head is the warning board's rule, held in `tests/test_event_parts.gd`.
 ##
 ## The standing decision this suite exists to keep, from `CLAUDE.md`:
 ##
@@ -29,7 +26,6 @@ func run(t: TestRunner) -> void:
 	_test_a_walker_brushing_past_is_unmarked(t)
 	_test_the_arterial_at_ordinary_density_marks_nobody(t)
 	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
-	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	await _test_the_badge_measures_the_things_own_speed(t)
@@ -161,85 +157,6 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t: TestRunn
 	rig.warn(Stroller.Alert.SOON, 0.5)
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"and a quieter one can be raised once the loud one has gone")
-	rig.free()
-
-## **The mark over her head means: this will end your day.** *(M30, playtest 05 finding 3.)*
-##
-## It used to be raised for any telegraphing event whose radius reached her, and the player's
-## verdict was *"it doesn't actually have an effect on gameplay — I can just keep doing what I
-## was doing."* That was accurate for fifteen of the eighteen rows: for anything that is not a
-## lethal, the mark meant *a number is about to move faster*, which the meter already says
-## continuously and proportionally. This is the same rule the caret over an entity got right
-## first time — a cue that marks everything says nothing — applied to the one cue that gives an
-## instruction rather than information.
-##
-## Run through the warning board rather than through `Stroller.warn()`, because the thing that was
-## wrong was *which events call it*, and no test in this suite could see that.
-func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> void:
-	# The board is handed the world it asks for the player and the live events: no manager is
-	# asked anything.
-	var world := EventWorld.new()
-	var board := WarningBoard.new(world)
-	var rig := _rig(t)
-	world.use_player(rig)
-	rig.global_position = Vector2(1000.0, 1000.0)
-
-	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
-	# through the meter; it is not an instruction.
-	var ordinary := _a_live(EventCatalogue.by_id("dog_walker"), rig.global_position)
-	world.take_in(ordinary)
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.NONE,
-			"a dog walker whose radius covers her raises nothing over her head")
-
-	# A lethal one, still telegraphing: the contract is now about her and the clock has started.
-	var lethal := _a_live(EventCatalogue.by_id("abduction"), rig.global_position)
-	world.take_in(lethal)
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.SOON,
-			"an unmarked van telegraphing over her is the flashing mark")
-
-	# And once it is live, the second level: one step left.
-	lethal.telegraphing = false
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.NOW,
-			"and the same van live around her is the doubled one")
-
-	# Far enough away and it is somebody else's problem again.
-	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() + 50.0, 0.0)
-	await _physics_ticks(t, rig, 1.0)
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.NONE,
-			"outside its outer radius there is nothing over her head")
-
-	# **And `NOW` is about the pair of them.** *(M39, playtest 10 finding 11: "when I'm walking
-	# orthogonally away from the biker the double !! shouldn't show anymore since there is no way it
-	# can affect me.")* Well inside the outer radius, well outside the lethal one, and not closing:
-	# the strongest cue in the game has nothing to say about that.
-	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() - 20.0, 0.0)
-	rig.velocity = Vector2.ZERO
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.NONE,
-			"standing still inside a live lethal field but nowhere near it is not an instruction")
-
-	# Walking into it is, once she is a step from the end of the day.
-	rig.global_position = lethal.global_position + Vector2(lethal.core_within() + 20.0, 0.0)
-	rig.velocity = Vector2(-Tuning.WALK_SPEED, 0.0)
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.NOW,
-			"walking the last step into it is")
-
-	# And turning round takes it away again, from the same place, on the same frame.
-	rig.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	# The doubled mark the step before raised is the warnings' own, and theirs to take down.
-	rig.stand_down(WarningBoard.WARNING_SOURCE)
-	board.warn_about_the_ground_she_is_on()
-	t.check(rig.alert_level() == Stroller.Alert.NONE,
-			"and walking away from the same spot takes it down — the danger has been avoided")
-
-	world.let_go_of_every_event()
-	ordinary.free()
-	lethal.free()
 	rig.free()
 
 ## The traffic half of the same finding, and the one the vocabulary's first row was not paying
@@ -540,21 +457,6 @@ func _test_the_carried_babys_cue_stays_over_her_head(t: TestRunner) -> void:
 	rig.free()
 
 # ------------------------------------------------------------------- helpers ---
-
-## A live event of `row` standing at `at`, just made and so telegraphing. It answers what its row
-## says of it (whether it ends the day, how far its core reaches and how far it is heard) and the
-## quiet answer otherwise, which is what a real dog walker or van answers where it stands: not
-## waiting, not driving, not travelling, no guard to lose (read off the real events once). It is
-## in no tree.
-func _a_live(row: EventDef, at: Vector2) -> FakeEvent:
-	var live := FakeEvent.new()
-	live.of_row = row
-	live.position = at
-	live.telegraphing = true
-	live.lethal = row.ends_the_day()
-	live.core = row.core_within()
-	live.heard = row.heard_within()
-	return live
 
 ## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs, its
 ## own tick off until a test lets real ticks pass (`_physics_ticks()`). `SomeNode.new()` is not
