@@ -276,7 +276,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	t.check(not look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
 	t.check(source.asked == 0, "and works out neither its key nor its caret")
 	var drawn := look.drawn_rect_now()
-	t.check(look.mark_rect().has_area(), "the caret it is owed is drawn, and it is the doubled red")
+	t.check(look.mark_rect().has_area(), "the caret it is owed is drawn")
 	var left := -2000.0
 	var asked_since_off := false
 	var first_seen_asked := false

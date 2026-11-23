@@ -362,7 +362,8 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var event := FakeEvent.new()
-	# Long past the walk, so a look that ignored whether a take is running would be stepping.
+	# A third of the way into the walk, so a look that ignored whether a take is running would be
+	# stepping.
 	event.victim_walked = def.takes_a_victim_by().taken_over() * 0.37
 	var look := event.look_for(def)
 	t.check(not look.victim_gait_is_stepping(), "no take is running yet")

@@ -8,9 +8,9 @@ extends RefCounted
 ## still build a real object that is not the record: `_test_draws_are_counted_by_listening` makes one
 ## of each node class the record sorts a draw by (the sorting is by the node's class, so only the
 ## class itself can be listened to), and `_test_a_timed_body_runs_once` runs a real event instance
-## on real frames under the record; that one is the event's own check (an instance handed a record
-## times itself once a frame) and moves to the events' suites with them, which two live pull
-## requests own.
+## on real frames under the record, with a stand-in for the screen it asks; that one is the event's
+## own check (an instance handed a record times itself once a frame), kept here because the
+## bucket it reads, `events`, is the record's.
 
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
