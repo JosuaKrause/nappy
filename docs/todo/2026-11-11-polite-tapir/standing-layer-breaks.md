@@ -18,8 +18,7 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **The rest**, small misplacements: the task calendar
-  computing on the map; the save indicator reading `GameSave`; the
+- **The rest**, small misplacements: the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
   (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
   of the neighbor's raid; and the row's check against `SpawnSiting`'s least distance.
@@ -31,7 +30,7 @@ review; a builder runs it again):
   that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
   building's pass; `GameSave` and
   `HelpText` in the view's pass; the
-  calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`.
+  `SpawnSiting` with row 4b of minty-quail's `event-interface.md`.
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.

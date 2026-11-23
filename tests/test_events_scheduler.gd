@@ -863,7 +863,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	var map := CityGenerator.generate(_CHOICE_CITY_SEED)
 	var sites := _sites_of(map)
 	var day := ResistanceSteps.swing_day()
-	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map, null)
+	var target := NarrowTargetPool.tiles(ResistanceSteps.narrow_target_on(day), map, null)
 	var park := CityGenerator.swing_park(map)
 	var others: Array[Vector2i] = []
 	for block in map.calm_blocks:

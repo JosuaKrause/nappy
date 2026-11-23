@@ -1618,7 +1618,7 @@ func _place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
 		# asked for reachability like every other pool and always finds some — the pavement she
 		# stands on to touch the door. The contact itself is the door, on the facade above it.
-		var pavement := _pick_reachable(ResistanceSteps.target_candidates(step, _map,
+		var pavement := _pick_reachable(NarrowTargetPool.tiles(step, _map,
 				_region_plan()), rng, true, her)
 		return Vector2.INF if pavement == Vector2.INF else station_door_point(_map)
 	if step.target_kind == ResistanceSteps.TargetKind.DOOR:
@@ -2103,11 +2103,11 @@ func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
 ## `DayStreets.region_plan().door_segments()` — at its own crossing tile, chosen the same reachable-among-
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
 ## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
-## equals the day this task is offered on. The pool is `ResistanceSteps.target_candidates()`,
+## equals the day this task is offered on. The pool is `NarrowTargetPool.tiles()`,
 ## which leaves out any door on a street bordering the home block — see that function's own doc for
 ## why `allow_held` below would otherwise let one through.
 func _place_at_a_door(rng: RandomNumberGenerator, her := Vector2.INF) -> Vector2:
-	var candidates := ResistanceSteps.target_candidates(
+	var candidates := NarrowTargetPool.tiles(
 			_step_of_kind(ResistanceSteps.TargetKind.DOOR), _map, _region_plan())
 	if candidates.is_empty():
 		return Vector2.INF
@@ -2202,13 +2202,13 @@ var _walked_under_the_door := false
 ## Where day 12's task points: the swing of the one park the city chose for it
 ## (`CityGenerator.swing_park()`), forced open today whatever its arc has reached
 ## (`CityState.purpose_of()`), at the same point `City._dress_block()` draws the swing frame at
-## (`CityMap.swing_position()`). The pool is `ResistanceSteps.target_candidates()`, one tile, which
+## (`CityMap.swing_position()`). The pool is `NarrowTargetPool.tiles()`, one tile, which
 ## the day's planning keeps reachable from home; `Vector2.INF` only on a day that park is not open,
 ## which on its own day is a city `CityGenerator.validation_problems()` refused.
 func _place_at_a_swing(rng: RandomNumberGenerator, her := Vector2.INF) -> Vector2:
 	if not _map:
 		return Vector2.INF
-	var tile := _pick_reachable(ResistanceSteps.target_candidates(
+	var tile := _pick_reachable(NarrowTargetPool.tiles(
 			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng, false, her)
 	if tile == Vector2.INF:
 		return Vector2.INF
@@ -2621,7 +2621,7 @@ func _take_the_neighbor_away() -> void:
 	_trace.note("contact", "the neighbor is taken with the raid")
 
 ## The calendar's one step that places its contact `kind`'s way — `DOOR` or `PARK_SWING` — so the
-## two placements above read their pool through `ResistanceSteps.target_candidates()`, the function
+## two placements above read their pool through `NarrowTargetPool.tiles()`, the function
 ## the day's planning reads it through, rather than a copy of it. Null if the calendar has none.
 ## The calendar is the one the director offers steps from (`_steps`, `use_steps()`).
 func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
@@ -2636,7 +2636,7 @@ func _region_plan() -> RegionPlan:
 	return _streets.region_plan() if _streets else null
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
-## day 12's swing or the power station's front door (`ResistanceSteps.target_candidates()`) that
+## day 12's swing or the power station's front door (`NarrowTargetPool.tiles()`) that
 ## pass every refusal this director makes of a tile before it draws (`SpawnSiting.is_legal_ground()`),
 ## empty on every other day. `CalmAreas.of()` is handed it to set the swing's park aside. A route from
 ## home to the place holds because the place is on the day's route tree and no body the dawn plans
@@ -2653,7 +2653,7 @@ static func target_ground(map: CityMap, day: int,
 		return found
 	var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
 	var allow_held := ResistanceSteps.stands_on_held_ground(step)
-	for tile in ResistanceSteps.target_candidates(step, map, region_plan):
+	for tile in NarrowTargetPool.tiles(step, map, region_plan):
 		if SpawnSiting.is_legal_ground(map, tile, walled, allow_held):
 			found.append(tile)
 	return found
@@ -2734,7 +2734,7 @@ static func target_ground(map: CityMap, day: int,
 ## a tile inside the home block's own lot (its own doc says so); the streets around the block are
 ## the other half of "nothing on the home block", and normally that half is exactly what
 ## `is_held_at` catches — which `allow_held` would otherwise skip for a door candidate too.
-## `ResistanceSteps.target_candidates()` drops those candidates from the door pool, before any
+## `NarrowTargetPool.tiles()` drops those candidates from the door pool, before any
 ## candidate reaches this function, so `allow_held` never has to carry that exemption.
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 		allow_held := false, her := Vector2.INF) -> Vector2:

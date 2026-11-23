@@ -695,7 +695,7 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 				"seed %d: on day 12 it is an open park (it was %s the day before)"
 				% [seed_value, GameEnums.BlockPurpose.keys()[before]])
 		var step := _perform_on(day)
-		var pool := ResistanceSteps.target_candidates(step, map, null)
+		var pool := NarrowTargetPool.tiles(step, map, null)
 		var layout: BlockLayout = map.layout_of(park)
 		t.check(pool.size() == 1 and pool[0] == map.world_to_tile(map.swing_position(
 				layout.playground_rect())), "seed %d: its swing is the task's only place" %

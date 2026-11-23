@@ -236,7 +236,7 @@ bodies never seal it off:
   has. A soft seal stands only off the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
-pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the
+pool is the tiles the contact may stand on (`NarrowTargetPool.tiles`) that pass the
 director's own refusals of the tile — walkable, not closed, not held (a door excepted), not on the
 home block, not in a walled-off alley — and the director draws among them asking reachability of
 every draw, so the tile it picks is one the day kept. The contact itself stands on the thing the

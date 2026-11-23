@@ -293,33 +293,9 @@ class Exception_:
 EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
-        "BlockLayout",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "CityGenerator",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "CityMap",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
         "HelpText",
         "the texts compose the controls' token",
         ("src/ui/texts.gd",),
-    ),
-    Exception_(
-        "names",
-        "RegionPlan",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
     ),
     Exception_(
         "names",
