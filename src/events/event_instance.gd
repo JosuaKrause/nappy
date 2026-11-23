@@ -163,8 +163,8 @@ var _drawn_box_known := false
 ## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
 ## chase as an influence.
 func is_chasing() -> bool:
-	return _def.pursues() and _charge.has_begun() and not is_gone() and not is_on_its_way_out() \
-			and not is_waiting()
+	return _def.pursues() and _charge.has_begun() and not is_gone() \
+			and not is_on_its_way_out() and not is_waiting()
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
 ## it (a pursuer's charge, the masked man's run up his shaft) and it has neither left, finished nor
@@ -173,8 +173,8 @@ func is_chasing() -> bool:
 ## approach rather than its smoothed one and raises its badge from outside the view proper, so it is
 ## up from the frame he runs.
 func has_charged() -> bool:
-	return _charge.has_begun() and not _charge.has_ended() and not is_gone() and not is_on_its_way_out() \
-			and not is_waiting()
+	return _charge.has_begun() and not _charge.has_ended() and not is_gone() \
+			and not is_on_its_way_out() and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
 ## otherwise the row's own `id()`. Telemetry only — nothing that decides anything reads it.
@@ -1139,7 +1139,7 @@ func flock_velocities() -> Array[Vector2]:
 		return [] as Array[Vector2]
 	return _composed.flock().velocities()
 
-## Its birds (`EventFlock.birds`), or none for a row that is one body.
+## Its birds (`EventFlock.birds()`), or none for a row that is one body.
 func birds() -> Array[EventFlock.Bird]:
 	return _composed.flock().birds() if _composed.flock() else _NO_BIRDS
 

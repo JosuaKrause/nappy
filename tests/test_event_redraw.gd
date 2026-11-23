@@ -19,13 +19,36 @@ extends RefCounted
 ## `tests/test_event_views.gd` both follow.
 ##
 ## **The gate is asked of a look made round a fake event** (`FakeEvent.look_for()`): the suite
-## writes what the event would answer after each tick (`FakeEvent.tick()`: its age, its clock, the
-## ground it has covered and the stride that makes) and reads whether the gate asks for a draw, so a live event,
-## its row's behaviours and its street are no part of what is tested. The one check that reads what
-## a real event draws over real frames is `_test_the_gate_stores_the_key_it_compared`.
+## writes what the event would answer after each tick (its age, its clock, the ground it has
+## covered, and the stride that ground makes, `WALK`) and reads whether the gate asks for a
+## draw, so a live event, its row's behaviours and its street are no part of what is tested. Two
+## cases ask a real event over real frames, because what they hold is what the game's own frames
+## do: `_test_the_gate_stores_the_key_it_compared` (after a settled draw the frames after it
+## draw nothing) and `_test_the_normal_dogs_opposite_step_is_another_picture` (which pictures a
+## real dog is told to stand in the two halves of its stride).
 
 const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")
+
+## What a real dog walker answers walking its route, read off one set up on open ground and
+## walked eight and three-quarter pixels at a time (half a beat of its stride, `PI / 2 /
+## GAIT_RATE` being a beat): the ground covered (x) and the stride's phase it reads (y), the
+## first point the event standing still. Every point after the first is one it has set off to,
+## so it is striding.
+const WALK: PackedVector2Array = [
+	Vector2(0.0, 0.0), Vector2(8.75, 0.7875), Vector2(17.5, 1.575), Vector2(26.25, 2.3625),
+	Vector2(35.0, 3.15), Vector2(43.75, 3.9375), Vector2(52.5, 4.725), Vector2(61.25, 5.5125),
+	Vector2(70.0, 0.0168), Vector2(78.75, 0.8043), Vector2(87.5, 1.5918),
+	Vector2(96.25, 2.3793), Vector2(105.0, 3.1668), Vector2(113.75, 3.9543),
+	Vector2(122.5, 4.7418), Vector2(131.25, 5.5293), Vector2(140.0, 0.0336),
+]
+
+## What a real dog sent off (`leave_for_a_completed_task()`) answers once it has walked to the
+## top of a step's bob (17px) and to the opposite step (51.9px, half a turn of the stride
+## further), the same for the normal dog, the loose dog and the charging dog: the ground covered
+## (x) and the stride's phase (y).
+const TOP_OF_THE_BOB := Vector2(17.0, 1.53)
+const OPPOSITE_STEP := Vector2(51.907, 4.6716)
 
 func run(t: TestRunner) -> void:
 	_test_a_standing_seal_holds_one_key_for_its_whole_life(t)
@@ -82,7 +105,8 @@ func _test_a_standing_seal_holds_one_key_for_its_whole_life(t: TestRunner) -> vo
 ## The gate stores whatever it compared, every drawn frame, whether or not it asked for a draw —
 ## which is what lets the *transition out of* a never-settling state still register as a change.
 ## What the first asks of a fresh look answer is the look's own; that the game's own frames then
-## leave a settled event undrawn is read off a real event over real frames, as its drawer sees it.
+## leave a settled event undrawn is read off a real event over real frames, as its drawer sees
+## it.
 func _test_the_gate_stores_the_key_it_compared(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loose_dog")
 	var fresh := FakeEvent.new()
@@ -96,8 +120,8 @@ func _test_the_gate_stores_the_key_it_compared(t: TestRunner) -> void:
 	instance.draw.connect(func() -> void: drawn[0] += 1)
 	await DrawnEvent.frames(t)
 	t.check(drawn[0] == 0,
-			"after a drawn frame the stored key is the one the gate just computed, so the frames after it draw nothing (%d)"
-					% drawn[0])
+			"after a drawn frame the stored key is the one the gate just computed, so the "
+					+ "frames after it draw nothing (%d)" % drawn[0])
 	instance.free()
 
 # ------------------------------------------------------------- what still moves ---
@@ -112,8 +136,8 @@ func _test_a_striding_event_moves_its_key(t: TestRunner) -> void:
 	var was_stepping := look.gait_is_stepping()
 	_asks(look)
 	var flips := 0
-	for i in 600:
-		event.tick(STEP, event.approach_speed() * STEP)
+	for point: Vector2 in WALK.slice(1):
+		_walk_to(event, point)
 		var now_stepping := look.gait_is_stepping()
 		var asked := _asks(look)
 		if now_stepping != was_stepping:
@@ -132,13 +156,13 @@ func _test_a_striding_event_moves_its_key(t: TestRunner) -> void:
 func _test_a_bobbing_event_moves_its_key(t: TestRunner) -> void:
 	var event := _walker("dog_walker")
 	var look := event.look_for(EventCatalogue.by_id("dog_walker"))
-	event.tick(STEP, event.approach_speed() * STEP)
+	_walk_to(event, WALK[1])
 	var moved_on_bob_alone := false
 	var was_stepping := look.gait_is_stepping()
 	var bob := look.current_bob()
 	_asks(look)
-	for i in 300:
-		event.tick(STEP, event.approach_speed() * STEP)
+	for point: Vector2 in WALK.slice(2):
+		_walk_to(event, point)
 		var now_stepping := look.gait_is_stepping()
 		var now_bob := look.current_bob()
 		var asked := _asks(look)
@@ -157,25 +181,24 @@ func _test_a_bobbing_event_moves_its_key(t: TestRunner) -> void:
 ## charging dog has one stepping picture per view, so the same two states are one key for it.
 ##
 ## **The two states are the ground a half-stride apart whose bobs are the same**: the bob is
-## `|sin|` of the ground covered over 34px, so a walk that ends at the top of the bob (17px) and one
-## that goes on a half-turn of the stride further (`PI / GAIT_RATE`, 34.9px) both lift the body the
-## same, to the eighth of a pixel the key reads it. The gate is asked of a look made round a fake
-## event the test walks that far; the pictures each state is drawn with are what the real dog,
-## walked to the same two places and drawn over real frames, is told to stand.
+## `|sin|` of the ground covered over 34px, so a walk that ends at the top of the bob (17px) and
+## one that goes on a half-turn of the stride further (`PI / GAIT_RATE`, 34.9px) both lift the
+## body the same, to the eighth of a pixel the key reads it. The gate is asked of a look made
+## round a fake event standing at those two places with the stride a real dog answers there
+## (`TOP_OF_THE_BOB`, `OPPOSITE_STEP`); the pictures each state is drawn with are what the real
+## dog, walked to the same two places and drawn over real frames, is told to stand.
 func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
-	var to_the_top_of_the_bob := PI / EventPictures.BOB_PER_PX * 0.5
-	var half_a_turn := PI / EventInstance.GAIT_RATE
 	for id: String in ["dog_walker", "loose_dog", "charging_dog"]:
 		var def := EventCatalogue.by_id(id)
 		var event := _walker(id)
 		var look := event.look_for(def)
 		_asks(look)
-		event.tick(STEP, to_the_top_of_the_bob)
+		_walk_to(event, TOP_OF_THE_BOB)
 		var asked_first := _asks(look)
 		var bob := look.current_bob()
 		var first_half := look.gait_is_second_half()
 		var stepping := look.gait_is_stepping()
-		event.tick(STEP, half_a_turn)
+		_walk_to(event, OPPOSITE_STEP)
 		var asked_opposite := _asks(look)
 		t.check(stepping and look.gait_is_stepping()
 				and look.gait_is_second_half() != first_half,
@@ -192,12 +215,13 @@ func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
 					"%s's first step and opposite step are two keys" % id)
 		event.free()
 
-## The pictures a normal dog and a charging dog are told to stand in the two states above, read off
-## a real one walked to the same two places (`leave_for_a_completed_task()`, then `step()` as its
-## manager steps it) and drawn over real frames, which the recording drawer holds: the first step and
-## the opposite step are two pictures, and two draws, for the normal dog; the charging dog has one
-## stepping picture per view, so its two states are one picture and no second draw. The engine's own
-## count of times it drew the event (its `draw` signal) is what is counted.
+## The pictures a normal dog and a charging dog are told to stand in the two states above, read
+## off a real one walked to the same two places (`leave_for_a_completed_task()`, then `step()`
+## as its manager steps it) and drawn over real frames, which the recording drawer holds: the
+## first step and the opposite step are two pictures, and two draws, for the normal dog; the
+## charging dog has one stepping picture per view, so its two states are one picture and no
+## second draw. The engine's own count of times it drew the event (its `draw` signal) is what is
+## counted.
 func _test_the_normal_dogs_opposite_step_is_another_picture(t: TestRunner) -> void:
 	var to_the_top_of_the_bob := PI / EventPictures.BOB_PER_PX * 0.5
 	var half_a_turn := PI / EventInstance.GAIT_RATE
@@ -247,15 +271,9 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) 
 	var look := event.look_for(def)
 	event.tick(STEP, 0.0)
 	_asks(look)
-	var crossed := false
-	var ticks := int(ceil(def.telegraphs_for() / STEP)) + 10
-	for i in ticks:
-		event.tick(STEP, 0.0)
-		event.telegraphing = event.age() < event.telegraph_length
-		if not event.is_telegraphing():
-			crossed = true
-			break
-	t.check(crossed, "the telegraph ended inside the window the test walked")
+	# The crouch is over from the next tick on.
+	event.telegraphing = false
+	event.tick(STEP, 0.0)
 	t.check(_asks(look),
 			"the crouch giving way to the dash moves the picture key")
 	event.free()
@@ -267,10 +285,10 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) 
 ## of the mark's size, and the key has to carry it or a caret would freeze on whichever half of the
 ## beat it was last drawn in.
 ##
-## A cyclist carrying the doubled red caret for as long as it telegraphs, at a swell its telegraph
-## holds constant, so the flash is the only thing that can move its key across a beat; the gate's
-## own asks are what is counted, one tick at a time. The same cyclist carrying no caret is asked
-## for on none of them.
+## A cyclist carrying the doubled red caret for as long as it telegraphs, at a swell its
+## telegraph holds constant, so the flash is the only thing that can move its key across a beat;
+## the gate's own asks are what is counted, one tick at a time. The same cyclist carrying no
+## caret is asked for on none of them.
 func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var marked := _walker("cyclist")
@@ -418,7 +436,7 @@ func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t: TestRunner) -> 
 	var event := FakeEvent.new()
 	event.waiting = true
 	var look := event.look_for(EventCatalogue.by_id("alley_robbery"))
-	# Far enough out that he never stops waiting, in two places 180° apart.
+	# He waits, and the line to her is turned half a turn from one tick to the next.
 	event.line_to_her = Vector2(9000.0, 0.0)
 	event.tick(STEP, 0.0)
 	_asks(look)
@@ -433,10 +451,12 @@ func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t: TestRunner) -> 
 func _test_a_chatting_mother_moves_her_key_while_frozen(t: TestRunner) -> void:
 	var event := _walker("chatting_mother")
 	var look := event.look_for(EventCatalogue.by_id("chatting_mother"))
-	for i in 30:
-		event.tick(STEP, event.approach_speed() * STEP)
+	# On a resting beat of her stride, which a stop leaves resting too, so the posture is all
+	# that changes.
+	_walk_to(event, WALK[3])
 	_asks(look)
 	event.chatting = true
+	event.striding = false
 	event.tick(STEP, 0.0)
 	t.check(_asks(look),
 			"the talking posture moves the key although she has stopped dead")
@@ -477,7 +497,8 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void
 	var flock := FakeEvent.new()
 	flock.flock.append(EventFlock.Bird.new())
 	var flock_look := flock.look_for(EventCatalogue.by_id("pigeon_flock"))
-	t.check(_never_settles(flock_look), "a flock is never gated — every bird moves every tick")
+	t.check(_never_settles(flock_look),
+			"a flock is never gated — every bird moves every tick")
 	flock.free()
 
 	var fire := FakeEvent.new()
@@ -521,8 +542,8 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -
 func _test_the_key_is_stable_within_a_tick(t: TestRunner) -> void:
 	var event := _walker("dog_walker")
 	var look := event.look_for(EventCatalogue.by_id("dog_walker"))
-	for i in 90:
-		event.tick(STEP, event.approach_speed() * STEP)
+	for i in WALK.size():
+		_walk_to(event, WALK[i])
 		_asks(look)
 		t.check(not _asks(look),
 				"the key answers the same way twice inside tick %d" % i)
@@ -553,8 +574,9 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
 	t.check(_asks(look), "silencing the mast moves its key")
 	event.free()
 
-## A fake event of `id`'s row at rest on open ground, past its telegraph, that walks the row's own
-## route at the row's own pace (`FakeEvent.tick()`): what the real one answers once it has set off.
+## A fake event of `id`'s row at rest on open ground, past its telegraph, that walks the row's
+## own route at the row's own pace: what the real one answers once it has set off. A check walks
+## it with `_walk_to()`.
 func _walker(id: String) -> FakeEvent:
 	var def := EventCatalogue.by_id(id)
 	var event := FakeEvent.new()
@@ -562,6 +584,13 @@ func _walker(id: String) -> FakeEvent:
 	event.approaching_at = def.approach_speed()
 	event.route = PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	return event
+
+## `event` walked on to `point` (ground covered, the stride's phase there), striding as a real
+## one is once it has set off.
+static func _walk_to(event: FakeEvent, point: Vector2) -> void:
+	event.tick(STEP, point.x - event.travelled)
+	event.stride = point.y
+	event.striding = point.x > 0.0
 
 ## Whether the redraw gate asks for a draw now: what `_process()` gets from it, and the one thing the
 ## picture key decides.

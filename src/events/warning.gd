@@ -8,9 +8,9 @@ extends RefCounted
 ##
 ## **The caller owns the clock it is read against** — an event's age, the badge's own time up —
 ## so a warning carried across a stream-out is its start on that clock (`started_at()`), and a
-## warning never drifts from the clock beside it. What calls it off and what it runs out into are
-## the caller's: a test the caller asks each tick (`call_off_when()`), and an action (`run_when_it_runs_out()`) that
-## `tick()` runs once, the frame it has run.
+## warning never drifts from the clock beside it. What calls it off and what it runs out into
+## are the caller's: a test the caller asks each tick (`call_off_when()`), and an action
+## (`run_when_it_runs_out()`) that `tick()` runs once, the frame it has run.
 
 ## What `tick()` found.
 enum Outcome { NOT_RUNNING, RUNNING, CALLED_OFF, RAN_OUT }

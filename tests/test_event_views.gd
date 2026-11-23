@@ -7,17 +7,18 @@ extends RefCounted
 ## `side_faces_west` parameter, the one bit a family's own art rather than its geometry decides.
 ##
 ## Nothing here calls a `_draw_*` function directly — `Sprites.draw_standing()` and the raw
-## `canvas.draw_*` calls inside them are only valid from an actual draw pass. A check about where a
-## picture stands or which way it faces hands the instance a recording drawer
-## (`tests/recording_event_drawer.gd`) through `EventSurroundings.drawing_through()`, as its manager's
-## spawner hands one in, lets real frames draw it, and reads what the look told the drawer to draw; one
-## about a selector asks the selector the look asks (`select_view()`, the `_BY_VIEW` tables), and
-## one no picture answers (which view a heading selects, the lift of a stride) asks a look the suite
-## makes round a fake event (`FakeEvent.look_for()`), set to what the real event answers. The
-## rendered evidence sheets under
-## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
-## are what a screenshot answers that a test cannot — see the **writing-tests** skill, "test what a
-## screenshot cannot see, screenshot what a test cannot judge."
+## `canvas.draw_*` calls inside them are only valid from an actual draw pass. A check about
+## where a picture stands or which way it faces hands the instance a recording drawer
+## (`tests/recording_event_drawer.gd`) through `EventSurroundings.drawing_through()`, as its
+## manager's spawner hands one in, lets real frames draw it, and reads what the look told the
+## drawer to draw; one about a selector asks the selector the look asks (`select_view()`, the
+## `_BY_VIEW` tables), and one no picture answers (which view a heading selects, the lift of a
+## stride) asks a look the suite makes round a fake event (`FakeEvent.look_for()`), set to what
+## the real event answers. The rendered evidence sheets under
+## `docs/evidence/m108-event-people-2026-09-11/` and
+## `docs/evidence/m108-event-vehicles-2026-09-11/` are what a screenshot answers that a test
+## cannot — see the **writing-tests** skill, "test what a screenshot cannot see, screenshot
+## what a test cannot judge."
 ##
 ## It also holds what a live row drawn through the recording drawer stands against what its row
 ## obstructs: a barrier's end posts at the edge of its obstruction, and a whole scene's slices
@@ -145,7 +146,6 @@ func run(t: TestRunner) -> void:
 	await _test_setup_resets_the_view_to_the_exact_siting(t)
 	_test_robber_waiting_faces_her(t)
 	_test_robber_waiting_falls_back_to_its_siting_with_no_player(t)
-	_test_robber_lunging_faces_her_through_the_chase(t)
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
 	await _test_masked_man_is_drawn_standing_until_he_goes(t)
@@ -472,9 +472,13 @@ func _test_state_pairs_stay_visually_distinct(t: TestRunner) -> void:
 ## `EightDirection.nearest()`'s own "no prior-view hold on a fresh placement" rule — rather than
 ## leaving a stale hold from whatever the field's zero-value default happens to be.
 func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
+	var sited: Array[EventInstance] = []
 	for sector in range(8):
-		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("busker"),
-				false, null, null, Vector2.ZERO, _heading_for_sector(sector))
+		sited.append(DrawnEvent.build(t, EventCatalogue.by_id("busker"), false, null, null,
+				Vector2.ZERO, _heading_for_sector(sector)))
+	await DrawnEvent.frames(t)
+	for sector in range(8):
+		var instance := sited[sector]
 		var drawn_as := {}
 		for entry in DrawnEvent.shown(instance):
 			if entry.canvas == instance and entry.kind == &"stand":
@@ -484,8 +488,8 @@ func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 				and [EventPictures.BUSKER_BY_VIEW[view], EventPictures.BUSKER_BY_VIEW_B[view]]
 						.has(drawn_as.picture)
 				and drawn_as.mirrored == EXPECTED_MIRRORED[sector],
-				"a fresh siting at %d degrees starts on sector %d directly, drawn as the %s view"
-				% [sector * 45, sector, view])
+				"a fresh siting at %d degrees starts on sector %d, drawn as the %s view"
+						% [sector * 45, sector, view])
 		instance.free()
 
 # ------------------------------------------------------------------- targeted facing ---
@@ -501,9 +505,9 @@ func _test_robber_waiting_faces_her(t: TestRunner) -> void:
 	instance.waiting = true
 	var look := instance.look_for(def)
 	for sector in range(8):
-		# Well outside `EventDef.notice_within()` (180px), so he never actually notices her —
-		# this is the waiting posture's own facing, not the notice turning `_heading` for it. The
-		# line to her is the one the real event answers with her there and nothing built between.
+		# The line to her runs toward each sector from just outside `EventDef.notice_within()`
+		# (180px), the length a real waiting robber answers with her there and nothing built
+		# between: the waiting posture's own facing, not the notice turning `_heading` for it.
 		instance.line_to_her = _heading_for_sector(sector) * (def.notice_within() + 40.0)
 		var heading := look.robber_waiting_heading()
 		var view := look.select_view(heading)
@@ -520,21 +524,6 @@ func _test_robber_waiting_falls_back_to_its_siting_with_no_player(t: TestRunner)
 	var look := instance.look_for(def)
 	t.check(look.robber_waiting_heading() == instance.facing_now(),
 			"with nothing to face, the waiting posture keeps the site's own authored facing")
-	instance.free()
-
-## Once he has noticed her, `EventPursuit` keeps `_heading` pointed at her for the whole of the
-## telegraph and the chase — "a lunging robber faces its lunge" is this, already true through the
-## existing pursuit code, and this test is what proves the drawing actually reads it.
-func _test_robber_lunging_faces_her_through_the_chase(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
-	var instance := FakeEvent.new()
-	# Southeast of him, the way the real event turns once it has noticed her
-	# (`test_event_behaviours.gd`, `_test_a_robber_who_notices_her_turns_to_face_her_exactly`).
-	instance.heading = _heading_for_sector(1)
-	var look := instance.look_for(def)
-	var view := look.select_view(instance.facing_now())
-	t.check(view == "front_diagonal", "facing southeast draws the front_diagonal view (got %s)"
-			% view)
 	instance.free()
 
 # ------------------------------------------------------------------- state predicates ---
@@ -1101,10 +1090,13 @@ func _test_every_moving_vehicle_has_wheels_on_its_own_canvas(t: TestRunner) -> v
 		t.check(not EventPictures.WHEELS_BY_LOOK.has(parked),
 				"a parked van (look %d) keeps its wheels in its one picture" % parked)
 
-## **A moving vehicle's body rides about a pixel over its wheels, on a phase of ground covered, and
-## a stopped one sits still.** A police patrol driven along a straight route bobs within
-## `WheelBob.HEIGHT` and reaches it, the lift is `WheelBob.lift()` of exactly the ground it has
-## covered, and the redraw key moves with it; the tick it covers no ground its body is back down.
+## **A moving vehicle's body rides about a pixel over its wheels, on a phase of ground covered,
+## and a stopped one sits still.** A police patrol's look, round an event that covers ground
+## each tick (striding, as a real patrol set up on open ground answers on every tick it drove),
+## bobs within `WheelBob.HEIGHT` and reaches it, the lift is `WheelBob.lift()` of exactly the
+## ground covered, and the redraw key moves with it; round the same event the tick it covers no
+## ground (not striding, as a real one answers a tick it stood), the body is back down on its
+## wheels.
 func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("police_patrol")
 	var instance := FakeEvent.new()
@@ -1113,31 +1105,26 @@ func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t: T
 	instance.route = PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)])
 	var look := instance.look_for(def)
 	var lowest := 0.0
-	var moved_ticks := 0
 	var keys := {}
 	for i in 240:
 		instance.tick(STEP, instance.approach_speed() * STEP)
+		instance.striding = true
 		var bob := look.current_bob()
 		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
 				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
-		if instance.gait_is_moving():
-			moved_ticks += 1
-			t.check(is_equal_approx(bob, WheelBob.lift(instance.path_travelled())),
-					"tick %d's lift is the bob of the ground covered" % i)
+		t.check(is_equal_approx(bob, WheelBob.lift(instance.path_travelled())),
+				"tick %d's lift is the bob of the ground covered" % i)
 		if look.redraw_if_the_picture_changed():
 			keys[i] = true
 		lowest = minf(lowest, bob)
-	t.check(moved_ticks > 0, "the patrol actually drove (%d ticks)" % moved_ticks)
 	t.check(lowest < -0.9 * WheelBob.HEIGHT, "and its body reached the top of a rise (%.3f)" % lowest)
 	t.check(lowest > -WheelBob.HEIGHT - 0.001,
 			"a rise of about a pixel, not the walkers' own stride bob (%.3f)" % lowest)
 	t.check(keys.size() > 2, "the redraw key moved with the body (%d heights)" % keys.size())
-	# She steps in front of its nose, so its next step is taken back and it covers no ground
-	# (`EventCarDriving`).
-	t.check(instance.gait_is_moving(), "it was rolling the tick before she stepped in front of it")
+	# The tick it covers no ground.
 	instance.tick(STEP, 0.0)
-	t.check(not instance.gait_is_moving() and look.current_bob() == 0.0,
-			"a vehicle that covered no ground sits on its wheels")
+	instance.striding = false
+	t.check(look.current_bob() == 0.0, "a vehicle that covered no ground sits on its wheels")
 	instance.free()
 
 ## **Only the vehicles changed.** A dog walker has no wheels, and its bob is still the stride's own

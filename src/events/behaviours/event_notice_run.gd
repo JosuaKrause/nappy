@@ -123,7 +123,8 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 ##
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:
-	return {"line_warned_from": _line_warning.started_at(), "line_warning_for": _line_warning.lasts_for(),
+	return {"line_warned_from": _line_warning.started_at(),
+			"line_warning_for": _line_warning.lasts_for(),
 			"noticed_inside": _noticed_inside}
 
 ## Overrides EventBehaviour.restore.

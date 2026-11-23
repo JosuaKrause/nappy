@@ -1,16 +1,17 @@
 class_name FakeEvent
 extends EventInstance
-## A stand-in for a live event, handed to what asks a live event questions (the looks, made round it
-## by `look_for()`) in place of the real one, so the check sets up no row, no body, no behaviours and
-## no street. It answers what a look asks of its event, and what the suite set is all it answers:
-## each answer is a field here, nothing (false, zero, empty) until a check sets it, to what the real
-## event answers in the same situation (read off the real event once, the way a mock is made: a dog
-## walker set up on open ground answers a pace of 32 and a route of two points, a waiting robber
-## answers that it waits). A question a look does not ask is not here.
+## A stand-in for a live event, handed to what asks a live event questions (the looks, made
+## round it by `look_for()`) in place of the real one, so the check sets up no row, no body, no
+## behaviours and no street. It answers what a look asks of its event, and what the suite set is
+## all it answers: each answer is a field here, the quiet answer (false, zero, empty, facing
+## east, nothing to point at) until a check sets it, to what the real event answers in the same
+## situation (read off the real event once, the way a mock is made: a dog walker set up on open
+## ground answers a pace of 32 and a route of two points, a waiting robber answers that it
+## waits). A question a look does not ask is not here.
 ##
-## **Never put in a tree**, and no step of it is real: its clock, its stride and its phase are what
-## the suite writes, a tick of it moves nothing. A node: the suite frees it, and with it what it was
-## handed to answer with.
+## **Never put in a tree**, and no step of it is real: its stride and its phase are what the
+## suite writes, and a tick of it only runs the counters (its age, its clock, the ground
+## covered). A node: the suite frees it, and with it what it was handed to answer with.
 
 ## Which way it faces, what `facing_now()` answers.
 var heading := Vector2.RIGHT
@@ -28,11 +29,11 @@ var standing_for_its_notice := false
 var on_its_way_out := false
 var gone := false
 var only_its_barrier := false
-## Where she is from it, what `sight_line_to_her()` answers: nothing, the zero vector, when none is
-## set.
+## Where she is from it, what `sight_line_to_her()` answers: nothing, the zero vector, when none
+## is set.
 var line_to_her := Vector2.ZERO
-## How long it has existed, in seconds (`age()`), its clock (`clock()`), and how far along its route
-## it has walked (`path_travelled()`).
+## How long it has existed, in seconds (`age()`), its clock (`clock()`), and how far along its
+## route it has walked (`path_travelled()`).
 var lived := 0.0
 var ticked := 0.0
 var travelled := 0.0
@@ -50,32 +51,35 @@ var approaching_at := 0.0
 var travels := false
 var is_a_car := false
 ## What its row says of its field: its peak (`peak()`), how long one beat of its pulse lasts
-## (`pulses_every()`), how long its telegraph lasts (`telegraphs_for()`), how far its core reaches
-## (`core_within()`), how near she has to come for it to notice her (`notice_within()`) and the rate
-## it emits now (`current_intensity()`).
+## (`pulses_every()`), how long its telegraph lasts (`telegraphs_for()`), how far its core
+## reaches (`core_within()`), how near she has to come for it to notice her (`notice_within()`)
+## and the rate it emits now (`current_intensity()`).
 var field_peak := 0.0
 var pulse_length := 0.0
 var telegraph_length := 0.0
 var core := 0.0
 var noticed_within := 0.0
 var emitting := 0.0
-## The outline its row's ground is (`ground_shape()`), null for a row with no picture, and the box
-## its drawing fills (`drawn_box()`) with the one its row occupies (`footprint()`).
+## The outline its row's ground is (`ground_shape()`), null for a row with no picture, and the
+## box its drawing fills (`drawn_box()`) with the one its row occupies (`footprint()`).
 var shape: GroundShape = null
 var box := Rect2()
 var footprint_box := Rect2()
-## The axis its body lies along (`solid_axis()`, `spread_axis()`) and whether a stopped vehicle shows
-## its side (`stands_side_on()`).
-var axis := Vector2.RIGHT
+## The axis its solid body lies along (`solid_axis()`), the axis its spread runs along
+## (`spread_axis()`), the point an offset along that spread is (`spread_at()`, the origin for an
+## offset not set) and whether a stopped vehicle shows its side (`stands_side_on()`).
+var solid_direction := Vector2.RIGHT
+var spread_direction := Vector2.RIGHT
+var spread_points: Dictionary[float, Vector2] = {}
 var side_on := false
-## How far a victim has been walked (`how_long_its_victim_has_walked()`) and whether it is taking one
-## (`is_taking_a_victim()`).
+## How far a victim has been walked (`how_long_its_victim_has_walked()`) and whether it is
+## taking one (`is_taking_a_victim()`).
 var victim_walked := 0.0
 var taking_a_victim := false
-## Whether its guard has his hand raised (`is_its_guard_warning()`), is inside (`is_its_guard_inside()`),
-## whether a conversation holds it (`is_chatting()`), it has stopped her (`has_stopped_her()`),
-## it pursues (`pursues()`), its boom is up (`is_raised()`), it is a silenced mast
-## (`is_silenced()`) and the pelican (`is_drawn_as_a_pelican()`).
+## Whether its guard has his hand raised (`is_its_guard_warning()`), is inside
+## (`is_its_guard_inside()`), whether a conversation holds it (`is_chatting()`), it has stopped
+## her (`has_stopped_her()`), it pursues (`pursues()`), its boom is up (`is_raised()`), it is a
+## silenced mast (`is_silenced()`) and the pelican (`is_drawn_as_a_pelican()`).
 var guard_warning := false
 var guard_inside := false
 var chatting := false
@@ -84,35 +88,34 @@ var pursuing := false
 var raised := false
 var silenced := false
 var pelican := false
-## Where a protest points its placards (`where_its_placards_point()`); nothing to point at until set.
+## Where a protest points its placards (`where_its_placards_point()`); nothing to point at until
+## set.
 var placards_point := Vector2.INF
-## Its birds (`birds()`), the world map (`world_map()`), the rim around its picture (`rim()`) and
-## what its field is as a source (`source()`, its caret set on it): what the suite hands in is
-## what it answers.
+## Its birds (`birds()`), the world map (`world_map()`), the rim around its picture (`rim()`)
+## and what its field is as a source (`source()`, its caret set on it): what the suite hands in
+## is what it answers.
 var flock: Array[EventFlock.Bird] = []
 var map: WorldMap = null
 var rim_halo: EntityHalo = null
 var excitement: FakeExcitement = FakeExcitement.new(self)
-## What the look asked to have put beside it (`add_beside_it()`, `add_slices_beside_it()`): the nodes
-## in order, freed with the fake, since no world takes them.
+## What the look asked to have put beside it (`add_beside_it()`, `add_slices_beside_it()`): the
+## nodes in order, freed with the fake, since no world takes them.
 var added: Array[Node] = []
 
 ## The row it is a live event of (`row()`), set by `look_for()`.
 var of_row: EventDef = null
 
-## One tick of it: the clock and the age run on by `delta`, `moved` pixels of ground are covered and
-## the stride turns by what covering them turns it (`EventInstance.GAIT_RATE` radians a pixel), as the
-## live event's own tick leaves them.
+## One tick of it: the clock and the age run on by `delta` and `moved` pixels of ground are
+## covered. The stride is not turned by it: a check that walks the fake sets `stride` and
+## `striding` to what a real event answers after that ground.
 func tick(delta: float, moved: float) -> void:
 	lived += delta
 	ticked += delta
 	travelled += moved
-	striding = moved > 0.0
-	stride = wrapf(stride + moved * EventInstance.GAIT_RATE, 0.0, TAU)
 
 ## A look of `row` made round this fake the way `EventInstance.setup()` makes the real event's
-## (`EventLooks.for_row()`), drawing through `drawer`, which a test that reads pictures hands in. It
-## is facing the way this fake faces now.
+## (`EventLooks.for_row()`), drawing through `drawer`, which a test that reads pictures hands
+## in. It is facing the way this fake faces now.
 func look_for(row: EventDef, drawer: EventDrawer = null) -> EventLook:
 	var made := EventLooks.for_row(self, row.look(), row.body(), row.takes_a_victim_by(),
 			drawer if drawer != null else EventDrawer.new(null), false, DrawnView.new(), null)
@@ -254,17 +257,15 @@ func footprint() -> Rect2:
 
 ## Overrides EventInstance.solid_axis.
 func solid_axis() -> Vector2:
-	return axis
+	return solid_direction
 
 ## Overrides EventInstance.spread_axis.
 func spread_axis() -> Vector2:
-	return axis
+	return spread_direction
 
-## A point `offset` along the axis, from the origin.
-##
 ## Overrides EventInstance.spread_at.
 func spread_at(offset: float) -> Vector2:
-	return axis * offset
+	return spread_points.get(offset, Vector2.ZERO)
 
 ## Overrides EventInstance.stands_side_on.
 func stands_side_on() -> bool:

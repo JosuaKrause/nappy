@@ -668,9 +668,10 @@ func _test_flocks_are_not_skipped(t: TestRunner) -> void:
 	flock.free()
 
 ## Alley mouths have no corridor band for an instance to read its spread's axis off. Their own
-## rectangle supplies the axis instead: a horizontal alley is sealed by a vertical spread across its
-## short side, while a vertical alley keeps the default horizontal spread. A roadworks barrier set
-## up in a horizontal and a vertical alley of a generated map says which way it runs.
+## rectangle supplies the axis instead: a horizontal alley is sealed by a vertical spread across
+## its short side, while a vertical alley keeps the default horizontal spread. A roadworks
+## barrier set up in a horizontal and a vertical alley of a generated map says which way it
+## runs.
 func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var horizontal := Rect2i()

@@ -28,12 +28,13 @@ func has_begun() -> bool:
 func has_ended() -> bool:
 	return _ended
 
-## Its warning counted as not said yet, for a warning the task sets to give way to one of its own.
+## Its warning counted as not said yet, for a warning the task sets to give way to one of its
+## own.
 func take_back_its_warning() -> void:
 	_warned = false
 
-## A charger streamed back in: whether its charge had begun before it streamed out, and whether its
-## warning had been said, so neither is said again.
+## A charger streamed back in: whether its charge had begun before it streamed out, and whether
+## its warning had been said, so neither is said again.
 func be_begun(on: bool) -> void:
 	_began = on
 
