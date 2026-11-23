@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends SceneTree
 ## Crops separated vector spans with the runtime SVG parser and retains their registration.
 ## Invoked only by tools/split-scenes.py; its output directory is always a fresh staging folder.
@@ -26,13 +25,15 @@ func _init() -> void:
 	var payload: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(arguments[0]))
 	var staging: String = arguments[1]
 	var metadata_path: String = arguments[2]
+	var layers_by_stem: Dictionary = payload.layers
 	var output := {"sources": payload.sources, "layers": {}}
-	for stem: String in payload.layers:
+	for stem: String in layers_by_stem:
 		var entries: Array = []
-		for layer: Dictionary in payload.layers[stem]:
+		for layer: Dictionary in layers_by_stem[stem]:
+			var frames: Array = layer.frames
 			var bounds := Rect2i()
 			var canvas := Rect2i()
-			for source: String in layer.frames:
+			for source: String in frames:
 				var image := Image.new()
 				assert(image.load_svg_from_string(source) == OK)
 				canvas = Rect2i(Vector2i.ZERO, image.get_size())
@@ -42,8 +43,8 @@ func _init() -> void:
 			# A transparent texel protects the edge coverage of subpixel vector strokes from
 			# the SVG rasterizer's viewport clip; original canvas edges remain clipped as authored.
 			bounds = bounds.grow(1).intersection(canvas)
-			for frame in layer.frames.size():
-				var source: String = layer.frames[frame]
+			for frame: int in frames.size():
+				var source: String = frames[frame]
 				for attribute: String in ["width", "height", "viewBox"]:
 					var regex := RegEx.new()
 					assert(regex.compile(' ' + attribute + '="[^"]*"') == OK)

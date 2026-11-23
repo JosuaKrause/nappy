@@ -50,11 +50,10 @@ that read's class, as for the animated water (`SceneryWater`, the record
 2026-10-18-minty-quail-tawny-toad); where it cannot, the file keeps its opt-out line, a list that
 only shrinks, and its area's conversion or a later typing pass types it and converts the read.
 Every file under `tests/` is typed but the two that wait for polite-tapir's placement step 4
-(`typed-everywhere.md`); the suites' conversion (`tests-one-module.md`) is still to come. The two
-scripts under `tools/` that carry it (`tools/cost_table.gd`, `tools/split-scenes-crop.gd`) are typed by the pull
-request that next changes each, or with the suites' conversion if none does first. The engine warns of nothing on a property read off a value it types as
-Variant (an untyped array's element, what `back()` or `get()` returns), so such a value is read
-through a typed name, and the check, not the engine, is what holds that. This paragraph is the
+(`typed-everywhere.md`); the suites' conversion (`tests-one-module.md`) is still to come. No script
+under `tools/` carries the opt-out line. The engine warns of nothing on a property read off a value it
+types as Variant (an untyped array's element, what `back()` or `get()` returns), so such a value is
+read through a typed name, and the check, not the engine, is what holds that. This paragraph is the
 design review's (inbox #1268 in olive-ferret), and its mechanism is built: `project.godot` makes the
 three typing warnings (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access`)
 errors. What remains is this item's own conversion, which predates the review, so the item stays in
