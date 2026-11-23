@@ -64,9 +64,9 @@ without one reads as a suite to split. **Any suite that builds a real city and i
 of the city gives its reason** (inbox #1159 in gray-dolphin), in its header. The ones that do,
 each for the reason its header states:
 
-- **`tests/test_event_manager.gd` runs the event manager against a real generated `City`**,
-  because the bugs it holds are wiring between the two (an instance freed but left in the list, a
-  successor spawned but never tracked), invisible to a data-level test; its header says so.
+- **`tests/test_event_manager.gd` stands the event manager on drawn streets, on a generated map for
+  the cases that start a day through it, and in a real `City` for the one case that asks the city's
+  own dawn**; its header says which and why.
 - **`tests/test_full_run_a.gd`, `_b.gd` and `_c.gd`** (one seed each, the run in
   `tests/full_run_rig.gd`) play three seeds through all 14 days with time actually advancing: the
   game's composition is what they test. Keep it that way: a version that only *plans* each day
