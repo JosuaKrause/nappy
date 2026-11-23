@@ -3,12 +3,20 @@ extends "res://tests/resistance_rig.gd"
 ##
 ## **A real city, for a stated reason**: each task's site is picked from the blocks, fronts and
 ## sidewalks a generator made and the events the day plans there, so what is checked about the
-## director's placement is over that ground. The cases that run `ResistanceHappenings` on a real
-## manager (the raid, the market and the column, the lost day 10 restoring her ordinary door, and
-## the neighbor's window boarded from day 11) are not covered by this reason, nor is the
-## neighbor walking out to work on days 1 to 9, which reads the director's happenings: they are
-## still to be judged in the group's next pull request, for whether they can take
-## `FakeEventManager` and `FakeEvent` where they do not read the city's siting.
+## director's placement is over that ground. The cases that run `ResistanceHappenings` keep the city
+## for what each reads of it that a drawn map and `FakeEventManager` do not carry:
+## - the raid (two cases) is sited by the city's own spawn siting (the vans' bodies off her
+##   sidewalk, the patrol car's beat and drawing box);
+## - the market found gone and the market waiting while she can see it walk the day's route tree
+##   (`DayStreets`) for the block ahead of her, and the first reads the buildings shuttered and
+##   the stalls taken from the day the manager planned;
+## - the column is warned of and driven by the real manager down the main road the map names;
+## - the lost day 10 restoring her ordinary door and the neighbor's window boarded from day 11
+##   are what `City` and its fronts do with the run's scars and the day, the door and the
+##   building read off the city's nodes;
+## - the neighbor walking out to work on days 1 to 9 measures the way along her street with the
+##   plan builder and the units drawn round it, which the real manager owns.
+## None takes a fake event or a fake manager, so none is left to judge.
 
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
