@@ -38,7 +38,7 @@ modules that do not wait for the events"), not this item.
   director passes it to `AuthoredScene.install()`, which waits with the scene recipes below.
 - The scene recipes take the city whole: `SceneRecipeRuntime.install()` (and the `AuthoredScene`
   it extends, `src/run/authored_scene.gd`), and `SceneRecipeDraft.record()` and `compose()`
-  (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 3 waits for `install()` to take a
+  (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 2 waits for `install()` to take a
   narrow interface instead.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
