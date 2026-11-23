@@ -3,16 +3,14 @@ extends RefCounted
 ## that decides which ending you get.
 ##
 ## **Mostly its one module.** The day's controller, the run's calendar and the summary screen are each
-## driven with a hand-built map and plain runs. Two cases combine other modules, each for its reason:
-## the booted one (`_test_day_finished_shows_the_summary_with_no_observer_in_the_tree`) holds that the
+## driven with a hand-built map and plain runs. One case combines other modules, for its reason: the
+## booted one (`_test_day_finished_shows_the_summary_with_no_observer_in_the_tree`) holds that the
 ## summary comes up from the day's own end signal with no observer in the tree, a guarantee of
-## `main`'s wiring; the retry case builds a real `City` and the resistance director, because what it
-## holds is that the calendar's seeded stream for a retried day puts the mark in the same alley, a
-## guarantee between the calendar and the director's placement. Both are on cached generated
-## cities (`tests/city_map_cache.gd`).
+## `main`'s wiring. It is on a cached generated city (`tests/city_map_cache.gd`). That a retried day
+## puts the mark in the same alley is the resistance director's placement, in
+## `tests/test_resistance_steps.gd`.
 
 const SEED := 4242
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
@@ -53,7 +51,6 @@ func run(t: TestRunner) -> void:
 	_test_the_bad_ending_names_the_day_it_reached(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
 	_test_a_lost_day_gives_back_what_it_burned(t)
-	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -732,48 +729,6 @@ func _test_a_lost_day_gives_the_resistance_back(t: TestRunner) -> void:
 	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(run.resistance().completed_steps().has(2) and run.resistance().progress() == 1,
 			"a won day's own work is committed and survives the next day's loss")
-
-## The half a test of the run alone cannot see: that the *director* re-offers what the restored
-## state says is untouched, in the place the day first put it. Its placement is drawn from
-## `run.calendar().day_rng(day, "resistance")`, so a retry of the same day with the same run seed and an
-## untouched step is the same alley — the mark is not merely on offer again, it is where she
-## already knows to look.
-func _test_the_retry_meets_the_same_mark_in_the_same_alley(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	var run := city.run
-	run.header().set_day(6)
-	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
-
-	run.calendar().begin_day()
-	var first := _resistance_director(t, city)
-	first.start_day(run.header().day(), run.calendar().day_rng(run.header().day(), "resistance"), 300.0)
-	var step := first.current_step()
-	t.check(step != null and step.is_pickup, "day 6 puts the first chalk mark on offer")
-	var where := first.contact_position()
-	t.check(where != Vector2.INF, "and the rig knows where it is")
-	run.complete_resistance_step(step.index, step.grants_progress)
-	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
-
-	run.calendar().begin_day()
-	var retry := _resistance_director(t, city)
-	retry.start_day(run.header().day(), run.calendar().day_rng(run.header().day(), "resistance"), 300.0)
-	t.check(retry.current_step() != null and retry.current_step().index == step.index,
-			"the retry is offered the same step the lost attempt was")
-	t.close_to(retry.contact_position().distance_to(where), 0.0,
-			"in the same alley, from the same seed", 0.01)
-
-	first.free()
-	retry.free()
-	city.free()
-
-func _resistance_director(t: TestRunner, city: City) -> ResistanceDirector:
-	var director := ResistanceDirector.new()
-	t.add_child(director)
-	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
-	return director
 
 ## **A lost day gives back what the attempt did to the city**, not only what it did to the
 ## resistance. *("a retry always rolls new -- nothing that happened on the day that got retried can

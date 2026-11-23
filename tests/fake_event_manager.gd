@@ -5,9 +5,12 @@ extends EventManager
 ## and plans no day. It answers what those ask of it in the situations its suites set: a row
 ## spawned unplanned (`spawn_extra()`) is an instance of that row at the point and on the path asked,
 ## which is what the real manager hands back for a raid at her building (two `night_raid` vans and a
-## pacing `police_patrol`, read off a real city once). The real manager's own logic is checked in
-## its own suites (`tests/test_event_manager.gd` and the rest). A helper, not a suite: the runner
-## loads only `test_*.gd`.
+## pacing `police_patrol`, read off a real city once). The resistance's director asks it three more
+## things in the days it stands a task on: the instances it has put in the street (`instances()`),
+## ending one (`retire()`), and rigging her route's bag (`rig_her_route()`), which a day with no
+## walk planned has nothing to rig. The real manager's own logic is checked in its own suites
+## (`tests/test_event_manager.gd` and the rest). A helper, not a suite: the runner loads only
+## `test_*.gd`.
 ##
 ## **Never put in a world.** The parts `EventManager._init()` builds stay idle, so a call this does
 ## not override reaches a real part over an empty world, which a check would see as a wrong answer
@@ -31,6 +34,37 @@ func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> Ev
 	instance.setup(def, at, path)
 	_made.append(instance)
 	return instance
+
+## The instances `spawn_extra()` made, the ones still standing: what the street holds, as the real
+## manager's street holds the ones it spawned. Not the ones freed since.
+##
+## Overrides EventManager.instances.
+func instances() -> Array[EventInstance]:
+	var standing: Array[EventInstance] = []
+	for instance in _made:
+		if is_instance_valid(instance):
+			standing.append(instance)
+	return standing
+
+## Ends `instance` where it stands, as the real manager's spawner does for one it spawned.
+##
+## Overrides EventManager.retire.
+func retire(instance: EventInstance) -> void:
+	if instance and is_instance_valid(instance) and not instance.is_gone():
+		instance.end_now()
+
+## How many times `rig_her_route()` was asked, and the rows it was asked to rig, the last ask's.
+var rigged_asks := 0
+var rigged_rows: Array[String] = []
+
+## Counts the ask and answers that nothing was rigged: no walk is planned here, so there is no bag
+## whose next marbles to set.
+##
+## Overrides EventManager.rig_her_route.
+func rig_her_route(ids: Array[String], _size: int, _just_ahead := false) -> Array:
+	rigged_asks += 1
+	rigged_rows = ids.duplicate()
+	return []
 
 ## Answers `masts_to_silence` and counts the ask.
 ##

@@ -579,7 +579,7 @@ func _on_a_run(buckets: Dictionary, at: Vector2) -> bool:
 class _Source extends FakeEventManager:
 	var live: Array[EventInstance] = []
 
-	## Overrides EventManager.instances.
+	## Overrides FakeEventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return live
 
