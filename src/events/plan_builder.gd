@@ -1,7 +1,7 @@
 class_name PlanBuilder
 extends RefCounted
 ## Builds one event's plan (`EventPlan`) at one tile on the map it is handed: a standing row faced
-## out of the wall it backs against, a moving row given its route down or across the street it
+## out of the wall it backs against, a moving row given its route down the street it
 ## stands on, a plan sited only where the plans already standing leave it room, and where a built
 ## plan's body stands.
 ##

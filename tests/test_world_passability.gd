@@ -424,8 +424,7 @@ func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
 	return null
 
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
-## and runs clear between, never out of or into a lot; so does the plan builder's crossing from any
-## road tile a cat may stand on.
+## and runs clear between, never out of or into a lot.
 func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var cat := EventCatalogue.by_id("cat_dash")
