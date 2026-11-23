@@ -32,19 +32,14 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
 -speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose and -frosty-tapir), and what each lists is what is left of it:
 
-1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
-   (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
-   events;
-2. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
+1. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
    `City`, so a stand-in can be handed in;
-3. the night group: `test_dark_spine` holds the scheduler's and the crowd's answers in a day-planning case,
-   to move to those modules' suites;
-4. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
+2. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
    ground, its header giving the wiring between the manager's record and a live event as its reason
    for a city; `test_wall_shield`'s fields layer cases keep a real street musician for the debug view,
    to move with the debug view's own suite pass;
-5. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
+3. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
    fence round trip ends in the city map's repaint, to move to a map suite.

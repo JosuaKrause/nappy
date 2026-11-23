@@ -84,6 +84,7 @@ const PARTS := {
 		"_test_cars_do_not_enter_a_junction_they_cannot_leave",
 		"_test_nothing_walks_into_a_hard_blocker",
 		"_test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once_turned",
+		"_test_a_dark_spine_keeps_moving",
 	],
 }
 
@@ -2221,3 +2222,90 @@ func _test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once
 			"with no pavement chosen it lands on the one nearest where it stands once turned (offset %d, not 4)"
 			% agent.lane().lane_index())
 	agent.free()
+
+
+## **A spine whose lights are out still carries its traffic**: right before left and "nothing enters
+## a box it cannot leave" hold a five-times-busier street together without a light. Stated against
+## the lit spine on the same day rather than as a speed, since what is being asked is that the dark
+## one is no car park by comparison. The lights are put out by the one flag the blackout sets
+## (`TrafficSignals.use_power()`); that the blackout does so is `tests/test_blackout.gd`'s.
+##
+## The city is day 14's as the game starts it, with the closures that day draws, and the day starts
+## no events: a protest the day's draw stands on the spine's crossings stops its cars lit or dark,
+## which is the density's question, not the lights'. The case is the last of its part, since it
+## leaves the city on day 14.
+func _test_a_dark_spine_keeps_moving(t: TestRunner) -> void:
+	var day := Tuning.RUN_LENGTH_DAYS
+	var state := CityState.new()
+	state.begin_day(_city.map.plans_by_block(), day)
+	_city.start_day(state, day, _dark_spine_rng("closures"))
+	var lit: Vector2 = await _spine_traffic(t)
+	var lit_samples := _spine_samples
+	_city.traffic_signals().use_power(false)
+	var dark: Vector2 = await _spine_traffic(t)
+	_spine_samples = mini(_spine_samples, lit_samples)
+	print("[test_crowd_streets] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "
+			% [lit.x, lit.y * 100.0] + "dark: mean %.0f px/s, %.0f%% stopped"
+			% [dark.x, dark.y * 100.0])
+	t.check(_spine_samples > 0, "there were cars on the spine to sample (%d samples)" % _spine_samples)
+	t.check(dark.x >= lit.x * 0.8,
+			"the dark spine carries its traffic about as fast as the lit one (%.0f vs %.0f px/s)"
+			% [dark.x, lit.x])
+	t.check(dark.y < 0.5, "and most of it is moving at any instant (%.0f%% stopped)"
+			% (dark.y * 100.0))
+	_city.traffic_signals().use_power(true)
+
+## How many car samples the last `_spine_traffic()` took.
+var _spine_samples := 0
+
+func _dark_spine_rng(label: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("dark spine:%d:%s" % [SEED, label])
+	return rng
+
+## Mean speed and stopped share of the cars on the spine, sampled every half second over forty
+## seconds of the crowd's own physics ticks, with a stroller standing on the sidewalk beside the
+## spine for the crowd to make way for, so the field is over the spine and the cars there are the
+## ones being simulated. The spine is lit or dark as the city has it.
+func _spine_traffic(t: TestRunner) -> Vector2:
+	RunCity.crowd(_city).use_focus(null)
+	RunCity.crowd(_city).start_day(Tuning.RUN_LENGTH_DAYS, _dark_spine_rng("traffic"))
+	var her := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	her.add_child(camera)
+	_city.add_child(her)
+	her.set_physics_process(false)
+	her.global_position = _sidewalk_beside_the_spine()
+	RunCity.simulation(_city).meet_her(her)
+	var totals := {"speed": 0.0, "stopped": 0, "samples": 0}
+	var sample := func(ticks: int) -> bool:
+		if ticks % 30 != 0:
+			return false
+		for agent in RunCity.crowd(_city).agents():
+			if agent.kind != CrowdAgent.Kind.CAR or not agent.travelling_vertically() \
+					or not _city.map.is_main_road(true, CrowdLanes.corridor_at(agent.position.x)):
+				continue
+			totals.samples += 1
+			totals.speed += agent.speed()
+			if agent.speed() < Tuning.CAR_STOPPED_SPEED:
+				totals.stopped += 1
+		return false
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(40.0, 1.0), PhysicsTicks.FASTER, sample)
+	RunCity.simulation(_city).meet_her(null)
+	her.free()
+	_spine_samples = totals.samples
+	return Vector2(totals.speed / maxf(1.0, totals.samples),
+			float(totals.stopped) / maxf(1.0, totals.samples))
+
+## A sidewalk tile beside the spine at the map's middle height, where a body stands off the
+## carriageway the cars drive on.
+func _sidewalk_beside_the_spine() -> Vector2:
+	var row := _city.map.size.y / 2
+	for x in range(_city.map.main_road * CityMap.period(),
+			_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH + 1):
+		var tile := Vector2i(x, row)
+		if _city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK:
+			return _city.map.tile_to_world(tile)
+	return _city.map.tile_to_world(Vector2i(_city.map.main_road * CityMap.period(), row))

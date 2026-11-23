@@ -1418,7 +1418,7 @@ field with its value before and after (`tests/shared_state.gd`).
   past the distance, dark for as long as the sabotage stands and lit again on a retry, and the
   escape's blackout dark from its first frame. What the switched parts do dark is theirs:
   `test_traffic_light.gd` (a signal head with no lamp), `test_traffic_signals.gd` (a dark junction
-  left to the box rule) and `test_dark_spine.gd` (the dark spine still carrying its traffic, on a
+  left to the box rule) and `test_crowd_streets.gd` (the dark spine still carrying its traffic, on a
   real city and crowd).
 - `test_full_run_a.gd`, `_b.gd` and `_c.gd` — three seeds, one per part (`tests/full_run_rig.gd`), each
   played through all 14 days with the real City, EventManager and ResistanceDirector, each day started

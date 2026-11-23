@@ -36,13 +36,13 @@ extends "res://tests/events_shared_city.gd"
 ## city's days and on a city of the crews' own, made once for the case.
 ##
 ## **Why these cases keep generated cities.** Each asks what a planned day or run holds (its mix,
-## its spacing, what a run spends, what a calm area is left, which alleys a robbery avoids), and the
-## answer depends on the whole street network the generator makes; a hand-drawn few streets would
-## hold a smaller claim, so none was moved onto one. A dawn is planned once per city, day and
-## calm areas for the suite and read by every case that asks it: the shared city's days
-## (`_dawn()`: the one-shot and alley-robbery cases read them too), the taught day of each seed
-## (`_the_taught_day()`) and the act walk (`_the_act_walk()`), which the calm-left-alone case and
-## the city's memory case both read. The dawn writes nothing a later dawn reads, so no case needs
+## its spacing, what a run spends, what a calm area is left, which alleys a robbery avoids, whether
+## a row past its teaching day is placed on a tile), and the answer depends on the whole street
+## network the generator makes; a hand-drawn few streets would hold a smaller claim, so none was
+## moved onto one. A dawn is planned once per city, day and calm areas for the suite and read by
+## every case that asks it: the shared city's days (`_dawn()`: the one-shot and alley-robbery cases
+## read them too), the taught day of each seed (`_the_taught_day()`) and the act walk
+## (`_the_act_walk()`), which the calm-left-alone case and the city's memory case both read. The dawn writes nothing a later dawn reads, so no case needs
 ## a plan of its own for a run's later day.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
@@ -60,6 +60,7 @@ func run(t: TestRunner) -> void:
 	_test_a_hot_day_places_more_patrols(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
+	_test_the_dog_past_the_teaching_day_is_a_map_placement(t)
 	_test_scheduler_respects_placement_and_one_of_a_row_per_unit(t)
 	_test_the_dawn_draws_no_unit(t)
 	_test_one_shots_fire_once_per_run(t)
@@ -1528,6 +1529,31 @@ func _test_the_run_is_always_taught(t: TestRunner) -> void:
 		var events: DayEvents = _the_taught_day(run_seed)["events"]
 		t.check(events.has_a_pursuit(),
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])
+
+## Day 4 and every day after: the row is placed on the map at dawn, the way `alley_robbery` is,
+## rather than left for the director to site. Walked over the planned placements of several seeds
+## and every day the row is eligible on past the teaching day, the same reason `alley_robbery`'s own
+## required-alley test is over placements rather than the pool directly: a def whose field answers
+## `MAP` and a scheduler that still refuses to place it are two different bugs.
+func _test_the_dog_past_the_teaching_day_is_a_map_placement(t: TestRunner) -> void:
+	var checked := 0
+	for run_seed: int in [4242, 2102613802, 90210]:
+		var map := MapCache.of(run_seed)
+		var consumed: Array[String] = []
+		var masts := _sites_of(map)
+		for day in range(Tuning.RUN_TAUGHT_DAY + 1, 15):
+			var tree := RouteTree.for_day(map, day)
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d" % [run_seed, day])
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(masts).spent(consumed) \
+					.on(tree).plan().placements():
+				if plan.row_id() != "charging_dog":
+					continue
+				checked += 1
+				t.check(plan.is_placed(),
+						"seed %d day %d: 'charging_dog' has a position, not a director siting"
+						% [run_seed, day])
+	t.check(checked > 0, "some run placed charging_dog past the teaching day to check (%d)" % checked)
 
 ## A planned day is a function of its arguments and heat is one of them: same seed, same day, same
 ## heat, same city. This is what lets a rig plan a hot day without a run having happened.

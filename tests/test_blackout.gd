@@ -12,7 +12,7 @@ extends RefCounted
 ## What each switched part does once it is off is that part's own suite: a hall and its clerestory
 ## (`tests/test_power_station.gd`), a signal head and a light that decides nothing
 ## (`tests/test_traffic_light.gd`, `tests/test_traffic_signals.gd`), the spine's traffic with its lights
-## out (`tests/test_dark_spine.gd`), every mast silenced (`tests/test_masts.gd`), and the escape
+## out (`tests/test_crowd_streets.gd`), every mast silenced (`tests/test_masts.gd`), and the escape
 ## building's lighting (`tests/test_interior.gd`).
 
 const BASE_SEED := 4242

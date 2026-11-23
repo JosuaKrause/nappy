@@ -18,19 +18,14 @@ extends RefCounted
 ##
 ## **The director is handed a hand-drawn map of streets** (`tests/fixtures/street_map.gd`): it sites
 ## what it hands out on the streets under and ahead of her and reads nothing else of a city, so no
-## generated city is built for the cases that test the director, the row or the instance. **One case
-## plans a whole day** (`_test_day_4_is_a_map_placement`): it asks the scheduler where the row is
-## placed, which is `EventScheduler`'s answer and not the director's, and it needs generated cities
-## for the planner to place on (`tests/city_map_cache.gd`: each seed's city is generated once in the
-## test process and every case is handed a copy of its own). It belongs in the scheduler's suite, which
-## is in the events conversion's list; it stays here until then.
+## generated city is built for the cases here. Where the scheduler places the row past the
+## teaching day is `EventScheduler`'s answer and not the director's, so that case is in
+## `tests/test_events_scheduler.gd`.
 
-const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
 func run(t: TestRunner) -> void:
 	_test_day_3_is_still_sited_on_her_heading(t)
-	_test_day_4_is_a_map_placement(t)
 	_test_day_4_is_never_owed_to_the_director(t)
 	_test_the_notice_switches_after_the_teaching_day(t)
 	_test_day_4_dog_waits_until_she_is_in_its_field(t)
@@ -88,31 +83,6 @@ func _test_day_3_is_still_sited_on_her_heading(t: TestRunner) -> void:
 	var direction := (site - sited_from).normalized()
 	t.check(direction.dot(north) > 0.99,
 			"and it is on her exact heading — the lesson has to be unavoidable")
-
-## Day 4 and every day after: the row is placed on the map at dawn, the way `alley_robbery` is,
-## rather than left for the director to site. Walked over the planned placements of several seeds
-## and every day the row is eligible on past the teaching day, the same reason `alley_robbery`'s own
-## required-alley test is over placements rather than the pool directly: a def whose field answers
-## `MAP` and a scheduler that still refuses to place it are two different bugs.
-func _test_day_4_is_a_map_placement(t: TestRunner) -> void:
-	var checked := 0
-	for run_seed: int in [4242, 2102613802, 90210]:
-		var map := MapCache.of(run_seed)
-		var consumed: Array[String] = []
-		var masts := MastSites.compute(map)
-		for day in range(Tuning.RUN_TAUGHT_DAY + 1, 15):
-			var tree := RouteTree.for_day(map, day)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(masts).spent(consumed) \
-					.on(tree).plan().placements():
-				if plan.row_id() != "charging_dog":
-					continue
-				checked += 1
-				t.check(plan.is_placed(),
-						"seed %d day %d: 'charging_dog' has a position, not a director siting"
-						% [run_seed, day])
-	t.check(checked > 0, "some run placed charging_dog past the teaching day to check (%d)" % checked)
 
 ## And the other half, confirmed at the director: a `MAP`-mode plan is never turned into an owed
 ## encounter by `start_day()`'s own per-plan loop, so it can never be sited on her heading, or
