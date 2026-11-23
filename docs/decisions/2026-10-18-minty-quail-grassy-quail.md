@@ -15,5 +15,6 @@ record, an event's behaviour, a flock and the warning are gone, their fields pri
 **Split.** The other readers of the look, about a dozen suites and six probes, are the next pull request, and the look
 goes private there; the crowd car's drawing suite is the crowd's, with the event halves held in other modules' suites.
 
-**Measured.** On CI, the six suites the pull request touched took 15.0 s on main and 13.5 s on the branch; the redraw
-suite fell from 0.8 s to 0.3 s, and the phase suite grew from 1.4 s to 2.3 s with the moved case that generates a city.
+**Measured.** On CI, the five suites the pull request touched took 12.8 s on main and 12.2 s on the branch; the redraw
+suite fell from 0.8 s to 0.3 s, and the phase suite, which took a moved case that generates a city, read 1.4 s on main
+and between 1.6 s and 2.3 s on the branch.
