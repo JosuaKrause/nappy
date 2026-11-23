@@ -330,13 +330,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "Stroller",
-        "her class's constants (the camera's look-ahead) and type tests are read where she is not handed in",
-        ("src/interior/interior_scene.gd",),
-        more=(("src/interior/interior_scene.gd", 2),),
-    ),
-    Exception_(
-        "names",
         "GameSave",
         "the save indicator reads the save's state, rather than being handed it",
         ("src/ui/save_indicator.gd",),
