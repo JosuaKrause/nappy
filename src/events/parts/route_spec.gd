@@ -14,7 +14,6 @@ extends RefCounted
 ## **How the scheduler builds a moving row's route.**
 enum Kind {
 	NONE,
-	CROSS_STREET,  ## Straight across the traffic, like a cat bolting.
 	ALONG_STREET,  ## Down the corridor it starts on.
 	## **Across the alley it landed in**, built by the instance itself from the alley it stands in
 	## (`EventInstance._alley_crossing_path()`), cut to the ground it fits on: `alley_mouse`, placed

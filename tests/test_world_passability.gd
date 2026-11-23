@@ -468,27 +468,6 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 	t.check(in_its_field == 0,
 			"walking on, she is never inside the crouching cat's field before it runs (%d were)"
 			% in_its_field)
-	var ends := 0
-	var in_a_lot := 0
-	var none: Array[EventPlan] = []
-	# No catalogue row is planned as a crossing (`RouteSpec.Kind.CROSS_STREET`: the cat is sited by
-	# the director), so the row is the cat with the plan builder's crossing path laid for it.
-	var crossing := cat.redraft()
-	crossing.route(RouteSpec.at(cat.speed(), RouteSpec.Kind.CROSS_STREET))
-	var scheduled := crossing.build()
-	var builder := GamePlanBuilder.over(map)
-	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
-		if tile.x % 7 != 0 or not map.passable(tile, Mover.on_foot()):
-			continue
-		var placed := builder.place_at(scheduled, tile, _rng("cross-street"), none)
-		if placed == null:
-			continue
-		for end in placed.walks():
-			ends += 1
-			if not map.passable(map.world_to_tile(end), Mover.on_foot()):
-				in_a_lot += 1
-	t.check(ends > 0 and in_a_lot == 0,
-			"the plan builder's crossings end on open ground (%d of %d do not)" % [in_a_lot, ends])
 
 ## A dog that loses interest facing a building leaves round it: every frame of its departure is on
 ## ground it may stand on, and it gets away from her.

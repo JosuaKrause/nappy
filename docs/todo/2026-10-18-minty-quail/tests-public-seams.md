@@ -68,8 +68,6 @@ ticks give, and is kept with its reason:
 
 **Open: what a test still reads that the game does not, or does not check.**
 
-- **`PlanBuilder._cross_street_path`** serves no catalogue row today, since the director sites the
-  cat; it wants a row or removing.
 - **`test_route_bag.gd`** reads a place waiting for its site in the director's private
   list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
   `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
