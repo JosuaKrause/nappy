@@ -353,6 +353,12 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## run its course leaves its crater where it went off. Spawned directly, since the escape's rows are
 ## not a day's.
 func _test_successor_replaces_its_parent(t: TestRunner) -> void:
+	# A bystander standing on, so a swap that kept only the successors would change the count and
+	# leave the list without it.
+	var bystander := EventPlan.new(EventCatalogue.by_id("burning_building"),
+			CrowdLanes.arterial_pavement(_stage.map()) + Vector2(0.0, 600.0))
+	_stage.events().streaming.add(bystander)
+	_stage.events().stream_around(bystander.placed_at())
 	var burst := _stage.events().spawner.spawn(EventCatalogue.by_id("finale_explosion"),
 			Vector2(500, 500))
 	var before := _stage.events().active_count()
