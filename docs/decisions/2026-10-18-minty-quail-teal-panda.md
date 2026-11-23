@@ -12,4 +12,4 @@ ends is parked when it is done, so their checks read what the game can reach. A 
 stall, a leaf blower, a poster crew) is sent off by day 12's park cordon, and leaving clears its parked flag: a case
 sends one off the way the cordon does and reads the flag before and after.
 
-**Measured.** The moves suite went from 18 checks to 21, the route lines suite stayed at 6.
+**Measured.** The moves suite went from 18 checks to 24, the route lines suite stayed at 6.
