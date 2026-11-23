@@ -85,6 +85,7 @@ func run(t: TestRunner) -> void:
 	_test_the_city_remembers_where_she_went(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
 	_test_a_crew_drawn_is_handed_to_her_walk(t)
+	_test_a_flock_is_a_place_she_can_see(t)
 
 
 func _signature(planned: Array[EventPlan]) -> String:
@@ -92,6 +93,17 @@ func _signature(planned: Array[EventPlan]) -> String:
 	for plan: EventPlan in planned:
 		parts.append("%s@%.1f,%.1f" % [plan.row_id(), plan.placed_at().x, plan.placed_at().y])
 	return "|".join(parts)
+
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
+		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
+	var instance := EventInstance.new()
+	var surroundings := EventSurroundings.new()
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
+	t.add_child(instance)
+	instance.set_process(false)
+	return instance
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
@@ -1684,3 +1696,84 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 		t.check(kept_crews > 0 and kept_placed == kept_crews,
 				"day %d: not sited from her walk, every crew stands placed (%d of %d)"
 				% [day, kept_placed, kept_crews])
+
+## **A flock exists before it is seen, and the first frame of one is never inside the view around
+## her.** *(PLAYTEST-69: "pigeons pop in on screen — they should exist before they are visible.")*
+##
+## The pop-in is a siting question rather than a drawing one, so this is stated over both halves of
+## the siting and over the live row:
+##
+## - **Nothing sites it near her, on any day of the run.** A director-sited row is created at
+##   `Tuning.AHEAD_LEAD_DISTANCE` (184px) in front of her, which is inside the 320px half-view on
+##   every sideways heading — right for a cat, whose whole content is the three seconds it is there,
+##   and the pop-in itself for eleven birds that are meant to be a patch of pavement. Checked over
+##   `spawn_mode_on(day)`, the one query every placement asks, rather than over `spawn_mode` alone.
+## - **The day gives it a tile**, so it is streamed in at `Tuning.EVENT_STREAM_RADIUS` — further
+##   from her than the corner of the view even after the frame in which she crosses that boundary
+##   at a run, which is what makes "the first drawn frame is off screen" true rather than likely.
+## - **And it is on the ground, quiet, until she walks up to it.** A flock that streamed in already
+##   bursting would have spent its whole event two screens away; one that emitted its full 42/s
+##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
+##   is inside `EventDef.notice_within()`, which is the telegraph contract paid in geometry.
+func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		t.check(def.spawn_mode_on(day) == EventDef.SpawnMode.MAP,
+				"day %d sites a flock on a tile rather than in front of her" % day)
+	t.check(def.notice_within() > 0.0 and def.notice_within() < def.heard_within(),
+			"it waits for her inside its own %.0fpx field (trigger %.0fpx)"
+			% [def.heard_within(), def.notice_within()])
+
+	var planned_flocks := 0
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		for plan in _planned(day):
+			if plan.row_id() != def.id():
+				continue
+			planned_flocks += 1
+			t.check(plan.is_placed(), "day %d's flock has ground of its own" % day)
+	t.check(planned_flocks > 0, "the run's days plan flocks at all (%d)" % planned_flocks)
+
+	# The far corner of the view, which is the furthest anything on screen can be from her.
+	var corner := Tuning.VIEW_HALF_EXTENT.length()
+	t.check(Tuning.EVENT_STREAM_RADIUS - Tuning.RUN_SPEED * STEP > corner,
+			"a streamed row's first frame is %.0fpx away, outside the %.0fpx corner of the view"
+			% [Tuning.EVENT_STREAM_RADIUS - Tuning.RUN_SPEED * STEP, corner])
+
+	# As far off as `EventManager` ever first builds one, and five seconds of it.
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
+	instance_where.tell(Vector2(Tuning.EVENT_STREAM_RADIUS, 0.0))
+	_advance(instance, 5.0)
+	t.check(instance.is_waiting() and not instance.is_gone(),
+			"five seconds out of reach and the flock is still standing there")
+	var still_grounded := true
+	for bird in instance.birds():
+		still_grounded = still_grounded and is_zero_approx(bird.lift())
+	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
+	t.close_to(instance.current_intensity(),
+			def.peak() * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
+			"and pecking costs a fraction of what going up does", 0.1)
+
+	# She comes inside the trigger: the notice starts here rather than at dawn.
+	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
+	instance.step(STEP)
+	t.check(not instance.is_waiting() and instance.is_telegraphing(),
+			"walking up to it is what starts it")
+	for bird in instance.birds():
+		still_grounded = still_grounded and is_zero_approx(bird.lift())
+	t.check(still_grounded, "and the telegraph is still eleven birds on the ground")
+	# Read at the flock's own middle rather than at her: every bird is inside the flock's spread of
+	# it whatever the wheel is doing, so the two readings differ by the damping rather than by where
+	# eleven birds happened to be on the frame each was taken.
+	var on_the_ground := instance.source().contribution_at(Vector2.ZERO)
+
+	_advance(instance, def.telegraphs_for() + 0.2)
+	var up := 0
+	for bird in instance.birds():
+		if bird.lift() > 0.0:
+			up += 1
+	t.check(up == instance.birds().size(), "then all %d of them are up" % instance.birds().size())
+	t.check(instance.source().contribution_at(Vector2.ZERO) > on_the_ground * 3.0,
+			"and the burst is what costs (%.1f/s through the middle against %.1f/s while they peck)"
+			% [instance.source().contribution_at(Vector2.ZERO), on_the_ground])
+	instance.free()
