@@ -163,6 +163,8 @@ func _director_on_the_least(t: TestRunner) -> ResistanceDirector:
 	director.use_bus(EventBus)
 	t.add_child(director)
 	director.set_process(false)
+	if _handed_atlas != null:
+		director.use_atlas(_handed_atlas)
 	director.setup(_least_map, _least_run, _least_events, null, null, _least_world)
 	return director
 
