@@ -105,6 +105,65 @@ var added: Array[Node] = []
 ## The row it is a live event of (`row()`), set by `look_for()`.
 var of_row: EventDef = null
 
+## A fake that answers what `instance` answers now, each question read off it once: the two steps of
+## making a mock for a check that must see the real event's own situation (an arrival the game
+## creates somewhere, a trap in its place) and asks what a look made round it shows, with no live
+## event kept for the look to read. A spread's points (`spread_at()`) are not copied, since they
+## are asked by offset: a row with a spread answers the origin.
+static func answering_as(instance: EventInstance) -> FakeEvent:
+	var fake := FakeEvent.new()
+	fake.position = instance.global_position
+	fake.of_row = instance.row()
+	fake.heading = instance.facing_now()
+	fake.vertical = instance.runs_vertically()
+	fake.telegraphing = instance.is_telegraphing()
+	fake.telegraphing_still = instance.is_telegraphing_still()
+	fake.waiting = instance.is_waiting()
+	fake.standing_for_its_notice = instance.is_standing_for_its_notice()
+	fake.on_its_way_out = instance.is_on_its_way_out()
+	fake.gone = instance.is_gone()
+	fake.only_its_barrier = instance.is_only_its_barrier()
+	fake.line_to_her = instance.sight_line_to_her()
+	fake.lived = instance.age()
+	fake.ticked = instance.clock()
+	fake.travelled = instance.path_travelled()
+	fake.stride = instance.gait_phase()
+	fake.striding = instance.gait_is_moving()
+	fake.idle_start = instance.idle_offset()
+	fake.body_at = instance.body_position()
+	fake.route = instance.walks()
+	fake.approaching_at = instance.approach_speed()
+	fake.travels = instance.moves()
+	fake.is_a_car = instance.drives()
+	fake.field_peak = instance.peak()
+	fake.pulse_length = instance.pulses_every()
+	fake.telegraph_length = instance.telegraphs_for()
+	fake.core = instance.core_within()
+	fake.noticed_within = instance.notice_within()
+	fake.emitting = instance.current_intensity()
+	fake.shape = instance.ground_shape()
+	fake.box = instance.drawn_box()
+	fake.footprint_box = instance.footprint()
+	fake.solid_direction = instance.solid_axis()
+	fake.spread_direction = instance.spread_axis()
+	fake.side_on = instance.stands_side_on()
+	fake.victim_walked = instance.how_long_its_victim_has_walked()
+	fake.taking_a_victim = instance.is_taking_a_victim()
+	fake.guard_warning = instance.is_its_guard_warning()
+	fake.guard_inside = instance.is_its_guard_inside()
+	fake.chatting = instance.is_chatting()
+	fake.stopped_her = instance.has_stopped_her()
+	fake.pursuing = instance.pursues()
+	fake.raised = instance.is_raised()
+	fake.silenced = instance.is_silenced()
+	fake.pelican = instance.is_drawn_as_a_pelican()
+	fake.placards_point = instance.where_its_placards_point()
+	fake.flock = instance.birds()
+	fake.map = instance.world_map()
+	fake.rim_halo = instance.rim()
+	fake.excitement.caret = instance.source().caret_strength()
+	return fake
+
 ## One tick of it: the clock and the age run on by `delta` and `moved` pixels of ground are
 ## covered. The stride is not turned by it: a check that walks the fake sets `stride` and
 ## `striding` to what a real event answers after that ground.

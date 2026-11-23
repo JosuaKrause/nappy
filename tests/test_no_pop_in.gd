@@ -12,7 +12,8 @@ extends RefCounted
 ## instance the way the game creates it there (`EventManager.spawn_warned()`, `EventsAhead._send_down_her_line()`,
 ## the trap's), told where she is, and asks it what it draws on that frame
 ## (`EventLook.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
-## caret's own drawing numbers and its own projection of her). A footprint (`footprint_of()`) that
+## caret's own drawing numbers and its own projection of her), asked of a look made round a fake
+## event that answers what the arrival answers (`FakeEvent.answering_as()`). A footprint (`footprint_of()`) that
 ## leaves anything out fails here. Asked over every bearing, cameras led every way her look-ahead can
 ## lead them, both input schemes (a corner the joystick's controls cover is not off screen for this),
 ## real cities as well as open ground, the column's lane at the main road's ends, and through a
@@ -70,10 +71,25 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 	instance_where.tell(her)
 	return instance
 
+## What `instance` draws on this frame, in its own space: asked of a look made round a fake that
+## answers what `instance` answers.
+static func _drawn_by(instance: EventInstance) -> Rect2:
+	var fake := FakeEvent.answering_as(instance)
+	var rect := fake.look_for(instance.row()).drawn_rect_now()
+	fake.free()
+	return rect
+
+## Whether `instance` draws a danger caret on this frame.
+static func _draws_a_caret(instance: EventInstance) -> bool:
+	var fake := FakeEvent.answering_as(instance)
+	var has_area := fake.look_for(instance.row()).mark_rect().has_area()
+	fake.free()
+	return has_area
+
 ## Whether anything `instance` draws on this frame overlaps the camera's whole `view` (corners
 ## included).
 static func _drawn_in(view: VisibleView, instance: EventInstance) -> bool:
-	var rect := instance.look.drawn_rect_now()
+	var rect := _drawn_by(instance)
 	return Rect2(instance.global_position + rect.position, rect.size) \
 			.intersects(view.camera_view())
 
@@ -98,7 +114,7 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 				for at in places:
 					var instance := _arrival(row, at, her)
 					placed += 1
-					if instance.look.mark_rect().has_area():
+					if _draws_a_caret(instance):
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
 						popped.append("'%s' along %v, camera at %v%s" % [row.id(), way,
@@ -324,7 +340,7 @@ func _test_a_turned_window_shows_nothing_either(t: TestRunner) -> void:
 				var at := SpawnSiting.just_out_of_sight(SpawnSiting.seen_from(view, her),
 						EventFootprints.footprint_of(row), her, way)
 				var instance := _arrival(row, at, her)
-				var rect := instance.look.drawn_rect_now()
+				var rect := _drawn_by(instance)
 				instance.free()
 				var drawn := Rect2(at + rect.position, rect.size)
 				var corners: Array[Vector2] = []

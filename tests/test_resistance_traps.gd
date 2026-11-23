@@ -408,6 +408,14 @@ static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
 				way))
 	return starts
 
+## What `trap` draws on this frame, in its own space: asked of a look made round a fake that answers
+## what the trap answers.
+func _drawing_of(trap: EventInstance) -> Rect2:
+	var fake := FakeEvent.answering_as(trap)
+	var rect := fake.look_for(trap.row()).drawn_rect_now()
+	fake.free()
+	return rect
+
 ## Camera smoothing can move the view while she stands still through a badge. The actual
 ## warning callback must place the entire drawing outside that new view in either input scheme.
 func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) -> void:
@@ -442,7 +450,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
 			if trap != null:
 				RunCity.events(_city).world.where_she_is().tell(her)
-				var drawing := trap.look.drawn_rect_now()
+				var drawing := _drawing_of(trap)
 				t.check(view.camera_view().intersects(
 						Rect2(initial + drawing.position, drawing.size)),
 						"the camera moved far enough to expose a trap at the initial badge position")
