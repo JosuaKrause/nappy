@@ -1,4 +1,18 @@
 extends "res://tests/events_shared_city.gd"
+## **A seed's day planned on that day's routes**, memoized: the plan of a city's day from the
+## stream `_rng(day)` hands out, a fresh run (nothing spent) and the route tree the day grows, with
+## the city's mast sites. The callers read the plans and none writes to them. The `map` is the
+## caller's copy, repainted for `day` before its tree was grown; the plan is the same on every copy
+## of the seed painted for that day.
+func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
+		tree: RouteTree) -> Array[EventPlan]:
+	var key := "%d:%d" % [map.city_seed(), day]
+	if not _route_plans.has(key):
+		var consumed: Array[String] = []
+		_route_plans[key] = GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed).on(tree).plan().placements()
+	return _route_plans[key]
+
 ## The two halves of `EventScheduler.role_for`: a lethal event is a wall and a wall never stands
 ## on ground a route runs along, and friction is aimed at the route as a weight rather than a rule.
 ## Plus the placement rules a pinned or pacing row keeps on top of that: a pinned row is only
@@ -22,12 +36,23 @@ extends "res://tests/events_shared_city.gd"
 ## days works the city's mast sites out once, on the city as built and before the first day repaints
 ## it (`_sites_of()`), and hands them to every dawn it plans, as the game does.
 ##
+## **Why these cases keep generated cities.** What each sweep asks is a placement rule's behaviour
+## among the ground a whole day's routes leave (which tiles a route holds, which sidewalks it
+## walks, where a row's body fits), and the floors under their counts rest on what the generator
+## produces across seeds, so a hand-drawn street shape would hold a different, smaller claim. The
+## cases that plan the same seed's day on its routes share one plan (`_planned_on_the_route()`).
+##
 ## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
 ## day, until the dawn group converts them to mocked moments.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
+
+## The plans of a seed's day on that day's routes (`_planned_on_the_route()`), planned once for the
+## suite: several cases ask exactly this of the same city and day, so the dawn is planned once and
+## each case reads it against its own repainted copy of the city.
+var _route_plans := {}
 
 func run(t: TestRunner) -> void:
 	_test_the_day_is_placed_by_role(t)
@@ -608,10 +633,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
-			var consumed: Array[String] = []
-			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-					.masts(sites).spent(consumed).on(tree) \
-					.plan().placements():
+			for plan in _planned_on_the_route(map, sites, day, tree):
 				if not plan.paces_a_beat() or not plan.counts_against_the_line():
 					continue
 				if not plan.row().reaches_the_far_lane():
@@ -722,11 +744,8 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
-		var consumed: Array[String] = []
 		var counted: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-				.masts(sites).spent(consumed).on(tree) \
-				.plan().placements():
+		for plan in _planned_on_the_route(map, sites, day, tree):
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		for junction in tree.junctions():
@@ -863,11 +882,8 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
-		var consumed: Array[String] = []
 		var counted: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-				.masts(sites).spent(consumed).on(tree) \
-				.plan().placements():
+		for plan in _planned_on_the_route(map, sites, day, tree):
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
 			if plan.counts_against_the_line() and not plan.paces_a_beat():
@@ -950,11 +966,8 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
-		var consumed: Array[String] = []
 		var counted: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-				.masts(sites).spent(consumed).on(tree) \
-				.plan().placements():
+		for plan in _planned_on_the_route(map, sites, day, tree):
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		var streets := {}
@@ -1297,10 +1310,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 						% [map.city_seed(), day, seal.row_id(), seal_tile])
 				checked_trees += 1
 
-			var consumed: Array[String] = []
-			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-					.masts(sites).spent(consumed).on(tree) \
-					.plan().placements():
+			for plan in _planned_on_the_route(map, sites, day, tree):
 				if not plan.is_placed():
 					continue
 				checked += 1
@@ -1394,11 +1404,8 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 
-			var consumed: Array[String] = []
 			var bodies: Array = []
-			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-					.masts(sites).spent(consumed).on(tree) \
-					.plan().placements():
+			for plan in _planned_on_the_route(map, sites, day, tree):
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
 				_add_a_physical_body(bodies, plan)
