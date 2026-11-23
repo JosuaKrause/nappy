@@ -286,8 +286,8 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 		driven += delta
 		await t.get_tree().process_frame
 	t.check(edge.badges().announcing().size() == 1, "a live instance closing from off screen is badged")
-	# Ended where it stands, then let go of, as the manager's streaming does with what it retires.
-	manager.retire(engine)
+	# Let go of without being ended, as a stream-out takes a live event off the list: the edge has
+	# only the list to know it by, where `retire()` would end it and the edge skips an ended one.
 	engine.free()
 	await t.get_tree().process_frame
 	t.check(edge.badges().announcing().is_empty(),
