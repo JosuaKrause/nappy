@@ -53,17 +53,11 @@ func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_gone():
 		instance.end_now()
 
-## How many times `rig_her_route()` was asked, and the rows it was asked to rig, the last ask's.
-var rigged_asks := 0
-var rigged_rows: Array[String] = []
-
-## Counts the ask and answers that nothing was rigged: no walk is planned here, so there is no bag
-## whose next marbles to set.
+## Answers that nothing was rigged: no walk is planned here, so there is no bag whose next marbles to
+## set, which is what the real manager answers for a rig that started no day.
 ##
 ## Overrides EventManager.rig_her_route.
-func rig_her_route(ids: Array[String], _size: int, _just_ahead := false) -> Array:
-	rigged_asks += 1
-	rigged_rows = ids.duplicate()
+func rig_her_route(_ids: Array[String], _size: int, _just_ahead := false) -> Array:
 	return []
 
 ## Answers `masts_to_silence` and counts the ask.
