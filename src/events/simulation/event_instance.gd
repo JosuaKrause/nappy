@@ -1,9 +1,9 @@
 class_name EventInstance
 extends Node2D
 ## One live event in the world: its lifetime, its telegraph phase and its excitement field. What
-## it does is its behaviours' (`src/events/behaviours/`); how it looks is its look's
-## (`src/events/views/`), which is handed its row and its drawer, asks it and reads some of its
-## public state, and draws it.
+## it does is its behaviours' (`src/events/simulation/behaviours/`); how it looks is its look's
+## (`src/events/simulation/views/`), which is handed its row and its drawer, asks it and reads some
+## of its public state, and draws it.
 ##
 ## The excitement model is entirely a *query*, asked of the source it composes (`source()`, an
 ## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the

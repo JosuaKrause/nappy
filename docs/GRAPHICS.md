@@ -44,7 +44,7 @@ Some visible graphics are code rather than image files:
 | Ground selection | `src/city/ground_tiles.gd` maps city tile types and their exposed edges to TileSet source IDs; `src/city/scenery_ground.gd` paints nearby cells into freeable `TileMapLayer` children of the `Ground` chunk container. |
 | Building assembly | `src/city/building.gd` repeats wall, roof, edge and window textures into each generated footprint and tints the wall and roof fields. |
 | Danger carets | `Sprites.draw_caret()` supplies the shared filled chevron used above live events and crowd traffic. `src/ui/danger_edge.gd` separately draws screen-edge chevrons, a circular icon backing and an event's own silhouette. |
-| Event composites | Each row's look (`src/events/views/`) arranges repeated barriers, café furniture, crowds, muzzle flashes, leads, shadows and state-dependent poses around each event's ground point. |
+| Event composites | Each row's look (`src/events/simulation/views/`) arranges repeated barriers, café furniture, crowds, muzzle flashes, leads, shadows and state-dependent poses around each event's ground point. |
 | Traffic lamps | `src/city/traffic_light.gd` combines one of three signal-head SVG views with red, amber or green rectangles driven by the signal phase. |
 | Player cues | `src/player/stroller.gd` assembles the selected parent and pram, then places the baby-state texture above the pram and the alert texture above the parent. |
 | HUD and touch controls | `src/ui/meter_bar.gd`, `home_arrow.gd`, `danger_edge.gd`, `mode_button.gd` and `touch_controls.gd` draw bars, labels, chevrons, button plates and touch focus shapes; the button glyphs named below are SVGs. |
@@ -161,7 +161,7 @@ length of road its across picture spans, and stands half that below the street's
 
 ### Events and seal pictures
 
-`EventPictures` (`src/events/views/event_pictures.gd`) names every asset in this table by its
+`EventPictures` (`src/events/simulation/views/event_pictures.gd`) names every asset in this table by its
 region of the baked `events` page (`AtlasLibrary.region()`); the look `EventLooks.for_row()` picks
 by `EventDef.Look` draws it, and `EventPictures.icon_for()` supplies the same row-specific
 silhouette to the screen-edge danger badge.

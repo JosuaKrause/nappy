@@ -62,11 +62,11 @@ src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
 # [ExcitementSource] src/world/excitement_source.gd
-src/events/encounter_watch.gd landed_ever
+src/events/simulation/encounter_watch.gd landed_ever
 
 # [Mover] src/world/mover.gd
-src/events/event_instance.gd blocked_by
-src/events/event_instance.gd radius
+src/events/simulation/event_instance.gd blocked_by
+src/events/simulation/event_instance.gd radius
 
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd sign_offset
@@ -94,9 +94,9 @@ src/dev/scene_recipe_draft.gd size
 src/dev/scene_recipe_runtime.gd size
 src/events/model/dawn_phases/dawn_roadblock_count.gd size
 src/events/model/dawn_phases/ruled_roadblock_ground.gd size
-src/events/event_instance.gd moves
 src/events/model/plan_builder.gd size
 src/events/model/walk_ground.gd size
+src/events/simulation/event_instance.gd moves
 src/resistance/park_cordon.gd moves
 src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version

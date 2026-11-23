@@ -1,8 +1,8 @@
 class_name EventPictures
 extends RefCounted
 ## Every picture an event is drawn in, by name, and the tables and rules that pick one: what a row
-## looks like is data, read by the looks (`src/events/views/`) and by the badge and the placement
-## that measure a picture's size.
+## looks like is data, read by the looks (`src/events/simulation/views/`) and by the badge and the
+## placement that measure a picture's size.
 ##
 ## **Every picture below is the name its region is baked under, never a loaded texture and never
 ## a file path.** The authoring SVG it came from lives under `art/`, which the engine ignores, so

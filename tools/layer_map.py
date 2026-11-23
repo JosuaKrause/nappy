@@ -58,12 +58,15 @@ FOLDERS: dict[str, str] = {
     "src/crowd": "simulation",
     "src/day": "flow",
     "src/dev": "root",
-    "src/events": "simulation",
     # events: the rows and the specs they are written in are data, in their own folder.
     "src/events/data": "data",
     # events: the day's plans and everything that builds them -- the scheduler, the draws, the
     # locations, the grounds, the street rules, the plan -- are the model, in their own folder.
     "src/events/model": "model",
+    # events: the live event and what runs it -- the manager, the spawner, streaming, the director,
+    # the warnings, the behaviours and the looks -- are the simulation, in their own folder. A file put
+    # directly in src/events is in no layer.
+    "src/events/simulation": "simulation",
     "src/finale": "model",
     "src/interior": "world",
     "src/player": "simulation",

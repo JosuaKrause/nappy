@@ -151,7 +151,7 @@ The events:
     section ended some other way while it was still charging — the meter at its cap, another
     thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
     which `DayDirector.finish_day()` asks of the city's or the building's events before the day's or
-    the section's own end is sent). A charger's own `ChargeRecord` (`src/events/charge_record.gd`) is the one owner
+    the section's own end is sent). A charger's own `ChargeRecord` (`src/events/simulation/charge_record.gd`) is the one owner
     of that rule: every ending asks it, and the first to ask is the only one sent.
 
   `<charger>` is the row's own id hyphenated, as the encounter events are (`alley-robbery`,
@@ -193,7 +193,7 @@ The events:
   dog is `seen-`, `influenced-` and `influenced-unseen-charging-dog-tutorial`, never
   `-charging-dog`, and day 13's task guard is `-task-guard` waiting and `-task-guard-sent` sent at
   her, never the alley robber's or the robber giving chase's (`EncounterWatch` names an encounter
-  by `EventInstance.logged_name()`, the row's id). `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  by `EventInstance.logged_name()`, the row's id). `EncounterWatch` (`src/events/simulation/encounter_watch.gd`), asked once a physics frame by
   `EventManager` while a day is played — the escape's city included, as day 16, but not behind
   the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
   each:

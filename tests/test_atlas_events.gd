@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 ## a path the bake does not know is a picture that would have to be loaded on its own to be drawn,
 ## and a path baked onto some *other* group is one this page's reference does not cover.
 func _test_every_picture_the_events_can_draw_is_on_the_events_page(t: TestRunner) -> void:
-	var script: Script = load("res://src/events/views/event_pictures.gd")
+	var script: Script = load("res://src/events/simulation/views/event_pictures.gd")
 	var pictures: Dictionary = {}
 	for value: Variant in script.get_script_constant_map().values():
 		_collect_paths(value, pictures)

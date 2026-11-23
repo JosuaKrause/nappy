@@ -3447,7 +3447,7 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
 4. If it stands still and is drawn, give it a solid body (`BodySpec.solid()`) of half its silhouette. That
    is a rule rather than a choice; see "Solid things are solid".
 5. **Draw it.** A new `EventDef.Look`, a new SVG in `art/events/`, its pictures in
-   `EventPictures`, a `_draw_*` in the look that draws its family (`src/events/views/`, picked by
+   `EventPictures`, a `_draw_*` in the look that draws its family (`src/events/simulation/views/`, picked by
    `EventLooks.for_row()`), and a row in `EventPictures.icon_for()` so the screen-edge badge has a
    silhouette to show. There is no generic look to borrow — that is deliberate, and
    `tests/test_events.gd` fails the build if two rows share a picture. See "The visual
@@ -3458,7 +3458,7 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    (`PursuitSpec`, `VehicleSpec`, `AbductionSpec`, `LethalSpec`, `HoldSpec`, `WarningSpec`, ...),
    with the draft statement that writes it where a row says it, or a new part with its own
    statement on `EventDraft`, and handle it in the behaviour that owns that rule under
-   `src/events/behaviours/`, or in a new `EventBehaviour` that `EventBehaviours.compose()` adds
+   `src/events/simulation/behaviours/`, or in a new `EventBehaviour` that `EventBehaviours.compose()` adds
    for every row whose data asks for it, saving and restoring its own state. The composer hands a
    behaviour what never changes under it (its settings, the map, the navigator, what it walks as,
    where she is, the run log its event writes to, the behaviours beside it it works with), and it

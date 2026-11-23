@@ -6,7 +6,7 @@ Found while the skills were checked against the code:
   tests hold only who is exempt.
 - `src/routes/route_tree.gd` names `Tuning.MIN_CALM_AREAS_REACHABLE`; the constant is the closure
   planner's.
-- `src/events/behaviours/event_flock.gd` says the world sums what each source charges her; the
+- `src/events/simulation/behaviours/event_flock.gd` says the world sums what each source charges her; the
   baby does.
 - `src/city/city.gd`, the docstring of the resistance package's decay multiplier, gives a main
   road's own multiplier as 0.6; the constant is 0.02.

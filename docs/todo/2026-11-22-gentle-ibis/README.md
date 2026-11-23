@@ -4,7 +4,7 @@ priority: later
 
 **Found** by the agent of pull request #1631 (minty-quail row 4b), whose build of the probe failed.
 
-**What holds.** `tests/probes/m159_prediction_audit.py` rewrites a disposable checkout's `src/events/event_instance.gd` and `src/crowd/crowd_agent.gd` to count the equivalent sampling requests. It anchors on the text `func expected_gross_at(player_position: Vector2) -> float:` and its generated key reads `def.shape.kind`, `def.shape.half_length` and `def.shape.half_extents`; the event definition has no `shape` field on main now (the row's ground shape is asked through `ground_shape()`). On a clean copy of main the script stops at its first replacement, `assert text.count(before) == 1`, for the missing `expected_gross_at` anchor, before it reaches the `def.shape` text. It is built for the tree the baseline measurements used, which still had both.
+**What holds.** `tests/probes/m159_prediction_audit.py` rewrites a disposable checkout's `src/events/simulation/event_instance.gd` and `src/crowd/crowd_agent.gd` to count the equivalent sampling requests. It anchors on the text `func expected_gross_at(player_position: Vector2) -> float:` and its generated key reads `def.shape.kind`, `def.shape.half_length` and `def.shape.half_extents`; the event definition has no `shape` field on main now (the row's ground shape is asked through `ground_shape()`). On a clean copy of main the script stops at its first replacement, `assert text.count(before) == 1`, for the missing `expected_gross_at` anchor, before it reaches the `def.shape` text. It is built for the tree the baseline measurements used, which still had both.
 
 **The command that shows it:**
 

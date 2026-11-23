@@ -55,8 +55,8 @@ live event's field or route is the event's to answer.
 
 If it needs behaviour no setting covers, add a setting to the part that owns the rule (and the draft
 statement that writes it), or a new part with a statement of its own on `EventDraft`, and handle it
-in the behaviour that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour`
-that `EventBehaviours.compose()` adds for the rows whose data ask for it. **A behaviour that keeps
+in the behaviour that owns that rule under `src/events/simulation/behaviours/`, or in a new
+`EventBehaviour` that `EventBehaviours.compose()` adds for the rows whose data ask for it. **A behaviour that keeps
 state saves and restores it** (`save()`, `restore()`), or a streamed-out event comes back with it
 fresh and nothing says so.
 

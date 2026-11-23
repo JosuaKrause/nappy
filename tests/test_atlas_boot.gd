@@ -227,7 +227,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 				% [where, symbol_asks, save_symbols])
 		# The events' manager keeps its library private and takes its page in `_enter_tree()`, on the
 		# day and in the building alike: one handed another library, or none, asks the sitting's nothing.
-		var manager_asks := recording.acquired_from("res://src/events/event_manager.gd")
+		var manager_asks := recording.acquired_from("res://src/events/simulation/event_manager.gd")
 		t.check(managers > 0 and manager_asks >= managers,
 				"%s: the event manager asked the sitting's library for its page (%d of %d)"
 				% [where, manager_asks, managers])

@@ -161,7 +161,7 @@
       "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: any row in the catalogue can stream into reach at any moment. EventManager takes a reference on it for its own life, and the screen-edge badge draws the same regions",
       "padding": "transparent",
       "consumers": [
-        "src/events/event_instance.gd",
+        "src/events/simulation/event_instance.gd",
         "src/ui/danger_edge.gd",
         "src/resistance/cordon_officer.gd"
       ],

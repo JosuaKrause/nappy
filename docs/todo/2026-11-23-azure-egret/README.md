@@ -8,7 +8,7 @@ to drift apart. polite-tapir's standing-rest design, section 2, sends removing i
 entry. A filing from a review, not from the player's words; the band, `later`, is the filer's proposal.
 
 **What a builder does.** Delete `least_distance()` and read `Offscreen.min_boundary()` where it is read, which is
-about ten files: `src/world/spawn_siting.gd` itself, `src/events/event_spawner.gd`, comments in
+about ten files: `src/world/spawn_siting.gd` itself, `src/events/simulation/event_spawner.gd`, comments in
 `src/offscreen.gd` and `src/events/data/event_catalogue.gd`, `tools/cost_table.gd` (which writes a sentence of
 `docs/COSTS.md`), `docs/EVENTS.md`, `docs/COSTS.md`, and the suites and probe `tests/test_spawn_siting.gd`,
 `tests/test_events_pursuit.gd`, `tests/test_pursuer_on_foot.gd`, `tests/test_resistance_placement_kinds.gd` and

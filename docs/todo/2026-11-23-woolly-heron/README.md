@@ -18,6 +18,6 @@ running the suite.
 - `route-end-spacing.md`: the gap between two route events' ends, and two checks pull request 1662 left weaker.
 
 **A nit for whoever builds these.** The doc comment of `EventInstance.is_past_its_warning()`
-(`src/events/event_instance.gd`) says "a pursuit" asks it; the reader is the scene recipe's pursuing
+(`src/events/simulation/event_instance.gd`) says "a pursuit" asks it; the reader is the scene recipe's pursuing
 observation (`src/dev/scene_recipe_runtime.gd`, which asks `event.pursues() and event.is_past_its_warning()`).
 The comment is corrected in the first pull request of this entry that touches `event_instance.gd`.
