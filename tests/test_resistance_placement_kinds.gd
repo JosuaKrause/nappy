@@ -3,20 +3,18 @@ extends "res://tests/resistance_rig.gd"
 ##
 ## **A real city, for a stated reason**: each task's site is picked from the blocks, fronts and
 ## sidewalks a generator made and the events the day plans there, so what is checked about the
-## director's placement is over that ground. The cases that run `ResistanceHappenings` keep the city
-## for what each reads of it that a drawn map and `FakeEventManager` do not carry:
-## - the raid (two cases) is sited by the city's own spawn siting (the vans' bodies off her
-##   sidewalk, the patrol car's beat and drawing box);
-## - the market found gone and the market waiting while she can see it walk the day's route tree
-##   (`DayStreets`) for the block ahead of her, and the first reads the buildings shuttered and
-##   the stalls taken from the day the manager planned;
+## director's placement is over that ground. Three cases that run `ResistanceHappenings` keep the
+## city for what each reads of it that a drawn map and `FakeEventManager` do not carry:
+## - the market found gone reads the buildings the city shuttered (`City.buildings()`) and the
+##   market stalls gone from the day the real manager planned;
 ## - the column is warned of and driven by the real manager down the main road the map names;
-## - the lost day 10 restoring her ordinary door and the neighbor's window boarded from day 11
-##   are what `City` and its fronts do with the run's scars and the day, the door and the
-##   building read off the city's nodes;
-## - the neighbor walking out to work on days 1 to 9 measures the way along her street with the
-##   plan builder and the units drawn round it, which the real manager owns.
-## None takes a fake event or a fake manager, so none is left to judge.
+## - the neighbor walking out to work on days 1 to 9 needs the manager's plan builder
+##   (`room_along()`) to find the way along her street and the manager's drawing of the ground
+##   along it (`draw_the_ground_round()`); the fake manager has neither over a street, so the case
+##   stands on the manager the city's dawn hands the director.
+## The raid, the market waiting while she can see it and the neighbor's window boarded from day 11
+## are `tests/test_resistance_happenings.gd`'s, on its stand-ins; her door's picture sealed and
+## restored and the window's own boarding are `tests/test_home_block.gd`'s.
 
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
@@ -32,8 +30,6 @@ const UI := preload("res://tests/ui_screens.gd")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
 const FrontReads := preload("res://tests/front_reads.gd")
-## Her street door's picture and the building it stands in front of, read off the city's nodes.
-const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 
 func run(t: TestRunner) -> void:
 	await _test_the_burnt_shell_task_rides_the_recorded_scar(t)
@@ -52,13 +48,7 @@ func run(t: TestRunner) -> void:
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
 	_test_the_morning_neighbors_way_is_over_drawn_ground(t)
 	_test_the_neighbors_walk_home_is_over_drawn_ground(t)
-	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
-	_test_the_raid_waits_for_the_patrol_cars_beat_to_be_out_of_her_view(t)
-	_test_the_sealed_door_stands_after_a_reload(t)
-	_test_a_lost_day_ten_restores_the_ordinary_door(t)
-	_test_the_neighbor_window_is_boarded_from_day_eleven(t)
 	_test_the_market_is_found_gone(t)
-	_test_the_market_waits_while_she_can_see_it(t)
 	_test_the_column_comes_down_the_main_road(t)
 	_free_city()
 
@@ -1060,165 +1050,6 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 				"seed %d: while the day's other units are still to draw" % seed_value)
 		director.free()
 
-## Day 10's raid: vans at her building and a patrol, arriving only once she is out of sight of her
-## door, and never on her own sidewalk — the doorstep stays reachable along it.
-func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, RunCity.spawn_siting(_city))
-	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY)
-	var before := _street()
-	var door := _city.map.doorstep_world_position()
-	happenings.tick(STEP, door, Vector2.ZERO)
-	t.check(_raid_since(before).is_empty(), "nothing arrives while she is at her door")
-	_look_at(Rect2(door - Vector2(400.0, 400.0), Vector2(800.0, 800.0)))
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(_raid_since(before).is_empty(), "or while any of it would be on screen")
-	_look_at(Rect2())
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	var vans := 0
-	var patrols := 0
-	var door_tile := _city.map.world_to_tile(door)
-	var raid := _raid_since(before)
-	for instance in raid:
-		if instance.row_id() == "night_raid":
-			vans += 1
-			t.check(not instance.pursues(), "a van at her door does not hunt")
-			for tile in EventSpawner.footprint_of(BodyStance.of(_city.map, instance.row(),
-					instance.global_position, Vector2.RIGHT)):
-				t.check(tile.y > door_tile.y + Tuning.SIDEWALK_WIDTH - 1,
-						"a van's body is off her own sidewalk (%s)" % tile)
-		elif instance.row_id() == "police_patrol":
-			patrols += 1
-			t.check(instance.ground_shape() != null, "the patrol car keeps its shape")
-	t.check(vans == 2 and patrols == 1, "two vans and a patrol at her building (%d, %d)"
-			% [vans, patrols])
-	for instance in raid:
-		RunCity.events(_city).retire(instance)
-	before = _street()
-	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY + 1)
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(_raid_since(before).is_empty(), "and only on day 10")
-
-## **The patrol car's beat is held to the view on its own**, apart from the vans. The beat
-## runs `RAID_PATROL_REACH_TILES` either side of her door, further than the vans'
-## `RAID_VAN_OFFSET_TILES`, so a view that holds one end of the beat and neither van is one only
-## the patrol car's own check can refuse (`ResistanceHappenings._maybe_raid()`): the view is the
-## car's own drawing box standing at the beat's far end, and the raid holds back; with the view
-## looking at nothing the same tick brings it. The two premises are checked first, or the test
-## would pass on the vans' check alone: neither van would be drawn in that view, and the car would.
-func _test_the_raid_waits_for_the_patrol_cars_beat_to_be_out_of_her_view(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, RunCity.spawn_siting(_city))
-	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY)
-	var door := _city.map.doorstep_world_position()
-	var door_tile := _city.map.world_to_tile(door)
-	var corridor := door_tile.y - CityMap.corridor_offset(door_tile.y)
-	var far_side := corridor + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
-	var lane := corridor + Tuning.SIDEWALK_WIDTH
-	var beat_end := _city.map.tile_to_world(
-			Vector2i(door_tile.x + ResistanceHappenings.RAID_PATROL_REACH_TILES, lane))
-	var van_box := EventFootprints.footprint_of(EventCatalogue.by_id("night_raid"))
-	var car_box := EventFootprints.footprint_of(EventCatalogue.by_id("police_patrol"))
-	_look_at(Rect2(beat_end + car_box.position, car_box.size))
-	var van_in_view := false
-	for side: int in [-1, 1]:
-		var van_at := _city.map.tile_to_world(
-				Vector2i(door_tile.x + side * ResistanceHappenings.RAID_VAN_OFFSET_TILES, far_side))
-		van_in_view = van_in_view or _would_show(van_box, van_at)
-	t.check(not van_in_view and _would_show(car_box, beat_end),
-			"the view holds the patrol car's far end and neither van, or this test checks the vans alone")
-	var before := _street()
-	var away := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
-	happenings.tick(STEP, away, Vector2.ZERO)
-	t.check(_raid_since(before).is_empty(),
-			"the raid waits while the patrol car's beat would be drawn in her view, the vans out of it")
-	_look_at(Rect2())
-	happenings.tick(STEP, away, Vector2.ZERO)
-	t.check(_raid_since(before).size() == 3, "and arrives the moment none of it would be")
-
-## Sealed on day 11 and after a save/load: `City.build()` reads the run's scars once, at boot,
-## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `City.build()`
-## call sites, both after the run has already loaded.
-func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
-	var run := RunState.new()
-	run.start_run(RUN_SEED)
-	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
-	var city: City = CITY_SCENE.instantiate()
-	city.run = run
-	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(SEED))
-	t.check(HomeDoorReads.is_sealed(city),
-			"a boot whose scars already carry the seal starts the door sealed")
-	city.free()
-
-## A lost day 10 gives the scar back (the run's `run_parts.give_back()`) and the
-## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
-## other scar already gets.
-func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
-	run.header().set_day(ResistanceSteps.NEIGHBOR_DAY)
-	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, RunCity.spawn_siting(_city))
-	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY)
-	var door := _city.map.doorstep_world_position()
-	var before := _street()
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(HomeDoorReads.is_sealed(_city), "sealed once the raid arrives")
-	for instance in _raid_since(before):
-		RunCity.events(_city).retire(instance)
-	# The loss: the attempt's own scar is given back, the same way
-	# the run's `run_parts.give_back()` restores every scar a lost day left.
-	GivenRun.scars(run, [])
-	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), ResistanceSteps.NEIGHBOR_DAY)
-	_city.start_day(state, ResistanceSteps.NEIGHBOR_DAY,
-			_rng(ResistanceSteps.NEIGHBOR_DAY, "closures"))
-	t.check(not HomeDoorReads.is_sealed(_city), "a lost day 10 restores the ordinary door")
-
-## The neighbor's boarded window: absent before day 11, set on the one home-block building the
-## door notch stands in front of from day 11's morning on — the third floor nearest the door,
-## down the hall from her own door (PLAYTEST-131), always there since M185 fixes that building's
-## own height at `City.HOME_BUILDING_WALL_ROWS` (4) wall rows or more — the same cell every later
-## day and on a fresh load of the same seed. `SEED` (4242) is the seed PLAYTEST-134 found with
-## only two wall rows before the fix.
-func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, RunCity.spawn_siting(_city))
-	var building := HomeDoorReads.building(_city)
-	t.check(building != null, "the door notch stands in front of exactly one home-block building")
-	t.check(building.wall_tiles() >= 4,
-			"seed %d: her own building has at least four wall rows (%d)" % [SEED, building.wall_tiles()])
-
-	happenings.start_day(ResistanceHappenings.MARKET_DAY - 1)
-	t.check(building.neighbor_window_col() == -1, "unboarded the day before")
-
-	happenings.start_day(ResistanceHappenings.MARKET_DAY)
-	var col := building.neighbor_window_col()
-	t.check(col >= 0, "boarded from day 11's morning on")
-	t.check(building.neighbor_window_row() == 3,
-			"seed %d: on the third floor" % SEED)
-
-	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)
-	t.check(building.neighbor_window_col() == col, "the same cell on every later day")
-
-	var run := RunState.new()
-	run.start_run(RUN_SEED)
-	var reloaded: City = CITY_SCENE.instantiate()
-	reloaded.run = run
-	t.add_child(reloaded)
-	RunCity.build(reloaded, CityGenerator.generate(SEED))
-	reloaded.fronts().board_neighbor_window()
-	var reloaded_building := HomeDoorReads.building(reloaded)
-	t.check(reloaded_building.neighbor_window_col() == col, "and the same cell on a fresh load")
-	reloaded.free()
-
 ## Plans `day` on the test city through the real day order (the closures and the events) with
 ## `state`, the run's own city state (`AttemptSpendState.block_arcs()`), which the happenings read, and hands back the happenings of
 ## that day, started.
@@ -1299,36 +1130,6 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 		if state.purpose_of(_city.map.plans_by_block(), block) == GameEnums.BlockPurpose.BOARDED_UP:
 			boarded.append(block)
 	return boarded
-
-## Day 11: **a market in her sight is not boarded up.** She stands in the middle of a candidate
-## block's frontage, walks as long as the market waits for a way to be chosen and then past the day's
-## deadline; the block she stands at stays commercial, whatever the day
-## does with the others. Checked on each of the first two candidates, a block-arcs record of its own for each.
-func _test_the_market_waits_while_she_can_see_it(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var seen := 0
-	for which in 2:
-		var state := _city.run.attempt_spend().block_arcs()
-		state.reset()
-		var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
-		var candidates: Array[Vector2i] = []
-		for y in Tuning.CITY_BLOCKS.y:
-			for x in Tuning.CITY_BLOCKS.x:
-				var candidate := Vector2i(x, y)
-				if _city.map.plans_by_block().has(candidate) \
-						and state.purpose_of(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.COMMERCIAL \
-						and state.next_purpose(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.BOARDED_UP:
-					candidates.append(candidate)
-		if candidates.size() <= which:
-			break
-		var block := candidates[which]
-		var her := _city.map.tile_rect_to_world(_city.map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH)).get_center()
-		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
-		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
-		seen += 1
-		t.check(state.purpose_of(_city.map.plans_by_block(), block) == GameEnums.BlockPurpose.COMMERCIAL,
-				"the market in block %s is not boarded up with her standing in front of it" % block)
-	t.check(seen > 0, "the test city has a block to stand in front of, or this test checks nothing")
 
 ## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
 ## in one lane of the main road, warned of first: its badge goes up with no truck in the world, its

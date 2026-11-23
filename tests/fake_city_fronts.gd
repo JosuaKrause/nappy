@@ -4,10 +4,12 @@ extends CityFronts
 ## resistance's happenings, `ResistanceHappenings.setup()`) in place of the city's, so the check
 ## builds no city and no building. It records what it is asked to change and changes nothing: her
 ## street door sealed (`seal_home_door()`), as the raid asks the city's fronts once, the moment it
-## arrives. The real fronts' own logic, the door's picture swapped, is checked with the city's.
+## arrives, and the neighbor's window boarded (`board_neighbor_window()`), as the happenings ask it
+## on each day from day 11. The real fronts' own logic, the door's picture swapped, is checked with the city's.
 ## A helper, not a suite: the runner loads only `test_*.gd`.
 
 var _seals := 0
+var _boardings := 0
 
 ## Counts the seal and changes nothing.
 ##
@@ -18,3 +20,13 @@ func seal_home_door() -> void:
 ## How many times her street door has been asked to be sealed.
 func seals() -> int:
 	return _seals
+
+## Counts the boarding and changes nothing.
+##
+## Overrides CityFronts.board_neighbor_window.
+func board_neighbor_window() -> void:
+	_boardings += 1
+
+## How many times the neighbor's window has been asked to be boarded.
+func boardings() -> int:
+	return _boardings
