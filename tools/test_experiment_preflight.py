@@ -21,7 +21,10 @@ COLLECTORS = (
     "entity_frame_profile.tscn",
     "entity_frame_profile_observer.gd",
 )
-SOURCES = ("src/events/simulation/event_instance.gd", "src/crowd/crowd_agent.gd")
+# The dated runner compares recorded revisions, where the event instance is at the old path; the
+# audit probe follows main, where it is under src/events/simulation/.
+SOURCES = ("src/events/event_instance.gd", "src/crowd/crowd_agent.gd")
+AUDIT_SOURCES = ("src/events/simulation/event_instance.gd", "src/crowd/crowd_agent.gd")
 
 
 class ExperimentPreflightTests(unittest.TestCase):
@@ -51,6 +54,7 @@ class ExperimentPreflightTests(unittest.TestCase):
             *(f"tests/probes/{collector}" for collector in COLLECTORS),
             "tests/probes/entity_frame_profile_analyze.py",
             *SOURCES,
+            *AUDIT_SOURCES,
         ):
             (checkout / relative).parent.mkdir(parents=True, exist_ok=True)
             (checkout / relative).write_text(relative + "\n")
@@ -61,7 +65,7 @@ class ExperimentPreflightTests(unittest.TestCase):
             "    return {'accepted': True, 'rejections': [], 'native_ms': None, "
             "'callback_interval_ms': {}}\n"
         )
-        for relative in SOURCES:
+        for relative in {*SOURCES, *AUDIT_SOURCES}:
             (checkout / relative).write_text(relative + source_suffix + "\n")
         self._git(checkout, "init", "-q")
         self._git(checkout, "config", "user.name", "Experiment Test")
@@ -136,7 +140,7 @@ class ExperimentPreflightTests(unittest.TestCase):
 
     def test_audit_refuses_dirty_or_its_own_repository(self) -> None:
         checkout = self._checkout("audit")
-        (checkout / SOURCES[0]).write_text("dirty\n")
+        (checkout / AUDIT_SOURCES[0]).write_text("dirty\n")
         dirty = self._run(AUDIT, str(checkout))
         self.assertEqual(dirty.returncode, 2, dirty.stderr)
         self.assertIn("dirty tracked files", dirty.stderr)

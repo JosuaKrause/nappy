@@ -15,14 +15,13 @@ about. Each group ends one of three ways: fixed by a named pull request, correct
 because the file was in the wrong layer, or declared permanent in designing-classes with its
 reason.
 
-**The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
-review; a builder runs it again):
+**What is left.** `check_layers.py --list` lists no break and the events folder is split by layer, so what
+remains is the closing, the rule that outlives the list:
 
-- **None stands now**: `check_layers.py --list` lists no break.
-
-**How each group is settled.** The player approved the review's point that these are not forgotten
-(inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
-
-**Build:** one pull request per group, module by module with the rest of the refactor (minty-quail's
-README's order), each deleting the breaks it fixes from `tools/layer_map.py`'s list. The pull request that finishes this item
-lists what is left, each line with its reason in designing-classes.
+- designing-classes, "Code is designed by layer": the sentence that the list of breaks standing in the map only
+  shrinks becomes the rule that no break stands, and one that has to is listed in `tools/layer_map.py` with its
+  reason and declared in that section with the same reason, in the pull request that adds it.
+- `docs/ARCHITECTURE.md`'s paragraph on the map, which says the map lists by file every break that still stands,
+  and pr-review's `references/architecture-questions.md`, which names its list of standing breaks, say the same
+  rule in their own words.
+- polite-tapir's `README.md` loses its bullet on the standing layer breaks.

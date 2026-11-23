@@ -17,7 +17,7 @@ COLLECTOR_FILES = [
     "entity_frame_profile.tscn",
     "entity_frame_profile_observer.gd",
 ]
-SOURCE_FILES = ["src/events/simulation/event_instance.gd", "src/crowd/crowd_agent.gd"]
+SOURCE_FILES = ["src/events/event_instance.gd", "src/crowd/crowd_agent.gd"]
 
 
 def _git_output(parser, root, *args):
