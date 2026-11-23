@@ -11,8 +11,6 @@ extends RefCounted
 ## dog was killing people, because every line of it was about **speeds and durations** and a
 ## pursuit is played out in **distances**. The rig below is the contract walked rather than
 ## asserted.
-##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again".
 
 const STEP := 1.0 / 60.0
 
@@ -195,8 +193,8 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	instance.free()
 	return result
 
-## A real building tile with open pavement on two adjacent sides — the outward corner every
-## rectangular building has at least one of. `{}` would mean the generator changed shape rather
+## A building tile with open pavement on two adjacent sides — the outward corner every
+## rectangular building has at least one of. `{}` would mean the hand-built map has none rather
 ## than that the test picked badly.
 func _a_building_corner(map: CityMap) -> Dictionary:
 	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
@@ -940,7 +938,7 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 ## travelled a route the scheduler had already checked, and not harmless the moment something
 ## steers freely at the player.
 ##
-## A real building corner, chased round: she walks from its north face to its east face, and a dog
+## A building corner of the hand-built map, chased round: she walks from its north face to its east face, and a dog
 ## aimed straight at wherever she currently is would cut across the building itself to follow her —
 ## exactly the shape of the bug. The pursuit's step through the navigator (`EventPursuit`,
 ## `Navigator.step()`) is the fix, and this is what it has to hold true of every frame regardless
@@ -948,7 +946,7 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	var map := _map()
 	var corner := _a_building_corner(map)
-	t.check(not corner.is_empty(), "the sampled map has a building corner to chase round")
+	t.check(not corner.is_empty(), "the hand-built map has a building corner to chase round")
 	if corner.is_empty():
 		return
 	var north: Vector2i = corner["north"]
@@ -990,12 +988,12 @@ func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	t.check(checked > 0, "the walk round the corner actually ran")
 	instance.free()
 
-## An alley mouth on the real map, as the corner the robber reaches round: a building tile with
+## An alley mouth on the hand-built map, as the corner the robber reaches round: a building tile with
 ## alley ground on one side (`d1`, where he stands) and walkable ground on a perpendicular side
 ## (`d2`, the sidewalk she walks), with the tile between the two (the mouth, `d1 + d2`) walkable too,
 ## so the corner is one he can come round. `corner` is the building's own vertex shared by all four
-## tiles; from it the building lies toward `-d1` and `-d2`. `{}` would mean the generator stopped
-## carving alleys onto streets rather than that the search picked badly.
+## tiles; from it the building lies toward `-d1` and `-d2`. `{}` would mean the map's
+## alley does not open onto a street rather than that the search picked badly.
 func _an_alley_mouth(map: CityMap) -> Dictionary:
 	var sides: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
 	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
@@ -1042,7 +1040,7 @@ func _a_chasing_robber(t: TestRunner, map: CityMap, where: WhereSheIs) -> EventI
 func _test_the_robber_does_not_catch_her_through_a_wall(t: TestRunner) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
-	t.check(not mouth.is_empty(), "the sampled map has an alley opening onto a street")
+	t.check(not mouth.is_empty(), "the hand-built map has an alley opening onto a street")
 	if mouth.is_empty():
 		return
 	var corner: Vector2 = mouth["corner"]
@@ -1341,7 +1339,7 @@ func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px 
 			return false
 	return true
 
-## **`clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
+## **`clear_line_to()` against the sampled line, over the hand-built map.** Seeded segments up to a
 ## stand-off long from walkable ground near buildings, in every direction, each answered both by
 ## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
 ## The guard counts how many of them crossed a building, so a sweep that only ever asked open

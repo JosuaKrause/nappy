@@ -65,6 +65,7 @@ func _test_plain_pose_with_no_objective(t: TestRunner) -> void:
 	t.check(EventPictures.protester_texture(Vector2(5.0, 5.0), Vector2(5.0, 5.0))
 			== EventPictures.PROTESTER,
 			"an objective on top of the protester draws the plain rank rather than dividing by zero")
+
 # ---------------------------------------------------------------- the wiring ---
 
 ## A protest on open ground, in the tree and drawn through `recorded`, pointing its placards where

@@ -15,11 +15,15 @@ extends "res://tests/events_shared_city.gd"
 ##
 ## **Why these checks build a city.** The suite's checks still build the shared city and are not
 ## converted to stand-ins yet: only as far as a pull request's change reaches is a suite converted
-## (inbox #1159 in gray-dolphin). One check builds a city for a reason of its own: the closed-streets
-## day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the integration check of
-## day 12's route to a clean calm area other than the swing's, on a real day planned through
-## `build_day()`, with the day's calm areas made the way `DayPlanner` makes them (`CalmAreas.of()`
-## from the day and its target, which is where the swing's park is set aside).
+## (inbox #1159 in gray-dolphin). Three checks build cities for a reason of their own: the
+## closed-streets day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the
+## integration check of day 12's route to a clean calm area other than the swing's, on a real day
+## planned through `build_day()`, with the day's calm areas made the way `DayPlanner` makes them
+## (`CalmAreas.of()` from the day and its target, which is where the swing's park is set aside);
+## and the retried day and the taught run (`_test_a_retried_day_is_the_same_day`,
+## `_test_the_run_is_always_taught`, moved in from the pursuit suite for the dawn's group to
+## convert) each generate the cities of their own seeds through `CityGenerator.generate()`, three
+## seeds and four.
 
 const STEP := 1.0 / 60.0
 const SEED := 4242

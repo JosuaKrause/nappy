@@ -23,9 +23,10 @@ extends RefCounted
 ## **No case builds a real `City`**: the observer is handed the run and the clock (`setup()`), and
 ## per walk the map she walks, its events, her and the baby, and in a city the city's map, today's
 ## streets and the crowd's sources (`watch()`), and the cases hand it a
-## `RunState`, a map, a `StandInEvents` (a `FakeEventManager` that answers a day's plans as the case
-## sets them), a `DayStreets` of no day (`DayStreets.new()`, which holds a null tree and no closures
-## as a day with none does) and the base `ExcitementSources`, which answers nothing. A map is a
+## `RunState`, a map, a `StandInEvents` (a `FakeEventManager` that answers a day's plans and their
+## live instances as the case sets them), a `DayStreets` of no day (`DayStreets.new()`, which holds
+## a null tree and no closures as a day with none does) and the base `ExcitementSources`, which
+## answers nothing. A map is a
 ## hand-drawn one (`StreetMap.full()`) for a case that needs only streets under her feet, and a
 ## generated one (`CityMapCache.of()`, a copy of a city built once per process, no `City` node) for
 ## the one case that plans a day from it.
@@ -124,9 +125,9 @@ class WatchedDayParts extends RefCounted:
 				instance.free()
 		events.free()
 
-## A day's events as the observer asks them (`plans()`): the plans a case sets, each placed with its
-## instance live where the case put it. The base fake answers nothing else, and the real manager's
-## streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
+## A day's events as the observer asks them (`plans()` and `instances()`): the plans a case sets,
+## each placed with its instance live where the case put it. The base fake answers nothing else,
+## and the real manager's streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
 class StandInEvents extends FakeEventManager:
 	var placed: Array[EventPlan] = []
 	## The instance of each plan placed, which `free_all()` frees.
