@@ -8,8 +8,7 @@ through the dawn only to hand the director its moments take moments read once of
 and one placed plan on day 1 of one seed (a cafe's tables), the only placed plan whose removal changed what the walk
 hands out; its header says how it was read and how to read it again. The four cases run no dawn and grow no route tree;
 they still generate a map, since the walk needs the main road and the world's size. Each case was shown failing with the
-director's rule it holds broken, but one check, that every return patrol comes behind a refused mast, which needs a
-larger change to break.
+director's rule it holds broken.
 
 **Measured.** 96 checks before and after; in three paired local runs the suite took about 29 s on main and 9 s on the
 branch.
