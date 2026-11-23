@@ -65,8 +65,7 @@ static func of(map: WorldMap, row: EventDef, at: Vector2, facing: Vector2) -> Bo
 ## ask. `EventInstance.setup()` stands the built body from the same point. A plan's route does
 ## not enter into it: every plan that carries one starts its route where it was placed (the
 ## director's and the finale's are made at `path[0]`, the plan builder's along-street route
-## starts at the placed tile), and no row is planned cross-street, the one route that starts
-## elsewhere.
+## starts at the placed tile).
 static func of_plan(map: WorldMap, plan: EventPlan) -> BodyStance:
 	return of(map, plan.row(), plan.placed_at(), plan.faces())
 

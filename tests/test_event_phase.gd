@@ -78,11 +78,19 @@ func _test_a_warning_ticks_into_its_action_or_is_called_off(t: TestRunner) -> vo
 
 # ------------------------------------------------------------------- the phase ---
 
+## Whether it is in its warning and nowhere else. Telegraphing alone also answers yes for a row that
+## has left, parked, stopped her or finished inside its warning's clock.
+func _is_warning(instance: EventInstance) -> bool:
+	return instance.is_telegraphing() and not instance.is_waiting() \
+			and not instance.is_on_its_way_out() and not instance.is_gone() \
+			and not instance.has_parked() and not instance.is_only_its_barrier() \
+			and not instance.has_stopped_her()
+
 func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	t.check(instance.phase == EventInstance.Phase.WARNING and instance.is_telegraphing(),
+	t.check(_is_warning(instance),
 			"a row with no wait starts in its telegraph")
 	var before := int(floor(instance.telegraphs_for() / STEP)) - 1
 	for i in before:
@@ -92,8 +100,7 @@ func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t: TestRunner) -> 
 			% instance.telegraphs_for())
 	for i in int(ceil(instance.telegraphs_for() / STEP)) + 1 - before:
 		instance.step(STEP)
-	t.check(instance.phase == EventInstance.Phase.ACTIVE and not instance.is_telegraphing(),
-			"and is active once its telegraph has run")
+	t.check(instance.is_past_its_warning(), "and is active once its telegraph has run")
 	instance.free()
 
 func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
@@ -102,26 +109,24 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
-	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
-			"a row that waits starts waiting")
+	t.check(instance.is_waiting(), "a row that waits starts waiting")
 	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
-	t.check(instance.phase == EventInstance.Phase.WARNING and not instance.is_waiting(),
+	t.check(_is_warning(instance),
 			"inside its one radius it notices her and warns")
 	t.check(instance.save().noticed_at() != INF, "and its notice has a start")
 	instance_where.tell(Vector2(def.notice_within() + 40.0, 0.0))
 	instance.step(STEP)
-	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
-			"back outside its radius, it waits again")
+	t.check(instance.is_waiting(), "back outside its radius, it waits again")
 	t.check(instance.save().noticed_at() == INF, "with no notice left")
 	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	var frames := 0
-	while instance.phase == EventInstance.Phase.WARNING or frames == 0:
+	while _is_warning(instance) or frames == 0:
 		instance.step(STEP)
 		frames += 1
 		if frames > 200:
 			break
-	t.check(instance.phase == EventInstance.Phase.ACTIVE,
+	t.check(instance.has_charged() and not instance.is_telegraphing(),
 			"staying inside, it charges once its warning has run (%d frames)" % frames)
 	t.close_to(frames * STEP, def.pursuit().warns_for(), "after its own warning", 2.0 * STEP)
 	instance.free()
@@ -138,16 +143,14 @@ func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 	while not instance.is_on_its_way_out() and frames < 400:
 		instance.step(STEP)
 		frames += 1
-	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_on_its_way_out()
-			and instance.is_on_its_way_out() and not instance.is_gone(),
+	t.check(instance.is_on_its_way_out() and not instance.is_gone(),
 			"off the end of its route it is leaving (%d frames)" % frames)
 	t.check(instance.current_intensity() == 0.0, "and emits nothing while it goes")
 	var leaving_ticks := 0
 	while not instance.is_gone() and leaving_ticks < 400:
 		instance.step(STEP)
 		leaving_ticks += 1
-	t.check(instance.phase == EventInstance.Phase.DONE and instance.is_gone()
-			and instance.is_gone() and not instance.is_on_its_way_out() and not instance.is_on_its_way_out(),
+	t.check(instance.is_gone() and not instance.is_on_its_way_out(),
 			"finished, it is done, and only done")
 	instance.free()
 
@@ -210,7 +213,7 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	for i in held_steps:
 		first_where.tell(her)
 		first.step(STEP)
-	t.check(first.phase == EventInstance.Phase.WARNING, "set on her, he is warning")
+	t.check(_is_warning(first), "set on her, he is warning")
 	t.close_to(first.chase_age(), 0.0, "and his notice, held every tick, has not run", 0.0001)
 	t.close_to(first.save().noticed_at(), held_steps * STEP,
 			"the second he waited is counted into the start a stream-out carries", 0.0001)

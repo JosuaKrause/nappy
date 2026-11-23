@@ -48,8 +48,7 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 5. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites):
    - two suites call `EventInstance.transition()` to put a live event in a phase that sets a check up
-     (`test_resistance_replacement` and `test_resistance_placement_kinds`), and the live event's phase, behaviours and
-     day 13 guard suites read its `phase`: each reaches the phase the way the game does or is handed a fake event,
+     (`test_resistance_replacement` and `test_resistance_placement_kinds`): each reaches the phase the way the game does or is handed a fake event,
      as `event-interface.md`'s section 4.2 says under `phase`;
 6. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
