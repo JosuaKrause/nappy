@@ -263,7 +263,7 @@ src/
 	                      distance, notice and each behaviour's state, one value its plan carries
 	where_it_stands.gd    where a plan's live event stands now (`WhereItStands`): there or not, where,
 	                      facing which way, over or not; the plan asks it without naming the event
-	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
+	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along
 	                      the street, room among placed plans, where its body stands; handed the map
 	                      and what it asks (what stops a row, where a body stands, the room)
 	row_ground.gd         which tiles a row may stand on today and how many times over each is
@@ -574,7 +574,8 @@ src/
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	texts.gd              `Texts`, every text the game shows on screen: one constant per line, grouped by
-	                      screen; callers read `Texts.<NAME>`, and tests/test_texts_catalogue.gd fails on a
+	                      screen, and the `{pause}` and `{run}` tokens `HelpText` draws as a button's symbol;
+	                      callers read `Texts.<NAME>`, and tests/test_texts_catalogue.gd fails on a
 	                      quoted sentence anywhere else under src/
 	meter_bar.gd
 	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home

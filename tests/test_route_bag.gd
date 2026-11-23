@@ -16,9 +16,9 @@ extends RefCounted
 ## else. The director's reading of a mark rigs a bag (its run-log line), the events' walk sites what
 ## the bag draws on the route she walks, and the city streams the place in once she walks to it;
 ## a stand-in for any one of them would hand the others back the answer the case asks whether they
-## agree on. No other case builds a city. Four plan a whole real day through `GameDawn` on a
-## generated map only to hand the director its moments: the scheduler is not this suite's subject,
-## and those four are what is left of the item's pass over this suite (`docs/todo/`, minty-quail).
+## agree on. No other case builds a city. The four that walk the director take a generated map to
+## walk on and the day's moments as recorded off a real day (`tests/fixtures/route_bag_moments.gd`,
+## which says how they were read): the scheduler's dawn is not this suite's subject.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -260,20 +260,10 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 	var day := 2
 	for seed_value: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(seed_value)
-		var state := CityState.new()
-		state.begin_day(map.plans_by_block(), day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("route-bag:%d" % seed_value)
-		var plans: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements():
-			if not plan.is_placed():
-				plans.append(plan)
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
-		director.start_day(day, plans, rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng)
 		var expected := {}
 		for marble: String in EventDirector.ordinary_route_marbles(day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
@@ -323,7 +313,7 @@ func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) ->
 				else ": not " + ", ".join(wrong)))
 
 ## **Day one's dog walkers come by construction** (PLAYTEST-05 6; inbox #561 in coral-bunny, a
-## rigged bag): walking a real day one's plan down the arterial's sidewalk, where a dog walker always
+## rigged bag): walking a recorded day one down the arterial's sidewalk, where a dog walker always
 ## has a sidewalk ahead of her to come down, two of the first three events the director hands out on
 ## her route are dog walkers, on every seed tried.
 func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner) -> void:
@@ -332,17 +322,10 @@ func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner
 	var seeds: Array[int] = [4242, 90210, 1234567, 77, 1301, 31337]
 	for seed_value in seeds:
 		var map := CityGenerator.generate(seed_value)
-		var state := CityState.new()
-		state.begin_day(map.plans_by_block(), day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("route-bag:day-one:%d" % seed_value)
-		var plans := GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:day-one:ahead:%d" % seed_value)
-		director.start_day(day, plans, rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng)
 		var handed: Array[String] = []
 		var at := CrowdLanes.arterial_pavement(map)
 		at.y = map.world_size().y * 0.5
@@ -365,7 +348,7 @@ func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner
 			% [EventDirector.DAY_ONE_DOG_WALKERS, EventDirector.DAY_ONE_DOG_WALKERS_WITHIN,
 			seeds.size()] + "seeds%s" % ("" if short.is_empty() else ": " + "; ".join(short)))
 
-## Day 3's lesson through the director: on a real day's plan the dog is the first thing she meets,
+## Day 3's lesson through the director: on a recorded day the dog is the first thing she meets,
 ## at `LESSON_DELAY`, out of a rigged bag of one in front of the route's bag, and the ordinary bag
 ## after it still holds every dog marble it was filled with. *(inbox #561 in coral-bunny: "keep it first" · inbox
 ## #566 in feathery-stork: "but the first dog is a rigged bag with only one entry that is separate from anything that
@@ -374,17 +357,10 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for seed_value: int in [4242, 90210]:
 		var map := CityGenerator.generate(seed_value)
-		var state := CityState.new()
-		state.begin_day(map.plans_by_block(), day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("route-bag:lesson:%d" % seed_value)
-		var plans := GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
-		director.start_day(day, plans, rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng)
 		var bag := director.route_bag()
 		t.check(bag.bag_in_front() == ["charging_dog"],
 				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s)"
@@ -448,20 +424,14 @@ func _test_after_the_mark_the_task_row_is_put_on_her_route(t: TestRunner) -> voi
 func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	var day := 11
 	var map := CityGenerator.generate(SEED)
-	var state := CityState.new()
-	state.begin_day(map.plans_by_block(), day)
-	map.repaint(state)
-	var tree := RouteTree.for_day(map, day)
-	var plan_rng := RandomNumberGenerator.new()
-	plan_rng.seed = hash("route-bag:refused:%d" % SEED)
-	var plans := GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements()
 	# A siting that refuses every place, as the real one does when she is off the day's routes or
 	# walking home inside the streaming band of the branch's end.
 	var siting := FakeWalkSiting.new()
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
-	director.start_day(day, plans, rng, siting)
+	# The day's own moments play no part: the return's patrols and the mast are owed below.
+	director.start_day(day, [] as Array[EventPlan], rng, siting)
 	director.owe_the_return(day, 0)
 	var mast: Array[String] = ["loudspeaker"]
 	director.rig_her_route(mast, 1, 0, siting)

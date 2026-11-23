@@ -35,8 +35,8 @@ one owner: the scene recipe runtime's `manifest`, `named`, `start_position` and 
 (`src/dev/scene_recipe_runtime.gd`), which waits with the scene recipes for the events' interface
 row 3c and the scene recipes' own pass (`city-hand-ins.md`). Under `src/events/`, the events' suites and rigs
 still read the `[own file only]` group's calm areas' `unused`, the catalogue's `all`, the live event's
-`charge_radius`, `chase_age`, `clear_line_to`, `notice_time` and `phase`, the event manager's `ahead`,
-`checkpoints`, `spawner`, `streaming` and `warnings`, the plan's `ends` and the location's `section`; the `[no reader]`
+`charge_radius`, `chase_age`, `clear_line_to` and `notice_time`, the event manager's `ahead`,
+`checkpoints`, `spawner`, `streaming` and `warnings`; the `[no reader]`
 group holds none of the events'. Nothing under `src/resistance/` is left in either group.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each

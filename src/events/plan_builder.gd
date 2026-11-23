@@ -1,7 +1,7 @@
 class_name PlanBuilder
 extends RefCounted
 ## Builds one event's plan (`EventPlan`) at one tile on the map it is handed: a standing row faced
-## out of the wall it backs against, a moving row given its route down or across the street it
+## out of the wall it backs against, a moving row given its route down the street it
 ## stands on, a plan sited only where the plans already standing leave it room, and where a built
 ## plan's body stands.
 ##
@@ -51,9 +51,6 @@ func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 			placed.face(-Vector2(_map.pavement_inward(tile)))
 		return placed
 	match def.route().kind():
-		RouteSpec.Kind.CROSS_STREET:
-			var crossing := _cross_street_path(tile)
-			return null if crossing.is_empty() else EventPlan.new(def, at, crossing)
 		RouteSpec.Kind.ALONG_STREET:
 			var route := _along_street_path(tile, def, rng, within)
 			# Nowhere to go from here; a "mobile" event that stands still is worse than
@@ -158,28 +155,6 @@ func _along_street_path(tile: Vector2i, def: EventDef,
 		return PackedVector2Array()
 
 	return PackedVector2Array([_map.tile_to_world(tile), _map.tile_to_world(finish)])
-
-## A route straight across the street the tile sits on. A cat runs *across* traffic, so the
-## path is perpendicular to the road it starts from: out from the tile each way, at most a street's
-## width, as far as a figure on foot may stand (`CityMap.passable()`), so it comes out of one kerb
-## and goes into the other and never starts or ends inside a lot. Empty, so the candidate is
-## refused, where the tile is not one a figure on foot may stand on or nothing either side of it is.
-func _cross_street_path(tile: Vector2i) -> PackedVector2Array:
-	var vertical_road := CityMap.corridor_offset(tile.x) >= 0
-	var across := Vector2i.RIGHT if vertical_road else Vector2i.DOWN
-	var reach := Tuning.STREET_WIDTH
-	var mover := _as_it_stops(Mover.on_foot())
-	var ends: Array[Vector2i] = []
-	for way: Vector2i in [-across, across]:
-		var end := tile
-		for step in range(1, reach + 1):
-			if not _map.passable(tile + way * step, mover):
-				break
-			end = tile + way * step
-		ends.append(end)
-	if ends[0] == ends[1] or not _map.passable(tile, mover):
-		return PackedVector2Array()
-	return PackedVector2Array([_map.tile_to_world(ends[0]), _map.tile_to_world(ends[1])])
 
 ## `mover` as this builder's routes are stopped: as it is, or with today's bodies left out where
 ## the builder passes them (`without_todays_bodies()`).

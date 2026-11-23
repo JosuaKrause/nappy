@@ -66,6 +66,13 @@ func _sections_of(locations: DayLocations, view: int, key: Vector3i) -> Array[Lo
 			found.append(section)
 	return found
 
+## Whether the section at `index` shares its section with none of the others.
+func _alone_in_its_section(sections: Array[Location], index: int) -> bool:
+	for other in sections.size():
+		if other != index and sections[index].shares_a_section_with(sections[other]):
+			return false
+	return true
+
 func _test_a_street_is_three_sections_along_its_length(t: TestRunner) -> void:
 	var sections := _sections_of(DayLocations.lay_out(CityMap.new(), _views()),
 			PlacementView.View.OFF_THE_ROUTE, OFF)
@@ -78,7 +85,7 @@ func _test_a_street_is_three_sections_along_its_length(t: TestRunner) -> void:
 	for index in sections.size():
 		var tiles := sections[index].tiles()
 		t.check(tiles.position.x == x and tiles.position.y == rect.position.y
-				and tiles.size.y == rect.size.y and sections[index].section() == index,
+				and tiles.size.y == rect.size.y and _alone_in_its_section(sections, index),
 				"section %d follows the one before along the street, the street's whole width (%s)"
 				% [index, tiles])
 		lengths.append(tiles.size.x)
@@ -134,16 +141,16 @@ func _test_a_section_taken_takes_its_two_sidewalk_locations(t: TestRunner) -> vo
 		var on_a_band := false
 		for band in bands:
 			on_a_band = on_a_band or band.encloses(sidewalk.tiles())
-		t.check(on_a_band and middle.tiles().intersects(sidewalk.tiles()) == (sidewalk.section() == 1),
+		t.check(on_a_band and middle.tiles().intersects(sidewalk.tiles()) == sidewalk.shares_a_section_with(middle),
 				"each sidewalk location lies on one sidewalk inside its own section (%s)"
 				% sidewalk.tiles())
 	street.take_section(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
 			middle.centre()))
-	var taken: Array[int] = []
+	var taken: Array[bool] = []
 	for sidewalk in sidewalks:
 		if sidewalk.is_taken():
-			taken.append(sidewalk.section())
-	t.check(taken == ([1, 1] as Array[int]),
+			taken.append(sidewalk.shares_a_section_with(middle))
+	t.check(taken == ([true, true] as Array[bool]),
 			"a section taken takes its two sidewalk locations and no other (%s)" % [taken])
 
 ## Her paths as `tile -> distance`, the middle tile of each section given its distance.
@@ -251,17 +258,17 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 	for sidewalk in sidewalks:
 		if sidewalk.is_taken():
 			taken += 1
-			t.check(sidewalk.section() == 1, "only the section's own sidewalks are taken")
+			t.check(sidewalk.shares_a_section_with(middle), "only the section's own sidewalks are taken")
 	t.check(middle.is_drawn() and middle.is_taken() and taken == 2,
 			"a roadblock drawn into a section takes it and its two sidewalk locations (%d)" % taken)
 	var first := sidewalks[0]
-	if first.section() == 1:
+	if first.shares_a_section_with(middle):
 		first = sidewalks[sidewalks.size() - 1]
 	locations.record(first, EventPlan.new(EventCatalogue.by_id("cafe_tables"),
 			first.centre()))
 	var others_taken := 0
 	for sidewalk in sidewalks:
-		if sidewalk != first and sidewalk.section() != 1 and sidewalk.is_taken():
+		if sidewalk != first and not sidewalk.shares_a_section_with(middle) and sidewalk.is_taken():
 			others_taken += 1
 	t.check(first.is_taken() and others_taken == 0,
 			"while a cafe drawn on a sidewalk takes that location alone")
@@ -279,7 +286,7 @@ func _test_a_sidewalk_holding_an_event_closes_its_section(t: TestRunner) -> void
 	var other: Location = null
 	for location in locations.all():
 		if location.kind() != Location.Kind.SIDEWALK or location.segment().key() != BESIDE \
-				or location.section() != 0:
+				or not location.shares_a_section_with(sections[0]):
 			continue
 		if held == null:
 			held = location

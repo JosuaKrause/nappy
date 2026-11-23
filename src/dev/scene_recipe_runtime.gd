@@ -1359,11 +1359,10 @@ func activity_snapshot() -> Dictionary:
 			result.visible_events[event.row_id()] = int(result.visible_events.get(event.row_id(), 0)) + 1
 	return result
 
-## Whether `event` is chasing her now: a pursuer neither waiting for her, telegraphing, gone nor
-## on its way out. What the manifest's `pursuing` records and the `pursuing` observation asks.
+## Whether `event` is chasing her now: a pursuer whose warning has run and that is still in the
+## world. What the manifest's `pursuing` records and the `pursuing` observation asks.
 static func _is_pursuing(event: EventInstance) -> bool:
-	return event.pursues() and not event.is_waiting() and not event.is_telegraphing() \
-			and not event.is_gone() and not event.is_on_its_way_out()
+	return event.pursues() and event.is_past_its_warning()
 
 func _release_input() -> void:
 	TouchControls.set_axis(&"move_left", &"move_right", 0)
