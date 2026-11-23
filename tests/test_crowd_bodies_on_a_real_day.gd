@@ -5,9 +5,10 @@ extends RefCounted
 ## `CityMap.obstructed_tiles` (`EventManager`'s wiring), the city starts the day, and the crowd walks
 ## round what stands there. A suite of the crowd (`test_crowd_bodies.gd`) puts a body on the map by
 ## hand and asks what the crowd does; whether the plan puts the right tiles there is only seen by
-## planning a real day on a real city, which is what this suite does, over three seeds. Where a crash
-## is sited (every crashed car's middle on ground the record holds) is the seals' answer and
-## `test_seals.gd`'s (the seal planner sites it, the spawner records it).
+## planning a real day on a real city, which is what this suite does, over three seeds. Its check of
+## where a crash is sited (every crashed car's middle on ground the record holds) is the same
+## wiring: the record the manager writes while the city starts the day, against where a live event
+## stands its cars.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
@@ -64,6 +65,15 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 			var cars := _car_bodies(map, RunCity.events(city))
 			cars_seen += cars.size()
+			# The cars as an instance stands them are where the record put them: the middle of
+			# each is on ground the day marked as a body.
+			var off_the_record := 0
+			for car: Array in cars:
+				if not map.is_obstructed(map.world_to_tile(car[0])):
+					off_the_record += 1
+			t.check(off_the_record == 0,
+					"seed %d day %d: every crashed car's middle is on ground the record holds (%d are not)"
+					% [city_seed, day, off_the_record])
 			var inside := 0
 			var in_a_car := 0
 			var reached_a_car := 0
@@ -90,15 +100,25 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 	t.check(cars_seen > 0, "these days stood crashed cars somewhere at all (%d)" % cars_seen)
 
 ## Every crashed car standing on the day `events` has planned, as `[centre, radius]` pairs — the
-## rows that declare `BodySpec.in_pieces()`, each piece where its plan's stance lays it out
-## (`BodyStance.of_plan()`, the stance a live body stands from and the record is made from). Read off
-## the **plan** rather than off the live instances for the reason the record is: a plan covers the
-## whole map and an instance only exists near the player.
+## rows that declare `BodySpec.in_pieces()`, each piece placed the way
+## `EventSpawner.footprint_of()` places it. Read off the **plan** rather than off the live
+## instances for the reason the record is: a plan covers the whole map and an instance only exists
+## near the player.
 func _car_bodies(map: CityMap, events: EventManager) -> Array:
 	var bodies := []
 	for plan in events.plans():
 		if not plan.is_placed() or plan.row() == null or plan.row().body().declared_pieces().is_empty():
 			continue
-		for piece in BodyStance.of_plan(map, plan).pieces():
-			bodies.append([piece.center(), piece.ground_shape().reach()])
+		# The instance the spawner would make for the plan: where it stands and which way its
+		# pieces are laid out are what it decides when it is set up.
+		var sited := EventInstance.new()
+		sited.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
+				EventSurroundings.new().on(map))
+		var placed := sited.position
+		var vertical := sited.runs_vertically()
+		sited.free()
+		for piece in plan.row().body().pieces():
+			var offset := piece.offset_for(vertical)
+			var centre := placed + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0))
+			bodies.append([centre, piece.ground_shape().reach()])
 	return bodies

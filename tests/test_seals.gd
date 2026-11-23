@@ -15,8 +15,7 @@ extends RefCounted
 ## flood fill from the doorstep passed on the run that found this bug, along a route that used the
 ## main road — physically connected is not the same claim as winnable, and the old assertion had no
 ## way to tell the two apart. `_test_a_day_is_reachable_without_the_main_road` is the restatement;
-## see its own doc for exactly what it proves and what it does not. A crash a day's seals stand has
-## its cars on ground the record of bodies holds.
+## see its own doc for exactly what it proves and what it does not.
 
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const SEEDS := 6
@@ -39,7 +38,6 @@ func run(t: TestRunner) -> void:
 	_test_thinning_leaves_a_walkable_line(t)
 	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
 	_test_hard_seals_cover_the_street_edge_to_edge(t)
-	_test_a_crashs_cars_are_sited_on_ground_the_record_holds(t)
 	_test_whole_scene_hard_seals_place_a_single_body(t)
 	_test_a_placed_crash_keeps_its_two_car_bodies(t)
 	_test_squeezing_past_a_crash_costs_more_than_half_the_meter(t)
@@ -953,27 +951,3 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 		if not joined:
 			return false
 	return true
-
-## **A crash a day's seals stand has both cars on ground the record of bodies holds.** The record is
-## the footprint of each placed body as its stance stands it (`EventSpawner.footprint_of()`, what
-## `EventManager.start_day()` records from the plan), so every car of a crash sited as a hard seal
-## has the tile its middle stands on recorded, on whichever street it lands. Over every seed's days;
-## the guard that the days stood crashed cars at all keeps it from passing on days that placed none.
-func _test_a_crashs_cars_are_sited_on_ground_the_record_holds(t: TestRunner) -> void:
-	var cars := 0
-	for map in _maps:
-		var off_the_record := 0
-		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			for plan in _seals_for(map, day):
-				if not plan.is_placed() or plan.row().body().declared_pieces().is_empty():
-					continue
-				var stance := BodyStance.of_plan(map, plan)
-				var recorded := EventSpawner.footprint_of(stance)
-				for piece in stance.pieces():
-					cars += 1
-					if not recorded.has(map.world_to_tile(piece.center())):
-						off_the_record += 1
-		t.check(off_the_record == 0,
-				"seed %d: every crashed car's middle is on ground the record holds (%d are not)"
-				% [map.city_seed(), off_the_record])
-	t.check(cars > 0, "these days stood crashed cars somewhere at all (%d)" % cars)
