@@ -15,10 +15,13 @@ extends "res://tests/events_shared_city.gd"
 ## combined file measured close to the two-minute budget on its own -- `test_events_costs.gd` keeps
 ## the cost side, which asks the rows alone.
 ##
-## **Why these checks build a city.** Each case asks what the dawn plans on a real city, so the suite
-## builds the shared city and plans its days on it; the dawn's group shared those plans between the
-## cases and handed every dawn the city's mast sites, and moved no case onto a stand-in city (the
-## record minty-quail-amber-elk). Three checks build cities for a reason of their own: the
+## **Why these checks build a city.** The cases that plan a day or a run ask what the dawn plans on
+## a real street network, so they plan on the shared city or on a generated city of a seed of their
+## own; the dawn's group shared those plans between the cases that ask the same day and handed every
+## dawn the city's mast sites (the record minty-quail-amber-elk). The cases that ask the rows alone
+## (`_test_successors_resolve`, `_test_sighted_successors_resolve`,
+## `_test_fire_truck_is_never_scheduled` and the fire engine's warning) build no city. Three checks
+## build cities for a reason of their own: the
 ## closed-streets day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the
 ## integration check of day 12's route to a clean calm area other than the swing's, on a real day
 ## planned through `build_day()`, with the day's calm areas made the way `DayPlanner` makes them
