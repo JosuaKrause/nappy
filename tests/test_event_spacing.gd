@@ -2,6 +2,10 @@ extends "res://tests/events_shared_city.gd"
 ## Focused checks for the scheduler's route-to-route spacing arithmetic, and that no two events of a
 ## planned day are drawn inside each other (the planned day is the shared city's, from
 ## `events_shared_city.gd`).
+##
+## **Why a real city is built here.** That one case asks what the dawn plans, so it plans three days
+## on the shared generated city; it is not a direct test of the city, and it stays on a real city
+## until the dawn group converts it to mocked moments. Every other case is hand-made plans.
 
 func run(t: TestRunner) -> void:
 	_test_stationary_pairs(t)

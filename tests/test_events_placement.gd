@@ -13,9 +13,16 @@ extends "res://tests/events_shared_city.gd"
 ## `events_shared_city.gd` for the cases that read the shared city's day plans (the parked van, the
 ## lorry, the doorstep street); every other case rolls its own seed on its own generated map.
 ##
-## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
-## seed's city is generated once in the test process and every case is handed a copy of its own,
-## the same city `CityGenerator.generate()` builds for the seed.
+## **Where each case gets its city.** The held-ground, walked-sidewalk and corner-refusal cases
+## generate their own cities (`CityGenerator.generate()`), and the parked van, lorry and doorstep
+## street cases read the shared test city of `events_shared_city.gd`, which is generated outside the
+## cache. Every other case is handed a copy of its seed's city from the cache of generated cities
+## (`tests/city_map_cache.gd`): each seed is generated once in the test process, and the copy is the
+## same city `CityGenerator.generate()` builds for the seed.
+##
+## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
+## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
+## day, until the dawn group converts them to mocked moments.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
