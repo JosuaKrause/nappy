@@ -263,6 +263,11 @@ func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
 		t.check(not instance.was_warned_of(), "'%s' made where it stands came under no warning" % id)
+		t.check(instance.ends_the_day() == def.ends_the_day(),
+				"'%s' answers whether its row ends the day" % id)
+		t.close_to(instance.core_within(), def.core_within(), "'%s' answers its row's core" % id)
+		t.close_to(instance.heard_within(), def.heard_within(),
+				"'%s' answers how far its row is heard" % id)
 		if not instance.drives():
 			t.check(not instance.closes_on(Vector2.ZERO),
 					"'%s' drives nothing, so it closes on nothing" % id)
