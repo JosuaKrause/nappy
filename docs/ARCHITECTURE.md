@@ -706,8 +706,8 @@ tools/
   cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
-  check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and its
-                          list of the breaks that still stand
+  check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and the
+                          place a break that has to stand is listed
   split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
                           runtime registration and atlas membership; evidence metadata is an
                           explicit output rather than an ordinary regeneration side effect
@@ -743,10 +743,12 @@ the city maps in the domain model, as the player decided (inbox #904 in freckled
 The world and simulation are also handed what they read, never fetching it through a group, an
 autoload or a static that holds state.
 
-`tools/layer_map.py` is the one place that says which folder and which file is in which layer, and
-lists by file every break that still stands, each with its reason and, where a file uses the name
-more than once, how many times; `tools/check_layers.py` holds the code to it in CI and fails on a
-new break (a further use of a listed name included) and on a listed one that is gone. Besides group
+`tools/layer_map.py` is the one place that says which folder and which file is in which layer. No
+break of it stands; one that has to is listed there by file with its reason and, where a file uses
+the name more than once, how many times, and is declared with the same reason in
+**designing-classes**, in the pull request that adds it. `tools/check_layers.py` holds the code to
+the map in CI and fails on a new break (a further use of a listed name included) and on a listed
+one that is gone. Besides group
 lookups, autoloads and stateful statics, the world and simulation also fetch nothing by an absolute
 node path, from the root or as the current scene.
 
