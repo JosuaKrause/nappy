@@ -11,6 +11,8 @@ extends RefCounted
 ## truck is stepped by hand, a frame at a time, told where she and her pram are the way
 ## `EventManager` tells it.
 
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
+
 const STEP := 1.0 / 60.0
 const WALK := 2.0
 
@@ -23,7 +25,7 @@ func run(t: TestRunner) -> void:
 	_test_behind_and_beside_it_nothing_strikes(t)
 	_test_parked_it_is_solid_and_harmless(t)
 	_test_parked_its_field_is_a_points(t)
-	_test_its_picture_stands_over_its_body(t)
+	await _test_its_picture_stands_over_its_body(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -31,12 +33,16 @@ func _truck() -> EventDef:
 	return EventCatalogue.by_id("fire_truck")
 
 ## A live truck on `route`, its warning spent (`spawn_warned()` hands it over with the telegraph
-## used up), in the tree so its body exists, stepped by hand.
-func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> EventInstance:
+## used up), in the tree so its body exists, stepped by hand, drawn through `drawer` when one is
+## handed in.
+func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs,
+		drawer: EventDrawer = null) -> EventInstance:
 	var def := _truck()
 	var engine := EventInstance.new()
-	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().hearing(where))
+	var surroundings := EventSurroundings.new().hearing(where)
+	if drawer != null:
+		surroundings.drawing_through(drawer)
+	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), surroundings)
 	engine.restore(EventSave.new(def.telegraphs_for(), 0.0))
 	t.add_child(engine)
 	engine.set_process(false)
@@ -391,15 +397,30 @@ func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 
 # ----------------------------------------------------------------- picture ---
 
+## Its picture's bottom lands on its body's southern edge: the spine's reach down the screen, its
+## rounding and the view's own canvas margin below the node. Drawn on real frames facing south (its
+## front view, where the spine's half length counts) and facing east (its side view), the foot it
+## tells its drawer to stand the picture at is where that bottom lands.
 func _test_its_picture_stands_over_its_body(t: TestRunner) -> void:
-	var engine_where := WhereSheIs.nowhere()
-	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]),
-			engine_where)
 	var shape := _truck().ground_shape()
-	t.check(is_equal_approx(engine.look.body_anchor("side").y,
-			shape.spine_half_length() * absf(engine.solid_axis().y) + shape.rounding_radius()
-			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
-			"the side view's bottom lands on the body's southern edge")
+	var views := {"front": Vector2(0.0, 600.0), "side": Vector2(600.0, 0.0)}
+	for view: String in views:
+		var engine_where := WhereSheIs.nowhere()
+		var recording := RecordingEventDrawer.new()
+		var engine := _engine(t, PackedVector2Array([Vector2.ZERO, views[view]]), engine_where,
+				recording)
+		engine.set_process(true)
+		for i in 2:
+			await engine.get_tree().process_frame
+		var drawn: Array[Dictionary] = []
+		for entry in recording.shown_on(engine):
+			if entry.kind == &"stand" and entry.picture == EventPictures.FIRE_ENGINE_BY_VIEW[view]:
+				drawn.append(entry)
+		t.check(drawn.size() == 1, "the %s view of it is drawn once (%d)" % [view, drawn.size()])
+		t.check(not drawn.is_empty() and is_equal_approx(drawn[0].foot.y,
+				shape.spine_half_length() * absf(engine.solid_axis().y) + shape.rounding_radius()
+				+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN[view])),
+				"the %s view's bottom lands on the body's southern edge" % view)
+		engine.free()
 	t.check(EventFootprints.footprint_of(_truck()).end.y > shape.reach(),
 			"and the drawn box allows for the lowered picture")
-	engine.free()

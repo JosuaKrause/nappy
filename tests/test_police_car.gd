@@ -9,13 +9,15 @@ extends RefCounted
 ## displacement per step, not `move_and_slide()`'s own), and the car is stepped by hand, a frame
 ## at a time, told where she and her pram are the way `EventManager` tells it.
 
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
+
 const STEP := 1.0 / 60.0
 const WALK := 2.0
 
 func run(t: TestRunner) -> void:
 	_test_her_walk_into_a_standing_car_stops_at_its_side(t)
 	_test_a_car_made_where_she_stands_holds_its_body_back_from_its_first_frame(t)
-	_test_the_body_is_its_drawn_ground_contact_along_its_heading(t)
+	await _test_the_body_is_its_drawn_ground_contact_along_its_heading(t)
 	_test_a_driving_car_beside_her_is_solid_and_not_lethal(t)
 	_test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t)
 	_test_in_front_of_a_driving_car_is_lethal_after_its_warning(t)
@@ -35,12 +37,16 @@ func run(t: TestRunner) -> void:
 func _patrol() -> EventDef:
 	return EventCatalogue.by_id("police_patrol")
 
-## A live car of `def` on `route`, in the tree so its body exists, stepped by hand.
+## A live car of `def` on `route`, in the tree so its body exists, stepped by hand, drawn through
+## `drawer` when one is handed in.
 func _car(t: TestRunner, def: EventDef, route: PackedVector2Array, map: CityMap,
-		where: WhereSheIs, lights: TrafficSignals = null) -> EventInstance:
+		where: WhereSheIs, lights: TrafficSignals = null,
+		drawer: EventDrawer = null) -> EventInstance:
 	var car := EventInstance.new()
-	car.setup(def, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().on(map).hearing(where).stopping_at(lights))
+	var surroundings := EventSurroundings.new().on(map).hearing(where).stopping_at(lights)
+	if drawer != null:
+		surroundings.drawing_through(drawer)
+	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), surroundings)
 	t.add_child(car)
 	car.set_process(false)
 	return car
@@ -142,6 +148,14 @@ func _test_a_car_made_where_she_stands_holds_its_body_back_from_its_first_frame(
 	t.check(clear.is_solid(), "a car made with her elsewhere puts its body down at once")
 	clear.free()
 
+## What `shown` stood of `picture`, in order.
+func _pictures_stood(shown: Array[Dictionary], picture: String) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	for entry in shown:
+		if entry.kind == &"stand" and entry.picture == picture:
+			found.append(entry)
+	return found
+
 ## The collision shape of the solid body the car carries, found by type among its children.
 func _body_shape(car: EventInstance) -> CollisionShape2D:
 	for child in car.get_children():
@@ -161,7 +175,8 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner)
 			% side.x)
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(0.0, 80.0), Vector2(400.0, 80.0)])
 	var car_where := WhereSheIs.nowhere()
-	var car := _car(t, _patrol(), route, null, car_where)
+	var recording := RecordingEventDrawer.new()
+	var car := _car(t, _patrol(), route, null, car_where, null, recording)
 	var collision := _body_shape(car)
 	var capsule := collision.shape as CapsuleShape2D
 	t.check(capsule != null and is_equal_approx(capsule.radius, shape.rounding_radius())
@@ -178,7 +193,14 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner)
 	t.check(car.facing_now().is_equal_approx(Vector2.RIGHT), "the car turns east at the corner of its route")
 	spine = Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.RIGHT)) > 0.999, "and turned east, east-west (%s)" % spine)
-	t.check(car.look.body_anchor("side").y == shape.rounding_radius(),
+	# Drawn on real frames, the picture it tells its drawer to stand is the side view, and its foot
+	# is where the bottom of the picture lands.
+	car.set_process(true)
+	for i in 2:
+		await car.get_tree().process_frame
+	var bodies := _pictures_stood(recording.shown_on(car), EventPictures.POLICE_CAR)
+	t.check(bodies.size() == 1, "its side picture is drawn once (%d)" % bodies.size())
+	t.check(not bodies.is_empty() and is_equal_approx(bodies[0].foot.y, shape.rounding_radius()),
 			"its side picture's bottom lands on its body's southern edge, %.0fpx below the node"
 			% shape.rounding_radius())
 	car.free()
