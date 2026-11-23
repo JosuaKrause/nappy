@@ -7,6 +7,10 @@ extends RefCounted
 ## of those are invisible to a data-level test and both happened. The one wiring the events and the
 ## crowd share, a body the events stand on a lane taking the car there away, is the builder's that
 ## makes it (`tests/test_simulation_builder.gd`).
+##
+## Two cases build no city and are run after the others on a map of their own (the generated map of
+## seed 4242): the cyclist's warning, which drives a manager of its own over a map, and the parked
+## fire engine's route guarantee, which reads the map's street network.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
 const STEP := 1.0 / 60.0
@@ -40,13 +44,19 @@ func run(t: TestRunner) -> void:
 		_test_a_drawn_body_is_told_to_whoever_listens,
 		_test_a_recipes_bodies_are_in_its_way_on,
 		_test_a_world_keeps_the_navigator_it_was_handed,
-		_test_the_cyclist_is_warned_shortly_before_he_arrives,
-		_test_a_parked_body_closes_no_street,
 	]
 	for test in tests:
 		_build_city(t)
 		await test.call(t)
 		_teardown()
+	# These two take a generated map and no city: the warning board and the street network are
+	# theirs, and the city node is not.
+	var map_tests: Array[Callable] = [
+		_test_the_cyclist_is_warned_shortly_before_he_arrives,
+		_test_a_parked_body_closes_no_street,
+	]
+	for test in map_tests:
+		await test.call(t)
 
 ## **A world keeps the navigator it was handed** (`EventSurroundings.moving_by()`), whichever map
 ## that navigator walks: a manager set up on a street map and handed a navigator over open ground
@@ -872,7 +882,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	var def := EventCatalogue.by_id("cyclist")
 	t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX,
 			"his badge is up alone for %.2fs, at most %.2fs" % [def.warned_for(), Tuning.WARNING_ALONE_MAX])
-	var map := _city.map
+	var map := CityGenerator.generate(4242)
 	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
 	# out of sight ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
 	var her := CrowdLanes.arterial_pavement(map)
@@ -1038,7 +1048,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 ## what shows it can fail; the lattice leaves every calm area its routes past most single closed
 ## streets, so the count of routes lost is reported for it rather than required.
 func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
-	var map := _city.map
+	var map := CityGenerator.generate(4242)
 	var kerbs := _kerbs(map)
 	t.check(kerbs.size() >= 20, "enough kerbs were tried (%d)" % kerbs.size())
 	var truck := EventCatalogue.by_id("fire_truck").ground_shape()
