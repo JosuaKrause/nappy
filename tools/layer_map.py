@@ -137,8 +137,7 @@ FILES: dict[str, str] = {
     "src/dev/event_route_lines.gd": "observers",
     "src/dev/route_lines.gd": "observers",
     # events: the plan-builders, pure functions of the map and the day, are the model; the rest
-    # (the folder's) is simulation; the
-    # dawn's phases are a folder of the model's.
+    # (the folder's) is simulation; the dawn's phases are a folder of the model's.
     "src/events/body_stance.gd": "model",
     "src/events/standing_piece.gd": "model",
     "src/events/calm_areas.gd": "model",

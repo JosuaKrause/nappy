@@ -174,7 +174,7 @@ src/
 	                      table and the settings of a row's parts
 	  event_def.gd          authored event data
 	  event_draft.gd        the one way a row is written: one statement per setting and part, then build()
-	  event_scenery_parts.gd registered bounds and atlas names for those source-art spans
+	  event_scenery_parts.gd registered bounds and atlas names for the source-art spans of pipe and crash scenery
 	  event_catalogue.gd    every event, defined in code
 	  placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
 	  placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a

@@ -809,7 +809,7 @@ tuned for them.
 Six points the design put as questions, each with the player's answer (inbox #1278 in olive-ferret, which holds
 each question as it was shown).
 
-1. **Where do the settings files live?** Offered a new folder `src/events/data/parts/` for the
+1. **Where do the settings files live?** Offered a new folder `src/events/parts/` for the
    seventeen small files, with the full split of the events folder by layer after placement closes
    (a), or the whole folder split by layer now (b): "a".
 2. **Does a car's strike become the row's lethal part?** Offered `ends_the_day()` keeping its
