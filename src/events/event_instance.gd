@@ -512,7 +512,7 @@ func _become_solid_once_it_starts() -> void:
 		return
 	if not _body.waits_to_come_down():
 		return
-	if is_gone() or is_on_its_way_out() or is_waiting() or is_telegraphing():
+	if not is_past_its_warning():
 		return
 	_body.come_down_clear_of_her(global_position, _heading)
 
@@ -1271,6 +1271,13 @@ func is_telegraphing() -> bool:
 		return false
 	return chase_age() < notice_time()
 
+## Whether its warning has run and it is still in the world: it is not waiting for her, not in its
+## telegraph, not leaving and not gone. True of a row happening at full strength, and of one that
+## stopped her, parked or stands as a barrier once its telegraph's clock has run, so it is not the
+## `Phase.ACTIVE` alone. What a body coming down, a lethal reach and a pursuit ask.
+func is_past_its_warning() -> bool:
+	return not is_gone() and not is_on_its_way_out() and not is_waiting() and not is_telegraphing()
+
 ## True while a pursuer that noticed her stands for its notice in its alert pose rather than closing
 ## on her (`PursuitSpec.stands_for_its_notice()`): the dog that waited, the hunting roadblock's guard, the
 ## man a vehicle lets out, and day 13's guard set on her in her view (`notice_her_at()`). **Asked of
@@ -1623,7 +1630,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if _composed.car():
 		return _composed.car().strikes(world_position)
 	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
-	if not _def.ends_the_day() or is_gone() or is_on_its_way_out() or is_waiting() or is_telegraphing():
+	if not _def.ends_the_day() or not is_past_its_warning():
 		return false
 	if global_position.distance_to(world_position) > _def.lethal_reach():
 		return false

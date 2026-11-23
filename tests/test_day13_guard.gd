@@ -488,12 +488,6 @@ static func _open(map: CityMap, tile: Vector2i) -> bool:
 	return map.in_bounds(tile) and map.is_walkable(tile) and not map.is_obstructed(tile) \
 			and not map.is_closed(tile)
 
-## Whether the warning has run and it is neither waiting, leaving nor gone: what the stored phase's
-## active state said. `has_charged()` is not it: it answers true while a held lunge still warns.
-func _is_past_its_warning(instance: EventInstance) -> bool:
-	return not instance.is_telegraphing() and not instance.is_waiting() \
-			and not instance.is_on_its_way_out() and not instance.is_gone()
-
 ## **Set on her already inside his stand-off, he holds it** (`EventInstance.notice_her_at()`; the
 ## events skill: "the chase starts at the stand-off however she came"). A waiting robber with her
 ## 60px off along a clear line — inside his stand-off, outside his catch — is set on her: while she
@@ -519,7 +513,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 	for i in 60:
 		guard_where.tell(her)
 		guard.step(0.1)
-		lunged_standing = lunged_standing or _is_past_its_warning(guard)
+		lunged_standing = lunged_standing or guard.is_past_its_warning()
 		lethal_standing = lethal_standing or guard.is_lethal_at(her)
 	t.check(not lunged_standing and not lethal_standing,
 			"while she stands 60px off for 6s he holds: no lunge, and he cannot end her day")
@@ -528,7 +522,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
 		guard_where.tell(her)
 		guard.step(0.1)
-		if _is_past_its_warning(guard):
+		if guard.is_past_its_warning():
 			lunged_at = guard.global_position.distance_to(her)
 			break
 	t.check(lunged_at >= standoff - Tuning.WALK_SPEED * 0.1,

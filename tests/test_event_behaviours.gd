@@ -95,7 +95,7 @@ func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	_advance(first, 0.3)
-	t.check(first.is_telegraphing() and not first.is_waiting(), "the robber has noticed her")
+	t.check(_is_warning(first), "the robber has noticed her")
 	# His held lunge is his own state, so it is set the one way the game sets it from outside: the
 	# state a stream-out carries, put back (`EventPursuit.restore()`).
 	var state := first.save().state_of("EventPursuit")
@@ -106,15 +106,17 @@ func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 	var carried := second.save().state_of("EventPursuit")
 	t.check(bool(carried["lunge_held"]) and is_equal_approx(float(carried["outrun_for"]), 0.4),
 			"his held lunge and his running clock come back")
-	t.check(second.is_telegraphing() and not second.is_waiting(), "and he is still warning")
+	t.check(_is_warning(second), "and he is still warning")
 	first.free()
 	second.free()
 
-## Whether the warning has run and it is neither waiting, leaving nor gone: what the stored phase's
-## active state said. `has_charged()` is not it: it answers true while a held lunge still warns.
-func _is_past_its_warning(instance: EventInstance) -> bool:
-	return not instance.is_telegraphing() and not instance.is_waiting() \
-			and not instance.is_on_its_way_out() and not instance.is_gone()
+## Whether it is in its warning and nowhere else. Telegraphing alone also answers yes for a row that
+## has left, parked, stopped her or finished inside its warning's clock.
+func _is_warning(instance: EventInstance) -> bool:
+	return instance.is_telegraphing() and not instance.is_waiting() \
+			and not instance.is_on_its_way_out() and not instance.is_gone() \
+			and not instance.has_parked() and not instance.is_only_its_barrier() \
+			and not instance.has_stopped_her()
 
 ## Stood inside his run distance as he notices her, he runs once his warning has run, and one
 ## streamed out half way through it runs on the same tick as one that never left.
@@ -126,7 +128,7 @@ func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, def, Vector2.ZERO, path, first_where)
 	first_where.tell(her)
 	_advance(first, 0.5)
-	t.check(first.is_telegraphing() and not first.is_waiting(),
+	t.check(_is_warning(first),
 			"inside his run distance, he warns first")
 	var second := _round_trip(t, first, "the masked man's warning", &"EventNoticeRun",
 			first_where)
@@ -136,9 +138,9 @@ func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
 	for i in int(Tuning.WARNING_ALONE_MAX / STEP) + 3:
 		first.step(STEP)
 		second.step(STEP)
-		if first_ran < 0 and _is_past_its_warning(first):
+		if first_ran < 0 and first.is_past_its_warning():
 			first_ran = i
-		if second_ran < 0 and _is_past_its_warning(second):
+		if second_ran < 0 and second.is_past_its_warning():
 			second_ran = i
 	t.check(first_ran >= 0, "he runs once his warning has run")
 	t.check(second_ran == first_ran,
@@ -155,7 +157,7 @@ func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t: T
 	var instance := _instance(t, def, Vector2.ZERO, path, instance_where)
 	instance_where.tell(Vector2((def.notice().runs_within() + def.notice_within()) * 0.5, 0.0))
 	_advance(instance, Tuning.WARNING_ALONE_MAX + 0.5)
-	t.check(instance.is_telegraphing() and not instance.is_waiting(),
+	t.check(_is_warning(instance),
 			"outside his run distance he is still warning after his warning's length")
 	instance_where.tell(Vector2(def.notice_within() + 50.0, 0.0))
 	instance.step(STEP)
