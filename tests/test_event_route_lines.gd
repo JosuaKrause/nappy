@@ -60,7 +60,7 @@ func _test_an_event_that_stands_has_no_route_to_draw(t: TestRunner) -> void:
 func _test_a_gone_event_is_not_drawn(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(0.0, 0.0), Vector2(50.0, 0.0)])
 	var instance := _event("police_patrol", route[0], route)
-	instance.transition(EventInstance.Phase.DONE)
+	instance.end_now()
 	var events := StandInEvents.new()
 	events.live = [instance]
 	var layer := EventRouteLines.new()
