@@ -735,11 +735,10 @@ written once, after it is final.
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
   manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
   first, the spawner's question: the manager real, plans
-  plain, a real city only in the suite whose header gives the reason); the event halves
-  held in other modules' suites, which move to the event suites or take a `FakeEvent`
-  (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
-  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose
-  subject is the crowd's cars and whose city hosts crowd agents); and the resistance
+  plain, a real city only in the suite whose header gives the reason); what is left of the event halves held in other modules' suites (the rest moved, the record
+  minty-quail-speckled-hare): `test_danger`'s four cases that stand a real event manager on open ground (the cue
+  over her head the warning board raises, and three screen-edge badge cases that spawn a fire engine or a
+  cat), which take a stand-in manager answering a moved instance's approach speed; and the resistance
   (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
   `FakeEvent`).
 
