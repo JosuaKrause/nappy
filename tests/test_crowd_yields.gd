@@ -11,8 +11,8 @@ extends RefCounted
 ## is in the game (`Crowd.step()`, which gathers the map's separation pass first). The figure is a
 ## move put on the map's list by hand (`WorldMap.moves`), since what the crowd reads is the move and
 ## never the event behind it. **The events' own half** — a row's body's `is_walked_round()` and `parks()`
-## reaching its move, an event leaving the list of moves where it goes, a placement not being a walk
-## — is `test_event_moves.gd`'s.
+## reaching its move, an event leaving the list of moves where it goes, and a placement leaving the
+## move where it was put — is `test_event_moves.gd`'s.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RIG := preload("res://tests/test_crowd_bodies.gd")
@@ -22,6 +22,7 @@ const STEP := 1.0 / 60.0
 var _rig: RIG = RIG.new()
 
 func run(t: TestRunner) -> void:
+	_test_a_placement_is_not_a_walk(t)
 	var map := MapCache.of(SEED)
 	var crowd := _rig.a_crowd(t, map)
 
@@ -39,7 +40,7 @@ func run(t: TestRunner) -> void:
 ## A figure's move, standing at `at`, on `map`'s list: the radius an event figure walks at
 ## (`EventInstance.FIGURE_RADIUS`), keeping its course, a walker going round it while it stands
 ## when `stood_round`.
-func _a_figure(map: CityMap, at: Vector2, stood_round: bool) -> MoveProposal:
+func _a_figure(map: WorldMap, at: Vector2, stood_round: bool) -> MoveProposal:
 	var move := MoveProposal.new()
 	move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	move.be_walked_round(stood_round)
@@ -150,6 +151,36 @@ func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-yields:%d:%d" % [SEED, day])
 	return rng
+
+const PLACEMENT_WALK := 8.0
+
+## **A resting figure stood on other ground by hand is placed, not walked there**
+## (`MoveProposal.place()`): the separation pass reads no velocity off a step longer than
+## `SeparationPass.PLACEMENT_STEP`, and the figure does not count as under way. A step under that
+## limit is still a walk, so the pass does read steps at all. Both figures are moves put on a bare
+## map's list by hand, since the pass reads the move and never the event behind it.
+func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
+	var at := Vector2(5000.0, 5000.0)
+	var map := WorldMap.open_ground()
+	var placed := _a_figure(map, at, false)
+	var pass_over := SeparationPass.new(map.moves)
+	pass_over.gather()
+	placed.place(at + Vector2(400.0, 0.0))
+	pass_over.gather()
+	t.check(pass_over.walker_keepers().is_empty() and not pass_over.has_keepers_for_cars(),
+			"a 400px placement is no walk: no walker and no car gives way to the person put there")
+	var walker := _a_figure(map, at, false)
+	pass_over.gather()
+	walker.place(at + Vector2(PLACEMENT_WALK, 0.0))
+	pass_over.gather()
+	var kept: Array[SeparationPass.Keeper] = []
+	for keeper in pass_over.walker_keepers():
+		if keeper.move == walker:
+			kept.append(keeper)
+	t.check(kept.size() == 1, "a step under the placement limit puts the figure among the keepers")
+	if kept.size() == 1:
+		t.check(kept[0].step == Vector2(PLACEMENT_WALK, 0.0) and kept[0].ticks_still == 0,
+				"a step under the placement limit is still a walk")
 
 # ------------------------------------------------------ a walker meets one ---
 

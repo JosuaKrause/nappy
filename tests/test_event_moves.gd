@@ -2,9 +2,9 @@ extends RefCounted
 ## What the live event and the event manager hand the crowd's separation pass: the move each
 ## figure puts on its map's list (`WorldMap.moves`), which the pass reads and never the event
 ## behind it. A row's body's `is_walked_round()` and `parks()` reaching its move, an event
-## leaving the list where it goes, and a placement not being a walk. The crowd's own half, how a
-## walker and a car answer a move, is `test_crowd_yields.gd`'s, which puts moves on the list by
-## hand. A real `EventInstance` and a real `EventManager` are built here because they are what
+## leaving the list where it goes, and a moved figure standing where it was put. The crowd's own
+## half, how a walker and a car answer a move, is `test_crowd_yields.gd`'s, which puts moves on
+## the list by hand. A real `EventInstance` and a real `EventManager` are built here because they are what
 ## is under test; each stands on a map of its own, never a city.
 
 const SEED := 4242
@@ -13,7 +13,7 @@ func run(t: TestRunner) -> void:
 	_test_a_row_hands_what_it_stands_as_to_its_move(t)
 	_test_a_row_hands_whether_it_has_parked_to_its_move(t)
 	_test_an_event_leaves_the_list_of_moves_where_it_goes(t)
-	_test_a_placement_is_not_a_walk(t)
+	_test_a_moved_figure_stands_where_it_is_put(t)
 
 # ------------------------------------------------------- what a figure is ---
 
@@ -156,41 +156,20 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 			"EventManager.clear() empties the list (%d left)" % moves.size())
 	_free_the_manager(rig)
 
-## **A resting figure stood on other ground by hand is placed, not walked there**
-## (`EventManager.move_extra()`, the task guard following her): the pass reads no velocity off a
-## step longer than `SeparationPass.PLACEMENT_STEP`, and the figure does not count as under way.
-func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
+## **A figure the manager moves is placed where it is put** (`EventManager.move_extra()`, the task
+## guard following her): the event's move on the map's list stands at the new point at once, with
+## no step walked there. What the separation pass then reads off such a placement is
+## `test_crowd_yields.gd`'s.
+func _test_a_moved_figure_stands_where_it_is_put(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
-	var moves: ProposedMoves = manager.world.map().moves
 	var live: EventInstance = manager.event_of(rig.plan)
-	var pass_over := SeparationPass.new(moves)
 	var live_move: MoveProposal = rig.move
-	t.check(live_move != null, "the streamed-in figure is on the list to be placed")
-	if live_move == null:
-		_free_the_manager(rig)
-		return
-	live_move.use_body_radius(EventInstance.FIGURE_RADIUS)
-	pass_over.gather()
-	manager.move_extra(live, at + Vector2(400.0, 0.0))
-	pass_over.gather()
-	t.check(pass_over.walker_keepers().is_empty() and not pass_over.has_keepers_for_cars(),
-			"a 400px placement is no walk: no walker and no car gives way to the person put there")
-	var walker := _a_figure_move_for_the_walk(moves, at)
-	pass_over.gather()
-	walker.place(at + Vector2(PLACEMENT_WALK, 0.0))
-	pass_over.gather()
-	for keeper in pass_over.walker_keepers():
-		if keeper.move == walker:
-			t.check(keeper.step == Vector2(PLACEMENT_WALK, 0.0) and keeper.ticks_still == 0,
-					"a step under the placement limit is still a walk")
+	t.check(live != null and live_move != null, "the streamed-in figure is on the list to be placed")
+	if live != null and live_move != null:
+		var put := at + Vector2(400.0, 0.0)
+		manager.move_extra(live, put)
+		t.check(live_move.stands_at() == put and live_move.steps_to() == put,
+				"a figure moved by hand stands at the point it was put, with no walk to it")
 	_free_the_manager(rig)
-
-const PLACEMENT_WALK := 8.0
-
-func _a_figure_move_for_the_walk(moves: ProposedMoves, at: Vector2) -> MoveProposal:
-	var move := MoveProposal.new()
-	move.use_body_radius(EventInstance.FIGURE_RADIUS)
-	moves.join(move, at)
-	return move
