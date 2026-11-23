@@ -784,11 +784,12 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> voi
 	t.check(guard.global_position.is_equal_approx(post)
 			and _is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW),
 			"at his post, hand raised, through his warning")
-	# Out of his radius he is back at the band, and both guards stand at their posts again.
+	# Out of his radius he waits at the band's centre again (that both posts are manned and the body
+	# is under him is `tests/test_event_barrier_post.gd`'s).
 	_hold(guard, guard_where, Vector2(0.0, hot.notice_within() + 10.0), STEP)
 	t.check(guard.is_waiting()
 			and guard.global_position.is_equal_approx(Vector2.ZERO),
-			"out of his radius he stands at the band again, its body under him")
+			"out of his radius he waits at the band's centre again")
 	_hold(guard, guard_where, her, STEP)
 	t.check(guard.is_standing_for_its_notice()
 			and _is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW),
