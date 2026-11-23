@@ -11,6 +11,11 @@ extends RefCounted
 ## ever fences (`ClosurePlanner.plan_day` hands `City` its `ParkClosure`). This suite asks all of
 ## that over a sweep of seeds and days, with the used areas an act would actually have, and once
 ## with every calm area used to make the guarantee's refusals happen.
+##
+## **A combined suite, for a stated reason**: the guarantee spans the closure planner (which used areas
+## come off the route), the route tree (nothing routes through one) and the dawn's spoilers (the
+## events spoil every one but the fenced park), so the real maps of a sweep of seeds are asked all
+## three at once.
 
 const SEEDS := 6
 const BASE_SEED := 14040

@@ -9,8 +9,10 @@ extends RefCounted
 
 ## The overridden answers `answering_as()` leaves out, each for its reason: a spread's points are
 ## asked by offset, so a copy of one answer would not be a copy of the spread, and the two
-## `add_` calls record what a look put beside it and answer nothing.
-const NOT_COPIED: Array[String] = ["spread_at", "add_beside_it", "add_slices_beside_it"]
+## `add_` calls record what a look put beside it and answer nothing, and `core_reaches` is asked
+## about a point and answers what the suite sets, so no copy of one answer is a copy of the disc.
+const NOT_COPIED: Array[String] = ["spread_at", "add_beside_it", "add_slices_beside_it",
+		"core_reaches"]
 
 const SOURCE := "res://tests/fake_event.gd"
 

@@ -2,6 +2,9 @@ extends "res://tests/resistance_rig.gd"
 ## M188: the narrow targets are reachable on their day, and a task is placed near its mark; where
 ## the nearest place stands in for one, and where the nearest live mast stands in for day 11's, a
 ## way from home to it is confirmed.
+##
+## **A real city, for a stated reason**: reachability is the director's over the ground of a day's
+## real plan, the closures and the bodies the events stand, which a stand-in would restate.
 
 
 func run(t: TestRunner) -> void:

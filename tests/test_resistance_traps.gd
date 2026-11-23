@@ -10,6 +10,14 @@ extends "res://tests/resistance_rig.gd"
 ## which the drawn rectangle or the caret reads. A question the looks start asking must be copied
 ## by `answering_as()` or the arrival is under-measured; `tests/test_fake_event.gd` fails until
 ## it is.
+##
+## **A real city, for a stated reason**: the guarded targets are the director's picks over a
+## day's real streets and events; what is checked about the live events they set on her is the
+## arrival's as the game makes it. Two cases are not covered by this reason, since they
+## `spawn_extra` real men shouting into the real manager:
+## `_test_the_contact_rides_onto_the_first_look_alike_she_reaches` and
+## `_test_the_step_completes_on_the_look_alike_she_hands_it_to`. They are still to be judged in
+## the group's next pull request.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots

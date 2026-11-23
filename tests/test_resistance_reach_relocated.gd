@@ -1,5 +1,12 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: a relocated mark is never placed in an alley she cannot reach, and day 11 puts up a mast near the mark when none is near.
+##
+## **A real city, for a stated reason**: the case that a relocated mark is never placed in an
+## alley she cannot reach reads which alleys a day's real plan, its closures and the bodies its
+## events stand leave her; a fake would have to answer that, and the answer is what the case
+## checks. The day-11 case is not reachability but the manager generating a mast
+## (`EventManager.queue_a_mast()`) on three real cities, and is still to be judged in the
+## group's next pull request.
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 

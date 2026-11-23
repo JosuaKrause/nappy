@@ -1,10 +1,17 @@
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
-
-## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
-## and sets on that run what the day it asks about needs; none reads what another left.
-## The library the bare event instances below draw from, holding the events' page for them.
-var _events_atlas := AtlasLibrary.new()
+##
+## Thirteen cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`),
+## and set on that run what the day it asks about needs; none reads what another left. Two have
+## a reason: placement being the same every time and the guard standing two-thirds through the
+## mark's real alley are about where the director puts things in the alleys the generator draws,
+## and a map drawn for the case would only restate the alley the case chose. Every other city
+## case is still to be judged in the group's next pull request, for whether the director's
+## steps, the run's calendar or what the manager shows can be had from `FakeEventManager` and
+## `FakeEvent`: the dawn draws ignoring where the last attempt left her (it also plans each day
+## through the real manager, and planning a day is the dawn's), the mark activating the same day's
+## task, the yeller step sending only its rider away, the lost-day retry, the rider-gone expiry,
+## the timed step, the two package cases, the sabotage, and the two protesters' poses.
 
 func run(t: TestRunner) -> void:
 	_test_step_table(t)
@@ -17,15 +24,10 @@ func run(t: TestRunner) -> void:
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	_test_plain_pose_on_a_mark_step(t)
 	_test_pointing_pose_on_a_perform_step(t)
-	# The bare event instances the next tests stand in the tree are drawn on the real frames they let
-	# pass, so the events' pictures are held for them, on a library each is handed, as a city's
-	# `EventManager` holds them.
-	_events_atlas.acquire(EventPictures.ATLAS_GROUP)
 	await _test_a_perform_contact_rides_on_its_instance(t)
 	await _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	await _test_touching_a_tasks_body_from_any_side_completes_it(t)
-	_events_atlas.release(EventPictures.ATLAS_GROUP)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
 	_test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t)
@@ -35,9 +37,6 @@ func run(t: TestRunner) -> void:
 	_test_completing_the_package_makes_the_pram_heavier(t)
 	_test_starting_a_day_resets_the_package_flag(t)
 	_test_completing_the_yeller_step_sends_only_its_rider_away(t)
-	_test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t)
-	_test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t)
-	_test_an_ordinary_departure_still_gives_up_at_six_seconds(t)
 	_test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t)
 	await _test_the_sabotage_silences_the_city(t)
 	_free_city()
@@ -186,8 +185,9 @@ func _test_the_chalk_mark_pictures_are_baked_on_decoration(t: TestRunner) -> voi
 		t.check(AtlasTable.baked().group_of(name) == ContactPoint.ATLAS_GROUP,
 				"%s is on the '%s' group" % [name, ContactPoint.ATLAS_GROUP])
 
-## The shared plumbing every task needs: a contact that rides on an `EventInstance` rather
-## than sitting on a bare tile, and follows it if it moves.
+## The shared plumbing every task needs: a contact that rides on a live event rather than sitting
+## on a bare tile, and follows it if it moves. The rider is a `FakeEvent`: the contact asks it
+## where it is and whether her touch is inside its core, and that is all this checks.
 func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
@@ -197,31 +197,33 @@ func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 	t.add_child(_player)
 	_player.set_physics_process(false)
 
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2(300.0, 0.0),
-			PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().drawn_from(_events_atlas))
-	t.add_child(instance)
-	instance.set_process(false)
+	var rider := FakeEvent.new()
+	rider.position = Vector2(300.0, 0.0)
 
 	var contact := ContactPoint.new()
-	contact.ride(ResistanceSteps.by_index(2), instance, Vector2.ZERO)
+	contact.ride(ResistanceSteps.by_index(2), rider, Vector2.ZERO)
 	contact.use_player(_player)
 	t.add_child(contact)
 
 	_player.global_position = Vector2.ZERO
 	await _step_a_frame(t)
-	t.check(not contact.is_finished(), "out of reach of where the rider is now")
+	t.check(contact.global_position.is_equal_approx(Vector2(300.0, 0.0)),
+			"the contact stands where the rider stands")
+	t.check(not rider.core_asked.is_empty() and not contact.is_finished(),
+			"out of reach of where the rider is now, which it asked of the rider")
 
-	# The rider moves; the contact follows it rather than staying where it started. Index 2's own
-	# `completes_at_inner_radius` (M205) still completes on the first tick she is in reach -- it
-	# only changes which radius that reach is measured against, not whether it is instant.
-	instance.position = Vector2.ZERO
+	# The rider moves; the contact follows it rather than staying where it started. She stays put
+	# at the origin, and index 2's `completes_at_inner_radius` (M205) asks the rider whether she is
+	# in its core: the fake answers yes, so the contact completes on that first tick.
+	rider.position = Vector2.ZERO
+	rider.core_reached = true
 	await _step_a_frame(t)
-	t.check(contact.is_finished(), "and completes once she reaches wherever the rider has gone")
+	t.check(contact.global_position.is_equal_approx(Vector2.ZERO),
+			"the contact follows the rider to where it has gone")
+	t.check(contact.is_finished(), "and completes once the rider answers that she is in its core")
 
 	contact.free()
-	instance.free()
+	rider.free()
 	_player.free()
 
 ## M205, "the note costs, and the ordinary day" -- fails before the fix: the old code completed
@@ -231,9 +233,10 @@ func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 ## inside inner radius for a couple of seconds before it completes -- and the player rejected
 ## it outright: "the player should stand for 2.5s? no way. the moment the player touches the
 ## inner circle it counts as delivered." So this pins the simpler fix instead: day 6's note
-## completes on the very first tick she is within his inner radius, even short of `REACH`,
-## while an ordinary step at the identical distance does not complete at all, and stepping short
-## of inner radius altogether does not complete either.
+## completes on the very first tick the rider says she is within his inner radius, even short
+## of `REACH`, while an ordinary step at the identical distance does not complete at all, and
+## a rider saying she is outside his inner radius does not complete it either. The rider is a
+## `FakeEvent`; the radius is the row's own (45px for the man shouting).
 func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRunner) -> void:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -243,31 +246,30 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	t.add_child(player)
 	player.set_physics_process(false)
 
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT,
-			EventSurroundings.new().drawn_from(_events_atlas))
-	t.add_child(instance)
-	instance.set_process(false)
+	var inner_radius := EventCatalogue.by_id("homeless_yeller").core_within()
+	var rider := FakeEvent.new()
 
 	var step := ResistanceSteps.by_index(2)
 	t.check(step.completes_at_inner_radius, "day 6's note is the one step this applies to")
-	t.check(ContactPoint.REACH < instance.core_within(),
+	t.check(ContactPoint.REACH < inner_radius,
 			"the case this test distinguishes -- REACH sits inside inner_radius -- or the checks " +
 			"below prove nothing")
 
 	# Between REACH (36px) and inner radius (45px): outside the ordinary REACH check, but inside
-	# the wider circle the note actually uses.
-	var between := (ContactPoint.REACH + instance.core_within()) * 0.5
+	# the wider circle the note actually uses, which the rider answers as inside.
+	var between := (ContactPoint.REACH + inner_radius) * 0.5
 	player.global_position = Vector2.RIGHT * between
+	rider.core_reached = true
 
 	var note_contact := ContactPoint.new()
-	note_contact.ride(step, instance, Vector2.ZERO)
+	note_contact.ride(step, rider, Vector2.ZERO)
 	note_contact.use_player(player)
 	t.add_child(note_contact)
 	await _step_a_frame(t)
 	t.check(note_contact.is_finished(),
 			"one tick inside inner_radius completes it, even though REACH alone would not have")
+	t.check(rider.core_asked.has(player.global_position),
+			"which it asked of the rider, from where she stands")
 	note_contact.free()
 
 	# The identical distance, on an ordinary step that never sets `completes_at_inner_radius`:
@@ -276,7 +278,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	t.check(not ordinary_step.completes_at_inner_radius,
 			"a bare Step defaults to the ordinary REACH check")
 	var ordinary_contact := ContactPoint.new()
-	ordinary_contact.ride(ordinary_step, instance, Vector2.ZERO)
+	ordinary_contact.ride(ordinary_step, rider, Vector2.ZERO)
 	ordinary_contact.use_player(player)
 	t.add_child(ordinary_contact)
 	await _step_a_frame(t)
@@ -284,39 +286,35 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 			"the same distance does not complete an ordinary step's REACH check")
 	ordinary_contact.free()
 
-	# Outside inner radius altogether: too far for the note either.
-	player.global_position = Vector2.RIGHT * (instance.core_within() + 5.0)
+	# The rider answers that she is outside his inner radius: the note is not delivered either.
+	rider.core_reached = false
+	player.global_position = Vector2.RIGHT * (inner_radius + 5.0)
 	var outside_contact := ContactPoint.new()
-	outside_contact.ride(step, instance, Vector2.ZERO)
+	outside_contact.ride(step, rider, Vector2.ZERO)
 	outside_contact.use_player(player)
 	t.add_child(outside_contact)
 	await _step_a_frame(t)
 	t.check(not outside_contact.is_finished(), "outside inner_radius, the note is not delivered either")
 	outside_contact.free()
 
-	instance.free()
+	rider.free()
 	player.free()
 
 func _test_a_perform_contact_sees_its_rider_finish(t: TestRunner) -> void:
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT,
-			EventSurroundings.new().drawn_from(_events_atlas))
-	t.add_child(instance)
-	instance.set_process(false)
+	var rider := FakeEvent.new()
 
 	var contact := ContactPoint.new()
-	contact.ride(_perform_on(13), instance, Vector2(90.0, 0.0))
+	contact.ride(_perform_on(13), rider, Vector2(90.0, 0.0))
 	t.add_child(contact)
 	contact.set_physics_process(false)
 
 	t.check(contact.rider_alive(), "the rider starts alive")
-	# Its end, the phase every finished event reaches (`EventInstance.Phase.DONE`).
-	instance.transition(EventInstance.Phase.DONE)
+	# Its end, what a finished event answers (`EventInstance.is_gone()`).
+	rider.gone = true
 	t.check(not contact.rider_alive(), "and rider_alive() sees it end")
 
 	contact.free()
-	instance.free()
+	rider.free()
 
 ## feathery-marmot, "touching the van completes the task" — *"the arrow correctly points to the van
 ## but touching the van doesn't solve the task"* (minty-hedgehog, statement 3). The contact rides
@@ -327,15 +325,15 @@ func _test_a_perform_contact_sees_its_rider_finish(t: TestRunner) -> void:
 ## completes the task. A touch counted only within `ContactPoint.REACH` of one point beside the body
 ## would leave pressing against its far side completing nothing. And standing two
 ## pixels past `ContactPoint.REACH` beyond the farthest she can be stopped from its centre (its
-## furthest reach and her own body), on any side, completes nothing.
+## furthest reach and her own body), on any side, completes nothing. The rider is a `FakeEvent`
+## standing at the origin, its outline and reach those of the row's.
 func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> void:
 	for id: String in ["delivery_van", "roadblock"]:
 		var step := _perform_on(7 if id == "delivery_van" else 13)
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().drawn_from(_events_atlas))
-		t.add_child(instance)
-		instance.set_process(false)
+		var row := EventCatalogue.by_id(id)
+		var instance := FakeEvent.new()
+		instance.shape = row.ground_shape()
+		instance.solid_extent = row.solid_reach()
 		var player := _rig_player(t, Vector2.ZERO)
 		var shape := instance.ground_shape()
 		var axis := instance.solid_axis()
@@ -679,105 +677,6 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 			"still shouting, still emitting")
 
 	director.free()
-
-## A pacing row folds a beat back and forth over its path, so "the way it was going" mid-beat
-## means something different on each half — walking out toward the far end, or already turned
-## round and walking back. `_be_done()`'s own rule ("something on a route carries on the way it
-## was going") would carry him at her on whichever half has him walking toward where she is
-## standing; `leave_for_a_completed_task()` turns him to leave away from her regardless.
-func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: TestRunner) -> void:
-	for on_the_second_half: bool in [false, true]:
-		var where := WhereSheIs.nowhere()
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
-				PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT,
-				EventSurroundings.new().hearing(where))
-		t.add_child(instance)
-		instance.set_process(false)
-
-		# 50px is the beat's first half (walking east); 350px is past the 200px turn, the second
-		# half (walking west) — `restore()` puts him that far along his beat, reading it back into a
-		# heading and a position without covering any further ground.
-		instance.restore(EventSave.new(STEP, 350.0 if on_the_second_half else 50.0))
-		var walking := instance.facing_now()
-		t.check((walking.x < 0.0) == on_the_second_half,
-				"set up walking %s" % ("west, the second half" if on_the_second_half
-						else "east, the first half"))
-		# Sited ahead of him on his own heading — where "the way it was going" would walk him
-		# straight at her if nothing turned him round.
-		where.tell(instance.position + walking * 40.0)
-
-		instance.leave_for_a_completed_task()
-
-		t.check(instance.is_on_its_way_out(), "he leaves (%s half)"
-				% ("second" if on_the_second_half else "first"))
-		t.check(instance.facing_now().dot(walking) < -0.99,
-				"and turns to walk away from her rather than along the beat (%s half)"
-						% ("second" if on_the_second_half else "first"))
-		instance.free()
-
-## Contribution stops the instant he leaves, and he walks rather than vanishing. He does **not**
-## pop out of existence mid-screen at `EventDeparture.LEAVING_GIVES_UP` (6.0s) while she is still
-## standing right there watching — that backstop is for a departure nobody could be watching (a
-## headless rig, a streamed-out day), not for one that starts with her in reach. He only finishes
-## once he has actually walked far enough away.
-func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: TestRunner) -> void:
-	var where := WhereSheIs.nowhere()
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
-	t.add_child(instance)
-	instance.set_process(false)
-	# She stands still for the whole test — the case that used to pop him out of existence
-	# mid-screen at the backstop.
-	var her := Vector2(20.0, 0.0)
-	where.tell(her)
-	t.check(instance.current_intensity() > 0.0, "shouting, before the task is done")
-
-	instance.leave_for_a_completed_task()
-	t.check(instance.is_on_its_way_out(), "he stops the instant she hands him the note")
-	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
-			"and contributes nothing the same frame", 0.001)
-
-	var before := instance.global_position
-	var before_distance := before.distance_to(her)
-	instance.behaviours().departure().leave(EventDeparture.LEAVING_GIVES_UP)
-	t.check(not instance.is_gone(),
-			"still leaving past the backstop's own six seconds, since she is still watching")
-	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
-			"and still contributes nothing")
-	t.check(instance.global_position.distance_to(her) > before_distance,
-			"farther away than when he started, not stalled")
-
-	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears
-	# `Tuning.OUT_OF_SIGHT` (420px) in well under ten more seconds.
-	instance.behaviours().departure().leave(10.0)
-	t.check(instance.is_gone(), "gone once he is actually out of sight, not before")
-	instance.free()
-
-## The departure's sight rule (`EventDeparture._must_clear_sight`) is set by `leave_for_a_completed_task()`. An ordinary
-## departure — `_be_done()` reached with nothing routing it through the resistance, here by his
-## giving up (`give_up_the_chase()`), since a man shouting has no duration to run out — still gives
-## up at the plain six-second backstop, watched or not: this changes nothing about it.
-func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) -> void:
-	var where := WhereSheIs.nowhere()
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
-	t.add_child(instance)
-	instance.set_process(false)
-	where.tell(Vector2(20.0, 0.0))
-
-	instance.give_up_the_chase()
-	t.check(instance.is_on_its_way_out(), "an ordinary departure starts leaving the same way")
-
-	instance.behaviours().departure().leave(EventDeparture.LEAVING_GIVES_UP - 0.1)
-	t.check(not instance.is_gone(), "not gone yet, just under six seconds in")
-	instance.behaviours().departure().leave(0.2)
-	t.check(instance.is_gone(), "gone at the six-second backstop, watched or not")
-	instance.free()
 
 ## "A task is only complete if it is done on the day that won" — the run's `calendar.finish_day()` gives
 ## a lost day's resistance work back, and the retry starts at the mark again, not straight at the

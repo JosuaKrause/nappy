@@ -1,5 +1,15 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: every mark and contact stands on ground she can reach, and a queued mast is never generated inside a lethal field.
+##
+## **A real city, for a stated reason**: the case that every mark and contact stands on
+## walkable, unobstructed ground reads which ground a day's real plan, its closures and the
+## bodies its events stand leave her; a fake would have to answer that, and the answer is what
+## the case checks. The other four cases are still to be judged in the group's next pull
+## request: the queued mast inside a lethal field (the scheduler's acceptance, not reachability,
+## which the events skill names this suite as holding, so a move updates that sentence), the
+## day's spacing in `PlanBuilder.place_at()` (not reachability either: it reads only the city's
+## map), and the two cases of the dawn's draw (the director's dawn plans a day, which is the
+## dawn's).
 
 func run(t: TestRunner) -> void:
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)

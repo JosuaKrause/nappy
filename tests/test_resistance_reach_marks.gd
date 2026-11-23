@@ -1,6 +1,9 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: a mark is never placed in an alley she cannot reach, and one placed across the city
 ## stands on a way from home whose ground has drawn.
+##
+## **A real city, for a stated reason**: reachability is the director's over the ground of a day's
+## real plan, the closures and the bodies the events stand, which a stand-in would restate.
 
 func run(t: TestRunner) -> void:
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)

@@ -1,5 +1,14 @@
 extends "res://tests/resistance_rig.gd"
 ## The four placement kinds a perform step may use, each task's own site, and the days built in order.
+##
+## **A real city, for a stated reason**: each task's site is picked from the blocks, fronts and
+## sidewalks a generator made and the events the day plans there, so what is checked about the
+## director's placement is over that ground. The cases that run `ResistanceHappenings` on a real
+## manager (the raid, the market and the column, the lost day 10 restoring her ordinary door, and
+## the neighbor's window boarded from day 11) are not covered by this reason, nor is the
+## neighbor walking out to work on days 1 to 9, which reads the director's happenings: they are
+## still to be judged in the group's next pull request, for whether they can take
+## `FakeEventManager` and `FakeEvent` where they do not read the city's siting.
 
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. What the

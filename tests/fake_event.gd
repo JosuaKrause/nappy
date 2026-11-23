@@ -60,6 +60,13 @@ var telegraph_length := 0.0
 var core := 0.0
 var noticed_within := 0.0
 var emitting := 0.0
+## Whether she is inside its core (`core_reaches()`): what the suite sets, and each point the
+## question was asked about, in order. How far a core reaches is `core_within()`; the answer is not
+## worked out from it here.
+var core_reached := false
+var core_asked: Array[Vector2] = []
+## How far its body stops her (`solid_reach()`), zero for a row with no body.
+var solid_extent := 0.0
 ## The outline its row's ground is (`ground_shape()`), null for a row with no picture, and the
 ## box its drawing fills (`drawn_box()`) with the one its row occupies (`footprint()`).
 var shape: GroundShape = null
@@ -144,6 +151,7 @@ static func answering_as(instance: EventInstance) -> FakeEvent:
 	fake.pulse_length = instance.pulses_every()
 	fake.telegraph_length = instance.telegraphs_for()
 	fake.core = instance.core_within()
+	fake.solid_extent = instance.solid_reach()
 	fake.noticed_within = instance.notice_within()
 	fake.emitting = instance.current_intensity()
 	fake.shape = instance.ground_shape()
@@ -301,6 +309,17 @@ func telegraphs_for() -> float:
 ## Overrides EventInstance.core_within.
 func core_within() -> float:
 	return core
+
+## Notes the point asked about and answers `core_reached`.
+##
+## Overrides EventInstance.core_reaches.
+func core_reaches(point: Vector2) -> bool:
+	core_asked.append(point)
+	return core_reached
+
+## Overrides EventInstance.solid_reach.
+func solid_reach() -> float:
+	return solid_extent
 
 ## Overrides EventInstance.notice_within.
 func notice_within() -> float:

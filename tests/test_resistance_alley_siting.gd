@@ -11,6 +11,13 @@ extends "res://tests/resistance_rig.gd"
 ## dawn costs the day's reachability built afresh, so the sweeps over every mark tile of a city are
 ## relocations and the dawn draws are a few. Where a mark's alley ends and where its guard should
 ## stand are worked out from the map alone (`AlleyMarks`).
+##
+## **A real city, for a stated reason**: where a mark and its guard stand is the director's pick over
+## the alleys a generator made, the closures the day plans on them and the bodies the day's
+## events stand there, so the guarantee spans those and the director; no stand-in holds them. A
+## bare real `alley_robbery` is also built (`_stays_asleep_walking_in_and_out()`), because what
+## the cases ask of it is the live event's own notice, whether it wakes as she walks past where
+## the director put it, and that is the event's answer to where she stands.
 
 func run(t: TestRunner) -> void:
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
