@@ -730,21 +730,17 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
-  the live event's looks (the drawing suites `test_event_views`, `test_event_redraw`, `test_car_views`,
-  and every other suite or probe that reads the live event's `look`, found with
-  `rg -n "\.look\b" tests` (among them `test_event_strides`, `test_drawn_view`, `test_events_pursuit`,
-  `test_police_car`, `test_fire_truck_body`, `test_barrier_stays`, `test_no_pop_in`,
-  `test_scenery_animation`, `test_frame_record`, `test_halo_behind`, `test_draw_layers`,
-  `test_resistance_traps`, and five probes);
-  the live event's other suites build one real event on open ground or a hand-drawn map, the
-  record minty-quail-pebbly-plover): what a look shows read off a recording drawer handed to the event in its
-  setup call (`tests/recording_event_drawer.gd`) or, for a question no picture answers, off a look
-  the suite makes with `EventLooks.for_row()` round a `FakeEvent`, written here, and then the live
-  event's `look` private (*proposed, not asked for:* the plainer alternative is that the live event's
-  public `look` stays for them), with the field-read groups `[EventBehaviour]`, `[EventFlock]`,
-  `[Warning]` and `[ChargeRecord]` where every reader is one of these suites; the live event's
-  `behaviours()`, read by about fifteen suites across the groups, goes with the group that converts its
-  last reader; the event manager and its
+  the live event's looks' readers (`FakeEvent`, `tests/fake_event.gd`, and the redraw and view suites are
+  built, the record minty-quail-grassy-quail): every other suite or probe that reads the live event's `look`,
+  found with `rg -n "\.look\b" tests` (among them `test_event_strides`, `test_drawn_view`, whose
+  cyclist case needs `FakeEvent.look_for()` to take a drawn view, `test_events_pursuit`,
+  `test_police_car`, `test_fire_truck_body`, `test_protest`, `test_barrier_stays`, `test_no_pop_in`,
+  `test_scenery_animation`, `test_frame_record`, which also assigns it, `test_halo_behind`,
+  `test_draw_layers`, `test_resistance_traps`, and five probes), what a look shows read off a
+  recording drawer or a look made round a `FakeEvent`, and then the live event's `look` private
+  (*proposed, not asked for:* the plainer alternative is that the live event's public `look` stays
+  for them); the live event's `behaviours()`, read by about fifteen suites across the groups, goes
+  with the group that converts its last reader; the event manager and its
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
   manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
   first, the spawner's question: the manager real, plans
@@ -753,7 +749,7 @@ written once, after it is final.
   cases that generate a city and plan a day, moved out of the row's suites (the record minty-quail-gentle-bison): rows and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
-  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front`, whose
+  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose
   subject is the crowd's cars and whose city hosts crowd agents); and the resistance
   (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
   `FakeEvent`).
