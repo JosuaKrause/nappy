@@ -730,22 +730,24 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
-  the live event and its parts
-  (`test_event_phase`, `test_event_behaviours`, `test_events_pursuit`, `test_car_driving`,
-  `test_police_car`, `test_fire_truck_body`, `test_car_front`, `test_protest`,
-  `test_events_chat`, the drawing suites: one real live event on open ground or a hand-drawn map,
-  a `WhereSheIs` the test moves, a fake navigator where a wall matters, and what a look shows read
-  off a recording drawer handed to the event in its setup call (`tests/recording_event_drawer.gd`)
-  or, for a question no picture answers, off a look the suite makes with `EventLooks.for_row()`
-  round a `FakeEvent` (*proposed, not asked for:* the plainer alternative is that the live event's
-  public `look` stays for them); the event manager and its
-  parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`: the manager real, plans
+  the live event's looks (the drawing suites `test_event_views`, `test_event_redraw`, `test_car_views`;
+  the live event's other suites build one real event on open ground or a hand-drawn map, the
+  record minty-quail-pebbly-plover): what a look shows read off a recording drawer handed to the event in its
+  setup call (`tests/recording_event_drawer.gd`) or, for a question no picture answers, off a look
+  the suite makes with `EventLooks.for_row()` round a `FakeEvent`, written here, and then the live
+  event's `look` private (*proposed, not asked for:* the plainer alternative is that the live event's
+  public `look` stays for them), with the live event's `behaviours()` and the field-read groups
+  `[EventBehaviour]`, `[EventFlock]`, `[Warning]` and `[ChargeRecord]` whose readers are these
+  suites; the event manager and its
+  parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
+  manager's tick starts: the manager real, plans
   plain, a real city only in the suite whose header gives the reason); the dawn
   (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites, which hold the
   cases that generate a city and plan a day, moved out of the row's suites (the record minty-quail-gentle-bison): rows and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
-  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one); and the resistance
+  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front`, whose
+  subject is the crowd's cars and whose city hosts crowd agents); and the resistance
   (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
   `FakeEvent`).
 
