@@ -16,6 +16,10 @@ extends RefCounted
 ## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
 ## are what a screenshot answers that a test cannot — see the **writing-tests** skill, "test what a
 ## screenshot cannot see, screenshot what a test cannot judge."
+##
+## It also holds what a live row drawn through the recording drawer stands against what its row
+## obstructs: a barrier's end posts at the edge of its obstruction, and a whole scene's slices
+## spanning it.
 
 const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")

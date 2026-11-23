@@ -2,7 +2,10 @@ extends RefCounted
 ## The event's stored phase and the one warning clock: `EventInstance.Phase` changed only by
 ## `transition()`, every row's telegraph and every waiting row's notice moving through it, a notice
 ## carried across a stream-out exactly as far run (held time included), and `Warning` itself — the
-## clock an event's notice, a door crossing and a badge up alone all run on.
+## clock an event's notice, a door crossing and a badge up alone all run on. A live event is built
+## here by hand, with no scheduler, map or manager under it, and stepped through real seconds: what it
+## charges through its phases (the telegraph's damping, a field's bound, a two-part field, a
+## protest's swell), the collision shapes a crash registers, and that it leaves rather than vanishing.
 
 const STEP := 0.1
 const EMISSION_STEP := 1.0 / 60.0

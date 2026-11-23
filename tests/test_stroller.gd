@@ -1,5 +1,6 @@
 extends RefCounted
-## Direction quantisation for the player rig, including its boundary hold.
+## Direction quantisation for the player rig, including its boundary hold, and the pram's own size
+## against the one the rules think it is (`Tuning.PLAYER_BODY_RADIUS`).
 
 const HeadIndicators := preload("res://tests/head_indicators.gd")
 const STEP := 1.0 / 60.0
