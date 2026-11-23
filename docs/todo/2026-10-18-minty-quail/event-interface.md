@@ -394,8 +394,11 @@ A test is a caller like any other ("yes", inbox #1182 in gray-dolphin): it asks 
 Nothing is added for tests alone. A test that sets a row's field today builds the row it needs
 with a draft; a test hands the live event a `WhereSheIs` and tells it where she is; a
 test that reads `phase` asks the question it means (`is_waiting()`, `is_telegraphing()`,
-`is_active()`, `has_stopped_her()`, `is_on_its_way_out()`, `has_parked()`,
-`is_only_its_barrier()`, `is_gone()`).
+`is_past_its_warning()`, `has_stopped_her()`, `is_on_its_way_out()`, `has_parked()`,
+`is_only_its_barrier()`, `is_gone()`). `is_past_its_warning()` says its warning has run and it is
+still in the world, which a row that stopped her, parked or stands as its barrier also is; the game
+asks it too (a body that comes down once the event starts, a lethal reach, a scene recipe's pursuer),
+and no question answers the active phase alone.
 
 ### 2.10 The live event's own parts, and where she is
 
@@ -418,7 +421,7 @@ strategies did (the record brisk-lark):
   `step_by(delta)`, `begin(phase)`, `be_done()`, `drop_its_body()`, `charge_began()`,
   `hold_the_notice(delta)`. The body's collision shape, the notice clock and the charge record
   stay private to the live event. `Figure` has these, of the phase questions the ones the
-  behaviours below ask (all of section 2.9's but `is_active()` and `has_stopped_her()`), and not
+  behaviours below ask (all of section 2.9's but `is_past_its_warning()` and `has_stopped_her()`), and not
   `drop_its_body()`, which no behaviour that asks through it calls yet; it has further questions
   and events the records minty-quail-tiny-alpaca, minty-quail-tawny-swan and
   minty-quail-striped-hawk list. Every behaviour, and the barrier post's far guard, asks through it
@@ -621,7 +624,7 @@ counted where it only writes.
 | `is_finished` | 12 in; 154 reads in tests | `is_gone()` ok (the base look asks it ok); the property is deleted, with streaming's read (the record minty-quail-grassy-elk) |
 | `is_leaving` | 13 in; 133 in tests | `is_on_its_way_out()` ok; the property is deleted, with streaming's read (the record minty-quail-grassy-elk) |
 | `is_parked` | 3 in; the suites | `has_parked()` ok; the property is deleted (the record minty-quail-grassy-elk) |
-| `phase` | 2 in; the suites | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_active()`, `has_stopped_her()` ok, `is_only_its_barrier()` ok); `transition()` reached by its parts through `Figure.begin()` ok; no game file outside `event_instance.gd` reads the field. Two things hold of it today. **`transition()` stays public** for four suites that call it to put a live event in a phase that sets a check up (`test_resistance_replacement`, `test_resistance_placement_kinds`, `test_scenery_animation` and `test_prediction_reuse`; `tools/test_only_members.txt` keeps its `transition` line, whose list of suites is its own to keep true): each call goes when its suite reaches the phase the way the game does or is handed a fake event, which no `FakeEvent` answer does today, and the design names nothing for `test_scenery_animation` and `test_prediction_reuse`. **`phase` is private**: the live event's phase, behaviours and day 13 guard suites ask its phase questions (the record minty-quail-merry-osprey) |
+| `phase` | 2 in; the suites | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_past_its_warning()` ok, `has_stopped_her()` ok, `is_only_its_barrier()` ok); `transition()` reached by its parts through `Figure.begin()` ok; no game file outside `event_instance.gd` reads the field. Two things hold of it today. **`transition()` stays public** for four suites that call it to put a live event in a phase that sets a check up (`test_resistance_replacement`, `test_resistance_placement_kinds`, `test_scenery_animation` and `test_prediction_reuse`; `tools/test_only_members.txt` keeps its `transition` line, whose list of suites is its own to keep true): each call goes when its suite reaches the phase the way the game does or is handed a fake event, which no `FakeEvent` answer does today, and the design names nothing for `test_scenery_animation` and `test_prediction_reuse`. **`phase` is private**: the live event's phase, behaviours and day 13 guard suites ask its phase questions (the record minty-quail-merry-osprey) |
 | `age` | 7 in, 1 out (the readout); set by rigs and recipes | `age()` ok, the property gone (the record minty-quail-gentle-stork); set only by its own tick and by `restore(save)` ok |
 | `path` | 7 in; the suites | `walks()` ok, `beat()` ok, `way_left()` ok; the field is private (the record minty-quail-grassy-elk) |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |

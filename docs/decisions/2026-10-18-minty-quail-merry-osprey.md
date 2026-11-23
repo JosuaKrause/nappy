@@ -7,10 +7,11 @@ design.
 
 **What was built.** Every read of the phase outside the live event's file asks its phase questions (whether it is
 telegraphing, waiting, on its way out, gone, only its barrier), each first compared with the stored phase on every
-frame. Whether it has charged is not the same as being past its warning (it is true while a held lunge still warns,
-and for a restored masked man), so the day 13 hold and the masked man's cases ask "its warning has run, it is not
-waiting, not leaving, not gone" through a helper each; the robber's charge keeps "has charged and is not telegraphing",
-which agreed on every frame. `transition()` stays public for the suites that still call it.
+frame. The live event gains the question its tests and three places in the game each worked out by
+hand, whether its warning has run and it is still in the world (`is_past_its_warning()`), and the three game sites ask
+it; whether it has charged is not the same (it is true while a held lunge still warns). A check that compared the warning
+phase asks a test helper true in the warning alone, since telegraphing is also true of a row that left, stopped,
+parked or ended inside its warning clock. The two probes print a stopped officer as stopped. `transition()` stays public for the suites that still call it.
 
 **Measured.** Check counts unchanged; each rewritten check was shown failing with its rule broken. The two probes that
 print a phase word print it from the questions, so their hash chains changed once.
