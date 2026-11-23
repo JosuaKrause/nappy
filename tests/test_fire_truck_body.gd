@@ -69,21 +69,6 @@ func _step(engine: EventInstance, where: WhereSheIs, player: Stroller) -> void:
 		for child in body.get_children():
 			(child as Node2D).force_update_transform()
 
-## How far apart the truck's body is from her and from her pram: the smaller gap, negative where
-## they overlap. Measured here off the body's own outline (`GroundShape`) at the truck's place and
-## heading against her rig's circle and her pram's, so it holds whatever the truck's own driving
-## believes.
-func _gap(engine: EventInstance, player: Stroller) -> float:
-	var pram := player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
-	return minf(_gap_to(engine, player.global_position, Tuning.PLAYER_BODY_RADIUS),
-			_gap_to(engine, pram, Stroller.PRAM_BODY_RADIUS))
-
-## The gap between the truck's body and a circle of `radius` about `centre`.
-func _gap_to(engine: EventInstance, centre: Vector2, radius: float) -> float:
-	var shape := engine.ground_shape()
-	var local := (centre - engine.global_position).rotated(-engine.facing_now().angle())
-	return shape.distance_to_spine(local) - shape.rounding_radius() - radius
-
 func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 	var walked := 0.0
 	while walked < distance:
@@ -269,7 +254,7 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.has_parked():
 				break
-		var gap := _gap(engine, player)
+		var gap := GapToHer.between(engine, player)
 		t.check(engine.has_parked() and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])

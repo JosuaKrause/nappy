@@ -9,6 +9,7 @@ const STEP := 1.0 / 60.0
 
 func run(t: TestRunner) -> void:
 	_test_both_guards_stand_posted_until_one_sets_off(t)
+	_test_the_guard_back_at_the_band_leaves_both_posts_manned(t)
 	_test_the_far_guard_walks_off_when_his_partner_does(t)
 	_test_a_barrier_restored_spent_stands_unmanned(t)
 
@@ -38,6 +39,32 @@ func _test_both_guards_stand_posted_until_one_sets_off(t: TestRunner) -> void:
 	var far_side: Array[int] = [-1]
 	t.check(post.sides_still_posted() == far_side and not post.is_spent(),
 			"only the guard on the other side is still posted, and nothing is spent yet")
+	# Her partner has set off and has not started to walk away: the far guard stays at his post on
+	# every frame of that, however long it lasts.
+	var stays := true
+	for _frame in int(3.0 / STEP):
+		parts.tick(STEP)
+		stays = stays and post.where_the_far_guard_walks() == Vector2.INF \
+				and post.sides_still_posted() == far_side
+	t.check(stays, "the far guard stays at his post on every frame while his partner is out and "
+			+ "has not started to walk away")
+	parts.release()
+
+## The guard on her side steps back out of her radius and is back at the band: neither side is
+## set off, nothing is left behind, and both guards are posted again.
+func _test_the_guard_back_at_the_band_leaves_both_posts_manned(t: TestRunner) -> void:
+	var where := WhereSheIs.nowhere()
+	var parts := _stand(t, where)
+	var post := parts.post
+	var band := post.body_position()
+	post.leave_the_body()
+	t.check(post.has_left_its_body() and post.chaser_side() != 0, "the guard on her side has set off")
+	post.back_at_the_band()
+	t.check(post.chaser_side() == 0 and not post.has_left_its_body(),
+			"he steps back and no side is set off, nothing is left behind")
+	t.check(post.sides_still_posted().size() == 2 and post.save().is_empty(),
+			"both guards are posted again and there is nothing to carry")
+	t.check(post.body_position().is_equal_approx(band), "and the band's body is under him again")
 	parts.release()
 
 ## The frame his partner starts to walk away, the guard at the far post sets off from it: away from

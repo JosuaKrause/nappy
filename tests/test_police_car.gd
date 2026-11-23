@@ -100,20 +100,6 @@ func _stands(car: EventInstance, where: WhereSheIs, player: Stroller) -> bool:
 	_drive(car, where, player)
 	return car.global_position.is_equal_approx(was_at)
 
-## How far apart the car's body is from her and from her pram: the smaller gap, negative where they
-## overlap. Measured here off the body's own outline (`GroundShape`) at the car's place and heading
-## against her rig's circle and her pram's, so it holds whatever the car's own driving believes.
-func _gap(car: EventInstance, player: Stroller) -> float:
-	var pram := player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
-	return minf(_gap_to(car, player.global_position, Tuning.PLAYER_BODY_RADIUS),
-			_gap_to(car, pram, Stroller.PRAM_BODY_RADIUS))
-
-## The gap between the car's body and a circle of `radius` about `centre`.
-func _gap_to(car: EventInstance, centre: Vector2, radius: float) -> float:
-	var shape := car.ground_shape()
-	var local := (centre - car.global_position).rotated(-car.facing_now().angle())
-	return shape.distance_to_spine(local) - shape.rounding_radius() - radius
-
 # ------------------------------------------------------------- the reproduction ---
 
 ## **The reproduction**: walked at side-on, a standing patrol car stops her at its flank — with no
@@ -232,7 +218,7 @@ func _test_a_driving_car_beside_her_is_solid_and_not_lethal(t: TestRunner) -> vo
 	for i in int(6.0 / STEP):
 		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-		deepest = minf(deepest, _gap(car, player))
+		deepest = minf(deepest, GapToHer.between(car, player))
 		# Level with its middle, she walks up into its flank and leans on it as it passes.
 		if not pressed and absf(car.global_position.x) < 4.0:
 			pressed = true
@@ -319,7 +305,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t: TestRunner) -> void:
 	for i in int(5.0 / STEP):
 		_drive(leaving, leaving_where, player)
 		struck = struck or leaving.is_lethal_at(player.global_position)
-		deepest = minf(deepest, _gap(leaving, player))
+		deepest = minf(deepest, GapToHer.between(leaving, player))
 	t.check(not struck, "a leaving car never strikes her in front of it")
 	t.check(deepest >= -0.01 and _stands(leaving, leaving_where, player),
 			"it stops against her instead (closest %.2fpx)" % deepest)
@@ -366,7 +352,7 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
 	for i in int(6.0 / STEP):
 		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-		deepest = minf(deepest, _gap(car, player))
+		deepest = minf(deepest, GapToHer.between(car, player))
 	t.check(map.tile_at(map.world_to_tile(on_the_sidewalk)) == GameEnums.TileType.SIDEWALK,
 			"she stands on the sidewalk")
 	t.check(not struck, "with her on the sidewalk, a car never strikes her")
@@ -445,7 +431,7 @@ func _test_the_car_never_drives_into_her(t: TestRunner) -> void:
 					_drive(car, car_where, player)
 					if car.is_lethal_at(player.global_position):
 						break
-					worst = minf(worst, _gap(car, player))
+					worst = minf(worst, GapToHer.between(car, player))
 				if _stands(car, car_where, player):
 					held += 1
 				player.free()
@@ -553,7 +539,7 @@ func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 		for i in int(6.0 / STEP):
 			_drive(car, car_where, player)
 			struck = struck or car.is_lethal_at(player.global_position)
-			deepest = minf(deepest, _gap(car, player))
+			deepest = minf(deepest, GapToHer.between(car, player))
 		t.check(not struck, "stepped in %.0fpx behind the raid's car at the end of its beat, it never "
 				% behind + "strikes her")
 		t.check(_stands(car, car_where, player)

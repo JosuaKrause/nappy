@@ -636,7 +636,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 		await t.get_tree().process_frame
 		walked += 1
 	t.check(guard.get_parent().get_node_or_null("FarGuard") == null,
-			"his node goes with him once he is out of her sight (%d frames)" % walked)
+			"his node goes with him (%d frames)" % walked)
 	stage.manager.streaming.stream_out(plan)
 	stage.manager.streaming.stream_in(plan)
 	var streamed := stage.manager.event_of(plan)
