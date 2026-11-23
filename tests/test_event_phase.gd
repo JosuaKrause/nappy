@@ -20,6 +20,8 @@ func run(t: TestRunner) -> void:
 	_test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t)
 	_test_a_mover_reaches_as_the_ellipse_its_field_is(t)
 	_test_a_flock_reaches_where_one_of_its_birds_does(t)
+	_test_a_live_event_leaves_its_rows_spread_classification_alone(t)
+	_test_a_live_crash_registers_a_collision_shape_per_car(t)
 	_test_telegraph_damps_emission(t)
 	_test_a_phase_damps_both_parts_of_a_two_part_field(t)
 	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
@@ -334,6 +336,54 @@ func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
 	t.check(not instance.field_reaches(uncovered),
 			"so a flock does not reach it, though it is inside the disc its row is heard in")
 	instance.free()
+
+## **A live event leaves its row's classification as a spread alone**: crossing a phase and
+## finishing are the instance's, and neither changes what the row it was set up from says it is,
+## whatever geometry the row was reshaped to.
+func _test_a_live_event_leaves_its_rows_spread_classification_alone(t: TestRunner) -> void:
+	var cafe := EventCatalogue.by_id("cafe_tables")
+	var reshaped := cafe.redraft()
+	reshaped.body(cafe.body().reshaped(GroundShape.band(22.0)))
+	reshaped.field(cafe.field().holding_to(15.0).reaching(90.0))
+	reshaped.warning(WarningSpec.lasting(EMISSION_STEP))
+	var def := reshaped.build()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	instance.step(EMISSION_STEP * 2.0)
+	t.check(not instance.is_telegraphing() and def.lies_as_a_spread(),
+			"crossing an instance phase leaves its definition's classification true")
+	# The way the game ends one early: a resistance step's contact completing, which runs the
+	# instance's own `_be_done()` and, for a café that has no departure speed, finishes it.
+	instance.leave_for_a_completed_task()
+	t.check(instance.is_gone() and def.lies_as_a_spread(),
+			"finishing the instance leaves the classification true")
+	instance.free()
+
+## **A live crash registers one collision shape per car**, on either axis of the street it stands
+## on (the pieces it stands are `tests/test_events_catalogue.gd`'s, asked of its stance). This
+## fixture puts a live scenery-bearing instance in the tree without an EventManager, whose tree
+## lifetime owns the events page in the game. Mirror that owner explicitly around the rig, on a
+## library of the fixture's own that every instance is handed.
+func _test_a_live_crash_registers_a_collision_shape_per_car(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var crash := EventCatalogue.by_id("car_accident")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(EventPictures.ATLAS_GROUP)
+	for vertical: bool in [false, true]:
+		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
+				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+		var instance := EventInstance.new()
+		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map) \
+					.drawn_from(atlas))
+		t.add_child(instance)
+		instance.set_process(false)
+		var bodies := DebugLayers.collision_nodes_under(instance)
+		t.check(bodies.size() == 2,
+				"on a %s street the crash registers one collision shape per car (%d)"
+				% ["east-west" if vertical else "north-south", bodies.size()])
+		instance.free()
+	atlas.release(EventPictures.ATLAS_GROUP)
 
 # ------------------------------------------------------------------- the meter ---
 

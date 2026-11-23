@@ -6,16 +6,14 @@ extends RefCounted
 ## picture or a silhouette a badge could draw.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again" -- this half is the
-## catalogue's own static contract, checked without a generated city or a live `EventManager`.
+## catalogue's own static contract, checked on the rows as they are: no node, no live event and no
+## city is built, and a case that needs one is `tests/test_event_phase.gd`'s or
+## `tests/test_event_views.gd`'s.
 ##
 ## *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's
 ## first row is that **the entity itself carries most of it**, and the catalogue had been quietly
 ## failing it since M5: five category looks -- `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`, `FIRE` --
 ## were drawing sixteen of the twenty-eight visible rows between them.
-
-const STEP := 1.0 / 60.0
-const DrawnEvent := preload("res://tests/drawn_event.gd")
-const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 func run(t: TestRunner) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
@@ -37,8 +35,7 @@ func run(t: TestRunner) -> void:
 	_test_a_spread_rotates_with_the_street(t)
 	_test_stationary_vehicles_face_their_street(t)
 	_test_a_spread_never_lands_on_a_corner(t)
-	await _test_a_spread_cap_matches_what_it_obstructs(t)
-	await _test_a_wide_scene_faces_its_street(t)
+	_test_a_wide_scene_faces_its_street(t)
 	_test_a_crash_is_solid_only_where_its_cars_are(t)
 	_test_every_other_row_is_one_body(t)
 	_test_no_two_rows_draw_the_same_picture(t)
@@ -85,20 +82,6 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	def = reshaped.build()
 	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
-
-	var instance := EventInstance.new()
-	reshaped.warning(WarningSpec.lasting(STEP))
-	def = reshaped.build()
-	instance.setup(def, Vector2.ZERO)
-	instance.step(STEP * 2.0)
-	t.check(not instance.is_telegraphing() and def.lies_as_a_spread(),
-			"crossing an instance phase leaves its definition's classification true")
-	# The way the game ends one early: a resistance step's contact completing, which runs the
-	# instance's own `_be_done()` and, for a café that has no departure speed, finishes it.
-	instance.leave_for_a_completed_task()
-	t.check(instance.is_gone() and def.lies_as_a_spread(),
-			"finishing the instance leaves the classification true")
-	instance.free()
 
 	_test_a_copy_of_a_row_lies_as_the_row_does(t)
 	_test_a_solid_body_with_no_shape_is_refused(t)
@@ -543,25 +526,19 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 	map.set_tile(kerb_tile, GameEnums.TileType.SIDEWALK)
 
 	var van := EventCatalogue.by_id("delivery_van")
-	var parked := EventInstance.new()
-	parked.setup(van, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
-	t.check(parked.position.is_equal_approx(map.tile_to_world(kerb_tile)),
+	var parked := BodyStance.of(map, van, map.tile_to_world(kerb_tile), Vector2.RIGHT)
+	t.check(parked.center().is_equal_approx(map.tile_to_world(kerb_tile)),
 			"'delivery_van' (AT_THE_KERB) is left exactly where it was placed, not re-centred")
-	parked.free()
 
 	# The exemption is meaningful, not a no-op: an ANY-`pavement_side` body sited on the very same
 	# tile does get moved, onto the middle of the two-lane band — half a tile from the tile centre,
 	# in the direction `CityMap.pavement_inward()` already answers for this lane.
 	var barrier := EventCatalogue.by_id("construction")
-	var centred := EventInstance.new()
-	centred.setup(barrier, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+	var centred := BodyStance.of(map, barrier, map.tile_to_world(kerb_tile), Vector2.RIGHT)
 	var band_centre := map.tile_to_world(kerb_tile) \
 			+ Vector2(map.pavement_inward(kerb_tile)) * (Tuning.TILE_SIZE * 0.5)
-	t.check(centred.position.is_equal_approx(band_centre),
+	t.check(centred.center().is_equal_approx(band_centre),
 			"'construction' (pavement_side ANY) is re-centred onto the pavement band")
-	centred.free()
 
 	# And the payoff, stated as the arithmetic that decides it rather than as a distance: with
 	# `construction` centred on the band, no point on the pavement is far enough from it to clear
@@ -670,16 +647,11 @@ func _test_a_spread_rotates_with_the_street(t: TestRunner) -> void:
 	t.check(not _runs_vertically_at(WorldMap.open_ground(), Vector2.ZERO),
 			"a data-level rig on open ground gets the unrotated default")
 
-## Whether a spread row set up at `at` on `map` runs down the screen (`EventInstance.runs_vertically()`,
-## which the looks draw and lay their slices by): `setup()` decides it once from the street it stands
-## on, as the scheduler's placement does when it makes the instance.
+## Whether a spread row set up at `at` on `map` lies down the screen (`BodyStance.lies_vertically()`,
+## which a live event's looks draw and lay their slices by), decided once from the street it stands on.
 func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("construction"), at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
-	var vertical := instance.runs_vertically()
-	instance.free()
-	return vertical
+	return BodyStance.of(map, EventCatalogue.by_id("construction"), at, Vector2.RIGHT) \
+			.lies_vertically()
 
 ## How the row `id` stands on `map` when it is built at `at` facing right.
 func _stance_of(id: String, map: WorldMap, at: Vector2) -> BodyStance:
@@ -754,107 +726,11 @@ func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 						% [run_seed, day, plan.row_id(), tile])
 	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
 
-## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**
-## `SpreadLook._draw_spread`'s own docstring is the contract; the repeated segments already meet
-## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
-## wide) hung 3px past each end of a `construction` barrier's 64px obstruction. A `construction`
-## barrier is drawn broadside and end-on with a recording drawer handed in, and the end posts it
-## stands are read off what it was told to draw: where each post's feet are, against the real
-## asset size and the real `obstructs_within()`, and in which order each slice draws its post and
-## its segment.
-func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("construction")
-	var half := maxf(11.0, def.obstructs_within())
-	var cap_size := EventPictures.native_size(EventPictures.BARRIER_END)
-	t.check(cap_size.y > cap_size.x * 2.0,
-			"the post is an upright picture (%s), so its height and width are different questions"
-			% cap_size)
-	for vertical: bool in [false, true]:
-		var axis := "end-on" if vertical else "broadside"
-		var along := Vector2.DOWN if vertical else Vector2.RIGHT
-		var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
-		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
-		var segment := EventPictures.roadwork_segment_texture(vertical)
-		# Each slice's draws in its own order, the slices far end first.
-		var slices: Array = []
-		for canvas in drawer.canvases():
-			slices.append(drawer.shown_on(canvas))
-		slices.sort_custom(func(a: Array, b: Array) -> bool:
-			return _along_of(a, segment, instance, along) < _along_of(b, segment, instance, along))
-		var posts: Array[float] = []
-		for drawn: Array in slices:
-			for entry: Dictionary in drawn:
-				if entry.picture == EventPictures.BARRIER_END:
-					posts.append(RecordingEventDrawer.foot_about(entry, instance).dot(along))
-		posts.sort()
-		t.check(posts.size() == 2 and is_equal_approx(posts[0] - cap_size.x * 0.5, -half)
-				and is_equal_approx(posts[1] + cap_size.x * 0.5, half),
-				"%s, each post's outer edge (%s, %.1f wide) lands on the %.1fpx obstruction, not past it"
-				% [axis, posts, cap_size.x, half])
-		t.check(posts.size() == 2 and not is_equal_approx(posts[1], half),
-				"%s, and it is not simply centred at ±half (%s)" % [axis, posts])
-		var first: Array = slices[0]
-		var last: Array = slices[slices.size() - 1]
-		var before := _posts_drawn(first, segment, true, instance)
-		var after := _posts_drawn(last, segment, false, instance)
-		if vertical:
-			# End-on, the extent along the run is the post's picture height; what it covers of the
-			# run is still its width. The near post's feet stand within that width of the barrier's
-			# near end — inside the last segment's own slice of ground, which ends at the end of the
-			# body — rather than half a post's height in toward the middle.
-			var last_segment := _entry_of(last, segment)
-			var last_slice_starts := RecordingEventDrawer.rect_about(last_segment, instance) \
-					.position.y if not last_segment.is_empty() else INF
-			var near := posts[posts.size() - 1] if not posts.is_empty() else 0.0
-			t.check(half - near <= cap_size.x and near > last_slice_starts,
-					"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"
-					% [near, half] + " segment's slice (from %.1f)" % last_slice_starts)
-			# A post sorts with its end slice, so draw order within the slice is its only depth.
-			# The side drawn behind the board has to be the far end, up the screen, and the near
-			# end is the only one drawn over it.
-			t.check(before.size() == 1 and before[0].dot(along) < 0.0 and after.size() == 1
-					and after[0].dot(along) > 0.0,
-					"end-on, the far post is drawn behind the board (%s) and only the near one over it (%s)"
-					% [before, after])
-		else:
-			t.check(before.is_empty() and after.size() == 2,
-					"broadside, both posts are drawn over the board (before %s, after %s)"
-					% [before, after])
-		instance.free()
-
-## Where along the run the slice that drew `drawn` stands: its segment's feet.
-static func _along_of(drawn: Array, segment: String, instance: EventInstance,
-		along: Vector2) -> float:
-	var entry := _entry_of(drawn, segment)
-	return RecordingEventDrawer.foot_about(entry, instance).dot(along) if not entry.is_empty() \
-			else INF
-
-## The first of `drawn` showing `picture`, or an empty dictionary.
-static func _entry_of(drawn: Array, picture: String) -> Dictionary:
-	for entry: Dictionary in drawn:
-		if entry.picture == picture:
-			return entry
-	return {}
-
-## The feet, about the event's origin, of the end posts a slice drew before its segment (`behind`)
-## or after it.
-static func _posts_drawn(drawn: Array, segment: String, behind: bool,
-		instance: EventInstance) -> Array[Vector2]:
-	var feet: Array[Vector2] = []
-	var segment_seen := false
-	for entry: Dictionary in drawn:
-		if entry.picture == segment:
-			segment_seen = true
-		elif entry.picture == EventPictures.BARRIER_END and segment_seen != behind:
-			feet.append(RecordingEventDrawer.foot_about(entry, instance))
-	return feet
-
-## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
-## obstruction at the ground point.** `EventPictures.wide_scene_texture` is the pure selector
-## this pins: on an east-west street (`vertical` true) it returns the directional asset. That the
-## drawn body stays aligned with the obstruction is read off what a `fallen_tree` drawn on either
-## axis with a recording drawer handed in was told to draw: every slice cuts its band out of the
-## one whole picture, and that picture spans the row's own obstruction along its run.
+## **A whole-scene hard seal has to use a distinct authored picture on either axis.**
+## `EventPictures.wide_scene_texture` is the pure selector this pins: on an east-west street
+## (`vertical` true) it returns the directional asset. That the drawn body spans the obstruction
+## at the ground point is `tests/test_event_views.gd`'s, read off what a `fallen_tree` drawn on
+## either axis was told to draw.
 func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 	var horizontal := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
 	var vertical := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
@@ -863,26 +739,6 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 	t.check(vertical == EventPictures.FALLEN_TREE_VERTICAL,
 			"an east-west street draws its directional picture, not the same one relabelled")
 	t.check(horizontal != vertical, "and the two are not the same asset")
-
-	var tree := EventCatalogue.by_id("fallen_tree")
-	var half := maxf(11.0, tree.obstructs_within())
-	for is_vertical: bool in [false, true]:
-		var texture := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
-		var instance: EventInstance = await DrawnEvent.stand(t, tree, is_vertical)
-		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
-		var wholes: Array[Rect2] = []
-		for entry in drawer.shown():
-			if entry.kind == &"band" and entry.picture == texture:
-				wholes.append(RecordingEventDrawer.rect_about(entry, instance))
-		var spans := wholes.size() > 1
-		for drawn in wholes:
-			var from := drawn.position.y if is_vertical else drawn.position.x
-			var to := drawn.end.y if is_vertical else drawn.end.x
-			spans = spans and is_equal_approx(from, -half) and is_equal_approx(to, half)
-		t.check(spans, "'%s' %s body spans the obstruction from -%.0f to %.0f in each of its %d slices"
-				% [texture.get_file(), "vertical" if is_vertical else "horizontal", half, half,
-					wholes.size()])
-		instance.free()
 
 	# The other two whole-scene rows carry the same guarantee — checked once each rather than
 	# re-running the segment arithmetic, since `wide_scene_texture`'s own match is what could
@@ -913,15 +769,12 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 ## cars leaves a lane she can walk on each pavement and holds the middle of the road, and a body
 ## spanning the street leaves neither. The offsets those lanes fall out of are read off the two
 ## pictures (`EventCatalogue._car_accident_parts`) and checked by eye with the bounding-box layer
-## (`--layers 3`); what this holds is the thing that would be wrong if they drifted.
+## (`--layers 3`); what this holds is the thing that would be wrong if they drifted. The pieces are
+## the ones its stance lays out on the street (`BodyStance.pieces()`); that a live crash registers
+## a collision shape per car is `tests/test_event_phase.gd`'s.
 func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var crash := EventCatalogue.by_id("car_accident")
-	# This fixture puts a live scenery-bearing instance in the tree without an EventManager, whose
-	# tree lifetime owns the events page in the game. Mirror that owner explicitly around the rig,
-	# on a library of the fixture's own that every instance is handed.
-	var atlas := AtlasLibrary.new()
-	atlas.acquire(EventPictures.ATLAS_GROUP)
 	t.check(crash.body().declared_pieces().size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_within(),
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
@@ -931,63 +784,52 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 	for vertical: bool in [false, true]:
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
-		var instance := EventInstance.new()
-		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map) \
-					.drawn_from(atlas))
-		t.add_child(instance)
-		instance.set_process(false)
+		var stance := BodyStance.of(map, crash, map.tile_to_world(tile), Vector2.RIGHT)
 		var street := "east-west" if vertical else "north-south"
-
-		var bodies := DebugLayers.collision_nodes_under(instance)
-		t.check(bodies.size() == 2,
-				"on a %s street the crash registers one collision shape per car (%d)"
-				% [street, bodies.size()])
+		t.check(stance.pieces().size() == 2,
+				"on a %s street the crash stands one piece per car (%d)"
+				% [street, stance.pieces().size()])
 
 		var half: float = crash.obstructs_within()
-		var offsets := _lateral_offsets(instance)
+		var offsets := _lateral_offsets(stance)
 		for offset in offsets:
 			t.check(absf(offset) < carriageway,
 					"a wrecked car sits on the carriageway, not on a %s pavement (%.1fpx of %.0f)"
 					% [street, offset, carriageway])
-		t.check(_walkable_lane_beside(instance, half, -1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+		t.check(_walkable_lane_beside(stance, half, -1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
 				"a %s crash leaves her a lane on one side (%.0fpx)"
-				% [street, _walkable_lane_beside(instance, half, -1.0)])
-		t.check(_walkable_lane_beside(instance, half, 1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
-				"and one on the other (%.0fpx)" % _walkable_lane_beside(instance, half, 1.0))
-		t.check(_is_blocked_at(instance, 0.0),
+				% [street, _walkable_lane_beside(stance, half, -1.0)])
+		t.check(_walkable_lane_beside(stance, half, 1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"and one on the other (%.0fpx)" % _walkable_lane_beside(stance, half, 1.0))
+		t.check(_is_blocked_at(stance, 0.0),
 				"while the middle of the road, where the cars are, is still shut on a %s street"
 				% street)
-		instance.free()
-	atlas.release(EventPictures.ATLAS_GROUP)
 
-## Where each of an instance's solid pieces sits along its own spread axis, in px from the scene's
+## Where each of a stance's solid pieces sits along its own spread axis, in px from the scene's
 ## centre.
-func _lateral_offsets(instance: EventInstance) -> PackedFloat32Array:
-	var vertical := instance.solid_axis() == Vector2.DOWN
+func _lateral_offsets(stance: BodyStance) -> PackedFloat32Array:
 	var found := PackedFloat32Array()
-	for piece in instance.standing_pieces():
-		var offset := piece.center() - instance.global_position
-		found.append(offset.y if vertical else offset.x)
+	for piece in stance.pieces():
+		var offset := piece.center() - stance.center()
+		found.append(offset.y if stance.lies_vertically() else offset.x)
 	return found
 
 ## Whether her centre may stand at `offset` along the spread axis — clear of every piece by her own
 ## body radius.
-func _is_blocked_at(instance: EventInstance, offset: float) -> bool:
-	var vertical := instance.solid_axis() == Vector2.DOWN
-	for piece in instance.standing_pieces():
-		var delta := piece.center() - instance.global_position
-		var along: float = delta.y if vertical else delta.x
+func _is_blocked_at(stance: BodyStance, offset: float) -> bool:
+	for piece in stance.pieces():
+		var delta := piece.center() - stance.center()
+		var along: float = delta.y if stance.lies_vertically() else delta.x
 		if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
 			return true
 	return false
 
 ## How much walkable width the crash leaves on one side of itself (`side` −1 or +1), measured from
 ## the far edge of the scene inward to the first body she cannot pass.
-func _walkable_lane_beside(instance: EventInstance, half: float, side: float) -> float:
+func _walkable_lane_beside(stance: BodyStance, half: float, side: float) -> float:
 	var width := 0.0
 	var offset := side * (half - Tuning.PLAYER_BODY_RADIUS)
-	while absf(offset) <= half and not _is_blocked_at(instance, offset):
+	while absf(offset) <= half and not _is_blocked_at(stance, offset):
 		width += 1.0
 		offset -= side
 	return width

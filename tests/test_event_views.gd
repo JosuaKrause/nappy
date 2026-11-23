@@ -130,6 +130,8 @@ func run(t: TestRunner) -> void:
 	_test_roadblock_barrier_is_end_on_down_a_column(t)
 	await _test_roadblock_guard_stands_clear_of_the_band(t)
 	await _test_a_spread_covers_the_ground_its_body_closes(t)
+	await _test_a_spread_cap_matches_what_it_obstructs(t)
+	await _test_a_whole_scene_spans_its_obstruction(t)
 	_test_roadwork_barrier_follows_alley_axis(t)
 	_test_family_dictionaries_are_complete(t)
 	_test_people_views_are_five_distinct_pictures(t)
@@ -1202,3 +1204,123 @@ func _test_a_vehicle_badge_draws_its_wheels(t: TestRunner) -> void:
 			"a parked van's badge is its one picture")
 	t.check(EventPictures.icon_wheels_for(EventDef.Look.DOG_WALKER).is_empty(),
 			"and so is everything that does not roll")
+
+## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**
+## `SpreadLook._draw_spread`'s own docstring is the contract; the repeated segments already meet
+## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
+## wide) hung 3px past each end of a `construction` barrier's 64px obstruction. A `construction`
+## barrier is drawn broadside and end-on with a recording drawer handed in, and the end posts it
+## stands are read off what it was told to draw: where each post's feet are, against the real
+## asset size and the real `obstructs_within()`, and in which order each slice draws its post and
+## its segment.
+func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("construction")
+	var half := maxf(11.0, def.obstructs_within())
+	var cap_size := EventPictures.native_size(EventPictures.BARRIER_END)
+	t.check(cap_size.y > cap_size.x * 2.0,
+			"the post is an upright picture (%s), so its height and width are different questions"
+			% cap_size)
+	for vertical: bool in [false, true]:
+		var axis := "end-on" if vertical else "broadside"
+		var along := Vector2.DOWN if vertical else Vector2.RIGHT
+		var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
+		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
+		var segment := EventPictures.roadwork_segment_texture(vertical)
+		# Each slice's draws in its own order, the slices far end first.
+		var slices: Array = []
+		for canvas in drawer.canvases():
+			slices.append(drawer.shown_on(canvas))
+		slices.sort_custom(func(a: Array, b: Array) -> bool:
+			return _along_of(a, segment, instance, along) < _along_of(b, segment, instance, along))
+		var posts: Array[float] = []
+		for drawn: Array in slices:
+			for entry: Dictionary in drawn:
+				if entry.picture == EventPictures.BARRIER_END:
+					posts.append(RecordingEventDrawer.foot_about(entry, instance).dot(along))
+		posts.sort()
+		t.check(posts.size() == 2 and is_equal_approx(posts[0] - cap_size.x * 0.5, -half)
+				and is_equal_approx(posts[1] + cap_size.x * 0.5, half),
+				"%s, each post's outer edge (%s, %.1f wide) lands on the %.1fpx obstruction, not past it"
+				% [axis, posts, cap_size.x, half])
+		t.check(posts.size() == 2 and not is_equal_approx(posts[1], half),
+				"%s, and it is not simply centred at ±half (%s)" % [axis, posts])
+		var first: Array = slices[0]
+		var last: Array = slices[slices.size() - 1]
+		var before := _posts_drawn(first, segment, true, instance)
+		var after := _posts_drawn(last, segment, false, instance)
+		if vertical:
+			# End-on, the extent along the run is the post's picture height; what it covers of the
+			# run is still its width. The near post's feet stand within that width of the barrier's
+			# near end — inside the last segment's own slice of ground, which ends at the end of the
+			# body — rather than half a post's height in toward the middle.
+			var last_segment := _entry_of(last, segment)
+			var last_slice_starts := RecordingEventDrawer.rect_about(last_segment, instance) \
+					.position.y if not last_segment.is_empty() else INF
+			var near := posts[posts.size() - 1] if not posts.is_empty() else 0.0
+			t.check(half - near <= cap_size.x and near > last_slice_starts,
+					"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"
+					% [near, half] + " segment's slice (from %.1f)" % last_slice_starts)
+			# A post sorts with its end slice, so draw order within the slice is its only depth.
+			# The side drawn behind the board has to be the far end, up the screen, and the near
+			# end is the only one drawn over it.
+			t.check(before.size() == 1 and before[0].dot(along) < 0.0 and after.size() == 1
+					and after[0].dot(along) > 0.0,
+					"end-on, the far post is drawn behind the board (%s) and only the near one over it (%s)"
+					% [before, after])
+		else:
+			t.check(before.is_empty() and after.size() == 2,
+					"broadside, both posts are drawn over the board (before %s, after %s)"
+					% [before, after])
+		instance.free()
+
+## Where along the run the slice that drew `drawn` stands: its segment's feet.
+static func _along_of(drawn: Array, segment: String, instance: EventInstance,
+		along: Vector2) -> float:
+	var entry := _entry_of(drawn, segment)
+	return RecordingEventDrawer.foot_about(entry, instance).dot(along) if not entry.is_empty() \
+			else INF
+
+## The first of `drawn` showing `picture`, or an empty dictionary.
+static func _entry_of(drawn: Array, picture: String) -> Dictionary:
+	for entry: Dictionary in drawn:
+		if entry.picture == picture:
+			return entry
+	return {}
+
+## The feet, about the event's origin, of the end posts a slice drew before its segment (`behind`)
+## or after it.
+static func _posts_drawn(drawn: Array, segment: String, behind: bool,
+		instance: EventInstance) -> Array[Vector2]:
+	var feet: Array[Vector2] = []
+	var segment_seen := false
+	for entry: Dictionary in drawn:
+		if entry.picture == segment:
+			segment_seen = true
+		elif entry.picture == EventPictures.BARRIER_END and segment_seen != behind:
+			feet.append(RecordingEventDrawer.foot_about(entry, instance))
+	return feet
+
+## **A whole-scene hard seal spans its obstruction at the ground point.** A `fallen_tree` drawn
+## on either axis with a recording drawer handed in: every slice cuts its band out of the one
+## whole picture (`EventPictures.wide_scene_texture()`), and that picture spans the row's own
+## obstruction along its run.
+func _test_a_whole_scene_spans_its_obstruction(t: TestRunner) -> void:
+	var tree := EventCatalogue.by_id("fallen_tree")
+	var half := maxf(11.0, tree.obstructs_within())
+	for is_vertical: bool in [false, true]:
+		var texture := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
+		var instance: EventInstance = await DrawnEvent.stand(t, tree, is_vertical)
+		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
+		var wholes: Array[Rect2] = []
+		for entry in drawer.shown():
+			if entry.kind == &"band" and entry.picture == texture:
+				wholes.append(RecordingEventDrawer.rect_about(entry, instance))
+		var spans := wholes.size() > 1
+		for drawn in wholes:
+			var from := drawn.position.y if is_vertical else drawn.position.x
+			var to := drawn.end.y if is_vertical else drawn.end.x
+			spans = spans and is_equal_approx(from, -half) and is_equal_approx(to, half)
+		t.check(spans, "'%s' %s body spans the obstruction from -%.0f to %.0f in each of its %d slices"
+				% [texture.get_file(), "vertical" if is_vertical else "horizontal", half, half,
+					wholes.size()])
+		instance.free()
