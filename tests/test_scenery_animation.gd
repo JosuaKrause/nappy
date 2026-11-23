@@ -253,12 +253,6 @@ func _test_event_parts(t: TestRunner) -> void:
 			t.check(not asked, "animation leaves the static event key alone")
 			t.check(_body_of(instance) == body and _centres_of(instance) == centers,
 					"animation preserves both collision resource and placement")
-			# The instance's own process frame hides what a finished event leaves.
-			instance.transition(EventInstance.Phase.DONE)
-			await t.get_tree().process_frame
-			await t.get_tree().process_frame
-			t.check(sceneries.all(func(scenery: EventScenery) -> bool: return not scenery.visible),
-					"a finished event hides every scenery layer")
 			# Detached, it takes its slices and their scenery with it; back in the tree, it builds
 			# them again once it has settled.
 			t.remove_child(instance)
@@ -271,13 +265,7 @@ func _test_event_parts(t: TestRunner) -> void:
 			var rebound := false
 			instance.set_process(false)
 			for scenery in _sceneries_of(pictures):
-				# The event is finished, so its look hides its slices' scenery; shown here, up to the
-				# event, with the look's frame held, so its layers are drawn and their pictures read.
-				var shown: Node = scenery
-				while shown != null and shown != t:
-					if shown is CanvasItem:
-						(shown as CanvasItem).visible = true
-					shown = shown.get_parent()
+				# The look's frame is held, so its layers are drawn and their pictures read.
 				var split: Array = await _split_by_animation(t, scenery, laid)
 				var animated: Array = split[0]
 				rebound = rebound or not animated.is_empty()

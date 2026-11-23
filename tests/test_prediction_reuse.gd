@@ -1,8 +1,14 @@
 extends RefCounted
 ## Exact projection parity under same-frame writes, with counters on actual sampled work.
+##
+## The sources are real events, not fakes, so that the suite stands on the event's own field: the
+## projection is that field reprojected, which no fake can answer without logic of its own.
 
 const Reference = preload("res://tests/fixtures/prediction_reference.gd")
 const HaloRig = preload("res://tests/halo_rig.gd")
+
+## The length of the straight route the sweep's events are set up on.
+const ROUTE_LENGTH := 600.0
 
 ## An event's source that keeps the sensitivity the halo last told it (`set_her_motion()`), which the
 ## frozen reference scales its projection by as the source scales its own.
@@ -163,6 +169,36 @@ func _under_a_different_row(event: CountedEvent, row: EventDef) -> void:
 	event._def = row
 	event.source().use_row_and_where_she_is(row, event._where)
 
+## An event of a copy of `definition` set up on the route and the streets the sweep runs on, hearing
+## `where`, in the tree when it is a flock, whose birds are built there as the game builds them.
+func _swept_event(t: TestRunner, definition: EventDef, where: WhereSheIs) -> CountedEvent:
+	var event := CountedEvent.new()
+	event.setup(_copy_definition(definition), Vector2.ZERO,
+		PackedVector2Array([Vector2.ZERO, Vector2(ROUTE_LENGTH, 0.0)]), Vector2.RIGHT,
+		EventSurroundings.new().on(SplitStreets.new()).hearing(where))
+	if event.row().is_a_flock():
+		t.add_child(event)
+		event.set_process(false)
+	return event
+
+## A second event of `definition` put back from `saved` and set walking as the sweep's phases left
+## her, its answer at `at` asked once so the cache holds it.
+func _projecting_copy(t: TestRunner, definition: EventDef, saved: EventSave,
+		at: Vector2) -> CountedEvent:
+	var copy := _swept_event(t, definition, WhereSheIs.nowhere())
+	copy.restore(saved)
+	copy.source().set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
+	_event_parity(t, copy, at, definition.id() + " before its end")
+	return copy
+
+## What the frozen reference projects from `source` at `at`.
+func _reference_of(source: CountedEvent, at: Vector2) -> float:
+	return Reference.event_gross(source, at, (source.source() as ToldEventSource).told_sensitivity)
+
+## One if what a write just made moved the reference's answer off `before`, else none.
+func _count_a_move(source: CountedEvent, at: Vector2, before: float) -> int:
+	return 0 if _same_bits(_reference_of(source, at), before) else 1
+
 func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
 	var expected := Reference.event_gross(source, at,
 			(source.source() as ToldEventSource).told_sensitivity)
@@ -224,16 +260,11 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	var sampled := 0
 	var positive := 0
 	var flock_queries := 0
+	# The rows each kind of phase write moved the answer on.
+	var moved := {"noticed": 0, "lunged": 0, "silenced": 0, "leaving": 0, "retired": 0}
 	for definition: EventDef in EventCatalogue.all():
 		var source_where := WhereSheIs.nowhere()
-		var source := CountedEvent.new()
-		source.setup(_copy_definition(definition), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().on(SplitStreets.new()).hearing(source_where))
-		if source.row().is_a_flock():
-			# In the tree, where its flock is built as the game builds it.
-			t.add_child(source)
-			source.set_process(false)
+		var source := _swept_event(t, definition, source_where)
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id() + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.restore(EventSave.aged(phase))
@@ -242,6 +273,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 				_event_parity(t, source, at, definition.id() + " phase/position")
 				if source.source().expected_gross_at(at) > 0.0:
 					positive += 1
+		var projecting := source.save()
 		var at := Vector2(-170.0, 30.0)
 		source.source().set_her_motion(Vector2(92.0, 0.0))
 		# All writes happen without advancing age or the engine frame.
@@ -249,16 +281,21 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id() + " source movement")
 		source._heading = Vector2.DOWN
 		_event_parity(t, source, at, definition.id() + " source heading")
+		# What a phase change moves among the cache's terms is asked of each write by the answer
+		# before it and after it, and the sweep counts the rows that answer moved on.
+		var before := _reference_of(source, at)
 		if source.row().waits_for_her():
-			source._notice_her()
-		else:
-			source.transition(EventInstance.Phase.WARNING)
-		_event_parity(t, source, at, definition.id() + " noticed")
-		source.transition(EventInstance.Phase.ACTIVE)
-		_event_parity(t, source, at, definition.id() + " lunged")
-		source.transition(EventInstance.Phase.PARKED)
-		_event_parity(t, source, at, definition.id() + " parked")
-		source.transition(EventInstance.Phase.ACTIVE)
+			# The streaming restore of a row that had noticed her, at the age it has: it starts
+			# the notice and moves to its warning.
+			source.restore(EventSave.new(source.age(), source.save().travelled(), source.age()))
+			_event_parity(t, source, at, definition.id() + " noticed")
+			moved["noticed"] += _count_a_move(source, at, before)
+			before = _reference_of(source, at)
+			# Streamed back in a minute after it noticed her, which no notice in the catalogue runs.
+			source.restore(EventSave.new(source.age(), source.save().travelled(),
+					source.age() - 60.0))
+			_event_parity(t, source, at, definition.id() + " lunged")
+			moved["lunged"] += _count_a_move(source, at, before)
 		source.source().set_her_motion(Vector2(43.0, 71.0))
 		_event_parity(t, source, at, definition.id() + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
@@ -325,19 +362,34 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			source.birds()[0].speed += 10.0
 			_event_parity(t, source, at, definition.id() + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")
-		# Silenced last: nothing un-silences a live event, and a leaving or a retired one answers 0
-		# silenced or not, so the two checks after it still hold their own phases.
-		source.silence()
-		_event_parity(t, source, at, definition.id() + " silence")
-		source.transition(EventInstance.Phase.LEAVING)
-		_event_parity(t, source, at, definition.id() + " leaving")
-		source.transition(EventInstance.Phase.ACTIVE)
-		retiring.retire(source)
-		_event_parity(t, source, at, definition.id() + " retired")
-		sampled += source.sampling_runs
+		# The ends come last, each on an event of its own that comes back from the save the phases
+		# left: this one has been moved off and had its row replaced, so it projects nothing at her,
+		# and a stale answer from before an end and the fresh one would be the same 0.
+		var leaver := _projecting_copy(t, definition, projecting, at)
+		before = _reference_of(leaver, at)
+		if definition.is_a_mast():
+			# Nothing silences a row but a mast.
+			leaver.silence()
+			_event_parity(t, leaver, at, definition.id() + " silence")
+			moved["silenced"] += _count_a_move(leaver, at, before)
+		else:
+			leaver.leave_for_a_completed_task()
+			_event_parity(t, leaver, at, definition.id() + " leaving")
+			moved["leaving"] += _count_a_move(leaver, at, before)
+		var ended := _projecting_copy(t, definition, projecting, at)
+		before = _reference_of(ended, at)
+		retiring.retire(ended)
+		_event_parity(t, ended, at, definition.id() + " retired")
+		moved["retired"] += _count_a_move(ended, at, before)
+		sampled += source.sampling_runs + leaver.sampling_runs + ended.sampling_runs
+		ended.free()
+		leaver.free()
 		source.free()
 	t.check(sampled > 100 and positive > 20, "catalogue sweep samples live positive projections")
 	t.check(flock_queries > 0, "flock bypass assertions exercise constructed birds")
+	for write: String in moved:
+		t.check((moved[write] as int) > 0,
+				"the %s write moved the answer on %d rows" % [write, moved[write]])
 	retiring.free()
 
 func _test_crowd_mutations(t: TestRunner) -> void:
