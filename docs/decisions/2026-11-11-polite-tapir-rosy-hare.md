@@ -29,3 +29,15 @@ and so named four classes of the model.
   a hand-built map would restate the three branches.
 - **The three reads of `step.target_kind` moved with the body.** `Step`'s fields stay public for every
   reader; putting them behind methods is `field-reads.md`'s, for all readers at once.
+
+## Verified
+
+- `tools/test.sh probes/m181_resistance_targets.gd` on the base (26ec12450) and on this branch's
+  head gives an identical table: all 120 rows (per seed and per day 9, 12 and 14: candidates, legal,
+  open and reachable, and where the contact is put), ending "40 of 120 placements unreachable or
+  nowhere", the same 40 on both, all of them day 14's station rows.
+- `tools/test.sh resistance_reach_narrow resistance_placement_kinds events_scheduler route_rig
+  routes_closures`: 11829 checks, 0 failures.
+- `check_layers.py`, `check_field_reads.py`, `check_test_only_members.py`, `pycheck.sh` and
+  `lint.sh` pass; `rg "target_candidates"` over `src`, `tests`, `tools`, `docs` and
+  `.claude/skills`, bar the records, comes back empty.

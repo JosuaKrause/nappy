@@ -29,7 +29,7 @@ review; a builder runs it again):
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
   that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
   building's pass; `GameSave` and
-  `HelpText` in the view's pass; the
+  `HelpText` in the view's pass;
   `SpawnSiting` with row 4b of minty-quail's `event-interface.md`.
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
