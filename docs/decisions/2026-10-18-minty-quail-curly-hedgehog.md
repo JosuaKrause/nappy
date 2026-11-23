@@ -10,7 +10,10 @@ world and no manager: it stands a board over a plain event world and hands it tw
 abduction van, whose answers were read off the real events first. The three screen-edge badge cases (the fire engine
 she walks at and that drives at her, the cat, and a live instance keeping its badge while a gone one loses it) stand on
 the fake event manager, moving the instance by hand. The fake event gained four answers, whether it ends the day, how
-far it is heard, its travel velocity and whether it has lost its guard, each tested real in the phase, carets, fire,
-behaviours, catalogue and costs suites. No case of the danger suite builds an event manager.
+far it is heard, its travel velocity and whether it has lost its guard; the live event's own answers for its row (whether
+it ends the day, how far it is heard, and the core radius the board measures her distance from) are held in the phase
+suite, its travel velocity in the carets and fire suites, and a lost guard in the behaviours suite. The mark over her
+head's case moved to the event parts suite, beside the board's other cases. No case of the danger suite builds an event manager.
 
-**Measured.** The danger suite's check count is unchanged; its time is unchanged, since every case waits on real frames.
+**Measured.** The danger suite's check count is unchanged; in paired local runs it took 18.1 s on main and 18.2 s on the
+branch, since every case waits on real frames, and 14.8 s on CI.
