@@ -513,7 +513,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 	for i in 60:
 		guard_where.tell(her)
 		guard.step(0.1)
-		lunged_standing = lunged_standing or guard.phase == EventInstance.Phase.ACTIVE
+		lunged_standing = lunged_standing or guard.is_past_its_warning()
 		lethal_standing = lethal_standing or guard.is_lethal_at(her)
 	t.check(not lunged_standing and not lethal_standing,
 			"while she stands 60px off for 6s he holds: no lunge, and he cannot end her day")
@@ -522,7 +522,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
 		guard_where.tell(her)
 		guard.step(0.1)
-		if guard.phase == EventInstance.Phase.ACTIVE:
+		if guard.is_past_its_warning():
 			lunged_at = guard.global_position.distance_to(her)
 			break
 	t.check(lunged_at >= standoff - Tuning.WALK_SPEED * 0.1,
