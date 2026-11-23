@@ -9,8 +9,9 @@ extends RefCounted
 ## the dawn makes them (`DawnMasts`). What the dawn plans (the same sites every day from the first
 ## mast day, the scar a silenced mast leaves) is `test_events_scheduler.gd`'s. The scheduler's
 ## acceptance of a mast queued for day 11 (`EventManager.queue_a_mast()`) is asked of a manager of
-## its own, handed the map as the city's (`EventSurroundings.in_the_city()`) and no day planned,
-## which siting a mast asks of it and planning a day would ask the city's route tree besides.
+## its own, handed the cached map as the city's (`EventSurroundings.in_the_city()`), which is what
+## siting a mast asks of it; no day is planned, since planning one would also ask for the city's
+## route tree.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
