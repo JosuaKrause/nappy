@@ -6,11 +6,15 @@ extends RefCounted
 ## Two symptoms, one cause each: `_draw()` lifts the whole canvas by the chaser's stride bob and the
 ## barrier was drawn inside the lift; and a chase that ended finished the instance, which is the
 ## barrier's body and picture as well as the man. The barrier's picture is now its own node
-## (`RoadblockLook.RoadblockBand`), standing at the body whatever the man does.
+## (`RoadblockLook.RoadblockBand`), standing at the body whatever the man does. And what the
+## hunting roadblock's guard does at his post: the barrier he leaves is not a second killer, he catches
+## at a man's reach, and only the guard on her side sets off, from his own post.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const EastWestStreet := preload("res://tests/east_west_street.gd")
 
 const STEP := 1.0 / 60.0
 
@@ -24,6 +28,8 @@ func run(t: TestRunner) -> void:
 	await _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
 	_test_a_posted_guard_sees_and_charges_her_across_his_own_band(t)
 	_test_his_catch_does_not_reach_through_his_own_band(t)
+	await _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
+	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
@@ -473,3 +479,158 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 	t.check(guard.clear_line_to(across), "he sees it across his own band")
 	t.check(not guard.is_lethal_at(across), "and his catch does not reach through his own band")
 	stage.close()
+
+## *"I just saw a barrier turn into a mask men (the barrier disappeared and the masked man
+## appeared) and the pursuit ended way too early (I got caught when I was still very visibly away
+## from him)."* — and, on how it should work: *"the guard needs to be at the barrier from the
+## beginning, standing. only then does it make sense for it to start pursuing. 86px is huge why is
+## that the fix for the problem that the radius is too big?"*
+##
+## Four things, and each is one half of what the player reported.
+##
+## - **A cold roadblock is a barrier and nothing else**: solid, never lethal, catching nobody at
+##   any distance. The guard standing at it is a drawing, which is why he costs nothing here.
+## - **Nothing disappears when he sets off.** The body is still there and it is still at the place
+##   the barrier was built, not wherever the man has walked to.
+## - **The catch is measured from the man**, at `masked_pursuer`'s own reach — so she is taken
+##   when he is on her, not when he is two and a half tiles away.
+## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
+##   radius would have fired from, ends nothing while the man is elsewhere.
+func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: TestRunner) -> void:
+	var reach: float = EventCatalogue.by_id("masked_pursuer").core_within()
+	var cold := EventCatalogue.by_id("roadblock")
+	var post := Vector2(400.0, 0.0)
+
+	var band_where := WhereSheIs.nowhere()
+	var band := EventInstance.new()
+	# Drawn through a drawer that records what it is told instead of painting it, since this rig
+	# holds no atlas, handed before `setup()` as its manager's spawner hands the real one.
+	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(band_where) \
+				.drawing_through(DrawnEvent.recording(band, RecordingEventDrawer.new())))
+	t.add_child(band)
+	band_where.tell(post + Vector2(cold.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0))
+	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	var segments := 0
+	for entry in DrawnEvent.drawer_of(band).draws:
+		if entry.picture == EventPictures.roadblock_segment_texture(band.runs_vertically()):
+			segments += 1
+	t.check(segments > 0, "the band was drawn in the frames that passed (%d segments)" % segments)
+	t.check(band.is_solid(), "a cold roadblock is a solid band")
+	t.check(not band.is_lethal_at(band_where.at()) and not band.is_lethal_at(post),
+			"and it takes nobody, at its own edge or standing in it")
+	band.free()
+
+	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
+	var guard_where := WhereSheIs.nowhere()
+	var guard := EventInstance.new()
+	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(guard_where))
+	t.add_child(guard)
+	guard.set_process(false)
+	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
+	t.check(not guard.behaviours().barrier_post().has_left_its_body(), "with its body still under its own feet")
+
+	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
+	guard_where.tell(her)
+	guard.step(STEP)
+	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
+	t.check(guard.is_solid() and guard.behaviours().barrier_post().has_left_its_body(),
+			"he sets off and the barrier stays solid behind him")
+	t.check(guard.body_position().is_equal_approx(post),
+			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
+
+	# He warns, standing where she can see him, for his `PursuitSpec.warns_for()` while she stays
+	# in his radius, and nothing is lethal during it (`EventInstance.warns_by_radius()`); then
+	# he charges.
+	var frames := 0
+	while guard.is_telegraphing() and frames < int((hot.pursuit().warns_for() + 1.0) / STEP):
+		t.check(not guard.is_lethal_at(guard.global_position),
+				"nothing is lethal while he warns")
+		guard_where.tell(her)
+		guard.step(STEP)
+		frames += 1
+	t.check(absf(frames * STEP - hot.pursuit().warns_for()) <= 2.0 * STEP,
+			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.pursuit().warns_for()])
+	t.check(not guard.is_telegraphing() and not guard.is_waiting(),
+			"and then, she still inside his radius, he charges")
+
+	# The reach is a man's, measured from him.
+	var on_him := guard.global_position + Vector2(reach - 1.0, 0.0)
+	var just_clear := guard.global_position + Vector2(reach + 2.0, 0.0)
+	t.check(guard.is_lethal_at(on_him), "he takes her at %.0fpx, a man's own reach" % reach)
+	t.check(not guard.is_lethal_at(just_clear),
+			"and not a pixel past it (%.0fpx is clear)" % (reach + 2.0))
+	t.check(not guard.is_lethal_at(guard.global_position
+			+ Vector2(hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0)),
+			"never at the %.0fpx the band's own body would have forced"
+			% (hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
+
+	# And the barrier he left behind is not a second killer: she can stand against it. She holds
+	# still while he closes, so what this measures is him leaving rather than her drawing him off.
+	var chased := 0.0
+	while chased < 2.0:
+		guard_where.tell(her)
+		guard.step(STEP)
+		chased += STEP
+	t.check(guard.body_position().is_equal_approx(post),
+			"the barrier has not followed him (%s)" % guard.body_position())
+	t.check(guard.global_position.distance_to(post) > reach,
+			"he has actually walked away from the post (%.0fpx)"
+			% guard.global_position.distance_to(post))
+	t.check(not guard.is_lethal_at(post)
+			and not guard.is_lethal_at(post + Vector2(0.0, hot.obstructs_within())),
+			"and the barrier standing there takes nobody")
+	guard.free()
+
+## *"have one guard on each side?"* · *"only the guard on her side can chase since the other one
+## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
+## centre. That post is nearer her than the centre where his notice is measured: she comes straight
+## across the band, the approach that puts his post nearest her, and stands still once he has
+## noticed her. He warns for his row's `PursuitSpec.warns_for()` with nothing lethal in it and
+## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
+## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
+func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	t.check(hot.pursuit().warns_for() >= Tuning.OFFSCREEN_WARNING_MIN,
+			"the hunting guard warns for %.1fs before he charges" % hot.pursuit().warns_for())
+	var post := Vector2(400.0, 0.0)
+	for vertical: bool in [false, true]:
+		for side: int in [-1, 1]:
+			var what := "%s, side %d" % ["end-on" if vertical else "broadside", side]
+			var guard_where := WhereSheIs.nowhere()
+			var guard := EventInstance.new()
+			# End-on, he stands on an east-west street, which his band reads its axis off as it
+			# does in a city; broadside, on open ground.
+			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().on(EastWestStreet.new() if vertical else null) \
+						.hearing(guard_where))
+			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
+					"down the screen" if vertical else "across it"])
+			t.add_child(guard)
+			guard.set_process(false)
+			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
+			var her := post + across * side * (hot.notice_within() - 1.0)
+			guard_where.tell(her)
+			guard.step(STEP)
+			t.check(guard.behaviours().barrier_post().has_left_its_body() and guard.behaviours().barrier_post().chaser_side() == side,
+					"%s: the guard on her side sets off" % what)
+			var his_post := post + EventFootprints.guard_post_offset(vertical, side)
+			t.check(guard.global_position.is_equal_approx(his_post),
+					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
+			t.check(guard.body_position().is_equal_approx(post),
+					"%s: the band stays where it was built" % what)
+			var frames := 0
+			var lethal := false
+			while guard.is_telegraphing() and frames < int(10.0 / STEP):
+				lethal = lethal or guard.is_lethal_at(her)
+				guard_where.tell(her)
+				guard.step(STEP)
+				frames += 1
+			t.check(not lethal and absf(frames * STEP - hot.pursuit().warns_for()) <= 2.0 * STEP,
+					"%s: he warns her for %.2fs, nothing lethal in it, then charges"
+					% [what, frames * STEP])
+			t.check(guard.is_chasing(), "%s: and he charges, she still inside his radius" % what)
+			guard.free()
