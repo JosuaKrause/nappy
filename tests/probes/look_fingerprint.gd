@@ -16,7 +16,8 @@ extends RefCounted
 ## - one line per picture the drawer was told since the last sample (canvas, kind, picture, rect,
 ##   mirrored, colour, band), a canvas named by what it is (`event`, `sliceN`, `band`, `far_guard`,
 ##   `sceneryN`) and never by an instance id;
-## - one line of what the look answers (`drawn_rect_now()`, `mark_rect()`, `drawn_heading()`,
+## - one line of what a look made round a fake event that answers what the event answers
+##   (`FakeEvent.answering_as()`) answers (`drawn_rect_now()`, `mark_rect()`, `drawn_heading()`,
 ##   `current_bob()`) and one of where each drawing node stands and whether it is shown, each only
 ##   when it differs from the last sample's.
 ##
@@ -30,8 +31,8 @@ extends RefCounted
 ## **`LK_SEEN` is the guard against a probe that checked nothing**: the look classes reached, the
 ## count of distinct pictures, and the rows that drew nothing (the rows with no picture of their
 ## own). **`LK_COST`** is the one line that is not the fingerprint: the microseconds a fixed number of
-## calls of each live event's `look.redraw_if_the_picture_changed()` took, the redraw gate's share
-## of a frame, for comparing two revisions' cost.
+## drawn frames' own work (`EventInstance._process()`, whose cost is its look's redraw gate) took,
+## the gate's share of a frame, for comparing two revisions' cost.
 ##
 ## **Which rows:** the catalogue's, each one's full-heat copy (`@heat`) and last-day copy (`@late`)
 ## where either differs from the row, so the roadblock's guard who sets off, its far guard and the
@@ -45,13 +46,13 @@ extends RefCounted
 ## `is_on_its_way_out()`): each changes at the same sample as another term.
 ##
 ## **It asks only what every tree of the looks' step has.** Of `EventInstance`: `setup()`, `step()`,
-## `look`, `hold`, `atlas`, `drawer`, `is_chasing()`, `leave_for_a_completed_task()`,
+## `hold`, `atlas`, `drawer`, `is_chasing()`, `leave_for_a_completed_task()`,
 ## `give_up_the_chase()`, `raise_its_guards_hand()`, `start_chat()`, and the members the spawner,
 ## streaming and the checkpoint controller write today (`be_drawn_as_the_pelican()`, `silence()`, `gate_state`,
 ## `points_at`). By string, so a rename shows as a difference in the labels rather than hiding one: a
-## slice's place in `SpreadLook.slices()` and the far guard's node found by its name `FarGuard`.
-## Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,
-## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id()`, `look`,
+## slice's place among the slices the drawer saw drawn (`RecordingEventDrawer.slices()`) and the far
+## guard's node found by its name `FarGuard`. Of the look made round a fake: `drawn_rect_now()`,
+## `mark_rect()`, `drawn_heading()`, `current_bob()`. Of the rows: `EventDef.id()`, `look`,
 ## `speed`, `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`,
 ## `out_of_the_car()`, `building_fire()`, `task_guard_sent()`. A later change which makes one
 ## of those private changes this probe with it.
@@ -95,6 +96,8 @@ class Rig extends RefCounted:
 	var holder: Node2D
 	var instance: EventInstance
 	var scenery_ids: Array[int] = []
+	## The slices the drawer has seen so far, in the order they were first seen.
+	var slices: Array[SpreadLook.Slice] = []
 	var last_answer := ""
 	var last_nodes := ""
 	## What a protest is handed to point at (`points`).
@@ -302,10 +305,9 @@ func _cost(rigs: Array[Rig], seen: Seen) -> void:
 	for rig in rigs:
 		if not rig.alive():
 			continue
-		var look := rig.instance.look
 		var from := Time.get_ticks_usec()
 		for i in COST_CALLS:
-			look.redraw_if_the_picture_changed()
+			rig.instance._process(0.0)
 		seen.cost_usec += Time.get_ticks_usec() - from
 		seen.cost_calls += COST_CALLS
 
@@ -316,8 +318,13 @@ func _sample(rig: Rig, tick: int, seen: Seen) -> void:
 	var instance := rig.instance
 	var drawer := DrawnEvent.drawer_of(instance)
 	var prefix := "LK %s %s %s t%d" % [rig.ground, rig.label, rig.drive, tick]
-	var script := instance.look.get_script() as Script
+	var fake := FakeEvent.answering_as(instance)
+	var look := fake.look_for(rig.row)
+	var script := look.get_script() as Script
 	seen.looks[script.get_global_name()] = true
+	for slice in drawer.slices():
+		if not rig.slices.has(slice):
+			rig.slices.append(slice)
 	for entry in drawer.draws:
 		var picture: String = entry.picture
 		var canvas: Node = entry.canvas
@@ -329,9 +336,9 @@ func _sample(rig: Rig, tick: int, seen: Seen) -> void:
 				_canvas_name(rig, canvas), picture, _rect(entry.rect), 1 if mirrored else 0,
 				_colour(entry.colour), _rect(entry.band)])
 	drawer.draws.clear()
-	var look := instance.look
 	var answer := "%s %s %s %s" % [_rect(look.drawn_rect_now()), _rect(look.mark_rect()),
 			_vec(look.drawn_heading()), _h(look.current_bob())]
+	fake.free()
 	if answer != rig.last_answer:
 		rig.last_answer = answer
 		seen.lines += 1
@@ -367,7 +374,7 @@ func _nodes(rig: Rig, node: Node, path: String) -> String:
 func _canvas_name(rig: Rig, canvas: Node, fallback := "other") -> String:
 	if canvas == rig.instance:
 		return "event"
-	if canvas == rig.instance.look.band_node():
+	if canvas is RoadblockLook.RoadblockBand:
 		return "band"
 	if canvas is EventScenery:
 		var id := canvas.get_instance_id()
@@ -376,12 +383,15 @@ func _canvas_name(rig: Rig, canvas: Node, fallback := "other") -> String:
 		return "scenery%d" % rig.scenery_ids.find(id)
 	if canvas.name == &"FarGuard":
 		return "far_guard"
-	var spread := rig.instance.look as SpreadLook
-	if spread != null:
-		var slices := spread.slices()
-		for slice_at in slices.size():
-			if slices[slice_at] == canvas:
-				return "slice%d" % slice_at
+	var slices: Array[SpreadLook.Slice] = []
+	for slice in rig.slices:
+		if is_instance_valid(slice):
+			slices.append(slice)
+	slices.sort_custom(func(first: SpreadLook.Slice, second: SpreadLook.Slice) -> bool:
+		return first.get_index() < second.get_index())
+	for slice_at in slices.size():
+		if slices[slice_at] == canvas:
+			return "slice%d" % slice_at
 	return fallback
 
 static func _h(value: float) -> String:

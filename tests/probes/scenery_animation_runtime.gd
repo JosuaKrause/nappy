@@ -17,6 +17,8 @@ var _building: Building
 var _roof := RecordingRoofDrawer.new()
 var _water: SceneryWater
 var _events: Array[EventInstance] = []
+## What each event's drawer saw built, by event.
+var _seen: Dictionary[EventInstance, SeeingDrawer] = {}
 var _output := OS.get_environment("SCENERY_CAPTURE_OUTPUT")
 ## The library the fixture's events draw from, holding their page as a manager would.
 var _atlas := AtlasLibrary.new()
@@ -87,14 +89,29 @@ func _rotors() -> Array[SceneryLayer]:
 			rotors.append(object.rotor)
 	return rotors
 
+## The event's own drawer, which paints as the real one does and keeps the scenery it was asked to
+## build, so the probe finds the layers an event's slices stand without asking the event.
+class SeeingDrawer extends EventDrawer:
+	var sceneries: Array[EventScenery] = []
+
+	## Overrides EventDrawer.scenery.
+	func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
+			band: Rect2) -> EventScenery:
+		var built := super(picture, extent, anchor, shadow, band)
+		sceneries.append(built)
+		return built
+
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
+	var drawer := SeeingDrawer.new(_atlas)
 	event.setup(EventCatalogue.by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
-				.drawn_from(_atlas))
+				.drawn_from(_atlas) \
+				.drawing_through(drawer))
 	event.scale = Vector2.ONE * factor
 	_fixtures.add_child(event)
 	_events.append(event)
+	_seen[event] = drawer
 	_watch(event, id + "_owner")
 
 ## Watches every scenery layer of the events, by kind: the scene is drawn in slices beside each
@@ -105,15 +122,12 @@ func _watch_the_events() -> void:
 	await get_tree().process_frame
 	for event in _events:
 		var id := event.row_id()
-		for slice in (event.look as SpreadLook).slices():
-			for scenery in slice.get_children():
-				if not scenery is EventScenery:
-					continue
-				var split: Array = await _split_by_animation(event, scenery as EventScenery)
-				for layer: SceneryLayer in split[1]:
-					_watch(layer, id + "_static")
-				for layer: SceneryLayer in split[0]:
-					_watch(layer, id + "_motion")
+		for scenery in _seen[event].sceneries:
+			var split: Array = await _split_by_animation(event, scenery)
+			for layer: SceneryLayer in split[1]:
+				_watch(layer, id + "_static")
+			for layer: SceneryLayer in split[0]:
+				_watch(layer, id + "_motion")
 
 ## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its
 ## `set_frame()` draws again when it turns them, counted off each layer's `draw` signal; the still

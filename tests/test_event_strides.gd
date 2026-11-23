@@ -461,8 +461,8 @@ func _test_gait_query_is_stable_within_a_tick(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- helpers ---
 
-## `event` walked on to `point` (ground covered, the stride's phase there), striding as a real one is
-## once it has set off.
+## `event` walked on to `point` (ground covered, the stride's phase there), striding as a real one
+## is once it has set off.
 static func _walk_to(event: FakeEvent, point: Vector2) -> void:
 	event.tick(STEP, point.x - event.travelled)
 	event.stride = point.y

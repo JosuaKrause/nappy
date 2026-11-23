@@ -245,9 +245,10 @@ static func _ground_in(vertical: bool) -> WorldMap:
 		return WorldMap.open_ground()
 	return EastWestStreet.new()
 
-## The slices `instance`'s picture was drawn in, as `drawer` saw them drawn, beside it in the world's
-## entity layer, in their own order (far end first).
-static func _slices_of(instance: EventInstance, drawer: RecordingEventDrawer) -> Array[SpreadLook.Slice]:
+## The slices `instance`'s picture was drawn in, as `drawer` saw them drawn, beside it in the
+## world's entity layer, in their own order (far end first).
+static func _slices_of(instance: EventInstance,
+		drawer: RecordingEventDrawer) -> Array[SpreadLook.Slice]:
 	var found: Array[SpreadLook.Slice] = []
 	var beside := instance.get_parent().get_children()
 	for slice in drawer.slices():

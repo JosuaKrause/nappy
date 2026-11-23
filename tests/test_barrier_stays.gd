@@ -66,8 +66,8 @@ func _its_body(guard: EventInstance) -> StaticBody2D:
 			return child
 	return null
 
-## The barrier's own node, which its look stands beside the guard (`RoadblockLook.RoadblockBand`), as
-## the recording drawer saw it drawn on, or null.
+## The barrier's own node, which its look stands beside the guard (`RoadblockLook.RoadblockBand`),
+## as the recording drawer saw it drawn on, or null.
 func _band_of(drawer: RecordingEventDrawer) -> Node2D:
 	for canvas in drawer.canvases():
 		if canvas is RoadblockLook.RoadblockBand:

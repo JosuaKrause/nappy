@@ -13,8 +13,8 @@ extends RefCounted
 ## the trap's), told where she is, and asks it what it draws on that frame
 ## (`EventLook.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
 ## caret's own drawing numbers and its own projection of her), asked of a look made round a fake
-## event that answers what the arrival answers (`FakeEvent.answering_as()`). A footprint (`footprint_of()`) that
-## leaves anything out fails here. Asked over every bearing, cameras led every way her look-ahead can
+## event that answers what the arrival answers (`FakeEvent.answering_as()`). A footprint
+## (`footprint_of()`) that leaves anything out fails here. Asked over every bearing, cameras led every way her look-ahead can
 ## lead them, both input schemes (a corner the joystick's controls cover is not off screen for this),
 ## real cities as well as open ground, the column's lane at the main road's ends, and through a
 ## portrait window turned the way the game turns it.
