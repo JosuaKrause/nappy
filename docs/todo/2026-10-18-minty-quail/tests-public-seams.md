@@ -8,11 +8,16 @@ second counts its lines that call a frame function or emit the frame signal by h
 `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`.
 Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
 well as the suites), and neither sees access through a variable holding the name, so
-`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print two breaches still open: `tests/test_event_manager_fire.gd` and
-`tests/test_fire_truck_body.gd` each call the private `EventSpawner._where_the_summoned_row_stops()`; and the
-shared helper `tests/game_dawn.gd`, whose `GameDawn.of()` writes its own new dawn's private fields
-(`_spec`, `_rng`, `_map`); *proposed, not asked for:* an `_init` taking them would close it. A test or helper that makes them
-print anything else is a breach.
+`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
+these breaches still open:
+
+- the first command prints `tests/test_event_manager_fire.gd` and `tests/test_event_manager.gd`,
+  which each call the private `EventSpawner._where_the_summoned_row_stops()`;
+- the first prints `tests/roadblock_parts.gd`, the shared helper whose static `on()` writes its new
+  rig's private `_host` (the event whose figure the parts move) five times;
+- both print `tests/test_observers.gd`, whose one test calls the observer's `_process(0.1)` by hand.
+
+A test or helper that makes them print anything else is a breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
