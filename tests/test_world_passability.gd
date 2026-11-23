@@ -25,6 +25,8 @@ func run(t: TestRunner) -> void:
 	_test_each_mover_is_stopped_by_its_own_layers(t)
 	_test_is_walkable_is_the_lattice(t)
 	_test_a_line_stops_at_a_body_and_sees_out_of_its_own(t)
+	_test_a_clear_line_is_every_tile_the_line_crosses(t)
+	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
 	_test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t)
 	_test_a_step_keeps_the_body_clear(t)
 	_test_a_mover_on_blocked_ground_may_walk_off_it(t)
@@ -142,6 +144,89 @@ func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t: TestRunner) -> void
 	t.check(not map.clear_line(_centre(Vector2i(2, 5)), _centre(Vector2i(6, 5)), on_foot),
 			"one standing in front of her does")
 
+## A 48x48 sidewalk map with a block of buildings and an alley through it, to draw lines near
+## building corners on.
+func _a_block_with_an_alley() -> CityMap:
+	var map := CityMap.new(Vector2i(48, 48))
+	map.fill_rect(Rect2i(0, 0, 48, 48), GameEnums.TileType.SIDEWALK)
+	map.fill_rect(Rect2i(10, 10, 8, 8), GameEnums.TileType.BUILDING)
+	map.fill_rect(Rect2i(13, 10, 2, 8), GameEnums.TileType.ALLEY)
+	return map
+
+## Every tile a straight line passes through, found by sampling it `per_px` times a pixel.
+func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px := 4.0) -> bool:
+	var samples := maxi(1, ceili(from.distance_to(to) * per_px))
+	for i in samples + 1:
+		if not map.is_walkable(map.world_to_tile(from.lerp(to, float(i) / float(samples)))):
+			return false
+	return true
+
+## **`clear_line()` against the sampled line, over the hand-built map.** Seeded segments up to a
+## stand-off long from walkable ground near buildings, in every direction, each answered both by
+## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
+## The guard counts how many of them crossed a building, so a sweep that only ever asked open
+## ground cannot pass.
+func _test_a_clear_line_is_every_tile_the_line_crosses(t: TestRunner) -> void:
+	var map := _a_block_with_an_alley()
+	var on_foot := Mover.on_foot()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 544
+	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
+	var asked := 0
+	var blocked := 0
+	var disagreed := 0
+	while asked < 400:
+		var near: Vector2i = buildings[rng.randi_range(0, buildings.size() - 1)]
+		var from := map.tile_to_world(near) + Vector2(rng.randf_range(-64.0, 64.0),
+				rng.randf_range(-64.0, 64.0))
+		if not map.is_walkable(map.world_to_tile(from)):
+			continue
+		var to := from + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 116.0)
+		var sampled := _sampled_line_is_walkable(map, from, to, 8.0)
+		asked += 1
+		if not sampled:
+			blocked += 1
+		if map.clear_line(from, to, on_foot) != sampled:
+			disagreed += 1
+	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
+	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
+
+## A 10×10 map of sidewalk with the given tiles built on, for the stepper's exact cases.
+func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
+	var map := CityMap.new(Vector2i(10, 10))
+	map.fill_rect(Rect2i(0, 0, 10, 10), GameEnums.TileType.SIDEWALK)
+	for tile in buildings:
+		map.set_tile(tile, GameEnums.TileType.BUILDING)
+	return map
+
+func _clear_on(map: CityMap, from: Vector2, to: Vector2) -> bool:
+	return map.clear_line(from, to, Mover.on_foot())
+
+## **The cases a random sweep never lands on, each on exact binary fractions so the arithmetic is
+## exact.** A 45° line through a tile vertex, (80, 80) to (112, 112) through (96, 96), crosses both
+## axes at once: a building on either tile beside the vertex blocks it, the x-side one (3, 2) and
+## the y-side one (2, 3) asked separately, since stepping one axis and then the other visits only one
+## of them. A line ending exactly on a tile's edge, (64, 80) to (128, 80), ends on the building
+## beyond the edge (4, 2), since a point on an edge is the tile it opens (`world_to_tile()` floors),
+## so its last crossing, at exactly the whole of the segment, is asked. A line starting on a
+## building is blocked though it crosses into open ground. A line inside one open tile is clear.
+func _test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t: TestRunner) -> void:
+	var through_the_vertex := [Vector2(80.0, 80.0), Vector2(112.0, 112.0)]
+	t.check(_clear_on(_a_small_map([]), through_the_vertex[0], through_the_vertex[1]),
+			"a line through an open vertex is clear")
+	t.check(not _clear_on(_a_small_map([Vector2i(3, 2)]), through_the_vertex[0],
+			through_the_vertex[1]), "a building on the x side of the vertex blocks the line")
+	t.check(not _clear_on(_a_small_map([Vector2i(2, 3)]), through_the_vertex[0],
+			through_the_vertex[1]), "a building on the y side of the vertex blocks the line")
+	t.check(not _clear_on(_a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
+			Vector2(128.0, 80.0)), "a line ending exactly on a building's edge is blocked")
+	t.check(_clear_on(_a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
+			Vector2(127.5, 80.0)), "and half a pixel short of it is clear")
+	t.check(not _clear_on(_a_small_map([Vector2i(2, 2)]), Vector2(80.0, 80.0),
+			Vector2(100.0, 80.0)), "a line starting on a building is blocked")
+	t.check(_clear_on(_a_small_map([]), Vector2(66.0, 66.0), Vector2(90.0, 90.0)),
+			"a line inside one open tile is clear")
+
 ## A wall a tile thick, and a step three tiles long across it, as a long frame gives a chaser: the
 ## tile it lands on is open, so only a swept step refuses it.
 func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t: TestRunner) -> void:
@@ -238,13 +323,16 @@ func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 		var map := _yard(Vector2i(8, 8))
 		map.fill_rect(Rect2i(0, 1, 8, 1), GameEnums.TileType.ROAD)
 		map.fill_rect(Rect2i(3, 3, 2, 2), ground)
+		var car_where := WhereSheIs.nowhere()
 		var car := EventInstance.new()
 		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT,
 				EventSurroundings.new().on(map) \
+					.hearing(car_where) \
 					.drawing_nothing())
 		t.add_child(car)
 		var her := _centre(Vector2i(3, 3))
-		t.check(car.clear_line_to(her), "a car sees her standing on %s" % ground)
+		car_where.tell(her)
+		t.check(car.sight_line_to_her() != Vector2.ZERO, "a car sees her standing on %s" % ground)
 		t.check(map.passable(map.world_to_tile(her), EventInstance.mover_for(patrol))
 				== (ground == GameEnums.TileType.SIDEWALK),
 				"and drives only where street ground is (%s)" % ground)

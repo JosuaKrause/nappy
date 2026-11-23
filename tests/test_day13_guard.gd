@@ -602,9 +602,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 	if parked:
 		# In her view his warning is a second, standing with it up *(inbox #764 in minty-lemur, the player: "yes,
 		# we can do a 1s on screen and 1s off-screen warning if they were not visible")*.
-		t.check(guard.is_standing_for_its_notice()
-				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
-				"(%s) in her view he stands with his warning up for %.1fs" % [what, guard.notice_time()])
+		t.check(guard.is_standing_for_its_notice(), "(%s) in her view he stands with his warning up" % what)
 		var held_at := guard.global_position
 		RunCity.events(city).world.where_she_is().tell(at)
 		guard.step(Tuning.WARNING_ALONE_MAX - 0.1)
@@ -613,10 +611,15 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 		guard.step(0.2)
 		t.check(not guard.is_telegraphing(), "(%s) and then he charges" % what)
 	if not parked:
-		t.check(guard.is_standing_for_its_notice()
-				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
-				"(%s) a guard already warning her by sight is set on her with the task's second (standing %s, %.1fs)"
-				% [what, guard.is_standing_for_its_notice(), guard.notice_time()])
+		t.check(guard.is_standing_for_its_notice(),
+				"(%s) a guard already warning her by sight is set on her, standing for his notice" % what)
+		var held_at := guard.global_position
+		RunCity.events(city).world.where_she_is().tell(at)
+		guard.step(Tuning.WARNING_ALONE_MAX - 0.1)
+		t.check(guard.is_telegraphing() and guard.global_position == held_at,
+				"(%s) he stands just short of the task's second" % what)
+		guard.step(0.2)
+		t.check(not guard.is_telegraphing(), "(%s) and charges once it has run" % what)
 		_tear_down(player, director, city)
 		return
 	var start := guard.global_position.distance_to(at)
@@ -695,16 +698,21 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t: TestRunner
 	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var away := Vector2.ZERO
 	var her := Vector2.INF
+	var where := RunCity.events(city).world.where_she_is()
+	var told_before := where.at()
 	for i in 16:
 		var dir := Vector2.RIGHT.rotated(TAU * i / 16.0)
 		var at := guard.global_position + dir * 150.0
 		var far := guard.global_position + dir * 1200.0
-		# Clear as he sees it (`EventInstance.clear_line_to()`, what his notice asks), the band and
-		# the bodies round it in the way included, which the map's own line does not know of.
-		if map.is_walkable(map.world_to_tile(at)) and guard.clear_line_to(at):
+		# Clear as he sees it (his notice asks `EventInstance._clear_line_to()`, and
+		# `sight_line_to_her()` answers along the same line), the band and the bodies round it in the
+		# way included, which the map's own line does not know of.
+		where.tell(at)
+		if map.is_walkable(map.world_to_tile(at)) and guard.sight_line_to_her() != Vector2.ZERO:
 			her = at
 			away = dir
 			break
+	where.tell(told_before)
 	t.check(her != Vector2.INF, "there is open ground 150px from him to warn her on")
 	if her == Vector2.INF:
 		_tear_down(player, director, city)

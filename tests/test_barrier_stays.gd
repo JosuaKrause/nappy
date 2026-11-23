@@ -396,11 +396,12 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	EventBus.pursuit_cut_short.disconnect(listen[4])
 	city.free()
 
-## **A guard sees out of the band he belongs to, and only that one.** *(`EventInstance.clear_line_to()`:
-## "a guard sees out of the band he stands in".)* A band streamed in as a day's is has its body on
-## the map's record, and the guard who steps out to his post on her side is then off the band's
-## tiles: she walks round to the band's far side while he warns, and the line to her crosses his own
-## band. He still charges, and a second band's body between them still hides her.
+## **A guard sees out of the band he belongs to, and only that one.** *(The comment of
+## `EventInstance`'s own sight line, `_clear_line_to()`: "a guard sees out of the band he stands
+## in".)* A band streamed in as a day's is has its body on the map's record, and the guard who steps
+## out to his post on her side is then off the band's tiles: she walks round to the band's far side
+## while he warns, and the line to her crosses his own band. He still charges, and a second band's
+## body between them still hides her.
 func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	var post := Vector2(2128.0, 80.0)
@@ -422,13 +423,15 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner
 		frames += 1
 	t.check(guard.is_telegraphing(), "he notices her on the near side and warns")
 	t.check(guard.global_position.distance_to(body) > 1.0, "from his post, off the band's middle")
-	t.check(guard.clear_line_to(far),
+	where.tell(far)
+	t.check(guard.sight_line_to_her() != Vector2.ZERO,
 			"and sees her on the band's far side across his own band's body")
 	# A body of another band in the line still hides her: a second band stands beyond her.
 	var second := stage.stand(EventPlan.new(_hot_roadblock(),
 			body + (far - body) * 2.0))
+	where.tell(body + (far - body) * 2.6)
 	t.check(second.body_position().distance_to(body) > 150.0
-			and not guard.clear_line_to(body + (far - body) * 2.6),
+			and guard.sight_line_to_her() == Vector2.ZERO,
 			"a second band's body in the line still hides her")
 	# She walks round to the far side while he warns, and he charges anyway.
 	frames = 0
@@ -484,7 +487,8 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 			and not map.is_obstructed(map.world_to_tile(guard.global_position))
 			and guard.global_position.distance_to(across) > guard.global_position.distance_to(body) + 16.0,
 			"the point is within his reach and beyond his band's body")
-	t.check(guard.clear_line_to(across), "he sees it across his own band")
+	where.tell(across)
+	t.check(guard.sight_line_to_her() != Vector2.ZERO, "he sees it across his own band")
 	t.check(not guard.is_lethal_at(across), "and his catch does not reach through his own band")
 	stage.close()
 

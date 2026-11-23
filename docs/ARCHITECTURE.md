@@ -180,7 +180,7 @@ src/
 	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
-	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
+	event_instance.gd     runtime node: position, its phase (one `_transition()`), telegraph,
 	                       its field (`field_at()`), and the behaviours it is composed of, stepped
 	                       in order on its manager's physics tick (`step()`: proposed, checked, then
 	                       committed, a car's by its own checks); drawn by its look,

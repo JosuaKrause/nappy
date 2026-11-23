@@ -545,7 +545,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
-		while guard.is_telegraphing() and waited < int((guard.notice_time() + 1.0) / step):
+		while guard.is_telegraphing() and waited < int((guard.row().pursuit().warns_for() + 1.0) / step):
 			guard.step(step)
 			waited += 1
 		var charged := false
@@ -610,7 +610,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 	guard.step(step)
 	var waited := 0
-	while guard.is_telegraphing() and waited < int((guard.notice_time() + 1.0) / step):
+	while guard.is_telegraphing() and waited < int((guard.row().pursuit().warns_for() + 1.0) / step):
 		guard.step(step)
 		waited += 1
 	var frames := 0
@@ -804,7 +804,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	told.tell(band.global_position + Vector2(0.0, band.row().notice_within() - 10.0))
 	band.step(step)
 	var waited := 0
-	while band.is_telegraphing() and waited < int((band.notice_time() + 1.0) / step):
+	while band.is_telegraphing() and waited < int((band.row().pursuit().warns_for() + 1.0) / step):
 		band.step(step)
 		waited += 1
 	var frames := 0

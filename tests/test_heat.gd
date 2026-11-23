@@ -443,8 +443,8 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 ## The other half of the same question, mid-chase rather than mid-patrol. `restore()` restores
 ## `age`, the travelled distance and the notice (`save()`), so a patrol streamed out after
 ## it has noticed her comes back still chasing rather than `is_waiting()` again, having
-## forgotten why it was coming. Checked against `chase_age()` as well as `is_waiting()`, so the
-## fix is that the chase's own clock picks up where it left off, not only that the flag agrees —
+## forgotten why it was coming. Checked against the notice's start (`save().noticed_at()`) as well as
+## `is_waiting()`, so the fix is that the notice keeps the start it had, not only that the flag agrees —
 ## a restored notice that disagreed with the restored `age` would still read `not is_waiting()`
 ## while timing the telegraph and the duration from the wrong moment. `alley_robbery` has waited
 ## for her (`EventDef.waits_for_her()`) the same way since the mechanic was built, just never in
@@ -481,8 +481,8 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	second.restore(EventSave.new(age, travelled, noticed_at))
 	t.check(not second.is_waiting(),
 			"streamed back in after it stopped, it has still noticed her — its notice is carried over")
-	t.close_to(second.chase_age(), age - noticed_at,
-			"and the notice's clock resumes from the notice rather than restarting at it", 0.001)
+	t.close_to(second.save().noticed_at(), noticed_at,
+			"and the notice keeps the start it had rather than restarting at the restore", 0.001)
 	t.check(second.officers_owed() == 0, "and it does not let a second man out")
 	var resumed_at := second.position
 	her = Vector2(hot.notice_within() - 10.0, -120.0)

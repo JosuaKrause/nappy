@@ -817,7 +817,7 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 		# step, having noticed her, is a car that stands in a junction box and so drives on rather
 		# than stopping.
 		seen_her = seen_her or (car.global_position.distance_to(her) <= hot.notice_within()
-				and car.clear_line_to(her))
+				and car.sight_line_to_her() != Vector2.ZERO)
 		car.step(STEP)
 		elapsed += STEP
 		if seen_her and car.is_waiting():
