@@ -1,33 +1,25 @@
-# teal-kestrel — test_event_manager's check count holds still · 2026-11-23
+# teal-kestrel — test_event_manager's check count never moved; the name matched three suites · 2026-11-23
 
-**What it was.** The reviews of #1650 saw `tests/test_event_manager.gd` print a different number
-of checks from one run to another: 1565 on one machine and 1483 on another, and 826 inside a
-nine-suite run. The count of a case that loops over what the game made (the day's live events, the
-dawn's closed streets, the region wall's segments) is the number of things the game made, so a
-different day plan or map on another machine is a different count with every check passing.
+**What it was.** The reviews of #1650 saw `tools/test.sh test_event_manager` print different counts
+in different checkouts: 1565 against 1483 on main before #1650, 912 against 827 at #1650's head,
+each time about 82 more in a review agent's freshly made checkout than in a builder's worktree.
 
-**What was measured, on one machine.** The suite alone gave 827 checks five times running, 827 in
-each of three passes of a repeated, shuffled run beside other event and crowd suites, and 827 in
-each of six processes started together under load; the per-case counts were identical in all of
-them, one case at a time. Nothing in the suite or the rig reads a clock, a frame count, the
-engine's global random stream or an instance id for its length. The cached generated map
-(`tests/city_map_cache.gd`) hands out copies that share no object with the kept map (a walk of
-every object reachable from two copies found none in common), so what one suite does to its copy
-reaches no other. The leak check (`tests/shared_state.gd`) reads the statics under `src/` and
-the autoloads; the cache is the one static under `tests/`, and no suite changes it.
+**The cause.** A suite name given to `tools/test.sh` is a substring of the suite's file name, so
+`test_event_manager` runs `test_event_manager.gd`, `test_event_manager_fire.gd` and
+`test_event_manager_units.gd` together, while `test_event_manager.gd` runs the one suite. The
+larger count was the three suites, the smaller the one. Nothing in the suite is nondeterministic.
 
-**What was not found.** The movement was not reproduced here, so the cause of a different day on
-another machine is not named. What the arithmetic allows: 1565 - 1483 = 82, an even number, and
-the case that starts day 1 through the manager made two checks for each live event (349 events,
-699 checks, of 827); the closure and wall-segment loops of the city case made one each.
+**The evidence.** In a fresh detached checkout of main, as its first Godot run, with no import
+cache, `test_event_manager.gd` gave 827 checks, as it did again in the same checkout and in a
+worktree that had run Godot before (alone five times, repeated and shuffled, and six processes
+at once under load, with identical per-case counts). `test_event_manager` gave 912 there: 827 and
+the two sibling suites' 85. At the commit before #1650 (d6b81dc75), where the suite was split in
+the same way, the substring gave 1542 and `test_event_manager.gd` 1460, a difference of 82. A fresh
+checkout and a warm one plan the same day.
 
-**What changed.** Every check whose count followed what the game made is now one check over the
-whole set, saying what was found when it fails: the live events of the day-start case, the freed
-nodes after a retirement and after a successor swap, the closed streets and the wall segments held.
-The claims are the same and none is loosened; a failure names the offenders and their number. The
-suite's count is now 106 and does not move with the number of events, closures or segments. The
-cases that loop over the catalogue's rows (a fixed table in the source) still make a check for each
-row.
+**What was not changed.** Folding the per-event checks into one check per set was tried and not
+kept: the count does not move, so nothing needs it. A walk of every object reachable from two
+copies of the cached map (`tests/city_map_cache.gd`) found none shared.
 
-**What stays open.** If the count of this suite moves again, a case outside these loops is the
-cause, and a print of the runner's check count after each case names it.
+**What to remember.** Compare counts of one suite by its file name with `.gd`; a bare name is a
+filter over every suite whose file name contains it.
