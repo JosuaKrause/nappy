@@ -230,7 +230,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 		var drawn := siting.ask_of_drawing(box)
 		var nearest := INF
 		var placed := 0
-		for officer in _officers_in(world):
+		for officer in CordonInTheWorld.officers(world):
 			placed += 1
 			var at := officer.global_position
 			nearest = minf(nearest, at.distance_to(swing))
@@ -261,13 +261,13 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 	var recording := RecordingAtlas.new()
 	var cordon := ParkCordon.new(map, navigator, null, world, recording, park, siting)
 	var waited := 0.0
-	while waited < PATIENCE and (_tapes_in(world).is_empty() or _posts_in(world).is_empty()):
+	while waited < PATIENCE and (CordonInTheWorld.tapes(world).is_empty() or CordonInTheWorld.posts(world).is_empty()):
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 		cordon.tick(STEP, swing)
 		waited += STEP
-	var officers := _officers_in(world).size()
-	var tapes := _tapes_in(world).size()
-	var planted := _posts_in(world).size()
+	var officers := CordonInTheWorld.officers(world).size()
+	var tapes := CordonInTheWorld.tapes(world).size()
+	var planted := CordonInTheWorld.posts(world).size()
 	t.check(officers > 0 and tapes > 0 and planted > 0,
 			"the cordon put out officers, tape and posts (%d, %d, %d)" % [officers, tapes, planted])
 	t.check(recording.acquired_from("res://src/resistance/cordon_officer.gd") >= officers,
@@ -278,40 +278,6 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 			% [recording.acquired_from("res://src/resistance/cordon_tape.gd"), tapes + planted])
 	cordon.clear()
 	world.free()
-
-## The cordon's officers standing in a bare `world`, on its entity layer.
-func _officers_in(world: WorldContext) -> Array[CordonOfficer]:
-	var found: Array[CordonOfficer] = []
-	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
-		var figure := node as CordonOfficer
-		if figure != null and not figure.is_queued_for_deletion():
-			found.append(figure)
-	return found
-
-## Every piece of the cordon standing in a bare `world`, tape and post alike.
-func _pieces_in(world: WorldContext) -> Array[CordonTape]:
-	var found: Array[CordonTape] = []
-	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
-		var piece := node as CordonTape
-		if piece != null and not piece.is_queued_for_deletion():
-			found.append(piece)
-	return found
-
-## The tape standing in a bare `world`: the pieces with a body, as `CordonInTheWorld.tapes()` reads a city.
-func _tapes_in(world: WorldContext) -> Array[CordonTape]:
-	var found: Array[CordonTape] = []
-	for piece in _pieces_in(world):
-		if CordonInTheWorld.body_rect(piece).has_area():
-			found.append(piece)
-	return found
-
-## The posts standing in a bare `world`: the pieces with no body, as `CordonInTheWorld.posts()` reads a city.
-func _posts_in(world: WorldContext) -> Array[CordonTape]:
-	var found: Array[CordonTape] = []
-	for piece in _pieces_in(world):
-		if not CordonInTheWorld.body_rect(piece).has_area():
-			found.append(piece)
-	return found
 
 ## Reaching the swing takes the park, as before — requisitioned and no longer calm — and starts the
 ## cordon rather than mud: no tile of its ground changes, during the closing or after it. **Played

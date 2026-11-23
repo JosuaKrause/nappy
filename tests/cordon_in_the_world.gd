@@ -20,10 +20,11 @@ static func park_ground(map: CityMap, park: Vector2i) -> Rect2:
 static func tape_line(map: CityMap, park: Vector2i) -> Rect2:
 	return park_ground(map, park).grow(-Tuning.CLOSURE_BARRIER_DEPTH * 0.5)
 
-## The cordon's officers standing in the city now.
-static func officers(city: City) -> Array[CordonOfficer]:
+## The cordon's officers standing in `world` now, on its entity layer (a city's, or a bare
+## `WorldContext`'s).
+static func officers(world: WorldContext) -> Array[CordonOfficer]:
 	var found: Array[CordonOfficer] = []
-	for node in city.get_node("Entities").get_children():
+	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
 		var figure := node as CordonOfficer
 		if figure != null and not figure.is_queued_for_deletion():
 			found.append(figure)
@@ -41,30 +42,30 @@ static func is_shut(map: CityMap, inside: Vector2) -> bool:
 	var field := map.walk_field(map.world_to_tile(inside), shut_tiles(map))
 	return not map.reaches(field, map.home_rect.position)
 
-## The tape standing in the city now: one `CordonTape` per taped stretch of the edge, each a static
+## The tape standing in `world` now: one `CordonTape` per taped stretch of the edge, each a static
 ## body the physics world blocks her with. The posts the officers plant at the stretches' ends are
 ## not tape: a post has no body. A piece the cordon has let go (queued to be freed) is not standing.
-static func tapes(city: City) -> Array[CordonTape]:
+static func tapes(world: WorldContext) -> Array[CordonTape]:
 	var found: Array[CordonTape] = []
-	for piece in _pieces(city):
+	for piece in _pieces(world):
 		if body_rect(piece).has_area():
 			found.append(piece)
 	return found
 
-## The posts standing in the city now: the cordon's pieces the officers plant at the stretches'
+## The posts standing in `world` now: the cordon's pieces the officers plant at the stretches'
 ## ends, each standing in the world with no body, since the tape strung between them is what stops
 ## her.
-static func posts(city: City) -> Array[CordonTape]:
+static func posts(world: WorldContext) -> Array[CordonTape]:
 	var found: Array[CordonTape] = []
-	for piece in _pieces(city):
+	for piece in _pieces(world):
 		if not body_rect(piece).has_area():
 			found.append(piece)
 	return found
 
-## Every piece of the cordon standing on the city's entity layer, tape and post alike.
-static func _pieces(city: City) -> Array[CordonTape]:
+## Every piece of the cordon standing on `world`'s entity layer, tape and post alike.
+static func _pieces(world: WorldContext) -> Array[CordonTape]:
 	var found: Array[CordonTape] = []
-	for node in city.get_node("Entities").get_children():
+	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
 		var piece := node as CordonTape
 		if piece != null and not piece.is_queued_for_deletion():
 			found.append(piece)
