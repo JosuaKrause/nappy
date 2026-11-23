@@ -1,6 +1,5 @@
 priority: later
 after: 2026-10-18-minty-quail
-after: 2026-11-11-polite-tapir
 
 # tiny-bunny — The ground-frames probe measures the ground mode it names and finishes in its deadline · filed 2026-11-12
 
@@ -11,8 +10,7 @@ checks the ground's residency against real process frames. Nobody asked for this
 the defects are not lost.
 
 *Not asked for:* this entry is not the player's request. The defects come from reading the probe and
-from one run of it. The band, and the wait for the refactor (minty-quail and polite-tapir; an entry
-that waits for the refactor waits for both, polite-tapir's README), are the filer's proposal, the
+from one run of it. The band, and the wait for the refactor (minty-quail), are the filer's proposal, the
 same place lilac-pelican's parked probes have.
 
 **Fixed or deleted, decided when the entry is picked up.** What the probe is still worth is the

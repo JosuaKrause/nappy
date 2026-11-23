@@ -11,11 +11,11 @@ to whoever asks (designing-classes). The dawn cases were built with `DayEvents` 
 (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
 **What is left of the last case, the ground cache** (which tiles each row may stand on): the day's
-walk derives it once, in polite-tapir's `RowGround` (`src/events/model/row_ground.gd`), which the dawn
+walk derives it once, in the design review's `RowGround` (`src/events/model/row_ground.gd`), which the dawn
 makes and hands to every pass and to the walk's sitings. Three places outside a day's walk still scan for themselves: `EventScheduler.recipe_placement()`
 makes one ground per authored row of a scene recipe, `SceneRecipeRuntime._finale_placement()` one per
 escape actor, and a scene recipe's walk carries no ground, so `EventsAhead._ground_of_the_walk()` makes
 one per siting and the resistance director one per ask. The fix is the recipe runtime making one
 `RowGround` for its scene and handing it to all three, its walk included. Placement by construction
-is closed (polite-tapir's record polite-tapir-feathery-kestrel) and left `recipe_placement()` where it
+is closed (the record polite-tapir-feathery-kestrel) and left `recipe_placement()` where it
 sits, so the fix waits on nothing.

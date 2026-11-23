@@ -1,6 +1,5 @@
 priority: later
 after: 2026-10-18-minty-quail
-after: 2026-11-11-polite-tapir
 
 # lilac-pelican — The parked probes that fail on main · filed 2026-11-12
 
@@ -16,8 +15,7 @@ filed here so they are not lost, as an entry of their own after minty-quail, who
 (its README, "The entry's list is frozen").
 
 *Not asked for:* none of these items is the player's request. Each is a defect the passes found,
-filed by the orchestrator. The band and the wait for the refactor (minty-quail and polite-tapir, which
-an entry that waits for the refactor waits for both of, polite-tapir's README) are the filer's
+filed by the orchestrator. The band and the wait for the refactor (minty-quail) are the filer's
 proposal. The facts in each item were checked by reading the probe against the tree, not by running
 it.
 

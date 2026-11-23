@@ -487,7 +487,7 @@ re-derive it.
 ## 3. What the placement track needs from it
 
 The placement track owns `src/events/model/street_rules/`, `marble_draw.gd`,
-`day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is being built now. Its files
+`day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is closed (the record polite-tapir-feathery-kestrel). Its files
 ask a row and a plan almost only through methods already (`row()`, `line_reach()`,
 `obstructs_within()`, `notice_within()`, `counts_against_the_line()`, `reach_touches()`,
 `denies()`, `obstructs()`, `blocking_radius()`). A setting the dawn reads off a plan's row is
@@ -496,7 +496,7 @@ rule for the track: a new line there asks a method, and where the method is miss
 pull request adds it to `event_def.gd` or to the plan under the name below**, so the events'
 conversion finds nothing to redo in those files.
 
-| Step of polite-tapir's placement by construction (closed, record polite-tapir-feathery-kestrel) | What it asks | Method |
+| Step of the design review's placement by construction (closed, record polite-tapir-feathery-kestrel) | What it asks | Method |
 |---|---|---|
 | 1, the route's ground rule (no body's disc and no lethal row's inner disc on a route's tile off the sidewalks) | does a plan block; the disc it shuts; where it stands | plan `obstructs()` ok, `blocking_radius()` ok, `placed_at()` ok |
 | 1 | is a row asked the route rules at all (not scenery, not a pursuer, not a mast, not a door) | plan `counts_against_the_line()` ok |
@@ -715,8 +715,8 @@ list; the report to the player names each skill change (woolly-finch 24).
 from the rows is unchanged), `tests/probes/placement_rows.gd` and
 `tests/probes/excitement_fingerprint.gd` identical before and after, and
 `uv run python tools/ci_telemetry_kinds.py`. After 4b `tools/field_reads.txt` holds no group for
-the row, the plan, the live event or a spec, and polite-tapir's `baseline-measurements.md` takes its reading
-"after the events' field-read conversion".
+the row, the plan, the live event or a spec, and the baseline's fourth reading was taken after the events' field-read conversion
+(the record polite-tapir-crisp-heron).
 
 **How the suites are converted (5).** The interface is what a mock mirrors, so the mocks are
 written once, after it is final.
