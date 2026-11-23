@@ -731,11 +731,7 @@ written once, after it is final.
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
   the live event's `behaviours()`, read by about fifteen suites across the groups, goes
-  with the group that converts its last reader; the event manager and its
-  parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
-  manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
-  first, the spawner's question: the manager real, plans
-  plain, a real city only in the suite whose header gives the reason); the event halves
+  with the group that converts its last reader; the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
   `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose

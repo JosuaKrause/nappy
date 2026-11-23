@@ -50,9 +50,9 @@ func _rng(stream: String) -> RandomNumberGenerator:
 
 ## One day, built the way `main._start()` builds it — closures before events, so `closure:0`
 ## has one to find — with streaming off so a plan is placed without a player ever coming near it
-## (the same reasoning `tests/test_event_manager.gd`'s own `_build_city()` gives), and the
-## resistance run over the city's own fresh run, so day 6 selects step 1 on a run that has done
-## nothing, on the seed `RUN_SEED` names.
+## (the same reasoning `Rig.build_city_stage()` in `tests/event_manager_rig.gd` gives the event
+## manager suites' one city), and the resistance run over the city's own fresh run, so day 6
+## selects step 1 on a run that has done nothing, on the seed `RUN_SEED` names.
 func _build_day(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
