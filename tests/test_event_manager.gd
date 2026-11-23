@@ -273,9 +273,12 @@ func _start(day: int) -> void:
 func _test_day_populates_the_manager(t: TestRunner) -> void:
 	_start(1)
 	t.check(_stage.events().active_count() > 0, "starting a day puts events in the world")
-	for instance in _stage.events().instances():
-		t.check(is_instance_valid(instance), "every tracked instance is a live node")
-		t.check(instance.row() != null, "every tracked instance has a def")
+	var dead := _stage.events().instances().filter(func(instance: Variant) -> bool:
+			return not is_instance_valid(instance))
+	t.check(dead.is_empty(), "every tracked instance is a live node (%d are not)" % dead.size())
+	var defless := _stage.events().instances().filter(func(instance: EventInstance) -> bool:
+			return instance.row() == null)
+	t.check(defless.is_empty(), "every tracked instance has a def (%d have none)" % defless.size())
 
 ## Before a day there is no plan to count, so the run log's `events:` line says none; once a walk's
 ## plans are taken it names each row the plan holds.
@@ -334,9 +337,10 @@ func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	var before := _stage.events().active_count()
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(_stage.events().active_count() == before - 1, "a finished event is dropped")
-	for instance in _stage.events().instances():
-		t.check(is_instance_valid(instance),
-				"no freed node is left in the list after a retirement")
+	var freed := _stage.events().instances().filter(func(instance: Variant) -> bool:
+			return not is_instance_valid(instance))
+	t.check(freed.is_empty(),
+			"no freed node is left in the list after a retirement (%d are)" % freed.size())
 
 ## Steps `instance` a second at a time, nobody told where she is, until it has run its course;
 ## whether it did within an hour of them.
@@ -371,8 +375,10 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	t.check(_stage.events().active_count() == before,
 			"a one-for-one replacement keeps the count the same")
 	var crater: EventInstance = null
+	var freed := _stage.events().instances().filter(func(instance: Variant) -> bool:
+			return not is_instance_valid(instance))
+	t.check(freed.is_empty(), "no freed node survives a successor swap (%d do)" % freed.size())
 	for instance in _stage.events().instances():
-		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
 		if instance.row_id() == "impact_crater":
 			crater = instance
 	t.check(crater != null, "the burst leaves a crater behind it")
@@ -547,14 +553,21 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 	var held := _stage.map().held_streets()
 	t.check(not streets.closures().is_empty(),
 			"the dawn closed streets to hold (%d)" % streets.closures().size())
+	var unheld_closures: Array[String] = []
 	for closure in streets.closures():
-		t.check(held.has(closure.street_key()), "the street the dawn closed (%s) is held"
-				% closure.street_key())
+		if not held.has(closure.street_key()):
+			unheld_closures.append(str(closure.street_key()))
+	t.check(unheld_closures.is_empty(),
+			"every street the dawn closed is held (not held: %s)" % [unheld_closures])
 	t.check(not streets.region_plan().wall_segments().is_empty(),
 			"the dawn grew a region wall to hold (%d segments)"
 			% streets.region_plan().wall_segments().size())
+	var unheld_segments: Array[String] = []
 	for segment in streets.region_plan().wall_segments():
-		t.check(held.has(segment.key()), "the region wall's segment %s is held" % segment.key())
+		if not held.has(segment.key()):
+			unheld_segments.append(str(segment.key()))
+	t.check(unheld_segments.is_empty(),
+			"every segment of the region wall is held (not held: %s)" % [unheld_segments])
 	# The very bodies of the dawn's region plan are the day's, not those of a plan grown again from
 	# the same tree: the siting's region and the crowd's gates read the streets' plan.
 	var bodies: Array[EventPlan] = streets.region_plan().wall_plans() \
