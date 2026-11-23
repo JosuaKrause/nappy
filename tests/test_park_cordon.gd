@@ -14,7 +14,10 @@ extends RefCounted
 ## **A real city, for a stated reason**: the cordon's guarantees (the police come from off screen,
 ## being shut in ends the day, the park's people are walked out) are a property of the cordon, the
 ## day's events, the walk's ground and the swing task the director offers, on streets a generator
-## made.
+## made. Two cases are not covered by it: that the officers are placed by the siting the cordon is
+## handed and that its figures ask the library it is handed. Neither is a guarantee about streets a
+## generator made, and both are still to be judged in the group's next pull request, for whether a
+## drawn park would do.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
