@@ -10,11 +10,14 @@ extends RefCounted
 ## in `tests/test_events_catalogue.gd`; that the edge asks it is checked here. The mark a live event
 ## carries on itself (its caret and the projection behind it) is `tests/test_event_carets.gd`'s.
 ##
-## **Why four cases build a real `EventManager`** (over open ground, no city): the cue over her head
-## is raised by the manager's warning board from the live events it holds
-## (`_test_only_a_lethal_thing_puts_the_mark_over_her_head`), and the screen edge is handed the
-## manager and reads its live events (the three badge cases that spawn a fire engine or a cat through
-## `spawn_extra()`), so each is a guarantee between the manager's events and the cue that reads them.
+## **Nothing here stands a real `EventManager`.** The cue over her head is raised by the warning
+## board from the live events its world holds, so the case that asks which events raise it
+## (`_test_only_a_lethal_thing_puts_the_mark_over_her_head`) hands a board `FakeEvent`s that
+## answer, as their rows do, what the board asks of an event. The screen edge is handed the
+## manager and reads its live events, so the three badge cases that put a fire engine or a cat on
+## the street hand it a `FakeEventManager` holding what they spawn. The real event's phases are
+## `tests/test_event_phase.gd`'s, and the real manager's street, read by a real `DangerEdge`, is
+## `tests/test_event_manager.gd`'s.
 ##
 ## The standing decision this suite exists to keep, from `CLAUDE.md`:
 ##
@@ -170,40 +173,42 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t: TestRunn
 ## first time — a cue that marks everything says nothing — applied to the one cue that gives an
 ## instruction rather than information.
 ##
-## Run through `EventManager` rather than through `Stroller.warn()`, because the thing that was
+## Run through the warning board rather than through `Stroller.warn()`, because the thing that was
 ## wrong was *which events call it*, and no test in this suite could see that.
 func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> void:
-	var manager := _manager(t)
-	# Its own tick off (after it enters the tree, which turns it on): the warning under test is run
-	# through `_warn_through()`, and a bare manager's whole tick wants a director.
-	manager.set_physics_process(false)
+	# The board is handed the world it asks for the player and the live events: no manager is
+	# asked anything.
+	var world := EventWorld.new()
+	var board := WarningBoard.new(world)
 	var rig := _rig(t)
-	manager.use_player(rig)
+	world.use_player(rig)
 	rig.global_position = Vector2(1000.0, 1000.0)
 
 	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
 	# through the meter; it is not an instruction.
-	var ordinary := manager.spawn_extra(EventCatalogue.by_id("dog_walker"), rig.global_position)
-	_warn_through(manager)
+	var ordinary := _a_live(EventCatalogue.by_id("dog_walker"), rig.global_position)
+	world.take_in(ordinary)
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"a dog walker whose radius covers her raises nothing over her head")
 
 	# A lethal one, still telegraphing: the contract is now about her and the clock has started.
-	var lethal := manager.spawn_extra(EventCatalogue.by_id("abduction"), rig.global_position)
-	_warn_through(manager)
+	var lethal := _a_live(EventCatalogue.by_id("abduction"), rig.global_position)
+	world.take_in(lethal)
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"an unmarked van telegraphing over her is the flashing mark")
 
 	# And once it is live, the second level: one step left.
-	_advance(lethal, lethal.telegraphs_for() + 0.2)
-	_warn_through(manager)
+	lethal.telegraphing = false
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NOW,
 			"and the same van live around her is the doubled one")
 
 	# Far enough away and it is somebody else's problem again.
 	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() + 50.0, 0.0)
 	await _physics_ticks(t, rig, 1.0)
-	_warn_through(manager)
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"outside its outer radius there is nothing over her head")
 
@@ -213,14 +218,14 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> voi
 	# the strongest cue in the game has nothing to say about that.
 	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() - 20.0, 0.0)
 	rig.velocity = Vector2.ZERO
-	_warn_through(manager)
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"standing still inside a live lethal field but nowhere near it is not an instruction")
 
 	# Walking into it is, once she is a step from the end of the day.
 	rig.global_position = lethal.global_position + Vector2(lethal.core_within() + 20.0, 0.0)
 	rig.velocity = Vector2(-Tuning.WALK_SPEED, 0.0)
-	_warn_through(manager)
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NOW,
 			"walking the last step into it is")
 
@@ -228,12 +233,14 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> voi
 	rig.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	# The doubled mark the step before raised is the warnings' own, and theirs to take down.
 	rig.stand_down(WarningBoard.WARNING_SOURCE)
-	_warn_through(manager)
+	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"and walking away from the same spot takes it down — the danger has been avoided")
 
+	world.let_go_of_every_event()
+	ordinary.free()
+	lethal.free()
 	rig.free()
-	_free_manager(manager)
 
 ## The traffic half of the same finding, and the one the vocabulary's first row was not paying
 ## for: *the entity itself carries most of it* — except a car, which carried nothing at all,
@@ -274,8 +281,7 @@ func _test_the_screen_edge_is_the_same_size_for_everyone(t: TestRunner) -> void:
 func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 	# The edge runs its own frames, and each thing moves by hand at its own speed over the frame's
 	# own length: a stationary fire engine with her walking at it, then the same one driving at her.
-	var manager := _manager(t)
-	manager.set_physics_process(false)
+	var manager := FakeEventManager.new()
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
@@ -309,7 +315,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 
 	edge.free()
 	standing.free()
-	_free_manager(manager)
+	manager.free()
 
 ## **The edge badges what the row announces, and nothing else that comes fast.** Whether a row's
 ## coming is worth an arrow is the row's own answer (`EventDef.announces_its_coming()`); this is
@@ -317,8 +323,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 ## alone, and its row does not announce it (it does not telegraph its coming, PLAYTEST-145 20), so
 ## a second of it running at her from off screen puts nothing on the edge.
 func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
-	var manager := _manager(t)
-	manager.set_physics_process(false)
+	var manager := FakeEventManager.new()
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
@@ -342,13 +347,12 @@ func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 
 	edge.free()
 	standing.free()
-	_free_manager(manager)
+	manager.free()
 
 ## An instance still around keeps its badge frame to frame, and one `_events.instances()` stopped
 ## carrying loses it rather than leaving it up forever.
 func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner) -> void:
-	var manager := _manager(t)
-	manager.set_physics_process(false)
+	var manager := FakeEventManager.new()
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
@@ -365,15 +369,16 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 		driven += delta
 		await t.get_tree().process_frame
 	t.check(edge.badges().announcing().size() == 1, "a live instance closing from off screen is badged")
+	# Ended where it stands, then let go of, as the manager's streaming does with what it retires.
 	manager.retire(engine)
-	manager.streaming.retire_finished()
+	engine.free()
 	await t.get_tree().process_frame
 	t.check(edge.badges().announcing().is_empty(),
 			"an instance _events.instances() no longer carries loses its badge, not left to sit there forever")
 
 	edge.free()
 	standing.free()
-	_free_manager(manager)
+	manager.free()
 
 ## The other half of the same shape, and the reason `warn()` is additive. *(Playtest 06, finding
 ## 3: "I get the flashing exclamation marks **after** the fact, at which point they're not
@@ -536,36 +541,20 @@ func _test_the_carried_babys_cue_stays_over_her_head(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- helpers ---
 
-## A manager over open ground and a run of its own, set up as the escape's building is
-## (`EventSurroundings.on()`, then `EventManager.setup()`), in the tree; the events it spawns stand
-## in the world node its map is drawn in, a child of the manager. `_free_manager()` frees it.
-func _manager(t: TestRunner) -> EventManager:
-	var run := RunState.new()
-	run.start_run(1)
-	var map := WorldMap.open_ground()
-	var holder := WorldContext.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
-	manager.add_child(holder)
-	manager.setup(run)
-	t.add_child(manager)
-	return manager
-
-func _free_manager(manager: EventManager) -> void:
-	manager.free()
-
-## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`
-## has no `EventDirector` — that is built when a day starts — and stepping the whole frame
-## raises a script error inside `EventsAhead.place_what_is_owed_ahead()` before ever reaching the mark.
-##
-## Worth the note: the error did not fail the suite. GDScript aborts the erroring *function* and
-## carries on in the caller, so the assertions afterwards ran, passed, and the only sign was
-## four stack traces in the middle of a green run.
-func _warn_through(manager: EventManager) -> void:
-	manager.warnings.warn_about_the_ground_she_is_on()
-
-func _advance(instance: EventInstance, seconds: float) -> void:
-	for i in int(round(seconds / STEP)):
-		instance.step(STEP)
+## A live event of `row` standing at `at`, just made and so telegraphing. It answers what its row
+## says of it (whether it ends the day, how far its core reaches and how far it is heard) and the
+## quiet answer otherwise, which is what a real dog walker or van answers where it stands: not
+## waiting, not driving, not travelling, no guard to lose (read off the real events once). It is
+## in no tree.
+func _a_live(row: EventDef, at: Vector2) -> FakeEvent:
+	var live := FakeEvent.new()
+	live.of_row = row
+	live.position = at
+	live.telegraphing = true
+	live.lethal = row.ends_the_day()
+	live.core = row.core_within()
+	live.heard = row.heard_within()
+	return live
 
 ## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs, its
 ## own tick off until a test lets real ticks pass (`_physics_ticks()`). `SomeNode.new()` is not
