@@ -16,5 +16,5 @@ no longer ask.
 **Split.** The cases each header names as still to be judged, and the day loop's retry case, are the group's next
 pull request; the queue's line lists them.
 
-**Measured.** Check counts are unchanged in every suite but the three that moved cases between them (435 checks
-before, 449 after); in paired local runs the steps suite took 21.1 s on main and on the branch.
+**Measured.** Check counts are unchanged in every suite but the four that moved cases between them or gained one (435
+checks before, 449 after); in paired local runs the steps suite took 21.1 s on main and on the branch.

@@ -737,14 +737,16 @@ written once, after it is final.
   board raises, and three screen-edge badge cases that spawn a fire engine or a cat), which take
   a stand-in manager answering what each asks (for the badge's speed, a moved instance's approach
   speed; for the mark over her head, whether the event ends the day, its telegraph and its lethal
-  reach); and what is left of the resistance's (the contact cases and the headers are
+  reach); and what is left of the resistance's suites (the contact cases and the headers are
   built, the record minty-quail-jolly-ibis), each to take `FakeEventManager` and `FakeEvent` where its
   subject is not the city's siting, to move to the suite of the module it tests, or to keep its
   city under a header that says why: `test_resistance_steps`' eleven city cases its header names
   as still to be judged (the dawn draws, the mark starting the same day's task, the yeller step
   sending only its rider away, the lost day's retry, the perform and timed steps expiring, the two
   package cases, the sabotage, and the two pose cases); `test_resistance_placement_kinds`' raid,
-  market and column cases, which run the happenings on a real manager; `test_resistance_traps`'
+  market and column cases, its lost day 10 restoring her ordinary door and its neighbor's window boarded from
+  day 11, which run the happenings on a real manager, and its neighbor walking out to work on days 1 to 9,
+  which reads the director's happenings; `test_resistance_traps`'
   two look-alike cases; `test_resistance_arrow`'s three street yeller cases and its library case;
   `test_resistance_reach_contacts`' queued mast kept out of a lethal field (the scheduler's
   acceptance, which the events skill names this suite as holding), its `PlanBuilder.place_at()`
