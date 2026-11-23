@@ -21,7 +21,7 @@ COLLECTORS = (
     "entity_frame_profile.tscn",
     "entity_frame_profile_observer.gd",
 )
-SOURCES = ("src/events/event_instance.gd", "src/crowd/crowd_agent.gd")
+SOURCES = ("src/events/simulation/event_instance.gd", "src/crowd/crowd_agent.gd")
 
 
 class ExperimentPreflightTests(unittest.TestCase):

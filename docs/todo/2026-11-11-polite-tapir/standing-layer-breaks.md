@@ -23,10 +23,6 @@ review; a builder runs it again):
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
-- `src/events/` holds data, model and simulation files side by side, so a new file there takes the
-  most permissive of the three by default: the folder is split by layer, or the map names a
-  default for it that a new file has to opt out of.
-
 **Build:** one pull request per group, module by module with the rest of the refactor (minty-quail's
 README's order), each deleting the breaks it fixes from `tools/layer_map.py`'s list. The pull request that finishes this item
 lists what is left, each line with its reason in designing-classes.

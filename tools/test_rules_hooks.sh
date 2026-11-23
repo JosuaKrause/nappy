@@ -1033,14 +1033,14 @@ assert_first_edit "assets/atlases/membership.json -> svg-art + illustrated-png" 
     "svg-art,illustrated-png," "assets/atlases/membership.json"
 
 # The files that draw the cues, and the files that hold the numbers balance's description names.
-assert_first_edit "src/events/views/event_look.gd -> events + cues" \
-    "events,cues,godot,designing-classes,orchestrating," "src/events/views/event_look.gd"
+assert_first_edit "src/events/simulation/views/event_look.gd -> events + cues" \
+    "events,cues,godot,designing-classes,orchestrating," "src/events/simulation/views/event_look.gd"
 assert_first_edit "src/crowd/crowd_agent.gd -> crowd-traffic + cues" \
     "crowd-traffic,cues,godot,designing-classes,orchestrating," "src/crowd/crowd_agent.gd"
 assert_first_edit "src/player/stroller.gd -> cues" \
     "cues,godot,designing-classes,orchestrating," "src/player/stroller.gd"
-assert_first_edit "src/events/warning_board.gd -> events + cues" \
-    "events,cues,godot,designing-classes,orchestrating," "src/events/warning_board.gd"
+assert_first_edit "src/events/simulation/warning_board.gd -> events + cues" \
+    "events,cues,godot,designing-classes,orchestrating," "src/events/simulation/warning_board.gd"
 assert_first_edit "src/sprites.gd -> cues" \
     "cues,godot,designing-classes,orchestrating," "src/sprites.gd"
 assert_first_edit "src/autoload/tuning.gd -> balance" \

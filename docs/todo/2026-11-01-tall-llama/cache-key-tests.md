@@ -16,7 +16,7 @@ The review removed each key field in turn and reran the suite; these survived:
   `sampling_runs` rose.
 - `tools/test_experiment_preflight.py`'s test that the audit refuses to instrument its own
   repository runs the real audit on the real checkout; if that guard regresses, the test rewrites
-  `src/events/event_instance.gd`, `src/crowd/crowd_agent.gd` and the profile observer before it
+  `src/events/simulation/event_instance.gd`, `src/crowd/crowd_agent.gd` and the profile observer before it
   fails. Copy the audit script into a throwaway git repository and test the refusal there.
 - The two evidence runners (the classification one and the prediction one) are copies, the second
   weaker, and both are now load-bearing (the preflight test runs them; CI's sparse checkout keeps

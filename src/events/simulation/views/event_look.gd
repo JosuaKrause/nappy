@@ -12,7 +12,7 @@ extends RefCounted
 ## any caller asks; the family looks still read some of the event's fields as well. It holds the
 ## eight-view sector last drawn, the redraw key, the caret's cache and the drawing nodes a long
 ## picture is drawn in, and draws on the event's own canvas. What the event does is its behaviours'
-## (`src/events/behaviours/`); nothing here decides it.
+## (`src/events/simulation/behaviours/`); nothing here decides it.
 ##
 ## The event calls its look. In `setup()` it makes it (`EventLooks.for_row()`), faces it
 ## (`face()`) and hands it how it stands on its street (`stand_as()`, again when the event is

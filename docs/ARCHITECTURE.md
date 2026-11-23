@@ -319,112 +319,114 @@ src/
 	                        ruled ground
 	  mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                         junction corners, squares and the main road; a pure function of the map
-	way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
-	                      junction box to junction box by the walk's through roads, a walker
-	                      straight on; made once a walk and handed to the director
-	event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
-	                      box it draws, all it can put on the screen, its solid footprint and its
-	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
-	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
-	event_instance.gd     runtime node: position, its phase (one `_transition()`), telegraph,
-	                       its field (`field_at()`), and the behaviours it is composed of, stepped
-	                       in order on its manager's physics tick (`step()`: proposed, checked, then
-	                       committed, a car's by its own checks); drawn by its look,
-	                       which each drawn frame redraws it if its picture changed, interpolated
-	                       between ticks; its excitement is a composed `EventExcitement` and
-	                       its body a composed `EventBody`
-	event_body.gd         what a live event is on the ground (`EventBody`): its collision body,
-	                       the tiles it is recorded on, a boom's body following its arm; handed
-	                       its row, how it stands on its street (`BodyStance`), where she is and
-	                       its gate's boom state, asked by its event and told what happens to it
-	event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
-	                       map and navigator, where she is, the world it is drawn in, its drawer,
-	                       the drawn view its looks are gated by, its timing sink, its trace, its
-	                       atlas, the car's lights and where a protest points; built once where the
-	                       world is (`SimulationBuilder`), handed to the manager as it is made and
-	                       to every live event's one `EventInstance.setup()` call, which takes the
-	                       shared boom state last
-	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
-	                       present rate cached on its age, the walls it does not pass, its live
-	                       course and rate for the projection, whether that course is lethal
-	where_she_is.gd       where she is this tick (`WhereSheIs`): her place, her pram's, the
-	                       camera's view, whether she runs, whether the baby is awake, whether a
-	                       door holds her; told once a tick by the manager, handed to every live
-	                       event, which hands it on to its behaviours and its excitement
-	event_sources.gd      a day's live events as one set of things that charge her
-	                       (`EventSources`): the door's toll alone inside a held door, a region
-	                       boundary's structures as their strongest
-	views/                how an event looks, asked of the event and, in the family looks,
-	                       still partly read off its public state: `EventPictures` names
-	                       every picture (each a region of the baked `events` page) and the
-	                       tables that pick one; `EventLooks.for_row()` gives each row the look
-	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
-	                       rank, the roadblock, a fire, the checkpoint kit, the flock), handed
-	                       its event, its look part, its body part and its drawer (the van's
-	                       look its abduction part) as it is made, which holds the
-	                       redraw gate, the caret and the slices a long picture is drawn in;
-	                       every picture a look draws goes through one `EventDrawer`
-	                       (`views/event_drawer.gd`), which the manager builds over its atlas
-	                       and its world hands every instance in its surroundings
-	                       (`EventSurroundings.drawer()`) as `setup()` hands it to the look
-	behaviours/           what an event does, one rule and its state each, composed per row
-	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
-	                       line run, a route, a flock, a hold, a stop, a departure, a car's
-	                       driving, a barrier's posts, a van's take, ...; each saves and restores
-	                       its own state, which a streamed-out plan carries; each is handed what
-	                       never changes as it is composed and asks its event what changes through
-	                       the event's narrow view of itself (`EventInstance.Figure`); none holds
-	                       its event
-	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
-	warning.gd            the one warning clock: started, held, called off or run out, read against
-	                      its owner's clock — an event's notice, a door crossing, a badge up alone
-	checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
-	                      under a raised boom, the crossing's warning and the guard it sets on her;
-	                      what a door does to her it says as an intent the manager carries out
-	event_manager.gd      a day's events as the rest of the game sees them: made over what its
-	                       events are set up in (`EventSurroundings`), then handed the run,
-	                       today's streets, the poster walls and the player; starts every walk
-	                       the one way, `start_day(spec)`, a day, the escape's city or its
-	                       building; holds one reference on the `events`
-	                       atlas page; steps the live instances once a physics tick in a fixed
-	                       order (tells them where she is, steps them, then the catches and hard
-	                       fails); hands the world its events as one set of things that charge
-	                       her (`sources`); hands its work to the parts below,
-	                       all working over one `EventWorld` (event_world.gd)
-	day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
-	                       holds, seals, rows and doors, against the day's streets the manager is
-	                       handed (`DayStreets`), the rows planned on the dawn's context it makes;
-	                       the escape city's seals and rows on its chains; the building's own
-	                       placements
-	event_streaming.gd    the day's plan and the live instance each plan streams in as, kept in its
-	                       own table with the clock of a plan that comes again, carrying its state
-	                       out and back; the repeats, the masts, a finished plan spent
-	event_spawner.gd      every instance made, with its scar, its body and the bang outside;
-	                       what a finished row leaves; the rows summoned on sight; the pelican bag,
-	                       and the pelican's first landing on her
-	warning_board.gd      the screen-edge badges up for something not in the world yet, and the
-	                       mark over her head
-	events_ahead.gd       what the director puts in front of her while she walks: sited on her
-	                       way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
-	                       a task's mast placed after dawn and day 13's roadblock put across a
-	                       route-adjacent section in place of what it held, the fire lit at dusk,
-	                       and the day's units drawn as she comes near them
-	siting_maker.gd       makes a day's siting from the walk's rules and locations; what the events
-	                       ahead are handed, so a test hands in one that answers a stand-in
-	walk_siting.gd        lays the rows her walk places: the free locations on her way, a unit's
-	                       that has not drawn first, the first the day's rules take; a row a mark
-	                       rigs straight ahead of her on her branch, just out of her view
-	sited_ground.gd       the tiles a row her walk lays may stand on: a crew's fronts, a mast's
-	                       sites
-	event_director.gd     sites what the day planned and did not place, from her own walk:
-	                       the moments that cross her line, and day 3's fire
-	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
-	                       second: where its badge points, fixed against her, and where the
-	                       thing is then placed just out of sight on its own ground
-	event_reports.gd      what a day's events say happened, one teller a signal, on the bus the
-	                       manager is handed (`EventManager.use_bus()`); one for the world's life
-	                       (`EventWorld.reports()`), shared by every part, each live event and its
-	                       charge's record; with no bus handed in, it tells nobody
+	simulation/           the live event and what runs it: the manager, the spawner, streaming, the
+	                      director, the warnings, the behaviours and the looks
+	  way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
+	                        junction box to junction box by the walk's through roads, a walker
+	                        straight on; made once a walk and handed to the director
+	  event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
+	                        box it draws, all it can put on the screen, its solid footprint and its
+	                        spine, the roadblock guard's post, a warning's picture, its hold's hiding
+	  event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
+	  event_instance.gd     runtime node: position, its phase (one `_transition()`), telegraph,
+	                         its field (`field_at()`), and the behaviours it is composed of, stepped
+	                         in order on its manager's physics tick (`step()`: proposed, checked, then
+	                         committed, a car's by its own checks); drawn by its look,
+	                         which each drawn frame redraws it if its picture changed, interpolated
+	                         between ticks; its excitement is a composed `EventExcitement` and
+	                         its body a composed `EventBody`
+	  event_body.gd         what a live event is on the ground (`EventBody`): its collision body,
+	                         the tiles it is recorded on, a boom's body following its arm; handed
+	                         its row, how it stands on its street (`BodyStance`), where she is and
+	                         its gate's boom state, asked by its event and told what happens to it
+	  event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
+	                         map and navigator, where she is, the world it is drawn in, its drawer,
+	                         the drawn view its looks are gated by, its timing sink, its trace, its
+	                         atlas, the car's lights and where a protest points; built once where the
+	                         world is (`SimulationBuilder`), handed to the manager as it is made and
+	                         to every live event's one `EventInstance.setup()` call, which takes the
+	                         shared boom state last
+	  event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
+	                         present rate cached on its age, the walls it does not pass, its live
+	                         course and rate for the projection, whether that course is lethal
+	  where_she_is.gd       where she is this tick (`WhereSheIs`): her place, her pram's, the
+	                         camera's view, whether she runs, whether the baby is awake, whether a
+	                         door holds her; told once a tick by the manager, handed to every live
+	                         event, which hands it on to its behaviours and its excitement
+	  event_sources.gd      a day's live events as one set of things that charge her
+	                         (`EventSources`): the door's toll alone inside a held door, a region
+	                         boundary's structures as their strongest
+	  views/                how an event looks, asked of the event and, in the family looks,
+	                         still partly read off its public state: `EventPictures` names
+	                         every picture (each a region of the baked `events` page) and the
+	                         tables that pick one; `EventLooks.for_row()` gives each row the look
+	                         that draws its family (a figure, a vehicle, a pursuer, a spread, a
+	                         rank, the roadblock, a fire, the checkpoint kit, the flock), handed
+	                         its event, its look part, its body part and its drawer (the van's
+	                         look its abduction part) as it is made, which holds the
+	                         redraw gate, the caret and the slices a long picture is drawn in;
+	                         every picture a look draws goes through one `EventDrawer`
+	                         (`views/event_drawer.gd`), which the manager builds over its atlas
+	                         and its world hands every instance in its surroundings
+	                         (`EventSurroundings.drawer()`) as `setup()` hands it to the look
+	  behaviours/           what an event does, one rule and its state each, composed per row
+	                         by `EventBehaviours.compose()` from the row's data: a pursuit, a
+	                         line run, a route, a flock, a hold, a stop, a departure, a car's
+	                         driving, a barrier's posts, a van's take, ...; each saves and restores
+	                         its own state, which a streamed-out plan carries; each is handed what
+	                         never changes as it is composed and asks its event what changes through
+	                         the event's narrow view of itself (`EventInstance.Figure`); none holds
+	                         its event
+	  charge_record.gd      a charger's warning, charge and the one way it ended, as counted
+	  warning.gd            the one warning clock: started, held, called off or run out, read against
+	                        its owner's clock — an event's notice, a door crossing, a badge up alone
+	  checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
+	                        under a raised boom, the crossing's warning and the guard it sets on her;
+	                        what a door does to her it says as an intent the manager carries out
+	  event_manager.gd      a day's events as the rest of the game sees them: made over what its
+	                         events are set up in (`EventSurroundings`), then handed the run,
+	                         today's streets, the poster walls and the player; starts every walk
+	                         the one way, `start_day(spec)`, a day, the escape's city or its
+	                         building; holds one reference on the `events`
+	                         atlas page; steps the live instances once a physics tick in a fixed
+	                         order (tells them where she is, steps them, then the catches and hard
+	                         fails); hands the world its events as one set of things that charge
+	                         her (`sources`); hands its work to the parts below,
+	                         all working over one `EventWorld` (event_world.gd)
+	  day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
+	                         holds, seals, rows and doors, against the day's streets the manager is
+	                         handed (`DayStreets`), the rows planned on the dawn's context it makes;
+	                         the escape city's seals and rows on its chains; the building's own
+	                         placements
+	  event_streaming.gd    the day's plan and the live instance each plan streams in as, kept in its
+	                         own table with the clock of a plan that comes again, carrying its state
+	                         out and back; the repeats, the masts, a finished plan spent
+	  event_spawner.gd      every instance made, with its scar, its body and the bang outside;
+	                         what a finished row leaves; the rows summoned on sight; the pelican bag,
+	                         and the pelican's first landing on her
+	  warning_board.gd      the screen-edge badges up for something not in the world yet, and the
+	                         mark over her head
+	  events_ahead.gd       what the director puts in front of her while she walks: sited on her
+	                         way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
+	                         a task's mast placed after dawn and day 13's roadblock put across a
+	                         route-adjacent section in place of what it held, the fire lit at dusk,
+	                         and the day's units drawn as she comes near them
+	  siting_maker.gd       makes a day's siting from the walk's rules and locations; what the events
+	                         ahead are handed, so a test hands in one that answers a stand-in
+	  walk_siting.gd        lays the rows her walk places: the free locations on her way, a unit's
+	                         that has not drawn first, the first the day's rules take; a row a mark
+	                         rigs straight ahead of her on her branch, just out of her view
+	  sited_ground.gd       the tiles a row her walk lays may stand on: a crew's fronts, a mast's
+	                         sites
+	  event_director.gd     sites what the day planned and did not place, from her own walk:
+	                         the moments that cross her line, and day 3's fire
+	  pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
+	                         second: where its badge points, fixed against her, and where the
+	                         thing is then placed just out of sight on its own ground
+	  event_reports.gd      what a day's events say happened, one teller a signal, on the bus the
+	                         manager is handed (`EventManager.use_bus()`); one for the world's life
+	                         (`EventWorld.reports()`), shared by every part, each live event and its
+	                         charge's record; with no bus handed in, it tells nobody
   day/
 	day_spec.gd           what one day is: its number, its words, its clock, its goal, who is on
 	                      its streets, what stands on them and how it is placed, and what losing
