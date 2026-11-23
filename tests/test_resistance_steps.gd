@@ -1,8 +1,17 @@
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
 
-## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
-## and sets on that run what the day it asks about needs; none reads what another left.
+## Thirteen cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`),
+## and set on that run what the day it asks about needs; none reads what another left. Two have
+## a reason: placement being the same every time and the guard standing two-thirds through the
+## mark's real alley are about where the director puts things in the alleys the generator draws,
+## and a map drawn for the case would only restate the alley the case chose. Every other city
+## case is still to be judged in the group's next pull request, for whether the director's
+## steps, the run's calendar or what the manager shows can be had from `FakeEventManager` and
+## `FakeEvent`: the dawn draws ignoring where the last attempt left her (it also plans each day
+## through the real manager, and planning a day is the dawn's), the mark activating the same day's
+## task, the yeller step sending only its rider away, the lost-day retry, the rider-gone expiry,
+## the timed step, the two package cases, the sabotage, and the two protesters' poses.
 func run(t: TestRunner) -> void:
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
@@ -202,15 +211,15 @@ func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 	t.check(not rider.core_asked.is_empty() and not contact.is_finished(),
 			"out of reach of where the rider is now, which it asked of the rider")
 
-	# The rider moves; the contact follows it rather than staying where it started. Index 2's own
-	# `completes_at_inner_radius` (M205) still completes on the first tick she is in reach -- it
-	# only changes which radius that reach is measured against, not whether it is instant.
+	# The rider moves; the contact follows it rather than staying where it started. She stays put
+	# at the origin, and index 2's `completes_at_inner_radius` (M205) asks the rider whether she is
+	# in its core: the fake answers yes, so the contact completes on that first tick.
 	rider.position = Vector2.ZERO
 	rider.core_reached = true
 	await _step_a_frame(t)
 	t.check(contact.global_position.is_equal_approx(Vector2.ZERO),
 			"the contact follows the rider to where it has gone")
-	t.check(contact.is_finished(), "and completes once she reaches wherever the rider has gone")
+	t.check(contact.is_finished(), "and completes once the rider answers that she is in its core")
 
 	contact.free()
 	rider.free()
