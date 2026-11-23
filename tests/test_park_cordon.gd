@@ -14,10 +14,9 @@ extends RefCounted
 ## **A real city, for a stated reason**: the cordon's guarantees (the police come from off screen,
 ## being shut in ends the day, the park's people are walked out) are a property of the cordon, the
 ## day's events, the walk's ground and the swing task the director offers, on streets a generator
-## made. Two cases are not covered by it: that the officers are placed by the siting the cordon is
-## handed and that its figures ask the library it is handed. Neither is a guarantee about streets a
-## generator made, and both are still to be judged in the group's next pull request, for whether a
-## drawn park would do.
+## made. Two cases are not covered by it and stand on a cached map in a bare world, with no city, no
+## day and no events handed in: that the officers are placed by the siting the cordon is handed and
+## that its figures ask the library it is handed. Their park is the swing's, drawn on that map.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -209,30 +208,29 @@ func _stop_listening(listener: Array) -> void:
 ## her and once under one whose camera is wide, set out on the first tick. Under each, every
 ## officer's drawing is wholly off its camera (`DRAWING_OFF_THE_VIEW`) and his feet are on ground
 ## open to him (`OPEN_TO_IT`) — asked of the siting, the public seam — and the wide camera puts them
-## further out, which a cordon keeping a view of its own could not.
+## further out, which a cordon keeping a view of its own could not. The park is the swing's, drawn on
+## a cached map and standing in a bare world, with no city, no day and no events handed in.
 func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) -> void:
-	var fixture := _at_the_swing(t)
-	var happenings: ResistanceHappenings = fixture.happenings
-	var swing: Vector2 = fixture.swing
-	var director: ResistanceDirector = fixture.director
-	happenings.cordon.clear()
+	var map := MapCache.of(SEED)
+	var world := WorldContext.new()
+	t.add_child(world)
+	var park := CityGenerator.swing_park(map)
+	var swing := CordonInTheWorld.park_ground(map, park).get_center()
+	var navigator := Navigator.new(map)
 	var box := EventFootprints.footprint_of(EventCatalogue.by_id(ParkCordon.OFFICER_ROW))
 	var distances: Array[float] = []
 	for scale: float in [1.0, 3.0]:
 		var view := VisibleView.new()
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT * scale,
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
-		var siting := SpawnSiting.new(_city.map, _city.navigator(),
-				func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(_city.map, _city.navigator(), RunCity.events(_city), _city, _city.atlas,
-				fixture.park, siting,
-				ResistanceReads.day_reachability(_city)[1])
+		var siting := SpawnSiting.new(map, navigator, func() -> VisibleView: return view)
+		var cordon := ParkCordon.new(map, navigator, null, world, null, park, siting)
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
 		var drawn := siting.ask_of_drawing(box)
 		var nearest := INF
 		var placed := 0
-		for officer in CordonInTheWorld.officers(_city):
+		for officer in _officers_in(world):
 			placed += 1
 			var at := officer.global_position
 			nearest = minf(nearest, at.distance_to(swing))
@@ -245,29 +243,31 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 		cordon.clear()
 	t.check(distances[1] > distances[0] + Tuning.TILE_SIZE,
 			"and a wider camera puts them further out (%.0f, %.0f)" % [distances[0], distances[1]])
-	_end(fixture)
+	world.free()
 
 ## **The cordon's officers, tape and posts ask the library the cordon is handed** for their pages, not
 ## a library of their own: a cordon handed a recording library (`tests/recording_atlas.gd`) and ticked
 ## until it has put out its officers, tape and posts has had each kind ask it, as many times as there
-## are of them standing.
+## are of them standing. The park is the swing's, drawn on a cached map in a bare world.
 func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> void:
-	var fixture := _at_the_swing(t)
-	var happenings: ResistanceHappenings = fixture.happenings
-	var swing: Vector2 = fixture.swing
-	happenings.cordon.clear()
+	var map := MapCache.of(SEED)
+	var world := WorldContext.new()
+	t.add_child(world)
+	var park := CityGenerator.swing_park(map)
+	var swing := CordonInTheWorld.park_ground(map, park).get_center()
+	var navigator := Navigator.new(map)
+	var view := VisibleView.new()
+	var siting := SpawnSiting.new(map, navigator, func() -> VisibleView: return view)
 	var recording := RecordingAtlas.new()
-	var cordon := ParkCordon.new(_city.map, _city.navigator(), RunCity.events(_city), _city, recording,
-			fixture.park, RunCity.spawn_siting(_city), ResistanceReads.day_reachability(_city)[1])
+	var cordon := ParkCordon.new(map, navigator, null, world, recording, park, siting)
 	var waited := 0.0
-	while waited < PATIENCE and (CordonInTheWorld.tapes(_city).is_empty()
-			or CordonInTheWorld.posts(_city).is_empty()):
-		_look(_city, swing)
+	while waited < PATIENCE and (_tapes_in(world).is_empty() or _posts_in(world).is_empty()):
+		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 		cordon.tick(STEP, swing)
 		waited += STEP
-	var officers := CordonInTheWorld.officers(_city).size()
-	var tapes := CordonInTheWorld.tapes(_city).size()
-	var planted := CordonInTheWorld.posts(_city).size()
+	var officers := _officers_in(world).size()
+	var tapes := _tapes_in(world).size()
+	var planted := _posts_in(world).size()
 	t.check(officers > 0 and tapes > 0 and planted > 0,
 			"the cordon put out officers, tape and posts (%d, %d, %d)" % [officers, tapes, planted])
 	t.check(recording.acquired_from("res://src/resistance/cordon_officer.gd") >= officers,
@@ -277,7 +277,41 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 			"every piece of tape and every post asked it for theirs (%d of %d)"
 			% [recording.acquired_from("res://src/resistance/cordon_tape.gd"), tapes + planted])
 	cordon.clear()
-	_end(fixture)
+	world.free()
+
+## The cordon's officers standing in a bare `world`, on its entity layer.
+func _officers_in(world: WorldContext) -> Array[CordonOfficer]:
+	var found: Array[CordonOfficer] = []
+	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
+		var figure := node as CordonOfficer
+		if figure != null and not figure.is_queued_for_deletion():
+			found.append(figure)
+	return found
+
+## Every piece of the cordon standing in a bare `world`, tape and post alike.
+func _pieces_in(world: WorldContext) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
+		var piece := node as CordonTape
+		if piece != null and not piece.is_queued_for_deletion():
+			found.append(piece)
+	return found
+
+## The tape standing in a bare `world`: the pieces with a body, as `CordonInTheWorld.tapes()` reads a city.
+func _tapes_in(world: WorldContext) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for piece in _pieces_in(world):
+		if CordonInTheWorld.body_rect(piece).has_area():
+			found.append(piece)
+	return found
+
+## The posts standing in a bare `world`: the pieces with no body, as `CordonInTheWorld.posts()` reads a city.
+func _posts_in(world: WorldContext) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for piece in _pieces_in(world):
+		if not CordonInTheWorld.body_rect(piece).has_area():
+			found.append(piece)
+	return found
 
 ## Reaching the swing takes the park, as before — requisitioned and no longer calm — and starts the
 ## cordon rather than mud: no tile of its ground changes, during the closing or after it. **Played

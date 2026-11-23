@@ -4,9 +4,12 @@ extends "res://tests/resistance_rig.gd"
 ## **A real city, for a stated reason**: the case that a relocated mark is never placed in an
 ## alley she cannot reach reads which alleys a day's real plan, its closures and the bodies its
 ## events stand leave her; a fake would have to answer that, and the answer is what the case
-## checks. The day-11 case is not reachability but the manager generating a mast
-## (`EventManager.queue_a_mast()`) on three real cities, and is still to be judged in the
-## group's next pull request.
+## checks. The day-11 case checks a chain that runs through a day's real plan on three real cities:
+## the director sends the task to a mast the manager has just generated (`EventManager.queue_a_mast()`)
+## where no planned mast stands near the mark, reaching it silences it and records its scar, and the
+## dawns of the next day and of the last night plan their masts from that scar. What the manager's
+## acceptance refuses is `tests/test_masts.gd`'s, and the case asks only that the chain holds over
+## the day's real plan.
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 
