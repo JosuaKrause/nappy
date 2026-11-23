@@ -265,7 +265,7 @@ src/
 	                      distance, notice and each behaviour's state, one value its plan carries
 	where_it_stands.gd    where a plan's live event stands now (`WhereItStands`): there or not, where,
 	                      facing which way, over or not; the plan asks it without naming the event
-	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
+	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along
 	                      the street, room among placed plans, where its body stands; handed the map
 	                      and what it asks (what stops a row, where a body stands, the room)
 	row_ground.gd         which tiles a row may stand on today and how many times over each is

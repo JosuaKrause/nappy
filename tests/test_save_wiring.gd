@@ -341,7 +341,7 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t: TestRunner) -> void:
 	parked.name = GameSave.NODE_NAME
 	sitting.add_child(parked)
 	var ids: Array[int] = []
-	var hear := func(operation: int, _result: int) -> void: ids.append(operation)
+	var hear := func(operation: int) -> void: ids.append(operation)
 	EventBus.save_written.connect(hear)
 	var calls := Calls.new()
 
@@ -404,7 +404,7 @@ func _test_a_game_closed_between_days_writes_nothing_at_opening(t: TestRunner) -
 	t.check(_on_disk().get("day_under_way") == false, "the load finds the day not under way")
 	var before := FileAccess.get_file_as_string(_SCRATCH_PATH)
 	var heard: Array[int] = []
-	var listen := func(_operation: int, result: int) -> void: heard.append(result)
+	var listen := func(operation: int) -> void: heard.append(operation)
 	EventBus.save_written.connect(listen)
 	EventBus.save_deleted.connect(listen)
 	# Built after the save, which raised the symbol of no boot: what is checked below is that
@@ -574,7 +574,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner
 			and run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"a won day 14 puts day 14's summary up with the run in the building")
 	var day_fourteen := _next_operation()
-	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(day_fourteen)
 	t.check(Boot.save_symbol_shows(indicator), "and the symbol shows day 14's pending save")
 	await Boot.press_continue(t, main)
 	t.check(calls.reloads.size() == 1, "continuing past day 14's summary reloads into the escape")
@@ -597,11 +597,11 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner
 			"the next boot adopts the carried symbol and builds none of its own")
 	var timeline := parked.timeline
 	var begun := timeline.begun
-	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(day_fourteen)
 	t.check(timeline.begun == begun + 1 and timeline.pending == 1 and timeline.alpha() == 1.0,
 			"still fully shown for day 14's save")
 	var escape := _next_operation()
-	EventBus.save_written.emit(escape, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(escape)
 	EventBus.save_write_settled.emit(day_fourteen, true)
 	t.check(timeline.pending == 1,
 			"day 14's late answer settles day 14's save, not the escape's")
@@ -633,24 +633,30 @@ func _test_main_draws_nothing_for_a_refused_run(t: TestRunner) -> void:
 	parked.free_all()
 
 ## The whole path through `main`'s write on a run that saves: a desktop save is answered at once and
-## the symbol is already showing the plain picture. A write tells `EventBus` what it came to, so the
-## symbol hears it without `main` relaying it, and begins exactly once for one save: `main` adds
-## nothing to what the bus carried. The `_save.write()` half, with its refused cases, is
+## the symbol is already showing the plain picture. A write tells `EventBus` that it began and that it was
+## kept, so the symbol hears both without `main` relaying them, and begins exactly once for one
+## save: `main` adds nothing to what the bus carried. The `_save.write()` half, with its refused cases, is
 ## `tests/test_save.gd`'s `_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once()`.
 func _test_a_desktop_save_is_shown_at_once_and_begun_once(t: TestRunner) -> void:
 	_begin()
 	var parked := Parked.new(t)
 	var main := await _boot(t, _windowed(), Calls.new(), parked.home)
-	var heard: Array[int] = []
-	var listen := func(_operation: int, result: int) -> void: heard.append(result)
-	EventBus.save_written.connect(listen)
+	var heard: Array[String] = []
+	var announced := func(operation: int) -> void: heard.append("announced %d" % operation)
+	var settled := func(operation: int, kept: bool) -> void:
+		heard.append("settled %d %s" % [operation, "kept" if kept else "not kept"])
+	EventBus.save_written.connect(announced)
+	EventBus.save_write_settled.connect(settled)
 	await Boot.press_title(t, main, "Tap")
-	EventBus.save_written.disconnect(listen)
+	EventBus.save_written.disconnect(announced)
+	EventBus.save_write_settled.disconnect(settled)
 	var timeline := parked.timeline
 	t.check(timeline.pending == 0 and not timeline.is_idle(),
 			"a desktop save is answered at once and the symbol is already showing")
 	t.check(not timeline.struck and Boot.save_symbol_plain(parked.indicator), "showing the plain picture")
-	t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
+	t.check(heard.size() == 2 and heard[0].begins_with("announced ")
+			and heard[1] == heard[0].replace("announced", "settled") + " kept",
+			"a write is announced once and settled once as kept, under one operation id (%s)" % [heard])
 	t.check(timeline.begun == 1, "and the symbol began once for it, not a second time by main")
 
 	_shut(t, main)

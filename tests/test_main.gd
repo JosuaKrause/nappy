@@ -141,6 +141,35 @@ func _test_main_hands_the_baby_the_world_it_puts_her_in(t: TestRunner) -> void:
 	await _boot_hands_the_baby_the_city(t, DaySpec.Section.CITY, "a boot straight onto the escape's street")
 	await _boot_hands_the_baby_the_city(t, DaySpec.Section.NONE, "an ordinary day's boot")
 
+## **`main` puts her down when the building says she came through a door**
+## (`InteriorScene.arrived_through_a_door` to `Stroller.reset_at()`): the building only announces the
+## arrival, so a boot whose connection was missing would fade and leave her where she stood. Booted
+## for real in the escape's building, her brief pressed, she is stood on a door's tile and real
+## frames let the building's own ground fire the door and its fade run; she is then on the
+## counterpart door's tile.
+func _test_main_puts_her_down_when_the_building_says_she_came_through_a_door(t: TestRunner) -> void:
+	var run := _a_run_on(DaySpec.Section.BUILDING)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var interior := Boot.interior(booted.main)
+	var player := Boot.player(booted.main)
+	t.check(interior != null and player != null, "the boot stands her in the building")
+	if interior != null and player != null:
+		await Boot.press_continue(t, booted.main)
+		var door := interior.map().door("hallway_third:left")
+		var from := interior.map().tile_to_world(door.tile)
+		var to := interior.map().tile_to_world(interior.map().door(door.target_door).tile)
+		player.reset_at(from)
+		# The fade is 0.35s each way; a margin of a second beyond both.
+		for _frame in 100:
+			await t.get_tree().physics_frame
+		t.check(player.global_position.distance_to(to) < 1.0,
+				"a door the building fires puts her on the counterpart door's tile (at %s, wanted %s)"
+				% [player.global_position, to])
+	booted.free_all()
+	home.free()
+
 ## A fresh run on the player's seed, on day 1, in the escape's `section` (`DaySpec.Section.NONE` for
 ## an ordinary day): what a boot is handed to play.
 func _a_run_on(section: int) -> RunState:
@@ -352,6 +381,7 @@ func run(t: TestRunner) -> void:
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
+	await _test_main_puts_her_down_when_the_building_says_she_came_through_a_door(t)
 	await _test_main_connects_her_release_to_the_controls(t)
 	await _test_main_binds_the_family_before_the_first_draw(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
