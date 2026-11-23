@@ -487,7 +487,7 @@ re-derive it.
 ## 3. What the placement track needs from it
 
 The placement track owns `src/events/model/street_rules/`, `marble_draw.gd`,
-`day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is being built now. Its files
+`day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is closed (the record polite-tapir-feathery-kestrel). Its files
 ask a row and a plan almost only through methods already (`row()`, `line_reach()`,
 `obstructs_within()`, `notice_within()`, `counts_against_the_line()`, `reach_touches()`,
 `denies()`, `obstructs()`, `blocking_radius()`). A setting the dawn reads off a plan's row is

@@ -24,11 +24,10 @@ hook, a general project script, or anything else of that kind) is the exception 
 (inbox #1305 in grassy-trout). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after the refactor closes.
 
-**The design review's work is built.** The player had the refactor's design reviewed ("have a fable
-agent review the design of the refactor", inbox #1265 in olive-ferret). *Read as, the filer's, open to the
-player's correction:* its items are the refactor's work and the rule above (inbox #1210 in gentle-owl) covers them
-as it covers this entry's; their records are the ones named polite-tapir (`tools/decisions.sh polite-tapir`), and
-this entry's remeasure (step 4 below) comes after the last item here.
+**The design review's items are closed.** The player had the refactor's design reviewed ("have a fable
+agent review the design of the refactor", inbox #1265 in olive-ferret); its records are the ones named
+polite-tapir (`tools/decisions.sh polite-tapir`), and this entry's remeasure (step 4 below) comes after the last
+item here.
 
 ## The review this entry files
 
@@ -102,8 +101,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    typed with them or by a typing pass ahead of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **The design review's tracks are built**, their records the ones named polite-tapir; the baseline
-     readings they took are listed under step 4.
+   - **The design review's tracks are closed**, their records the ones named polite-tapir; the events'
+     rows that follow placement are this entry's, below, and the baseline readings are listed under step 4.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed
      but those `field-reads.md` lists, each with what it waits for, under "What is left of the
@@ -143,9 +142,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    main's own route-adjacent walls from 30.54 to 19.41 a city a day, and
    `tests/probes/placement_view_mix.gd` still plans no closures or seals.
 
-   The "before" it compares with is the design review's baseline readings, on `v0.29.0`, in
-   `docs/evidence/minty-quail-baseline-2026-11-09/`: `v0.29.0` beside a mid-refactor `main` (the record
-   minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
+   The "before" it compares with is the design review's baseline readings in
+   `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`
+   (the record minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
    fourth after the events' field-read conversion (the record polite-tapir-crisp-heron). Nothing is judged in the
    readings: a number that moved is listed here for this remeasure, and no step waits on one. Three lists of
    numbers are left for it:
@@ -158,7 +157,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      profiled and 7.5 to 6.3 with the profiler off; `test_acts`'s checks 349 to 45 (its sweep holds scripted rows
      only) and `test_finale`'s 9,464 to 9,463; the unmodified frame-profile launcher's six runs all rejected by
      the analyzer (an 8.3 ms callback interval), not looked into.
-   - **The escape's mix and walks** (step 5's switch, the record polite-tapir-coral-badger;
+   - **The escape's mix and walks** (placement by construction's switch of the escape city's walk to the unit draw, the record
+     polite-tapir-coral-badger;
      `tests/probes/escape_winnable.gd`, 24 seeds): main before the switch planned 0.66 dangers a street and 34%
      of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44), and walked out to the tunnel on 13
      walks and to the bridge on 10; after it, 0.66 and 34% (181, 178, 89, 46), 12 and 10.
