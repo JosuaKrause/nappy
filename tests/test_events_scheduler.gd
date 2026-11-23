@@ -18,13 +18,14 @@ extends "res://tests/events_shared_city.gd"
 ## **Why these checks build a city.** The cases that plan a day or a run ask what the dawn plans on
 ## a real street network, so they plan on the shared city or on a generated city of a seed of their
 ## own; the dawn's group shared those plans between the cases that ask the same day and handed every
-## dawn the city's mast sites (the record minty-quail-amber-elk). The cases that ask the rows alone
-## (`_test_successors_resolve`, `_test_sighted_successors_resolve`,
-## `_test_fire_truck_is_never_scheduled` and the fire engine's warning) build no city. Three checks
-## build cities for a reason of their own: the
-## closed-streets day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the
-## integration check of day 12's route to a clean calm area other than the swing's, on a real day
-## planned through `build_day()`, with the day's calm areas made the way `DayPlanner` makes them
+## dawn the city's mast sites (the record minty-quail-amber-elk). Four cases ask the rows alone and
+## build no city (`_test_successors_resolve`, `_test_sighted_successors_resolve`,
+## `_test_fire_truck_is_never_scheduled` and the fire engine's warning), and the spoiler case
+## (`_test_a_spoiler_on_a_route_stands_beside_it`) plans on a drawn street map. Three checks build
+## cities for a reason of their own: the closed-streets day
+## (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the integration check of day
+## 12's route to a clean calm area other than the swing's, on a real day planned through
+## `build_day()`, with the day's calm areas made the way `DayPlanner` makes them
 ## (`CalmAreas.of()` from the day and its target, which is where the swing's park is set aside);
 ## and the retried day and the taught run (`_test_a_retried_day_is_the_same_day`,
 ## `_test_the_run_is_always_taught`, moved in from the pursuit suite for the dawn's group to

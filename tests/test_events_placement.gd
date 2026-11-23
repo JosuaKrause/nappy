@@ -34,8 +34,8 @@ extends "res://tests/events_shared_city.gd"
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
 ## day. The dawn's group handed each dawn the city's mast sites and shared one plan between the cases
 ## that ask the same day (the record minty-quail-amber-elk), and rejected moving the sweeps onto
-## hand-drawn maps. Two cases build no city: the friction case and the lethal row's reach case ask
-## the rows alone.
+## hand-drawn maps. One case builds no city: the lethal row's reach case asks the rows alone. The
+## friction case repaints the seed-4242 city per day and grows its routes on it.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
