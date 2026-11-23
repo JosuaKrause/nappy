@@ -4,10 +4,17 @@ extends RefCounted
 ## through, the screen-edge badge from his run, and the next man up the shaft. Split from
 ## `test_interior.gd` for its wall time, and from `test_interior_masked_man_badge.gd` the same way:
 ## these walk thousands of real ticks, so the shard planner can put the pieces on different shards.
+## The one case that is not a walk asks the building's events what the building's own walls do to
+## the masked man's field and the explosion's (`CityMap.wall_between()`'s geometry is
+## `test_wall_shield.gd`'s).
 
 const BuildingEvents := preload("res://tests/building_events.gd")
 const InteriorRig := preload("res://tests/interior_rig.gd")
 const MaskedManMeeting := preload("res://tests/masked_man_meeting.gd")
+const _SIZE := float(Tuning.TILE_SIZE)
+## How much faster than real time a long stretch of real physics ticks runs (`Engine.time_scale`, put
+## back by `PhysicsTicks`).
+const FAST_SCALE := 8.0
 
 var _rig := InteriorRig.new()
 var _meeting := MaskedManMeeting.new(_rig)
@@ -18,6 +25,7 @@ func run(t: TestRunner) -> void:
 	await _test_she_has_to_run_to_the_first_floor_door(t)
 	await _test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
 	await _test_another_masked_man_comes_up_the_same_shaft(t)
+	await _test_the_building_inside_stops_it_at_its_own_walls(t)
 
 ## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
 ## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
@@ -298,5 +306,109 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
 	print("The masked man came %d times before the watch ended; gaps measured: %d"
 			% [appeared.size(), gaps])
+	events.free()
+	scene.free()
+
+## **Indoors too.** *(plaid-wombat, inbox #554: "Excitement should not go through **any** wall".)*
+## Every source in the escape's building stands on the building's map (`InteriorMapPlan`), open
+## where she may stand, and its walls stop a field at the depths a city's buildings do
+## (`WorldMap.wall_between()`). The masked man is stood on every tile
+## of his own shaft's walk and asked at every walkable point of it within his reach: nothing where
+## the grid walls the line, the field itself everywhere else; the guard counts the points a field
+## reached and a wall stopped, which is what the solid between two flights does to him. The
+## explosion is the exception: it stands for a bang outside that has already come through the walls,
+## so a wall between where its instance stands and her keeps none of it from her.
+func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var run := RunState.new()
+	run.start_run(4242)
+	var events := BuildingEvents.events_in(t, scene, rng, run)
+	var grid := scene.map()
+
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.row_id() == "masked_pursuer":
+			man = instance
+	t.check(man != null, "the masked man is on the stairs")
+	if man:
+		man.restore(EventSave.new(man.telegraphs_for(), 0.0, INF))
+		var shaft: Array[Vector2] = []
+		for tile in scene.map().stairwell_tiles("stairwell_right"):
+			if not scene.map().is_walkable(tile):
+				continue
+			for sy in 4:
+				for sx in 4:
+					shaft.append(Vector2(tile) * _SIZE + Vector2(4.0 + 8.0 * sx, 4.0 + 8.0 * sy))
+		var reached := 0
+		var stopped := 0
+		var wrong := 0
+		for tile in scene.map().stairwell_walk("stairwell_right"):
+			# Moved as the manager moves an event it stands elsewhere (`EventInstance.move_to()`).
+			man.move_to(scene.map().tile_to_world(tile))
+			for her in shaft:
+				var field := man.field_at(her, -1.0, Vector2.INF)
+				if field <= 0.0:
+					continue
+				var landed := man.source().contribution_at(her)
+				var walled := grid.wall_between(man.global_position, her)
+				if walled:
+					stopped += 1
+				else:
+					reached += 1
+				if landed != (0.0 if walled else field):
+					wrong += 1
+		t.check(stopped > 0, "a wall in his shaft stands between him and her (%d points)" % stopped)
+		t.check(reached > stopped, "while most of his reach is open stairs (%d points)" % reached)
+		t.check(wrong == 0, "and his field reaches her exactly where no wall stops it (%d did not)"
+				% wrong)
+
+	# Somewhere on the stairs with open stair behind a wall from it, well inside the bang's reach.
+	var stands := Vector2.INF
+	var behind := Vector2.INF
+	for from in scene.map().stairwell_walk("stairwell_right"):
+		for tile in scene.map().stairwell_tiles("stairwell_right"):
+			var at := scene.map().tile_to_world(tile)
+			if scene.map().is_walkable(tile) and at.distance_to(scene.map().tile_to_world(from)) < 200.0 \
+					and grid.wall_between(scene.map().tile_to_world(from), at):
+				stands = scene.map().tile_to_world(from)
+				behind = at
+				break
+		if behind != Vector2.INF:
+			break
+	t.check(behind != Vector2.INF, "there is open stair behind a wall from a step of the shaft")
+	var player := Node2D.new()
+	player.add_to_group("player")
+	events.use_player(player)
+	t.add_child(player)
+	player.global_position = stands
+	# The manager's own physics ticks, one a frame (`PhysicsTicks`), at `FAST_SCALE` times real time
+	# so the interval does not take its length of the suite, until the next bang comes: a tick count,
+	# not a clock, bounds the wait, and the bang is judged on the tick it appears.
+	var burst: EventInstance = null
+	var ticks_left: int = PhysicsTicks.ticks_for(EventCatalogue.FINALE_EXPLOSION_INTERVAL + 1.0,
+			FAST_SCALE)
+	while burst == null and ticks_left > 0:
+		await PhysicsTicks.pass_ticks(t, 1, Callable(), FAST_SCALE)
+		ticks_left -= 1
+		for instance in events.instances():
+			if instance.row_id() == "finale_explosion":
+				burst = instance
+	t.check(burst != null and burst.global_position == stands,
+			"an explosion goes off where she stands")
+	if burst and behind != Vector2.INF:
+		t.check(burst.source().contribution_at(behind) > 0.0,
+				"and the bang reaches her behind the wall: it came through the walls from outside"
+				+ " (%.1f)" % burst.source().contribution_at(behind))
+		t.check(not burst.source().wall_grid().wall_between(burst.global_position, behind),
+				"and the debug view's fields layer cuts it at no wall either, as the meter does")
+		var outline := GroundShape.field_outline_at(burst.global_position, Vector2.ZERO,
+				burst.heard_within())
+		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.source().wall_grid())
+		t.check(runs.size() == 1 and runs[0].size() == outline.size() + 1,
+				"so its outline is drawn whole, in one closed run (%d runs)" % runs.size())
+	player.free()
 	events.free()
 	scene.free()
