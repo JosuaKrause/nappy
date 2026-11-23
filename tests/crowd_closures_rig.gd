@@ -693,9 +693,9 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 		var consumed: Array[String] = []
 		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 		var plan := city.streets().region_plan()
-		if not plan.walls.is_empty() and not plan.doors.is_empty():
-			wall_segment = plan.walls[0]
-			door_segment = plan.doors[0]
+		if not plan.wall_segments().is_empty() and not plan.door_segments().is_empty():
+			wall_segment = plan.wall_segments()[0]
+			door_segment = plan.door_segments()[0]
 			used_day = day
 			break
 	t.check(wall_segment != null and door_segment != null,
@@ -717,7 +717,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 	var mouth := wall_segment.mouth_rect(at_a)
 	var at := map.tile_rect_to_world(mouth).get_center()
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), at)
-	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 
 	var frames_inside := 0
 	var walkers_on_the_segment := 0
@@ -793,8 +793,8 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
 		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
-		if not city.streets().region_plan().doors.is_empty():
-			door = city.streets().region_plan().doors[0]
+		if not city.streets().region_plan().door_segments().is_empty():
+			door = city.streets().region_plan().door_segments()[0]
 			used_day = day
 			break
 	t.check(door != null, "a sampled day carries a region door for the crowd to cross")
@@ -807,7 +807,7 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
 	RunCity.crowd(city).use_focus(null)
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), mouth.get_center())
-	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 	RunCity.crowd(city).clear()
 
 	var vertical := not door.horizontal
@@ -817,7 +817,7 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 	# each one's hold is what a walker walking at it is handed (`door_ahead`): a probe walker is set
 	# walking at each and the hold read off it after one frame.
 	var huts: Array[WalkerDoorHold] = []
-	for body in city.streets().region_plan().door_bodies:
+	for body in city.streets().region_plan().door_plans():
 		if body.row().detains_for() <= 0.0 or not mouth.has_point(body.placed_at()):
 			continue
 		var across: float = body.placed_at().x if vertical else body.placed_at().y
@@ -1103,9 +1103,9 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 	RunCity.crowd(city).clear()
 	var map: CityMap = scene["map"]
 	var vertical: bool = scene["vertical"]
-	var gate: GateState = city.streets().region_plan().gates[0]
-	var gate_across: float = gate.position.x if vertical else gate.position.y
-	var gate_along: float = gate.position.y if vertical else gate.position.x
+	var gate: GateState = city.streets().region_plan().gate_states()[0]
+	var gate_across: float = gate.ground_point().x if vertical else gate.ground_point().y
+	var gate_along: float = gate.ground_point().y if vertical else gate.ground_point().x
 	var corridor := CrowdLanes.corridor_at(gate_across)
 	var direction := -1.0 if scene["at_a"] else 1.0
 	var lane := CrowdLanes.road_lane(vertical, direction)
@@ -1122,12 +1122,13 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 	var crossed_before_it_raised := false
 	for frame in int(round(8.0 / STEP)):
 		RunCity.crowd(city).step(STEP)
-		if gate.raised:
+		if gate.is_boom_up():
 			ever_raised = true
 			continue
 		if car.speed() < Tuning.CAR_STOPPED_SPEED and car.lane().gate_hold() < INF:
 			came_to_a_stop = true
-		if not ever_raised and (car.global_position - gate.position).dot(car.heading()) > 0.0:
+		var past_the_gate := (car.global_position - gate.ground_point()).dot(car.heading())
+		if not ever_raised and past_the_gate > 0.0:
 			crossed_before_it_raised = true
 	t.check(came_to_a_stop, "a car comes to a full stop at a lowered boom")
 	t.check(ever_raised, "and the boom then raises for it")

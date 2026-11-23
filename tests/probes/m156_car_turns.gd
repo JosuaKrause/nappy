@@ -84,7 +84,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m156-crowd:%d:%d" % [city_seed, day])
 	RunCity.crowd(city).start_day(day, crowd_rng, at)
-	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 
 	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(SECONDS / STEP)):

@@ -87,7 +87,7 @@ func _ready() -> void:
 				return
 	if anchors.has("gate"):
 		var found := false
-		for body in city.streets().region_plan().door_bodies:
+		for body in city.streets().region_plan().door_plans():
 			if body.row_id() == "checkpoint_gate" and body.placed_at().is_equal_approx(
 					anchors.gate + Vector2(0, 64)):
 				found = not EventPictures.gate_runs_north_south(body.faces())

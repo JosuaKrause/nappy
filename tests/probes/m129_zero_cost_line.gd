@@ -380,21 +380,21 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 	map.clear_day_holds()
 	for closure in closures:
 		map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-	for segment in region_plan.walls:
+	for segment in region_plan.wall_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
-	for segment in region_plan.walls:
+	for segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		boundary[segment.key()] = true
-	for rect in region_plan.alley_walls:
+	for rect in region_plan.walled_alleys():
 		boundary[rect.position] = true
-	for rect in region_plan.alley_doors:
+	for rect in region_plan.door_alleys():
 		boundary[rect.position] = true
 
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
@@ -415,11 +415,11 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 	# `_test_the_catalogue_sees_a_seal_at_a_route_junction`; the PR description carries the full
 	# isolation table.
 	var doors := PackedVector2Array()
-	for body in region_plan.door_bodies:
+	for body in region_plan.door_plans():
 		doors.append(body.placed_at())
 	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
-	standing.append_array(region_plan.wall_bodies)
+	standing.append_array(region_plan.wall_plans())
 	var plans := GameDawn.of(DaySpec.for_day(day), _rng(map, day, "events"), map) \
 			.calm(CalmAreas.of(map, _used if not _used.is_empty() else no_calm)).spent(no_one_shots) \
 			.scars(no_scars).on(tree).doors(doors).standing(standing).plan().placements()
@@ -430,13 +430,13 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 		_sources[plan.get_instance_id()] = Source.CATALOGUE
 	for plan in seals:
 		_sources[plan.get_instance_id()] = Source.SEAL
-	for plan in region_plan.wall_bodies:
+	for plan in region_plan.wall_plans():
 		_sources[plan.get_instance_id()] = Source.REGION
-	for plan in region_plan.door_bodies:
+	for plan in region_plan.door_plans():
 		_sources[plan.get_instance_id()] = Source.REGION
 	plans.append_array(seals)
-	plans.append_array(region_plan.wall_bodies)
-	plans.append_array(region_plan.door_bodies)
+	plans.append_array(region_plan.wall_plans())
+	plans.append_array(region_plan.door_plans())
 	return plans
 
 ## Plan instance id -> `Source`, for the day being measured. See `_place_the_day`.

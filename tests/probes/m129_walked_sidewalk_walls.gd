@@ -284,22 +284,22 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
 		map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-	for segment: StreetNetwork.Segment in region_plan.walls:
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-	for segment: StreetNetwork.Segment in region_plan.doors:
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
-	for segment: StreetNetwork.Segment in region_plan.walls:
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment: StreetNetwork.Segment in region_plan.doors:
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		boundary[segment.key()] = true
-	for rect: Rect2i in region_plan.alley_walls:
+	for rect: Rect2i in region_plan.walled_alleys():
 		boundary[rect.position] = true
-	for rect: Rect2i in region_plan.alley_doors:
+	for rect: Rect2i in region_plan.door_alleys():
 		boundary[rect.position] = true
 
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
@@ -343,12 +343,12 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for plan: EventPlan in seals:
 		provenance[plan.get_instance_id()] = Source.SEAL
 	planned.append_array(seals)
-	for plan: EventPlan in region_plan.wall_bodies:
+	for plan: EventPlan in region_plan.wall_plans():
 		provenance[plan.get_instance_id()] = Source.REGION
-	planned.append_array(region_plan.wall_bodies)
-	for plan: EventPlan in region_plan.door_bodies:
+	planned.append_array(region_plan.wall_plans())
+	for plan: EventPlan in region_plan.door_plans():
 		provenance[plan.get_instance_id()] = Source.REGION
-	planned.append_array(region_plan.door_bodies)
+	planned.append_array(region_plan.door_plans())
 
 	var bodies: Array[Body] = []
 	for plan: EventPlan in planned:

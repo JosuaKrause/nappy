@@ -399,7 +399,7 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 
 ## Runs the real day order (`DayDirector.start()`: city, events, resistance) rather than
 ## skipping the middle step. `EventManager.start_day()` is what holds every door segment for the
-## day (`CityMap.held`, filled from `region_plan.doors` among other things) — with it
+## day (`CityMap.held`, filled from `region_plan.door_segments()` among other things) — with it
 ## never run, a bare `_pick_reachable()` call would find the door tile reachable whether or not
 ## `_place_at_a_door()`'s `allow_held` carve-out (`docs/DECISIONS.md`, M181) actually does
 ## anything, so this test would pass whether the carve-out worked or was deleted. Also asserts
@@ -409,7 +409,7 @@ func _test_the_door_task_sits_at_a_region_door(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	var the_day := _start_the_day(t, 9, director)
-	var doors := _city.streets().region_plan().doors
+	var doors := _city.streets().region_plan().door_segments()
 	t.check(not doors.is_empty(),
 			"day 9 (Tuning.REGION_WALL_FIRST_DAY) has at least one door, or this test "
 			+ "checks nothing")
@@ -424,7 +424,7 @@ func _test_the_door_task_sits_at_a_region_door(t: TestRunner) -> void:
 			"the chosen tile's own segment is ground the day already holds — the case " +
 			"`allow_held` exists for")
 	var on_a_door := false
-	for body in _city.streets().region_plan().door_bodies:
+	for body in _city.streets().region_plan().door_plans():
 		if body.row().detains_again() and body.placed_at().distance_to(at) < 0.5:
 			on_a_door = true
 			break

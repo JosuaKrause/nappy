@@ -220,7 +220,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 			var player: Stroller = read[2]
 			var region_plan: RegionPlan = city.streets().region_plan()
 			var pool := ResistanceSteps.target_candidates(step, city.map, region_plan)
-			var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+			var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
 			var allow_held := ResistanceSteps.stands_on_held_ground(step)
 			var reachability := _day_reachability(city)
 			var grid: ReachabilityGrid = reachability[0]

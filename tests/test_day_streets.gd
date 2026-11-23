@@ -25,10 +25,10 @@ func _row(radius: float) -> EventDef:
 ## A day's wall and doors as data: one wall body, two door bodies and one walled alley.
 func _a_walled_plan() -> RegionPlan:
 	var plan := RegionPlan.new()
-	plan.wall_bodies.append(EventPlan.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
-	plan.door_bodies.append(EventPlan.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
-	plan.door_bodies.append(EventPlan.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
-	plan.alley_walls.append(Rect2i(30, 12, 1, 4))
+	plan.add_wall_plan(EventPlan.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
+	plan.add_door_plan(EventPlan.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
+	plan.add_door_plan(EventPlan.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
+	plan.add_walled_alley(Rect2i(30, 12, 1, 4))
 	return plan
 
 func _closures_on(junction: Vector2i) -> Array[RoadClosure]:
@@ -92,7 +92,7 @@ func _test_the_siting_region_is_built_once_for_a_plan(t: TestRunner) -> void:
 	t.check(first.walled_alleys == walled_alley, "and it shuts the plan's walled alley")
 
 	var other := RegionPlan.new()
-	other.alley_walls.append(Rect2i(8, 2, 1, 3))
+	other.add_walled_alley(Rect2i(8, 2, 1, 3))
 	streets.replace_region_plan(other)
 	var changed := streets.siting_region()
 	var other_alley: Array[Rect2i] = [Rect2i(8, 2, 1, 3)]

@@ -66,7 +66,7 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m110-crowd:%d:%d" % [city_seed, day])
 	RunCity.crowd(city).start_day(day, crowd_rng, at)
-	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 
 	var inside_walkers := 0
 	var inside_cars := 0

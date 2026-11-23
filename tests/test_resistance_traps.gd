@@ -359,7 +359,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 		var director: ResistanceDirector = first if side > 0.0 \
 				else _start_a_guarded_target_day(t, 9)[0]
 		var hut: EventPlan = null
-		for body in _city.streets().region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_plans():
 			if body.detains_again() and body.placed_at().distance_to(director.red_arrow_target()) < 0.5:
 				hut = body
 		if side > 0.0:
@@ -505,7 +505,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 			"%s: wholly out of sight the frame he exists" % label)
 	var through_a_door := false
 	var plan := _city.streets().region_plan()
-	for body: EventPlan in plan.door_bodies if plan else []:
+	for body: EventPlan in plan.door_plans() if plan else []:
 		if DoorLine.crossed_by(body.placed_at(), body.faces(), body.obstructs_within(),
 				start, her):
 			through_a_door = true

@@ -57,9 +57,9 @@ func run(t: TestRunner) -> void:
 			var step: ResistanceSteps.Step = _step_for(day)
 			var candidates := _candidates(city, day)
 			var region_plan := city.streets().region_plan()
-			var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+			var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
 			var door_bodies: Array[EventPlan] = \
-					region_plan.door_bodies if region_plan else []
+					region_plan.door_plans() if region_plan else []
 			var blockers: Array[EventPlan] = []
 			for plan in RunCity.events(city).plans():
 				if not plan.is_placed() or plan in door_bodies:

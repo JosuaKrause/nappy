@@ -62,7 +62,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			var crowd_rng := RandomNumberGenerator.new()
 			crowd_rng.seed = hash("bodies-crowd:%d:%d" % [city_seed, day])
 			RunCity.crowd(city).start_day(day, crowd_rng, at)
-			RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+			RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 			var cars := _car_bodies(map, RunCity.events(city))
 			cars_seen += cars.size()
 			# The cars as an instance stands them are where the record put them: the middle of
