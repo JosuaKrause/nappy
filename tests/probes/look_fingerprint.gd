@@ -282,9 +282,9 @@ func _act(rig: Rig, tick: int) -> void:
 				instance.give_up_the_chase()
 		"boom":
 			if tick == SWITCH_ON_AT:
-				rig.gate.raised = true
+				rig.gate.set_boom_up(true)
 			elif tick == SWITCH_OFF_AT:
-				rig.gate.raised = false
+				rig.gate.set_boom_up(false)
 		"hand":
 			if tick == SWITCH_ON_AT:
 				instance.raise_its_guards_hand(true)

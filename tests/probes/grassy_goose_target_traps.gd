@@ -159,7 +159,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 			her += Vector2(0.0, Tuning.TILE_SIZE)
 		return [her]
 	var hut: EventPlan = null
-	for body in city.streets().region_plan().door_bodies:
+	for body in city.streets().region_plan().door_plans():
 		if body.detains_again() and body.placed_at().distance_to(her) < 0.5:
 			hut = body
 	if hut == null:
@@ -182,7 +182,7 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 	var plan := city.streets().region_plan()
 	if not plan:
 		return false
-	for body in plan.door_bodies:
+	for body in plan.door_plans():
 		if DoorLine.crossed_by(body.placed_at(), body.faces(), body.obstructs_within(),
 				start, her):
 			return true

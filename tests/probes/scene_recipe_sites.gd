@@ -21,7 +21,7 @@ func run(_t: TestRunner) -> void:
 		var corridor := Corridor.of(tree)
 		var doors := PackedVector2Array()
 		var calm := CalmAreas.of(map)
-		for body in regions.door_bodies:
+		for body in regions.door_plans():
 			doors.append(body.placed_at())
 			if body.row_id() == "checkpoint_hut":
 				print("GATE ", body.placed_at())

@@ -105,21 +105,21 @@ func _plan(map: CityMap, day: int, i: int) -> Array[EventPlan]:
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
 		map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-	for segment: StreetNetwork.Segment in region_plan.walls:
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-	for segment: StreetNetwork.Segment in region_plan.doors:
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var boundary := {}
-	for segment in region_plan.walls:
+	for segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		boundary[segment.key()] = true
-	for rect in region_plan.alley_walls:
+	for rect in region_plan.walled_alleys():
 		boundary[rect.position] = true
-	for rect in region_plan.alley_doors:
+	for rect in region_plan.door_alleys():
 		boundary[rect.position] = true
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
@@ -127,12 +127,12 @@ func _plan(map: CityMap, day: int, i: int) -> Array[EventPlan]:
 	for seal in seals:
 		seal.stand_as_a_seal()
 	var doors := PackedVector2Array()
-	for body in region_plan.door_bodies:
+	for body in region_plan.door_plans():
 		doors.append(body.placed_at())
 	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
-	standing.append_array(region_plan.wall_bodies)
-	for body in region_plan.wall_bodies:
+	standing.append_array(region_plan.wall_plans())
+	for body in region_plan.wall_plans():
 		body.stand_in_the_wall()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("placement_view_mix:%d:%d" % [i, day])
@@ -146,7 +146,7 @@ func _plan(map: CityMap, day: int, i: int) -> Array[EventPlan]:
 	for plan in standing:
 		if not all.has(plan):
 			all.append(plan)
-	for plan in region_plan.door_bodies:
+	for plan in region_plan.door_plans():
 		if not all.has(plan):
 			all.append(plan)
 	return all

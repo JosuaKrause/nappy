@@ -1619,7 +1619,8 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t: TestRunner, lane: Dicti
 	]
 	for case in cases:
 		var plan := RegionPlan.new()
-		plan.door_bodies.assign(case["huts"])
+		for hut: EventPlan in case["huts"]:
+			plan.add_door_plan(hut)
 		_city.streets().replace_region_plan(plan)
 		RunCity.crowd(_city).use_focus(null)
 		RunCity.crowd(_city).start_day(1, _rng(1), Vector2(lane["centre"], along), false)
@@ -1663,12 +1664,12 @@ func _check_a_gate_across_a_bucket_edge_holds_the_car(t: TestRunner, vertical: b
 	var edge := roundf(line / bucket) * bucket
 	var past_the_edge := edge + 8.0 * signf(edge - line)
 	var ahead := CarStrategy.braking_distance(car.speed()) + Tuning.CAR_STOP_LINE_SETBACK - 24.0
-	var gate := GateState.new()
-	gate.position = car.global_position + car.heading() * ahead
+	var at := car.global_position + car.heading() * ahead
 	if vertical:
-		gate.position.x = past_the_edge
+		at.x = past_the_edge
 	else:
-		gate.position.y = past_the_edge
+		at.y = past_the_edge
+	var gate := GateState.new(at)
 	t.check(floori(past_the_edge / bucket) != floori(line / bucket)
 			and absf(past_the_edge - line) < Crowd.GATE_LANE_TOLERANCE,
 			"%s: the gate stands in the next bucket over (%.0fpx from the car's line, tolerance %.0f)"
@@ -1975,8 +1976,8 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
 		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
-		if not city.streets().region_plan().doors.is_empty():
-			door = city.streets().region_plan().doors[0]
+		if not city.streets().region_plan().door_segments().is_empty():
+			door = city.streets().region_plan().door_segments()[0]
 			used_day = day
 			break
 	t.check(door != null, "a sampled day carries a region door for the crowd to cross")
@@ -1989,11 +1990,11 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
 	RunCity.crowd(city).use_focus(null)
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), mouth.get_center())
-	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 	RunCity.crowd(city).clear()
 	var vertical := not door.horizontal
 	var huts: Array[Vector2] = []
-	for body in city.streets().region_plan().door_bodies:
+	for body in city.streets().region_plan().door_plans():
 		if body.row().detains_for() <= 0.0 or not mouth.has_point(body.placed_at()):
 			continue
 		var across: float = body.placed_at().x if vertical else body.placed_at().y

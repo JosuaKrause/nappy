@@ -45,7 +45,7 @@ func run(_t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var doors := PackedVector2Array()
-			for body in plan.door_bodies:
+			for body in plan.door_plans():
 				doors.append(body.placed_at())
 
 			var before := _plan_day(map, day, tree, PackedVector2Array())

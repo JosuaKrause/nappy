@@ -139,7 +139,7 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 	var doors := PackedVector2Array()
 	var region_plan: RegionPlan = _city.streets().region_plan()
 	if region_plan:
-		for body in region_plan.door_bodies:
+		for body in region_plan.door_plans():
 			doors.append(body.placed_at())
 	return not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors,
 			EventCatalogue.mast().field_reach())
@@ -193,7 +193,8 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 				continue
 
 			var region_plan: RegionPlan = city.streets().region_plan()
-			var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+			var walled_alleys: Array[Rect2i] = \
+					region_plan.walled_alleys() if region_plan else []
 			var reachability := _day_reachability(city)
 			var grid: ReachabilityGrid = reachability[0]
 			var blocked: Dictionary = reachability[1]

@@ -173,7 +173,8 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		t.check(door_street != null and tree.is_on_the_tree(door_street.key()),
 				"seed %d day %d: the corridor reaches the door's street" % [map.city_seed(), day])
 		var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-		t.check(not (region_plan.doors.is_empty() and region_plan.alley_doors.is_empty()),
+		t.check(not (region_plan.door_segments().is_empty()
+				and region_plan.door_alleys().is_empty()),
 				"seed %d day %d: the wall has a door in it" % [map.city_seed(), day])
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
@@ -181,13 +182,13 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 				closure_rng, tree, region_plan)
 		map.close_streets(closures)
 		var boundary := {}
-		for segment in region_plan.walls:
+		for segment in region_plan.wall_segments():
 			boundary[segment.key()] = true
-		for segment in region_plan.doors:
+		for segment in region_plan.door_segments():
 			boundary[segment.key()] = true
-		for rect in region_plan.alley_walls:
+		for rect in region_plan.walled_alleys():
 			boundary[rect.position] = true
-		for rect in region_plan.alley_doors:
+		for rect in region_plan.door_alleys():
 			boundary[rect.position] = true
 		var seal_rng := RandomNumberGenerator.new()
 		seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
@@ -196,7 +197,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		var blocked := map.closed_tiles.duplicate()
 		for item in seals:
 			_add_circle(map, blocked, item.placed_at(), item.obstructs_within())
-		for item in region_plan.wall_bodies:
+		for item in region_plan.wall_plans():
 			_add_circle(map, blocked, item.placed_at(), item.obstructs_within())
 		var grid := ReachabilityGrid.build(map)
 		var door := map.rect_tiles(map.power_station_door_tiles())
@@ -206,13 +207,13 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 				% [map.city_seed(), day] + "%d closures in place" % closures.size())
 
 		var shut := blocked.duplicate()
-		for segment in region_plan.doors:
+		for segment in region_plan.door_segments():
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
 			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 			for tile in map.rect_tiles(segment.mouth_rect(at_a)):
 				shut[tile] = true
-		for rect in region_plan.alley_doors:
+		for rect in region_plan.door_alleys():
 			var vertical := rect.size.x < rect.size.y
 			for at_start: bool in [true, false]:
 				for tile in map.rect_tiles(SealPlanner.alley_mouth_rect(rect, vertical, at_start)):

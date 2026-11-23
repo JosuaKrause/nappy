@@ -544,7 +544,7 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 			return director.rider().global_position if director.rider() else Vector2.INF
 		ResistanceSteps.TargetKind.DOOR:
 			var nearest := Vector2.INF
-			for body in _city.streets().region_plan().door_bodies:
+			for body in _city.streets().region_plan().door_plans():
 				if body.detains_again() and (nearest == Vector2.INF or body.placed_at().distance_to(
 						director.contact_position()) < nearest.distance_to(director.contact_position())):
 					nearest = body.placed_at()

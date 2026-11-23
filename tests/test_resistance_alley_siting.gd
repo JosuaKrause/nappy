@@ -715,12 +715,12 @@ func _test_a_walled_alley_escapes_no_other_check(t: TestRunner) -> void:
 	var map := CityGenerator.generate(seed_value)
 	var tree := RouteTree.for_day(map, day)
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-	t.check(not region_plan.alley_walls.is_empty(),
+	t.check(not region_plan.walled_alleys().is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
 			% [seed_value, day])
 
 	var checked := 0
-	for rect in region_plan.alley_walls:
+	for rect in region_plan.walled_alleys():
 		for tile in map.rect_tiles(rect):
 			checked += 1
 			t.check(not map.is_closed(tile) and not map.is_held_at(tile) \
@@ -728,7 +728,7 @@ func _test_a_walled_alley_escapes_no_other_check(t: TestRunner) -> void:
 					("seed %d day %d: %s is inside a walled alley, and none of is_closed(), " +
 					"is_held_at() or is_on_home_block() catches it — that gap is the reported bug")
 					% [seed_value, day, tile])
-			t.check(map.is_in_walled_alley(tile, region_plan.alley_walls),
+			t.check(map.is_in_walled_alley(tile, region_plan.walled_alleys()),
 					"seed %d day %d: %s is refused by the check that closes the gap"
 					% [seed_value, day, tile])
 	t.check(checked > 0, "some walled-alley tile was actually checked (%d)" % checked)
@@ -754,7 +754,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t: TestRunner) 
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
 	city.start_day(closure_state, day, closure_rng)
-	var walled_alleys := city.streets().region_plan().alley_walls
+	var walled_alleys := city.streets().region_plan().walled_alleys()
 	t.check(not walled_alleys.is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
 			% [seed_value, day])
