@@ -220,8 +220,8 @@ func _the_days_plan_of_the_run(run_seed: int, day: int) -> Array[EventPlan]:
 ## **Two seeds, every day of a run.** The plan owes each unspent one-shot to her walk and spends
 ## nothing itself (`DawnOneShots`), so each day of a run is planned with nothing spent and the
 ## fourteen days are the unit: a sampled day cannot say "on at most one day". What it asserts is
-## true of every run rather than of the average, so a second city is there to keep it from being a
-## fact about one layout and a third would add nothing. The shared city's days are the suite's one
+## true of every run rather than of the average. One-shots are planned with no position, so the
+## layout never enters the answer; the second city's run is kept so its checks stay, not for its layout. The shared city's days are the suite's one
 ## plan of them; the second seed's city is generated once.
 func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 	var one_shots_seen := 0

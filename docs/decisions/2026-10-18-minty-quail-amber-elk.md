@@ -8,7 +8,7 @@ moved their day-planning cases here (the records minty-quail-gentle-bison and mi
 #1648 by a Sonnet agent.
 
 **What was built.** Every dawn the scheduler and placement suites plan on a city is handed that city's mast sites,
-worked out once on the city as built; the spacing suite plans on one city of its own; placement's six sweeps that asked
+worked out once on the city as built; the spacing suite plans on one city of its own; placement's four sweeps that asked
 for the same plan share one plan per seed and day, each read against its own repainted copy of the city, the
 scheduler's retried-day and taught-run cases share one plan of day 3 per seed; and the cases that planned a run of days
 the suite already held (the one-time events, the alley robbery, the calm areas left alone, the spread on a corner, the

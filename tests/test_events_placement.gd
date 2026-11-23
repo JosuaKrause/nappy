@@ -42,8 +42,9 @@ const STEP := 1.0 / 60.0
 ## the route tree the day grows, with the city's mast sites. The four sweeps that ask exactly this
 ## of a seed's city (the pacing row's sweep, the junctions, the route's own sidewalk and the
 ## pacing row's opening) read it, each against its own repainted copy of the city, and none writes
-## to a plan. The key is the seed, the day and how many segments the city has blocked (its absent
-## streets and today's closures), and the helper refuses a city with closed tiles: a case that
+## to a plan. The key is the seed and the day (the count of blocked segments it also holds is the
+## city's absent streets, the same every day); what keeps a changed map out is the helper's refusal
+## of a city with closed tiles: a case that
 ## closes streets or holds segments before it plans (held ground, the walked sidewalk) plans its
 ## own dawns, since the dawn's placement reads those and a plan made on another map state is
 ## another answer.
