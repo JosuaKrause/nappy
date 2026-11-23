@@ -52,13 +52,6 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
      `test_resistance_placement_kinds`), and the live event's phase, behaviours and
      day 13 guard suites read its `phase`: each reaches the phase the way the game does or is handed a fake event,
      as `event-interface.md`'s section 4.2 says under `phase`;
-6. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
-   through `GameDawn` (the scheduler's dawn, on generated maps) only to hand `EventDirector.start_day()`
-   its moments (`_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix`,
-   `_test_day_one_hands_out_two_dog_walkers_among_the_first_three`,
-   `_test_day_3s_lesson_is_first_and_a_bag_of_its_own`,
-   `_test_a_place_that_cannot_be_sited_holds_nothing_up`) are handed moments read once off a real plan,
-   committed as the mock (writing-tests: a realistic mock is made in two steps);
-7. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
+6. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
    fence round trip ends in the city map's repaint, to move to a map suite.
