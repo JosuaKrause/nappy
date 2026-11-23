@@ -317,7 +317,7 @@ func blocking_radius() -> float:
 	return maxf(_def.obstructs_within(), _def.core_within() if _def.ends_the_day() else 0.0)
 
 ## The points that bound this event — the corners of its route, or the one place it stands.
-func ends() -> PackedVector2Array:
+func _ends() -> PackedVector2Array:
 	return _path if _path.size() >= 2 else PackedVector2Array([body_at()])
 
 ## Distance from a point to the nearest part of this event — the point it stands at, or the
@@ -360,9 +360,9 @@ func gap_to(other: EventPlan) -> float:
 	if other._path.size() < 2:
 		return distance_from(other.body_at())
 	var gap := INF
-	for point in ends():
+	for point in _ends():
 		gap = minf(gap, other.distance_from(point))
-	for point in other.ends():
+	for point in other._ends():
 		gap = minf(gap, distance_from(point))
 	return gap
 
