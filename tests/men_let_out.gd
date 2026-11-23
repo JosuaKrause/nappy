@@ -6,7 +6,11 @@ extends RefCounted
 ## state), in the order the list holds them. A suite asks it of the manager the way the game's own
 ## classes find them, rather than of the vehicle, which answers only how many men it still owes.
 
-## Every man `vehicle` let out who is still in the world.
+## Every man `vehicle` let out who is still in the world. A man is matched to his vehicle by where
+## his trail starts, not by identity (nothing public answers which vehicle let him out), so it
+## stops the run when the start of a man's trail is at a door of a second vehicle too: the match
+## would be a guess, and a suite that stood two vehicles that close must say which man is whose
+## another way.
 static func of(events: EventManager, vehicle: EventInstance) -> Array[EventInstance]:
 	var men: Array[EventInstance] = []
 	if not is_instance_valid(vehicle):
@@ -14,6 +18,12 @@ static func of(events: EventManager, vehicle: EventInstance) -> Array[EventInsta
 	for instance in events.instances():
 		if instance != vehicle and instance.pursues() and _was_put_down_at_a_door_of(instance, vehicle):
 			men.append(instance)
+			for other in events.instances():
+				assert(other == vehicle or other == instance or other.pursues()
+						or not (other.drives() or other.hunts_for_her())
+						or not _was_put_down_at_a_door_of(instance, other),
+						"MenLetOut cannot tell which of two vehicles standing within each other's "
+						+ "door reach let a man out: the match is by where his trail starts")
 	return men
 
 ## The first of them, or null.
