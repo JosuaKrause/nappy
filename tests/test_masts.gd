@@ -34,10 +34,11 @@ func run(t: TestRunner) -> void:
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
 	_teardown()
 
-## Stands the masts of a day on the manager as the dawn plans them (`DawnMasts`), over what the manager held before: one loudspeaker
-## plan at each site's foot, known by the site's id, and on the curfew announcement's day a
-## `curfew_announce` plan beside each, the two a site carries. The manager's streaming takes them
-## as it takes a day's, and the dawn's own choice of them is `test_events_scheduler.gd`'s.
+## Stands the masts of a day on the manager as the dawn plans them (`DawnMasts`), in place of
+## whatever day the manager held (it is cleared first): one loudspeaker plan at each site's foot,
+## known by the site's id, and on the curfew announcement's day a `curfew_announce` plan beside
+## each, the two a site carries. The manager's streaming takes them as it takes a day's, and the
+## dawn's own choice of them is `test_events_scheduler.gd`'s.
 func _start(with_the_announcement := false) -> void:
 	_manager.clear()
 	var loudspeaker := EventCatalogue.mast()
@@ -256,10 +257,8 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> 
 	_start(true)
 	for site in _sites():
 		_manager.stream_around(site.foot())
-	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `DawnMasts` skips a
-	# site whose tile is today's own closure, region wall or checkpoint ground rather than
-	# planting on top of it (`tests/test_events.gd`,
-	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.
+	# Today's own count of *standing* masts, read off the plans: the hand-built day stands one at
+	# every site.
 	var standing_ids := {}
 	for plan in _manager.plans():
 		if plan.mast_id() != "":

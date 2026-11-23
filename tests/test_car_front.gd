@@ -53,8 +53,8 @@ func _rng() -> RandomNumberGenerator:
 	rng.seed = hash("car-front:%d" % SEED)
 	return rng
 
-func _test_the_rear_half_is_safe_and_the_front_half_is_not(t: TestRunner, crowd: Crowd, map: CityMap,
-		street: Vector2i, lane: int) -> void:
+func _test_the_rear_half_is_safe_and_the_front_half_is_not(t: TestRunner, crowd: Crowd,
+		map: CityMap, street: Vector2i, lane: int) -> void:
 	var car := _a_car(crowd, map, street, lane, Tuning.CAR_SPEED.x)
 	var forward := car.heading()
 	var side := Vector2(-forward.y, forward.x)
@@ -97,7 +97,8 @@ func _test_a_car_pulling_away_from_a_stand_does_not_end_the_day(t: TestRunner) -
 
 ## A stroller on the carriageway `gap` px ahead of `car`, the crowd's own physics frames passing for
 ## `seconds`, reports whether the day ended in that time.
-func _the_day_ends_with_her_ahead(t: TestRunner, crowd: Crowd, car: CrowdAgent, gap: float, seconds: float) -> bool:
+func _the_day_ends_with_her_ahead(t: TestRunner, crowd: Crowd, car: CrowdAgent, gap: float,
+		seconds: float) -> bool:
 	var her := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -117,16 +118,17 @@ func _the_day_ends_with_her_ahead(t: TestRunner, crowd: Crowd, car: CrowdAgent, 
 	her.free()
 	return _fails.has("car_strike")
 
-func _test_a_car_driving_at_her_still_does(t: TestRunner, crowd: Crowd, map: CityMap, street: Vector2i,
-		lane: int) -> void:
+func _test_a_car_driving_at_her_still_does(t: TestRunner, crowd: Crowd, map: CityMap,
+		street: Vector2i, lane: int) -> void:
 	var car := _a_car(crowd, map, street, lane, Tuning.CAR_SPEED.x)
 	var ended: bool = await _the_day_ends_with_her_ahead(t, crowd, car, 120.0, 2.0)
 	t.check(ended, "a car driving at her still ends the day")
 
-func _test_a_car_driving_away_from_her_does_not(t: TestRunner, crowd: Crowd, map: CityMap, street: Vector2i,
-		lane: int) -> void:
+func _test_a_car_driving_away_from_her_does_not(t: TestRunner, crowd: Crowd, map: CityMap,
+		street: Vector2i, lane: int) -> void:
 	var car := _a_car(crowd, map, street, lane, Tuning.CAR_SPEED.x)
-	var ended: bool = await _the_day_ends_with_her_ahead(t, crowd, car, -(Tuning.CAR_STRIKE_HALF_LENGTH - 4.0), 2.0)
+	var ended: bool = await _the_day_ends_with_her_ahead(t, crowd, car,
+			-(Tuning.CAR_STRIKE_HALF_LENGTH - 4.0), 2.0)
 	t.check(not ended, "a car driving away from her, who stands just behind it, never ends the day")
 
 func _test_a_fast_car_is_foreseen(t: TestRunner, crowd: Crowd, map: CityMap, street: Vector2i,

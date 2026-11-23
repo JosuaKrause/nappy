@@ -717,10 +717,15 @@ func _walled_map(buildings: Array[Vector2i], width := 12, height := 12) -> CityM
 		map.set_tile(tile, GameEnums.TileType.BUILDING)
 	return map
 
-func _wall_columns(first: int, count: int, height: int) -> Array[Vector2i]:
+## A `width`×`height` map of sidewalk with nothing built on it.
+func _open_map(width := 12, height := 12) -> CityMap:
+	return _walled_map([], width, height)
+
+## The tiles of `rect`, to be built on.
+func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in height:
-		for x in range(first, first + count):
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
 			found.append(Vector2i(x, y))
 	return found
 
@@ -739,8 +744,8 @@ func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("busker")
 	var her := Vector2(240.0, 176.0)
 	var at := Vector2(112.0, 176.0)
-	var walled := _walled_map(_wall_columns(5, 2, 12))
-	var open := _walled_map([])
+	var walled := _walled_map(_rect_tiles(Rect2i(5, 0, 2, 12)))
+	var open := _open_map()
 	var behind := _musician(def, at, walled)
 	var beside := _musician(def, at, open)
 	t.check(beside.source().contribution_at(her) > 0.0,
@@ -757,8 +762,8 @@ func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
 ## from him, and the same walk in the open does.
 func _test_an_event_expects_nothing_from_behind_a_wall(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("busker")
-	var walled := _walled_map(_wall_columns_across(4, 2, 24), 24, 12)
-	var open := _walled_map([], 24, 12)
+	var walled := _walled_map(_rect_tiles(Rect2i(0, 4, 24, 2)), 24, 12)
+	var open := _open_map(24, 12)
 	var at := Vector2(400.0, 80.0)
 	var her := Vector2(240.0, 208.0)
 	var walk := Vector2(Tuning.WALK_SPEED, 0.0)
@@ -773,10 +778,3 @@ func _test_an_event_expects_nothing_from_behind_a_wall(t: TestRunner) -> void:
 			t.check(expected > 0.0, "the same walk in the open expects something (%.2f)"
 					% expected)
 		musician.free()
-
-func _wall_columns_across(first_row: int, rows: int, width: int) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for y in range(first_row, first_row + rows):
-		for x in width:
-			found.append(Vector2i(x, y))
-	return found

@@ -593,7 +593,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 ## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
 ## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
 func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var hot := _hot_roadblock()
 	t.check(hot.pursuit().warns_for() >= Tuning.OFFSCREEN_WARNING_MIN,
 			"the hunting guard warns for %.1fs before he charges" % hot.pursuit().warns_for())
 	var post := Vector2(400.0, 0.0)

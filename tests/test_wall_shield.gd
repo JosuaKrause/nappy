@@ -339,12 +339,10 @@ func _a_car(t: TestRunner, map: CityMap, at: Vector2) -> CrowdAgent:
 	return car
 
 ## The caret projects both bodies forward. The wall is asked where they will be, not at the
-## translated point: her walking down a street with a long building between her and a musician
-## expects nothing from him, and the same walk in the open does; a car driving down the far side
-## of the building expects nothing from her standing still, and in the open it does. And a car
-## about to come out past the building's end expects what it will land once it is out — which the
-## line from where the car stands now to her translated place, still across the building, would
-## answer as nothing.
+## translated point: a car driving down the far side of a long building expects nothing from her
+## standing still, and in the open it does. And a car about to come out past the building's end
+## expects what it will land once it is out — which the line from where the car stands now to her
+## translated place, still across the building, would answer as nothing.
 func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t: TestRunner) -> void:
 	var walled := _map_with(_rect_tiles(Rect2i(0, 4, 24, 2)), 24, 12)
 	var open := _map_with([], 24, 12)
