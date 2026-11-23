@@ -26,10 +26,11 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
-`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 5, 7 and 8 have had their
+`booted_main` and `build_day`/`start_day`/`begin_day` first. Every entry has had its
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
--curly-hawk, -merry-goose and -dotted-pelican), and what each lists is what is left of it; entry 6 is row 5 of
-`event-interface.md`, after its row 4b; entry 7 lists what is left of its pass:
+-curly-hawk, -merry-goose and -dotted-pelican; for entry 6, row 5 of `event-interface.md`, the records
+2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
+-speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog and -spry-moose), and what each lists is what is left of it:
 
 1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
@@ -46,7 +47,20 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
    for a city; `test_wall_shield`'s fields layer cases keep a real street musician for the debug view,
    to move with the debug view's own suite pass;
 6. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
-   `protest`, the day 6, 7 and 13 suites);
+   `protest`, the day 6, 7 and 13 suites):
+   - `test_events_scenery` extends `events_shared_city.gd` for one case, `_test_a_flock_is_a_place_she_can_see`,
+     which asks what the scheduler plans over the shared city's days: a question of the dawn, to move to the
+     scheduler's suite, after which the suite builds no city;
+   - `test_events_scheduler` and `test_events_placement` plan whole days on generated cities, each case with its
+     reason under "Why these cases keep generated cities", but a header sentence of each says the cases are "not
+     converted to stand-ins yet" and are built "until the dawn group converts them to mocked moments", which the
+     dawn's pass decided against (the record 2026-10-18-minty-quail-amber-elk): the two sentences are corrected with
+     the next change to either suite;
+   - six suites call `EventInstance.transition()` to put a live event in a phase that sets a check up
+     (`test_event_moves`, `test_event_route_lines`, `test_prediction_reuse`, `test_scenery_animation`,
+     `test_resistance_replacement` and `test_resistance_placement_kinds`), and the live event's phase, behaviours and
+     day 13 guard suites read its `phase`: each reaches the phase the way the game does or is handed a fake event,
+     as `event-interface.md`'s section 4.2 says under `phase`;
 7. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
    through `GameDawn` (the scheduler's dawn, on generated maps) only to hand `EventDirector.start_day()`
    its moments (`_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix`,
