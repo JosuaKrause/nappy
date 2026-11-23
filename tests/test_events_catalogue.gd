@@ -1,14 +1,17 @@
 extends RefCounted
 ## The catalogue's own fairness contract: the physical and visual shape every row keeps regardless
 ## of where the scheduler places it -- the geometry a `spread` body draws at, that it fits the
-## ground it stands on (a `SIDEWALK` band or a carriageway tile), that it rotates to the street it
-## is on, that a crash is solid only where its cars actually are, and that no two rows share a
-## picture or a silhouette a badge could draw.
+## ground it stands on (a `SIDEWALK` band or a carriageway tile), that a crash is two cars solid
+## inside the street it closes, and that no two rows share a picture or a silhouette a badge could
+## draw.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again" -- this half is the
-## catalogue's own static contract, checked on the rows as they are: no node, no live event and no
-## city is built, and a case that needs one is `tests/test_event_phase.gd`'s or
-## `tests/test_event_views.gd`'s.
+## catalogue's own static contract, checked on the rows as they are: no node, no live event, no
+## generated city and no planned day is built. The one map built is a bare `CityMap` with a street
+## drawn on it (the roadblock's width). A case that needs a live event is
+## `tests/test_event_phase.gd`'s or `tests/test_event_views.gd`'s, how a body stands and lies on its
+## street is `tests/test_body_stance.gd`'s, and what a planned day places is
+## `tests/test_events_placement.gd`'s.
 ##
 ## *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's
 ## first row is that **the entity itself carries most of it**, and the catalogue had been quietly
@@ -17,7 +20,6 @@ extends RefCounted
 
 func run(t: TestRunner) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
-	_test_where_a_body_stands_is_read_from_one_place(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
 	_test_a_one_shot_is_sited_on_her_way(t)
@@ -32,16 +34,13 @@ func run(t: TestRunner) -> void:
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_roadblock_covers_its_own_sidewalk_and_the_road(t)
-	_test_a_spread_rotates_with_the_street(t)
-	_test_stationary_vehicles_face_their_street(t)
-	_test_a_spread_never_lands_on_a_corner(t)
+	_test_stationary_vehicles_have_a_side_and_an_end_picture(t)
 	_test_a_wide_scene_faces_its_street(t)
-	_test_a_crash_is_solid_only_where_its_cars_are(t)
+	_test_a_crash_is_two_cars_solid_inside_the_street_it_closes(t)
 	_test_every_other_row_is_one_body(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t)
-
 
 ## The rows whose picture is drawn on the building they stand against rather than on the sidewalk
 ## they are sited on: the fire on its facade (`FireLook._draw_fire()`), and the burnt building
@@ -145,49 +144,6 @@ func _find_deep_copies(folder: String, into: Array[String]) -> void:
 	for sub in DirAccess.get_directories_at(folder):
 		_find_deep_copies("%s/%s" % [folder, sub], into)
 
-## **Where a body stands once built is `BodyStance.of()`'s one answer**, which a body
-## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a
-## stationary solid row the pavement does not pin is stood on the middle of its band; on a
-## carriageway lane, a row that spans the street is stood on the kerb beside it; a mobile row, a
-## pinned one or one with no body where it is put.
-func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
-	var map := CityGenerator.generate(4242)
-	var lane := Vector2i(-1, -1)
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			if lane == Vector2i(-1, -1) and map.pavement_inward(tile) != Vector2i.ZERO:
-				lane = tile
-	t.check(lane != Vector2i(-1, -1), "the city has a pavement lane to stand a body on")
-	var at := map.tile_to_world(lane)
-	var solid_unpinned := 0
-	for def in EventCatalogue.all():
-		var stands := BodyStance.of(map, def, at, Vector2.RIGHT).center()
-		var is_centred := def.stands_on_its_band_middle()
-		if is_centred:
-			solid_unpinned += 1
-		t.check((stands != at) == is_centred,
-				"%s stands %s" % [def.id(), "on the middle of its band, off its lane" if is_centred else "where it is put"])
-	t.check(solid_unpinned > 0, "the catalogue has a stationary solid row the pavement does not pin")
-	var road := Vector2i(-1, -1)
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			if road == Vector2i(-1, -1) and map.tile_at(tile) == GameEnums.TileType.ROAD \
-					and CityMap.kerb_beside(map.tile_to_world(tile)) != map.tile_to_world(tile):
-				road = tile
-	t.check(road != Vector2i(-1, -1), "the city has a carriageway lane beside a kerb")
-	var on_the_road := map.tile_to_world(road)
-	var at_the_kerb := 0
-	for def in EventCatalogue.all():
-		var stands := BodyStance.of(map, def, on_the_road, Vector2.RIGHT).center()
-		var kerbed := def.stands_at_its_kerb()
-		if kerbed:
-			at_the_kerb += 1
-		t.check(stands == (CityMap.kerb_beside(on_the_road) if kerbed else on_the_road),
-				"%s stands %s" % [def.id(), "on the kerb beside its lane" if kerbed else "where it is put on the road"])
-	t.check(at_the_kerb > 0, "the catalogue has a row that spans the street and stands at its kerb")
-
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside
 ## one of. `BodyStance._centred_on_the_pavement_band()` moves a stationary, unpinned
@@ -214,36 +170,16 @@ const _KERB_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 ## route a day plans rather than on one she can be sent to walk through.
 ##
 ## Not "the intensity is 19.5", which would be the catalogue read back to itself: what would tell
-## you something is that the row changed role.
+## you something is that the row changed role, which is asked of the row's own cost and size
+## (`EventScheduler.role_for()`), the role a day's placement gives it.
 func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
 	var day := def.own_first_day()
-	var map := CityGenerator.generate(4242)
-	var state := CityState.new()
-	state.begin_day(map.plans_by_block(), day)
-	map.repaint(state)
-	var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day)))
+	var role := EventScheduler.role_for(def.for_day(day), day)
 	t.check(role == GameEnums.BlockerRole.FRICTION,
 			"a protest is placed as friction, so the day may put one on a route she walks (%.1f against "
 			% def.walk_through_cost() + "the %.1f that makes a wall; placed as role %d)"
 			% [EventScheduler.WALL_WORTH_OF_COST, role])
-
-## The role the scheduler gives `def` on `day`, read off the placement it makes on the first tile of
-## the ground it offers that takes the row (`EventScheduler.recipe_placement()`, which the scene
-## recipes call and which judges the candidate as the day's fill does): the role the plan carries.
-## `-1` when no tile of that ground takes the row, or the day does not place it.
-func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corridor) -> int:
-	var no_doors := PackedVector2Array()
-	var calm := CalmAreas.of(map)
-	var nothing_down: Array[EventPlan] = []
-	var locations := DayLocations.lay_out(map, corridor)
-	for tile in EventScheduler.row_ground(map).tiles_for(def.for_day(day)):
-		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
-				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, nothing_down,
-				locations)
-		if plan:
-			return plan.role()
-	return -1
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
@@ -506,7 +442,8 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 ## **The kerb exception must not silently regress.** `delivery_van` and `ice_cream_van` are
 ## `pavement_side == AT_THE_KERB` on purpose — `EventCatalogue`'s own docstring is "a parked van
 ## belongs at the kerb" — so `_centred_on_the_pavement_band()` must leave them flush against it
-## rather than re-centring them onto the pavement band the way `construction` is. A kerb-parked
+## rather than re-centring them onto the pavement band the way `construction` is (where each stands
+## is `tests/test_body_stance.gd`'s). A kerb-parked
 ## `VEHICLE_BODY` (44px across) still has to leave a gap to the frontage narrower than the pram, or
 ## the row stops being an obstacle: `docs/EVENTS.md`'s `delivery_van` row reads that placement as
 ## "a **wall** by physical fit", and the gap is the exact shape of "no line to walk."
@@ -519,27 +456,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 			% [EventCatalogue.VEHICLE_BODY, frontage_gap]
 			+ "%.0fpx pram" % (Tuning.PLAYER_BODY_RADIUS * 2.0))
 
-	var map := CityMap.new()
-	# The kerb lane of a north-south street's near-start pavement pair — offset `SIDEWALK_WIDTH - 1`
-	# is the tile whose road-side neighbour is the carriageway.
-	var kerb_tile := Vector2i(Tuning.SIDEWALK_WIDTH - 1, Tuning.STREET_WIDTH + 3)
-	map.set_tile(kerb_tile, GameEnums.TileType.SIDEWALK)
-
-	var van := EventCatalogue.by_id("delivery_van")
-	var parked := BodyStance.of(map, van, map.tile_to_world(kerb_tile), Vector2.RIGHT)
-	t.check(parked.center().is_equal_approx(map.tile_to_world(kerb_tile)),
-			"'delivery_van' (AT_THE_KERB) is left exactly where it was placed, not re-centred")
-
-	# The exemption is meaningful, not a no-op: an ANY-`pavement_side` body sited on the very same
-	# tile does get moved, onto the middle of the two-lane band — half a tile from the tile centre,
-	# in the direction `CityMap.pavement_inward()` already answers for this lane.
 	var barrier := EventCatalogue.by_id("construction")
-	var centred := BodyStance.of(map, barrier, map.tile_to_world(kerb_tile), Vector2.RIGHT)
-	var band_centre := map.tile_to_world(kerb_tile) \
-			+ Vector2(map.pavement_inward(kerb_tile)) * (Tuning.TILE_SIZE * 0.5)
-	t.check(centred.center().is_equal_approx(band_centre),
-			"'construction' (pavement_side ANY) is re-centred onto the pavement band")
-
 	# And the payoff, stated as the arithmetic that decides it rather than as a distance: with
 	# `construction` centred on the band, no point on the pavement is far enough from it to clear
 	# `obstructs_within() + PLAYER_BODY_RADIUS` — the pram cannot pass on either lane, which is what
@@ -607,74 +524,10 @@ func _solid_across(shape: GroundShape, stands: Vector2, axis: Vector2, placed: V
 	var spine := Vector2(local.dot(axis), local.dot(axis.orthogonal()))
 	return shape.distance_to_spine(spine) <= shape.rounding_radius()
 
-## **A spread's rotation is a property of the street it stands on.** Playtest 13 and 19 both report
-## it from play: *"they're always horizontal even when they should be vertical."* A tile whose `x`
-## sits inside a corridor band and whose `y` does not is on a north-south street, where the default
-## lay (along local X) already blocks the traffic; a tile whose `y` is inside a band and `x` is not
-## is on an east-west street, where the spread has to rotate onto local Y to block anything at all.
-## A bare `CityMap.new()` needs no generation for this — `corridor_offset` is arithmetic over
-## `Tuning`'s constants alone.
-func _test_a_spread_rotates_with_the_street(t: TestRunner) -> void:
-	var map := CityMap.new()
-
-	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
-	t.check(CityMap.corridor_offset(ns_tile.x) >= 0 and CityMap.corridor_offset(ns_tile.y) < 0,
-			"tile %s sits on a north-south street" % ns_tile)
-	t.check(not _runs_vertically_at(map, map.tile_to_world(ns_tile)),
-			"a north-south street keeps the spread's default lay along local X")
-
-	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
-	t.check(CityMap.corridor_offset(ew_tile.y) >= 0 and CityMap.corridor_offset(ew_tile.x) < 0,
-			"tile %s sits on an east-west street" % ew_tile)
-	t.check(_runs_vertically_at(map, map.tile_to_world(ew_tile)),
-			"an east-west street rotates the spread onto local Y")
-
-	# A junction belongs to both corridors at once, and ground off any corridor belongs to
-	# neither — neither has one street to lie across, so both keep the default lay.
-	var junction_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH / 2)
-	t.check(CityMap.corridor_offset(junction_tile.x) >= 0
-			and CityMap.corridor_offset(junction_tile.y) >= 0,
-			"tile %s is a junction, on both corridors at once" % junction_tile)
-	t.check(not _runs_vertically_at(map, map.tile_to_world(junction_tile)),
-			"a junction has no single street to be wrong about")
-
-	var block_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH + 3)
-	t.check(CityMap.corridor_offset(block_tile.x) < 0 and CityMap.corridor_offset(block_tile.y) < 0,
-			"tile %s is off any corridor — a square, a park, a courtyard" % block_tile)
-	t.check(not _runs_vertically_at(map, map.tile_to_world(block_tile)),
-			"ground that was never a street keeps the default lay too")
-
-	t.check(not _runs_vertically_at(WorldMap.open_ground(), Vector2.ZERO),
-			"a data-level rig on open ground gets the unrotated default")
-
-## Whether a spread row set up at `at` on `map` lies down the screen (`BodyStance.lies_vertically()`,
-## which a live event's looks draw and lay their slices by), decided once from the street it stands on.
-func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
-	return BodyStance.of(map, EventCatalogue.by_id("construction"), at, Vector2.RIGHT) \
-			.lies_vertically()
-
-## How the row `id` stands on `map` when it is built at `at` facing right.
-func _stance_of(id: String, map: WorldMap, at: Vector2) -> BodyStance:
-	return BodyStance.of(map, EventCatalogue.by_id(id), at, Vector2.RIGHT)
-
-## Stationary seal vehicles use the street axis even though their default facing is right. The van
-## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
-## while end art keeps the narrower projection instead of stretching into a square.
-func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
-	var map := CityMap.new()
-	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
-	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
-	t.check(not _stance_of("moving_van", map, map.tile_to_world(ns_tile)).stands_side_on(),
-			"a moving van on a north-south street uses its end view")
-	t.check(_stance_of("moving_van", map, map.tile_to_world(ew_tile)).stands_side_on(),
-			"a moving van on an east-west street uses its side view")
-	t.check(_stance_of("burnt_out_car", map, map.tile_to_world(ns_tile)).stands_side_on(),
-			"a burnt car across a north-south street uses its side view")
-	t.check(not _stance_of("burnt_out_car", map, map.tile_to_world(ew_tile)).stands_side_on(),
-			"a burnt car across an east-west street uses its end view")
-	t.check(_stance_of("moving_van", WorldMap.open_ground(), Vector2.ZERO).stands_side_on(),
-			"off-street or data-level placement follows the vehicle's own default facing")
-
+## Stationary seal vehicles have a side picture and an end picture of their own. Side art fits the
+## circular body's diameter, while end art keeps the narrower projection instead of stretching into
+## a square. Which of the two a vehicle shows on its street is `tests/test_body_stance.gd`'s.
+func _test_stationary_vehicles_have_a_side_and_an_end_picture(t: TestRunner) -> void:
 	var vehicle_looks: Array[EventDef.Look] = [
 		EventDef.Look.MOVING_VAN,
 		EventDef.Look.BURNT_OUT_CAR,
@@ -694,37 +547,6 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 		t.check(end_extent.is_equal_approx(EventPictures.native_size(end))
 				and end_extent.x < side_extent.x,
 				"'%s' end view keeps its narrower authored projection" % def.id())
-
-## **A spread never lands on a corner.** `RowGround._is_a_corner()` refuses any tile whose two
-## coordinates are both inside a corridor band to a row whose body `BodySpec.as_a_spread()` names — see
-## `docs/DECISIONS.md`, "a spread on a corner is placed as if the corner were nothing": such a tile
-## has no single street for `BodyStance.lies_vertically_at()` or `BodyStance._centred_on_the_pavement_band()` to answer about.
-## Walked over the **planned** placements of several seeds and every day of a run, rather than over
-## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
-## are two different bugs.
-## **One seed, all fourteen days.** The refusal is a filter on the candidate pool rather than
-## anything about a layout, so what a second city adds is more draws from the same rule — and a
-## day's worth of draws is already hundreds. The days stay whole because a run is what carries the
-## `consumed` set forward, which is what makes a later day's pool different from an earlier one's.
-func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
-	var checked := 0
-	for run_seed: int in [4242]:
-		var map := CityGenerator.generate(run_seed)
-		var consumed: Array[String] = []
-		for day in range(1, 15):
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements():
-				if not plan.is_placed() or not plan.row().lies_as_a_spread():
-					continue
-				checked += 1
-				var tile := map.world_to_tile(plan.placed_at())
-				var on_corner := CityMap.corridor_offset(tile.x) >= 0 \
-						and CityMap.corridor_offset(tile.y) >= 0
-				t.check(not on_corner,
-						"seed %d day %d: '%s' at tile %s is not on a corner"
-						% [run_seed, day, plan.row_id(), tile])
-	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
 
 ## **A whole-scene hard seal has to use a distinct authored picture on either axis.**
 ## `EventPictures.wide_scene_texture` is the pure selector this pins: on an east-west street
@@ -761,78 +583,17 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 			EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, false)).is_empty(),
 			"a continuous fallen tree keeps the generic wide-scene shadow")
 
-## **A crash is solid only where the cars are.** *(2026-09-12: "a car crash right now has a full
-## bounding box even though there are gaps in the sprite. the bounding box should only be the
-## crashed cars".)*
-##
-## Stated as what the player asked for rather than as the offsets themselves: a body at the two
-## cars leaves a lane she can walk on each pavement and holds the middle of the road, and a body
-## spanning the street leaves neither. The offsets those lanes fall out of are read off the two
-## pictures (`EventCatalogue._car_accident_parts`) and checked by eye with the bounding-box layer
-## (`--layers 3`); what this holds is the thing that would be wrong if they drifted. The pieces are
-## the ones its stance lays out on the street (`BodyStance.pieces()`); that a live crash registers
-## a collision shape per car is `tests/test_event_phase.gd`'s.
-func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
-	var map := CityMap.new()
+## **A crash is two cars, solid to less than the street it closes.** *(2026-09-12: "a car crash
+## right now has a full bounding box even though there are gaps in the sprite. the bounding box
+## should only be the crashed cars".)* Where its cars stand on a street, and the lanes that leaves
+## her, is `tests/test_body_stance.gd`'s; that a live crash registers a collision shape per car is
+## `tests/test_event_phase.gd`'s.
+func _test_a_crash_is_two_cars_solid_inside_the_street_it_closes(t: TestRunner) -> void:
 	var crash := EventCatalogue.by_id("car_accident")
 	t.check(crash.body().declared_pieces().size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_within(),
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
 			% [crash.solid_reach(), crash.obstructs_within()])
-
-	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
-	for vertical: bool in [false, true]:
-		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
-				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
-		var stance := BodyStance.of(map, crash, map.tile_to_world(tile), Vector2.RIGHT)
-		var street := "east-west" if vertical else "north-south"
-		t.check(stance.pieces().size() == 2,
-				"on a %s street the crash stands one piece per car (%d)"
-				% [street, stance.pieces().size()])
-
-		var half: float = crash.obstructs_within()
-		var offsets := _lateral_offsets(stance)
-		for offset in offsets:
-			t.check(absf(offset) < carriageway,
-					"a wrecked car sits on the carriageway, not on a %s pavement (%.1fpx of %.0f)"
-					% [street, offset, carriageway])
-		t.check(_walkable_lane_beside(stance, half, -1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
-				"a %s crash leaves her a lane on one side (%.0fpx)"
-				% [street, _walkable_lane_beside(stance, half, -1.0)])
-		t.check(_walkable_lane_beside(stance, half, 1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
-				"and one on the other (%.0fpx)" % _walkable_lane_beside(stance, half, 1.0))
-		t.check(_is_blocked_at(stance, 0.0),
-				"while the middle of the road, where the cars are, is still shut on a %s street"
-				% street)
-
-## Where each of a stance's solid pieces sits along its own spread axis, in px from the scene's
-## centre.
-func _lateral_offsets(stance: BodyStance) -> PackedFloat32Array:
-	var found := PackedFloat32Array()
-	for piece in stance.pieces():
-		var offset := piece.center() - stance.center()
-		found.append(offset.y if stance.lies_vertically() else offset.x)
-	return found
-
-## Whether her centre may stand at `offset` along the spread axis — clear of every piece by her own
-## body radius.
-func _is_blocked_at(stance: BodyStance, offset: float) -> bool:
-	for piece in stance.pieces():
-		var delta := piece.center() - stance.center()
-		var along: float = delta.y if stance.lies_vertically() else delta.x
-		if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
-			return true
-	return false
-
-## How much walkable width the crash leaves on one side of itself (`side` −1 or +1), measured from
-## the far edge of the scene inward to the first body she cannot pass.
-func _walkable_lane_beside(stance: BodyStance, half: float, side: float) -> float:
-	var width := 0.0
-	var offset := side * (half - Tuning.PLAYER_BODY_RADIUS)
-	while absf(offset) <= half and not _is_blocked_at(stance, offset):
-		width += 1.0
-		offset -= side
-	return width
 
 ## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
 func _test_every_other_row_is_one_body(t: TestRunner) -> void:

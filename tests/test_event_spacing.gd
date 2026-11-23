@@ -1,11 +1,14 @@
-extends RefCounted
-## Focused checks for the scheduler's route-to-route spacing arithmetic.
+extends "res://tests/events_shared_city.gd"
+## Focused checks for the scheduler's route-to-route spacing arithmetic, and that no two events of a
+## planned day are drawn inside each other (the planned day is the shared city's, from
+## `events_shared_city.gd`).
 
 func run(t: TestRunner) -> void:
 	_test_stationary_pairs(t)
 	_test_one_stationary_side(t)
 	_test_one_point_paths_are_stationary(t)
 	_test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t)
+	_test_no_two_events_are_drawn_inside_each_other(t)
 
 func _plan(at: Vector2, path := PackedVector2Array()) -> EventPlan:
 	return EventPlan.new(EventCatalogue.by_id("busker"), at, path)
@@ -61,3 +64,28 @@ func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t: Te
 					"stationary ordered pair %d matches the symmetric result" % compared)
 	t.check(compared > 0,
 			"the stationary oracle covered both orders and the duplicate zero-length segment")
+
+## **No two events are drawn inside each other**: every two placed events of a day stand at
+## least `EventScheduler.EVENT_SPACING_ANY` apart, the one spacing no placement bends. Two of a
+## kind may stand closer than `EVENT_SPACING_SAME` where two touching units each drew one; that a
+## unit draws one of a row is `tests/test_events_scheduler.gd`'s.
+func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
+	var pairs := 0
+	for day: int in [1, 8, 14]:
+		var planned := _planned(day)
+		for i in planned.size():
+			for j in range(i + 1, planned.size()):
+				var a: EventPlan = planned[i]
+				var b: EventPlan = planned[j]
+				if not a.is_placed() or not b.is_placed():
+					continue
+				if a.is_ambient():
+					continue
+				if b.is_ambient():
+					continue
+				var gap := a.placed_at().distance_to(b.placed_at())
+				pairs += 1
+				t.check(gap >= EventScheduler.EVENT_SPACING_ANY - 0.5,
+						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
+						% [day, a.row_id(), b.row_id(), gap])
+	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)

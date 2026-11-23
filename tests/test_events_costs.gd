@@ -1,15 +1,13 @@
-extends "res://tests/events_shared_city.gd"
-## What a street actually costs her: running is the answer to exactly the one kind of thing that
-## follows her and nothing else, nothing is cheaper to walk through than around it, the pavement
-## can be blocked from day one, a day has enough in it to meet, danger arrives on schedule, the
-## named decisions arrive, no two events are drawn inside each other,
-## nothing happens inside a lethal field, a pursuer keeps no field clear, and the city remembers
-## where she has already walked.
+extends RefCounted
+## What a street actually costs her, asked of the rows: running is the answer to exactly the one kind
+## of thing that follows her and nothing else, nothing is cheaper to walk through than around it,
+## the pavement can be blocked from day one, and a pursuer keeps no field clear. A row and a plan are
+## built as they are and nothing else is: no city, no live event, no day planned.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split out
 ## of a combined `test_events_scheduler.gd` once that file measured close to the two-minute budget
-## on its own -- `test_events_scheduler.gd` keeps the scheduler's determinism and safety rules,
-## which share nothing but the inherited `_map()`/`_planned()` with this half.
+## on its own -- `test_events_scheduler.gd` keeps the scheduler's determinism and safety rules and
+## what a planned day holds (its density, its danger, the named decisions, the city's memory).
 
 const STEP := 1.0 / 60.0
 
@@ -19,13 +17,7 @@ func run(t: TestRunner) -> void:
 	_test_nothing_chases_her_before_the_run_is_taught(t)
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
 	_test_the_pavement_can_be_blocked_from_day_one(t)
-	_test_a_day_has_enough_in_it_to_meet(t)
-	_test_danger_arrives_before_act_three(t)
-	_test_the_named_decisions_arrive(t)
-	_test_no_two_events_are_drawn_inside_each_other(t)
 	_test_a_pursuer_keeps_no_field_clear(t)
-	_test_the_city_remembers_where_she_went(t)
-
 
 ## Events that are deliberately scenery: they are there so the street *looks* different, not
 ## so it costs something. Everything else has to cost something to walk through — an obstacle
@@ -112,24 +104,6 @@ func _cost_to_run_through(def: EventDef) -> float:
 	var mean := def.walk_through_cost() / (def.heard_within() * 2.0 / Tuning.WALK_SPEED) \
 			+ Tuning.EXCITEMENT_DECAY_WALKING
 	return (mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING) * seconds
-
-func _signature(planned: Array[EventPlan]) -> String:
-	var parts: Array[String] = []
-	for plan in planned:
-		parts.append("%s@%.1f,%.1f" % [plan.row_id(), plan.placed_at().x, plan.placed_at().y])
-	return "|".join(parts)
-
-## The calm block she would find and settle in: the one the fewest of the day's rows spoil, as
-## the day itself answers it (`DayEvents.spoilers_of()`).
-func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
-	var best := Vector2i(-1, -1)
-	var fewest := 1 << 30
-	for block in calm.blocks():
-		var spoilers := events.spoilers_of(block).size()
-		if spoilers < fewest:
-			fewest = spoilers
-			best = block
-	return best
 
 func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t: TestRunner) -> void:
 	var pursuers := 0
@@ -243,135 +217,6 @@ func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 				"'%s' does not walk toward her: a moving wall on a two-tile pavement pins"
 				% def.id())
 
-## Playtest 03, finding 1: day 1 placed four events across a 7x7-block city and the traced
-## player met none of them. Playtest 05, finding 6, made it a number: **one event per block**.
-##
-## Checked against what a day actually *places*, the bags' draws with their empty marbles and the
-## caps, not against any one number, since a share the catalogue cannot fill is not density.
-func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
-	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
-	for day: int in [1, 3, 7, 14]:
-		var planned := _planned(day)
-		var real := 0
-		for plan in planned:
-			if not plan.row().is_ambient():
-				real += 1
-		# Stated as a fraction of a block each way rather than as a count, so it survives the
-		# city changing size — which M21 is about to do.
-		t.check(real >= blocks * 4 / 5,
-				"day %d puts %d events across %d blocks — about one each"
-				% [day, real, blocks])
-	var early := 0
-	var late := 0
-	for plan in _planned(1):
-		if not plan.row().is_ambient() and plan.is_placed():
-			early += 1
-	for plan in _planned(14):
-		if not plan.row().is_ambient() and plan.is_placed():
-			late += 1
-	# A fifth more, not half again: what day 14 places is under half again what day 1 places, before
-	# the bags as after (`tests/probes/placement_view_mix.gd`), so a bar of half again on what is
-	# placed holds no day. A fifth keeps it a check on the ramp and not only on its direction.
-	t.check(late * 5 > early * 6,
-			"and a late day is markedly denser than an early one, a fifth more and over (%d placed on day 14, %d on day 1)"
-			% [late, early])
-
-## Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
-## relatively easy is okay if the difficulty increases. But right now there is never any
-## danger."* It was true by construction and this is the construction, asserted.
-##
-## Two claims, and they are the two halves of the finding. **Danger exists before day 8** — it
-## used to start there and nothing lethal was reachable before it. And **the escalation is a
-## change of kind rather than of count**: day 1 has nothing that can end the day, day 2 does.
-## A budget that goes up by two events is not something a person can feel; the first day the
-## streets acquire something lethal is.
-##
-## Deliberately not asserted: that day 1 is safe *forever*. If a later milestone wants a lethal
-## thing on day 1 that is a decision somebody takes, and this test is where they will find out
-## they are taking it.
-func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
-	var lethal_on := {}
-	for day in range(1, 15):
-		var count := 0
-		for plan in _planned(day):
-			if plan.ends_the_day():
-				count += 1
-		lethal_on[day] = count
-
-	t.check(int(lethal_on[1]) == 0,
-			"day 1 has nothing that can end the day (%s)" % lethal_on[1])
-	t.check(int(lethal_on[2]) > 0,
-			"and day 2 does, which is an escalation a person can feel (%s)" % lethal_on[2])
-	for day in range(3, 15):
-		t.check(int(lethal_on[day]) > 0, "day %d keeps something lethal on the map" % day)
-
-	# The catalogue half of the same claim, stated over the rows rather than over one seed's
-	# plan: something lethal has to be *available* in act I at all, which is what was wrong.
-	var early: Array[String] = []
-	for def in EventCatalogue.available_on(2):
-		if def.ends_the_day():
-			early.append(def.id())
-	t.check(not early.is_empty(),
-			"act I has lethal events in its pool by day 2 (%s)" % ", ".join(early))
-	# And they are fair, which for a lethal thing is the doubled margin. `validate()` covers the
-	# whole catalogue; this names the new ones so a rebalance cannot quietly break act I only.
-	for id in early:
-		var def := EventCatalogue.by_id(id)
-		t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
-				"'%s' warns for %.2fs before it can reach her against a required %.2fs"
-				% [id, def.warning_time(), def.minimum_telegraph()])
-
-## The café playtest 05 named, and the reason it named it: the café that exists to force a crossing
-## has to be findable at all. Counted over the whole map, since what she meets on a route is a
-## fraction of it. The other decision it named, the dog walker's, arrives by construction: two of
-## the first three marbles the director draws on day one are dog walkers, which
-## `tests/test_route_bag.gd` holds where she has a sidewalk ahead of her.
-##
-## Stated as a **per-seed floor**, since the density is a fixed number of events: every row added
-## to the day-1 pool takes a share of it, and a single total across a few seeds is a tight enough
-## sample to fail on noise. Its weight went up to compensate — café frontages are what an ordinary
-## street is mostly made of.
-func _test_the_named_decisions_arrive(t: TestRunner) -> void:
-	var map := _map()
-	for city_seed: int in [4242, 77, 1301]:
-		var seeded := CityGenerator.generate(city_seed)
-		var consumed: Array[String] = []
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:1" % city_seed)
-		var counts := {}
-		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded).spent(consumed).plan().placements():
-			counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
-		# No day-1 map may be without one at all, which is the failure the player actually
-		# reported: *"a restaurant — I never saw one."*
-		t.check(int(counts.get("cafe_tables", 0)) >= 2,
-				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
-	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
-
-## **No two events are drawn inside each other**: every two placed events of a day stand at
-## least `EventScheduler.EVENT_SPACING_ANY` apart, the one spacing no placement bends. Two of a
-## kind may stand closer than `EVENT_SPACING_SAME` where two touching units each drew one; that a
-## unit draws one of a row is `tests/test_events_scheduler.gd`'s.
-func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
-	var pairs := 0
-	for day: int in [1, 8, 14]:
-		var planned := _planned(day)
-		for i in planned.size():
-			for j in range(i + 1, planned.size()):
-				var a: EventPlan = planned[i]
-				var b: EventPlan = planned[j]
-				if not a.is_placed() or not b.is_placed():
-					continue
-				if a.is_ambient():
-					continue
-				if b.is_ambient():
-					continue
-				var gap := a.placed_at().distance_to(b.placed_at())
-				pairs += 1
-				t.check(gap >= EventScheduler.EVENT_SPACING_ANY - 0.5,
-						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
-						% [day, a.row_id(), b.row_id(), gap])
-	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)
-
 ## **The third case of the clearance rule, pinned over whether a row pursues
 ## (`EventDef.pursues()`) rather than over either of the two placed rows that pursue today,
 ## `charging_dog` and `alley_robbery`.** A lethal field that follows her is neither on the
@@ -409,96 +254,3 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	t.check(not walled.keeps_its_field_clear(),
 			"while a lethal wall is the exemption the rule makes, and keeps nothing clear")
 
-## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
-## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
-## verb stopped being a decision on day two.
-##
-## Three things are checked, and the third is the one that makes it fair rather than punishing:
-## the park she used gets something in it, the day still guarantees a *different* usable one,
-## and what gets put there can never take the day or the ground away.
-func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
-	var map := _map()
-	t.check(map.calm_blocks.size() >= 2,
-			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
-
-	var used: Vector2i = map.calm_blocks[0]
-	var used_set: Array[Vector2i] = [used]
-	var calm := CalmAreas.of(map, used_set)
-	var lot := calm.ground_of(used)
-	var allowed := maxf(DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD,
-			minf(lot.size.x, lot.size.y) / 16.0)
-	var spoiled_days := 0
-	for day in range(2, 15):
-		var consumed: Array[String] = []
-		var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).calm(calm).spent(consumed) \
-				.plan()
-		var planned := events.placements()
-
-		var on_her_park := 0
-		var clean_elsewhere := 0
-		for block in calm.blocks():
-			var spoilers := events.spoilers_of(block).size()
-			if block == used:
-				on_her_park = spoilers
-			elif spoilers == 0:
-				clean_elsewhere += 1
-		if on_her_park > 0:
-			spoiled_days += 1
-		t.check(clean_elsewhere >= 1,
-				"day %d still leaves a *different* calm block clean" % day)
-
-		# Nothing sitting in yesterday's park may end the day or close the ground: she has to be
-		# able to see it from the street and walk away, which is what keeps it from being a
-		# punishment for having played well.
-		#
-		# "Close the ground" is the test, not "have a body at all" — the two were the same thing
-		# until M34 made everything that stands still solid, and reading it as the stricter one
-		# would have emptied the pool of loud harmless things and retired this rule by accident.
-		# A busker is 22px of a 704px lot. See `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD`.
-		#
-		# And the allowance is the lot's, not a constant:
-		# `DawnSpoilers._things_to_put_in_a_park()` lets a
-		# bigger park hold a bigger thing, because what matters is the share of the ground it
-		# takes. Asserting the constant instead passed for as long as `calm_blocks[0]` happened
-		# to be a single block, and failed the day a city had enough calm areas for a four-block
-		# zone to come first — which is the test restating a rule the scheduler owns rather than
-		# asking it.
-		for plan in planned:
-			if not plan.is_placed() or not lot.has_point(plan.placed_at()):
-				continue
-			t.check(not plan.ends_the_day() and plan.obstructs_within() <= allowed,
-					"day %d puts '%s' in her park, which is loud rather than lethal"
-					% [day, plan.row_id()])
-
-	t.check(spoiled_days >= 10,
-			"the park she used yesterday is reliably spoiled (%d of 13 days)" % spoiled_days)
-
-	# And a day that knows nothing about yesterday plans exactly as it always did.
-	var forgetful: Array[String] = []
-	var remembering: Array[String] = []
-	var a := GameDawn.of(DaySpec.for_day(3), _rng(3), map).spent(forgetful).plan().placements()
-	var nothing: Array[Vector2i] = []
-	var b := GameDawn.of(DaySpec.for_day(3), _rng(3), map).calm(CalmAreas.of(map, nothing)) \
-			.spent(remembering).plan().placements()
-	t.check(_signature(a) == _signature(b),
-			"and a day with nothing to remember is unchanged by the rule")
-
-	# The whole run, played the way a player plays it: settle in the quietest calm block, and
-	# the next day is planned knowing that. Measured over five seeds while this was built, the
-	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
-	# Since playtest 12 the memory is the whole **act**, not the night before, so this walks the
-	# run the way `RunCalendar.settled_this_act` does: the used set grows through an act and is
-	# emptied at the boundary. A day must send her somewhere she has not been this act.
-	var used_this_act: Array[Vector2i] = []
-	var act := 0
-	for day in range(1, 15):
-		if Tuning.act_for_day(day) != act:
-			act = Tuning.act_for_day(day)
-			used_this_act = []
-		var consumed: Array[String] = []
-		var calm_today := CalmAreas.of(map, used_this_act)
-		var quietest := _quietest_calm_block(GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-				.calm(calm_today).spent(consumed).plan(), calm_today)
-		t.check(not used_this_act.has(quietest),
-				"day %d sends her somewhere she has not used this act" % day)
-		used_this_act.append(quietest)
