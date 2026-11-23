@@ -11,17 +11,24 @@ extends RefCounted
 ## full city is built for every seed (buildings, street trees, crowd, events), from the cached maps
 ## of `tests/city_map_cache.gd`. Each check also reads what its building drew (`tests/front_reads.gd`)
 ## and what its roof stood (`tests/roof_reads.gd`), the real `Building` over the real wiring.
+##
+## The fire's own flames are asked of the same buildings: they burn along the whole facade of the one
+## a street fire stands before, and the dawn after it shows that building burnt.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RoofReads := preload("res://tests/roof_reads.gd")
 const UI := preload("res://tests/ui_screens.gd")
 const FrontReads := preload("res://tests/front_reads.gd")
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
 ## A spread of cities, built in full.
 const SWEEP_SEEDS := 5
 const BASE_SEED := 61_400
+## The seed of the city the burning building's fronts are asked of.
+const FIRE_SEED := 4242
 
 func run(t: TestRunner) -> void:
 	_test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t)
@@ -31,6 +38,7 @@ func run(t: TestRunner) -> void:
 	await _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t)
 	await _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
 	_test_a_dawn_replaces_no_building_and_no_collision(t)
+	await _test_the_scarred_building_shows_burnt(t)
 
 ## A dawn re-dresses the city's ground and closures and rebuilds no building: every building the
 ## city holds after `start_day()` is the same node with the same physics shape it had before, the
@@ -487,3 +495,170 @@ static func _front_of(fronts: Dictionary, building: Building) -> FrontReads:
 static func _under_door(building: Building, col: int) -> bool:
 	var min_x := building.global_position.x - building.columns() * Building.TILE * 0.5 + col * Building.TILE
 	return min_x < building.door_world_x_range.y and min_x + Building.TILE > building.door_world_x_range.x
+
+## **The fire only catches where there is a building to burn, and burns on that building alone.**
+## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
+## `Building`s directly north of it — never the edge of the world, which `CityMap.tile_at()` reads
+## as `BUILDING` — and the flames a fire sited there draws, read off the pictures its look tells
+## its drawer to stand (`tests/recording_event_drawer.gd`) on real frames, burn along the
+## whole of that building's own facade and stay inside it, including at a site on the first or last
+## column of its lot: every column the city draws a facade on carries a flame, and no column another
+## building's roof covers does. *"the fire should be on the whole building not only the door"*
+## (sandy-egret).
+##
+## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
+## not an object next to the building"* — through `City.start_day()`, the way a real morning
+## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
+func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
+	var city: City = RunCity.with_own_run(CITY_SCENE, FIRE_SEED)
+	city.run.header().set_day(4)
+	t.add_child(city)
+	RunCity.build(city, CityGenerator.generate(FIRE_SEED))
+
+	var sites := {}
+	for tile in EventScheduler.row_ground(city.map).tiles_for(
+			EventCatalogue.by_id("burning_building")):
+		sites[tile] = true
+	t.check(sites.size() > 100,
+			"seed %d: there are fronts for the fire to catch on (%d)" % [FIRE_SEED, sites.size()])
+	# Every site holds a street fire of its own on the city's map, found and drawn as the game does,
+	# all drawn by the same three frames.
+	var def := EventCatalogue.by_id("burning_building")
+	var fires := {}
+	for tile: Vector2i in sites:
+		if _building_at(city, tile + Vector2i.UP):
+			fires[tile] = DrawnEvent.build(t, def, false, null, city.map, city.map.tile_to_world(tile))
+	await DrawnEvent.frames(t)
+	var nothing_behind: Array[Vector2i] = []
+	var spilled: Array[Vector2i] = []
+	var bare: Array[Vector2i] = []
+	var on_a_roof: Array[Vector2i] = []
+	var at_a_lot_end := 0
+	var wider_than_five := 0
+	var size := float(Tuning.TILE_SIZE)
+	for tile: Vector2i in sites:
+		var behind := _building_at(city, tile + Vector2i.UP)
+		if not behind:
+			nothing_behind.append(tile)
+			continue
+		if tile.x == behind.lot_rect().position.x or tile.x == behind.lot_rect().end.x - 1:
+			at_a_lot_end += 1
+		var fire: EventInstance = fires[tile]
+		var facade := city.map.tile_rect_to_world(behind.lot_rect())
+		if facade.size.x > 80.0:
+			wider_than_five += 1
+		# Each flame as the span of x it covers in the world.
+		var flames: Array[Vector2] = []
+		for entry in DrawnEvent.shown(fire):
+			if entry.picture == EventPictures.FLAME:
+				var rect := RecordingEventDrawer.rect_about(entry, fire)
+				flames.append(Vector2(fire.global_position.x + rect.position.x,
+						fire.global_position.x + rect.end.x))
+		for flame in flames:
+			if flame.x < facade.position.x - 0.01 or flame.y > facade.end.x + 0.01:
+				spilled.append(tile)
+				break
+		# Each column, at its middle and a pixel in from both its edges, against every flame's own
+		# span: a column the building draws is burning end to end (so a flame dropped at the end of a
+		# stretch leaves a bare edge), one another building's roof covers (`Building.covered_ground_cols()`)
+		# is not.
+		for col in behind.lot_rect().size.x:
+			var left_edge := facade.position.x + col * size
+			var drawn := not (col < behind.covered_ground_cols().size() and behind.covered_ground_cols()[col])
+			var burning_all := true
+			var burning_any := false
+			for point: float in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
+				var burning := false
+				for flame in flames:
+					if flame.x <= point and point <= flame.y:
+						burning = true
+				burning_all = burning_all and burning
+				burning_any = burning_any or burning
+			if drawn and not burning_all:
+				bare.append(tile)
+				break
+			if burning_any and not drawn:
+				on_a_roof.append(tile)
+				break
+	for fire: EventInstance in fires.values():
+		fire.free()
+	t.check(nothing_behind.is_empty(),
+			"every front the fire can catch on has a building behind it (%d do not, first %s)"
+			% [nothing_behind.size(), nothing_behind.slice(0, 3)])
+	t.check(at_a_lot_end > 0,
+			"and some of them stand at a lot's end, where flames could spill over (%d)" % at_a_lot_end)
+	t.check(spilled.is_empty(),
+			"the flames stay on the burning building's own facade (%d spill over, first %s)"
+			% [spilled.size(), spilled.slice(0, 3)])
+	t.check(wider_than_five > 0,
+			"and some fronts are wider than five flames could cover (%d)" % wider_than_five)
+	t.check(bare.is_empty(),
+			"the whole facade burns, every column it draws (%d leave one bare, first %s)"
+			% [bare.size(), bare.slice(0, 3)])
+	t.check(on_a_roof.is_empty(),
+			"and never a column another building's roof covers (%d do, first %s)"
+			% [on_a_roof.size(), on_a_roof.slice(0, 3)])
+
+	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
+	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
+	# the station's own fronts, which the same lane offers any row that does not burn.
+	var station := CityMap.blocks_tile_rect(city.map.power_station)
+	t.check(city.map.has_power_station(), "seed %d has a power station" % FIRE_SEED)
+	var station_fronts := 0
+	var lane_of_fronts := EventScheduler.row_ground(city.map).tiles_for(
+			EventCatalogue.by_id("cafe_tables"), EventDef.Pavement.AT_THE_FRONT)
+	for tile in lane_of_fronts:
+		if station.has_point(tile + Vector2i.UP):
+			station_fronts += 1
+	t.check(station_fronts > 0,
+			"seed %d: the power station has fronts on the lane (%d)" % [FIRE_SEED, station_fronts])
+	var on_the_station: Array[Vector2i] = []
+	for tile: Vector2i in sites:
+		if station.has_point(tile + Vector2i.UP):
+			on_the_station.append(tile)
+	t.check(on_the_station.is_empty(),
+			"the fire never catches on the power station (%d fronts do, first %s)"
+			% [on_the_station.size(), on_the_station.slice(0, 3)])
+
+	var site: Vector2i = sites.keys()[sites.size() / 2]
+	var scarred := _building_at(city, site + Vector2i.UP)
+	t.check(scarred != null, "the fire's site has a building behind it")
+	if not scarred:
+		city.free()
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = FIRE_SEED
+	city.start_day(CityState.new(), 4, rng)
+	t.check(_burnt_count(city) == 0, "no building is burnt before any fire has left a scar")
+
+	city.run.add_scar("burnt_shell", city.map.tile_to_world(site))
+	city.start_day(CityState.new(), 4, rng)
+	t.check(scarred.condition() == Building.Condition.BURNT,
+			"the dawn after the fire, the building behind its scar is drawn burnt")
+	t.check(_burnt_count(city) == 1, "and no other building is (%d are)" % _burnt_count(city))
+	city.start_day(CityState.new(), 5, rng)
+	t.check(scarred.condition() == Building.Condition.BURNT and _burnt_count(city) == 1,
+			"and every dawn after that, the same one")
+	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
+	# building is never boarded up with it.
+	city.fronts().present_block(
+			city.map.block_at(city.map.tile_rect_to_world(scarred.lot_rect()).get_center()),
+			CityState.new())
+	t.check(scarred.condition() == Building.Condition.BURNT,
+			"its block shown anew during the day leaves the burnt building burnt")
+
+	city.free()
+
+## The one `Building` whose lot holds `tile`, or null.
+func _building_at(city: City, tile: Vector2i) -> Building:
+	for building in city.buildings():
+		if building.lot_rect().has_point(tile):
+			return building
+	return null
+
+func _burnt_count(city: City) -> int:
+	var burnt := 0
+	for building in city.buildings():
+		if building.condition() == Building.Condition.BURNT:
+			burnt += 1
+	return burnt

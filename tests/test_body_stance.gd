@@ -42,6 +42,14 @@ class SidewalkStreets extends WorldMap:
 			return step
 		return Vector2i.ZERO
 
+## A map that answers every tile's corridor offsets as the city's lattice does
+## (`CityMap.corridor_offset()` on each coordinate), so a tile lies on a north-south street, an
+## east-west one, a junction or off the streets as the lattice says, with no city generated.
+class Lattice extends WorldMap:
+	## Overrides WorldMap.corridor_offsets.
+	func corridor_offsets(tile: Vector2i) -> Vector2i:
+		return Vector2i(CityMap.corridor_offset(tile.x), CityMap.corridor_offset(tile.y))
+
 const EastWestStreet = preload("res://tests/east_west_street.gd")
 
 const _AT := Vector2(336.0, 336.0)
@@ -57,6 +65,11 @@ func run(t: TestRunner) -> void:
 	_test_a_planned_body_stands_where_its_plan_was_placed(t)
 	_test_a_stance_lays_its_pieces_out_round_any_point(t)
 	_test_only_a_car_that_drives_lies_along_its_heading(t)
+	_test_where_a_body_stands_is_read_from_one_place(t)
+	_test_a_kerbed_body_is_left_where_it_is_and_an_unpinned_one_is_centred(t)
+	_test_a_spread_rotates_with_the_street(t)
+	_test_stationary_vehicles_face_their_street(t)
+	_test_a_crash_is_solid_only_where_its_cars_are(t)
 
 func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
@@ -288,3 +301,189 @@ func _test_only_a_car_that_drives_lies_along_its_heading(t: TestRunner) -> void:
 					"%s lies along its street whatever it heads" % row.id())
 	t.check(drivers > 0 and stood_still > 0,
 			"there were cars that drive and rows that do not (%d, %d)" % [drivers, stood_still])
+
+## **Where a body stands once built is `BodyStance.of()`'s one answer**, which a body
+## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a
+## stationary solid row the pavement does not pin is stood on the middle of its band; on a
+## carriageway lane, a row that spans the street is stood on the kerb beside it; a mobile row, a
+## pinned one or one with no body where it is put.
+func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
+	var map := SidewalkStreets.new(false)
+	var lane := Vector2i(20, 12)
+	t.check(map.pavement_inward(lane) != Vector2i.ZERO, "the street has a pavement lane to stand a body on")
+	var at := map.tile_to_world(lane)
+	var solid_unpinned := 0
+	for def in EventCatalogue.all():
+		var stands := BodyStance.of(map, def, at, Vector2.RIGHT).center()
+		var is_centred := def.stands_on_its_band_middle()
+		if is_centred:
+			solid_unpinned += 1
+		t.check((stands != at) == is_centred,
+				"%s stands %s" % [def.id(), "on the middle of its band, off its lane" if is_centred else "where it is put"])
+	t.check(solid_unpinned > 0, "the catalogue has a stationary solid row the pavement does not pin")
+	var on_the_road := _carriageway_point()
+	t.check(on_the_road != Vector2.INF, "the street has a carriageway lane beside a kerb")
+	var at_the_kerb := 0
+	for def in EventCatalogue.all():
+		var stands := BodyStance.of(WorldMap.open_ground(), def, on_the_road, Vector2.RIGHT).center()
+		var kerbed := def.stands_at_its_kerb()
+		if kerbed:
+			at_the_kerb += 1
+		t.check(stands == (CityMap.kerb_beside(on_the_road) if kerbed else on_the_road),
+				"%s stands %s" % [def.id(), "on the kerb beside its lane" if kerbed else "where it is put on the road"])
+	t.check(at_the_kerb > 0, "the catalogue has a row that spans the street and stands at its kerb")
+
+## **The kerb exception must not silently regress.** `delivery_van` and `ice_cream_van` are
+## `pavement_side == AT_THE_KERB` on purpose, so a body stood on a kerb lane's pavement is left flush
+## against the kerb where a body with any `pavement_side`, `construction`, is stood on the middle of
+## the two-lane band. That a kerb-parked van still leaves no line to the frontage is
+## `tests/test_events_catalogue.gd`'s arithmetic.
+func _test_a_kerbed_body_is_left_where_it_is_and_an_unpinned_one_is_centred(t: TestRunner) -> void:
+	var map := SidewalkStreets.new(true)
+	# The kerb lane of a north-south street's near-start pavement pair — offset `SIDEWALK_WIDTH - 1`
+	# is the tile whose road-side neighbour is the carriageway.
+	var kerb_tile := Vector2i(Tuning.SIDEWALK_WIDTH - 1, Tuning.STREET_WIDTH + 3)
+
+	var van := EventCatalogue.by_id("delivery_van")
+	var parked := BodyStance.of(map, van, map.tile_to_world(kerb_tile), Vector2.RIGHT)
+	t.check(parked.center().is_equal_approx(map.tile_to_world(kerb_tile)),
+			"'delivery_van' (AT_THE_KERB) is left exactly where it was placed, not re-centred")
+
+	# The exemption is meaningful, not a no-op: an ANY-`pavement_side` body sited on the very same
+	# tile does get moved, onto the middle of the two-lane band — half a tile from the tile centre,
+	# in the direction `pavement_inward()` answers for this lane.
+	var barrier := EventCatalogue.by_id("construction")
+	var centred := BodyStance.of(map, barrier, map.tile_to_world(kerb_tile), Vector2.RIGHT)
+	var band_centre := map.tile_to_world(kerb_tile) \
+			+ Vector2(map.pavement_inward(kerb_tile)) * (Tuning.TILE_SIZE * 0.5)
+	t.check(centred.center().is_equal_approx(band_centre),
+			"'construction' (pavement_side ANY) is re-centred onto the pavement band")
+
+## **A spread's rotation is a property of the street it stands on.** Playtest 13 and 19 both report
+## it from play: *"they're always horizontal even when they should be vertical."* A tile whose `x`
+## sits inside a corridor band and whose `y` does not is on a north-south street, where the default
+## lay (along local X) already blocks the traffic; a tile whose `y` is inside a band and `x` is not
+## is on an east-west street, where the spread has to rotate onto local Y to block anything at all.
+## The lattice stand-in answers each tile as the city's streets do, which is arithmetic over
+## `Tuning`'s constants alone.
+func _test_a_spread_rotates_with_the_street(t: TestRunner) -> void:
+	var map := Lattice.new()
+
+	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+	t.check(CityMap.corridor_offset(ns_tile.x) >= 0 and CityMap.corridor_offset(ns_tile.y) < 0,
+			"tile %s sits on a north-south street" % ns_tile)
+	t.check(not _runs_vertically_at(map, map.tile_to_world(ns_tile)),
+			"a north-south street keeps the spread's default lay along local X")
+
+	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
+	t.check(CityMap.corridor_offset(ew_tile.y) >= 0 and CityMap.corridor_offset(ew_tile.x) < 0,
+			"tile %s sits on an east-west street" % ew_tile)
+	t.check(_runs_vertically_at(map, map.tile_to_world(ew_tile)),
+			"an east-west street rotates the spread onto local Y")
+
+	# A junction belongs to both corridors at once, and ground off any corridor belongs to
+	# neither — neither has one street to lie across, so both keep the default lay.
+	var junction_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH / 2)
+	t.check(CityMap.corridor_offset(junction_tile.x) >= 0
+			and CityMap.corridor_offset(junction_tile.y) >= 0,
+			"tile %s is a junction, on both corridors at once" % junction_tile)
+	t.check(not _runs_vertically_at(map, map.tile_to_world(junction_tile)),
+			"a junction has no single street to be wrong about")
+
+	var block_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH + 3)
+	t.check(CityMap.corridor_offset(block_tile.x) < 0 and CityMap.corridor_offset(block_tile.y) < 0,
+			"tile %s is off any corridor — a square, a park, a courtyard" % block_tile)
+	t.check(not _runs_vertically_at(map, map.tile_to_world(block_tile)),
+			"ground that was never a street keeps the default lay too")
+
+	t.check(not _runs_vertically_at(WorldMap.open_ground(), Vector2.ZERO),
+			"a data-level rig on open ground gets the unrotated default")
+
+## Whether a spread row set up at `at` on `map` lies down the screen (`BodyStance.lies_vertically()`,
+## which a live event's looks draw and lay their slices by), decided once from the street it stands on.
+func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
+	return BodyStance.of(map, EventCatalogue.by_id("construction"), at, Vector2.RIGHT) \
+			.lies_vertically()
+
+## How the row `id` stands on `map` when it is built at `at` facing right.
+func _stance_of(id: String, map: WorldMap, at: Vector2) -> BodyStance:
+	return BodyStance.of(map, EventCatalogue.by_id(id), at, Vector2.RIGHT)
+
+## Stationary seal vehicles use the street axis even though their default facing is right. The van
+## faces along it and the burnt car lies across it.
+func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
+	var map := Lattice.new()
+	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
+	t.check(not _stance_of("moving_van", map, map.tile_to_world(ns_tile)).stands_side_on(),
+			"a moving van on a north-south street uses its end view")
+	t.check(_stance_of("moving_van", map, map.tile_to_world(ew_tile)).stands_side_on(),
+			"a moving van on an east-west street uses its side view")
+	t.check(_stance_of("burnt_out_car", map, map.tile_to_world(ns_tile)).stands_side_on(),
+			"a burnt car across a north-south street uses its side view")
+	t.check(not _stance_of("burnt_out_car", map, map.tile_to_world(ew_tile)).stands_side_on(),
+			"a burnt car across an east-west street uses its end view")
+	t.check(_stance_of("moving_van", WorldMap.open_ground(), Vector2.ZERO).stands_side_on(),
+			"off-street or data-level placement follows the vehicle's own default facing")
+
+## **A crash is solid only where the cars are.** *(2026-09-12: "a car crash right now has a full
+## bounding box even though there are gaps in the sprite. the bounding box should only be the
+## crashed cars".)*
+##
+## Stated as what the player asked for rather than as the offsets themselves: a body at the two
+## cars leaves a lane she can walk on each pavement and holds the middle of the road, and a body
+## spanning the street leaves neither. The offsets those lanes fall out of are read off the two
+## pictures (`EventCatalogue._car_accident_parts`) and checked by eye with the bounding-box layer
+## (`--layers 3`); what this holds is the thing that would be wrong if they drifted. That the crash
+## is two pieces on either axis is the check beside the first two of this suite.
+func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
+	var crash := EventCatalogue.by_id("car_accident")
+	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	for vertical: bool in [false, true]:
+		var map: WorldMap = EastWestStreet.new() if vertical else NorthSouthStreet.new()
+		var stance := BodyStance.of(map, crash, _AT, Vector2.RIGHT)
+		var street := "east-west" if vertical else "north-south"
+
+		var half: float = crash.obstructs_within()
+		var offsets := _lateral_offsets(stance)
+		for offset in offsets:
+			t.check(absf(offset) < carriageway,
+					"a wrecked car sits on the carriageway, not on a %s pavement (%.1fpx of %.0f)"
+					% [street, offset, carriageway])
+		t.check(_walkable_lane_beside(stance, half, -1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"a %s crash leaves her a lane on one side (%.0fpx)"
+				% [street, _walkable_lane_beside(stance, half, -1.0)])
+		t.check(_walkable_lane_beside(stance, half, 1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"and one on the other (%.0fpx)" % _walkable_lane_beside(stance, half, 1.0))
+		t.check(_is_blocked_at(stance, 0.0),
+				"while the middle of the road, where the cars are, is still shut on a %s street"
+				% street)
+
+## Where each of a stance's solid pieces sits along its own spread axis, in px from the scene's
+## centre.
+func _lateral_offsets(stance: BodyStance) -> PackedFloat32Array:
+	var found := PackedFloat32Array()
+	for piece in stance.pieces():
+		var offset := piece.center() - stance.center()
+		found.append(offset.y if stance.lies_vertically() else offset.x)
+	return found
+
+## Whether her centre may stand at `offset` along the spread axis — clear of every piece by her own
+## body radius.
+func _is_blocked_at(stance: BodyStance, offset: float) -> bool:
+	for piece in stance.pieces():
+		var delta := piece.center() - stance.center()
+		var along: float = delta.y if stance.lies_vertically() else delta.x
+		if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
+			return true
+	return false
+
+## How much walkable width the crash leaves on one side of itself (`side` −1 or +1), measured from
+## the far edge of the scene inward to the first body she cannot pass.
+func _walkable_lane_beside(stance: BodyStance, half: float, side: float) -> float:
+	var width := 0.0
+	var offset := side * (half - Tuning.PLAYER_BODY_RADIUS)
+	while absf(offset) <= half and not _is_blocked_at(stance, offset):
+		width += 1.0
+		offset -= side
+	return width

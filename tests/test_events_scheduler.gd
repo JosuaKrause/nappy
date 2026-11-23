@@ -4,12 +4,14 @@ extends "res://tests/events_shared_city.gd"
 ## mouse stay on the alley's own ground, a calm area a day has not used is left alone -- plus the
 ## day's own content guarantees: the successors of a resolved event resolve, the fire truck is
 ## never itself scheduled, the fire engine is warned long enough from the worst position on its
-## street, and every along-street path a row can walk stays in bounds.
+## street, and every along-street path a row can walk stays in bounds -- and what a planned day holds:
+## enough in it to meet, danger before act three, the named decisions, the city's memory of where
+## she went, a scar outliving its day and a park staying reachable every day.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split from
 ## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
 ## combined file measured close to the two-minute budget on its own -- `test_events_costs.gd` keeps
-## the cost side, which shares nothing but the inherited `_map()`/`_planned()` with this half.
+## the cost side, which asks the rows alone.
 ##
 ## **Why these checks build a city.** The suite's checks still build the shared city and are not
 ## converted to stand-ins yet: only as far as a pull request's change reaches is a suite converted
@@ -20,6 +22,7 @@ extends "res://tests/events_shared_city.gd"
 ## from the day and its target, which is where the swing's park is set aside).
 
 const STEP := 1.0 / 60.0
+const SEED := 4242
 
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
@@ -46,6 +49,12 @@ func run(t: TestRunner) -> void:
 	_test_nothing_beside_the_routes_stands_on_the_main_road(t)
 	_test_day_13s_roadblocks_stand_beside_the_routes(t)
 	_test_a_roadblock_leaves_no_section_within_its_spacing_offered(t)
+	_test_scars_outlive_the_day_that_made_them(t)
+	_test_a_park_stays_reachable_every_day(t)
+	_test_a_day_has_enough_in_it_to_meet(t)
+	_test_danger_arrives_before_act_three(t)
+	_test_the_named_decisions_arrive(t)
+	_test_the_city_remembers_where_she_went(t)
 
 
 func _signature(planned: Array[EventPlan]) -> String:
@@ -1061,3 +1070,274 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 	var sealed := dawn.locations().holding(seal_tile, map.tile_at(seal_tile))
 	t.check(sealed != null and sealed.is_drawn(),
 			"the location under the seal's body is not held: the draw visits it like any other")
+
+## The burnt-out shell is on the same corner on day 12 as it was the morning after the fire.
+func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
+	var run := RunState.new()
+	run.start_run(SEED)
+	run.header().set_day(3)
+	var where := _map().tile_to_world(Vector2i(40, 40))
+	run.add_scar("burnt_shell", where)
+	run.add_scar("burnt_shell", where)
+	t.check(run.attempt_spend().scars().size() == 1, "the same scar is not recorded twice")
+
+	var consumed: Array[String] = []
+	var same_day := GameDawn.of(DaySpec.for_day(3), _rng(3), _map()).spent(consumed) \
+			.scars(run.attempt_spend().scars()).plan().placements()
+	t.check(not _contains(same_day, "burnt_shell"),
+			"a scar does not double up on the day it was made")
+
+	for day: int in [4, 9, 14]:
+		var later: Array[String] = []
+		var planned := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).spent(later) \
+				.scars(run.attempt_spend().scars()).plan().placements()
+		t.check(_contains(planned, "burnt_shell"),
+				"the burnt-out shell is still there on day %d" % day)
+		for plan in planned:
+			if plan.row_id() == "burnt_shell":
+				t.close_to(plan.placed_at().distance_to(where), 0.0,
+						"and it is on the same corner", 1.0)
+
+func _contains(planned: Array[EventPlan], id: String) -> bool:
+	for plan in planned:
+		if plan.row_id() == id:
+			return true
+	return false
+
+## From act II onwards several events physically close streets, and from act IV a run can
+## accumulate permanent barricades. Any combination that seals the home off from every park
+## makes the day unwinnable in a way the player cannot see coming.
+func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
+	# Stack the deck: pretend several convoys have already left barricades around, in rings of
+	# 3, 5 and 7 tiles round the home's door (a ring is what can seal the home in; four far-off
+	# ones cannot), and plan every day.
+	var run := RunState.new()
+	run.start_run(SEED)
+	var home := _map().home_rect.position
+	for radius: int in [3, 5, 7]:
+		for step: Vector2i in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
+			# The run's own writer, on day 1, which is the day a scar stands from the day after.
+			run.add_scar("barricade", _map().tile_to_world(home + step * radius))
+
+	var grid := ReachabilityGrid.build(_map())
+	# Day 1 runs with no scar in effect (a scar applies from the day after its `since_day`), and
+	# is the plain plan whose route to a park nothing else checks.
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		var consumed: Array[String] = []
+		var blockers: Array[EventPlan] = []
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).spent(consumed) \
+				.scars(run.attempt_spend().scars()).plan().placements():
+			if plan.obstructs():
+				blockers.append(plan)
+		t.check(_a_park_is_reachable(grid, blockers),
+				"day %d leaves a walkable route from home to a park" % day)
+
+## Whether the grid still finds a way from the home to some calm tile with today's closures and
+## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`): what the
+## scheduler keeps true of the day it plans.
+func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventPlan]) -> bool:
+	var blocked := EventScheduler.blocked_by(_map(), blockers)
+	var reached := grid.flood([_map().home_rect.position], blocked)
+	for tile in _map().calm_tiles():
+		if grid.reaches(tile, blocked, reached):
+			return true
+	return false
+
+## Playtest 03, finding 1: day 1 placed four events across a 7x7-block city and the traced
+## player met none of them. Playtest 05, finding 6, made it a number: **one event per block**.
+##
+## Checked against what a day actually *places*, the bags' draws with their empty marbles and the
+## caps, not against any one number, since a share the catalogue cannot fill is not density.
+func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
+	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
+	for day: int in [1, 3, 7, 14]:
+		var planned := _planned(day)
+		var real := 0
+		for plan in planned:
+			if not plan.row().is_ambient():
+				real += 1
+		# Stated as a fraction of a block each way rather than as a count, so it survives the
+		# city changing size — which M21 is about to do.
+		t.check(real >= blocks * 4 / 5,
+				"day %d puts %d events across %d blocks — about one each"
+				% [day, real, blocks])
+	var early := 0
+	var late := 0
+	for plan in _planned(1):
+		if not plan.row().is_ambient() and plan.is_placed():
+			early += 1
+	for plan in _planned(14):
+		if not plan.row().is_ambient() and plan.is_placed():
+			late += 1
+	# A fifth more, not half again: what day 14 places is under half again what day 1 places, before
+	# the bags as after (`tests/probes/placement_view_mix.gd`), so a bar of half again on what is
+	# placed holds no day. A fifth keeps it a check on the ramp and not only on its direction.
+	t.check(late * 5 > early * 6,
+			"and a late day is markedly denser than an early one, a fifth more and over (%d placed on day 14, %d on day 1)"
+			% [late, early])
+
+## Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
+## relatively easy is okay if the difficulty increases. But right now there is never any
+## danger."* It was true by construction and this is the construction, asserted.
+##
+## Two claims, and they are the two halves of the finding. **Danger exists before day 8** — it
+## used to start there and nothing lethal was reachable before it. And **the escalation is a
+## change of kind rather than of count**: day 1 has nothing that can end the day, day 2 does.
+## A budget that goes up by two events is not something a person can feel; the first day the
+## streets acquire something lethal is.
+##
+## Deliberately not asserted: that day 1 is safe *forever*. If a later milestone wants a lethal
+## thing on day 1 that is a decision somebody takes, and this test is where they will find out
+## they are taking it.
+func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
+	var lethal_on := {}
+	for day in range(1, 15):
+		var count := 0
+		for plan in _planned(day):
+			if plan.ends_the_day():
+				count += 1
+		lethal_on[day] = count
+
+	t.check(int(lethal_on[1]) == 0,
+			"day 1 has nothing that can end the day (%s)" % lethal_on[1])
+	t.check(int(lethal_on[2]) > 0,
+			"and day 2 does, which is an escalation a person can feel (%s)" % lethal_on[2])
+	for day in range(3, 15):
+		t.check(int(lethal_on[day]) > 0, "day %d keeps something lethal on the map" % day)
+
+	# The catalogue half of the same claim, stated over the rows rather than over one seed's
+	# plan: something lethal has to be *available* in act I at all, which is what was wrong.
+	var early: Array[String] = []
+	for def in EventCatalogue.available_on(2):
+		if def.ends_the_day():
+			early.append(def.id())
+	t.check(not early.is_empty(),
+			"act I has lethal events in its pool by day 2 (%s)" % ", ".join(early))
+	# And they are fair, which for a lethal thing is the doubled margin. `validate()` covers the
+	# whole catalogue; this names the new ones so a rebalance cannot quietly break act I only.
+	for id in early:
+		var def := EventCatalogue.by_id(id)
+		t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
+				"'%s' warns for %.2fs before it can reach her against a required %.2fs"
+				% [id, def.warning_time(), def.minimum_telegraph()])
+
+## The café playtest 05 named, and the reason it named it: the café that exists to force a crossing
+## has to be findable at all. Counted over the whole map, since what she meets on a route is a
+## fraction of it. The other decision it named, the dog walker's, arrives by construction: two of
+## the first three marbles the director draws on day one are dog walkers, which
+## `tests/test_route_bag.gd` holds where she has a sidewalk ahead of her.
+##
+## Stated as a **per-seed floor**, since the density is a fixed number of events: every row added
+## to the day-1 pool takes a share of it, and a single total across a few seeds is a tight enough
+## sample to fail on noise. Its weight went up to compensate — café frontages are what an ordinary
+## street is mostly made of.
+func _test_the_named_decisions_arrive(t: TestRunner) -> void:
+	var map := _map()
+	for city_seed: int in [4242, 77, 1301]:
+		var seeded := CityGenerator.generate(city_seed)
+		var consumed: Array[String] = []
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:1" % city_seed)
+		var counts := {}
+		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded).spent(consumed).plan().placements():
+			counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
+		# No day-1 map may be without one at all, which is the failure the player actually
+		# reported: *"a restaurant — I never saw one."*
+		t.check(int(counts.get("cafe_tables", 0)) >= 2,
+				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
+	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
+
+## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
+## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
+## verb stopped being a decision on day two.
+##
+## Three things are checked, and the third is the one that makes it fair rather than punishing:
+## the park she used gets something in it, the day still guarantees a *different* usable one,
+## and what gets put there can never take the day or the ground away.
+func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
+	var map := _map()
+	t.check(map.calm_blocks.size() >= 2,
+			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
+
+	var used: Vector2i = map.calm_blocks[0]
+	var used_set: Array[Vector2i] = [used]
+	var calm := CalmAreas.of(map, used_set)
+	var lot := calm.ground_of(used)
+	var allowed := maxf(DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD,
+			minf(lot.size.x, lot.size.y) / 16.0)
+	var spoiled_days := 0
+	for day in range(2, 15):
+		var consumed: Array[String] = []
+		var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).calm(calm).spent(consumed) \
+				.plan()
+		var planned := events.placements()
+
+		var on_her_park := 0
+		var clean_elsewhere := 0
+		for block in calm.blocks():
+			var spoilers := events.spoilers_of(block).size()
+			if block == used:
+				on_her_park = spoilers
+			elif spoilers == 0:
+				clean_elsewhere += 1
+		if on_her_park > 0:
+			spoiled_days += 1
+		t.check(clean_elsewhere >= 1,
+				"day %d still leaves a *different* calm block clean" % day)
+
+		# Nothing sitting in yesterday's park may end the day or close the ground: she has to be
+		# able to see it from the street and walk away, which is what keeps it from being a
+		# punishment for having played well.
+		#
+		# "Close the ground" is the test, not "have a body at all" — the two were the same thing
+		# until M34 made everything that stands still solid, and reading it as the stricter one
+		# would have emptied the pool of loud harmless things and retired this rule by accident.
+		# A busker is 22px of a 704px lot. See `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD`.
+		#
+		# And the allowance is the lot's, not a constant:
+		# `DawnSpoilers._things_to_put_in_a_park()` lets a
+		# bigger park hold a bigger thing, because what matters is the share of the ground it
+		# takes. Asserting the constant instead passed for as long as `calm_blocks[0]` happened
+		# to be a single block, and failed the day a city had enough calm areas for a four-block
+		# zone to come first — which is the test restating a rule the scheduler owns rather than
+		# asking it.
+		for plan in planned:
+			if not plan.is_placed() or not lot.has_point(plan.placed_at()):
+				continue
+			t.check(not plan.ends_the_day() and plan.obstructs_within() <= allowed,
+					"day %d puts '%s' in her park, which is loud rather than lethal"
+					% [day, plan.row_id()])
+
+	t.check(spoiled_days >= 10,
+			"the park she used yesterday is reliably spoiled (%d of 13 days)" % spoiled_days)
+
+	# And a day that knows nothing about yesterday plans exactly as it always did.
+	var forgetful: Array[String] = []
+	var remembering: Array[String] = []
+	var a := GameDawn.of(DaySpec.for_day(3), _rng(3), map).spent(forgetful).plan().placements()
+	var nothing: Array[Vector2i] = []
+	var b := GameDawn.of(DaySpec.for_day(3), _rng(3), map).calm(CalmAreas.of(map, nothing)) \
+			.spent(remembering).plan().placements()
+	t.check(_signature(a) == _signature(b),
+			"and a day with nothing to remember is unchanged by the rule")
+
+	# The whole run, played the way a player plays it: settle in the quietest calm block, and
+	# the next day is planned knowing that. Measured over five seeds while this was built, the
+	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
+	# Since playtest 12 the memory is the whole **act**, not the night before, so this walks the
+	# run the way `RunCalendar.settled_this_act` does: the used set grows through an act and is
+	# emptied at the boundary. A day must send her somewhere she has not been this act.
+	var used_this_act: Array[Vector2i] = []
+	var act := 0
+	for day in range(1, 15):
+		if Tuning.act_for_day(day) != act:
+			act = Tuning.act_for_day(day)
+			used_this_act = []
+		var consumed: Array[String] = []
+		var calm_today := CalmAreas.of(map, used_this_act)
+		var quietest := _quietest_calm_block(GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.calm(calm_today).spent(consumed).plan(), calm_today)
+		t.check(not used_this_act.has(quietest),
+				"day %d sends her somewhere she has not used this act" % day)
+		used_this_act.append(quietest)
