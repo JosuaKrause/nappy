@@ -6,7 +6,8 @@ extends "res://tests/events_shared_city.gd"
 ## never itself scheduled, the fire engine is warned long enough from the worst position on its
 ## street, and every along-street path a row can walk stays in bounds -- and what a planned day holds:
 ## enough in it to meet, danger before act three, the named decisions, the city's memory of where
-## she went, a scar outliving its day and a park staying reachable every day.
+## she went, a scar outliving its day and a park staying reachable every day; and a day planned at
+## full heat, which is the same day when planned twice and places more patrols than a cold one.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split from
 ## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
@@ -38,6 +39,7 @@ extends "res://tests/events_shared_city.gd"
 ## the city's memory case both read. The dawn writes nothing a later dawn reads, so no case needs
 ## a plan of its own for a run's later day.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 const SEED := 4242
 
@@ -46,6 +48,10 @@ var _other_cities := {}
 
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
+	_test_masts_appear_from_day_5_at_the_same_sites_every_day(t)
+	_test_a_silenced_fixed_mast_stays_silenced_the_next_day(t)
+	_test_a_day_is_a_function_of_its_heat(t)
+	_test_a_hot_day_places_more_patrols(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_scheduler_respects_placement_and_one_of_a_row_per_unit(t)
@@ -1504,6 +1510,116 @@ func _test_the_run_is_always_taught(t: TestRunner) -> void:
 		var events: DayEvents = _the_taught_day(run_seed)["events"]
 		t.check(events.has_a_pursuit(),
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])
+
+## A planned day is a function of its arguments and heat is one of them: same seed, same day, same
+## heat, same city. This is what lets a rig plan a hot day without a run having happened.
+func _test_a_day_is_a_function_of_its_heat(t: TestRunner) -> void:
+	var day := 9
+	var consumed: Array[String] = []
+	var first := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).spent(consumed.duplicate()) \
+			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
+	var second := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).spent(consumed.duplicate()) \
+			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
+	t.check(first.size() == second.size(),
+			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
+	for i in mini(first.size(), second.size()):
+		t.check(first[i].row_id() == second[i].row_id() and first[i].placed_at() == second[i].placed_at(),
+				"placement %d of a hot day is where it was" % i)
+	# And nothing in the heated catalogue can plan a day that has no park left to walk to — the
+	# calm area dawn keeps clean cold (`DawnCalmKeptClean`) has to survive the escalation.
+	t.check(not first.is_empty(), "a hot day places events at all")
+
+## A day planned at full heat places more patrols than the same day cold, over several seeds —
+## measured, since the population multiplier raising the row's cap and its weight in the day's bags
+## (`EventDef.at_heat()`) does not by itself guarantee more of them are drawn against everything else
+## the locations draw.
+##
+## **Summed over the seeds, not asserted seed by seed.** A cold and a hot day draw every location
+## from bags of different marbles, so on one seed the hot day can draw a patrol fewer by the luck of
+## its draws, which is no broken relationship. More over the seeds is the contract the population
+## multiplier promises.
+func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
+	var day := 9
+	var seeds := [8817, 4242, 2102613802, 90210, 37, 38, 39, 12345]
+	var colds := 0
+	var hots := 0
+	for run_seed: int in seeds:
+		var map := MapCache.of(run_seed)
+		var rng_seed := hash("%d:%d" % [run_seed, day])
+		var cold_rng := RandomNumberGenerator.new()
+		cold_rng.seed = rng_seed
+		var hot_rng := RandomNumberGenerator.new()
+		hot_rng.seed = rng_seed
+		colds += _count_patrols(GameDawn.of(DaySpec.for_day(day), cold_rng, map).plan().placements())
+		hots += _count_patrols(GameDawn.of(DaySpec.for_day(day), hot_rng, map) \
+				.heat(Tuning.RESISTANCE_GOAL).plan().placements())
+	t.check(hots > colds,
+			"over %d seeds a fully heated day places more patrols than a cold one (%d against %d)"
+			% [seeds.size(), hots, colds])
+
+func _count_patrols(planned: Array[EventPlan]) -> int:
+	var count := 0
+	for plan in planned:
+		if plan.row_id() == "police_patrol":
+			count += 1
+	return count
+
+func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) -> void:
+	t.check(_mast_plans_of(Tuning.MAST_FIRST_DAY - 1).is_empty(),
+			"no mast stands the day before Tuning.MAST_FIRST_DAY")
+
+	var by_day := {}
+	for day: int in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
+		var by_id := {}
+		for plan in _mast_plans_of(day):
+			if plan.row_id() != "loudspeaker":
+				continue
+			by_id[plan.mast_id()] = plan.placed_at()
+		t.check(by_id.size() == Tuning.MAST_COUNT,
+				"day %d carries all %d masts (%d)" % [day, Tuning.MAST_COUNT, by_id.size()])
+		by_day[day] = by_id
+	var first: Dictionary = by_day[Tuning.MAST_FIRST_DAY]
+	for day: int in by_day:
+		var here: Dictionary = by_day[day]
+		for id: String in first:
+			var site: Vector2 = here.get(id, Vector2.INF)
+			t.check(here.has(id) and site.distance_to(first[id]) < 0.01,
+					"mast '%s' stands at the same place on day %d as on day %d"
+					% [id, day, Tuning.MAST_FIRST_DAY])
+
+## The mast plans of `day`, off the shared city's plan of it.
+func _mast_plans_of(day: int) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
+	for plan in _planned(day):
+		if plan.mast_id() != "":
+			found.append(plan)
+	return found
+
+## **A mast she silenced on an earlier day stands silenced the next day**, and only that site: the
+## day she touches a mast the director records a scar at its foot, and the next day's dawn stands the
+## same pole with its lamp out while every other site speaks (`DawnMasts`). Planned on the shared city
+## with the scar handed to the dawn, the way the run hands it.
+func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> void:
+	var first := Tuning.MAST_FIRST_DAY
+	var day := first + 1
+	var target := _sites()[0]
+	var scars: Array[Dictionary] = [{"id": DawnMasts.SILENCED_MAST, "position": target.foot(),
+			"since_day": first}]
+	var consumed: Array[String] = []
+	var tomorrow := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+			.scars(scars).spent(consumed).plan().placements()
+	var standing_here: EventPlan = null
+	var others_speak := 0
+	for plan in tomorrow:
+		if plan.mast_id() == "" or plan.row_id() != "loudspeaker":
+			continue
+		if plan.mast_id() == target.id():
+			standing_here = plan
+		elif not plan.is_silenced():
+			others_speak += 1
+	t.check(standing_here != null and standing_here.is_silenced(),
+			"the next day the same site stands silenced, lamp out and no field")
+	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
 
 ## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
 ## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.

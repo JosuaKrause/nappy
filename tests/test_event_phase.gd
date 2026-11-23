@@ -36,6 +36,8 @@ func run(t: TestRunner) -> void:
 	_test_contribution_skips_only_silence(t)
 	_test_flocks_are_not_skipped(t)
 	_test_roadwork_barrier_follows_alley_axis(t)
+	_test_an_event_is_silent_behind_a_wall(t)
+	_test_an_event_expects_nothing_from_behind_a_wall(t)
 
 # ------------------------------------------------------------------- the clock ---
 
@@ -704,3 +706,75 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 	t.check(not across_a_vertical.runs_vertically(),
 			"a vertical alley keeps a horizontal barrier spread across its mouth")
 	across_a_vertical.free()
+
+# ----------------------------------------------------------------- behind a wall ---
+
+## A `width`×`height` map of sidewalk with the given tiles built on.
+func _walled_map(buildings: Array[Vector2i], width := 12, height := 12) -> CityMap:
+	var map := CityMap.new(Vector2i(width, height))
+	map.fill_rect(Rect2i(0, 0, width, height), GameEnums.TileType.SIDEWALK)
+	for tile in buildings:
+		map.set_tile(tile, GameEnums.TileType.BUILDING)
+	return map
+
+## A `width`×`height` map of sidewalk with nothing built on it.
+func _open_map(width := 12, height := 12) -> CityMap:
+	return _walled_map([], width, height)
+
+## The tiles of `rect`, to be built on.
+func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			found.append(Vector2i(x, y))
+	return found
+
+## A row's instance standing at `at` past its telegraph, asking `map` about the ground — handed to
+## `setup()` as the spawner hands it the world's, so both copies stand exactly where they were put.
+func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
+	var instance := EventInstance.new()
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
+	instance.restore(EventSave.aged(def.telegraphs_for() + 1.0))
+	return instance
+
+## A street musician with a building between them: nothing on the meter's sum, while the same
+## musician on open ground reaches her. The wall's own geometry is `test_wall_shield.gd`'s.
+func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("busker")
+	var her := Vector2(240.0, 176.0)
+	var at := Vector2(112.0, 176.0)
+	var walled := _walled_map(_rect_tiles(Rect2i(5, 0, 2, 12)))
+	var open := _open_map()
+	var behind := _musician(def, at, walled)
+	var beside := _musician(def, at, open)
+	t.check(beside.source().contribution_at(her) > 0.0,
+			"on open ground the musician's field reaches her (%.2f/s)" % beside.source().contribution_at(her))
+	t.check(behind.source().contribution_at(her) == 0.0,
+			"with a building between them it does not")
+	t.check(behind.field_at(her, -1.0, Vector2.INF) == beside.source().contribution_at(her),
+			"the field itself is unchanged; only what reaches her is")
+	behind.free()
+	beside.free()
+
+## The caret projects the event forward and asks the wall where it will be, not at the translated
+## point: her walking down a street with a long building between her and a musician expects nothing
+## from him, and the same walk in the open does.
+func _test_an_event_expects_nothing_from_behind_a_wall(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("busker")
+	var walled := _walled_map(_rect_tiles(Rect2i(0, 4, 24, 2)), 24, 12)
+	var open := _open_map(24, 12)
+	var at := Vector2(400.0, 80.0)
+	var her := Vector2(240.0, 208.0)
+	var walk := Vector2(Tuning.WALK_SPEED, 0.0)
+	for map: CityMap in [walled, open]:
+		var musician := _musician(def, at, map)
+		musician.source().set_her_motion(walk)
+		var expected := musician.source().expected_gross_at(her)
+		if map == walled:
+			t.check(expected == 0.0, "walking past behind a building expects nothing (%.2f)"
+					% expected)
+		else:
+			t.check(expected > 0.0, "the same walk in the open expects something (%.2f)"
+					% expected)
+		musician.free()

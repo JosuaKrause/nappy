@@ -34,7 +34,7 @@ const ViewRig := preload("res://tests/view_rig.gd")
 var _rig: ViewRig
 
 func run(t: TestRunner) -> void:
-	_rig = ViewRig.new(t)
+	_rig = ViewRig.new()
 	_test_selector_nearest_covers_all_eight(t)
 	_test_selector_boundary_hold(t)
 	_test_selector_wrap_boundary_holds(t)
@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 	_test_a_stopped_walker_holds_gait_frame_a(t)
 	_test_walker_gait_b_tables_agree_with_a(t)
 	_test_walker_gait_b_tables_cover_every_sector(t)
-	_rig.free_city()
+	_rig.release_atlas()
 
 # ------------------------------------------------------------------- selector ---
 
@@ -205,7 +205,7 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -
 	var placed_north := false
 	for seed_value in range(1, ViewRig.ROLLS):
 		look.view = 1
-		agent.setup(CrowdAgent.Kind.WALKER, _rig.city.map, _rig.field, seed_value,
+		agent.setup(CrowdAgent.Kind.WALKER, _rig.map, _rig.field, seed_value,
 				0.5 * float(seed_value % 2))
 		if agent.heading().is_equal_approx(Vector2.UP):
 			placed_north = true
