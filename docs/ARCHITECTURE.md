@@ -198,6 +198,127 @@ src/
 	    route_spec.gd         how a row travels: whether it moves, how fast, how its route is built and how long, whether it paces a beat, whether it parks where it arrives
 	    flock_spec.gd         how many creatures a row is and how far they spread
 	    look_spec.gd          how a row is drawn: its picture, its warning picture, its shadow, its lead, whether its hold hides it, the pelican, its guards' sides
+	model/                the day's plans and everything that builds them: the scheduler, the draws,
+	                      the locations, the grounds, the street rules, the plan and the save of a live event
+	  event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, the escape
+	                        city's as well; a row's role, the walk's ground and the view bags
+	  dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
+	                        builds once, the corridor, the day's events, locations, ground and rules;
+	                        handed to every phase, and what a phase asks it to record or judge: a fixed
+	                        part's location, a body off the routes
+	  event_plan.gd         one placed event's row, position, role and path: what the manager needs to
+	                        spawn one instance; told when its live event enters and leaves the world
+	  event_save.gd         what a live event was in the middle of when it left the world: its age,
+	                        distance, notice and each behaviour's state, one value its plan carries
+	  where_it_stands.gd    where a plan's live event stands now (`WhereItStands`): there or not, where,
+	                        facing which way, over or not; the plan asks it without naming the event
+	  plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along
+	                        the street, room among placed plans, where its body stands; handed the map
+	                        and what it asks (what stops a row, where a body stands, the room)
+	  row_ground.gd         which tiles a row may stand on today and how many times over each is
+	                        offered: one object a walk, made at dawn and handed to every placement
+	                        that asks, then to the walk; handed the map, the corridor, the
+	                        home-street rule, the weights and which wall is one by cost, and answers the
+	                        weights it was made with
+	  day_events.gd         the day's planned rows read through one object: what each spoils, a
+	                        pursuit; kept in step as the plan is built, never saved
+	  calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used
+	                        this act, the one that does not count today
+	  walk_events.gd        the walk's plans read through one object once it has started: the plans
+	                        in the order they stream, everything but one, what stands in an area, the
+	                        doors, the calm areas, the reach, the day's locations, its ground and its
+	                        units' draw
+	  day_reach.gd          where she can get to from home: the ground the walk's plan shuts and the
+	                        flood over it, made as the walk starts and told what each unit draws; a
+	                        shortest walk from home to a tile; and the walk her paths take within a
+	                        circle, the measure of close by
+	  way_confirmation.gd   whether she can be sent to a place, by where it stands: inside the ground
+	                        drawn round her as it is, beyond it once the units along a way from home
+	                        have drawn and a way stands that no undrawn unit lies near
+	  walk_ground.gd        the walk kept open past everything standing on it: each street a
+	                        sidewalk, the walk joined — the rule a spec keeping its walk open asks
+	  body_stance.gd        how a body built at a point stands on its street, derived once and handed
+	                        round: where, which way it lies, the side a vehicle shows, and its
+	                        pieces laid out there, the one layout the walk, the record, the live body
+	                        and its look and the rig ask
+	  standing_piece.gd     one solid piece of a body where it stands: its middle, shape and axis
+	  day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
+	                        lots, junction boxes), laid out at dawn and handed round: each one's view,
+	                        what a fixed part holds, what is taken or drawn,
+	                        and the open section of a view nearest along her paths; for a walk with no
+	                        corridor, the streets the walk names and nothing beyond them
+	  street_locations.gd   one street's locations: three sections along it, two sidewalk locations
+	                        in each, a section taken whole by an event that spans the street
+	  location.gd           one location: its street, section, tiles, view, what stands on it and the
+	                        beat her walk stood there, the whole it is part of and the run a route
+	                        starting in it may lie on
+	  placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
+	                        an alley, a park or a square (its kind of ground); its name, its rank and
+	                        its stream for the day, its view, the most permissive of its locations',
+	                        and the beats her walk stands on its locations
+	  unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
+	                        sections and half-filled ones, what share of a street (a section, a
+	                        location) a marble may still take
+	  day_units.gd          the day's units grouped from its locations, and which touch which: a shared
+	                        junction box, or a shared alley, park or square
+	  unit_bags.gd          the bag a unit draws from, answered by the walk: on a day, the fresh bag of
+	                        the fill `UnitFills` answers for the unit's view and kind of ground
+	  unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
+	                        every touching unit of lower rank, from the bag the walk's bags answer
+	                        for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
+	                        answers for its view and kind of ground), judged among the dawn's plans,
+	                        the touching units' draws and the beats her walk laid in the unit or a
+	                        touching one; a walk drawn whole is drawn at dawn in its units' order,
+	                        each among everything before it
+	  whole_walk_bag.gd     one bag every unit of a walk draws from, a refused marble left in it for the
+	                        next unit: the escape's
+	  unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
+	                        table's events per hundred as row marbles, the rows among themselves by
+	                        weight (their own, on the ground, for their role in the view), empty for
+	                        the rest; each worked out the first time a unit of it draws, kept for the
+	                        day; and each unit's fresh bag of its fill
+	  roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
+	                        toward the farthest from those placed, until every route tile has one close by
+	  scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
+	                        the row's role, offered the row and assigned what it took
+	  view_bag.gd           a bag of marbles drawn without putting back: a unit's, of its view's and
+	                        ground's fill, or a whole walk's; every row possible there as often as its
+	                        weight, and the empty event, only what the unit accepts
+	  marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
+	                        out again largest first as each is added, what the room left or the
+	                        layout cannot hold left out, at most one of a row in the unit
+	  location_ground.gd    what the dawn draw and her walk's siting ask of the day: a row's event at a
+	                        location if valid among the plans it is handed (on a tile of the draw's
+	                        choosing or a tile the siting brings), the location's own weight; the
+	                        day's own is `RuledLocationGround`
+	  ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
+	                        fits and the day's rules leave it valid among the plans it is handed, the
+	                        location's weight; handed the walk's ground and the bodies the day stands,
+	                        and its two settings: the first allowed tile or the roomiest, and a route
+	                        kept on its location's run
+	  location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
+	                        ground on the day, and the candidate built on one
+	  street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
+	                        may stand, given what the walk placed and what stands round it
+	  street_rules/         one file per rule: the unused calm, a door's clear ground, her line from a
+	                        route's junction box onto the sidewalks she walks, her walked sidewalk, a
+	                        pacing beat's opening, a route's ground off the streets kept free of
+	                        bodies and of cost, one sidewalk of a street of her routes kept open
+	                        past its bodies, and the escape's one notice at a time and its walk kept
+	                        open
+	  street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
+	                        where one refuses, else the room round it
+	  roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
+	                        if valid, the route tiles one is close by, standing one; the day's own is
+	                        `RuledRoadblockGround`
+	  dawn_phases/          the dawn's phases, one class each with run(context), handed the dawn's
+	                        context: the ambient rows, the scars, the masts, the wall's bodies, the calm
+	                        area kept clean, the roadblocks, the scripted rows, the one-shots, the park
+	                        spoilers, the moments, the dawn draw (prepared, each unit drawn as she
+	                        walks), the run lesson, the roadblock count; and the roadblock phase's
+	                        ruled ground
+	  mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
+	                         junction corners, squares and the main road; a pure function of the map
 	way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
 	                      junction box to junction box by the walk's through roads, a walker
 	                      straight on; made once a walk and handed to the director
@@ -260,125 +381,6 @@ src/
 	checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
 	                      under a raised boom, the crossing's warning and the guard it sets on her;
 	                      what a door does to her it says as an intent the manager carries out
-	event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, the escape
-	                      city's as well; a row's role, the walk's ground and the view bags
-	dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
-	                      builds once, the corridor, the day's events, locations, ground and rules;
-	                      handed to every phase, and what a phase asks it to record or judge: a fixed
-	                      part's location, a body off the routes
-	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
-	                      spawn one instance; told when its live event enters and leaves the world
-	event_save.gd         what a live event was in the middle of when it left the world: its age,
-	                      distance, notice and each behaviour's state, one value its plan carries
-	where_it_stands.gd    where a plan's live event stands now (`WhereItStands`): there or not, where,
-	                      facing which way, over or not; the plan asks it without naming the event
-	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along
-	                      the street, room among placed plans, where its body stands; handed the map
-	                      and what it asks (what stops a row, where a body stands, the room)
-	row_ground.gd         which tiles a row may stand on today and how many times over each is
-	                      offered: one object a walk, made at dawn and handed to every placement
-	                      that asks, then to the walk; handed the map, the corridor, the
-	                      home-street rule, the weights and which wall is one by cost, and answers the
-	                      weights it was made with
-	day_events.gd         the day's planned rows read through one object: what each spoils, a
-	                      pursuit; kept in step as the plan is built, never saved
-	calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used
-	                      this act, the one that does not count today
-	walk_events.gd        the walk's plans read through one object once it has started: the plans
-	                      in the order they stream, everything but one, what stands in an area, the
-	                      doors, the calm areas, the reach, the day's locations, its ground and its
-	                      units' draw
-	day_reach.gd          where she can get to from home: the ground the walk's plan shuts and the
-	                      flood over it, made as the walk starts and told what each unit draws; a
-	                      shortest walk from home to a tile; and the walk her paths take within a
-	                      circle, the measure of close by
-	way_confirmation.gd   whether she can be sent to a place, by where it stands: inside the ground
-	                      drawn round her as it is, beyond it once the units along a way from home
-	                      have drawn and a way stands that no undrawn unit lies near
-	walk_ground.gd        the walk kept open past everything standing on it: each street a
-	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
-	body_stance.gd        how a body built at a point stands on its street, derived once and handed
-	                      round: where, which way it lies, the side a vehicle shows, and its
-	                      pieces laid out there, the one layout the walk, the record, the live body
-	                      and its look and the rig ask
-	standing_piece.gd     one solid piece of a body where it stands: its middle, shape and axis
-	day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
-	                      lots, junction boxes), laid out at dawn and handed round: each one's view,
-	                      what a fixed part holds, what is taken or drawn,
-	                      and the open section of a view nearest along her paths; for a walk with no
-	                      corridor, the streets the walk names and nothing beyond them
-	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
-	                      in each, a section taken whole by an event that spans the street
-	location.gd           one location: its street, section, tiles, view, what stands on it and the
-	                      beat her walk stood there, the whole it is part of and the run a route
-	                      starting in it may lie on
-	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
-	                      an alley, a park or a square (its kind of ground); its name, its rank and
-	                      its stream for the day, its view, the most permissive of its locations',
-	                      and the beats her walk stands on its locations
-	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
-	                      sections and half-filled ones, what share of a street (a section, a
-	                      location) a marble may still take
-	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
-	                      junction box, or a shared alley, park or square
-	unit_bags.gd          the bag a unit draws from, answered by the walk: on a day, the fresh bag of
-	                      the fill `UnitFills` answers for the unit's view and kind of ground
-	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
-	                      every touching unit of lower rank, from the bag the walk's bags answer
-	                      for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
-	                      answers for its view and kind of ground), judged among the dawn's plans,
-	                      the touching units' draws and the beats her walk laid in the unit or a
-	                      touching one; a walk drawn whole is drawn at dawn in its units' order,
-	                      each among everything before it
-	whole_walk_bag.gd     one bag every unit of a walk draws from, a refused marble left in it for the
-	                      next unit: the escape's
-	unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
-	                      table's events per hundred as row marbles, the rows among themselves by
-	                      weight (their own, on the ground, for their role in the view), empty for
-	                      the rest; each worked out the first time a unit of it draws, kept for the
-	                      day; and each unit's fresh bag of its fill
-	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
-	                      toward the farthest from those placed, until every route tile has one close by
-	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
-	                      the row's role, offered the row and assigned what it took
-	view_bag.gd           a bag of marbles drawn without putting back: a unit's, of its view's and
-	                      ground's fill, or a whole walk's; every row possible there as often as its
-	                      weight, and the empty event, only what the unit accepts
-	marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
-	                      out again largest first as each is added, what the room left or the
-	                      layout cannot hold left out, at most one of a row in the unit
-	location_ground.gd    what the dawn draw and her walk's siting ask of the day: a row's event at a
-	                      location if valid among the plans it is handed (on a tile of the draw's
-	                      choosing or a tile the siting brings), the location's own weight; the
-	                      day's own is `RuledLocationGround`
-	ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
-	                      fits and the day's rules leave it valid among the plans it is handed, the
-	                      location's weight; handed the walk's ground and the bodies the day stands,
-	                      and its two settings: the first allowed tile or the roomiest, and a route
-	                      kept on its location's run
-	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
-	                      ground on the day, and the candidate built on one
-	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
-	                      may stand, given what the walk placed and what stands round it
-	street_rules/         one file per rule: the unused calm, a door's clear ground, her line from a
-	                      route's junction box onto the sidewalks she walks, her walked sidewalk, a
-	                      pacing beat's opening, a route's ground off the streets kept free of
-	                      bodies and of cost, one sidewalk of a street of her routes kept open
-	                      past its bodies, and the escape's one notice at a time and its walk kept
-	                      open
-	street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
-	                      where one refuses, else the room round it
-	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
-	                      if valid, the route tiles one is close by, standing one; the day's own is
-	                      `RuledRoadblockGround`
-	dawn_phases/          the dawn's phases, one class each with run(context), handed the dawn's
-	                      context: the ambient rows, the scars, the masts, the wall's bodies, the calm
-	                      area kept clean, the roadblocks, the scripted rows, the one-shots, the park
-	                      spoilers, the moments, the dawn draw (prepared, each unit drawn as she
-	                      walks), the run lesson, the roadblock count; and the roadblock phase's
-	                      ruled ground
-	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
-	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: made over what its
 	                       events are set up in (`EventSurroundings`), then handed the run,
 	                       today's streets, the poster walls and the player; starts every walk

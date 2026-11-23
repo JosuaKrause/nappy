@@ -1,7 +1,7 @@
 # The gap between two route events' ends is held, and two checks pull request 1662 weakened are tightened
 
 **What is wrong.** No suite holds the plan's gap between two route events' ends. Stubbing `EventPlan._ends()`
-(`src/events/event_plan.gd`) to the body alone passes every suite, the scheduler's included (pull request
+(`src/events/model/event_plan.gd`) to the body alone passes every suite, the scheduler's included (pull request
 1662's review). With that change, pull request 1662 left two checks slightly weaker:
 
 - `tests/test_day_locations.gd`'s section-order check no longer ties a section's number to its index in the

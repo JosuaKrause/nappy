@@ -1552,7 +1552,7 @@ Each item quotes the code on this branch.
 EventScheduler.build_day(context):
     the context (DawnContext) holds the day's inputs and gives each phase its own stream off the
     day's seed
-    the dawn's phases are the thirteen phase classes under src/events/dawn_phases/ (beside their
+    the dawn's phases are the thirteen phase classes under src/events/model/dawn_phases/ (beside their
     base, DawnPhase, and RuledRoadblockGround), run in the order of EventScheduler._phases(); steps 2 to 9 below are the phases, step 2 being four of them, with
     DawnCalmKeptClean (which calm area the spoilers leave alone) between steps 2 and 3 and
     DawnRoadblockCount (the run-log count of route tiles day 13's roadblocks leave uncovered) after 9
@@ -1633,7 +1633,7 @@ number an act, so a day's `plan` line reads as *n sited, m ahead*.
 ### Where in the city, and why
 
 **The pool is narrower than "every tile of the right type" before a single weight is applied.**
-Which tiles a row may stand on is the day's ground's answer (`RowGround`, `src/events/row_ground.gd`):
+Which tiles a row may stand on is the day's ground's answer (`RowGround`, `src/events/model/row_ground.gd`):
 one object a walk, made at dawn by the dawn's context (`DawnContext.ground()`, with
 `EventScheduler.row_ground()`), which scans the map once for each
 question a row asks and keeps the answer, and is handed to every placement that asks: the dawn's
