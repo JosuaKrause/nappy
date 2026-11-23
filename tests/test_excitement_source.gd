@@ -5,12 +5,16 @@ extends RefCounted
 ## rules that are only its own, and the door rule the world states once
 ## (`ExcitementSources.all_at()`).
 
+const STEP := 1.0 / 60.0
+
 func run(t: TestRunner) -> void:
 	_test_the_ledger_is_a_sliding_sum_on_the_source_clock(t)
 	_test_the_first_landing_is_told_once(t)
 	_test_the_nets_sum_to_the_bar_rise(t)
 	_test_an_event_caches_its_rate_on_its_age(t)
 	_test_an_event_caret_reads_where_its_instance_says_she_is(t)
+	_test_asking_for_the_key_does_not_freeze_the_caret(t)
+	_test_the_caret_strength_follows_her_place_and_motion(t)
 	_test_an_outranked_source_projects_nothing(t)
 	_test_a_crowd_body_is_never_cached(t)
 	_test_a_crowd_body_jolt_widens_its_set(t)
@@ -130,6 +134,36 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 			"and the answer moves with her inside one tick, keyed on where she is")
 	instance.free()
 
+## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
+## gets.** `caret_strength()` caches its projection so that the four things wanting it in one
+## frame share one sampling loop — and the gate is now the *first* of the four to ask, at the end
+## of this instance's own `_process()`, while where she is is told from outside by
+## `EventManager` (`WhereSheIs.tell()`) and `ExcitementHalo` at whatever point in the frame
+## those nodes run. Keyed on `age` alone the gate's answer stood for the whole tick, computed
+## against wherever she was last frame, or against `Vector2.INF` before anything had said where
+## she was at all: a lethal cyclist
+## ridden straight at her read as carrying no caret.
+func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
+	if not def:
+		return
+	var her := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]),
+			Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
+	# Ticks with nobody's position known, so the gate caches an answer for this `age` against
+	# `Vector2.INF` — the state the running game is in on any frame whose event `_process()` runs
+	# before whoever tells where she is (`WhereSheIs.tell()`).
+	for i in int(ceil(def.telegraphs_for() / STEP)) + 1:
+		instance.step(STEP)
+	t.check(instance.source().caret_strength() == 0, "with nobody to aim at there is no caret")
+	her.tell(instance.global_position + Vector2(def.heard_within(), 0.0))
+	t.check(instance.source().caret_strength() == 2,
+			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
+	instance.free()
+
 func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	var moving := _def("moving", 30.0).redraft()
@@ -202,3 +236,35 @@ func _total_at_the_origin(world: WorldContext) -> float:
 	for pair: Array in world.excitement_sources_at(Vector2.ZERO):
 		total += pair[1]
 	return total
+
+## The caret's own 0/1/2 strength follows where she is and how she moves: a loose dog that ends the
+## day on contact (a copy of its row with lethal set) is amber when she is far off and closing on
+## it, doubled red with her on it, and nothing with her away and still.
+func _test_the_caret_strength_follows_her_place_and_motion(t: TestRunner) -> void:
+	var def := _made_lethal(EventCatalogue.by_id("loose_dog"))
+	var her := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
+	var here := instance.global_position
+	var states := [
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+		[Vector2(150.0, 0.0), Vector2(-100.0, 0.0), 1],
+		[Vector2.ZERO, Vector2.ZERO, 2],
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+	]
+	var strengths := []
+	for state: Array in states:
+		her.tell(here + state[0])
+		instance.source().set_her_motion(state[1])
+		strengths.append(instance.source().caret_strength())
+	t.check(strengths == [0, 1, 2, 0], "she is far off, closing, on it and far off again (%s)" % [strengths])
+	instance.free()
+
+## A copy of `def` that ends the day at its core, the catalogue's own row left as it is, since every
+## suite shares it: made the way the game makes a derived row (`EventDef.at_heat()`,
+## `as_warned_first()`), a redraft, which shares the row's body value.
+static func _made_lethal(def: EventDef) -> EventDef:
+	var draft := def.redraft()
+	draft.lethal(LethalSpec.at_its_core())
+	return draft.build()

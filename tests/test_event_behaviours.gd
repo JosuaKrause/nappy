@@ -9,6 +9,8 @@ const STEP := 0.1
 
 func run(t: TestRunner) -> void:
 	_test_the_pursuit_round_trips(t)
+	_test_a_robber_out_of_his_radius_keeps_waiting(t)
+	_test_a_robber_who_notices_her_turns_to_face_her_exactly(t)
 	_test_the_masked_mans_warning_round_trips(t)
 	_test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t)
 	_test_the_hold_round_trips(t)
@@ -391,3 +393,36 @@ func _test_a_car_is_composed_of_its_vehicle(t: TestRunner) -> void:
 			"a patrol car drives, but stays put with no route to drive; a robber does not drive")
 	patrol.free()
 	robber.free()
+
+## A waiting robber stays waiting at any bearing while she is outside his notice radius
+## (`EventDef.notice_within()`, 180px): he is only watching the street, not noticing her.
+func _test_a_robber_out_of_his_radius_keeps_waiting(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	var instance_where := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
+	t.check(instance.is_waiting(), "nobody has come near him yet")
+	for sector in range(8):
+		instance_where.tell(Vector2.from_angle(deg_to_rad(sector * 45.0)) * (def.notice_within() + 40.0))
+		t.check(instance.is_waiting(), "still only waiting at sector %d" % sector)
+	instance.free()
+
+## Once she is inside the notice radius one step of the pursuit has him notice her and turn to face
+## her exactly, which every later picture of him reads (`tests/test_event_views.gd`, the robber
+## who lunges faces her through the chase).
+func _test_a_robber_who_notices_her_turns_to_face_her_exactly(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	var instance_where := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
+	# Southeast of him and inside `EventDef.notice_within()`, so one `EventPursuit` step notices
+	# her and turns to face her.
+	var her := Vector2.from_angle(deg_to_rad(45.0)) * (def.notice_within() - 10.0)
+	instance_where.tell(her)
+	instance.step(STEP)
+	t.check(not instance.is_waiting(), "he has noticed her")
+	var expected := (her - instance.global_position).normalized()
+	t.check(instance.facing_now().is_equal_approx(expected), "he turned to face her exactly")
+	instance.free()

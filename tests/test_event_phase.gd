@@ -35,6 +35,7 @@ func run(t: TestRunner) -> void:
 	_test_no_field_reaches_past_silent_beyond(t)
 	_test_contribution_skips_only_silence(t)
 	_test_flocks_are_not_skipped(t)
+	_test_roadwork_barrier_follows_alley_axis(t)
 
 # ------------------------------------------------------------------- the clock ---
 
@@ -665,3 +666,40 @@ func _test_flocks_are_not_skipped(t: TestRunner) -> void:
 	t.check(flock.source().contribution_at(far_bird) > 0.0,
 			"a bird far past its flock's silent_beyond() is still heard where it is")
 	flock.free()
+
+## Alley mouths have no corridor band for an instance to read its spread's axis off. Their own
+## rectangle supplies the axis instead: a horizontal alley is sealed by a vertical spread across its
+## short side, while a vertical alley keeps the default horizontal spread. A roadworks barrier set
+## up in a horizontal and a vertical alley of a generated map says which way it runs.
+func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
+	var map := CityGenerator.generate(4242)
+	var horizontal := Rect2i()
+	var vertical := Rect2i()
+	for rect: Rect2i in map.alley_lots():
+		# An alley the generator made solid has no ground to stand on (see `SealPlanner`).
+		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+			continue
+		if rect.size.x > rect.size.y and not horizontal.has_area():
+			horizontal = rect
+		elif rect.size.y > rect.size.x and not vertical.has_area():
+			vertical = rect
+	t.check(horizontal.has_area() and vertical.has_area(),
+			"the generated map has a horizontal and a vertical alley to put a barrier in")
+	if not (horizontal.has_area() and vertical.has_area()):
+		return
+	var barrier := EventCatalogue.by_id("construction")
+	var across_a_horizontal := EventInstance.new()
+	across_a_horizontal.setup(barrier,
+			map.tile_to_world(horizontal.position + horizontal.size / 2), PackedVector2Array(),
+			Vector2.RIGHT,
+			EventSurroundings.new().on(map))
+	t.check(across_a_horizontal.runs_vertically(),
+			"a horizontal alley gets a vertical barrier spread across its mouth")
+	across_a_horizontal.free()
+	var across_a_vertical := EventInstance.new()
+	across_a_vertical.setup(barrier, map.tile_to_world(vertical.position + vertical.size / 2),
+			PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
+	t.check(not across_a_vertical.runs_vertically(),
+			"a vertical alley keeps a horizontal barrier spread across its mouth")
+	across_a_vertical.free()
