@@ -293,12 +293,6 @@ class Exception_:
 EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
-        "HelpText",
-        "the texts compose the controls' token",
-        ("src/ui/texts.gd",),
-    ),
-    Exception_(
-        "names",
         "SpawnSiting",
         "a row's lead is checked against the siting's least distance",
         ("src/events/event_def.gd",),

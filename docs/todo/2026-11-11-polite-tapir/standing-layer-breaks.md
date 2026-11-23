@@ -18,18 +18,16 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **The rest**, small misplacements: the save indicator reading `GameSave`; the
-  texts' `HelpText` token; her class's type tests where she is not handed in
-  (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
-  of the neighbor's raid; and the row's check against `SpawnSiting`'s least distance.
+- **The rest**, small misplacements: the save indicator reading `GameSave`; her class's type tests
+  where she is not handed in (`interior_scene.gd`); and the row's check against `SpawnSiting`'s least
+  distance.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
   that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
-  building's pass; `GameSave` and
-  `HelpText` in the view's pass;
+  building's pass; `GameSave` in the view's pass;
   `SpawnSiting` with row 4b of minty-quail's `event-interface.md`.
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
