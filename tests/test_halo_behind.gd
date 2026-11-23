@@ -10,6 +10,7 @@ extends RefCounted
 ## changing.
 
 const EastWestStreet = preload("res://tests/east_west_street.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 func run(t: TestRunner) -> void:
 	await _test_the_rim_is_painted_before_the_scene(t)
@@ -23,16 +24,20 @@ func _test_the_rim_is_painted_before_the_scene(t: TestRunner) -> void:
 		# stands on decides.
 		var ground: WorldMap = EastWestStreet.new() if vertical else WorldMap.open_ground()
 		var instance := EventInstance.new()
+		var drawer := RecordingEventDrawer.new(atlas)
 		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(),
 				Vector2.RIGHT,
 				EventSurroundings.new().on(ground) \
-					.drawn_from(atlas))
+					.drawn_from(atlas) \
+					.drawing_through(drawer))
 		t.add_child(instance)
-		await t.get_tree().process_frame
+		# The slices are put in at the end of the first frame and their scenery drawn on the next.
+		for i in 3:
+			await t.get_tree().process_frame
 		instance.step(instance.telegraphs_for() + 0.01)
 		t.check(instance.runs_vertically() == vertical,
 				"the crash runs %s the screen on its street" % ("down" if vertical else "across"))
-		var first := _first_slice(instance)
+		var first := _first_slice(instance, drawer)
 		var sceneries := _sceneries_on(first)
 		t.check(not sceneries.is_empty(), "the crash has its scenery (vertical %s)" % vertical)
 		instance.source().rim().set_strength(EntityHalo.MAX_ALPHA,
@@ -59,7 +64,8 @@ func _test_the_rim_is_given_back_when_the_slices_go(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT,
-			EventSurroundings.new().drawn_from(atlas))
+			EventSurroundings.new().drawn_from(atlas) \
+				.drawing_through(RecordingEventDrawer.new(atlas)))
 	t.add_child(instance)
 	await t.get_tree().process_frame
 	instance.step(instance.telegraphs_for() + 0.01)
@@ -67,18 +73,17 @@ func _test_the_rim_is_given_back_when_the_slices_go(t: TestRunner) -> void:
 	var rim := instance.rim()
 	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,
 			"a pick builds the crash's rim behind its first slice")
-	instance.look.release_nodes()
-	t.check(instance.rim() == null and not is_instance_valid(rim),
-			"letting go of the slices gives the rim back, and the instance holds none")
 	t.remove_child(instance)
+	t.check(instance.rim() == null and not is_instance_valid(rim),
+			"leaving the tree lets go of the slices and gives the rim back; none is held")
 	instance.free()
 	atlas.release(&"events")
 
-## The first slice `instance`'s picture is drawn in, found where the look stood it: beside the
-## instance in its parent (`EventInstance.add_beside_it()`), the first of its look's
-## (`SpreadLook.slices()`).
-static func _first_slice(instance: EventInstance) -> SpreadLook.Slice:
-	var slices := (instance.look as SpreadLook).slices()
+## The first slice `instance`'s picture is drawn in, as `drawer` saw it drawn: beside the instance
+## in its parent (`EventInstance.add_beside_it()`).
+static func _first_slice(instance: EventInstance,
+		drawer: RecordingEventDrawer) -> SpreadLook.Slice:
+	var slices := drawer.slices()
 	if slices.is_empty() or slices[0].get_parent() != instance.get_parent():
 		return null
 	return slices[0]

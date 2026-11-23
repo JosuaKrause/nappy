@@ -8,9 +8,11 @@ extends RefCounted
 ## still build a real object that is not the record: `_test_draws_are_counted_by_listening` makes one
 ## of each node class the record sorts a draw by (the sorting is by the node's class, so only the
 ## class itself can be listened to), and `_test_a_timed_body_runs_once` runs a real event instance
-## on real frames under the record; that one is the event's own check (an instance handed a record
-## times itself once a frame) and moves to the events' suites with them, which two live pull
-## requests own.
+## on real frames under the record, with a stand-in for the screen it asks; that one is the event's
+## own check (an instance handed a record times itself once a frame), kept here because the
+## bucket it reads, `events`, is the record's.
+
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 const STEP := 1.0 / 60.0
 ## How long a test holds the clock inside a bucket it wants to read back, in microseconds: long
@@ -439,17 +441,17 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t: TestRunner) -> void
 func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	var record := FrameRecord.new()
 	var def := EventCatalogue.by_id("protest")
-	var untimed_event := _event(t, def)
-	var untimed_look := _BucketLook.watching(untimed_event)
+	var untimed_view := _SlowView.new()
+	var untimed_event := _event(t, def, untimed_view)
 	var scratch := FrameLedger.new(4)
 	record.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
 	await _one_drawn_frame(t, untimed_event)
 	var untimed := _row_so_far(scratch)
-	t.check(untimed[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0 and untimed_look.redraws == 1,
+	t.check(untimed[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0 and untimed_view.asked == 1,
 			"an event handed no record is not timed while another is on")
-	var event := _event(t, def, record)
-	var look := _BucketLook.watching(event)
+	var view := _SlowView.new()
+	var event := _event(t, def, view, record)
 	await _one_drawn_frame(t, event)
 	# Time spent after the frame, measured, lands in what was running before the event: had the
 	# event left its bucket open, it would land in `events` on top of the redraw's own.
@@ -457,9 +459,9 @@ func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	OS.delay_usec(4 * SPENT_US)
 	var after := Time.get_ticks_usec() - after_from
 	var timed := _row_so_far(scratch)
-	t.check(look.redraws == 1 and timed[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] >= SPENT_US,
+	t.check(view.asked == 1 and timed[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] >= SPENT_US,
 			"a timed event's drawn frame redraws once a frame, inside the events bucket (%d redraws)"
-			% look.redraws)
+			% view.asked)
 	t.check(timed[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 1
 			and timed[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= after
 			and timed[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] < after,
@@ -481,7 +483,7 @@ func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	record.stop()
 	await _one_drawn_frame(t, event)
 	var stopped := _row_so_far(scratch)
-	t.check(look.redraws == 2
+	t.check(view.asked == 2
 			and stopped[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0
 			and stopped[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] == 0,
 			"once the record stops, an event made under it redraws once and times nothing")
@@ -496,29 +498,26 @@ func _one_drawn_frame(t: TestRunner, event: EventInstance) -> void:
 	await t.get_tree().process_frame
 	event.set_process(false)
 
-## A look that only counts how many times its event's drawn frame asked it to redraw.
-## `watching()` lets the event's own look go first, so nothing it built is left over.
-class _BucketLook extends EventLook:
-	var redraws := 0
+## The screen an event's look asks whether any of it is shown, which counts the asks and spends the
+## time in each: the look asks it once in each drawn frame's redraw check, which is the call the
+## record times under `events`, so the asks are the times the event's drawn frame ran its redraw
+## check and the time spent in each is spent inside it.
+class _SlowView extends DrawnView:
+	var asked := 0
 
-	static func watching(instance: EventInstance) -> _BucketLook:
-		instance.look.release_nodes()
-		var look := _BucketLook.new(instance, instance.row().look(), instance.row().body(),
-				EventDrawer.new(null), false, DrawnView.new())
-		instance.look = look
-		return look
-
-	## Overrides EventLook.redraw_if_the_picture_changed.
-	func redraw_if_the_picture_changed() -> bool:
-		redraws += 1
+	## Overrides DrawnView.shows.
+	func shows(_item: Node2D, _reach: Rect2) -> bool:
+		asked += 1
 		OS.delay_usec(SPENT_US)
-		return false
+		return true
 
 ## A live event standing alone, its process callback off until the test lets it draw, as
 ## `tests/test_acts.gd` builds one.
-func _event(t: TestRunner, def: EventDef, timing: FrameTiming = null) -> EventInstance:
+func _event(t: TestRunner, def: EventDef, view: DrawnView,
+		timing: FrameTiming = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().shown_by(view) \
+			.drawing_through(RecordingEventDrawer.new())
 	if timing != null:
 		surroundings.timed_by(timing)
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, surroundings)

@@ -330,13 +330,13 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var stance := BodyStance.of(_map, definition, at, face)
 	position = stance.center()
 	_heading = face
-	look = EventLooks.for_row(self, definition.look(), definition.body(),
+	_look = EventLooks.for_row(self, definition.look(), definition.body(),
 			definition.takes_a_victim_by(), _surroundings.drawer(), not _surroundings.draws(),
 			_surroundings.drawn_view(), _composed.barrier_post())
-	look.face(face)
-	look.stand_as(stance)
-	if look is SpreadLook:
-		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
+	_look.face(face)
+	_look.stand_as(stance)
+	if _look is SpreadLook:
+		(_look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
 	_body = EventBody.new(definition, definition.body(), _where, self, stance, _gate_state)
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventBody.is_walked_round()`).
@@ -412,7 +412,7 @@ func _ready() -> void:
 		_body.go_down(_heading)
 	if _composed.flock():
 		_composed.flock().build()
-	look.build_nodes()
+	_look.build_nodes()
 
 ## Where its body stands, which is where the street is still shut: `global_position`, or where a
 ## barrier's guard left it (`EventBarrierPost.body_position()`), so a caller never has to ask which
@@ -476,7 +476,7 @@ func stance() -> BodyStance:
 ## `EventLook.draw_body` and `EventLook.current_bob` so its ring rides the same lift
 ## `EventLook.draw()` gives the body.
 func _build_halo() -> EntityHalo:
-	var halo := EntityHalo.new(look.draw_body, look.current_bob)
+	var halo := EntityHalo.new(_look.draw_body, _look.current_bob)
 	var holder := _rim_holder()
 	holder.add_child(halo)
 	halo.position = global_position - holder.global_position
@@ -491,7 +491,7 @@ func _build_halo() -> EntityHalo:
 ## the first slice of a long picture drawn in slices, so the rim is behind the whole picture as it
 ## is behind a picture drawn on this node).
 func _rim_holder() -> Node2D:
-	var holder := look.rim_holder()
+	var holder := _look.rim_holder()
 	return holder if holder != null else self
 
 ## Whether this instance is solid right now (`EventBody.is_solid()`). True from `_ready()` for
@@ -558,15 +558,15 @@ var _timing := FrameTiming.new()
 ## tick left, so the tick writes no drawing property. Timed under the record's events, as the step
 ## is.
 func _process(_delta: float) -> void:
-	if look == null:
+	if _look == null:
 		return
 	_take_the_layer_it_warns_on()
 	if _timing.is_on():
 		var outer := _timing.enter(FrameTiming.EVENTS)
-		look.redraw_if_the_picture_changed()
+		_look.redraw_if_the_picture_changed()
 		_timing.leave(outer)
 		return
-	look.redraw_if_the_picture_changed()
+	_look.redraw_if_the_picture_changed()
 
 ## Whether a hand holds it still, so its manager does not step it: a scene recipe that walks it
 ## itself (`SceneRecipeRuntime`). Its drawing goes on.
@@ -1099,7 +1099,7 @@ func move_to(at: Vector2) -> void:
 	global_position = stance.center()
 	_move.place(position)
 	_body.land_at(stance)
-	look.stand_as(stance)
+	_look.stand_as(stance)
 	_idle_phase_offset = _position_roll(101)
 	_excitement.invalidate_contribution()
 	reset_physics_interpolation()
@@ -1782,19 +1782,19 @@ class Rim extends SourceRim:
 func _the_band_carries_the_rim() -> bool:
 	var post := _composed.barrier_post()
 	return is_on_its_way_out() and post != null and post.has_left_its_body() \
-			and look.band_node() != null and not is_gone()
+			and _look.band_node() != null and not is_gone()
 
 ## The band's rim, behind the band's first slice, drawn before every other part of the band, as a
 ## rim is behind the picture it outlines (`_rim_holder()`).
 func _build_band_halo() -> EntityHalo:
 	var halo := EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
-	var holder := (look as RoadblockLook).band_rim_holder()
+	var holder := (_look as RoadblockLook).band_rim_holder()
 	holder.add_child(halo)
-	halo.position = look.band_node().global_position - holder.global_position
+	halo.position = _look.band_node().global_position - holder.global_position
 	return halo
 
 func _draw_the_band_for_the_halo(canvas: CanvasItem) -> void:
-	look.draw_the_band(canvas, Vector2.ZERO)
+	_look.draw_the_band(canvas, Vector2.ZERO)
 
 func _release_rims_on_slices() -> void:
 	_rim.release_on_slices()
@@ -1809,20 +1809,18 @@ func rim() -> EntityHalo:
 ## its drawer and the drawn view in `setup()`): it draws the instance from what it asks it and,
 ## in the family looks, from some of its public state, decides when it is drawn again, and holds
 ## the drawing nodes a long picture is drawn in.
-## Public because suites read it: no game file outside this one does, so the CI list of test-only
-## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
-var look: EventLook
+var _look: EventLook
 
 func _draw() -> void:
-	look.draw()
+	_look.draw()
 
 ## Builds the drawing nodes again when the instance comes back into the tree after leaving it,
 ## which took them with it.
 func _enter_tree() -> void:
 	if _map:
 		_map.moves.join(_move, position)
-	if look:
-		look.enter_tree()
+	if _look:
+		_look.enter_tree()
 
 ## **Takes it out of the world now**: its move leaves the map's list at once and the node is freed
 ## at the end of the frame. Every place that frees an event goes through here, because the node
@@ -1837,8 +1835,8 @@ func _exit_tree() -> void:
 	if _map:
 		_map.moves.leave(_move)
 	_rim.band.forget()
-	if look:
-		look.release_nodes()
+	if _look:
+		_look.release_nodes()
 
 ## Adds `node` to the world this instance is drawn in, on the entity layer
 ## (`WorldContext.add_entity()`), or beside it in its own parent where no world draws it — a rig that

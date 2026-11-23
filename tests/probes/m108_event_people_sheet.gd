@@ -81,15 +81,16 @@ func _row(label: String, entries: Array) -> Dictionary:
 ## family reads its own fixed site facing this way, and every mobile one has `_heading` set the
 ## same way by `EventRouteWalk.advance()`/`EventPursuit` during play — `setup()`'s own `face` argument is
 ## the identical assignment (`_heading = face`), so sitting a fresh instance at each of the eight
-## headings and reading `_view_sector` back is the same selection the real draw path runs.
+## headings, a look made round a fake event at each, asked for its view and its mirror, is the same
+## selection the real draw path runs.
 func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 	var row := []
 	for sector in range(8):
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(def_id), Vector2.ZERO, PackedVector2Array(),
-				_sector_heading(sector))
-		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look._view_sector]
-		row.append(_entry(by_view[view], EightDirection.is_mirrored(instance.look._view_sector)))
+		var instance := FakeEvent.new()
+		instance.heading = _sector_heading(sector)
+		var look := instance.look_for(EventCatalogue.by_id(def_id))
+		var view := look.select_view(instance.heading)
+		row.append(_entry(by_view[view], look.is_mirrored()))
 		instance.free()
 	return row
 
@@ -100,14 +101,13 @@ func _robber_waiting_row() -> Array:
 	var row := []
 	var def := EventCatalogue.by_id("alley_robbery")
 	for sector in range(8):
-		var instance_where := WhereSheIs.nowhere()
-		var instance := EventInstance.new()
-		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().hearing(instance_where))
-		instance_where.tell(_sector_heading(sector) * (def.notice_within() + 40.0))
-		var view := instance.look.select_view(instance.look.robber_waiting_heading())
-		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view],
-				EightDirection.is_mirrored(instance.look._view_sector)))
+		var instance := FakeEvent.new()
+		instance.waiting = true
+		# Where she is told, from the origin with a clear line to her: the way to her.
+		instance.line_to_her = _sector_heading(sector) * (def.notice_within() + 40.0)
+		var look := instance.look_for(def)
+		var view := look.select_view(look.robber_waiting_heading())
+		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view], look.is_mirrored()))
 		instance.free()
 	return row
 

@@ -68,17 +68,18 @@ func _row(label: String, entries: Array) -> Dictionary:
 ## The exact runtime selection `EventLook._draw_eight_view()` makes, `side_faces_west` included
 ## — see that function's own doc comment. `setup()`'s own `face` argument is the identical
 ## assignment `draw_body()` reads (`_heading = face` for a fresh instance), so sitting a fresh
-## instance at each of the eight headings and reading `_view_sector` back is the same selection the
-## real draw path runs, whatever heading the row would actually reach in play — the probe's job is
-## to show the picture at every sector, not to reproduce which ones are reachable.
+## look made round a fake event at each of the eight headings and asking it for its view and its
+## mirror is the same selection the real draw path runs, whatever heading the row would actually
+## reach in play — the probe's job is to show the picture at every sector, not to reproduce which
+## ones are reachable.
 func _heading_row(def_id: String, by_view: Dictionary, side_faces_west: bool) -> Array:
 	var row := []
 	for sector in range(8):
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(def_id), Vector2.ZERO, PackedVector2Array(),
-				_sector_heading(sector))
-		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look._view_sector]
-		var mirror := EightDirection.is_mirrored(instance.look._view_sector)
+		var instance := FakeEvent.new()
+		instance.heading = _sector_heading(sector)
+		var look := instance.look_for(EventCatalogue.by_id(def_id))
+		var view := look.select_view(instance.heading)
+		var mirror := look.is_mirrored()
 		if view == "side" and side_faces_west:
 			mirror = not mirror
 		row.append(_entry(by_view[view], mirror))

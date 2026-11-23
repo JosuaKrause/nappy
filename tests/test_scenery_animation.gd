@@ -191,8 +191,14 @@ func _test_event_parts(t: TestRunner) -> void:
 			# The slices go into the world on the idle frame after the instance is made.
 			await t.get_tree().process_frame
 			instance.step(instance.telegraphs_for() + 0.01)
-			var sceneries := _sceneries_of(instance)
-			var first_ask := instance.look.redraw_if_the_picture_changed()
+			var sceneries := _sceneries_of(pictures)
+			# The redraw gate is asked of a look made round a fake event of the same row on the
+			# same axis, so that animation leaving the static key alone is asked of the gate on
+			# its own: its first ask after nothing was drawn is a draw.
+			var gated := FakeEvent.new()
+			gated.vertical = vertical
+			var gate := gated.look_for(EventCatalogue.by_id(id))
+			var first_ask := gate.redraw_if_the_picture_changed()
 			# The layers are drawn on the frame after they are made.
 			await t.get_tree().process_frame
 			var moving: Array[SceneryLayer] = []
@@ -218,8 +224,9 @@ func _test_event_parts(t: TestRunner) -> void:
 			for layer: SceneryLayer in moving + still:
 				before[layer] = _pictures_on(laid, layer)
 			instance.step(period * 0.5)
-			# The look shows the step on the next drawn frame.
-			var asked := instance.look.redraw_if_the_picture_changed()
+			gated.tick(period * 0.5, 0.0)
+			var asked := gate.redraw_if_the_picture_changed()
+			gated.free()
 			await t.get_tree().process_frame
 			for layer in moving:
 				var turned := _pictures_on(laid, layer)
@@ -263,7 +270,7 @@ func _test_event_parts(t: TestRunner) -> void:
 			await t.get_tree().process_frame
 			var rebound := false
 			instance.set_process(false)
-			for scenery in _sceneries_of(instance):
+			for scenery in _sceneries_of(pictures):
 				# The event is finished, so its look hides its slices' scenery; shown here, up to the
 				# event, with the look's frame held, so its layers are drawn and their pictures read.
 				var shown: Node = scenery
@@ -276,7 +283,7 @@ func _test_event_parts(t: TestRunner) -> void:
 				rebound = rebound or not animated.is_empty()
 			instance.set_process(true)
 			t.check(rebound, "reentry rebinds event scenery regions")
-			var again := _sceneries_of(instance)
+			var again := _sceneries_of(pictures)
 			instance.free()
 			await t.get_tree().process_frame
 			t.check(again.all(func(scenery: Variant) -> bool:
@@ -326,13 +333,13 @@ func _split_by_animation(t: TestRunner, scenery: EventScenery, laid: RecordingSc
 	await t.get_tree().process_frame
 	return [moving, still]
 
-## The scenery behind each of `instance`'s slices, in the slices' order.
-func _sceneries_of(instance: EventInstance) -> Array[EventScenery]:
+## The scenery behind each slice, in the slices' order, that `pictures` was handed to build and that
+## still stands: the layers of a slice it was drawn behind.
+func _sceneries_of(pictures: RecordingEventDrawer) -> Array[EventScenery]:
 	var found: Array[EventScenery] = []
-	for slice in (instance.look as SpreadLook).slices():
-		for child in slice.get_children():
-			if child is EventScenery:
-				found.append(child)
+	for entry in pictures.draws:
+		if entry.kind == &"scenery" and is_instance_valid(entry.canvas):
+			found.append(entry.canvas as EventScenery)
 	return found
 
 ## Where each of an instance's solid pieces stands, in world space.

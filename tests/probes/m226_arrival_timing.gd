@@ -5,7 +5,7 @@ extends RefCounted
 ## detection: drawing_parts() reads each part separately: the selected sprite frame and the
 ## wheels from EventPictures, the shadow polygon from the row's own parts (def.body().pieces(), then
 ## shape.shadow_outline()), the loose leash as this probe's own 26px rectangle, and the live
-## caret from instance.look.mark_rect(), flashing at EventPictures.MARK_FLASHES_PER_SECOND.
+## caret from a look's mark_rect(), flashing at EventPictures.MARK_FLASHES_PER_SECOND.
 ## See the retained evidence README.
 
 const STEP := 1.0 / 60.0
@@ -161,27 +161,29 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var parts: Array[Rect2] = []
 	var def := instance.row()
-	var view: String = instance.look.select_view(instance.facing_now())
-	var bob: float = instance.look.current_bob()
+	var fake := FakeEvent.answering_as(instance)
+	var look := fake.look_for(def)
+	var view: String = look.select_view(instance.facing_now())
+	var bob: float = look.current_bob()
 	var picture := ""
 	match def.picture():
 		EventDef.Look.CYCLIST:
 			var rider := [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B] \
 					if instance.is_drawn_as_a_pelican() \
 					else [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
-			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
+			picture = rider[1 if look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
-			picture = EventPictures.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
+			picture = EventPictures.dog_picture(view, look.gait_is_stepping(), look.gait_is_second_half())
 			# FigureLook._draw_loose_dog() draws this slack lead, 2px wide, trailing
 			# EventFootprints.LOOSE_LEAD_REACH (26px) behind the dog.
-			var behind := 26.0 if instance.look._heading_is_west() else -26.0
+			var behind := 26.0 if look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
 		EventDef.Look.FIRE_ENGINE:
 			picture = EventPictures.FIRE_ENGINE_BY_VIEW[view]
 		EventDef.Look.ARMY_TRUCK:
 			picture = EventPictures.ARMY_TRUCK_BY_VIEW[view]
 		EventDef.Look.CHARGING_DOG:
-			picture = (EventPictures.CHARGING_DOG_BY_VIEW_B if instance.look.gait_is_stepping()
+			picture = (EventPictures.CHARGING_DOG_BY_VIEW_B if look.gait_is_stepping()
 					else EventPictures.CHARGING_DOG_BY_VIEW)[view]
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
@@ -197,7 +199,8 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 				shadow = shadow.expand(point)
 			shadow.position.y += 0.0 if not wheels.is_empty() else bob
 			parts.append(shadow)
-	var mark: Rect2 = instance.look.mark_rect()
+	var mark: Rect2 = look.mark_rect()
+	fake.free()
 	if mark.has_area() and not (instance.is_telegraphing() \
 			and fmod(instance.age() * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
 		parts.append(mark)

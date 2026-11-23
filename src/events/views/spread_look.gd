@@ -453,7 +453,3 @@ func rim_holder() -> Node2D:
 	if not _slices.is_empty() and _slices[0].is_inside_tree():
 		return _slices[0]
 	return null
-
-## The slices, in drawing order.
-func slices() -> Array[Slice]:
-	return _slices
