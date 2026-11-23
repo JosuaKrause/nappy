@@ -82,10 +82,10 @@ enum Phase {
 	DONE,
 }
 
-## Where it is in its life — see `Phase`. Changed only by `transition()`. Public
-## because suites read it: no game file outside this one does, so the CI list of test-only
-## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
-var phase := Phase.WARNING
+## Where it is in its life — see `Phase`. Changed only by `transition()`; the phase questions
+## (`is_telegraphing()`, `is_waiting()`, `is_on_its_way_out()`, `has_parked()`, `is_gone()`,
+## `is_only_its_barrier()`) answer from it.
+var _phase := Phase.WARNING
 ## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge, a
 ## flush or the masked man's run. A row that left, parked or stopped before that is still within
 ## its telegraph's clock (`is_telegraphing()`).
@@ -95,11 +95,11 @@ var _telegraph_ended := false
 ## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
 ## showing its scenery on the next drawn frame, when its look asks `is_gone()`.
 func transition(to: Phase) -> void:
-	if phase == to:
+	if _phase == to:
 		return
-	if phase == Phase.WARNING and to == Phase.ACTIVE:
+	if _phase == Phase.WARNING and to == Phase.ACTIVE:
 		_telegraph_ended = true
-	phase = to
+	_phase = to
 	_excitement.invalidate_contribution()
 	# **Parked while it stands for good, and only then** (`MoveProposal.has_parked()`): a row
 	# that parks has once it stops where it arrives, and nothing leaving or gone stands anywhere
@@ -116,7 +116,7 @@ func age() -> float:
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
 func _settle_the_notice() -> void:
-	if phase == Phase.WARNING and chase_age() >= notice_time():
+	if _phase == Phase.WARNING and chase_age() >= notice_time():
 		transition(Phase.ACTIVE)
 
 ## Whether this cyclist is drawn as the pelican (`EventPictures.PELICAN_BY_VIEW`) rather than the
@@ -347,10 +347,10 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# telegraph of no length.
 	if definition.waits_for_her():
 		_notice.stop()
-		phase = Phase.WAITING
+		_phase = Phase.WAITING
 	else:
 		_notice.start(0.0)
-		phase = Phase.WARNING
+		_phase = Phase.WARNING
 		_settle_the_notice()
 	if definition.route().kind() == RouteSpec.Kind.ACROSS_ITS_ALLEY:
 		# Placed on the map with no route at all, so its own dash is built here, from the alley it
@@ -1166,8 +1166,8 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 ##
 ## Everything else that runs out of route drives on and is gone.
 func _be_done(may_park := true) -> void:
-	if phase == Phase.DONE or phase == Phase.LEAVING or phase == Phase.PARKED \
-			or phase == Phase.SPENT:
+	if _phase == Phase.DONE or _phase == Phase.LEAVING or _phase == Phase.PARKED \
+			or _phase == Phase.SPENT:
 		return
 	if counts_a_charge():
 		# `VisitCounter`'s own "-shaken"/"-outlasted" — a charge that had begun is over without
@@ -1235,7 +1235,7 @@ func way_left() -> PackedVector2Array:
 ## the one who chased walks back to his post and the barrier is armed again.)
 var _guard_spent: bool:
 	get:
-		return phase == Phase.SPENT
+		return _phase == Phase.SPENT
 
 func _has_expired() -> bool:
 	if is_waiting():
@@ -1265,9 +1265,9 @@ func end_now() -> void:
 ## shaken off at 2s into its 4.5s telegraph is still telegraphing as it trots away, to the mark,
 ## the alert and its pictures.
 func is_telegraphing() -> bool:
-	if phase == Phase.WARNING:
+	if _phase == Phase.WARNING:
 		return true
-	if phase == Phase.ACTIVE or phase == Phase.WAITING or _telegraph_ended or is_waiting():
+	if _phase == Phase.ACTIVE or _phase == Phase.WAITING or _telegraph_ended or is_waiting():
 		return false
 	return chase_age() < notice_time()
 
@@ -2159,7 +2159,7 @@ func leaves_behind() -> String:
 
 ## Whether it is over and gone (`Phase.DONE`).
 func is_gone() -> bool:
-	return phase == Phase.DONE
+	return _phase == Phase.DONE
 
 ## Whether it has stopped being an event and is only getting out of shot (`Phase.LEAVING`). It
 ## emits nothing, it cannot end the day, and it carries no cue: whatever it was, it is over. **The
@@ -2168,14 +2168,14 @@ func is_gone() -> bool:
 ## barrier costs nothing while he goes, as a roadblock's band never costs anything
 ## (`EventCatalogue._roadblock()`'s `intensity` 0).
 func is_on_its_way_out() -> bool:
-	return phase == Phase.LEAVING
+	return _phase == Phase.LEAVING
 
 ## Whether it has stopped where its route ended, for the rest of the day (`Phase.PARKED`): day 10's
 ## neighbor home before she reached them. A row whose route parks where it arrives parks at the
 ## end of its route; unlike `is_on_its_way_out()` this is not an ending: it is still the same event,
 ## standing still. See `_be_done()`.
 func has_parked() -> bool:
-	return phase == Phase.PARKED
+	return _phase == Phase.PARKED
 
 ## Whether it was created where a warning pointed, once that warning was over
 ## (`arrive_from_its_warning()`): the badge it had carries on until it comes into view.
@@ -2384,7 +2384,7 @@ func beat() -> PackedVector2Array:
 
 ## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
 func is_only_its_barrier() -> bool:
-	return phase == Phase.SPENT
+	return _phase == Phase.SPENT
 
 ## **Where it stands now, for the plan it is the live event of** (`EventPlan.enter_the_world()`):
 ## a handle that answers whether it is still there, where, which way it faces and whether it is

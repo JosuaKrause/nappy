@@ -95,7 +95,7 @@ func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	_advance(first, 0.3)
-	t.check(first.phase == EventInstance.Phase.WARNING, "the robber has noticed her")
+	t.check(first.is_telegraphing() and not first.is_waiting(), "the robber has noticed her")
 	# His held lunge is his own state, so it is set the one way the game sets it from outside: the
 	# state a stream-out carries, put back (`EventPursuit.restore()`).
 	var state := first.save().state_of("EventPursuit")
@@ -106,9 +106,15 @@ func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 	var carried := second.save().state_of("EventPursuit")
 	t.check(bool(carried["lunge_held"]) and is_equal_approx(float(carried["outrun_for"]), 0.4),
 			"his held lunge and his running clock come back")
-	t.check(second.phase == EventInstance.Phase.WARNING, "and he is still warning")
+	t.check(second.is_telegraphing() and not second.is_waiting(), "and he is still warning")
 	first.free()
 	second.free()
+
+## Whether the warning has run and it is neither waiting, leaving nor gone: what the stored phase's
+## active state said. `has_charged()` is not it: it answers true while a held lunge still warns.
+func _is_past_its_warning(instance: EventInstance) -> bool:
+	return not instance.is_telegraphing() and not instance.is_waiting() \
+			and not instance.is_on_its_way_out() and not instance.is_gone()
 
 ## Stood inside his run distance as he notices her, he runs once his warning has run, and one
 ## streamed out half way through it runs on the same tick as one that never left.
@@ -120,7 +126,8 @@ func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, def, Vector2.ZERO, path, first_where)
 	first_where.tell(her)
 	_advance(first, 0.5)
-	t.check(first.phase == EventInstance.Phase.WARNING, "inside his run distance, he warns first")
+	t.check(first.is_telegraphing() and not first.is_waiting(),
+			"inside his run distance, he warns first")
 	var second := _round_trip(t, first, "the masked man's warning", &"EventNoticeRun",
 			first_where)
 	first_where.tell(her)
@@ -129,9 +136,9 @@ func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
 	for i in int(Tuning.WARNING_ALONE_MAX / STEP) + 3:
 		first.step(STEP)
 		second.step(STEP)
-		if first_ran < 0 and first.phase == EventInstance.Phase.ACTIVE:
+		if first_ran < 0 and _is_past_its_warning(first):
 			first_ran = i
-		if second_ran < 0 and second.phase == EventInstance.Phase.ACTIVE:
+		if second_ran < 0 and _is_past_its_warning(second):
 			second_ran = i
 	t.check(first_ran >= 0, "he runs once his warning has run")
 	t.check(second_ran == first_ran,
@@ -148,12 +155,11 @@ func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t: T
 	var instance := _instance(t, def, Vector2.ZERO, path, instance_where)
 	instance_where.tell(Vector2((def.notice().runs_within() + def.notice_within()) * 0.5, 0.0))
 	_advance(instance, Tuning.WARNING_ALONE_MAX + 0.5)
-	t.check(instance.phase == EventInstance.Phase.WARNING,
+	t.check(instance.is_telegraphing() and not instance.is_waiting(),
 			"outside his run distance he is still warning after his warning's length")
 	instance_where.tell(Vector2(def.notice_within() + 50.0, 0.0))
 	instance.step(STEP)
-	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
-			"she leaving his notice has him wait again")
+	t.check(instance.is_waiting(), "she leaving his notice has him wait again")
 	instance.free()
 
 # ----------------------------------------------------------------------- hold ---
@@ -410,7 +416,7 @@ func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
 	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
 	t.check(second.has_lost_its_guard()
 			and int(second.save().state_of("EventBarrierPost").get("side", 0)) == side
-			and second.phase == EventInstance.Phase.SPENT,
+			and second.is_only_its_barrier(),
 			"it comes back as only the barrier, his post empty")
 	first.free()
 	second.free()

@@ -354,11 +354,28 @@ class Run extends RefCounted:
 				moments.leaving = tick
 			if moments.finished < 0 and instance.is_gone():
 				moments.finished = tick
-			line += "|%d:%s,%s,%s,%s,%s,%d,%d" % [i, var_to_str(instance.position.x),
+			line += "|%d:%s,%s,%s,%s,%s,%s,%d" % [i, var_to_str(instance.position.x),
 					var_to_str(instance.position.y), var_to_str(instance.facing_now().x),
 					var_to_str(instance.facing_now().y), var_to_str(instance.path_travelled()),
-					instance.phase, 1 if instance.has_parked() else 0]
+					_phase_word(instance), 1 if instance.has_parked() else 0]
 		_chain.update(line.to_utf8_buffer())
+
+	## The phase as a word, from the questions the event answers: the stored phase itself is not
+	## readable. A stopped event reads as active.
+	static func _phase_word(instance: EventInstance) -> String:
+		if instance.is_gone():
+			return "gone"
+		if instance.is_on_its_way_out():
+			return "leaving"
+		if instance.is_only_its_barrier():
+			return "barrier"
+		if instance.has_parked():
+			return "parked"
+		if instance.is_waiting():
+			return "waiting"
+		if instance.is_telegraphing():
+			return "warning"
+		return "charging" if instance.has_charged() else "active"
 
 	func report() -> String:
 		var parts: Array[String] = []
