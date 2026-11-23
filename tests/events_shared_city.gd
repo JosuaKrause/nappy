@@ -34,13 +34,11 @@ func _map() -> CityMap:
 		_shared_sites = _sites_of(_shared_map)
 	return _shared_map
 
-## `map`'s mast sites as the game works them out: once per city, on the city as built
-## (`EventWorld.work_out_mast_sites()`), before any day repaints it. A suite that plans a city over
+## `map`'s mast sites as the game works them out (`EventWorld.work_out_mast_sites()` is this call):
+## once per city, on the city as built, before any day repaints it. A suite that plans a city over
 ## many days asks once and hands the answer to every dawn it plans on that city.
 func _sites_of(map: CityMap) -> Array[MastSites.Site]:
-	var world := EventWorld.new()
-	world.work_out_mast_sites(map)
-	return world.mast_sites()
+	return MastSites.compute(map)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

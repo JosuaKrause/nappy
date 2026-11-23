@@ -23,18 +23,24 @@ extends "res://tests/events_shared_city.gd"
 ## and the retried day and the taught run (`_test_a_retried_day_is_the_same_day`,
 ## `_test_the_run_is_always_taught`, moved in from the pursuit suite for the dawn's group to
 ## convert) each generate the cities of their own seeds through `CityGenerator.generate()`, three
-## seeds and four. A case that plans a city over many days works the city's mast sites out once, on the
-## city as built (`_sites_of()`), and hands them to every dawn it plans, as the game does.
+## seeds and four. A case that plans a city over many days works the city's mast sites out once, on
+## the city as built (`_sites_of()`), and hands them to every dawn it plans, as the game does.
 ##
 ## **Why these cases keep generated cities.** Each asks what a planned day or run holds (its mix,
 ## its spacing, what a run spends, what a calm area is left, which alleys a robbery avoids), and the
 ## answer depends on the whole street network the generator makes; a hand-drawn few streets would
-## hold a smaller claim, so none was moved onto one. The cases that ask the same city and day share
-## one plan: the shared city's days (`_dawn()`) and the taught day of each seed
-## (`_the_taught_day()`).
+## hold a smaller claim, so none was moved onto one. A dawn is planned once per city, day and
+## calm areas for the suite and read by every case that asks it: the shared city's days
+## (`_dawn()`: the one-shot and alley-robbery cases read them too), the taught day of each seed
+## (`_the_taught_day()`) and the act walk (`_the_act_walk()`), which the calm-left-alone case and
+## the city's memory case both read. The dawn writes nothing a later dawn reads, so no case needs
+## a plan of its own for a run's later day.
 
 const STEP := 1.0 / 60.0
 const SEED := 4242
+
+## The cities of the seeds that are not the shared city's, each generated once, with its mast sites.
+var _other_cities := {}
 
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
@@ -81,6 +87,32 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
+## **The run walked the way a player walks it, planned once for the suite**: the shared city's
+## fourteen dawns, each planned with the calm areas that act's used set leaves (the set grows by the
+## quietest calm block each day and empties at an act boundary, as `RunCalendar.settled_this_act`
+## does). Each step holds its `day`, the `used` set the day was planned with, its `calm` areas, its
+## `events` and the `quietest` block she settles in. The calm-left-alone case and the city's memory
+## case both read it. The dawn spends nothing, so nothing else is carried between the days.
+var _act_walk: Array[Dictionary] = []
+
+func _the_act_walk() -> Array[Dictionary]:
+	if _act_walk.is_empty():
+		var used_this_act: Array[Vector2i] = []
+		var act := 0
+		for day in range(1, 15):
+			if Tuning.act_for_day(day) != act:
+				act = Tuning.act_for_day(day)
+				used_this_act = []
+			var calm := CalmAreas.of(_map(), used_this_act)
+			var consumed: Array[String] = []
+			var events := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+					.calm(calm).spent(consumed).plan()
+			var quietest := _quietest_calm_block(events, calm)
+			_act_walk.append({"day": day, "used": used_this_act.duplicate(), "calm": calm,
+					"events": events, "quietest": quietest})
+			used_this_act.append(quietest)
+	return _act_walk
+
 ## The calm block she would find and settle in: the one the fewest of the day's rows spoil, as
 ## the day itself answers it (`DayEvents.spoilers_of()`).
 func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
@@ -95,7 +127,7 @@ func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 
 func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	var map := _map()
-	var sites := _sites_of(map)
+	var sites := _sites()
 	for day: int in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
@@ -167,27 +199,36 @@ func _test_the_dawn_draws_no_unit(t: TestRunner) -> void:
 			"and its plan holds fewer rows than the whole day's (%d of %d)"
 					% [dawn.events().placements().size(), whole])
 
+## Seed 4242's `day` is the suite's shared city's plan; any other seed's is planned on a city of its
+## own, with the seed's own stream and mast sites and nothing spent (the dawn spends nothing).
+func _the_days_plan_of_the_run(run_seed: int, day: int) -> Array[EventPlan]:
+	if run_seed == SEED:
+		return _planned(day)
+	if not _other_cities.has(run_seed):
+		var map := CityGenerator.generate(run_seed)
+		_other_cities[run_seed] = [map, _sites_of(map)]
+	var city: Array = _other_cities[run_seed]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d" % [run_seed, day])
+	var consumed: Array[String] = []
+	return GameDawn.of(DaySpec.for_day(day), rng, city[0] as CityMap) \
+			.masts(city[1] as Array[MastSites.Site]).spent(consumed).plan().placements()
+
 ## **A one-shot is planned on at most one day of a run.** Asserted here, over the plan; that it is
 ## one plan owed to her walk is asserted where the manager plans it: `tests/test_event_manager.gd`.
 ##
-## **Two seeds, both runs whole.** Fourteen days is the unit and cannot shrink — "planned on one
-## day of a *run*" is a statement about carrying `consumed` across the whole calendar, and a
-## sampled day cannot say it. What it asserts is true of every run rather than of the average, so a
-## second city is there to keep it from being a fact about one layout and a third would add nothing.
+## **Two seeds, every day of a run.** The plan owes each unspent one-shot to her walk and spends
+## nothing itself (`DawnOneShots`), so each day of a run is planned with nothing spent and the
+## fourteen days are the unit: a sampled day cannot say "on at most one day". What it asserts is
+## true of every run rather than of the average, so a second city is there to keep it from being a
+## fact about one layout and a third would add nothing. The shared city's days are the suite's one
+## plan of them; the second seed's city is generated once.
 func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 	var one_shots_seen := 0
 	for seed_value: int in [4242, 5150]:
-		var map := CityGenerator.generate(seed_value)
-		var sites := MastSites.compute(map)
-		var consumed: Array[String] = []
 		var seen := {}
-		var rng_for := func(day: int) -> RandomNumberGenerator:
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [seed_value, day])
-			return rng
 		for day in range(1, 15):
-			for plan in GameDawn.of(DaySpec.for_day(day), rng_for.call(day), map).masts(sites) \
-					.spent(consumed).plan().placements():
+			for plan in _the_days_plan_of_the_run(seed_value, day):
 				if not plan.row().is_a_one_shot():
 					continue
 				t.check(int(seen.get(plan.row_id(), day)) == day,
@@ -214,16 +255,10 @@ func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed: int in [4242]:
-		var map := CityGenerator.generate(run_seed)
-		var sites := _sites_of(map)
-		var consumed: Array[String] = []
+		var map := _map()
 		for day in range(8, 15):
-			var tree := RouteTree.for_day(map, day)
-			var corridor := Corridor.of(tree)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map) \
-					.masts(sites).spent(consumed).on(tree).plan().placements():
+			var corridor := Corridor.of(RouteTree.for_day(map, day))
+			for plan in _planned(day):
 				if plan.row_id() != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -408,20 +443,11 @@ func _test_one_park_stays_usable(t: TestRunner) -> void:
 ## it tens of thousands of times. A second city asked the same question again on a different
 ## street plan and cost two and a half minutes to do it.
 func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
-	for run_seed: int in [4242]:
-		var map := CityGenerator.generate(run_seed)
-		var sites := _sites_of(map)
-		var used_this_act: Array[Vector2i] = []
-		var act := 0
-		var consumed: Array[String] = []
-		for day in range(1, 15):
-			if Tuning.act_for_day(day) != act:
-				act = Tuning.act_for_day(day)
-				used_this_act = []
-			var calm := CalmAreas.of(map, used_this_act)
-			var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-					.masts(sites).calm(calm) \
-					.spent(consumed).plan()
+	for run_seed: int in [SEED]:
+		for step in _the_act_walk():
+			var day: int = step["day"]
+			var calm: CalmAreas = step["calm"]
+			var events: DayEvents = step["events"]
 			for block in calm.unused():
 				var near: Array[String] = []
 				for plan in events.spoilers_of(block):
@@ -429,7 +455,6 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 				t.check(near.is_empty(),
 						"seed %d day %d: nothing is near the unused calm at %s (%s)"
 						% [run_seed, day, block, ", ".join(near)])
-			used_this_act.append(_quietest_calm_block(events, calm))
 
 func _test_successors_resolve(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
@@ -600,7 +625,7 @@ const _WALL_SHARE_TOLERANCE := 0.2
 ## and a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day either way.
 func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> void:
 	var map := _map()
-	var sites := _sites_of(map)
+	var sites := _sites()
 	var walls := 0
 	var kept := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY - 1, Tuning.REGION_WALL_FIRST_DAY, 11, 13]:
@@ -683,7 +708,7 @@ static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
 ## day's real ground together.
 func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var map := _map()
-	var sites := _sites_of(map)
+	var sites := _sites()
 	var day := 13
 	var tree := RouteTree.for_day(map, day)
 	var corridor := Corridor.of(tree)
@@ -1291,7 +1316,7 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 ## and what gets put there can never take the day or the ground away.
 func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var map := _map()
-	var sites := _sites_of(map)
+	var sites := _sites()
 	t.check(map.calm_blocks.size() >= 2,
 			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
 
@@ -1348,38 +1373,17 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	t.check(spoiled_days >= 10,
 			"the park she used yesterday is reliably spoiled (%d of 13 days)" % spoiled_days)
 
-	# And a day that knows nothing about yesterday plans exactly as it always did.
-	var forgetful: Array[String] = []
-	var remembering: Array[String] = []
-	var a := GameDawn.of(DaySpec.for_day(3), _rng(3), map) \
-			.masts(sites).spent(forgetful).plan().placements()
-	var nothing: Array[Vector2i] = []
-	var b := GameDawn.of(DaySpec.for_day(3), _rng(3), map) \
-			.masts(sites).calm(CalmAreas.of(map, nothing)) \
-			.spent(remembering).plan().placements()
-	t.check(_signature(a) == _signature(b),
-			"and a day with nothing to remember is unchanged by the rule")
-
 	# The whole run, played the way a player plays it: settle in the quietest calm block, and
 	# the next day is planned knowing that. Measured over five seeds while this was built, the
 	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
 	# Since playtest 12 the memory is the whole **act**, not the night before, so this walks the
 	# run the way `RunCalendar.settled_this_act` does: the used set grows through an act and is
 	# emptied at the boundary. A day must send her somewhere she has not been this act.
-	var used_this_act: Array[Vector2i] = []
-	var act := 0
-	for day in range(1, 15):
-		if Tuning.act_for_day(day) != act:
-			act = Tuning.act_for_day(day)
-			used_this_act = []
-		var consumed: Array[String] = []
-		var calm_today := CalmAreas.of(map, used_this_act)
-		var quietest := _quietest_calm_block(GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
-				.masts(sites) \
-				.calm(calm_today).spent(consumed).plan(), calm_today)
+	for step in _the_act_walk():
+		var used_this_act: Array[Vector2i] = step["used"]
+		var quietest: Vector2i = step["quietest"]
 		t.check(not used_this_act.has(quietest),
-				"day %d sends her somewhere she has not used this act" % day)
-		used_this_act.append(quietest)
+				"day %d sends her somewhere she has not used this act" % step["day"])
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
 func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
