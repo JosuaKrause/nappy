@@ -10,12 +10,16 @@ extends RefCounted
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again". **No case builds a
 ## city or plans a day**: the director is handed a hand-drawn street map (`StreetMap.full()`), the fire
-## a plan of its own and the walk a staircase of streets laid out here. What a planned day holds of
+## a plan of its own and the walk a staircase of straight runs at right angles laid out here, which
+## follows none of the map's streets and runs past its edge: the director asks the map only how far
+## she is from home (`EventDirector.ON_HER_WAY_BEYOND_HOME`), and a map with no home puts home at
+## its origin. What a planned day holds of
 ## them, that day 3's fire and the crews are the only rows owed her walk and that a crew is handed to
 ## it, is the dawn's, asked in `tests/test_events_scheduler.gd`.
 
 const STEP := 1.0 / 60.0
-## Where the staircase of her walk starts, past the director's reach of home on any map.
+## Where the staircase of her walk starts, more than `ON_HER_WAY_BEYOND_HOME` from the home of a
+## map with none, which is its origin.
 const STAIR_START := Vector2(800.0, 800.0)
 ## How long each run of the staircase is, and how many it has: about five seconds of walking a run.
 const STAIR_RUN := 480.0
@@ -68,7 +72,7 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 			best = i
 	return best
 
-## A walk of streets, as the line she walks: a staircase of `STAIR_STEPS` runs of `STAIR_RUN` east
+## A walk as the line she walks: a staircase of `STAIR_STEPS` runs of `STAIR_RUN` east
 ## and north in turn, out from a point beyond the director's reach of home
 ## (`EventDirector.ON_HER_WAY_BEYOND_HOME`) when `outward`, back to it when not. Each turning is a
 ## right angle, and the walk is longer than a minute of the director's looks.

@@ -11,7 +11,9 @@ extends RefCounted
 ## calls is sent down the fire's own street: each is a guarantee spanning the dawn's plan, the
 ## director's siting, the manager's streaming and the street network, which a map of a few drawn
 ## streets or a stand-in for any of them would not hold. The manager stands on the map and the
-## streets of the seed's generated city, with no city built round it.
+## streets of the seed's generated city, with no city built round it. The covered-corner case plans
+## no day: it stands its fire on the arterial sidewalk the generated map has, and asks only that the
+## fire there is not sighted.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
 ## The bus script, so a recording bus of the suite's own is the class a builder takes.
@@ -25,7 +27,7 @@ var _walker_node: Rig.Walker
 
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
-	# Every test builds a city and a run of its own, so none leans on what an earlier one left
+	# Every test builds a stage and a run of its own, so none leans on what an earlier one left
 	# behind: the scars a fire writes, the streaming radius, the day a test started.
 	var tests: Array[Callable] = [
 		_test_the_fire_under_a_covered_corner_is_not_sighted,
@@ -61,7 +63,7 @@ func _build_stage(t: TestRunner, bus: _BUS = null) -> void:
 ## Nothing walks here, which is the case: a day nobody walked far enough into for a siting to be due
 ## is the cheapest way to produce exactly the state this is for.
 ##
-## **And the page hears it was lit unmet**, once, on the bus the city's builder was handed
+## **And the page hears it was lit unmet**, once, on the bus the manager was handed
 ## (`event_lit_unmet`, which `VisitCounter` counts as `fire-unmet`).
 func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -> void:
 	var lit_unmet: Array[String] = []
@@ -80,7 +82,7 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 			"and it has been in the world, which is what records what a fire does to a run")
 	var told: Array[String] = ["burning_building"]
 	t.check(lit_unmet == told,
-			"and it is told on the builder's bus as lit unmet, once, by its row (%s)" % [lit_unmet])
+			"and it is told on the manager's bus as lit unmet, once, by its row (%s)" % [lit_unmet])
 	t.check(plan.placed_at().distance_to(doorstep)
 			>= WalkSiting.DUSK_CLEAR_OF_HER,
 			("it is lit %.0fpx from where she finished, past the %.0fpx streaming band, so it is "

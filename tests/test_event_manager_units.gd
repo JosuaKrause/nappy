@@ -455,8 +455,8 @@ func _test_the_walks_reach_is_told_what_a_unit_draws(t: TestRunner) -> void:
 ## **A day started twice stands the same rows on the same tiles** (PLAYTEST-119 27;
 ## `docs/MECHANICS.md`, "A retry is the same day"): the dawn plans before she can move, and the
 ## units round where she starts draw before she can either, so day 4 started a second time, after a
-## walk east on the first start, plans from nothing the first start or the walk left in the city
-## or the manager. That the units the walk draws are the same whatever her path is the next test's.
+## walk east on the first start, plans from nothing the first start or the walk left in the manager
+## or on the map. That the units the walk draws are the same whatever her path is the next test's.
 func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	var events := _stage.events()
 	events.stream_within(Tuning.EVENT_STREAM_RADIUS)

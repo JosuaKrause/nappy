@@ -11,9 +11,11 @@ extends RefCounted
 ## ground the dawn made handed to the walk) stand it on the seed's generated map, whose day the dawn
 ## plans; the one case that asks the city's own dawn (`City.start_day()`) stands it in a city,
 ## because it is the dawn there that grows the route tree and holds the closures the manager's walk
-## must be. No other case builds a city. Two cases stand a manager of their own on the generated map
-## and run after the others: the cyclist's warning, and the parked fire engine's route guarantee,
-## which reads the map's street network.
+## must be. No other case builds a city. Two cases run after the others on the generated map: the
+## cyclist's warning, which stands a manager of its own, and the parked fire engine's route
+## guarantee, which builds no manager and reads the map's street network. The last case asks the
+## spawner (`EventSpawner.as_warned()`) of each catalogue row and builds nothing: no suite is the
+## spawner's, and the spawner is one of the manager's parts, so its question is held here.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
 const STEP := 1.0 / 60.0
