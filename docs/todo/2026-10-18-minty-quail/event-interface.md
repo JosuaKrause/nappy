@@ -111,7 +111,7 @@ Two things are deliberately not reshaped. **A car's strike stays the car's** (`E
 not the row's `LethalSpec`: `hard_fail` means a place that ends the day, and every placement rule
 keyed on it (a wall off the routes, a field kept clear) is wrong for a car on a road. **The stored
 phase stays on the live event** (the record minty-quail-10: one stored phase, changed only by
-`transition()`); a part asks for a change of phase, it never holds one.
+`_transition()`); a part asks for a change of phase, it never holds one.
 
 ### 1.2 What each part owns and answers
 
@@ -624,7 +624,7 @@ counted where it only writes.
 | `is_finished` | 12 in; 154 reads in tests | `is_gone()` ok (the base look asks it ok); the property is deleted, with streaming's read (the record minty-quail-grassy-elk) |
 | `is_leaving` | 13 in; 133 in tests | `is_on_its_way_out()` ok; the property is deleted, with streaming's read (the record minty-quail-grassy-elk) |
 | `is_parked` | 3 in; the suites | `has_parked()` ok; the property is deleted (the record minty-quail-grassy-elk) |
-| `phase` | 2 in; the suites | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_past_its_warning()` ok, `has_stopped_her()` ok, `is_only_its_barrier()` ok); `transition()` reached by its parts through `Figure.begin()` ok; no game file outside `event_instance.gd` reads the field. **`transition()` is private** (`_transition()`): no suite puts a live event in a phase by hand (the records minty-quail-frosty-tapir and minty-quail-rosy-stork). **`phase` is private**: the live event's phase, behaviours and day 13 guard suites ask its phase questions (the record minty-quail-merry-osprey) |
+| `phase` | 2 in; the suites | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_past_its_warning()` ok, `has_stopped_her()` ok, `is_only_its_barrier()` ok); `_transition()` reached by its parts through `Figure.begin()` ok; no game file outside `event_instance.gd` reads the field. **`transition()` is private** (`_transition()`): no suite puts a live event in a phase by hand (the records minty-quail-frosty-tapir and minty-quail-rosy-stork). **`phase` is private**: the live event's phase, behaviours and day 13 guard suites ask its phase questions (the record minty-quail-merry-osprey) |
 | `age` | 7 in, 1 out (the readout); set by rigs and recipes | `age()` ok, the property gone (the record minty-quail-gentle-stork); set only by its own tick and by `restore(save)` ok |
 | `path` | 7 in; the suites | `walks()` ok, `beat()` ok, `way_left()` ok; the field is private (the record minty-quail-grassy-elk) |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |

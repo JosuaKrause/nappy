@@ -398,10 +398,10 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 
 ## **A guard sees out of the band he belongs to, and only that one.** *(The comment of
 ## `EventInstance`'s own sight line, `_clear_line_to()`: "a guard sees out of the band he stands
-## in".)* A band streamed in as a day's is has its body on
-## the map's record, and the guard who steps out to his post on her side is then off the band's
-## tiles: she walks round to the band's far side while he warns, and the line to her crosses his own
-## band. He still charges, and a second band's body between them still hides her.
+## in".)* A band streamed in as a day's is has its body on the map's record, and the guard who steps
+## out to his post on her side is then off the band's tiles: she walks round to the band's far side
+## while he warns, and the line to her crosses his own band. He still charges, and a second band's
+## body between them still hides her.
 func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	var post := Vector2(2128.0, 80.0)
