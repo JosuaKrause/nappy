@@ -64,6 +64,8 @@ func run(t: TestRunner) -> void:
 	]
 	for test in map_tests:
 		await test.call(t)
+	# Nor does this one: it asks the catalogue's rows what the spawner makes of each.
+	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
 
 ## **A world keeps the navigator it was handed** (`EventSurroundings.moving_by()`), whichever map
 ## that navigator walks: a manager set up on a street map and handed a navigator over open ground
@@ -1053,3 +1055,20 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 			seen[next] = true
 			queue.append(next)
 	return false
+
+## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should
+## work like that".)* Every pursuer that is sent rather than met — no trigger to wait on, and not
+## set off beside her at a door — is warned of first: the resistance's own two by their rows, and the
+## day-3 dog by the copy `EventSpawner.as_warned()` makes as the director sends it. Each one's badge
+## alone is at most `Tuning.WARNING_ALONE_MAX`.
+func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> void:
+	var sent := 0
+	for def in EventCatalogue.all():
+		if not def.pursues() or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
+			continue
+		sent += 1
+		var warned := EventSpawner.as_warned(def)
+		t.check(warned.warns_before_it_exists() and warned.warned_for() <= Tuning.WARNING_ALONE_MAX,
+				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
+				% [def.id(), warned.warned_for(), Tuning.WARNING_ALONE_MAX])
+	t.check(sent >= 3, "the dog and the resistance's two are among them (%d)" % sent)
