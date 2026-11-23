@@ -25,7 +25,7 @@ hook, a general project script, or anything else of that kind) is the exception 
 already has stays open as a draft and resumes after the refactor closes.
 
 **The design review's items are polite-tapir** (the refactor's design review: placement drawn as she walks, one
-start for every kind of day, the standing layer breaks, the baseline measurements),
+start for every kind of day, the baseline measurements),
 an entry of their own that carries `fable-only: true` where this entry does not (inbox #1387 in mossy-bunny).
 *Read as, the filer's, open to the player's correction:* the review was of the refactor's design ("have a fable
 agent review the design of the refactor", inbox #1265 in olive-ferret), so its items are the refactor's work, the
@@ -101,14 +101,12 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    review found that the order converted the tests before the event code they read, so the largest
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
-   module: its dead code (`dead-code-sweep.md`), its standing layer breaks (the design review's,
-   below), its interface and field reads, its receivers typed with them or by a typing pass ahead
-   of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
+   module: its dead code (`dead-code-sweep.md`), its interface and field reads, its receivers
+   typed with them or by a typing pass ahead of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
    - **The design review's tracks are the entry polite-tapir** (placement drawn as she walks, one
-     start for every kind of day, the standing layer
-     breaks, the baseline readings); its README gives their order and where each meets the items
+     start for every kind of day, the baseline readings); its README gives their order and where each meets the items
      here.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed
@@ -156,7 +154,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 to this entry through three weeks with no stated end; shown "The entry has no stated end", the
 player: "also good points". *Read as, the orchestrator's, open to the player's correction:* the
 entry is done when the items in this folder are gone and the remeasure is taken, which comes after
-the design review's items too, the decision on each standing break among them; a defect found in a pull request of this entry is fixed in that pull request,
+the design review's items too; a defect found in a pull request of this entry is fixed in that pull request,
 and anything else found from here on is filed as an entry of its own after this one, never as a new
 item here. `tests-public-seams.md`'s open list holds test gaps, which add tests and
 refactor nothing and move to such an entry when this one closes.

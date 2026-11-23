@@ -29,8 +29,8 @@ fetching it from an autoload, a group or a static, so a test hands it fakes. A m
 included, is a configuration of the shared code, never a parallel copy of it (minty-lemur #785).
 
 **The layers, lowest first, are the ones `tools/layer_map.py` lists**, the file that says which
-folder and file is in which layer; `tools/check_layers.py` holds the code to it in CI, and the list
-of breaks standing there only shrinks:
+folder and file is in which layer; `tools/check_layers.py` holds the code to it in CI, and no break of
+it stands:
 
 1. **data**: data and configuration. The catalogue, the balance numbers, the run's configuration,
    the specs, the on-screen texts, the art's pages and the value types the rows are written in.
@@ -48,6 +48,13 @@ of breaks standing there only shrinks:
    screens, the badges, the controls.
 7. **root**: the composition root, above everything. `main.gd`, which builds every layer and hands
    each what it needs, and the developer's rigs.
+
+**No break of the map stands, and the rule outlives the list that held them** (inbox #1268 in
+olive-ferret). A break that has to stand is the exception, and it is held in two places in the
+pull request that adds it: listed in `tools/layer_map.py` (`EXCEPTIONS`, by file and by what it
+names or fetches) with its reason, and declared in this section with the same reason. A break in
+neither fails CI, and a listed one that is gone fails it too, so the pull request that fixes one
+deletes it from both.
 
 **The map lookup stays with the city maps in the model** (inbox #904 in freckled-moose), and a
 record the map holds is placed on the map's layer as it appears. Each thing's own drawing is on the
@@ -196,6 +203,10 @@ names, `## Overrides Class.method.` (inbox #1154 in gray-dolphin).
 These rules above are the filer's or the builder's proposals and readings, not the player's words,
 and hold until the player corrects them. An entry cites the player's word it extends or the record
 that proposes it, and says so where the player's words name nothing on the point:
+
+- **No break of the layer map stands, and one that has to is listed with its reason and declared in
+  "Code is designed by layer" with the same reason**: the design review's reading of the player's
+  wish that no listed break be forgotten, which the player approved (inbox #1268 in olive-ferret).
 
 - **Which layers there are**, apart from the two points the player decided, the observers and the
   view as siblings and the map lookup in the model (plush-kestrel).

@@ -1,7 +1,7 @@
 priority: now
 fable-only: true
 
-# polite-tapir — The refactor's design review: placement drawn as she walks, one start for every kind of day, the standing layer breaks, the baseline measurements · filed 2026-11-11
+# polite-tapir — The refactor's design review: placement drawn as she walks, one start for every kind of day, the baseline measurements · filed 2026-11-11
 
 **The ask.** The player had the refactor's design reviewed, the refactor being minty-quail (one
 engine: the codebase refactored by layer): "have a fable agent review the design of the refactor"
@@ -44,10 +44,6 @@ detail, which the player approved.
   `event-interface.md` that come after it (its dawn, the event manager's parts, the resistance and
   the scene recipes) are open, and so is what is left of minty-quail's `re-derived-cases.md` (the
   scene recipes' own ground scans).
-- **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
-  its module's turn of minty-quail's order (within a module, its dead code, then its standing
-  breaks, then its interface and field reads, then its suites). Dawn planning's one read left, the plan
-  holding its live event, goes with row 3b of minty-quail's `event-interface.md`.
 - **The baseline** (`baseline-measurements.md`): a reading with placement closed and one after the
   events' field-read conversion (row 4b of minty-quail's `event-interface.md`), for the remeasure
   that closes minty-quail.
