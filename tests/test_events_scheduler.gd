@@ -23,7 +23,8 @@ extends "res://tests/events_shared_city.gd"
 ## and the retried day and the taught run (`_test_a_retried_day_is_the_same_day`,
 ## `_test_the_run_is_always_taught`, moved in from the pursuit suite for the dawn's group to
 ## convert) each generate the cities of their own seeds through `CityGenerator.generate()`, three
-## seeds and four.
+## seeds and four. A case that plans a city over many days works the city's mast sites out once, on the
+## city as built (`_sites_of()`), and hands them to every dawn it plans, as the game does.
 
 const STEP := 1.0 / 60.0
 const SEED := 4242
@@ -87,18 +88,23 @@ func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 
 func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	var map := _map()
+	var sites := _sites_of(map)
 	for day: int in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
-		var first := GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed_a).plan().placements()
-		var second := GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed_b).plan().placements()
+		var first := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed_a).plan().placements()
+		var second := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed_b).plan().placements()
 		t.check(_signature(first) == _signature(second),
 				"day %d replans identically from the same seed" % day)
 
 	var consumed: Array[String] = []
-	var day_one := GameDawn.of(DaySpec.for_day(1), _rng(1), map).spent(consumed).plan().placements()
+	var day_one := GameDawn.of(DaySpec.for_day(1), _rng(1), map) \
+			.masts(sites).spent(consumed).plan().placements()
 	consumed.clear()
-	var day_two := GameDawn.of(DaySpec.for_day(2), _rng(2), map).spent(consumed).plan().placements()
+	var day_two := GameDawn.of(DaySpec.for_day(2), _rng(2), map) \
+			.masts(sites).spent(consumed).plan().placements()
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
 ## Every row stands on a tile type its row allows, and **no unit holds two drawn rows of one id**
@@ -202,13 +208,15 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed: int in [4242]:
 		var map := CityGenerator.generate(run_seed)
+		var sites := _sites_of(map)
 		var consumed: Array[String] = []
 		for day in range(8, 15):
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map) \
+					.masts(sites).spent(consumed).on(tree).plan().placements():
 				if plan.row_id() != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -395,6 +403,7 @@ func _test_one_park_stays_usable(t: TestRunner) -> void:
 func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 	for run_seed: int in [4242]:
 		var map := CityGenerator.generate(run_seed)
+		var sites := _sites_of(map)
 		var used_this_act: Array[Vector2i] = []
 		var act := 0
 		var consumed: Array[String] = []
@@ -403,7 +412,8 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 				act = Tuning.act_for_day(day)
 				used_this_act = []
 			var calm := CalmAreas.of(map, used_this_act)
-			var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).calm(calm) \
+			var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+					.masts(sites).calm(calm) \
 					.spent(consumed).plan()
 			for block in calm.unused():
 				var near: Array[String] = []
@@ -583,13 +593,15 @@ const _WALL_SHARE_TOLERANCE := 0.2
 ## and a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day either way.
 func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> void:
 	var map := _map()
+	var sites := _sites_of(map)
 	var walls := 0
 	var kept := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY - 1, Tuning.REGION_WALL_FIRST_DAY, 11, 13]:
 		var every_wall := DaySpec.for_day(day)
 		every_wall.wall_row_share = 1.0
 		var consumed: Array[String] = []
-		var full_plans := GameDawn.of(every_wall, _rng(day), map).spent(consumed).plan().placements()
+		var full_plans := GameDawn.of(every_wall, _rng(day), map) \
+				.masts(sites).spent(consumed).plan().placements()
 		var full := _walls_of(full_plans)
 		var game := _walls_of(_planned(day))
 		if day < Tuning.REGION_WALL_FIRST_DAY:
@@ -664,11 +676,13 @@ static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
 ## day's real ground together.
 func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var map := _map()
+	var sites := _sites_of(map)
 	var day := 13
 	var tree := RouteTree.for_day(map, day)
 	var corridor := Corridor.of(tree)
 	var told: Array[String] = []
-	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree) \
+	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+			.masts(sites).on(tree) \
 			.traced(RecordingTrace.new(told)).roadblock(EventCatalogue.by_id("roadblock")).plan()
 	var stood: Array[Vector2i] = []
 	var counted := ""
@@ -787,6 +801,7 @@ const _CUTTING_BODY := "burst_water_main"
 ## leaves the spoiled one reached, so the check fails when the scar is stood regardless.
 func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) -> void:
 	var map := CityGenerator.generate(_CHOICE_CITY_SEED)
+	var sites := _sites_of(map)
 	var day := ResistanceSteps.swing_day()
 	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map, null)
 	var park := CityGenerator.swing_park(map)
@@ -849,7 +864,8 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _CHOICE_DRAW_SEED
 	var consumed: Array[String] = []
-	var events := GameDawn.of(DaySpec.for_day(day), rng, map).calm(calm).spent(consumed) \
+	var events := GameDawn.of(DaySpec.for_day(day), rng, map) \
+			.masts(sites).calm(calm).spent(consumed) \
 			.scars(scars).plan()
 	t.check(events.is_spoiled(spoiled_block),
 			"the area she used is spoiled, so the day has a spoiled area besides the clean one")
@@ -1088,14 +1104,16 @@ func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 	t.check(run.attempt_spend().scars().size() == 1, "the same scar is not recorded twice")
 
 	var consumed: Array[String] = []
-	var same_day := GameDawn.of(DaySpec.for_day(3), _rng(3), _map()).spent(consumed) \
+	var same_day := GameDawn.of(DaySpec.for_day(3), _rng(3), _map()) \
+			.masts(_sites()).spent(consumed) \
 			.scars(run.attempt_spend().scars()).plan().placements()
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
 	for day: int in [4, 9, 14]:
 		var later: Array[String] = []
-		var planned := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).spent(later) \
+		var planned := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()) \
+				.masts(_sites()).spent(later) \
 				.scars(run.attempt_spend().scars()).plan().placements()
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
@@ -1132,7 +1150,8 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
 		var blockers: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).spent(consumed) \
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), _map()) \
+				.masts(_sites()).spent(consumed) \
 				.scars(run.attempt_spend().scars()).plan().placements():
 			if plan.obstructs():
 				blockers.append(plan)
@@ -1242,11 +1261,13 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 	var map := _map()
 	for city_seed: int in [4242, 77, 1301]:
 		var seeded := CityGenerator.generate(city_seed)
+		var sites := _sites_of(seeded)
 		var consumed: Array[String] = []
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:1" % city_seed)
 		var counts := {}
-		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded).spent(consumed).plan().placements():
+		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded) \
+				.masts(sites).spent(consumed).plan().placements():
 			counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
 		# No day-1 map may be without one at all, which is the failure the player actually
 		# reported: *"a restaurant — I never saw one."*
@@ -1263,6 +1284,7 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 ## and what gets put there can never take the day or the ground away.
 func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var map := _map()
+	var sites := _sites_of(map)
 	t.check(map.calm_blocks.size() >= 2,
 			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
 
@@ -1275,7 +1297,8 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var spoiled_days := 0
 	for day in range(2, 15):
 		var consumed: Array[String] = []
-		var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).calm(calm).spent(consumed) \
+		var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).calm(calm).spent(consumed) \
 				.plan()
 		var planned := events.placements()
 
@@ -1321,9 +1344,11 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	# And a day that knows nothing about yesterday plans exactly as it always did.
 	var forgetful: Array[String] = []
 	var remembering: Array[String] = []
-	var a := GameDawn.of(DaySpec.for_day(3), _rng(3), map).spent(forgetful).plan().placements()
+	var a := GameDawn.of(DaySpec.for_day(3), _rng(3), map) \
+			.masts(sites).spent(forgetful).plan().placements()
 	var nothing: Array[Vector2i] = []
-	var b := GameDawn.of(DaySpec.for_day(3), _rng(3), map).calm(CalmAreas.of(map, nothing)) \
+	var b := GameDawn.of(DaySpec.for_day(3), _rng(3), map) \
+			.masts(sites).calm(CalmAreas.of(map, nothing)) \
 			.spent(remembering).plan().placements()
 	t.check(_signature(a) == _signature(b),
 			"and a day with nothing to remember is unchanged by the rule")
@@ -1343,6 +1368,7 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		var consumed: Array[String] = []
 		var calm_today := CalmAreas.of(map, used_this_act)
 		var quietest := _quietest_calm_block(GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites) \
 				.calm(calm_today).spent(consumed).plan(), calm_today)
 		t.check(not used_this_act.has(quietest),
 				"day %d sends her somewhere she has not used this act" % day)
@@ -1380,11 +1406,13 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(run_seed)
+		var sites := _sites_of(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
 
 		var consumed: Array[String] = []
-		var first := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements()
+		var first := GameDawn.of(DaySpec.for_day(day), rng, map) \
+				.masts(sites).spent(consumed).plan().placements()
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
 		# where it becomes real — `DawnOneShots`. And a lost day gives back what
 		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
@@ -1393,7 +1421,8 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
 		var again := RandomNumberGenerator.new()
 		again.seed = rng.seed
-		var second := GameDawn.of(DaySpec.for_day(day), again, map).spent(consumed.duplicate()) \
+		var second := GameDawn.of(DaySpec.for_day(day), again, map) \
+				.masts(sites).spent(consumed.duplicate()) \
 				.plan().placements()
 
 		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
@@ -1423,7 +1452,8 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 		var spent: Array[String] = ["burning_building"]
 		var third_rng := RandomNumberGenerator.new()
 		third_rng.seed = rng.seed
-		var third := _kinds_in(GameDawn.of(DaySpec.for_day(day), third_rng, map).spent(spent).plan().placements())
+		var third := _kinds_in(GameDawn.of(DaySpec.for_day(day), third_rng, map) \
+				.masts(sites).spent(spent).plan().placements())
 		for id: String in before.keys() + third.keys():
 			var expected: int = 0 if id in spent else int(before.get(id, 0))
 			t.check(int(third.get(id, 0)) == expected,
@@ -1440,9 +1470,11 @@ func _test_the_run_is_always_taught(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed: int in [4242, 90210, 1234567, 31337]:
 		var map := CityGenerator.generate(run_seed)
+		var sites := _sites_of(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
 		var consumed: Array[String] = []
-		var events := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan()
+		var events := GameDawn.of(DaySpec.for_day(day), rng, map) \
+				.masts(sites).spent(consumed).plan()
 		t.check(events.has_a_pursuit(),
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])

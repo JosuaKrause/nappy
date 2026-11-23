@@ -18,7 +18,9 @@ extends "res://tests/events_shared_city.gd"
 ## street cases read the shared test city of `events_shared_city.gd`, which is generated outside the
 ## cache. Every other case is handed a copy of its seed's city from the cache of generated cities
 ## (`tests/city_map_cache.gd`): each seed is generated once in the test process, and the copy is the
-## same city `CityGenerator.generate()` builds for the seed.
+## same city `CityGenerator.generate()` builds for the seed. A case that plans a city over many
+## days works the city's mast sites out once, on the city as built and before the first day repaints
+## it (`_sites_of()`), and hands them to every dawn it plans, as the game does.
 ##
 ## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
@@ -102,6 +104,7 @@ const _A_JUNCTION_BOXES_HALF_WIDTH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0
 
 func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
+	var sites := _sites_of(map)
 	# The day's poster crews are drawn by exactly these rules and handed to her walk with no
 	# position (`MarbleDraw.draw()`). What this asks is how the draw places, so the crews are
 	# read where the draw put them.
@@ -132,7 +135,8 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
 		var ground := EventScheduler.row_ground(map)
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).with_row(crew) \
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).with_row(crew) \
 				.spent(consumed).on(tree).plan().placements():
 			if not plan.is_placed():
 				continue
@@ -597,6 +601,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 	var first := ""
 	for map_seed: int in [4242, 90210, 1234567, 88]:
 		var map := MapCache.of(map_seed)
+		var sites := _sites_of(map)
 		for day: int in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
@@ -604,7 +609,8 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
 			var consumed: Array[String] = []
-			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
+			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+					.masts(sites).spent(consumed).on(tree) \
 					.plan().placements():
 				if not plan.paces_a_beat() or not plan.counts_against_the_line():
 					continue
@@ -705,6 +711,7 @@ func _beat_tiles(map: CityMap, plan: EventPlan) -> Array[Vector2i]:
 ## junction would satisfy it with nothing checked, so the rows that do are counted and asserted.
 func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
+	var sites := _sites_of(map)
 	var junctions := 0
 	var in_reach := 0
 	var closed := 0
@@ -717,7 +724,8 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed).on(tree) \
 				.plan().placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
@@ -844,6 +852,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 ## written down.
 func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
+	var sites := _sites_of(map)
 	var bands := 0
 	var bands_with_a_row := 0
 	var closed := 0
@@ -856,7 +865,8 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed).on(tree) \
 				.plan().placements():
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
@@ -925,6 +935,7 @@ func _a_route_is_walked_along(corridor: Corridor, band: Rect2i) -> bool:
 ## (14.0 over 210px, no body, paces) is the row the sample is really about.
 func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
+	var sites := _sites_of(map)
 	var paced_streets := 0
 	var closed := 0
 	var first := ""
@@ -941,7 +952,8 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventPlan] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.masts(sites).spent(consumed).on(tree) \
 				.plan().placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
@@ -1044,13 +1056,15 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 	var on_corridor := 0
 	var off_corridor := 0
 	var map := MapCache.of(4242)
+	var sites := _sites_of(map)
 	var consumed: Array[String] = []
 	for day: int in [1, 4, 8, 11, 14]:
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [4242, day])
-		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
+		for plan in GameDawn.of(DaySpec.for_day(day), rng, map) \
+				.masts(sites).spent(consumed).on(tree).plan().placements():
 			if plan.row_id() != "pigeon_flock" or not plan.is_placed():
 				continue
 			t.check(plan.role() == GameEnums.BlockerRole.NONE,
@@ -1227,6 +1241,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 	var checked_trees := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 137)
+		var sites := _sites_of(map)
 		for day: int in DAYS:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
@@ -1283,7 +1298,8 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				checked_trees += 1
 
 			var consumed: Array[String] = []
-			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
+			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+					.masts(sites).spent(consumed).on(tree) \
 					.plan().placements():
 				if not plan.is_placed():
 					continue
@@ -1342,6 +1358,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 	var bands_checked := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 173)
+		var sites := _sites_of(map)
 		for day: int in DAYS:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
@@ -1379,7 +1396,8 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 
 			var consumed: Array[String] = []
 			var bodies: Array = []
-			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
+			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+					.masts(sites).spent(consumed).on(tree) \
 					.plan().placements():
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
@@ -1416,11 +1434,13 @@ func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed: int in [4242]:
 		var map := CityGenerator.generate(run_seed)
+		var sites := _sites_of(map)
 		var consumed: Array[String] = []
 		for day in range(1, 15):
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map) \
+					.masts(sites).spent(consumed).plan().placements():
 				if not plan.is_placed() or not plan.row().lies_as_a_spread():
 					continue
 				checked += 1
