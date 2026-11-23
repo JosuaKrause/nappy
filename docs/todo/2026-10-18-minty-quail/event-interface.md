@@ -730,8 +730,7 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
-  the row (`test_events_catalogue`, `_costs`, `_emission`, `_solid`, `test_acts`: real rows, no
-  node, and only relationships between settings asserted); the live event and its parts
+  the live event and its parts
   (`test_event_phase`, `test_event_behaviours`, `test_events_pursuit`, `test_car_driving`,
   `test_police_car`, `test_fire_truck_body`, `test_car_front`, `test_protest`,
   `test_events_chat`, the drawing suites: one real live event on open ground or a hand-drawn map,
@@ -742,8 +741,8 @@ written once, after it is final.
   public `look` stays for them); the event manager and its
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`: the manager real, plans
   plain, a real city only in the suite whose header gives the reason); the dawn
-  (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites: rows
-  and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
+  (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites, which hold the
+  cases that generate a city and plan a day, moved out of the row's suites (the record minty-quail-gentle-bison): rows and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
   `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one); and the resistance
