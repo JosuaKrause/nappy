@@ -730,12 +730,7 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after: the live event's
-  `behaviours()`, read by about fifteen suites, goes private in a pull request of its own; what is left of
-  the event halves held in other modules' suites (the rest moved, the record minty-quail-speckled-hare):
-  `test_danger`'s four cases that stand a real event manager on open ground (the cue over her head the
-  warning board raises, and three screen-edge badge cases that spawn a fire engine or a cat), which take a
-  stand-in manager answering what each asks (for the badge's speed, a moved instance's approach speed; for
-  the mark over her head, whether the event ends the day, its telegraph and its lethal reach).
+  `behaviours()`, read by about fifteen suites, goes private in a pull request of its own.
 
 ## 6. What it costs per frame
 

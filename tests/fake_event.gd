@@ -7,7 +7,8 @@ extends EventInstance
 ## east, nothing to point at) until a check sets it, to what the real event answers in the same
 ## situation (read off the real event once, the way a mock is made: a dog walker set up on open
 ## ground answers a pace of 32 and a route of two points, a waiting robber answers that it
-## waits). A question a look does not ask is not here.
+## waits). The warning board (the mark over her head) asks a few more of it. A question neither
+## asks is not here.
 ##
 ## **Never put in a tree**, and no step of it is real: its stride and its phase are what the
 ## suite writes, and a tick of it only runs the counters (its age, its clock, the ground
@@ -21,6 +22,14 @@ var vertical := false
 ## (`is_telegraphing_still()`).
 var telegraphing := false
 var telegraphing_still := false
+## Whether it ends the day (`ends_the_day()`), how far its row is heard (`heard_within()`), how
+## fast it travels (`travel_velocity()`) and whether its guard is gone for good
+## (`has_lost_its_guard()`): what the warning board asks of an event beside its core and its
+## telegraph.
+var lethal := false
+var heard := 0.0
+var travelling_at := Vector2.ZERO
+var guard_lost := false
 ## Whether it waits for her (`is_waiting()`), is standing for its notice
 ## (`is_standing_for_its_notice()`) and is on its way out (`is_on_its_way_out()`), gone
 ## (`is_gone()`) or only its barrier (`is_only_its_barrier()`).
@@ -151,6 +160,10 @@ static func answering_as(instance: EventInstance) -> FakeEvent:
 	fake.pulse_length = instance.pulses_every()
 	fake.telegraph_length = instance.telegraphs_for()
 	fake.core = instance.core_within()
+	fake.lethal = instance.ends_the_day()
+	fake.heard = instance.heard_within()
+	fake.travelling_at = instance.travel_velocity()
+	fake.guard_lost = instance.has_lost_its_guard()
 	fake.solid_extent = instance.solid_reach()
 	fake.noticed_within = instance.notice_within()
 	fake.emitting = instance.current_intensity()
@@ -309,6 +322,22 @@ func telegraphs_for() -> float:
 ## Overrides EventInstance.core_within.
 func core_within() -> float:
 	return core
+
+## Overrides EventInstance.ends_the_day.
+func ends_the_day() -> bool:
+	return lethal
+
+## Overrides EventInstance.heard_within.
+func heard_within() -> float:
+	return heard
+
+## Overrides EventInstance.travel_velocity.
+func travel_velocity() -> Vector2:
+	return travelling_at
+
+## Overrides EventInstance.has_lost_its_guard.
+func has_lost_its_guard() -> bool:
+	return guard_lost
 
 ## Notes the point asked about and answers `core_reached`.
 ##
