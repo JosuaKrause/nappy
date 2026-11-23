@@ -110,10 +110,9 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 	var band := _band_of(recording)
 	t.check(band != null and band.is_inside_tree() and band.get_parent() == guard.get_parent(),
 			"the band is its own node beside the guard, so it sorts at its own feet")
-	# What the look lifts his canvas by is asked of a look made round a fake event that pursues over
-	# the ground the guard has covered.
+	# What the look lifts his canvas by is asked of a look made round a fake event that answers, each
+	# frame, whether the guard pursues and is on his way out, and the ground he has covered.
 	var fake := FakeEvent.new()
-	fake.pursuing = true
 	var lift := fake.look_for(guard.row())
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
@@ -121,6 +120,8 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 		guard.step(STEP)
 		await t.get_tree().process_frame
 		fake.travelled = guard.path_travelled()
+		fake.pursuing = guard.pursues()
+		fake.on_its_way_out = guard.is_on_its_way_out()
 		lifted = lifted or absf(lift.current_bob()) > 0.1
 		worst = maxf(worst, band.global_position.distance_to(post))
 		if guard.is_gone():
