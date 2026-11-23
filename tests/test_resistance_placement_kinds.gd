@@ -983,7 +983,8 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t: TestRunner) -> void
 	var walker := late.rider()
 	t.check(walker != null, "the neighbor is walking home again on the retry")
 	if walker:
-		walker.transition(EventInstance.Phase.PARKED)
+		t.check(_walk_the_neighbor_home(walker) and _stands_at_her_door(walker),
+				"the neighbor walks home on their own steps and parks at her door")
 	late.tick(STEP)
 	var warning := ResistanceSteps.warning_step()
 	t.check(warning.index in retry_run.resistance().failed_steps(),

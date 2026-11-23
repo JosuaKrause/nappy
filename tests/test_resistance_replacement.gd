@@ -422,7 +422,8 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 	var walker := late.rider()
 	t.check(walker != null, "the neighbor is walking home")
 	if walker:
-		walker.transition(EventInstance.Phase.PARKED)
+		t.check(_walk_the_neighbor_home(walker) and _stands_at_her_door(walker),
+				"the neighbor walks home on their own steps and parks at her door")
 		late.tick(STEP)
 		t.check(_said(lines, "the neighbor walked home into the vans"),
 				"reaching the door first, they are to be taken")
@@ -460,7 +461,8 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 		var walker := late.rider()
 		t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)
 		if walker:
-			walker.transition(EventInstance.Phase.PARKED)
+			t.check(_walk_the_neighbor_home(walker) and _stands_at_her_door(walker),
+					"%s scheme: the neighbor walks home and parks at her door" % scheme)
 			events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 					Tuning.VIEW_HALF_EXTENT * 2.0), covered)
 			late.tick(STEP)

@@ -473,6 +473,26 @@ func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 		_read_the_mark(director)
 	return director
 
+## Walks day 10's neighbor home by its own steps, the way its manager steps it each tick
+## (`EventManager._step_them()`), until it has parked at the end of its walk or the walk's time and
+## two seconds more have passed. Whether it parked. A step of a tenth of a second covers the same
+## ground as a frame, since the walk is driven by distance, and ends in the same place.
+func _walk_the_neighbor_home(walker: EventInstance) -> bool:
+	var length := 0.0
+	var walks := walker.walks()
+	for i in range(1, walks.size()):
+		length += walks[i - 1].distance_to(walks[i])
+	var step := 0.1
+	var time_left := length / walker.row().speed() + 2.0
+	while not walker.has_parked() and time_left > 0.0:
+		walker.step(step)
+		time_left -= step
+	return walker.has_parked()
+
+## Whether `walker`, the neighbor walking home, stands at her door.
+func _stands_at_her_door(walker: EventInstance) -> bool:
+	return walker.global_position.distance_to(_city.map.doorstep_world_position()) < 1.0
+
 ## The warning `events` has up for the row `id`, or null.
 func _warning_for(events: EventManager, id: String) -> PendingWarning:
 	for warning in events.pending_warnings():
