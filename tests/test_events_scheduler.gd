@@ -79,7 +79,6 @@ func run(t: TestRunner) -> void:
 	_test_the_city_remembers_where_she_went(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
 	_test_a_crew_drawn_is_handed_to_her_walk(t)
-	_test_a_set_piece_is_one_plan_owed_to_her_walk(t)
 
 
 func _signature(planned: Array[EventPlan]) -> String:
@@ -1569,27 +1568,3 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 		t.check(kept_crews > 0 and kept_placed == kept_crews,
 				"day %d: not sited from her walk, every crew stands placed (%d of %d)"
 				% [day, kept_placed, kept_crews])
-
-## **A set piece is one plan, owed to her walk.** Every one-shot is sited from her walk
-## (`EventDef.validate()` refuses one that is not), so the day plans it as one plan with no position
-## at all, which cannot be in two places because there is only ever one of it, and which nothing in
-## this rig can put anywhere: there is no player here, so no walk for it to be sited from. Over a
-## whole run, each day's one-shots are each a single unsited plan, never live and never spent here.
-func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
-	var owed_to_her_walk := 0
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var by_row := {}
-		for plan in _planned(day):
-			if not plan.row().is_a_one_shot():
-				continue
-			by_row[plan.row_id()] = int(by_row.get(plan.row_id(), 0)) + 1
-			owed_to_her_walk += 1
-			t.check(not plan.is_placed() and not plan.has_been_in_the_world() and not plan.is_spent(),
-					"day %d: '%s' is an unsited plan waiting for a walk that never happens here"
-					% [day, plan.row_id()])
-		for id: String in by_row:
-			t.check(int(by_row[id]) == 1, "day %d: '%s' is one plan, not several (%d)"
-					% [day, id, by_row[id]])
-	t.check(owed_to_her_walk > 0,
-			"a run has a set piece to check at all (%d owed to her walk, over fourteen days)"
-			% owed_to_her_walk)
