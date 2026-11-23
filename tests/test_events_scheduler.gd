@@ -25,6 +25,13 @@ extends "res://tests/events_shared_city.gd"
 ## convert) each generate the cities of their own seeds through `CityGenerator.generate()`, three
 ## seeds and four. A case that plans a city over many days works the city's mast sites out once, on the
 ## city as built (`_sites_of()`), and hands them to every dawn it plans, as the game does.
+##
+## **Why these cases keep generated cities.** Each asks what a planned day or run holds (its mix,
+## its spacing, what a run spends, what a calm area is left, which alleys a robbery avoids), and the
+## answer depends on the whole street network the generator makes; a hand-drawn few streets would
+## hold a smaller claim, so none was moved onto one. The cases that ask the same city and day share
+## one plan: the shared city's days (`_dawn()`) and the taught day of each seed
+## (`_the_taught_day()`).
 
 const STEP := 1.0 / 60.0
 const SEED := 4242
@@ -1381,6 +1388,24 @@ func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
 		counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
 	return counts
 
+## **The day the run is taught, planned once per seed for the suite**: the seed's city, its mast
+## sites worked out on it as built, a fresh run (`consumed`, which planning leaves as it found it)
+## and the day's plan from the seed's own stream. The retried day and the taught run both ask
+## exactly this of the same cities, and each reads it without writing to it.
+var _taught_days := {}
+
+func _the_taught_day(run_seed: int) -> Dictionary:
+	if not _taught_days.has(run_seed):
+		var map := CityGenerator.generate(run_seed)
+		var sites := _sites_of(map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d:events" % [run_seed, Tuning.RUN_TAUGHT_DAY])
+		var consumed: Array[String] = []
+		var events := GameDawn.of(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), rng, map) \
+				.masts(sites).spent(consumed).plan()
+		_taught_days[run_seed] = {"map": map, "sites": sites, "consumed": consumed, "events": events}
+	return _taught_days[run_seed]
+
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
 ## appeared once (I died) then it didn't appear again.")*
 ##
@@ -1405,14 +1430,13 @@ func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
 func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed: int in [4242, 90210, 1234567]:
-		var map := CityGenerator.generate(run_seed)
-		var sites := _sites_of(map)
+		var taught := _the_taught_day(run_seed)
+		var map: CityMap = taught["map"]
+		var sites: Array[MastSites.Site] = taught["sites"]
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
-
-		var consumed: Array[String] = []
-		var first := GameDawn.of(DaySpec.for_day(day), rng, map) \
-				.masts(sites).spent(consumed).plan().placements()
+		var consumed: Array[String] = taught["consumed"]
+		var first: Array[EventPlan] = (taught["events"] as DayEvents).placements()
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
 		# where it becomes real — `DawnOneShots`. And a lost day gives back what
 		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
@@ -1469,12 +1493,6 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 func _test_the_run_is_always_taught(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed: int in [4242, 90210, 1234567, 31337]:
-		var map := CityGenerator.generate(run_seed)
-		var sites := _sites_of(map)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%d:events" % [run_seed, day])
-		var consumed: Array[String] = []
-		var events := GameDawn.of(DaySpec.for_day(day), rng, map) \
-				.masts(sites).spent(consumed).plan()
+		var events: DayEvents = _the_taught_day(run_seed)["events"]
 		t.check(events.has_a_pursuit(),
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])
