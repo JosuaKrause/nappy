@@ -61,6 +61,10 @@ if ! reject_route_with_screenshot "$@"; then
     exit 1
 fi
 
+if ! reject_input_flag_without_carrier live "$@"; then
+    exit 1
+fi
+
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2
     echo "install Godot 4.7, or point GODOT at your binary:" >&2
