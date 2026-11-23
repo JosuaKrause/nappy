@@ -39,7 +39,8 @@ var _rig: RIG = RIG.new()
 var _spine_samples := 0
 
 ## The three parts the suite is split into, each the cases it runs in the order the one suite ran
-## them (the dark spine's last, which the suite it came from had alone). Each part stands in a city of its own, built over a run of its own.
+## them (the dark spine's last, which the suite it came from had alone). Each part stands in a
+## city of its own, built over a run of its own.
 const PARTS := {
 	"traffic": [
 		"_test_population_follows_the_act",

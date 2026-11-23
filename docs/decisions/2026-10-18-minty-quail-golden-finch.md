@@ -12,9 +12,10 @@ both entries are deleted from the list, the rest renumbered.
   is the call it made before. `test_tutorial_dog` had no other generated city, so it drops the map
   cache and builds none: 268 checks became 173, 95 of them moved; the scheduler's 9474 became 9569.
   Suite time from CI's shard logs, main's run against the pull request's: `test_tutorial_dog`
-  72.1 s to 0.4 s, `test_events_scheduler` 246.3 s to 308.3 s with the case planning its own days,
-  and 403.7 s once it reads the suite's own plans of the days (seed 4242's are the suite's memoized
-  ones).
+  72.1 s to 0.4 s, `test_events_scheduler` 246.3 s to 403.7 s and 389.4 s on two slower runners
+  (its shard mates 21% and 12% slower than on main's run); back to back locally, 282 s with the
+  case planning its own days and 261 s once it reads the suite's own plans (seed 4242's are the
+  suite's memoized ones; the other two seeds' 22 dawns are what the case adds).
 - **The dark spine** (`tests/test_dark_spine.gd`) holds one case: the crowd's cars on the spine,
   lit and then dark, on day 14's city. What it plans is the city's closures for that day
   (`City.start_day()`); it starts no event, so no scheduler answer is in it, and the whole case is
