@@ -255,7 +255,7 @@ func _teach_the_pause(delta: float) -> void:
 	# the line shows that icon where it says what to press rather than describing it. In every
 	# scheme, since the button is always drawn. `Esc` still pauses on a keyboard, but nothing on
 	# screen names it.
-	_say(Texts.PAUSE_LESSON % HelpText.PAUSE_TOKEN, TEACH_SECONDS)
+	_say(Texts.PAUSE_LESSON % Texts.PAUSE_TOKEN, TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
