@@ -1,111 +1,21 @@
 extends "res://tests/resistance_rig.gd"
-## M188: every mark and contact stands on ground she can reach, and a queued mast is never generated inside a lethal field.
+## M188: every mark and contact stands on ground she can reach, and the director's draw only replaces the candidate a new check rejects.
 ##
 ## **A real city, for a stated reason**: the case that every mark and contact stands on
 ## walkable, unobstructed ground reads which ground a day's real plan, its closures and the
-## bodies its events stand leave her; a fake would have to answer that, and the answer is what
-## the case checks. The other four cases are still to be judged in the group's next pull
-## request: the queued mast inside a lethal field (the scheduler's acceptance, not reachability,
-## which the events skill names this suite as holding, so a move updates that sentence), the
-## day's spacing in `PlanBuilder.place_at()` (not reachability either: it reads only the city's
-## map), and the two cases of the dawn's draw (the director's dawn plans a day, which is the
-## dawn's).
+## bodies its events stand leave her; a fake would have to answer that, and the answer is what the
+## case checks. The two cases of the director's draw (`_dawn_mark_tile()`) are drawn over the same
+## ground, the tiles a day's real plan and the bodies recorded on its map leave open to her, and
+## check that a body on another tile leaves the dawn's mark where it fell and a body on the tile
+## it fell on moves it; a fake plan would have to restate the ground the draw is over. The
+## scheduler's acceptance of a queued mast and the day's spacing in `PlanBuilder.place_at()` do not
+## read that ground, and are `tests/test_masts.gd`'s and `tests/test_plan_builder.gd`'s.
 
 func run(t: TestRunner) -> void:
-	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
-	_test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t)
 	await _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t)
 	_test_the_director_hands_the_draw_its_own_predicates(t)
 	_free_city()
-
-## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
-## event to be generated"* (quiet-yak, inbox #503). On the test city's day 11, a stationary `reversing_lorry`
-## (lethal, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
-## inside that field to stand on: the scheduler's acceptance refuses every tile, so no mast is
-## generated, as `StreetInvalidation.room_around()` refuses any row inside a lethal field ("Nothing else happens
-## inside a lethal event's field"). Offered sidewalk well clear of it, the mast is generated, joins
-## the day's plan under an added id, and has room by the same rule. A mast put down where the
-## director pointed, as before, fails the first half.
-func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var read := _read_the_mark_on(t, 11, SEED)
-	var director: ResistanceDirector = read[0]
-	var player: Stroller = read[2]
-	var map := _city.map
-	var lorry_def := EventCatalogue.by_id("reversing_lorry")
-	var walled := _walled_alleys()
-	var lorry_tile := Vector2i(-1, -1)
-	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
-				and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
-			lorry_tile = tile
-			break
-	var lorry := EventPlan.new(lorry_def, map.tile_to_world(lorry_tile))
-	lorry.give_role(GameEnums.BlockerRole.FRICTION)
-	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
-	# planned row and its body is recorded where it stands.
-	RunCity.events(_city).streaming.add(lorry)
-	var inside: Array[Vector2i] = []
-	var clear: Array[Vector2i] = []
-	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
-			continue
-		var gap := map.tile_to_world(tile).distance_to(lorry.placed_at())
-		if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
-			inside.append(tile)
-		elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
-			clear.append(tile)
-	t.check(not inside.is_empty() and not clear.is_empty(),
-			"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
-			% [inside.size(), clear.size()])
-	var refused := RunCity.events(_city).queue_a_mast(inside)
-	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
-	var placed := RunCity.events(_city).queue_a_mast(clear)
-	t.check(placed != null and placed.mast_id().begins_with("added-")
-			and placed in RunCity.events(_city).plans(),
-			"offered ground clear of it, a mast is generated into the day's plan")
-	player.free()
-	director.free()
-
-## `PlanBuilder.place_at()`, the entry a recipe sites an authored row by, keeps the day's spacing:
-## on a tile the same row already holds (the day's spacing refuses it: a body inside another's
-## `EVENT_SPACING_ANY`) it answers null, and with the tile free of every other plan it answers the
-## placement. The mast row stands for any catalogue row here; the spacing asks the candidate and the
-## plans standing, not which row it is.
-func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var map := _city.map
-	var def := EventCatalogue.mast()
-	var walled := _walled_alleys()
-	var tile := Vector2i(-1, -1)
-	for candidate_tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if SpawnSiting.is_legal_ground(map, candidate_tile, walled) \
-				and not map.is_obstructed(candidate_tile):
-			tile = candidate_tile
-			break
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	var none: Array[EventPlan] = []
-	var builder := GamePlanBuilder.over(map)
-	var first := builder.place_at(def, tile, rng, none)
-	t.check(first != null and first.is_placed(),
-			"with no plan standing, `place_at()` sites the row on a free sidewalk tile")
-	if not first:
-		return
-	var crowded: Array[EventPlan] = [first]
-	t.check(builder.place_at(def, tile, rng, crowded) == null,
-			"on the tile a placed plan already holds, `place_at()` answers null")
-	var far := Vector2i(-1, -1)
-	for candidate_tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if SpawnSiting.is_legal_ground(map, candidate_tile, walled) \
-				and not map.is_obstructed(candidate_tile) and map.tile_to_world(candidate_tile) \
-				.distance_to(first.placed_at()) > EventScheduler.EVENT_SPACING_ANY + 600.0:
-			far = candidate_tile
-			break
-	var elsewhere := builder.place_at(def, far, rng, crowded)
-	t.check(far != Vector2i(-1, -1) and elsewhere != null,
-			"on a tile well clear of it, `place_at()` sites the row")
 
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 

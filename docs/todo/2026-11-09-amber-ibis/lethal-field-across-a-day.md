@@ -2,7 +2,7 @@
 
 The events skill's rule is that nothing else is placed inside a lethal event's field. The
 placement rules do it (`StreetInvalidation.room_around()`), one case is held (a queued mast is
-never generated inside a lethal field, `tests/test_resistance_reach_contacts.gd`), and
+never generated inside a lethal field, `tests/test_masts.gd`), and
 `tests/test_events_costs.gd` holds who is exempt. No suite walks a planned day to check the rule
 for every row, and `docs/EVENTS.md` says one does.
 

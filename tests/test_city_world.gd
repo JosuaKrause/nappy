@@ -9,6 +9,9 @@ extends RefCounted
 ## through the lot it lies in. Everything the baby asks of her
 ## world, a suite on `Baby` answers with a stand-in (`tests/test_baby_world.gd`); a stand-in cannot
 ## drop a line the city wires. What the meter does with the answers is `tests/test_meters.gd`'s.
+## The city's streets also decay at half speed while she carries the resistance's package
+## (`City.decay_multiplier()`), which is the city's own answer to the baby and held nowhere else;
+## the director's setting the flag is `tests/test_resistance_steps.gd`'s.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4216201080
@@ -23,7 +26,22 @@ func run(t: TestRunner) -> void:
 	_test_a_live_event_charges_the_spot_it_stands_on(t, city)
 	_test_calm_ground_fills_sleepiness_faster_than_the_street(t, city)
 	_test_the_camera_framing_is_less_the_look_ahead_it_is_handed(t, city)
+	_test_carrying_the_package_halves_every_streets_decay(t, city)
 	city.free()
+
+## Carrying the resistance's package makes every street after it decay slower
+## (`City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER`): the city's answer to the baby at a spot, read before
+## the run's flag is set and after. The flag is set on the run the city was handed; what sets it, the
+## director's completing the package's task, is `tests/test_resistance_steps.gd`'s.
+func _test_carrying_the_package_halves_every_streets_decay(t: TestRunner, city: City) -> void:
+	var somewhere := city.map.tile_to_world(Vector2i(10, 10))
+	var before := city.decay_multiplier(somewhere)
+	city.run.resistance().pick_up_package()
+	t.close_to(city.decay_multiplier(somewhere), before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
+			"every street decays slower once she carries the package", 0.001)
+	city.run.resistance().put_down_package()
+	t.close_to(city.decay_multiplier(somewhere), before,
+			"and as before once she has put it down", 0.001)
 
 ## An event placed in the city's own manager, whose field reaches the spot it stands on, is in what
 ## the city says charges her there: the events' set is among the city's.

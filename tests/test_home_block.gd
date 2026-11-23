@@ -10,6 +10,13 @@ extends RefCounted
 ## view with her facing, but in frame once she turns to face the building (PLAYTEST-134, statement
 ## 4 revisited).
 ##
+## The suite also holds what the city does with the resistance's story at her door: the street door
+## drawn sealed on a boot whose scars carry the seal and drawn ordinary again once a lost day 10
+## gives the scar back (`City._sync_home_door()`), and the neighbor's window unboarded until the
+## fronts are asked to board it (`CityFronts.board_neighbor_window()`), boarded once on one cell,
+## and on the same cell when asked again and on a fresh load. When the happenings ask for it is
+## `tests/test_resistance_happenings.gd`'s.
+##
 ## **The home block's own lot geometry was already seed-independent before this change** —
 ## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `CityGenerator.HOME_SIZE_TILES` and the fixed
 ## middle block alone, never from `map.city_seed()` — which is what makes `City._variant_for()` and
@@ -29,6 +36,8 @@ const UI := preload("res://tests/ui_screens.gd")
 const FrontReads := preload("res://tests/front_reads.gd")
 ## Her street door and the building it stands in front of, read off the city's nodes.
 const HomeDoorReads := preload("res://tests/home_door_reads.gd")
+## The seed of the run's own state in the door cases.
+const RUN_SEED := 2
 ## The seed PLAYTEST-134 found with only two wall rows on her own building, before this fix.
 const SHORT_SEED := 4242
 ## A second seed with nothing else in common with the first, for the cross-seed comparisons.
@@ -47,6 +56,9 @@ func run(t: TestRunner) -> void:
 	_test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t)
 	_test_non_home_buildings_still_roll_the_seed(t)
 	_test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t)
+	_test_the_neighbors_window_boards_once_and_stays_on_one_cell(t)
+	_test_the_sealed_door_stands_after_a_reload(t)
+	_test_a_lost_day_ten_restores_the_ordinary_door(t)
 
 # ------------------------------------------------------------------- fixtures ---
 
@@ -347,3 +359,65 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) 
 				% [seed_value, heights.keys()])
 		city.free()
 		again.free()
+
+# ---------------------------------------------------------- the window and the door ---
+
+## The neighbor's boarded window: absent until the city's fronts are asked to board it
+## (`CityFronts.board_neighbor_window()`, which the resistance's happenings ask from day 11), then
+## set on the one home-block building the door notch stands in front of, and the same cell when
+## asked again and on a fresh load of the same seed. Its row, the third floor, is held above.
+func _test_the_neighbors_window_boards_once_and_stays_on_one_cell(t: TestRunner) -> void:
+	var city := _city_for(t, SHORT_SEED)
+	var building := HomeDoorReads.building(city)
+	t.check(building != null, "the door notch stands in front of exactly one home-block building")
+	if building == null:
+		city.free()
+		return
+	t.check(building.neighbor_window_col() == -1, "unboarded until the fronts are asked")
+	city.fronts().board_neighbor_window()
+	var col := building.neighbor_window_col()
+	t.check(col >= 0, "boarded once asked")
+	city.fronts().board_neighbor_window()
+	t.check(building.neighbor_window_col() == col, "the same cell when asked again")
+	var reloaded := _city_for(t, SHORT_SEED)
+	reloaded.fronts().board_neighbor_window()
+	t.check(HomeDoorReads.building(reloaded).neighbor_window_col() == col,
+			"and the same cell on a fresh load")
+	reloaded.free()
+	city.free()
+
+## Her street door is sealed on a boot whose scars already carry the seal: `City.build()` reads the
+## run's scars once, at boot, which is what a resumed or reloaded run's own boot does (see
+## `main.gd`'s two `City.build()` call sites, both after the run has already loaded).
+func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
+	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
+	var city: City = CITY_SCENE.instantiate()
+	city.run = run
+	t.add_child(city)
+	RunCity.build(city, CityGenerator.generate(SHORT_SEED))
+	t.check(HomeDoorReads.is_sealed(city),
+			"a boot whose scars already carry the seal starts the door sealed")
+	city.free()
+
+## A lost day 10 gives the scar back (the run's `run_parts.give_back()`) and the next dawn's own
+## `_sync_home_door()` puts the ordinary door back, exactly the restore every other scar already
+## gets: the door of a city built sealed shows the ordinary one once `start_day()` finds no scar.
+func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
+	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
+	var city: City = CITY_SCENE.instantiate()
+	city.run = run
+	t.add_child(city)
+	RunCity.build(city, CityGenerator.generate(SHORT_SEED))
+	t.check(HomeDoorReads.is_sealed(city), "the door starts sealed, or this test checks nothing")
+	GivenRun.scars(run, [])
+	var state := CityState.new()
+	state.begin_day(city.map.plans_by_block(), ResistanceSteps.NEIGHBOR_DAY)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	city.start_day(state, ResistanceSteps.NEIGHBOR_DAY, rng)
+	t.check(not HomeDoorReads.is_sealed(city), "a lost day 10 restores the ordinary door")
+	city.free()

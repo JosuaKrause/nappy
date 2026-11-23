@@ -147,7 +147,7 @@ class StandInEvents extends FakeEventManager:
 	func plans() -> Array[EventPlan]:
 		return placed
 
-	## Overrides EventManager.instances.
+	## Overrides FakeEventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return made
 
@@ -180,7 +180,7 @@ func _lines_of(kind: String) -> Array[String]:
 class StandInSource extends FakeEventManager:
 	var live: Array[EventInstance] = []
 
-	## Overrides EventManager.instances.
+	## Overrides FakeEventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return live
 

@@ -128,7 +128,7 @@ held to, what is created with its telegraph spent, and the two things that are n
 outer radius clear of every other event at placement (`StreetInvalidation.room_around()`), and it
 is the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
 inherits this, not just the telegraph. **One case of it is held and the whole is not.**
-`tests/test_resistance_reach_contacts.gd` holds a queued mast: offered only sidewalk inside a
+`tests/test_masts.gd` holds a queued mast: offered only sidewalk inside a
 planned lethal field it is not generated, and offered sidewalk clear of it, it is.
 `tests/test_events_costs.gd` holds who is exempt (below). **No suite walks a planned day** from
 `EventScheduler.build_day()` to check that every lethal field was kept clear, so for every other

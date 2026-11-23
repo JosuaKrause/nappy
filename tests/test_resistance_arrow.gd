@@ -1,9 +1,9 @@
 extends "res://tests/resistance_rig.gd"
 ## The red arrow: what it points at, how it chooses and switches, and where every arrow ends.
 ##
-## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`) and plays the day it
-## asks about on it, so none leans on a step, a scar or a man shouting an earlier one left. What the
-## arrow has chosen is read the way the player reads it, from where its tip stands
+## Every test but four builds its city in a run of its own (`_build_city_in_a_new_run()`) and
+## plays the day it asks about on it, so none leans on a step, a scar or a man shouting an earlier
+## one left. What the arrow has chosen is read the way the player reads it, from where its tip stands
 ## (`ResistanceDirector.red_arrow_target()`) and what the street has there (`ResistanceReads`), with the
 ## contact (`contact()`, `contact_position()`) and what it rides (`rider()`); its choosing and
 ## sweeping are driven by `tick()`, the step `main` runs on every physics
@@ -12,11 +12,12 @@ extends "res://tests/resistance_rig.gd"
 ## **A real city, for a stated reason**: the arrow chooses among marks, masts and doors that
 ## stand on a day's real ground, planned by the day's events, so what it points at is a property
 ## of the director, the events' plan and the map together. Four cases are not covered by this
-## reason and are still to be judged in the group's next pull request: the three that stand real
-## men shouting in the real manager (the arrow choosing by walking distance, switching as
-## another target becomes closer, and leaving a freed instance at once) and the one that checks
-## the contact draws from the library its director is handed, which reads nothing about what the
-## arrow points at.
+## reason and stand on the least (`_build_the_least_in_a_new_run()`: a cached map, a stand-in
+## for the day's events and no city): the three that stand men shouting in the street (the arrow choosing
+## by walking distance, switching as another target becomes closer, and leaving a freed instance at
+## once), which ask the arrow of the men and the map's bodies alone, and the one that checks the
+## contact draws from the library its director is handed. The men are real ones made by
+## `FakeEventManager.spawn_extra()`.
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const RecordingAtlas := preload("res://tests/recording_atlas.gd")
@@ -102,7 +103,7 @@ func _test_an_arrow_exists_on_every_task_day(t: TestRunner) -> void:
 ## seal, no body standing — `before` tiles to its left and `after` to its right, for building a
 ## constructed case, or (-1, -1).
 func _open_run_for(before: int, after: int) -> Vector2i:
-	var map := _city.map
+	var map := _least_map
 	for y in range(8, map.size.y - 8):
 		for x in range(before + 1, map.size.x - after - 1):
 			var open := true
@@ -123,10 +124,10 @@ func _open_run_for(before: int, after: int) -> Vector2i:
 ## the look-alike she is within reach of); then the day's own man, who rode the contact before, is
 ## retired along with the rest.
 func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) -> Array:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	var tile := _open_run_for(before, after)
-	var player := _rig_player(t, _city.map.tile_to_world(tile))
+	var player := _rig_player(t, _least_map.tile_to_world(tile))
 	director.use_player(player)
 	var men: Array[EventInstance] = []
 	if tile.x < 0:
@@ -135,15 +136,15 @@ func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) 
 		men.append(_put_a_yeller(tile + Vector2i(offset, 0)))
 	player.global_position = men[0].global_position
 	director.tick(STEP)
-	for instance in RunCity.events(_city).instances():
+	for instance in _least_events.instances():
 		if instance.row_id() == "homeless_yeller" and instance not in men:
-			RunCity.events(_city).retire(instance)
-	player.global_position = _city.map.tile_to_world(tile)
+			_least_events.retire(instance)
+	player.global_position = _least_map.tile_to_world(tile)
 	return [director, player, tile, men]
 
 func _put_a_yeller(tile: Vector2i) -> EventInstance:
-	return RunCity.events(_city).spawn_extra(EventCatalogue.by_id("homeless_yeller"),
-			_city.map.tile_to_world(tile))
+	return _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+			_least_map.tile_to_world(tile))
 
 ## plush-moose, "closest here always means path closeness not crow closeness": a wall of standing
 ## bodies between her and the man who is nearer as the crow flies sends the arrow to the farther
@@ -169,15 +170,15 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t: TestRunner
 		for dy in range(-30, 31):
 			wall.append(here + Vector2i(3, dy))
 		var owner := get_instance_id()
-		_city.map.obstruct_tiles(owner, wall)
+		_least_map.obstruct_tiles(owner, wall)
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"behind a wall the arrow points at the one she can walk to sooner")
-		t.check(RunCity.events(_city).world.surroundings().where_protests_point() == director.red_arrow_target(),
+		t.check(_least_events.world.surroundings().where_protests_point() == director.red_arrow_target(),
 				"and the protest cue points at the same chosen objective as the arrow")
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")
-		_city.map.release_obstruction(owner)
+		_least_map.release_obstruction(owner)
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) < 1.0,
 				"the wall taken down, the arrow goes back to the nearer one")
@@ -185,14 +186,14 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t: TestRunner
 		# (`CityMap.day_record_version`) rather than to the standing bodies, which the arrow's
 		# cached ground must also notice.
 		for tile in wall:
-			_city.map.seal_soft_tile(tile)
+			_least_map.seal_soft_tile(tile)
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"a wall of soft seals sent up after it has chosen sends the arrow to the one she can walk to")
-		_city.map.clear_day_soft_seals()
+		_least_map.clear_day_soft_seals()
 	player.free()
 	director.free()
-	_free_city()
+	_free_the_least()
 
 ## plush-moose, "might switch if another closest one comes close": as she walks the arrow moves to
 ## whichever target has become closer on foot, with a hold of `ARROW_HOLD_TILES` so two about-as-
@@ -210,23 +211,23 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t: TestRunner) ->
 		t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 				"standing at the start the arrow points at the closer one")
 		# Walking east: the other becomes closer by more than the hold, and the tick moves it.
-		player.global_position = _city.map.tile_to_world(here + Vector2i(8, 0))
+		player.global_position = _least_map.tile_to_world(here + Vector2i(8, 0))
 		director.tick(ResistanceDirector.ARROW_RETARGET_SECONDS)
 		t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
 				"walking toward the other one, the arrow switches to it")
 		# Back to a spot about as near to both: it stays where it is.
-		player.global_position = _city.map.tile_to_world(here + Vector2i(4, 0))
+		player.global_position = _least_map.tile_to_world(here + Vector2i(4, 0))
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
 				"about as near to both, it does not flicker back")
 		# Ignoring the task and walking on west: it goes back to the first.
-		player.global_position = _city.map.tile_to_world(here + Vector2i(-4, 0))
+		player.global_position = _least_map.tile_to_world(here + Vector2i(-4, 0))
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 				"walking away from the task the arrow jumps to the closest on the other side")
 	player.free()
 	director.free()
-	_free_city()
+	_free_the_least()
 
 ## When the instance the arrow points at goes — freed as it streams out, the way
 ## `EventStreaming.stream_out()` frees it — asking for the arrow is still a read that answers a
@@ -246,10 +247,9 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t: TestRunner) -> void:
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near.global_position) < 1.0,
 				"the arrow is on the nearer man")
-		# Retired as the manager retires one, taken out of its list by the sweep, and then freed
-		# at once rather than at the frame's end: the arrow is asked about a freed man.
-		RunCity.events(_city).retire(near)
-		RunCity.events(_city).streaming.retire_finished()
+		# Retired as the manager retires one, and then freed at once rather than at the frame's end:
+		# the arrow is asked about a freed man.
+		_least_events.retire(near)
 		near.free()
 		var asked := director.red_arrow_target()
 		t.check(asked == director.contact_position() and asked != Vector2.ZERO,
@@ -262,7 +262,7 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t: TestRunner) -> void:
 				"and stays there once the sweep without the freed one is done")
 	player.free()
 	director.free()
-	_free_city()
+	_free_the_least()
 
 ## The cell centres of the day's longest route, from the doorstep end out: the walk she takes, as
 ## `tests/test_route_bag.gd` walks it. A route names `ReachabilityGrid` cells, two tiles square, so
@@ -572,19 +572,19 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 ## its own: the director is handed a recording one (`ResistanceDirector.use_atlas()`) before the day
 ## starts, and the contact it offers has asked it, which a contact handed none would not have.
 func _test_the_contact_draws_from_the_library_its_director_is_handed(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
+	_build_the_least_in_a_new_run(t)
 	var recording := RecordingAtlas.new()
 	_handed_atlas = recording
-	var read := _read_the_mark_on(t, 7, SEED)
+	var director := _director_on_the_least(t)
 	_handed_atlas = null
-	var director: ResistanceDirector = read[0]
+	director.start_day(7, _rng(7, "resistance"), 300.0)
 	t.check(director.contact() != null and director.contact().is_inside_tree(),
 			"the day offers a contact standing in the world")
 	t.check(recording.acquired_from("res://src/resistance/contact_point.gd") >= 1,
 			"the contact asked the director's library for its page (%d)"
 			% recording.acquired_from("res://src/resistance/contact_point.gd"))
-	(read[2] as Stroller).free()
 	director.free()
+	_free_the_least()
 
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,

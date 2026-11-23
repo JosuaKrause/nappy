@@ -1371,7 +1371,8 @@ field with its value before and after (`tests/shared_state.gd`).
   accumulated street closures.
 - `test_masts.gd` — the loudspeaker masts: fixed sites from `Tuning.MAST_FIRST_DAY`, none
   reaching the doorstep or a calm interior, the field's own edge, the shared broadcast clock,
-  and silencing one or all for the rest of the day.
+  silencing one or all for the rest of the day, and a queued mast kept out of a planned lethal
+  field.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `booted_main.gd` — a helper the runner does not load, shared by the suites that boot the real
   `scenes/main.tscn`: it hands each boot a save at a scratch path, lets real frames pass until she

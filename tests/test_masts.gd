@@ -7,7 +7,11 @@ extends RefCounted
 ## streaming, mast_foot() and silencing are the event manager's, so a real manager is built, over
 ## the cached generated map of its seed with no city round it, and handed mast plans made by hand as
 ## the dawn makes them (`DawnMasts`). What the dawn plans (the same sites every day from the first
-## mast day, the scar a silenced mast leaves) is `test_events_scheduler.gd`'s.
+## mast day, the scar a silenced mast leaves) is `test_events_scheduler.gd`'s. The scheduler's
+## acceptance of a mast queued for day 11 (`EventManager.queue_a_mast()`) is asked of a manager of
+## its own, handed the cached map as the city's (`EventSurroundings.in_the_city()`), which is what
+## siting a mast asks of it; no day is planned, since planning one would also ask for the city's
+## route tree.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -32,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
+	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_teardown()
 
 ## Stands the masts of a day on the manager as the dawn plans them (`DawnMasts`), in place of
@@ -283,6 +288,57 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> 
 	t.check(mast_plans_checked == standing_ids.size() * 2,
 			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
 			% mast_plans_checked) + "the curfew announcement, one pair per standing site")
+
+## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
+## event to be generated"* (quiet-yak, inbox #503). With a stationary
+## `reversing_lorry` (lethal, 175px field) planned on a sidewalk, the mast is queued with only
+## the sidewalk inside that field to stand on: the scheduler's acceptance refuses every tile, so no
+## mast is generated, as `StreetInvalidation.room_around()` refuses any row inside a lethal field
+## ("Nothing else happens inside a lethal event's field"). Offered sidewalk well clear of it, the mast
+## is generated, joins the day's plan under an added id, and has room by the same rule. A mast put down
+## where the director pointed, as before, fails the first half.
+func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner) -> void:
+	# A manager of its own, handed the city's map as the city's own (`in_the_city()`), which is what
+	# planning a day, and so siting a mast in it, is asked over.
+	var run := RunState.new()
+	run.start_run(SEED)
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(_map).drawn_in(_world))
+	manager.setup(run)
+	t.add_child(manager)
+	var map := _map
+	var lorry_def := EventCatalogue.by_id("reversing_lorry")
+	var walled: Array[Rect2i] = []
+	var lorry_tile := Vector2i(-1, -1)
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
+				and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
+			lorry_tile = tile
+			break
+	var lorry := EventPlan.new(lorry_def, map.tile_to_world(lorry_tile))
+	lorry.give_role(GameEnums.BlockerRole.FRICTION)
+	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
+	# planned row and its body is recorded where it stands.
+	manager.streaming.add(lorry)
+	var inside: Array[Vector2i] = []
+	var clear: Array[Vector2i] = []
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
+			continue
+		var gap := map.tile_to_world(tile).distance_to(lorry.placed_at())
+		if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
+			inside.append(tile)
+		elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
+			clear.append(tile)
+	t.check(not inside.is_empty() and not clear.is_empty(),
+			"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
+			% [inside.size(), clear.size()])
+	var refused := manager.queue_a_mast(inside)
+	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
+	var placed := manager.queue_a_mast(clear)
+	t.check(placed != null and placed.mast_id().begins_with("added-")
+			and placed in manager.plans(),
+			"offered ground clear of it, a mast is generated into the day's plan")
+	manager.free()
 
 func _teardown() -> void:
 	_manager.free()

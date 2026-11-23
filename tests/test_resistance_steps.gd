@@ -1,17 +1,24 @@
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
 ##
-## Thirteen cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`),
-## and set on that run what the day it asks about needs; none reads what another left. Two have
-## a reason: placement being the same every time and the guard standing two-thirds through the
-## mark's real alley are about where the director puts things in the alleys the generator draws,
-## and a map drawn for the case would only restate the alley the case chose. Every other city
-## case is still to be judged in the group's next pull request, for whether the director's
-## steps, the run's calendar or what the manager shows can be had from `FakeEventManager` and
-## `FakeEvent`: the dawn draws ignoring where the last attempt left her (it also plans each day
-## through the real manager, and planning a day is the dawn's), the mark activating the same day's
-## task, the yeller step sending only its rider away, the lost-day retry, the rider-gone expiry,
-## the timed step, the two package cases, the sabotage, and the two protesters' poses.
+## Four cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`), and set on
+## that run what the day it asks about needs; none reads what another left. Each has a reason.
+## Placement being the same every time and the guard standing two-thirds through the mark's real
+## alley are about where the director puts things in the alleys the generator draws, and a map drawn
+## for the case would only restate the alley the case chose. The dawn draws ignoring where the last
+## attempt left her plan each day through the real manager before the director draws, so the
+## guarantee spans the dawn's plan, the city's siting and the director's draw. The sabotage ends in
+## the real manager silencing every mast once she walks out of range of the station, which the
+## blackout the city watches for sets off.
+##
+## The other cases of the director's steps stand on the least (`_build_the_least_in_a_new_run()`):
+## the cached generated map of a seed, a run of its own, `FakeEventManager` for the day's events and a
+## bare `WorldContext` for the contact to stand in, with no city and no day planned. The events the
+## director spawns there are real ones, made by the fake's `spawn_extra()`; what the fake answers in
+## place of the real manager is the manager's to test: the instances standing in
+## `tests/test_event_manager.gd`, ending one in `tests/test_halo.gd`, and rigging her route's bag
+## in `tests/test_walk_siting_spec.gd` (the manager's answer, `[]` for a rig that started no day,
+## and the rigging itself) and `tests/test_route_bag.gd` (the director's `rig_her_route()`).
 
 func run(t: TestRunner) -> void:
 	_test_step_table(t)
@@ -30,6 +37,7 @@ func run(t: TestRunner) -> void:
 	await _test_touching_a_tasks_body_from_any_side_completes_it(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
+	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
 	_test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t)
 	_test_the_guard_is_seeded(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
@@ -39,6 +47,7 @@ func run(t: TestRunner) -> void:
 	_test_completing_the_yeller_step_sends_only_its_rider_away(t)
 	_test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t)
 	await _test_the_sabotage_silences_the_city(t)
+	_free_the_least()
 	_free_city()
 
 func _test_step_table(t: TestRunner) -> void:
@@ -472,8 +481,8 @@ func _test_placement_is_deterministic(t: TestRunner) -> void:
 ## `start_day()`'s own RNG and guard state, without waiting for a `start_day()` that would not
 ## come until tomorrow.
 func _test_touching_the_mark_activates_the_same_days_task(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
 	t.check(director.current_step() != null and director.current_step().index == 1,
 			"day 6 starts on the mark")
@@ -483,6 +492,36 @@ func _test_touching_the_mark_activates_the_same_days_task(t: TestRunner) -> void
 	t.check(director.contact_position() != Vector2.INF,
 			"and it rides on a live instance rather than a bare tile")
 	director.free()
+
+## The half a test of the run alone cannot see: that the *director* re-offers what the restored
+## state says is untouched, in the place the day first put it. Its placement is drawn from
+## `run.calendar().day_rng(day, "resistance")`, so a retry of the same day with the same run seed and an
+## untouched step is the same alley — the mark is not merely on offer again, it is where she
+## already knows to look.
+func _test_the_retry_meets_the_same_mark_in_the_same_alley(t: TestRunner) -> void:
+	var run := _build_the_least_in_a_new_run(t)
+	run.header().set_day(6)
+
+	run.calendar().begin_day()
+	var first := _director_on_the_least(t)
+	first.start_day(run.header().day(), run.calendar().day_rng(run.header().day(), "resistance"), 300.0)
+	var step := first.current_step()
+	t.check(step != null and step.is_pickup, "day 6 puts the first chalk mark on offer")
+	var where := first.contact_position()
+	t.check(where != Vector2.INF, "and the rig knows where it is")
+	run.complete_resistance_step(step.index, step.grants_progress)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+
+	run.calendar().begin_day()
+	var retry := _director_on_the_least(t)
+	retry.start_day(run.header().day(), run.calendar().day_rng(run.header().day(), "resistance"), 300.0)
+	t.check(retry.current_step() != null and retry.current_step().index == step.index,
+			"the retry is offered the same step the lost attempt was")
+	t.close_to(retry.contact_position().distance_to(where), 0.0,
+			"in the same alley, from the same seed", 0.01)
+
+	first.free()
+	retry.free()
 
 ## *Always guarded* has to mean a survivable placement, not a guaranteed lost day: a robber
 ## stands at least 62px (26 + `ContactPoint.REACH`) from every mark, in the mark's own alley —
@@ -543,14 +582,14 @@ var _seen_guard_distances: Array[float] = []
 # should count as not placed and be placed on the next alley the player comes close to."
 
 func _test_a_perform_step_expires_when_its_rider_is_gone(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+	var run := _build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	t.check(director.current_step() != null and director.current_step().index == 2,
 			"the yeller perform is active")
 	var rider := director.rider()
 	t.check(rider != null, "the perform step rides on a live instance")
 
-	RunCity.events(_city).retire(rider)
+	_least_events.retire(rider)
 	director.tick(0.1)
 	t.check(director.current_step() == null, "and it is gone once the rider is")
 	t.check(2 in run.resistance().failed_steps(), "recorded as failed for the run")
@@ -564,7 +603,7 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t: TestRunner) -> void:
 ## ticks (`tick()`) run its deadline out, to prove the mechanism a later slice's tasks will use
 ## still works.
 func _test_a_timed_step_expires(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
+	var run := _build_the_least_in_a_new_run(t)
 	var mark := ResistanceSteps.by_index(1)
 	var timed := ResistanceSteps.Step.new()
 	timed.index = mark.index + 1
@@ -575,7 +614,7 @@ func _test_a_timed_step_expires(t: TestRunner) -> void:
 	timed.deadline_fraction = 0.5
 	var calendar: Array[ResistanceSteps.Step] = [mark, timed]
 
-	var director := _director(t)
+	var director := _director_on_the_least(t)
 	director.use_steps(calendar)
 	director.start_day(timed.day, _rng(timed.day, "resistance"), 100.0)
 	_read_the_mark(director)
@@ -591,27 +630,23 @@ func _test_a_timed_step_expires(t: TestRunner) -> void:
 
 ## Step 4's cost is deferred and total rather than local: picking the package up does not cost the
 ## street it happened on, it makes every street after it dearer for the rest of the day. Day 7's
-## mark is read and the van's task it unlocks is done, the package handed over.
+## mark is read and the van's task it unlocks is done, the package handed over, and the run says she
+## carries it; what the carried package does to the ground's decay is the city's
+## (`tests/test_city_world.gd`).
 func _test_completing_the_package_makes_the_pram_heavier(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
-	var somewhere := _city.map.tile_to_world(Vector2i(10, 10))
-	var before := _city.decay_multiplier(somewhere)
-
-	var director := _director(t)
+	var run := _build_the_least_in_a_new_run(t)
+	t.check(not run.resistance().is_carrying_package(), "she carries nothing at the start")
+	var director := _director_on_the_least(t)
 	director.start_day(7, _rng(7, "resistance"), 300.0)
 	_read_the_mark(director)
 	director.contact().complete_now()
 	t.check(run.resistance().is_carrying_package(), "picking up the package sets the flag")
-
-	var after := _city.decay_multiplier(somewhere)
-	t.close_to(after, before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
-			"and every street after it decays slower for the rest of the day", 0.001)
 	director.free()
 
 func _test_starting_a_day_resets_the_package_flag(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
+	var run := _build_the_least_in_a_new_run(t)
 	run.resistance().pick_up_package()
-	var director := _director(t)
+	var director := _director_on_the_least(t)
 	director.start_day(1, _rng(1, "resistance"), 300.0)
 	t.check(not run.resistance().is_carrying_package(),
 			"a fresh attempt at a day has not picked it up yet")
@@ -623,14 +658,14 @@ func _test_starting_a_day_resets_the_package_flag(t: TestRunner) -> void:
 
 ## The nearest open tile centre to `near` (within twelve tiles), or the home's position when none is.
 func _open_ground_near(near: Vector2) -> Vector2:
-	var start := _city.map.world_to_tile(near)
+	var start := _least_map.world_to_tile(near)
 	for radius in 12:
 		for dy in range(-radius, radius + 1):
 			for dx in range(-radius, radius + 1):
 				var tile := start + Vector2i(dx, dy)
-				if _city.map.is_walkable(tile):
-					return _city.map.tile_to_world(tile)
-	return _city.map.home_world_position()
+				if _least_map.is_walkable(tile):
+					return _least_map.tile_to_world(tile)
+	return _least_map.home_world_position()
 
 ## The look-alike she never reached is a second live `homeless_yeller`, spawned directly rather
 ## than waiting for the scheduler to place one, so the test does not depend on the seed placing a
@@ -641,16 +676,16 @@ func _open_ground_near(near: Vector2) -> Vector2:
 ## hands, and once `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` has actually elapsed. He does
 ## not leave the first moment — he stays and keeps shouting, still charging her, until the second.
 func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	t.check(director.current_step() != null and director.current_step().index == 2,
 			"the yeller perform is active")
 	var rider := director.rider()
 	t.check(rider != null and not rider.is_on_its_way_out(), "the seeded rider is shouting, not leaving")
 
-	var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+	var decoy := _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
 			_open_ground_near(rider.global_position + Vector2(600.0, 0.0)))
-	t.check(_city.map.is_walkable(_city.map.world_to_tile(decoy.global_position))
+	t.check(_least_map.is_walkable(_least_map.world_to_tile(decoy.global_position))
 			and decoy.global_position.distance_to(rider.global_position) > 400.0,
 			"the look-alike stands on open ground, well away from the one she reached")
 
@@ -683,13 +718,13 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 ## task: a task is one day, so there is no dawn shortcut into the middle of it the way the old
 ## two-beat design had.
 func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
+	var run := _build_the_least_in_a_new_run(t)
 	run.header().use_seed(SEED)
 	run.header().set_day(6)
 	run.header().set_nerves(Tuning.STARTING_NERVES)
 	run.calendar().begin_day()
 
-	var attempt := _director(t)
+	var attempt := _director_on_the_least(t)
 	attempt.start_day(6, _rng(6, "resistance"), 300.0)
 	t.check(attempt.current_step() != null and attempt.current_step().index == 1,
 			"the first attempt starts at the mark")
@@ -712,7 +747,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: Test
 			"and gives both halves of the day's task back")
 	t.check(run.header().day() == 6, "and the retry is the same day")
 
-	var retry := _director(t)
+	var retry := _director_on_the_least(t)
 	retry.start_day(6, _rng(6, "resistance"), 300.0)
 	t.check(retry.current_step() != null and retry.current_step().index == 1,
 			"the retry starts at the mark again, not straight at the task")
@@ -734,8 +769,8 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	t.check(run.sabotage_available(), "the finale is on offer")
 
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
-	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
-	# `EventPlan.mast_id()`, which only a real plan carries.
+	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: the blackout the
+	# city watches for silences the masts of the day's real plans.
 	var site := MastSites.compute(_city.map)[0]
 	# The real day order, `City.start_day()` first: it is what holds today's region plan and
 	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
@@ -801,14 +836,14 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 ## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
 ## that.")* A pickup gives the protests' pointing hand-in (`EventManager.use_protest_target()`) nothing to hand back.
 func _test_plain_pose_on_a_mark_step(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
 	var step := director.current_step()
 	t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
-	t.check(RunCity.events(_city).world.surroundings().where_protests_point() == Vector2.INF,
+	t.check(_least_events.world.surroundings().where_protests_point() == Vector2.INF,
 			"a mark step gives a protester nothing to point at")
-	t.check(EventPictures.protester_texture(Vector2.ZERO, RunCity.events(_city).world.surroundings().where_protests_point())
+	t.check(EventPictures.protester_texture(Vector2.ZERO, _least_events.world.surroundings().where_protests_point())
 			== EventPictures.PROTESTER,
 			"...so a protester anywhere in the city draws the plain rank")
 	director.free()
@@ -818,14 +853,14 @@ func _test_plain_pose_on_a_mark_step(t: TestRunner) -> void:
 ## than waiting for a `start_day()` that does not come until tomorrow. Before the first arrow field
 ## settles, that objective is the contact `_begin_step()` already placed.
 func _test_pointing_pose_on_a_perform_step(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
 	director.contact().complete_now()
 	var step := director.current_step()
 	t.check(step != null and not step.is_pickup, "the yeller perform is active")
 
-	var objective: Vector2 = RunCity.events(_city).world.surroundings().where_protests_point()
+	var objective: Vector2 = _least_events.world.surroundings().where_protests_point()
 	t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
 	t.check(objective == director.contact_position(),
 			"before its first arrow choice, it is the step's own contact")

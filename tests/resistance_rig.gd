@@ -124,6 +124,58 @@ func _would_show(box: Rect2, at: Vector2) -> bool:
 ## for a rig that hands nothing.
 var _handed_atlas: AtlasLibrary = null
 
+## **The least a director stands on**: a drawn city's map (the cached one of `seed_value`, no `City`),
+## a run of its own, a stand-in for the day's events (`FakeEventManager`) and a bare world to put its
+## contact in (`WorldContext`). A case whose subject is not where the city's siting puts things, but
+## what the director does with the step it has put on offer, builds this and not a city
+## (`_build_the_least_in_a_new_run()`), and no day is planned: the director's own placement of a
+## mark reads the map's alleys and the ground rules of its siting, which the map carries. Returns
+## the run; `_free_the_least()` frees what was built.
+var _least_map: CityMap
+var _least_run: RunState
+var _least_events: FakeEventManager
+var _least_world: WorldContext
+
+func _build_the_least_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
+	_free_the_least()
+	_least_run = RunState.new()
+	_least_run.start_run(RUN_SEED)
+	_least_map = MapCache.of(seed_value)
+	_least_events = FakeEventManager.new()
+	_least_world = WorldContext.new()
+	t.add_child(_least_world)
+	return _least_run
+
+func _free_the_least() -> void:
+	if _least_events != null:
+		_least_events.free()
+	if _least_world != null:
+		_least_world.free()
+	_least_events = null
+	_least_world = null
+	_least_map = null
+	_least_run = null
+
+## A director over the least (`_build_the_least_in_a_new_run()`), handed the same things the game's
+## hands it that the least has: no streets and no fronts, which it reads as none.
+func _director_on_the_least(t: TestRunner) -> ResistanceDirector:
+	var director := ResistanceDirector.new()
+	director.use_bus(EventBus)
+	t.add_child(director)
+	director.set_process(false)
+	if _handed_atlas != null:
+		director.use_atlas(_handed_atlas)
+	director.setup(_least_map, _least_run, _least_events, null, null, _least_world)
+	return director
+
+## Day 6's mark read on the least's director, with step 2 (the yeller perform) active, as
+## `_director_on_the_yeller_perform()` hands one over the city.
+func _director_on_the_least_on_the_yeller_perform(t: TestRunner, seed_value := SEED) -> ResistanceDirector:
+	var director := _director_on_the_least(t)
+	director.start_day(6, _rng(6, "resistance", seed_value), 300.0)
+	_read_the_mark(director)
+	return director
+
 func _director(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	director.use_bus(EventBus)

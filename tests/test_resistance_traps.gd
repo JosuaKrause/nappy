@@ -13,11 +13,12 @@ extends "res://tests/resistance_rig.gd"
 ##
 ## **A real city, for a stated reason**: the guarded targets are the director's picks over a
 ## day's real streets and events; what is checked about the live events they set on her is the
-## arrival's as the game makes it. Two cases are not covered by this reason, since they
-## `spawn_extra` real men shouting into the real manager:
-## `_test_the_contact_rides_onto_the_first_look_alike_she_reaches` and
-## `_test_the_step_completes_on_the_look_alike_she_hands_it_to`. They are still to be judged in
-## the group's next pull request.
+## arrival's as the game makes it. The two cases of the contact following her between look-alikes
+## (`_test_the_contact_rides_onto_the_first_look_alike_she_reaches` and
+## `_test_the_step_completes_on_the_look_alike_she_hands_it_to`) are not covered by it: what they
+## check is which man shouting the director's contact rides, so they stand on the least
+## (`_build_the_least_in_a_new_run()`: a cached map, `FakeEventManager` and no city), the men
+## real ones made by the fake's `spawn_extra()`, on open ground with no body on it.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
@@ -26,6 +27,7 @@ func run(t: TestRunner) -> void:
 	_test_a_perform_contact_is_never_relocated(t)
 	await _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	await _test_the_step_completes_on_the_look_alike_she_hands_it_to(t)
+	_free_the_least()
 	_test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t)
 	_test_the_van_task_stands_unguarded_until_it_is_handed_over(t)
 	_test_the_roadblock_keeps_a_waiting_guard(t)
@@ -49,19 +51,18 @@ func _director_on_the_van_perform(t: TestRunner) -> ResistanceDirector:
 	return director
 
 ## Ground a look-alike of `step`'s rider stands on, drawn by `rng`: a tile of the kinds the step's
-## own task is sited on (`ResistanceSteps.Step.placement`) that a contact may stand on
-## (`SpawnSiting.CONTACT_GROUND`, the test city's siting), more than `apart` from every one of
+## own task is sited on (`ResistanceSteps.Step.placement`) that is legal ground with no body on it
+## (`SpawnSiting.is_legal_ground()`, on the least's map), more than `apart` from every one of
 ## `others` — the ground the day's scheduler could equally have placed one on. `Vector2.INF` when
 ## the city has none.
 func _look_alike_ground(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 		others: Array[Vector2], apart: float) -> Vector2:
-	var siting := RunCity.spawn_siting(_city)
-	var ground := siting.ask_of_ground()
+	var walled: Array[Rect2i] = []
 	var pool: Array[Vector2] = []
 	for type in step.placement:
-		for tile in _city.map.tiles_of_type(type as GameEnums.TileType):
-			var at := _city.map.tile_to_world(tile)
-			if not siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, at):
+		for tile in _least_map.tiles_of_type(type as GameEnums.TileType):
+			var at := _least_map.tile_to_world(tile)
+			if not SpawnSiting.is_legal_ground(_least_map, tile, walled) or _least_map.is_obstructed(tile):
 				continue
 			var clear := true
 			for other in others:
@@ -95,8 +96,8 @@ func _test_a_perform_contact_is_never_relocated(t: TestRunner) -> void:
 ## rider. She is put within reach of the *decoy* rather than the rider `_begin_step()` rolled, and
 ## the contact rides onto it instead of waiting for her to find the one it was seeded on.
 func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	var perform := director.current_step()
 	t.check(perform != null and perform.index == 2, "the yeller perform is active")
 	var seeded_at := director.contact_position()
@@ -107,7 +108,7 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t: TestRunner
 	var decoy_at := _look_alike_ground(perform, _rng(6, "decoy"), seeded, apart)
 	t.check(decoy_at.distance_to(seeded_at) > apart,
 			"the decoy lands well clear of the seeded rider, or this test checks nothing")
-	var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("homeless_yeller"), decoy_at)
+	var decoy := _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), decoy_at)
 
 	var player := _rig_player(t, decoy_at)
 	director.use_player(player)
@@ -134,8 +135,8 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t: TestRunner
 ## the seeded rider, so the first one she comes near is a retarget rather than the rider the step
 ## already had — a walk that only ever touched the seeded one could pass with the rule deleted.
 func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	var perform := director.current_step()
 	t.check(perform != null and perform.index == 2, "the yeller perform is active")
 	var seeded := director.rider()
@@ -149,8 +150,8 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t: TestRunner) -
 			and second_at.distance_to(seeded.global_position) > apart
 			and first_at.distance_to(second_at) > apart,
 			"the three look-alikes stand well clear of each other, or this walk checks nothing")
-	var first := RunCity.events(_city).spawn_extra(yeller, first_at)
-	var second := RunCity.events(_city).spawn_extra(yeller, second_at)
+	var first := _least_events.spawn_extra(yeller, first_at)
+	var second := _least_events.spawn_extra(yeller, second_at)
 	var completed: Array[int] = []
 	director.contact().completed.connect(func(index: int) -> void: completed.append(index))
 
