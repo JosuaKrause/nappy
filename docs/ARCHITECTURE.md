@@ -1342,14 +1342,17 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.
-- `test_event_manager.gd` — the manager against a real generated city: retirement,
-  successors, summed excitement. Its header gives the reason it builds one: an instance freed but
-  left in the list and a successor spawned but never tracked are invisible to a data-level test.
-- `test_event_manager_units.gd` — the manager against a real generated city, the day's units
-  drawn as she comes near them: a unit draws before the streaming looks at its ground, a beat her
-  walk lays stands in a unit before it draws, and what the resistance swaps in or takes away draws
-  the units round it first. Its header gives the reason it builds a city: each rule is the order of
-  two parts the manager owns.
+- `test_event_manager.gd` — the manager over drawn streets, with plans of the case's own:
+  retirement, successors, summed excitement, streaming. Its header says which cases stand it on
+  the generated map (a day started through it) or in a city (the city's own dawn), and why: an
+  instance freed but left in the list and a successor spawned but never tracked are invisible to a
+  data-level test of one part, so the manager is real.
+- `test_event_manager_units.gd` — the manager over a generated map, the day's units drawn as she
+  comes near them: a unit draws before the streaming looks at its ground, a beat her walk lays
+  stands in a unit before it draws (the one case in a city, for the blank walls a crew pastes),
+  what the resistance swaps in or takes away draws the units round it first, and a day started
+  twice or walked two ways draws the same units. Its header gives the reason it plans a day on a
+  generated map: each rule is the order of two parts the manager owns.
 - `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
   route tree, the locations and the judge: the nearest free location on her branch, a
   unit's that has not drawn first (a location still open), takes a beat which the location then holds, a placed beat gives its

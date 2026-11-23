@@ -1,16 +1,23 @@
 extends RefCounted
-## EventManager against a real generated City: the fire, and a walk down the day's own routes.
+## EventManager over a generated map: the fire, and a walk down the day's own routes.
 ##
 ## `tests/test_event_manager.gd` is the manager's wiring over a day; this suite is what a walking
 ## player adds, the fire sited on her way, the engine sent to it and the day's fire lit at dusk. They
 ## are two suites because the walks take a real tick each and together they outran the two minutes
 ## a suite is allowed.
+##
+## **Why these cases plan a day on a generated map.** The fire is sited from where she actually
+## walks, on the tree of the day's routes, ahead on her branch and off screen, and the engine it
+## calls is sent down the fire's own street: each is a guarantee spanning the dawn's plan, the
+## director's siting, the manager's streaming and the street network, which a map of a few drawn
+## streets or a stand-in for any of them would not hold. The manager stands on the map and the
+## streets of the seed's generated city, with no city built round it.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
 ## The bus script, so a recording bus of the suite's own is the class a builder takes.
 const _BUS := preload("res://src/autoload/event_bus.gd")
 
-var _city: City
+var _stage: Rig.Stage
 
 ## Moves her down the route a walking test sets it, on its own physics tick, before the city's
 ## (it is added to the tree first), so the manager's tick sees her where this tick put her.
@@ -29,23 +36,21 @@ func run(t: TestRunner) -> void:
 		_test_a_fire_that_was_never_lit_was_not_spent,
 	]
 	for test in tests:
-		_build_city(t)
+		_build_stage(t)
 		await test.call(t)
 		_teardown()
-	# The won day's city is stood by a builder handed a bus of the suite's own, as `main` hands its
-	# builder the game's, so what the fire lit at dusk says is heard there and nowhere else.
+	# The won day's manager is handed a bus of the suite's own, as `main` hands its builder the
+	# game's, so what the fire lit at dusk says is heard there and nowhere else.
 	var bus: _BUS = _BUS.new()
-	var builder := SimulationBuilder.new()
-	builder.use_bus(bus)
-	_build_city(t, builder)
+	_build_stage(t, bus)
 	_test_a_won_day_with_the_fire_unmet_still_burns(t, bus)
 	_teardown()
 	bus.free()
 
-func _build_city(t: TestRunner, builder: SimulationBuilder = null) -> void:
+func _build_stage(t: TestRunner, bus: _BUS = null) -> void:
 	_walker_node = Rig.Walker.new()
 	t.add_child(_walker_node)
-	_city = Rig.build_city(t, builder)
+	_stage = Rig.build_stage(t, bus)
 
 ## **A day 3 she wins with the fire never in the world still burns.** *"I agree with the fire fix"*
 ## (PLAYTEST-121). The row's only day is day 3 and it is spent where it enters the world, so a day
@@ -68,8 +73,8 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 			"the day ends with the fire owed, planned and never in the world")
 	if not plan:
 		return
-	var doorstep := _city.map.doorstep_world_position()
-	t.check(RunCity.events(_city).light_what_she_never_met(doorstep),
+	var doorstep := _stage.map().doorstep_world_position()
+	t.check(_stage.events().light_what_she_never_met(doorstep),
 			"the end of a won day lights it")
 	t.check(plan.is_placed() and plan.has_been_in_the_world(),
 			"and it has been in the world, which is what records what a fire does to a run")
@@ -82,27 +87,27 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 			% [plan.placed_at().distance_to(doorstep),
 			WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
 	var scar_here := false
-	for scar in _city.run.attempt_spend().scars():
+	for scar in _stage.run().attempt_spend().scars():
 		scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 				and Vector2(scar["position"]).distance_to(plan.placed_at()) < 1.0)
 	t.check(scar_here, "and the shell the run keeps is standing where it burned")
 	var still_alight := false
-	for instance in RunCity.events(_city).instances():
+	for instance in _stage.events().instances():
 		still_alight = still_alight or instance.row_id() == "burning_building"
 	t.check(not still_alight,
 			"and nothing is left burning in a day that is over")
 
 	# A second call on the same day has nothing left to light: the one-shot is spent.
-	t.check(not RunCity.events(_city).light_what_she_never_met(doorstep),
+	t.check(not _stage.events().light_what_she_never_met(doorstep),
 			"a run gets exactly one fire, however many times the day ends")
 	t.check(lit_unmet == told, "and nothing more is told of it (%s)" % [lit_unmet])
 
 func _teardown() -> void:
-	_city.free()
+	_stage.free_events()
 	_walker_node.free()
 
 func _start(day: int) -> void:
-	Rig.start(_city, day)
+	Rig.start(_stage, day)
 
 # ------------------------------------------- the fire is on her way (M179) ---
 # *"the fire should come first and be on your way guaranteed (a dynamic event dependent on the
@@ -155,34 +160,34 @@ func _walk(t: TestRunner, rig: Stroller, route: PackedVector2Array, until := Cal
 ## stops at, up the road from that kerb rather than past it, level with her or further up rather than
 ## between her and the fire, and wholly out of sight — and is given the route down to the kerb.
 func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
-	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
+	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
-	var rig := Rig.walker(t, _city, route[0])
+	var rig := Rig.walker(t, _stage, route[0])
 	_walk_clock = 0.0
 	if plan:
 		await _walk(t, rig, route,
-				func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()))
+				func() -> bool: return plan.is_placed() and _stage.events().sees(plan.placed_at()))
 	var warning: PendingWarning = null
-	for pending in RunCity.events(_city).pending_warnings():
+	for pending in _stage.events().pending_warnings():
 		if pending.row().id() == "fire_truck":
 			warning = pending
 	t.check(plan != null and warning != null, "she walks out, finds the fire, and the engine is warned")
 	if not warning:
 		rig.free()
-		RunCity.events(_city).stream_within(INF)
+		_stage.events().stream_within(INF)
 		return
 	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
 			"its badge is up alone for at most a second")
-	var stop := EventSpawner._where_the_summoned_row_stops(_city.map, plan.placed_at())
+	var stop := EventSpawner._where_the_summoned_row_stops(_stage.map(), plan.placed_at())
 	var offset := warning.points_at() - rig.global_position
 	var looked := [0]
 	var jumped := [0]
 	var her_at := [rig.global_position]
 	var watch := func() -> bool:
 		her_at[0] = rig.global_position
-		if not RunCity.events(_city).pending_warnings().has(warning):
+		if not _stage.events().pending_warnings().has(warning):
 			return true
 		looked[0] += 1
 		if not (warning.points_at() - rig.global_position).is_equal_approx(offset):
@@ -195,7 +200,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 			% [looked[0], jumped[0]])
 	t.check(not warning.was_withdrawn(), "and it is not withdrawn")
 	var engine: EventInstance = null
-	for instance in RunCity.events(_city).instances():
+	for instance in _stage.events().instances():
 		if instance.row_id() == "fire_truck":
 			engine = instance
 	t.check(engine != null, "and the engine is created once its second is over")
@@ -211,7 +216,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 			wrong.append("past the fire's kerb")
 		if from_the_kerb.dot(up_the_road) < ((her_at[0] as Vector2) - stop).dot(up_the_road) - 0.5:
 			wrong.append("between her and the fire")
-		if not Tile.is_road(_city.map.tile_type_at_world(at)):
+		if not Tile.is_road(_stage.map().tile_type_at_world(at)):
 			wrong.append("off the carriageway")
 		if not SpawnSiting.is_out_of_sight(VisibleView.around(her_at[0], null),
 				EventFootprints.footprint_of(engine.row()), her_at[0], at):
@@ -221,7 +226,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		t.close_to(engine.walks()[engine.walks().size() - 1].distance_to(stop), 0.0,
 				"and it drives to the kerb across from the fire", 1.0)
 	rig.free()
-	RunCity.events(_city).stream_within(INF)
+	_stage.events().stream_within(INF)
 
 	# The same place on a straight road, walked a long way up it toward where the engine comes from:
 	# the stretch between her and the fire goes out of view behind her long before she stops, and
@@ -246,8 +251,8 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 ## holds a tree grown for a different day, and a rig walking a route out of a tree the fire was
 ## never sited against measures nothing.
 func _days_tree(day: int) -> RouteTree:
-	var tree := _city.streets().route_tree()
-	return tree if tree else RouteTree.for_day(_city.map, day)
+	var tree := _stage.streets().route_tree()
+	return tree if tree else RouteTree.for_day(_stage.map(), day)
 
 ## The longest route of the day's own tree as the line she walks: out from the doorstep to the calm
 ## area it reaches when `outward`, back down the same ground when not.
@@ -269,17 +274,16 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 ## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
 ## empty for a point off the tree. What "on the path" means, asked of a placement.
 func _branches_on(day: int, position: Vector2) -> Array[int]:
-	return _days_tree(day).branches_on(_city.map.world_to_tile(position))
+	return _days_tree(day).branches_on(_stage.map().world_to_tile(position))
 
 ## **The fire under a corner the joystick's controls cover is not sighted** (dappled-swan's
 ## the-sightings): with the burning building standing only under the left corner, the day's own
 ## visible area in the joystick scheme sends no `seen-fire` and summons no engine; in the tap scheme,
 ## the same view and the same fire, it does both.
 func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void:
-	_start(Tuning.RUN_TAUGHT_DAY)
-	var events := RunCity.events(_city)
+	var events := _stage.events()
 	var def := EventCatalogue.by_id("burning_building")
-	var at := CrowdLanes.arterial_pavement(_city.map)
+	var at := CrowdLanes.arterial_pavement(_stage.map())
 	var sighted: Array[String] = []
 	var on_sighted := func(id: String) -> void: sighted.append(id)
 	EventBus.event_sighted.connect(on_sighted)
@@ -292,7 +296,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 		var plan := EventPlan.new(def, at)
 		var instance := EventInstance.new()
 		instance.setup(def, at)
-		_city.add_child(instance)
+		_stage.events().world.drawn_in().add_child(instance)
 		plan.enter_the_world(instance.standing())
 		events.streaming.add(plan)
 		sighted.clear()
@@ -310,7 +314,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 	EventBus.event_sighted.disconnect(on_sighted)
 
 func _fire_plan() -> EventPlan:
-	for plan in RunCity.events(_city).plans():
+	for plan in _stage.events().plans():
 		if plan.row_id() == "burning_building":
 			return plan
 	return null
@@ -328,7 +332,7 @@ func _fire_plan() -> EventPlan:
 ## she was standing. And it is **off screen**: outside the streaming band, so nothing about it is
 ## visible and nothing about it is real yet.
 func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
-	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
+	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var day := Tuning.RUN_TAUGHT_DAY
 	for leg: String in ["out", "home again"]:
 		_start(day)
@@ -338,7 +342,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 		if not plan:
 			continue
 		var route := _a_route_out(day)
-		var rig := Rig.walker(t, _city, route[0])
+		var rig := Rig.walker(t, _stage, route[0])
 		_walk_clock = 0.0
 		if leg == "home again":
 			# Stood at the calm area with nothing sited, which is the state a walk out that dodged
@@ -360,9 +364,9 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 		var sited_at := _walk_clock
 		t.check(not _branches_on(day, plan.placed_at()).is_empty(),
 				"walking %s: and it stands on the day's own route tree, never off it" % leg)
-		var tile := _city.map.world_to_tile(plan.placed_at())
-		var location := RunCity.events(_city).walk_events().locations().holding(tile,
-				_city.map.tile_at(tile))
+		var tile := _stage.map().world_to_tile(plan.placed_at())
+		var location := _stage.events().walk_events().locations().holding(tile,
+				_stage.map().tile_at(tile))
 		t.check(location != null and location.is_taken(),
 				"walking %s: and the location under it is taken for the day, so no draw fills it" % leg)
 		t.check(plan.placed_at().distance_to(sited_from) > Tuning.EVENT_STREAM_RADIUS,
@@ -372,8 +376,8 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 		t.check(_days_tree(day).is_ahead(sited_from, heading, plan.placed_at()),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
-		await _walk(t, rig, route, func() -> bool: return RunCity.events(_city).sees(plan.placed_at()))
-		if RunCity.events(_city).sees(plan.placed_at()):
+		await _walk(t, rig, route, func() -> bool: return _stage.events().sees(plan.placed_at()))
+		if _stage.events().sees(plan.placed_at()):
 			seen_at = _walk_clock
 		t.check(seen_at >= 0.0,
 				"walking %s: and continuing along the route brings it into view (%.1fs in)"
@@ -383,11 +387,11 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 					% [leg, sited_at, plan.placed_at().distance_to(sited_from), seen_at - sited_at])
 			# The engine is what the sight of it summons, and its warning goes up on that same frame.
 			var engine := false
-			for warning in RunCity.events(_city).pending_warnings():
+			for warning in _stage.events().pending_warnings():
 				engine = engine or warning.row().id() == "fire_truck"
 			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
-	RunCity.events(_city).stream_within(INF)
+	_stage.events().stream_within(INF)
 
 ## **The scar the run keeps is where it actually burned.** The whole point of siting the fire from
 ## her walk is that where it stands is not known at dawn, and a scar is the city's memory of a day —
@@ -399,21 +403,21 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 ## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
 ## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
 func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
-	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
+	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	t.check(plan != null, "day 3 has a fire to walk into")
 	if not plan:
-		RunCity.events(_city).stream_within(INF)
+		_stage.events().stream_within(INF)
 		return
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
-	var rig := Rig.walker(t, _city, route[0])
+	var rig := Rig.walker(t, _stage, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route, func() -> bool: return plan.is_placed())
 	t.check(plan.is_placed(), "walking the day's route sites it")
 	if not plan.is_placed():
 		rig.free()
-		RunCity.events(_city).stream_within(INF)
+		_stage.events().stream_within(INF)
 		return
 
 	await _walk(t, rig, route, func() -> bool: return plan.has_been_in_the_world())
@@ -421,7 +425,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 	if plan.has_been_in_the_world():
 		var burning_at := plan.placed_at()
 		var scar_here := false
-		for scar in _city.run.attempt_spend().scars():
+		for scar in _stage.run().attempt_spend().scars():
 			scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 					and Vector2(scar["position"]).distance_to(burning_at) < 1.0)
 		t.check(scar_here, "and the scar the run keeps is where it actually burned")
@@ -431,7 +435,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 		t.check(plan.placed_at() == burning_at,
 				"and turning round after it is real leaves it exactly where it burned")
 	rig.free()
-	RunCity.events(_city).stream_within(INF)
+	_stage.events().stream_within(INF)
 
 ## **The fire she meets on her way is seen coming, and so is the engine it calls.** She walks up
 ## to this fire because the day put it in front of her rather than because she picked the street:
@@ -440,26 +444,26 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 ## sooner than its own minimum after its badge. Nothing about the site is a reachability question
 ## (inbox #1173): the fire has no body and the engine parks on the carriageway.
 func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
-	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
+	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	if not plan:
 		t.check(false, "day 3 has a fire to walk up to")
-		RunCity.events(_city).stream_within(INF)
+		_stage.events().stream_within(INF)
 		return
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
-	var rig := Rig.walker(t, _city, route[0])
+	var rig := Rig.walker(t, _stage, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route,
-			func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()))
-	t.check(plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()),
+			func() -> bool: return plan.is_placed() and _stage.events().sees(plan.placed_at()))
+	t.check(plan.is_placed() and _stage.events().sees(plan.placed_at()),
 			"she walks out and finds the fire")
 	if not plan.is_placed():
 		rig.free()
-		RunCity.events(_city).stream_within(INF)
+		_stage.events().stream_within(INF)
 		return
 
-	var fire: EventInstance = RunCity.events(_city).event_of(plan)
+	var fire: EventInstance = _stage.events().event_of(plan)
 	t.check(fire != null, "the fire is in the world by the time it is on screen")
 	if fire:
 		# **What the first sight owes is the walk out of it, not a clear screen.** The fire is on the
@@ -480,11 +484,11 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 				plan.telegraphs_for()]) + "telegraph buys her")
 	var engines := 0
 	var engine_in_the_world := false
-	for instance in RunCity.events(_city).instances():
+	for instance in _stage.events().instances():
 		engine_in_the_world = engine_in_the_world or instance.row_id() == "fire_truck"
 	t.check(not engine_in_the_world,
 			"and the engine it calls in is not in the world yet: its warning comes first")
-	for warning in RunCity.events(_city).pending_warnings():
+	for warning in _stage.events().pending_warnings():
 		if warning.row().id() != "fire_truck":
 			continue
 		engines += 1
@@ -496,12 +500,12 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		# plan stops being movable at its first stream-in, so the two can never be a fire that moved
 		# after the engine was sent to where it used to be. The end of the route is the near kerb
 		# across from the frontage it is burning against — `EventSpawner._summon_the_sighted_row()`.
-		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.placed_at()))
+		var inward := _stage.map().pavement_inward(_stage.map().world_to_tile(plan.placed_at()))
 		var kerb: Vector2 = plan.placed_at() - Vector2(inward) \
 				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 		# She stands where she first saw the fire while the warning runs on the manager's own ticks.
 		var her_at := rig.global_position
-		while RunCity.events(_city).pending_warnings().has(warning) \
+		while _stage.events().pending_warnings().has(warning) \
 				and warning.shown_for() < Tuning.WARNING_ALONE_MAX + 5.0:
 			await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), Rig.WALK_SCALE)
 		# To the tick: `put_up()` adds nothing to `shown`, only `tick()` does, so the badge is over on
@@ -512,7 +516,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		# she stands, and a dog walker sent ahead of her can finish its leg and go in that second.
 		var arrived: EventInstance = null
 		var trucks := 0
-		for instance in RunCity.events(_city).instances():
+		for instance in _stage.events().instances():
 			if instance.row_id() == "fire_truck":
 				arrived = instance
 				trucks += 1
@@ -535,7 +539,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 						else arrived.source().contribution_at(her_at) > 0.0
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
-				RunCity.events(_city).world.where_she_is().tell(her_at)
+				_stage.events().world.where_she_is().tell(her_at)
 				arrived.step(Rig.WALK_STEP)
 				to_reach += Rig.WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
@@ -555,7 +559,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 	t.check(engines == 1, "seeing the fire calls in exactly one engine (%d)" % engines)
 
 	rig.free()
-	RunCity.events(_city).stream_within(INF)
+	_stage.events().stream_within(INF)
 
 ## **A fire that was never lit was not spent.** *"What the run has spent stays spent ... a fire that
 ## burnt a block down did happen"* (`RunCalendar.finish_day`) — so a set piece the day owed her walk is
@@ -564,26 +568,26 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 ## the shell is standing in it.
 func _test_a_fire_that_was_never_lit_was_not_spent(t: TestRunner) -> void:
 	var consumed: Array[String] = []
-	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
+	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var day := Tuning.RUN_TAUGHT_DAY
-	Rig.start(_city, day, consumed)
+	Rig.start(_stage, day, consumed)
 	t.check(not "burning_building" in consumed and _fire_plan() != null,
 			"day 3 budgets the fire without spending it, because a plan with no position promises "
 			+ "nothing yet")
 
 	# Lost without her ever walking out to it. The same day, again, still owes her one.
-	Rig.start(_city, day, consumed)
+	Rig.start(_stage, day, consumed)
 	t.check(_fire_plan() != null, "a day 3 lost before she reached it is offered it again")
 
 	# Now she walks into it. That is the fire the run remembers, and there is not a second one.
 	var plan := _fire_plan()
 	var route := _a_route_out(day)
-	var rig := Rig.walker(t, _city, route[0])
+	var rig := Rig.walker(t, _stage, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route, func() -> bool: return plan.has_been_in_the_world())
 	t.check(plan.has_been_in_the_world() and "burning_building" in consumed,
 			"walking into it is what spends it")
-	Rig.start(_city, day, consumed)
+	Rig.start(_stage, day, consumed)
 	t.check(_fire_plan() == null, "and no later day plans a second one")
 	rig.free()
-	RunCity.events(_city).stream_within(INF)
+	_stage.events().stream_within(INF)

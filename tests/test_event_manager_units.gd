@@ -1,16 +1,18 @@
 extends RefCounted
-## EventManager against a real generated City: the day's units, each drawn as she comes near it.
+## EventManager over a generated map: the day's units, each drawn as she comes near it.
 ##
-## `tests/test_event_manager.gd` is the manager's wiring over a day and holds that two walks draw
-## the same units; this suite is the wiring between the manager, her walk and the unit draw
+## `tests/test_event_manager.gd` is the manager's wiring; this suite holds that a day started twice
+## and two walks draw the same units, and is the wiring between the manager, her walk and the unit draw
 ## (`EventsAhead`, `UnitDraw`): a unit draws before the streaming looks at its ground; a beat her walk
 ## lays stands in a unit before it draws, and changes no draw but that unit's and the units touching
 ## it; and what the resistance swaps in or takes away draws the units round it first, so it changes
-## no unit's draw. A real city, because each rule is about the order of two parts the manager owns
-## (the draw and the streaming, the draw and a siting, the draw and a take-away) over the units a
-## generated day lays out and the routes her walk is sited on, which a hand-made unit and a fake
-## siting would not show. It is a suite of its
-## own because its walks take a real tick each.
+## no unit's draw. A generated map and the day planned on it, because each rule is about the order of
+## two parts the manager owns (the draw and the streaming, the draw and a siting, the draw and a
+## take-away) over the units a generated day lays out and the routes her walk is sited on, which a
+## hand-made unit and a fake siting would not show; no city is built round the manager, but for
+## the beat's, whose crews stand in front of the blank walls only a city's buildings give
+## (`WalkSiting` asks the poster walls for their fronts). It is a suite of its own because its walks
+## take a real tick each.
 ##
 ## **Each case reads the day drawn whole first** (`_the_day_drawn_whole()`): the same city and day
 ## started and every unit drawn at once, which names a unit far from her door and what it draws, so
@@ -21,7 +23,7 @@ const Rig := preload("res://tests/event_manager_rig.gd")
 ## A day with poster crews for her walk to site.
 const DAY := 4
 
-var _city: City
+var _stage: Rig.Stage
 ## Moves her down the route a walking test sets it, on its own physics tick, before the city's.
 var _walker: Rig.Walker
 
@@ -34,14 +36,18 @@ func run(t: TestRunner) -> void:
 		_test_an_area_cleared_of_its_rows_draws_first,
 		_test_a_swap_changes_no_units_draw,
 		_test_the_walks_reach_is_told_what_a_unit_draws,
+		_test_a_day_started_twice_stands_the_same_rows,
+		_test_two_walks_draw_the_same_day,
 	]
 	for test in tests:
 		_walker = Rig.Walker.new()
 		t.add_child(_walker)
-		_city = Rig.build_city(t)
-		RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
+		# The beat's crews stand in front of blank walls, which only the city's buildings know.
+		var needs_the_walls := test == _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws
+		_stage = Rig.build_city_stage(t) if needs_the_walls else Rig.build_stage(t)
+		_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 		await test.call(t)
-		_city.free()
+		_stage.free_events()
 		_walker.free()
 
 ## What one unit drew on the day drawn whole: plain values, read across starts by the unit's name.
@@ -57,21 +63,21 @@ class _Drew extends RefCounted:
 ## Starts the day at her door, at a played day's stream radius. Answers the units the start left
 ## undrawn: all but the ones round her door.
 func _start() -> Array[PlacementUnit]:
-	Rig.start(_city, DAY, [], _home())
+	Rig.start(_stage, DAY, [], _home())
 	return _units().undrawn_within(Vector2.ZERO, INF)
 
 func _home() -> Vector2:
-	return _city.map.doorstep_world_position()
+	return _stage.map().doorstep_world_position()
 
 func _units() -> DayUnits:
-	return RunCity.events(_city).walk_events().unit_draw().units()
+	return _stage.events().walk_events().unit_draw().units()
 
 ## **The day drawn whole**: started at her door and every unit drawn at once. Answers what each
 ## unit the start left undrawn drew, and leaves `_whole` reading the same as one string.
 func _the_day_drawn_whole() -> Array[_Drew]:
 	var kept := _start()
-	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
-	_whole = Rig.what_the_units_drew(_city.map, kept)
+	_stage.events().draw_the_ground_round(Vector2.ZERO, INF)
+	_whole = Rig.what_the_units_drew(_stage.map(), kept)
 	var drew: Array[_Drew] = []
 	for unit in kept:
 		var one := _Drew.new()
@@ -129,7 +135,7 @@ func _their_rows_are_in_the_world(units: Array[PlacementUnit], at: Vector2,
 ## any part of which lies within the stream radius of her has drawn, and every row those units
 ## drew within the radius is in the world, none of it left for a later tick.
 func _test_a_unit_near_her_draws_before_the_streaming_looks(t: TestRunner) -> void:
-	var events := RunCity.events(_city)
+	var events := _stage.events()
 	var far_row := _a_far_row(_the_day_drawn_whole(), func(_one: _Drew, _k: int) -> bool:
 		return true, _home())
 	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
@@ -138,7 +144,7 @@ func _test_a_unit_near_her_draws_before_the_streaming_looks(t: TestRunner) -> vo
 	var far: Vector2 = (far_row[0] as _Drew).places[far_row[1]]
 	_start()
 	var near := _units().undrawn_within(far, Tuning.EVENT_STREAM_RADIUS)
-	var rig := Rig.walker(t, _city, far)
+	var rig := Rig.walker(t, _stage, far)
 	await PhysicsTicks.pass_ticks(t, 1)
 	var counted: Array[int] = [0]
 	var in_the_world := _their_rows_are_in_the_world(near, far, counted)
@@ -157,7 +163,7 @@ func _test_a_unit_near_her_draws_before_the_streaming_looks(t: TestRunner) -> vo
 ## developer's `--spawn` moved (`DayDirector`), every unit within the stream radius of the place
 ## draws and its rows are in the world when the call returns.
 func _test_streaming_round_a_place_draws_its_units_first(t: TestRunner) -> void:
-	var events := RunCity.events(_city)
+	var events := _stage.events()
 	var far_row := _a_far_row(_the_day_drawn_whole(), func(_one: _Drew, _k: int) -> bool:
 		return true, _home())
 	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
@@ -196,8 +202,8 @@ const WALK_SECONDS := 170.0
 ## difference can carry, and two touching units that both differ do not excuse each other): no
 ## unit differs out of nowhere, and some unit far from every crew is compared.
 func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) -> void:
-	var events := RunCity.events(_city)
-	var map := _city.map
+	var events := _stage.events()
+	var map := _stage.map()
 	_the_day_drawn_whole()
 	var whole_by_unit := {}
 	for line in _whole.split("\n"):
@@ -206,11 +212,11 @@ func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) 
 	var told: Array[String] = []
 	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
 		told.append(str(tiles)))
-	var route := Rig.longest_route_out(_city, DAY)
+	var route := Rig.longest_route_out(_stage, DAY)
 	var back := route.duplicate()
 	back.reverse()
 	route.append_array(back)
-	var rig := Rig.walker(t, _city, route[0])
+	var rig := Rig.walker(t, _stage, route[0])
 	_walker.rig = rig
 	_walker.route = route
 	_walker.next = 0
@@ -332,7 +338,7 @@ func _holding(plan: EventPlan) -> PlacementUnit:
 ## before the unit has drawn, each take-away draws the unit, takes the row it drew, and leaves
 ## none of that row standing there once the rest of the day is drawn.
 func _test_an_area_cleared_of_its_rows_draws_first(t: TestRunner) -> void:
-	var events := RunCity.events(_city)
+	var events := _stage.events()
 	var drew := _the_day_drawn_whole()
 	var not_ambient := func(one: _Drew, k: int) -> bool:
 		return not EventCatalogue.by_id(one.ids[k]).is_ambient()
@@ -367,8 +373,8 @@ func _test_an_area_cleared_of_its_rows_draws_first(t: TestRunner) -> void:
 ## and with the rest of the day drawn every unit drew what it draws on the day drawn whole, the
 ## rows the section held spent.
 func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
-	var events := RunCity.events(_city)
-	var map := _city.map
+	var events := _stage.events()
+	var map := _stage.map()
 	var drew := _the_day_drawn_whole()
 	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
 	var far := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_DRAW_AHEAD * 2.0
@@ -427,8 +433,8 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 ## until the unit draws, and shut once it has, so whoever asks whether she can be sent somewhere
 ## is answered over the bodies drawn so far.
 func _test_the_walks_reach_is_told_what_a_unit_draws(t: TestRunner) -> void:
-	var events := RunCity.events(_city)
-	var map := _city.map
+	var events := _stage.events()
+	var map := _stage.map()
 	var a_body := func(one: _Drew, k: int) -> bool:
 		return one.obstructs[k]
 	var far_row := _a_far_row(_the_day_drawn_whole(), a_body, _home())
@@ -445,3 +451,84 @@ func _test_the_walks_reach_is_told_what_a_unit_draws(t: TestRunner) -> void:
 	t.check(open_before and unit.is_drawn() and reach.is_shut(under),
 			"the ground under a far unit's %s is open in the walk's reach until the unit draws, "
 			% one.ids[far_row[1]] + "and shut once it has")
+
+## **A day started twice stands the same rows on the same tiles** (PLAYTEST-119 27;
+## `docs/MECHANICS.md`, "A retry is the same day"): the dawn plans before she can move, and the
+## units round where she starts draw before she can either, so day 4 started a second time, after a
+## walk east on the first start, plans from nothing the first start or the walk left in the city
+## or the manager. That the units the walk draws are the same whatever her path is the next test's.
+func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
+	var events := _stage.events()
+	events.stream_within(Tuning.EVENT_STREAM_RADIUS)
+	var home := _stage.map().doorstep_world_position()
+	var rig := Rig.walker(t, _stage, home)
+	var started: Array[String] = []
+	for start in 2:
+		Rig.start(_stage, 4)
+		events.use_player(rig)
+		var placed: Array[EventPlan] = []
+		for plan in events.plans():
+			if plan.is_placed():
+				placed.append(plan)
+		started.append(_where_they_stand(placed))
+		if start == 0:
+			rig.global_position = home
+			var each := func(_n: int) -> void:
+				rig.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
+				rig.global_position += rig.velocity * Rig.WALK_STEP
+			await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
+	t.check(started[0] == started[1] and started[0] != "",
+			"started twice, day 4 stands the same rows on the same tiles")
+	events.use_player(null)
+	rig.free()
+
+## **Two walks draw the same day** (`UnitDraw`, `EventsAhead.draw_what_comes_near()`): day 4
+## started at her door with a played day's stream radius, walked east for 60 ticks through the
+## manager's own tick, then started again and walked south, draws every unit the start left undrawn
+## the same, row for row and tile for tile, once the rest of the day is drawn
+## (`EventManager.draw_the_ground_round()`); and each walk drew some of those units before the
+## rest, in an order of its own. A row handed to her walk reads as `row@walk`, wherever her walk
+## has since sited it. A walk too short for the director to site anything, so no beat is laid and
+## it does not cover a unit a beat stands in or beside, which draws by her path on purpose: one long
+## enough for a crew to stand on her way is in `test_event_manager_units.gd`, with what its units
+## draw held against the day drawn whole. Neither covers the moments, the rows her route's bag rigs
+## and the rows a mark rigs just ahead of her, which follow her walk on purpose.
+func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
+	var events := _stage.events()
+	events.stream_within(Tuning.EVENT_STREAM_RADIUS)
+	var home := _stage.map().doorstep_world_position()
+	var rig := Rig.walker(t, _stage, home)
+	var readings: Array[String] = []
+	var drawn_on_the_walk: Array[String] = []
+	for heading: Vector2 in [Vector2.RIGHT, Vector2.DOWN]:
+		Rig.start(_stage, 4, [], home)
+		events.use_player(rig)
+		rig.global_position = home
+		var kept := events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+		var each := func(_n: int) -> void:
+			rig.velocity = heading * Tuning.WALK_SPEED
+			rig.global_position += rig.velocity * Rig.WALK_STEP
+		await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
+		var drawn: Array[String] = []
+		for unit in kept:
+			if unit.is_drawn():
+				drawn.append(unit.name())
+		drawn.sort()
+		drawn_on_the_walk.append(", ".join(drawn))
+		events.draw_the_ground_round(Vector2.ZERO, INF)
+		readings.append(Rig.what_the_units_drew(_stage.map(), kept))
+	t.check(readings[0] == readings[1] and readings[0] != "",
+			"walked east and walked south, day 4's units draw the same rows on the same tiles")
+	t.check(drawn_on_the_walk[0] != "" and drawn_on_the_walk[1] != ""
+			and drawn_on_the_walk[0] != drawn_on_the_walk[1],
+			"and each walk drew some of them on the way, not the same ones (east %s; south %s)"
+					% drawn_on_the_walk)
+	events.use_player(null)
+	rig.free()
+
+## Each of `plans` as its row and the place it was put, in order.
+static func _where_they_stand(plans: Array[EventPlan]) -> String:
+	var parts: Array[String] = []
+	for plan in plans:
+		parts.append("%s@%s" % [plan.row_id(), plan.placed_at()])
+	return ";".join(parts)
