@@ -41,6 +41,7 @@ func run(t: TestRunner) -> void:
 		_test_a_recipes_bodies_are_in_its_way_on,
 		_test_a_world_keeps_the_navigator_it_was_handed,
 		_test_the_cyclist_is_warned_shortly_before_he_arrives,
+		_test_a_parked_body_closes_no_street,
 	]
 	for test in tests:
 		_build_city(t)
@@ -1025,3 +1026,133 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 				% [encounter["how"], stood["lead"]])
 		probe_edge.free()
 	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
+
+## **The route-redundancy guarantee with it parked** (the **city** skill: a day leaves distinct
+## routes from home to its calm areas, counted as a max flow, `StreetNetwork.route_count()`). The
+## engine parks on the carriageway's near tile across from the fire
+## (`EventSpawner._where_the_summoned_row_stops()`), its body a capsule along the street. On a real
+## city, at every such kerb tried, every tile the body overlaps at all is blocked; the street it
+## stands in counts as closed unless a way along it past the body is left inside its own corridor;
+## and every calm area must keep as many distinct routes from home, up to two, as it had without
+## it. The same check run with a body the street's whole width finds the street closed, which is
+## what shows it can fail; the lattice leaves every calm area its routes past most single closed
+## streets, so the count of routes lost is reported for it rather than required.
+func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
+	var map := _city.map
+	var kerbs := _kerbs(map)
+	t.check(kerbs.size() >= 20, "enough kerbs were tried (%d)" % kerbs.size())
+	var truck := EventCatalogue.by_id("fire_truck").ground_shape()
+	var lost := _routes_lost(map, kerbs, truck)
+	t.check(lost.x == 0 and lost.y == 0,
+			"with the parked engine's tiles blocked, no street is closed (%d) and no calm area "
+			% lost.x + "loses a route from home (%d)" % lost.y)
+	var street := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	var wide := _routes_lost(map, kerbs, GroundShape.segment(truck.spine_half_length(), street))
+	t.check(wide.x > 0,
+			"and a body the street's whole width closes the street it stands in (%d of %d kerbs; "
+			% [wide.x, kerbs.size()] + "%d calm areas then lose a route)" % wide.y)
+
+## The kerbs a summoned engine can park at on `map`, as `[park, along]`: the near carriageway tile
+## across from every sidewalk tile beside a carriageway, sampled across the map, and the street's
+## own axis there.
+func _kerbs(map: CityMap) -> Array[Array]:
+	var kerbs: Array[Array] = []
+	var tile_count := map.size.x * map.size.y
+	var step := maxi(1, tile_count / 160)
+	for index in range(0, tile_count, step):
+		var tile := Vector2i(index % map.size.x, index / map.size.x)
+		var inward := map.pavement_inward(tile)
+		if inward == Vector2i.ZERO:
+			continue
+		var park := EventSpawner._where_the_summoned_row_stops(map, map.tile_to_world(tile))
+		if park == Vector2.INF or not Tile.is_road(map.tile_type_at_world(park)):
+			continue
+		kerbs.append([park, Vector2(absf(float(inward.y)), absf(float(inward.x)))])
+	return kerbs
+
+## With `body` parked at each of `kerbs`: how many times the street it stands in is closed, as
+## `x`, and how many calm areas have fewer distinct routes from home than without it, as `y`.
+func _routes_lost(map: CityMap, kerbs: Array[Array], body: GroundShape) -> Vector2i:
+	var home := ClosurePlanner.home_street(map)
+	var areas := ClosurePlanner.calm_areas(map)
+	var open := map.blocked_segments()
+	var before: Array[int] = []
+	for area in areas:
+		before.append(map.network.route_count(home, area.access, open, 2))
+	var lost := Vector2i.ZERO
+	for kerb: Array in kerbs:
+		var park: Vector2 = kerb[0]
+		var along: Vector2 = kerb[1]
+		var blocked := _tiles_touched(body, park, along)
+		var segment := map.network.segment_containing(map.world_to_tile(park))
+		if segment == null or _passes(map, park, along, body, blocked):
+			continue
+		lost.x += 1
+		var closed := open.duplicate()
+		closed[segment.key()] = true
+		for i in areas.size():
+			if map.network.route_count(home, areas[i].access, closed, 2) < before[i]:
+				lost.y += 1
+	return lost
+
+## Every tile `body`, parked at `at` along `along`, overlaps at all — not only the tiles whose
+## centres it covers, which for a 26px body is one tile in six across the street.
+func _tiles_touched(body: GroundShape, at: Vector2, along: Vector2) -> Dictionary:
+	var size := float(Tuning.TILE_SIZE)
+	var spine := Rect2(at - along * body.spine_half_length(), Vector2.ZERO).expand(at + along * body.spine_half_length())
+	var reach := ceili((body.spine_half_length() + body.rounding_radius()) / size) + 1
+	var centre := Vector2i(floori(at.x / size), floori(at.y / size))
+	var touched := {}
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var tile := centre + Vector2i(dx, dy)
+			var box := Rect2(Vector2(tile) * size, Vector2.ONE * size)
+			var gap := Vector2(
+					maxf(0.0, maxf(box.position.x - spine.end.x, spine.position.x - box.end.x)),
+					maxf(0.0, maxf(box.position.y - spine.end.y, spine.position.y - box.end.y)))
+			if gap.length() < body.rounding_radius():
+				touched[tile] = true
+	return touched
+
+## Whether, with `blocked` closed, she can still walk along the street at `at` past `body`, inside
+## the street's own corridor: from the walkable tiles across it a few tiles before the body to
+## those a few tiles after it.
+func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
+		blocked: Dictionary) -> bool:
+	var vertical := along.y > 0.5
+	var tile := map.world_to_tile(at)
+	var cross := tile.x if vertical else tile.y
+	var first := cross - CityMap.corridor_offset(cross)
+	var down := tile.y if vertical else tile.x
+	var span := ceili((body.spine_half_length() + body.rounding_radius())
+			/ float(Tuning.TILE_SIZE)) + 2
+	var make := func(a: int, c: int) -> Vector2i:
+		return Vector2i(c, a) if vertical else Vector2i(a, c)
+	var open := func(at_tile: Vector2i) -> bool:
+		return map.in_bounds(at_tile) and map.is_walkable(at_tile) and not blocked.has(at_tile)
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	for c in range(first, first + Tuning.STREET_WIDTH):
+		var start: Vector2i = make.call(down - span, c)
+		if open.call(start):
+			seen[start] = true
+			queue.append(start)
+	var head := 0
+	while head < queue.size():
+		var here := queue[head]
+		head += 1
+		var a := here.y if vertical else here.x
+		if a == down + span:
+			return true
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := here + step
+			var a_next := next.y if vertical else next.x
+			var c_next := next.x if vertical else next.y
+			if a_next < down - span or a_next > down + span or c_next < first \
+					or c_next >= first + Tuning.STREET_WIDTH:
+				continue
+			if seen.has(next) or not open.call(next):
+				continue
+			seen[next] = true
+			queue.append(next)
+	return false
