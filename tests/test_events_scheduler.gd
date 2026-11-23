@@ -46,6 +46,8 @@ var _other_cities := {}
 
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
+	_test_masts_appear_from_day_5_at_the_same_sites_every_day(t)
+	_test_a_silenced_fixed_mast_stays_silenced_the_next_day(t)
 	_test_a_day_is_a_function_of_its_heat(t)
 	_test_a_hot_day_places_more_patrols(t)
 	_test_a_retried_day_is_the_same_day(t)
@@ -1557,3 +1559,60 @@ func _count_patrols(planned: Array[EventPlan]) -> int:
 		if plan.row_id() == "police_patrol":
 			count += 1
 	return count
+
+func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) -> void:
+	t.check(_mast_plans_of(Tuning.MAST_FIRST_DAY - 1).is_empty(),
+			"no mast stands the day before Tuning.MAST_FIRST_DAY")
+
+	var by_day := {}
+	for day: int in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
+		var by_id := {}
+		for plan in _mast_plans_of(day):
+			if plan.row_id() != "loudspeaker":
+				continue
+			by_id[plan.mast_id()] = plan.placed_at()
+		t.check(by_id.size() == Tuning.MAST_COUNT,
+				"day %d carries all %d masts (%d)" % [day, Tuning.MAST_COUNT, by_id.size()])
+		by_day[day] = by_id
+	var first: Dictionary = by_day[Tuning.MAST_FIRST_DAY]
+	for day: int in by_day:
+		var here: Dictionary = by_day[day]
+		for id: String in first:
+			var site: Vector2 = here.get(id, Vector2.INF)
+			t.check(here.has(id) and site.distance_to(first[id]) < 0.01,
+					"mast '%s' stands at the same place on day %d as on day %d"
+					% [id, day, Tuning.MAST_FIRST_DAY])
+
+## The mast plans of `day`, off the shared city's plan of it.
+func _mast_plans_of(day: int) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
+	for plan in _planned(day):
+		if plan.mast_id() != "":
+			found.append(plan)
+	return found
+
+## **A mast she silenced on an earlier day stands silenced the next day**, and only that site: the
+## day she touches a mast the director records a scar at its foot, and the next day's dawn stands the
+## same pole with its lamp out while every other site speaks (`DawnMasts`). Planned on the shared city
+## with the scar handed to the dawn, the way the run hands it.
+func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> void:
+	var first := Tuning.MAST_FIRST_DAY
+	var day := first + 1
+	var target := _sites()[0]
+	var scars: Array[Dictionary] = [{"id": DawnMasts.SILENCED_MAST, "position": target.foot(),
+			"since_day": first}]
+	var consumed: Array[String] = []
+	var tomorrow := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+			.scars(scars).spent(consumed).plan().placements()
+	var standing_here: EventPlan = null
+	var others_speak := 0
+	for plan in tomorrow:
+		if plan.mast_id() == "" or plan.row_id() != "loudspeaker":
+			continue
+		if plan.mast_id() == target.id():
+			standing_here = plan
+		elif not plan.is_silenced():
+			others_speak += 1
+	t.check(standing_here != null and standing_here.is_silenced(),
+			"the next day the same site stands silenced, lamp out and no field")
+	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
