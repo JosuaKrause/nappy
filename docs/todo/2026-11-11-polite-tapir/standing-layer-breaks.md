@@ -20,8 +20,8 @@ review; a builder runs it again):
 
 - **The rest**, small misplacements: the task calendar
   computing on the map; the save indicator reading `GameSave`; her class's type tests where she
-  is not handed in (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
-  of the neighbor's raid; and the row's check against `SpawnSiting`'s least distance.
+  is not handed in (`interior_scene.gd`); and the row's check against `SpawnSiting`'s least
+  distance.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:

@@ -4,4 +4,6 @@
 
 **What was built.** The two tokens, `{pause}` and `{run}`, are part of the sentence, so they are written where the sentences are: `Texts.PAUSE_TOKEN` and `Texts.RUN_TOKEN`, at the head of the lessons section. `Texts.RUN_JOYSTICK` reads `RUN_TOKEN`. `HelpText` reads them from below: its icon table is keyed by them and `measurable()` replaces them. `HelpText` keeps no alias under the old names. The readers moved with them: `hud.gd`, `test_sentence_lines.gd`, `test_hud.gd`, `test_pause.gd`. The `HelpText` entry of `tools/layer_map.py` is deleted, and the two clauses of the item file that named the `HelpText` token are settled. No sentence changed, so no picture is owed.
 
+**A clause that was already false.** The item file also listed "the run reading `ResistanceHappenings`' day of the neighbor's raid" among the small misplacements. The day is `ResistanceSteps.NEIGHBOR_DAY`, a constant on the resistance calendar (data), and the layer check lists nothing for it, so the clause is deleted here (the design's section 1 says the first pull request of the design to merge does it, and the first pull request leaves it too).
+
 **Rejected.** Handing `HelpText.joystick_in_force()` its group lookup's answer is not done: it is not a listed break, and the view is not a layer that is handed what it reads. `Texts.PAUSE_LESSON`'s `%s` form stays.
