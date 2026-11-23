@@ -10,6 +10,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 const STEP := 1.0 / 60.0
 
@@ -31,10 +32,12 @@ func _hot_roadblock() -> EventDef:
 ## radius and he warns, and she stays inside it until his warning has run and he charges
 ## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for()`). The roadblock is a plan handed to a
 ## manager's streaming on open ground (`RoadblockRig.Stage`), as a day's is, and its band stands
-## beside it once the idle frame has passed. Answers `[guard, her, stage]`; `stage.close()` frees it.
-func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array:
+## beside it once the idle frame has passed. Everything it is drawn with goes to `drawer`. Answers
+## `[guard, her, stage]`; `stage.close()` frees it.
+func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null,
+		drawer: RecordingEventDrawer = null) -> Array:
 	var hot := _hot_roadblock()
-	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
+	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas, drawer)
 	var guard := stage.stand(EventPlan.new(hot, post))
 	await RoadblockRig.settle(t)
 	var where := stage.manager.world.where_she_is()
@@ -63,10 +66,23 @@ func _its_body(guard: EventInstance) -> StaticBody2D:
 			return child
 	return null
 
+## The barrier's own node, which its look stands beside the guard (`RoadblockLook.RoadblockBand`), as
+## the recording drawer saw it drawn on, or null.
+func _band_of(drawer: RecordingEventDrawer) -> Node2D:
+	for canvas in drawer.canvases():
+		if canvas is RoadblockLook.RoadblockBand:
+			return canvas as Node2D
+	return null
+
 ## The rim lit round the barrier's band while its guard walks away: the `EntityHalo` standing behind
-## the band's picture (`RoadblockLook.band_rim_holder()`, where the instance builds it), or null.
-func _band_halo(guard: EventInstance) -> EntityHalo:
-	var holder := (guard.look as RoadblockLook).band_rim_holder()
+## the band's picture, on the band's first slice or on the band when it has no slice (the nodes the
+## drawer saw it drawn on), or null.
+func _band_halo(drawer: RecordingEventDrawer) -> EntityHalo:
+	var holder := _band_of(drawer)
+	for canvas in drawer.canvases():
+		if canvas is SpreadLook.Slice and canvas.is_inside_tree():
+			holder = canvas as Node2D
+			break
 	if holder == null:
 		return null
 	for child in holder.get_children():
@@ -81,7 +97,8 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 	# The pictures a drawn frame redraws come from the atlas the manager hands every event.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
-	var made := await _chasing(t, post, atlas)
+	var recording := RecordingEventDrawer.new(atlas)
+	var made := await _chasing(t, post, atlas, recording)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
 	var where := stage.manager.world.where_she_is()
@@ -90,21 +107,28 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 	var worst := 0.0
 	var lifted := false
 	guard.set_process(true)
-	var band: Node2D = guard.look.band_node()
+	var band := _band_of(recording)
 	t.check(band != null and band.is_inside_tree() and band.get_parent() == guard.get_parent(),
 			"the band is its own node beside the guard, so it sorts at its own feet")
+	# What the look lifts his canvas by is asked of a look made round a fake event that pursues over
+	# the ground the guard has covered.
+	var fake := FakeEvent.new()
+	fake.pursuing = true
+	var lift := fake.look_for(guard.row())
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
 		where.tell(her)
 		guard.step(STEP)
 		await t.get_tree().process_frame
-		lifted = lifted or absf(guard.look.current_bob()) > 0.1
+		fake.travelled = guard.path_travelled()
+		lifted = lifted or absf(lift.current_bob()) > 0.1
 		worst = maxf(worst, band.global_position.distance_to(post))
 		if guard.is_gone():
 			break
 	t.check(lifted, "the chaser's stride does lift his own canvas (the bob is the thing undone)")
 	t.check(guard.global_position.distance_to(post) > 20.0, "and he has walked away from the post")
 	t.check(worst < 0.001, "the band stays on its body on every frame (off by %.3fpx)" % worst)
+	fake.free()
 	stage.close()
 	atlas.release(&"events")
 
@@ -223,7 +247,8 @@ func _test_he_is_never_removed_in_view_while_she_stays_near(t: TestRunner) -> vo
 ## The band's rim is one object, lit on every frame he walks away, and the man holds none.
 func _test_the_barrier_rim_survives_the_departure(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := await _chasing(t, post)
+	var recording := RecordingEventDrawer.new()
+	var made := await _chasing(t, post, null, recording)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
 	var where := stage.manager.world.where_she_is()
@@ -241,7 +266,7 @@ func _test_the_barrier_rim_survives_the_departure(t: TestRunner) -> void:
 	while guard.is_on_its_way_out() and frames < int(30.0 / STEP):
 		where.tell(beside)
 		source.set_strength(0.8, Color.RED)
-		var banded := _band_halo(guard)
+		var banded := _band_halo(recording)
 		if rim == null:
 			rim = banded
 		same = same and rim != null and banded == rim
