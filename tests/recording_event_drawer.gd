@@ -105,6 +105,22 @@ func canvases() -> Array[CanvasItem]:
 			found.append(entry.canvas)
 	return found
 
+## The slices a long picture was drawn in (`SpreadLook.Slice`, the nodes a look stands beside its
+## event): each one drawn on, and each one a scenery was drawn behind (a crash's slice paints
+## nothing of its own), in their order in the tree. A slice is drawn the frame after it is put in,
+## so a check asks after that frame.
+func slices() -> Array[SpreadLook.Slice]:
+	var found: Array[SpreadLook.Slice] = []
+	for canvas in canvases():
+		var slice := canvas as SpreadLook.Slice
+		if slice == null and canvas is EventScenery:
+			slice = canvas.get_parent() as SpreadLook.Slice
+		if slice != null and is_instance_valid(slice) and not found.has(slice):
+			found.append(slice)
+	found.sort_custom(func(first: SpreadLook.Slice, second: SpreadLook.Slice) -> bool:
+		return first.get_index() < second.get_index())
+	return found
+
 ## What every canvas shows now (`shown_on()`), the canvases in the order `canvases()` gives.
 func shown() -> Array[Dictionary]:
 	var all: Array[Dictionary] = []

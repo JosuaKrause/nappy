@@ -192,7 +192,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 	for i in instances.size():
 		var instance := instances[i]
 		var source := instance.source()
-		var caret := source.caret_strength() if instance.look else -1
+		var caret := source.caret_strength()
 		printed += _print_one(walk, tick, "E%d:%s" % [i, instance.logged_name()], [
 				source.contribution_at(her), source.expected_gross_at(her),
 				source.expected_impact_at(her), source.landed()],

@@ -170,13 +170,17 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> v
 		var world := WorldContext.new()
 		t.add_child(world)
 		var instance := EventInstance.new()
+		var drawer := RecordingEventDrawer.new(atlas)
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
 				EventSurroundings.new().on(_ground_in(vertical)) \
 					.drawn_in(world) \
-					.drawn_from(atlas))
+					.drawn_from(atlas) \
+					.drawing_through(drawer))
 		world.add_entity(instance)
-		await t.get_tree().process_frame
-		var slices := _slices_of(instance)
+		# The slices are put in at the end of the first frame and drawn on the next.
+		for i in 3:
+			await t.get_tree().process_frame
+		var slices := _slices_of(instance, drawer)
 		t.check(slices.size() > 1, "%s: the spread is drawn in slices (%d)" % [what, slices.size()])
 		var ahead := true
 		var on_its_layer := true
@@ -241,12 +245,13 @@ static func _ground_in(vertical: bool) -> WorldMap:
 		return WorldMap.open_ground()
 	return EastWestStreet.new()
 
-## The slices `instance`'s picture is drawn in, found where the look stood them, beside it in the
-## world's entity layer, in their own order (`SpreadLook.slices()`, far end first).
-static func _slices_of(instance: EventInstance) -> Array[SpreadLook.Slice]:
+## The slices `instance`'s picture was drawn in, as `drawer` saw them drawn, beside it in the
+## world's entity layer, in their own order (far end first).
+static func _slices_of(instance: EventInstance,
+		drawer: RecordingEventDrawer) -> Array[SpreadLook.Slice]:
 	var found: Array[SpreadLook.Slice] = []
 	var beside := instance.get_parent().get_children()
-	for slice in (instance.look as SpreadLook).slices():
+	for slice in drawer.slices():
 		if beside.has(slice):
 			found.append(slice)
 	return found
@@ -286,8 +291,11 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 						.drawn_from(atlas) \
 						.drawing_through(drawer))
 			world.add_entity(instance)
-			await t.get_tree().process_frame
-			var slices := _slices_of(instance)
+			# The slices are put in at the end of the first frame and drawn on the next; two more,
+			# so every slice has been drawn.
+			for i in 3:
+				await t.get_tree().process_frame
+			var slices := _slices_of(instance, drawer)
 			var ahead := slices.size() > 1
 			for slice in slices:
 				ahead = ahead and slice.get_parent() == instance.get_parent() \
@@ -297,9 +305,6 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 				t.check(slices[0].global_position.y < slices[slices.size() - 1].global_position.y,
 						"%s: the back rank stands up the screen of the front rank" % what)
 			if id in ["fallen_tree", "car_accident", "burst_water_main"]:
-				# Two frames, so every slice has been drawn.
-				await t.get_tree().process_frame
-				await t.get_tree().process_frame
 				var covered := 0.0
 				var bands := 0
 				for slice in slices:

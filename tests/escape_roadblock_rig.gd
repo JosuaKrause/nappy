@@ -166,8 +166,10 @@ class Stage extends RefCounted:
 
 	## Under `t`, or in no tree when `t` is null, for a rig that only reads where an event
 	## stands once it is made. `atlas` is the page set the manager hands every event it makes, for a
-	## case that lets real frames draw them.
-	func _init(t: Node, map: WorldMap, atlas: AtlasLibrary = null) -> void:
+	## case that lets real frames draw them, and `drawer` the drawer it hands them to paint through,
+	## for a case that reads what they were drawn with.
+	func _init(t: Node, map: WorldMap, atlas: AtlasLibrary = null,
+			drawer: EventDrawer = null) -> void:
 		_map = map
 		world = WorldContext.new()
 		if t != null:
@@ -176,6 +178,8 @@ class Stage extends RefCounted:
 		var surroundings := EventSurroundings.new().on(map).drawn_in(world)
 		if atlas != null:
 			surroundings.drawn_from(atlas)
+		if drawer != null:
+			surroundings.drawing_through(drawer)
 		manager = EventManager.new(surroundings)
 		manager.setup(run)
 		world.add_child(manager)

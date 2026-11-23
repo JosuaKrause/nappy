@@ -37,7 +37,6 @@ src/events/events_ahead.gd sends_poster_pursuits  # whether a torn poster sends 
 src/events/unit_fills.gd of  # the fill of a view and a kind of ground, marble by marble and count by count: bag_for() hands a bag the draw consumes, so a unit's fill is not readable outward, and tests/test_unit_fills.gd holds what each fill contains (the declared table's events in a hundred, the wall share, the role weights) over every view and ground, which a bag's draws cannot show; the game reads it only through bag_for() in its own file, and tests/test_unit_draw.gd overrides it to hand a unit the fill the test sets
 src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the danger-caret suite reads the caret's colour and chevrons off a recording drawer, but the arrival sweep (tests/test_no_pop_in.gd, hundreds of arrivals) and the redraw suite ask only whether a mark has an area, and drawing each of those arrivals through a recording drawer would add a real frame and a drawer per arrival to the slowest suites for a check that reads only the area
 src/events/views/event_look.gd drawn_rect_now  # the rectangle the whole drawing covers on this frame (pictures, shadow, danger caret, halo margin, a fire's front), which the game asks only in pieces (_drawn_reach(), mark_rect()); the no-pop-in, drawn-view and resistance-trap suites hold that a thing that arrives is wholly off screen on the frame it exists against it, and a headless run draws no pixels and the caret is drawn straight onto the event, so no recording drawer or node holds the extent
-src/events/views/spread_look.gd slices  # the nodes a long picture is drawn in, which the look builds, stands beside its event in the world's entity layer, moves and frees; a slice holds its look by a weak reference and nothing else says which slice belongs to which event, so test_draw_layers, test_halo_behind, test_protest and test_scenery_animation find an event's slices through it, and so do the look-picture probes; the way out is a mock drawer handed in that records every slice's part (the drawn-art answer, inbox #1018 in brisk-ferret), which makes the member deletable
 src/player/stroller.gd carrying  # whether the baby is in her arms; the game asks her through `is_carrying()` (the manager's pram, the debug layers, the scene recipes' checks) and her own file writes the field, and tests/masked_man_meeting.gd and the other suites and probes the check's --list names read it until they read through the method, which they do when they are converted to one module each (docs/todo/2026-10-18-minty-quail/tests-one-module.md)
 src/player/stroller.gd facing  # the way she faces; the game asks her through `facing_direction()` (the manager's pram) and her own file writes the field, and tests/probes/calm_pelican_day13_guard_walk.gd and the other suites and probes the check's --list names read it until they read through the method, which they do when they are converted to one module each (docs/todo/2026-10-18-minty-quail/tests-one-module.md)
 src/resistance/contact_point.gd would_complete_at  # the contact's pure touch question, which the game asks every physics frame through `_physics_process()` in this class; a contact completes once and for all, so the suites that ask it of many places (`tests/contact_touches.gd`) ask it directly of the day's own contact; no other game code asks a contact whether a body at a place would complete it, so there is no second caller to give it
@@ -70,7 +69,6 @@ src/events/event_catalogue.gd all
 src/events/event_instance.gd charge_radius
 src/events/event_instance.gd chase_age
 src/events/event_instance.gd clear_line_to
-src/events/event_instance.gd look
 src/events/event_instance.gd notice_time
 src/events/event_instance.gd phase
 src/events/event_manager.gd ahead
@@ -80,7 +78,6 @@ src/events/event_manager.gd streaming
 src/events/event_manager.gd warnings
 src/events/event_plan.gd ends
 src/events/location.gd section
-src/events/views/event_look.gd drawn_heading
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each

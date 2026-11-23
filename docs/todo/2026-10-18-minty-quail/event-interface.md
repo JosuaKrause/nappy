@@ -636,7 +636,7 @@ counted where it only writes.
 | `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok; the field is private |
 | `silenced` | 2 in; written by streaming | `silence()` ok (which drops its contribution as well), `is_silenced()` ok; the field is private |
 | `came_under_a_warning` | the live event itself | `arrive_from_its_warning()` ok, `was_warned_of()` ok; the field is private |
-| `look` | 2 in (two looks reading another's) | private; a slice, the roadblock's band and its far guard are each handed their look ok, so no game file outside `event_instance.gd` reads the field; it goes private when row 5's drawing suites are handed a look another way (about 114 test lines ask a live event's look what it shows; the reason it is public is a comment on the member) |
+| `look` | 2 in (two looks reading another's) | private ok; a slice, the roadblock's band and its far guard are each handed their look ok, so no file outside `event_instance.gd` reads the field; the suites read what a look shows off a recording drawer or a look made round a `FakeEvent` (the record minty-quail-sunny-sparrow) |
 
 ### 4.3 The plan (`EventPlan`)
 
@@ -730,16 +730,7 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
-  the live event's looks' readers (`FakeEvent`, `tests/fake_event.gd`, and the redraw and view suites are
-  built, the record minty-quail-grassy-quail): every other suite or probe that reads the live event's `look`,
-  found with `rg -n "\.look\b" tests` (among them `test_event_strides`, `test_drawn_view`, whose
-  cyclist case needs `FakeEvent.look_for()` to take a drawn view, `test_events_pursuit`,
-  `test_police_car`, `test_fire_truck_body`, `test_barrier_stays`, `test_no_pop_in`,
-  `test_scenery_animation`, `test_frame_record`, which also assigns it, `test_halo_behind`,
-  `test_draw_layers`, `test_resistance_traps`, and six probes), what a look shows read off a
-  recording drawer or a look made round a `FakeEvent`, and then the live event's `look` private
-  (*proposed, not asked for:* the plainer alternative is that the live event's public `look` stays
-  for them); the live event's `behaviours()`, read by about fifteen suites across the groups, goes
+  the live event's `behaviours()`, read by about fifteen suites across the groups, goes
   with the group that converts its last reader; the event manager and its
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
   manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned

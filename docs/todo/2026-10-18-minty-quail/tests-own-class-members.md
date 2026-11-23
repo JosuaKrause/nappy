@@ -36,9 +36,9 @@ one owner: the scene recipe runtime's `manifest`, `named`, `start_position` and 
 row 3c and the scene recipes' own pass (`city-hand-ins.md`). Under `src/events/`,
 waiting for the events' interface rows: the officer behaviour's `trail` and `vehicle`, the calm
 areas' `unused`, the catalogue's `all`, the live event's `charge_radius`, `chase_age`,
-`clear_line_to`, `look`, `notice_time` and `phase`, the event manager's `ahead`, `checkpoints`,
+`clear_line_to`, `notice_time` and `phase`, the event manager's `ahead`, `checkpoints`,
 `spawner`, `streaming` and `warnings`, the plan's `ends`, the location's `section`, the pending
-warning's `place` and the event look's `drawn_heading`; and in the `[no reader]` group, the pending
+warning's `place`; and in the `[no reader]` group, the pending
 warning's `left`. Nothing under `src/resistance/` is left in either group.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each

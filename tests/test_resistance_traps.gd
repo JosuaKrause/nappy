@@ -1,5 +1,15 @@
 extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
+##
+## **A real event is built here, and its look is made round a copy of what it answers.** The
+## subject is the arrival as the game makes it (the trap the resistance director sets), so no
+## hand-set fake could state what it answers.
+## What a look would draw of it is asked of a look round `FakeEvent.answering_as()`, a snapshot of
+## those answers. The copy leaves out a spread's points, the barrier post, the stance
+## `stand_as()` hands a look and the view sector a look carries from frame to frame, none of
+## which the drawn rectangle or the caret reads. A question the looks start asking must be copied
+## by `answering_as()` or the arrival is under-measured; `tests/test_fake_event.gd` fails until
+## it is.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
@@ -408,6 +418,14 @@ static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
 				way))
 	return starts
 
+## What `trap` draws on this frame, in its own space: asked of a look made round a fake that answers
+## what the trap answers.
+func _drawing_of(trap: EventInstance) -> Rect2:
+	var fake := FakeEvent.answering_as(trap)
+	var rect := fake.look_for(trap.row()).drawn_rect_now()
+	fake.free()
+	return rect
+
 ## Camera smoothing can move the view while she stands still through a badge. The actual
 ## warning callback must place the entire drawing outside that new view in either input scheme.
 func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) -> void:
@@ -442,7 +460,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
 			if trap != null:
 				RunCity.events(_city).world.where_she_is().tell(her)
-				var drawing := trap.look.drawn_rect_now()
+				var drawing := _drawing_of(trap)
 				t.check(view.camera_view().intersects(
 						Rect2(initial + drawing.position, drawing.size)),
 						"the camera moved far enough to expose a trap at the initial badge position")

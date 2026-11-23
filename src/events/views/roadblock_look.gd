@@ -22,8 +22,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 
 ## A guard still standing at his band (before he has left its body) is drawn facing out from his
 ## post; once he has left it, his heading is the base's.
-## Overrides EventLook.drawn_heading.
-func drawn_heading() -> Vector2:
+## Overrides EventLook._drawn_heading.
+func _drawn_heading() -> Vector2:
 	if _barrier_post and not _barrier_post.has_left_its_body():
 		return EventFootprints.guard_post_heading(event.runs_vertically(), 1)
 	return super()
