@@ -877,7 +877,7 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t: TestRunner) -> vo
 	_free_fixture(fixture)
 
 ## Day 12, the swing: `TargetKind.PARK_SWING` sits at the one park the city chose for it, a bare
-## point `ResistanceSteps.target_candidates()` computes from today's city.
+## point `NarrowTargetPool.tiles()` computes from today's city.
 func _test_task_target_resolves_for_the_swing_task_on_day_12(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 12)
 	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
@@ -892,7 +892,7 @@ func _test_task_target_resolves_for_the_swing_task_on_day_12(t: TestRunner) -> v
 	_free_fixture(fixture)
 
 ## Day 9, the crossing: `TargetKind.DOOR` sits at one of today's region-wall doors, the other bare
-## point `target_candidates()` computes rather than a rider.
+## point `NarrowTargetPool.tiles()` computes rather than a rider.
 func _test_task_target_resolves_for_the_door_task_on_day_9(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 9)
 	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()

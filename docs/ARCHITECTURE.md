@@ -117,6 +117,8 @@ src/
 	reachability_grid.gd  the tile graph contracted into two-tile cells; is there a walkable path
 	road_closure.gd       one street shut for one day, and what shut it
 	closure_planner.gd    picks the day's closures; enforces the two-routes invariant
+	narrow_target_pool.gd the tiles a narrow task's contact may stand on, which the closures keep
+	                      one of reachable and the director draws from
     closure_marker.gd     one barrier panel, sign or piece of wreckage
 	route_source.gd       the walk placement is stated against, as the questions it asks of it —
 	                      a day's route tree and the escape's two chains both answer them

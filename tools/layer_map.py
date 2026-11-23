@@ -290,29 +290,4 @@ class Exception_:
     more: tuple[tuple[str, int], ...] = ()
 
 
-EXCEPTIONS: tuple[Exception_, ...] = (
-    Exception_(
-        "names",
-        "BlockLayout",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "CityGenerator",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "CityMap",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "RegionPlan",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-)
+EXCEPTIONS: tuple[Exception_, ...] = ()
