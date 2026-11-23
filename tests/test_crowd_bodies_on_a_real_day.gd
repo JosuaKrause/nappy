@@ -6,9 +6,9 @@ extends RefCounted
 ## round what stands there. A suite of the crowd (`test_crowd_bodies.gd`) puts a body on the map by
 ## hand and asks what the crowd does; whether the plan puts the right tiles there is only seen by
 ## planning a real day on a real city, which is what this suite does, over three seeds. Its check of
-## where a crash is sited (every crashed car's middle on ground the record holds) is the event
-## manager's own answer and moves to the events' suites with their conversion (`src/events/` and its
-## tests are another agent's now).
+## where a crash is sited (every crashed car's middle on ground the record holds) is the same
+## wiring: the record the manager writes while the city starts the day, against where a live event
+## stands its cars.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0

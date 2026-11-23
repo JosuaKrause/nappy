@@ -731,11 +731,13 @@ written once, after it is final.
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
   the live event's `behaviours()`, read by about fifteen suites across the groups, goes
-  with the group that converts its last reader; the event halves
-  held in other modules' suites, which move to the event suites or take a `FakeEvent`
-  (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
-  `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose
-  subject is the crowd's cars and whose city hosts crowd agents); and what is left of the resistance's (the contact cases and the headers are
+  with the group that converts its last reader; what is left of the event halves held in
+  other modules' suites (the rest moved, the record minty-quail-speckled-hare): `test_danger`'s
+  four cases that stand a real event manager on open ground (the cue over her head the warning
+  board raises, and three screen-edge badge cases that spawn a fire engine or a cat), which take
+  a stand-in manager answering what each asks (for the badge's speed, a moved instance's approach
+  speed; for the mark over her head, whether the event ends the day, its telegraph and its lethal
+  reach); and what is left of the resistance's (the contact cases and the headers are
   built, the record minty-quail-jolly-ibis): the director's cases over a real city in
   `test_resistance_steps` (the rider-gone expiry, the timed step, the two package cases, sabotage),
   `test_resistance_placement_kinds`' raid, market and column cases on a real manager, the cases of

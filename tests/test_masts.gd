@@ -2,10 +2,14 @@ extends RefCounted
 ## The masts: fixed sites from `Tuning.MAST_FIRST_DAY`, a field like any other row's, a broadcast
 ## clock every mast reads rather than a clock of its own, and an id that survives silencing. See
 ## `docs/TODO.md`, M180, "Posters she notices, and loudspeakers that are somewhere".
+##
+## The sites and the field are asked of `MastSites` and the row alone. The broadcast clock,
+## streaming, mast_foot() and silencing are the event manager's, so a real manager is built, over
+## the cached generated map of its seed with no city round it, and handed mast plans made by hand as
+## the dawn makes them (`DawnMasts`). What the dawn plans (the same sites every day from the first
+## mast day, the scar a silenced mast leaves) is `test_events_scheduler.gd`'s.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
+const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
 const FAST_SCALE := 5.0
 ## A handful of seeds, for the one guarantee that has to hold on more than the seed the rest of
@@ -14,43 +18,38 @@ const FAST_SCALE := 5.0
 const SITE_SEEDS := [4242, 1, 90210, 778812345]
 
 var _map: CityMap
-var _city: City
+var _world: WorldContext
+var _manager: EventManager
 
 func run(t: TestRunner) -> void:
-	_map = CityGenerator.generate(SEED)
+	_map = MapCache.of(SEED)
 	_test_no_row_is_city_wide(t)
-	_test_masts_appear_from_day_5_at_the_same_sites_every_day(t)
+	_test_the_sites_are_the_same_geometry_every_time(t)
 	_test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t)
 	_test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t)
-	_build_city(t)
+	_build_manager(t)
 	await _test_they_all_speak_together(t)
 	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
-	_test_a_silenced_fixed_mast_stays_silenced_the_next_day(t)
 	_teardown()
 
-## Starts day `day` through the manager, which plans it against the city's streets: the suite runs
-## no dawn of the city's own (`City.start_day()`), so it begins them for the day first
-## (`RigStreets.begin()`).
-func _start(day: int) -> void:
-	var spec := DaySpec.for_day(day)
-	RigStreets.begin(_city.streets(), _city.map, spec)
-	RunCity.events(_city).start_day(spec, _rng(day), [])
-
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, day])
-	return rng
-
-func _mast_plans(day: int) -> Array[EventPlan]:
-	var consumed: Array[String] = []
-	var planned := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed).plan().placements()
-	var found: Array[EventPlan] = []
-	for plan in planned:
-		if plan.mast_id() != "":
-			found.append(plan)
-	return found
+## Stands the masts of a day on the manager as the dawn plans them (`DawnMasts`), in place of
+## whatever day the manager held (it is cleared first): one loudspeaker plan at each site's foot,
+## known by the site's id, and on the curfew announcement's day a `curfew_announce` plan beside
+## each, the two a site carries. The manager's streaming takes them as it takes a day's, and the
+## dawn's own choice of them is `test_events_scheduler.gd`'s.
+func _start(with_the_announcement := false) -> void:
+	_manager.clear()
+	var loudspeaker := EventCatalogue.mast()
+	for site in _sites():
+		var mast := EventPlan.new(loudspeaker, site.foot())
+		mast.stand_as_a_mast(site.id())
+		_manager.streaming.add(mast)
+		if with_the_announcement:
+			var announcement := EventPlan.new(EventCatalogue.by_id("curfew_announce"), site.foot())
+			announcement.stand_as_a_mast(site.id())
+			_manager.streaming.add(announcement)
 
 # ---------------------------------------------------------------- no floor ---
 
@@ -69,29 +68,7 @@ func _test_no_row_is_city_wide(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- sites ---
 
-func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) -> void:
-	t.check(_mast_plans(Tuning.MAST_FIRST_DAY - 1).is_empty(),
-			"no mast stands the day before Tuning.MAST_FIRST_DAY")
-
-	var by_day := {}
-	for day: int in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
-		var by_id := {}
-		for plan in _mast_plans(day):
-			if plan.row_id() != "loudspeaker":
-				continue
-			by_id[plan.mast_id()] = plan.placed_at()
-		t.check(by_id.size() == Tuning.MAST_COUNT,
-				"day %d carries all %d masts (%d)" % [day, Tuning.MAST_COUNT, by_id.size()])
-		by_day[day] = by_id
-	var first: Dictionary = by_day[Tuning.MAST_FIRST_DAY]
-	for day: int in by_day:
-		var here: Dictionary = by_day[day]
-		for id: String in first:
-			var site: Vector2 = here.get(id, Vector2.INF)
-			t.check(here.has(id) and site.distance_to(first[id]) < 0.01,
-					"mast '%s' stands at the same place on day %d as on day %d"
-					% [id, day, Tuning.MAST_FIRST_DAY])
-
+func _test_the_sites_are_the_same_geometry_every_time(t: TestRunner) -> void:
 	# Pure geometry, called twice: MastSites.compute() takes no day and no RNG, so "the same
 	# places every day" is true of the function itself and not only of what build_day did with it.
 	var once := MastSites.compute(_map)
@@ -107,7 +84,7 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) ->
 func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -> void:
 	var checked := 0
 	for seed_value: int in SITE_SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		var reach := EventCatalogue.by_id("loudspeaker").heard_within()
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
@@ -159,15 +136,19 @@ func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t: TestRu
 
 # -------------------------------------------------------------- the broadcast ---
 
-func _build_city(t: TestRunner) -> void:
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(_city)
-	RunCity.build(_city, _map)
+func _build_manager(t: TestRunner) -> void:
+	_world = WorldContext.new()
+	t.add_child(_world)
+	var run := RunState.new()
+	run.start_run(SEED)
+	_manager = EventManager.new(EventSurroundings.new().on(_map).drawn_in(_world))
+	_manager.setup(run)
+	t.add_child(_manager)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`
 	# skips streaming while no player is handed in (`EventWorld.has_player()`), the same reason
 	# `test_event_manager.gd` gives.
 	# Streaming below is driven by hand, at whatever real moment each check wants a mast live.
-	RunCity.events(_city).stream_within(10.0)
+	_manager.stream_within(10.0)
 
 func _sites() -> Array[MastSites.Site]:
 	return MastSites.compute(_map)
@@ -176,17 +157,17 @@ func _sites() -> Array[MastSites.Site]:
 ## stretch (each frame then carries `1 / Engine.physics_ticks_per_second * Engine.time_scale`
 ## seconds) and put back after it. The frame in progress when the scale changes keeps the delta it
 ## started with, so one frame passes at the normal scale after; the checks that follow read a range.
-func _advance(seconds: float) -> void:
+func _advance(t: TestRunner, seconds: float) -> void:
 	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var clock := Engine.time_scale
 	Engine.time_scale = FAST_SCALE
 	for i in maxi(1, int(round(seconds / frame))):
-		await _city.get_tree().physics_frame
+		await t.get_tree().physics_frame
 	Engine.time_scale = clock
-	await _city.get_tree().physics_frame
+	await t.get_tree().physics_frame
 
 func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
-	for plan in RunCity.events(_city).plans():
+	for plan in _manager.plans():
 		if plan.mast_id() == mast_id and plan.row_id() == row_id:
 			return plan
 	return null
@@ -196,7 +177,7 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
 ## one streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is
 ## not a mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t: TestRunner) -> void:
-	_start(Tuning.MAST_FIRST_DAY)
+	_start()
 	var sites := _sites()
 	t.check(sites.size() >= 2, "there are at least two masts to compare")
 	if sites.size() < 2:
@@ -204,17 +185,17 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	var a := sites[0]
 	var b := sites[1]
 
-	await _advance(9.0)
-	RunCity.events(_city).stream_around(a.foot())
+	await _advance(t, 9.0)
+	_manager.stream_around(a.foot())
 	var plan_a := _plan_for(a.id())
 	t.check(plan_a != null and plan_a.is_in_the_world(), "the first mast is live")
 	if plan_a == null or not plan_a.is_in_the_world():
 		return
 	var age_a := _live(plan_a).age()
 
-	await _advance(6.0)
+	await _advance(t, 6.0)
 	# Walking to the second mast takes the first out of the world.
-	RunCity.events(_city).stream_around(b.foot())
+	_manager.stream_around(b.foot())
 	var plan_b := _plan_for(b.id())
 	t.check(plan_b != null and plan_b.is_in_the_world(), "the second mast is live")
 	if plan_b == null or not plan_b.is_in_the_world():
@@ -225,26 +206,26 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 
 	# The first mast streams back in on the very frame the second one is in the world: both read
 	# the one clock, so their ages match although the first was first met minutes before.
-	RunCity.events(_city).stream_around(a.foot())
+	_manager.stream_around(a.foot())
 	t.check(plan_a.is_in_the_world(), "the first mast is back in the world")
 	if _live(plan_a):
 		t.close_to(_live(plan_a).age(), age_b,
 				"a mast streamed back in tells the same time as the one met minutes later", 0.05)
 
 func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
-	_start(Tuning.MAST_FIRST_DAY)
+	_start()
 	var site := _sites()[0]
-	t.check(RunCity.events(_city).mast_foot(site.id()).distance_to(site.foot()) < 0.01,
+	t.check(_manager.mast_foot(site.id()).distance_to(site.foot()) < 0.01,
 			"mast_foot() answers the same point MastSites named for this id")
-	t.check(RunCity.events(_city).mast_foot("not_a_real_mast") == Vector2.INF,
+	t.check(_manager.mast_foot("not_a_real_mast") == Vector2.INF,
 			"and INF for an id today does not carry")
 
 # -------------------------------------------------------------- silencing ---
 
 func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
-	_start(Tuning.MAST_FIRST_DAY)
+	_start()
 	var target := _sites()[0]
-	RunCity.events(_city).stream_around(target.foot())
+	_manager.stream_around(target.foot())
 	var plan := _plan_for(target.id())
 	t.check(plan != null and plan.is_in_the_world(), "the mast is live before it is silenced")
 	if not (plan and _live(plan)):
@@ -257,43 +238,41 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 	# cache (`ExcitementSource.invalidate_contribution()`) as it silences.
 	var _primed := _live(plan).source().contribution_at(nearby)
 
-	t.check(RunCity.events(_city).silence_mast(target.id()), "silencing a mast by id finds it")
+	t.check(_manager.silence_mast(target.id()), "silencing a mast by id finds it")
 	t.check(is_zero_approx(_live(plan).current_intensity()), "a silenced mast's field is gone")
 	t.check(is_zero_approx(_live(plan).source().contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
 	t.check(not _live(plan).is_gone(), "but the mast still stands — it has not left")
 
 	# Streamed out and back in, the silence holds.
-	RunCity.events(_city).stream_around(Vector2(-99999.0, -99999.0))
+	_manager.stream_around(Vector2(-99999.0, -99999.0))
 	t.check(not plan.is_in_the_world(), "walking away streams it back out")
-	RunCity.events(_city).stream_around(target.foot())
+	_manager.stream_around(target.foot())
 	t.check(plan.is_in_the_world(), "and walking back streams it in again")
 	if _live(plan):
 		t.check(_live(plan).is_silenced(), "still silenced — for the rest of the day")
 		t.check(is_zero_approx(_live(plan).current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
-	_start(DawnMasts.CURFEW_ANNOUNCE_DAY)
+	_start(true)
 	for site in _sites():
-		RunCity.events(_city).stream_around(site.foot())
-	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `DawnMasts` skips a
-	# site whose tile is today's own closure, region wall or checkpoint ground rather than
-	# planting on top of it (`tests/test_events.gd`,
-	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.
+		_manager.stream_around(site.foot())
+	# Today's own count of *standing* masts, read off the plans: the hand-built day stands one at
+	# every site.
 	var standing_ids := {}
-	for plan in RunCity.events(_city).plans():
+	for plan in _manager.plans():
 		if plan.mast_id() != "":
 			standing_ids[plan.mast_id()] = true
 	t.check(standing_ids.size() > 0 and standing_ids.size() <= Tuning.MAST_COUNT,
 			"today carries between one and Tuning.MAST_COUNT masts (%d)" % standing_ids.size())
 
-	var silenced := RunCity.events(_city).silence_all_masts()
+	var silenced := _manager.silence_all_masts()
 	t.check(silenced == standing_ids.size(),
 			("silencing every mast silences exactly the masts standing today (%d wanted, %d got) "
 			% [standing_ids.size(), silenced])
 			+ "— one per site, not one per row sharing that site on the curfew day")
 	var mast_plans_checked := 0
-	for plan in RunCity.events(_city).plans():
+	for plan in _manager.plans():
 		if plan.mast_id() == "":
 			continue
 		mast_plans_checked += 1
@@ -305,45 +284,10 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> 
 			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
 			% mast_plans_checked) + "the curfew announcement, one pair per standing site")
 
-## **The scar a fixed-site mast leaves silences that site the next day**, and only that site: the
-## day she touches a mast the director records a scar at its foot (`RunState.add_scar()`), and the
-## next day's plan stands the same pole with its lamp out while every other site speaks. Played on
-## one city, two days running through the manager, the way the run plans them.
-func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> void:
-	var first := Tuning.MAST_FIRST_DAY
-	var run := _city.run
-	run.header().set_day(first)
-	_start(first)
-	var target: MastSites.Site = null
-	for site in _sites():
-		if _plan_for(site.id()) != null:
-			target = site
-			break
-	t.check(target != null, "day %d stands a mast to silence" % first)
-	if target == null:
-		return
-	t.check(not _plan_for(target.id()).is_silenced(), "the mast speaks the day she reaches it")
-	var foot := RunCity.events(_city).mast_foot(target.id())
-	RunCity.events(_city).silence_mast(target.id())
-	run.add_scar(DawnMasts.SILENCED_MAST, foot)
-
-	run.header().set_day(first + 1)
-	_start(first + 1)
-	var tomorrow := _plan_for(target.id())
-	t.check(tomorrow != null and tomorrow.is_silenced(),
-			"the next day the same site stands silenced, lamp out and no field")
-	var others_speak := 0
-	for site in _sites():
-		var plan := _plan_for(site.id())
-		if site.id() != target.id() and plan != null and not plan.is_silenced():
-			others_speak += 1
-	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
-	GivenRun.scars(run, [])
-
 func _teardown() -> void:
-	if _city:
-		_city.free()
+	_manager.free()
+	_world.free()
 
-## The live event of `plan`, asked of the city's event manager.
+## The live event of `plan`, asked of the event manager.
 func _live(plan: EventPlan) -> EventInstance:
-	return RunCity.events(_city).event_of(plan)
+	return _manager.event_of(plan)

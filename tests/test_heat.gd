@@ -9,31 +9,16 @@ extends RefCounted
 ##
 ## **No city and no day are built.** The row cases are asked of `EventCatalogue.heated()`'s rows and of
 ## `EventInstance`s set up on a hand-drawn path, with no world round them. **Why real `EventInstance`s
-## are in a heat suite**: what heat promises about a patrol, a guard or a raid is how the instance
-## made from the heated row behaves (it notices, stops, lets a man out, resumes from a stream), a
-## guarantee between the catalogue's row and the instance that plays it, so a fake instance would
-## answer nothing. The instance's own members a case reads (`age`, `is_on_its_way_out()`, `is_gone()`,
-## `barrier_post`) have no method to read them through, and `src/events/` is not this change's to add
-## one to.
-##
-## **The two cases that plan a day** (`_test_a_day_is_a_function_of_its_heat`,
-## `_test_a_hot_day_places_more_patrols`) hand `EventScheduler.build_day()` a generated map from the
-## shared city cache (`tests/city_map_cache.gd`), because the guarantee is between the heated rows and
-## where the scheduler places them, which only a map the generator drew answers (the scheduler's own
-## suites, `tests/test_events_scheduler.gd` and its fellows, are `src/events/`'s fence's and do not
-## take them).
+## are in a heat suite**: what heat promises about a patrol or a raid is how the instance made from
+## the heated row behaves (it notices, stops, lets a man out, resumes from a stream), a guarantee
+## between the catalogue's row and the instance that plays it, so a fake instance would answer
+## nothing. What a hunting roadblock's guard does (the barrier staying, the catch at a man's reach,
+## the post he sets off from) is `test_barrier_stays.gd`'s, and what a day planned at heat places
+## is `test_events_scheduler.gd`'s.
 
-const SEED := 8817
-const DrawnEvent := preload("res://tests/drawn_event.gd")
 const STEP := 1.0 / 60.0
-const EastWestStreet := preload("res://tests/east_west_street.gd")
-const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
-const MapCache := preload("res://tests/city_map_cache.gd")
-
-var _map: CityMap
 
 func run(t: TestRunner) -> void:
-	_map = MapCache.of(SEED)
 	_test_every_shape_of_every_row_is_fair(t)
 	_test_a_row_that_answers_to_nothing_is_untouched(t)
 	_test_heat_is_derived_once_and_kept(t)
@@ -41,23 +26,14 @@ func run(t: TestRunner) -> void:
 	_test_a_hunts_row_wakes_up_at_its_own_threshold(t)
 	_test_the_raid_hunts_past_its_own_threshold(t)
 	_test_the_roadblock_hunts_past_its_own_threshold(t)
-	_test_a_day_is_a_function_of_its_heat(t)
 	_test_the_patrol_presses_more_and_louder(t)
 	_test_the_patrol_investigates_past_the_threshold(t)
 	_test_it_patrols_while_it_waits(t)
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_stops_once_it_notices(t)
-	await _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
-	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
-	_test_a_hot_day_places_more_patrols(t)
 	_test_every_waiting_row_resumes_the_notice(t)
-
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, day])
-	return rng
 
 # ------------------------------------------------------------- the contracts ---
 
@@ -260,26 +236,6 @@ func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 						== EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL).peak(),
 				"'%s' cannot be heated past the goal" % def.id())
 
-# --------------------------------------------------------------------- a day ---
-
-## A planned day is a function of its arguments and heat is one of them: same seed, same day, same
-## heat, same city. This is what lets a rig plan a hot day without a run having happened.
-func _test_a_day_is_a_function_of_its_heat(t: TestRunner) -> void:
-	var day := 9
-	var consumed: Array[String] = []
-	var first := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed.duplicate()) \
-			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
-	var second := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed.duplicate()) \
-			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
-	t.check(first.size() == second.size(),
-			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
-	for i in mini(first.size(), second.size()):
-		t.check(first[i].row_id() == second[i].row_id() and first[i].placed_at() == second[i].placed_at(),
-				"placement %d of a hot day is where it was" % i)
-	# And nothing in the heated catalogue can plan a day that has no park left to walk to — the
-	# calm area dawn keeps clean cold (`DawnCalmKeptClean`) has to survive the escalation.
-	t.check(not first.is_empty(), "a hot day places events at all")
-
 # ------------------------------------------------------------ the patrol presses ---
 # `police_patrol` is the first row to actually carry `PRESSES` — everything above this line was
 # checked against a catalogue where the loops had nothing to bite. These are stated as
@@ -451,161 +407,6 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	officer.free()
 	instance.free()
 
-## *"I just saw a barrier turn into a mask men (the barrier disappeared and the masked man
-## appeared) and the pursuit ended way too early (I got caught when I was still very visibly away
-## from him)."* — and, on how it should work: *"the guard needs to be at the barrier from the
-## beginning, standing. only then does it make sense for it to start pursuing. 86px is huge why is
-## that the fix for the problem that the radius is too big?"*
-##
-## Four things, and each is one half of what the player reported.
-##
-## - **A cold roadblock is a barrier and nothing else**: solid, never lethal, catching nobody at
-##   any distance. The guard standing at it is a drawing, which is why he costs nothing here.
-## - **Nothing disappears when he sets off.** The body is still there and it is still at the place
-##   the barrier was built, not wherever the man has walked to.
-## - **The catch is measured from the man**, at `masked_pursuer`'s own reach — so she is taken
-##   when he is on her, not when he is two and a half tiles away.
-## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
-##   radius would have fired from, ends nothing while the man is elsewhere.
-func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: TestRunner) -> void:
-	var reach: float = EventCatalogue.by_id("masked_pursuer").core_within()
-	var cold := _cold_roadblock()
-	var post := Vector2(400.0, 0.0)
-
-	var band_where := WhereSheIs.nowhere()
-	var band := EventInstance.new()
-	# Drawn through a drawer that records what it is told instead of painting it, since this rig
-	# holds no atlas, handed before `setup()` as its manager's spawner hands the real one.
-	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(band_where) \
-				.drawing_through(DrawnEvent.recording(band, RecordingEventDrawer.new())))
-	t.add_child(band)
-	band_where.tell(post + Vector2(cold.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0))
-	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
-	var segments := 0
-	for entry in DrawnEvent.drawer_of(band).draws:
-		if entry.picture == EventPictures.roadblock_segment_texture(band.runs_vertically()):
-			segments += 1
-	t.check(segments > 0, "the band was drawn in the frames that passed (%d segments)" % segments)
-	t.check(band.is_solid(), "a cold roadblock is a solid band")
-	t.check(not band.is_lethal_at(band_where.at()) and not band.is_lethal_at(post),
-			"and it takes nobody, at its own edge or standing in it")
-	band.free()
-
-	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
-	var guard_where := WhereSheIs.nowhere()
-	var guard := EventInstance.new()
-	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(guard_where))
-	t.add_child(guard)
-	guard.set_process(false)
-	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
-	t.check(not guard.behaviours().barrier_post().has_left_its_body(), "with its body still under its own feet")
-
-	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
-	guard_where.tell(her)
-	guard.step(STEP)
-	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
-	t.check(guard.is_solid() and guard.behaviours().barrier_post().has_left_its_body(),
-			"he sets off and the barrier stays solid behind him")
-	t.check(guard.body_position().is_equal_approx(post),
-			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
-
-	# He warns, standing where she can see him, for his `PursuitSpec.warns_for()` while she stays
-	# in his radius, and nothing is lethal during it (`EventInstance.warns_by_radius()`); then
-	# he charges.
-	var frames := 0
-	while guard.is_telegraphing() and frames < int((hot.pursuit().warns_for() + 1.0) / STEP):
-		t.check(not guard.is_lethal_at(guard.global_position),
-				"nothing is lethal while he warns")
-		guard_where.tell(her)
-		guard.step(STEP)
-		frames += 1
-	t.check(absf(frames * STEP - hot.pursuit().warns_for()) <= 2.0 * STEP,
-			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.pursuit().warns_for()])
-	t.check(not guard.is_telegraphing() and not guard.is_waiting(),
-			"and then, she still inside his radius, he charges")
-
-	# The reach is a man's, measured from him.
-	var on_him := guard.global_position + Vector2(reach - 1.0, 0.0)
-	var just_clear := guard.global_position + Vector2(reach + 2.0, 0.0)
-	t.check(guard.is_lethal_at(on_him), "he takes her at %.0fpx, a man's own reach" % reach)
-	t.check(not guard.is_lethal_at(just_clear),
-			"and not a pixel past it (%.0fpx is clear)" % (reach + 2.0))
-	t.check(not guard.is_lethal_at(guard.global_position
-			+ Vector2(hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0)),
-			"never at the %.0fpx the band's own body would have forced"
-			% (hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
-
-	# And the barrier he left behind is not a second killer: she can stand against it. She holds
-	# still while he closes, so what this measures is him leaving rather than her drawing him off.
-	var chased := 0.0
-	while chased < 2.0:
-		guard_where.tell(her)
-		guard.step(STEP)
-		chased += STEP
-	t.check(guard.body_position().is_equal_approx(post),
-			"the barrier has not followed him (%s)" % guard.body_position())
-	t.check(guard.global_position.distance_to(post) > reach,
-			"he has actually walked away from the post (%.0fpx)"
-			% guard.global_position.distance_to(post))
-	t.check(not guard.is_lethal_at(post)
-			and not guard.is_lethal_at(post + Vector2(0.0, hot.obstructs_within())),
-			"and the barrier standing there takes nobody")
-	guard.free()
-
-## *"have one guard on each side?"* · *"only the guard on her side can chase since the other one
-## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
-## centre. That post is nearer her than the centre where his notice is measured: she comes straight
-## across the band, the approach that puts his post nearest her, and stands still once he has
-## noticed her. He warns for his row's `PursuitSpec.warns_for()` with nothing lethal in it and
-## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
-## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
-func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
-	t.check(hot.pursuit().warns_for() >= Tuning.OFFSCREEN_WARNING_MIN,
-			"the hunting guard warns for %.1fs before he charges" % hot.pursuit().warns_for())
-	var post := Vector2(400.0, 0.0)
-	for vertical: bool in [false, true]:
-		for side: int in [-1, 1]:
-			var what := "%s, side %d" % ["end-on" if vertical else "broadside", side]
-			var guard_where := WhereSheIs.nowhere()
-			var guard := EventInstance.new()
-			# End-on, he stands on an east-west street, which his band reads its axis off as it
-			# does in a city; broadside, on open ground.
-			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().on(EastWestStreet.new() if vertical else null) \
-						.hearing(guard_where))
-			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
-					"down the screen" if vertical else "across it"])
-			t.add_child(guard)
-			guard.set_process(false)
-			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
-			var her := post + across * side * (hot.notice_within() - 1.0)
-			guard_where.tell(her)
-			guard.step(STEP)
-			t.check(guard.behaviours().barrier_post().has_left_its_body() and guard.behaviours().barrier_post().chaser_side() == side,
-					"%s: the guard on her side sets off" % what)
-			var his_post := post + EventFootprints.guard_post_offset(vertical, side)
-			t.check(guard.global_position.is_equal_approx(his_post),
-					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
-			t.check(guard.body_position().is_equal_approx(post),
-					"%s: the band stays where it was built" % what)
-			var frames := 0
-			var lethal := false
-			while guard.is_telegraphing() and frames < int(10.0 / STEP):
-				lethal = lethal or guard.is_lethal_at(her)
-				guard_where.tell(her)
-				guard.step(STEP)
-				frames += 1
-			t.check(not lethal and absf(frames * STEP - hot.pursuit().warns_for()) <= 2.0 * STEP,
-					"%s: he warns her for %.2fs, nothing lethal in it, then charges"
-					% [what, frames * STEP])
-			t.check(guard.is_chasing(), "%s: and he charges, she still inside his radius" % what)
-			guard.free()
-
 ## `EventInstance.restore()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first
 ## row that moves and is also a pursuer, and `restore()`'s own "if the row moves and
@@ -692,41 +493,6 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 			"with nobody of its own out, it drives on along its route (%.0fpx)"
 			% (second.position.x - resumed_at.x))
 	second.free()
-
-## A day planned at full heat places more patrols than the same day cold, over several seeds —
-## measured, since the population multiplier raising the row's cap and its weight in the day's bags
-## (`EventDef.at_heat()`) does not by itself guarantee more of them are drawn against everything else
-## the locations draw.
-##
-## **Summed over the seeds, not asserted seed by seed.** A cold and a hot day draw every location
-## from bags of different marbles, so on one seed the hot day can draw a patrol fewer by the luck of
-## its draws, which is no broken relationship. More over the seeds is the contract the population
-## multiplier promises.
-func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
-	var day := 9
-	var seeds := [8817, 4242, 2102613802, 90210, 37, 38, 39, 12345]
-	var colds := 0
-	var hots := 0
-	for run_seed: int in seeds:
-		var map := MapCache.of(run_seed)
-		var rng_seed := hash("%d:%d" % [run_seed, day])
-		var cold_rng := RandomNumberGenerator.new()
-		cold_rng.seed = rng_seed
-		var hot_rng := RandomNumberGenerator.new()
-		hot_rng.seed = rng_seed
-		colds += _count_patrols(GameDawn.of(DaySpec.for_day(day), cold_rng, map).plan().placements())
-		hots += _count_patrols(GameDawn.of(DaySpec.for_day(day), hot_rng, map) \
-				.heat(Tuning.RESISTANCE_GOAL).plan().placements())
-	t.check(hots > colds,
-			"over %d seeds a fully heated day places more patrols than a cold one (%d against %d)"
-			% [seeds.size(), hots, colds])
-
-func _count_patrols(planned: Array[EventPlan]) -> int:
-	var count := 0
-	for plan in planned:
-		if plan.row_id() == "police_patrol":
-			count += 1
-	return count
 
 ## `restore()`'s restored notice is not particular to the heated patrol that surfaced the gap —
 ## `alley_robbery` waits for her the same way, cold (`EventDef.waits_for_her()`), with no heat

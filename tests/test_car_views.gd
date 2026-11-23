@@ -16,7 +16,7 @@ const ViewRig := preload("res://tests/view_rig.gd")
 var _rig: ViewRig
 
 func run(t: TestRunner) -> void:
-	_rig = ViewRig.new(t)
+	_rig = ViewRig.new()
 	_test_body_and_trim_can_never_disagree(t)
 	_test_cardinal_headings_select_the_expected_view(t)
 	_test_a_turn_sweeps_through_the_diagonal_views(t)
@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_the_bob_is_driven_by_ground_covered(t)
 	await _test_the_halo_rides_the_bob(t)
 	_test_the_redraw_gate_follows_the_bob(t)
-	_rig.free_city()
+	_rig.release_atlas()
 
 ## A car the game placed on a lane running along `heading` (`CrowdAgent.setup()`), at the pace that
 ## placement rolled.
@@ -176,7 +176,7 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -
 	var placed_north := false
 	for seed_value in range(1, ViewRig.ROLLS):
 		look.view = 0
-		agent.setup(CrowdAgent.Kind.CAR, _rig.city.map, _rig.field, seed_value,
+		agent.setup(CrowdAgent.Kind.CAR, _rig.map, _rig.field, seed_value,
 				0.5 * float(seed_value % 2))
 		if agent.heading().is_equal_approx(Vector2.UP):
 			placed_north = true
