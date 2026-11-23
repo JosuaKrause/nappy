@@ -396,8 +396,9 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	EventBus.pursuit_cut_short.disconnect(listen[4])
 	city.free()
 
-## **A guard sees out of the band he belongs to, and only that one.** *(`EventInstance.sight_line_to_her()`:
-## "a guard sees out of the band he stands in".)* A band streamed in as a day's is has its body on
+## **A guard sees out of the band he belongs to, and only that one.** *(The comment of
+## `EventInstance`'s own sight line, `_clear_line_to()`: "a guard sees out of the band he stands
+## in".)* A band streamed in as a day's is has its body on
 ## the map's record, and the guard who steps out to his post on her side is then off the band's
 ## tiles: she walks round to the band's far side while he warns, and the line to her crosses his own
 ## band. He still charges, and a second band's body between them still hides her.

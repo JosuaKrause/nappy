@@ -928,7 +928,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	if _chase_way == null:
 		_chase_way = _navigator.way_to(_mover, _sight)
 	_set_on_her = true
-	_noticed_for = notice
+	_notice_length = notice
 	_stands_for_this_notice = stand
 	_notice_her()
 	var toward := her - global_position
@@ -953,9 +953,10 @@ var _chase_way: ChaseWay
 ## task guard): a pursuer set on her so keeps a timed notice rather than warning by radius
 ## (`warns_by_radius()`), whether or not it has a way round.
 var _set_on_her := false
-## The notice `notice_her_at()` was given, in seconds, or negative for the row's own
-## `telegraphs_for()` (`_notice_time()`).
-var _noticed_for := -1.0
+## How long its notice is to run, in seconds: the length `notice_her_at()` was given, or a
+## crossing's crouch made longer by `hold_still_longer()`; negative for the row's own length
+## (`_notice_time()`). Not the elapsed clock, which is `_chase_age()`.
+var _notice_length := -1.0
 ## Whether `notice_her_at()` asked it to stand still with its warning up for that notice
 ## (`is_standing_for_its_notice()`), as day 13's task guard does in her view.
 var _stands_for_this_notice := false
@@ -1294,15 +1295,15 @@ func is_standing_for_its_notice() -> bool:
 ## only grows, so the fairness contract it was validated under still holds.
 func hold_still_longer(seconds: float) -> void:
 	if seconds > 0.0 and _def.holds_still():
-		_noticed_for = _notice_time() + seconds
+		_notice_length = _notice_time() + seconds
 
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
 ## warns for its row's `PursuitSpec.warns_for()` (`warns_by_radius()`); anything else for its row's
 ## `telegraphs_for()`, the notice a task gave it when it set it on her (`notice_her_at()`), or a
 ## crossing's crouch held longer (`hold_still_longer()`).
 func _notice_time() -> float:
-	if _noticed_for >= 0.0:
-		return _noticed_for
+	if _notice_length >= 0.0:
+		return _notice_length
 	if warns_by_radius() and _def.pursues() and _def.pursuit().warns_for() > 0.0:
 		return _def.pursuit().warns_for()
 	return _def.telegraphs_for()

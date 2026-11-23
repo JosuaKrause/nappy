@@ -704,8 +704,9 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t: TestRunner
 		var dir := Vector2.RIGHT.rotated(TAU * i / 16.0)
 		var at := guard.global_position + dir * 150.0
 		var far := guard.global_position + dir * 1200.0
-		# Clear as he sees it (`EventInstance.sight_line_to_her()`, the line his notice asks), the
-		# band and the bodies round it in the way included, which the map's own line does not know of.
+		# Clear as he sees it (his notice asks `EventInstance._clear_line_to()`, and
+		# `sight_line_to_her()` answers along the same line), the band and the bodies round it in the
+		# way included, which the map's own line does not know of.
 		where.tell(at)
 		if map.is_walkable(map.world_to_tile(at)) and guard.sight_line_to_her() != Vector2.ZERO:
 			her = at
