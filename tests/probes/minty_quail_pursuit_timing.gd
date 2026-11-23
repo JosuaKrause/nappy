@@ -360,8 +360,9 @@ class Run extends RefCounted:
 					_phase_word(instance), 1 if instance.has_parked() else 0]
 		_chain.update(line.to_utf8_buffer())
 
-	## The phase as a word, from the questions the event answers: the stored phase itself is not
-	## readable. A stopped event reads as active.
+	## The phase as a word, from the questions the event answers, since the stored phase is not
+	## readable. An officer who has stopped her prints his own word; "charging" and "active" are
+	## told apart by whether his charge has begun.
 	static func _phase_word(instance: EventInstance) -> String:
 		if instance.is_gone():
 			return "gone"
@@ -371,6 +372,8 @@ class Run extends RefCounted:
 			return "barrier"
 		if instance.has_parked():
 			return "parked"
+		if instance.has_stopped_her():
+			return "stopped"
 		if instance.is_waiting():
 			return "waiting"
 		if instance.is_telegraphing():

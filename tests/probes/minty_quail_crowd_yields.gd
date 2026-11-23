@@ -427,8 +427,9 @@ class Meeting extends RefCounted:
 				_box_run.erase(agent)
 		_overlapping = now
 
-	## The phase as a word, from the questions the event answers: the stored phase itself is not
-	## readable. A stopped event reads as active.
+	## The phase as a word, from the questions the event answers, since the stored phase is not
+	## readable. An officer who has stopped her prints his own word; "charging" and "active" are
+	## told apart by whether his charge has begun.
 	static func _phase_word(instance: EventInstance) -> String:
 		if instance.is_gone():
 			return "gone"
@@ -438,6 +439,8 @@ class Meeting extends RefCounted:
 			return "barrier"
 		if instance.has_parked():
 			return "parked"
+		if instance.has_stopped_her():
+			return "stopped"
 		if instance.is_waiting():
 			return "waiting"
 		if instance.is_telegraphing():
