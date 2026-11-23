@@ -32,7 +32,9 @@ extends "res://tests/events_shared_city.gd"
 ##
 ## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
-## day, until the dawn group converts them to mocked moments.
+## day. The dawn's group handed each dawn the city's mast sites and shared one plan between the cases
+## that ask the same day (the record minty-quail-amber-elk); a hand-drawn few streets would not hold
+## the claims of the sweeps above, so no case was moved onto one.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0

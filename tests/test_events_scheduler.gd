@@ -6,17 +6,19 @@ extends "res://tests/events_shared_city.gd"
 ## never itself scheduled, the fire engine is warned long enough from the worst position on its
 ## street, and every along-street path a row can walk stays in bounds -- and what a planned day holds:
 ## enough in it to meet, danger before act three, the named decisions, the city's memory of where
-## she went, a scar outliving its day and a park staying reachable every day; and a day planned at
-## full heat, which is the same day when planned twice and places more patrols than a cold one.
+## she went, a scar outliving its day, a park staying reachable every day and a flock sited on a
+## tile rather than in front of her; and a day planned at full heat, which is the same day when
+## planned twice and places more patrols than a cold one.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split from
 ## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
 ## combined file measured close to the two-minute budget on its own -- `test_events_costs.gd` keeps
 ## the cost side, which asks the rows alone.
 ##
-## **Why these checks build a city.** The suite's checks still build the shared city and are not
-## converted to stand-ins yet: only as far as a pull request's change reaches is a suite converted
-## (inbox #1159 in gray-dolphin). Three checks build cities for a reason of their own: the
+## **Why these checks build a city.** Each case asks what the dawn plans on a real city, so the suite
+## builds the shared city and plans its days on it; the dawn's group shared those plans between the
+## cases and handed every dawn the city's mast sites, and moved no case onto a stand-in city (the
+## record minty-quail-amber-elk). Three checks build cities for a reason of their own: the
 ## closed-streets day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the
 ## integration check of day 12's route to a clean calm area other than the swing's, on a real day
 ## planned through `build_day()`, with the day's calm areas made the way `DayPlanner` makes them
