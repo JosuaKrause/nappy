@@ -13,9 +13,12 @@ spacing to a new plan builder suite; the events skill's sentence that names wher
 masts suite. The park cordon's siting and library cases stand on a cached map in a bare world. Every other case keeps
 its city, its suite's header claiming it with the reason: placement the same every time, the guard in the mark's
 alley, the dawn draws, the package's decay, the sabotage, the reach sweep and the director's draws over a real day's
-ground, the day eleven mast's chain through the director, the manager, silencing and the scar, and placement's nine
-cases (the raid on the city's own siting, the market on the day's route tree, the column driven down the main road,
-the door and the window on the city's fronts, the neighbor's walk on the real plan builder). No header names a case
+ground, the day eleven mast's chain through the director, the manager, silencing and the scar, and placement's market found
+gone, column and neighbor's walk to work. Placement's two raid cases and its market waiting while she can see it moved to
+the happenings suite, on its stand-ins and a spawn siting built over the map; the neighbor's window boarded from day 11
+is held there on a fake city's fronts, and the fronts' own half, with the lost day 10 restoring her door, in the home
+block suite; the package's half that the city's streets decay at half speed while she carries it is in the city world
+suite. The cordon suite reads the cordon's figures through the readers it shares with the cordon in the world. No header names a case
 as still to be judged. Each converted or moved case was shown able to fail.
 
 **Measured.** Check counts move only with the moved cases, and in the park cordon suite by two checks the swing
