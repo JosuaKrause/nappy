@@ -57,6 +57,11 @@ Run these before committing. They are fast and they each catch a different class
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
 
+**A suite name is a substring of the file name, so it runs the suite's siblings too**:
+`./tools/test.sh test_event_manager` also runs `test_event_manager_fire.gd` and
+`test_event_manager_units.gd`. Name the file with its `.gd` (`test_event_manager.gd`) to run that suite
+alone, and compare check counts only between runs of the same suites.
+
 **The unfiltered `./tools/test.sh` is CI's job, not yours.** Every branch reaches `main` through a
 pull request, and `main`'s ruleset requires the `test` check, run on the *merge result*. So the
 full run happens on exactly the tree that matters, on a machine that is not yours, whether or not
