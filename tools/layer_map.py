@@ -322,11 +322,4 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         ("src/interior/interior_scene.gd",),
         more=(("src/interior/interior_scene.gd", 2),),
     ),
-    Exception_(
-        "names",
-        "GameSave",
-        "the save indicator reads the save's state, rather than being handed it",
-        ("src/ui/save_indicator.gd",),
-        more=(("src/ui/save_indicator.gd", 2),),
-    ),
 )
