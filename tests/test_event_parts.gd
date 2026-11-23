@@ -4,9 +4,10 @@ extends RefCounted
 ## part, rather than through the manager's tick: `EventStreaming` bringing a plan in and out with its
 ## state, `WarningBoard` creating what a warning was for once its time is up or withdrawing it, and
 ## raising the mark over her head for the live events that end the day (handed `FakeEvent`s over a
-## world of its own, no manager), `EventSpawner` recording a scar once and drawing the pelican bag of the run it is handed, and
-## `CheckpointController` saying what a door does to her as intents rather than moving her. And the
-## manager seeing her once she is handed in, never by looking her up.
+## world of its own, no manager), `EventSpawner` recording a scar once and drawing the pelican bag
+## of the run it is handed, and `CheckpointController` saying what a door does to her as intents
+## rather than moving her. And the manager seeing her once she is handed in, never by looking her
+## up.
 
 const STEP := 0.1
 ## One physics frame, the step the lesson's retry is driven at.
@@ -21,7 +22,7 @@ func run(t: TestRunner) -> void:
 	_test_a_door_says_what_it_does_to_her_and_moves_nobody(t)
 	_test_a_failed_lesson_retry_leaves_the_director_running(t)
 	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
-	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
+	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 
 ## A manager handed a map drawn in a world node and a run of its own (`EventSurroundings.on()`,
 ## then `EventManager.setup()`, as the escape's building is set up), out of the tree so that
@@ -352,7 +353,8 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> voi
 
 	# Far enough away and it is somebody else's problem again.
 	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() + 50.0, 0.0)
-	await _physics_ticks(t, rig, 1.0)
+	# The doubled mark raised above is the board's own, and hers to take down as she leaves.
+	rig.stand_down(WarningBoard.WARNING_SOURCE)
 	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"outside its outer radius there is nothing over her head")
@@ -401,20 +403,3 @@ func _a_live(row: EventDef, at: Vector2) -> FakeEvent:
 	live.core = row.core_within()
 	live.heard = row.heard_within()
 	return live
-
-## Lets `seconds` of the stroller's own physics ticks pass for real, counted in ticks, one tick a
-## frame (record busy-puffin: a slow frame would pack several), its tick switched on only for them.
-## Ends on the frame after the last tick, so the rig has run every one of them.
-func _physics_ticks(t: TestRunner, rig: Stroller, seconds: float) -> void:
-	var steps := Engine.max_physics_steps_per_frame
-	Engine.max_physics_steps_per_frame = 1
-	rig.set_physics_process(true)
-	var ticks := ceili(seconds * Engine.physics_ticks_per_second - 0.001)
-	var ran := 0
-	while ran < ticks:
-		var before := Engine.get_physics_frames()
-		await t.get_tree().physics_frame
-		ran += Engine.get_physics_frames() - before
-	await t.get_tree().process_frame
-	rig.set_physics_process(false)
-	Engine.max_physics_steps_per_frame = steps
