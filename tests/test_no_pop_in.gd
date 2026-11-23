@@ -18,6 +18,16 @@ extends RefCounted
 ## lead them, both input schemes (a corner the joystick's controls cover is not off screen for this),
 ## real cities as well as open ground, the column's lane at the main road's ends, and through a
 ## portrait window turned the way the game turns it.
+##
+## **A real event is built here, and its look is made round a copy of what it answers.** The
+## subject is the arrival as the game makes it (`EventManager.spawn_warned()`, the director, the
+## trap), so no hand-set fake could state what it answers.
+## What a look would draw of it is asked of a look round `FakeEvent.answering_as()`, a snapshot of
+## those answers. The copy leaves out a spread's points, the barrier post, the stance
+## `stand_as()` hands a look and the view sector a look carries from frame to frame, none of
+## which the drawn rectangle or the caret reads. A question the looks start asking must be copied
+## by `answering_as()` or the arrival is under-measured; `tests/test_fake_event.gd` fails until
+## it is.
 
 const SEEDS: Array[int] = [4242, 90210, 1234567, 31337]
 const BEARINGS := 48

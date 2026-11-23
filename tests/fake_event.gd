@@ -108,8 +108,13 @@ var of_row: EventDef = null
 ## A fake that answers what `instance` answers now, each question read off it once: the two steps of
 ## making a mock for a check that must see the real event's own situation (an arrival the game
 ## creates somewhere, a trap in its place) and asks what a look made round it shows, with no live
-## event kept for the look to read. A spread's points (`spread_at()`) are not copied, since they
-## are asked by offset: a row with a spread answers the origin.
+## event kept for the look to read. **What the copy leaves out**: a spread's points
+## (`spread_at()`, asked by offset: a row with a spread answers the origin), the barrier post and
+## the stance `look_for()` never hands a look, and the view sector a look carries from frame to
+## frame (so a posted guard's heading is not the game's). **A question the looks start asking
+## must be copied here**, or a suite that measures an arrival under-measures it:
+## `tests/test_fake_event.gd` fails while an answer the fake gives is neither copied nor named as
+## left out.
 static func answering_as(instance: EventInstance) -> FakeEvent:
 	var fake := FakeEvent.new()
 	fake.position = instance.global_position

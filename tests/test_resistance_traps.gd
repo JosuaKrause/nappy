@@ -1,5 +1,15 @@
 extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
+##
+## **A real event is built here, and its look is made round a copy of what it answers.** The
+## subject is the arrival as the game makes it (the trap the resistance director sets), so no
+## hand-set fake could state what it answers.
+## What a look would draw of it is asked of a look round `FakeEvent.answering_as()`, a snapshot of
+## those answers. The copy leaves out a spread's points, the barrier post, the stance
+## `stand_as()` hands a look and the view sector a look carries from frame to frame, none of
+## which the drawn rectangle or the caret reads. A question the looks start asking must be copied
+## by `answering_as()` or the arrival is under-measured; `tests/test_fake_event.gd` fails until
+## it is.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
