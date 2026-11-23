@@ -640,12 +640,14 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 		t.check(held.has(closure.street_key()), "the street the dawn closed (%s) is held"
 				% closure.street_key())
 	t.check(not streets.region_plan().wall_segments().is_empty(),
-			"the dawn grew a region wall to hold (%d segments)" % streets.region_plan().wall_segments().size())
+			"the dawn grew a region wall to hold (%d segments)"
+			% streets.region_plan().wall_segments().size())
 	for segment in streets.region_plan().wall_segments():
 		t.check(held.has(segment.key()), "the region wall's segment %s is held" % segment.key())
 	# The very bodies of the dawn's region plan are the day's, not those of a plan grown again from
 	# the same tree: the siting's region and the crowd's gates read the streets' plan.
-	var bodies: Array[EventPlan] = streets.region_plan().wall_plans() + streets.region_plan().door_plans()
+	var bodies: Array[EventPlan] = streets.region_plan().wall_plans() \
+			+ streets.region_plan().door_plans()
 	var plans := RunCity.events(_city).plans()
 	var among := 0
 	for body in bodies:

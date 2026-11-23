@@ -173,7 +173,8 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		t.check(door_street != null and tree.is_on_the_tree(door_street.key()),
 				"seed %d day %d: the corridor reaches the door's street" % [map.city_seed(), day])
 		var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-		t.check(not (region_plan.door_segments().is_empty() and region_plan.door_alleys().is_empty()),
+		t.check(not (region_plan.door_segments().is_empty()
+				and region_plan.door_alleys().is_empty()),
 				"seed %d day %d: the wall has a door in it" % [map.city_seed(), day])
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])

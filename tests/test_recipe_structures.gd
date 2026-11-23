@@ -95,8 +95,10 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 	setup.gates = [{"segment": [key.x, key.y, key.z]}]
 	var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	var authored := city.streets().region_plan()
-	t.check(errors.is_empty() and authored.door_segments().size() == 1 and authored.door_segments()[0].key() == key
-			and authored.gate_states().size() == 1 and authored.door_plans().size() == bodies.size(),
+	var authored_doors := authored.door_segments()
+	t.check(errors.is_empty() and authored_doors.size() == 1 and authored_doors[0].key() == key
+			and authored.gate_states().size() == 1
+			and authored.door_plans().size() == bodies.size(),
 			"the authored door is the day's street, with its gate and its bodies: %s" % [errors])
 	var same := authored.door_plans().size() == bodies.size()
 	for i in mini(authored.door_plans().size(), bodies.size()):

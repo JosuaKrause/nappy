@@ -169,7 +169,8 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			director.tick(STEP)
 
 			var region_plan: RegionPlan = city.streets().region_plan()
-			var walled_alleys: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
+			var walled_alleys: Array[Rect2i] = \
+					region_plan.walled_alleys() if region_plan else []
 			var reachability := _day_reachability(city)
 			var grid: ReachabilityGrid = reachability[0]
 			var blocked: Dictionary = reachability[1]

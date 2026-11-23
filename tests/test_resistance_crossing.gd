@@ -409,10 +409,10 @@ func _on_the_named_door(director: ResistanceDirector, instance: EventInstance) -
 
 ## The door day 9 names, as the arrow has it: the boom (or, on a door with no boom today, the
 ## first gatehouse) of the district door whose segment holds the gatehouse the contact stands on
-## (`region_plan().door_segments()`, `door_plans()`), as `[position, street axis]`, or `[Vector2.INF,
-## Vector2.ZERO]` where the contact is on no door. **A deliberate copy of the rule in
-## `ResistanceDirector._a_gatehouse_of_the_door_at()`**, kept as an oracle: a change to one finds
-## the other, since a drift turns the named-door walk red.
+## (`region_plan().door_segments()`, `door_plans()`), as `[position, street axis]`, or
+## `[Vector2.INF, Vector2.ZERO]` where the contact is on no door. **A deliberate copy of
+## the rule in `ResistanceDirector._a_gatehouse_of_the_door_at()`**, kept as an oracle: a change
+## to one finds the other, since a drift turns the named-door walk red.
 func _named_door(director: ResistanceDirector) -> Array:
 	var house := director.contact_position()
 	var region_plan := _city.streets().region_plan()

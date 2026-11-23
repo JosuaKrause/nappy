@@ -31,9 +31,9 @@ var _wall_bodies: Array[EventPlan] = []
 ## door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart from
 ## `_wall_bodies` for the same reason. Asked through `door_plans()`.
 var _door_bodies: Array[EventPlan] = []
-## One `GateState` per street door, in the same order as `_doors`: `Crowd` reads this to know where
-## today's gates are and to raise and lower them; the `checkpoint_gate` `EventPlan` at the same
-## crossing carries the identical object. Empty for an alley door, which has no gate. Asked
+## One `GateState` per street door, in the same order as `_doors`: `Crowd` reads this to know
+## where today's gates are and to raise and lower them; the `checkpoint_gate` `EventPlan` at the
+## same crossing carries the identical object. Empty for an alley door, which has no gate. Asked
 ## through `gate_states()`.
 var _gates: Array[GateState] = []
 

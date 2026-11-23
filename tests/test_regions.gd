@@ -346,8 +346,8 @@ func _test_no_wall_before_the_first_day(t: TestRunner) -> void:
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			t.check(plan.wall_segments().is_empty() and plan.door_segments().is_empty(),
 					"seed %d day %d: nothing is drawn before day %d (%d walls, %d doors)"
-					% [map.city_seed(), day, Tuning.REGION_WALL_FIRST_DAY, plan.wall_segments().size(),
-					plan.door_segments().size()])
+					% [map.city_seed(), day, Tuning.REGION_WALL_FIRST_DAY,
+					plan.wall_segments().size(), plan.door_segments().size()])
 
 ## The day's whole shape, from `Tuning.REGION_WALL_FIRST_DAY` to the end of the run: every door is
 ## on the tree, unconditionally; every wall is off the tree, unconditionally — the tree wins over
@@ -525,8 +525,9 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-			# The street walls' bodies come first in the plan, `SealPlanner.place_hard_on()`'s run for
-			# each wall in `plan.wall_segments()` order, then the alley mouths' (`_alley_wall_mouths()`).
+			# The street walls' bodies come first in the plan, `SealPlanner.place_hard_on()`'s
+			# run for each wall in `plan.wall_segments()` order, then the alley mouths'
+			# (`_alley_wall_mouths()`).
 			var street_walls: Array[EventPlan] = []
 			street_walls.assign(plan.wall_plans().slice(0,
 					plan.wall_plans().size() - plan.walled_alleys().size() * 2))

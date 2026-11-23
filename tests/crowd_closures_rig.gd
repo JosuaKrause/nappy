@@ -1127,7 +1127,8 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 			continue
 		if car.speed() < Tuning.CAR_STOPPED_SPEED and car.lane().gate_hold() < INF:
 			came_to_a_stop = true
-		if not ever_raised and (car.global_position - gate.ground_point()).dot(car.heading()) > 0.0:
+		var past_the_gate := (car.global_position - gate.ground_point()).dot(car.heading())
+		if not ever_raised and past_the_gate > 0.0:
 			crossed_before_it_raised = true
 	t.check(came_to_a_stop, "a car comes to a full stop at a lowered boom")
 	t.check(ever_raised, "and the boom then raises for it")

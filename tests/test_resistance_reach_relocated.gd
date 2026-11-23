@@ -193,7 +193,8 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 				continue
 
 			var region_plan: RegionPlan = city.streets().region_plan()
-			var walled_alleys: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
+			var walled_alleys: Array[Rect2i] = \
+					region_plan.walled_alleys() if region_plan else []
 			var reachability := _day_reachability(city)
 			var grid: ReachabilityGrid = reachability[0]
 			var blocked: Dictionary = reachability[1]

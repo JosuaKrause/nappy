@@ -153,7 +153,8 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 				% [map.city_seed(), day, plan.door_alleys().size(), posts])
 		t.check(plan.gate_states().size() == plan.door_segments().size(),
 				"seed %d day %d: one GateState per street door (%d doors, %d gates)"
-				% [map.city_seed(), day, plan.door_segments().size(), plan.gate_states().size()])
+				% [map.city_seed(), day, plan.door_segments().size(),
+				plan.gate_states().size()])
 	t.check(sampled > 0, "at least one (seed, day) pair was sampled (%d)" % sampled)
 	print(("[test_checkpoints] over %d sampled (seed, day) pairs: %d street doors (%d huts, " +
 			"%d gates), %d alley doors (%d posts)")
@@ -368,10 +369,11 @@ func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 			"the ordinary scheduler roll never places a checkpoint_hut/gate/post (%d)" % rolled)
 
 ## The wiring bug a data-level test cannot see: `RegionPlanner.plan_day()` building the right
-## bodies is not the same as `EventManager` ever placing them. `region_plan.door_plans()` has to be
-## appended to the walk's plans (`WalkEvents`) in `start_day()`, the same way `wall_plans()` already is, or
-## the whole structure is correct data nobody ever meets — see `tests/test_event_manager.gd`'s own
-## class doc on why this suite exists at all: "the bugs that live here are wiring bugs."
+## bodies is not the same as `EventManager` ever placing them. `region_plan.door_plans()` has
+## to be appended to the walk's plans (`WalkEvents`) in `start_day()`, the same way
+## `wall_plans()` already is, or the whole structure is correct data nobody ever meets — see
+## `tests/test_event_manager.gd`'s own class doc on why this suite exists at all: "the bugs that
+## live here are wiring bugs."
 func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
@@ -1886,7 +1888,8 @@ func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 
 	stroller.global_position = gate.ground_point() + Vector2(40.0, 10.0)
 	RunCity.crowd(city).step(STEP)
-	t.check(gate.is_boom_up(), "with no car anywhere near it, the arm stays up while she is under it")
+	t.check(gate.is_boom_up(),
+			"with no car anywhere near it, the arm stays up while she is under it")
 	stroller.global_position = gate.ground_point() + Vector2(200.0, 0.0)
 	RunCity.crowd(city).step(STEP)
 	t.check(not gate.is_boom_up(), "and comes down once she is out from under it")
@@ -1922,7 +1925,8 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting(), "and it runs its full ordinary length regardless of the boom")
-	t.check(gate.is_boom_up(), "raising the boom for the cars is a fact about the queue, not about her")
+	t.check(gate.is_boom_up(),
+			"raising the boom for the cars is a fact about the queue, not about her")
 
 	stroller.free()
 	_free_manager(manager)
@@ -1941,7 +1945,8 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	RunCity.build(city, map)
 	_repaint_for(map, day)
 	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
-	t.check(not plan.gate_states().is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
+	t.check(not plan.gate_states().is_empty(),
+			"day %d on seed %d has a street door" % [day, BASE_SEED])
 	var gate: EventInstance = null
 	var state: GateState = null
 	var huts: Array[EventInstance] = []
