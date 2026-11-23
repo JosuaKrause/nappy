@@ -73,22 +73,22 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	for closure in closures:
 		if closure is RoadClosure:
 			map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-	for segment: StreetNetwork.Segment in region_plan.walls:
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-	for segment: StreetNetwork.Segment in region_plan.doors:
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
-	for segment: StreetNetwork.Segment in region_plan.walls:
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment: StreetNetwork.Segment in region_plan.doors:
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		boundary[segment.key()] = true
-	for rect: Rect2i in region_plan.alley_walls:
+	for rect: Rect2i in region_plan.walled_alleys():
 		boundary[rect.position] = true
-	for rect: Rect2i in region_plan.alley_doors:
+	for rect: Rect2i in region_plan.door_alleys():
 		boundary[rect.position] = true
 
 	var off_tree := 0
@@ -111,9 +111,9 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 
 	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
-	standing.append_array(region_plan.wall_bodies)
+	standing.append_array(region_plan.wall_plans())
 	var doors := PackedVector2Array()
-	for body in region_plan.door_bodies:
+	for body in region_plan.door_plans():
 		doors.append(body.placed_at())
 	var consumed: Array[String] = []
 	var walls := 0

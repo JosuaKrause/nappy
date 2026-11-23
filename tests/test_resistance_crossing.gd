@@ -62,7 +62,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 				"the arrow ends on the same gatehouse every time the day is played (%s)" % house)
 		gatehouse = house
 		var at_a_house := false
-		for body in _city.streets().region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_plans():
 			if body.detains_again() and body.placed_at().distance_to(house) < 0.5:
 				at_a_house = true
 		t.check(at_a_house and director.red_arrow_target() == house,
@@ -70,7 +70,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		# Another door's line first: nothing — and that crossing is seen happening, so the check
 		# is not vacuous.
 		var walked_before := _walks_under(walks_told)
-		for body in _city.streets().region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_plans():
 			if body.is_a_boom() \
 					and body.placed_at().distance_to(_door_position(director)) > 200.0:
 				_walk_through(body.placed_at(), body.faces(), direction, player)
@@ -192,7 +192,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 			var a_axis := Vector2.ZERO
 			# Another door's boom with the named door well to one side of its line, so that she
 			# can be across A's line while she stands at B.
-			for body in _city.streets().region_plan().door_bodies:
+			for body in _city.streets().region_plan().door_plans():
 				if body.is_a_boom() and body.placed_at().distance_to(b_at) > 200.0 \
 						and absf((b_at - body.placed_at()).dot(body.faces())) > 100.0:
 					a_at = body.placed_at()
@@ -357,7 +357,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 			t.check(trap != null and trap.row_id() == "robber_giving_chase",
 					"the inspected crossing sends the robber after her")
 			if trap:
-				for body in _city.streets().region_plan().door_bodies:
+				for body in _city.streets().region_plan().door_plans():
 					t.check(not DoorLine.crossed_by(body.placed_at(), body.faces(),
 							body.obstructs_within(), trap.global_position,
 							player.global_position),
@@ -409,7 +409,7 @@ func _on_the_named_door(director: ResistanceDirector, instance: EventInstance) -
 
 ## The door day 9 names, as the arrow has it: the boom (or, on a door with no boom today, the
 ## first gatehouse) of the district door whose segment holds the gatehouse the contact stands on
-## (`region_plan().doors`, `door_bodies`), as `[position, street axis]`, or `[Vector2.INF,
+## (`region_plan().door_segments()`, `door_plans()`), as `[position, street axis]`, or `[Vector2.INF,
 ## Vector2.ZERO]` where the contact is on no door. **A deliberate copy of the rule in
 ## `ResistanceDirector._a_gatehouse_of_the_door_at()`**, kept as an oracle: a change to one finds
 ## the other, since a drift turns the named-door walk red.
@@ -418,13 +418,13 @@ func _named_door(director: ResistanceDirector) -> Array:
 	var region_plan := _city.streets().region_plan()
 	if region_plan == null or house == Vector2.INF:
 		return [Vector2.INF, Vector2.ZERO]
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		var area := _city.map.tile_rect_to_world(segment.tile_rect())
 		if not area.has_point(house):
 			continue
 		var boom: EventPlan = null
 		var first_house: EventPlan = null
-		for body in region_plan.door_bodies:
+		for body in region_plan.door_plans():
 			if not area.has_point(body.placed_at()):
 				continue
 			if body.is_a_boom():

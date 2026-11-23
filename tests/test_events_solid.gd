@@ -250,21 +250,21 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			map.clear_day_holds()
 			for closure in closures:
 				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-			for segment in region_plan.walls:
+			for segment in region_plan.wall_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-			for segment in region_plan.doors:
+			for segment in region_plan.door_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
-			for segment in region_plan.walls:
+			for segment in region_plan.wall_segments():
 				boundary[segment.key()] = true
-			for segment in region_plan.doors:
+			for segment in region_plan.door_segments():
 				boundary[segment.key()] = true
-			for rect in region_plan.alley_walls:
+			for rect in region_plan.walled_alleys():
 				boundary[rect.position] = true
-			for rect in region_plan.alley_doors:
+			for rect in region_plan.door_alleys():
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
@@ -311,8 +311,8 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				checked_trees += 1
 
 			total_closures += closures.size()
-			total_boundary += region_plan.walls.size() + region_plan.doors.size()
-			total_checkpoints += region_plan.door_bodies.size()
+			total_boundary += region_plan.wall_segments().size() + region_plan.door_segments().size()
+			total_checkpoints += region_plan.door_plans().size()
 			total_seals += seals.size()
 
 	t.check(checked > 0, "the catalogue placed something to check across every sampled day (%d)"
@@ -363,21 +363,21 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			map.clear_day_holds()
 			for closure in closures:
 				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-			for segment in region_plan.walls:
+			for segment in region_plan.wall_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-			for segment in region_plan.doors:
+			for segment in region_plan.door_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
-			for segment in region_plan.walls:
+			for segment in region_plan.wall_segments():
 				boundary[segment.key()] = true
-			for segment in region_plan.doors:
+			for segment in region_plan.door_segments():
 				boundary[segment.key()] = true
-			for rect in region_plan.alley_walls:
+			for rect in region_plan.walled_alleys():
 				boundary[rect.position] = true
-			for rect in region_plan.alley_doors:
+			for rect in region_plan.door_alleys():
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
@@ -390,9 +390,9 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
 				_add_a_physical_body(bodies, plan)
-			for plan in region_plan.wall_bodies:
+			for plan in region_plan.wall_plans():
 				_add_a_physical_body(bodies, plan)
-			for plan in region_plan.door_bodies:
+			for plan in region_plan.door_plans():
 				_add_a_physical_body(bodies, plan)
 
 			var corridor := Corridor.of(tree)

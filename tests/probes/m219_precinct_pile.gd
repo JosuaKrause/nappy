@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 		var at := map.tile_to_world(case[2])
 		RunCity.events(city).stream_around(at)
 		RunCity.crowd(city).start_day(day, city.run.calendar().day_rng(day, "crowd"), at)
-		RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+		RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 		var most := 0
 		var total := 0
 		var frames := int(round(30.0 / STEP))

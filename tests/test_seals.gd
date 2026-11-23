@@ -808,26 +808,26 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			map.clear_day_holds()
 			for closure in closures:
 				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-			for segment in region_plan.walls:
+			for segment in region_plan.wall_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-			for segment in region_plan.doors:
+			for segment in region_plan.door_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 			var boundary := {}
-			for segment in region_plan.walls:
+			for segment in region_plan.wall_segments():
 				boundary[segment.key()] = true
-			for segment in region_plan.doors:
+			for segment in region_plan.door_segments():
 				boundary[segment.key()] = true
-			for rect in region_plan.alley_walls:
+			for rect in region_plan.walled_alleys():
 				boundary[rect.position] = true
-			for rect in region_plan.alley_doors:
+			for rect in region_plan.door_alleys():
 				boundary[rect.position] = true
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
 					map.held_streets())
 			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
-			standing.append_array(region_plan.wall_bodies)
+			standing.append_array(region_plan.wall_plans())
 
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []

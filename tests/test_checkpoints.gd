@@ -129,11 +129,11 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
 		sampled += 1
-		total_doors += plan.doors.size()
-		total_alley_doors += plan.alley_doors.size()
+		total_doors += plan.door_segments().size()
+		total_alley_doors += plan.door_alleys().size()
 
 		var counts: Dictionary[String, int] = {}
-		for body in plan.door_bodies:
+		for body in plan.door_plans():
 			counts[body.row_id()] = counts.get(body.row_id(), 0) + 1
 		var huts: int = counts.get("checkpoint_hut", 0)
 		var gates: int = counts.get("checkpoint_gate", 0)
@@ -142,18 +142,18 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 		total_gates += gates
 		total_posts += posts
 
-		t.check(huts == plan.doors.size() * 2,
+		t.check(huts == plan.door_segments().size() * 2,
 				"seed %d day %d: two huts per street door (%d doors, %d huts)"
-				% [map.city_seed(), day, plan.doors.size(), huts])
-		t.check(gates == plan.doors.size(),
+				% [map.city_seed(), day, plan.door_segments().size(), huts])
+		t.check(gates == plan.door_segments().size(),
 				"seed %d day %d: one gate per street door (%d doors, %d gates)"
-				% [map.city_seed(), day, plan.doors.size(), gates])
-		t.check(posts == plan.alley_doors.size() * 2,
+				% [map.city_seed(), day, plan.door_segments().size(), gates])
+		t.check(posts == plan.door_alleys().size() * 2,
 				"seed %d day %d: two posts per alley door (%d alley doors, %d posts)"
-				% [map.city_seed(), day, plan.alley_doors.size(), posts])
-		t.check(plan.gates.size() == plan.doors.size(),
+				% [map.city_seed(), day, plan.door_alleys().size(), posts])
+		t.check(plan.gate_states().size() == plan.door_segments().size(),
 				"seed %d day %d: one GateState per street door (%d doors, %d gates)"
-				% [map.city_seed(), day, plan.doors.size(), plan.gates.size()])
+				% [map.city_seed(), day, plan.door_segments().size(), plan.gate_states().size()])
 	t.check(sampled > 0, "at least one (seed, day) pair was sampled (%d)" % sampled)
 	print(("[test_checkpoints] over %d sampled (seed, day) pairs: %d street doors (%d huts, " +
 			"%d gates), %d alley doors (%d posts)")
@@ -172,12 +172,12 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 		var plan := _plan_for(map, day)
 
 		# Every door body's own tile belongs to the segment or the alley it was built for.
-		for segment in plan.doors:
+		for segment in plan.door_segments():
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
 			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
-			for body in plan.door_bodies:
+			for body in plan.door_plans():
 				if body.row_id() != "checkpoint_hut" and body.row_id() != "checkpoint_gate":
 					continue
 				if not mouth.has_point(body.placed_at()):
@@ -192,8 +192,8 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 
 		# And every wall body never reaches inside a door's own mouth, the same direction
 		# `test_regions.gd`'s own alley-mouth check runs.
-		for wall_body in plan.wall_bodies:
-			for segment in plan.doors:
+		for wall_body in plan.wall_plans():
+			for segment in plan.door_segments():
 				var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 						< RegionPlanner.region_of_junction(map, segment.b)
 				var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
@@ -224,14 +224,14 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
-		for segment in plan.doors:
+		for segment in plan.door_segments():
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
 			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
 			var gate: EventPlan = null
 			var huts: Array[EventPlan] = []
-			for body in plan.door_bodies:
+			for body in plan.door_plans():
 				if not mouth.has_point(body.placed_at()):
 					continue
 				if body.row_id() == "checkpoint_gate":
@@ -368,8 +368,8 @@ func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 			"the ordinary scheduler roll never places a checkpoint_hut/gate/post (%d)" % rolled)
 
 ## The wiring bug a data-level test cannot see: `RegionPlanner.plan_day()` building the right
-## bodies is not the same as `EventManager` ever placing them. `region_plan.door_bodies` has to be
-## appended to the walk's plans (`WalkEvents`) in `start_day()`, the same way `wall_bodies` already is, or
+## bodies is not the same as `EventManager` ever placing them. `region_plan.door_plans()` has to be
+## appended to the walk's plans (`WalkEvents`) in `start_day()`, the same way `wall_plans()` already is, or
 ## the whole structure is correct data nobody ever meets — see `tests/test_event_manager.gd`'s own
 ## class doc on why this suite exists at all: "the bugs that live here are wiring bugs."
 func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void:
@@ -398,9 +398,9 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var region_plan := city.streets().region_plan()
-	t.check(region_plan.door_bodies.size() > 0,
+	t.check(region_plan.door_plans().size() > 0,
 			"day %d generated a door structure to place (%d bodies)"
-			% [day, region_plan.door_bodies.size()])
+			% [day, region_plan.door_plans().size()])
 
 	var planned_ids: Dictionary[String, int] = {}
 	for plan in RunCity.events(city).plans():
@@ -422,9 +422,9 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	t.check(live_gate != null, "and a checkpoint_gate actually goes live")
 	if live_gate:
 		var shared: Array[GateState] = []
-		shared.assign(region_plan.gates)
+		shared.assign(region_plan.gate_states())
 		for door_state in shared:
-			door_state.raised = true
+			door_state.set_boom_up(true)
 		t.check(live_gate.is_raised(),
 				"the live gate instance is handed the shared GateState (raising it raises the boom), not a null default")
 
@@ -453,7 +453,7 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var doors := PackedVector2Array()
-			for body in RegionPlanner.plan_day(map, DaySpec.for_day(day), tree).door_bodies:
+			for body in RegionPlanner.plan_day(map, DaySpec.for_day(day), tree).door_plans():
 				doors.append(body.placed_at())
 			if doors.is_empty():
 				continue
@@ -1283,21 +1283,21 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var region := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-			if region.door_bodies.is_empty():
+			if region.door_plans().is_empty():
 				continue
 			var doors := PackedVector2Array()
-			for body in region.door_bodies:
+			for body in region.door_plans():
 				doors.append(body.placed_at())
 			var guarded := _planned_day(map, day, tree, doors)
 			var unguarded := _planned_day(map, day, tree, PackedVector2Array())
 			# The wall and the door structure stand whatever the catalogue was allowed to place, so
 			# both plans carry them — otherwise the "before" would be missing the very barriers the
 			# non-additive rule is about.
-			guarded.append_array(region.wall_bodies)
-			guarded.append_array(region.door_bodies)
-			unguarded.append_array(region.wall_bodies)
-			unguarded.append_array(region.door_bodies)
-			for body in region.door_bodies:
+			guarded.append_array(region.wall_plans())
+			guarded.append_array(region.door_plans())
+			unguarded.append_array(region.wall_plans())
+			unguarded.append_array(region.door_plans())
+			for body in region.door_plans():
 				for point in _release_points(body):
 					var heading := (point - body.placed_at()).normalized()
 					releases += 1
@@ -1787,8 +1787,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 		return
 	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(car.global_position))
 
-	var gate := GateState.new()
-	gate.position = car.global_position + car.heading() * 150.0
+	var gate := GateState.new(car.global_position + car.heading() * 150.0)
 	var gates: Array[GateState] = [gate]
 	RunCity.crowd(city).set_gates(gates)
 
@@ -1800,14 +1799,14 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	while elapsed < 20.0 and passed_at == INF:
 		RunCity.crowd(city).step(STEP)
 		elapsed += STEP
-		var ahead := (gate.position - car.global_position).dot(car.heading())
+		var ahead := (gate.ground_point() - car.global_position).dot(car.heading())
 		if ahead > 0.0 and ahead < Tuning.CAR_STOP_LINE_SETBACK + 20.0:
 			if car.speed() < Tuning.CAR_STOPPED_SPEED:
 				ever_stopped = true
 				stopped_seconds += STEP
 		if ahead <= 0.0:
 			passed_at = elapsed
-			raised_while_passing = gate.raised
+			raised_while_passing = gate.is_boom_up()
 
 	t.check(ever_stopped, "the car comes to a full stop before the gate opens (%.1fs held)"
 			% stopped_seconds)
@@ -1822,7 +1821,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	while elapsed < 5.0 and not cleared:
 		RunCity.crowd(city).step(STEP)
 		elapsed += STEP
-		cleared = not gate.raised
+		cleared = not gate.is_boom_up()
 	t.check(cleared, "and lowers again once the road either side of it is clear")
 	print("[test_checkpoints] gate rig: %.2fs stopped, passed at %.2fs, cleared by %.2fs"
 			% [stopped_seconds, passed_at, elapsed])
@@ -1836,8 +1835,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 ## the arm is down and not while it is up — and a hut still takes her in from its own sidewalk, so
 ## the toll is where the guard is.
 func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
-	var state := GateState.new()
-	state.position = Vector2(5200.0, 5200.0)
+	var state := GateState.new(Vector2(5200.0, 5200.0))
 	var rig := _door_rig(t, state)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
@@ -1846,7 +1844,7 @@ func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
 	var gate := doors[1]
 
 	for raised: bool in [false, true]:
-		state.raised = raised
+		state.set_boom_up(raised)
 		# The arm moves and the body follows it on the instance's next step, the manager's tick.
 		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(gate.is_solid() == not raised,
@@ -1881,18 +1879,17 @@ func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 	var stroller := _real_stroller(t)
 	RunCity.crowd(city).use_player(stroller)
 
-	var gate := GateState.new()
-	gate.position = Vector2(-5000.0, -5000.0)
-	gate.raised = true
+	var gate := GateState.new(Vector2(-5000.0, -5000.0))
+	gate.set_boom_up(true)
 	var gates: Array[GateState] = [gate]
 	RunCity.crowd(city).set_gates(gates)
 
-	stroller.global_position = gate.position + Vector2(40.0, 10.0)
+	stroller.global_position = gate.ground_point() + Vector2(40.0, 10.0)
 	RunCity.crowd(city).step(STEP)
-	t.check(gate.raised, "with no car anywhere near it, the arm stays up while she is under it")
-	stroller.global_position = gate.position + Vector2(200.0, 0.0)
+	t.check(gate.is_boom_up(), "with no car anywhere near it, the arm stays up while she is under it")
+	stroller.global_position = gate.ground_point() + Vector2(200.0, 0.0)
 	RunCity.crowd(city).step(STEP)
-	t.check(not gate.raised, "and comes down once she is out from under it")
+	t.check(not gate.is_boom_up(), "and comes down once she is out from under it")
 
 	stroller.free()
 	city.free()
@@ -1913,10 +1910,9 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 	var axis := Vector2.RIGHT
 	var centre := Vector2(7000.0, 7000.0)
 	var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
-	var gate := GateState.new()
-	gate.position = centre + Vector2(0.0, 64.0)
-	gate.raised = true
-	_door_instance(manager, "checkpoint_gate", gate.position, axis, gate)
+	var gate := GateState.new(centre + Vector2(0.0, 64.0))
+	gate.set_boom_up(true)
+	_door_instance(manager, "checkpoint_gate", gate.ground_point(), axis, gate)
 
 	stroller.global_position = centre - axis * 60.0
 	await PhysicsTicks.pass_ticks(t, 1)
@@ -1926,7 +1922,7 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting(), "and it runs its full ordinary length regardless of the boom")
-	t.check(gate.raised, "raising the boom for the cars is a fact about the queue, not about her")
+	t.check(gate.is_boom_up(), "raising the boom for the cars is a fact about the queue, not about her")
 
 	stroller.free()
 	_free_manager(manager)
@@ -1945,20 +1941,20 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	RunCity.build(city, map)
 	_repaint_for(map, day)
 	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
-	t.check(not plan.gates.is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
+	t.check(not plan.gate_states().is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
 	var gate: EventInstance = null
 	var state: GateState = null
 	var huts: Array[EventInstance] = []
-	if not plan.gates.is_empty():
-		state = plan.gates[0]
-		for body in plan.door_bodies:
+	if not plan.gate_states().is_empty():
+		state = plan.gate_states()[0]
+		for body in plan.door_plans():
 			if body.gate() == state:
 				# The planner's own plan, put in by the city's streaming with its facing and the
 				# door's shared boom state, as a door day puts it in.
 				RunCity.events(city).streaming.add(body)
 				RunCity.events(city).stream_around(body.placed_at())
 				gate = RunCity.events(city).event_of(body)
-		for body in plan.door_bodies:
+		for body in plan.door_plans():
 			if gate and body.row_id() == "checkpoint_hut" \
 					and absf((body.placed_at() - gate.global_position).dot(body.faces())) <= 1.0:
 				RunCity.events(city).streaming.add(body)
@@ -2008,7 +2004,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	(rig["state"] as GateState).raised = true
+	(rig["state"] as GateState).set_boom_up(true)
 	var lane := gate.global_position + across * 16.0
 	_step_her_to(rig, lane - axis * 20.0)
 	_step_her_to(rig, lane - axis * 2.0)
@@ -2068,7 +2064,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	(rig["state"] as GateState).raised = true
+	(rig["state"] as GateState).set_boom_up(true)
 	var lane := gate.global_position + across * 16.0
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
@@ -2137,7 +2133,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	(rig["state"] as GateState).raised = true
+	(rig["state"] as GateState).set_boom_up(true)
 	var lane := gate.global_position + across * 16.0
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]

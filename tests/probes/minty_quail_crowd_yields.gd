@@ -317,7 +317,7 @@ class Meeting extends RefCounted:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("crowd-yields:%s" % JSON.stringify(_label))
 		RunCity.crowd(_city).start_day(int(_label.day), rng, player.global_position)
-		RunCity.crowd(_city).set_gates(_city.streets().region_plan().gates)
+		RunCity.crowd(_city).set_gates(_city.streets().region_plan().gate_states())
 		RunCity.crowd(_city)._player = player
 		RunCity.crowd(_city).use_focus(StrollerFocus.new(player))
 		RunCity.crowd(_city).use_bus(EventBus)

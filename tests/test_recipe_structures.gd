@@ -84,23 +84,23 @@ func run(t: TestRunner) -> void:
 func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
 	var days := RegionPlanner.plan_day(city.map, DaySpec.for_day(own_run.header().day()), city.streets().route_tree())
-	t.check(not days.doors.is_empty(), "the day has a street door to author")
-	if days.doors.is_empty():
+	t.check(not days.door_segments().is_empty(), "the day has a street door to author")
+	if days.door_segments().is_empty():
 		return
 	var setup: Dictionary = data.setup
-	var door: StreetNetwork.Segment = days.doors[0]
-	var bodies := days.door_bodies.slice(0, 3)
+	var door: StreetNetwork.Segment = days.door_segments()[0]
+	var bodies := days.door_plans().slice(0, 3)
 	city.streets().replace_region_plan(days)
 	var key := door.key()
 	setup.gates = [{"segment": [key.x, key.y, key.z]}]
 	var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	var authored := city.streets().region_plan()
-	t.check(errors.is_empty() and authored.doors.size() == 1 and authored.doors[0].key() == key
-			and authored.gates.size() == 1 and authored.door_bodies.size() == bodies.size(),
+	t.check(errors.is_empty() and authored.door_segments().size() == 1 and authored.door_segments()[0].key() == key
+			and authored.gate_states().size() == 1 and authored.door_plans().size() == bodies.size(),
 			"the authored door is the day's street, with its gate and its bodies: %s" % [errors])
-	var same := authored.door_bodies.size() == bodies.size()
-	for i in mini(authored.door_bodies.size(), bodies.size()):
-		var mine: EventPlan = authored.door_bodies[i]
+	var same := authored.door_plans().size() == bodies.size()
+	for i in mini(authored.door_plans().size(), bodies.size()):
+		var mine: EventPlan = authored.door_plans()[i]
 		var theirs: EventPlan = bodies[i]
 		same = same and mine.placed_at() == theirs.placed_at() and mine.row_id() == theirs.row_id() \
 				and mine.faces() == theirs.faces()

@@ -27,9 +27,9 @@ func run(t: TestRunner) -> void:
 		var region := city.streets().region_plan()
 		var fixed := {}
 		if region:
-			for body in region.wall_bodies:
+			for body in region.wall_plans():
 				fixed[body] = true
-			for body in region.door_bodies:
+			for body in region.door_plans():
 				fixed[body] = true
 		var counts := {"on": 0, "adjacent": 0, "deep": 0, "spine": 0}
 		var adjacent: Array[EventPlan] = []

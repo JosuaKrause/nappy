@@ -230,7 +230,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)
 
 	var huts: Array[EventPlan] = []
-	for body in city.streets().region_plan().door_bodies:
+	for body in city.streets().region_plan().door_plans():
 		if body.row_id() == "checkpoint_hut":
 			huts.append(body)
 	t.check(not huts.is_empty(), "seed %d day %d has at least one checkpoint hut" % [_CHECKPOINT_SEED, day])
