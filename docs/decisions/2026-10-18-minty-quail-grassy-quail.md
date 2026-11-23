@@ -12,6 +12,8 @@ event's pictures through the recording drawer, and no longer read the live event
 modules moved unchanged to the phase, behaviours and excitement source suites. The field-read groups for the charge
 record, an event's behaviour, a flock and the warning are gone, their fields private behind methods.
 
-**Split.** The other readers of the look, about a dozen suites and five probes, are the next pull request, and the look
+**Split.** The other readers of the look, about a dozen suites and six probes, are the next pull request, and the look
 goes private there; the crowd car's drawing suite is the crowd's, with the event halves held in other modules' suites.
 
+**Measured.** On CI, the six suites the pull request touched took 15.0 s on main and 13.5 s on the branch; the redraw
+suite fell from 0.8 s to 0.3 s, and the phase suite grew from 1.4 s to 2.3 s with the moved case that generates a city.
