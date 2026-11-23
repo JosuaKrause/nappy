@@ -115,10 +115,13 @@ func tick(delta: float, moved: float) -> void:
 
 ## A look of `row` made round this fake the way `EventInstance.setup()` makes the real event's
 ## (`EventLooks.for_row()`), drawing through `drawer`, which a test that reads pictures hands
-## in. It is facing the way this fake faces now.
-func look_for(row: EventDef, drawer: EventDrawer = null) -> EventLook:
+## in, and asking `drawn_view` which part of the world is on the screen, which a test of the look's
+## gate over what is off screen hands in (one that shows everything otherwise). It is facing the
+## way this fake faces now.
+func look_for(row: EventDef, drawer: EventDrawer = null, drawn_view: DrawnView = null) -> EventLook:
 	var made := EventLooks.for_row(self, row.look(), row.body(), row.takes_a_victim_by(),
-			drawer if drawer != null else EventDrawer.new(null), false, DrawnView.new(), null)
+			drawer if drawer != null else EventDrawer.new(null), false,
+			drawn_view if drawn_view != null else DrawnView.new(), null)
 	made.face(heading)
 	of_row = row
 	return made

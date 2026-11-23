@@ -39,6 +39,14 @@ class MovedView extends DrawnView:
 	func box() -> Rect2:
 		return _shown
 
+## The same screen for an item that is not in a tree: a fake event, which is never put in one, is
+## shown by the box as an item in a tree is, where the real view answers true for any item outside
+## a tree, which has no screen to be off.
+class MovedViewOfAFake extends MovedView:
+	## Overrides DrawnView.shows.
+	func shows(item: Node2D, reach: Rect2) -> bool:
+		return box().intersects(Rect2(item.global_position + reach.position, reach.size))
+
 func run(t: TestRunner) -> void:
 	await _test_the_box_is_the_screen_grown_by_the_margin(t)
 	_test_a_hand_built_agent_with_no_screen_is_always_drawn(t)
@@ -243,52 +251,39 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 ## **An event off screen runs no key and no caret projection, and it is redrawn with the caret it is
 ## owed no later than the frame any of it can be seen.** A cyclist on course for her, so its caret
 ## is the doubled red, stands still while the screen pans onto it, the way it does when she walks
-## towards it; what can be seen is `drawn_rect_now()`, the drawing's own extent, caret included.
+## towards it; what can be seen is `drawn_rect_now()`, the drawing's own extent, caret included. The
+## gate is asked of a look made round a fake event standing where a real cyclist's row stands, its
+## excitement source a counting one: the caret's cache is the real source's, which a fake has none
+## of, so that the gate worked out no caret off screen is held by the source never being asked
+## (`_CountingExcitement`). That the real source answers the doubled red to a cyclist on course for
+## her is `tests/test_danger.gd`'s.
 func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
-	var view := MovedView.new()
+	var view := MovedViewOfAFake.new()
 	view.look_at(_world_shown(Vector2(-2000.0, 0.0)))
-	var her := WhereSheIs.nowhere()
-	var cyclist := EventInstance.new()
-	cyclist.setup(def, Vector2(320.0, 180.0),
-			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her).shown_by(view))
-	cyclist.set_process(false)
-	# Hidden, so the runner's tree never draws it (it was handed no atlas): the gate asks for a
-	# redraw whatever the event's visibility, and that answer is what is checked.
-	cyclist.visible = false
-	t.add_child(cyclist)
-	her.tell(cyclist.global_position + Vector2(def.heard_within(), 0.0))
-	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
-	# cached (below), and reading it works the caret out.
-	var twin := EventInstance.new()
-	twin.setup(def, Vector2(320.0, 180.0),
-			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her).shown_by(view))
-	twin.set_process(false)
-	t.add_child(twin)
-	t.check(not twin.look.redraw_if_the_picture_changed(), "off screen its twin asks for no redraw")
-	# The caret is cached on the age and where she stands, so a change to whether the event may carry
-	# one at all (`leave_for_a_completed_task()`, which no key term names) is answered afresh by a
-	# gate that left nothing cached, and with the doubled red it was owed by one that worked it out.
-	twin.leave_for_a_completed_task()
-	t.check(twin.is_on_its_way_out() and twin.source().caret_strength() == 0,
-			"and works out neither its key nor its caret")
-	twin.free()
-	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	var drawn := cyclist.look.drawn_rect_now()
-	t.check(cyclist.look.mark_rect().has_area() and cyclist.source().caret_strength() == 2,
-			"the caret it is owed is the doubled red")
+	var cyclist := FakeEvent.new()
+	cyclist.position = Vector2(320.0, 180.0)
+	cyclist.footprint_box = EventFootprints.footprint_of(def)
+	cyclist.box = Rect2(-20.0, -42.0, 40.0, 42.0)
+	cyclist.shape = def.ground_shape()
+	var source := _CountingExcitement.new(cyclist)
+	source.caret = 2
+	cyclist.excitement = source
+	var look := cyclist.look_for(def, null, view)
+	t.check(not look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
+	t.check(source.asked == 0, "and works out neither its key nor its caret")
+	var drawn := look.drawn_rect_now()
+	t.check(look.mark_rect().has_area(), "the caret it is owed is drawn, and it is the doubled red")
 	var left := -2000.0
 	var asked_since_off := false
 	var first_seen_asked := false
 	var seen := false
 	while left < 320.0 and not seen:
 		view.look_at(_world_shown(Vector2(left, 0.0)))
-		asked_since_off = cyclist.look.redraw_if_the_picture_changed() or asked_since_off
+		asked_since_off = look.redraw_if_the_picture_changed() or asked_since_off
 		if _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(cyclist.global_position + drawn.position, drawn.size)):
 			seen = true
@@ -296,19 +291,28 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 		left += 4.0
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
-	t.check(cyclist.look.mark_rect().has_area(), "and that redraw carries its caret")
+	t.check(look.mark_rect().has_area(), "and that redraw carries its caret")
 	# The same picture off screen and back: nothing in its key moved, and it redraws all the same,
 	# since nothing kept what it shows current while it was away.
 	view.look_at(_world_shown(Vector2.ZERO))
-	cyclist.look.redraw_if_the_picture_changed()
-	t.check(not cyclist.look.redraw_if_the_picture_changed(),
+	look.redraw_if_the_picture_changed()
+	t.check(not look.redraw_if_the_picture_changed(),
 			"on screen and unchanged, it asks for nothing")
 	view.look_at(_world_shown(Vector2(-2000.0, 0.0)))
-	cyclist.look.redraw_if_the_picture_changed()
+	look.redraw_if_the_picture_changed()
 	view.look_at(_world_shown(Vector2.ZERO))
-	t.check(cyclist.look.redraw_if_the_picture_changed(),
+	t.check(look.redraw_if_the_picture_changed(),
 			"back on screen with the same key, it redraws once")
 	cyclist.free()
+
+## An excitement source that counts the times its caret was asked for, handed to a fake event.
+class _CountingExcitement extends FakeExcitement:
+	var asked := 0
+
+	## Overrides FakeExcitement.caret_strength.
+	func caret_strength() -> int:
+		asked += 1
+		return super()
 
 ## The ground of a street fire's long building, answering per tile as a city's long block does: the
 ## sidewalk row in front of the building (`FRONT_ROW`) points north, at the building's lot (`LOT`,
@@ -339,17 +343,9 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 	t.check(def != null and def.obstructs_within() <= 0.0, "burning_building is the street fire")
 	if not def:
 		return
-	var view := MovedView.new()
+	var view := MovedViewOfAFake.new()
 	view.look_at(_world_shown(Vector2(2000.0, 0.0)))
-	var fire := EventInstance.new()
 	var map := LongFrontage.new()
-	# The window's tree draws it while the reference below is awaited, so it paints through a drawer
-	# that records rather than one over an atlas it was not given.
-	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
-				.drawing_through(DrawnEvent.recording(fire, RecordingEventDrawer.new())).shown_by(view))
-	fire.set_process(false)
-	t.add_child(fire)
 	# What the front draws, from a fire of the same siting drawn on real frames in the window's own
 	# tree: every picture it tells its drawer to stand, flames and smoke, merged, in its own space.
 	var reference := await DrawnEvent.stand(t, def, false, null, map, Vector2(0.0, 180.0))
@@ -359,6 +355,15 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 		var rect := RecordingEventDrawer.rect_about(entry, reference)
 		drawn = rect if not any else drawn.merge(rect)
 		any = true
+	# The fire the gate is asked about is a fake standing where the reference does, answering what
+	# the reference answers of its footprint and its box, on the same ground.
+	var fire := FakeEvent.new()
+	fire.position = Vector2(0.0, 180.0)
+	fire.map = map
+	fire.footprint_box = reference.footprint()
+	fire.box = reference.drawn_box()
+	fire.shape = reference.ground_shape()
+	var look := fire.look_for(def, null, view)
 	reference.free()
 	var lot := map.tile_rect_to_world(LongFrontage.LOT)
 	t.check(any and drawn.position.x <= lot.position.x - fire.global_position.x + 0.01
@@ -366,14 +371,14 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 			"the fire draws along the building's whole width (%s)" % drawn)
 	t.check(drawn.size.x > Tuning.TILE_SIZE * 10.0,
 			"the building is a long one, as this check is about (%s)" % drawn)
-	t.check(fire.look.drawn_rect_now().encloses(drawn),
+	t.check(look.drawn_rect_now().encloses(drawn),
 			"the drawn rect holds the whole front and its smoke (%s)" % drawn)
 	var shown_unasked := 0
 	var shown_point_outside := 0
 	var left := 1200.0
 	while left > -700.0:
 		view.look_at(_world_shown(Vector2(left, 0.0)))
-		var asked := fire.look.redraw_if_the_picture_changed()
+		var asked := look.redraw_if_the_picture_changed()
 		var on_screen := _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(fire.global_position + drawn.position, drawn.size))
 		if on_screen and not asked:
