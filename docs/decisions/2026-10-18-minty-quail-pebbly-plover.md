@@ -15,4 +15,8 @@ the run log observer's suite.
 event's look going private, `behaviours()` and four field-read groups are the group's next pull request, the live
 event's looks. The chat suite needs a real manager because the manager's tick starts the hold, so it is the manager's
 group's; the car front suite's subject is the crowd's cars, so it is with the event halves held in other modules'
-suites. The phase, behaviours and car driving suites built no city and needed nothing.
+suites. The phase, behaviours and car driving suites built no city; the first two still read the live event's `behaviours()`,
+which goes with the group that converts its last reader.
+
+**Measured.** On CI, the four converted suites (pursuit, police car, fire truck, protest) took 38.2 s on main and 7.5 s on
+the branch; the scheduler's suite, which took the two moved day-planning cases, grew by about 27 s.

@@ -730,17 +730,21 @@ written once, after it is final.
 - **Each fake's answers are read off the real event in the same situation first** (the two steps
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
-  the live event's looks (the drawing suites `test_event_views`, `test_event_redraw`, `test_car_views`;
+  the live event's looks (the drawing suites `test_event_views`, `test_event_redraw`, `test_car_views`,
+  and every other suite that reads the live event's `look`: `test_event_strides`, `test_drawn_view`,
+  `test_events_pursuit`, `test_police_car`, `test_fire_truck_body`;
   the live event's other suites build one real event on open ground or a hand-drawn map, the
   record minty-quail-pebbly-plover): what a look shows read off a recording drawer handed to the event in its
   setup call (`tests/recording_event_drawer.gd`) or, for a question no picture answers, off a look
   the suite makes with `EventLooks.for_row()` round a `FakeEvent`, written here, and then the live
   event's `look` private (*proposed, not asked for:* the plainer alternative is that the live event's
-  public `look` stays for them), with the live event's `behaviours()` and the field-read groups
-  `[EventBehaviour]`, `[EventFlock]`, `[Warning]` and `[ChargeRecord]` whose readers are these
-  suites; the event manager and its
+  public `look` stays for them), with the field-read groups `[EventBehaviour]`, `[EventFlock]`,
+  `[Warning]` and `[ChargeRecord]` where every reader is one of these suites; the live event's
+  `behaviours()`, read by about fifteen suites across the groups, goes with the group that converts its
+  last reader; the event manager and its
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
-  manager's tick starts: the manager real, plans
+  manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
+  first, the spawner's question: the manager real, plans
   plain, a real city only in the suite whose header gives the reason); the dawn
   (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites, which hold the
   cases that generate a city and plan a day, moved out of the row's suites (the record minty-quail-gentle-bison): rows and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
