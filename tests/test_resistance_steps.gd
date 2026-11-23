@@ -1,25 +1,24 @@
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
 ##
-## Five cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`), and set on
+## Four cases build a real city, each in a run of its own (`_build_city_in_a_new_run()`), and set on
 ## that run what the day it asks about needs; none reads what another left. Each has a reason.
 ## Placement being the same every time and the guard standing two-thirds through the mark's real
 ## alley are about where the director puts things in the alleys the generator draws, and a map drawn
 ## for the case would only restate the alley the case chose. The dawn draws ignoring where the last
 ## attempt left her plan each day through the real manager before the director draws, so the
-## guarantee spans the dawn's plan, the city's siting and the director's draw. Completing the package
-## makes every street after it decay slower, a guarantee that runs from the contact through the
-## run's flag to the city's ground (`City.decay_multiplier()`). The sabotage silences the masts a
-## real plan carries (`EventPlan.mast_id()`, which only a planned day gives) once she walks out of
-## range of the station, which the city's blackout watches.
+## guarantee spans the dawn's plan, the city's siting and the director's draw. The sabotage ends in
+## the real manager silencing every mast once she walks out of range of the station, which the
+## blackout the city watches for sets off.
 ##
 ## The other cases of the director's steps stand on the least (`_build_the_least_in_a_new_run()`):
 ## the cached generated map of a seed, a run of its own, `FakeEventManager` for the day's events and a
 ## bare `WorldContext` for the contact to stand in, with no city and no day planned. The events the
 ## director spawns there are real ones, made by the fake's `spawn_extra()`; what the fake answers in
-## place of the real manager is the manager's to test: the instances standing and ending one in
-## `tests/test_event_manager.gd`, rigging her route's bag in `tests/test_route_bag.gd` (the
-## director's `rig_her_route()`, which the manager hands on).
+## place of the real manager is the manager's to test: the instances standing in
+## `tests/test_event_manager.gd`, ending one in `tests/test_halo.gd`, and rigging her route's bag
+## in `tests/test_walk_siting_spec.gd` (the manager's answer, `[]` for a rig that started no day,
+## and the rigging itself) and `tests/test_route_bag.gd` (the director's `rig_her_route()`).
 
 func run(t: TestRunner) -> void:
 	_test_step_table(t)
@@ -631,21 +630,17 @@ func _test_a_timed_step_expires(t: TestRunner) -> void:
 
 ## Step 4's cost is deferred and total rather than local: picking the package up does not cost the
 ## street it happened on, it makes every street after it dearer for the rest of the day. Day 7's
-## mark is read and the van's task it unlocks is done, the package handed over.
+## mark is read and the van's task it unlocks is done, the package handed over, and the run says she
+## carries it; what the carried package does to the ground's decay is the city's
+## (`tests/test_city_world.gd`).
 func _test_completing_the_package_makes_the_pram_heavier(t: TestRunner) -> void:
-	var run := _build_city_in_a_new_run(t)
-	var somewhere := _city.map.tile_to_world(Vector2i(10, 10))
-	var before := _city.decay_multiplier(somewhere)
-
-	var director := _director(t)
+	var run := _build_the_least_in_a_new_run(t)
+	t.check(not run.resistance().is_carrying_package(), "she carries nothing at the start")
+	var director := _director_on_the_least(t)
 	director.start_day(7, _rng(7, "resistance"), 300.0)
 	_read_the_mark(director)
 	director.contact().complete_now()
 	t.check(run.resistance().is_carrying_package(), "picking up the package sets the flag")
-
-	var after := _city.decay_multiplier(somewhere)
-	t.close_to(after, before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
-			"and every street after it decays slower for the rest of the day", 0.001)
 	director.free()
 
 func _test_starting_a_day_resets_the_package_flag(t: TestRunner) -> void:
@@ -774,8 +769,8 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	t.check(run.sabotage_available(), "the finale is on offer")
 
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
-	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
-	# `EventPlan.mast_id()`, which only a real plan carries.
+	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: the blackout the
+	# city watches for silences the masts of the day's real plans.
 	var site := MastSites.compute(_city.map)[0]
 	# The real day order, `City.start_day()` first: it is what holds today's region plan and
 	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
