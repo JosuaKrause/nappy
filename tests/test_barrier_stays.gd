@@ -31,6 +31,15 @@ func run(t: TestRunner) -> void:
 	await _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
 	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 
+## Whether the guard on her side has set off from his post: he stands somewhere other than where
+## the barrier's body stands, which is where it was built (`body_position()`).
+func _has_set_off(guard: EventInstance) -> bool:
+	return not guard.global_position.is_equal_approx(guard.body_position())
+
+## Which side of the band, `-1` or `1`, her standing at `her` puts the guard who sets off on.
+func _side_she_is_on(guard: EventInstance, her: Vector2) -> int:
+	return EventFootprints.guard_side_toward(guard.runs_vertically(), her - guard.body_position())
+
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
@@ -109,7 +118,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 	var stage: RoadblockRig.Stage = made[2]
 	var where := stage.manager.world.where_she_is()
 	var her: Vector2 = made[1]
-	t.check(guard.behaviours().barrier_post().has_left_its_body(), "he has set off")
+	t.check(_has_set_off(guard), "he has set off")
 	var worst := 0.0
 	var lifted := false
 	guard.set_process(true)
@@ -339,8 +348,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	guard.step(STEP)
 	her = _charge(guard, where)
 	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
-	t.check(guard.behaviours().barrier_post().has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.behaviours().barrier_post().has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age()])
-	var side := guard.behaviours().barrier_post().chaser_side()
+	t.check(_has_set_off(guard) and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [_has_set_off(guard), guard.is_waiting(), guard.global_position, guard.age()])
+	var side := _side_she_is_on(guard, her)
 	# Stream out in the middle of his walking away.
 	var frames := 0
 	while not guard.is_on_its_way_out() and frames < int(60.0 / STEP):
@@ -360,10 +369,9 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 				"streamed out mid-walk, it comes back as the barrier and not as a chase")
 		t.check(back.is_solid() and back.body_position().is_equal_approx(post),
 				"solid where it was built")
-		t.check(back.behaviours().barrier_post().chaser_side() == side,
-				"with his post still empty")
-		var departure := back.behaviours().departure()
-		t.check(departure.save().is_empty() and not departure.walks_a_way(),
+		t.check(int(back.save().state_of("EventBarrierPost").get("side", 0)) == side,
+				"with the side he left still his")
+		t.check(back.save().state_of("EventDeparture").is_empty(),
 				"and with nothing of the walk he was on when it streamed out")
 		# She walks up to it: nobody notices.
 		where.tell(post + Vector2(0.0, 20.0))
@@ -531,13 +539,13 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
-	t.check(not guard.behaviours().barrier_post().has_left_its_body(), "with its body still under its own feet")
+	t.check(not _has_set_off(guard), "with its body still under its own feet")
 
 	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
 	guard_where.tell(her)
 	guard.step(STEP)
 	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
-	t.check(guard.is_solid() and guard.behaviours().barrier_post().has_left_its_body(),
+	t.check(guard.is_solid() and _has_set_off(guard),
 			"he sets off and the barrier stays solid behind him")
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
@@ -615,8 +623,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> v
 			var her := post + across * side * (hot.notice_within() - 1.0)
 			guard_where.tell(her)
 			guard.step(STEP)
-			t.check(guard.behaviours().barrier_post().has_left_its_body() and guard.behaviours().barrier_post().chaser_side() == side,
-					"%s: the guard on her side sets off" % what)
+			t.check(_has_set_off(guard), "%s: the guard on her side sets off" % what)
 			var his_post := post + EventFootprints.guard_post_offset(vertical, side)
 			t.check(guard.global_position.is_equal_approx(his_post),
 					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])

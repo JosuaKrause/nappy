@@ -604,7 +604,9 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				officer = MenLetOut.first_of(events, car)
 				# Where he was put down, the first point of his trail: this frame has already
 				# stepped him toward her.
-				door = officer.behaviours().on_foot().trail[0]
+				var trail: PackedVector2Array = officer.save().state_of("EventOfficer").get("trail",
+						PackedVector2Array())
+				door = trail[0]
 				out_at = elapsed
 				stopped_at = car.global_position
 				t.check(events.pending_warnings().is_empty(),

@@ -54,12 +54,6 @@ var _composed: EventBehaviours = EventBehaviours.new()
 ## composed.
 var _figure := Figure.new(self)
 
-## The behaviours this event is composed of, each by name (`EventBehaviours`): for the suites that
-## hold one behaviour's own state through the event it is composed into. The game asks each of
-## them through the event's own methods.
-func behaviours() -> EventBehaviours:
-	return _composed
-
 ## **Where this event is in its life, stored and changed in one place** (`transition()`), so every
 ## question about it — is it waiting, warning, done — reads one value rather than re-deriving the
 ## phase from a dozen flags each frame. Every row has one, a pursuer or not.

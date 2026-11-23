@@ -254,8 +254,7 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.has_parked():
 				break
-		var car := engine.behaviours().car()
-		var gap := car.gap_to_her(engine.global_position, engine.facing_now())
+		var gap := GapToHer.between(engine, player)
 		t.check(engine.has_parked() and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])
