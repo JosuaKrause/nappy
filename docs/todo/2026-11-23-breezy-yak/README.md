@@ -17,8 +17,9 @@ filed as an entry of its own; the nits are fixed in a docs-only pull request.
   bullet says what the item holds now.
 - minty-quail's `field-reads.md` says "Every file under `tests/` is typed but the two that wait for
   polite-tapir's placement step 4". Placement is closed and `rg -l '@warning_ignore_start' tests` finds no
-  file; `uv run python tools/check_field_reads.py --summary` counts 4 files with the opt-out line, three under
-  `src/` and `tools/split-scenes-crop.gd`. The sentence says every file under `tests/` is typed.
+  file; `uv run python tools/check_field_reads.py --summary` counts the files with the opt-out line, all under
+  `src/`; no script under `tools/` carries it (that part of the line is settled). The sentence says every file
+  under `tests/` is typed.
 - minty-quail's `typed-everywhere.md`, "Build", says every file under `tests/` "carries no file-level ignore
   but the two below", and nothing below names two; its "Done when" holds for the files under `tests/` (what is
   left of it is the two `PROBE` scripts' strings and the files under `src/`). Both lines say what is true.
