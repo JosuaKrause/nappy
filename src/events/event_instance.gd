@@ -54,7 +54,7 @@ var _composed: EventBehaviours = EventBehaviours.new()
 ## composed.
 var _figure := Figure.new(self)
 
-## **Where this event is in its life, stored and changed in one place** (`transition()`), so every
+## **Where this event is in its life, stored and changed in one place** (`_transition()`), so every
 ## question about it — is it waiting, warning, done — reads one value rather than re-deriving the
 ## phase from a dozen flags each frame. Every row has one, a pursuer or not.
 enum Phase {
@@ -82,7 +82,7 @@ enum Phase {
 	DONE,
 }
 
-## Where it is in its life — see `Phase`. Changed only by `transition()`; the phase questions
+## Where it is in its life — see `Phase`. Changed only by `_transition()`; the phase questions
 ## (`is_telegraphing()`, `is_waiting()`, `is_on_its_way_out()`, `has_parked()`, `is_gone()`,
 ## `is_only_its_barrier()`) answer from it.
 var _phase := Phase.WARNING
@@ -94,7 +94,7 @@ var _telegraph_ended := false
 ## **The one place its phase changes**, and with it what every phase change owes: the field it
 ## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
 ## showing its scenery on the next drawn frame, when its look asks `is_gone()`.
-func transition(to: Phase) -> void:
+func _transition(to: Phase) -> void:
 	if _phase == to:
 		return
 	if _phase == Phase.WARNING and to == Phase.ACTIVE:
@@ -117,7 +117,7 @@ func age() -> float:
 ## the age moves, so the stored phase is never behind the clock.
 func _settle_the_notice() -> void:
 	if _phase == Phase.WARNING and _chase_age() >= _notice_time():
-		transition(Phase.ACTIVE)
+		_transition(Phase.ACTIVE)
 
 ## Whether this cyclist is drawn as the pelican (`EventPictures.PELICAN_BY_VIEW`) rather than the
 ## kid. Set once, by `EventManager` as it creates the rider, and never changed afterwards, so a
@@ -188,7 +188,7 @@ var _silenced := false
 
 ## **Silences it**: a mast reached for the rest of the day (`EventStreaming.silence_mast()`). Its field
 ## is gone at once, so the contribution its source keeps is let go with it, as every phase change
-## lets it go (`transition()`): the present rate would otherwise go on answering the pre-silence
+## lets it go (`_transition()`): the present rate would otherwise go on answering the pre-silence
 ## contribution for the rest of the tick.
 func silence() -> void:
 	_silenced = true
@@ -337,7 +337,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_move.be_walked_round(_body.is_walked_round())
 	# Whether it has parked, for a crowd car behind it in its lane (`EventBody.parks()`): a figure
 	# that never moves has parked from the start; one that drives to where it stops parks once it is
-	# there (`transition()`).
+	# there (`_transition()`).
 	_move.be_parked(_body.has_parked_from_the_start())
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
@@ -1027,7 +1027,7 @@ func _noticed_at() -> float:
 ## a notice of no length.
 func _notice_her() -> void:
 	_notice.start(_age)
-	transition(Phase.WARNING)
+	_transition(Phase.WARNING)
 	_settle_the_notice()
 
 ## **What it is in the middle of**, as one value a plan carries while this event is out of the world
@@ -1065,7 +1065,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 	_path_travelled = saved.travelled()
 	if _def.waits_for_her() and saved.noticed_at() != INF:
 		_notice.start(saved.noticed_at())
-		transition(Phase.WARNING)
+		_transition(Phase.WARNING)
 		_settle_the_notice()
 	# A pursuer streamed back in still waiting is the one case that has not begun chasing yet; every
 	# other, a row with no wait included, was chasing before it streamed out. **A row created where
@@ -1175,7 +1175,7 @@ func _be_done(may_park := true) -> void:
 		# short already ended, so the record says nothing (`ChargeRecord`).
 		_charge.end(_gave_up)
 	if _def.parks_where_it_arrives() and may_park:
-		transition(Phase.PARKED)
+		_transition(Phase.PARKED)
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
 		# where the last step put it, so `path_travelled()` still answers "the whole route" for a
@@ -1186,7 +1186,7 @@ func _be_done(may_park := true) -> void:
 	if (_composed.departure().speed() <= 0.0 or _def.leaves_behind() != ""):
 		end_now()
 		return
-	transition(Phase.LEAVING)
+	_transition(Phase.LEAVING)
 	_composed.departure().begin()
 
 ## Ends this instance early because a resistance step's contact rode on it and she has just
@@ -1249,11 +1249,11 @@ func _has_expired() -> bool:
 	return _def.lasts_for() > 0.0 and _chase_age() >= _notice_time() + _def.lasts_for()
 
 ## **Ends it now**, from outside as well as from its own step: it leaves as an event that is over does
-## (`transition()` into `Phase.DONE`), and its manager frees it in its ordinary sweep
+## (`_transition()` into `Phase.DONE`), and its manager frees it in its ordinary sweep
 ## (`EventStreaming.retire_finished()`). The resistance's guard over a chalk mark that has moved is
 ## ended so (`EventSpawner.retire()`).
 func end_now() -> void:
-	transition(Phase.DONE)
+	_transition(Phase.DONE)
 
 # ------------------------------------------------------------------ emission ---
 
@@ -1904,7 +1904,7 @@ func world_map() -> WorldMap:
 ## `LaneMover.Lane` is a lane mover's view of itself. A behaviour asks it questions and tells it
 ## what happened, and never reads or writes the event's fields; what never changes under a
 ## behaviour (its settings, the map, the navigator, what it walks as, where she is, the run log the
-## event writes to, the behaviours beside it) it is handed instead. **The stored phase changes only in `transition()`**, which a
+## event writes to, the behaviours beside it) it is handed instead. **The stored phase changes only in `_transition()`**, which a
 ## behaviour asks for with `begin()`; the notice clock and the charge record stay the event's, and
 ## are told what happened. An inner class, because it is the event's own view of itself.
 class Figure:
@@ -2057,9 +2057,9 @@ class Figure:
 	func arrive_at(at: Vector2) -> void:
 		_of.global_position = at
 
-	## It asks for `phase` (`EventInstance.transition()`, the one place the phase changes).
+	## It asks for `phase` (`EventInstance._transition()`, the one place the phase changes).
 	func begin(phase: EventInstance.Phase) -> void:
-		_of.transition(phase)
+		_of._transition(phase)
 
 	## It is over (`EventInstance._be_done()`): it leaves, parks where `may_park` lets it, or is
 	## gone where it has nowhere to go.
@@ -2102,14 +2102,14 @@ class Figure:
 	## (`EventInstance.report_the_catch()`), and the vehicle that let him out (`vehicle`, null for
 	## none) calls back the other men it let out (`EventInstance.call_back_its_officers()`).
 	func stopped_her(vehicle: EventInstance) -> void:
-		_of.transition(EventInstance.Phase.STOPPED)
+		_of._transition(EventInstance.Phase.STOPPED)
 		_of.report_the_catch()
 		if vehicle != null:
 			vehicle.call_back_its_officers(_of)
 
 	## Its guard is gone for good, and it is only its barrier (`Phase.SPENT`): its notice is over.
 	func be_only_its_barrier() -> void:
-		_of.transition(EventInstance.Phase.SPENT)
+		_of._transition(EventInstance.Phase.SPENT)
 		_of._notice.stop()
 
 	## Its body is held at `at`, in world space, where its guard left it, wherever it moves itself
@@ -2142,7 +2142,7 @@ class Figure:
 	## She left its notice while it warned: its notice's clock stops and it waits for her again.
 	func wait_for_her_again() -> void:
 		_of._notice.stop()
-		_of.transition(EventInstance.Phase.WAITING)
+		_of._transition(EventInstance.Phase.WAITING)
 
 # --------------------------------------------------------- what a caller asks ---
 # The questions a caller outside the events asks a live event, so it never reaches through it to

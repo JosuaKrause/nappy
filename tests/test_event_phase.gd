@@ -1,6 +1,6 @@
 extends RefCounted
 ## The event's stored phase and the one warning clock: `EventInstance.Phase` changed only by
-## `transition()`, every row's telegraph and every waiting row's notice moving through it, a notice
+## `_transition()`, every row's telegraph and every waiting row's notice moving through it, a notice
 ## carried across a stream-out exactly as far run (held time included), and `Warning` itself — the
 ## clock an event's notice, a door crossing and a badge up alone all run on. A live event is built
 ## here by hand, with no scheduler, map or manager under it, and stepped through real seconds: what it
