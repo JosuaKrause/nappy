@@ -315,11 +315,4 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
     ),
-    Exception_(
-        "names",
-        "Stroller",
-        "her class's constants (the camera's look-ahead) and type tests are read where she is not handed in",
-        ("src/interior/interior_scene.gd",),
-        more=(("src/interior/interior_scene.gd", 2),),
-    ),
 )

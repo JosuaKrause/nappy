@@ -1051,6 +1051,7 @@ func _build_the_escape_building() -> void:
 	_interior.exit_requested.connect(_day.reach_the_exit)
 
 	_player = _make_player()
+	_interior.arrived_through_a_door.connect(_player.reset_at)
 	_player.use_carrying_rig()
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())

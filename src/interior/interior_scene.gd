@@ -27,7 +27,8 @@ extends WorldContext
 ## **One map, seven parts, no loading.** `InteriorMap.build()` lays all seven parts at once, `64`
 ## tiles apart from each other — comfortably more than the 20×11.25 tiles a 640×360 view at zoom 2
 ## can ever show, so no part is in view from another. A door does not rebuild anything: it fades to
-## black, moves her to the counterpart door's own tile, and fades back in — see
+## black, says she arrived at the counterpart door's own tile (`arrived_through_a_door`, which whoever
+## builds the building connects to what puts her there), and fades back in — see
 ## `_start_door_transition()`. There is no "current part" in this class.
 ##
 ## **A door tile is both where she leaves from and where she arrives.** Nothing here makes the
@@ -90,6 +91,11 @@ const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
 const FINALE_WINDOW_FLASH_SECONDS := 0.12
 
 signal exit_requested
+
+## She has come through a door, under the black: she stands at `at`, facing `look`. Whoever builds
+## the building connects it to what puts her there (`main` connects her own `reset_at()`), since
+## the building is the world's and does not name her class.
+signal arrived_through_a_door(at: Vector2, look: Vector2)
 
 ## Every picture below is a region name on the `interior` atlas group; `_enter_tree()`/
 ## `_exit_tree()` acquire and release it, and every draw site fetches its texture through
@@ -633,16 +639,16 @@ func process_player(player: Node2D, _delta: float) -> void:
 	if result.is_empty():
 		return
 	if result["kind"] == "door":
-		_start_door_transition(result["door"], player)
+		_start_door_transition(result["door"])
 	else:
 		_start_exit()
 
-func _start_door_transition(door: InteriorMapPlan.Door, player: Node2D) -> void:
+func _start_door_transition(door: InteriorMapPlan.Door) -> void:
 	_transitioning = true
 	var target_door: String = door.target_door
 	var tween := create_tween()
 	tween.tween_property(_fade_rect, "modulate:a", 1.0, FADE_SECONDS)
-	tween.tween_callback(func() -> void: _teleport_to_door(target_door, player))
+	tween.tween_callback(func() -> void: _teleport_to_door(target_door))
 	tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_SECONDS)
 	tween.tween_callback(func() -> void: _transitioning = false)
 
@@ -697,27 +703,19 @@ func put_the_pictures_away() -> void:
 	for node in layers().nodes():
 		node.hide()
 
-## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
-## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than
-## kept behind the tween above, so a test can drive the same teleport the running game uses without
-## also driving the fade's timing — see `transition_at()`'s own doc for the same reasoning.
-##
-## `reset_at()` rather than a bare `global_position` assignment: it also resets the camera's own
-## smoothing (`Camera2D.reset_smoothing()`), which is what makes this a *snap* to the door rather
+## Says she has come through the door named `door_id`, at its own tile — "just inside its counterpart
+## door," in the TODO's own words, since the door tile is exactly where she is placed — and lights
+## the part she arrives in. Whoever listens to `arrived_through_a_door` puts her there; `main`
+## connects her `reset_at()`, which also resets the camera's own smoothing
+## (`Camera2D.reset_smoothing()`), which is what makes this a *snap* to the door rather
 ## than a slide across the empty ground between two parts — *(2026-09-10, playtest 55: "fade to
 ## black, teleport, then fade in again", and the camera "snapping with her, not sliding across the
 ## gap")*. Facing chosen as north on arrival: arbitrary, and open to revisit once the scene is
 ## actually played rather than stepped.
-func _teleport_to_door(door_id: String, player: Node2D) -> void:
+func _teleport_to_door(door_id: String) -> void:
 	var door := _map.door(door_id)
 	var at := _map.tile_to_world(door.tile)
 	_door_release_latch.arm(at, _DOOR_RELEASE_RADIUS)
 	# Under the black, so the part she arrives in is never seen in the light of the one she left.
 	modulate = _lighting_at(door.tile)
-	if player is Stroller:
-		(player as Stroller).reset_at(at, Vector2.UP)
-	else:
-		player.global_position = at
-		# `reset_at()` already does this for the `Stroller` branch above; a bare test double
-		# still needs it or physics interpolation draws it sliding in from the part it left.
-		player.reset_physics_interpolation()
+	arrived_through_a_door.emit(at, Vector2.UP)

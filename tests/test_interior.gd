@@ -772,6 +772,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 		player.add_child(camera)
 		t.add_child(player)
 		player.set_physics_process(false)
+		scene.arrived_through_a_door.connect(player.reset_at)
 
 		# Her door -> the stair door at this hallway's own end.
 		player.global_position = scene.map().tile_to_world(f.door("hallway_third:%s" % side).tile)
@@ -837,8 +838,9 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 ## the building's `process_player()` (`WorldContext.process_player()`), the call the running game makes, and
 ## lets real frames pass after each so the fade has the frames it needs to show. She arrives by
 ## walking onto the counterpart door and letting the fade run, as in the game. `player` is a plain
-## `Node2D` rather than a `Stroller`: a door puts anything that is not a `Stroller` at the door by a
-## bare `global_position` assignment, and nothing here touches physics or the camera.
+## `Node2D` rather than a `Stroller`: the building only says she arrived, and the stand-in's own
+## handler puts it at the door by a bare `global_position` assignment, with nothing touching
+## physics or the camera.
 func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
@@ -846,6 +848,9 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) ->
 	scene.build()
 	var player := Node2D.new()
 	t.add_child(player)
+	scene.arrived_through_a_door.connect(func(at: Vector2, _look: Vector2) -> void:
+		player.global_position = at
+		player.reset_physics_interpolation())
 
 	var door_id := "hallway_third:left"
 	var centre := scene.map().tile_to_world(f.door(door_id).tile)
