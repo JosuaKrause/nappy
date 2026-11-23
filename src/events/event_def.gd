@@ -1413,7 +1413,7 @@ func nearest_crouch() -> float:
 ##
 ## **For a row warned of before it exists** (`warns_before_it_exists()`) **it is its badge to its
 ## reach**: its badge alone (`warned_for()`) plus the time the thing then takes to reach her from
-## where it is created. Created closest (`SpawnSiting.least_distance()`, just out of sight on the
+## where it is created. Created closest (`Offscreen.min_boundary()`, just out of sight on the
 ## view's short axis) and reaching her with her walking into it: at its lethal reach for a
 ## row that ends the day, and at its field's forward reach for any other. A field that already covers her
 ## where it is created adds nothing.
@@ -1422,7 +1422,7 @@ func warning_time() -> float:
 		return telegraphs_for()
 	var closing := _route.speed() + Tuning.WALK_SPEED
 	var reach := lethal_reach() if ends_the_day() else field_reach()
-	var created_at := SpawnSiting.least_distance()
+	var created_at := Offscreen.min_boundary()
 	return warned_for() + maxf(0.0, created_at - reach) / closing
 
 ## How long this row's badge is up alone, with nothing in the world, before it is placed just out of
@@ -1466,13 +1466,13 @@ func warns_before_it_exists() -> bool:
 	return _warning.is_warned_first() or (comes_down_her_line() and telegraphs_its_coming())
 
 ## **The nearest to her this row is ever created arriving from off screen**: just out of sight,
-## never nearer than `SpawnSiting.least_distance()` (the view's half height), whatever she is facing
+## never nearer than `Offscreen.min_boundary()` (the view's half height), whatever she is facing
 ## and in either control scheme; and a row created at once down a lane of the road (the patrol the
 ## director sends, `PendingWarning.in_its_lane()`) never nearer than `Offscreen.min_lead()` at its
 ## own closing speed and notice either, since nothing warns of it first and the camera may be led
 ## away from it. `validate()` holds a `TOWARD_PLAYER` row's field short of it.
 func nearest_it_is_created() -> float:
-	var out_of_sight := SpawnSiting.least_distance()
+	var out_of_sight := Offscreen.min_boundary()
 	if _spawn_mode == SpawnMode.TOWARD_PLAYER and not comes_down_her_line() \
 			and not warns_before_it_exists():
 		return maxf(out_of_sight, Offscreen.min_lead(

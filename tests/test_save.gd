@@ -1109,7 +1109,7 @@ func _test_a_deletion_raises_and_settles_the_symbol(t: TestRunner) -> void:
 		var waiting := SaveIndicator.new(waiting_timeline)
 		t.add_child(waiting)
 		var deletion := _next_operation()
-		EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
+		EventBus.save_deleted.emit(deletion)
 		t.check(waiting_timeline.pending == 1, "a pending deletion begins one change")
 		waiting_timeline.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 20.0)
 		t.check(waiting_timeline.alpha() == 1.0, "and holds the symbol fully shown while unanswered")
@@ -1125,7 +1125,9 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t: TestRunner) -> void:
 	var immediate_timeline := SaveIndicator.Showing.new()
 	var immediate := SaveIndicator.new(immediate_timeline)
 	t.add_child(immediate)
-	EventBus.save_deleted.emit(_next_operation(), int(GameSave.Result.FAILED))
+	var failed := _next_operation()
+	EventBus.save_deleted.emit(failed)
+	EventBus.save_deletion_settled.emit(failed, false)
 	t.check(Boot.save_symbol_struck(immediate) and immediate_timeline.pending == 0,
 			"a deletion that failed at once shows the struck picture")
 	immediate_timeline.advance(9.9)
@@ -1136,7 +1138,7 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t: TestRunner) -> void:
 	var later := SaveIndicator.new(later_timeline)
 	t.add_child(later)
 	var deletion := _next_operation()
-	EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
+	EventBus.save_deleted.emit(deletion)
 	EventBus.save_deletion_settled.emit(deletion, false)
 	t.check(Boot.save_symbol_struck(later) and later_timeline.pending == 0,
 			"a deletion the browser did not keep shows the struck picture")
@@ -1219,7 +1221,7 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t: TestRunner) -> void:
 	t.check(indicator.get_parent() == old_main, "an idle symbol stays where it is")
 
 	var deletion := _next_operation()
-	EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
+	EventBus.save_deleted.emit(deletion)
 	indicator.outlive_the_scene(sitting)
 	t.check(indicator.get_parent() == sitting, "a symbol that is up goes to the sitting")
 	old_main.free()
@@ -1254,24 +1256,30 @@ func _test_the_symbols_listening_ends_with_the_symbol(t: TestRunner) -> void:
 	t.check(EventBus.save_written.get_connections().size() == before_writes,
 			"until it is freed")
 
-## A write tells `EventBus` what it came to, so the symbol hears it without `main` relaying it, and
-## begins exactly once for one save. A write
-## `GameSave` refuses (a headless run, an ended run) announces nothing.
+## A write tells `EventBus` that it began and then whether it was kept, so the symbol hears both
+## without `main` relaying them, and begins exactly once for one save. A desktop write is announced
+## once and settled once as kept, in that order, under one operation id. A write `GameSave` refuses
+## (a headless run, an ended run) announces and settles nothing.
 func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t: TestRunner) -> void:
 	var run := _a_run()
-	var heard: Array[int] = []
-	var listen := func(_operation: int, result: int) -> void: heard.append(result)
-	EventBus.save_written.connect(listen)
+	var heard: Array[String] = []
+	var announced := func(operation: int) -> void: heard.append("announced %d" % operation)
+	var settled := func(operation: int, kept: bool) -> void:
+		heard.append("settled %d %s" % [operation, "kept" if kept else "not kept"])
+	EventBus.save_written.connect(announced)
+	EventBus.save_write_settled.connect(settled)
 	_headless(func() -> void:
 		t.check(_save.write(run, true) == GameSave.Result.REFUSED and heard.is_empty(),
-				"a headless run's write is refused and announces nothing")
+				"a headless run's write is refused, announces nothing and settles nothing")
 	)
 	_with_a_scratch_save(func() -> void:
 		var timeline := SaveIndicator.Showing.new()
 		var indicator := SaveIndicator.new(timeline)
 		t.add_child(indicator)
 		_save.write(run, true)
-		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
+		t.check(heard.size() == 2 and heard[0].begins_with("announced ")
+				and heard[1] == heard[0].replace("announced", "settled") + " kept",
+				"a write is announced once and settled once as kept, under one operation id (%s)" % [heard])
 		t.check(timeline.begun == 1, "and the symbol began once for it, with nobody relaying it")
 		t.check(Boot.save_symbol_shows(indicator) and timeline.pending == 0 and Boot.save_symbol_plain(indicator),
 				"and that one change is already answered, showing the plain picture")
@@ -1279,9 +1287,10 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t: Tes
 		run.header().set_ending(GameEnums.Ending.BAD)
 		heard.clear()
 		t.check(_save.write(run, true) == GameSave.Result.REFUSED and heard.is_empty(),
-				"a run that has ended refuses the write and announces nothing")
+				"a run that has ended refuses the write, announces nothing and settles nothing")
 	)
-	EventBus.save_written.disconnect(listen)
+	EventBus.save_written.disconnect(announced)
+	EventBus.save_write_settled.disconnect(settled)
 
 ## A write's web answer reaches `EventBus.save_write_settled`, and only a write's: a deletion's goes
 ## to `save_deletion_settled`, so one answer settles one change however many are out.
@@ -1322,7 +1331,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	var saver := Node.new()
 
 	var save := _next_operation()
-	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(save)
 	var token := flushes.register(save, Callable(saver, &"set_name"))
 	t.check(timeline.pending == 1, "the web save is out and the symbol waits for it")
 	indicator.outlive_the_scene(sitting)
@@ -1337,7 +1346,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	t.check(timeline.is_idle(), "so the symbol fades out instead of staying up for good")
 
 	save = _next_operation()
-	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(save)
 	token = flushes.register(save, Callable())
 	flushes.answer([float(token), "Connection to Indexed Database server lost"])
 	t.check(Boot.save_symbol_struck(indicator) and timeline.pending == 0,
@@ -1354,7 +1363,7 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t: TestRunner
 	t.add_child(indicator)
 	var before_it := _next_operation()
 	var its_own := _next_operation()
-	EventBus.save_written.emit(its_own, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(its_own)
 	EventBus.save_write_settled.emit(before_it, true)
 	EventBus.save_deletion_settled.emit(before_it, false)
 	t.check(timeline.pending == 1 and Boot.save_symbol_plain(indicator),
@@ -1369,7 +1378,7 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t: TestRunner
 func _test_each_change_carries_its_own_operation_id_to_its_answer(t: TestRunner) -> void:
 	var run := _a_run()
 	var announced: Array[int] = []
-	var announce := func(operation: int, _result: int) -> void: announced.append(operation)
+	var announce := func(operation: int) -> void: announced.append(operation)
 	var answered: Array[int] = []
 	var answer := func(operation: int, _kept: bool) -> void: answered.append(operation)
 	EventBus.save_written.connect(announce)
@@ -1378,12 +1387,16 @@ func _test_each_change_carries_its_own_operation_id_to_its_answer(t: TestRunner)
 	EventBus.save_deletion_settled.connect(answer)
 	_save.clear()
 	var before := announced.size()
+	var before_answers := answered.size()
 	_save.write(run, true)
 	_save.clear()
 	_save.write(run, false)
 	announced = announced.slice(before)
 	t.check(announced.size() == 3 and announced[0] < announced[1] and announced[1] < announced[2],
 			"a write, a deletion and a write announce increasing ids from one sequence")
+	t.check(answered.slice(before_answers) == announced,
+			"and each is settled at once under the id it was announced with, in the same order")
+	answered.clear()
 	var flushes := GameSave.Flushes.new()
 	var write_flush := flushes.register(announced[0], Callable())
 	var delete_flush := flushes.register(announced[1], Callable(), true)
@@ -1694,14 +1707,14 @@ func _test_a_save_not_kept_swaps_to_the_struck_picture(t: TestRunner) -> void:
 	var icon := indicator.find_child("Icon", true, false) as TextureRect
 	var plain := icon.texture
 	var first := _next_operation()
-	EventBus.save_written.emit(first, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(first)
 	EventBus.save_write_settled.emit(first, false)
 	var struck := icon.texture
 	t.check(plain != null and struck != null and struck != plain,
 			"the plain and the struck pictures are both on the atlas, and different")
 	t.check(Boot.save_symbol_struck(indicator), "a save not kept shows the struck picture")
 	var second := _next_operation()
-	EventBus.save_written.emit(second, int(GameSave.Result.PENDING))
+	EventBus.save_written.emit(second)
 	t.check(Boot.save_symbol_struck(indicator), "a new save still unanswered does not hide the failure")
 	EventBus.save_write_settled.emit(second, true)
 	t.check(Boot.save_symbol_plain(indicator) and icon.texture == plain,

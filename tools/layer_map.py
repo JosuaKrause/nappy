@@ -315,18 +315,4 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
     ),
-    Exception_(
-        "names",
-        "SpawnSiting",
-        "a row's lead is checked against the siting's least distance",
-        ("src/events/event_def.gd",),
-        more=(("src/events/event_def.gd", 2),),
-    ),
-    Exception_(
-        "names",
-        "GameSave",
-        "the save indicator reads the save's state, rather than being handed it",
-        ("src/ui/save_indicator.gd",),
-        more=(("src/ui/save_indicator.gd", 2),),
-    ),
 )
