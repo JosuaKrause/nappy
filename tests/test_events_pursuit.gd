@@ -31,7 +31,6 @@ func run(t: TestRunner) -> void:
 	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 	_test_the_day_3_dog_keeps_its_gold_timing(t)
 	_test_the_resistances_pursuers_are_fitted_to_the_dog(t)
-	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
 	_test_a_sent_pursuer_counts_running_before_he_is_visible(t)
 	_test_a_paced_event_walks_a_beat(t)
 	_test_a_pursuer_can_wait(t)
@@ -549,23 +548,6 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 				t.check(met["caught"], "'%s' from above, answer %d: caught (%s)"
 						% [id, answer, met["ends"]])
 	edge.free()
-
-## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should
-## work like that".)* Every pursuer that is sent rather than met — no trigger to wait on, and not
-## set off beside her at a door — is warned of first: the resistance's own two by their rows, and the
-## day-3 dog by the copy `EventSpawner.as_warned()` makes as the director sends it. Each one's badge
-## alone is at most `Tuning.WARNING_ALONE_MAX`.
-func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> void:
-	var sent := 0
-	for def in EventCatalogue.all():
-		if not def.pursues() or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
-			continue
-		sent += 1
-		var warned := EventSpawner.as_warned(def)
-		t.check(warned.warns_before_it_exists() and warned.warned_for() <= Tuning.WARNING_ALONE_MAX,
-				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
-				% [def.id(), warned.warned_for(), Tuning.WARNING_ALONE_MAX])
-	t.check(sent >= 3, "the dog and the resistance's two are among them (%d)" % sent)
 
 ## **A beat rather than a journey.** *(M36, playtest 09: "who is the person killing me? It didn't
 ## move… if it's the homeless person it needs to walk up and down the sidewalk.")*

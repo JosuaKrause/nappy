@@ -25,7 +25,9 @@ extends "res://tests/events_shared_city.gd"
 ## `_test_the_run_is_always_taught`, moved in from the pursuit suite for the dawn's group to
 ## convert) each generate the cities of their own seeds through `CityGenerator.generate()`, three
 ## seeds and four. A case that plans a city over many days works the city's mast sites out once, on
-## the city as built (`_sites_of()`), and hands them to every dawn it plans, as the game does.
+## the city as built (`_sites_of()`), and hands them to every dawn it plans, as the game does. What
+## the dawn leaves for her walk to site, day 3's fire and the poster crews, is asked on the shared
+## city's days and on a city of the crews' own, made once for the case.
 ##
 ## **Why these cases keep generated cities.** Each asks what a planned day or run holds (its mix,
 ## its spacing, what a run spends, what a calm area is left, which alleys a robbery avoids), and the
@@ -81,6 +83,8 @@ func run(t: TestRunner) -> void:
 	_test_danger_arrives_before_act_three(t)
 	_test_the_named_decisions_arrive(t)
 	_test_the_city_remembers_where_she_went(t)
+	_test_the_fire_is_the_days_only_unsited_place(t)
+	_test_a_crew_drawn_is_handed_to_her_walk(t)
 
 
 func _signature(planned: Array[EventPlan]) -> String:
@@ -1616,3 +1620,67 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 	t.check(standing_here != null and standing_here.is_silenced(),
 			"the next day the same site stands silenced, lamp out and no field")
 	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
+
+## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
+## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
+## The only other rows left for the walk to site are the poster crews, drawn by a unit like any
+## recurring row and handed over with no position (`MarbleDraw.draw()`).
+func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
+	var owed := 0
+	var crews := 0
+	for day in range(1, 15):
+		for plan in _planned(day):
+			if not plan.row().is_sited_from_her_walk():
+				continue
+			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
+					% [day, plan.row_id()])
+			t.check(plan.row().is_placed_on_the_map() and not plan.row().moves(),
+					"day %d: and it is a place that stands still, not a director's moment" % day)
+			if not plan.row().is_a_one_shot():
+				crews += 1
+				t.check(plan.row_id() == "poster_crew" and plan.row().stands_at_a_front(),
+						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
+						% [day, plan.row_id()])
+				continue
+			owed += 1
+			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.row_id() == "burning_building",
+					"day %d: the only set piece the day leaves for her walk is day 3's fire, not '%s'"
+					% [day, plan.row_id()])
+	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
+	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
+
+## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every
+## crew the day draws has no position, for the director to site; with the crew row not sited from
+## her walk, the same day stands its crews placed. A unit's draw hands a crew on as it lays it out
+## (`MarbleDraw.draw()`), so the rows drawn after it are spaced without it and the two days
+## need not match beyond the crews.
+func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
+	var map := CityGenerator.generate(4242)
+	var sites := _sites_of(map)
+	var crew_draft := EventCatalogue.by_id("poster_crew").redraft()
+	crew_draft.not_sited_from_her_walk()
+	var crew := crew_draft.build()
+	for day: int in [4, 8, 12]:
+		var tree := RouteTree.for_day(map, day)
+		var handed := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(sites).on(tree).plan() \
+				.placements()
+		var kept := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(sites).with_row(crew) \
+				.on(tree).plan().placements()
+		var handed_crews := 0
+		var handed_placed := 0
+		for plan in handed:
+			if plan.row_id() == "poster_crew":
+				handed_crews += 1
+				handed_placed += 1 if plan.is_placed() else 0
+		var kept_crews := 0
+		var kept_placed := 0
+		for plan in kept:
+			if plan.row_id() == "poster_crew":
+				kept_crews += 1
+				kept_placed += 1 if plan.is_placed() else 0
+		t.check(handed_crews > 0 and handed_placed == 0,
+				"day %d: every crew drawn for her walk has no position (%d of %d placed)"
+				% [day, handed_placed, handed_crews])
+		t.check(kept_crews > 0 and kept_placed == kept_crews,
+				"day %d: not sited from her walk, every crew stands placed (%d of %d)"
+				% [day, kept_placed, kept_crews])

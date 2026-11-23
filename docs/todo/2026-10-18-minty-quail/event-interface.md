@@ -731,16 +731,13 @@ written once, after it is final.
   of writing-tests), and only the mock is committed.
 - **The groups**, each its own pull request with the suites' times before and after:
   the live event's `behaviours()`, read by about fifteen suites across the groups, goes
-  with the group that converts its last reader; the event manager and its
-  parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
-  manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
-  first, the spawner's question: the manager real, plans
-  plain, a real city only in the suite whose header gives the reason); what is left of the event halves held in other modules' suites (the rest moved, the record
-  minty-quail-speckled-hare): `test_danger`'s four cases that stand a real event manager on open ground (the cue
-  over her head the warning board raises, and three screen-edge badge cases that spawn a fire engine or a
-  cat), which take a stand-in manager answering what each asks (for the badge's speed, a moved
-  instance's approach speed; for the mark over her head, whether the event ends the day, its telegraph
-  and its lethal reach); and the resistance
+  with the group that converts its last reader; what is left of the event halves held in
+  other modules' suites (the rest moved, the record minty-quail-speckled-hare): `test_danger`'s
+  four cases that stand a real event manager on open ground (the cue over her head the warning
+  board raises, and three screen-edge badge cases that spawn a fire engine or a cat), which take
+  a stand-in manager answering what each asks (for the badge's speed, a moved instance's approach
+  speed; for the mark over her head, whether the event ends the day, its telegraph and its lethal
+  reach); and the resistance
   (`resistance_*`, `spent_park`, `park_cordon`, `burnt_door`: `FakeEventManager` and
   `FakeEvent`).
 
