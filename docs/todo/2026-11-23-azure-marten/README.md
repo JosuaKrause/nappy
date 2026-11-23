@@ -1,4 +1,6 @@
 priority: later
+after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # azure-marten — The simulation's five files that name nothing of it: whether each belongs a layer lower · filed 2026-11-23
 
@@ -15,9 +17,13 @@ its folder puts it and says nothing of a class that could stand lower.
 
 **The question, one class at a time.** Whether a file belongs a layer lower is a question about
 that class: the warning clock and where she is read as live state, which is the simulation's;
-`SitedGround` reads as a plan-builder, which is the model's. Each answer is one `git mv` into
-`src/events/model/` or `src/events/data/` that `tools/check_layers.py` then holds, with the paths
-that name the file rewritten; a class that stays says why in its pull request.
+`SitedGround` reads as a plan-builder, which is the model's. For four of the files the answer is one
+`git mv` into `src/events/model/` or `src/events/data/` that `tools/check_layers.py` then holds, with
+the paths that name the file rewritten; a class that stays says why in its pull request.
+`event_scenery.gd` is different: it names world-layer classes (`AtlasLibrary`, `SceneryDrawer`,
+`SceneryLayer`), so its only lower layer is the world, which no events folder holds. Its answer is a
+move under `src/world/`, where it leaves the **events** skill's path row, or a new events folder with
+a line of its own in the map, and which of the two is part of its question.
 
 **Proposed, not asked for.** That each file gets its own answer rather than all five moving or all
 five staying, and the `later` band, are the filer's. The plainer alternative is to leave the five

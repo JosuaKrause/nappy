@@ -27,5 +27,5 @@ is deleted, and polite-tapir's and minty-quail's READMEs no longer name the stan
 
 **Set aside.** Deleting `Exception_` and the matching, so the map could excuse nothing: it removes
 the third outcome the player approved. The design's other findings: `SpawnSiting.least_distance()`'s
-removal and the five simulation files that name nothing of it (azure-marten, filed with this pull
-request).
+removal (azure-egret, filed in #1674) and the five simulation files that name nothing of the
+simulation (azure-marten, filed with this pull request).

@@ -22,11 +22,11 @@ comment or a sentence is not a dependency -- and finds:
 
 Every use is a finding. Each is matched against `EXCEPTIONS` by its file, its rule and what it
 names, and the file's listed count of that (one unless the exception says more). More uses than
-listed fail, so a second use of a listed name in a listed file is seen; fewer fail too, so the list
-only shrinks and is pruned in the pull request that fixes a break. A file in no layer fails, so a
-new folder is placed the day it appears. A `res://src/...gd` or `uid://` path (resolved through the
-`.uid` files) counts as the class it loads. `--rev` reads the tree of any commit instead of the
-checkout, and `--list` prints every finding with its file's layer, listed or not, without failing.
+listed fail, so a second use of a listed name in a listed file is seen; fewer fail too, so the pull
+request that fixes a break prunes its line. A file in no layer fails, so a new folder is placed the
+day it appears. A `res://src/...gd` or `uid://` path (resolved through the `.uid` files) counts as
+the class it loads. `--rev` reads the tree of any commit instead of the checkout, and `--list`
+prints every finding with its file's layer, listed or not, without failing.
 """
 
 from __future__ import annotations

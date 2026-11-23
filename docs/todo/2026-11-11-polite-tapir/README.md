@@ -1,7 +1,7 @@
 priority: now
 fable-only: true
 
-# polite-tapir — The refactor's design review: placement drawn as she walks, one start for every kind of day, the baseline measurements · filed 2026-11-11
+# polite-tapir — The refactor's design review: the baseline measurements · filed 2026-11-11
 
 **The ask.** The player had the refactor's design reviewed, the refactor being minty-quail (one
 engine: the codebase refactored by layer): "have a fable agent review the design of the refactor"

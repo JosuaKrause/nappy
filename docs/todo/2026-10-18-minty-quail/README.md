@@ -24,8 +24,8 @@ hook, a general project script, or anything else of that kind) is the exception 
 (inbox #1305 in grassy-trout). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after the refactor closes.
 
-**The design review's items are polite-tapir** (the refactor's design review: placement drawn as she walks, one
-start for every kind of day, the baseline measurements),
+**The design review's items are polite-tapir** (the refactor's design review: the baseline
+measurements),
 an entry of their own that carries `fable-only: true` where this entry does not (inbox #1387 in mossy-bunny).
 *Read as, the filer's, open to the player's correction:* the review was of the refactor's design ("have a fable
 agent review the design of the refactor", inbox #1265 in olive-ferret), so its items are the refactor's work, the
@@ -105,9 +105,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    typed with them or by a typing pass ahead of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **The design review's tracks are the entry polite-tapir** (placement drawn as she walks, one
-     start for every kind of day, the baseline readings); its README gives their order and where each meets the items
-     here.
+   - **The design review's tracks are the entry polite-tapir** (the baseline readings; the other tracks
+     are closed, their records are polite-tapir's); its README gives their order and where each
+     meets the items here.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed
      but those `field-reads.md` lists, each with what it waits for, under "What is left of the

@@ -52,9 +52,10 @@ it stands:
 **No break of the map stands, and the rule outlives the list that held them** (inbox #1268 in
 olive-ferret). A break that has to stand is the exception, and it is held in two places in the
 pull request that adds it: listed in `tools/layer_map.py` (`EXCEPTIONS`, by file and by what it
-names or fetches) with its reason, and declared in this section with the same reason. A break in
-neither fails CI, and a listed one that is gone fails it too, so the pull request that fixes one
-deletes it from both.
+names or fetches) with its reason, and declared in this section with the same reason. CI reads
+only the map: a break not listed there fails, and so does a listed one that is gone, so the pull
+request that fixes one deletes it from both. The declaration here is held by the review, through
+**pr-review**'s architecture questions, and no check fails a break that is listed but not declared.
 
 **The map lookup stays with the city maps in the model** (inbox #904 in freckled-moose), and a
 record the map holds is placed on the map's layer as it appears. Each thing's own drawing is on the
@@ -204,9 +205,12 @@ These rules above are the filer's or the builder's proposals and readings, not t
 and hold until the player corrects them. An entry cites the player's word it extends or the record
 that proposes it, and says so where the player's words name nothing on the point:
 
-- **No break of the layer map stands, and one that has to is listed with its reason and declared in
-  "Code is designed by layer" with the same reason**: the design review's reading of the player's
-  wish that no listed break be forgotten, which the player approved (inbox #1268 in olive-ferret).
+- **No break of the layer map stands**: the design review's reading of the player's wish that no
+  listed break be forgotten, which the player approved (inbox #1268 in olive-ferret). **That one
+  that has to stand is listed in the map with its reason and declared in "Code is designed by
+  layer" with the same reason, in the pull request that adds it** is the design's own addition,
+  open to the player's correction; the player objected to marking what they had approved as only
+  proposed (inbox #1268 in olive-ferret), so the two parts are told apart here.
 
 - **Which layers there are**, apart from the two points the player decided, the observers and the
   view as siblings and the map lookup in the model (plush-kestrel).

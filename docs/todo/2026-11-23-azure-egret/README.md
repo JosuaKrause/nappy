@@ -1,4 +1,6 @@
 priority: later
+after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # azure-egret — SpawnSiting.least_distance() is a second name for Offscreen.min_boundary() · filed 2026-11-23
 

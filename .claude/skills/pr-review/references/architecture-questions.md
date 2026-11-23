@@ -24,9 +24,9 @@ are true. This file is the one place the questions are worded; every other text 
 The layers are **designing-classes**'s "Code is designed by layer"; which folder and file sits in which
 is `tools/layer_map.py`. `tools/check_layers.py` answers the second and third questions
 mechanically: CI fails a new upward name, and a group lookup, an autoload or a stateful static read
-in the world or simulation layers, that the map does not list as a break that has to stand (none
-does today). An answer to either names every listed break in a file the pull request touches and
-every line it adds to or removes from that list, and says why, a break added being declared in
+in the world or simulation layers, that the map does not list as a break that has to stand. An
+answer to either names every listed break in a file the pull request touches and every line it adds
+to or removes from `EXCEPTIONS` in `tools/layer_map.py`, and says why, a break added being declared in
 **designing-classes** with the same reason; a pull request that puts a file in another layer says why the
 map was wrong.
 
