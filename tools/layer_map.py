@@ -13,9 +13,9 @@ in `FOLDERS` (the nearest folder that has one). A file in neither fails the chec
 is placed in a layer the day it appears.
 
 `EXCEPTIONS` lists, by file and by what it names or fetches, every place that breaks the map on
-`main` today, each group with one line saying why it still stands. It only shrinks: a new break
-fails the check, and so does a listed one that is gone, so the pull request that fixes one deletes
-its line.
+`main` today. No break stands; one that has to is listed here with its reason and declared in
+designing-classes with the same reason, in the pull request that adds it. A new break fails the
+check, and so does a listed one that is gone, so the pull request that fixes one deletes its line.
 """
 
 from __future__ import annotations
