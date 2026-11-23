@@ -744,9 +744,7 @@ written once, after it is final.
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`, `test_events_chat`, whose hold the
   manager's tick starts, and `test_events_pursuit`'s case that a pursuer sent from off screen is warned
   first, the spawner's question: the manager real, plans
-  plain, a real city only in the suite whose header gives the reason); the dawn
-  (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites, which hold the
-  cases that generate a city and plan a day, moved out of the row's suites (the record minty-quail-gentle-bison): rows and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
+  plain, a real city only in the suite whose header gives the reason); the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
   `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one, and `test_car_front` and `test_car_views`, whose

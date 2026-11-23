@@ -31,6 +31,9 @@ extends RefCounted
 ## (`ResistanceDirector.ROADBLOCK_WIDER_REACH`), and with it standing she can still walk home and to
 ## a calm area from where she read the mark.
 ##
+## **A real city on purpose**: the guarantee is the guard following her through the resistance
+## director and the event manager together, so both are real here and neither is handed a stand-in.
+##
 ## **Each test builds its city in a run of its own** (`_build_city()`) and plays day 13 on it through
 ## the real day order, so none leans on the steps, alleys or scars another left. What the director
 ## has put in the street is read from the street: the contact (`ResistanceDirector.contact()`), the

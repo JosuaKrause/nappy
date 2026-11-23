@@ -1,11 +1,15 @@
-extends "res://tests/events_shared_city.gd"
+extends RefCounted
 ## Focused checks for the scheduler's route-to-route spacing arithmetic, and that no two events of a
-## planned day are drawn inside each other (the planned day is the shared city's, from
-## `events_shared_city.gd`).
+## planned day are drawn inside each other.
 ##
-## **Why a real city is built here.** That one case asks what the dawn plans, so it plans three days
-## on the shared generated city; it is not a direct test of the city, and it stays on a real city
-## until the dawn group converts it to mocked moments. Every other case is hand-made plans.
+## **What is built.** Every case but the last is hand-made plans and builds nothing. The last asks
+## what the dawn plans among a city's variety of streets, so it generates one city (seed 4242),
+## works its mast sites out once on it as built (`MastSites.compute()`, as the game does at the
+## start of a run) and plans three days on it through `GameDawn`. It builds no `City` node and no
+## manager. A hand-drawn map would hold the spacing of the few plans a small map fits, not the
+## placement of a whole day among a city's routes.
+
+const SEED := 4242
 
 func run(t: TestRunner) -> void:
 	_test_stationary_pairs(t)
@@ -74,9 +78,15 @@ func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t: Te
 ## kind may stand closer than `EVENT_SPACING_SAME` where two touching units each drew one; that a
 ## unit draws one of a row is `tests/test_events_scheduler.gd`'s.
 func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
+	var map := CityGenerator.generate(SEED)
+	var sites := MastSites.compute(map)
 	var pairs := 0
 	for day: int in [1, 8, 14]:
-		var planned := _planned(day)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d" % [SEED, day])
+		var consumed: Array[String] = []
+		var planned := GameDawn.of(DaySpec.for_day(day), rng, map).masts(sites) \
+				.spent(consumed).plan().placements()
 		for i in planned.size():
 			for j in range(i + 1, planned.size()):
 				var a: EventPlan = planned[i]
