@@ -11,8 +11,6 @@ filed as an entry of its own; the nits are fixed in a docs-only pull request.
 
 **Stale lines.**
 
-- minty-quail's `field-reads.md` line on the two test files waiting for placement is settled: it says every
-  file under `tests/` is typed.
 - minty-quail's `typed-everywhere.md`, "Build", says every file under `tests/` "carries no file-level ignore
   but the two below", and nothing below names two; its "Done when" holds for the files under `tests/` (what is
   left of it is the two `PROBE` scripts' strings and the files under `src/`). Both lines say what is true.

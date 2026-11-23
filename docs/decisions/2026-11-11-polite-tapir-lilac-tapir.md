@@ -45,4 +45,4 @@ Every `after:` line that named it is gone, each entry keeping its line for minty
 - Streaming's loop over every plan, `EventStreaming.stream_around()`, which row 3b's design asked
   to be measured and which was not (minty-quail-gray-koala).
 
-**Remeasure.** None of its own: the lists above are what the end remeasure takes. 
+**Remeasure.** None of its own: the lists above are what the end remeasure takes.
