@@ -601,7 +601,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 		_stage.events().world.where_she_is().tell(her)
 		_live(plan).step(1.0 / 60.0)
 	t.check(not _live(plan).is_waiting(), "and a second later it is still chasing, not patrolling")
-	var chase_age_before := _live(plan).chase_age()
+	var noticed_at_before := _live(plan).save().noticed_at()
 
 	_stage.events().streaming.stream_out(plan)
 	t.check(not plan.is_in_the_world(), "streaming out through the manager clears the live instance")
@@ -613,8 +613,8 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	if _live(plan):
 		t.check(not _live(plan).is_waiting(),
 				"streamed back in through EventManager it is still chasing, not waiting")
-		t.close_to(_live(plan).chase_age(), chase_age_before,
-				"and the chase clock continued from the notice rather than restarting at it", 0.05)
+		t.close_to(_live(plan).save().noticed_at(), noticed_at_before,
+				"and the notice kept the start it was carried with rather than restarting at it", 0.05)
 
 ## **A row warned of down her line is created with its telegraph spent, at its own intensity from
 ## its first frame.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be more

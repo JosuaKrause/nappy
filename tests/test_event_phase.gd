@@ -174,18 +174,18 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 		dog_where.tell(her, Vector2.INF, Rect2(), dog_where.is_running())
 		dog.step(STEP)
 		clock += STEP
-	t.check(dog.is_on_its_way_out() and dog.chase_age() < def.telegraphs_for(),
+	t.check(dog.is_on_its_way_out() and dog.age() < def.telegraphs_for(),
 			"run from 1.2s, the lesson dog gives up %.1fs into its %.1fs telegraph"
-			% [dog.chase_age(), def.telegraphs_for()])
+			% [dog.age(), def.telegraphs_for()])
 	t.check(dog.is_telegraphing(), "and is still telegraphing as it leaves")
 	t.check(dog.has_given_up(), "having given up: she shook it off, its clock did not run out")
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
-	while dog.chase_age() < def.telegraphs_for() - 2.0 * STEP and not dog.is_gone():
+	while dog.age() < def.telegraphs_for() - 2.0 * STEP and not dog.is_gone():
 		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
 				dog_where.is_running())
 		dog.step(STEP)
-		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.chase_age())
-	while dog.chase_age() < def.telegraphs_for() + STEP and not dog.is_gone():
+		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.age())
+	while dog.age() < def.telegraphs_for() + STEP and not dog.is_gone():
 		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
 				dog_where.is_running())
 		dog.step(STEP)
@@ -207,22 +207,24 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(first_where))
 	var her := Vector2(60.0, 0.0)
-	t.check(her.length() < first.charge_radius(), "she stands inside the robber's stand-off")
+	t.check(her.length() < PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()),
+			"she stands inside the robber's stand-off")
 	first.notice_her_at(her, 5.0)
 	var held_steps := 10
 	for i in held_steps:
 		first_where.tell(her)
 		first.step(STEP)
 	t.check(_is_warning(first), "set on her, he is warning")
-	t.close_to(first.chase_age(), 0.0, "and his notice, held every tick, has not run", 0.0001)
 	t.close_to(first.save().noticed_at(), held_steps * STEP,
 			"the second he waited is counted into the start a stream-out carries", 0.0001)
 	var second := EventInstance.new()
 	second.setup(def, Vector2.ZERO)
-	# Put back two seconds later: the notice has run those two seconds, and the second he waited held
-	# is not counted as run. Started at the age it was put back at instead, it would have run none.
+	# Put back two seconds later: the notice it carries still starts where the first one's did, the
+	# second he waited held counted into it. Started at the age it was put back at instead, it would
+	# start two seconds later.
 	second.restore(EventSave.new(first.age() + 2.0, 0.0, first.save().noticed_at()))
-	t.close_to(second.chase_age(), 2.0, "streamed back in, it has run the two seconds since and not the held one", 0.0001)
+	t.close_to(second.save().noticed_at(), first.save().noticed_at(),
+			"streamed back in, its notice starts where the first one's did, not at the restore", 0.0001)
 	first.free()
 	second.free()
 

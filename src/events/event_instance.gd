@@ -62,7 +62,7 @@ enum Phase {
 	## there, at full strength unless its notice is quiet, not lethal, not moving.
 	WAITING,
 	## Its telegraph or notice is running: a row's own telegraph from the frame it exists, or for a
-	## row that waits, its warning from the frame it noticed her (`chase_age() < notice_time()`).
+	## row that waits, its warning from the frame it noticed her (`_chase_age() < _notice_time()`).
 	WARNING,
 	## Happening at full strength: a pursuer charging her, a crossing cat running, a flock up.
 	ACTIVE,
@@ -116,7 +116,7 @@ func age() -> float:
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
 func _settle_the_notice() -> void:
-	if _phase == Phase.WARNING and chase_age() >= notice_time():
+	if _phase == Phase.WARNING and _chase_age() >= _notice_time():
 		transition(Phase.ACTIVE)
 
 ## Whether this cyclist is drawn as the pelican (`EventPictures.PELICAN_BY_VIEW`) rather than the
@@ -762,7 +762,7 @@ func start_chat() -> void:
 var _gave_up := false
 ## **Its notice's clock** (`Warning`, read against `age`): started when it exists for a row with no
 ## wait, and when it notices her for one that waits (`EventDef.waits_for_her()`); stopped while
-## it waits. `chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
+## it waits. `_chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
 var _notice := Warning.new()
 ## Its charge as it is counted — its warning, its start and the one way it ended — and the one
 ## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
@@ -928,7 +928,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	if _chase_way == null:
 		_chase_way = _navigator.way_to(_mover, _sight)
 	_set_on_her = true
-	_notice_time = notice
+	_noticed_for = notice
 	_stands_for_this_notice = stand
 	_notice_her()
 	var toward := her - global_position
@@ -954,8 +954,8 @@ var _chase_way: ChaseWay
 ## (`warns_by_radius()`), whether or not it has a way round.
 var _set_on_her := false
 ## The notice `notice_her_at()` was given, in seconds, or negative for the row's own
-## `telegraphs_for()` (`notice_time()`).
-var _notice_time := -1.0
+## `telegraphs_for()` (`_notice_time()`).
+var _noticed_for := -1.0
 ## Whether `notice_her_at()` asked it to stand still with its warning up for that notice
 ## (`is_standing_for_its_notice()`), as day 13's task guard does in her view.
 var _stands_for_this_notice := false
@@ -1246,7 +1246,7 @@ func _has_expired() -> bool:
 	# man it let out is back in.
 	if _composed.investigation() and not _composed.investigation().all_back():
 		return false
-	return _def.lasts_for() > 0.0 and chase_age() >= notice_time() + _def.lasts_for()
+	return _def.lasts_for() > 0.0 and _chase_age() >= _notice_time() + _def.lasts_for()
 
 ## **Ends it now**, from outside as well as from its own step: it leaves as an event that is over does
 ## (`transition()` into `Phase.DONE`), and its manager frees it in its ordinary sweep
@@ -1269,7 +1269,7 @@ func is_telegraphing() -> bool:
 		return true
 	if _phase == Phase.ACTIVE or _phase == Phase.WAITING or _telegraph_ended or is_waiting():
 		return false
-	return chase_age() < notice_time()
+	return _chase_age() < _notice_time()
 
 ## Whether its warning has run and it is still in the world: it is not waiting for her, not in its
 ## telegraph, not leaving and not gone. True of a row happening at full strength, and of one that
@@ -1294,15 +1294,15 @@ func is_standing_for_its_notice() -> bool:
 ## only grows, so the fairness contract it was validated under still holds.
 func hold_still_longer(seconds: float) -> void:
 	if seconds > 0.0 and _def.holds_still():
-		_notice_time = notice_time() + seconds
+		_noticed_for = _notice_time() + seconds
 
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
 ## warns for its row's `PursuitSpec.warns_for()` (`warns_by_radius()`); anything else for its row's
 ## `telegraphs_for()`, the notice a task gave it when it set it on her (`notice_her_at()`), or a
 ## crossing's crouch held longer (`hold_still_longer()`).
-func notice_time() -> float:
-	if _notice_time >= 0.0:
-		return _notice_time
+func _notice_time() -> float:
+	if _noticed_for >= 0.0:
+		return _noticed_for
 	if warns_by_radius() and _def.pursues() and _def.pursuit().warns_for() > 0.0:
 		return _def.pursuit().warns_for()
 	return _def.telegraphs_for()
@@ -1324,7 +1324,7 @@ func is_waiting() -> bool:
 ## It is the notice's own clock (`_notice`, a `Warning` read against `age`), less whatever held it:
 ## a held lunge with her inside its stand-off, a waiting charger behind a wall at its warning's last
 ## moment, the masked man's wait. Zero for a row that waits and has not noticed her.
-func chase_age() -> float:
+func _chase_age() -> float:
 	return _notice.elapsed(_age)
 
 ## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
@@ -1332,7 +1332,7 @@ func chase_age() -> float:
 ## waited, the alley robber and every guard drawn from his row, the hunting roadblock's guard
 ## (inbox #788 in minty-lemur). **One radius, and a warning on a clock inside it**: from the
 ## frame it notices her inside `EventDef.notice_within()` it warns for its row's
-## `PursuitSpec.warns_for()` (`notice_time()`); back outside the radius before that, the
+## `PursuitSpec.warns_for()` (`_notice_time()`); back outside the radius before that, the
 ## warning stops and it waits again (`EventPursuit`), its clock reset; still inside when it
 ## runs out, it charges.
 ##
@@ -1350,13 +1350,13 @@ func warns_by_radius() -> bool:
 ## lunges from (the day-3 dog's gold timing is spent at it), and where one that walks at her through
 ## its warning (the robber) stops. A charger that waits for her charges on its warning's clock, not
 ## on this distance (`warns_by_radius()`).
-func charge_radius() -> float:
+func _charge_radius() -> float:
 	return PursuitSpec.standoff(_def.chase_speed(), _def.standoff_reach())
 
 ## **Holds the notice clock for this tick** (`_notice.hold()`), run straight after `age`
 ## advances and before the phase is settled, so a frame whose notice is held is never seen as
 ## the charge starting. Every notice runs, a waiting charger's warning included
-## (`notice_time()`), held only: while a held lunge has her inside its stand-off
+## (`_notice_time()`), held only: while a held lunge has her inside its stand-off
 ## (`EventPursuit.pause_a_held_notice()`); at a waiting charger's last moment while a wall stands
 ## between them, since **his charge needs a clear line** (inbox #650 in mossy-beaver), so he goes
 ## on warning until the line clears or she leaves his radius; and for every tick of a row that runs
@@ -1366,13 +1366,13 @@ func charge_radius() -> float:
 func _hold_the_notice_clock(delta: float) -> void:
 	if _telegraph_ended or is_waiting():
 		return
-	if _def.runs_its_own_line() and chase_age() - delta < _def.telegraphs_for():
+	if _def.runs_its_own_line() and _chase_age() - delta < _def.telegraphs_for():
 		_notice.hold(delta)
 		return
 	var her := _where.at()
 	if warns_by_radius() and _def.pursues() and her != Vector2.INF \
-			and chase_age() >= notice_time() and chase_age() - delta < notice_time() \
-			and not clear_line_to(her):
+			and _chase_age() >= _notice_time() and _chase_age() - delta < _notice_time() \
+			and not _clear_line_to(her):
 		_notice.hold(delta)
 		return
 	if _composed.pursuit():
@@ -1414,13 +1414,13 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# makes "asleep, it is a pure time loss" true of the meter and not only of the words:
 		# nothing here scales through `Baby.SLEEPING_SENSITIVITY`, it emits exactly zero.
 		return (Tuning.CHAT_EXCITEMENT / _def.detains_for()) if _where.baby_is_awake() else 0.0
-	# The swell is measured on `chase_age()` rather than `age`, so a ramp measures the burst rather
+	# The swell is measured on `_chase_age()` rather than `age`, so a ramp measures the burst rather
 	# than the wait in front of it: for everything without a trigger the two are the same number,
 	# and for a row that stood on a pavement half the morning before she came near, `age` would
 	# hand the first instant of the burst the multiplier the *end* of it is meant to have. The
-	# pulse beats on `age` rather than `chase_age()` on purpose: a pulse is the thing's own rhythm,
+	# pulse beats on `age` rather than `_chase_age()` on purpose: a pulse is the thing's own rhythm,
 	# which is running whether or not anybody has walked up to it.
-	return _def.peak_through(_age, chase_age() - notice_time(), pulse_multiplier_override) \
+	return _def.peak_through(_age, _chase_age() - _notice_time(), pulse_multiplier_override) \
 			* _notice_damping()
 
 ## The pulse envelope's own mean over `[age, age + Tuning.EXPECTED_IMPACT_HORIZON]`, closed-form
@@ -1644,7 +1644,7 @@ func will_strike(point: Vector2) -> bool:
 	return _composed.car() != null and _composed.car().will_strike(point)
 
 ## **The way from it to her where it can see her**: from its node to where she is, when something
-## has told it where she is and nothing built stands between them (`clear_line_to()`, the line its
+## has told it where she is and nothing built stands between them (`_clear_line_to()`, the line its
 ## notice asks), or `Vector2.ZERO` otherwise, standing on her included. What a waiting robber's look
 ## turns him toward before he has noticed her (`EventLook.robber_waiting_heading()`).
 func sight_line_to_her() -> Vector2:
@@ -1652,7 +1652,7 @@ func sight_line_to_her() -> Vector2:
 	if her == Vector2.INF:
 		return Vector2.ZERO
 	var toward := her - global_position
-	if toward.length_squared() <= 0.0001 or not clear_line_to(her):
+	if toward.length_squared() <= 0.0001 or not _clear_line_to(her):
 		return Vector2.ZERO
 	return toward
 
@@ -1671,7 +1671,7 @@ func sight_line_to_her() -> Vector2:
 ## stands), because he steps out to his post on her side and she may stand on the band's far side;
 ## the catch above asks every body, his own included, and every other body's tile stops either
 ## question.
-func clear_line_to(world_position: Vector2) -> bool:
+func _clear_line_to(world_position: Vector2) -> bool:
 	return _navigator.clear_line(global_position, world_position, _sight,
 			_body.tiles())
 
@@ -1932,13 +1932,13 @@ class Figure:
 	func age() -> float:
 		return _of._age
 
-	## How long it has been happening (`EventInstance.chase_age()`).
+	## How long it has been happening (`EventInstance._chase_age()`).
 	func chase_age() -> float:
-		return _of.chase_age()
+		return _of._chase_age()
 
-	## How long its notice runs once it has noticed her (`EventInstance.notice_time()`).
+	## How long its notice runs once it has noticed her (`EventInstance._notice_time()`).
 	func notice_time() -> float:
-		return _of.notice_time()
+		return _of._notice_time()
 
 	## The route it walks, in world space; empty, or one point, for one that stands.
 	func walks() -> PackedVector2Array:
@@ -1996,9 +1996,9 @@ class Figure:
 		return _of._body.solid_axis(_of._heading)
 
 	## Whether the straight line from where it stands to `point` is one it sees along
-	## (`EventInstance.clear_line_to()`): what a pursuer's notice, lunge and stop ask.
+	## (`EventInstance._clear_line_to()`): what a pursuer's notice, lunge and stop ask.
 	func clear_line_to(point: Vector2) -> bool:
-		return _of.clear_line_to(point)
+		return _of._clear_line_to(point)
 
 	## Whether a waiting charger's warning would stand whole in her view
 	## (`EventInstance._would_stand_in_her_view()`).
@@ -2019,9 +2019,9 @@ class Figure:
 	func is_standing_for_its_notice() -> bool:
 		return _of.is_standing_for_its_notice()
 
-	## The stand-off a pursuer closes to and holds (`EventInstance.charge_radius()`).
+	## The stand-off a pursuer closes to and holds (`EventInstance._charge_radius()`).
 	func charge_radius() -> float:
-		return _of.charge_radius()
+		return _of._charge_radius()
 
 	## The way it walks round buildings to her (`ChaseWay`): the posted roadblock guard's from the
 	## start, day 13's task guard's once she was set on him from wherever he stood

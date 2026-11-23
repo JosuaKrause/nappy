@@ -45,8 +45,6 @@ func run(t: TestRunner) -> void:
 	_test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t)
 	_test_the_red_caret_is_measured_from_the_catch(t)
 	_test_the_robber_catches_her_by_coming_round_the_corner(t)
-	_test_a_clear_line_is_every_tile_the_line_crosses(t)
-	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
 
 
 ## A bare instance of `def` at `at`, in the tree, its frames stepped by the test (`_advance()`), on
@@ -1282,9 +1280,10 @@ func _test_the_red_caret_is_measured_from_the_catch(t: TestRunner) -> void:
 ## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
 ## building's face (his step through the navigator, `Navigator.step()`) and catches her only once
-## the line between them clears the building's corner, never through it. Every frame of the chase is checked against a line sampled
-## a quarter pixel at a time, a second answer to the question `clear_line_to()` asks, so a frame
-## that catches through the corner fails it wherever it falls.
+## the line between them clears the building's corner, never through it. Every frame of the chase is
+## checked against a line sampled a quarter pixel at a time, a second answer to the question the
+## map's own line (`WorldMap.clear_line()`) asks, so a frame that catches through the corner fails it
+## wherever it falls.
 func _test_the_robber_catches_her_by_coming_round_the_corner(t: TestRunner) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
@@ -1323,76 +1322,3 @@ func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px 
 		if not map.is_walkable(map.world_to_tile(from.lerp(to, float(i) / float(samples)))):
 			return false
 	return true
-
-## **`clear_line_to()` against the sampled line, over the hand-built map.** Seeded segments up to a
-## stand-off long from walkable ground near buildings, in every direction, each answered both by
-## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
-## The guard counts how many of them crossed a building, so a sweep that only ever asked open
-## ground cannot pass.
-func _test_a_clear_line_is_every_tile_the_line_crosses(t: TestRunner) -> void:
-	var map := _map()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 544
-	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO,
-			PackedVector2Array(), map)
-	var asked := 0
-	var blocked := 0
-	var disagreed := 0
-	while asked < 400:
-		var near: Vector2i = buildings[rng.randi_range(0, buildings.size() - 1)]
-		var from := map.tile_to_world(near) + Vector2(rng.randf_range(-64.0, 64.0),
-				rng.randf_range(-64.0, 64.0))
-		if not map.is_walkable(map.world_to_tile(from)):
-			continue
-		var to := from + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 116.0)
-		instance.position = from
-		var sampled := _sampled_line_is_walkable(map, from, to, 8.0)
-		asked += 1
-		if not sampled:
-			blocked += 1
-		if instance.clear_line_to(to) != sampled:
-			disagreed += 1
-	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
-	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
-	instance.free()
-
-## A 10×10 map of sidewalk with the given tiles built on, for the stepper's exact cases.
-func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
-	var map := CityMap.new(Vector2i(10, 10))
-	map.fill_rect(Rect2i(0, 0, 10, 10), GameEnums.TileType.SIDEWALK)
-	for tile in buildings:
-		map.set_tile(tile, GameEnums.TileType.BUILDING)
-	return map
-
-func _clear_on(t: TestRunner, map: CityMap, from: Vector2, to: Vector2) -> bool:
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from,
-			PackedVector2Array(), map)
-	var clear := instance.clear_line_to(to)
-	instance.free()
-	return clear
-
-## **The cases a random sweep never lands on, each on exact binary fractions so the arithmetic is
-## exact.** A 45° line through a tile vertex, (80, 80) to (112, 112) through (96, 96), crosses both
-## axes at once: a building on either tile beside the vertex blocks it, the x-side one (3, 2) and
-## the y-side one (2, 3) asked separately, since stepping one axis and then the other visits only one
-## of them. A line ending exactly on a tile's edge, (64, 80) to (128, 80), ends on the building
-## beyond the edge (4, 2), since a point on an edge is the tile it opens (`world_to_tile()` floors),
-## so its last crossing, at exactly the whole of the segment, is asked. A line starting on a
-## building is blocked though it crosses into open ground. A line inside one open tile is clear.
-func _test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t: TestRunner) -> void:
-	var through_the_vertex := [Vector2(80.0, 80.0), Vector2(112.0, 112.0)]
-	t.check(_clear_on(t, _a_small_map([]), through_the_vertex[0], through_the_vertex[1]),
-			"a line through an open vertex is clear")
-	t.check(not _clear_on(t, _a_small_map([Vector2i(3, 2)]), through_the_vertex[0],
-			through_the_vertex[1]), "a building on the x side of the vertex blocks the line")
-	t.check(not _clear_on(t, _a_small_map([Vector2i(2, 3)]), through_the_vertex[0],
-			through_the_vertex[1]), "a building on the y side of the vertex blocks the line")
-	t.check(not _clear_on(t, _a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
-			Vector2(128.0, 80.0)), "a line ending exactly on a building's edge is blocked")
-	t.check(_clear_on(t, _a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
-			Vector2(127.5, 80.0)), "and half a pixel short of it is clear")
-	t.check(not _clear_on(t, _a_small_map([Vector2i(2, 2)]), Vector2(80.0, 80.0),
-			Vector2(100.0, 80.0)), "a line starting on a building is blocked")
-	t.check(_clear_on(t, _a_small_map([]), Vector2(66.0, 66.0), Vector2(90.0, 90.0)),
-			"a line inside one open tile is clear")
