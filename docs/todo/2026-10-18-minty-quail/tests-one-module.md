@@ -49,8 +49,7 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
    `protest`, the day 6, 7 and 13 suites):
    - four suites call `EventInstance.transition()` to put a live event in a phase that sets a check up
      (`test_prediction_reuse`, `test_scenery_animation`, `test_resistance_replacement` and
-     `test_resistance_placement_kinds`), and the live event's phase, behaviours and
-     day 13 guard suites read its `phase`: each reaches the phase the way the game does or is handed a fake event,
+     `test_resistance_placement_kinds`): each reaches the phase the way the game does or is handed a fake event,
      as `event-interface.md`'s section 4.2 says under `phase`;
 6. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
    through `GameDawn` (the scheduler's dawn, on generated maps) only to hand `EventDirector.start_day()`
