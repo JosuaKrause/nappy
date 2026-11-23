@@ -226,9 +226,8 @@ func _test_a_larger_row_drawn_later_is_laid_out_first(t: TestRunner) -> void:
 	t.check(_where(locations, "roadblock") == street.locations()[1],
 			"the roadblock drawn last takes the section that offers it")
 	var cafe_at := _where(locations, "cafe_tables")
-	t.check(cafe_at != null and cafe_at.section() != 1,
-			"and the cafe moved off that section (section %d)"
-			% (cafe_at.section() if cafe_at else -1))
+	t.check(cafe_at != null and not cafe_at.shares_a_section_with(street.locations()[1]),
+			"and the cafe moved off that section")
 
 ## A street musician the ground refuses wherever a cafe stands among the plans judged: drawn after
 ## the cafe, it is refused as it comes up, and the cafe keeps its place.

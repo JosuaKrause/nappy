@@ -13,8 +13,8 @@ one number.
   `Tuning.VIEW_HALF_EXTENT`; `least_distance()` was one line returning the same call, and
   `nearest_it_is_created()` already called `Offscreen.min_lead()` two lines further down. The two doc
   comments say the same.
-- **The `SpawnSiting` entry is deleted from `tools/layer_map.py`**, and the two clauses of the item
-  file that handed it to the events' interface rows are gone.
+- **The `SpawnSiting` entry is deleted from `tools/layer_map.py`**, and the item file's two clauses on
+  it are gone: the one that listed the break and the one that handed it to the events' interface rows.
 
 ## Verified
 
