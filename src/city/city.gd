@@ -165,7 +165,7 @@ func navigator() -> Navigator:
 var _streets := DayStreets.new()
 ## Where the city and the day's closures write their own account for the run log — handed in by
 ## `equip()` before `build()`, which hands it on to the fronts; silent until then.
-var trace := RunTrace.new()
+var _trace := RunTrace.new()
 
 # ------------------------------------------------- handed in before build() reads them ---
 ## How this city draws and schedules its own ground and scenery, handed in by whoever builds it —
@@ -214,7 +214,7 @@ var _buildings: Array[Building] = []
 ## streams the walls are pasted from, which `PosterWalls` is handed in turn. Whoever builds the city
 ## hands it over before `build()` (`use_run()`, from `main._new_city()` or `RunCity` in a test);
 ## `build()` refuses a city without it.
-var run: RunState = null
+var _run: RunState = null
 ## The ground's composition recipe, read from disk once per process: `main._new_city()` hands the
 ## one the sitting holds (`use_ground_recipe()`), so every day's city composes from the same read. A
 ## city nobody handed one (a suite's) reads the file itself, once.
@@ -223,7 +223,7 @@ var _ground_recipe := GroundRecipe.new()
 ## `equip()` hands the sitting's, and the city hands it on to its buildings, props,
 ## exits, lights, markers, ground and decals. `main` and `RunCity` hand it in; `build()` refuses a
 ## city never equipped.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
 ## What the decals, every vent's turning rotor and every closure piece lay their pictures through
 ## (`SceneryDrawer`): the one drawer, handed to the decals, to every closure piece and, inside the
 ## roof drawer, to every building.
@@ -297,9 +297,14 @@ func _ready() -> void:
 ## the baked atlas pages and the frame record the scenery queue charges its time to. The same three,
 ## in the same order, as `SimulationBuilder.equip()`, so `main` equips both alike.
 func equip(run_trace: RunTrace, library: AtlasLibrary, frame_timing: FrameTiming) -> void:
-	trace = run_trace
-	atlas = library
+	_trace = run_trace
+	_atlas = library
 	_timing = frame_timing
+
+## The library this city draws from and hands on to what it builds (`equip()`). The game never
+## asks it back; tests/test_atlas_boot.gd reads it to hold that the city draws from the sitting's.
+func atlas() -> AtlasLibrary:
+	return _atlas
 
 ## The ground's composition recipe the city composes every day's ground from, in place of the file
 ## it reads itself.
@@ -308,7 +313,7 @@ func use_ground_recipe(recipe: GroundRecipe) -> void:
 
 ## The run the city stands in; `build()` refuses a city never handed one.
 func use_run(the_run: RunState) -> void:
-	run = the_run
+	_run = the_run
 
 ## The two ways the scenery's preparation is scheduled: how a needed ground region is scheduled
 ## (`--ground-mode`), and whether a scripted recipe's playback is locked to frames.
@@ -330,10 +335,10 @@ func draw_scenery_through(drawer: SceneryDrawer) -> void:
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
-	if run == null:
+	if _run == null:
 		push_error("City.build(): the run must be handed in first")
 		return
-	assert(atlas != null, "City.build(): equip() must hand the city its library first")
+	assert(_atlas != null, "City.build(): equip() must hand the city its library first")
 	_map = city_map
 	_navigator = Navigator.new(_map)
 	scenery = SceneryResidency.new()
@@ -342,8 +347,8 @@ func build(city_map: CityMap) -> void:
 	scenery.setup(self, _map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
 	scenery_ground.use_mode(_ground_mode)
-	scenery_ground.use_atlas(atlas)
-	_decals.use_atlas(atlas)
+	scenery_ground.use_atlas(_atlas)
+	_decals.use_atlas(_atlas)
 	_decals.draw_through(_scenery_drawer)
 	_decals.stream_in_chunks()
 	_building_shadows.stream_in_chunks()
@@ -352,7 +357,7 @@ func build(city_map: CityMap) -> void:
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
 	# see `AtlasLibrary`.
-	atlas.acquire(CityDecals.DECORATION_ATLAS)
+	_atlas.acquire(CityDecals.DECORATION_ATLAS)
 	_paint_ground()
 	# Buildings first: the door sits in the wall of the building above the notch, at exactly
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
@@ -369,7 +374,7 @@ func build(city_map: CityMap) -> void:
 	_building_shadows.set_buildings(shown_rects)
 	if _recipe_contains(_map.home_world_position()):
 		_spawn_home()
-	_fronts = CityFronts.over(_buildings, _home_door, _door_world_x_range(), _map, run, trace)
+	_fronts = CityFronts.over(_buildings, _home_door, _door_world_x_range(), _map, _run, _trace)
 	_spawn_street_trees()
 	_spawn_boundary()
 	if _map.has_stretch():
@@ -390,8 +395,8 @@ func build(city_map: CityMap) -> void:
 ## resident, for a city that no longer exists. The event families are `EventManager`'s own and are
 ## released by its own `_exit_tree()`.
 func _exit_tree() -> void:
-	if atlas != null:
-		atlas.release(CityDecals.DECORATION_ATLAS)
+	if _atlas != null:
+		_atlas.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
 ##
@@ -460,7 +465,7 @@ func _sleepiness_on(tile: Vector2i) -> float:
 ## Overrides WorldContext.decay_multiplier.
 func decay_multiplier(world_position: Vector2) -> float:
 	var ground := _ground_decay_multiplier(world_position)
-	if run.resistance().is_carrying_package():
+	if _run.resistance().is_carrying_package():
 		# The one cost in the game that is not a field at a place: picking the package up makes
 		# every street after it dearer for the rest of the day, rather than the street it was
 		# picked up on.
@@ -498,7 +503,7 @@ func is_alley(world_position: Vector2) -> bool:
 func _spawn_home() -> void:
 	var stoop := _map.tile_rect_to_world(_map.home_tile_rect())
 	_home_door = HomeDoor.new()
-	_home_door.atlas = atlas
+	_home_door.atlas = _atlas
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
 	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend()`), already loaded by the
 	# time `main.gd` calls `City.build()`. Day 10 itself is `CityFronts.seal_home_door()`'s, called
@@ -523,7 +528,7 @@ func _spawn_home() -> void:
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
-	if run.attempt_spend().has_scar(SEALED_DOOR_SCAR):
+	if _run.attempt_spend().has_scar(SEALED_DOOR_SCAR):
 		return SEALED_DOOR_TEXTURE
 	return DOOR_TEXTURE
 
@@ -566,7 +571,7 @@ func _spawn_street_trees() -> void:
 		if not _recipe_contains(planted_tree.position):
 			continue
 		var tree := Prop.new()
-		tree.dress(atlas, Prop.Kind.STREET_TREE, hash(planted_tree.position))
+		tree.dress(_atlas, Prop.Kind.STREET_TREE, hash(planted_tree.position))
 		tree.position = planted_tree.position
 		add_entity(tree)
 		scenery.register(tree.residence())
@@ -666,7 +671,7 @@ func bridge_world_position() -> Vector2:
 ## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
 func _spawn_exit(piece: CityEdge.Piece, at: Vector2) -> void:
 	var exit := CityEdge.new()
-	exit.dress(atlas, piece)
+	exit.dress(_atlas, piece)
 	exit.position = at
 	if exit.overhangs():
 		add_entity(exit, DrawLayer.Layer.OVERHEAD)
@@ -699,7 +704,7 @@ func _spawn_signal_heads() -> void:
 	var half := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE) * 0.5
 	var kerb := Tuning.carriageway_width() * 0.5 + inset
 	# One drawer for every head: it holds nothing but the atlas the heads draw from.
-	var drawer := TrafficLightDrawer.new(atlas)
+	var drawer := TrafficLightDrawer.new(_atlas)
 	for x in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		for y in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
 			var junction := Vector2i(x, y)
@@ -716,7 +721,7 @@ func _spawn_signal_heads() -> void:
 				if not _map.is_walkable(_map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
-				light.mount(atlas, drawer, junction, _signals)
+				light.mount(_atlas, drawer, junction, _signals)
 				light.faces(heading)
 				light.position = at
 				add_entity(light)
@@ -731,13 +736,13 @@ func _spawn_buildings() -> void:
 	# One drawer for every roof and one for every front: each holds nothing but the atlas the
 	# buildings draw from, and the roof's also the scenery drawer its vents' rotors lay their frames
 	# through.
-	var roof_drawer := RoofDrawer.new(atlas, _scenery_drawer)
-	var front_drawer := FrontDrawer.new(atlas)
+	var roof_drawer := RoofDrawer.new(_atlas, _scenery_drawer)
+	var front_drawer := FrontDrawer.new(_atlas)
 	var buildings: Array[Building] = []
 	for rect in _map.building_lots():
 		var world := _map.tile_rect_to_world(rect)
 		var building := Building.new()
-		building.equip(atlas, roof_drawer, front_drawer)
+		building.equip(_atlas, roof_drawer, front_drawer)
 		building.use_scenery_clock(scenery_ground)
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
@@ -793,7 +798,7 @@ func _spawn_buildings() -> void:
 		var feet := building.stack_feet()
 		for i in feet.size():
 			var stack := Building.StationStack.new()
-			stack.atlas = atlas
+			stack.atlas = _atlas
 			stack.name = "StationStack%d" % i
 			stack.position = building.position + feet[i]
 			add_entity(stack)
@@ -1062,7 +1067,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 ## ground, the litter and the block dressing.
 func _dress(state: CityState, day: int) -> void:
 	scenery.use_view(_home_scenery_view())
-	_map.repaint(state, trace)
+	_map.repaint(state, _trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
@@ -1101,7 +1106,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 	for closure in closures:
 		_spawn_closure(closure)
 	if _map.has_stretch():
-		run.posters().mark_pasted_through(day)
+		_run.posters().mark_pasted_through(day)
 	day_dressed.emit(day, spec)
 
 ## The closed streets of the day `spec` describes. The whole street comes out of the network; the
@@ -1120,10 +1125,10 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	var plan := RegionPlanner.plan_day(_map, spec, tree)
-	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
+	_trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.wall_segments().size() + plan.door_segments().size(), plan.wall_segments().size(),
 			plan.door_segments().size(), RegionPlanner.regions_with_calm(_map)])
-	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, trace)
+	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, _trace)
 	_streets.begin_day(tree, plan, closures)
 	_map.close_streets(closures)
 	for closure in closures:
@@ -1230,7 +1235,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 	# after the rail, at the run midpoint rather than at a panel endpoint.
 	for feet in closure.posts(_map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		post.use_atlas(atlas)
+		post.use_atlas(_atlas)
 		post.draw_through(_scenery_drawer)
 		post.stand_as(ClosureMarker.Piece.POST, closure.kind(), true)
 		post.position = feet
@@ -1239,7 +1244,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		_spawn_barrier(closure, mouth)
 	if ClosureMarker.CAUSES.has(closure.kind()):
 		var cause := ClosureMarker.new()
-		cause.use_atlas(atlas)
+		cause.use_atlas(_atlas)
 		cause.draw_through(_scenery_drawer)
 		cause.stand_as(ClosureMarker.Piece.CAUSE, closure.kind(), closure.barrier_runs_across())
 		cause.position = closure.cause_centre(_map)
@@ -1263,7 +1268,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var footprint := _barrier_footprint(closure)
 	var picture_width := width
 	var picture_at := at
-	var run := DrawLayer.run_of(footprint, at)
+	var ends := DrawLayer.run_of(footprint, at)
 	if closure is ParkClosure:
 		var fence := closure as ParkClosure
 		# An open end's post is inset on its own ground. Rails end on that post, while
@@ -1272,7 +1277,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var end_inset := 0.0 if fence.end_turns_a_corner() else ParkClosure.POST_HALF
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
-		run = fence.rail_ends()
+		ends = fence.rail_ends()
 	var pitch := float(AtlasTable.baked().native_size(ClosureMarker.FENCE_ACROSS).x)
 	if closure is ParkClosure and not across:
 		pitch = 44.0
@@ -1285,11 +1290,11 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var sign_from_start := at.y - (picture_at.y - picture_width * 0.5)
 		sign_panel = mini(panels - 1,
 				ceili((sign_from_start + ParkFenceMarker.UPPER_RISE) / span) - 1)
-	var feet := DrawLayer.slice_feet(run[0], run[1], panels)
+	var feet := DrawLayer.slice_feet(ends[0], ends[1], panels)
 	var slices: Array[Node2D] = []
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		panel.use_atlas(atlas)
+		panel.use_atlas(_atlas)
 		panel.draw_through(_scenery_drawer)
 		panel.stand_as(ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE,
 				closure.kind(), across)
@@ -1355,7 +1360,7 @@ func _dress_blocks(state: CityState) -> void:
 func _dress_the_stretch() -> void:
 	for listed in _map.stretch_prop_list():
 		var prop := Prop.new()
-		prop.dress(atlas, int(listed.kind) as Prop.Kind, int(listed.variant), float(listed.scale))
+		prop.dress(_atlas, int(listed.kind) as Prop.Kind, int(listed.variant), float(listed.scale))
 		prop.position = listed.at
 		_add_prop(prop)
 
@@ -1366,7 +1371,7 @@ func _dress_the_stretch() -> void:
 func _place_garbage_sacks() -> void:
 	for entry in GarbageSacks.placed(_map, _day):
 		var sack := Prop.new()
-		sack.dress(atlas, Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK)
+		sack.dress(_atlas, Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK)
 		sack.position = entry.position
 		_add_prop(sack)
 
@@ -1391,7 +1396,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	if purpose == GameEnums.BlockPurpose.PARK and layout.has_playground():
 		var playground := _map.tile_rect_to_world(layout.playground_rect())
 		var frame := Prop.new()
-		frame.dress(atlas, Prop.Kind.PLAYGROUND_FRAME, block.x * 31 + block.y)
+		frame.dress(_atlas, Prop.Kind.PLAYGROUND_FRAME, block.x * 31 + block.y)
 		frame.position = Vector2(playground.get_center().x, playground.end.y - 8.0)
 		_add_prop(frame)
 
@@ -1437,7 +1442,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 		if _too_close_to_a_planted_tree(at, planted, spacing):
 			continue
 		var tree := Prop.new()
-		tree.dress(atlas, Prop.Kind.TREE, rng.randi(),
+		tree.dress(_atlas, Prop.Kind.TREE, rng.randi(),
 				rng.randf_range(PARK_TREE_SCALES.x, PARK_TREE_SCALES.y))
 		tree.position = at
 		_add_prop(tree)
@@ -1468,7 +1473,7 @@ static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2],
 func _dress_precincts() -> void:
 	for at in _map.post_positions():
 		var bollard := Prop.new()
-		bollard.dress(atlas, Prop.Kind.BOLLARD)
+		bollard.dress(_atlas, Prop.Kind.BOLLARD)
 		bollard.position = at
 		_add_prop(bollard)
 
@@ -1609,12 +1614,12 @@ func _spawn_the_void_edge() -> void:
 			if i < xs.size() and int(xs[i]) == last + 1:
 				last = xs[i]
 				continue
-			var run := _map.tile_rect_to_world(Rect2i(start, y, last - start + 1, 1))
+			var strip := _map.tile_rect_to_world(Rect2i(start, y, last - start + 1, 1))
 			var shape := CollisionShape2D.new()
 			var rectangle := RectangleShape2D.new()
-			rectangle.size = run.size
+			rectangle.size = strip.size
 			shape.shape = rectangle
-			shape.position = run.get_center()
+			shape.position = strip.get_center()
 			body.add_child(shape)
 			if i < xs.size():
 				start = xs[i]
@@ -1641,7 +1646,7 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
 		_authored_ground_tile_set = scenery_ground.tile_set()
-	return GroundLayers.build_tile_set(_authored_ground_tile_set, _ground_recipe, atlas)
+	return GroundLayers.build_tile_set(_authored_ground_tile_set, _ground_recipe, _atlas)
 
 ## What the city stops at, on each of its four sides.
 ##

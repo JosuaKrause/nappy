@@ -296,7 +296,7 @@ var _mouths_of: CityMap
 var _mark_tiles_of_mouths: Array[Vector2i] = []
 
 ## Hands the director the art's pages its marks and its happenings' cordon draw from — the city's
-## own (`City.atlas`), handed by `main` before `setup()`, which hands it on to the happenings. A
+## own (`City.atlas()`), handed by `main` before `setup()`, which hands it on to the happenings. A
 ## director handed none draws each mark from a library of the mark's own.
 func use_atlas(atlas: AtlasLibrary) -> void:
 	_atlas = atlas

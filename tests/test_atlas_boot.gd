@@ -197,6 +197,11 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 				player = node
 			if node is DangerEdge and edge == null:
 				edge = node
+			if node is City:
+				holders += 1
+				if (node as City).atlas() != atlas and strays.size() < 5:
+					strays.append(str(main.get_path_to(node)))
+				continue
 			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
