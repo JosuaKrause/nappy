@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name City
 extends CityDressing
 ## Turns a CityMap into a scene: ground, buildings, props, boundary, and the answers the
@@ -160,29 +159,31 @@ func navigator() -> Navigator:
 ## closures and the region a siting reads. Made with the city, written only by the city's dawn
 ## (`_close_streets()`, `start_recipe_day()`), and handed to whoever asks (`streets()`).
 var _streets := DayStreets.new()
-## Where the city and the day's closures write their own account for the run log — set before
-## `build()`, which hands it on to the fronts; silent until then.
+## Where the city and the day's closures write their own account for the run log — handed in by
+## `equip()` before `build()`, which hands it on to the fronts; silent until then.
 var trace := RunTrace.new()
 
 # ------------------------------------------------- handed in before build() reads them ---
-## How this city draws and schedules its own ground and scenery, set by whoever builds it — `main`,
-## from the run's configuration — before `build()` reads them. The defaults are an ordinary run's,
-## which is what a test's own city gets. What moves on the city is stood by `SimulationBuilder`,
-## which `main` hands its own settings.
+## How this city draws and schedules its own ground and scenery, handed in by whoever builds it —
+## `main`, from the run's configuration — before `build()` reads them (`equip()`,
+## `use_ground_recipe()`, `use_run()`, `schedule_scenery()`, `leave_out()`). The defaults are an
+## ordinary run's, which is what a test's own city gets. What moves on the city is stood by
+## `SimulationBuilder`, which `main` equips the same way.
 
 ## How a needed nearby ground region is scheduled (`--ground-mode`). See `SceneryGround.Mode`.
-var ground_mode := SceneryGround.Mode.ONE
-## A scripted recipe's frame-locked playback. See `SceneryResidency.frame_locked`.
-var scenery_frame_locked := false
+var _ground_mode := SceneryGround.Mode.ONE
+## A scripted recipe's frame-locked playback, handed on to the residency
+## (`SceneryResidency.lock_to_frames()`).
+var _frame_locked := false
 ## `--skip shadows`: what a frame reading leaves out of the city's own drawing. See
 ## `DevFlags.skip_words()`.
-var skip_shadows := false
-## Where the scenery queue charges its time to the frame record, handed in by whoever builds the
-## city (`main`) before `build()`; the null sink until then.
-var frame_timing := FrameTiming.new()
+var _skip_shadows := false
+## Where the scenery queue charges its time to the frame record, handed in by `equip()`; the null
+## sink until then.
+var _timing := FrameTiming.new()
 ## The lights on the spine. Held here because both the traffic and the signal heads read it, and
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
-var signals: TrafficSignals
+var _signals: TrafficSignals
 var _daylight: CanvasModulate
 var _act := 1
 ## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
@@ -207,15 +208,15 @@ var _buildings: Array[Building] = []
 ## pasted on the walls (`posters`), the scars and block arcs a lost day gives back
 ## (`attempt_spend`), whether the pram carries the package (`resistance`), and the seed and day
 ## streams the walls are pasted from, which `PosterWalls` is handed in turn. Whoever builds the city
-## hands it over before `build()` (`main._new_city()`, or `RunCity` in a test); `build()` refuses a
-## city without it.
+## hands it over before `build()` (`use_run()`, from `main._new_city()` or `RunCity` in a test);
+## `build()` refuses a city without it.
 var run: RunState = null
 ## The ground's composition recipe, read from disk once per process: `main._new_city()` hands the
-## one the sitting holds, so every day's city composes from the same read. A city nobody handed one
-## (a suite's) reads the file itself, once.
-var ground_recipe := GroundRecipe.new()
+## one the sitting holds (`use_ground_recipe()`), so every day's city composes from the same read. A
+## city nobody handed one (a suite's) reads the file itself, once.
+var _ground_recipe := GroundRecipe.new()
 ## The baked atlas pages this city and everything it builds draw from (`AtlasLibrary`):
-## `main._new_city()` hands the sitting's, and the city hands it on to its buildings, props,
+## `equip()` hands the sitting's, and the city hands it on to its buildings, props,
 ## exits, lights, markers, ground and decals. A city nobody handed one (a suite's) makes its own in
 ## `build()`.
 var atlas: AtlasLibrary = null
@@ -287,6 +288,34 @@ func _ready() -> void:
 	layers().hold(DrawLayer.Layer.BUILDINGS, _buildings_layer, true)
 	layers().hold(DrawLayer.Layer.ENTITIES, _entities, true)
 
+## What the city and everything it builds is equipped with, before `build()`: the run log's trace,
+## the baked atlas pages and the frame record the scenery queue charges its time to. The same three,
+## in the same order, as `SimulationBuilder.equip()`, so `main` equips both alike.
+func equip(run_trace: RunTrace, library: AtlasLibrary, frame_timing: FrameTiming) -> void:
+	trace = run_trace
+	atlas = library
+	_timing = frame_timing
+
+## The ground's composition recipe the city composes every day's ground from, in place of the file
+## it reads itself.
+func use_ground_recipe(recipe: GroundRecipe) -> void:
+	_ground_recipe = recipe
+
+## The run the city stands in; `build()` refuses a city never handed one.
+func use_run(the_run: RunState) -> void:
+	run = the_run
+
+## The two ways the scenery's preparation is scheduled: how a needed ground region is scheduled
+## (`--ground-mode`), and whether a scripted recipe's playback is locked to frames.
+func schedule_scenery(mode: SceneryGround.Mode, frame_locked: bool) -> void:
+	_ground_mode = mode
+	_frame_locked = frame_locked
+
+## Whether the city's own shadow drawing is left out (`--skip shadows`), named as
+## `SimulationBuilder.leave_out()` is.
+func leave_out(shadows: bool) -> void:
+	_skip_shadows = shadows
+
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
@@ -298,18 +327,18 @@ func build(city_map: CityMap) -> void:
 	map = city_map
 	_navigator = Navigator.new(map)
 	scenery = SceneryResidency.new()
-	scenery.use_frame_timing(frame_timing)
-	scenery.frame_locked = scenery_frame_locked
+	scenery.use_frame_timing(_timing)
+	scenery.lock_to_frames(_frame_locked)
 	scenery.setup(self, map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
-	scenery_ground.use_mode(ground_mode)
+	scenery_ground.use_mode(_ground_mode)
 	scenery_ground.use_atlas(atlas)
 	_decals.use_atlas(atlas)
 	_decals.draw_through(_scenery_drawer)
 	_decals.stream_in_chunks()
 	_building_shadows.stream_in_chunks()
 	_building_shadows.draw_through(ShadowDrawer.new())
-	_building_shadows.skip_drawing(skip_shadows)
+	_building_shadows.skip_drawing(_skip_shadows)
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
 	# see `AtlasLibrary`.
@@ -337,7 +366,7 @@ func build(city_map: CityMap) -> void:
 		_spawn_the_void_edge()
 	elif not map.has_recipe_exterior():
 		_spawn_the_edge_of_the_city()
-	signals = TrafficSignals.new(map)
+	_signals = TrafficSignals.new(map)
 	_spawn_signal_heads()
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
@@ -570,10 +599,10 @@ func furnish_a_roof(lot: Rect2i, fixtures: Array) -> Array[String]:
 ##
 ## Overrides CityDressing.start_the_signals.
 func start_the_signals(into_the_cycle: float, dark: bool) -> void:
-	signals.restart_cycle()
-	signals.advance(into_the_cycle)
+	_signals.restart_cycle()
+	_signals.advance(into_the_cycle)
 	if dark:
-		signals.use_power(false)
+		_signals.use_power(false)
 
 ## What is on the far side of the streets that run along the boundary.
 ##
@@ -664,7 +693,7 @@ func _spawn_signal_heads() -> void:
 	for x in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		for y in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
 			var junction := Vector2i(x, y)
-			if not signals.has_lights(junction):
+			if not _signals.has_lights(junction):
 				continue
 			var centre := Vector2(x * CityMap.period() + Tuning.STREET_WIDTH * 0.5,
 					y * CityMap.period() + Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
@@ -677,7 +706,7 @@ func _spawn_signal_heads() -> void:
 				if not map.is_walkable(map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
-				light.mount(atlas, drawer, junction, signals)
+				light.mount(atlas, drawer, junction, _signals)
 				light.faces(heading)
 				light.position = at
 				add_entity(light)
@@ -903,7 +932,7 @@ func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int])
 ## smaller than any of them, so `encloses()` is exact rather than an overlap test.
 func _courtyard_lot_of(rects: Array[Rect2i]) -> Array[int]:
 	var courtyard_lots: Array[Rect2i] = []
-	for block in map.blocks_with_layouts():
+	for block: Vector2i in map.blocks_with_layouts():
 		if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
 			courtyard_lots.append(map.lot_rect(block))
 	var result: Array[int] = []
@@ -1155,11 +1184,11 @@ func buildings() -> Array[Building]:
 
 ## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
 func traffic_signals() -> TrafficSignals:
-	return signals
+	return _signals
 
-## Which way the ground is scheduled this run (`ground_mode`, the `--ground-mode` flag).
+## Which way the ground is scheduled this run (`schedule_scenery()`, the `--ground-mode` flag).
 func ground_mode_in_force() -> SceneryGround.Mode:
-	return ground_mode
+	return _ground_mode
 
 ## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
 ## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
@@ -1462,7 +1491,7 @@ func _spawn_boundary() -> void:
 		return
 	var extent := map.world_size()
 	var t := BOUNDARY_THICKNESS
-	var walls := [
+	var walls: Array[Rect2] = [
 		Rect2(-t, -t, extent.x + t * 2.0, t),
 		Rect2(-t, extent.y, extent.x + t * 2.0, t),
 		Rect2(-t, 0.0, t, extent.y),
@@ -1602,7 +1631,7 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
 		_authored_ground_tile_set = scenery_ground.tile_set()
-	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe, atlas)
+	return GroundLayers.build_tile_set(_authored_ground_tile_set, _ground_recipe, atlas)
 
 ## What the city stops at, on each of its four sides.
 ##

@@ -107,7 +107,7 @@ func _probe_the_camera() -> void:
 		"camera": {"fixed": true, "fixed_offset": [200, 0], "zoom_out": 4, "zoom_delay": 0}}
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
 	var city: City = city_scene.instantiate()
-	city.run = _run
+	city.use_run(_run)
 	add_child(city)
 	RunCity.build(city, loaded.map)
 	var state := CityState.new()
@@ -208,7 +208,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	own_run.start_run(4242)
 	own_run.header().set_day(3)
 	var city: City = CITY_SCENE.instantiate()
-	city.run = own_run
+	city.use_run(own_run)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
@@ -388,7 +388,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	own_run.start_run(4242)
 	own_run.header().set_day(6)
 	var city: City = CITY_SCENE.instantiate()
-	city.run = own_run
+	city.use_run(own_run)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
@@ -437,7 +437,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 	own_run.start_run(4242)
 	own_run.header().set_day(13)
 	var city: City = CITY_SCENE.instantiate()
-	city.run = own_run
+	city.use_run(own_run)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
@@ -587,7 +587,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	state.begin_day(map.plans_by_block(), day)
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
 	var city: City = city_scene.instantiate()
-	city.run = own_run
+	city.use_run(own_run)
 	t.add_child(city)
 	RunCity.build(city, map)
 	city.start_recipe_day(state, day, own_run.calendar().day_rng(day, "closures"))

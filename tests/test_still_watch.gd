@@ -45,6 +45,7 @@ func run(t: TestRunner) -> void:
 	await _test_held_ticks_never_trigger_however_long_they_run(t)
 	await _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t)
 	await _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t)
+	await _test_the_watch_writes_its_line_into_the_trace_it_was_handed(t)
 	Engine.physics_ticks_per_second = tick_rate
 	_scratch = null
 	_test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she_stands(t)
@@ -138,6 +139,19 @@ func _test_a_move_past_the_radius_arms_it_without_triggering(t: TestRunner) -> v
 	t.check(rig.triggered_at < 0, "the tick she moves is not itself a trigger")
 	await _stand(t, rig, moved, _HOLD_TICKS + _MARGIN)
 	t.check(rig.triggered_at >= 0, "and standing there afterwards fires it, so moving armed it")
+	rig.free_all()
+
+## When it fires the watch notes one `still` line into the run trace it was handed
+## (`use_trace()`), which is how the boot's run log hears of it.
+func _test_the_watch_writes_its_line_into_the_trace_it_was_handed(t: TestRunner) -> void:
+	var rig := await _rig(t)
+	var lines: Array[String] = []
+	rig.watch.use_trace(RunTrace.new(func(kind: String, text: String) -> void:
+			lines.append("%s %s" % [kind, text])))
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, Vector2(StillWatch.STILL_RADIUS + 1.0, 0.0), _HOLD_TICKS + _MARGIN)
+	t.check(rig.triggered_at >= 0 and lines.size() == 1 and lines[0].begins_with("still "),
+			"the watch writes its one still line into the trace it was handed (%s)" % [lines])
 	rig.free_all()
 
 ## The hold counts from the move, and fires when it reaches the given number of seconds: not half

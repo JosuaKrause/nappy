@@ -37,7 +37,7 @@ var _colour := Palette.HOME_ARROW
 var _label_when_near := Texts.ARROW_HOME
 
 ## Whether `main` has decided a portrait touch window is presenting rotated. Handed in from outside:
-## see `TouchControls.rotated`'s own doc for why this is a flag rather than a query at each use
+## see `TouchControls._rotated`'s own doc for why this is a flag rather than a query at each use
 ## site. `hud.gd`'s `_root` is pinned to `ScreenOrientation.DESIGN_SIZE` regardless of rotation, so
 ## the raw canvas-space position below has to come back through `ScreenOrientation.to_design_space()`
 ## before it is usable as a local coordinate on this control.

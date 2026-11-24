@@ -111,7 +111,7 @@ func _day(t: TestRunner, day: int) -> Array:
 	state.reset()
 	state.begin_day(map.plans_by_block(), day)
 	var city: City = CITY_SCENE.instantiate()
-	city.run = own_run
+	city.use_run(own_run)
 	t.add_child(city)
 	RunCity.build(city, map)
 	city.start_recipe_day(state, day, own_run.calendar().day_rng(day, "closures"))

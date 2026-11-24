@@ -250,14 +250,19 @@ func controls_mode() -> ControlsMode.Mode:
 	return _mode
 
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
-## `ScreenOrientation`. Set from outside rather than asked here, the same way `_touch` is a read
+## `ScreenOrientation`. Handed in (`use_rotated()`) rather than asked here, the same way `_touch` is a read
 ## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
 ## place that knows the window's own shape, and the pause button's own touch handling goes through
 ## `ScreenOrientation.to_design_space()` with this flag before comparing a raw press to
 ## `PAUSE_CENTRE`, which stays authored in the unrotated 1280x720 box regardless. A direction press
 ## needs no such remap — it is turned straight into a world position through the viewport's own
 ## canvas transform, which already carries the rotation.
-var rotated := false
+var _rotated := false
+
+## Hands the controls whether the window presents rotated: `main` hands its answer at boot and
+## again whenever the window turns.
+func use_rotated(rotate: bool) -> void:
+	_rotated = rotate
 
 ## The touch or pointer index currently down on the pause button, or -1 when nothing is. Going down
 ## does not press anything — see `_on_pointer()` for why the action only fires on release, and only
@@ -434,7 +439,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 			return
 		# The one correction a rotated presentation needs on the input side — see
 		# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
-		var design := ScreenOrientation.to_design_space(position, rotated)
+		var design := ScreenOrientation.to_design_space(position, _rotated)
 		if visible and _pause_touch == -1 \
 				and design.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
 			# Only grabs the index here — see `_send_pause_action()`'s doc for why
@@ -487,7 +492,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 		queue_redraw()
 		# Fires on release rather than on press, and only when the release itself is still over
 		# the button, so a press that lands wrong can slide off and lift without stopping the day.
-		var design := ScreenOrientation.to_design_space(position, rotated)
+		var design := ScreenOrientation.to_design_space(position, _rotated)
 		if _pause_fires(design):
 			_send_pause_action()
 
@@ -515,7 +520,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## has to be walked through, because the two spaces cannot be mixed:
 ## - "is this press in the dead zone or the band" is asked in **design space**, the 1280x720 box the
 ##   constants are authored in and where "two thirds of the way to Run" means what it says —
-##   `ScreenOrientation.to_design_space(screen_position, rotated)` is what gets there.
+##   `ScreenOrientation.to_design_space(screen_position, _rotated)` is what gets there.
 ## - the heading itself needs the focus in **world space**, the same space `target` (the press) is
 ##   already in. A design-space subtraction would ignore the camera, the zoom and — on a rotated
 ##   presentation — literally point the wrong way, since the design box does not carry the
@@ -554,7 +559,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		_set_direction(world, double)
 		return
 	# Mode.JOYSTICK, past here — see the class doc and this function's own doc above.
-	var design := ScreenOrientation.to_design_space(screen_position, rotated)
+	var design := ScreenOrientation.to_design_space(screen_position, _rotated)
 	if _in_dead_zone(design, _steering_focus) or _is_in_stop_band(design, _steering_focus):
 		_stop()
 		return
@@ -570,7 +575,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 ## world space once is left behind in the street the moment she walks and the camera follows her.
 func _focus_world(focus_design: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() \
-			* ScreenOrientation.to_presented_space(focus_design, rotated)
+			* ScreenOrientation.to_presented_space(focus_design, _rotated)
 
 ## Whether `world` lands within `TAP_STOP_RADIUS` of the centre of her sprite — `TAP_STOP_CENTRE_LIFT`
 ## above her feet, not her bare `global_position` (see that constant's own doc for why) —
@@ -605,7 +610,7 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 		return
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	if _mode == ControlsMode.Mode.JOYSTICK:
-		var design := ScreenOrientation.to_design_space(screen_position, rotated)
+		var design := ScreenOrientation.to_design_space(screen_position, _rotated)
 		if _in_dead_zone(design, _steering_focus) or _is_in_stop_band(design, _steering_focus):
 			_stop()
 			return

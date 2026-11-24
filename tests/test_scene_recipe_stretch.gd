@@ -81,7 +81,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	viewport.size = Vector2i(1280, 720)
 	t.add_child(viewport)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.run = own_run
+	city.use_run(own_run)
 	viewport.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := own_run.attempt_spend().block_arcs()

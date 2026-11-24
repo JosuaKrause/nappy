@@ -2,8 +2,8 @@ class_name GroundRecipe
 extends RefCounted
 ## The ground's composition recipe (`assets/ground_layers.json`), read from disk by the first ask and
 ## held by this object after, like the `ground` page it composes from. **One per process**, held by
-## the `Sitting` and handed to every city (`City.ground_recipe`, set by `main._new_city()`), which
-## hands it to `GroundLayers.build_tile_set()`; nothing fetches it.
+## the `Sitting` and handed to every city (`City.use_ground_recipe()`, called by
+## `main._new_city()`), which hands it to `GroundLayers.build_tile_set()`; nothing fetches it.
 ##
 ## The ground is repainted at the start of every day, and a repaint that went back to the disk would
 ## make each day's ground depend on what the file system holds at that moment -- a file moved under a

@@ -139,7 +139,7 @@ is being watched.
 **The ground's composition recipe follows the same rule.** `GroundRecipe` reads
 `assets/ground_layers.json` once, on the first ask, which is the city's first build; the `Sitting`
 holds it for the life of the process and `main._new_city()` hands it to each city
-(`City.ground_recipe`), which passes it to `GroundLayers.build_tile_set()`. So a day's repaint
+(`City.use_ground_recipe()`), which passes it to `GroundLayers.build_tile_set()`. So a day's repaint
 composes from the held page and the held recipe and reads nothing from disk.
 
 **`main`'s boot holds every group a day can draw for the life of the process** —

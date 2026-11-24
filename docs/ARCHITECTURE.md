@@ -1091,7 +1091,7 @@ and finds there (the sitting names neither: it is on the model's layer, they are
 takes the one the boot before parked at the tree's root, or builds one as its own child on the
 sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
 and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, its
-run to every reader it builds (see "`RunState`"), its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`), and its library
+run to every reader it builds (see "`RunState`"), its recipe to every city it builds (`main._new_city()` calls `City.use_ground_recipe()`), and its library
 to everything that acquires a group or draws a region (the city, which hands it on to its
 furniture, crowd and events; her; the escape's building, its events and its steam grates; the
 screens, which hand it to their buttons and lines; the touch controls; the badge and the save

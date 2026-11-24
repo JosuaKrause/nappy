@@ -310,27 +310,42 @@ func _boot_catching_the_rig(t: TestRunner, seat: Seat, words: Array, entered: Ar
 	t.get_tree().node_added.disconnect(catch)
 	return booted
 
-## `main` hands `--quit-when-still`'s watch the trace it hands every other writer (`StillWatch.trace`,
-## the session's): a line written through the watch's trace reaches the recording run log the boot
-## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
-## is long enough that the watch never fires and quits here.
+## `main` hands `--quit-when-still`'s watch the trace it hands every other writer
+## (`StillWatch.use_trace()`, the session's): the line the watch writes as it fires reaches the
+## recording run log the boot is handed (`tests/recording_log.gd`), which a trace nobody handed the
+## watch would drop. The boot's hold is short and she is moved past the watch's radius once and
+## then held still, so it fires; its picture's child is switched off the moment it arrives, as
+## `tests/test_still_watch.gd` does, so a headless run does not quit.
 func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED)
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
-			Boot.config(["--quit-when-still", "600"]),
+			Boot.config(["--quit-when-still", "0.5"]),
 			func(main: Boot.MainScript) -> void:
 				main.use_sitting_home(home)
 				main.use_run_log(run_log))
 	var watch := booted.main.get_node_or_null("StillWatch") as StillWatch
 	t.check(watch != null, "a --quit-when-still boot builds the watch")
 	if watch:
-		watch.trace.note("still", "the watch's own line")
+		watch.child_entered_tree.connect(func(child: Node) -> void:
+				if child is AutoScreenshot:
+					child.set_process.call_deferred(false))
+		var title := Boot.title(booted.main)
+		if title and title.is_open():
+			await Boot.press_title(t, booted.main)
+		if t.get_tree().paused:
+			await Boot.press_continue(t, booted.main)
+		var her := Boot.player(booted.main)
+		her.set_physics_process(false)
+		await PhysicsTicks.pass_ticks(t, 2)
+		her.global_position += Vector2(StillWatch.STILL_RADIUS + 50.0, 0.0)
+		await PhysicsTicks.pass_ticks(t, 90)
 	t.check(run_log.lines.any(func(line: String) -> bool:
-				return line.ends_with("still the watch's own line")),
-			"and what the watch writes reaches the boot's run log (%s)" % [run_log.lines.slice(-3)])
+				return line.contains("still quit-when-still")),
+			"and what the watch writes as it fires reaches the boot's run log (%s)"
+			% [run_log.lines.slice(-3)])
 	booted.free_all()
 	run_log.free()
 	home.free()

@@ -395,7 +395,7 @@ func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
 	run.start_run(RUN_SEED)
 	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
 	var city: City = CITY_SCENE.instantiate()
-	city.run = run
+	city.use_run(run)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(SHORT_SEED))
 	t.check(HomeDoorReads.is_sealed(city),
@@ -410,7 +410,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
 	run.start_run(RUN_SEED)
 	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
 	var city: City = CITY_SCENE.instantiate()
-	city.run = run
+	city.use_run(run)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(SHORT_SEED))
 	t.check(HomeDoorReads.is_sealed(city), "the door starts sealed, or this test checks nothing")

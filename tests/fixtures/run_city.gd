@@ -1,6 +1,7 @@
 class_name RunCity
 extends RefCounted
-## A `City` handed the run it stands in (`City.run`), which `City.build()` refuses to run without.
+## A `City` handed the run it stands in (`City.use_run()`), which `City.build()` refuses to run
+## without.
 ## A test or rig that builds a city outside a boot hands it a run of its own (`in_run`, or
 ## `with_own_run` for a run the city holds). A suite asks this class, never the city, for the parts
 ## standing in a city it built: `build()` builds it and stands its simulation in it as `main` does
@@ -9,12 +10,12 @@ extends RefCounted
 ## `PosterWalls` in the tree, under the name the builder gives the simulation
 ## (`WorldSimulation.NODE_NAME`), the way `tests/booted_main.gd` finds what a booted `main` built.
 ##
-## **Every builder `build()` uses is equipped with the city's own trace, atlas and frame timing**,
-## after `City.build()` has made the city's library where the suite handed none, so the city and
-## its parts draw from one library as a booted city does. A suite that wants a part configured
-## otherwise makes a builder (`new_builder()`), hands it what `main` would (`leave_out()`,
-## `use_the_crowds_screen()` and the like) and hands it to `build()`; it hands the city its own
-## atlas, never the builder.
+## **The city and every builder `build()` uses are equipped with one trace, one library and one
+## frame timing** (`City.equip()`, `SimulationBuilder.equip()`), so the city and its parts draw from
+## one library as a booted city does, without reading any field of the city. A suite that wants a
+## part configured otherwise makes a builder (`new_builder()`), hands it what `main` would
+## (`leave_out()`, `use_the_crowds_screen()` and the like) and hands it to `build()`; it hands the
+## city its own library through `build()`, never the builder.
 ##
 ## **Nobody is handed her but by the suite.** A city's crowd, poster walls and blackout meet her
 ## only when she is handed in, as the game hands her at the start of a walk
@@ -30,10 +31,10 @@ const BLACKOUT_NODE := "Blackout"
 ## the test hands the code it exercises a run of its own.
 static func in_run(scene: PackedScene, run: RunState) -> City:
 	var city: City = scene.instantiate()
-	city.run = run
+	city.use_run(run)
 	return city
 
-## A city over a fresh run of its own (`start_run(run_seed)`), which the city holds (`City.run`).
+## A city over a fresh run of its own (`start_run(run_seed)`), which the city holds.
 static func with_own_run(scene: PackedScene, run_seed: int) -> City:
 	var run := RunState.new()
 	run.start_run(run_seed)
@@ -50,12 +51,17 @@ static func new_builder() -> SimulationBuilder:
 ## Builds `city` on `map` (`City.build()`), then stands its simulation in it with `builder`
 ## (`SimulationBuilder.in_the_city()`), or with a builder of the game's defaults where the suite
 ## hands none: what a suite calls in place of `city.build(map)`. `dark_from_the_start` is the
-## escape's city, dark from its first frame.
+## escape's city, dark from its first frame. `library` is the one the city and its parts draw
+## from, a new one where the suite hands none.
 static func build(city: City, map: CityMap, builder: SimulationBuilder = null,
-		dark_from_the_start := false) -> void:
+		dark_from_the_start := false, library: AtlasLibrary = null) -> void:
+	var trace := RunTrace.new()
+	var timing := FrameTiming.new()
+	var pictures := library if library else AtlasLibrary.new()
+	city.equip(trace, pictures, timing)
 	city.build(map)
 	var stands := builder if builder else new_builder()
-	stands.equip(city.trace, city.atlas, city.frame_timing)
+	stands.equip(trace, pictures, timing)
 	stands.in_the_city(city, city.map, city.navigator(), city.streets(), city.traffic_signals(),
 			city.buildings(), city.run, dark_from_the_start)
 

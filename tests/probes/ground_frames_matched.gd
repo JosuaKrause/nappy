@@ -152,8 +152,8 @@ func _run() -> void:
 		_city = RunCity.with_own_run(CITY, 4242)
 		# The launch's own `--ground-mode`, handed to the city as `Main` hands it (the city no
 		# longer reads the command line), so the mode a capture reports is the mode it ran.
-		_city.ground_mode = DevFlags.new(OS.get_cmdline_user_args(), "", true).ground_mode() \
-				as SceneryGround.Mode
+		_city.schedule_scenery(DevFlags.new(OS.get_cmdline_user_args(), "", true).ground_mode() \
+				as SceneryGround.Mode, false)
 		add_child(_city)
 		RunCity.build(_city, CityGenerator.generate(4242))
 		_city.scenery.set_process(false)

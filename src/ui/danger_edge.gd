@@ -52,7 +52,7 @@ const MARGIN := Vector4(104.0, 116.0, 104.0, 148.0)
 const CHEVRON := 19.0
 const ICON := 34.0
 ## Whether `main` has decided a portrait touch window is presenting rotated, handed in by
-## `use_rotated()` — see `TouchControls.rotated`'s own doc. This control is pinned to
+## `use_rotated()` — see `TouchControls._rotated`'s own doc. This control is pinned to
 ## `ScreenOrientation.DESIGN_SIZE` regardless of rotation (see `main._add_danger_edge()`), so a raw
 ## canvas-space position has to come back through `ScreenOrientation.to_design_space()` before it is
 ## drawn here. What is in sight needs no such turn: `VisibleView` asks it of the world box the
