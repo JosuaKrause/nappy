@@ -49,8 +49,6 @@ enum Kind {
 	WALL_LAMP,               ## Elevation, a wall sconce. Never a floor tile.
 	LIFT_DOOR,               ## Elevation, the dead lift. Never a floor tile.
 	ENTRANCE_DOOR,           ## Elevation, the lobby's own barricaded main entrance.
-	ENTRANCE_BARRICADE,      ## Drawn in front of ENTRANCE_DOOR; not a wall column of its own —
-	                         ## see `InteriorScene._rebuild_walls()`.
 	BRICK_WALL,              ## Elevation, the basement's own wall material.
 	DOOR,                    ## Walkable. The threshold between two maps — a hallway's end and its
 	                         ## stairwell's landing, a stairwell's lowest landing and the lobby, or

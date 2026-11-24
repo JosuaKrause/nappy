@@ -97,7 +97,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    review found that the order converted the tests before the event code they read, so the largest
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
-   module: its dead code (`dead-code-sweep.md`), its interface and field reads, its receivers
+   module: its dead code (deleted as the pass finds it, **designing-classes**' rule), its interface and field reads, its receivers
    typed with them (`tools/check_field_reads.py` holds both, its list `tools/field_reads.txt` empty), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:

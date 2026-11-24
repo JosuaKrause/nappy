@@ -799,7 +799,7 @@ tuned for them.
 5. **Do the tests read through the methods too?** "yes" (inbox #1182 in gray-dolphin).
 6. **Is `display_name` deleted, with `Texts.EVENT_NAMES`, the table of the rows' names it is
    read from?** *Read as* (the design's) under the player's standing rule on dead code, which
-   `dead-code-sweep.md` carries for the rest of the tree. Nothing in `src/`, `tests/` or `tools/` reads the field; the table's comment says it is
+   **designing-classes** holds for the rest of the tree. Nothing in `src/`, `tests/` or `tools/` reads the field; the table's comment says it is
    what "a day summary or a codex would call the thing", and neither shows a name. "remove dead
    code or code needed for features that don't exist anymore ... if we want a feature back we can
    just implement it fresh" (inbox #1180 in gray-dolphin). It is deleted in 4b, and that pull

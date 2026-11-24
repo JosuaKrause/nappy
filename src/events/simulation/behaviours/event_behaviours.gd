@@ -47,10 +47,6 @@ func hold() -> EventHold:
 func investigation() -> EventInvestigation:
 	return _investigation
 
-## What a row that waits for her runs once it has noticed her, null for any other.
-func notice_run() -> EventNoticeRun:
-	return _notice_run
-
 ## The man on foot a pursuer sends, null for a row that does not pursue.
 func on_foot() -> EventOfficer:
 	return _on_foot
