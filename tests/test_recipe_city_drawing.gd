@@ -24,6 +24,33 @@ func _recipe() -> Dictionary:
 func run(t: TestRunner) -> void:
 	await _test_the_bounded_context(t)
 	_test_the_examples(t)
+	_test_the_props_stand_a_relocated_tree(t)
+
+## **The city's props stand a tree the recipe relocates** across the road, where the builder's
+## planting has its pit now: the street tree the city draws stands at the destination pit's tile
+## and not at the source's, and is the real street-tree prop.
+func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
+	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
+	var built := RecipeCityBuilder.build(recipe)
+	if not _errors(built).is_empty():
+		t.check(false, "opposite-curb tree recipe constructs: %s" % [built.errors])
+		return
+	var source := Vector2i(50, 74)
+	var destination := Vector2i(50, 71)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	t.add_child(city)
+	RunCity.build(city, built.map)
+	var trees := {}
+	for node in city.props():
+		var prop := node as Prop
+		if prop != null and prop.kind() == Prop.Kind.STREET_TREE:
+			trees[city.map.world_to_tile(prop.position)] = prop
+	t.check(not trees.has(source) and trees.has(destination),
+			"real tree props use the relocated planning source")
+	var tree: Prop = trees.get(destination)
+	t.check(tree != null and tree.position == city.map.tile_to_world(destination),
+			"relocation retains a real existing street-tree component")
+	city.free()
 
 func _test_the_bounded_context(t: TestRunner) -> void:
 	var input := _recipe()

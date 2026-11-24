@@ -253,23 +253,23 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	t.add_child(clock)
 	var events := _FakeEvents.new(_asked)
 	events.name = "Events"
-	var player := _FakeStroller.new(_asked)
-	var baby := _FakeBaby.new(_asked)
+	var player := FakeStroller.new(_asked)
+	var baby := FakeBaby.new(_asked)
 	var resistance := _FakeResistance.new(_asked)
-	var city: _FakeDressing = null
+	var city: FakeCityDressing = null
 	var map: _FakeMap = null
-	var crowd: _FakeCrowd = null
-	var posters: PosterWalls = null
+	var crowd: FakeCrowd = null
+	var posters: FakePosterWalls = null
 	var world: DayWorld
 	if in_building:
 		world = DayWorld.in_the_building(WorldMap.open_ground(), events, player, baby,
 				Vector2(30.0, 40.0), Vector2.UP, _run.calendar().day_rng(1, "a seed of its own"))
 	else:
-		city = _FakeDressing.new(_asked)
+		city = FakeCityDressing.new(_asked)
 		city.name = "City"
 		map = _FakeMap.new(Vector2i(8, 8))
-		crowd = _FakeCrowd.new(_asked)
-		posters = PosterWalls.new()
+		crowd = FakeCrowd.new(_asked)
+		posters = FakePosterWalls.new()
 		var home_map: CityMap = map if spec.goal_kind() == DaySpec.Goal.HOME else null
 		var exits: Dictionary = EXITS if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
 		world = DayWorld.in_the_city(city, map, DayStreets.new(), crowd, posters, events, player,
@@ -370,8 +370,8 @@ func _test_the_city_section_starts_on_its_settings(t: TestRunner) -> void:
 			"its events are planned on the escape's own stream of the run's day")
 	t.check(not is_same(events.one_shots_spent, _run.attempt_spend().consumed_one_shots())
 			and events.one_shots_spent.is_empty(), "from a list of its own, empty")
-	var city: _FakeDressing = rig["city"]
-	t.check(city.tinted == events.walk(), "the kerb tint is the walk it planned")
+	var city: FakeCityDressing = rig["city"]
+	t.check(city.tinted_route() == events.walk(), "the kerb tint is the walk it planned")
 	var lines: Array[String] = rig["lines"]
 	t.check(lines == ["plan finale: 0 open streets, 0 placements"],
 			"and the walk's shape is written to the run log (%s)" % [lines])
@@ -491,20 +491,20 @@ func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t: TestRunner) -
 		var director: DayDirector = rig["director"]
 		director.use_first_day(true)
 		director.start(spec)
-		var player: _FakeStroller = rig["player"]
+		var player: FakeStroller = rig["player"]
 		var map: _FakeMap = rig["map"]
 		var doorstep := map.doorstep_world_position()
 		var meters := _asked.filter(func(line: String) -> bool: return line.begins_with("meters"))
 		if spec.start_point() == DaySpec.Start.DOORSTEP:
 			t.check(meters == ["meters true"], "the bars' override is asked once, with the day "
 					+ "running, on a walk from her doorstep (%s)" % [meters])
-			t.check(player.put_at == doorstep, "the flag's spawn, its doorstep with no target, "
-					+ "decides a walk from her doorstep (%s)" % [player.put_at])
+			t.check(player.put_at() == doorstep, "the flag's spawn, its doorstep with no target, "
+					+ "decides a walk from her doorstep (%s)" % [player.put_at()])
 		else:
 			t.check(meters.is_empty(), "and no walk that starts anywhere else asks it")
-			t.check(player.put_at == Vector2(100.0, 200.0),
+			t.check(player.put_at() == Vector2(100.0, 200.0),
 					"and a walk from anywhere else starts where its world puts her (%s)"
-					% [player.put_at])
+					% [player.put_at()])
 		_put_the_start_away(rig)
 	var later := _start_rig(t, DaySpec.for_day(1, 210.0))
 	(later["director"] as DayDirector).start(later["spec"])
@@ -522,7 +522,7 @@ func _test_the_start_hands_on_the_ways_out_of_the_world(t: TestRunner) -> void:
 	var director: DayDirector = rig["director"]
 	director.start(spec)
 	var clock: DayController = rig["clock"]
-	var player: _FakeStroller = rig["player"]
+	var player: FakeStroller = rig["player"]
 	player.position = Vector2(100.0, 200.0)
 	clock.tick(0.01)
 	t.check(clock.is_running(), "standing where she starts wins nothing")
@@ -549,7 +549,7 @@ func _test_the_start_hands_the_clock_her_and_her_front_door(t: TestRunner) -> vo
 	clock.day_finished.connect(note_won)
 	director.start(spec)
 	var map: _FakeMap = rig["map"]
-	var player: _FakeStroller = rig["player"]
+	var player: FakeStroller = rig["player"]
 	map.home = Vector2(40.0, 40.0)
 	player.position = Vector2(40.0, 40.0)
 	EventBus.return_phase_started.emit()
@@ -572,17 +572,18 @@ func _test_the_scenery_round_her_is_prepared_where_she_is_put_down(t: TestRunner
 		if scene:
 			scene.clock = rig["clock"]
 		var camera := _stand_her_in_the_tree(t, rig)
-		var player: _FakeStroller = rig["player"]
+		var player: FakeStroller = rig["player"]
 		player.position = Vector2(300.0, 420.0)
 		_start(rig["director"], spec)
-		var city: _FakeDressing = rig["city"]
+		var city: FakeCityDressing = rig["city"]
 		var where := player.global_position
 		var shown := player.get_viewport_rect().size / camera.zoom
 		var walk := "an authored scene's day" if scene_day else "a day"
-		t.check(city.prepared.size() == 1 and city.prepared[0].get_center().is_equal_approx(where)
-				and city.prepared[0].size.is_equal_approx(shown),
+		var views := city.prepared_views()
+		t.check(views.size() == 1 and views[0].get_center().is_equal_approx(where)
+				and views[0].size.is_equal_approx(shown),
 				"on %s the scenery is prepared once, over the %s her camera shows round %s (%s)"
-				% [walk, shown, where, city.prepared])
+				% [walk, shown, where, views])
 		var order: Array[String] = ["reset_at (100.0, 200.0) (0.0, 1.0)", "prepare", "baby reset"]
 		if scene_day:
 			order.assign(["install running", "prepare"])
@@ -598,7 +599,7 @@ func _test_the_scenery_round_her_is_prepared_where_she_is_put_down(t: TestRunner
 ## down (`Stroller.reset_at()`), so it draws from where she now stands; the fake her does not, and a
 ## camera off interpolation is the same answer without it.
 func _stand_her_in_the_tree(t: TestRunner, rig: Dictionary) -> Camera2D:
-	var player: _FakeStroller = rig["player"]
+	var player: FakeStroller = rig["player"]
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.zoom = Vector2(2.0, 2.0)
@@ -626,7 +627,7 @@ func _test_a_won_walk_home_lights_the_fire_she_never_met(t: TestRunner) -> void:
 		_stand_her_in_the_tree(t, rig)
 		var director: DayDirector = rig["director"]
 		director.start(spec)
-		var player: _FakeStroller = rig["player"]
+		var player: FakeStroller = rig["player"]
 		player.position = Vector2(640.0, 96.0)
 		director.finish_day(case[1])
 		var lit := _asked.filter(func(line: String) -> bool: return line.begins_with("light"))
@@ -653,49 +654,6 @@ class _FakeWorlds extends DayWorldSource:
 		_asked.append("stand %d" % spec.day_number())
 		return _world
 
-## The city's dressing, noting how it is dressed, tinted and prepared. No `City`: what the director asks of
-## the city scene is all it answers.
-class _FakeDressing extends CityDressing:
-	var _asked: Array[String]
-	var tinted: RouteSource
-	## Every view the scenery was asked to be prepared over, in order.
-	var prepared: Array[Rect2] = []
-
-	func _init(asked: Array[String]) -> void:
-		_asked = asked
-
-	## Overrides CityDressing.start_day.
-	func start_day(_state: CityState, _day: int, _rng: RandomNumberGenerator,
-			_spec: DaySpec = null) -> void:
-		_asked.append("dress start_day")
-
-	## Overrides CityDressing.start_recipe_day.
-	func start_recipe_day(_state: CityState, _day: int, _rng: RandomNumberGenerator,
-			_spec: DaySpec = null) -> void:
-		_asked.append("dress start_recipe_day")
-
-	## Overrides CityDressing.set_act.
-	func set_act(act: int) -> void:
-		_asked.append("set_act %d" % act)
-
-	## Overrides CityDressing.set_daylight.
-	func set_daylight(fraction: float) -> void:
-		_asked.append("daylight %.1f" % fraction)
-
-	## Overrides CityDressing.refresh_street_trees.
-	func refresh_street_trees() -> void:
-		_asked.append("refresh_street_trees")
-
-	## Overrides CityDressing.tint_the_route.
-	func tint_the_route(route: RouteSource) -> void:
-		tinted = route
-		_asked.append("tint")
-
-	## Overrides CityDressing.prepare_scenery_in.
-	func prepare_scenery_in(view: Rect2) -> void:
-		prepared.append(view)
-		_asked.append("prepare")
-
 ## A map that notes whether the act's spent calm was handed to it, and whose one home tile is at
 ## `home`, every other point a road.
 class _FakeMap extends CityMap:
@@ -715,27 +673,6 @@ class _FakeMap extends CityMap:
 	## Overrides CityMap.set_fenced_park_state.
 	func set_fenced_park_state(_block: Vector2i, _act: int, _today_act: int) -> void:
 		handed_spent = true
-
-## A crowd that notes whether it was started or cleared.
-class _FakeCrowd extends Crowd:
-	var _asked: Array[String]
-
-	func _init(asked: Array[String]) -> void:
-		_asked = asked
-
-	## Overrides Crowd.start_day.
-	func start_day(_day: int, _rng: RandomNumberGenerator, _focus := Vector2.INF,
-			_populate := true, _city_view := false, _uniform_walkers := false,
-			_walker_multiplier := 1.0, _car_multiplier := 1.0) -> void:
-		_asked.append("crowd start_day")
-
-	## Overrides Crowd.clear.
-	func clear() -> void:
-		_asked.append("crowd clear")
-
-	## Overrides Crowd.agent_count.
-	func agent_count() -> int:
-		return 0
 
 ## Events that note how they are planned and streamed, and plan nothing.
 class _FakeEvents extends EventManager:
@@ -789,35 +726,6 @@ class _FakeResistance extends ResistanceDirector:
 	## Overrides ResistanceDirector.start_day.
 	func start_day(day: int, _rng: RandomNumberGenerator, day_length: float) -> void:
 		_asked.append("resistance %d %d" % [day, roundi(day_length)])
-
-## Her, noting where she is put down and facing which way, and standing there.
-class _FakeStroller extends Stroller:
-	var _asked: Array[String]
-	var put_at := Vector2.INF
-
-	func _init(asked: Array[String]) -> void:
-		_asked = asked
-
-	## Overrides Stroller.reset_at.
-	func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
-		put_at = where
-		position = where
-		_asked.append("reset_at %s %s" % [where, look])
-
-## The baby, noting being reset and put to sleep.
-class _FakeBaby extends Baby:
-	var _asked: Array[String]
-
-	func _init(asked: Array[String]) -> void:
-		_asked = asked
-
-	## Overrides Baby.reset.
-	func reset() -> void:
-		_asked.append("baby reset")
-
-	## Overrides Baby.force_sleep.
-	func force_sleep() -> void:
-		_asked.append("baby force_sleep")
 
 ## An authored scene noting what it was installed into, and whether the clock was running then.
 class _FakeScene extends AuthoredScene:
