@@ -18,8 +18,8 @@ courtyard lot.
 **Rejected.** A reader on `Building` for the extension, the tint or the size: nothing in the game reads them back.
 
 **The unextended-roof sweep.** `test_city_buildings.gd`'s sweep reads the extension off the drawn roof, so that
-check alone does not fail when `assign_roof_extensions()` stops handing the extension (every roof
-then reads as unextended and its units on the extension are filtered out); the sweep gained a check that it met extended roofs.
+check alone does not fail when `assign_roof_extensions()` stops handing the extension (every roof then reads as
+unextended and its units on the extension are filtered out); the sweep gained a check that it met extended roofs.
 
 **The lazy probe.** `probes/lazy_scenery_measure.gd` measured the roof's north overhang from the extension and the
 footprint it read off the building. It reads the building's own scenery bounds now and takes off the two tiles of
