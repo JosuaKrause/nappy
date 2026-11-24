@@ -15,3 +15,4 @@ func run(t: TestRunner) -> void:
 	rig.case_a_mid_segment_opening_stays_reachable_from_its_own_side(t)
 	rig.case_closures_are_deterministic(t)
 	rig.case_a_closed_street_is_out_of_the_network(t)
+	rig.case_a_spawn_beside_a_closure_lands_on_walkable_ground(t)

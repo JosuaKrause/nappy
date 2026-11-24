@@ -47,6 +47,8 @@ func run(t: TestRunner) -> void:
 	await _test_the_boom_bars_the_carriageway(t)
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
+	_test_no_door_before_the_region_wall_starts(t)
+	_test_door_target_lands_on_the_approach_side_of_a_hut(t)
 	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
 	await _test_a_hut_detains_and_releases_on_the_other_side(t)
 	await _test_she_stands_still_when_a_hold_lets_her_out(t)
@@ -111,6 +113,58 @@ func _plan_for(map: CityMap, day: int) -> RegionPlan:
 		var tree := RouteTree.for_day(map, day)
 		_plan_cache[key] = RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	return _plan_cache[key]
+
+## The streets of `day` on `map`: the day's region plan and no closure, the tree being data the
+## door target never asks.
+func _streets_of(map: CityMap, day: int) -> DayStreets:
+	var streets := DayStreets.new()
+	var no_closures: Array[RoadClosure] = []
+	streets.begin_day(RouteTree.new(), _plan_for(map, day), no_closures)
+	return streets
+
+## `DevRig.for_spawn_target("door")` as `main` asks it, on the streets of `day`: where it stands her,
+## and what it told the run log.
+func _spawn_at_a_door(map: CityMap, day: int, target: String, told: Array[String]) -> Vector2:
+	var header := RunHeader.new()
+	header.set_day(day)
+	return DevRig.for_spawn_target(target, map, null, _streets_of(map, day), null, header,
+			RecordingTrace.new(told))
+
+## Before the region wall exists, the region plan holds no door bodies on any seed: `--spawn door`
+## reaches its target on a day too early for it and falls back to the doorstep.
+func _test_no_door_before_the_region_wall_starts(t: TestRunner) -> void:
+	var day := 6
+	var map := _maps[0]
+	t.check(day < Tuning.REGION_WALL_FIRST_DAY,
+			"day %d is before the region wall starts (day %d)" % [day, Tuning.REGION_WALL_FIRST_DAY])
+	var told: Array[String] = []
+	var at := _spawn_at_a_door(map, day, "door", told)
+	t.check(at == map.home_world_position(),
+			"no checkpoint exists yet, so --spawn door falls back to the doorstep")
+
+## `door:0` lands on a walkable tile `TILE_SIZE * 4` back from the first hut, along its own
+## `faces()` axis: the approach side a `--walk` in that same direction closes toward.
+func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> void:
+	var day := Tuning.REGION_WALL_FIRST_DAY
+	var map := _maps[0]
+	var huts: Array[EventPlan] = []
+	for body in _plan_for(map, day).door_plans():
+		if body.row_id() == "checkpoint_hut":
+			huts.append(body)
+	t.check(not huts.is_empty(), "seed %d day %d has at least one checkpoint hut" % [BASE_SEED, day])
+	if huts.is_empty():
+		return
+	var told: Array[String] = []
+	var at := _spawn_at_a_door(map, day, "door:0", told)
+	t.check(map.is_walkable(map.world_to_tile(at)), "--spawn door:0 lands on a walkable tile (%s)" % at)
+	var hut := huts[0]
+	var expected := hut.placed_at() - hut.faces() * Tuning.TILE_SIZE * 4.0
+	t.check(at.distance_to(expected) < Tuning.TILE_SIZE * 2.0,
+			"stands close to four tiles back from the hut along its own facing axis (got %s, hut %s, facing %s)"
+					% [at, hut.placed_at(), hut.faces()])
+	var closer := at + hut.faces() * Tuning.TILE_SIZE
+	t.check(closer.distance_to(hut.placed_at()) < at.distance_to(hut.placed_at()),
+			"walking one tile in the hut's own facing direction closes the distance to it")
 
 # ------------------------------------------------------------------- the shape ---
 

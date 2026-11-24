@@ -31,7 +31,7 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 -curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, row 5 of `event-interface.md`, done, the records
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
 -speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose, -frosty-tapir and
--golden-finch), and what each lists is what is left of it:
+-golden-finch and -coral-elk), and what each lists is what is left of it:
 
 1. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
@@ -39,8 +39,4 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
    `City`, so a stand-in can be handed in;
 2. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
    ground, its header giving the wiring between the manager's record and a live event as its reason
-   for a city; `test_wall_shield`'s fields layer cases keep a real street musician for the debug view,
-   to move with the debug view's own suite pass;
-3. run flow, save and pause: `test_dev_rig`'s `--spawn` event, closure and door cases read
-   event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
-   fence round trip ends in the city map's repaint, to move to a map suite.
+   for a city.
