@@ -18,7 +18,10 @@ it once in `RowGround`; a scene recipe still scanned for itself in three places:
   out its route tree and locations again (a review of this pull request found it).
 
 **Noted.**
-- Made inside the witness bracket, the ground keeps the answers the install judged while she walks a
-  bounded or stretch scene with its edges on. A second ground per edge state would change nothing
-  until `CityMap.tiles_of_type()`'s cache tells the two states apart.
+- Made inside the witness bracket, the ground keeps each answer from the first time it is asked: a
+  question the install asks is answered with a bounded scene's exterior and a stretch's void off,
+  and the walk keeps that answer, while a question first asked as she walks (day 8's
+  burnt-building front) is answered with the edges shown, since the ground's side test reads
+  `tile_at()`, `pavement_inward()` and `is_street()`, which answer differently with them on. No
+  scene shows a difference today.
 - Every scene recipe passes and all 25 manifests are byte-identical to main's.

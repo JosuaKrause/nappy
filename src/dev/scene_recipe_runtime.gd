@@ -45,10 +45,12 @@ var _world: DayWorld
 ## The scene's one ground for a row (`EventScheduler.row_ground()`): which tiles a row may stand
 ## on, made once by `_event_plans()` and handed to every authored row's placement, to the
 ## escape's actors' and to the scene's walk (`EventManager.start_recipe()`), so none of the
-## three scans the map again. It is made inside `install()`'s `witness_only()` bracket, so a
-## bounded scene's or a stretch's ground is the whole-city answer the install judges; the walk
-## keeps those answers, as it keeps the map's tile lists for every type the install asked
-## (`CityMap.tiles_of_type()`).
+## three scans the map again. It is made inside `install()`'s `witness_only()` bracket, and
+## keeps each answer from the first time it is asked: a question the install asks (every authored
+## row's) is answered with a bounded scene's exterior and a stretch's void off, and the walk
+## keeps that answer; a question first asked while she walks (day 8's burnt-building front) is
+## answered with the edges shown, as its side test reads `tile_at()`, `pavement_inward()` and
+## `is_street()`.
 var _ground: RowGround
 ## Where the army column's lines go, handed in by `use_trace()`; a trace that writes nowhere until then.
 var _trace := RunTrace.new()

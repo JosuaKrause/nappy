@@ -319,8 +319,8 @@ func walk() -> RouteSource:
 ## the walk sites against the same ones; a rig that places none hands none. `ground` is the
 ## ground the recipe's rows were placed on (`EventScheduler.row_ground()`), which the walk's
 ## events answer (`WalkEvents.ground()`) so what is sited while she walks asks it rather than
-## making one; a rig that places no rows hands none, and the walk makes its own as a walk no
-## dawn planned does.
+## making one; a rig that hands none, whether it places rows or not, has the walk make its own as
+## a walk no dawn planned does.
 ##
 ## **The recipe's holds stay**: its builder holds what it placed (`SceneRecipeRuntime`), and nothing
 ## here rolls against them. Its plans are taken as a walk planned whole is (`start_day()`), with

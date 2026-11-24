@@ -2491,16 +2491,19 @@ two are.
 
 **The escape offers its rows per street rather than per city, on the day's own ground** — a row
 fits a location of the street on the day's answer for the row (`LocationFit`, over
-`RowGround.tiles_for()`), since the chains already say which streets exist for it. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
-regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
-tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
-(`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
-spread, the power station's front; all but the street the
-home's front door opens onto, a door the escape never sets off from (`DaySpec.keeps_the_home_streets_clear()`
-off; `docs/CITY.md`, "The escape"). What is sited after dawn asks a ground under the same setting: a day's own,
-handed on from dawn (`WalkEvents.ground()`), and on a walk no dawn of a day planned and no ground was handed to one `EventsAhead`
-makes under the walk's spec (`_ground_of_the_walk()`), so a row placed while she walks keeps the rule
-the walk was planned under.
+`RowGround.tiles_for()`), since the chains already say which streets exist for it. *(Inbox #785 in
+minty-lemur: "does the escape use the same placement rules as the regular game? it doesn't seem
+like it does. it should, though.")* So every refusal a day makes of a tile holds here — a closed
+tile, a held street, the home block, **a standing street tree's ground** (`docs/CITY.md`, "Street
+trees"), the side of the sidewalk a row wants, a corner for a row with a spread, the power
+station's front; all but the street the home's front door opens onto, a door the escape never
+sets off from (`DaySpec.keeps_the_home_streets_clear()` off; `docs/CITY.md`, "The escape").
+
+What is sited after dawn asks a ground under the same setting. A day's walk carries the day's
+own, handed on from dawn (`WalkEvents.ground()`). A scene recipe's walk carries the ground its
+rows were placed on. A walk that was handed none gets one `EventsAhead` makes under the walk's
+spec (`_ground_of_the_walk()`). So a row placed while she walks keeps the rule the walk was
+planned under.
 Each candidate then meets the day's own spacing (`StreetInvalidation.room_around()`) and the escape's own refusals
 below, and is never offered the ground she starts on.
 

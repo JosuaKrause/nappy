@@ -20,7 +20,10 @@ extends "res://tests/events_shared_city.gd"
 ## (`tests/city_map_cache.gd`): each seed is generated once in the test process, and the copy is the
 ## same city `CityGenerator.generate()` builds for the seed. A case that plans a city over many
 ## days works the city's mast sites out once, on the city as built and before the first day repaints
-## it (`_sites_of()`), and hands them to every dawn it plans, as the game does.
+## it (`_sites_of()`), and hands them to every dawn it plans, as the game does. The one case that
+## hands a placement a stand-in ground (`_test_a_placement_asks_the_ground_it_is_handed`) stands
+## on drawn streets (`StreetMap.full()`): the ground is the stand-in's, the map is only where the
+## tiles are.
 ##
 ## **Why these cases keep generated cities.** What each sweep asks is a placement rule's behaviour
 ## among the ground a whole day's routes leave (which tiles a route holds, which sidewalks it
@@ -545,37 +548,47 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 
 ## **A placement asks the ground it is handed and makes none of its own**
 ## (`EventScheduler.recipe_placement()`, whose `ground` is the scene's one ground, made once for
-## every row of a scene): on the seed-4242 city painted for day 9, the square crew is placed on
-## the first tile of the real ground that takes it, and the same tile, asked with a ground that
-## offers no tile (`_BareGround`), is refused with the location not taking the row there. A
-## placement that made a ground of its own would place it on both, which is what the second
-## check holds.
+## every row of a scene): on drawn streets (`StreetMap.full()`), with a stand-in ground that
+## offers exactly one sidewalk tile (`_OneTileGround`), a tile it offers is not refused for the
+## location not taking the row and the placement is made there; the next tile along the same
+## sidewalk is refused with the location not taking the row there; and a stand-in that offers no
+## tile (`_BareGround`) refuses the first one too. A placement that made a ground of its own would
+## place the row on all three, which is what the refusals hold.
 func _test_a_placement_asks_the_ground_it_is_handed(t: TestRunner) -> void:
 	var day := 9
-	var def := EventCatalogue.by_id("poster_crew_square")
-	var map := _repainted_city(day)
-	var corridor := Corridor.of(RouteTree.for_day(map, day))
-	var locations := DayLocations.lay_out(map, corridor)
-	var ground := EventScheduler.row_ground(map, corridor)
+	var def := EventCatalogue.by_id("poster_crew")
+	var map := StreetMap.full()
+	var locations := DayLocations.lay_out(map, Corridor.of(null))
+	var sidewalk := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
+	var offered: Vector2i = sidewalk[0]
+	var beside := Vector2i(-1, -1)
+	for tile in sidewalk:
+		if tile != offered and locations.holding(tile, GameEnums.TileType.SIDEWALK) \
+				== locations.holding(offered, GameEnums.TileType.SIDEWALK):
+			beside = tile
+			break
+	t.check(beside != Vector2i(-1, -1), "the offered tile has a tile beside it in its location")
 	var no_doors := PackedVector2Array()
 	var calm := CalmAreas.of(map)
-	var placed_on := Vector2i(-1, -1)
-	for tile in ground.tiles_for(def):
-		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
-				map.tile_to_world(tile), 1, [], corridor, ground, no_doors, calm, [], locations)
-		if plan:
-			placed_on = tile
-			break
-	t.check(placed_on != Vector2i(-1, -1),
-			"the square crew is placed on a tile of the real ground")
-	if placed_on == Vector2i(-1, -1):
-		return
 	var why: Array[String] = []
-	var refused := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
-			map.tile_to_world(placed_on), 1, [], corridor, _BareGround.new(), no_doors, calm,
+	var placed := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+			map.tile_to_world(offered), 1, [], null, _OneTileGround.new(offered), no_doors, calm,
 			[], locations, why)
-	t.check(refused == null and why.size() == 1 and why[0].contains("does not take"),
-			"the same tile is refused when the ground handed in offers none (%s)" % [why])
+	t.check(placed != null, "the row is placed on the one tile the ground handed in offers (%s)"
+			% [why])
+	var refused: Array[String] = []
+	var beside_it := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+			map.tile_to_world(beside), 1, [], null, _OneTileGround.new(offered), no_doors, calm,
+			[], locations, refused)
+	t.check(beside_it == null and refused.size() == 1 and refused[0].contains("does not take"),
+			"and the next tile along the sidewalk is refused: the ground does not offer it (%s)"
+			% [refused])
+	var bare: Array[String] = []
+	var none := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+			map.tile_to_world(offered), 1, [], null, _BareGround.new(), no_doors, calm, [],
+			locations, bare)
+	t.check(none == null and bare.size() == 1 and bare[0].contains("does not take"),
+			"and the tile is refused when the ground handed in offers none (%s)" % [bare])
 
 ## A ground that offers no tile to any row.
 class _BareGround extends RowGround:
@@ -585,6 +598,18 @@ class _BareGround extends RowGround:
 	## Overrides RowGround.offers_for_role.
 	func offers_for_role(_def: EventDef, _role: GameEnums.BlockerRole) -> Dictionary:
 		return {}
+
+## A ground that offers one tile, once, to every row.
+class _OneTileGround extends RowGround:
+	var _tile: Vector2i
+
+	func _init(tile: Vector2i) -> void:
+		super(null, null, true, RowGround.Weights.new(), Callable())
+		_tile = tile
+
+	## Overrides RowGround.offers_for_role.
+	func offers_for_role(_def: EventDef, _role: GameEnums.BlockerRole) -> Dictionary:
+		return {_tile: 1}
 
 ## **A scene recipe lays a row the units draw as the day lays it: its route stays on its
 ## location's run** (`Location.run()`, `EventScheduler.recipe_placement()`), so an authored man
