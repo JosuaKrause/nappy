@@ -339,10 +339,14 @@ func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built
 	var handed := made.events.recipe_locations()
 	var over_its_corridor := DayLocations.lay_out(made.map,
 			Corridor.of(made.streets.route_tree()))
-	t.check(handed != null and not handed.all().is_empty()
-			and handed.all().size() == over_its_corridor.all().size(),
-			"and the locations laid out over its corridor (%d of %d)"
-			% [handed.all().size() if handed else -1, over_its_corridor.all().size()])
+	var with_no_corridor := DayLocations.lay_out(made.map, Corridor.of(null))
+	var views_handed := _views_of(handed)
+	var views_over_corridor := _views_of(over_its_corridor)
+	t.check(views_over_corridor != _views_of(with_no_corridor),
+			"fixture: on this scene a layout with no corridor tells the locations' views differently")
+	t.check(not views_handed.is_empty() and views_handed == views_over_corridor,
+			"and the locations are the ones laid out over its corridor, with its views (%d)"
+			% views_handed.size())
 	_free(stood)
 	# A scene with no route tree lays its locations out under a corridor that answers none, so
 	# the walk is handed neither.
@@ -355,6 +359,16 @@ func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built
 			and bare.events.recipe_locations() == null,
 			"a scene with no route tree hands the walk neither: %s" % [bare_errors])
 	_free(treeless)
+
+## The view each of `locations`' locations has of the routes, in the order they are laid out: what
+## a layout over a corridor tells that one with no corridor does not. Empty for none.
+func _views_of(locations: DayLocations) -> Array[int]:
+	var views: Array[int] = []
+	if locations == null:
+		return views
+	for location in locations.all():
+		views.append(location.view())
+	return views
 
 ## **An oversized city-wide uniform population is refused, not truncated**: the crowd placed fewer
 ## walkers than the recipe's area and multiplier asked for (8,444 of the 8,540 asked, read off the

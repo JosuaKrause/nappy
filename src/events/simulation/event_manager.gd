@@ -307,7 +307,8 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bod
 	stream_around(focus)
 
 ## The walk the plan `start_day()` started is stated against (`RouteSource`): the day's route tree,
-## the escape's two chains (`FinalePlanner.Plan`), or null in the building and before a walk starts.
+## a scene recipe's (the one its rows were placed against; null for a rig's), the escape's two
+## chains (`FinalePlanner.Plan`), or null in the building and before a walk starts.
 func walk() -> RouteSource:
 	return _walk
 
