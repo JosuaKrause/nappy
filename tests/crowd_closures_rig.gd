@@ -1280,7 +1280,8 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 	for frame in int(round(12.0 / STEP)):
 		RunCity.crowd(city).step(STEP)
 		for agent in RunCity.crowd(city).agents():
-			var segment := map.street_network().segment_containing(map.world_to_tile(agent.position))
+			var segment := map.street_network().segment_containing(map.world_to_tile(
+					agent.position))
 			if segment == null or not home_keys.has(segment.key()):
 				continue
 			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
@@ -1302,7 +1303,8 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 ## reach beyond the edge) on its way in, which is the whole of how it looks like it drives across
 ## rather than stopping dead at the kerb.
 func _test_only_cars_go_over_the_bridge(t: TestRunner) -> void:
-	var spine_x := (_city.map.main_road_corridor() * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
+	var spine_x := (_city.map.main_road_corridor() * CityMap.period()
+			+ Tuning.STREET_WIDTH * 0.5) \
 			* float(Tuning.TILE_SIZE)
 	var limit := _city.map.world_size().y
 	var at := Vector2(spine_x, limit - Tuning.TILE_SIZE)

@@ -248,7 +248,8 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 func _the_column(city: City, director: ResistanceDirector, player: Stroller, label: String) -> int:
 	var happenings := director._happenings
 	var map := city.map
-	var spine := (float(map.main_road_corridor() * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
+	var spine := (float(map.main_road_corridor() * CityMap.period())
+			+ Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 	var printed := 0
 	var hers: Array[Vector2] = [Vector2(spine, 600.0), Vector2(spine + 90.0, 40.0),

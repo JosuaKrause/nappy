@@ -156,8 +156,8 @@ func _signals_of(map: CityMap) -> TrafficSignals:
 
 ## A column of the main road a north-south lane runs down, or -1.
 func _spine_lane(map: CityMap) -> int:
-	for x in range(map.main_road_corridor() * CityMap.period(), map.main_road_corridor() * CityMap.period()
-			+ Tuning.STREET_WIDTH):
+	for x in range(map.main_road_corridor() * CityMap.period(),
+			map.main_road_corridor() * CityMap.period() + Tuning.STREET_WIDTH):
 		if CityMap.corridor_offset(x) == Tuning.SIDEWALK_WIDTH \
 				and map.tile_at(Vector2i(x, 4 * CityMap.period() - 4)) == GameEnums.TileType.ROAD:
 			return x

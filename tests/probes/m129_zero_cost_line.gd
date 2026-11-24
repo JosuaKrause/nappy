@@ -384,7 +384,8 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-	for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+	for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(),
+			Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}

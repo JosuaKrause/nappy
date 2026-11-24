@@ -140,7 +140,8 @@ func _test_the_one_fence_is_remembered_after_its_act(t: TestRunner) -> void:
 			t.check(fenced == first and fenced_act == 3,
 					"day %d remembers the original fence after the director's read-back" % day)
 		if day >= 12:
-			t.check(map.fenced_park_block() == Vector2i(-1, -1) and map.closed_tile_set().is_empty(),
+			t.check(map.fenced_park_block() == Vector2i(-1, -1)
+					and map.closed_tile_set().is_empty(),
 					"day %d has no physical fence after the chosen act" % day)
 		elif day >= 9:
 			t.check(map.fenced_park_block() == first, "the original fence stands for the rest of act III")
@@ -432,7 +433,8 @@ func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 				if block in used:
 					continue
 				compared += 1
-				t.check(block in map.calm_blocks_now(), "seed %d day %d: unused %s is still calm"
+				t.check(block in map.calm_blocks_now(),
+						"seed %d day %d: unused %s is still calm"
 						% [map.city_seed(), day, block])
 				for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
 					t.check(not map.is_shut(tile) and not map.is_closed(tile),

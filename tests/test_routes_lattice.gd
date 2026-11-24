@@ -145,11 +145,13 @@ func _test_an_open_city_can_reach_everywhere_calm(t: TestRunner) -> void:
 		var home := ClosurePlanner.home_street(map)
 		t.check(home != null, "seed %d: the front door opens onto a street" % map.city_seed())
 		for area in ClosurePlanner.calm_areas(map):
-			t.check(map.street_network().route_count(home, area.access, map.blocked_segments(), 1) >= 1,
+			t.check(map.street_network().route_count(
+					home, area.access, map.blocked_segments(), 1) >= 1,
 					"seed %d: calm area %s can be walked to before anything closes"
 					% [map.city_seed(), area.block])
 			total += 1
-			if map.street_network().route_count(home, area.access, map.blocked_segments(), 2) >= 2:
+			if map.street_network().route_count(
+					home, area.access, map.blocked_segments(), 2) >= 2:
 				with_a_choice += 1
 	# Measured at 100% of areas on these seeds with the weaker gate in place. A floor well under
 	# it, because the offer is allowed to fail on a map that cannot make it — what would be worth
@@ -228,7 +230,8 @@ func _test_a_doorway_is_not_a_route(t: TestRunner) -> void:
 			if area.access.size() != 1:
 				continue
 			checked += 1
-			t.check(map.street_network().route_count(home, area.access, map.blocked_segments(), 1) >= 1,
+			t.check(map.street_network().route_count(
+					home, area.access, map.blocked_segments(), 1) >= 1,
 					"seed %d: the one archway into %s can be walked to"
 					% [map.city_seed(), area.block])
 			var closed := map.blocked_segments()

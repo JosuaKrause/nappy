@@ -524,8 +524,8 @@ each is stated where its decision is taken:
 | the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness stands in for, asserted directly |
 
 The count of *areas* is two because one may be spoiled with events while its ground remains
-walkable. A physically fenced area is removed from `calm_blocks_now()` before this count; it cannot
-satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
+walkable. A physically fenced area is removed from `calm_blocks_now()` before this count; it
+cannot satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
@@ -589,10 +589,10 @@ The lattice is a graph: a **junction** at each end of every block — one more p
 blocks — and the **streets** between them, each one block long and one corridor wide.
 `StreetNetwork` owns that view of the city, and a closure takes out one whole street. A few hundred
 segments is cheap enough that validating a whole day's closures costs less than one tile-level flood
-fill. Each `CityMap` holds its own (`map.street_network()`), built with the map, and everything that asks
-about streets is handed it with the map rather than reading a lattice kept for the process; the
-lattice is a function of the block count alone, so every city's network has the same streets in the
-same order and a segment key names the same street on all of them.
+fill. Each `CityMap` holds its own (`map.street_network()`), built with the map, and everything
+that asks about streets is handed it with the map rather than reading a lattice kept for the
+process; the lattice is a function of the block count alone, so every city's network has the
+same streets in the same order and a segment key names the same street on all of them.
 
 Half a street would be a closure the player cannot see the shape of, and a whole corridor
 would delete a route rather than narrow the choice. A street is the unit the player already
@@ -1525,12 +1525,12 @@ almost nothing. See `docs/DECISIONS.md` under M45 for the measurement.
 
 ### Everything else has to know
 
-A closed street's ground goes into `CityMap.closed_tile_set()` wherever the barriers actually cut it
-off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway can open
-onto the middle of a closed street, and the ground beside it is still reachable from that side
-however the two mouths are sealed. `ReachabilityGrid` is what tells the difference, flooding the
-day's tiles with every barrier tile added on top; what the flood never reaches is what
-`closed_tile_set()` holds.
+A closed street's ground goes into `CityMap.closed_tile_set()` wherever the barriers actually
+cut it off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway
+can open onto the middle of a closed street, and the ground beside it is still reachable from
+that side however the two mouths are sealed. `ReachabilityGrid` is what tells the difference,
+flooding the day's tiles with every barrier tile added on top; what the flood never reaches is
+what `closed_tile_set()` holds.
 
 - The **event scheduler** places nothing there, shortens a mobile event's route so it stops
   before a barrier, and counts closures as part of what is in the way when it checks that a
@@ -1539,12 +1539,12 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
   never do.
 - The **resistance** never puts a contact behind one. Steps expire, so that would silently
   cost a run its good ending.
-- **Every figure that moves** is stopped by it as she is. `closed_tile_set()` is one layer of the
-  map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts, the
-  soft seals and the stationary bodies; every step, walk, line and way a figure takes is asked of
-  that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves by), so a
-  dog, a bike or a pursuer never walks through a closure's barrier, and a closure's barrier body
-  stands on ground the closure took (`City._barrier_footprint()`).
+- **Every figure that moves** is stopped by it as she is. `closed_tile_set()` is one layer of
+  the map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts,
+  the soft seals and the stationary bodies; every step, walk, line and way a figure takes is
+  asked of that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves
+  by), so a dog, a bike or a pursuer never walks through a closure's barrier, and a closure's
+  barrier body stands on ground the closure took (`City._barrier_footprint()`).
 
 ### Sealing the tree
 

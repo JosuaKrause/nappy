@@ -43,8 +43,10 @@ func run(t: TestRunner) -> void:
 				adjacent.append(plan)
 				var key := "%s r%.0f" % [plan.row_id(), plan.blocking_radius()]
 				ids[key] = int(ids.get(key, 0)) + 1
-				var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
-				if segment and not segment.horizontal and segment.a.x == map.main_road_corridor():
+				var segment := map.street_network().segment_containing(
+						map.world_to_tile(plan.placed_at()))
+				if (segment and not segment.horizontal
+						and segment.a.x == map.main_road_corridor()):
 					counts["spine"] += 1
 		print("SC seed %d | on the routes %d | route-adjacent %d (on the main road %d) | deep %d"
 				% [seed_value, counts["on"], counts["adjacent"], counts["spine"], counts["deep"]])
@@ -61,7 +63,8 @@ func run(t: TestRunner) -> void:
 					continue
 				fits.append(plan)
 				var segment := map.street_network().segment_containing(tile)
-				if segment and not segment.horizontal and segment.a.x == map.main_road_corridor():
+				if (segment and not segment.horizontal
+						and segment.a.x == map.main_road_corridor()):
 					spine += 1
 			var kinds := {}
 			for plan in fits:
@@ -203,7 +206,8 @@ func _scar_discs(city: City, seed_value: int) -> void:
 	var sites := 0
 	var through := 0
 	for going: float in [1.0, -1.0]:
-		var lane_x := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
+		var lane_x := CrowdLanes.lane_centre(map.main_road_corridor(),
+				CrowdLanes.road_lane(true, going))
 		for y in range(0, map.size.y, 3):
 			var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
 			var segment := map.street_network().segment_containing(tile)

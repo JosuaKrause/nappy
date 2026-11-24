@@ -624,7 +624,8 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 			if at == Vector2.INF:
 				continue
 			checked += 1
-			var segment := city.map.street_network().segment_containing(city.map.world_to_tile(at))
+			var segment := city.map.street_network().segment_containing(city.map.world_to_tile(
+					at))
 			var bordering := segment != null and home_border_keys.has(segment.key())
 			t.check(not bordering,
 					("seed %d day %d draw %d: the door task never sits on a segment bordering " +

@@ -174,10 +174,10 @@ static func _square_sites(map: CityMap) -> Array[Vector2]:
 			found.append(snapped)
 	return found
 
-## One candidate per block along `map.main_road_corridor()`'s own corridor — the spine every other siting
-## rule in the game reads off `CityMap.main_road_corridor()` for, `SealPlanner._is_the_main_road()` included.
-## Sited at the **middle of a block**, never at a junction row, so the snap lands on an ordinary
-## stretch of sidewalk rather than a crossing.
+## One candidate per block along `map.main_road_corridor()`'s own corridor — the spine every
+## other siting rule in the game reads off `CityMap.main_road_corridor()` for,
+## `SealPlanner._is_the_main_road()` included. Sited at the **middle of a block**, never at a
+## junction row, so the snap lands on an ordinary stretch of sidewalk rather than a crossing.
 static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	if map.main_road_corridor() < 0:

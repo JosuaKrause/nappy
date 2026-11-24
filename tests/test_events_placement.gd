@@ -55,7 +55,8 @@ var _route_plans := {}
 
 func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
 		tree: RouteTree) -> Array[EventPlan]:
-	assert(map.closed_tile_set().is_empty(), "a plan shared by the suite is planned on an open map")
+	assert(map.closed_tile_set().is_empty(),
+			"a plan shared by the suite is planned on an open map")
 	var key := "%d:%d:%d" % [map.city_seed(), day, map.blocked_segments().size()]
 	if not _route_plans.has(key):
 		var consumed: Array[String] = []
@@ -983,7 +984,8 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 		for plan in counted:
 			if not plan.paces_a_beat():
 				continue
-			var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
+			var segment := map.street_network().segment_containing(map.world_to_tile(
+					plan.placed_at()))
 			if segment and corridor.depth(segment.tile_rect().position) == 0:
 				streets[segment.key()] = segment
 		for key: Vector3i in streets:

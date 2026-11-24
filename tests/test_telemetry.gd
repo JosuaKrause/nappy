@@ -400,7 +400,8 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t: TestRunner) -> void:
 	var seen := _colours_in(image)
 	t.check(seen.has(TelemetryMap.HOME_MARK), "the home is marked")
 	t.check(seen.has(TelemetryMap.CALM_MARK), "and every calm area is outlined")
-	t.check(map.main_road_corridor() < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
+	t.check(map.main_road_corridor() < 0 or seen.has(TelemetryMap.SPINE_MARK),
+			"and the spine is drawn")
 	_check_a_precinct_shows_as_paving(t, map, image)
 	# A hard blocker nobody can find in the one picture built to check placements might as well
 	# not have been placed. It showed through as building at first, which is invisible.

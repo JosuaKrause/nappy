@@ -1094,7 +1094,8 @@ func capture() -> Dictionary:
 	var trees: Array[Vector2i] = []
 	for tree in StreetTrees.planted(self):
 		trees.append(tree.tile)
-	return {"size": size, "seed": _seed_used, "main_road": _main_road, "home_block": _home_block,
+	return {"size": size, "seed": _seed_used, "main_road": _main_road,
+			"home_block": _home_block,
 			"home_rect": _home_rect, "power_station": _power_station,
 			"power_station_door": _power_station_door,
 			"power_station_door_key": _power_station_door_key,

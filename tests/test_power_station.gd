@@ -38,7 +38,8 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------ generation ---
 
 ## One station on every seed, and it is one of the big buildings rather than a thing of its own:
-## the rolled count still bounds the lot, and the station is the pair `power_station_blocks()` names.
+## the rolled count still bounds the lot, and the station is the pair `power_station_blocks()`
+## names.
 func _test_every_city_has_exactly_one(t: TestRunner) -> void:
 	for map in _maps:
 		var problems := CityGenerator.validation_problems(map)
@@ -333,7 +334,8 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 		if node is Building.StationStack:
 			in_buildings += 1
 	t.check(in_buildings == 0, "no stack is left in the building layer (%d)" % in_buildings)
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station_blocks()))
+	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
+			city.map.power_station_blocks()))
 	var height := float(AtlasTable.baked().native_size(Building.POWER_STATION_STACK).y)
 	for i in mini(stacks.size(), feet.size()):
 		var stack := stacks[i]

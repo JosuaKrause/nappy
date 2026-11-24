@@ -324,7 +324,8 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 			"the events")
 	t.check(RunCity.crowd(city).skip_motion and RunCity.crowd(city).skip_agent_drawing, "the crowd")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station_blocks()))
+	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
+			city.map.power_station_blocks()))
 	var she := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

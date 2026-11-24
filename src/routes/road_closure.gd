@@ -84,12 +84,13 @@ func street_key() -> Vector3i:
 
 ## Every tile of the street this closure's segment covers — the geometry, not the verdict.
 ##
-## **This is not the same set as what ends up in `CityMap.closed_tile_set()`.** The barriers stand at
-## the two mouths, and ground between them that opens onto an alley or a courtyard archway mid-
-## segment is still somewhere a pedestrian can get to from that side, whatever the two ends of the
-## street say. Which of these tiles are genuinely unreachable is a question about the whole day's
-## walkable ground, not about one closure in isolation, so `CityMap.close_streets` is what answers
-## it — with `ReachabilityGrid`, once, for every closure of the day together.
+## **This is not the same set as what ends up in `CityMap.closed_tile_set()`.** The barriers
+## stand at the two mouths, and ground between them that opens onto an alley or a courtyard
+## archway mid- segment is still somewhere a pedestrian can get to from that side, whatever the
+## two ends of the street say. Which of these tiles are genuinely unreachable is a question
+## about the whole day's walkable ground, not about one closure in isolation, so
+## `CityMap.close_streets` is what answers it — with `ReachabilityGrid`, once, for every closure
+## of the day together.
 func tiles(map: CityMap) -> Array[Vector2i]:
 	return map.rect_tiles(_segment.tile_rect())
 

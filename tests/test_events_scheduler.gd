@@ -1348,7 +1348,8 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var map := _map()
 	var sites := _sites()
 	t.check(map.calm_blocks_now().size() >= 2,
-			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks_now().size())
+			"the map has calm ground to choose between (%d blocks)"
+			% map.calm_blocks_now().size())
 
 	var used: Vector2i = map.calm_blocks_now()[0]
 	var used_set: Array[Vector2i] = [used]
