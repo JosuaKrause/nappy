@@ -68,6 +68,7 @@ ENTRY_POINTS = (
     "merge-test-only-members.py",
     "check_field_reads.py",
     "field_answers.py",
+    "field_to_method.py",
     "typing_census.py",
     "compare-placement-rows.py",
 )
