@@ -355,8 +355,9 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
 	lorry.free()
 
-	# A hold: the manager's own `CheckpointController.hold_that_would_begin()`, handed in as the
-	# watch is given it.
+	# A hold: the answer `CheckpointController.hold_that_would_begin()` gives for a lone post
+	# (the post itself with her inside its `detain_distance()`, nothing outside it), handed in as
+	# the watch is given it.
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)
@@ -367,7 +368,9 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	t.check(_seen.size() == 1 and _influenced.is_empty(),
 			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
 	var held := Vector2(0.0, hold_reach - 2.0)
-	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
+	var hold_of_the_post := func(at: Vector2) -> EventInstance:
+		return post if at.distance_to(post.global_position) <= hold_reach else null
+	_stand(watch, [post] as Array[EventInstance], held, hold_of_the_post)
 	t.check(_influenced.size() == 1 and post.source().landed_ever() == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
 	manager.stand_down()
@@ -426,7 +429,9 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 			"a cyclist still only warned is not a catch, and not an influence (%s)" % [_influenced])
 	cyclist.free()
 
-	# A hold already running: the manager would begin no other, so the watch counts none.
+	# A hold already running: the controller begins no other (`hold_that_would_begin()` answers
+	# nothing while any instance is chatting; `_test_a_corner_of_two_doors_is_one_toll` in
+	# tests/test_checkpoints.gd holds that), so the watch is handed no hold and counts none.
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)
@@ -437,7 +442,8 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	mother.start_chat()
 	var at_post := Vector2(0.0, 500.0 + post.detain_distance() - 2.0)
 	var both: Array[EventInstance] = [mother, post]
-	_stand(_watch(), both, at_post, manager.checkpoints.hold_that_would_begin)
+	var no_other_hold := func(_at: Vector2) -> EventInstance: return null
+	_stand(_watch(), both, at_post, no_other_hold)
 	t.check(_influenced.is_empty(),
 			"inside a post's reach while another hold runs is no hold (%s)" % [_influenced])
 	manager.stand_down()

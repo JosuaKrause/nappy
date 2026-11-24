@@ -61,10 +61,12 @@ ticks give, and is kept with its reason:
   no case asks about (a district door's hold that put her down elsewhere, a chatting mother, an extra
   row the director sent) and took 1.1 to 2.1 times as long. `test_pursuer_on_foot.gd`'s walk, whose
   run log real ticks left as it was, takes real ticks.
-- `test_checkpoints.gd` drives the street-door rig's public `watch_the_door_lines()`,
-  `warn_at_the_doors()` and `hut.step()` on a city that never ticks, a standalone guard's `step()` in
-  the pursuit simulations, and the gate rig's `RunCity.crowd(city).step()`: a real tick passes the car at
-  another time than the rig's own.
+- `test_checkpoints.gd` drives a standalone guard's `step()` in the pursuit simulations
+  (`_guard_rig()`), and the gate rig's `RunCity.crowd(city).step()`: a real tick passes the car at
+  another time than the rig's own. Its street-door rigs take real ticks.
+- `test_resistance_crossing.gd` calls `EventManager.step_the_doors()`, the tick's three door steps,
+  and `step_the_encounters()` before it where a hut's hold runs, since real ticks over a whole day 9
+  with every event live ran 94.2 s in CI against 46.0 s recorded (record minty-quail-polite-quail).
 - A crowd car at speed 700, and a walker at pace 0 other than a waiting one, are not reachable
   through `Crowd.add_recipe_actor()`; a stopped car is reached through `crashed_into()`, which the
   game calls.

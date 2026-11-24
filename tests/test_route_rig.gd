@@ -1588,9 +1588,9 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	var told: Array[String] = []
 	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(told))
 	stroller.reset_at(lane - axis * 20.0)
-	RunCity.events(city).checkpoints.watch_the_door_lines()
+	await _steps(t, 1)
 	stroller.global_position = lane + axis * 20.0
-	RunCity.events(city).checkpoints.watch_the_door_lines()
+	await _steps(t, 1)
 	t.check(_walks_told_in(told) == 1,
 			"while walking straight along the carriageway under it is counted (%d)"
 			% _walks_told_in(told))
