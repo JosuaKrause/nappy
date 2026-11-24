@@ -46,7 +46,8 @@ func _test_each_parent_has_a_page_of_their_own(t: TestRunner) -> void:
 		var views: Dictionary = {}
 		var prams: Dictionary = {}
 		for carrying: bool in [false, true]:
-			rig.carrying = carrying
+			if carrying:
+				rig.use_carrying_rig()
 			for direction in range(8):
 				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
 				var pose := rig.pose(1.0)

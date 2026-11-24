@@ -20,7 +20,7 @@ extends RefCounted
 ## - **day 13's column** sent down the main road toward her at the doorstep, `TICKS * 2` ticks.
 ##
 ## **An event figure** is a move on the map's list (`WorldMap.list_move()`) that does not
-## give way (`MoveProposal.yields` false) and has a body (`radius` above zero), by the rules the
+## give way (`MoveProposal.gives_way()` false) and has a body (`radius` above zero), by the rules the
 ## crowd gives way by (`SeparationPass`): **for a walker**, one under way (moved in the last
 ## `SeparationPass.UNDER_WAY_TICKS` ticks) or standing with `stood_round`; **for a car**, one that
 ## has moved since the probe first saw it, as long as it stands. A step longer than

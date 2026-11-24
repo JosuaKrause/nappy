@@ -21,7 +21,7 @@ signal let_out_of_the_hold
 const CAMERA_EASE_SECONDS := 0.5
 
 ## The illustrated family keeps different amounts of empty canvas around each projection, so its
-## functional hand-to-handle placement uses three screen-axis distances. Scaling `facing` by these
+## functional hand-to-handle placement uses three screen-axis distances. Scaling `_facing` by these
 ## axes keeps the pram moving continuously through a turn; selecting offsets from the eight texture
 ## views instead would make it jump at every view boundary.
 const PRAM_HORIZONTAL_DISTANCE := 24.0
@@ -77,7 +77,7 @@ const MOTHER_BACK_DIAGONAL: Array[String] = [
 	"rig/mother_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `Pose.mother_texture()`.
+## whenever the baby is in her arms; see `Pose.mother_texture()`.
 const MOTHER_CARRYING_FRONT: Array[String] = [
 	"rig/mother_carrying_front_a",
 	"rig/mother_carrying_front_c",
@@ -121,7 +121,7 @@ const FATHER_BACK_DIAGONAL: Array[String] = [
 	"rig/father_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `Pose.mother_texture()`, the shared parent selector.
+## whenever the baby is in his arms; see `Pose.mother_texture()`, the shared parent selector.
 const FATHER_CARRYING_FRONT: Array[String] = [
 	"rig/father_carrying_front_a",
 	"rig/father_carrying_front_c",
@@ -244,11 +244,11 @@ enum Alert {
 ## radius. Null in a test rig built without one.
 @onready var _pram_collision: CollisionShape2D = get_node_or_null("PramCollisionShape2D")
 
-var facing := Vector2.DOWN
+var _facing := Vector2.DOWN
 
 ## The way she faces, the last way she moved or was turned.
 func facing_direction() -> Vector2:
-	return facing
+	return _facing
 
 ## The direction she is being steered this physics frame (`steering_direction()`).
 var _steering := Vector2.ZERO
@@ -276,26 +276,26 @@ var _parent_atlas: StringName = &""
 ## The baked atlas pages she draws from (`AtlasLibrary`), handed by `main` before she enters the
 ## tree (`use_atlas()`); a stroller nobody handed one (a suite's) makes its own when she first
 ## enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
 
-## The atlas pages she draws from from now on (`atlas`), handed by `main` as it makes her.
+## The atlas pages she draws from from now on (`_atlas`), handed by `main` as it makes her.
 func use_atlas(library: AtlasLibrary) -> void:
-	atlas = library
+	_atlas = library
 
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
 ## Set once by `main` as the escape's first world is built, before she is ever drawn; nothing ever
 ## flips it back, so there is no case of switching mid-walk to account for. Her collision circle is
 ## unchanged either way — see `_shape`'s own doc.
-var carrying := false
+var _carrying := false
 
-## Whether the baby is in her arms instead of ahead in the pram (`carrying`).
+## Whether the baby is in her arms instead of ahead in the pram.
 func is_carrying() -> bool:
-	return carrying
+	return _carrying
 
 ## Puts the baby in her arms: the escape scene's rig, which `main` hands her as it builds the escape's
 ## first world.
 func use_carrying_rig() -> void:
-	carrying = true
+	_carrying = true
 
 ## The map of the world she walks (`WorldMap`), handed in by whoever puts her in it (`set_map()`).
 ## Asked every physics frame whether her *current* position sits on a flight of stairs
@@ -333,7 +333,7 @@ func pram_shape() -> GroundShape:
 ## The pram's own body radius, smaller than `_pram_shape`'s 12px — **8px is the pinned
 ## recommendation, open to overturn** if the far half still reads as too much or too little to
 ## clip through. `PramCollisionShape2D`'s centre sits on the circumference of her own body
-## (`Tuning.PLAYER_BODY_RADIUS`, 14px out along `facing`) rather than at the pram's drawn
+## (`Tuning.PLAYER_BODY_RADIUS`, 14px out along `_facing`) rather than at the pram's drawn
 ## presentation offset — *(PLAYTEST-57: "place the center of the stroller hitbox at the circumference
 ## of the player hitbox", "and don't make it too big")* — so the pram's far half overlaps whatever
 ## it meets and she can stand against a wall while the pram no longer clips through a corner whole.
@@ -343,16 +343,16 @@ func pram_shape() -> GroundShape:
 ## own body.
 const PRAM_BODY_RADIUS := 8.0
 
-## Where the pram is *drawn* relative to her this frame — `Vector2.ZERO` while `carrying`, since
-## there is no pram to be ahead of her. Computed once in `_physics_process()`, and read again by
+## Where the pram is *drawn* relative to her this frame — `Vector2.ZERO` while she carries the baby,
+## since there is no pram to be ahead of her. Computed once in `_physics_process()`, and read again by
 ## `_draw()` so the two can never disagree about where the pram is drawn. **Not the collision
 ## body's own offset any more** — `PramCollisionShape2D` now sits on her own circumference
-## (`facing * Tuning.PLAYER_BODY_RADIUS`, set alongside this in `_physics_process()`), unsquashed,
+## (`_facing * Tuning.PLAYER_BODY_RADIUS`, set alongside this in `_physics_process()`), unsquashed,
 ## since physics stays in the plain 2D plane and only the drawn offset carries `OBLIQUE_Y`.
 var _pram_offset := Vector2.ZERO
 
 ## The current eight-direction projection, shared by both draw calls so mother and pram cannot
-## disagree about which way the rig faces. Starts south to match the default `facing`.
+## disagree about which way the rig faces. Starts south to match the default `_facing`.
 var _view_direction := 2
 var _walk_phase := 0.0
 ## How long her own movement input stays ignored, set by `detain()`. Velocity is not touched here —
@@ -403,17 +403,17 @@ var _camera_smoothing_when_free := true
 ## is bound before she enters the tree (`main._make_player()`) and `docs/GRAPHICS.md` holds it
 ## fixed for the run, so the two can never name different pages.
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
 	_parent_atlas = parent_atlas(_is_male)
-	atlas.acquire(_parent_atlas)
-	atlas.acquire(STROLLER_ATLAS)
-	atlas.acquire(INDICATOR_ATLAS)
+	_atlas.acquire(_parent_atlas)
+	_atlas.acquire(STROLLER_ATLAS)
+	_atlas.acquire(INDICATOR_ATLAS)
 
 func _ready() -> void:
 	add_to_group("player")
 	if _pram_collision:
-		_pram_collision.disabled = carrying
+		_pram_collision.disabled = _carrying
 	# Read off the scene rather than written down here, so the camera's own smoothing stays a
 	# property of the camera and a focus can switch it off without owning the default.
 	_camera_smoothing_when_free = _camera.position_smoothing_enabled
@@ -426,9 +426,9 @@ func _ready() -> void:
 ## never more than one of her in a running game. In the running game none of these three drops a
 ## page: the boot's own residency is still holding each of them underneath her.
 func _exit_tree() -> void:
-	atlas.release(_parent_atlas)
-	atlas.release(STROLLER_ATLAS)
-	atlas.release(INDICATOR_ATLAS)
+	_atlas.release(_parent_atlas)
+	_atlas.release(STROLLER_ATLAS)
+	_atlas.release(INDICATOR_ATLAS)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -489,7 +489,7 @@ func _physics_process(delta: float) -> void:
 		# Unsquashed, unlike `_pram_offset` above: the collision body stays in the plain 2D plane
 		# every other body in the game collides in, on the circumference of her own
 		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn position.
-		_pram_collision.position = facing * Tuning.PLAYER_BODY_RADIUS
+		_pram_collision.position = _facing * Tuning.PLAYER_BODY_RADIUS
 	move_and_slide()
 
 	# The deflection is moved separately rather than added to `velocity`, which stays what she
@@ -819,9 +819,9 @@ func baby_cue_aside() -> float:
 		return 0.0
 	# Carrying, the bundle has no side to follow: stepping to whichever side she faces would swap
 	# the cue from one shoulder to the other every time a turn crossed the vertical.
-	if carrying:
+	if _carrying:
 		return BABY_CUE_ASIDE
-	return BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
+	return BABY_CUE_ASIDE if _facing.x >= 0.0 else -BABY_CUE_ASIDE
 
 ## Whether the pram is drawn in her own column, which is the one question both cues below turn on.
 ##
@@ -842,7 +842,7 @@ func baby_cue_aside() -> float:
 func _pram_shares_her_column() -> bool:
 	# Carrying, `pram_offset` in `_draw()` is always `Vector2.ZERO` — the bundle rides at her own
 	# position on every facing, so it shares her column on all eight rather than on two.
-	if carrying:
+	if _carrying:
 		return true
 	return absf(pram_draw_offset().x) < Tuning.PLAYER_BODY_RADIUS
 
@@ -869,9 +869,9 @@ func baby_cue_lift() -> float:
 	# Carrying, the cue is just over her head on every facing. Lifted only walking south, it dropped
 	# to her chest the moment a turn crossed the horizontal and jumped back on the way out; lifted
 	# a whole `BABY_CUE_LIFT` over her head, it floated a pram's height above it.
-	if carrying:
+	if _carrying:
 		return FIGURE_HEIGHT + (BABY_CUE_LIFT - PRAM_ART_HEIGHT)
-	if _pram_shares_her_column() and facing.y > 0.0:
+	if _pram_shares_her_column() and _facing.y > 0.0:
 		return FIGURE_HEIGHT + (BABY_CUE_LIFT - PRAM_ART_HEIGHT) + pram_draw_offset().y
 	return BABY_CUE_LIFT
 
@@ -885,8 +885,8 @@ const FIGURE_HEIGHT := 46.0
 
 func _turn_toward(target: Vector2, delta: float) -> void:
 	var step := FACING_TURN_SPEED * delta
-	var diff := angle_difference(facing.angle(), target.angle())
-	facing = facing.rotated(clampf(diff, -step, step)).normalized()
+	var diff := angle_difference(_facing.angle(), target.angle())
+	_facing = _facing.rotated(clampf(diff, -step, step)).normalized()
 
 ## Her own walking follow — `_camera.offset`'s look-ahead lerp — for every frame that is not a
 ## focus or its own return; a focus takes the camera off her entirely, driven below instead.
@@ -917,7 +917,7 @@ func _update_camera(delta: float) -> void:
 			_camera.position_smoothing_enabled = _camera_smoothing_when_free
 			_camera.reset_smoothing()
 		return
-	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
+	var lead := Vector2(_facing.x, _facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
 	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
 
 ## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
@@ -925,7 +925,7 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
 	_outright_moves += 1
 	velocity = Vector2.ZERO
-	facing = look.normalized()
+	_facing = look.normalized()
 	_shove = Vector2.ZERO
 	_detained_for = 0.0
 	_alert = Alert.NONE
@@ -1001,18 +1001,18 @@ func run_excess_ratio() -> float:
 ## inside the registered texture. The sign choice remains continuous at east and west: the
 ## directional Y contribution reaches zero before its distance changes.
 func pram_draw_offset() -> Vector2:
-	if carrying:
+	if _carrying:
 		return Vector2.ZERO
-	var vertical_distance: float = PRAM_SOUTH_DISTANCE if facing.y > 0.0 else PRAM_NORTH_DISTANCE
+	var vertical_distance: float = PRAM_SOUTH_DISTANCE if _facing.y > 0.0 else PRAM_NORTH_DISTANCE
 	var north_diagonal_adjustment := 0.0
-	if facing.y < 0.0:
+	if _facing.y < 0.0:
 		# The normalized x² * y² term peaks at a 45° diagonal, so the selected maximum is the
 		# visually selected correction without introducing a view-sector snap.
-		north_diagonal_adjustment = (4.0 * facing.x * facing.x * facing.y * facing.y
+		north_diagonal_adjustment = (4.0 * _facing.x * _facing.x * _facing.y * _facing.y
 				* PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT)
 	return Vector2(
-			facing.x * PRAM_HORIZONTAL_DISTANCE,
-			facing.y * vertical_distance * OBLIQUE_Y + PRAM_VERTICAL_LIFT
+			_facing.x * PRAM_HORIZONTAL_DISTANCE,
+			_facing.y * vertical_distance * OBLIQUE_Y + PRAM_VERTICAL_LIFT
 			+ north_diagonal_adjustment)
 
 # ------------------------------------------------------------------ drawing ---
@@ -1028,11 +1028,11 @@ func _draw() -> void:
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	_shape.draw_shadow(self, Vector2.ZERO)
-	if carrying:
+	if _carrying:
 		_draw_mother(drawn)
 	else:
 		_pram_shape.draw_shadow(self, pram_offset)
-		if facing.y < 0.0:
+		if _facing.y < 0.0:
 			_draw_pram(drawn)
 			_draw_mother(drawn)
 		else:
@@ -1077,7 +1077,7 @@ func pose(gait: float) -> Pose:
 	for frame in 3:
 		drawn.mother_sources.append(_mother_source(frame))
 	drawn.pram_source = _pram_source()
-	drawn.atlas = atlas
+	drawn.atlas = _atlas
 	drawn.pram_offset = _pram_offset
 	drawn.pram_size = drawn.pram_texture().get_size() * PRAM_VISUAL_SCALE
 	return drawn
@@ -1094,7 +1094,7 @@ class Pose extends RefCounted:
 	var pram_source := ""
 	var pram_offset := Vector2.ZERO
 	var pram_size := Vector2.ZERO
-	## The library her pages are acquired on (`Stroller.atlas`), which the pictures are read from.
+	## The library her pages are acquired on (`Stroller._atlas`), which the pictures are read from.
 	var atlas: AtlasLibrary = null
 
 	## The region of the pose she is drawn in; the run's own parent page is acquired for the whole
@@ -1108,7 +1108,7 @@ class Pose extends RefCounted:
 
 ## The authored view this frame draws, as the path it is baked under.
 func _mother_source(frame: int) -> String:
-	if carrying:
+	if _carrying:
 		if _view_direction == 0 or _view_direction == 4:
 			return FATHER_CARRYING_SIDE[frame] if _is_male else MOTHER_CARRYING_SIDE[frame]
 		if _view_direction == 1 or _view_direction == 3:
@@ -1151,11 +1151,11 @@ func _pram_source() -> String:
 ## either side boundary, so the new direction is already decided by the time either draw function
 ## reads it.
 func _update_view() -> void:
-	_view_direction = EightDirection.update(_view_direction, facing)
+	_view_direction = EightDirection.update(_view_direction, _facing)
 
 ## The nearest of the eight projections, without the moving-view hysteresis.
 func _nearest_view_direction() -> int:
-	return EightDirection.nearest(facing)
+	return EightDirection.nearest(_facing)
 
 ## How the baby is, drawn where the player is already looking — a zzz above the stroller when the
 ## baby is asleep, and something louder as the excitement approaches full, rather than a number
@@ -1188,7 +1188,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
-	Sprites.draw_standing(self, atlas.region(StringName(path)),
+	Sprites.draw_standing(self, _atlas.region(StringName(path)),
 			_indicator_anchor(path, pram_offset + Vector2(aside, -baby_cue_lift() + breath)))
 
 ## The draw anchor that puts a cue's registration line (`INDICATOR_BOTTOM_PADDING` above its
@@ -1215,5 +1215,5 @@ func _draw_alert() -> void:
 	if fmod(_alert_phase * rate, 1.0) > 0.55:
 		return
 	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
-	Sprites.draw_standing(self, atlas.region(StringName(mark)),
+	Sprites.draw_standing(self, _atlas.region(StringName(mark)),
 			Vector2(0.0, -ALERT_HEIGHT))

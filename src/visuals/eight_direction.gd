@@ -35,7 +35,7 @@ static func nearest(heading: Vector2) -> int:
 ## `current` is kept in three cases: `heading`'s length is at or below `idle_threshold` (a body at
 ## rest keeps facing however it stopped, rather than snapping to whatever direction a near-zero
 ## residual velocity happens to point in — the caller passes `0.0`, the default, when its own
-## heading is never actually zero, the way `Stroller.facing` never is); the nearest sector has not
+## heading is never actually zero, the way `Stroller.facing_direction()` never is); the nearest sector has not
 ## changed; or it has, but by less than `SECTOR_DEGREES + HYSTERESIS_DEGREES` of arc from the
 ## sector already shown — the hold that keeps a facing sitting exactly on a boundary from
 ## flickering between its two neighbours.

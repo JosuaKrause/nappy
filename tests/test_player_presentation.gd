@@ -51,7 +51,8 @@ func _test_each_family_stays_in_its_own_poses(t: TestRunner) -> void:
 		rig.step_back_in()
 		rig.reset_at(Vector2.ZERO)
 		for carrying: bool in [false, true]:
-			rig.carrying = carrying
+			if carrying:
+				rig.use_carrying_rig()
 			for direction in range(8):
 				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
 				for frame in range(3):

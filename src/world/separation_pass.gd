@@ -10,7 +10,7 @@ extends RefCounted
 ## proposal and its check (`MoveProposal`).
 ##
 ## **The movers that keep their course** (a "keeper", a name of this class's, each held as a
-## `Keeper`) are the moves on the list that do not give way (`MoveProposal.yields` false) and have a
+## `Keeper`) are the moves on the list that do not give way (`MoveProposal.gives_way()` false) and have a
 ## body (a body radius above zero). Which of them a body gives way to depends on the body:
 ##
 ## - **A walker gives way to a keeper under way**, one that moved within the last `UNDER_WAY_TICKS`

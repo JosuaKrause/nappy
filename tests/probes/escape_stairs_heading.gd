@@ -25,7 +25,7 @@ func run(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
-	player.carrying = true
+	player.use_carrying_rig()
 	player.set_map(scene.map())
 	scene.add_entity(player)
 	player.set_physics_process(false)
