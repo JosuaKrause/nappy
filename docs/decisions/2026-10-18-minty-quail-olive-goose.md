@@ -26,15 +26,12 @@ into the event surroundings and gave the rigs parts of their own; S moved the ot
 Each probe was run by name on main and on the head; the lines each prints are the same apart from
 the times they print (the cost probes' microseconds and milliseconds). `m159_tick_sweep_events_cost`
 and `minty_quail_crowd_yields` report 3 failures on both: the first is the split mode's known
-mismatch with the real tick (lilac-pelican's `tick-sweep-split.md`), the second a change of
-`EventBus.hard_fail_triggered`'s listeners that the probe leaves behind.
+mismatch with the real tick (lilac-pelican's `tick-sweep-split.md`), the second the runner's leak check
+(the probe's lambda stays connected to `car_near_miss`, `crowd_bumped` and `hard_fail_triggered`),
+already filed in lilac-pelican's `crowd-probes-connections.md`. `poster_pursuer_starts.gd`'s two
+`_ahead.clear()` calls, which the design drops, are dropped, and its output is unchanged.
 
 ## Set aside
 
 `use_director()` (a hand-in only so a test keeps a handle on the real director), walking five cities
 for `route_row()`, and real ticks in the probes (every fingerprint they print would change).
-
-## Not held
-
-`EventManager._take()` skipping `EventSpawner.record_the_body()` fails no suite; the gap is filed in
-`tests-own-class-members.md`.
