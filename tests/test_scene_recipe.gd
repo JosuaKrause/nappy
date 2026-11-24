@@ -89,6 +89,25 @@ func run(t: TestRunner) -> void:
 		t.check(local.is_walkable(Vector2i(-100, -100)), "bounded exterior permits walking beyond the original world")
 		t.check(not local.is_street(Vector2i(-100, -100)), "fallback ground never claims to be a generated street")
 	_test_examples(t)
+	_test_the_stretch_schema(t)
+
+## A stretch recipe's schema (`SceneRecipe.validate()`), asked of day 7's task scene: a stretch scope
+## needs its stretch, a stretch lists ground and never a building tile, and a street tree is listed
+## under `trees`, the shared placement source, never under `props`.
+func _test_the_stretch_schema(t: TestRunner) -> void:
+	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-07-package.json").data
+	var bare := data.duplicate(true)
+	bare.erase("stretch")
+	t.check("\n".join(SceneRecipe.validate(bare)).contains("come together"),
+			"a stretch scope needs its stretch")
+	var walled := data.duplicate(true)
+	walled.stretch.tiles["building"] = [[0, 0, 0]]
+	t.check("\n".join(SceneRecipe.validate(walled)).contains("not a walkable tile type"),
+			"a stretch lists ground, never a building tile")
+	var prop := data.duplicate(true)
+	(prop.stretch.props as Array).append({"kind": "street_tree", "at": [0, 0]})
+	t.check("\n".join(SceneRecipe.validate(prop)).contains("stretch.props"),
+			"a street tree is listed under trees, the shared placement source")
 
 func _test_station_pins(t: TestRunner) -> void:
 	var input := _recipe()

@@ -16,7 +16,8 @@ extends RefCounted
 ## (`rig_her_route()`) is handed to her walk when its marble is drawn and not before, laid by
 ## `WalkSiting.lay_just_ahead()` where the rig asked for that and by `lay_ahead()` where it did not,
 ## joins the day's plan as a place from her route (`is_from_her_route()`), and is not rigged under
-## `--force`.
+## `--force`; and the route a scene rigs (`start_recipe_route()`): it is owed the count the scene
+## says, and the marbles it puts in the bag first are drawn first.
 ##
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
 ## the same map turned), with plans made by hand: plans and rows are data, built as they are, and
@@ -83,6 +84,7 @@ func run(t: TestRunner) -> void:
 	_test_a_place_rigged_without_the_setting_is_laid_past_the_band(t)
 	_test_nothing_is_rigged_under_force(t)
 	_test_the_copy_on_her_route_shares_its_rows_body(t)
+	_test_a_scenes_rigged_route_is_owed_its_count_and_draws_its_pre_bag_first(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -590,6 +592,19 @@ func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
 				"the copy of '%s' on her route is the row's own body" % id)
 		t.check(routed.ground_shape() == EventCatalogue.by_id(id).ground_shape(),
 				"and it stands on the row's own shape")
+
+## **A scene rigs her route's bag** (`start_recipe_route()`, as a task scene's `setup.route_bag` does):
+## she is owed the count the scene gives, whatever the bag holds, and the marble the scene put in
+## the pre-bag is the first one drawn, before the ordinary marbles.
+func _test_a_scenes_rigged_route_is_owed_its_count_and_draws_its_pre_bag_first(t: TestRunner) -> void:
+	var director := EventDirector.new(_street())
+	director.use_way_on(FakeWayOn.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	director.start_day(7, _no_plans(), rng)
+	director.start_recipe_route(["cyclist", "cyclist"], ["cat_dash"], 3, 2.0, 0)
+	t.check(director.owed() == 3, "the route is owed what the recipe says")
+	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
 
 ## Walks her on the street past `ON_HER_WAY_AFTER`, rigs the man shouting as the next marble on her
 ## route (`just_ahead` as given), and walks on, the clock and her walk's looks ticking together a
