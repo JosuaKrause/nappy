@@ -95,6 +95,13 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 	t.check(pole.obstructs() and rule.allows(roadblock, at, with_the_pole, with_the_pole),
 			"a roadblock level with a pole on the far sidewalk's outer row stands: read on its "
 			+ "kerb, its band leaves the inner row open past the pole")
+	for level: int in [EventDef.HEAT_HUNTS_LEVEL, Tuning.RESISTANCE_GOAL]:
+		var hot := EventPlan.new(
+				EventCatalogue.heated(EventCatalogue.by_id("roadblock"), level),
+				_map.tile_to_world(at))
+		t.check(rule.allows(hot, at, with_the_pole, with_the_pole),
+				"at heat %d the hunting roadblock beside the pole stands too: its guard's catch lies "
+				% level + "inside its band, so its band is the disc read")
 
 func _test_a_street_a_seal_closes_refuses_nothing(t: TestRunner) -> void:
 	var rule := _rule()

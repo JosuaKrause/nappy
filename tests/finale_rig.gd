@@ -363,11 +363,11 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 	t.check(band_held.size() == pieces.size() + 1,
 			"a roadblock holds one piece more than its band: its guard's catch")
 	var catch_disc: WalkGround.Solid = band_held[band_held.size() - 1]
-	var guard_catch := EventCatalogue.escape_roadblock().lethal_reach()
+	var disc_edge := catch_disc.shape.reach() + Tuning.PLAYER_BODY_RADIUS
 	var inside_the_band := 0
 	for step in 24:
 		var around := Vector2.RIGHT.rotated(TAU * float(step) / 24.0)
-		var on_the_ring := catch_disc.centre + around * (guard_catch - 1.0)
+		var on_the_ring := catch_disc.centre + around * (disc_edge - 1.0)
 		var held_by_a_piece := false
 		for piece in pieces:
 			held_by_a_piece = held_by_a_piece or piece.stops_her_at(on_the_ring)
