@@ -43,23 +43,23 @@ func run(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in DAYS:
-			printed += _a_day(t, city, seed_value, day)
+			printed += _a_day(t, city, run, seed_value, day)
 		city.free()
 	print("TA_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were starts to print (%d)" % printed)
 
-func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
+func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int) -> int:
 	var finale := day == Tuning.RUN_LENGTH_DAYS
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 			done.append(step.index)
-	GivenRun.completed_steps(city.run, done)
-	city.run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
-	GivenRun.alley_tiles(city.run, [])
-	GivenRun.scars(city.run, [])
-	city.run.header().set_day(day)
-	var state := city.run.attempt_spend().block_arcs()
+	GivenRun.completed_steps(run, done)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+	GivenRun.alley_tiles(run, [])
+	GivenRun.scars(run, [])
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
@@ -80,8 +80,8 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	director.set_process(false)
 	_lines.clear()
 	director.use_trace(RecordingTrace.new(_lines))
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)

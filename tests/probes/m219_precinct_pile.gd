@@ -22,13 +22,15 @@ func run(t: TestRunner) -> void:
 		run.header().set_day(day)
 		t.add_child(city)
 		RunCity.build(city, run, map)
-		city.run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), day)
-		city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"))
+		run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), day)
+		city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+				"closures"))
 		var doorstep := map.doorstep_world_position()
-		RunCity.events(city).start_day(DaySpec.for_day(day), city.run.calendar().day_rng(), city.run.attempt_spend().consumed_one_shots(), doorstep)
+		RunCity.events(city).start_day(DaySpec.for_day(day), run.calendar().day_rng(),
+				run.attempt_spend().consumed_one_shots(), doorstep)
 		var at := map.tile_to_world(case[2])
 		RunCity.events(city).stream_around(at)
-		RunCity.crowd(city).start_day(day, city.run.calendar().day_rng(day, "crowd"), at)
+		RunCity.crowd(city).start_day(day, run.calendar().day_rng(day, "crowd"), at)
 		RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 		var most := 0
 		var total := 0

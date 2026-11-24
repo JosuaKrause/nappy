@@ -40,8 +40,8 @@ func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var day := ResistanceSteps.swing_day()
-	city.run.header().set_day(day)
-	var state := city.run.attempt_spend().block_arcs()
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
@@ -50,8 +50,8 @@ func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director._on_contact_completed(mark.index if mark else -1)

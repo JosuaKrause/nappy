@@ -76,12 +76,12 @@ func run(t: TestRunner) -> void:
 			for step in ResistanceSteps.all():
 				if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 					done.append(step.index)
-			GivenRun.completed_steps(city.run, done)
-			city.run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
-			GivenRun.alley_tiles(city.run, [])
-			GivenRun.scars(city.run, [])
-			city.run.header().set_day(day)
-			var state := city.run.attempt_spend().block_arcs()
+			GivenRun.completed_steps(run, done)
+			run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+			GivenRun.alley_tiles(run, [])
+			GivenRun.scars(run, [])
+			run.header().set_day(day)
+			var state := run.attempt_spend().block_arcs()
 			state.reset()
 			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
@@ -90,7 +90,7 @@ func run(t: TestRunner) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map(), city.run, RunCity.events(city), city.streets(),
+			director.setup(city.map(), run, RunCity.events(city), city.streets(),
 					city.fronts(), city, null,
 					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)

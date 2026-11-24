@@ -55,8 +55,8 @@ func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> 
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-				RunCity.spawn_siting(city))
+		director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+				city, null, RunCity.spawn_siting(city))
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:%s" % [seed_value, day, "resistance"])
 		director.start_day(day, rng, 300.0)

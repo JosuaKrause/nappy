@@ -30,11 +30,11 @@ func run(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in range(6, 14):
-			GivenRun.alley_tiles(city.run, [])
+			GivenRun.alley_tiles(run, [])
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			GivenRun.completed_steps(city.run, done)
-			var state := city.run.attempt_spend().block_arcs()
+			GivenRun.completed_steps(run, done)
+			var state := run.attempt_spend().block_arcs()
 			state.reset()
 			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
@@ -43,8 +43,8 @@ func run(t: TestRunner) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-					RunCity.spawn_siting(city))
+			director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+					city, null, RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var step := director.current_step()
 			if step == null or not step.is_pickup:

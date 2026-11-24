@@ -56,7 +56,7 @@ func run(t: TestRunner) -> void:
 			var city := RunCity.new_city(CITY_SCENE)
 			t.add_child(city)
 			RunCity.build(city, run, CityGenerator.generate(seed_value))
-			var director := _read_the_mark(t, city, day, seed_value)
+			var director := _read_the_mark(t, city, run, day, seed_value)
 			var player := _rig_player(t, director.contact_position())
 			director.use_player(player)
 			_walk_the_rigged_bag(city, player)
@@ -120,12 +120,12 @@ func _worst_count(values: Array[int]) -> int:
 		worst = maxi(worst, v)
 	return worst
 
-func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> ResistanceDirector:
+func _read_the_mark(t: TestRunner, city: City, run: RunState, day: int,
+		seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	var run: RunState = city.run
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
@@ -136,8 +136,8 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:

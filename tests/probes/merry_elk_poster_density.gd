@@ -35,11 +35,11 @@ func run(t: TestRunner) -> void:
 		var state := CityState.new()
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.plans_by_block(), day)
-			city.run.posters().photograph()
-			city.start_day(state, day, city.run.calendar().day_rng(day, "closures"))
+			run.posters().photograph()
+			city.start_day(state, day, run.calendar().day_rng(day, "closures"))
 			if day < PosterWalls.FIRST_DAY:
 				continue
-			_measure(city, map, day, rows)
+			_measure(city, run, map, day, rows)
 		city.free()
 	for day in range(PosterWalls.FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 		var r: Dictionary = rows[day]
@@ -63,14 +63,14 @@ func run(t: TestRunner) -> void:
 				worst, 100.0 * bare / maxi(1, routes.size())])
 	t.check(rows.size() > 0, "measured")
 
-func _measure(city: City, map: CityMap, day: int, rows: Dictionary) -> void:
+func _measure(city: City, run: RunState, map: CityMap, day: int, rows: Dictionary) -> void:
 	if not rows.has(day):
 		rows[day] = {"city": 0, "view_sum": 0, "cells": 0, "empty": 0, "route_counts": [],
 				"underfoot": []}
 	var r: Dictionary = rows[day]
-	for tile: Vector2i in city.run.posters().cells():
-		r["city"] = int(r["city"]) + (1 if city.run.posters().has_intact_sheet(tile) else 0)
-	var w: Dictionary = POSTER_VIEW.walk(city, city.run, map)
+	for tile: Vector2i in run.posters().cells():
+		r["city"] = int(r["city"]) + (1 if run.posters().has_intact_sheet(tile) else 0)
+	var w: Dictionary = POSTER_VIEW.walk(city, run, map)
 	r["view_sum"] = int(r["view_sum"]) + int(w["view_sum"])
 	r["cells"] = int(r["cells"]) + int(w["cells"])
 	r["empty"] = int(r["empty"]) + int(w["cells"]) - int(w["with_sheet"])

@@ -43,7 +43,7 @@ func run(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
-		var player := _start_the_day(t, city, director, seed_value)
+		var player := _start_the_day(t, city, run, director, seed_value)
 		var marks := _legal_marks(city, director)
 		var roadblocks := _roadblocks(city)
 		var chosen := _spaced(marks, PER_SEED)
@@ -60,7 +60,7 @@ func run(t: TestRunner) -> void:
 		var per_seed := {}
 		for index in chosen.size():
 			if index > 0:
-				_restart_the_day(city, director, seed_value)
+				_restart_the_day(city, run, director, seed_value)
 			var at := city.map().tile_to_world(chosen[index])
 			var outcome := _read_the_mark_at(city, director, player, at, seed_value)
 			var kind: String = outcome[0]
@@ -184,8 +184,9 @@ static func _roadblock_step() -> ResistanceSteps.Step:
 			return step
 	return null
 
-func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
-	_restart_the_day(city, director, seed_value, t)
+func _start_the_day(t: TestRunner, city: City, run: RunState, director: ResistanceDirector,
+		seed_value: int) -> Stroller:
+	_restart_the_day(city, run, director, seed_value, t)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -197,12 +198,12 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	player.set_physics_process(false)
 	return player
 
-func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t: TestRunner = null) -> void:
+func _restart_the_day(city: City, run: RunState, director: ResistanceDirector, seed_value: int,
+		t: TestRunner = null) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	var run: RunState = city.run
 	run.header().set_day(DAY)
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
@@ -214,8 +215,8 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-				RunCity.spawn_siting(city))
+		director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+				city, null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

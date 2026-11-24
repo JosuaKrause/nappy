@@ -56,12 +56,12 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value), _builder(t))
-	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
-	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
-			spec)
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), spec)
 	var start := city.map().doorstep_world_position()
 	var consumed: Array[String] = []
-	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(day), consumed, start)
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(day), consumed, start)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
 	RunCity.crowd(city).start_day(day, rng, start)
@@ -82,12 +82,12 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value), _builder(t))
-	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
-	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
-			spec)
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), spec)
 	var start := FinalePlanner.service_exit_world_position(city.map())
 	var none: Array[String] = []
-	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(day, "finale"), none, start)
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(day, "finale"), none, start)
 	var printed := _walk(t, "escape seed %d" % seed_value, city,
 			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
 			start)
