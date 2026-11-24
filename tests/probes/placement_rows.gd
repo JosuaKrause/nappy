@@ -6,20 +6,20 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/placement_rows.gd
 ##
-## It asks only what every tree has (`EventScheduler.build_day()`, `Corridor.view_of()`, the tile
-## under each plan), so the same file measures main and a branch alike, row by row beside the
-## declared table's cells (`tests/probes/placement_cells.gd`): each day planned as the
-## scheduler plans it, on `SEEDS` cities from `BASE` in steps of `STEP` and the streams
-## `placement_view_mix.gd` uses, and every placed plan counted under its row, its view (its street's,
-## or the depth of its tile off the streets) and its kind of ground (a junction box, an alley, a
-## park or square, a carriageway, a sidewalk). The moments she is owed are counted apart. Prints
-## `RD day seeds placed moments`, `RV day row view count` and `RK day row kind count`, each summed
-## over the seeds. Each day is planned as the game plans it: its closures, holds, region wall and
-## seals first, the seals and the wall's bodies handed in as standing.
+## It asks what the game's own dawn asks (`EventScheduler.build_day()`, `Corridor.view_of()`,
+## the tile under each plan), row by row beside the declared table's cells
+## (`tests/probes/placement_cells.gd`): each day planned as the scheduler plans it, on `SEEDS`
+## cities from `PlacementProbeDay.BASE` in steps of `PlacementProbeDay.STEP` and the streams
+## `placement_view_mix.gd` uses, and every placed plan counted under its row, its view (its
+## street's, or the depth of its tile off the streets) and its kind of ground (a junction box,
+## an alley, a park or square, a carriageway, a sidewalk). The moments she is owed are counted
+## apart. Prints `RD day seeds placed moments`, `RV day row view count` and `RK day row kind
+## count`, each summed over the seeds. Each day is planned as the game plans it: its closures,
+## holds, region wall and seals first, the seals and the wall's bodies handed in as standing,
+## the street trees refreshed, and the guarded-band roadblock row heated as `DayPlanner` heats
+## it (`PlacementProbeDay`, which both placement probes plan through).
 
 const SEEDS := 18
-const BASE := 90210
-const STEP := 31
 const KINDS := ["sidewalk", "carriageway", "alley", "open", "junction", "other"]
 
 func run(t: TestRunner) -> void:
@@ -29,62 +29,10 @@ func run(t: TestRunner) -> void:
 		var placed := 0
 		var moments := 0
 		for i in SEEDS:
-			var map := CityGenerator.generate(BASE + i * STEP)
-			# The run's mast sites, worked out once on the city as built, as the game does.
-			var sites := MastSites.compute(map)
-			var state := CityState.new()
-			state.begin_day(map.plans_by_block(), day)
-			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
-			var spec := DaySpec.for_day(day)
-			# The day's own closures, holds, region wall and seals, planned as the game plans them
-			# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
-			# stand as the day's standing and hold their locations.
-			var region_plan := RegionPlanner.plan_day(map, spec, tree)
-			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
-			var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
-			map.close_streets(closures)
-			map.clear_day_holds()
-			for closure: RoadClosure in closures:
-				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-			for segment: StreetNetwork.Segment in region_plan.wall_segments():
-				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-			for segment: StreetNetwork.Segment in region_plan.door_segments():
-				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment: StreetNetwork.Segment in map.street_network().around_blocks(
-					Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
-				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
-			var boundary := {}
-			for segment in region_plan.wall_segments():
-				boundary[segment.key()] = true
-			for segment in region_plan.door_segments():
-				boundary[segment.key()] = true
-			for rect in region_plan.walled_alleys():
-				boundary[rect.position] = true
-			for rect in region_plan.door_alleys():
-				boundary[rect.position] = true
-			var seal_rng := RandomNumberGenerator.new()
-			seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
-			var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary, map.held_streets())
-			for seal in seals:
-				seal.stand_as_a_seal()
-			var doors := PackedVector2Array()
-			for body in region_plan.door_plans():
-				doors.append(body.placed_at())
-			var standing: Array[EventPlan] = []
-			standing.append_array(seals)
-			standing.append_array(region_plan.wall_plans())
-			for body in region_plan.wall_plans():
-				body.stand_in_the_wall()
-			var corridor := Corridor.of(tree)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("placement_view_mix:%d:%d" % [i, day])
-			var guarded := ResistanceSteps.guarded_row_on(day)
-			var consumed: Array[String] = []
-			for plan in GameDawn.of(spec, rng, map).masts(sites).spent(consumed).on(tree) \
-					.doors(doors).standing(standing) \
-					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements():
+			var the_day := PlacementProbeDay.prepared(day, i, "placement_rows", t)
+			var map := the_day.map
+			var corridor := the_day.corridor
+			for plan in the_day.placements():
 				var mode := plan.spawn_mode_on(day)
 				# A row the director sends ahead of her is a moment where the dawn left it unplaced.
 				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
@@ -108,6 +56,7 @@ func run(t: TestRunner) -> void:
 				by_view[kv] = int(by_view.get(kv, 0)) + 1
 				var kk := "%s %s" % [id, kind]
 				by_kind[kk] = int(by_kind.get(kk, 0)) + 1
+			the_day.city.free()
 		print("RD %d %d %d %d" % [day, SEEDS, placed, moments])
 		for key: String in by_view:
 			print("RV %d %s %d" % [day, key, by_view[key]])
