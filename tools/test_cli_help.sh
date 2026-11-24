@@ -1064,6 +1064,51 @@ else
     echo "skip decisions.sh's search cases: rg is not on PATH"
 fi
 
+# ------------------------------------ new-name.sh checks the open pull requests' branches too ---
+# A scratch git checkout whose `gh` stub lists two open branches: `other`, readable as
+# origin/other and holding a review item named busy-badger, and `gone`, which cannot be read. Two
+# branches cut from the same main must not draw the same pair, so the draw skips busy-badger and
+# says that it skipped `gone`; with a `gh` that fails (no network) it draws from this tree alone.
+pr_repo="$work_dir/names-pr-repo"
+pr_bin="$work_dir/names-pr-bin"
+mkdir -p "$pr_repo/tools/names" "$pr_repo/docs/todo" "$pr_repo/docs/decisions" "$pr_repo/docs/review" \
+    "$pr_repo/docs/playtests" "$pr_bin"
+cp "$root/tools/new-name.sh" "$pr_repo/tools/"
+printf 'busy\n' > "$pr_repo/tools/names/adjectives.txt"
+printf 'badger\notter\n' > "$pr_repo/tools/names/animals.txt"
+touch "$pr_repo/docs/review/.gitkeep"
+(
+    cd "$pr_repo" || exit 1
+    git init --quiet
+    git add -A
+    git -c user.name=t -c user.email=t@example.com commit --quiet -m main
+    git checkout --quiet -b other
+    printf '# busy-badger — Taken elsewhere\n' > docs/review/2026-09-02-busy-badger.md
+    git add -A
+    git -c user.name=t -c user.email=t@example.com commit --quiet -m other
+    git update-ref refs/remotes/origin/other HEAD
+    git checkout --quiet -
+)
+printf '#!/usr/bin/env bash\nprintf "other\\ngone\\n"\n' > "$pr_bin/gh"
+chmod +x "$pr_bin/gh"
+# With the one pair the other branch holds as the only one, the draw has nothing free (a draw that
+# ignored the branch would take it).
+printf 'badger\n' > "$pr_repo/tools/names/animals.txt"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Only" 2>&1)"; pr_status=$?
+check_that "new-name.sh finds no free pair when an open branch holds the only one" \
+    '[[ $pr_status -ne 0 && "$pr_out" == *"no free adjective-animal pair"* ]]'
+printf 'badger\notter\n' > "$pr_repo/tools/names/animals.txt"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Second" 2>&1)"
+check_that "new-name.sh passes over a name an open pull request's branch holds" \
+    '[[ "$pr_out" == *"2026-09-27-busy-otter"* && -s "$pr_repo/docs/playtests/2026-09-27-busy-otter.md" ]]'
+check_that "new-name.sh says that it skipped a branch it cannot read, and goes on" \
+    '[[ "$pr_out" == *"cannot read branch gone; skipped"* ]]'
+rm -f "$pr_repo/docs/playtests/2026-09-27-busy-otter.md"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$pr_bin/gh"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Offline" 2>&1)"
+check_that "new-name.sh offline says so and draws from its own tree" \
+    '[[ "$pr_out" == *"gh pr list failed; names on open pull requests are not checked"* && -n "$(ls "$pr_repo/docs/playtests")" ]]'
+
 # ------------------------------------------------------- lint.sh's checks of the queue's layout ---
 # On the same scratch tree: an entry, its review items and an old entry's decision share names on
 # purpose and pass; a second use of a pair of words, a checkbox in a queue file, and a link in
