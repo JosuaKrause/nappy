@@ -268,8 +268,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	var events := StandInSource.new()
 	events.live.append(man)
 	var player := Stroller.new()
-	player.global_position = start
-	player.turn_to(Vector2.UP)
+	player.reset_at(start, Vector2.UP)
 	var baby := Baby.new()
 	baby.use_bus(EventBus)
 	var clock := EndedClock.new()
@@ -521,8 +520,7 @@ func _test_a_lost_day_restarts_the_trail(t: TestRunner) -> void:
 	var rig := Rig.new(t, _log, null, day)
 	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
 	# it is normally instanced from provides, and `start()` reads nothing that needs one.
-	rig.player.global_position = _on_a_sidewalk(day.map)
-	rig.player.turn_to(Vector2.DOWN)
+	rig.player.reset_at(_on_a_sidewalk(day.map), Vector2.DOWN)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
 
@@ -712,8 +710,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	car.step(1.0 / 60.0)
 	_fresh_log()
 	var rig := Rig.new(t, _log, null, day)
-	rig.player.global_position = lane
-	rig.player.turn_to(-along)
+	rig.player.reset_at(lane, -along)
 	where.tell(lane, lane - along * Tuning.PLAYER_BODY_RADIUS)
 	t.check(car.closes_on(lane), "the car is closing on her in its lane")
 	_log.begin_run(1, false)

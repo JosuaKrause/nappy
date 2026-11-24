@@ -111,8 +111,7 @@ func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 		_tear_down(day)
 		return {}
 	var mark_at := director.contact_position()
-	player.global_position = mark_at
-	player.turn_to(Vector2.DOWN)
+	player.reset_at(mark_at, Vector2.DOWN)
 	RunCity.events(city).visible_view().look(_view_of(player), null)
 	director.set_sight(RunCity.events(city).sees)
 	director.contact().complete_now()
@@ -212,7 +211,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 		var length := from.distance_to(to)
 		if length <= 0.0:
 			continue
-		player.turn_to((to - from) / length)
+		player.reset_at(player.global_position, (to - from) / length)
 		while next_choice <= walked + length:
 			player.global_position = from.lerp(to, (next_choice - walked) / length)
 			_settle_the_arrow(director)

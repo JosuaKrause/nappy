@@ -78,11 +78,6 @@ var _model := BadgeModel.new()
 func use_atlas(library: AtlasLibrary) -> void:
 	_atlas = library
 
-## Whether the badges are drawn from `library`. The badge acquires nothing and reads a region only
-## while a badge is up, so which library it was handed shows nowhere else.
-func draws_from(library: AtlasLibrary) -> bool:
-	return _atlas == library
-
 ## Hands the edge where it charges its time to the frame record: `main` hands the sitting's kept
 ## frame timing.
 func use_frame_timing(timing: FrameTiming) -> void:

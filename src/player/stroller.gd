@@ -121,7 +121,7 @@ const FATHER_BACK_DIAGONAL: Array[String] = [
 	"rig/father_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
-## whenever the baby is in her arms; see `Pose.mother_texture()`, the shared parent selector.
+## whenever the baby is in his arms; see `Pose.mother_texture()`, the shared parent selector.
 const FATHER_CARRYING_FRONT: Array[String] = [
 	"rig/father_carrying_front_a",
 	"rig/father_carrying_front_c",
@@ -250,12 +250,6 @@ var _facing := Vector2.DOWN
 func facing_direction() -> Vector2:
 	return _facing
 
-## Turns her to face `direction` at once, where steering turns her at `FACING_TURN_SPEED` and
-## `reset_at()` also settles the view she is drawn in. The view then follows `direction` through its
-## own hysteresis, which a suite reaches only by turning her to a heading and letting frames run.
-func turn_to(direction: Vector2) -> void:
-	_facing = direction
-
 ## The direction she is being steered this physics frame (`steering_direction()`).
 var _steering := Vector2.ZERO
 
@@ -349,11 +343,11 @@ func pram_shape() -> GroundShape:
 ## own body.
 const PRAM_BODY_RADIUS := 8.0
 
-## Where the pram is *drawn* relative to her this frame — `Vector2.ZERO` while she carries the baby, since
-## there is no pram to be ahead of her. Computed once in `_physics_process()`, and read again by
+## Where the pram is *drawn* relative to her this frame — `Vector2.ZERO` while she carries the baby,
+## since there is no pram to be ahead of her. Computed once in `_physics_process()`, and read again by
 ## `_draw()` so the two can never disagree about where the pram is drawn. **Not the collision
 ## body's own offset any more** — `PramCollisionShape2D` now sits on her own circumference
-## (`facing * Tuning.PLAYER_BODY_RADIUS`, set alongside this in `_physics_process()`), unsquashed,
+## (`_facing * Tuning.PLAYER_BODY_RADIUS`, set alongside this in `_physics_process()`), unsquashed,
 ## since physics stays in the plain 2D plane and only the drawn offset carries `OBLIQUE_Y`.
 var _pram_offset := Vector2.ZERO
 

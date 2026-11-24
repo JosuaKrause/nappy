@@ -106,8 +106,7 @@ Left, each its own design question:
   asked through their methods (row 4b of `event-interface.md`).
   `MoveProposal.yields` and `on_the_list`, `Stroller.atlas`, `carrying` and `facing`, and `DangerEdge.atlas` (the
   screen-edge badge) are private: callers ask `gives_way()`, `is_on_the_list()`, `is_carrying()` and
-  `facing_direction()`; the suites set her heading through `turn_to()` and read which library the badge was handed
-  through `draws_from()`, both `[kept]` lines with their reasons;
+  `facing_direction()`, and the suites set her heading through `reset_at()` or by steering her with analog input;
   `VisibleView.controls` is private, set through `use_cover()`.
 - **The lines other work touches** are converted with that work:
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it

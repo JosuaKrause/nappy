@@ -65,8 +65,7 @@ func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
 	player.set_physics_process(false)
-	player.global_position = at
-	player.turn_to(facing)
+	player.reset_at(at, facing)
 	var pram := player.get_node("PramCollisionShape2D") as CollisionShape2D
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
@@ -361,8 +360,7 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
 	# Standing for her, it stays harmless however she then steps into the road in front of it.
 	var nose := car.global_position + along * (car.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS
 			+ 3.0)
-	player.global_position = Vector2(nose.x, lane.y)
-	player.turn_to(-along)
+	player.reset_at(Vector2(nose.x, lane.y), -along)
 	for i in int(3.0 / STEP):
 		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)

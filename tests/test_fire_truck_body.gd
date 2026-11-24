@@ -53,8 +53,7 @@ func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
 	player.set_physics_process(false)
-	player.global_position = at
-	player.turn_to(facing)
+	player.reset_at(at, facing)
 	var pram := player.get_node("PramCollisionShape2D") as CollisionShape2D
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
