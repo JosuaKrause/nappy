@@ -44,6 +44,8 @@ check, stays as it is.
 
 ## Verification
 
+CI times, read from the shard logs (main's run of d3faeaf8c, then this branch's run), in seconds: test_wall_shield 4.8 to 0.3; test_debug_layers 2.1 to 6.4; test_dev_rig 9.8 to 3.5; test_event_manager 13.0 to 21.6; test_routes_closures_a 35.4 to 38.5; test_checkpoints 127.8 to 84.9; test_save 1.0 to 0.9; test_spent_park 116.4 to 136.8. The suites that gained a case are slower or faster by more than the case costs (checkpoints fell by 43 s, spent park rose by 20 s although it gained two checks on a cached map); I read that as shard noise without proof. What the moves took out is clear: the dev rig and the wall shield suites, which each lost a city or a real-city sweep.
+
 Check counts by file name, main then branch (local runs): `test_wall_shield.gd` 84 to 53,
 `test_debug_layers.gd` 74 to 105 (the 31 moved), `test_dev_rig.gd` 21 to 7, `test_event_manager.gd` 827 to 833
 (the 6 of events), `test_routes_closures_a.gd` 792 to 794 (2), `test_checkpoints.gd` 18164 to 18170 (6),
