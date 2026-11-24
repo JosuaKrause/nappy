@@ -2320,7 +2320,7 @@ Top-down camera with a fake vertical extrusion:
   wall, window, door, portico or fire escape — since every rule above only ever describes ground
   she can actually stand on. The building standing there instead draws its own roof deeper to meet
   it: extended north by exactly the covered building's own `wall_tiles()` (`Building.
-  roof_extension_rows`), enough to reach the world row the covered building's roof already starts
+  extend_roof_over()`), enough to reach the world row the covered building's roof already starts
   at, edge to edge, in its own colour, with a parapet cap (`ROOF_EDGE_N`) where the two meet —
   except between two pieces of one courtyard, below — and a step cap (`ROOF_EDGE_W`/`ROOF_EDGE_E`)
   wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and
@@ -2361,7 +2361,7 @@ Top-down camera with a fake vertical extrusion:
   its first roof row, so the two roofs run into each other with no lip on either side.
   `Building._roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
   with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own
-  carries on above the extension. Every piece of the lot takes one tint (`Building.tint_variant`,
+  carries on above the extension. Every piece of the lot takes one tint (`Building.share_tint()`,
   wall and roof alike), since four tints read as four buildings. An ordinary city takes its first
   piece's tint; an authored stretch that shows only part of the courtyard takes the first authored
   piece in the same rectangle order, so hidden context cannot choose the visible colour. The tint

@@ -25,11 +25,11 @@ func _ready() -> void:
 	entities.y_sort_enabled = true
 	add_child(entities)
 	var building := Building.new()
-	building.atlas = _atlas
+	building.equip(_atlas, RoofDrawer.new(_atlas), FrontDrawer.new(_atlas))
+	building.residence().set_resident(true)
 	building.position = Vector2(640, 576)
-	building.footprint = Vector2(1152, 448)
-	building.draw_as(GameEnums.BlockPurpose.BIG_BUILDING, 4, 64)
-	building.roof_object_parent = entities
+	building.stand_on(Rect2i(), Vector2(1152, 448), 4, GameEnums.BlockPurpose.BIG_BUILDING, 64)
+	building.put_roof_objects_in(entities)
 	buildings.add_child(building)
 	for index in EQUIPMENT.size():
 		var foot := Vector2(180 + (index % 6) * 184, 300 + (index / 6) * 144)

@@ -31,8 +31,8 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	drawer.real = RoofDrawer.new(atlas, scenery)
 	var building := Building.new()
 	building.equip(atlas, drawer, FrontDrawer.new(atlas))
-	building.footprint = Vector2(256, 256)
-	building.draw_as(GameEnums.BlockPurpose.INDUSTRIAL, building.look_variant(), 64)
+	building.stand_on(Rect2i(), Vector2(256, 256), building.look_variant(),
+			GameEnums.BlockPurpose.INDUSTRIAL, 64)
 	t.add_child(building)
 	# Equipped as the city equips it, the building waits for the residency, which stands a building
 	# in view up.
@@ -82,8 +82,9 @@ func _test_roof_rotors(t: TestRunner) -> void:
 					"stationary roof objects own no independently redrawn child")
 	t.check(drawer.draws.size() == drawn, "animation does not redraw or reroll the roof's furniture")
 	t.check(_collision_shape(building) == body, "animation does not rebuild collision")
-	# A rebuild from the property the city's own height and footprint changes assign.
-	building.footprint = building.footprint
+	# A rebuild from the facts the city hands a building: the lot, the size, the look and the height.
+	building.stand_on(building.lot_rect(), Vector2(256, 256), building.look_variant(), building.district(),
+			building.height())
 	for object in objects:
 		t.check(not is_instance_valid(object), "rebuild releases every superseded roof object")
 	t.check(drawer.standing().size() == objects.size()
@@ -108,7 +109,8 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	t.check(not reentered.is_empty()
 			and _picture_on(scenery, reentered[0]) == _rotor_picture(atlas, phase),
 			"reentry acquires fresh regions and preserves the animation phase")
-	building.footprint = Vector2(32, 32)
+	building.stand_on(building.lot_rect(), Vector2(32, 32), building.look_variant(), building.district(),
+			building.height())
 	t.check(_rotors(drawer).is_empty() and not building.is_processing(),
 			"a roof without vents releases them and stops its animation callback")
 	building.free()

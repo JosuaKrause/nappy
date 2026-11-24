@@ -249,7 +249,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 ## through a drawer that records.
 func _doors_drawn_on(t: TestRunner, buildings: Array) -> Dictionary:
 	for building: Building in buildings:
-		FrontReads.watch(building)
+		FrontReads.watch(building, _city.atlas)
 	await UI.frames(t, 2)
 	var doors := {}
 	for building: Building in buildings:

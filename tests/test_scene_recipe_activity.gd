@@ -63,7 +63,7 @@ func _ready() -> void:
 		var matched := false
 		for building in city.buildings():
 			if building.lot_rect() == SceneRecipe.rect(roof.lot):
-				matched = roof_matches(building, roof.fixtures)
+				matched = roof_matches(building, roof.fixtures, city.layers().node(DrawLayer.Layer.ENTITIES))
 		if not matched:
 			fail("authored fixtures did not reach the real production building")
 			return
@@ -120,7 +120,7 @@ const ROOF_TEXTURE_OF_KIND := {
 }
 ## Whether the roof the building stands (read off where its roof objects stand) carries the
 ## authored fixtures: one picture per cell, a duct straight taking its cell and the one east of it.
-func roof_matches(building: Building, fixtures: Array) -> bool:
+func roof_matches(building: Building, fixtures: Array, entities: Node) -> bool:
 	var expected := {}
 	for fixture: Dictionary in fixtures:
 		var cell := Vector2i(fixture.cell[0], fixture.cell[1])
@@ -129,7 +129,8 @@ func roof_matches(building: Building, fixtures: Array) -> bool:
 		if kind == "DUCT_STRAIGHT":
 			expected[cell + Vector2i.RIGHT] = Building.DUCT_RUN
 	building.residence().set_resident(true)
-	var layout := RoofReads.units_of(building)
+	var none: Array[int] = []
+	var layout := RoofReads.units_of(building, none, entities)
 	if layout.is_empty() or expected.size() != layout.size():
 		return false
 	for entry: Dictionary in layout:

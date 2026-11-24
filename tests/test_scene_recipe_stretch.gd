@@ -16,6 +16,8 @@ const RUN_SEED := 2
 const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
+const FrontReads := preload("res://tests/front_reads.gd")
+const UI := preload("res://tests/ui_screens.gd")
 
 ## The diagnostics a builder's answer carries.
 func _diagnostics(result: Dictionary) -> Array[String]:
@@ -35,8 +37,8 @@ func run(t: TestRunner) -> void:
 	_test_the_stretch_is_the_only_ground(t, map, data)
 	_test_the_arrow_stays_on_the_stretch(t, map)
 	_test_saved_layout_is_independent(t, data)
-	_test_authored_building_values_drive_live_joins(t, data)
-	_test_authored_partial_courtyard_controls_live_tint(t)
+	await _test_authored_building_values_drive_live_joins(t, data)
+	await _test_authored_partial_courtyard_controls_live_tint(t)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
 	_test_the_draft_takes_whole_streets(t, data)
@@ -352,10 +354,12 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 		t.check(back != null and front != null,
 				"both pieces of the edited day-7 join stand in the live City")
 		if back != null and front != null:
+			FrontReads.watch(front, city.atlas)
+			await UI.frames(t, 2)
+			var drawn_extension := FrontReads.look(front).roof_extension()
 			var expected_extension: Array[int] = [4, 4]
-			t.check(back.wall_tiles() == 4 and front.roof_extension_rows == expected_extension,
-					"the front roof reaches the edited four-row rear wall: %s"
-					% [front.roof_extension_rows])
+			t.check(back.wall_tiles() == 4 and drawn_extension == expected_extension,
+					"the front roof reaches the edited four-row rear wall: %s" % [drawn_extension])
 		city.free()
 
 ## A stretch keeps the complete courtyard as hidden context but draws only its authored members.
@@ -393,10 +397,15 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 			t.check(tint_source.look_variant() == authored_variant
 					and visible_sibling.look_variant() == sibling_variant,
 					"each visible piece keeps its own authored variant")
-			t.check(tint_source.tint_variant == authored_variant
-					and visible_sibling.tint_variant == authored_variant,
+			FrontReads.watch(tint_source, city.atlas)
+			FrontReads.watch(visible_sibling, city.atlas)
+			await UI.frames(t, 2)
+			var source_wall := FrontReads.look(tint_source).colour_of(Building.WALL)
+			var sibling_wall := FrontReads.look(visible_sibling).colour_of(Building.WALL)
+			var authored_wall := Palette.building_wall(authored_variant)
+			t.check(source_wall == authored_wall and sibling_wall == authored_wall,
 					("the first visible piece controls the partial courtyard's live tint: %s, %s")
-					% [tint_source.tint_variant, visible_sibling.tint_variant])
+					% [source_wall, sibling_wall])
 		city.free()
 
 func _test_the_schema(t: TestRunner, data: Dictionary) -> void:

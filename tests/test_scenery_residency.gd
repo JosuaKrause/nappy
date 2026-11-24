@@ -189,7 +189,8 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	t.check(_lit_windows(building) > 0, "the building watched has lit windows to compare")
 	var roof := _drawer_of(building).drawn()
 	t.check(not roof.is_empty(), "a prepared building draws a roof")
-	t.check(_drawer_of(building).layout().map(_cell_and_picture) == RoofReads.units_of(building).map(_cell_and_picture),
+	var none: Array[int] = []
+	t.check(_drawer_of(building).layout().map(_cell_and_picture) == RoofReads.units_of(building, none, scene.entities).map(_cell_and_picture),
 			"the roof a prepared building tells its drawer to draw is the roof that stands in the layer")
 	var layers: Array[Building.RoofObject] = []
 	for entry in _drawer_of(building).standing():
@@ -348,6 +349,14 @@ func _cell_and_picture(unit: Dictionary) -> Array:
 func _drawer_of(building: Building) -> RecordingRoofDrawer:
 	return _drawers[building]
 
+## What `building`'s front last painted of `picture`, in the order it was painted.
+func _painted_of(building: Building, picture: StringName) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	for entry in _fronts_of(building).shown():
+		if entry.canvas == building and entry.picture == picture and not entry.standing:
+			found.append(entry)
+	return found
+
 ## The recording front drawer `building` was equipped with.
 func _fronts_of(building: Building) -> RecordingFrontDrawer:
 	return _fronts[building]
@@ -465,6 +474,21 @@ func _check_what_the_front_is_told_survives_eviction(t: TestRunner, scene: Scene
 		t.check(_fronts_of(candidate).pictures() == in_the_dark,
 				"the day and the power told while unloaded show in the rebuilt front: last day, every window dark")
 		t.check(scene.poster_art.asked > 0, "and the sheets handed over while unloaded are drawn")
+		# The tint and the roof's extension handed while the front is unloaded show in the rebuilt front too.
+		var roof_cells_before := _painted_of(candidate, Building.ROOF).size()
+		var extension: Array[int] = []
+		extension.resize(candidate.columns())
+		extension.fill(2)
+		scene.scenery.update(far, true)
+		candidate.share_tint(7)
+		candidate.extend_roof_over(extension)
+		scene.scenery.update(view, true)
+		await _redraw(t, scene)
+		var walls := _painted_of(candidate, Building.WALL)
+		t.check(not walls.is_empty() and walls[0].colour == Palette.building_wall(7),
+				"the tint told while unloaded shows in the rebuilt front's walls")
+		t.check(_painted_of(candidate, Building.ROOF).size() == roof_cells_before + 2 * candidate.columns(),
+				"and the roof extension told while unloaded is drawn: two more rows over every column")
 		return
 	t.check(false, "a commercial front whose shutters follow the day, lit with the power on, was found to compare")
 

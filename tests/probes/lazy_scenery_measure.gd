@@ -109,16 +109,21 @@ func _coverage(city: City) -> void:
 	var roof_layers := 0
 	for building in city.buildings():
 		building_nodes += _nodes(building)
-		for col in building.columns():
-			max_roof_north_overhang = maxf(max_roof_north_overhang,
-				(building.roof_extension_rows[col] if col < building.roof_extension_rows.size() else 0) * 32.0)
+		# How far the building's own scenery bounds reach north of its lot, which is the roof's
+		# extension and the two tiles of margin the bounds keep beyond it.
+		var footprint_depth := map.tile_rect_to_world(building.lot_rect()).size.y
+		var reach := building.global_position.y - footprint_depth - building.residence().bounds().position.y
+		max_roof_north_overhang = maxf(max_roof_north_overhang, reach)
+		var extension: Array[int] = []
+		extension.resize(building.columns())
+		extension.fill(maxi(0, roundi(reach / 32.0) - 2))
 		# The roof furniture each stands feet-anchored on its roof cell (read off where its roof
 		# objects stand, the building made resident for the read and handed back as it was): its
 		# picture rises from the floor line of its row by the region's height at the equipment's
 		# scale, and how far that clears the lot's north edge (-footprint.y) is the overhang.
 		var was_resident := building.residence().is_resident()
 		building.residence().set_resident(true)
-		var units := RoofReads.units_of(building)
+		var units := RoofReads.units_of(building, extension, city.layers().node(DrawLayer.Layer.ENTITIES))
 		building.residence().set_resident(was_resident)
 		for unit: Dictionary in units:
 			roof_layers += 1
@@ -126,7 +131,7 @@ func _coverage(city: City) -> void:
 			var rise := picture.get_height() * RoofReads.equipment_scale(unit["texture"])
 			var foot := -float(building.wall_tiles() + (unit["cell"] as Vector2i).y) * 32.0
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
-					-(foot - rise) - building.footprint.y)
+					-(foot - rise) - footprint_depth)
 	print("LAZY_BOOT " + JSON.stringify({"seed": map.city_seed(),
 		"viewport_world": str(view), "home_block_world": str(home_rect),
 		"ground_prepared": cells.size(), "visible_ground_inside_home": boot_inside,

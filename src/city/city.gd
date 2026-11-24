@@ -750,7 +750,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
 
-## `Building.roof_extension_rows` and the courtyard seams (`Building.mark_courtyard_seams()`) for every
+## `Building.extend_roof_over()` and the courtyard seams (`Building.mark_courtyard_seams()`) for every
 ## building in `buildings` (parallel to `map.building_lots()`): wherever a building's own
 ## `covered_ground_cols()` marks a column covered, the tile directly south of it belongs to some
 ## other lot's rect — the one whose roof now has to reach up to meet the covered building's own
@@ -840,13 +840,13 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 				var back_seamless: Array[bool] = seamless_below[i]
 				back_seamless[col] = true
 	for i in buildings.size():
-		buildings[i].roof_extension_rows = extensions[i]
+		buildings[i].extend_roof_over(extensions[i])
 		buildings[i].mark_courtyard_seams(seamless[i], seamless_below[i])
 		var narrowed: Array[bool] = reached[i]
 		if covered[i] != narrowed:
 			buildings[i].mark_covered_ground_cols(narrowed)
 
-## Gives every piece of one courtyard lot one tint (`Building.tint_variant`), so the rectangles a
+## Gives every piece of one courtyard lot one tint (`Building.share_tint()`), so the rectangles a
 ## courtyard is cut into read as the one building they are rather than as three or four neighbours.
 ## An ordinary city takes the first piece's variant, as before. A stretch may show only part of a
 ## complete-context courtyard, so its first authored piece in the same canonical rectangle order
@@ -869,7 +869,7 @@ func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int])
 			continue
 		if not first_variant.has(lot):
 			first_variant[lot] = buildings[i].look_variant()
-		buildings[i].tint_variant = first_variant[lot]
+		buildings[i].share_tint(first_variant[lot])
 
 ## Which courtyard lot (an index into the courtyards found on `map`, or -1) each of `rects` was cut
 ## from — single-block and apartment-complex courtyards alike, a multi-block lot (`map.zone_anchors()`) or not, since both
