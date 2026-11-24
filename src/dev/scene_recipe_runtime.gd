@@ -772,10 +772,10 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	happening.use_trace(_trace)
 	happening.setup(map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
 			null, null, _world.events().spawn_siting())
-	happening.start_day(_run.header().day())
 	if not happening.column_fits_at(at, going):
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
+	happening.start_day(_run.header().day())
 	var trucks := happening.bring_the_column_at(at, going)
 	for i in trucks.size():
 		named["truck_%d" % (i + 1)] = trucks[i]
