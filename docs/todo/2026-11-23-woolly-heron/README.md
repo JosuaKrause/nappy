@@ -2,12 +2,13 @@ priority: later
 
 # woolly-heron — Test gaps the reviews of the excitement, spacing and event-view work found · filed 2026-11-23
 
-**What this is.** Checks that no suite holds, found by the adversarial reviews of pull requests 1662 and 1663
-and not filed. No playtest note is behind it; the band, `later`, is the filer's proposal. It is an entry of
-its own, never an item of minty-quail: minty-quail's test item `tests-public-seams.md`
-owns the suites' shape and `writing-tests` holds the one-module rule, and a builder takes each item here when the suite it names is
-next touched, showing each check failing before it passes, by making the change the item names to the source and
-running the suite.
+**What this is.** Checks that no suite holds, found by the adversarial reviews of pull requests
+1662 and 1663 and not filed. No playtest note is behind it; the band, `later`, is the filer's
+proposal. It is an entry of its own, never an item of minty-quail: minty-quail's test item
+`tests-public-seams.md` owns the suites' shape and `writing-tests` holds the one-module rule,
+and a builder takes each item here when the suite it names is next touched, showing each check
+failing before it passes, by making the change the item names to the source and running the
+suite.
 
 **Items**, one file each:
 

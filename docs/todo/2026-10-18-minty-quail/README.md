@@ -90,17 +90,17 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 
 1. `comments.md`: in whichever PR touches the code.
 2. `tests-public-seams.md`: the rule the tests are written under (dependency injection, public
-   APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md` for
-   what its count cannot see. `tests-own-class-members.md` holds the
-   members whose names collide with another class's.
-3. **The rest goes module by module, in tracks that run in parallel** (inbox #1268 in olive-ferret). The design
-   review found that the order converted the tests before the event code they read, so the largest
-   group of suites would be mocked against fields and redone; shown its suggestion to go module by
-   module, the player: "yeah module by module makes sense and can be parallelized". Within a
-   module: its dead code (`dead-code-sweep.md`), its interface and field reads, its receivers
-   typed with them (`tools/check_field_reads.py` holds both, its list `tools/field_reads.txt`
-   empty), then its suites, one module each and all typed. The player approved going module by
-   module in parallel; the tracks are the design review's worked-out detail:
+   APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md`
+   for what its count cannot see. `tests-own-class-members.md` holds the members only their own
+   class and the tests use, which become internal. 3. **The rest goes module by module, in
+   tracks that run in parallel** (inbox #1268 in olive-ferret). The design review found that the
+   order converted the tests before the event code they read, so the largest group of suites
+   would be mocked against fields and redone; shown its suggestion to go module by module, the
+   player: "yeah module by module makes sense and can be parallelized". Within a module: its
+   dead code (`dead-code-sweep.md`), its interface and field reads, its receivers typed with
+   them (`tools/check_field_reads.py` holds both, its list `tools/field_reads.txt` empty), then
+   its suites, one module each and all typed. The player approved going module by module in
+   parallel; the tracks are the design review's worked-out detail:
    - **The design review's tracks are closed**, their records the ones named polite-tapir; the
      baseline readings are listed under step 4.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
@@ -194,8 +194,12 @@ and anything else found from here on is filed as an entry of its own after this 
 item here. `tests-public-seams.md`'s open list holds test gaps, which add tests and
 refactor nothing and move to such an entry when this one closes.
 
-The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
-layering paragraph and closing list of proposals refer to this entry, and **removes its exception for downy-tapir's minimal
-escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear that
-the exception still stands" (minty-lemur #799). The escape city's placement runs on the day's
-scheduler and that fix's `build_finale` is gone (minty-quail-8), so the exception covers no code.
+The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer",
+whose layering paragraph and closing list of proposals refer to this entry, **rewrites its
+paragraph "Two lists hold..."** (both lists are empty: no read of another class's field is
+listed in `tools/field_reads.txt` and no file carries the opt-out line, so the paragraph
+describes a conversion that is over), and **removes its exception for downy-tapir's minimal
+escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear
+that the exception still stands" (minty-lemur #799). The escape city's placement runs on the
+day's scheduler and that fix's `build_finale` is gone (minty-quail-8), so the exception covers
+no code.

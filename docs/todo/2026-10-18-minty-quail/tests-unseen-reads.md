@@ -30,26 +30,28 @@ from the rule alone:
   tested through a fake handed in or through what the game exposes (the drawn arrow, the plans, the
   world) and then removed; one stays only where both conditions hold, and its builder writes down
   why and what about the module makes it so.
-- **A hand-built checkpoint's facing and gate state go through a plan** (`EventPlan`, its facing set by
-  `face()` and its gate state by `stand_as_the_boom_of()`, handed to `EventStreaming.add()`), not a new
-  `spawn_extra()` parameter that only tests would pass.
+- **A hand-built checkpoint's facing and gate state go through a plan** (`EventPlan`, its facing
+  set by `face()` and its gate state by `stand_as_the_boom_of()`, handed to
+  `EventStreaming.add()`), not a new `spawn_extra()` parameter that only tests would pass.
 
-**How a test writes game state.** Where the game has a callable writer the tests go through it: a
-scar through `RunState.add_scar()`, a completed step through `RunState.complete_resistance_step()`
-with the step's own `grants_progress`, a day's give-back through `ResistanceRunState.give_back()`,
-a map's tile state through `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()` and
-`obstruct_tiles()` with `release_obstruction()`, events through `EventManager.spawn_extra()`,
-`spawn_warned()` or an `EventPlan` handed to `EventStreaming.add()`, and an `EventWorld` through
-`setup()` and `use_player()`. What stays is fixture state on public fields no game writer
-reaches alone:
+**How a test writes game state.** Where the game has a callable writer the tests go through it:
+a scar through `RunState.add_scar()`, a completed step through
+`RunState.complete_resistance_step()` with the step's own `grants_progress`, a day's give-back
+through `ResistanceRunState.give_back()`, a map's tile state through `close_streets()`,
+`seal_soft_tile()`, `clear_day_soft_seals()` and `obstruct_tiles()` with
+`release_obstruction()`, events through `EventManager.spawn_extra()`, `spawn_warned()` or an
+`EventPlan` handed to `EventStreaming.add()`, and an `EventWorld` through `setup()` and
+`use_player()`. What stays is fixture state a test writes through the game's accessors or its
+save round trip, where no game writer reaches it alone:
 
 - `run.attempt_spend().consumed_one_shots().append("burning_building")` (`test_day_loop.gd`,
-  `test_run_checkpoints.gd`, `test_run_state.gd` and `test_save.gd`): the method hands out the list the
-  scheduler appends to as it places the one-shot, and a test of the give-back needs it spent without
-  planning a day.
-- A sabotage done, where the state the suite needs the run to be in is not what it tests, and playing
-  the finale to reach it would be: `GivenRun.sabotage()` writes it through the state's own
-  `to_data()` and `restore()`, the save's round trip, since no test writes the field.
+  `test_run_checkpoints.gd`, `test_run_state.gd`, `test_save.gd` and
+  `tests/fixtures/run_state_scenario.gd`): the method hands out the list the scheduler appends
+  to as it places the one-shot, and a test of the give-back needs it spent without planning a
+  day.
+- A sabotage done, where the state the suite needs the run to be in is not what it tests, and
+  playing the finale to reach it would be: `GivenRun.sabotage()` writes it through the state's
+  own `to_data()` and `restore()`, the save's round trip, since no test writes the field.
 - `test_invincible.gd` sets `noise` on its own fake world, a test double's state no game path sets,
   and `test_excitement_source.gd` hands a world its excitement sources, the hand-in `main.gd` and
   `City` make.
