@@ -7,6 +7,9 @@ Building's `day`, `powered`, `poster_art`, `posters`, `scenery_clock` and `door_
 (a recording front drawer, a recording poster art) or hand the blackout buildings that record the switch.
 
 Rejected: a field keeping its old name behind a forwarder (no legacy shape); a getter only the suites
-call. Not writable any more: `test_scenery_residency.gd`'s fixture buildings have at most three wall rows
-and the boarded neighbor window draws on row index 3, so the neighbor-window column is no longer read
-there (`test_home_block.gd` holds it on the home building).
+call. `test_scenery_residency.gd` reads what survives an eviction: the boarded condition, the neighbor
+window's column (`neighbor_window_col()`, untouched) and a sheet drawn through a recording art; no lit
+window with the power off; and a lived-in commercial front whose shutters differ between day 1 and the
+last day, which must show the last day's after eviction. The fixture buildings are too short to draw the
+neighbor window's overlay (row index 3), so the column is read, not the picture. The frames those checks
+wait on run with the residency's own per-frame work paused, which otherwise moves the view home.

@@ -235,10 +235,6 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 			"returning artwork reconstructs the same seeded window and furniture layout")
 	building.show_condition(Building.Condition.BOARDED)
 	building.switch_power(false)
-	# The front the changed building shows before it is evicted, to compare with the reconstructed one.
-	for _frame in 2:
-		await t.get_tree().process_frame
-	var shown_before := _fronts_of(building).pictures()
 	_check_roof_ownership(t, scene)
 	for cycle in 3:
 		scene.scenery.update(far, true)
@@ -246,20 +242,17 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 		scene.scenery.update(target, true)
 		_check_roof_ownership(t, scene)
 	scene.poster_art.asked = 0
-	for _frame in 2:
-		await t.get_tree().process_frame
-	var shown := _fronts_of(building).pictures()
-	t.check(building.condition() == Building.Condition.BOARDED and shown == shown_before
-			and scene.poster_art.asked > 0,
-			"changes while unloaded survive reconstruction: the same boarded front as before, a sheet")
-	# A boarded block draws no lit window whatever the power; lived in again, only the power that was
-	# switched off while unloaded keeps every window dark.
+	await _redraw(t, scene)
+	t.check(building.condition() == Building.Condition.BOARDED and building.neighbor_window_col() == 2
+			and scene.poster_art.asked > 0, "changes while unloaded survive reconstruction: boarded, the "
+			+ "neighbor's window column, a sheet drawn")
+	# The power was switched off while the building stood loaded, and every eviction since leaves it
+	# off: lived in again (a boarded block draws no lit window whatever the power), no window is lit.
 	building.show_condition(Building.Condition.LIVED_IN)
-	for _frame in 2:
-		await t.get_tree().process_frame
+	await _redraw(t, scene)
 	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
 	t.check(not _fronts_of(building).pictures().any(func(picture: StringName) -> bool: return picture in lit),
-			"and the power switched off while unloaded keeps every window dark")
+			"and the power switched off survives it: every window stays dark")
 	_check_coverage(t, scene, target)
 	scene.scenery.update(far, true)
 	_check_coverage(t, scene, far)
@@ -267,6 +260,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	_check_coverage(t, scene, home)
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"relocation does not replace persistent building collision")
+	await _check_the_day_survives_eviction(t, scene, far)
 	# Clock belongs to the city, so a newly entered shoreline resumes its neighbors' phase.
 	await _run_the_city_clock(t, scene, 3.75)
 	var shore := _view(Vector2(map.world_size().x * 0.5, map.world_size().y + 100))
@@ -413,6 +407,42 @@ func _run_the_city_clock(t: TestRunner, scene: Scene, seconds: float) -> void:
 	t.check(ground.elapsed() >= until,
 			"the ground's clock ran its %.2f s within 600 frames (it reached %.2f of %.2f)"
 			% [seconds, ground.elapsed(), until])
+
+## Lets two frames pass, which is how long a changed front takes to redraw, with the residency's own
+## per-frame work paused as `_run_the_city_clock()` pauses it: its `_process()` would otherwise move the
+## camera-less view back to her doorstep.
+func _redraw(t: TestRunner, scene: Scene) -> void:
+	scene.scenery.set_process(false)
+	await _frames(t, 2)
+	scene.scenery.set_process(true)
+
+## A lived-in commercial front whose storefront shutters follow the day shows the same shutters after
+## it is evicted and reconstructed as it showed before: the day it was handed survives the rebuild.
+## The building is one whose front differs between day 1 and the last day, so the picture says the day.
+func _check_the_day_survives_eviction(t: TestRunner, scene: Scene, far: Rect2) -> void:
+	var last := Tuning.RUN_LENGTH_DAYS
+	for candidate in scene.buildings:
+		if candidate.district() != GameEnums.BlockPurpose.COMMERCIAL:
+			continue
+		var view := _view(candidate.residence().bounds().get_center())
+		scene.scenery.update(view, true)
+		candidate.show_condition(Building.Condition.LIVED_IN)
+		candidate.switch_power(true)
+		candidate.show_day(1)
+		await _redraw(t, scene)
+		var on_day_one := _fronts_of(candidate).pictures()
+		candidate.show_day(last)
+		await _redraw(t, scene)
+		var on_the_last_day := _fronts_of(candidate).pictures()
+		if on_day_one == on_the_last_day:
+			continue
+		scene.scenery.update(far, true)
+		scene.scenery.update(view, true)
+		await _redraw(t, scene)
+		t.check(_fronts_of(candidate).pictures() == on_the_last_day,
+				"the day survives eviction: a commercial front's shutters stay those of day %d" % last)
+		return
+	t.check(false, "a commercial front whose shutters follow the day was found to compare")
 
 ## Lets `count` process frames pass. The caller sits at the start of a frame, before that frame's
 ## `_process`, whenever it has just awaited one, so each await here is exactly one `_process` of
