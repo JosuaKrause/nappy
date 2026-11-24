@@ -227,7 +227,8 @@ bodies never seal it off:
   corridor: every body a day judges, at dawn or on her walk, is judged by the rules that keep her
   line through its junctions, its walked sidewalk and a pacing beat's opening open (`RouteLineRule`,
   `RouteSidewalkRule`, `PacingOpeningRule`) and by the one that keeps its ground off the streets
-  free (`RouteGroundRule`: no obstructing body's disc, no deadly row's catch round where it holds its place and no counted
+  free (`RouteGroundRule`: no obstructing body's disc, no deadly row's catch round where it
+  holds its place and no counted
   row's line reach covers a tile a route runs along on an alley, a park cut or a square), asked against everything already down,
   the seals and the region wall's own bodies included. The run's scars and the park spoilers are
   asked `RouteGroundRule` alone, with a street's route tiles and the street she starts on counted
@@ -1202,14 +1203,14 @@ them, and leaves the far sidewalk whole, so it is refused where a body already c
 sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin; "okay
 let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
 inbox #1465 in spry-plover). Every reading of a body here takes the band where it stands
-(`EventPlan.body_at()`). **The band is the disc every rule reads at every heat.** Its guard catches at a man's 28px, inside
-its band, so the ground its catch shuts (`EventDef.catch_shuts_within()`) never reaches past the
-band, and a hunting roadblock stands on a route's street wherever a cold one does; the escape reads
-the same hunting roadblock at its band (`WalkGround`). The robber and the dog have no body and are
-read at their catch, which takes one sidewalk. Day 13's
-roadblock phase stands its roadblocks in sections beside the routes, which the rule does not cover,
-and the task's own swap, which puts a roadblock across such a section where the day placed none
-close by, is not judged by the day's rules, so neither loses one.
+(`EventPlan.body_at()`). **The band is the disc every rule reads at every heat.** Its guard
+catches at a man's 28px, inside its band, so the ground its catch shuts
+(`EventDef.catch_shuts_within()`) never reaches past the band, and a hunting roadblock stands on a
+route's street wherever a cold one does; the escape reads the same hunting roadblock at its band
+(`WalkGround`). The robber and the dog have no body and are read at their catch, which takes one
+sidewalk. Day 13's roadblock phase stands its roadblocks in sections beside the routes, which the
+rule does not cover, and the task's own swap, which puts a roadblock across such a section where
+the day placed none close by, is not judged by the day's rules, so neither loses one.
 
 ### A pacing row is passed by waiting, or left at a crossing
 

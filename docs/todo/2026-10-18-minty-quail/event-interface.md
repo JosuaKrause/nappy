@@ -844,6 +844,10 @@ each question as it was shown).
    #1278 in olive-ferret). **Read as:** every answer is made correct, each as a pull request of its own after the step
    that gave it a name, saying what it changes in play and in the run log, with its pictures;
    playtests decide what then needs fixing. The field's real shape is built (the record
-   minty-quail-dappled-llama), and the ground a row that ends the day shuts is one stated fact,
-   `EventDef.catch_shuts_within()`, which the plan's blocking disc, its clearance and the walk
-   ground ask (the record 2026-10-18-minty-quail-calm-marmot).
+   minty-quail-dappled-llama). The ground a row that ends the day shuts is one stated fact,
+   `EventDef.catch_shuts_within()`, which the plan's blocking disc (`EventPlan.blocking_radius()`)
+   and the walk ground (`WalkGround.held_by()`) ask; `EventPlan.clearance()` reads the catch
+   itself, measured to her centre (the record 2026-10-18-minty-quail-calm-marmot). What is left is
+   the `--route` dev rig, which still works the fact out in its own words: it asks
+   `catch_shuts_within()` on the live event and `EventInstance.is_a_standing_lethal_place()` is
+   deleted (A1b of the design).

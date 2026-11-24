@@ -29,12 +29,11 @@ extends StreetRule
 ##   has no open sidewalk to keep, and nothing is refused there.
 ## - **A roadblock is asked too** (*inbox #747 in woolly-penguin: "roadblocks currently are
 ##   impossible to get past. one sidewalk must be open if they're en-route."*). It spans the street
-##   by design (`EventDef.spans_the_street()`), and it is read at its band at
-##   every heat, since its guard's catch lies inside the band (`EventDef.catch_shuts_within()`).
-##   The band stands on the kerb beside its lane (`EventPlan.body_at()`) and takes the sidewalk on
-##   its own side of the road and the road, leaving the far sidewalk whole, so it is refused where
-##   a body already closes that far sidewalk, and a body drawn after it is refused across from it
-##   the same way.
+##   by design (`EventDef.spans_the_street()`), and it is read at its band at every heat, since its
+##   guard's catch lies inside the band (`EventDef.catch_shuts_within()`). The band stands on the
+##   kerb beside its lane (`EventPlan.body_at()`) and takes the sidewalk on its own side of the
+##   road and the road, leaving the far sidewalk whole, so it is refused where a body already
+##   closes that far sidewalk, and a body drawn after it is refused across from it the same way.
 ##
 ## It asks a body, never a cost: a row whose field alone covers both sidewalks is the line rules'
 ## question. Model: no node.
@@ -59,8 +58,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 	return true
 
 ## The streets a body's disc reaches a tile of, with her own radius on it: a body stops her
-## `blocking_radius() + PLAYER_BODY_RADIUS` from where it stands. The streets this city has
-## only.
+## `blocking_radius() + PLAYER_BODY_RADIUS` from where it stands. The streets this city has only.
 func _streets_reached_by(plan: EventPlan) -> Array[StreetNetwork.Segment]:
 	var reach := plan.blocking_radius() + Tuning.PLAYER_BODY_RADIUS
 	var at := plan.body_at()

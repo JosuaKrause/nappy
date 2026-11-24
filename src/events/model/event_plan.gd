@@ -259,8 +259,8 @@ func role() -> GameEnums.BlockerRole:
 ## across: its body and her whole shape, the field it carries where it carries one (a car
 ## crash's, there to stop her walking past it), and a hard fail's catch, measured to her centre as
 ## the park cordon tests her centre (a body stops her shape, a catch does not); 0 for an event
-## that neither stands in the way nor ends the day. What the park cordon's last
-## gap is kept clear of (`ParkCordon._clear_of_the_day()`).
+## that neither stands in the way nor ends the day. What the park cordon's last gap is kept
+## clear of (`ParkCordon._clear_of_the_day()`).
 func clearance(her_reach: float) -> float:
 	if _def.obstructs_within() <= 0.0 and not _def.ends_the_day():
 		return 0.0
@@ -307,9 +307,9 @@ func spoils(ground: Rect2) -> bool:
 
 ## **Whether this event blocks the way**: placed, not a region door's body (`is_door()`), and
 ## either a body she cannot pass (`obstructs_within()`) or a catch that shuts ground
-## (`catch_shuts_within()`). An abduction in progress is
-## not something she walks through to reach the park behind it; a door is a crossing she walks
-## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
+## (`catch_shuts_within()`). An abduction in progress is not something she walks through to
+## reach the park behind it; a door is a crossing she walks through. What the day's reach
+## (`DayReach`) stands as discs (`blocking_radius()`).
 func obstructs() -> bool:
 	return is_placed() and not _is_door and blocking_radius() > 0.0
 
