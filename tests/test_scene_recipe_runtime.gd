@@ -258,7 +258,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 		t.check(dog.is_held_by_hand() and walked.length() > 0.0 and dog.position.distance_to(
 				player.global_position) > from.distance_to(player.global_position),
 				"the runtime walks the held dog on, farther from her: %s" % walked)
-		var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
+		var placed := city.map.moves.keeping_their_course().any(func(move: MoveProposal) -> bool:
 				return move.stands_at() == dog.position and move.steps_to() == dog.position)
 		t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
 		RunCity.events(city).retire(dog)

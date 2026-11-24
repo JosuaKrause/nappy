@@ -49,7 +49,7 @@ func use_platform(touch: bool, can_quit: bool) -> void:
 ## Set once by `main._ready()`, the same way `_connect_summary_and_pause_signals()` wires the
 ## signals this screen fires — null in a test that builds a bare `PauseScreen`, which is why every
 ## use below is guarded. *"Pause can keep the last direction just don't overwrite it from the
-## button press."* `open()` and `close()` are the only two places this is read, so a run that never
+## button press."* `open()` and `_close()` are the only two places this is read, so a run that never
 ## reaches a real `main` (most of this file's own suite) never remembers or restores anything and
 ## behaves exactly as it always has.
 var _touch_controls: TouchControls
@@ -165,7 +165,7 @@ func open() -> void:
 
 const DIM_OVER_THE_CITY := 0.78
 
-func close() -> void:
+func _close() -> void:
 	visible = false
 	get_tree().paused = _was_paused
 	# The heading she carried in, not the press that just dismissed this screen — see
@@ -282,10 +282,10 @@ var _resuming := false
 
 ## Flashes the continue button pressed for two frame boundaries before actually resuming — the same
 ## shape `DaySummary._acknowledge_and_continue()` already uses and for the same reason. *(Playtest
-## 34 finding 1: "buttons still don't light up when pressed or hovered.")* `close()` used to run
+## 34 finding 1: "buttons still don't light up when pressed or hovered.")* `_close()` used to run
 ## synchronously inside the same input-processing pass that set the pressed fill, and Godot never
 ## draws a frame between one call and the next within a single input dispatch, so the fill was set
-## and then hidden again — by `close()`'s own `visible = false` — without a frame ever rendering it.
+## and then hidden again — by `_close()`'s own `visible = false` — without a frame ever rendering it.
 ## Two `process_frame` awaits, not one: `SceneTree.process_frame` fires *before* the frame it names
 ## is drawn, so the second is what actually lands after the draw that happens between them.
 ##
@@ -302,7 +302,7 @@ func _acknowledge_and_resume() -> void:
 	await get_tree().process_frame
 	_continue_button.clear_forced_press()
 	_resuming = false
-	close()
+	_close()
 
 ## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
 ## **except on the web**, where `QuitOption.available()` is false and the key is not handled at
@@ -337,7 +337,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# `_acknowledge_and_resume()`'s own doc for the one that does.
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
-		close()
+		_close()
 		return
 	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
 	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
@@ -353,7 +353,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# after. A mouse branch that does not ask whether this device even has touch hardware to emulate
 	# one from would let a press on the restart button reach here first as the emulated click,
 	# firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
-	# `_handle_restart_touch()` above — and that coroutine's own `close()` cancels whatever hold the
+	# `_handle_restart_touch()` above — and that coroutine's own `_close()` cancels whatever hold the
 	# real touch had just started and resumes the day before the hold could ever complete. Gating
 	# the mouse branch on `not _touch`, exactly as `_handle_restart_touch()`'s own mouse branch
 	# already is, means the emulated click never reaches a branch at all on a device where a real

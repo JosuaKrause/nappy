@@ -251,14 +251,14 @@ func _test_the_pause_puts_back_what_it_found(t: TestRunner) -> void:
 	t.get_tree().paused = false
 	pause.open()
 	t.check(pause.is_open() and t.get_tree().paused, "opening it over the city pauses the tree")
-	pause.close()
+	UI.dismiss(pause)
 	t.check(not pause.is_open() and not t.get_tree().paused, "and closing it starts the day again")
 
 	# Over something that has already stopped the world — the summary, the ending screen.
 	t.get_tree().paused = true
 	pause.open()
 	t.check(t.get_tree().paused, "opening it over a stopped screen leaves the tree stopped")
-	pause.close()
+	UI.dismiss(pause)
 	t.check(t.get_tree().paused,
 			"and closing it hands the screen underneath back its pause rather than resuming a day "
 			+ "that had ended")
@@ -310,7 +310,7 @@ func _test_the_pause_says_where_the_run_stands(t: TestRunner) -> void:
 			"the pause says which day it is and how many nerves are left, as stars ('%s')" % line)
 	t.check(line == SummaryModel.standing_line(run),
 			"and the line is the summary model's own standing line, the one formatter")
-	pause.close()
+	UI.dismiss(pause)
 
 	# A single nerve is one star, drawn through the same `Texts.nerve_stars()` every other screen
 	# reads the count through — never a digit and never the word.
@@ -318,7 +318,7 @@ func _test_the_pause_says_where_the_run_stands(t: TestRunner) -> void:
 	pause.open()
 	t.check(standing.text.contains(Texts.nerve_stars(1)) and not standing.text.contains("1 nerve"),
 			"and the last one is one star, not a number ('%s')" % standing.text)
-	pause.close()
+	UI.dismiss(pause)
 
 	t.get_tree().paused = false
 	pause.free()
@@ -345,7 +345,7 @@ func _test_there_is_a_way_out_of_a_finished_run(t: TestRunner) -> void:
 	pause.open()
 	UI.push(pause, _key(KEY_R))
 	t.check(restarts[0] == 1, "r on the pause screen asks for a new run")
-	pause.close()
+	UI.dismiss(pause)
 	pause.free()
 
 	# And the other end of the same dead end: the last screen of a run has a key on it.
@@ -587,14 +587,14 @@ func _test_the_pause_quit_key_matches_the_platform(t: TestRunner) -> void:
 	pause.open()
 	UI.push(pause, _key(KEY_Q))
 	t.check(quit[0] == 1, "the key does something where quitting works")
-	pause.close()
+	UI.dismiss(pause)
 
 	pause.use_platform(false, false)
 	pause.open()
 	UI.push(pause, _key(KEY_Q))
 	t.check(quit[0] == 1, "and pressing it where quitting is impossible emits nothing at all")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -819,7 +819,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t: TestRunner) -> void:
 	t.check(UI.fill(continue_button) == Palette.BUTTON_HOVER,
 			"the same reading lights up the pause screen's own continue button")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -876,7 +876,7 @@ func _test_the_pause_hint_and_body_match_the_platform(t: TestRunner) -> void:
 	# no mention of tapping her or 'that way'".)*
 	t.check(not "that way" in body.get_parsed_text() and not "tap her" in body.get_parsed_text(),
 			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
-	pause.close()
+	UI.dismiss(pause)
 
 	pause.use_platform(true, true)
 	pause.open()
@@ -884,7 +884,7 @@ func _test_the_pause_hint_and_body_match_the_platform(t: TestRunner) -> void:
 			"the touch hint says nothing either — the buttons say it now ('%s')" % hint.text)
 	t.check(UI.control(pause, "Buttons").visible, "and the continue/restart pair is what shows instead")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -946,7 +946,7 @@ func _test_the_restart_button_is_a_hold(t: TestRunner) -> void:
 	UI.push(pause, UI.touch_at(at, false))
 	t.check(restarts[0] == 1, "and the release afterwards does not fire it again")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -1014,7 +1014,7 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t: 
 	UI.push(pause, UI.touch_at(at, false))
 	t.check(restarts[0] == 1, "and the matching release, also GUI-routed, does not fire it again")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -1461,7 +1461,7 @@ func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t: TestRun
 	var pause := _pause(t, false, true, null, atlas)
 	var body := UI.control(pause, "Body") as HelpText
 	pause.open()
-	pause.close()
+	UI.dismiss(pause)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	# Forgets what was asked before this open: the buttons' glyphs, and the tap scheme's line.
 	atlas.pictures_asked()
@@ -1471,6 +1471,6 @@ func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t: TestRun
 			and atlas.pictures_asked() == [&"ui/run"],
 			"joystick scheme: the line is read again on this open and shows the run button, got '%s'"
 			% body.get_parsed_text())
-	pause.close()
+	UI.dismiss(pause)
 	pause.free()
 	controls.free()

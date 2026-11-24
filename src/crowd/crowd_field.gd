@@ -26,16 +26,16 @@ var _centre := Vector2.ZERO:
 	set(at):
 		_looking_at = at
 		if not _stretch_box.has_area():
-			_centre = map.world_size() * 0.5 if _city_view and map else at
-			radius = maxf(map.world_size().x, map.world_size().y) * 0.5 \
-					if _city_view and map else _grown_for(at)
+			_centre = _map.world_size() * 0.5 if _city_view and _map else at
+			radius = maxf(_map.world_size().x, _map.world_size().y) * 0.5 \
+					if _city_view and _map else _grown_for(at)
 			return
 		_centre = _stretch_box.get_center()
 		radius = maxf(_stretch_box.size.x, _stretch_box.size.y) * 0.5 + Tuning.TILE_SIZE
 ## Half-extent of the box. Read by everything that places or recycles an agent; never set from
 ## outside, because it is a function of where the centre is.
 var radius := Tuning.CROWD_FIELD_RADIUS
-var map: CityMap
+var _map: CityMap
 ## A recipe's city overview simulates every visible street at the ordinary field density.
 ## The normal moving field remains the default, including after another day is started.
 var _city_view := false
@@ -55,7 +55,7 @@ var _stretch_box := Rect2()
 var stretch_ends: Array[Dictionary] = []
 
 func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
-	map = city_map
+	_map = city_map
 	_centre = at
 
 ## Centres the box on `at`, which re-sizes it (`_centre`).
@@ -97,13 +97,13 @@ func has_stretch() -> bool:
 ## scene walks the stretch and nothing else.
 func use_stretch() -> void:
 	var box := Rect2i()
-	for y in map.size_in_tiles().y:
-		for x in map.size_in_tiles().x:
-			if map.in_stretch(Vector2i(x, y)):
+	for y in _map.size_in_tiles().y:
+		for x in _map.size_in_tiles().x:
+			if _map.in_stretch(Vector2i(x, y)):
 				box = Rect2i(x, y, 1, 1) if not box.has_area() else box.expand(Vector2i(x, y)) \
 						.expand(Vector2i(x + 1, y + 1))
-	_stretch_box = map.tile_rect_to_world(box)
-	stretch_ends = _stretch_ends_of(map)
+	_stretch_box = _map.tile_rect_to_world(box)
+	stretch_ends = _stretch_ends_of(_map)
 	_centre = _looking_at
 
 ## Where the camera is looking: the box's own centre, except on a stretch, whose box stays put while
@@ -169,7 +169,7 @@ static func _stretch_ends_of(stretch_map: CityMap) -> Array[Dictionary]:
 ## within a pixel in three passes because a bigger box can only add city on the sides that are
 ## not already against a wall.
 func _grown_for(at: Vector2) -> float:
-	if not map:
+	if not _map:
 		return Tuning.CROWD_FIELD_RADIUS
 	var want := pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0)
 	var grown := Tuning.CROWD_FIELD_RADIUS
@@ -182,7 +182,7 @@ func _grown_for(at: Vector2) -> float:
 
 ## How much of a box of this size, centred here, is inside the city.
 func _city_area(at: Vector2, half: float) -> float:
-	var extent := map.world_size()
+	var extent := _map.world_size()
 	var across := minf(extent.x, at.x + half) - maxf(0.0, at.x - half)
 	var down := minf(extent.y, at.y + half) - maxf(0.0, at.y - half)
 	return maxf(0.0, across) * maxf(0.0, down)
@@ -190,7 +190,7 @@ func _city_area(at: Vector2, half: float) -> float:
 ## The lowest and highest coordinate the box spans along an axis, clamped to the map. Agents
 ## enter at one of these and leave at the other.
 func along_bounds(vertical: bool) -> Vector2:
-	var extent := map.world_size()
+	var extent := _map.world_size()
 	var here: float = _centre.y if vertical else _centre.x
 	var limit: float = extent.y if vertical else extent.x
 	return Vector2(maxf(0.0, here - radius), minf(limit, here + radius))
