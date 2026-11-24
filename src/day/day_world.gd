@@ -3,17 +3,17 @@ extends RefCounted
 ## A world standing for one spec, as the day director and the run log are handed it
 ## (`DayWorldSource.stand()`, `RunFlow.world_stood`): the map of the ground she walks, the events
 ## walked among, her and the baby in it, where she is put down and which way she faces, the city's
-## parts where the world is one (its map, today's streets, its crowd and what dresses it for the
-## day), and what the walk is won at in it — the map her front door is on, or the ways out of it.
+## parts where the world is one (its map, today's streets, its crowd, its poster walls and what
+## dresses it for the day), and what the walk is won at in it — the map her front door is on, or the ways out of it.
 ## The fourteen days and the escape's city section stand in a city; the escape's building has no
 ## streets and no crowd, only its events.
 ##
 ## **The city's parts, never the city.** *(inbox #1156 in gray-dolphin: "the city should never be
 ## built for tests that don't test the actual city".)* The director and the run log are handed only
 ## what they read of the city, each a part of its own: the map (`CityMap`), today's streets
-## (`DayStreets`), the crowd and the city scene's own dressing (`CityDressing`), so a test stands a
-## world of fakes with no city. The one reader of the whole city is an authored scene, which
-## installs itself into it (`scene_city()`).
+## (`DayStreets`), the crowd, the poster walls and the city scene's own dressing (`CityDressing`), so
+## a test stands a world of fakes with no city. An authored scene is handed the same world and
+## installs itself into it (`AuthoredScene.install()`).
 ##
 ## Built by whoever stood the world, with everything it answers worked out there; the director and
 ## the run log only ask, and the director hands on what the walk's goal is read from (the ways out to the spec, the home's map to
@@ -31,28 +31,25 @@ var _city_map: CityMap
 var _streets: DayStreets
 var _crowd: Crowd
 var _dressing: CityDressing
-var _scene_city: City
-var _scene_simulation: WorldSimulation
+var _posters: PosterWalls
 var _plan_rng: RandomNumberGenerator
 var _home_map: CityMap
 var _exits := {}
 
-## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, what dresses the
-## city for the day `dressing` and its events, her and the baby in it, put down at `start` facing
+## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, the walls its posters
+## are pasted on `posters`, what dresses the city for the day `dressing` and its events, her and the baby in it, put down at `start` facing
 ## `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk home,
 ## null on one that is not — or at `exits`, the ways out of the city by `CityExit.Kind`, empty on a
 ## walk with none. Its walk is planned on the spec's own stream of the run
-## (`DaySpec.events_stream()`). `scene_city` is the city whole, handed only where an authored scene
-## installs itself into it (`scene_city()`), null otherwise.
+## (`DaySpec.events_stream()`).
 ##
-## **A city has all four of its parts**, so a world is a city or it is not (`is_in_a_city()`), and
+## **A city has all five of its parts**, so a world is a city or it is not (`is_in_a_city()`), and
 ## nothing that walks it asks which parts it has. Refused, null, when the dressing, the map, the
-## streets or the crowd is missing: a half-city is a world nothing could walk.
+## streets, the crowd or the poster walls is missing: a half-city is a world nothing could walk.
 static func in_the_city(dressing: CityDressing, map: CityMap, streets: DayStreets, crowd: Crowd,
-		events: EventManager, player: Stroller, baby: Baby, start: Vector2, home_map: CityMap,
-		exits: Dictionary, facing := Vector2.DOWN, scene_city: City = null,
-		scene_simulation: WorldSimulation = null) -> DayWorld:
-	if dressing == null or map == null or streets == null or crowd == null:
+		posters: PosterWalls, events: EventManager, player: Stroller, baby: Baby, start: Vector2,
+		home_map: CityMap, exits: Dictionary, facing := Vector2.DOWN) -> DayWorld:
+	if dressing == null or map == null or streets == null or crowd == null or posters == null:
 		return null
 	var world := DayWorld.new()
 	world._in_a_city = true
@@ -61,8 +58,7 @@ static func in_the_city(dressing: CityDressing, map: CityMap, streets: DayStreet
 	world._streets = streets
 	world._crowd = crowd
 	world._dressing = dressing
-	world._scene_city = scene_city
-	world._scene_simulation = scene_simulation
+	world._posters = posters
 	world._events = events
 	world._player = player
 	world._baby = baby
@@ -115,7 +111,7 @@ func start_position() -> Vector2:
 func start_facing() -> Vector2:
 	return _facing
 
-## Whether this world is a city, with all four of the city's parts (`in_the_city()`): the one answer
+## Whether this world is a city, with all five of the city's parts (`in_the_city()`): the one answer
 ## the director and the run log key every city branch on, rather than asking which parts it has.
 func is_in_a_city() -> bool:
 	return _in_a_city
@@ -136,17 +132,10 @@ func crowd() -> Crowd:
 func dressing() -> CityDressing:
 	return _dressing
 
-## The city whole, for an authored scene to install itself into (`AuthoredScene.install()`, whose
-## scene recipe playback reads the city whole), or null in any world no authored scene is played
-## in.
-func scene_city() -> City:
-	return _scene_city
-
-## The city's simulation whole, for an authored scene to install itself into beside the city
-## (`scene_city()`): its events, its crowd and its poster walls. Null in any world no authored scene
-## is played in.
-func scene_simulation() -> WorldSimulation:
-	return _scene_simulation
+## The walls the city's posters are pasted on, or null in a world with no city. An authored scene
+## is the one that reads them.
+func poster_walls() -> PosterWalls:
+	return _posters
 
 ## The stream the walk is planned on when the world has one of its own, or null for the spec's own
 ## stream of the run (`DaySpec.events_stream()`).

@@ -38,7 +38,7 @@ extends RefCounted
 ## for tests that don't test the actual city")*: what it reads of a city world comes out of the
 ## world as parts of their own — the map, today's streets (`DayStreets`), the crowd and the city
 ## scene's dressing for the day (`CityDressing`) — so a test stands a world of fakes, and none is
-## a `City`. An authored scene alone is handed the city whole (`DayWorld.scene_city()`).
+## a `City`. An authored scene is handed the same world.
 ##
 ## It writes no save and shows no screen: `finish_day()` returns a `DayEnd` and `main` saves and
 ## shows.
@@ -209,8 +209,7 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 		# sleep at its start has her owe the walk home on a day.
 		_day.start(_spec.seconds_on_the_clock())
 		# The scene's events run under the very spec the clock and the HUD were just handed.
-		errors = _scene.install(world.scene_city(), world.scene_simulation(), _player, baby, _spec,
-				resistance)
+		errors = _scene.install(world, _spec, resistance)
 		if errors.is_empty():
 			_prepare_the_scenery_round_her()
 	else:

@@ -1,0 +1,8 @@
+# minty-quail — The scene recipes' runtime and draft are installed into the world, not the city (D1) · 2026-11-23
+
+The scene recipes' playback (`SceneRecipeRuntime`) and its draft (`SceneRecipeDraft`) read no `City`: an authored scene is installed into the `DayWorld` the day director stood, the same world a played day walks (`AuthoredScene.install(world, spec, resistance)`).
+
+- **The poster walls became a fifth part of a city's world** (`DayWorld.in_the_city()` refuses a world without them, as for the other four), since the scene is the one reader of them and `DayWorld.scene_city()` and `scene_simulation()` are gone. Rejected: keeping the simulation whole beside the world, which would leave a second route to the events and the crowd the world already answers.
+- **`CityDressing` took four asks of the city scene** (`furnish_a_roof()`, `start_the_signals()`, `buildings()`, `props()`), each with a base that does nothing or answers nothing, and `City` overrides them: the roof loop and the signals' three calls the runtime made on the city moved into the city, and the draft reads the buildings and props through the dressing. Rejected: handing the scene the buildings and the signals as parts of their own, which the world would then have to carry for one reader.
+- **The army column's lines go to a trace the scene is handed** (`SceneRecipeRuntime.use_trace()`, which `main` gives the run's own, the trace it gives the city), and the column's happenings are set up with the run the scene already holds and no fronts, world or atlas, which only day 12's cordon and day 10's windows read and a column scene never reaches.
+- **A scene refuses a world that is not a city** with one error, since every recipe is a city scene or the escape's city section.

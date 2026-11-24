@@ -43,7 +43,7 @@ func run(t: TestRunner) -> void:
 	t.check(selected.x >= 0, "tree regression has a real eligible off-route street")
 	if selected.x >= 0:
 		setup.seals = [{"segment": [selected.x, selected.y, selected.z], "candidate": "fallen_tree_seal"}]
-		var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+		var errors := runtime.install(RunCity.world_of(city, player, baby), DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty(), "authored fallen tree installs through production siting: %s" % [errors])
 		var emptied := _emptied_pits(city.map)
 		t.check(emptied.size() == 1, "authored fallen tree empties exactly one source pit")
@@ -52,7 +52,7 @@ func run(t: TestRunner) -> void:
 			t.check(tree != null and not tree.visible,
 					"runtime hides the standing source tree after installing its fallen seal")
 		setup.erase("seals")
-		errors = runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+		errors = runtime.install(RunCity.world_of(city, player, baby), DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty() and _emptied_pits(city.map).is_empty(), "reinstallation clears unselected fallen-tree state")
 		for tree in _street_trees(city):
 			t.check(tree.visible, "standing source trees return when no authored fallen tree selects them")
@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 		elif collection == "seals":
 			entry.candidate = "cafe_pair"
 		setup[collection] = [entry]
-		var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+		var errors := runtime.install(RunCity.world_of(city, player, baby), DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		t.check("\n".join(errors).contains("leaves the authored extent"),
 				"%s outside a bounded scene rejects instead of silently dropping bodies" % collection)
 		setup.erase(collection)
@@ -93,7 +93,7 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 	city.streets().replace_region_plan(days)
 	var key := door.key()
 	setup.gates = [{"segment": [key.x, key.y, key.z]}]
-	var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(RunCity.world_of(city, player, baby), DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	var authored := city.streets().region_plan()
 	var authored_doors := authored.door_segments()
 	t.check(errors.is_empty() and authored_doors.size() == 1 and authored_doors[0].key() == key
@@ -134,7 +134,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 	var key := street.key()
 	var setup: Dictionary = data.setup
 	setup.seals = [{"segment": [key.x, key.y, key.z], "candidate": "cafe_pair"}]
-	var errors := runtime.install(city, RunCity.simulation(city), player, baby, spec)
+	var errors := runtime.install(RunCity.world_of(city, player, baby), spec)
 	t.check(errors.is_empty(), "the café pair installs: %s" % [errors])
 	# Compared at the grain the placement decides — how far along the street, and which sidewalk —
 	# since a body on a sidewalk is centred on its band as it is set up, in a recipe as on a day.
@@ -176,7 +176,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: Sc
 	player.global_position = city.map.tile_to_world(Vector2i(16, 16))
 	RunCity.events(city).use_player(player)
 	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var errors := runtime.install(city, RunCity.simulation(city), player, baby, escape)
+	var errors := runtime.install(RunCity.world_of(city, player, baby), escape)
 	t.check(errors.is_empty() and not RunCity.events(city).ahead.holds_the_home_streets,
 			"an escape scene is installed into the spec it is handed, whose siting keeps off no home street: %s"
 			% [errors])
@@ -189,7 +189,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: Sc
 	var day := DaySpec.for_day(own_run.header().day(), configured.day_length_for(own_run.header().day()))
 	t.check(is_equal_approx(day.length, 77.0),
 			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
-	errors = runtime.install(city, RunCity.simulation(city), player, baby, day)
+	errors = runtime.install(RunCity.world_of(city, player, baby), day)
 	t.check(errors.is_empty() and RunCity.events(city).ahead.holds_the_home_streets
 			and RunCity.events(city).ahead.sends_poster_pursuits,
 			"and the same spec, with a day's settings, is the one its events run under: %s" % [errors])

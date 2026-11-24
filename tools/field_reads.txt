@@ -26,11 +26,6 @@ src/dev/roof_scale_preview.gd footprint
 src/dev/roof_scale_preview.gd roof_object_parent
 
 # [City] src/city/city.gd
-src/dev/scene_recipe_draft.gd map
-src/dev/scene_recipe_runtime.gd atlas
-src/dev/scene_recipe_runtime.gd map
-src/dev/scene_recipe_runtime.gd run
-src/dev/scene_recipe_runtime.gd trace
 src/main.gd atlas
 src/main.gd frame_timing
 src/main.gd ground_mode
