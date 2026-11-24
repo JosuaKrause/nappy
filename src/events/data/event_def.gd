@@ -1069,10 +1069,6 @@ func validate() -> bool:
 	# the field, a band with nothing in it, or one reaching past the field's own edge (outside the
 	# radius every fairness rule is stated over) is a row that reads as having a core and has not
 	# got one. Checked before the ambient and city-wide returns, since those rows have a field too.
-	if falloff() <= 0.0:
-		push_error("event '%s' has a falloff power of %.2f: a field has to fall away from its own "
-				% [_id, falloff()] + "centre")
-		return false
 	if core_rate() > 0.0:
 		if core_rate() <= peak():
 			push_error(("event '%s' has a %.1f/s core inside a %.1f/s field: a core quieter than "
@@ -1676,10 +1672,6 @@ func core_rate() -> float:
 ## Where its field's louder core has fallen to nothing, or 0 for a row with none.
 func core_reach() -> float:
 	return _field.core_reach()
-
-## The exponent on the drop of its field between its two radii.
-func falloff() -> float:
-	return _field.falloff()
 
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its body's shape, or none — a point at its centre — for a row whose

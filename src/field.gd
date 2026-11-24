@@ -41,11 +41,8 @@ static func scale(e: float) -> float:
 ## shape rather than from its radii** — thirty rows of hand-widened radii would be thirty chances to
 ## break the fairness contract.
 ##
-## **`power` is the exponent on `t` and a row may carry its own** (`FieldSpec.falling_off()`), for
-## the case a row's two radii cannot express: under 1 it drops fast and tails long, over 2 it holds
-## near full and then falls off a cliff. **Every row in the catalogue is at the 2.0 default**, which
-## is the curve above and the curve every number in `docs/EVENTS.md` was measured against — the knob
-## exists so that a shape is a row's decision rather than a change to this function.
+## **The square is the one curve**: every row, the crowd and the debug layers drop by `t²`, and
+## every number in `docs/EVENTS.md` was measured against it.
 ##
 ## **`(1−t)²` is the shape that looks equally reasonable and inverts the game.** It puts a quarter of
 ## the intensity at the midpoint of the band and six percent three quarters of the way out, so a café
@@ -59,14 +56,10 @@ static func scale(e: float) -> float:
 ## about. `tests/test_events.gd` re-checks the whole catalogue either way.
 ##
 ## See docs/MECHANICS.md.
-static func falloff(d: float, intensity: float, inner_radius: float, outer_radius: float,
-		power: float = 2.0) -> float:
+static func falloff(d: float, intensity: float, inner_radius: float, outer_radius: float) -> float:
 	if d <= inner_radius:
 		return intensity
 	if d >= outer_radius:
 		return 0.0
 	var t := (d - inner_radius) / (outer_radius - inner_radius)
-	# The default is written out rather than raised, so the curve every measured number in the
-	# catalogue was taken against is the same expression it has always been, bit for bit.
-	var drop := t * t if is_equal_approx(power, 2.0) else pow(t, power)
-	return intensity * (1.0 - drop)
+	return intensity * (1.0 - t * t)
