@@ -265,7 +265,10 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	changed_seed.city.context_seed = 1
 	changed_seed.city.layouts = []
 	var independent := RecipeCityBuilder.build(changed_seed)
-	t.check(_diagnostics(independent).is_empty() and independent.map.tiles_snapshot() == original.map.tiles_snapshot(),
+	var independent_map: CityMap = independent.map
+	var original_map: CityMap = original.map
+	t.check(_diagnostics(independent).is_empty()
+			and independent_map.tiles_snapshot() == original_map.tiles_snapshot(),
 			"changing drafting inputs cannot regenerate or reject a saved layout")
 	var malformed := data.duplicate(true)
 	malformed.context.tiles[0] = [["sidewalk", -1]]

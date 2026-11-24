@@ -52,7 +52,8 @@ func run(t: TestRunner) -> void:
 				other.append(footprint)
 		t.check(not first.is_empty() and first == other,
 				"explicit building layout survives changed random construction context")
-		t.check(first_map.tiles_snapshot() != other_map.tiles_snapshot(), "unpinned construction changes with its context seed")
+		t.check(first_map.tiles_snapshot() != other_map.tiles_snapshot(),
+				"unpinned construction changes with its context seed")
 	pinned.city.context_seed = 61400
 	t.check(not _errors(RecipeCityBuilder.build(pinned)).is_empty(),
 			"changed context refuses ineligible station/dead-end pins instead of moving them")
@@ -73,7 +74,9 @@ func run(t: TestRunner) -> void:
 	input.erase("expected_violations")
 	input.seed = 9999
 	var repeated := RecipeCityBuilder.build(input)
-	t.check(repeated.map.tiles_snapshot() == map.tiles_snapshot(), "unrelated runtime seed cannot move construction pins")
+	var repeated_map: CityMap = repeated.map
+	t.check(repeated_map.tiles_snapshot() == map.tiles_snapshot(),
+			"unrelated runtime seed cannot move construction pins")
 	city.dead_ends = [{"segment": [5, 6, 0], "end": "a"}]
 	t.check(not _errors(RecipeCityBuilder.build(input)).is_empty(), "home street cannot become an authored dead end")
 	city.erase("dead_ends")

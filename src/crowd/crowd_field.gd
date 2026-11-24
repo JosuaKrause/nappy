@@ -93,7 +93,7 @@ func ends_of_the_stretch() -> Array[Dictionary]:
 func has_stretch() -> bool:
 	return _stretch_box.has_area()
 
-## Puts the box over the map's stretch and reads its ends (`CityMap.stretch`): the crowd of a task
+## Puts the box over the map's stretch and reads its ends (`CityMap.in_stretch()`): the crowd of a task
 ## scene walks the stretch and nothing else.
 func use_stretch() -> void:
 	var box := Rect2i()
