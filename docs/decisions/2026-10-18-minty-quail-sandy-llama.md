@@ -17,9 +17,10 @@ outside by the scene recipes' runtime and draft and written by tests: `tiles`, `
   `drop_the_stretch()`; the bytes it writes are the ones already there.
 - The `[CityMap]` group's four lines leave `tools/field_reads.txt`. The runtime's and the draft's
   `size_in_tiles()` reads, and the two `size` lines gone with them, arrived with main's #1687, merged in.
-- The tests read what the map answers: `is_void()` of a tile outside the stretch for `stretch_active`,
-  `recipe_window()` and `show_recipe_window()` for `recipe_bounds`, `tiles_snapshot()` and
-  `restore_tiles()` for `tiles` (`tests/test_reachability_grid.gd` fills a map through one helper).
+- The tests read what the map answers: `is_void()` of a tile outside the stretch for
+  `stretch_active`; `recipe_window()` and `show_recipe_window()` for `recipe_bounds`, in the map's own
+  suite and the spawn siting's; `tiles_snapshot()` to compare two grids for `tiles`. A test that
+  lays ground uses `fill_rect()` (`tests/test_reachability_grid.gd`).
 
 **Noted.** `test_recipe_structures.gd`'s bounded case is built on a city of its own, from the recipe with
 a bounded extent through `RecipeCityBuilder` (the design's §4.1), so the full-scope city the other cases
