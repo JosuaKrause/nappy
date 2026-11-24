@@ -15,12 +15,13 @@ outside by the scene recipes' runtime and draft and written by tests: `tiles`, `
   temporary stretch its starting crowd is placed again on with `begin_stretch()`,
   `add_stretch_tile(tile, map.tile_at(tile))` and `show_stretch()`, and lifts it with
   `drop_the_stretch()`; the bytes it writes are the ones already there.
-- The runtime and the draft read `size_in_tiles()` in place of `WorldMap.size`, and their lines leave
-  `tools/field_reads.txt` (the `[CityMap]` group's four lines and the two `size` lines).
+- The `[CityMap]` group's four lines leave `tools/field_reads.txt`. The runtime's and the draft's
+  `size_in_tiles()` reads, and the two `size` lines gone with them, arrived with main's #1687, merged in.
 - The tests read what the map answers: `is_void()` of a tile outside the stretch for `stretch_active`,
   `recipe_window()` and `show_recipe_window()` for `recipe_bounds`, `tiles_snapshot()` and
   `restore_tiles()` for `tiles` (`tests/test_reachability_grid.gd` fills a map through one helper).
 
-**Noted.** `test_recipe_structures.gd`'s bounded setup writes the window through
-`show_recipe_window()`, which also turns the recipe's exterior on; the suite's checks pass unchanged with it.
+**Noted.** `test_recipe_structures.gd`'s bounded case is built on a city of its own, from the recipe with
+a bounded extent through `RecipeCityBuilder` (the design's §4.1), so the full-scope city the other cases
+use keeps its map; a check holds that the map after the case is the map before it at her start tile.
 A scene draft of `task-07-package` is byte-identical before and after.

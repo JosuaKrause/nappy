@@ -179,7 +179,5 @@ func _test_reaches_uses_the_dirty_set_flood_already_built(t: TestRunner) -> void
 ## A map of `size` whose every tile is `type`.
 func _map_of(size: Vector2i, type: GameEnums.TileType) -> CityMap:
 	var map := CityMap.new(size)
-	var ground := map.tiles_snapshot()
-	ground.fill(type)
-	map.restore_tiles(ground)
+	map.fill_rect(Rect2i(Vector2i.ZERO, size), type)
 	return map

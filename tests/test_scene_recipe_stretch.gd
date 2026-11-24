@@ -202,7 +202,7 @@ func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: C
 ## scene's real walk must pick the one on the street she can walk to.
 func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	var raw_ground := PackedInt32Array()
-	raw_ground.resize(map.tiles_snapshot().size())
+	raw_ground.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	raw_ground.fill(WalkField.UNREACHED)
 	var start := Vector2i.ZERO
 	for y in map.size_in_tiles().y:
@@ -258,7 +258,7 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 func _swept(map: CityMap, targets: Array[Dictionary], ground: PackedInt32Array) -> WalkField:
 	var field := WalkField.start(map, targets, Vector2i.ZERO)
 	while not field.is_done():
-		field.advance(map, ground, map.tiles_snapshot().size())
+		field.advance(map, ground, map.size_in_tiles().x * map.size_in_tiles().y)
 	return field
 
 func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
