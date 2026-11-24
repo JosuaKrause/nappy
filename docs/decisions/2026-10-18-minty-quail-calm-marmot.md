@@ -31,8 +31,10 @@ d3faeaf8c and the branch): the hunting roadblocks placed are the same in number 
 91, 63, 53, 83, 361, 76 on days 7 to 14); the tiles their discs shut fall from 7928, 17120, 8974,
 6210, 5138, 7274, 36190 and 6736 to 7128, 15900, 8064, 5580, 4608, 6444, 32580 and 5976; the route
 tiles home no longer reaches over the day's shut ground are none on both. `placement_fingerprint.gd`
-(the escape's and the building's `FP` lines included) and `cordon_placement_fingerprint.gd` come out
-line for line the same.
+(the escape's and the building's `FP` lines included), `cordon_placement_fingerprint.gd`,
+`downy_llama_route_roadblocks.gd` (heat 0 and heat 4) and the `WC` and `WB` lines of `walk_rows.gd` come
+out line for line the same: the dawn accepts the same placements, and only the discs they shut
+shrink.
 
 **Rejected.** Narrowing `clearance_around_her()` to the shut ground (it brings back the flashing
 mark at the start); a pursuer's post shutting nothing (it loosens four day rules and drops the
