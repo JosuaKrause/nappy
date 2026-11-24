@@ -896,7 +896,7 @@ stands on to reach it.
 sabotage is done (`run.resistance().sabotage_went_through()`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
-(`Building.powered`), every traffic light on the spine (`TrafficSignals.use_power()`, see "Traffic
+(`Building.switch_power()`), every traffic light on the spine (`TrafficSignals.use_power()`, see "Traffic
 signals") and every loudspeaker mast (`EventManager.silence_all_masts()`). *(The player,
 2026-09-20: "just wait until a certain distance away -- then everything is off at once".)* The
 station's own hall goes with them: on the last night its clerestory is dimly lit while the power
@@ -2273,7 +2273,7 @@ Top-down camera with a fake vertical extrusion:
   portico and the fire escape exactly where they already stand. A column she cannot stand in front
   of is the exception below. **Her own building is the other exception** and keeps its ground-floor
   windows, read off `CityMap.home_block_coordinate()` rather than off anything drawn — except the column(s) her
-  own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
+  own front door's footprint overlaps (`Building.mark_door_span()`), which draw plain wall
   instead, since a window behind a door she is standing in front of never showed anything. A
   facade only one wall row tall is not multi-story, so its single row is unaffected either way. Each complete
   two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the

@@ -366,8 +366,8 @@ func _test_the_hall_is_lit_only_on_the_last_night(t: TestRunner) -> void:
 	hall.equip(atlas, RoofDrawer.new(atlas), front)
 	hall.dress_as_power_station(3, Vector2i(14, 8))
 	hall.stand_on(Rect2i(), Vector2(704.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 128.0)
-	hall.day = Tuning.POWER_STATION_DAY
-	hall.powered = true
+	hall.show_day(Tuning.POWER_STATION_DAY)
+	hall.switch_power(true)
 	t.add_child(hall)
 	# Equipped as the city equips it, the hall waits for the residency, which stands a building in
 	# view up.
@@ -381,14 +381,14 @@ func _test_the_hall_is_lit_only_on_the_last_night(t: TestRunner) -> void:
 	var yards := front.pictures().count(Building.POWER_STATION_YARD)
 	t.check(yards == 1, "and its yard is stood beside it, once (%d)" % yards)
 	front.draws.clear()
-	hall.powered = false
+	hall.switch_power(false)
 	await UI.frames(t, 2)
 	band = _clerestory_band(front)
 	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,
 			"and with it off, the hall is dark (%s)" % [band])
 	front.draws.clear()
-	hall.powered = true
-	hall.day = Tuning.POWER_STATION_DAY - 1
+	hall.switch_power(true)
+	hall.show_day(Tuning.POWER_STATION_DAY - 1)
 	await UI.frames(t, 2)
 	band = _clerestory_band(front)
 	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,

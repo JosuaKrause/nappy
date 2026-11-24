@@ -445,7 +445,7 @@ func _test_the_escape_clock_takes_its_length_and_invincible(t: TestRunner) -> vo
 	clock.use_the_spec(spec)
 	t.add_child(clock)
 	clock.set_process(false)
-	clock.start(spec.length)
+	clock.start(spec.seconds_on_the_clock())
 	t.check(is_equal_approx(clock.seconds_left(), 25.0), "a section runs the length handed in")
 	clock.tick(5.0)
 	t.check(is_equal_approx(clock.seconds_left(), 25.0), "and stands still when invincible")

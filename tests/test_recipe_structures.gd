@@ -187,8 +187,8 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: Sc
 
 	var configured := RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true)
 	var day := DaySpec.for_day(own_run.header().day(), configured.day_length_for(own_run.header().day()))
-	t.check(is_equal_approx(day.length, 77.0),
-			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
+	t.check(is_equal_approx(day.seconds_on_the_clock(), 77.0),
+			"a day scene's walk is the configured day's length (%.1fs)" % day.seconds_on_the_clock())
 	errors = runtime.install(city, RunCity.simulation(city), player, baby, day)
 	t.check(errors.is_empty() and RunCity.events(city).ahead.holds_the_home_streets
 			and RunCity.events(city).ahead.sends_poster_pursuits,

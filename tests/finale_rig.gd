@@ -1816,7 +1816,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		var summary := Boot.summary(main)
 		var words := _section(section).title()
 		var nerves := escape.run.header().nerves()
-		var length: float = Boot.day(main).spec().length
+		var length: float = Boot.day(main).spec().seconds_on_the_clock()
 		var title: Label = summary.get_node("Root/Center/Lines/Title")
 		var body: Label = summary.get_node("Root/Center/Lines/Body")
 		t.check(Boot.day(main).spec().section_kind() == section and summary.is_showing(),
@@ -2188,7 +2188,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t: TestRunner) -> void:
 	t.check(pause.is_open(), "Esc opens the pause")
 	t.get_viewport().push_input(_key(KEY_Q))
 	t.check(calls["quits"] == 1, "Q on the open pause reaches the same quit a day's pause reaches")
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 
 	# Her heading, held by the on-screen controls: let go while the pause is up, and given back by
@@ -2223,7 +2223,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t: TestRunner) -> void:
 	t.get_viewport().push_input(_action("pause"))
 	t.get_viewport().push_input(_key(KEY_R))
 	t.check(calls["reloads"] == 1, "and R on the open pause reaches the same restart a day's does")
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	_free_the_escape(t, escape)
 
@@ -2266,7 +2266,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	t.check(not pause.is_open(), "losing focus does not open the pause over it")
 	t.get_viewport().push_input(_action("pause"))
 	t.check(pause.is_open(), "Esc does, as over a lost day's outcome screen")
-	pause.close()
+	UI.dismiss(pause)
 	t.check(t.get_tree().paused and summary.is_showing(),
 			"and closing it leaves the outcome screen up and the tree paused")
 
@@ -2315,7 +2315,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t: TestRun
 			func(node: Node) -> void: (node as Main).use_sitting_home(home))
 	var main := booted.main
 	var day := Boot.day(main)
-	var length: float = day.spec().length
+	var length: float = day.spec().seconds_on_the_clock()
 
 	t.check(day.spec().section_kind() == DaySpec.Section.BUILDING,
 			"the boot read the section off the save")
@@ -2420,7 +2420,8 @@ func _test_a_handover_does_not_open_on_the_title(t: TestRunner) -> void:
 	t.check(Boot.summary(main).is_showing() and title.text == "Escape the building",
 			"it opens straight on the section's own brief")
 	t.check(t.get_tree().paused and not Boot.day(main).can_process()
-			and is_equal_approx(Boot.day(main).seconds_left(), Boot.day(main).spec().length),
+			and is_equal_approx(Boot.day(main).seconds_left(),
+					Boot.day(main).spec().seconds_on_the_clock()),
 			"with the section's whole clock standing still behind it")
 	_free_the_escape(t, escape)
 
@@ -2439,7 +2440,7 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t: TestRunner) ->
 	await Boot.press_continue(t, main)
 	t.get_viewport().push_input(_action("pause"))
 	t.get_viewport().push_input(_key(KEY_R))
-	Boot.pause(main).close()
+	UI.dismiss(Boot.pause(main))
 	t.get_tree().paused = false
 	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
 	var sitting := escape.home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting

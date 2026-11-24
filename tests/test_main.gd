@@ -94,8 +94,8 @@ func _test_a_boot_gives_the_day_its_configured_length(t: TestRunner) -> void:
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--day-length", "77"]),
 			func(main: Boot.MainScript) -> void: main.use_sitting_home(home))
 	var spec: DaySpec = Boot.day(booted.main).spec()
-	t.check(spec != null and is_equal_approx(spec.length, 77.0),
-			"a boot with --day-length 77 starts a day 77s long (%s)" % [spec.length if spec else "no spec"])
+	t.check(spec != null and is_equal_approx(spec.seconds_on_the_clock(), 77.0),
+			"a boot with --day-length 77 starts a day 77s long (%s)" % [spec.seconds_on_the_clock() if spec else "no spec"])
 	booted.free_all()
 	home.free()
 
@@ -1111,7 +1111,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 		await tree.physics_frame
 	t.check(run.header().play_ticks() == ticks_before and day.seconds_left() == time_before,
 			"a paused tick does not, nor does the day's countdown run")
-	pause.close()
+	UI.dismiss(pause)
 
 	# The day summary: the day ends for real, a short one running out, so the summary arrives in the
 	# shape a real day-end tick arrives in (phase OVER, the tree paused).
@@ -1148,7 +1148,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 ## Puts the screens a focus check leaves behind away: the pause closed, the summary dismissed, the
 ## tree running, and the window's own half second over.
 func _reset_the_screens(t: TestRunner, main: Boot.MainScript) -> void:
-	(_one(main, "PauseScreen") as PauseScreen).close()
+	UI.dismiss(_one(main, "PauseScreen") as PauseScreen)
 	(_one(main, "DaySummary") as DaySummaryScript).dismiss()
 	(main.get_node("ReturnWindow") as ReturnWindow).end(true)
 	t.get_tree().paused = false
