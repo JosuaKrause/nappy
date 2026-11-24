@@ -127,7 +127,6 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 	await _continue_while_paused(t, main)
 
 	var lines := _lines_kept(run_log.lines)
-	_check_the_badges_reach_the_observer(t, main, run_log)
 	t.check(counter.sent == [
 			"nappy-run-fresh", "nappy-day-1-began",
 			"nappy-controls-joystick", "nappy-mode-normal",
@@ -139,6 +138,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 			"nappy-day-1-won", "nappy-day-2-began"],
 			"a day lost to each kind of cause, won and the next begun sends exactly these (%s)"
 					% [counter.sent])
+	await _check_the_badges_reach_the_observer(t, main, run_log)
 
 	booted.free_all()
 	run_log.free()
@@ -174,32 +174,38 @@ func _check_the_observer_runs_after(t: TestRunner, main: Node, world: Array, boo
 ## **The badges the edge has up reach the run log** (`DangerEdge.badges()`, which `main` hands
 ## `RunSession.watch()`, which hands it to the observer): a hand-off lost anywhere on the way leaves
 ## the observer its base `EdgeBadges`, which has none, and would read as a day with no badges. So
-## the edge's own badge model is stepped with a warning up (a pending `BadgeModel.Subject`, which is
-## announced whether in sight or not) and the observer watches one frame of it, called straight
-## after so no frame of the edge's own clears it first; the run log then holds one `edge badge`
-## line for it. Asked once the day's lines are taken for the baseline, so it adds none to them.
+## a real warning for the fire engine is put up on the day's event manager
+## (`EventManager.warn_first()`, announced whether in sight or not), the tree is let run two real
+## frames, in which the edge reads the warning and the observer, processing after it, watches the
+## edge's badges, and is held still again; the run log then holds one `edge badge` line for it. The
+## engine's warning lasts `Tuning.WARNING_ALONE_MAX`, one second, about sixty frames, so it is
+## still up after the two and nothing of it has arrived. Asked once the day's lines are taken for
+## the baseline and the counter's names are read, so the frames it lets pass add to neither.
 func _check_the_badges_reach_the_observer(t: TestRunner, main: Node, run_log: RecordingLog) -> void:
 	var edge := _edge_of(main) as DangerEdge
 	var found := main.find_children("*", "TelemetryObserver", true, false)
 	t.check(edge != null and not found.is_empty(), "the boot built the edge and the observer")
 	if edge == null or found.is_empty():
 		return
-	var observer: TelemetryObserver = found[0]
-	var model := edge.badges() as BadgeModel
+	var model := edge.badges()
 	t.check(model != null, "the edge's badges are its badge model")
 	if model == null:
 		return
 	var before := _edge_badge_lines(run_log)
-	var warning := BadgeModel.Subject.new()
-	warning.pending = true
-	warning.position = Vector2(600.0, 0.0)
-	warning.left = 1.0
-	warning.approach_speed = 190.0
-	warning.logged_name = "fire_truck"
-	warning.payload = EventCatalogue.by_id("fire_truck")
-	model.step(0.1, Vector2.ZERO, [warning],
-			func(_at: Vector2, _margin: float) -> bool: return false)
-	observer._process(0.1)
+	var managers := main.find_children("*", "EventManager", true, false)
+	t.check(not managers.is_empty(), "the boot built the day's event manager")
+	if managers.is_empty():
+		return
+	var events: EventManager = managers[0]
+	var her := Boot.player(main).global_position
+	var warning: PendingWarning = events.warn_first(EventCatalogue.by_id("fire_truck"), her,
+			func(standing: Vector2) -> Vector2: return standing + Vector2(600.0, 0.0),
+			func(_place: Vector2, _standing: Vector2) -> bool: return true)
+	t.check(warning != null, "the engine's warning is put up on the day's event manager")
+	t.get_tree().paused = false
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.get_tree().paused = true
 	var written := _edge_badge_lines(run_log).size() - before.size()
 	t.check(before.is_empty() and written == 1,
 			"a badge the edge has up is written by the run log's observer (%d line(s), %d before)"

@@ -1003,7 +1003,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 ## **The route-redundancy guarantee with it parked** (the **city** skill: a day leaves distinct
 ## routes from home to its calm areas, counted as a max flow, `StreetNetwork.route_count()`). The
 ## engine parks on the carriageway's near tile across from the fire
-## (`EventSpawner._where_the_summoned_row_stops()`), its body a capsule along the street. On a real
+## (`CityMap.kerb_across_from()`), its body a capsule along the street. On a real
 ## city, at every such kerb tried, every tile the body overlaps at all is blocked; the street it
 ## stands in counts as closed unless a way along it past the body is left inside its own corridor;
 ## and every calm area must keep as many distinct routes from home, up to two, as it had without
@@ -1025,9 +1025,10 @@ func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
 			"and a body the street's whole width closes the street it stands in (%d of %d kerbs; "
 			% [wide.x, kerbs.size()] + "%d calm areas then lose a route)" % wide.y)
 
-## The kerbs a summoned engine can park at on `map`, as `[park, along]`: the near carriageway tile
-## across from every sidewalk tile beside a carriageway, sampled across the map, and the street's
-## own axis there.
+## The kerbs a summoned engine can park at on `map`, as `[park, along]`: the carriageway tile
+## against the kerb across from every sidewalk tile beside a carriageway
+## (`CityMap.kerb_across_from()`, the same tile from either sidewalk tile of a kerb), sampled across
+## the map, and the street's own axis there.
 func _kerbs(map: CityMap) -> Array[Array]:
 	var kerbs: Array[Array] = []
 	var tile_count := map.size.x * map.size.y
@@ -1037,7 +1038,7 @@ func _kerbs(map: CityMap) -> Array[Array]:
 		var inward := map.pavement_inward(tile)
 		if inward == Vector2i.ZERO:
 			continue
-		var park := EventSpawner._where_the_summoned_row_stops(map, map.tile_to_world(tile))
+		var park := map.kerb_across_from(map.tile_to_world(tile))
 		if park == Vector2.INF or not Tile.is_road(map.tile_type_at_world(park)):
 			continue
 		kerbs.append([park, Vector2(absf(float(inward.y)), absf(float(inward.x)))])
