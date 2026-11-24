@@ -121,8 +121,8 @@ func locations() -> DayLocations:
 
 ## The day's ground for a row, as dawn made it (`RowGround`): which tiles a row may stand on, the
 ## answers dawn asked for already kept, which every placement made while she walks asks in place
-## of scanning the city again; null for a walk no dawn of a day planned (the escape's walks, the
-## building, a scene recipe's) and before a walk starts.
+## of scanning the city again; null for a walk no ground was handed to (the escape's walks, the
+## building, a rig's recipe walk) and before a walk starts.
 func ground() -> RowGround:
 	return _ground
 

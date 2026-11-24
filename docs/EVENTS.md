@@ -1508,7 +1508,8 @@ Each item quotes the code on this branch.
    each draw one location at dawn, weighted
    by role, and are assigned it (`ScriptedPhase`); a one-shot is owed to her walk and sited on her
    way, never placed at dawn (`EventDef.validate()` refuses one that is not); an authored scene's row stands
-   in the location its tile names, asked once (`EventScheduler.recipe_placement()`); the masts stand
+   in the location its tile names, asked once (`EventScheduler.recipe_placement()`, on the one ground
+   the scene makes for every row it places, `SceneRecipeRuntime`); the masts stand
    at the run's sites (`EventWorld.mast_sites()`, worked out once when the run's city is handed
    over) and each holds the location under it, so no draw happens there, and closes that sidewalk's
    section, so nothing that spans the street is drawn or stood over it
@@ -1638,7 +1639,10 @@ one object a walk, made at dawn by the dawn's context (`DawnContext.ground()`, w
 `EventScheduler.row_ground()`), which scans the map once for each
 question a row asks and keeps the answer, and is handed to every placement that asks: the dawn's
 phases, and, with the walk (`WalkEvents.ground()`), whatever is sited while she walks, so nothing
-scans the city for it again and both stand their rows on the same ground.
+scans the city for it again and both stand their rows on the same ground. A scene recipe makes the
+same one object for its scene (`SceneRecipeRuntime`), hands it to each authored row's placement and
+to its walk (`EventManager.start_recipe()`), and makes it where the install judges the map, so a
+bounded scene's or a stretch's walk keeps the answers the install asked.
 `RowGround.tiles_for()` refuses five kinds of ground outright, by construction rather than
 as a check on what a roll came back with:
 
@@ -2487,16 +2491,19 @@ two are.
 
 **The escape offers its rows per street rather than per city, on the day's own ground** — a row
 fits a location of the street on the day's answer for the row (`LocationFit`, over
-`RowGround.tiles_for()`), since the chains already say which streets exist for it. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
-regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
-tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
-(`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
-spread, the power station's front; all but the street the
-home's front door opens onto, a door the escape never sets off from (`DaySpec.keeps_the_home_streets_clear()`
-off; `docs/CITY.md`, "The escape"). What is sited after dawn asks a ground under the same setting: a day's own,
-handed on from dawn (`WalkEvents.ground()`), and on a walk no dawn of a day planned one `EventsAhead`
-makes under the walk's spec (`_ground_of_the_walk()`), so a row placed while she walks keeps the rule
-the walk was planned under.
+`RowGround.tiles_for()`), since the chains already say which streets exist for it. *(Inbox #785 in
+minty-lemur: "does the escape use the same placement rules as the regular game? it doesn't seem
+like it does. it should, though.")* So every refusal a day makes of a tile holds here — a closed
+tile, a held street, the home block, **a standing street tree's ground** (`docs/CITY.md`, "Street
+trees"), the side of the sidewalk a row wants, a corner for a row with a spread, the power
+station's front; all but the street the home's front door opens onto, a door the escape never
+sets off from (`DaySpec.keeps_the_home_streets_clear()` off; `docs/CITY.md`, "The escape").
+
+What is sited after dawn asks a ground under the same setting. A day's walk carries the day's
+own, handed on from dawn (`WalkEvents.ground()`). A scene recipe's walk carries the ground its
+rows were placed on. A walk that was handed none gets one `EventsAhead` makes under the walk's
+spec (`_ground_of_the_walk()`). So a row placed while she walks keeps the rule the walk was
+planned under.
 Each candidate then meets the day's own spacing (`StreetInvalidation.room_around()`) and the escape's own refusals
 below, and is never offered the ground she starts on.
 

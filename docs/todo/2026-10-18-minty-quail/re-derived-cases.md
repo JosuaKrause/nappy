@@ -10,12 +10,10 @@ what another place already worked out, is moved into one object that derives it 
 to whoever asks (designing-classes). The dawn cases were built with `DayEvents` and `CalmAreas`
 (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
-**What is left of the last case, the ground cache** (which tiles each row may stand on): the day's
-walk derives it once, in the design review's `RowGround` (`src/events/model/row_ground.gd`), which the dawn
-makes and hands to every pass and to the walk's sitings. Three places outside a day's walk still scan for themselves: `EventScheduler.recipe_placement()`
-makes one ground per authored row of a scene recipe, `SceneRecipeRuntime._finale_placement()` one per
-escape actor, and a scene recipe's walk carries no ground, so `EventsAhead._ground_of_the_walk()` makes
-one per siting and the resistance director one per ask. The fix is the recipe runtime making one
-`RowGround` for its scene and handing it to all three, its walk included. Placement by construction
-is closed (the record polite-tapir-feathery-kestrel) and left `recipe_placement()` where it
-sits, so the fix waits on nothing.
+**What is left: a scene's walk works out its route tree and locations again.** A scene recipe
+makes one `RowGround` and hands it to its rows, its escape actors and its walk (the record
+2026-10-18-minty-quail-mossy-puffin). When the walk sites something (day 11's mast),
+`SitingMaker._assemble()` grows the route tree again, with the scene's edges shown, because
+`EventsAhead.start_a_given_walk()` (which `EventManager._take()` calls) never sets its `_day_tree`; and it lays out the day's
+locations again, though `SceneRecipeRuntime._event_plans()` already holds both. The fix is the
+runtime handing the walk the tree and the locations it holds, as it hands the ground.

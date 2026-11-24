@@ -65,7 +65,7 @@ class Planned extends FakeEventManager:
 		return CalmAreas.of(map)
 	## Overrides EventManager.start_recipe.
 	func start_recipe(_plans: Array[EventPlan], _spec: DaySpec, _day: int, _focus: Vector2,
-			_calm: CalmAreas = null) -> void:
+			_calm: CalmAreas = null, _ground: RowGround = null) -> void:
 		pass
 	## Overrides EventManager.plans.
 	func plans() -> Array[EventPlan]:
@@ -569,14 +569,15 @@ func _placeable_tiles(city: City, def: EventDef, day: int, count: int) -> Array[
 	var map := city.map
 	var corridor := Corridor.of(RouteTree.for_day(map, day))
 	var locations := DayLocations.lay_out(map, corridor)
-	var offered := EventScheduler.row_ground(map).tiles_for(def)
+	var ground := EventScheduler.row_ground(map, corridor)
+	var offered := ground.tiles_for(def)
 	var already: Array[EventPlan] = []
 	var found: Array[Vector2i] = []
 	for tile in offered:
 		if found.size() >= count:
 			break
 		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
-				map.tile_to_world(tile), 1, already, corridor, PackedVector2Array(),
+				map.tile_to_world(tile), 1, already, corridor, ground, PackedVector2Array(),
 				CalmAreas.of(map), [], locations)
 		if plan != null:
 			already.append(plan)

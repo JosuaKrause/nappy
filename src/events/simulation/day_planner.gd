@@ -86,8 +86,10 @@ class Plan extends RefCounted:
 		_locations = locations
 
 	## The day's ground for a row, as the dawn's context made it (`DawnContext.ground()`), which the
-	## walk hands every placement made while she walks (`WalkEvents.ground()`); null for a walk no
-	## dawn of a day planned (the escape's walks, the building, a scene recipe's).
+	## walk hands every placement made while she walks (`WalkEvents.ground()`); a scene recipe's
+	## walk is handed the ground its rows were placed on (`EventManager.start_recipe()`); null
+	## for a walk no ground was handed to (the escape's walks, the building, a rig's recipe
+	## walk).
 	var _ground: RowGround = null
 
 	## The day's ground for a row. See `_ground`.

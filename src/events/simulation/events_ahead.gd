@@ -106,9 +106,10 @@ func _a_siting(day: int, tree: RouteTree) -> WalkSiting:
 
 ## **The ground a siting made here stands its rows on** (`RowGround`): the walk's, as dawn made it
 ## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
-## worked out, and it stands on the ground the day was planned on. A walk no dawn of a day planned
-## (a scene recipe's, a rig's) has none, and its siting is handed one made here under the walk's
-## own home-street rule (`_holds_the_home_streets`).
+## worked out, and it stands on the ground the day was planned on. A scene recipe's walk
+## carries the ground its rows were placed on (`EventManager.start_recipe()`). A walk no ground
+## was handed to (a rig's) has none, and its siting is handed one made here under the walk's own
+## home-street rule (`_holds_the_home_streets`).
 func _ground_of_the_walk() -> RowGround:
 	var dawns := _walk.ground()
 	if dawns:
