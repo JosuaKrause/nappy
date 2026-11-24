@@ -55,10 +55,9 @@ ticks give, and is kept with its reason:
 - `test_pursuer_on_foot.gd` calls `EventManager.step_the_encounters()` and `check_hard_fails()`,
   the two steps the manager's own tick calls, since real manager ticks over its whole encounters run
   past four hundred seconds against about thirty (record minty-quail-snowy-panda).
-- `test_checkpoints.gd` drives the street-door rig's public `watch_the_door_lines()`,
-  `warn_at_the_doors()` and `hut.step()` on a city that never ticks, a standalone guard's `step()` in
-  the pursuit simulations, and the gate rig's `RunCity.crowd(city).step()`: a real tick passes the car at
-  another time than the rig's own.
+- `test_checkpoints.gd` drives a standalone guard's `step()` in the pursuit simulations
+  (`_guard_rig()`), and the gate rig's `RunCity.crowd(city).step()`: a real tick passes the car at
+  another time than the rig's own. Its street-door rigs take real ticks.
 - A crowd car at speed 700, and a walker at pace 0 other than a waiting one, are not reachable
   through `Crowd.add_recipe_actor()`; a stopped car is reached through `crashed_into()`, which the
   game calls.
