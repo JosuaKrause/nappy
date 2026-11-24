@@ -34,8 +34,8 @@ whatever the check then lists joins the scope.
 one owner: the scene recipe runtime's `manifest`, `named`, `start_position` and `tick`
 (`src/dev/scene_recipe_runtime.gd`), which waits with the scene recipes for the events' interface
 row 3c and the scene recipes' own pass. Under `src/events/`, the events' suites and rigs
-still read the `[own file only]` group's calm areas' `unused`, the catalogue's `all` and the event manager's
-`ahead`, `checkpoints`, `spawner`, `streaming` and `warnings`; the `[no reader]`
+still read the `[own file only]` group's event manager's `ahead`, `checkpoints`, `spawner`, `streaming` and
+`warnings`; the `[no reader]`
 group holds none of the events'. Nothing under `src/resistance/` is left in either group.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
