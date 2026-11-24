@@ -47,7 +47,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	resistance.use_bus(EventBus)
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her
@@ -95,11 +95,11 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 		# that shut the wrong area fails on the day it does. Whether any day shuts one at all is
 		# counted apart and checked once the run is over.
 		var used := run.calendar().settled_this_act()
-		for block: Vector2i in city.map.shut_calm():
+		for block: Vector2i in city.map().shut_calm():
 			t.check(used.has(block),
 					"seed %d day %d: calm area %s off the tree is one she used this act %s"
 					% [seed_value, day, block, used])
-		if not city.map.shut_calm().is_empty():
+		if not city.map().shut_calm().is_empty():
 			days_with_a_used_area_shut += 1
 		if RunCity.crowd(city).agent_count() > 0:
 			days_with_a_crowd += 1
@@ -115,7 +115,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 				one_shots_seen[instance.row_id()] = day
 
 		# The excitement field must be finite and sane wherever the player could stand.
-		var at_home := city.map.home_world_position()
+		var at_home := city.map().home_world_position()
 		var here := 0.0
 		for pair: Array in city.excitement_sources_at(at_home):
 			here += pair[1]
@@ -198,7 +198,7 @@ func _touch(resistance: ResistanceDirector) -> void:
 ## tree has not taken off, and the baby falls asleep there (`Baby.force_sleep()`, which announces it
 ## as falling asleep does).
 func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
-	var map := city.map
+	var map := city.map()
 	var used := run.calendar().settled_this_act()
 	var home := map.home_world_position()
 	var best := Vector2.INF

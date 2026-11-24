@@ -105,7 +105,7 @@ static func build_city_stage(t: TestRunner) -> Stage:
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
 	RunCity.events(city).stream_within(INF)
-	return Stage.new(RunCity.events(city), city.map, city.run, city.streets(), city)
+	return Stage.new(RunCity.events(city), city.map(), city.run, city.streets(), city)
 
 ## The stream a day's events are planned from.
 static func rng(day: int) -> RandomNumberGenerator:

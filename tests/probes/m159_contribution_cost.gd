@@ -18,7 +18,7 @@ func run(t: TestRunner) -> void:
 		for day: int in [1, 9]:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("contribution-cost:4242:%d" % day)
-			var here := city.map.home_world_position()
+			var here := city.map().home_world_position()
 			RunCity.crowd(city).start_day(day, rng, here)
 			var rows: Array = []
 			var mismatch := 0
@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 				var expected := 0.0
 				var silent := 0
 				for agent: CrowdAgent in RunCity.crowd(city).agents():
-					var contribution := ORACLE.full_contribution(city.map, agent, here, 0.0)
+					var contribution := ORACLE.full_contribution(city.map(), agent, here, 0.0)
 					if contribution != agent.mood().contribution_at(here):
 						mismatch += 1
 					expected += contribution

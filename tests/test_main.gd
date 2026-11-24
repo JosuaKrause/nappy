@@ -68,7 +68,7 @@ func _test_a_boot_builds_its_city_on_the_map_it_is_handed(t: TestRunner) -> void
 	var city := Boot.city(booted.main)
 	t.check(source.seeds == [SEED],
 			"a boot asks its map source once, with the run's seed (asked: %s)" % [source.seeds])
-	t.check(city != null and source.handed.size() == 1 and city.map == source.handed[0],
+	t.check(city != null and source.handed.size() == 1 and city.map() == source.handed[0],
 			"the city a boot walks stands on the map its source handed it")
 	booted.free_all()
 	seat.end()
@@ -83,7 +83,7 @@ func _test_an_authored_scenes_map_wins_over_the_map_source(t: TestRunner) -> voi
 	var city := Boot.city(booted.main)
 	t.check(source.seeds.is_empty(),
 			"a boot of an authored scene never asks the map source (asked: %s)" % [source.seeds])
-	t.check(city != null and city.map.is_void(Vector2i.ZERO),
+	t.check(city != null and city.map().is_void(Vector2i.ZERO),
 			"the city of an authored scene stands on the scene's own map")
 	booted.free_all()
 	seat.end()
@@ -201,7 +201,7 @@ func _boot_hands_the_baby_the_city(t: TestRunner, section: int, what: String) ->
 func _answers_from_the_city(city: City, baby: Baby, player: Stroller) -> bool:
 	if player == null:
 		return false
-	var map := city.map
+	var map := city.map()
 	var her := map.world_to_tile(player.global_position)
 	var best := Vector2.INF
 	var nearest := INF
@@ -1121,7 +1121,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	var escape_day := DayController.new()
 	main.add_child(escape_day)
 	escape_day.setup(run)
-	escape_day.use_the_walk((_one(main, "City") as City).map, _one(main, "Stroller"))
+	escape_day.use_the_walk((_one(main, "City") as City).map(), _one(main, "Stroller"))
 	escape_day.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	escape_day.start(30.0)
 	await tree.process_frame
@@ -1361,7 +1361,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 
 	var half := Tuning.VIEW_HALF_EXTENT
 	var lead := Stroller.CAMERA_LOOK_AHEAD
-	var size := city.map.world_size()
+	var size := city.map().world_size()
 	var corners := {
 		"nw": Vector2(0.0, 0.0), "ne": Vector2(size.x, 0.0),
 		"sw": Vector2(0.0, size.y), "se": Vector2(size.x, size.y),
@@ -1377,8 +1377,8 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 				CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
 		beyond_the_band = beyond_the_band or not band.encloses(window)
 		city.prepare_scenery_in(window)
-		var lo := city.map.world_to_tile(window.position)
-		var hi := city.map.world_to_tile(window.end - Vector2.ONE)
+		var lo := city.map().world_to_tile(window.position)
+		var hi := city.map().world_to_tile(window.end - Vector2.ONE)
 		var unpainted := 0
 		for y in range(lo.y, hi.y + 1):
 			for x in range(lo.x, hi.x + 1):
@@ -1400,8 +1400,8 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
 
-	var whole := Rect2i(Vector2i.ZERO, city.map.size_in_tiles())
-	var bounds := city.map.tile_rect_to_world(whole).grow(512.0)
+	var whole := Rect2i(Vector2i.ZERO, city.map().size_in_tiles())
+	var bounds := city.map().tile_rect_to_world(whole).grow(512.0)
 	var viewport := Vector2(
 			ProjectSettings.get_setting("display/window/size/viewport_width"),
 			ProjectSettings.get_setting("display/window/size/viewport_height"))
@@ -1409,10 +1409,10 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	var zoom := minf(viewport.x / bounds.size.x, viewport.y / bounds.size.y)
 	var size := viewport / zoom
 	var view := Rect2(bounds.get_center() - size / 2.0, size)
-	var lo := city.map.world_to_tile(view.position)
-	var hi := city.map.world_to_tile(view.end - Vector2.ONE)
-	var middle_y := city.map.size_in_tiles().y / 2
-	var south_spine_x := (city.map.main_road_corridor() * CityMap.period()
+	var lo := city.map().world_to_tile(view.position)
+	var hi := city.map().world_to_tile(view.end - Vector2.ONE)
+	var middle_y := city.map().size_in_tiles().y / 2
+	var south_spine_x := (city.map().main_road_corridor() * CityMap.period()
 			+ Tuning.SIDEWALK_WIDTH)
 	var keys := _ground_of(city).keys_in(view)
 
@@ -1429,10 +1429,10 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 			"south owns both overview corners as water")
 	for depth: int in [CityMap.OUTSIDE_DEPTH_TILES, CityMap.OUTSIDE_DEPTH_TILES * 4]:
 		t.check(city.scenery_ground_source(Vector2i(south_spine_x,
-				city.map.size_in_tiles().y + depth)) != GroundTiles.WATER,
+				city.map().size_in_tiles().y + depth)) != GroundTiles.WATER,
 				"the southern bridge's road carries on %d tiles out, to the edge of any view" % depth)
 	t.check(city.scenery_ground_source(Vector2i(south_spine_x - 2,
-			city.map.size_in_tiles().y + CityMap.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
+			city.map().size_in_tiles().y + CityMap.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
 			"the water either side of the bridge goes on too")
 
 	city.free()

@@ -56,7 +56,7 @@ func _the_guard(t: TestRunner, seed_value: int, walks: bool) -> void:
 		_finish(player, director, city)
 		return
 	_choose_again(director)
-	var map := city.map
+	var map := city.map()
 	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
 	director.contact().complete_now()
@@ -108,9 +108,9 @@ func _the_arrow(t: TestRunner, day: int, seed_value: int) -> void:
 			player.global_position = at
 			_settle_the_arrow(director)
 			print("%s position %d (%.1f, %.1f): arrow tile %s, lead %d, nearest tile %s" % [label,
-					index, at.x, at.y, _arrow_tile(director, city.map),
-					_arrow_lead_at(director, city.map.world_to_tile(at)),
-					_nearest_tile(director, city.map, found, at)])
+					index, at.x, at.y, _arrow_tile(director, city.map()),
+					_arrow_lead_at(director, city.map().world_to_tile(at)),
+					_nearest_tile(director, city.map(), found, at)])
 			index += 1
 	_tear_down(player, director, city)
 
@@ -124,7 +124,7 @@ static func _nearest_tile(director: ResistanceDirector, map: CityMap, found: Arr
 	return Vector2i(-1, -1)
 
 func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
-	var map := city.map
+	var map := city.map()
 	var sidewalk: Array[Vector2i] = []
 	for y in map.size_in_tiles().y:
 		for x in map.size_in_tiles().x:
@@ -149,14 +149,14 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _day_rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _day_rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(day, _day_rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()

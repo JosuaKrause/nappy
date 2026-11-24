@@ -48,13 +48,13 @@ func _the_escape_city(t: TestRunner, seed_value: int, day: int) -> int:
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
-	var start := FinalePlanner.service_exit_world_position(city.map)
+	var start := FinalePlanner.service_exit_world_position(city.map())
 	var none: Array[String] = []
 	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(day, "finale"), none, start)
-	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map,
+	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map(),
 			RunCity.events(city).plans())
 	city.free()
 	return printed
@@ -80,13 +80,13 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(day), consumed,
-			city.map.doorstep_world_position())
-	var printed := _print("day seed %d day %d" % [seed_value, day], city.map,
+			city.map().doorstep_world_position())
+	var printed := _print("day seed %d day %d" % [seed_value, day], city.map(),
 			RunCity.events(city).plans())
 	city.free()
 	return printed

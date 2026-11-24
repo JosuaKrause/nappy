@@ -82,14 +82,14 @@ func run(t: TestRunner) -> void:
 			city.run.header().set_day(day)
 			var state := city.run.attempt_spend().block_arcs()
 			state.reset()
-			state.begin_day(city.map.plans_by_block(), day)
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+					city.map().doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, RunCity.events(city), city.streets(),
+			director.setup(city.map(), city.run, RunCity.events(city), city.streets(),
 					city.fronts(), city, null,
 					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -118,7 +118,7 @@ func run(t: TestRunner) -> void:
 				else:
 					tally[NO_CLEAR_RUN] += 1
 					print("[grassy-goose] seed %d day %d: no clear run to her at %s"
-							% [seed_value, day, city.map.world_to_tile(her)])
+							% [seed_value, day, city.map().world_to_tile(her)])
 				walked[CASES] += 1
 				if _runs_through_a_door(city, start, her):
 					walked[THROUGH_THE_DOOR] += 1
@@ -155,7 +155,7 @@ func run(t: TestRunner) -> void:
 func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Array[Vector2]:
 	var her := director.contact_position()
 	if day != 9:
-		if not city.map.is_walkable(city.map.world_to_tile(her)):
+		if not city.map().is_walkable(city.map().world_to_tile(her)):
 			her += Vector2(0.0, Tuning.TILE_SIZE)
 		return [her]
 	var hut: EventPlan = null
@@ -195,7 +195,7 @@ func _chase(t: TestRunner, city: City, def: EventDef, start: Vector2, her_at: Ve
 	var chaser_where := WhereSheIs.nowhere()
 	var chaser := EventInstance.new()
 	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(city.map) \
+			EventSurroundings.new().on(city.map()) \
 				.hearing(chaser_where))
 	t.add_child(chaser)
 	chaser.set_process(false)
@@ -204,7 +204,7 @@ func _chase(t: TestRunner, city: City, def: EventDef, start: Vector2, her_at: Ve
 	var elapsed := 0.0
 	var limit := def.telegraphs_for() + def.lasts_for() + 1.0
 	while elapsed < limit and not chaser.is_gone() and not chaser.is_on_its_way_out():
-		her += _her_step(city.map, her, heading * Tuning.WALK_SPEED * STEP)
+		her += _her_step(city.map(), her, heading * Tuning.WALK_SPEED * STEP)
 		chaser_where.tell(her)
 		chaser.step(STEP)
 		elapsed += STEP

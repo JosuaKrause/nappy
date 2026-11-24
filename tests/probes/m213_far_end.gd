@@ -54,14 +54,14 @@ func _task_guards(t: TestRunner) -> void:
 			GivenRun.completed_steps(city.run, done)
 			var state := city.run.attempt_spend().block_arcs()
 			state.reset()
-			state.begin_day(city.map.plans_by_block(), day)
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+					city.map().doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, RunCity.events(city), city.streets(),
+			director.setup(city.map(), city.run, RunCity.events(city), city.streets(),
 					city.fronts(), city, null,
 					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)

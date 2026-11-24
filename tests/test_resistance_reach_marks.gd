@@ -42,10 +42,10 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 			GivenRun.failed_steps(this_run, [])
 			GivenRun.alley_tiles(this_run, [])
 			var closure_state := CityState.new()
-			closure_state.begin_day(city.map.plans_by_block(), day)
+			closure_state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+					city.map().doorstep_world_position())
 
 			var director := _director(t)
 			director.start_day(day, _production_rng(seed_value, day, "resistance"),
@@ -54,16 +54,16 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 			var placed_step := director.current_step()
 			if placed_step != null and placed_step.is_pickup:
 				var placed_at := director.contact_position()
-				t.check(_the_way_has_drawn(city.map.world_to_tile(placed_at)),
+				t.check(_the_way_has_drawn(city.map().world_to_tile(placed_at)),
 						"seed %d day %d: the units along a way from home to the mark have drawn"
 						% [seed_value, day])
-				if placed_at.distance_to(city.map.doorstep_world_position()) \
+				if placed_at.distance_to(city.map().doorstep_world_position()) \
 						> Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_DRAW_AHEAD:
 					far_marks += 1
 			# `main.gd`'s own order: she is placed and ticks once before this checks anything —
 			# see `_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground`'s own
 			# doc for why the tick is load-bearing.
-			var player := _rig_player(t, city.map.doorstep_world_position())
+			var player := _rig_player(t, city.map().doorstep_world_position())
 			director.use_player(player)
 			director.tick(STEP)
 
@@ -77,8 +77,8 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 				var grid: ReachabilityGrid = reachability[0]
 				var blocked: Dictionary = reachability[1]
 				var reached: Dictionary = reachability[2]
-				var mark_tile := city.map.world_to_tile(director.contact_position())
-				t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false,
+				var mark_tile := city.map().world_to_tile(director.contact_position())
+				t.check(_stands_on_legal_ground(city.map(), mark_tile, walled_alleys, false,
 						grid, blocked, reached),
 						("seed %d day %d: the mark stands on walkable, unobstructed, " +
 						"reachable ground at %s, never a sealed or closed alley")

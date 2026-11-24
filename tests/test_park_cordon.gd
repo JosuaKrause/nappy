@@ -95,17 +95,17 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	_run.header().set_day(day)
 	var state := _run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	# What the day closes is closed before its walk starts, which is when where she can get to from
 	# home is worked out (`DayReach`).
 	if before_the_day.is_valid():
 		before_the_day.call()
-	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -116,9 +116,9 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	var swing := director.contact_position()
 	_swing_now = swing
 	_clock = 0.0
-	var swing_park := CityGenerator.swing_park(_city.map)
-	_ground_rect = CordonInTheWorld.park_ground(_city.map, swing_park)
-	_line_rect = CordonInTheWorld.tape_line(_city.map, swing_park)
+	var swing_park := CityGenerator.swing_park(_city.map())
+	_ground_rect = CordonInTheWorld.park_ground(_city.map(), swing_park)
+	_line_rect = CordonInTheWorld.tape_line(_city.map(), swing_park)
 	if before_the_touch.is_valid():
 		before_the_touch.call()
 	var happenings: ResistanceHappenings = null
@@ -127,12 +127,12 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	else:
 		happenings = ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+		happenings.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
 				_city.atlas, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,
-			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day}
+			"park": CityGenerator.swing_park(_city.map()), "swing": swing, "day": day}
 
 func _end(fixture: Dictionary) -> void:
 	(fixture.director as ResistanceDirector).free()
@@ -290,11 +290,11 @@ func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t: Tes
 	var state: CityState = fixture.state
 	var park: Vector2i = fixture.park
 	var director: ResistanceDirector = fixture.director
-	t.check(state.purpose_of(_city.map.plans_by_block(), park) == GameEnums.BlockPurpose.REQUISITIONED,
+	t.check(state.purpose_of(_city.map().plans_by_block(), park) == GameEnums.BlockPurpose.REQUISITIONED,
 			"reaching the swing takes the park")
-	t.check(not (park in _city.map.calm_blocks_now()), "and the city stops counting it as calm")
-	var rect := ClosurePlanner.calm_area_rect(_city.map, park)
-	var area := _city.map.tile_rect_to_world(rect)
+	t.check(not (park in _city.map().calm_blocks_now()), "and the city stops counting it as calm")
+	var rect := ClosurePlanner.calm_area_rect(_city.map(), park)
+	var area := _city.map().tile_rect_to_world(rect)
 	var inside := area.get_center()
 	# A real `Stroller` as `main` hands one, with the camera node its `_ready()` looks for and its
 	# own physics off: it stands where it is put.
@@ -310,20 +310,20 @@ func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t: Tes
 	_look(_city, player.global_position)
 	director.tick(STEP)
 	t.check(not CordonInTheWorld.officers(_city).is_empty()
-			and not CordonInTheWorld.is_shut(_city.map, inside),
+			and not CordonInTheWorld.is_shut(_city.map(), inside),
 			"and the police are sent to cordon it")
 	var before := {}
-	for tile in _city.map.rect_tiles(rect):
-		before[tile] = _city.map.tile_at(tile)
+	for tile in _city.map().rect_tiles(rect):
+		before[tile] = _city.map().tile_at(tile)
 	var waited := 0.0
-	while not CordonInTheWorld.is_shut(_city.map, inside) and waited < PATIENCE:
+	while not CordonInTheWorld.is_shut(_city.map(), inside) and waited < PATIENCE:
 		_look(_city, player.global_position)
 		director.tick(STEP)
 		waited += STEP
-	t.check(CordonInTheWorld.is_shut(_city.map, inside), "the cordon closes")
+	t.check(CordonInTheWorld.is_shut(_city.map(), inside), "the cordon closes")
 	var changed := 0
 	for tile: Vector2i in before:
-		if _city.map.tile_at(tile) != before[tile]:
+		if _city.map().tile_at(tile) != before[tile]:
 			changed += 1
 	t.check(changed == 0, "and not one tile of the park's ground changed (%d of %d)"
 			% [changed, before.size()])
@@ -381,12 +381,12 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t: TestRunner) -> void:
 			if not (seen.taped as Dictionary).has(tape):
 				(seen.taped as Dictionary)[tape] = true
 				seen.last = tape
-		seen.most_gaps = maxi(seen.most_gaps, CordonInTheWorld.open_gaps(_city.map, fixture.park))
+		seen.most_gaps = maxi(seen.most_gaps, CordonInTheWorld.open_gaps(_city.map(), fixture.park))
 	_run_until_closed(happenings, her, Callable(), Callable(), watch)
 	t.check(not _is_closing(happenings), "the cordon closes")
 	t.check(seen.most_gaps == 1, "and the open edge is one gap the whole time (at most %d)"
 			% seen.most_gaps)
-	t.check(CordonInTheWorld.open_gaps(_city.map, fixture.park) == 0, "and none is left once it has")
+	t.check(CordonInTheWorld.open_gaps(_city.map(), fixture.park) == 0, "and none is left once it has")
 	var line := _line()
 	var corners := [line.position, Vector2(line.end.x, line.position.y), line.end,
 			Vector2(line.position.x, line.end.y)]
@@ -413,9 +413,9 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t: TestRunner) -> void:
 func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t: TestRunner) -> void:
 	var side := {}
 	var seal := func() -> void:
-		var park := CityGenerator.swing_park(_city.map)
+		var park := CityGenerator.swing_park(_city.map())
 		var by_side: Dictionary[Vector2i, Array] = {}
-		for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map, park):
+		for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map(), park):
 			var run: Array = by_side.get(entry[1], [])
 			run.append(entry[0])
 			by_side[entry[1]] = run
@@ -424,7 +424,7 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 			if outward == Vector2i.ZERO or by_side[candidate].size() > by_side[outward].size():
 				outward = candidate
 		var along := Vector2i(absi(outward.y), absi(outward.x))
-		var rect := ClosurePlanner.calm_area_rect(_city.map, park)
+		var rect := ClosurePlanner.calm_area_rect(_city.map(), park)
 		var run: Array = by_side[outward]
 		var first: Vector2i = run[0]
 		var last: Vector2i = run[0]
@@ -444,8 +444,8 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 				walled.append(end)
 		var closures: Array[RoadClosure] = _city.streets().closures().duplicate()
 		closures.append(FakeClosure.new(walled))
-		_city.map.close_streets(closures)
-		side.pocket = _city.map.tile_to_world((first + last) / 2 + outward)
+		_city.map().close_streets(closures)
+		side.pocket = _city.map().tile_to_world((first + last) / 2 + outward)
 		side.outward = Vector2(outward)
 	var fixture := _at_the_swing(t, Callable(), true, seal)
 	var director: ResistanceDirector = fixture.director
@@ -464,7 +464,7 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 	_look(_city, player.global_position)
 	director.tick(STEP)
 	var park: Vector2i = fixture.park
-	while CordonInTheWorld.open_gaps(_city.map, park) > 0 and waited < PATIENCE:
+	while CordonInTheWorld.open_gaps(_city.map(), park) > 0 and waited < PATIENCE:
 		_look(_city, player.global_position)
 		director.tick(STEP)
 		for tape in CordonInTheWorld.tapes(_city):
@@ -472,7 +472,7 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 				seen[tape] = true
 				last_tape = tape
 		waited += STEP
-	t.check(CordonInTheWorld.open_gaps(_city.map, park) == 0 and last_tape != null,
+	t.check(CordonInTheWorld.open_gaps(_city.map(), park) == 0 and last_tape != null,
 			"the cordon tapes the whole edge")
 	if last_tape != null:
 		var ends := CordonInTheWorld.ends(last_tape)
@@ -581,7 +581,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t: TestRunne
 	var tapes := CordonInTheWorld.tapes(_city)
 	var fails: Array[String] = listener[0]
 	_stop_listening(listener)
-	t.check(cordon.is_closed() and CordonInTheWorld.open_gaps(_city.map, fixture.park) == 0
+	t.check(cordon.is_closed() and CordonInTheWorld.open_gaps(_city.map(), fixture.park) == 0
 			and fails.is_empty(),
 			"once she steps out of it, it is taped with her outside: no hard fail shuts her in (%s)"
 			% [fails])
@@ -597,7 +597,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t: TestRunne
 	var corners := [line.position, Vector2(line.end.x, line.position.y), line.end,
 			Vector2(line.position.x, line.end.y)]
 	var needed_tiles := {}
-	for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map, fixture.park):
+	for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map(), fixture.park):
 		needed_tiles[entry[0]] = true
 	var points := 0
 	var covered := 0
@@ -607,7 +607,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t: TestRunne
 		var steps := ceili(from.distance_to(to) / (Tuning.TILE_SIZE * 0.5))
 		for i in range(1, steps):
 			var point := from.lerp(to, float(i) / steps)
-			if not needed_tiles.has(_city.map.world_to_tile(point)):
+			if not needed_tiles.has(_city.map().world_to_tile(point)):
 				continue
 			points += 1
 			for tape in tapes:
@@ -618,7 +618,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t: TestRunne
 			% [covered, points])
 	var obstructed := 0
 	for tile: Vector2i in needed_tiles:
-		if _city.map.is_obstructed(tile):
+		if _city.map().is_obstructed(tile):
 			obstructed += 1
 	t.check(obstructed == needed_tiles.size(), "and its edge tiles are obstructed (%d of %d)"
 			% [obstructed, needed_tiles.size()])
@@ -647,7 +647,7 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city.navigator(), RunCity.events(_city), _city,
+			var cordon := ParkCordon.new(_city.map(), _city.navigator(), RunCity.events(_city), _city,
 					_city.atlas, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
@@ -689,8 +689,9 @@ func _circle_meets(box: Rect2, centre: Vector2, radius: float) -> bool:
 func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> void:
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void:
-		var park := CityGenerator.swing_park(_city.map)
-		var area := _city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map, park))
+		var park := CityGenerator.swing_park(_city.map())
+		var swing_rect := ClosurePlanner.calm_area_rect(_city.map(), park)
+		var area := _city.map().tile_rect_to_world(swing_rect)
 		person[0] = RunCity.events(_city).spawn_extra(EventCatalogue.by_id("busker"),
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings
@@ -731,7 +732,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 			var now: Vector2 = walkers[who]
 			var before: Vector2 = last[who]
 			seen.steps += 1
-			if not _city.map.is_walkable(_city.map.world_to_tile(now)):
+			if not _city.map().is_walkable(_city.map().world_to_tile(now)):
 				seen.off_ground += 1
 			if CordonInTheWorld.is_across_tape(_city, before, now):
 				seen.through_tape += 1
@@ -772,8 +773,8 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 ## the row is handed to his behaviours as he is set up, so a departure of his own
 ## (`_set_off_on_their_own()`) walks at it.
 func _busker_in_the_park(pace := 0.0) -> EventInstance:
-	var park := CityGenerator.swing_park(_city.map)
-	var area := _city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map, park))
+	var park := CityGenerator.swing_park(_city.map())
+	var area := _city.map().tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map(), park))
 	var row := EventCatalogue.by_id("busker")
 	if pace > 0.0:
 		var walking := row.redraft()
@@ -798,7 +799,7 @@ func _clear_the_drawn_rows_round(person: EventInstance) -> void:
 		if plan.is_placed() and plan.row().is_drawn_by_units(day, beside) \
 				and plan.placed_at().distance_to(person.global_position) < Tuning.OUT_OF_SIGHT * 2.0:
 			plan.spend()
-			_city.map.release_obstruction(plan.get_instance_id())
+			_city.map().release_obstruction(plan.get_instance_id())
 
 ## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
@@ -1000,7 +1001,7 @@ func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t: Tes
 		# The tapers owe the gap its tape once every other stretch that needs it is up; the gap is
 		# taped when tape stands at the place it closes.
 		if _line().grow(ParkCordon.WALKER_REACH).has_point(now) and not gap_tiles.is_empty() \
-				and CordonInTheWorld.is_only_the_gap_open(_city.map, fixture.park, gap_tiles):
+				and CordonInTheWorld.is_only_the_gap_open(_city.map(), fixture.park, gap_tiles):
 			if cordon.last_gap.distance_to(now) > ParkCordon.WALKER_REACH + Tuning.TILE_SIZE:
 				holding += 1
 				if CordonInTheWorld.is_beside_tape(_city, cordon.last_gap, 4.0) or cordon.is_closed():
@@ -1023,13 +1024,13 @@ func _test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t: TestRunner) 
 	_run_until_closed(happenings, her, Callable())
 	var tapes := CordonInTheWorld.tapes(_city)
 	var tiles: Array[Vector2i] = []
-	for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map, fixture.park):
+	for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map(), fixture.park):
 		tiles.append(entry[0])
 	t.check(not tapes.is_empty(), "the cordon stands in the city")
 	var day: int = fixture.day
 	var state: CityState = fixture.state
-	state.begin_day(_city.map.plans_by_block(), day + 1)
-	t.check(state.purpose_of(_city.map.plans_by_block(), fixture.park)
+	state.begin_day(_city.map().plans_by_block(), day + 1)
+	t.check(state.purpose_of(_city.map().plans_by_block(), fixture.park)
 			== GameEnums.BlockPurpose.REQUISITIONED, "the park stays taken")
 	happenings.start_day(day + 1)
 	var standing := 0
@@ -1038,7 +1039,7 @@ func _test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t: TestRunner) 
 			standing += 1
 	var still_obstructed := 0
 	for tile in tiles:
-		if _city.map.is_obstructed(tile):
+		if _city.map().is_obstructed(tile):
 			still_obstructed += 1
 	t.check(standing == 0 and happenings.cordon == null,
 			"and the next morning the cordon's tape is gone with the day (%d left)" % standing)

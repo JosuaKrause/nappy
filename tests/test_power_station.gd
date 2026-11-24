@@ -334,8 +334,8 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 		if node is Building.StationStack:
 			in_buildings += 1
 	t.check(in_buildings == 0, "no stack is left in the building layer (%d)" % in_buildings)
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
-			city.map.power_station_blocks()))
+	var lot := city.map().tile_rect_to_world(CityMap.blocks_tile_rect(
+			city.map().power_station_blocks()))
 	var height := float(AtlasTable.baked().native_size(Building.POWER_STATION_STACK).y)
 	for i in mini(stacks.size(), feet.size()):
 		var stack := stacks[i]
@@ -349,7 +349,7 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 		var behind := 0
 		var y := lot.position.y - Tuning.TILE_SIZE * 0.5
 		while y > foot.y - height:
-			if city.map.is_walkable(city.map.world_to_tile(Vector2(foot.x, y))):
+			if city.map().is_walkable(city.map().world_to_tile(Vector2(foot.x, y))):
 				behind += 1
 			y -= Tuning.TILE_SIZE
 		t.check(behind > 0, "stack %d's picture reaches walkable ground behind it (%d tiles)"

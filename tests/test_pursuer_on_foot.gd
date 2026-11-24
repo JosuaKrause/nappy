@@ -327,7 +327,7 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 		rng.seed = hash("%d:%d" % [SEED, 6])
 		var consumed: Array[String] = []
 		var spec := DaySpec.for_day(6)
-		RigStreets.begin(city.streets(), city.map, spec)
+		RigStreets.begin(city.streets(), city.map(), spec)
 		RunCity.events(city).start_day(spec, rng, consumed, her.global_position)
 		var owed_at_dawn := RunCity.events(city).owed_ahead()
 		var plans := RunCity.events(city).plans().size()
@@ -379,7 +379,7 @@ func _what_the_walk_hands_her(t: TestRunner, city: City, her: CharacterBody2D,
 	var told: Array[String] = []
 	events.world.surroundings().tracing_to(RecordingTrace.new(told))
 	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	var width := city.map.world_size().x
+	var width := city.map().world_size().x
 	# Real physics ticks of `WALK_TICK` seconds, the manager's own tick in the game's order; after
 	# each she is moved on. Ticks of `STEP` take 7,200 of them where these take 1,200, and the whole
 	# suite two and a half times as long.
@@ -600,7 +600,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 		var rig := _city_with_her(t, day)
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
-		var spot := _a_lane_beside_a_sidewalk(city.map)
+		var spot := _a_lane_beside_a_sidewalk(city.map())
 		t.check(spot.size() == 2, "found a lane beside a sidewalk")
 		if spot.size() != 2:
 			_done(city, her)
@@ -611,7 +611,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				Tuning.RESISTANCE_GOAL)
 		var route := PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)])
 		for end in route:
-			t.check(Tile.is_road(city.map.tile_type_at_world(end)), "its route is on the road")
+			t.check(Tile.is_road(city.map().tile_type_at_world(end)), "its route is on the road")
 		var car := RunCity.events(city).spawn_extra(hot, route[0], route)
 		var events := RunCity.events(city)
 		var off_its_lane := 0.0
@@ -704,7 +704,7 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> vo
 		var rig := _city_with_her(t, day)
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
-		var spot := _a_lane_beside_a_sidewalk(city.map)
+		var spot := _a_lane_beside_a_sidewalk(city.map())
 		if spot.size() == 2:
 			var lane: Vector2 = spot[0]
 			her.global_position = spot[1]
@@ -720,7 +720,7 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> vo
 		var rig := _city_with_her(t, 8, seed_value, _the_map_of_day_8(seed_value))
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
-		var map := city.map
+		var map := city.map()
 		for route: PackedVector2Array in _patrol_routes(seed_value).slice(0, 6):
 			var along := (route[1] - route[0]).normalized()
 			for fraction: float in [0.4, 0.6, 0.8]:
@@ -967,7 +967,7 @@ func _test_a_hunting_van_stops_and_lets_men_out(t: TestRunner) -> void:
 		var rig := _city_with_her(t, 10)
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
-		var map := city.map
+		var map := city.map()
 		var start := map.world_to_tile(her.global_position)
 		var van_tile := Vector2i(-1, -1)
 		for dx: int in [5, -5, 4, -4]:

@@ -86,7 +86,7 @@ func _test_the_crowd_does_not_meet_her_behind_the_title(t: TestRunner) -> void:
 ## patch over the city's map has there (`CrowdField.half_extent()`), plus the depth of the band bodies
 ## enter it through, plus a tile of slack, as `tests/crowd_rig.gd` measures the patch she walks.
 static func _all_round(city: City, at: Vector2) -> bool:
-	var reach := CrowdField.new(city.map, at).half_extent() + CrowdAgent.ENTRY_SPREAD \
+	var reach := CrowdField.new(city.map(), at).half_extent() + CrowdAgent.ENTRY_SPREAD \
 			+ Tuning.TILE_SIZE
 	for agent in RunCity.crowd(city).agents():
 		var away := agent.global_position - at
@@ -129,7 +129,7 @@ func _test_the_day_director_is_handed_the_spawn_target_and_the_meters(t: TestRun
 	var played := await _boot(t, Callable(),
 			["--seed", str(SEED), "--spawn", "arterial", "--meters", "30", "60"])
 	var main := played.booted.main
-	var doorstep := Boot.city(main).map.doorstep_world_position()
+	var doorstep := Boot.city(main).map().doorstep_world_position()
 	await Boot.press_title(t, main, "Tap")
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(Boot.player(main).global_position.distance_to(doorstep) > Tuning.TILE_SIZE,

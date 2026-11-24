@@ -66,7 +66,7 @@ func run(t: TestRunner) -> void:
 		var director: ResistanceDirector = day["director"]
 		var placed := _task_guard(city)
 		var own: EventInstance = director.rider()
-		var way := _a_way_past_from(city.map, placed, own, day["mark"])
+		var way := _a_way_past_from(city.map(), placed, own, day["mark"])
 		totals["placed"] += 1
 		totals["placed_without_a_way"] += 0 if way else 1
 		_tear_down(day)
@@ -136,7 +136,7 @@ static func _view_of(player: Stroller) -> Rect2:
 func _nearest_on_foot(day: Dictionary) -> Array[Vector2i]:
 	var director: ResistanceDirector = day["director"]
 	var city: City = day["city"]
-	var map: CityMap = city.map
+	var map: CityMap = city.map()
 	var by_length: Array = []
 	for target: Dictionary in _arrow_targets(director):
 		var roadblock := _live_instance(target["key"])
@@ -183,7 +183,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var director: ResistanceDirector = day["director"]
 	var player: Stroller = day["player"]
 	var city: City = day["city"]
-	var map: CityMap = city.map
+	var map: CityMap = city.map()
 	var target: EventInstance = null
 	for candidate: Dictionary in _arrow_targets(director):
 		var roadblock := _live_instance(candidate["key"])
@@ -285,7 +285,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var reach := ResistanceDirector._touch_reach(arrow)
 	var from_arrow := guard.global_position.distance_to(arrow.body_position())
-	var clear := city.map.clear_line(guard.global_position, arrow.body_position())
+	var clear := city.map().clear_line(guard.global_position, arrow.body_position())
 	var kind := "elsewhere"
 	if from_arrow >= robbery.core_within() + reach - 0.5 \
 			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
@@ -334,12 +334,12 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), DAY)
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map().doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
@@ -351,7 +351,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	RunCity.events(city).use_player(player)
 	director.use_player(player)
 	player.set_physics_process(false)
-	player.global_position = city.map.doorstep_world_position()
+	player.global_position = city.map().doorstep_world_position()
 	return player
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

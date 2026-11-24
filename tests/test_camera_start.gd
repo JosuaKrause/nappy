@@ -72,7 +72,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 	var city := Boot.city(main)
 	t.check(boot_camera != null, "a camera is already current before she exists")
 	t.check(boot_camera != null and city != null and boot_camera.get_screen_center_position()
-				.distance_to(city.map.doorstep_world_position()) < Tuning.TILE_SIZE,
+				.distance_to(city.map().doorstep_world_position()) < Tuning.TILE_SIZE,
 			"and it is already looking at the doorstep rather than the world's default transform, "
 			+ "which puts its own top-left corner on screen")
 
@@ -100,7 +100,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 		if remaining != total or not dawns.is_empty():
 			return
 		dawns.append(1)
-		var home_view := Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+		var home_view := Rect2(city.map().doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2)
 		for key in city.scenery_ground.keys_in(home_view):
 			t.check(city.scenery_ground.chunks().has(key),

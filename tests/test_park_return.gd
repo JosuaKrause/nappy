@@ -88,8 +88,8 @@ func _day_twelve(t: TestRunner, seed_value: int) -> Node2D:
 			func(unbooted: Boot.MainScript) -> void: unbooted.use_sitting_home(_home), false, MapCache.source())
 	var main := _booted.main
 	await Boot.press_title(t, main, "Right")
-	t.check(Boot.city(main).map.city_seed() == seed_value, "seed %d is the city under test (%d)"
-			% [seed_value, Boot.city(main).map.city_seed()])
+	t.check(Boot.city(main).map().city_seed() == seed_value, "seed %d is the city under test (%d)"
+			% [seed_value, Boot.city(main).map().city_seed()])
 	t.check(_run.header().day() == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
 			% [ResistanceSteps.swing_day(), _run.header().day()])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.
@@ -122,7 +122,7 @@ func _touch_the_swing(t: TestRunner, main: Node2D, through_the_director := false
 	var city := Boot.city(main)
 	_happenings = ResistanceHappenings.new()
 	_happenings.use_bus(EventBus)
-	_happenings.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city,
+	_happenings.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city,
 			city.atlas, null, RunCity.spawn_siting(city))
 	_happenings.start_day(_run.header().day(), false)
 	t.check(_happenings.take_the_park(ResistanceReads.day_reachability(Boot.city(main))[1]),
@@ -188,7 +188,7 @@ func _walk_out_through_the_gap(main: Node2D, swing: Vector2, shows: Callable) ->
 ## is a running day 13 with everything of the cordon gone.
 func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void:
 	t.check(Boot.summary(main).is_showing(), "%s: the won day's summary is up" % label)
-	var map: CityMap = Boot.city(main).map
+	var map: CityMap = Boot.city(main).map()
 	await Boot.press_continue(t, main)
 	t.check(_run.header().day() == ResistanceSteps.swing_day() + 1,
 			"%s: leaving the summary starts day %d (day %d)"
@@ -213,7 +213,7 @@ func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void
 func _check_no_cordon_stands(t: TestRunner, main: Node2D, label: String, when: String) -> void:
 	var city := Boot.city(main)
 	t.check(CordonInTheWorld.officers(city).is_empty()
-			and not CordonInTheWorld.is_shut(city.map, _swing),
+			and not CordonInTheWorld.is_shut(city.map(), _swing),
 			"%s: no cordon stands in %s" % [label, when])
 
 func _finish(t: TestRunner) -> void:
@@ -244,7 +244,7 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t: TestRunner, seed_value:
 	t.check(Boot.day(main).is_running() and results.is_empty(),
 			"%s: the day is still on, the baby asleep (%s)" % [label, results])
 	t.check(Boot.baby(main).is_asleep(), "%s: and still asleep" % label)
-	Boot.player(main).global_position = Boot.city(main).map.home_world_position()
+	Boot.player(main).global_position = Boot.city(main).map().home_world_position()
 	_frame(main, shows)
 	t.check(results == [GameEnums.DayResult.WON], "%s: home with her asleep wins (%s)"
 			% [label, results])
@@ -265,7 +265,7 @@ func _test_asleep_elsewhere_with_the_park_taped_behind_her(t: TestRunner, seed_v
 	var results: Array = []
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
 	Boot.baby(main).force_sleep()
-	Boot.player(main).global_position = Boot.city(main).map.home_world_position()
+	Boot.player(main).global_position = Boot.city(main).map().home_world_position()
 	_frame(main, shows)
 	t.check(results == [GameEnums.DayResult.WON], "%s: home asleep wins (%s)" % [label, results])
 	await _check_the_next_morning(t, main, label)

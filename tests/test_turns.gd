@@ -37,7 +37,7 @@ func _barrier_owner() -> int:
 ## (`CarStrategy.cannot_go_on()`), and the game writes it, where no street closure covers tiles
 ## inside a junction box or leaves lane stubs short of a half turn.
 func _stand_a_body_on(tiles: Array[Vector2i]) -> void:
-	_city.map.obstruct_tiles(_barrier_owner(), tiles)
+	_city.map().obstruct_tiles(_barrier_owner(), tiles)
 
 ## What watching a car through a manoeuvre measures.
 class Manoeuvre extends RefCounted:
@@ -255,7 +255,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t: TestRunner) -> voi
 			# It is stopped at its aim point with the landing taken and it has not reversed. That is
 			# the whole assertion; now let the lane clear and watch it take the arc it was refused.
 			waited = true
-			_city.map.unlist_move(figure)
+			_city.map().unlist_move(figure)
 	t.check(waited, "the car reached its aim point and waited for the lane its half turn lands in "
 			+ "rather than finding it empty")
 	t.check(not flipped, "it did not reverse on the spot while the landing was taken")
@@ -347,7 +347,7 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t: TestRunner) -> void:
 	t.check(first <= past_the_barrier + 1.0,
 			"the frame the overlap arises, the follower goes back as far as the barrier lets it "
 			+ "(%.1fpx past the barrier's edge)" % (first - past_the_barrier))
-	t.check(not _city.map.is_obstructed(_city.map.world_to_tile(follower.position)),
+	t.check(not _city.map().is_obstructed(_city.map().world_to_tile(follower.position)),
 			"and not onto it")
 	var a_frames_travel := Tuning.CAR_SPEED.y * STEP + 0.01
 	var worst := 0.0
@@ -395,7 +395,7 @@ func _test_a_plugged_arm_is_refused_rather_than_driven_into(t: TestRunner) -> vo
 	var watched := _watch(car, 12.0, true)
 	var inside := 0
 	for tile in plug:
-		if _city.map.world_to_tile(car.position) == tile:
+		if _city.map().world_to_tile(car.position) == tile:
 			inside += 1
 	t.check(inside == 0, "the car never ends up inside the plug it could not have left")
 	t.check(watched.turned, "it still makes a manoeuvre rather than standing there")
@@ -636,7 +636,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 		RunCity.crowd(_city).step(STEP)
 		if car.speed() < 1.0:
 			stopped = true
-		if stopped and _city.map.tile_type_at_world(car.position) \
+		if stopped and _city.map().tile_type_at_world(car.position) \
 				== GameEnums.TileType.CROSSING:
 			on_the_paint += 1
 	t.check(stopped, "a car with a turn planned still stops for somebody at the zebra")
@@ -649,7 +649,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 ## may not be inside the junction while its own arm is red.
 func _test_a_red_light_still_holds_a_car_that_is_turning(t: TestRunner) -> void:
 	var signals := _city.traffic_signals()
-	var box := Vector2i(_city.map.main_road_corridor(), _junction.y)
+	var box := Vector2i(_city.map().main_road_corridor(), _junction.y)
 	t.check(signals != null and signals.is_signalled(box),
 			"the spine's junction in the rig is signalled, so there is a light to meet")
 	if signals == null or not signals.is_signalled(box):
@@ -695,8 +695,8 @@ func _test_a_car_turns_at_the_last_junction_before_the_boundary(t: TestRunner) -
 	# a car, so those are skipped.
 	var start := (StreetNetwork.junction_count().x - 1) * CityMap.period() - 4
 	var corridor := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 1
-	while corridor > 1 and (corridor == _city.map.main_road_corridor()
-			or _city.map.street_kind(false, corridor, start) != GameEnums.StreetKind.ORDINARY):
+	while corridor > 1 and (corridor == _city.map().main_road_corridor()
+			or _city.map().street_kind(false, corridor, start) != GameEnums.StreetKind.ORDINARY):
 		corridor -= 1
 	# Started in the last block before the edge, heading east at it.
 	var car := _place_a_car(false, 1.0, corridor, 0.0,
@@ -706,7 +706,7 @@ func _test_a_car_turns_at_the_last_junction_before_the_boundary(t: TestRunner) -
 	t.check(watched.turned, "a car driving at the city boundary makes a manoeuvre at the last "
 			+ "junction rather than driving off the map")
 	_check_the_path(t, watched, "boundary")
-	var extent := _city.map.world_size()
+	var extent := _city.map().world_size()
 	t.check(car.position.x < extent.x and car.position.x > 0.0,
 			"and is still inside the city afterwards")
 
@@ -771,18 +771,18 @@ func _the_body_is_on_drivable_ground(car: CrowdAgent, over_the_kerb: bool) -> bo
 		var along := lerpf(-1.0, 1.0, float(a) / 4.0)
 		for b in 3:
 			var across := lerpf(-1.0, 1.0, float(b) / 2.0)
-			var tile := _city.map.world_to_tile(car.position
+			var tile := _city.map().world_to_tile(car.position
 					+ forward * (along * Tuning.CAR_STRIKE_HALF_LENGTH)
 					+ side * (across * Tuning.CAR_STRIKE_HALF_WIDTH))
-			if _city.map.is_closed(tile) or _city.map.is_obstructed(tile) \
-					or _city.map.is_held_at(tile):
+			if _city.map().is_closed(tile) or _city.map().is_obstructed(tile) \
+					or _city.map().is_held_at(tile):
 				return false
-			if not _city.map.in_bounds(tile):
+			if not _city.map().in_bounds(tile):
 				return false
 			if over_the_kerb:
-				if not _city.map.is_street(tile):
+				if not _city.map().is_street(tile):
 					return false
-			elif not Tile.is_road(_city.map.tile_at(tile)):
+			elif not Tile.is_road(_city.map().tile_at(tile)):
 				return false
 	return true
 
@@ -823,7 +823,7 @@ func _a_figure(at: Vector2) -> MoveProposal:
 	var move := MoveProposal.new()
 	move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	move.be_walked_round(true)
-	_city.map.list_move(move, at)
+	_city.map().list_move(move, at)
 	return move
 
 ## Which way along its street a car points once it is out of a turn: plus or minus one.
@@ -855,10 +855,10 @@ func _arm(vertical: bool, direction: float) -> Vector3i:
 	return _ahead_of(vertical, direction)
 
 func _hold(key: Vector3i) -> void:
-	_city.map.hold_segment(key, HeldStreets.Why.SEAL)
+	_city.map().hold_segment(key, HeldStreets.Why.SEAL)
 
 func _clear_the_holds() -> void:
-	_city.map.clear_day_holds()
+	_city.map().clear_day_holds()
 	RunCity.crowd(_city).clear()
 	# The day's pockets (`CrowdPockets`) are refreshed by a tick, so a tick of no time lets the last
 	# scenario's holds stop deciding which ground is a pocket the entry refuses.
@@ -878,7 +878,7 @@ func _plain_junction() -> Vector2i:
 	for x in range(2, count.x - 2):
 		for y in range(2, count.y - 2):
 			var junction := Vector2i(x, y)
-			if x == _city.map.main_road_corridor():
+			if x == _city.map().main_road_corridor():
 				continue
 			if _all_four_arms_are_plain(junction):
 				return junction
@@ -888,19 +888,19 @@ func _all_four_arms_are_plain(junction: Vector2i) -> bool:
 	for vertical: bool in [true, false]:
 		for direction: float in [1.0, -1.0]:
 			var key := _key_of(junction, vertical, direction)
-			if not _city.map.has_street(key):
+			if not _city.map().has_street(key):
 				return false
-			var segment := _city.map.street_network().by_key(key)
-			if _city.map.held_streets().has(segment.key()):
+			var segment := _city.map().street_network().by_key(key)
+			if _city.map().held_streets().has(segment.key()):
 				return false
 			var rect := segment.tile_rect()
 			for tile: Vector2i in [rect.position, rect.end - Vector2i.ONE]:
-				if _city.map.street_kind_at(vertical, tile) != GameEnums.StreetKind.ORDINARY:
+				if _city.map().street_kind_at(vertical, tile) != GameEnums.StreetKind.ORDINARY:
 					return false
 	# And the box itself is road rather than a park or a precinct's paving.
 	var centre := Vector2i(junction.x * CityMap.period() + Tuning.STREET_WIDTH / 2,
 			junction.y * CityMap.period() + Tuning.STREET_WIDTH / 2)
-	return Tile.is_road(_city.map.tile_at(centre))
+	return Tile.is_road(_city.map().tile_at(centre))
 
 func _key_of(junction: Vector2i, vertical: bool, direction: float) -> Vector3i:
 	var from := junction if direction > 0.0 \

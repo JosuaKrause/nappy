@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 
 func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
 	city.run.posters().reset()
-	var tree := RouteTree.for_day(city.map, day)
+	var tree := RouteTree.for_day(city.map(), day)
 	var no_closures: Array[RoadClosure] = []
 	city.streets().begin_day(tree, null, no_closures)
 	RunCity.poster_walls(city).dress_for(day, DaySpec.for_day(day))
@@ -40,7 +40,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	var spec := DaySpec.for_day(day)
-	RigStreets.begin(city.streets(), city.map, spec)
+	RigStreets.begin(city.streets(), city.map(), spec)
 	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
 	RunCity.events(city).start_day(spec, rng, consumed)
 	var crews: Array[EventPlan] = []
@@ -109,12 +109,12 @@ func _the_walk(city: City, day: int, walk_name: String) -> PackedVector2Array:
 ## without ever having been offered the fire at all.
 func _off_the_path(city: City) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	var at := city.map.doorstep_world_position()
+	var at := city.map().doorstep_world_position()
 	var heading := Vector2.DOWN
 	var step := Tuning.TILE_SIZE * 4.0
 	for i in 80:
 		var next := at + heading * step
-		if not city.map.in_bounds(city.map.world_to_tile(next + heading * step * 4.0)):
+		if not city.map().in_bounds(city.map().world_to_tile(next + heading * step * 4.0)):
 			heading = Vector2.RIGHT if heading == Vector2.DOWN else -heading
 			next = at + heading * step
 		at = next
@@ -142,7 +142,7 @@ const NEAR_HOME_CELLS := 8
 
 ## The day's longest route, walked from the doorstep out to its calm area and back again.
 func _out_and_back(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map, day)
+	var tree := RouteTree.for_day(city.map(), day)
 	var route := _longest_route(tree)
 	if route.is_empty():
 		return PackedVector2Array()
@@ -157,7 +157,7 @@ func _out_and_back(city: City, day: int) -> PackedVector2Array:
 ## anything to be sited at all. What it asks is that the fire lands on the branch she ended up on
 ## rather than the one she started down.
 func _turns_back_at_the_first_junction(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map, day)
+	var tree := RouteTree.for_day(city.map(), day)
 	var first := _longest_route(tree)
 	var second := _a_different_route(tree, first)
 	if first.is_empty() or second.is_empty():

@@ -85,7 +85,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	var spec := DaySpec.for_day(day)
-	RigStreets.begin(city.streets(), city.map, spec)
+	RigStreets.begin(city.streets(), city.map(), spec)
 	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
 	RunCity.events(city).start_day(spec, rng, consumed)
 	var plan: EventPlan = null
@@ -131,7 +131,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 		lit = RunCity.events(city).light_what_she_never_met(rig.global_position)
 		if lit:
 			print("      lit at dusk at %s, %.0fpx from where she finished"
-					% [RunTrace.tile(city.map.world_to_tile(plan.placed_at())),
+					% [RunTrace.tile(city.map().world_to_tile(plan.placed_at())),
 					plan.placed_at().distance_to(rig.global_position)])
 	rig.free()
 	GivenRun.scars(city.run, scars)
@@ -196,10 +196,10 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 		# The manager's tick steps every instance, so the engine leaves the top of its street and
 		# the fire finishes its telegraph.
 		RunCity.events(city)._physics_process(STEP)
-	var engine_at := city.map.kerb_across_from(plan.placed_at())
+	var engine_at := city.map().kerb_across_from(plan.placed_at())
 	var engine := EventCatalogue.by_id(plan.row().calls_in())
 	var along := Vector2.RIGHT
-	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.placed_at()))
+	var inward := city.map().pavement_inward(city.map().world_to_tile(plan.placed_at()))
 	if inward != Vector2i.ZERO:
 		along = Vector2(inward.y, inward.x)
 	var from := _clear_of_the_pair(plan, engine, engine_at, -along)
@@ -230,10 +230,10 @@ func _clear_of_the_pair(plan: EventPlan, engine: EventDef, engine_at: Vector2,
 
 func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 		engine: EventDef, engine_at: Vector2) -> float:
-	var grid := ReachabilityGrid.build(city.map)
+	var grid := ReachabilityGrid.build(city.map())
 	var tree := city.streets().route_tree()
-	var start := grid.node_at(city.map.world_to_tile(from))
-	var goal := grid.node_at(city.map.world_to_tile(to))
+	var start := grid.node_at(city.map().world_to_tile(from))
+	var goal := grid.node_at(city.map().world_to_tile(to))
 	if start < 0 or goal < 0:
 		return -1.0
 	var seen := {start: 0}
@@ -279,12 +279,12 @@ func _the_walk(city: City, day: int, walk_name: String) -> PackedVector2Array:
 ## without ever having been offered the fire at all.
 func _off_the_path(city: City) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	var at := city.map.doorstep_world_position()
+	var at := city.map().doorstep_world_position()
 	var heading := Vector2.DOWN
 	var step := Tuning.TILE_SIZE * 4.0
 	for i in 80:
 		var next := at + heading * step
-		if not city.map.in_bounds(city.map.world_to_tile(next + heading * step * 4.0)):
+		if not city.map().in_bounds(city.map().world_to_tile(next + heading * step * 4.0)):
 			heading = Vector2.RIGHT if heading == Vector2.DOWN else -heading
 			next = at + heading * step
 		at = next
@@ -312,7 +312,7 @@ const NEAR_HOME_CELLS := 8
 
 ## The day's longest route, walked from the doorstep out to its calm area and back again.
 func _out_and_back(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map, day)
+	var tree := RouteTree.for_day(city.map(), day)
 	var route := _longest_route(tree)
 	if route.is_empty():
 		return PackedVector2Array()
@@ -327,7 +327,7 @@ func _out_and_back(city: City, day: int) -> PackedVector2Array:
 ## anything to be sited at all. What it asks is that the fire lands on the branch she ended up on
 ## rather than the one she started down.
 func _turns_back_at_the_first_junction(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map, day)
+	var tree := RouteTree.for_day(city.map(), day)
 	var first := _longest_route(tree)
 	var second := _a_different_route(tree, first)
 	if first.is_empty() or second.is_empty():

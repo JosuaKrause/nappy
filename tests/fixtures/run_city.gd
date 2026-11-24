@@ -62,7 +62,7 @@ static func build(city: City, map: CityMap, builder: SimulationBuilder = null,
 	city.build(map)
 	var stands := builder if builder else new_builder()
 	stands.equip(trace, pictures, timing)
-	stands.in_the_city(city, city.map, city.navigator(), city.streets(), city.traffic_signals(),
+	stands.in_the_city(city, city.map(), city.navigator(), city.streets(), city.traffic_signals(),
 			city.buildings(), city.run, dark_from_the_start)
 
 ## What stands in `city` (`WorldSimulation`): its events, its crowd, its poster walls and its
@@ -77,8 +77,8 @@ static func simulation(city: City) -> WorldSimulation:
 ## under `player` where none is handed; `player` may be null where nobody is asked.
 static func world_of(city: City, player: Stroller, baby: Baby = null) -> DayWorld:
 	var carried := baby if baby else (player.get_node_or_null("Baby") as Baby if player else null)
-	return DayWorld.in_the_city(city, city.map, city.streets(), crowd(city), poster_walls(city),
-			events(city), player, carried, city.map.doorstep_world_position(), null, {})
+	return DayWorld.in_the_city(city, city.map(), city.streets(), crowd(city), poster_walls(city),
+			events(city), player, carried, city.map().doorstep_world_position(), null, {})
 
 ## The day's events on `city`'s streets (`EventManager`).
 static func events(city: City) -> EventManager:

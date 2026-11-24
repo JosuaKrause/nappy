@@ -56,12 +56,12 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	# On ground day 3's fire can actually catch on (`AT_THE_FRONT`, a building behind it), since a
 	# real scar is only ever recorded there and the arrow ends on that building.
-	var doorstep := _city.map.doorstep_world_position()
+	var doorstep := _city.map().doorstep_world_position()
 	var near_fronts: Array[Vector2i] = []
 	var far_fronts: Array[Vector2i] = []
-	for tile in EventScheduler.row_ground(_city.map).tiles_for(
+	for tile in EventScheduler.row_ground(_city.map()).tiles_for(
 			EventCatalogue.by_id("burning_building")):
-		var distance := _city.map.tile_to_world(tile).distance_to(doorstep)
+		var distance := _city.map().tile_to_world(tile).distance_to(doorstep)
 		if distance < Tuning.EVENT_STREAM_RADIUS:
 			near_fronts.append(tile)
 		elif distance > Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS:
@@ -81,13 +81,13 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
 ## the arrow and the contact on the door of the building behind it.
 func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void:
 	var run := _build_city_in_a_new_run(t)
-	var doorstep := _city.map.doorstep_world_position()
-	var scar_at := _city.map.tile_to_world(site)
+	var doorstep := _city.map().doorstep_world_position()
+	var scar_at := _city.map().tile_to_world(site)
 	GivenRun.scars(run, [{"id": "burnt_shell", "position": scar_at, "since_day": 3}])
 	# `DawnScars` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
 	# if `scar_at` is inside the streaming radius of the doorstep.
 	var spec := DaySpec.for_day(8)
-	RigStreets.begin(_city.streets(), _city.map, spec)
+	RigStreets.begin(_city.streets(), _city.map(), spec)
 	RunCity.events(_city).start_day(spec, _rng(8, "events"), [], doorstep)
 
 	var director := _director(t)
@@ -142,7 +142,7 @@ func _check_the_task_is_at_the_burnt_buildings_door(t: TestRunner, director: Res
 	t.check(tip == director.contact_position(),
 			"the arrow's tip %s is where the task's contact stands %s"
 			% [tip, director.contact_position()])
-	var shell_tile := _city.map.world_to_tile(shell.global_position)
+	var shell_tile := _city.map().world_to_tile(shell.global_position)
 	var behind: Building = null
 	for building in _city.buildings():
 		if building.lot_rect().has_point(shell_tile + Vector2i.UP):
@@ -150,7 +150,7 @@ func _check_the_task_is_at_the_burnt_buildings_door(t: TestRunner, director: Res
 	t.check(behind != null, "the shell at %s has a building behind it" % shell_tile)
 	if behind == null:
 		return
-	var lot := _city.map.tile_rect_to_world(behind.lot_rect())
+	var lot := _city.map().tile_rect_to_world(behind.lot_rect())
 	var size := float(Tuning.TILE_SIZE)
 	t.close_to(tip.y, lot.end.y - size * 0.5,
 			"the tip is half a tile up that building's ground floor", 0.01)
@@ -178,8 +178,10 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: 
 	var near := foot + Vector2.DOWN * (sidewalk * 0.5 - 4.0)
 	var far := foot + Vector2.DOWN * (sidewalk * 0.5 + 4.0)
 	var past := foot + Vector2.DOWN * (sidewalk + Tuning.TILE_SIZE * 0.5)
-	t.check(_city.map.tile_at(_city.map.world_to_tile(near)) == GameEnums.TileType.SIDEWALK
-			and _city.map.tile_at(_city.map.world_to_tile(far)) == GameEnums.TileType.SIDEWALK,
+	t.check(_city.map().tile_at(_city.map().world_to_tile(near))
+				== GameEnums.TileType.SIDEWALK
+			and _city.map().tile_at(_city.map().world_to_tile(far))
+				== GameEnums.TileType.SIDEWALK,
 			"the two halves in front of the door at %s are sidewalk" % door)
 	var player := _rig_player(t, past)
 	director.use_player(player)
@@ -211,7 +213,7 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: 
 func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var size := float(Tuning.TILE_SIZE)
-	var fronts := EventScheduler.row_ground(_city.map).tiles_for(
+	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
 			EventCatalogue.by_id("burning_building"))
 	var on_a_door := 0
 	var wrong: Array[Vector2i] = []
@@ -224,15 +226,15 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 				drawn_on.append(building)
 	var doors := await _doors_drawn_on(t, drawn_on)
 	for tile in fronts:
-		var way := _city.fronts().way_in_behind(_city.map.tile_to_world(tile))
+		var way := _city.fronts().way_in_behind(_city.map().tile_to_world(tile))
 		var behind: Building = behind_tile.get(tile)
 		if behind == null or way == Vector2.INF:
 			wrong.append(tile)
 			continue
-		var lot := _city.map.tile_rect_to_world(behind.lot_rect())
-		var below := _city.map.world_to_tile(way) + Vector2i.DOWN
+		var lot := _city.map().tile_rect_to_world(behind.lot_rect())
+		var below := _city.map().world_to_tile(way) + Vector2i.DOWN
 		var ok := absf(way.y - (lot.end.y - size * 0.5)) < 0.01 \
-				and _city.map.tile_at(below) == GameEnums.TileType.SIDEWALK
+				and _city.map().tile_at(below) == GameEnums.TileType.SIDEWALK
 		var door_col: int = doors[behind]
 		if door_col >= 0:
 			on_a_door += 1
@@ -282,8 +284,8 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 		return
 
 	var shell := rider.global_position
-	var shell_tile := _city.map.world_to_tile(shell)
-	var fronts := EventScheduler.row_ground(_city.map).tiles_for(
+	var shell_tile := _city.map().world_to_tile(shell)
+	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
 			EventCatalogue.by_id("burning_building"))
 	t.check(shell_tile in fronts,
 			"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
@@ -376,7 +378,7 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	director.watched = _city
 	var seen := {}
@@ -427,7 +429,7 @@ func _test_the_door_task_sits_at_a_region_door(t: TestRunner) -> void:
 
 	var at := director.contact_position()
 	t.check(at != Vector2.INF, "somewhere in the city")
-	t.check(_city.map.is_held_at(_city.map.world_to_tile(at)),
+	t.check(_city.map().is_held_at(_city.map().world_to_tile(at)),
 			"the chosen tile's own segment is ground the day already holds — the case " +
 			"`allow_held` exists for")
 	var on_a_door := false
@@ -591,16 +593,16 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 		var city := _city
 		var closure_state := run.attempt_spend().block_arcs()
 		closure_state.reset()
-		closure_state.begin_day(city.map.plans_by_block(), day)
+		closure_state.begin_day(city.map().plans_by_block(), day)
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
 		city.start_day(closure_state, day, closure_rng)
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
+		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], city.map().doorstep_world_position())
 
-		var home_border := city.map.street_network().around_blocks(
-				Rect2i(city.map.home_block_coordinate(), Vector2i.ONE))
+		var home_border := city.map().street_network().around_blocks(
+				Rect2i(city.map().home_block_coordinate(), Vector2i.ONE))
 		var home_border_keys := {}
 		for segment in home_border:
 			home_border_keys[segment.key()] = true
@@ -624,8 +626,8 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 			if at == Vector2.INF:
 				continue
 			checked += 1
-			var segment := city.map.street_network().segment_containing(city.map.world_to_tile(
-					at))
+			var segment := city.map().street_network().segment_containing(
+					city.map().world_to_tile(at))
 			var bordering := segment != null and home_border_keys.has(segment.key())
 			t.check(not bordering,
 					("seed %d day %d draw %d: the door task never sits on a segment bordering " +
@@ -636,9 +638,9 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), 12)
-	_city.map.repaint(state)
-	t.check(not _city.map.playground_rects().is_empty(),
+	state.begin_day(_city.map().plans_by_block(), 12)
+	_city.map().repaint(state)
+	t.check(not _city.map().playground_rects().is_empty(),
 			"the test city has at least one open playground, or this test checks nothing")
 
 	var director := _director(t)
@@ -651,16 +653,16 @@ func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 
 	var at := director.contact_position()
 	var on_a_swing := false
-	for rect in _city.map.playground_rects():
-		if _city.map.world_to_tile(_city.map.swing_position(rect)) \
-				== _city.map.world_to_tile(at):
+	for rect in _city.map().playground_rects():
+		if _city.map().world_to_tile(_city.map().swing_position(rect)) \
+				== _city.map().world_to_tile(at):
 			on_a_swing = true
 			break
 	t.check(on_a_swing, "exactly at one open park's own swing")
-	var park := CityGenerator.swing_park(_city.map)
-	var layout: BlockLayout = _city.map.layout_of(park)
-	t.check(layout != null and _city.map.world_to_tile(_city.map.swing_position(
-			layout.playground_rect())) == _city.map.world_to_tile(at),
+	var park := CityGenerator.swing_park(_city.map())
+	var layout: BlockLayout = _city.map().layout_of(park)
+	t.check(layout != null and _city.map().world_to_tile(_city.map().swing_position(
+			layout.playground_rect())) == _city.map().world_to_tile(at),
 			"and it is the park the city chose for day 12")
 
 	director.free()
@@ -722,9 +724,9 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	run.header().set_day(day)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -758,10 +760,10 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	# The next morning, planned from the run's own scars.
 	var next_state := run.attempt_spend().block_arcs()
 	next_state.reset()
-	next_state.begin_day(_city.map.plans_by_block(), day + 1)
+	next_state.begin_day(_city.map().plans_by_block(), day + 1)
 	_city.start_day(next_state, day + 1, _rng(day + 1, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day + 1), _rng(day + 1, "events"), [],
-			_city.map.doorstep_world_position())
+			_city.map().doorstep_world_position())
 	var quiet_tomorrow := false
 	var live_tomorrow := false
 	for plan in RunCity.events(_city).plans():
@@ -786,7 +788,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 ## are set so the far one's share is still drawn among them.
 func _test_the_mast_task_favors_the_near_mast(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	var map := _city.map
+	var map := _city.map()
 	var found := _two_masts_round_a_mark(map)
 	t.check(not found.is_empty(), "the test city has a mark with room for a near and a far mast")
 	if found.is_empty():
@@ -873,7 +875,7 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 ## figure — on day 10 they are out in the city, and after it they are gone.
 func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
-	var door := _city.map.doorstep_world_position()
+	var door := _city.map().doorstep_world_position()
 	for day: int in [1, 5, ResistanceSteps.NEIGHBOR_DAY - 1]:
 		var director := _director(t)
 		var before := _live("neighbor")
@@ -908,9 +910,9 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var day := 5
-	var door := _city.map.doorstep_world_position()
+	var door := _city.map().doorstep_world_position()
 	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], door)
 	var director := _director(t)
@@ -956,7 +958,7 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t: TestRunner) -> void
 	t.check(neighbor != null and neighbor.ground_shape() != null,
 			"with the row's own shape, which a copy has to carry by hand")
 	if neighbor:
-		var door := _city.map.doorstep_world_position()
+		var door := _city.map().doorstep_world_position()
 		t.check(neighbor.walks()[neighbor.walks().size() - 1].distance_to(door) < 1.0,
 				"home, to her own door")
 		var length := 0.0
@@ -1014,10 +1016,10 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 		var day := ResistanceSteps.NEIGHBOR_DAY
 		run.header().set_day(day)
 		var state := CityState.new()
-		state.begin_day(_city.map.plans_by_block(), day)
+		state.begin_day(_city.map().plans_by_block(), day)
 		_city.start_day(state, day, _rng(day, "closures", seed_value))
 		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
-				_city.map.doorstep_world_position())
+				_city.map().doorstep_world_position())
 		var director := _director(t)
 		director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
 		_read_the_mark(director)
@@ -1041,7 +1043,7 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 						else neighbor.walks()[k].move_toward(neighbor.walks()[k + 1], along)
 				if is_zero_approx(fmod(along, stride)):
 					undrawn += units.undrawn_within(at, Tuning.EVENT_DRAW_AHEAD).size()
-				if reach.is_shut(_city.map.world_to_tile(at)):
+				if reach.is_shut(_city.map().world_to_tile(at)):
 					shut += 1
 				along += Tuning.TILE_SIZE
 		t.check(undrawn == 0, "seed %d: no undrawn unit lies within %.0fpx of the walk (%d do)"
@@ -1058,11 +1060,11 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	var run: RunState = _city.run
 	run.header().set_day(day)
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+	happenings.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
 			_city.atlas, null, RunCity.spawn_siting(_city))
 	happenings.start_day(day)
 	return happenings
@@ -1082,15 +1084,15 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	var state := _city.run.attempt_spend().block_arcs()
 	state.reset()
 	var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
-	var door := _city.map.doorstep_world_position()
+	var door := _city.map().doorstep_world_position()
 	# The blocks whose arc is waiting to board up: commercial today, boarded up next.
 	var candidates: Array[Vector2i] = []
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var candidate := Vector2i(x, y)
-			if _city.map.plans_by_block().has(candidate) \
-					and state.purpose_of(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.COMMERCIAL \
-					and state.next_purpose(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.BOARDED_UP:
+			if _city.map().plans_by_block().has(candidate) \
+					and state.purpose_of(_city.map().plans_by_block(), candidate) == GameEnums.BlockPurpose.COMMERCIAL \
+					and state.next_purpose(_city.map().plans_by_block(), candidate) == GameEnums.BlockPurpose.BOARDED_UP:
 				candidates.append(candidate)
 	t.check(not candidates.is_empty(),
 			"the test city has a block waiting to board up, or this test checks nothing")
@@ -1102,14 +1104,14 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	t.check(gone.size() == 1, "by then a block waiting to board up is gone (%s)" % [gone])
 	var block := gone[0] if gone.size() == 1 else Vector2i(-1, -1)
 	if block.x >= 0:
-		var frontage := _city.map.tile_rect_to_world(_city.map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
+		var frontage := _city.map().tile_rect_to_world(_city.map().lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
 		t.check(_distance_to_rect(door, frontage) >= Tuning.OUT_OF_SIGHT,
 				"out of her sight")
-		t.check(state.purpose_of(_city.map.plans_by_block(), block)
+		t.check(state.purpose_of(_city.map().plans_by_block(), block)
 				== GameEnums.BlockPurpose.BOARDED_UP, "boarded up now")
 		var shuttered := 0
 		for building in _city.buildings():
-			if _city.map.lot_rect(block).has_point(building.lot_rect().position):
+			if _city.map().lot_rect(block).has_point(building.lot_rect().position):
 				t.check(building.condition() == Building.Condition.BOARDED,
 						"every building of it shuttered")
 				shuttered += 1
@@ -1119,8 +1121,8 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 				var live := RunCity.events(_city).event_of(plan)
 				t.check(plan.is_spent() or (live and live.is_gone()),
 						"no market stall of it is left in the day")
-		state.begin_day(_city.map.plans_by_block(), ResistanceHappenings.MARKET_DAY + 1)
-		t.check(state.purpose_of(_city.map.plans_by_block(), block)
+		state.begin_day(_city.map().plans_by_block(), ResistanceHappenings.MARKET_DAY + 1)
+		t.check(state.purpose_of(_city.map().plans_by_block(), block)
 				== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
 	happenings.tick(STEP, door, Vector2.ZERO)
 	t.check(_boarded_among(state, candidates) == gone, "and the market is gone once")
@@ -1129,7 +1131,7 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vector2i]:
 	var boarded: Array[Vector2i] = []
 	for block in candidates:
-		if state.purpose_of(_city.map.plans_by_block(), block) == GameEnums.BlockPurpose.BOARDED_UP:
+		if state.purpose_of(_city.map().plans_by_block(), block) == GameEnums.BlockPurpose.BOARDED_UP:
 			boarded.append(block)
 	return boarded
 
@@ -1145,7 +1147,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var state := _city.run.attempt_spend().block_arcs()
 	state.reset()
 	var happenings := _happenings_on_day(ResistanceHappenings.COLUMN_DAY, state)
-	var map := _city.map
+	var map := _city.map()
 	var door := map.doorstep_world_position()
 	# The main road's middle, across it: the corridor the map names as the main road, a street's
 	# width from its first tile.
@@ -1166,7 +1168,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	RunCity.events(_city).use_player(body)
 	var lead := SpawnSiting.least_distance()
 	if warning:
-		t.check(CrowdLanes.corridor_at(warning.points_at().x) == _city.map.main_road_corridor(),
+		t.check(CrowdLanes.corridor_at(warning.points_at().x) == _city.map().main_road_corridor(),
 				"pointing up the main road")
 		t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
 				"for at most a second alone (%.2fs)" % warning.seconds_left())

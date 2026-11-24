@@ -552,7 +552,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	RunCity.build(city, CityGenerator.generate(FIRE_SEED))
 
 	var sites := {}
-	for tile in EventScheduler.row_ground(city.map).tiles_for(
+	for tile in EventScheduler.row_ground(city.map()).tiles_for(
 			EventCatalogue.by_id("burning_building")):
 		sites[tile] = true
 	t.check(sites.size() > 100,
@@ -563,7 +563,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	var fires := {}
 	for tile: Vector2i in sites:
 		if _building_at(city, tile + Vector2i.UP):
-			fires[tile] = DrawnEvent.build(t, def, false, null, city.map, city.map.tile_to_world(tile))
+			fires[tile] = DrawnEvent.build(t, def, false, null, city.map(), city.map().tile_to_world(tile))
 	await DrawnEvent.frames(t)
 	var nothing_behind: Array[Vector2i] = []
 	var spilled: Array[Vector2i] = []
@@ -580,7 +580,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 		if tile.x == behind.lot_rect().position.x or tile.x == behind.lot_rect().end.x - 1:
 			at_a_lot_end += 1
 		var fire: EventInstance = fires[tile]
-		var facade := city.map.tile_rect_to_world(behind.lot_rect())
+		var facade := city.map().tile_rect_to_world(behind.lot_rect())
 		if facade.size.x > 80.0:
 			wider_than_five += 1
 		# Each flame as the span of x it covers in the world.
@@ -638,10 +638,10 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
 	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
 	# the station's own fronts, which the same lane offers any row that does not burn.
-	var station := CityMap.blocks_tile_rect(city.map.power_station_blocks())
-	t.check(city.map.has_power_station(), "seed %d has a power station" % FIRE_SEED)
+	var station := CityMap.blocks_tile_rect(city.map().power_station_blocks())
+	t.check(city.map().has_power_station(), "seed %d has a power station" % FIRE_SEED)
 	var station_fronts := 0
-	var lane_of_fronts := EventScheduler.row_ground(city.map).tiles_for(
+	var lane_of_fronts := EventScheduler.row_ground(city.map()).tiles_for(
 			EventCatalogue.by_id("cafe_tables"), EventDef.Pavement.AT_THE_FRONT)
 	for tile in lane_of_fronts:
 		if station.has_point(tile + Vector2i.UP):
@@ -667,7 +667,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	city.start_day(CityState.new(), 4, rng)
 	t.check(_burnt_count(city) == 0, "no building is burnt before any fire has left a scar")
 
-	city.run.add_scar("burnt_shell", city.map.tile_to_world(site))
+	city.run.add_scar("burnt_shell", city.map().tile_to_world(site))
 	city.start_day(CityState.new(), 4, rng)
 	t.check(scarred.condition() == Building.Condition.BURNT,
 			"the dawn after the fire, the building behind its scar is drawn burnt")
@@ -678,7 +678,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
 	# building is never boarded up with it.
 	city.fronts().present_block(
-			city.map.block_at(city.map.tile_rect_to_world(scarred.lot_rect()).get_center()),
+			city.map().block_at(city.map().tile_rect_to_world(scarred.lot_rect()).get_center()),
 			CityState.new())
 	t.check(scarred.condition() == Building.Condition.BURNT,
 			"its block shown anew during the day leaves the burnt building burnt")

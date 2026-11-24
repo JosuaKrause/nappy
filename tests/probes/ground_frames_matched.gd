@@ -165,7 +165,7 @@ func _run() -> void:
 		_camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 		_camera.zoom = get_viewport().get_visible_rect().size / EXTENT
 		add_child(_camera)
-		var at := _city.map.doorstep_world_position()
+		var at := _city.map().doorstep_world_position()
 		var initial := at
 		_camera.position = at
 		_camera.force_update_scroll()
@@ -183,11 +183,11 @@ func _run() -> void:
 		result.name = spec[0]
 		result.modeled_hz = rate
 		result.start = str(initial)
-		result.world_size = str(_city.map.world_size())
+		result.world_size = str(_city.map().world_size())
 		result.end_distance = at.distance_to(initial)
 		_write_rows(str(spec[0]), rows)
 		# All strategies settle the same shoreline view for water/quad overhead comparison.
-		at = Vector2(_city.map.world_size().x / 2, _city.map.world_size().y)
+		at = Vector2(_city.map().world_size().x / 2, _city.map().world_size().y)
 		_city.scenery_ground.clear()
 		_camera.position = at
 		_camera.force_update_scroll()

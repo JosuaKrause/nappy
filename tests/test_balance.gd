@@ -110,7 +110,7 @@ func _build_rig(t: TestRunner) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	_resistance.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	_days = DayDirector.new(_city.run.calendar(), _city.run.facts(), _city.run.attempt_spend())
 	_days.use_the_world(null, _resistance, _clock)
@@ -178,7 +178,7 @@ func _test_a_calm_park_still_settles_her(t: TestRunner) -> void:
 func _test_the_arterial_never_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
-	var street := CrowdLanes.arterial_pavement(_city.map)
+	var street := CrowdLanes.arterial_pavement(_city.map())
 	_stand_at(street)
 	_place_rig(street)
 	var settled := await _walk_until_asleep(t, street, ARTERIAL_WINDOW)
@@ -214,9 +214,10 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t: TestRunner) -> vo
 func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
-	if _city.map.playground_rects().is_empty():
+	if _city.map().playground_rects().is_empty():
 		return  # This city rolled no PARK-purpose block; nothing here to check.
-	var at: Vector2 = _city.map.tile_rect_to_world(_city.map.playground_rects()[0]).get_center()
+	var park_rect: Rect2i = _city.map().playground_rects()[0]
+	var at: Vector2 = _city.map().tile_rect_to_world(park_rect).get_center()
 	_stand_at(at)
 	_place_rig(at)
 	var settled := await _walk_until_asleep(t, at, Tuning.day_length(1))
@@ -235,10 +236,10 @@ func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 ## purpose: it lives on the street lattice, so what separates one park from another is the
 ## events on it, which is exactly what the rule protects.
 func _quietest_park() -> Vector2:
-	var best := _city.map.home_world_position()
+	var best := _city.map().home_world_position()
 	var quietest := INF
-	for block in _city.map.calm_blocks_now():
-		var spot := CalmSpot.of(_city.map, block)
+	for block in _city.map().calm_blocks_now():
+		var spot := CalmSpot.of(_city.map(), block)
 		if spot == Vector2.INF:
 			continue
 		RunCity.events(_city).stream_around(spot)

@@ -475,7 +475,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	var put_down: Array[String] = []
 	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:%d:%d:closures" % [SEED, day])
 	city.start_day(state, day, rng)
@@ -496,7 +496,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	resistance.use_trace(RecordingTrace.new(told))
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	var resistance_rng := RandomNumberGenerator.new()
 	resistance_rng.seed = hash("route-bag:%d:%d:resistance" % [SEED, day])
@@ -553,7 +553,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		# Only the place her route's marble handed to her walk: a unit the siting drew round its
 		# pick may have drawn the same row, a place of its own.
 		for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
-			if plan.row_id() == row and PutOnHerRoute.says(put_down, city.map, plan):
+			if plan.row_id() == row and PutOnHerRoute.says(put_down, city.map(), plan):
 				placed.append(plan)
 				her_at_siting = player.global_position
 		player.global_position += player.velocity * STEP
@@ -562,7 +562,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 			% [day, row, placed.size()])
 	if placed.size() == 1:
 		var plan := placed[0]
-		var map := city.map
+		var map := city.map()
 		var tile := map.world_to_tile(plan.placed_at())
 		# Day 6's man shouting is sited on the street she is walking, inside the streaming band and
 		# in the world at once (`WalkSiting.lay_ahead()`), not on the day's route band:

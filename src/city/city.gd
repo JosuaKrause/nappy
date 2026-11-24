@@ -144,11 +144,15 @@ const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 @onready var _decals: CityDecals = $Decals
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
-var map: CityMap
+var _map: CityMap
 ## How everything that moves over `map` moves (`Navigator`): built over the map by `build()` and
 ## held here for as long as the city stands, so the events, the crowd and whatever else moves over
 ## the map share the one (`navigator()`).
 var _navigator: Navigator
+
+## The map `build()` was handed: the streets, blocks and tiles this city stands on.
+func map() -> CityMap:
+	return _map
 
 ## How everything that moves over `map` moves: the navigator `build()` made, which the builder hands
 ## to the events and the crowd, and `main` to the resistance.
@@ -330,12 +334,12 @@ func build(city_map: CityMap) -> void:
 		push_error("City.build(): the run must be handed in first")
 		return
 	assert(atlas != null, "City.build(): equip() must hand the city its library first")
-	map = city_map
-	_navigator = Navigator.new(map)
+	_map = city_map
+	_navigator = Navigator.new(_map)
 	scenery = SceneryResidency.new()
 	scenery.use_frame_timing(_timing)
 	scenery.lock_to_frames(_frame_locked)
-	scenery.setup(self, map, scenery_ground, _building_shadows, _decals)
+	scenery.setup(self, _map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
 	scenery_ground.use_mode(_ground_mode)
 	scenery_ground.use_atlas(atlas)
@@ -357,22 +361,22 @@ func build(city_map: CityMap) -> void:
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
 	# their geometry from this source as they become resident.
 	var shown_rects: Array[Rect2i] = []
-	for footprint in map.building_lots():
+	for footprint in _map.building_lots():
 		if _recipe_shows_building(footprint):
 			shown_rects.append(footprint)
-	if map.has_stretch():
-		_building_shadows.use_falls_on(map.in_stretch)
+	if _map.has_stretch():
+		_building_shadows.use_falls_on(_map.in_stretch)
 	_building_shadows.set_buildings(shown_rects)
-	if _recipe_contains(map.home_world_position()):
+	if _recipe_contains(_map.home_world_position()):
 		_spawn_home()
-	_fronts = CityFronts.over(_buildings, _home_door, _door_world_x_range(), map, run, trace)
+	_fronts = CityFronts.over(_buildings, _home_door, _door_world_x_range(), _map, run, trace)
 	_spawn_street_trees()
 	_spawn_boundary()
-	if map.has_stretch():
+	if _map.has_stretch():
 		_spawn_the_void_edge()
-	elif not map.has_recipe_exterior():
+	elif not _map.has_recipe_exterior():
 		_spawn_the_edge_of_the_city()
-	_signals = TrafficSignals.new(map)
+	_signals = TrafficSignals.new(_map)
 	_spawn_signal_heads()
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
@@ -417,9 +421,9 @@ func set_daylight(fraction: float) -> void:
 ##
 ## Overrides WorldContext.sleepiness_multiplier.
 func sleepiness_multiplier(world_position: Vector2) -> float:
-	if not map:
+	if not _map:
 		return 1.0
-	var tile := map.world_to_tile(world_position)
+	var tile := _map.world_to_tile(world_position)
 	if tile != _sleepiness_tile:
 		_sleepiness_tile = tile
 		_sleepiness_answer = _sleepiness_on(tile)
@@ -439,10 +443,10 @@ var _sleepiness_tile := Vector2i(-1, -1)
 var _sleepiness_answer := 1.0
 
 func _sleepiness_on(tile: Vector2i) -> float:
-	if not Tile.is_calm(map.tile_at(tile)):
+	if not Tile.is_calm(_map.tile_at(tile)):
 		return 1.0
-	return Tuning.sleepiness_calm_multiplier(map.calm_lot_blocks(
-			map.block_at(map.tile_to_world(tile))))
+	return Tuning.sleepiness_calm_multiplier(_map.calm_lot_blocks(
+			_map.block_at(_map.tile_to_world(tile))))
 
 ## What the ground she is standing on does to her recovery: calm, precinct, ordinary, alley, main
 ## road, best to worst — and then, for the rest of a day she is carrying the resistance's package,
@@ -464,9 +468,9 @@ func decay_multiplier(world_position: Vector2) -> float:
 	return ground
 
 func _ground_decay_multiplier(world_position: Vector2) -> float:
-	if not map:
+	if not _map:
 		return 1.0
-	var type := map.tile_type_at_world(world_position)
+	var type := _map.tile_type_at_world(world_position)
 	if Tile.is_calm(type):
 		return EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 	# An alley is cut through a block rather than laid out as a corridor, so no street kind answers
@@ -474,9 +478,9 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 	# for that reason and not by precedence: the two cannot overlap.
 	if Tile.is_alley(type):
 		return EXCITEMENT_DECAY_ALLEY_MULTIPLIER
-	var tile := map.world_to_tile(world_position)
-	var across := map.street_kind_at(true, tile)
-	var along := map.street_kind_at(false, tile)
+	var tile := _map.world_to_tile(world_position)
+	var across := _map.street_kind_at(true, tile)
+	var along := _map.street_kind_at(false, tile)
 	if across == GameEnums.StreetKind.PEDESTRIAN or along == GameEnums.StreetKind.PEDESTRIAN:
 		return EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
 	if across == GameEnums.StreetKind.MAIN or along == GameEnums.StreetKind.MAIN:
@@ -485,14 +489,14 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 
 ## Overrides WorldContext.is_alley.
 func is_alley(world_position: Vector2) -> bool:
-	return map.is_alley(world_position) if map else false
+	return _map.is_alley(world_position) if _map else false
 
 # ------------------------------------------------------------------ spawning ---
 
 ## The front door. A sprite in the y-sorted layer rather than part of the ground, so she
 ## passes in front of it the way she passes in front of any other wall.
 func _spawn_home() -> void:
-	var stoop := map.tile_rect_to_world(map.home_tile_rect())
+	var stoop := _map.tile_rect_to_world(_map.home_tile_rect())
 	_home_door = HomeDoor.new()
 	_home_door.atlas = atlas
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
@@ -538,7 +542,7 @@ func _sync_home_door() -> void:
 ## home-block `Building` so it can blank the ground-floor column(s) standing behind the door
 ## instead of drawing a window there.
 func _door_world_x_range() -> Vector2:
-	var centre_x := map.tile_rect_to_world(map.home_tile_rect()).get_center().x
+	var centre_x := _map.tile_rect_to_world(_map.home_tile_rect()).get_center().x
 	var half_width := AtlasTable.baked().native_size(DOOR_TEXTURE).x * 0.5
 	return Vector2(centre_x - half_width, centre_x + half_width)
 
@@ -546,10 +550,10 @@ func _door_world_x_range() -> Vector2:
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
 ## street's own frontage rather than to what the block behind it currently is.
 func _spawn_street_trees() -> void:
-	var edges := map.witness_only()
-	var planted_trees := StreetTrees.planted(map)
-	map.restore_edges(edges)
-	if map.has_stretch():
+	var edges := _map.witness_only()
+	var planted_trees := StreetTrees.planted(_map)
+	_map.restore_edges(edges)
+	if _map.has_stretch():
 		# Only the stretch's own trees and their pits: a pit drawn out in the void is ground. The
 		# authored tree positions supply drawing, pits and clearance from one list.
 		var shown: Array[StreetTrees.Planted] = []
@@ -557,7 +561,7 @@ func _spawn_street_trees() -> void:
 			if _recipe_contains(planted_tree.position):
 				shown.append(planted_tree)
 		planted_trees = shown
-	_decals.set_street_tree_pits(planted_trees, map)
+	_decals.set_street_tree_pits(planted_trees, _map)
 	for planted_tree in planted_trees:
 		if not _recipe_contains(planted_tree.position):
 			continue
@@ -583,7 +587,7 @@ func _spawn_street_trees() -> void:
 func refresh_street_trees() -> void:
 	for tile: Vector2i in _street_tree_pits:
 		var tree: Prop = _street_tree_pits[tile]
-		tree.visible = not map.is_tree_pit_emptied(tile)
+		tree.visible = not _map.is_tree_pit_emptied(tile)
 	_decals.refresh_street_tree_pits()
 
 ## Sets a recipe's roof furniture on the building standing on `lot`
@@ -646,7 +650,7 @@ func _spawn_spine_exits() -> void:
 ## The spine's own centre line, in world space — where both exits are anchored, and the one place
 ## that arithmetic lives now that the finale asks where the ways out are as well as drawing them.
 func _spine_centre_x() -> float:
-	return (map.main_road_corridor() * CityMap.period()
+	return (_map.main_road_corridor() * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
 
 ## The tunnel mouth, at the north end of the spine.
@@ -655,7 +659,7 @@ func tunnel_world_position() -> Vector2:
 
 ## The bridge deck, at the south end of the spine.
 func bridge_world_position() -> Vector2:
-	return Vector2(_spine_centre_x(), map.world_size().y)
+	return Vector2(_spine_centre_x(), _map.world_size().y)
 
 ## The dark inside the tunnel goes in a layer of its own above the entities, so it lands on a car
 ## as the car drives in; the portal's face is y-sorted with them; the bridge and the road are
@@ -709,7 +713,7 @@ func _spawn_signal_heads() -> void:
 				var at := centre - heading * (half + inset) + right * kerb
 				if not _recipe_contains(at):
 					continue
-				if not map.is_walkable(map.world_to_tile(at)):
+				if not _map.is_walkable(_map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
 				light.mount(atlas, drawer, junction, _signals)
@@ -722,7 +726,7 @@ func _spawn_buildings() -> void:
 	# A stretch's buildings are measured against the city they were cut from — which of their
 	# columns a neighbouring roof covers, how far a roof reaches over an alley — rather than
 	# against the void round the stretch, which would read every edge of it as more building.
-	var edges := map.witness_only()
+	var edges := _map.witness_only()
 	var door_x_range := _door_world_x_range()
 	# One drawer for every roof and one for every front: each holds nothing but the atlas the
 	# buildings draw from, and the roof's also the scenery drawer its vents' rotors lay their frames
@@ -730,14 +734,14 @@ func _spawn_buildings() -> void:
 	var roof_drawer := RoofDrawer.new(atlas, _scenery_drawer)
 	var front_drawer := FrontDrawer.new(atlas)
 	var buildings: Array[Building] = []
-	for rect in map.building_lots():
-		var world := map.tile_rect_to_world(rect)
+	for rect in _map.building_lots():
+		var world := _map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.equip(atlas, roof_drawer, front_drawer)
 		building.use_scenery_clock(scenery_ground)
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
-		building.stand_on(rect, world.size, _variant_for(rect), map.starting_purpose(block_of(rect)),
+		building.stand_on(rect, world.size, _variant_for(rect), _map.starting_purpose(block_of(rect)),
 				_height_for(rect, rect.size.y))
 		# A stretch's authored values are the inputs to its geometry, not a repaint after it: the
 		# height decides the roof extension a touching lot needs, and the variant decides the tint
@@ -746,7 +750,7 @@ func _spawn_buildings() -> void:
 		_draw_as_the_recipe_says(building)
 		# Every lot on the home block is hers — the door's own notch carves no `Building` of its
 		# own, so this is every wall standing around it.
-		building.stand_on_home_block(block_of(rect) == map.home_block_coordinate())
+		building.stand_on_home_block(block_of(rect) == _map.home_block_coordinate())
 		if building.is_on_home_block():
 			# Only the one lot the door notch's own footprint overlaps ever reads this as true —
 			# every other home-block lot's world x sits entirely outside the door's span, since
@@ -766,11 +770,11 @@ func _spawn_buildings() -> void:
 	# route-redundancy guarantee the same way.
 	for i in buildings.size():
 		if not buildings[i].is_on_home_block():
-			buildings[i].mark_covered_ground_cols(_covered_ground_cols(map.building_lots()[i]))
-	var courtyard_of := _courtyard_lot_of(map.building_lots())
+			buildings[i].mark_covered_ground_cols(_covered_ground_cols(_map.building_lots()[i]))
+	var courtyard_of := _courtyard_lot_of(_map.building_lots())
 	assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
-	map.restore_edges(edges)
+	_map.restore_edges(edges)
 	for building in buildings:
 		if not _recipe_shows_building(building.lot_rect()):
 			building.free()
@@ -807,7 +811,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 	var result: Array[bool] = []
 	var south_row := rect.position.y + rect.size.y
 	for col in rect.size.x:
-		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
+		result.append(not _map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
 
 ## `Building.extend_roof_over()` and the courtyard seams (`Building.mark_courtyard_seams()`) for every
@@ -842,8 +846,8 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## all is never seamless: nothing of its own carries on above the extension, so the extension caps.
 func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
-	for i in map.building_lots().size():
-		var rect: Rect2i = map.building_lots()[i]
+	for i in _map.building_lots().size():
+		var rect: Rect2i = _map.building_lots()[i]
 		for x in rect.size.x:
 			for y in rect.size.y:
 				tile_to_index[Vector2i(rect.position.x + x, rect.position.y + y)] = i
@@ -874,7 +878,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 		var back_covered: Array[bool] = covered[i]
 		if back_covered.is_empty():
 			continue
-		var rect: Rect2i = map.building_lots()[i]
+		var rect: Rect2i = _map.building_lots()[i]
 		for col in back_covered.size():
 			if not back_covered[col]:
 				continue
@@ -883,7 +887,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 			if front_index < 0:
 				continue
 			var front := buildings[front_index]
-			var front_rect: Rect2i = map.building_lots()[front_index]
+			var front_rect: Rect2i = _map.building_lots()[front_index]
 			var local_col := south.x - front_rect.position.x
 			if front.is_power_station():
 				var hall := front.hall_cols()
@@ -916,7 +920,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 ## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_lots()`.
 func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var first_variant := {}
-	if map.has_stretch():
+	if _map.has_stretch():
 		for i in buildings.size():
 			var lot := courtyard_of[i]
 			if lot < 0 or first_variant.has(lot) \
@@ -938,9 +942,9 @@ func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int])
 ## smaller than any of them, so `encloses()` is exact rather than an overlap test.
 func _courtyard_lot_of(rects: Array[Rect2i]) -> Array[int]:
 	var courtyard_lots: Array[Rect2i] = []
-	for block: Vector2i in map.blocks_with_layouts():
-		if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
-			courtyard_lots.append(map.lot_rect(block))
+	for block: Vector2i in _map.blocks_with_layouts():
+		if _map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
+			courtyard_lots.append(_map.lot_rect(block))
 	var result: Array[int] = []
 	for rect in rects:
 		var found := -1
@@ -955,9 +959,9 @@ func _courtyard_lot_of(rects: Array[Rect2i]) -> Array[int]:
 ## `CityMap.power_station_door_tiles()` names, and the transformer yard over the other block — the hall is
 ## the door's block and the street the mass was built across.
 func _dress_the_power_station(building: Building, rect: Rect2i) -> void:
-	if not map.has_power_station() or rect != CityMap.blocks_tile_rect(map.power_station_blocks()):
+	if not _map.has_power_station() or rect != CityMap.blocks_tile_rect(_map.power_station_blocks()):
 		return
-	var door_col := map.power_station_door_tiles().position.x - rect.position.x
+	var door_col := _map.power_station_door_tiles().position.x - rect.position.x
 	var door_is_west := door_col < Tuning.BLOCK_SIZE
 	building.dress_as_power_station(door_col,
 			Vector2i(rect.size.x - Tuning.BLOCK_SIZE if door_is_west else 0, Tuning.BLOCK_SIZE))
@@ -972,16 +976,16 @@ static func block_of(rect: Rect2i) -> Vector2i:
 ## since `CityMap.home_block_coordinate()` and every constant the lattice is built from are the same on every
 ## seed) no longer depend on the seed either. A non-home building keeps the per-seed roll.
 func _variant_for(rect: Rect2i) -> int:
-	if block_of(rect) == map.home_block_coordinate():
+	if block_of(rect) == _map.home_block_coordinate():
 		return absi(hash("home:%d:%d" % [rect.position.x, rect.position.y]))
-	return absi(hash("%d:%d:%d" % [map.city_seed(), rect.position.x, rect.position.y]))
+	return absi(hash("%d:%d:%d" % [_map.city_seed(), rect.position.x, rect.position.y]))
 
 func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
-	if block_of(rect) == map.home_block_coordinate():
+	if block_of(rect) == _map.home_block_coordinate():
 		return _home_building_height(rect, lot_depth_tiles)
-	var range_tiles: Vector2i = _HEIGHT_TILES[map.starting_purpose(block_of(rect))]
+	var range_tiles: Vector2i = _HEIGHT_TILES[_map.starting_purpose(block_of(rect))]
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("h:%d:%d:%d" % [map.city_seed(), rect.position.x, rect.position.y])
+	rng.seed = hash("h:%d:%d:%d" % [_map.city_seed(), rect.position.x, rect.position.y])
 	var tiles := rng.randi_range(range_tiles.x, range_tiles.y)
 	# Slivers left beside an alley or a plaza are shallow lots; cap them to a low wall
 	# rather than letting the extrusion swallow the whole roof. A one-tile sliver is all
@@ -1003,7 +1007,7 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## reported as a fork rather than silently losing the roof, which is why this clamps to
 ## `rows() - 1` rather than reaching for `MAX_HEIGHT_FRACTION` as well.
 func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
-	var world := map.tile_rect_to_world(rect)
+	var world := _map.tile_rect_to_world(rect)
 	var door_x_range := _door_world_x_range()
 	var is_door_building := world.position.x < door_x_range.y and world.end.x > door_x_range.x
 	var tiles := HOME_BUILDING_WALL_ROWS if is_door_building else HOME_FLANKING_WALL_ROWS
@@ -1058,7 +1062,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 ## ground, the litter and the block dressing.
 func _dress(state: CityState, day: int) -> void:
 	scenery.use_view(_home_scenery_view())
-	map.repaint(state, trace)
+	_map.repaint(state, trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
@@ -1087,16 +1091,16 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 		spec = DaySpec.for_day(day)
 	_dress(state, day)
 	scenery.update(_home_scenery_view(), true)
-	var edges := map.witness_only()
-	var tree := RouteTree.for_day(map, day)
-	var plan := RegionPlanner.plan_day(map, spec, tree)
-	map.restore_edges(edges)
-	var closures: Array[RoadClosure] = map.recipe_road_closures().duplicate()
+	var edges := _map.witness_only()
+	var tree := RouteTree.for_day(_map, day)
+	var plan := RegionPlanner.plan_day(_map, spec, tree)
+	_map.restore_edges(edges)
+	var closures: Array[RoadClosure] = _map.recipe_road_closures().duplicate()
 	_streets.begin_day(tree, plan, closures)
-	map.close_streets(closures)
+	_map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
-	if map.has_stretch():
+	if _map.has_stretch():
 		run.posters().mark_pasted_through(day)
 	day_dressed.emit(day, spec)
 
@@ -1111,17 +1115,17 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
 	# Tinted before the region plan or the closures, so a tree a closure has not yet touched is what
 	# the tint answers for.
-	var tree := RouteTree.for_day(map, day)
+	var tree := RouteTree.for_day(_map, day)
 	tint_the_route(tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
-	var plan := RegionPlanner.plan_day(map, spec, tree)
+	var plan := RegionPlanner.plan_day(_map, spec, tree)
 	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.wall_segments().size() + plan.door_segments().size(), plan.wall_segments().size(),
-			plan.door_segments().size(), RegionPlanner.regions_with_calm(map)])
-	var closures := ClosurePlanner.plan_day(map, spec, rng, tree, plan, trace)
+			plan.door_segments().size(), RegionPlanner.regions_with_calm(_map)])
+	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, trace)
 	_streets.begin_day(tree, plan, closures)
-	map.close_streets(closures)
+	_map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
 
@@ -1224,21 +1228,21 @@ func fronts() -> CityFronts:
 func _spawn_closure(closure: RoadClosure) -> void:
 	# Supports precede the rails mounted on them. The sign's panel draws its composite
 	# after the rail, at the run midpoint rather than at a panel endpoint.
-	for feet in closure.posts(map):
+	for feet in closure.posts(_map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		post.use_atlas(atlas)
 		post.draw_through(_scenery_drawer)
 		post.stand_as(ClosureMarker.Piece.POST, closure.kind(), true)
 		post.position = feet
 		_add_closure_node(post, true)
-	for mouth in closure.mouth_centres(map):
+	for mouth in closure.mouth_centres(_map):
 		_spawn_barrier(closure, mouth)
 	if ClosureMarker.CAUSES.has(closure.kind()):
 		var cause := ClosureMarker.new()
 		cause.use_atlas(atlas)
 		cause.draw_through(_scenery_drawer)
 		cause.stand_as(ClosureMarker.Piece.CAUSE, closure.kind(), closure.barrier_runs_across())
-		cause.position = closure.cause_centre(map)
+		cause.position = closure.cause_centre(_map)
 		_add_closure_node(cause, true)
 
 ## A line of barrier panels across the mouth, with the sign on the middle one, and one static
@@ -1331,25 +1335,25 @@ func _dress_blocks(state: CityState) -> void:
 	for prop in _props:
 		prop.queue_free()
 	_props.clear()
-	if map.has_stretch():
+	if _map.has_stretch():
 		_dress_the_stretch()
 	else:
-		for block: Vector2i in map.blocks_with_plans():
-			var purpose := state.purpose_of(map.plans_by_block(), block)
+		for block: Vector2i in _map.blocks_with_plans():
+			var purpose := state.purpose_of(_map.plans_by_block(), block)
 			_dress_block(block, purpose)
 		_dress_precincts()
 		_place_garbage_sacks()
 	for building in _buildings:
-		var listed: Dictionary = map.stretch_building_on(building.lot_rect())
+		var listed: Dictionary = _map.stretch_building_on(building.lot_rect())
 		building.show_condition(int(listed.condition) as Building.Condition if not listed.is_empty() \
-				else condition_for(state.purpose_of(map.plans_by_block(), block_of(building.lot_rect()))))
+				else condition_for(state.purpose_of(_map.plans_by_block(), block_of(building.lot_rect()))))
 		building.show_day(_day)
 	_fronts.mark_the_burnt_frontage()
 
 ## A stretch's props are its recipe's (`CityMap.stretch_prop_list()`): every tree, swing frame, bollard
 ## and sack where the recipe puts it, in place of the rolls a day's blocks and streets would make.
 func _dress_the_stretch() -> void:
-	for listed in map.stretch_prop_list():
+	for listed in _map.stretch_prop_list():
 		var prop := Prop.new()
 		prop.dress(atlas, int(listed.kind) as Prop.Kind, int(listed.variant), float(listed.scale))
 		prop.position = listed.at
@@ -1360,7 +1364,7 @@ func _dress_the_stretch() -> void:
 ## Each is a `Prop` with a `GroundShape` for its shadow and no body, exactly as decorative as a
 ## bollard.
 func _place_garbage_sacks() -> void:
-	for entry in GarbageSacks.placed(map, _day):
+	for entry in GarbageSacks.placed(_map, _day):
 		var sack := Prop.new()
 		sack.dress(atlas, Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK)
 		sack.position = entry.position
@@ -1381,11 +1385,11 @@ static func condition_for(purpose: GameEnums.BlockPurpose) -> Building.Condition
 ## Trees and swings, placed from the *city* seed rather than the day's, so a park looks the
 ## same every morning. A fixed city the player can learn has to include its trees.
 func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
-	var layout: BlockLayout = map.layout_of(block)
+	var layout: BlockLayout = _map.layout_of(block)
 	if not layout or not layout.has_open_ground():
 		return
 	if purpose == GameEnums.BlockPurpose.PARK and layout.has_playground():
-		var playground := map.tile_rect_to_world(layout.playground_rect())
+		var playground := _map.tile_rect_to_world(layout.playground_rect())
 		var frame := Prop.new()
 		frame.dress(atlas, Prop.Kind.PLAYGROUND_FRAME, block.x * 31 + block.y)
 		frame.position = Vector2(playground.get_center().x, playground.end.y - 8.0)
@@ -1403,8 +1407,8 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	var lots := maxf(1.0, float(open.size.x * open.size.y) / block_area)
 	var wanted := roundi(per_block * lots)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("props:%d:%d:%d" % [map.city_seed(), block.x, block.y])
-	var lot := map.tile_rect_to_world(layout.open_ground())
+	rng.seed = hash("props:%d:%d:%d" % [_map.city_seed(), block.x, block.y])
+	var lot := _map.tile_rect_to_world(layout.open_ground())
 	var placed := 0
 	var attempts := 0
 	# Every tree already placed in this lot, so a candidate too close to one of them is rejected
@@ -1419,16 +1423,16 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	# the ordinary 16px inset while `block` is `map.fenced_park_block()`, so every other park's trees are
 	# untouched by this at every reading.
 	var margin := 16.0
-	if map.fenced_park_block() == block and ClosurePlanner.calm_area_rect(map, block) == layout.open_ground():
+	if _map.fenced_park_block() == block and ClosurePlanner.calm_area_rect(_map, block) == layout.open_ground():
 		margin += Tuning.CLOSURE_BARRIER_DEPTH
 	while placed < wanted and attempts < wanted * 8:
 		attempts += 1
 		var at := Vector2(rng.randf_range(lot.position.x + margin, lot.end.x - margin),
 				rng.randf_range(lot.position.y + margin, lot.end.y - margin))
 		# Keep the playground clear so the swing frame reads.
-		if not Tile.is_calm(map.tile_type_at_world(at)):
+		if not Tile.is_calm(_map.tile_type_at_world(at)):
 			continue
-		if map.tile_type_at_world(at) == GameEnums.TileType.PLAYGROUND:
+		if _map.tile_type_at_world(at) == GameEnums.TileType.PLAYGROUND:
 			continue
 		if _too_close_to_a_planted_tree(at, planted, spacing):
 			continue
@@ -1462,7 +1466,7 @@ static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2],
 ## alone, with no rng: a closed mouth is geometry, not a roll, so `CityMap.post_positions()` needs
 ## no seed and a test can call it without building a scene.
 func _dress_precincts() -> void:
-	for at in map.post_positions():
+	for at in _map.post_positions():
 		var bollard := Prop.new()
 		bollard.dress(atlas, Prop.Kind.BOLLARD)
 		bollard.position = at
@@ -1485,16 +1489,16 @@ func _add_prop(prop: Node2D) -> void:
 ## less `look_ahead`, the reach a glance toward a corner costs, which the caller hands in because it
 ## is the player camera's own number (`Stroller.CAMERA_LOOK_AHEAD`), not the city's.
 func camera_bounds(look_ahead: float) -> Rect2:
-	if map.has_recipe_exterior() or map.has_stretch():
+	if _map.has_recipe_exterior() or _map.has_stretch():
 		return Rect2(-100000000, -100000000, 200000000, 200000000)
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
-	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - look_ahead)
+	return Rect2(Vector2.ZERO, _map.world_size()).grow(depth - look_ahead)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:
-	if map.has_recipe_exterior() or map.has_stretch():
+	if _map.has_recipe_exterior() or _map.has_stretch():
 		return
-	var extent := map.world_size()
+	var extent := _map.world_size()
 	var t := BOUNDARY_THICKNESS
 	var walls: Array[Rect2] = [
 		Rect2(-t, -t, extent.x + t * 2.0, t),
@@ -1522,25 +1526,25 @@ func _spawn_boundary() -> void:
 ## place rather than four.
 func _paint_ground() -> void:
 	_tinted_route = null
-	scenery_ground.configure(map, scenery_ground_source, _composed_ground_tile_set())
+	scenery_ground.configure(_map, scenery_ground_source, _composed_ground_tile_set())
 	var initial := scenery.view() if scenery.view().has_area() else _home_scenery_view()
 	for key in scenery_ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
 		scenery_ground.prepare(key)
 
 func _home_scenery_view() -> Rect2:
-	return Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+	return Rect2(_map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2)
 
 ## Current source, independent of residency. Border and route paint use this same answer
 ## at boot, on approach, after a closure, and when a distant chunk returns.
 func scenery_ground_source(tile: Vector2i) -> int:
-	if map.has_stretch() and not map.in_stretch(tile):
+	if _map.has_stretch() and not _map.in_stretch(tile):
 		return -1
-	if map.has_recipe_exterior() and not map.recipe_window().has_point(tile):
+	if _map.has_recipe_exterior() and not _map.recipe_window().has_point(tile):
 		return GroundTiles.ALLEY
-	if tile.x < 0 or tile.y < 0 or tile.x >= map.size_in_tiles().x or tile.y >= map.size_in_tiles().y:
+	if tile.x < 0 or tile.y < 0 or tile.x >= _map.size_in_tiles().x or tile.y >= _map.size_in_tiles().y:
 		return _paint_outside_the_map(tile)
-	var source := GroundTiles.source_for(map, tile, _day)
+	var source := GroundTiles.source_for(_map, tile, _day)
 	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
 		var twin := GroundTiles.route_twin_of(source)
 		if twin >= 0 and scenery_ground.tile_set().has_source(twin):
@@ -1548,22 +1552,23 @@ func scenery_ground_source(tile: Vector2i) -> int:
 	return source
 
 func _recipe_contains(at: Vector2) -> bool:
-	if map.has_stretch():
-		return map.in_stretch(map.world_to_tile(at))
-	return not map.has_recipe_exterior() or map.recipe_window().has_point(map.world_to_tile(at))
+	if _map.has_stretch():
+		return _map.in_stretch(_map.world_to_tile(at))
+	return not _map.has_recipe_exterior() \
+			or _map.recipe_window().has_point(_map.world_to_tile(at))
 
 ## Whether a building on `lot` is shown: every one in a city, those inside a bounded recipe's
 ## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_building_lots()`).
 func _recipe_shows_building(lot: Rect2i) -> bool:
-	if map.has_stretch():
-		return map.has_stretch_building_on(lot)
-	return not map.has_recipe_exterior() or map.recipe_window().encloses(lot)
+	if _map.has_stretch():
+		return _map.has_stretch_building_on(lot)
+	return not _map.has_recipe_exterior() or _map.recipe_window().encloses(lot)
 
 ## Applies a stretch building's listed district, variant and wall height before any derived
 ## geometry or shared tint is computed, so a change to the seed roll cannot change either the
 ## handcrafted building or a roof joined to it. Nothing for any other city.
 func _draw_as_the_recipe_says(building: Building) -> void:
-	var listed: Dictionary = map.stretch_building_on(building.lot_rect())
+	var listed: Dictionary = _map.stretch_building_on(building.lot_rect())
 	if listed.is_empty():
 		return
 	building.draw_as(int(listed.district) as GameEnums.BlockPurpose, int(listed.variant),
@@ -1574,19 +1579,19 @@ func _draw_as_the_recipe_says(building: Building) -> void:
 ## the crowd all stop at the edge of the scene the way they stop at a frontage. Nothing is drawn.
 func _spawn_the_void_edge() -> void:
 	var walled := {}
-	for lot: Rect2i in map.stretch_building_lots():
-		for tile in map.rect_tiles(lot):
+	for lot: Rect2i in _map.stretch_building_lots():
+		for tile in _map.rect_tiles(lot):
 			walled[tile] = true
 	var edge := {}
-	for y in map.size_in_tiles().y:
-		for x in map.size_in_tiles().x:
+	for y in _map.size_in_tiles().y:
+		for x in _map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if not map.in_stretch(tile):
+			if not _map.in_stretch(tile):
 				continue
 			for dy in range(-1, 2):
 				for dx in range(-1, 2):
 					var beside := tile + Vector2i(dx, dy)
-					if not map.in_stretch(beside) and not walled.has(beside):
+					if not _map.in_stretch(beside) and not walled.has(beside):
 						edge[beside] = true
 	var body := StaticBody2D.new()
 	body.name = "VoidEdge"
@@ -1604,7 +1609,7 @@ func _spawn_the_void_edge() -> void:
 			if i < xs.size() and int(xs[i]) == last + 1:
 				last = xs[i]
 				continue
-			var run := map.tile_rect_to_world(Rect2i(start, y, last - start + 1, 1))
+			var run := _map.tile_rect_to_world(Rect2i(start, y, last - start + 1, 1))
 			var shape := CollisionShape2D.new()
 			var rectangle := RectangleShape2D.new()
 			rectangle.size = run.size
@@ -1618,14 +1623,14 @@ func _spawn_the_void_edge() -> void:
 
 func _recipe_litter(day: int) -> Array[Litter.Placed]:
 	var shown: Array[Litter.Placed] = []
-	if map.has_stretch():
-		for listed in map.stretch_litter_list():
+	if _map.has_stretch():
+		for listed in _map.stretch_litter_list():
 			var entry := Litter.Placed.new()
 			entry.position = listed.at
 			entry.texture_index = int(listed.texture)
 			shown.append(entry)
 		return shown
-	for placed in Litter.placed(map, day):
+	for placed in Litter.placed(_map, day):
 		if _recipe_contains(placed.position):
 			shown.append(placed)
 	return shown
@@ -1691,15 +1696,15 @@ func _paint_outside_the_map(tile: Vector2i) -> int:
 ## The order below is the whole rule. North first, then south, then whatever is left.
 func _border_source(x: int, y: int) -> int:
 	var north := -y
-	var south := y - (map.size_in_tiles().y - 1)
+	var south := y - (_map.size_in_tiles().y - 1)
 	var west := -x
-	var east := x - (map.size_in_tiles().x - 1)
+	var east := x - (_map.size_in_tiles().x - 1)
 
 	if _leaves_by_the_spine(x):
 		var on_to_the_bridge := south > 0
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
-			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size_in_tiles().y - 1)), _day)
+			return GroundTiles.source_for(_map, Vector2i(x, clampi(y, 0, _map.size_in_tiles().y - 1)), _day)
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:
@@ -1713,6 +1718,6 @@ func _border_source(x: int, y: int) -> int:
 ## border rather than stopping at it. The kerbs either side stop with the city: a pavement running
 ## into a tunnel would be an invitation, and what is out there is lethal by design.
 func _leaves_by_the_spine(x: int) -> bool:
-	var offset := x - map.main_road_corridor() * CityMap.period()
+	var offset := x - _map.main_road_corridor() * CityMap.period()
 	return offset >= Tuning.SIDEWALK_WIDTH \
 			and offset < Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH

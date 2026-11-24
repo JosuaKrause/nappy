@@ -32,10 +32,10 @@ func run(t: TestRunner) -> void:
 			city.run.header().set_day(day)
 			var state := city.run.attempt_spend().block_arcs()
 			state.reset()
-			state.begin_day(city.map.plans_by_block(), day)
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+					city.map().doorstep_world_position())
 			var player := Stroller.new()
 			var camera := Camera2D.new()
 			camera.name = "Camera2D"
@@ -54,7 +54,7 @@ func run(t: TestRunner) -> void:
 			for tile: Vector2i in picked:
 				tears += 1
 				GivenRun.tears(city.run, tears)
-				var her := city.map.tile_to_world(tile)
+				var her := city.map().tile_to_world(tile)
 				player.global_position = her
 				RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0), null)

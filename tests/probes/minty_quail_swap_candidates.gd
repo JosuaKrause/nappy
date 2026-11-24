@@ -22,7 +22,7 @@ func run(t: TestRunner) -> void:
 	var asked := 0
 	for seed_value in SEEDS:
 		var city := _start(t, seed_value)
-		var map := city.map
+		var map := city.map()
 		var corridor := Corridor.of(city.streets().route_tree())
 		var region := city.streets().region_plan()
 		var fixed := {}
@@ -126,12 +126,12 @@ func _start(t: TestRunner, seed_value: int) -> City:
 	city.run.header().set_day(DAY)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), DAY)
+	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(city.run.attempt_spend().block_arcs(), DAY, city.run.calendar().day_rng(DAY, "closures"),
 			spec)
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(DAY), consumed,
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	return city
 
 ## Where each beat's own body stands on the street it is put on: the tiles its footprint records
@@ -139,7 +139,7 @@ func _start(t: TestRunner, seed_value: int) -> City:
 ## each side of the street across from it. The barricade on the main road's lanes, the roadblock on
 ## its own ground, a few hundred sites each.
 func _bodies(city: City, seed_value: int) -> void:
-	var map := city.map
+	var map := city.map()
 	for id: String in ["barricade", "roadblock"]:
 		var def := EventCatalogue.by_id(id)
 		var sites := 0
@@ -199,7 +199,7 @@ func _bodies(city: City, seed_value: int) -> void:
 ## closures, and the street alone flooded on the reachability grid from a sidewalk tile a block-end
 ## short of it to one a block-end past it. Counted: the stops whose disc leaves the street through.
 func _scar_discs(city: City, seed_value: int) -> void:
-	var map := city.map
+	var map := city.map()
 	if map.main_road_corridor() < 0:
 		return
 	var grid := ReachabilityGrid.build(map)

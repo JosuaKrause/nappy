@@ -358,7 +358,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 							body.obstructs_within(), trap.global_position,
 							player.global_position),
 							"his run at her from %s never crosses a district door's line"
-							% _city.map.world_to_tile(trap.global_position))
+							% _city.map().world_to_tile(trap.global_position))
 				# A finished pursuer is no longer in the world, so the director stops naming him.
 				events.retire(trap)
 				t.check(_robber_after_her(events) == null,
@@ -416,7 +416,7 @@ func _named_door(director: ResistanceDirector) -> Array:
 	if region_plan == null or house == Vector2.INF:
 		return [Vector2.INF, Vector2.ZERO]
 	for segment in region_plan.door_segments():
-		var area := _city.map.tile_rect_to_world(segment.tile_rect())
+		var area := _city.map().tile_rect_to_world(segment.tile_rect())
 		if not area.has_point(house):
 			continue
 		var boom: EventPlan = null

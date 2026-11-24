@@ -192,7 +192,7 @@ func _probe_the_camera() -> void:
 	add_child(city)
 	RunCity.build(city, loaded.map)
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), 1)
+	state.begin_day(city.map().plans_by_block(), 1)
 	city.start_recipe_day(state, 1, _run.calendar().day_rng())
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
@@ -320,7 +320,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), 3)
+	state.begin_day(city.map().plans_by_block(), 3)
 	city.start_day(state, 3, own_run.calendar().day_rng(3, "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
@@ -330,8 +330,8 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	var row := EventCatalogue.by_id("charging_dog")
 	var lead := Offscreen.lead(Vector2.DOWN, row.chase_speed() + Tuning.WALK_SPEED, row.warned_for())
 	var her := Vector2.INF
-	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		var stand := city.map.tile_to_world(tile)
+	for tile in city.map().tiles_of_type(GameEnums.TileType.SIDEWALK):
+		var stand := city.map().tile_to_world(tile)
 		if city.navigator().passable_at(stand + Vector2.DOWN * lead, EventInstance.mover_for(row)) \
 				and city.navigator().passable_at(stand, EventInstance.mover_for(row)):
 			her = stand
@@ -342,7 +342,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"setup": {"day": 3, "events": [{"name": "dog", "row": "charging_dog",
 			"at": [at.x, at.y], "hold": true}], "player": {"at": [her.x, her.y]}}},
-			"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false), own_run)
+			"manifest": {}, "anchors": {}, "map": city.map()}, _recipe_config(false), own_run)
 	t.add_child(runtime)
 	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
@@ -371,7 +371,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 		t.check(dog.is_held_by_hand() and walked.length() > 0.0 and dog.position.distance_to(
 				player.global_position) > from.distance_to(player.global_position),
 				"the runtime walks the held dog on, farther from her: %s" % walked)
-		var placed := city.map.listed_moves().keeping_their_course().any(
+		var placed := city.map().listed_moves().keeping_their_course().any(
 				func(move: MoveProposal) -> bool:
 					return move.stands_at() == dog.position and move.steps_to() == dog.position)
 		t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
@@ -506,7 +506,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), own_run.header().day())
+	state.begin_day(city.map().plans_by_block(), own_run.header().day())
 	city.start_day(state, own_run.header().day(), own_run.calendar().day_rng(own_run.header().day(), "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
@@ -518,7 +518,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
 		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": [entry],
-				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map},
+				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map()},
 				_recipe_config(false), own_run)
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
@@ -555,7 +555,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), own_run.header().day())
+	state.begin_day(city.map().plans_by_block(), own_run.header().day())
 	city.start_day(state, own_run.header().day(), own_run.calendar().day_rng(own_run.header().day(), "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
@@ -571,14 +571,14 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 		var entries: Array = []
 		var tiles := _placeable_tiles(city, def, own_run.header().day(), int(case[1]))
 		for i in tiles.size():
-			var at := city.map.tile_to_world(tiles[i])
+			var at := city.map().tile_to_world(tiles[i])
 			entries.append({"name": "%s_%d" % [def.id(), i], "row": def.id(), "at": [at.x, at.y]})
 		t.check(entries.size() == int(case[1]), "%d places for %s are found (%d)"
 				% [int(case[1]), def.id(), entries.size()])
 		var runtime := SceneRecipeRuntime.new()
 		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": entries,
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
-				"map": city.map}, _recipe_config(false), own_run)
+				"map": city.map()}, _recipe_config(false), own_run)
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		var capped := errors.any(func(e: String) -> bool:
@@ -593,7 +593,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 ## Up to `count` tiles the day's own placement accepts for `def`, one after another, each placed
 ## among those before it.
 func _placeable_tiles(city: City, def: EventDef, day: int, count: int) -> Array[Vector2i]:
-	var map := city.map
+	var map := city.map()
 	var corridor := Corridor.of(RouteTree.for_day(map, day))
 	var locations := DayLocations.lay_out(map, corridor)
 	var ground := EventScheduler.row_ground(map, corridor)

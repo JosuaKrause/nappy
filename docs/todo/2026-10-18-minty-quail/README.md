@@ -98,19 +98,22 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
    module: its dead code (`dead-code-sweep.md`), its interface and field reads, its receivers
-   typed with them or by a typing pass ahead of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
+   typed with them (`tools/check_field_reads.py` holds both, its list `tools/field_reads.txt` empty), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
    - **The design review's tracks are closed**, their records the ones named polite-tapir; the events'
      rows that follow placement are this entry's, below, and the baseline readings are listed under step 4.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
-     crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed
-     but those `field-reads.md` lists, each with what it waits for, under "What is left of the
-     typing".** The view (`src/ui/`), the building (`src/interior/`, `src/finale/`), the run's
-     parts, the routes, the resistance and the developer's rigs (`src/dev/`) are typed ahead of
-     their conversion, and what is left of them is their reads of other classes' fields, which the
-     records of their typing list by class: among them the scene recipes' read of a row's `id`, row
-     4b of `event-interface.md`.
+     crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed and
+     no read of another class's field is listed under it**: `tools/check_field_reads.py` fails a
+     new read, and `tools/field_reads.txt` is empty. What the check cannot see is stated in its
+     `--help`.
+   - **The city scene's lanes still to come**, from `.claude/briefs/designs/minty-quail-city-scene-pass.md`
+     (C6a, C6b, C7): C6a, the suites and rigs outside `tests/probes/` hold the run, the trace and the
+     atlas they hand the city (every read of `city.run`, `city.trace` and `city.atlas` becomes the
+     object the suite made, and `RunCity.with_own_run()` goes); C6b, the probes under
+     `tests/probes/` do the same; C7, `City.run`, `trace` and `atlas` become private (three
+     renames in `city.gd`), once C6b and the scene recipes' lane D2 have both merged.
    - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
