@@ -28,6 +28,7 @@ const SEED := 4242
 func run(t: TestRunner) -> void:
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_the_events_ask_the_maker_they_are_handed_for_every_siting(t)
+	_test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t, MapCache.of(SEED))
 
 func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
@@ -52,13 +53,13 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 			and (maker.made[1][2] as RowGround).tiles_for(def) == leaves_it,
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
-	_test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t, map)
 
 ## **The escape building's spec splits the two settings** the day's and the escape city's spec keep
 ## alike: it holds the home's streets (the ground its siting is asked on keeps the street) and sends no
 ## poster pursuer (a torn poster there sends nobody, where a day's sends one). A swap of the two
 ## settings in `EventsAhead.use_the_walk_of()` fails here and nowhere else.
-func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t: TestRunner, map: CityMap) -> void:
+func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
+		t: TestRunner, map: CityMap) -> void:
 	var def := EventCatalogue.by_id("burning_building")
 	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
 	var building := DaySpec.for_section(DaySpec.Section.BUILDING, RunConfig.FINALE_LENGTH_SECONDS)
@@ -88,7 +89,8 @@ func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t: T
 	t.check(pursuers[building] == 0, "and a torn poster under it sends no pursuer (%d warnings)"
 			% pursuers[building])
 	t.check(pursuers.values().max() == 1 and pursuers.values().min() == 0,
-			"where a day's spec does send one, so the pursuer's absence is the spec's (%s)" % [pursuers.values()])
+			"where a day's spec does send one, so the pursuer's absence is the spec's (%s)"
+			% [pursuers.values()])
 
 ## **Every siting `EventsAhead` needs is asked of the maker it is handed**, with the walk's ground:
 ## at the day's start when a plan is left for her walk, on a rigged route (`rig_her_route()`) and for

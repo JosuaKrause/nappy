@@ -48,11 +48,11 @@ manager's own suites off them.
   held by `test_walk_siting_spec.gd`, and which spec the scene's events took by the torn-poster half,
   since both settings come from the one `use_the_walk_of()`. `test_scene_recipe_boot.gd` drops its
   home-street half the same way.
-- The design's mutation that swaps `use_the_walk_of()`'s two settings fails nothing: the suites use a
-  day's spec (both settings true) and the escape city's (both false), so swapping them changes no
-  answer. The escape building's spec (`DaySpec.Section.BUILDING`) sets them apart (no poster pursuer, the
-  home's streets held), and `test_walk_siting_spec.gd` runs a case under it (the ground its siting is asked on keeps the
-  home's streets; a torn poster sends nobody) that fails with the two settings swapped (3 failures). Each setting set always true fails the three suites.
+- A day's spec sets both of `use_the_walk_of()`'s settings true and the escape city's both false, so
+  a swap of the two changes no answer under them. The escape building's spec
+  (`DaySpec.Section.BUILDING`) sets them apart (no poster pursuer, the home's streets held), and
+  `test_walk_siting_spec.gd` runs a case under it (the ground its siting is asked on keeps the home's
+  streets; a torn poster sends nobody), which fails with the two settings swapped (3 failures). Each setting set always true fails the three suites.
 - Mutations shown failing: the summons deleted from the tick (the covered-corner tap case and four
   more), `warnings.run` deleted (the cyclist's four), `use_sitings` not forwarding (the counting-ground
   and both home-street cases), the way on made before the bodies are recorded (the way-on case), the
