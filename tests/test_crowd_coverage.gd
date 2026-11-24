@@ -96,12 +96,13 @@ static func _walkers_by_corridor(crowd: Crowd) -> Dictionary:
 		counts[key] = int(counts.get(key, 0)) + 1
 	return counts
 
-## **A scene recipe's uniform walkers** (`start_day()`'s `uniform_walkers` and `walker_multiplier`) on
-## the map its recipe builds: an authored walker overlapping the crowd is refused without losing
-## population; the walkers keep varied seeded headings within their lanes, double only the walkers and
-## leave the ordinary car population, and do not concentrate on the main road, while still moving; and
-## an ordinary day round the same point restores its density and its street hierarchy, the main road
-## holding clearly more walkers against the busiest ordinary corridor than the uniform day's level.
+## **A scene recipe's uniform walkers** (`start_day()`'s `uniform_walkers` and
+## `walker_multiplier`) on the map its recipe builds: an authored walker overlapping the crowd
+## is refused without losing population; the walkers keep varied seeded headings within their
+## lanes, double only the walkers and leave the ordinary car population, and do not concentrate
+## on the main road, while still moving; and an ordinary day round the same point restores its
+## density and its street hierarchy, the main road holding clearly more walkers against the
+## busiest ordinary corridor than the uniform day's level.
 func _test_a_uniform_population_and_the_ordinary_day(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
 	var built := RecipeCityBuilder.build(recipe)
@@ -141,7 +142,8 @@ func _test_a_uniform_population_and_the_ordinary_day(t: TestRunner) -> void:
 	var mixed := 0
 	for directions: Dictionary in lane_directions.values():
 		mixed += int(directions.size() == 2)
-	t.check(mixed > lane_directions.size() / 2, "even density retains varied seeded headings within sidewalk lanes")
+	t.check(mixed > lane_directions.size() / 2,
+			"even density retains varied seeded headings within sidewalk lanes")
 	t.check(cars == Tuning.crowd_cars(1) and before.size() == Tuning.crowd_pedestrians(1) * 2,
 			"recipe increases only walkers while retaining ordinary car population")
 	var main_key := "v%d" % map.main_road_corridor()
@@ -159,7 +161,8 @@ func _test_a_uniform_population_and_the_ordinary_day(t: TestRunner) -> void:
 	for agent: CrowdAgent in before:
 		var distance := agent.position.distance_to(before[agent])
 		moving += int(distance > 1 and distance < Tuning.PEDESTRIAN_SPEED.y * 1.5)
-	t.check(moving > before.size() / 2, "authored density retains physically moving production walkers")
+	t.check(moving > before.size() / 2,
+			"authored density retains physically moving production walkers")
 	crowd.start_day(1, rng, Vector2(1952, 1936))
 	var ordinary_counts := _walkers_by_corridor(crowd)
 	var ordinary_main := int(ordinary_counts.get(main_key, 0))

@@ -1,9 +1,10 @@
 extends RefCounted
-## What `RecipeCityBuilder` builds from a recipe: the tree a recipe relocates across the road is the
-## planting's own (a pit moves, a road or an unrelated sidewalk is refused), and the title scene's
-## capture stays in its park. The builder builds a map and nothing else, so no city, crowd or event
-## is made here: what the city draws of the map is `tests/test_recipe_city_drawing.gd`'s and what the
-## crowd does on it is `tests/test_crowd_coverage.gd`'s.
+## What `RecipeCityBuilder` builds from a recipe: the tree a recipe relocates across the road is
+## the planting's own (a pit moves, a road or an unrelated sidewalk is refused), and the title
+## scene's capture stays in its park. The builder builds a map and nothing else, so no city,
+## crowd or event is made here: what the city draws of the map is
+## `tests/test_recipe_city_drawing.gd`'s and what the crowd does on it is
+## `tests/test_crowd_coverage.gd`'s.
 
 ## The diagnostics a builder's answer carries.
 func _errors(result: Dictionary) -> Array[String]:
@@ -24,7 +25,8 @@ func _test_a_tree_moves_across_the_road_and_nothing_else(t: TestRunner) -> void:
 	var pits := {}
 	for tree in StreetTrees.planted(built.map):
 		pits[tree.tile] = tree
-	t.check(not pits.has(source) and pits.has(destination), "planning moves the original tree pit across the road")
+	t.check(not pits.has(source) and pits.has(destination),
+			"planning moves the original tree pit across the road")
 	for target: Array in [[50, 73], [51, 71]]:
 		var invalid: Dictionary = recipe.duplicate(true)
 		invalid.city.tree_moves[0].to = target

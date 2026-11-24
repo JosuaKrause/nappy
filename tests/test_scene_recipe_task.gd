@@ -1,10 +1,10 @@
 extends RefCounted
-## A scene recipe's `setup.task`: what the schema accepts, its observations, and an authored mast's
-## id. What the runtime installs of an authored mast (the ground the day's masts may stand on) is
-## `tests/test_scene_recipe_install.gd`'s, and what the resistance director does with a pinned mark and
-## a pinned neighbor is `tests/test_resistance_recipe_task.gd`'s. The scenes' own walks to their
-## targets are `tools/scene-recipes.sh`'s headless assertions. Nothing here builds a city: the schema
-## is checked through `load_recipe()`.
+## A scene recipe's `setup.task`: what the schema accepts, its observations, and an authored
+## mast's id. What the runtime installs of an authored mast (the ground the day's masts may
+## stand on) is `tests/test_scene_recipe_install.gd`'s, and what the resistance director does
+## with a pinned mark and a pinned neighbor is `tests/test_resistance_recipe_task.gd`'s. The
+## scenes' own walks to their targets are `tools/scene-recipes.sh`'s headless assertions.
+## Nothing here builds a city: the schema is checked through `load_recipe()`.
 
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 ## The context city every task scene is built on, so a mark here is a mark there.

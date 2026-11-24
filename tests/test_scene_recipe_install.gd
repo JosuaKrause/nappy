@@ -1,17 +1,18 @@
 extends RefCounted
-## What `SceneRecipeRuntime.install()` does with the world it is handed: the structures it refuses, the
-## ones it stands as the day's own stand, what it asks of the stand-ins round it, and the one spec and
-## the one ground it hands the walk.
+## What `SceneRecipeRuntime.install()` does with the world it is handed: the structures it
+## refuses, the ones it stands as the day's own stand, what it asks of the stand-ins round it,
+## and the one spec and the one ground it hands the walk.
 ##
-## **One module, on a world of stand-ins** (`tests/scene_world.gd`): the dressing, the crowd, the
-## events, the poster walls, her and the baby record what they are asked and answer what a recipe's
-## map gives them. The map and today's streets are real (model data a recipe builds, and the day's
-## own planners), and so are the day's static placement functions the runtime goes through
-## (`SealPlanner.seal_street()`, `RegionPlanner.stand_door()`, `EventScheduler.recipe_placement()`,
-## `MastSites`, `PlanBuilder`): that the runtime goes through them is what "an authored X stands as
-## the day's" means, so they run real here. What the city scene does with the answers, the street trees
-## it hides and the buildings it dresses, is the city's suites' (`tests/test_recipe_city_drawing.gd`),
-## and what the event manager and the crowd do with the plans and actors they are handed is theirs.
+## **One module, on a world of stand-ins** (`tests/scene_world.gd`): the dressing, the crowd,
+## the events, the poster walls, her and the baby record what they are asked and answer what a
+## recipe's map gives them. The map and today's streets are real (model data a recipe builds,
+## and the day's own planners), and so are the day's static placement functions the runtime goes
+## through (`SealPlanner.seal_street()`, `RegionPlanner.stand_door()`, `MastSites`,
+## `PlanBuilder`): that the runtime goes through them is what "an authored X stands as the
+## day's" means, so they run real here. What the city scene does with the answers, the street
+## trees it hides and the buildings it dresses, is the city's suites'
+## (`tests/test_recipe_city_drawing.gd`), and what the event manager and the crowd do with the
+## plans and actors they are handed is theirs.
 
 const STROLLER_SCENE_AT := Vector2i(16, 16)
 ## The context city every task scene is built on.
@@ -98,8 +99,10 @@ func _test_a_fallen_tree_empties_its_pit_before_the_trees_are_refreshed(t: TestR
 		var setup: Dictionary = data.setup
 		setup.seals = [{"segment": [selected.x, selected.y, selected.z], "candidate": "fallen_tree_seal"}]
 		var errors := runtime.install(made.world, spec)
-		t.check(errors.is_empty(), "authored fallen tree installs through production siting: %s" % [errors])
-		t.check(_emptied_pits(made.map).size() == 1, "authored fallen tree empties exactly one source pit")
+		t.check(errors.is_empty(),
+				"authored fallen tree installs through production siting: %s" % [errors])
+		t.check(_emptied_pits(made.map).size() == 1,
+				"authored fallen tree empties exactly one source pit")
 		t.check(made.dressing.emptied_pits_at_each_refresh() == once,
 				"the city is asked to refresh its street trees once the pit is emptied (%s)"
 				% [made.dressing.emptied_pits_at_each_refresh()])
@@ -121,9 +124,10 @@ func _emptied_pits(map: CityMap) -> Array[StreetTrees.Planted]:
 			emptied.append(pit)
 	return emptied
 
-## **A bounded scene rejects a gate, barrier or seal outside its extent** instead of silently dropping the
-## bodies. The scene is a map of its own, built from the recipe with a bounded extent through
-## `RecipeCityBuilder`, so the full-scope map the other cases use keeps its tiles.
+## **A bounded scene rejects a gate, barrier or seal outside its extent** instead of silently
+## dropping the bodies. The scene is a map of its own, built from the recipe with a bounded
+## extent through `RecipeCityBuilder`, so the full-scope map the other cases use keeps its
+## tiles.
 func _test_a_bounded_scene_rejects_what_leaves_its_extent(t: TestRunner, data: Dictionary,
 		own_run: RunState) -> void:
 	var bounded_data: Dictionary = data.duplicate(true)
@@ -188,10 +192,10 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, built: Dictionary,
 		setup.erase("gates")
 	_free(stood)
 
-## **An authored soft seal stands as the day's own would**: on an off-walk street the day may seal
-## (`SealPlanner.may_seal()`), its two bodies, read off the plans the events were handed, stand where
-## the day's pass sites the same picture (`SealPlanner.seal_street()`), and both of the street's
-## sidewalks are shut to walkers there.
+## **An authored soft seal stands as the day's own would**: on an off-walk street the day may
+## seal (`SealPlanner.may_seal()`), its two bodies, read off the plans the events were handed,
+## stand where the day's pass sites the same picture (`SealPlanner.seal_street()`), and both of
+## the street's sidewalks are shut to walkers there.
 func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, built: Dictionary,
 		data: Dictionary, own_run: RunState) -> void:
 	var stood := _stand(built, data, own_run)
@@ -249,19 +253,21 @@ func _along_and_side(street: StreetNetwork.Segment, centre: Vector2, at: Vector2
 ## **A scene on day 11 or later hands the happenings the dressing's fronts**, which board the
 ## neighbor's window as the happenings' day start does for a played day
 ## (`ResistanceHappenings.start_day()`): day 13's column is the scene that starts the happenings.
-func _test_a_column_scene_hands_the_happenings_the_dressings_fronts(t: TestRunner, built: Dictionary,
-		data: Dictionary, own_run: RunState) -> void:
+func _test_a_column_scene_hands_the_happenings_the_dressings_fronts(t: TestRunner,
+		built: Dictionary, data: Dictionary, own_run: RunState) -> void:
 	var stood := _stand(built, data, own_run)
 	var made: SceneWorld = stood[0]
 	var runtime: SceneRecipeRuntime = stood[1]
 	var fronts := FakeCityFronts.new()
 	made.dressing.front_with(fronts)
-	t.check(fronts.boardings() == 0, "the neighbor's window stands unboarded before the column scene installs")
+	t.check(fronts.boardings() == 0,
+			"the neighbor's window stands unboarded before the column scene installs")
 	var setup: Dictionary = data.setup
 	setup.column = {"at": [1904, 2312], "direction": "north"}
 	var errors := runtime.install(made.world, _day_spec(own_run))
 	t.check(errors.is_empty(), "the column scene installs: %s" % [errors])
-	t.check(fronts.boardings() >= 1, "and the neighbor's window is boarded through the dressing's fronts")
+	t.check(fronts.boardings() >= 1,
+			"and the neighbor's window is boarded through the dressing's fronts")
 	setup.erase("column")
 	_free(stood)
 
@@ -287,11 +293,10 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, built: Dict
 			% [errors])
 	_free(stood)
 
-## **The scene's ground is handed to the walk**: `start_recipe()` is handed one, and it is made as the
-## day's ground is, under the walk's home-street rule: the home's street, which a ground with no
-## rule would offer a row, is not offered by it. (The install holds the home's streets for every
-## spec, so the rule alone is `tests/test_walk_siting_spec.gd`'s: the spec's own rule cannot be told
-## from the holds on a map the install has held.)
+## **The scene's ground is handed to the walk**: `start_recipe()` is handed one, made on the map
+## as the install held it, and it offers a row none of the home's street, which a ground with no
+## rule would. (The install holds the home's streets for every spec, so the ground cannot show
+## the walk spec's own home-street rule, which is `tests/test_walk_siting_spec.gd`'s.)
 func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary,
 		data: Dictionary, own_run: RunState) -> void:
 	var def := EventCatalogue.by_id("burning_building")
@@ -300,7 +305,8 @@ func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary
 	var runtime: SceneRecipeRuntime = stood[1]
 	var errors := runtime.install(made.world, _day_spec(own_run))
 	var ground := made.events.recipe_ground()
-	t.check(errors.is_empty() and ground != null, "the walk is handed the scene's ground: %s" % [errors])
+	t.check(errors.is_empty() and ground != null,
+			"the walk is handed the scene's ground: %s" % [errors])
 	if ground != null:
 		var home := ClosurePlanner.home_street(made.map).tile_rect()
 		var unruled := EventScheduler.row_ground(built.map, Corridor.of(made.streets.route_tree()), false)
@@ -312,7 +318,8 @@ func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary
 		var kept_off := true
 		for tile in ground.tiles_for(def):
 			kept_off = kept_off and not home.has_point(tile)
-		t.check(kept_off, "and the scene's ground, made under the walk's rule, offers none of it")
+		t.check(kept_off, "and the ground it is handed, made on the map as the install held it, "
+				+ "offers none of it")
 	_free(stood)
 
 ## **An oversized city-wide uniform population is refused, not truncated**: the crowd placed fewer
@@ -351,8 +358,9 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t: TestRunner) 
 	if not context_errors.is_empty():
 		return
 	var day := 11
-	t.check(_mast_installs(t, context, day, MAST_AT),
-			"a mast stands on an eligible sidewalk of a day with masts")
+	var standing := _mast_install_errors(t, context, day, MAST_AT)
+	t.check(standing.is_empty(),
+			"a mast stands on an eligible sidewalk of a day with masts: %s" % [standing])
 	# A site within the reach of a door a street could stand at (`MastSites`, the ground a mast is
 	# offered) is refused: found as a tile that only that reach rules out, so the install's refusal
 	# is the door's.
@@ -364,9 +372,10 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t: TestRunner) 
 	t.check(not _mast_installs(t, context, Tuning.MAST_FIRST_DAY - 1, MAST_AT),
 			"nor on a day before the masts")
 
-## A sidewalk or square point of `map` that a mast site is refused only for lying within the reach of
-## a point a street door could stand at: ground that is open, unheld, off the home block, and that
-## `MastSites.is_eligible()` accepts when no door is handed in, or `Vector2.INF` when there is none.
+## A sidewalk or square point of `map` that a mast site is refused only for lying within the
+## reach of a point a street door could stand at: ground that is open, unheld, off the home
+## block, and that `MastSites.is_eligible()` accepts when no door is handed in, or `Vector2.INF`
+## when there is none.
 func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
 	var reach := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
 	var nowhere := PackedVector2Array([Vector2(-1.0e7, -1.0e7)])
@@ -385,10 +394,17 @@ func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
 					return at
 	return Vector2.INF
 
-## Whether a recipe's loudspeaker at `at` installs on `day` over a copy of `context`'s map, through the
-## runtime's own `install()` with her at the alley mouth: false when the install refuses the mast.
-## `shut` is "closed" to shut the street the site is on first, "held" to hold it, "" for neither.
+## Whether the install refuses a recipe's loudspeaker at `at` on `day`, as its own error names
+## the mast (`_mast_install_errors()`): false when the install fails for another reason or not
+## at all.
 func _mast_installs(t: TestRunner, context: Dictionary, day: int, at: Vector2, shut := "") -> bool:
+	return not "\n".join(_mast_install_errors(t, context, day, at, shut)).contains("event mast fails")
+
+## What the runtime's own `install()` says of a recipe's loudspeaker at `at` on `day` over a copy of
+## `context`'s map, with her at the alley mouth. `shut` is "closed" to shut the street the site is
+## on first, "held" to hold it, "" for neither.
+func _mast_install_errors(t: TestRunner, context: Dictionary, day: int, at: Vector2,
+		shut := "") -> Array[String]:
 	var own_run := _run_on(day)
 	var her := (context.map as CityMap).tile_to_world(MOUTH)
 	var data := {"setup": {"day": day, "player": {"at": [her.x, her.y]},
@@ -407,4 +423,4 @@ func _mast_installs(t: TestRunner, context: Dictionary, day: int, at: Vector2, s
 		made.map.hold_segment(street.key(), HeldStreets.Why.SEAL)
 	var errors := runtime.install(made.world, _day_spec(own_run))
 	_free(stood)
-	return not "\n".join(errors).contains("event mast fails")
+	return errors

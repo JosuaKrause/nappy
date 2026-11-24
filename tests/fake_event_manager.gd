@@ -10,13 +10,19 @@ extends EventManager
 ## ending one (`retire()`), and rigging her route's bag (`rig_her_route()`), which a day with no
 ## walk planned has nothing to rig.
 ##
-## **An authored scene starts its walk on it** (`SceneRecipeRuntime.install()`, `start_recipe()`): it
-## records the plans, the spec, the day, the focus, the calm areas and the ground it is handed, and
-## answers those plans (`plans()`), each standing in the world as the real manager's streaming puts a
-## plan in her view (`EventPlan.is_in_the_world()`, `event_of()`), the calm areas as the map stands
-## (a `FakeCalmAreas`) and the owed count a rigged route is handed back (`start_recipe_route()`),
-## which the real manager answers from its bag (read off a real day once). The real manager's own
-## logic is checked in its own suites (`tests/test_event_manager.gd` and the rest). A helper, not a suite: the runner loads only
+## **An authored scene starts its walk on it** (`SceneRecipeRuntime.install()`,
+## `start_recipe()`): it records the plans, the spec, the day, the focus, the calm areas and the
+## ground it is handed, and answers those plans (`plans()`), each standing in the world
+## (`EventPlan.is_in_the_world()`, `event_of()`), the calm areas (`calm_as_the_map_stands()`)
+## and the owed count a rigged route is handed back (`start_recipe_route()`), which the real
+## manager answers from its bag (read off a real day once). **Where it answers differently from
+## the real manager:** every plan is put in the world wherever it stands, where the real
+## streaming puts in only what lies within its radius, so the runtime's refusal of a plan that
+## is not live at its initial position never fires here; the calm areas are an empty
+## `FakeCalmAreas`, so no authored row is refused calm ground; and `spawn_warned()` is a plain
+## `spawn_extra()`, with neither the warning nor the warned age the real spawner gives. No case
+## reaches any of the three. The real manager's own logic is checked in its own suites
+## (`tests/test_event_manager.gd` and the rest). A helper, not a suite: the runner loads only
 ## `test_*.gd`.
 ##
 ## **Never put in a world.** The parts `EventManager._init()` builds stay idle, so a call this does
@@ -151,7 +157,8 @@ func recipe_calm() -> CalmAreas:
 func recipe_ground() -> RowGround:
 	return _fake_recipe_ground
 
-## What each `start_recipe_route()` was handed, in order: `marbles`, `pre_bag`, `owed`, `first_after`.
+## What each `start_recipe_route()` was handed, in order: `marbles`, `pre_bag`, `owed`,
+## `first_after`.
 func recipe_routes() -> Array[Dictionary]:
 	return _fake_routes
 

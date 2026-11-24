@@ -1,9 +1,10 @@
 class_name FakeCityDressing
 extends CityDressing
 ## A stand-in for the city scene's dressing, handed to what is handed a `CityDressing` (the day
-## director, `DayDirector.start()`, and an authored scene, `SceneRecipeRuntime.install()`) in place
-## of the city, so the check builds no city. It records each ask in order, as a line of the list it
-## is handed (`asked`), and dresses nothing. A helper, not a suite: the runner loads only `test_*.gd`.
+## director, `DayDirector.start()`, and an authored scene, `SceneRecipeRuntime.install()`) in
+## place of the city, so the check builds no city. It records each ask in order, as a line of
+## the list it is handed (`asked`), and dresses nothing. A helper, not a suite: the runner loads
+## only `test_*.gd`.
 ##
 ## **Read off a real city once** (the two steps of writing-tests): the asks are those the director
 ## and the runtime make of the city scene, in the order they make them; `refresh_street_trees()`
