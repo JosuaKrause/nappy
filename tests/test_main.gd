@@ -319,9 +319,8 @@ func _boot_catching_the_rig(t: TestRunner, seat: Seat, words: Array, entered: Ar
 ## her own tick would apply) and the boot is invincible. What can still hold the watch is a red
 ## light in view, or an event's detention, which would not run out with her physics off; on this
 ## seed's doorstep none reaches her. A red light holds it until the light lets her go, by design,
-## so she is moved past the
-## watch's radius on every tick of one signal cycle (which arms it the tick the light lets her go)
-## and then held still; the wait is bounded by one more cycle plus the hold and ends the moment the
+## so she is moved past the watch's radius on every tick of one signal cycle (which arms it the
+## tick the light lets her go) and then held still; the wait is bounded by one more cycle plus the hold and ends the moment the
 ## line is written, run at `_SCALE` times real time. Its picture's child is switched off the moment
 ## it arrives, as `tests/test_still_watch.gd` does, so a headless run does not quit.
 func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
