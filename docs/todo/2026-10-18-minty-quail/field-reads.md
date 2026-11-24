@@ -97,11 +97,13 @@ Left, each its own design question:
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
-- **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
-  read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
-  `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. *Read as* (the orchestrator's reading): they are converted with whatever
-  pass gives the blocked tiles an owner of their own. The fields the events read of
+- **The world map's and its movers' reads.** The world map (`WorldMap`, `src/world/world_map.gd`)
+  keeps its size, its list of moves, its separation pass and its day-record version private, and is
+  asked through `size_in_tiles()`, `list_move()` and `unlist_move()`, `course_keepers()`,
+  `day_record_version()`, `obstructed_tiles()`, `has_solid_bodies()` and `obstruction_version()`;
+  `Mover` keeps `blocked_by` and `radius` private, asked through `layers_blocked()` and
+  `body_reach()`; the excitement source keeps `landed_ever` private, asked through
+  `landed_ever()`. No later pass owns them. The fields the events read of
   `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
   asked through their methods (row 4b of `event-interface.md`).
   `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask

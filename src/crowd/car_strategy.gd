@@ -416,7 +416,7 @@ func _distance_to_a_figure() -> float:
 ##
 ## Overrides LaneStrategy.road_before_a_figure.
 func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
-	var separation := _map.separation
+	var separation := _map.course_keepers()
 	if not separation.has_keepers_for_cars() or _lane.is_in_the_arc():
 		return INF
 	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
@@ -431,7 +431,7 @@ func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 ## what it does about one is the same turn round. Read into `_distance_to_the_blockage()`, so
 ## the brake that leaves it room to turn and every arc the planner tries stop short of it.
 func road_before_a_parked_figure() -> float:
-	var separation := _map.separation
+	var separation := _map.course_keepers()
 	if not separation.has_keepers_for_cars() or _lane.is_in_the_arc():
 		return INF
 	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
@@ -471,7 +471,7 @@ const FIGURE_WIDEST := Tuning.CAR_STRIKE_HALF_WIDTH
 ##
 ## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
-	var separation := _map.separation
+	var separation := _map.course_keepers()
 	if not separation.has_keepers_for_cars():
 		return
 	var move := _move

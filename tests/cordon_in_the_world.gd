@@ -33,7 +33,7 @@ static func officers(world: WorldContext) -> Array[CordonOfficer]:
 ## What shuts ground to someone on foot today: the closures and every solid body, the tape included.
 static func shut_tiles(map: CityMap) -> Dictionary:
 	var shut := map.closed_tiles.duplicate()
-	shut.merge(map.obstructed_tiles)
+	shut.merge(map.obstructed_tiles())
 	return shut
 
 ## Whether nobody on foot can get from `inside`, a point in the park, to the home: the park is

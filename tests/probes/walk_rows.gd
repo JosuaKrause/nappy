@@ -403,8 +403,8 @@ func _walk_every_day(reach: float) -> void:
 			plans.append_array(region_plan.wall_plans())
 			var grid := ReachabilityGrid.build(map)
 			var routes: Array[Vector2i] = []
-			for y in map.size.y:
-				for x in map.size.x:
+			for y in map.size_in_tiles().y:
+				for x in map.size_in_tiles().x:
 					if corridor.carries_a_route(Vector2i(x, y)):
 						routes.append(Vector2i(x, y))
 			var reached_bare := grid.flood([map.home_tile()], map.closed_tiles)

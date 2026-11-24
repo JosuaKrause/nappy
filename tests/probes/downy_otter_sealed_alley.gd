@@ -96,7 +96,7 @@ func _by_tiles(city: City) -> PackedInt32Array:
 		blocked[tile] = true
 	for tile: Vector2i in city.map.soft_sealed_tiles():
 		blocked[tile] = true
-	for tile: Vector2i in city.map.obstructed_tiles:
+	for tile: Vector2i in city.map.obstructed_tiles():
 		blocked[tile] = true
 	return city.map.walk_field(city.map.world_to_tile(city.map.doorstep_world_position()), blocked)
 

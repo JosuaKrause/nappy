@@ -1394,12 +1394,12 @@ func _maybe_gone(officer: Officer) -> void:
 func _take_on(officer: Officer) -> void:
 	_officers.append(officer)
 	officer.move.use_body_radius(_officer_reach)
-	_map.moves.join(officer.move, officer.at)
+	_map.list_move(officer.move, officer.at)
 	_make_figure(officer)
 
 ## Lets an officer go: his move off the map's list and his figure out of the world.
 func _let_go(officer: Officer) -> void:
-	_map.moves.leave(officer.move)
+	_map.unlist_move(officer.move)
 	_free_figure(officer)
 
 func _make_figure(officer: Officer) -> void:

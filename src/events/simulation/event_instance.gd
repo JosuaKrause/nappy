@@ -315,8 +315,8 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_mover = mover_for(definition)
 	_composed = EventBehaviours.compose(definition, _where, _figure, _map, _navigator, _mover,
 			_surroundings.trace(), _surroundings.lights(), _move)
-	_move.use_body_radius(_mover.radius)
-	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
+	_move.use_body_radius(_mover.body_reach())
+	_sight = Mover.of(_mover.layers_blocked() & ~Mover.STREETS)
 	# A pursuer whose row walks round buildings to her (the roadblock's posted guard) holds his way
 	# from the start; it sweeps nothing until he is after her (`EventPursuit`).
 	if definition.walks_round_buildings():
@@ -1820,7 +1820,7 @@ func _draw() -> void:
 ## which took them with it.
 func _enter_tree() -> void:
 	if _map:
-		_map.moves.join(_move, position)
+		_map.list_move(_move, position)
 	if _look:
 		_look.enter_tree()
 
@@ -1830,12 +1830,12 @@ func _enter_tree() -> void:
 ## standing where the event last was (a mover leaves the list on going, minty-quail-34).
 func take_out() -> void:
 	if _map:
-		_map.moves.leave(_move)
+		_map.unlist_move(_move)
 	queue_free()
 
 func _exit_tree() -> void:
 	if _map:
-		_map.moves.leave(_move)
+		_map.unlist_move(_move)
 	_rim.band.forget()
 	if _look:
 		_look.release_nodes()

@@ -81,7 +81,7 @@ func sweep_under_way() -> WalkField:
 func keep_fresh(her_at: Vector2, from: Vector2) -> void:
 	if her_at == Vector2.INF or not _map.has_ground():
 		return
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
 	if _next == null:
 		var her := _map.world_to_tile(her_at)
 		var stale := REFRESH_TILES

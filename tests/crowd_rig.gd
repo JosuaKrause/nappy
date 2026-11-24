@@ -436,7 +436,7 @@ func _quietest_pavement() -> Vector2:
 		if CrowdLanes.busyness_for(_city.map, true, index, true) < CrowdLanes.busyness_for(_city.map, true, quietest, true):
 			quietest = index
 	var x := quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
-	return _city.map.tile_to_world(Vector2i(x, _city.map.size.y / 2))
+	return _city.map.tile_to_world(Vector2i(x, _city.map.size_in_tiles().y / 2))
 
 ## The noise floor of a street, measured with the crowd **actually on it**.
 ##
@@ -479,7 +479,7 @@ func _crossing_the_main_road_costs() -> float:
 	var corridor := _city.map.main_road
 	var from_x := CrowdLanes.lane_centre(corridor, 0)
 	var to_x := CrowdLanes.lane_centre(corridor, CrowdLanes.SIDEWALK_OFFSETS[-1])
-	var start := Vector2(from_x, float(_city.map.size.y / 2) * Tuning.TILE_SIZE)
+	var start := Vector2(from_x, float(_city.map.size_in_tiles().y / 2) * Tuning.TILE_SIZE)
 	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(1), start)
 	var worst := 0.0
@@ -1383,7 +1383,7 @@ func _test_the_crowd_does_not_bunch_against_the_wall(t: TestRunner) -> void:
 
 func _pavement_beside(corridor: int) -> Vector2:
 	var x := corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
-	return _city.map.tile_to_world(Vector2i(x, _city.map.size.y / 2))
+	return _city.map.tile_to_world(Vector2i(x, _city.map.size_in_tiles().y / 2))
 
 ## Walkers on screen per *screen of city*, standing at a point. Normalised because half a screen
 ## against the boundary wall is half a screen of wall, and counting what is on it without saying
@@ -1694,7 +1694,7 @@ func _check_a_gate_across_a_bucket_edge_holds_the_car(t: TestRunner, vertical: b
 func _a_straight_run_on(vertical: bool, length: int, wanted: Callable) -> Vector2i:
 	var map := _city.map
 	var blocks := Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
-	var extent := map.size.y if vertical else map.size.x
+	var extent := map.size_in_tiles().y if vertical else map.size_in_tiles().x
 	for corridor in range(1, CrowdLanes.corridor_count(blocks) - 1):
 		if (vertical and corridor == map.main_road) or not wanted.call(corridor):
 			continue
@@ -2306,7 +2306,7 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 ## A sidewalk tile beside the spine at the map's middle height, where a body stands off the
 ## carriageway the cars drive on.
 func _sidewalk_beside_the_spine() -> Vector2:
-	var row := _city.map.size.y / 2
+	var row := _city.map.size_in_tiles().y / 2
 	for x in range(_city.map.main_road * CityMap.period(),
 			_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH + 1):
 		var tile := Vector2i(x, row)

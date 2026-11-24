@@ -125,8 +125,8 @@ static func _roadblock_step() -> ResistanceSteps.Step:
 func _route_tiles(city: City) -> Array[Vector2i]:
 	var corridor := Corridor.of(city.streets().route_tree())
 	var found: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if corridor.carries_a_route(tile) and city.map.passable(tile, Mover.lattice()):
 				found.append(tile)

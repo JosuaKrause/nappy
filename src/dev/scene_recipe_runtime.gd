@@ -773,7 +773,7 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var going := -1.0 if column.direction == "north" else 1.0
 	var lane := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 	var top := Tuning.TILE_SIZE * 0.5
-	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
+	var bottom := map.size_in_tiles().y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	var back := at.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
 	if not is_equal_approx(at.x, lane) or at.y < top or at.y > bottom or back < top or back > bottom:
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
@@ -1111,7 +1111,7 @@ func begin() -> void:
 		_zoom = zoom
 		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
-		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size)).grow(
+		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size_in_tiles())).grow(
 				float(camera.get("landscape_margin", 0)))
 		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))

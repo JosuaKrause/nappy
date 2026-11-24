@@ -55,7 +55,7 @@ func _stand_a_body(map: CityMap, corridor: int, lanes: Array, from: int, to: int
 ## (`Crowd.add_recipe_actor()`) takes, or `null` when there is none.
 func any_agent(crowd: Crowd, map: CityMap, kind: CrowdAgent.Kind, seed_value := 1) -> CrowdAgent:
 	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
-		for tile in range(8, map.size.y - 8, 3):
+		for tile in range(8, map.size_in_tiles().y - 8, 3):
 			var lane := CrowdLanes.road_lane(true, 1.0) if kind == CrowdAgent.Kind.CAR else 0
 			var centre := CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
 					else CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)

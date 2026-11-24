@@ -3100,8 +3100,8 @@ func _move_the_task_guard_to_her_target() -> void:
 	# A search that found him nowhere better is not repeated until something it read has changed.
 	var facing := _player.facing_direction().snapped(Vector2.ONE * 0.5) if _player else Vector2.ZERO
 	var asked := [_arrow_key, _map.world_to_tile(her), facing,
-			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version,
-			_map.day_record_version, _approaches.has(_approach_key(target))]
+			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version(),
+			_map.day_record_version(), _approaches.has(_approach_key(target))]
 	if asked == _task_guard_found_nothing_for \
 			and _task_guard_found_nothing_age < TASK_GUARD_RETRY_SECONDS:
 		return
@@ -3703,7 +3703,7 @@ static func _mast_reach() -> float:
 ## copied whole by every sweep started under the same state. A sweep already finished keeps what
 ## blocked her when it began; a change starts a new one (`_retarget_the_arrow()`).
 func _ground_for_the_arrow() -> PackedInt32Array:
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
 	if versions == _arrow_ground_versions and not _arrow_ground.is_empty():
 		return _arrow_ground
 	_arrow_ground_versions = versions
@@ -3728,7 +3728,7 @@ func _retarget_the_arrow() -> void:
 	if not ResistanceSteps.answers_at_several_places(step):
 		return
 	var found := _arrow_candidates(step)
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
 	var newest := _arrow_nearest_next if _arrow_nearest_next else _arrow_nearest
 	if found.is_empty():
 		_arrow_nearest_next = null
@@ -3799,7 +3799,7 @@ func _sweep_the_arrow_fields(budget: int) -> void:
 	if not _arrow_nearest_next and not _arrow_own_next:
 		return
 	# Laying out what blocks her afresh is a tick's work of its own, like a field's own layout.
-	if Vector2i(_map.day_record_version, _map.obstruction_version) != _arrow_ground_versions \
+	if Vector2i(_map.day_record_version(), _map.obstruction_version()) != _arrow_ground_versions \
 			or _arrow_ground.is_empty():
 		_ground_for_the_arrow()
 		return

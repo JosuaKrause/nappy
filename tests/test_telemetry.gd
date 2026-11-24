@@ -394,7 +394,7 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t: TestRunner) -> vo
 func _test_the_map_picture_covers_the_city_and_marks_it(t: TestRunner) -> void:
 	var map := _picture_map()
 	var image := TelemetryMap.render(map)
-	t.check(image.get_size() == map.size * TelemetryMap.SCALE,
+	t.check(image.get_size() == map.size_in_tiles() * TelemetryMap.SCALE,
 			"the picture is the whole map at SCALE pixels a tile")
 
 	var seen := _colours_in(image)
@@ -483,8 +483,8 @@ func _test_the_map_picture_draws_the_corridor(t: TestRunner) -> void:
 
 	var elsewhere := 0
 	var checked := 0
-	for cy in map.size.y / ReachabilityGrid.CELL:
-		for cx in map.size.x / ReachabilityGrid.CELL:
+	for cy in map.size_in_tiles().y / ReachabilityGrid.CELL:
+		for cx in map.size_in_tiles().x / ReachabilityGrid.CELL:
 			var cell := Vector2i(cx, cy)
 			if on_the_tree.has(cell):
 				continue
@@ -629,7 +629,7 @@ func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t: TestRunn
 	# The middle of the map rather than the home or a calm area: both are drawn *after* the trail
 	# on purpose (they are the picture's fixed points) and would silently paint over a trail point
 	# placed on top of them, which is a fact about draw order and not about the trail.
-	var at := map.tile_to_world(map.size / 2)
+	var at := map.tile_to_world(map.size_in_tiles() / 2)
 
 	var plain := TelemetryMap.render(map)
 	var walked: Array[Vector3] = [Vector3(at.x, at.y, 0.0)]
@@ -1119,7 +1119,7 @@ func _picture_map() -> CityMap:
 	var period := CityMap.period()
 	map.record_built_over(Vector3i(1, 4, 6), Rect2i(Vector2i(4 * period, 6 * period + 8),
 			Vector2i(Tuning.STREET_WIDTH, 2)))
-	map.fill_rect(Rect2i(Vector2i(7 * period, 0), Vector2i(Tuning.STREET_WIDTH, map.size.y)),
+	map.fill_rect(Rect2i(Vector2i(7 * period, 0), Vector2i(Tuning.STREET_WIDTH, map.size_in_tiles().y)),
 			GameEnums.TileType.SIDEWALK)
 	map.add_precinct(Vector4i(1, 7, 2, 3))
 	return map

@@ -248,8 +248,8 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
 					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
@@ -345,7 +345,7 @@ class Meeting extends RefCounted:
 		# rules: walkers give way to one under way or standing round, cars to one that has moved.
 		var for_walkers: Array[MoveProposal] = []
 		var for_cars: Array[MoveProposal] = []
-		for move in _city.map.moves.keeping_their_course():
+		for move in _city.map.listed_moves().keeping_their_course():
 			if move.body_radius() <= 0.0:
 				continue
 			var seen: Array = _seen.get(move, [move.steps_to(), SeparationPass.NEVER_MOVED])

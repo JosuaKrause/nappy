@@ -64,7 +64,7 @@ func _city_with_her(t: TestRunner, day: int, seed_value := SEED, on_map: CityMap
 
 ## The centre of a sidewalk tile on an east-west street, well inside the map and off the home block.
 func _a_sidewalk(map: CityMap) -> Vector2:
-	var middle := map.size / 2
+	var middle := map.size_in_tiles() / 2
 	for radius in range(0, 40):
 		for dx in range(-radius, radius + 1):
 			var tile := middle + Vector2i(dx, radius)
@@ -533,8 +533,8 @@ func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
 ## A lane on an east-west street off the main road, with a sidewalk tile beside it: `[lane point,
 ## sidewalk point]` on `map`, or empty.
 func _a_lane_beside_a_sidewalk(map: CityMap) -> Array:
-	for y in range(2, map.size.y - 2):
-		for x in range(12, map.size.x - 12):
+	for y in range(2, map.size_in_tiles().y - 2):
+		for x in range(12, map.size_in_tiles().x - 12):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.ROAD \
 					or map.tile_at(tile + Vector2i.UP) != GameEnums.TileType.SIDEWALK:
@@ -1006,8 +1006,8 @@ func _test_the_car_does_not_notice_her_through_a_building(t: TestRunner) -> void
 ## or empty.
 func _a_hidden_spot(map: CityMap, reach: float) -> Array:
 	var tiles := ceili(reach / Tuning.TILE_SIZE)
-	for y in range(tiles, map.size.y - tiles):
-		for x in range(tiles, map.size.x - tiles):
+	for y in range(tiles, map.size_in_tiles().y - tiles):
+		for x in range(tiles, map.size_in_tiles().x - tiles):
 			var at := Vector2i(x, y)
 			if map.tile_at(at) != GameEnums.TileType.ROAD \
 					or map.tile_at(at + Vector2i.UP) != GameEnums.TileType.SIDEWALK:

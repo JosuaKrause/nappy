@@ -17,13 +17,6 @@ filed as an entry of its own; the nits are fixed in a docs-only pull request.
 
 **Reads no item owns**, from `tools/field_reads.txt` (the lines are the list's own):
 
-- `Mover.blocked_by` and `Mover.radius`, read in `src/events/simulation/event_instance.gd`
-  (`Mover.of(_mover.blocked_by & ~Mover.STREETS)`); `field-reads.md` names `Mover` nowhere.
-- `ExcitementSource.landed_ever`, read in `src/events/simulation/encounter_watch.gd`; `field-reads.md` names the
-  excitement source only for its typing.
-- `WorldMap.size` and `WorldMap.moves` read in `src/events/` (`plan_builder.gd`, `walk_ground.gd`,
-  `dawn_roadblock_count.gd`, `ruled_roadblock_ground.gd`, `event_instance.gd`); `field-reads.md`'s "world map's
-  residue" leaves them to "whatever pass gives the blocked tiles an owner of their own", a pass no item names.
 - The debug view's suite pass (`tests-one-module.md`: "to move with the debug view's own suite pass"), which no
   item holds a place for.
 

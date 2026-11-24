@@ -392,8 +392,8 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
 ## `[lane centre, outward toward the sidewalk, along the street]` of the first east-west carriageway
 ## lane on `map` with a sidewalk tile on its north side, or empty.
 func _a_kerb(map: CityMap) -> Array:
-	for y in range(1, map.size.y - 1):
-		for x in range(8, map.size.x - 8):
+	for y in range(1, map.size_in_tiles().y - 1):
+		for x in range(8, map.size_in_tiles().x - 8):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.ROAD:
 				continue
@@ -499,8 +499,8 @@ func _test_an_investigating_car_never_leaves_the_carriageway(t: TestRunner) -> v
 	car.free()
 
 func _a_wall(map: CityMap) -> Array:
-	for y in range(1, map.size.y - 1):
-		for x in range(8, map.size.x - 8):
+	for y in range(1, map.size_in_tiles().y - 1):
+		for x in range(8, map.size_in_tiles().x - 8):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.SIDEWALK:
 				continue
@@ -736,10 +736,10 @@ func _test_it_gives_way_at_a_zebra_she_waits_at(t: TestRunner) -> void:
 ## The centre of the first `CROSSING` tile on an east-west carriageway lane, at a junction off the
 ## main road, on `map`, or `INF`.
 func _a_zebra(map: CityMap) -> Vector2:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) < 0 or not CityMap.is_road_offset(CityMap.corridor_offset(y)):
 			continue
-		for x in range(12, map.size.x - 16):
+		for x in range(12, map.size_in_tiles().x - 16):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.CROSSING:
 				continue
@@ -755,7 +755,7 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	var map: CityMap = StreetMap.full()
 	var signals := TrafficSignals.new(map)
 	var lane_y := -1
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
 				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
@@ -801,7 +801,7 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 	var map: CityMap = StreetMap.full()
 	var lane_y := -1
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
 				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:

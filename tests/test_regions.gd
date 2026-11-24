@@ -89,7 +89,7 @@ func _main_road_tiles(map: CityMap) -> Dictionary[Vector2i, bool]:
 	if map.main_road < 0:
 		return blocked
 	var rect := Rect2i(Vector2i(map.main_road * CityMap.period(), 0),
-			Vector2i(Tuning.STREET_WIDTH, map.size.y))
+			Vector2i(Tuning.STREET_WIDTH, map.size_in_tiles().y))
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
 	return blocked

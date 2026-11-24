@@ -49,8 +49,8 @@ func _test_the_curve(t: TestRunner) -> void:
 ## happened to generate.
 static func _tiles_of(map: CityMap, type: GameEnums.TileType) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == type:
 				found.append(tile)

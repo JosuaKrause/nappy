@@ -44,7 +44,7 @@ func _a_figure(map: WorldMap, at: Vector2, stood_round: bool) -> MoveProposal:
 	var move := MoveProposal.new()
 	move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	move.be_walked_round(stood_round)
-	map.moves.join(move, at)
+	map.list_move(move, at)
 	return move
 
 ## Walks one walker down its lane at a figure standing on that lane five tiles ahead, for six
@@ -72,7 +72,7 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		crowd.step(STEP)
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
-	map.moves.leave(figure)
+	map.unlist_move(figure)
 	return {"closest": closest,
 			"touching": walker.lane().shape().reach() + figure.body_radius(),
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
@@ -84,7 +84,7 @@ func _a_vehicle(map: CityMap, at: Vector2, parked: bool) -> MoveProposal:
 	move.use_body_radius(EventCatalogue.by_id("police_patrol").ground_shape().reach())
 	move.be_walked_round(true)
 	move.be_parked(parked)
-	map.moves.join(move, at)
+	map.list_move(move, at)
 	return move
 
 ## A vertical corridor of ordinary street holding a whole block's stretch, the junction box after it
@@ -126,7 +126,7 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 			figure.place(at)
 		if frame == int(round(stand / STEP)):
 			speed_when_it_left = car.speed()
-			map.moves.leave(figure)
+			map.unlist_move(figure)
 		crowd.step(STEP)
 		if figure.is_on_the_list() and _overlaps(car, figure):
 			overlapping += 1
@@ -134,7 +134,7 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 		if _rig.still_driving_down(car, corridor):
 			deepest = maxf(deepest, car.position.y)
 	if figure.is_on_the_list():
-		map.moves.leave(figure)
+		map.unlist_move(figure)
 	var turned: bool = not _rig.still_driving_down(car, corridor)
 	return {"overlapping": overlapping, "in_the_box": in_the_box, "speed": speed_when_it_left,
 			"turned": turned, "deepest": deepest, "at": at, "car": car}
@@ -163,7 +163,7 @@ func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var map := WorldMap.open_ground()
 	var placed := _a_figure(map, at, false)
-	var pass_over := SeparationPass.new(map.moves)
+	var pass_over := SeparationPass.new(map.listed_moves())
 	pass_over.gather()
 	placed.place(at + Vector2(400.0, 0.0))
 	pass_over.gather()

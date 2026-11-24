@@ -43,15 +43,15 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
 
-	var tiles := map.obstructed_tiles.size()
-	var kept := map.obstructed_tiles.duplicate()
+	var tiles := map.obstructed_tiles().size()
+	var kept := map.obstructed_tiles().duplicate()
 	var with_bodies := _walk(city, map, city_seed, day)
 	# The same day with nothing recorded, for the traffic's own baseline. The bodies are still drawn
 	# and still solid to the player; only the crowd's copy of where they are goes away.
-	map.obstructed_tiles.clear()
+	map.obstructed_tiles().clear()
 	var without := _walk(city, map, city_seed, day)
-	map.obstructed_tiles.clear()
-	map.obstructed_tiles.merge(kept)
+	map.obstructed_tiles().clear()
+	map.obstructed_tiles().merge(kept)
 
 	print("seed %d day %d: %d tiles under a body | inside: %d walker-frames, %d car-frames | "
 			% [city_seed, day, tiles, with_bodies["inside_walkers"], with_bodies["inside_cars"]]

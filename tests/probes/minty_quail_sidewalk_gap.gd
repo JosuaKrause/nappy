@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 			if map.main_road < 0:
 				break
 			var lane_x := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
-			for y in range(0, map.size.y, 3):
+			for y in range(0, map.size_in_tiles().y, 3):
 				var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
 				if map.network.segment_containing(tile) == null or not map.is_driveable_at(true, tile):
 					continue

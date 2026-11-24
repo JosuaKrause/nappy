@@ -609,7 +609,7 @@ func _advance_the_world(delta: float) -> void:
 	# stepped already this tick, since `City` adds the event manager before the crowd. The box rule
 	# below and every agent's own step read the one gathering.
 	if _map:
-		_map.separation.gather()
+		_map.course_keepers().gather()
 	if _signals:
 		_signals.advance(delta)
 	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside

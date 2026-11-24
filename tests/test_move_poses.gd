@@ -201,7 +201,7 @@ func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, co
 		if officer != null and not officer.is_queued_for_deletion():
 			counts["officers"] += 1
 			poses.append(["cordon officer", officer.position])
-	_check_the_moves(t, seed_value, tick, poses, city.map.moves.all(), counts)
+	_check_the_moves(t, seed_value, tick, poses, city.map.listed_moves().all(), counts)
 
 ## Every mover's pose has a move on the list standing there and closed, and every move on the list
 ## is some mover's: a move left behind, or one still open, would show a body where nobody is.

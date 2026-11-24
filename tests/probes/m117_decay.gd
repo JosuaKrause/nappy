@@ -74,14 +74,14 @@ func _ground_rates(t: TestRunner) -> void:
 func _legs(city: City) -> Array[Dictionary]:
 	var map := city.map
 	var legs: Array[Dictionary] = []
-	var height := float(map.size.y) * Tuning.TILE_SIZE
+	var height := float(map.size_in_tiles().y) * Tuning.TILE_SIZE
 
 	var quietest := 0
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		if CrowdLanes.busyness_for(map, true, index, true) < CrowdLanes.busyness_for(map, true, quietest, true):
 			quietest = index
 	var quiet := map.tile_to_world(Vector2i(
-			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size.y / 2))
+			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size_in_tiles().y / 2))
 	legs.append({"name": "quiet pavement", "from": Vector2(quiet.x, height * 0.3),
 			"to": Vector2(quiet.x, height * 0.7)})
 
@@ -202,10 +202,10 @@ func _alley_leg(map: CityMap) -> Array:
 	var best_from := Vector2i(-1, -1)
 	var best_to := Vector2i(-1, -1)
 	var best_length := 0
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var run_start := -1
-		for x in map.size.x + 1:
-			var alley := x < map.size.x \
+		for x in map.size_in_tiles().x + 1:
+			var alley := x < map.size_in_tiles().x \
 					and Tile.is_alley(map.tile_at(Vector2i(x, y)))
 			if alley and run_start < 0:
 				run_start = x
@@ -215,10 +215,10 @@ func _alley_leg(map: CityMap) -> Array:
 					best_from = Vector2i(run_start, y)
 					best_to = Vector2i(x - 1, y)
 				run_start = -1
-	for x in map.size.x:
+	for x in map.size_in_tiles().x:
 		var run_start := -1
-		for y in map.size.y + 1:
-			var alley := y < map.size.y \
+		for y in map.size_in_tiles().y + 1:
+			var alley := y < map.size_in_tiles().y \
 					and Tile.is_alley(map.tile_at(Vector2i(x, y)))
 			if alley and run_start < 0:
 				run_start = y

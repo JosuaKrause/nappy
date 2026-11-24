@@ -30,8 +30,8 @@ extends RefCounted
 const UNREACHED := -1
 const BLOCKED := -2
 
-## The map's size in tiles; zero for open ground, which has no edge.
-var size := Vector2i.ZERO
+## The map's size in tiles; zero for open ground, which has no edge (`size_in_tiles()`).
+var _size := Vector2i.ZERO
 ## What stands on the ground today — a precinct's posts, the closures, the soft seals and every
 ## stationary solid body — as the one record every mover asks through `passable()`
 ## (`BlockedLayer`). The ground's own type is the map's (`_ground_lets()`).
@@ -42,14 +42,39 @@ func tiles_shut_to(layers: int) -> Dictionary:
 	return blocked.tiles_of(layers)
 
 ## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked, then
-## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over.
-var moves := ProposedMoves.new()
-## The pass a body that gives way asks at its own step about the movers on `moves` that keep their
-## course (`SeparationPass`): the crowd gives way to event figures (inbox #884 in plaid-raven).
-var separation := SeparationPass.new(moves)
+## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over. A mover
+## joins and leaves it through `list_move()` and `unlist_move()`.
+var _moves := ProposedMoves.new()
+## The pass a body that gives way asks at its own step about the movers on `_moves` that keep their
+## course (`SeparationPass`, handed out by `course_keepers()`): the crowd gives way to event figures
+## (inbox #884 in plaid-raven).
+var _separation := SeparationPass.new(_moves)
 ## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
-## closures): a version a reader only compares with the one its own answer was built from.
-var day_record_version := 0
+## closures); `day_record_version()` answers it.
+var _day_record_version := 0
+## Puts `move` on the list of moves in this world, standing at `at`.
+func list_move(move: MoveProposal, at: Vector2) -> void:
+	_moves.join(move, at)
+
+## Takes `move` off the list of moves in this world; a move that is not on it is a no-op.
+func unlist_move(move: MoveProposal) -> void:
+	_moves.leave(move)
+
+## The pass over the moves on the list that keep their course, which a body that gives way asks
+## about each step.
+func course_keepers() -> SeparationPass:
+	return _separation
+
+## Every move on the list: what a test reads to confirm what a figure put there, since nothing
+## outward carries the list.
+func listed_moves() -> ProposedMoves:
+	return _moves
+
+## A number a reader only compares with the one its own answer was built from: it changes whenever
+## a per-day record that is not a body (a hold, a soft seal, a closure) is written.
+func day_record_version() -> int:
+	return _day_record_version
+
 ## Open ground: a map with no ground of its own (see the class doc).
 static func open_ground() -> WorldMap:
 	return WorldMap.new()
@@ -84,10 +109,10 @@ func tile_rect_to_world(rect: Rect2i) -> Rect2:
 
 ## The map's size in tiles; zero for open ground, which has no edge.
 func size_in_tiles() -> Vector2i:
-	return size
+	return _size
 
 func in_bounds(tile: Vector2i) -> bool:
-	return tile.x >= 0 and tile.y >= 0 and tile.x < size.x and tile.y < size.y
+	return tile.x >= 0 and tile.y >= 0 and tile.x < _size.x and tile.y < _size.y
 
 # ------------------------------------------------------------ the ground itself ---
 
@@ -134,14 +159,17 @@ func passable(tile: Vector2i, mover: Mover) -> bool:
 
 ## Tiles a stationary solid body stands on today, as tile -> how many bodies stand there
 ## (`BlockedLayer.todays_body_tiles()`).
-var obstructed_tiles: Dictionary:
-	get:
-		return blocked.todays_body_tiles()
-## Bumped whenever a tile enters or leaves `obstructed_tiles`: a version a reader compares with the
-## one its own answer was built from (`BlockedLayer.body_ground_changes()`).
-var obstruction_version: int:
-	get:
-		return blocked.body_ground_changes()
+func obstructed_tiles() -> Dictionary:
+	return blocked.todays_body_tiles()
+
+## Whether any stationary solid body stands on a tile today.
+func has_solid_bodies() -> bool:
+	return not blocked.todays_body_tiles().is_empty()
+
+## Changes whenever a tile enters or leaves `obstructed_tiles()`: a version a reader compares with
+## the one its own answer was built from (`BlockedLayer.body_ground_changes()`).
+func obstruction_version() -> int:
+	return blocked.body_ground_changes()
 
 ## Clears today's solid bodies, once a day.
 func clear_day_obstructions() -> void:
@@ -158,7 +186,7 @@ func release_obstruction(owner: int) -> void:
 
 ## Whether a stationary solid body is standing on a tile today.
 func is_obstructed(tile: Vector2i) -> bool:
-	return obstructed_tiles.has(tile)
+	return blocked.todays_body_tiles().has(tile)
 
 # ---------------------------------------------------------------------- lines ---
 
@@ -252,9 +280,9 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 ## the record (`day_record_version`, `obstruction_version`). Empty for open ground.
 func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := PackedInt32Array()
-	ground.resize(size.x * size.y)
+	ground.resize(_size.x * _size.y)
 	ground.fill(UNREACHED)
-	blocked.lay_out(ground, size.x, size.y, mover.layers_blocked(), BLOCKED)
+	blocked.lay_out(ground, _size.x, _size.y, mover.layers_blocked(), BLOCKED)
 	return ground
 
 # ---------------------------------------------------------------------- walls ---

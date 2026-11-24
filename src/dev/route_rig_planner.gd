@@ -84,8 +84,8 @@ func _init(map: CityMap, events: EventManager, spawn_start: Callable, player: St
 	_player = player
 	_resistance = resistance
 	_day = day
-	for y in _map.size.y:
-		for x in _map.size.x:
+	for y in _map.size_in_tiles().y:
+		for x in _map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if _map.tile_at(tile) == GameEnums.TileType.ROAD:
 				_road_tiles[tile] = true
@@ -383,7 +383,7 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		blocked[tile] = true
 	for tile: Vector2i in _map.soft_sealed_tiles():
 		blocked[tile] = true
-	for tile: Vector2i in _map.obstructed_tiles:
+	for tile: Vector2i in _map.obstructed_tiles():
 		blocked[tile] = true
 	for tile: Vector2i in _gate_ground():
 		blocked[tile] = true
@@ -926,8 +926,8 @@ func _cheapest(from_tile: Vector2i, to_tile: Vector2i, keep_off: Dictionary = {}
 ## as `walk_field()`'s are, for its reason.
 func _weighted_field(from: Vector2i, blocked: Dictionary, extra: Dictionary) -> PackedInt32Array:
 	var map := _map
-	var width := map.size.x
-	var cells := width * map.size.y
+	var width := map.size_in_tiles().x
+	var cells := width * map.size_in_tiles().y
 	var field := PackedInt32Array()
 	field.resize(cells)
 	field.fill(CityMap.UNREACHED)
@@ -994,19 +994,19 @@ var _steps := PackedInt32Array()
 func _walkable_cells() -> PackedByteArray:
 	if _walkable.is_empty():
 		var map := _map
-		_walkable.resize(map.size.x * map.size.y)
-		for y in map.size.y:
-			for x in map.size.x:
-				_walkable[y * map.size.x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
+		_walkable.resize(map.size_in_tiles().x * map.size_in_tiles().y)
+		for y in map.size_in_tiles().y:
+			for x in map.size_in_tiles().x:
+				_walkable[y * map.size_in_tiles().x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
 	return _walkable
 
 func _base_steps() -> PackedInt32Array:
 	if _steps.is_empty():
 		var map := _map
-		_steps.resize(map.size.x * map.size.y)
+		_steps.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 		_steps.fill(1)
 		for tile: Vector2i in _road_tiles:
-			_steps[tile.y * map.size.x + tile.x] = 1 + _ROAD_STEP_COST
+			_steps[tile.y * map.size_in_tiles().x + tile.x] = 1 + _ROAD_STEP_COST
 	return _steps
 
 func _smaller_neighbour(field: PackedInt32Array, tile: Vector2i) -> Vector2i:

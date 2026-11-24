@@ -462,11 +462,11 @@ func _ready() -> void:
 ## mover's proposal sees it.
 func _enter_tree() -> void:
 	if _map:
-		_map.moves.join(_move, position)
+		_map.list_move(_move, position)
 
 func _exit_tree() -> void:
 	if _map:
-		_map.moves.leave(_move)
+		_map.unlist_move(_move)
 
 func _init() -> void:
 	_install(WalkerStrategy.new(self))

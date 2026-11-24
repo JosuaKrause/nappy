@@ -110,8 +110,8 @@ func _where(map: CityMap, corridor: Corridor, plan: EventPlan) -> String:
 
 func _route_tiles(map: CityMap, corridor: Corridor) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if corridor.carries_a_route(tile) and map.passable(tile, Mover.lattice()):
 				found.append(tile)
@@ -148,7 +148,7 @@ func _bodies(city: City, seed_value: int) -> void:
 				continue
 			for going: float in [1.0, -1.0]:
 				var lane_x := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
-				for y in range(0, map.size.y, 3):
+				for y in range(0, map.size_in_tiles().y, 3):
 					var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
 					if map.network.segment_containing(tile) == null or not map.is_driveable_at(true, tile):
 						continue
@@ -204,7 +204,7 @@ func _scar_discs(city: City, seed_value: int) -> void:
 	var through := 0
 	for going: float in [1.0, -1.0]:
 		var lane_x := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
-		for y in range(0, map.size.y, 3):
+		for y in range(0, map.size_in_tiles().y, 3):
 			var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
 			var segment := map.network.segment_containing(tile)
 			if segment == null or segment.horizontal or not map.is_driveable_at(true, tile):

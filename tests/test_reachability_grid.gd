@@ -67,8 +67,8 @@ func _test_the_grid_agrees_with_walk_field(t: TestRunner, maps: Array[CityMap]) 
 		var from := map.world_to_tile(map.doorstep_world_position())
 		var field := map.walk_field(from)
 		var reached := grid.flood([from])
-		for y in map.size.y:
-			for x in map.size.x:
+		for y in map.size_in_tiles().y:
+			for x in map.size_in_tiles().x:
 				var tile := Vector2i(x, y)
 				var walked := map.reaches(field, tile)
 				var gridded := grid.reaches(tile, {}, reached)
@@ -84,8 +84,8 @@ func _test_every_walkable_tile_has_a_node(t: TestRunner, maps: Array[CityMap]) -
 	var map := maps[0]
 	var grid := ReachabilityGrid.build(map)
 	var missing := 0
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile) and grid.node_at(tile) < 0:
 				missing += 1

@@ -169,8 +169,8 @@ func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: C
 	var void_elsewhere := true
 	var cut_off := 0
 	var cut_off_was_ground := true
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.in_stretch(tile) != listed.has(tile):
 				as_listed = false
@@ -203,8 +203,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	raw_ground.resize(map.tiles.size())
 	raw_ground.fill(WalkField.UNREACHED)
 	var start := Vector2i.ZERO
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			if start == Vector2i.ZERO and map.in_stretch(Vector2i(x, y)) \
 					and map.is_walkable(Vector2i(x, y)):
 				start = Vector2i(x, y)
@@ -216,8 +216,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	# target seeds the tiles within a tile of it, which would reach the stretch from the edge).
 	var through_void := Vector2i(-1, -1)
 	var nearest_hidden := INF
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if not map.is_cut_off(tile) or raw.length_at(tile) < 0 \
 					or raw.length_at(tile) >= nearest_hidden:
@@ -234,8 +234,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	# The stretch's tile farthest from her by the authored walk, which the context's walk puts
 	# farther than the hidden ground too.
 	var on_stretch := start
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.in_stretch(tile) and authored.length_at(tile) > authored.length_at(on_stretch):
 				on_stretch = tile
@@ -555,7 +555,7 @@ func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void
 	var edge := city.get_node_or_null("VoidEdge")
 	t.check(edge != null and edge.get_child_count() > 0, "and the void round the stretch is walled off")
 	var cracked := 0
-	for tile: Vector2i in map.rect_tiles(Rect2i(Vector2i.ZERO, map.size)):
+	for tile: Vector2i in map.rect_tiles(Rect2i(Vector2i.ZERO, map.size_in_tiles())):
 		if map.stretch_crack_at(tile) == null:
 			continue
 		var plain := GroundTiles.source_for(map, tile, 7)

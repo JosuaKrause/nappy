@@ -203,8 +203,8 @@ func _answers_from_the_city(city: City, baby: Baby, player: Stroller) -> bool:
 	var her := map.world_to_tile(player.global_position)
 	var best := Vector2.INF
 	var nearest := INF
-	for x in map.size.x:
-		for y in map.size.y:
+	for x in map.size_in_tiles().x:
+		for y in map.size_in_tiles().y:
 			var tile := Vector2i(x, y)
 			var at := map.tile_to_world(tile)
 			var multiplier := city.decay_multiplier(at)
@@ -1366,7 +1366,7 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
 
-	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size)).grow(512.0)
+	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size_in_tiles())).grow(512.0)
 	var viewport := Vector2(
 			ProjectSettings.get_setting("display/window/size/viewport_width"),
 			ProjectSettings.get_setting("display/window/size/viewport_height"))
@@ -1376,7 +1376,7 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	var view := Rect2(bounds.get_center() - size / 2.0, size)
 	var lo := city.map.world_to_tile(view.position)
 	var hi := city.map.world_to_tile(view.end - Vector2.ONE)
-	var middle_y := city.map.size.y / 2
+	var middle_y := city.map.size_in_tiles().y / 2
 	var south_spine_x := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
 	var keys := _ground_of(city).keys_in(view)
 
@@ -1393,10 +1393,10 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 			"south owns both overview corners as water")
 	for depth: int in [CityMap.OUTSIDE_DEPTH_TILES, CityMap.OUTSIDE_DEPTH_TILES * 4]:
 		t.check(city.scenery_ground_source(Vector2i(south_spine_x,
-				city.map.size.y + depth)) != GroundTiles.WATER,
+				city.map.size_in_tiles().y + depth)) != GroundTiles.WATER,
 				"the southern bridge's road carries on %d tiles out, to the edge of any view" % depth)
 	t.check(city.scenery_ground_source(Vector2i(south_spine_x - 2,
-			city.map.size.y + CityMap.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
+			city.map.size_in_tiles().y + CityMap.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
 			"the water either side of the bridge goes on too")
 
 	city.free()

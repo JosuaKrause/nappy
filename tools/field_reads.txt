@@ -61,13 +61,6 @@ src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
-# [ExcitementSource] src/world/excitement_source.gd
-src/events/simulation/encounter_watch.gd landed_ever
-
-# [Mover] src/world/mover.gd
-src/events/simulation/event_instance.gd blocked_by
-src/events/simulation/event_instance.gd radius
-
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd sign_offset
 
@@ -79,26 +72,3 @@ src/main.gd trace
 
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd rotated
-
-# [WorldMap] src/world/world_map.gd
-src/crowd/car_strategy.gd separation
-src/crowd/crowd.gd separation
-src/crowd/crowd_pockets.gd day_record_version
-src/crowd/lane_mover.gd moves
-src/crowd/walker_strategy.gd obstructed_tiles
-src/crowd/walker_strategy.gd separation
-src/dev/dev_rig.gd size
-src/dev/route_rig_planner.gd obstructed_tiles
-src/dev/route_rig_planner.gd size
-src/dev/scene_recipe_draft.gd size
-src/dev/scene_recipe_runtime.gd size
-src/events/model/dawn_phases/dawn_roadblock_count.gd size
-src/events/model/dawn_phases/ruled_roadblock_ground.gd size
-src/events/model/plan_builder.gd size
-src/events/model/walk_ground.gd size
-src/events/simulation/event_instance.gd moves
-src/resistance/park_cordon.gd moves
-src/resistance/resistance_director.gd day_record_version
-src/resistance/resistance_director.gd obstruction_version
-src/world/chase_way.gd day_record_version
-src/world/chase_way.gd obstruction_version

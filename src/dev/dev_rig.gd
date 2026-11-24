@@ -164,8 +164,8 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 		# Beside the carriageway, not on it: the exits are lethal, which is the point of them.
 		var at := Vector2i(spine_x - 2, 1)
 		match side:
-			"s": at = Vector2i(spine_x - 2, map.size.y - 2)
-			"e": at = Vector2i(map.size.x - 2, spine_y - 2)
+			"s": at = Vector2i(spine_x - 2, map.size_in_tiles().y - 2)
+			"e": at = Vector2i(map.size_in_tiles().x - 2, spine_y - 2)
 			"w": at = Vector2i(1, spine_y - 2)
 		return _nearest_walkable(map, map.tile_to_world(at))
 	# The middle of a pedestrianised street, which is the other end of the same trade: paving
@@ -193,7 +193,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 		# and `_nearest_walkable` will happily leave her standing on it — a shot taken from there
 		# is a shot of the day ending, which is the trap the `landmark` target has too.
 		var near := Tuning.SIDEWALK_WIDTH - 1
-		var far := map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
+		var far := map.size_in_tiles() - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
 		var at := Vector2i(near, near)
 		match which:
 			"ne": at = Vector2i(far.x, near)
@@ -242,8 +242,8 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 		push_warning("unknown --spawn target '%s'" % target)
 		return map.home_world_position()
 
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			if map.tile_at(Vector2i(x, y)) == wanted:
 				return map.tile_to_world(Vector2i(x, y))
 	push_warning("no %s tile in this city" % target)

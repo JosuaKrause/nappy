@@ -377,7 +377,7 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 			var after := map.walk_field(home, map.closed_tiles)
 			var cut := 0
 			for index in before.size():
-				var tile := Vector2i(index % map.size.x, index / map.size.x)
+				var tile := Vector2i(index % map.size_in_tiles().x, index / map.size_in_tiles().x)
 				if before[index] >= 0 and after[index] < 0 and not fenced_tiles.has(tile):
 					cut += 1
 			t.check(cut == 0, "seed %d day %d: fencing cuts nothing off but its own ground (%d tiles)"

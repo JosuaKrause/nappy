@@ -180,7 +180,7 @@ func _test_each_chain_reaches_its_own_edge(t: TestRunner) -> void:
 					"seed %d: the %s ends on the spine's own carriageway" % [seed_value, name])
 			# And it is the *last* of it: she is out under the portal, not a street short of it.
 			var from_the_edge: int = exit.y if chain.exit_kind == CityExit.Kind.TUNNEL \
-					else map.size.y - 1 - exit.y
+					else map.size_in_tiles().y - 1 - exit.y
 			t.check(from_the_edge <= CityEdge.TUNNEL_DEPTH_TILES,
 					"seed %d: and within the portal's own depth of the map edge (%d rows)"
 					% [seed_value, from_the_edge])
@@ -1693,8 +1693,8 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 ## Every tile of `city` whose plain ground source is a kerb a route can tint.
 static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if GroundTiles.source_for(city.map, tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
 				found.append(tile)

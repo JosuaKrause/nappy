@@ -137,7 +137,7 @@ func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, h
 		var record := _record_of(instance)
 		if record == null or not record.open:
 			var landed_before := record.landed_last if record != null else 0.0
-			if instance.source().landed_ever <= landed_before:
+			if instance.source().landed_ever() <= landed_before:
 				var box := instance.drawn_box()
 				if not Rect2(box.position + instance.global_position, box.size).intersects(view):
 					continue
@@ -174,11 +174,11 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 	var box := instance.drawn_box()
 	var world := Rect2(box.position + instance.global_position, box.size)
 	var record := _record_of(instance)
-	var landing := instance.source().landed_ever > (record.landed_last if record != null else 0.0)
+	var landing := instance.source().landed_ever() > (record.landed_last if record != null else 0.0)
 	var share := visible.share_of(world)
 	var in_view := share > 0.0
 	if record == null:
-		if not in_view and instance.source().landed_ever <= 0.0:
+		if not in_view and instance.source().landed_ever() <= 0.0:
 			return
 		record = Record.new()
 		record.instance = instance
@@ -190,7 +190,7 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 			_open_an_encounter(record)
 		record.last_present = _clock
 	if not record.open:
-		record.landed_last = instance.source().landed_ever
+		record.landed_last = instance.source().landed_ever()
 		return
 	if not record.seen and share >= Tuning.ENCOUNTER_SEEN_SHARE:
 		record.seen = true
@@ -204,7 +204,7 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 			_reports.tell_encounter_influenced(_day, record.name, true)
 		else:
 			record.influence_waiting = true
-	record.landed_last = instance.source().landed_ever
+	record.landed_last = instance.source().landed_ever()
 
 ## Opens a new encounter on `record`: nothing seen or influenced yet, and its landing counted from
 ## what the instance had landed before this frame, so a landing that opens it is part of it.
@@ -219,7 +219,7 @@ func _open_an_encounter(record: Record) -> void:
 ## The meaningful-encounter test — see the class doc. The same three ways in for every row: what a
 ## row cannot do (land anything, chase, catch or hold her) simply never happens.
 func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
-	if instance.source().landed_ever - record.landed_at_open >= ENCOUNTER_INFLUENCE_POINTS:
+	if instance.source().landed_ever() - record.landed_at_open >= ENCOUNTER_INFLUENCE_POINTS:
 		return true
 	if instance.is_chasing():
 		return true

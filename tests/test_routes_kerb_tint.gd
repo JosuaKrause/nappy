@@ -51,8 +51,8 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 	# the mark says *this street*, not *this sidewalk*, so the checks below ask whether a segment
 	# is tinted whole on both sides or not at all, never a lone tile or a stretch of one.
 	var tiles_by_segment := {}
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			var source := GroundTiles.source_for(city.map, tile, day)
 			if not (source in kerb_sources):
@@ -202,7 +202,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 ## other neighborhoods free to unload; the reverse pass proves reconstruction after eviction.
 func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> VisitedCells:
 	var keys := city.scenery_ground.keys_in(city.map.tile_rect_to_world(
-			Rect2i(Vector2i.ZERO, city.map.size)))
+			Rect2i(Vector2i.ZERO, city.map.size_in_tiles())))
 	if reverse:
 		keys.reverse()
 	var sources := {}
@@ -213,7 +213,7 @@ func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> V
 		for y in SceneryGround.CHUNK_TILES:
 			for x in SceneryGround.CHUNK_TILES:
 				var tile := key * SceneryGround.CHUNK_TILES + Vector2i(x, y)
-				if not Rect2i(Vector2i.ZERO, city.map.size).has_point(tile):
+				if not Rect2i(Vector2i.ZERO, city.map.size_in_tiles()).has_point(tile):
 					continue
 				var source := GroundCells.source_id(city.scenery_ground, tile)
 				if source >= 0:

@@ -108,7 +108,7 @@ func _test_a_zebra_past_the_box(t: TestRunner, map: CityMap) -> void:
 			"and not from the near side of the box")
 
 func _lane_to_the_main_road(map: CityMap) -> int:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
 				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
@@ -118,10 +118,10 @@ func _lane_to_the_main_road(map: CityMap) -> int:
 ## The centre of the first `CROSSING` tile on an east-west carriageway lane at a junction off the
 ## main road, or `INF`.
 func _a_zebra(map: CityMap) -> Vector2:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) < 0 or not CityMap.is_road_offset(CityMap.corridor_offset(y)):
 			continue
-		for x in range(12, map.size.x - 16):
+		for x in range(12, map.size_in_tiles().x - 16):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.CROSSING:
 				continue

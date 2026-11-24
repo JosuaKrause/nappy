@@ -126,8 +126,8 @@ static func _nearest_tile(director: ResistanceDirector, map: CityMap, found: Arr
 func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 	var map := city.map
 	var sidewalk: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not map.is_obstructed(tile) \
 					and director._reachable_from_home(tile):
