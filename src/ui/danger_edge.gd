@@ -63,10 +63,8 @@ var _rotated := false
 var _timing := FrameTiming.new()
 ## The baked atlas pages a badge's picture comes from (`AtlasLibrary`): the one `main` holds every
 ## page a day draws on, handed by `use_atlas()` before the edge is added. A badge only reads a
-## region, so it holds no group of its own. Public while `tests/test_atlas_boot.gd` finds every node
-## holding a library by the field's name: the badge acquires nothing, and reads a region only while
-## a badge is up, so the library it holds is the one thing that shows which it was handed.
-var atlas: AtlasLibrary
+## region, so it holds no group of its own.
+var _atlas: AtlasLibrary
 
 ## The day's events — see `setup()`.
 var _events: EventManager
@@ -78,7 +76,7 @@ var _model := BadgeModel.new()
 ## Hands the edge the baked atlas pages its badges draw from: `main` hands the sitting's library,
 ## before the edge is added.
 func use_atlas(library: AtlasLibrary) -> void:
-	atlas = library
+	_atlas = library
 
 ## Hands the edge where it charges its time to the frame record: `main` hands the sitting's kept
 ## frame timing.
@@ -265,12 +263,12 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	var fit := ICON / maxf(art.x, art.y)
 	var drawn := art * fit
 	var rect := Rect2(at - drawn * 0.5, drawn)
-	draw_texture_rect(atlas.region(name), rect, false)
+	draw_texture_rect(_atlas.region(name), rect, false)
 	# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
 	# rectangle and go over the body the way the street draws them.
 	var wheels := EventPictures.icon_wheels_for(def.picture())
 	if not wheels.is_empty():
-		draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
+		draw_texture_rect(_atlas.region(StringName(wheels)), rect, false)
 
 	var label := Texts.DISTANCE_METRES % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font

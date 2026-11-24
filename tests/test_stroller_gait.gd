@@ -20,7 +20,8 @@ func run(t: TestRunner) -> void:
 func _rig(t: TestRunner, carrying: bool) -> Stroller:
 	var rig := Stroller.new()
 	rig.use_atlas(_library)
-	rig.carrying = carrying
+	if carrying:
+		rig.use_carrying_rig()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS

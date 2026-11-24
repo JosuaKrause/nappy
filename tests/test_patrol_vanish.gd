@@ -50,7 +50,7 @@ class _Her extends Stroller:
 	var running := false
 
 	func _init() -> void:
-		carrying = true
+		use_carrying_rig()
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
 		# Never current, so what she sees from is where she stands.

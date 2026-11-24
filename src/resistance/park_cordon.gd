@@ -987,7 +987,7 @@ func _send_off(person: EventInstance) -> void:
 ## mover's step): his move is opened where he stands, he is walked through the navigator, which
 ## checks each part of the walk as he takes it, and the pose the walk ended on is recorded on the
 ## move and committed, before his figure is shown there. Nothing can change the move between: it is
-## the pose he publishes for the others to read, since he keeps his course (`MoveProposal.yields`
+## the pose he publishes for the others to read, since he keeps his course (`MoveProposal.gives_way()`
 ## false). What the tick acts on as he walks — a stretch taped at the end of a leg, the edge reached,
 ## a person sent off, gone out of her sight — is acted on at a pose the navigator has already let
 ## him take, which nothing after takes back.

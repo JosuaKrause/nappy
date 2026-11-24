@@ -15,7 +15,6 @@ extends RefCounted
 ## hands it to the save, as `main` hands the save the run its sitting holds; nothing here
 ## reads or sets a global run, so nothing is put back for the suite that runs after it.
 
-const MapCache := preload("res://tests/city_map_cache.gd")
 const Boot := preload("res://tests/booted_main.gd")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
@@ -517,7 +516,9 @@ func _test_completed_resistance_alley_tiles_survive_a_round_trip(t: TestRunner) 
 			"onto the tiles it was closed with, Vector2i values and all")
 	_save.clear()
 
-## Expiring the physical fence cannot reopen the once-per-run choice, including after a reload.
+## Expiring the physical fence cannot reopen the once-per-run choice, including after a reload: the
+## save carries the original fence, which the fence's own suite holds against a second one
+## (`_test_the_one_fence_is_remembered_after_its_act` in `tests/test_spent_park.gd`).
 func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(14040)
 	GivenRun.fenced_park(run, Vector2i(6, 8), 3)
@@ -528,17 +529,6 @@ func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 	t.check(not _save.try_resume(run).is_empty(), "the act-boundary save resumes")
 	t.check(run.facts().fenced_park() == Vector2i(6, 8) and run.facts().fenced_park_act() == 3,
 			"reloading after expiry remembers the original fence")
-	var map := MapCache.of(run.header().run_seed())
-	var state := CityState.new()
-	state.begin_day(map.plans_by_block(), 13)
-	map.repaint(state)
-	var used: Array[Vector2i] = [map.calm_blocks_now()[0]]
-	map.set_spent_calm(used)
-	map.set_fenced_park_state(run.facts().fenced_park(), run.facts().fenced_park_act(), 4)
-	map.repaint(state)
-	t.check(not map.shut_calm().is_empty(), "the resumed act has an accepted used area")
-	t.check(map.fenced_park_block() == Vector2i(-1, -1),
-			"the resumed run cannot select a second fence in act IV")
 	_save.clear()
 
 ## **A save written before this field existed still loads**, the same reasoning

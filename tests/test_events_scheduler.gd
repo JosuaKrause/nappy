@@ -1390,10 +1390,10 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		# And the allowance is the lot's, not a constant:
 		# `DawnSpoilers._things_to_put_in_a_park()` lets a
 		# bigger park hold a bigger thing, because what matters is the share of the ground it
-		# takes. Asserting the constant instead passed for as long as `calm_blocks[0]` happened
-		# to be a single block, and failed the day a city had enough calm areas for a four-block
-		# zone to come first — which is the test restating a rule the scheduler owns rather than
-		# asking it.
+		# takes. Asserting the constant instead passed for as long as `calm_blocks_now()[0]`
+		# happened to be a single block, and failed the day a city had enough calm areas for a
+		# four-block zone to come first — which is the test restating a rule the scheduler owns
+		# rather than asking it.
 		for plan in planned:
 			if not plan.is_placed() or not lot.has_point(plan.placed_at()):
 				continue

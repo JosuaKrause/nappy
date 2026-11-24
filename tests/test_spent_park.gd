@@ -591,7 +591,7 @@ func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t: TestRunner) -
 					ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 			var fenced_count := 1 if map.fenced_park_block().x >= 0 else 0
 			t.check(map.calm_blocks_now().size() == calm.size() - fenced_count,
-					"seed %d day %d: only the fenced park, if any, leaves calm_blocks (%d calm, "
+					"seed %d day %d: only the fenced park, if any, leaves the calm blocks (%d calm, "
 					% [map.city_seed(), day, calm.size()] + "%d left, fenced %s)"
 					% [map.calm_blocks_now().size(), map.fenced_park_block()])
 

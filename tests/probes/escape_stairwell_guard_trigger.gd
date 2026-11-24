@@ -69,7 +69,7 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	var second_door: Vector2i = (f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
-	player.carrying = true
+	player.use_carrying_rig()
 	player.set_map(scene.map())
 	scene.add_entity(player)
 	events.use_player(player)

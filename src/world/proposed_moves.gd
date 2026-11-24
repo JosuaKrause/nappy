@@ -8,7 +8,7 @@ extends RefCounted
 ## the event, the walker or the officer making it.
 
 var _moves: Array[MoveProposal] = []
-## The same list's moves that do not give way (`MoveProposal.yields` false), in the order they
+## The same list's moves that do not give way (`MoveProposal.gives_way()` false), in the order they
 ## joined, so a pass that cares only for the figures does not walk the whole crowd.
 var _keepers: Array[MoveProposal] = []
 
@@ -41,7 +41,7 @@ func has(move: MoveProposal) -> bool:
 
 ## **Every mover's move standing in this world, in the order they joined, as a copy of the list**,
 ## so a pass over it is safe against the list changing under its own loop: a mover freed or streamed
-## out mid-pass leaves the list and not the copy, whose move then says `on_the_list` false, and a
+## out mid-pass leaves the list and not the copy, whose move then says it is not on the list (`is_on_the_list()`), and a
 ## mover that joins mid-pass waits for the next pass. The copy shares the list's storage until the
 ## list is next written (Godot copies an array on write), so a pass in which nobody joins or leaves
 ## pays almost nothing for it, and one in which somebody does pays one copy of the references, less
@@ -49,7 +49,7 @@ func has(move: MoveProposal) -> bool:
 func all() -> Array[MoveProposal]:
 	return _moves.duplicate()
 
-## **The moves on the list that keep their course** (`MoveProposal.yields` false), in the order they
+## **The moves on the list that keep their course** (`MoveProposal.gives_way()` false), in the order they
 ## joined, as a copy under the same rule as `all()`: the event figures and the cordon's officers,
 ## a handful against the crowd's hundreds.
 func keeping_their_course() -> Array[MoveProposal]:
