@@ -42,6 +42,14 @@ var _player: Stroller
 ## The world the scene was installed into (`install()`): its map, today's streets, the city scene's
 ## dressing, its events, its crowd and its poster walls, her and the baby.
 var _world: DayWorld
+## The scene's one ground for a row (`EventScheduler.row_ground()`): which tiles a row may stand
+## on, made once by `_event_plans()` and handed to every authored row's placement, to the
+## escape's actors' and to the scene's walk (`EventManager.start_recipe()`), so none of the
+## three scans the map again. It is made inside `install()`'s `witness_only()` bracket, so a
+## bounded scene's or a stretch's ground is the whole-city answer the install judges; the walk
+## keeps those answers, as it keeps the map's tile lists for every type the install asked
+## (`CityMap.tiles_of_type()`).
+var _ground: RowGround
 ## Where the army column's lines go, handed in by `use_trace()`; a trace that writes nowhere until then.
 var _trace := RunTrace.new()
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
@@ -625,7 +633,7 @@ func _install(world: DayWorld, spec: DaySpec, resistance: ResistanceDirector) ->
 	# sites against after.
 	var calm := world.events().calm_as_the_map_stands()
 	var plans := _event_plans(at, errors, calm)
-	world.events().start_recipe(plans, spec, _run.header().day(), at, calm)
+	world.events().start_recipe(plans, spec, _run.header().day(), at, calm, _ground)
 	world.dressing().refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -981,6 +989,10 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	# The day's locations, laid out once: an authored row's tile names the one it stands in.
 	# A scene with no route tree lays its locations out under a corridor that answers none.
 	var locations := DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
+	# The scene's one ground, made now that the authored seals and the home's holds are on the
+	# map.
+	_ground = EventScheduler.row_ground(map, corridor,
+			_walk_spec.keeps_the_home_streets_clear())
 	for entry: Dictionary in setup.get("events", []):
 		var at := _position_of(entry.at, errors)
 		if not errors.is_empty():
@@ -1012,8 +1024,8 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			plan = EventPlan.new(def, at, route)
 		else:
 			plan = EventScheduler.recipe_placement(def, _run.header().day(), map, builder, at,
-					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing,
-					locations, why)
+					int(entry.get("route_seed", 1)), plans, corridor, _ground, doors, calm,
+					standing, locations, why)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement%s"
 					% [entry.name, (": " + "; ".join(why)) if not why.is_empty() else ""])
@@ -1097,9 +1109,8 @@ func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_
 	if not map.tile_to_world(tile).is_equal_approx(at):
 		return null
 	var ground_ok := false
-	var ground := EventScheduler.row_ground(map, null, _walk_spec.keeps_the_home_streets_clear())
 	for segment in finale.open_streets:
-		if tile in EventScheduler.street_ground(map, ground, segment, def, player_at):
+		if tile in EventScheduler.street_ground(map, _ground, segment, def, player_at):
 			ground_ok = true
 			break
 	if not ground_ok:

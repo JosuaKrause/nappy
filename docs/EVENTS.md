@@ -1508,7 +1508,8 @@ Each item quotes the code on this branch.
    each draw one location at dawn, weighted
    by role, and are assigned it (`ScriptedPhase`); a one-shot is owed to her walk and sited on her
    way, never placed at dawn (`EventDef.validate()` refuses one that is not); an authored scene's row stands
-   in the location its tile names, asked once (`EventScheduler.recipe_placement()`); the masts stand
+   in the location its tile names, asked once (`EventScheduler.recipe_placement()`, on the one ground
+   the scene makes for every row it places, `SceneRecipeRuntime`); the masts stand
    at the run's sites (`EventWorld.mast_sites()`, worked out once when the run's city is handed
    over) and each holds the location under it, so no draw happens there, and closes that sidewalk's
    section, so nothing that spans the street is drawn or stood over it
@@ -1638,7 +1639,10 @@ one object a walk, made at dawn by the dawn's context (`DawnContext.ground()`, w
 `EventScheduler.row_ground()`), which scans the map once for each
 question a row asks and keeps the answer, and is handed to every placement that asks: the dawn's
 phases, and, with the walk (`WalkEvents.ground()`), whatever is sited while she walks, so nothing
-scans the city for it again and both stand their rows on the same ground.
+scans the city for it again and both stand their rows on the same ground. A scene recipe makes the
+same one object for its scene (`SceneRecipeRuntime`), hands it to each authored row's placement and
+to its walk (`EventManager.start_recipe()`), and makes it where the install judges the map, so a
+bounded scene's or a stretch's walk keeps the answers the install asked.
 `RowGround.tiles_for()` refuses five kinds of ground outright, by construction rather than
 as a check on what a roll came back with:
 
@@ -2494,7 +2498,7 @@ tile holds here — a closed tile, a held street, the home block, **a standing s
 spread, the power station's front; all but the street the
 home's front door opens onto, a door the escape never sets off from (`DaySpec.keeps_the_home_streets_clear()`
 off; `docs/CITY.md`, "The escape"). What is sited after dawn asks a ground under the same setting: a day's own,
-handed on from dawn (`WalkEvents.ground()`), and on a walk no dawn of a day planned one `EventsAhead`
+handed on from dawn (`WalkEvents.ground()`), and on a walk no dawn of a day planned and no ground was handed to one `EventsAhead`
 makes under the walk's spec (`_ground_of_the_walk()`), so a row placed while she walks keeps the rule
 the walk was planned under.
 Each candidate then meets the day's own spacing (`StreetInvalidation.room_around()`) and the escape's own refusals

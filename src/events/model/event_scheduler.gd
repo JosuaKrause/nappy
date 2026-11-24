@@ -274,8 +274,9 @@ static func street_ground(map: CityMap, ground: RowGround, segment: StreetNetwor
 ## **One ground a walk**: the dawn's context makes the day's (`DawnContext.ground()`, with this
 ## function) and the day's planner hands it on with the plan (`DayPlanner.Plan.ground()`), so
 ## whoever is handed the walk's asks that one. A caller that makes its own is one with no walk's
-## ground to be handed: a scene recipe's row, a check, a probe and, for a walk no dawn of a day
-## planned, `EventsAhead._ground_of_the_walk()` and
+## ground to be handed: a check, a probe, a scene recipe's runtime (which makes one for its
+## whole scene and hands it to every row it places and to its walk) and, for a walk no dawn of a
+## day planned and no ground was handed to, `EventsAhead._ground_of_the_walk()` and
 ## `ResistanceDirector._fronts_a_fire_catches_on()`.
 static func row_ground(map: CityMap, corridor: Corridor = null,
 		from_the_door := true) -> RowGround:
@@ -403,10 +404,13 @@ static func _is_a_wall_by_cost(def: EventDef) -> bool:
 ## fails the recipe loudly, with the reason, rather than placing it somewhere else (the
 ## orchestrator's reading, open to the player's overturn). `locations` is the day's, laid out once
 ## for the whole recipe; laid out here for a caller that hands none. `builder` builds the candidate.
+## `ground` is the scene's one ground for a row (`row_ground()`), made once and handed to every
+## row it places: the tile has to be one it offers, and a placement makes no ground of its own.
 static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: PlanBuilder,
 		at: Vector2, route_seed: int, already: Array[EventPlan], corridor: Corridor,
-		doors: PackedVector2Array, calm: CalmAreas, standing: Array[EventPlan] = [],
-		locations: DayLocations = null, why: Array[String] = []) -> EventPlan:
+		ground: RowGround, doors: PackedVector2Array, calm: CalmAreas,
+		standing: Array[EventPlan] = [], locations: DayLocations = null,
+		why: Array[String] = []) -> EventPlan:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		why.append("%s is not placed on the map on day %d" % [def.id(), day])
 		return null
@@ -421,7 +425,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 	if location == null:
 		why.append("no location holds tile %s" % tile)
 		return null
-	var fit := LocationFit.new(day, map, builder, row_ground(map, corridor))
+	var fit := LocationFit.new(day, map, builder, ground)
 	if not tile in fit.tiles(def, location):
 		why.append("the location holding tile %s does not take %s there" % [tile, def.id()])
 		return null

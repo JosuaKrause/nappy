@@ -320,14 +320,20 @@ func walk() -> RouteSource:
 ## the walk the recipe stands for, handed in by the recipe's runtime — a day's, or the escape city's
 ## — and its settings are the walk's; `day` keys the walk's streams and counts its encounters.
 ## `calm` is the calm areas the recipe's rows were placed against (`calm_as_the_map_stands()`), so
-## the walk sites against the same ones; a rig that places none hands none.
+## the walk sites against the same ones; a rig that places none hands none. `ground` is the
+## ground the recipe's rows were placed on (`EventScheduler.row_ground()`), which the walk's
+## events answer (`WalkEvents.ground()`) so what is sited while she walks asks it rather than
+## making one; a rig that places no rows hands none, and the walk makes its own as a walk no
+## dawn planned does.
 ##
 ## **The recipe's holds stay**: its builder holds what it placed (`SceneRecipeRuntime`), and nothing
 ## here rolls against them. Its plans are taken as a walk planned whole is (`start_day()`), with
 ## their bodies recorded as a day's are.
 func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
-		focus: Vector2, calm: CalmAreas = null) -> void:
+		focus: Vector2, calm: CalmAreas = null, ground: RowGround = null) -> void:
 	var plan := DayPlanner.Plan.new(plans, null, PackedVector2Array(), false)
+	if ground:
+		plan.use_ground(ground)
 	# The recipe's walk is sited against the calm areas its rows were placed against, or, handed
 	# none, those a day's would be as the map stands.
 	if calm:

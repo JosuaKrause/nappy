@@ -27,8 +27,8 @@ func run(_t: TestRunner) -> void:
 				print("GATE ", body.placed_at())
 		var def := EventCatalogue.by_id("leaf_blower" if day == 1 else "military_convoy")
 		var tiles: Array[Vector2i] = []
-		tiles.assign(EventScheduler.row_ground(map, corridor).offers_for_role(def,
-				EventScheduler.role_for(def, day)).keys())
+		var ground := EventScheduler.row_ground(map, corridor)
+		tiles.assign(ground.offers_for_role(def, EventScheduler.role_for(def, day)).keys())
 		tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 			return a.distance_squared_to(Vector2i(65, 60)) < b.distance_squared_to(Vector2i(65, 60)))
 		var accepted := 0
@@ -38,7 +38,7 @@ func run(_t: TestRunner) -> void:
 			var prior: Array[EventPlan] = []
 			var at := map.tile_to_world(tile)
 			var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
-					at, 1, prior, corridor, doors, calm, none, locations)
+					at, 1, prior, corridor, ground, doors, calm, none, locations)
 			if not plan:
 				continue
 			print("SITE ", def.id(), " tile=", tile, " world=", at, " path=", plan.walks())

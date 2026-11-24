@@ -69,6 +69,7 @@ func run(t: TestRunner) -> void:
 	_test_friction_on_a_sidewalk_can_be_walked_past(t)
 	_test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t)
 	_test_the_square_poster_crew_only_ever_stands_on_a_square(t)
+	_test_a_placement_asks_the_ground_it_is_handed(t)
 	_test_a_recipes_drawn_row_keeps_its_route_on_its_run(t)
 	_test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t)
 	_test_a_routes_junctions_stay_clear(t)
@@ -386,10 +387,11 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var calm := CalmAreas.of(map)
 	var locations := DayLocations.lay_out(map, corridor)
 	var standing: Array[EventPlan] = []
-	for tile in EventScheduler.row_ground(map).tiles_for(def.for_day(day)):
+	var ground := EventScheduler.row_ground(map, corridor)
+	for tile in ground.tiles_for(def.for_day(day)):
 		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
-				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, standing,
-				locations)
+				map.tile_to_world(tile), 1, nothing_down, corridor, ground, no_doors, calm,
+				standing, locations)
 		if plan:
 			return plan.role()
 	return -1
@@ -494,7 +496,8 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
-			var offered := EventScheduler.row_ground(map).tiles_for(def)
+			var ground := EventScheduler.row_ground(map, corridor)
+			var offered := ground.tiles_for(def)
 			var off_the_squares := 0
 			for tile in offered:
 				if map.tile_at(tile) != GameEnums.TileType.SQUARE:
@@ -514,7 +517,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
 				var plan := EventScheduler.recipe_placement(def, day, map,
 						GamePlanBuilder.over(map), map.tile_to_world(tile), day + copy * 31, already,
-						corridor, no_doors, calm, standing, locations)
+						corridor, ground, no_doors, calm, standing, locations)
 				if not plan:
 					continue
 				already.append(plan)
@@ -529,7 +532,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 				var why: Array[String] = []
 				var plan := EventScheduler.recipe_placement(def, day, map,
 						GamePlanBuilder.over(map), map.tile_to_world(tile), day, already, corridor,
-						no_doors, calm, standing, locations, why)
+						ground, no_doors, calm, standing, locations, why)
 				t.check(plan == null, "day %d: a sidewalk tile %s is refused the square crew"
 						% [day, RunTrace.tile(tile)])
 				t.check(why.size() == 1 and (why[0].contains("does not take")
@@ -539,6 +542,49 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 				refused += 1
 	t.check(placed >= 1, "and the sweep actually placed one (%d)" % placed)
 	t.check(refused > 100, "and refused it sidewalk ground (%d tiles asked)" % refused)
+
+## **A placement asks the ground it is handed and makes none of its own**
+## (`EventScheduler.recipe_placement()`, whose `ground` is the scene's one ground, made once for
+## every row of a scene): on the seed-4242 city painted for day 9, the square crew is placed on
+## the first tile of the real ground that takes it, and the same tile, asked with a ground that
+## offers no tile (`_BareGround`), is refused with the location not taking the row there. A
+## placement that made a ground of its own would place it on both, which is what the second
+## check holds.
+func _test_a_placement_asks_the_ground_it_is_handed(t: TestRunner) -> void:
+	var day := 9
+	var def := EventCatalogue.by_id("poster_crew_square")
+	var map := _repainted_city(day)
+	var corridor := Corridor.of(RouteTree.for_day(map, day))
+	var locations := DayLocations.lay_out(map, corridor)
+	var ground := EventScheduler.row_ground(map, corridor)
+	var no_doors := PackedVector2Array()
+	var calm := CalmAreas.of(map)
+	var placed_on := Vector2i(-1, -1)
+	for tile in ground.tiles_for(def):
+		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+				map.tile_to_world(tile), 1, [], corridor, ground, no_doors, calm, [], locations)
+		if plan:
+			placed_on = tile
+			break
+	t.check(placed_on != Vector2i(-1, -1),
+			"the square crew is placed on a tile of the real ground")
+	if placed_on == Vector2i(-1, -1):
+		return
+	var why: Array[String] = []
+	var refused := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+			map.tile_to_world(placed_on), 1, [], corridor, _BareGround.new(), no_doors, calm,
+			[], locations, why)
+	t.check(refused == null and why.size() == 1 and why[0].contains("does not take"),
+			"the same tile is refused when the ground handed in offers none (%s)" % [why])
+
+## A ground that offers no tile to any row.
+class _BareGround extends RowGround:
+	func _init() -> void:
+		super(null, null, true, RowGround.Weights.new(), Callable())
+
+	## Overrides RowGround.offers_for_role.
+	func offers_for_role(_def: EventDef, _role: GameEnums.BlockerRole) -> Dictionary:
+		return {}
 
 ## **A scene recipe lays a row the units draw as the day lays it: its route stays on its
 ## location's run** (`Location.run()`, `EventScheduler.recipe_placement()`), so an authored man
@@ -559,7 +605,8 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 			map.repaint(state)
 			var corridor := Corridor.of(RouteTree.for_day(map, day))
 			var locations := DayLocations.lay_out(map, corridor)
-			var offered := EventScheduler.row_ground(map).tiles_for(def)
+			var ground := EventScheduler.row_ground(map, corridor)
+			var offered := ground.tiles_for(def)
 			var rng := _rng(day)
 			for k in 6:
 				if offered.is_empty():
@@ -568,7 +615,8 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 				var seed_of_route := day + k * 17
 				var plan := EventScheduler.recipe_placement(def, day, map,
 						GamePlanBuilder.over(map), map.tile_to_world(tile), seed_of_route, [],
-						corridor, PackedVector2Array(), CalmAreas.of(map), [], locations)
+						corridor, ground, PackedVector2Array(), CalmAreas.of(map), [],
+						locations)
 				if plan == null:
 					continue
 				placed += 1
