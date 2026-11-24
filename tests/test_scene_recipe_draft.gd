@@ -2,24 +2,25 @@ extends RefCounted
 ## `SceneRecipeDraft`: the stretch a draft cuts out of the whole city it walked
 ## (`tools/scene-draft.sh`), asked as a draft run asks it. A scene's recipe is turned into the
 ## witness map its drafting inputs make (`SceneRecipeDraft.base_of()`), the tiles she walked are
-## recorded (`record()`), the stretch is composed (`compose()`) and `stretch.tiles` read back:
-## a step on a street takes the whole street and the junction at each end, a mark she reads from
-## beside it brings its own corner and not the alley behind it, and walking into an alley takes the
-## whole of it. The drafted recipe's JSON reads back as written.
+## recorded (`record()`), the stretch is composed (`compose()`) and `stretch.tiles` read back: a
+## step on a street takes the whole street and the junction at each end, a mark she reads from
+## beside it brings its own corner and not the alley behind it, and walking into an alley takes
+## the whole of it. The drafted recipe's JSON reads back as written.
 ##
-## **One module, on a world of stand-ins** (`tests/scene_world.gd`): the draft is handed the world a
-## draft run is handed (`DayWorld`), whose dressing, crowd, events, poster walls, her and the baby
-## are stand-ins that answer none of what a scene stands in the street: the dressing no buildings
-## and no props, the crowd and the events nobody. What the checks read is the map and the day's own
-## planners (a real map built by `RecipeCityBuilder.build()` and begun for the day by
-## `SceneWorld.over()`), which are model data, so the draft's tiles are the only part asked of it;
-## its buildings, props, litter, cracks, posters and starting crowd are not.
+## **One module, on a world of stand-ins** (`tests/scene_world.gd`): the draft is handed the
+## world a draft run is handed (`DayWorld`), whose dressing, crowd, events, poster walls, her
+## and the baby are stand-ins that answer none of what a scene stands in the street: the
+## dressing no buildings and no props, the crowd and the events nobody. What the checks read is
+## the map and the day's own planners (a real map built by `RecipeCityBuilder.build()` and begun
+## for the day by `SceneWorld.over()`), which are model data, so the draft's tiles are the only
+## part asked of it; its buildings, props, litter, cracks, posters and starting crowd are not.
 
 ## The scene the draft is asked over: day 7's package task.
 const SCENE := "res://scene-recipes/task-07-package.json"
 ## The day it is walked on.
 const DAY := 7
-## A mark she reads from beside it, at an alley's mouth of the context city, and the alley behind it.
+## A mark she reads from beside it, at an alley's mouth of the context city, and the alley
+## behind it.
 const MOUTH := Vector2i(92, 69)
 
 ## The diagnostics a builder's answer carries.
@@ -47,11 +48,12 @@ func _test_the_json_reads_back_as_written(t: TestRunner, data: Dictionary) -> vo
 	t.check(not _listed(data).is_empty() and _listed(back) == _listed(data),
 			"and reads back with the same ground")
 
-## **A draft takes whole streets**: a step on a street takes the whole street and the junction at
-## each end, a mark she reads from beside it, pinned by the task, brings its own corner and not the
-## alley behind it (`SceneRecipeDraft.compose()` adds a pin as unwalked), and walking in at the same
-## mouth takes the whole alley behind it.
-func _test_the_draft_takes_whole_streets(t: TestRunner, made: SceneWorld, data: Dictionary) -> void:
+## **A draft takes whole streets**: a step on a street takes the whole street and the junction
+## at each end, a mark she reads from beside it, pinned by the task, brings its own corner and
+## not the alley behind it (`SceneRecipeDraft.compose()` adds a pin as unwalked), and walking in
+## at the same mouth takes the whole alley behind it.
+func _test_the_draft_takes_whole_streets(t: TestRunner, made: SceneWorld,
+		data: Dictionary) -> void:
 	var witness := made.map
 	var segment := witness.street_network().by_key(Vector3i(5, 5, 1))
 	var drafted := _drafted(made, data, [Vector2i(segment.tile_rect().get_center())], [])

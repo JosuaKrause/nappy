@@ -3,16 +3,17 @@ extends RefCounted
 ## clock every mast reads rather than a clock of its own, and an id that survives silencing. See
 ## `docs/TODO.md`, M180, "Posters she notices, and loudspeakers that are somewhere".
 ##
-## The sites and the field are asked of `MastSites` and the row alone, and the points a day's street
-## doors stand on of `MastSites` against `RegionPlanner`'s own plan, run real because the guarantee
-## is between the two. The broadcast clock, streaming, mast_foot() and silencing are the event
-## manager's, so a real manager is built, over the cached generated map of its seed with no city
-## round it, and handed mast plans made by hand as the dawn makes them (`DawnMasts`). What the dawn
-## plans (the same sites every day from the first mast day, the scar a silenced mast leaves) is
-## `test_events_scheduler.gd`'s. The scheduler's acceptance of a mast queued for day 11
-## (`EventManager.queue_a_mast()`) is asked of a manager of its own, handed the cached map as the
-## city's (`EventSurroundings.in_the_city()`), which is what siting a mast asks of it; no day is
-## planned, since planning one would also ask for the city's route tree.
+## The sites and the field are asked of `MastSites` and the row alone, and the points a day's
+## street doors stand on of `MastSites` against `RegionPlanner`'s own plan, run real because the
+## guarantee is between the two. The broadcast clock, streaming, mast_foot() and silencing are
+## the event manager's, so a real manager is built, over the cached generated map of its seed
+## with no city round it, and handed mast plans made by hand as the dawn makes them
+## (`DawnMasts`). What the dawn plans (the same sites every day from the first mast day, the
+## scar a silenced mast leaves) is `test_events_scheduler.gd`'s. The scheduler's acceptance of a
+## mast queued for day 11 (`EventManager.queue_a_mast()`) is asked of a manager of its own,
+## handed the cached map as the city's (`EventSurroundings.in_the_city()`), which is what siting
+## a mast asks of it; no day is planned, since planning one would also ask for the city's route
+## tree.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -131,17 +132,19 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -
 			"and every mast on every seed was actually checked (%d)" % checked)
 
 ## The street door a recipe's `setup.gates` stands is the one the day's own plan stands
-## (`RegionPlanner.stand_door()`), at the points `MastSites` keeps a mast's field clear of: so a mast
-## `SceneRecipeRuntime` places is already clear of every door it stands, by `MastSites.is_eligible()`
-## alone. Asked of every street door a day plans (`RegionPlanner.plan_day()`) on the context city
-## (the city every task scene is built on), from the first day with checkpoints and on the last.
+## (`RegionPlanner.stand_door()`), at the points `MastSites` keeps a mast's field clear of: so a
+## mast `SceneRecipeRuntime` places is already clear of every door it stands, by
+## `MastSites.is_eligible()` alone. Asked of every street door a day plans
+## (`RegionPlanner.plan_day()`) on the context city (the city every task scene is built on),
+## from the first day with checkpoints and on the last.
 func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner) -> void:
 	var map := MapCache.of(CONTEXT_SEED)
 	var points := MastSites.possible_door_points(map)
 	var bodies := 0
 	var off_a_point := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1]:
-		var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
+		var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map,
+				day))
 		var stood := RegionPlan.new()
 		for door in plan.door_segments():
 			RegionPlanner.stand_door(map, door, stood)

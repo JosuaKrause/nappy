@@ -1,11 +1,11 @@
 extends RefCounted
 ## What `RecipeCityBuilder` builds from a recipe: the tree a recipe relocates across the road is
-## the planting's own (a pit moves, a road or an unrelated sidewalk is refused), the title scene's
-## capture stays in its park, and a task scene's stretch is built as its recipe lists it (day 7's:
-## its tiles the only ground, the saved layout read as saved, the author's edits what shows). The
-## builder builds a map and nothing else, so no city, crowd or event is made here: what the city
-## draws of the map is `tests/test_recipe_city_drawing.gd`'s and what the crowd does on it is
-## `tests/test_crowd_coverage.gd`'s.
+## the planting's own (a pit moves, a road or an unrelated sidewalk is refused), the title
+## scene's capture stays in its park, and a task scene's stretch is built as its recipe lists it
+## (day 7's: its tiles the only ground, the saved layout read as saved, the author's edits what
+## shows). The builder builds a map and nothing else, so no city, crowd or event is made here:
+## what the city draws of the map is `tests/test_recipe_city_drawing.gd`'s and what the crowd
+## does on it is `tests/test_crowd_coverage.gd`'s.
 
 ## The diagnostics a builder's answer carries.
 func _errors(result: Dictionary) -> Array[String]:
@@ -48,13 +48,15 @@ func _test_the_titles_capture_stays_in_its_park(t: TestRunner) -> void:
 			"title's moving capture remains inside the park")
 
 ## **A task scene's stretch is built as its recipe lists it** (day 7's): the stretch is the only
-## ground, the saved layout is independent of the drafting inputs, and the author's own edits are
-## what the map shows. No city is made: what the city draws of the map is
+## ground, the saved layout is independent of the drafting inputs, and the author's own edits
+## are what the map shows. No city is made: what the city draws of the map is
 ## `tests/test_recipe_city_drawing.gd`'s.
 func _test_a_stretch_is_built_as_its_recipe_lists_it(t: TestRunner) -> void:
-	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-07-package.json").data
+	var data: Dictionary = SceneRecipe.load_file(
+			"res://scene-recipes/task-07-package.json").data
 	var built := RecipeCityBuilder.build(data)
-	t.check(_errors(built).is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
+	t.check(_errors(built).is_empty(),
+			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _errors(built).is_empty():
 		return
 	var map: CityMap = built.map
@@ -62,17 +64,20 @@ func _test_a_stretch_is_built_as_its_recipe_lists_it(t: TestRunner) -> void:
 	_test_the_saved_layout_ignores_the_drafting_inputs(t, data)
 	_test_a_hand_edited_tile_survives_the_dawns_repaint(t, data)
 	_test_a_resized_lot_and_a_planted_tree_are_the_authors(t, data)
-	t.check("\n".join(_errors(RecipeCityBuilder.build(_with_a_tile_listed_twice(data)))).contains(
-			"listed twice"), "a tile listed twice is refused")
+	var twice := RecipeCityBuilder.build(_with_a_tile_listed_twice(data))
+	t.check("\n".join(_errors(twice)).contains("listed twice"),
+			"a tile listed twice is refused")
 
 ## The live map against the recipe's own lists, never against a generated city *(mossy-marmot,
 ## inbox #618, the player's choice: "Finish fully handcrafted layouts now")*: each stretch tile
 ## is the type `stretch.tiles` lists for it, every other tile is void, and the void the stretch
-## cut off is ground in its saved `context`. Asked of the saved scene and of a copy with one road
-## run hand-edited to sidewalk, which the saved context still has as road: an edit an author makes
-## is what the scene shows, and holds here as it holds in play.
-func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap, data: Dictionary) -> void:
-	t.check(map.has_stretch() and map.is_void(Vector2i.ZERO), "the scene's map shows its stretch")
+## cut off is ground in its saved `context`. Asked of the saved scene and of a copy with one
+## road run hand-edited to sidewalk, which the saved context still has as road: an edit an
+## author makes is what the scene shows, and holds here as it holds in play.
+func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap,
+		data: Dictionary) -> void:
+	t.check(map.has_stretch() and map.is_void(Vector2i.ZERO),
+			"the scene's map shows its stretch")
 	var context := RecipeCityContext.restore(data.context)
 	_check_the_ground(t, map, data, context, "the saved scene")
 	var edited := data.duplicate(true)
@@ -94,7 +99,8 @@ func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap, data: Dic
 	t.check(map.is_void(outside) and map.tile_at(outside) == GameEnums.TileType.BUILDING,
 			"and the void is back once it is done")
 
-func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: CityMap, label: String) -> void:
+func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: CityMap,
+		label: String) -> void:
 	var listed := {}
 	for type_name: String in data.stretch.tiles:
 		for run: Array in data.stretch.tiles[type_name]:
@@ -116,21 +122,24 @@ func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: C
 				void_elsewhere = false
 			if map.is_cut_off(tile):
 				cut_off += 1
-				# A precinct's post stands on ground whose type is walkable and that nobody can stand on.
-				cut_off_was_ground = cut_off_was_ground and context.walkable_lut()[context.tile_at(tile)] == 1
+				# A precinct's post stands on ground whose type is walkable and that nobody can
+				# stand on.
+				cut_off_was_ground = cut_off_was_ground \
+						and context.walkable_lut()[context.tile_at(tile)] == 1
 	t.check(not listed.is_empty() and as_listed,
 			"%s: its %d tiles are the stretch and read as `stretch.tiles` lists them"
 			% [label, listed.size()])
 	t.check(void_elsewhere, "%s: every other tile is void, no ground" % label)
 	t.check(cut_off > 0 and cut_off_was_ground,
-			"%s: some of the void is ground the stretch cut off from its saved context (%d tiles)"
+			"%s: some void is ground the stretch cut off from its saved context (%d tiles)"
 			% [label, cut_off])
 
-## **Changing what a draft is made from changes nothing of a saved layout**: another context seed
-## and no layouts build the same tiles as the scene's own (a saved layout is read, never
+## **Changing what a draft is made from changes nothing of a saved layout**: another context
+## seed and no layouts build the same tiles as the scene's own (a saved layout is read, never
 ## regenerated or rejected), and a context whose tile array is malformed fails before it is
 ## restored.
-func _test_the_saved_layout_ignores_the_drafting_inputs(t: TestRunner, data: Dictionary) -> void:
+func _test_the_saved_layout_ignores_the_drafting_inputs(t: TestRunner,
+		data: Dictionary) -> void:
 	var original := RecipeCityBuilder.build(data)
 	var changed_seed := data.duplicate(true)
 	changed_seed.city.context_seed = 1
@@ -146,13 +155,14 @@ func _test_the_saved_layout_ignores_the_drafting_inputs(t: TestRunner, data: Dic
 	t.check(not _errors(RecipeCityBuilder.build(malformed)).is_empty(),
 			"a malformed context fails before restoring its tile array")
 
-## **A hand edit of the stretch's ground survives the dawn's repaint**: one road run and one alley
-## run listed as sidewalk, saved and read back as an author's file is, builds, and the map's repaint
-## for the day (`CityMap.repaint()`) leaves both edited tiles the sidewalk the author wrote. The
-## alley is block ground, which a repaint without the saved dawn ground would paint back; a street
-## tile is not, so the road alone would not show it. The city's own preparation of the day is
-## `tests/test_recipe_city_drawing.gd`'s.
-func _test_a_hand_edited_tile_survives_the_dawns_repaint(t: TestRunner, data: Dictionary) -> void:
+## **A hand edit of the stretch's ground survives the dawn's repaint**: one road run and one
+## alley run listed as sidewalk, saved and read back as an author's file is, builds, and the
+## map's repaint for the day (`CityMap.repaint()`) leaves both edited tiles the sidewalk the
+## author wrote. The alley is block ground, which a repaint without the saved dawn ground would
+## paint back; a street tile is not, so the road alone would not show it. The city's own
+## preparation of the day is `tests/test_recipe_city_drawing.gd`'s.
+func _test_a_hand_edited_tile_survives_the_dawns_repaint(t: TestRunner,
+		data: Dictionary) -> void:
 	var drifted := data.duplicate(true)
 	var runs: Dictionary = drifted.stretch.tiles
 	var road: Array = runs.road
@@ -178,10 +188,11 @@ func _test_a_hand_edited_tile_survives_the_dawns_repaint(t: TestRunner, data: Di
 				"authored ground survives dawn repaint")
 
 ## **A lot the author resized and a tree the author planted are what the map holds**: a lot one
-## tile narrower on a taller building is the live footprint without matching any generator's, and a
-## tree listed under `trees` is the planting's own, the one placement the drawing and the clearance
-## read.
-func _test_a_resized_lot_and_a_planted_tree_are_the_authors(t: TestRunner, data: Dictionary) -> void:
+## tile narrower on a taller building is the live footprint without matching any generator's,
+## and a tree listed under `trees` is the planting's own, the one placement the drawing and the
+## clearance read.
+func _test_a_resized_lot_and_a_planted_tree_are_the_authors(t: TestRunner,
+		data: Dictionary) -> void:
 	var building := data.duplicate(true)
 	var first: Dictionary = building.stretch.buildings[0]
 	first.lot[1] = int(first.lot[1]) + 1
@@ -189,7 +200,8 @@ func _test_a_resized_lot_and_a_planted_tree_are_the_authors(t: TestRunner, data:
 	first.height = int(first.height) + 1
 	var rebuilt := RecipeCityBuilder.build(building)
 	var rebuilt_map: CityMap = rebuilt.map
-	t.check(_errors(rebuilt).is_empty() and rebuilt_map.building_lots().has(SceneRecipe.rect(first.lot)),
+	t.check(_errors(rebuilt).is_empty()
+			and rebuilt_map.building_lots().has(SceneRecipe.rect(first.lot)),
 			"a resized lot becomes the live building footprint without matching a generator: %s"
 			% [rebuilt.errors])
 	var tree := data.duplicate(true)
@@ -203,10 +215,10 @@ func _test_a_resized_lot_and_a_planted_tree_are_the_authors(t: TestRunner, data:
 	t.check(_errors(treed).is_empty(), "manually planted tree loads: %s" % [treed.errors])
 	if _errors(treed).is_empty():
 		var treed_map: CityMap = treed.map
-		var shown := StreetTrees.planted(treed_map).filter(func(item: StreetTrees.Planted) -> bool:
-			return treed_map.in_stretch(item.tile))
+		var shown := StreetTrees.planted(treed_map).filter(
+				func(item: StreetTrees.Planted) -> bool: return treed_map.in_stretch(item.tile))
 		t.check(shown.size() == 1 and shown[0].tile == planted,
-				"the authored tree list supplies the same placement used by drawing and clearance")
+				"the authored tree list supplies the placement drawing and clearance use")
 
 ## `data` with its first road run listed a second time.
 func _with_a_tile_listed_twice(data: Dictionary) -> Dictionary:

@@ -1,12 +1,13 @@
 extends RefCounted
-## `WalkField`'s ground for the red arrow's sweep on an authored scene's map (`docs/SCENE_RECIPES.md`,
-## "The task scenes"): the ground every sweep starts from (`WalkField.ground_for()`, which the
-## director's `_ground_for_the_arrow()` lays out once for each state of what blocks her and the
-## day-13 guard's walk reads too) is the authored street's, not the hidden context's.
+## `WalkField`'s ground for the red arrow's sweep on an authored scene's map
+## (`docs/SCENE_RECIPES.md`, "The task scenes"): the ground every sweep starts from
+## (`WalkField.ground_for()`, which the director's `_ground_for_the_arrow()` lays out once for
+## each state of what blocks her and the day-13 guard's walk reads too) is the authored
+## street's, not the hidden context's.
 ##
-## The map is the one data a recipe builds (`RecipeCityBuilder.build()`, task 7's stretch): a map
-## with a stretch is model data, so no city, crowd or director is made here, and the sweeps are
-## `WalkField`'s own, advanced by hand over that ground.
+## The map is the one data a recipe builds (`RecipeCityBuilder.build()`, task 7's stretch): a
+## map with a stretch is model data, so no city, crowd or director is made here, and the sweeps
+## are `WalkField`'s own, advanced by hand over that ground.
 
 const SCENE := "res://scene-recipes/task-07-package.json"
 
@@ -17,7 +18,8 @@ func _diagnostics(result: Dictionary) -> Array[String]:
 func run(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
-	t.check(_diagnostics(built).is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
+	t.check(_diagnostics(built).is_empty(),
+			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _diagnostics(built).is_empty():
 		return
 	var map: CityMap = built.map
@@ -26,10 +28,10 @@ func run(t: TestRunner) -> void:
 ## The ground every sweep of the red arrow starts from (`WalkField.ground_for()`, which the
 ## director's `_ground_for_the_arrow()` lays out once for each state of what blocks her and the
 ## day-13 guard's walk reads too) is the authored street's, not the hidden context's. On the
-## scene's own map: the streets the stretch was cut from go on under the void, as walkable ground
-## in its saved context. A target standing on that hidden ground, nearer to her than one on the
-## stretch by the context's walk, is the counterexample: a sweep of the raw context picks it, and the
-## scene's real walk must pick the one on the street she can walk to.
+## scene's own map: the streets the stretch was cut from go on under the void, as walkable
+## ground in its saved context. A target standing on that hidden ground, nearer to her than one
+## on the stretch by the context's walk, is the counterexample: a sweep of the raw context picks
+## it, and the scene's real walk must pick the one on the street she can walk to.
 func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	var raw_ground := PackedInt32Array()
 	raw_ground.resize(map.size_in_tiles().x * map.size_in_tiles().y)
@@ -69,7 +71,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	for y in map.size_in_tiles().y:
 		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if map.in_stretch(tile) and authored.length_at(tile) > authored.length_at(on_stretch):
+			if map.in_stretch(tile) \
+					and authored.length_at(tile) > authored.length_at(on_stretch):
 				on_stretch = tile
 	t.check(raw.length_at(on_stretch) > raw.length_at(through_void),
 			"and it is nearer her through the context than the far end of the street is")
@@ -81,7 +84,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	]
 	t.check(_swept(map, targets, raw_ground).nearest_at(start) == "near_through_void",
 			"the scene's raw context chooses the target on the hidden ground")
-	t.check(_swept(map, targets, WalkField.ground_for(map)).nearest_at(start) == "near_on_stretch",
+	t.check(_swept(map, targets,
+			WalkField.ground_for(map)).nearest_at(start) == "near_on_stretch",
 			"the task arrow chooses the target on the authored street she can walk to")
 
 ## A finished sweep from `targets` over `ground`.

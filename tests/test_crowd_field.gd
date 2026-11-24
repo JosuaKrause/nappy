@@ -2,8 +2,9 @@ extends RefCounted
 ## The crowd against a real city: the field around the player, lanes and headways, the morning's unpacking and how the crowd is drawn.
 ## One of the parts the suite is split into so none runs two minutes serial; the cases are in `tests/crowd_rig.gd`.
 ##
-## And the field on a scene's stretch, which needs no city: the map is the one data a recipe builds
-## (`RecipeCityBuilder.build()`, task 7's stretch), and the field is `CrowdField`'s own over it.
+## And the field on a scene's stretch, which needs no city: the map is the one data a recipe
+## builds (`RecipeCityBuilder.build()`, task 7's stretch), and the field is `CrowdField`'s own
+## over it.
 
 const Rig := preload("res://tests/crowd_rig.gd")
 const SCENE := "res://scene-recipes/task-07-package.json"
@@ -17,7 +18,8 @@ func run(t: TestRunner) -> void:
 	await rig.run_part(t, "field")
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
-	t.check(_diagnostics(built).is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
+	t.check(_diagnostics(built).is_empty(),
+			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _diagnostics(built).is_empty():
 		return
 	var map: CityMap = built.map
@@ -35,14 +37,17 @@ func _test_the_crowd_enters_at_the_ends(t: TestRunner, map: CityMap) -> void:
 		var lane_end := false
 		for offset in Tuning.STREET_WIDTH:
 			var cross := int(end.corridor) * CityMap.period() + offset
-			var at := Vector2i(cross, int(end.along)) if end.vertical else Vector2i(int(end.along), cross)
+			var at := Vector2i(cross,
+					int(end.along)) if end.vertical else Vector2i(int(end.along), cross)
 			var run := 0
 			while map.in_stretch(at + inward * run):
 				run += 1
 			lane_end = lane_end or (map.is_cut_off(at - inward) and run > Tuning.STREET_WIDTH)
 		sound = sound and lane_end
-	t.check(sound, "each end is a lane end with void beyond it and more than a junction behind it")
+	t.check(sound,
+			"each end is a lane end with void beyond it and more than a junction behind it")
 	var looking := Vector2(123, 456)
 	field.centre_on(looking)
-	t.check(field.has_stretch() and field.looking_at() == looking and field.centre_point() != looking,
+	t.check(field.has_stretch() and field.looking_at() == looking
+			and field.centre_point() != looking,
 			"the field stays over the whole stretch while the camera moves")

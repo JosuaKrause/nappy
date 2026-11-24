@@ -91,11 +91,12 @@ func run(t: TestRunner) -> void:
 	_test_examples(t)
 	_test_the_stretch_schema(t)
 
-## A stretch recipe's schema (`SceneRecipe.validate()`), asked of day 7's task scene: a stretch scope
-## needs its stretch, a stretch lists ground and never a building tile, and a street tree is listed
-## under `trees`, the shared placement source, never under `props`.
+## A stretch recipe's schema (`SceneRecipe.validate()`), asked of day 7's task scene: a stretch
+## scope needs its stretch, a stretch lists ground and never a building tile, and a street tree
+## is listed under `trees`, the shared placement source, never under `props`.
 func _test_the_stretch_schema(t: TestRunner) -> void:
-	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-07-package.json").data
+	var data: Dictionary = SceneRecipe.load_file(
+			"res://scene-recipes/task-07-package.json").data
 	var bare := data.duplicate(true)
 	bare.erase("stretch")
 	t.check("\n".join(SceneRecipe.validate(bare)).contains("come together"),

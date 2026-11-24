@@ -45,7 +45,8 @@ the `walked` alley test; the builder listing every tile as sidewalk, not showing
 tile types from the context, regenerating the context from its seed, accepting a malformed tile run,
 not listing a resized lot, not planting an authored tree and accepting a tile listed twice; the city
 extending the roof a fixed two rows, letting a hidden courtyard piece choose the tint, building every
-context building, not adding the void edge and ignoring the recipe's cracks.
+context building, not adding the void edge, ignoring the recipe's cracks and answering border ground
+beyond the map's edge.
 
 ## Two checks were weaker than they read, and are now held
 
@@ -57,11 +58,14 @@ context building, not adding the void edge and ignoring the recipe's cracks.
   siting condition. A row available that day and placed on the map (`pigeon_flock`) is refused too,
   and fails when the siting condition is dropped.
 
-## Not shown failing alone
+## Two guards, two sets of tiles
 
-- **No ground in the void** (drawing): the city's own guard in `scenery_ground_source()` is redundant
-  with `GroundTiles.source_for()` answering no ground for the void's building tile, so each break
-  alone leaves the check green; it fails with both made.
+- **No ground in the void** (drawing): the void inside the map is held by `GroundTiles.source_for()`
+  answering no ground for a building tile, and the void beyond the map's edge by the city's own guard
+  at the top of `scenery_ground_source()`, since off the map's rectangle the city answers the border
+  band's ground. The check asks both, a tile inside the map and three outside it, and fails with the
+  city's guard alone removed: the three tiles outside (-3,-3) and one past each far edge then answer
+  border ground on day 7's stretch, where the guard answers no ground.
 
 ## Choices where the design was silent
 

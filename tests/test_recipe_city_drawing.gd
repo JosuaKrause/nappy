@@ -1,15 +1,16 @@
 extends RefCounted
-## **The real `City` draws the maps a recipe builds**: the power station recipes' bounded context and
-## their two examples are built by `RecipeCityBuilder` (`tests/test_scene_recipe.gd`'s) and handed to
-## a real `City`, which gives the exterior the plain ground, extends the hall roof over its adjoining
-## wall and streams fallback ground beyond the original map. A suite that builds a real `City` and
-## combines two modules for a guarantee that spans them: the builder's map is one the city can draw,
-## which neither module's own suite can see (the builder has no city to hand it to, and the city's
-## suites are handed maps the generator made). The same holds for a task scene's stretch (day 7's,
-## and day 14's partial courtyard): what the city does with a map that has a stretch (keeps the
-## ground an author edited through the day's preparation, builds a join from the authored heights,
-## draws only the recipe's buildings and walls the void) is a guarantee between the recipe's map
-## and the city, which the builder's suite (no city) and the city's (generated maps) cannot see.
+## **The real `City` draws the maps a recipe builds**: the power station recipes' bounded
+## context and their two examples are built by `RecipeCityBuilder`
+## (`tests/test_scene_recipe.gd`'s) and handed to a real `City`, which gives the exterior the
+## plain ground, extends the hall roof over its adjoining wall and streams fallback ground
+## beyond the original map. A suite that builds a real `City` and combines two modules for a
+## guarantee that spans them: the builder's map is one the city can draw, which neither module's
+## own suite can see (the builder has no city to hand it to, and the city's suites are handed
+## maps the generator made). The same holds for a task scene's stretch (day 7's, and day 14's
+## partial courtyard): what the city does with a map that has a stretch (keeps the ground an
+## author edited through the day's preparation, builds a join from the authored heights, draws
+## only the recipe's buildings and walls the void) is a guarantee between the recipe's map and
+## the city, which the builder's suite (no city) and the city's (generated maps) cannot see.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
@@ -158,9 +159,11 @@ func _test_the_examples(t: TestRunner) -> void:
 ## what a live join is built from, a partial courtyard's tint is its first visible member's, and
 ## the ground, the buildings and the wall are the recipe's alone.
 func _test_a_stretchs_city(t: TestRunner) -> void:
-	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-07-package.json").data
+	var data: Dictionary = SceneRecipe.load_file(
+			"res://scene-recipes/task-07-package.json").data
 	var built := RecipeCityBuilder.build(data)
-	t.check(_errors(built).is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
+	t.check(_errors(built).is_empty(),
+			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _errors(built).is_empty():
 		return
 	var map: CityMap = built.map
@@ -170,11 +173,12 @@ func _test_a_stretchs_city(t: TestRunner) -> void:
 	_test_the_city_draws_the_stretch_alone(t, map)
 
 ## **The day's and the finale's preparation keep the ground an author edited**: one road run and
-## one alley run of day 7's stretch are listed as sidewalk, and the real `City` begins the day over
-## that map (it repaints the map for the day's state, as the finale's preparation does) and both
-## tiles are still the sidewalk the author wrote. The alley is block ground, which a repaint
-## without the saved dawn ground would paint back; a street tile is not.
-func _test_the_days_preparation_keeps_the_manual_ground(t: TestRunner, data: Dictionary) -> void:
+## one alley run of day 7's stretch are listed as sidewalk, and the real `City` begins the day
+## over that map (it repaints the map for the day's state, as the finale's preparation does) and
+## both tiles are still the sidewalk the author wrote. The alley is block ground, which a
+## repaint without the saved dawn ground would paint back; a street tile is not.
+func _test_the_days_preparation_keeps_the_manual_ground(t: TestRunner,
+		data: Dictionary) -> void:
 	var drifted := data.duplicate(true)
 	var runs: Dictionary = drifted.stretch.tiles
 	var road: Array = runs.road
@@ -202,10 +206,11 @@ func _test_the_days_preparation_keeps_the_manual_ground(t: TestRunner, data: Dic
 			"the real finale/day preparation keeps the manual ground")
 	city.free()
 
-## Authored values are construction inputs, not a visual override applied after construction. The
-## day-7 rear lot touches the two-column front lot: making its wall four rows high makes the live
-## front roof extend four rows to meet it.
-func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: Dictionary) -> void:
+## Authored values are construction inputs, not a visual override applied after construction.
+## The day-7 rear lot touches the two-column front lot: making its wall four rows high makes the
+## live front roof extend four rows to meet it.
+func _test_authored_building_values_drive_live_joins(t: TestRunner,
+		day_seven: Dictionary) -> void:
 	var edited := day_seven.duplicate(true)
 	var back_lot := Rect2i(90, 56, 2, 6)
 	var front_lot := Rect2i(90, 62, 2, 8)
@@ -233,12 +238,13 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 			var drawn_extension := FrontReads.look(front).roof_extension()
 			var expected_extension: Array[int] = [4, 4]
 			t.check(back.wall_tiles() == 4 and drawn_extension == expected_extension,
-					"the front roof reaches the edited four-row rear wall: %s" % [drawn_extension])
+					"the front roof reaches the edited rear wall: %s" % [drawn_extension])
 		city.free()
 
 ## A stretch keeps the complete courtyard as hidden context but draws only its authored members.
 ## The first visible task-14 member therefore supplies their shared tint; the hidden context's
-## earlier member cannot override it, and the second visible member retains its own authored roll.
+## earlier member cannot override it, and the second visible member retains its own authored
+## roll.
 func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 	var courtyard_data: Dictionary = SceneRecipe.load_file(PARTIAL_COURTYARD_SCENE).data
 	var edited := courtyard_data.duplicate(true)
@@ -278,13 +284,13 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 			var sibling_wall := FrontReads.look(visible_sibling).colour_of(Building.WALL)
 			var authored_wall := Palette.building_wall(authored_variant)
 			t.check(source_wall == authored_wall and sibling_wall == authored_wall,
-					("the first visible piece controls the partial courtyard's live tint: %s, %s")
+					"the first visible piece controls the courtyard's live tint: %s, %s"
 					% [source_wall, sibling_wall])
 		city.free()
 
 ## **The city draws the stretch alone**: only the recipe's buildings stand, the void round the
-## stretch is walled off, the recipe's cracks are what the ground draws, and no ground is drawn in
-## the void.
+## stretch is walled off, the recipe's cracks are what the ground draws, and no ground is drawn
+## in the void.
 func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -292,15 +298,19 @@ func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void
 	t.check(city.buildings().size() == map.stretch_building_lots().size(),
 			"only the recipe's buildings stand (%d)" % city.buildings().size())
 	var edge := city.get_node_or_null("VoidEdge")
-	t.check(edge != null and edge.get_child_count() > 0, "and the void round the stretch is walled off")
+	t.check(edge != null and edge.get_child_count() > 0,
+			"and the void round the stretch is walled off")
 	var cracked := 0
 	for tile: Vector2i in map.rect_tiles(Rect2i(Vector2i.ZERO, map.size_in_tiles())):
 		if map.stretch_crack_at(tile) == null:
 			continue
-		var plain := GroundTiles.source_for(map, tile, 7)
-		cracked += int(plain != GroundTiles.SIDEWALK and plain != GroundTiles.ROAD
-				and plain != GroundTiles.ALLEY)
+		var drawn := city.scenery_ground_source(tile)
+		cracked += int(drawn != GroundTiles.SIDEWALK and drawn != GroundTiles.ROAD
+				and drawn != GroundTiles.ALLEY)
 	t.check(cracked > 0, "the recipe's cracks are what the ground draws")
-	var outside := Vector2i.ZERO
-	t.check(city.scenery_ground_source(outside) == -1, "and no ground is drawn in the void")
+	t.check(city.scenery_ground_source(Vector2i.ZERO) == -1, "no ground is drawn in the void")
+	var beyond := map.size_in_tiles()
+	for tile: Vector2i in [Vector2i(-3, -3), Vector2i(beyond.x, 5), Vector2i(5, beyond.y)]:
+		t.check(city.scenery_ground_source(tile) == -1,
+				"and none beyond the map's edge, at %s" % [tile])
 	city.free()
