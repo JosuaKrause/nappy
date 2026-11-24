@@ -694,7 +694,7 @@ func _out_of_view() -> bool:
 	if not _field:
 		return true
 	if _field.has_stretch():
-		return _beyond_every_view(position)
+		return beyond_every_view(position)
 	return position.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
 
 ## **On a stretch, the camera's own view, in both presentations, with a body's room round it.** A
@@ -704,12 +704,12 @@ func _out_of_view() -> bool:
 ## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the square
 ## `CrowdView.beyond_every_view()` describes. The camera is the crowd's `view`; with none, or with
 ## the agent out of the tree — a rig that steps agents by hand — the played day's radius answers.
-func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
+func beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 	if view == null or not is_inside_tree():
 		return at.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
 	return view.beyond_every_view(at, room, _field.looking_at())
 
-## How far past a body's centre its picture may reach, for `_beyond_every_view()`: two tiles, more than
+## How far past a body's centre its picture may reach, for `beyond_every_view()`: two tiles, more than
 ## a car's half length and its shadow.
 const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 
@@ -1124,7 +1124,7 @@ func _look_ahead() -> void:
 		# the end is a wall like any other — a walker turns round at it and a car turns off before
 		# it or waits — since nothing may vanish where she can see it.
 		var ahead := here + step * i
-		if _map.is_cut_off(ahead) and _beyond_every_view(_map.tile_to_world(ahead)):
+		if _map.is_cut_off(ahead) and beyond_every_view(_map.tile_to_world(ahead)):
 			break
 		if _strategy.cannot_go_on(_vertical, here + step * i):
 			_blocked_in = i
@@ -1387,7 +1387,7 @@ func _walks_off_the_stretch() -> bool:
 ## built: "walkers and cars recycled at the stretch's ends".)* The scene's crowd is the street she
 ## walks and nothing beyond it exists, so an agent that walks off one end comes back in at an end,
 ## rolled from the field's own ends (`CrowdField.stretch_ends`) that are out of every view
-## (`_beyond_every_view()`), heading in: a car on the lane that drives that way, a walker on any
+## (`beyond_every_view()`), heading in: a car on the lane that drives that way, a walker on any
 ## lane its footway has there, each at its ordinary speed. The same ground and room a recycle
 ## anywhere asks for are asked here, for a handful of rolls, including the final queue position.
 ## With no accepted entry, or every end in view, it turns
@@ -1399,7 +1399,7 @@ func _enter_at_a_stretch_end() -> void:
 		var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
 		var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 				* Tuning.TILE_SIZE
-		if _beyond_every_view(Vector2(across, along) if end.vertical else Vector2(along, across)):
+		if beyond_every_view(Vector2(across, along) if end.vertical else Vector2(along, across)):
 			ends.append(end)
 	if ends.is_empty():
 		_turn_round()
@@ -1426,7 +1426,7 @@ func _enter_at_a_stretch_end() -> void:
 		_settle_junction()
 		# The lane can lie nearer the picture than the street's middle, and joining a queue can
 		# move it again. Check the final placement, not merely the candidate street end.
-		if not _beyond_every_view(position) or not _stands_on_a_street():
+		if not beyond_every_view(position) or not _stands_on_a_street():
 			continue
 		_strategy.claim_the_road_here()
 		_gap_ahead = INF

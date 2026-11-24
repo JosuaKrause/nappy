@@ -171,10 +171,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				errors.append("setup structures select the same street in multiple collections")
 			structure_streets[key] = true
 			if collection == "seals":
-				var found := false
-				for candidate in SealPlanner.candidates():
-					found = found or candidate.id == entry.get("candidate", "")
-				if not found:
+				if not SealPlanner.candidate_named(str(entry.get("candidate", ""))):
 					errors.append("setup.seals requires an existing production candidate")
 			elif collection == "barriers" and entry.get("end") not in ["a", "b"]:
 				errors.append("setup.barriers requires end a or b")
@@ -771,21 +768,15 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	if not errors.is_empty():
 		return
 	var going := -1.0 if column.direction == "north" else 1.0
-	var lane := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
-	var top := Tuning.TILE_SIZE * 0.5
-	var bottom := map.size_in_tiles().y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
-	var back := at.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
-	if not is_equal_approx(at.x, lane) or at.y < top or at.y > bottom or back < top or back > bottom:
-		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
-		return
 	var happening := ResistanceHappenings.new()
 	happening.use_trace(_trace)
-	happening.setup(map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
-			null, null, _world.events().spawn_siting())
+	happening.setup(map, _run, _world.events(), _world.streets(), null, null, null, null,
+			_world.events().spawn_siting())
 	happening.start_day(_run.header().day())
-	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
-			bottom)
-	var trucks := happening.column_trucks()
+	if not happening.column_fits_at(at, going):
+		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
+		return
+	var trucks := happening.bring_the_column_at(at, going)
 	for i in trucks.size():
 		named["truck_%d" % (i + 1)] = trucks[i]
 
@@ -896,19 +887,15 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 		if not SealPlanner.may_seal(map, _walk_spec, route, segment):
 			errors.append("setup.seals: requires a production off-route, non-home, non-spine street")
 			continue
-		for candidate in SealPlanner.candidates():
-			if candidate.id != entry.candidate:
-				continue
-			if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key)):
-				errors.append("setup.seals: candidate is unavailable on this day or street")
-				continue
-			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
-			plans.append_array(sited.bodies)
-			if candidate.strength == SealPlanner.Strength.HARD:
-				map.hold_segment(key, HeldStreets.Why.SEAL)
-			else:
-				sited.shut_the_sidewalk(map, true)
-				sited.shut_the_sidewalk(map, false)
+		var candidate := SealPlanner.candidate_named(str(entry.candidate))
+		if not candidate:
+			continue
+		if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key)):
+			errors.append("setup.seals: candidate is unavailable on this day or street")
+			continue
+		var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
+		plans.append_array(sited.bodies())
+		sited.stand_whole(map)
 	map.set_seal_tree_pits(emptied)
 	return plans
 
@@ -1313,8 +1300,7 @@ func prepare_capture() -> void:
 	if manifest.has("capture_tick"):
 		return
 	if _zoom:
-		_zoom._process(0)
-		_zoom.set_process(false)
+		_zoom.hold_still()
 	var camera := get_viewport().get_camera_2d()
 	if camera:
 		camera.force_update_scroll()
@@ -1347,7 +1333,7 @@ func activity_snapshot() -> Dictionary:
 		var key := "visible_cars" if agent.is_car() else "visible_walkers"
 		result[key] += 1
 		if not agent.is_car():
-			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.get("_corridor")]
+			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.lane().corridor_index()]
 			if not result.walker_streets.has(street):
 				result.walker_streets[street] = {"walkers": 0, "moving": 0}
 			result.walker_streets[street].walkers += 1
@@ -1608,7 +1594,7 @@ const PICTURE_REACH := float(Tuning.TILE_SIZE)
 
 ## **Nothing in a stretch's crowd appears or vanishes where she can see it** *(the player's rule,
 ## PR #597)*: a walker or car that moves further in one tick than any of them walks or drives — a
-## recycle — while it stood, or now stands, in either view (`CrowdAgent._beyond_every_view()`) is
+## recycle — while it stood, or now stands, in either view (`CrowdAgent.beyond_every_view()`) is
 ## recorded in the manifest's `seen_to_jump`, which `tests/test_scene_recipe_stretch_crowd.gd` holds
 ## empty over every stretch scene.
 func _watch_the_crowd() -> void:
@@ -1619,8 +1605,8 @@ func _watch_the_crowd() -> void:
 		if _crowd_was.has(agent):
 			var was: Vector2 = _crowd_was[agent]
 			if was.distance_to(at) > 2.0 * Tuning.TILE_SIZE \
-					and not (agent._beyond_every_view(was, PICTURE_REACH)
-					and agent._beyond_every_view(at, PICTURE_REACH)):
+					and not (agent.beyond_every_view(was, PICTURE_REACH)
+					and agent.beyond_every_view(at, PICTURE_REACH)):
 				var jumps: Array = manifest.get("seen_to_jump", [])
 				jumps.append({"tick": tick, "from": [snappedf(was.x, 0.1), snappedf(was.y, 0.1)],
 						"to": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)],

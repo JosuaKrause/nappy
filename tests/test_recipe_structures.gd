@@ -198,7 +198,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 		if instance.row_id() == "cafe_tables":
 			stood.append(_along_and_side(street, centre, instance.position))
 	var where: Array[Vector2] = []
-	for body in expected.bodies:
+	for body in expected.bodies():
 		where.append(_along_and_side(street, centre, body.placed_at()))
 	stood.sort()
 	where.sort()

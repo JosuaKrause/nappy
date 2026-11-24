@@ -164,6 +164,13 @@ class Candidate extends RefCounted:
 static func candidates() -> Array[Candidate]:
 	return _build_candidates()
 
+## The production picture called `id`, or null when there is none.
+static func candidate_named(id: String) -> Candidate:
+	for candidate in candidates():
+		if candidate.id == id:
+			return candidate
+	return null
+
 ## The only place a new picture is added. See the class doc.
 ##
 ## **Eight seal pictures** (`docs/DECISIONS.md`, "Eight seal pictures"): reusable catalogue
@@ -289,7 +296,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		if candidate.strength == Strength.SOFT:
 			soft_pairs.append(sited)
 		else:
-			planned.append_array(sited.bodies)
+			planned.append_array(sited.bodies())
 			if held != null:
 				held.hold(key, HeldStreets.Why.SEAL)
 	map.set_seal_tree_pits(emptied)
@@ -435,14 +442,27 @@ class SitedSeal extends RefCounted:
 	var segment: StreetNetwork.Segment
 	var candidate: Candidate
 	var along := -1
-	var bodies: Array[EventPlan] = []
+	var _bodies: Array[EventPlan] = []
 
 	func _init(the_segment: StreetNetwork.Segment, the_candidate: Candidate, at: int,
 			placed: Array[EventPlan]) -> void:
 		segment = the_segment
 		candidate = the_candidate
 		along = at
-		bodies = placed
+		_bodies = placed
+
+	## The seal's bodies, as they stand on the street.
+	func bodies() -> Array[EventPlan]:
+		return _bodies
+
+	## What follows an authored seal, which `seal_street()` leaves to its caller: a hard seal's
+	## street held on the map, a soft seal's two pavements shut.
+	func stand_whole(map: CityMap) -> void:
+		if candidate.strength == Strength.HARD:
+			map.hold_segment(segment.key(), HeldStreets.Why.SEAL)
+		else:
+			shut_the_sidewalk(map, true)
+			shut_the_sidewalk(map, false)
 
 	## Shuts one pavement of a soft seal to walkers (`CityMap.soft_sealed_tiles()`): both lanes of
 	## the near side (`near`, the lower end of the street's cross-section) or of the far one, at the
@@ -630,7 +650,7 @@ static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenera
 	for sited: SitedSeal in pairs:
 		# Shut at the along tile `seal_street()` chose for this pair, so the tiles marked shut to
 		# walkers are the ones the bodies actually stand on rather than the street's own midpoint.
-		var pair := sited.bodies
+		var pair := sited.bodies()
 		if pair.size() == 2 and rng.randf() < SEAL_THINNING_FRACTION:
 			var side := rng.randi_range(0, 1)
 			kept.append(pair[side])
