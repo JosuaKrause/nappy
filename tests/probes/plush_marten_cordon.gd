@@ -25,7 +25,7 @@ func run(t: TestRunner) -> void:
 	var closes := PackedFloat32Array()
 	var walks := PackedFloat32Array()
 	for seed_value in seeds:
-		var m: Dictionary = sweep.call("measure", t, seed_value)
+		var m: Dictionary = await sweep.call("measure", t, seed_value)
 		if m.is_empty():
 			print("seed %5d: no swing park" % seed_value)
 			continue

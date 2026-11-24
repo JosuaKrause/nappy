@@ -269,10 +269,27 @@ func _all_but_the_finale() -> Array[int]:
 			done.append(step.index)
 	return done
 
+## Her as `_rig_player()` makes her, for a suite that lets the events tick on her
+## (`EventManager.use_player()`): her camera is not the current one, so the view the tick looks
+## through is where she stands.
+func _her_for_the_events(t: Node, at: Vector2) -> Stroller:
+	var player := _rig_player(t, at)
+	var camera: Camera2D = player.get_node("Camera2D")
+	camera.enabled = false
+	return player
+
+## Takes `body` (`_her_for_the_events()`) out of the city's events, and hands the poster walls and
+## the blackout the rig's own player (`_player`, or nobody when it is gone).
+func _let_her_go(body: Stroller) -> void:
+	RunCity.events(_city).use_player(null)
+	var hers: Stroller = _player if is_instance_valid(_player) else null
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, hers)
+	body.free()
+
 ## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
 ## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does. The
 ## test city's poster walls and blackout, where it stands, are handed her here, as a walk hands her.
-func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
+func _rig_player(t: Node, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -446,15 +463,31 @@ static func _is_one_in_from_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 	return AlleyMarks.is_a_mouth(map, tile)
 
-## Runs the warning the trap row `row_id` is under to its end, frame by frame, with her standing at
-## `her`, the way `EventManager._physics_process` runs it. Returns how long it was up, or `INF` when
-## none was.
+## Lets real physics ticks of the city's events pass, `STEP` of game time each, until `seconds`
+## have passed or `done` (called after every tick with the count so far) answers true: the
+## manager's own tick (`EventManager._tick_the_events()`), on whoever it was handed
+## (`EventManager.use_player()`).
+func _let_the_events_tick(seconds: float, done := Callable()) -> void:
+	var scale := STEP * Engine.physics_ticks_per_second
+	await PhysicsTicks.pass_ticks_faster(_city, PhysicsTicks.ticks_for(seconds, scale),
+			PhysicsTicks.FASTER, done, scale)
+
+## Runs the warning the trap row `row_id` is under to its end, tick by tick, with her standing
+## at `her` (a body of the rig's own, handed to the events for the run, unless they already have
+## her). Returns how long it was up, or `INF` when none was.
 func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
-	var warning := _warning_for(RunCity.events(_city), row_id)
+	var events := RunCity.events(_city)
+	var warning := _warning_for(events, row_id)
 	if warning == null:
 		return INF
-	while RunCity.events(_city).pending_warnings().has(warning) and warning.shown_for() < 5.0:
-		RunCity.events(_city).warnings.run(STEP, her)
+	var body: Stroller = null
+	if not events.world.has_player():
+		body = _her_for_the_events(_city, her)
+		events.use_player(body)
+	await _let_the_events_tick(5.0 + STEP, func(_ticks: int) -> bool:
+		return not events.pending_warnings().has(warning) or warning.shown_for() >= 5.0)
+	if body != null:
+		_let_her_go(body)
 	return warning.shown_for()
 
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned

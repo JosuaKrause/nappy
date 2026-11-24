@@ -303,7 +303,6 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	var city: City = RunCity.with_own_run(CITY_SCENE, 4242)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
-	RunCity.events(city).stream_within(INF)
 	# A post on open street with a clear line to where she stands: the notice needs one.
 	var post := Vector2.INF
 	var reach := _hot_roadblock().notice_within() - 10.0
@@ -334,8 +333,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	EventBus.pursuit_ended.connect(listen[3])
 	EventBus.pursuit_cut_short.connect(listen[4])
 	var plan := EventPlan.new(_hot_roadblock(), post)
-	RunCity.events(city).streaming.add(plan)
-	RunCity.events(city).streaming.stream_in(plan)
+	var planned: Array[EventPlan] = [plan]
+	RunCity.events(city).start_recipe(planned, DaySpec.for_day(1), 1, post)
 	var guard: EventInstance = RunCity.events(city).event_of(plan)
 	t.check(guard != null, "the roadblock streams in")
 	if guard == null:
@@ -357,11 +356,11 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_on_its_way_out(), "she shook him off and he is walking away")
-	RunCity.events(city).streaming.stream_out(plan)
+	_stream_out(city, post)
 	var carried := plan.saved().state_of("EventBarrierPost")
 	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
 			"the plan carries the spent guard and the side he left (%s)" % [carried])
-	RunCity.events(city).streaming.stream_in(plan)
+	_stream_in(city, post)
 	var back: EventInstance = RunCity.events(city).event_of(plan)
 	t.check(back != null and back != guard, "a fresh instance comes back")
 	if back != null:
@@ -380,8 +379,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 		t.check(back.is_waiting() and not back.is_lethal_at(where.at()),
 				"she walks up to it and nothing sets off")
 		# Streamed out once more, spent for good this time.
-		RunCity.events(city).streaming.stream_out(plan)
-		RunCity.events(city).streaming.stream_in(plan)
+		_stream_out(city, post)
+		_stream_in(city, post)
 		var again := RunCity.events(city).event_of(plan)
 		t.check(again != null and again.is_waiting() and again.has_lost_its_guard(),
 				"and a barrier streamed out and in again stays spent")
@@ -395,6 +394,17 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	EventBus.pursuit_ended.disconnect(listen[3])
 	EventBus.pursuit_cut_short.disconnect(listen[4])
 	city.free()
+
+## Streams the plan standing at `post` out, the way the game's own streaming does it
+## (`EventManager.stream_around()`): her taken to a point beyond the stream radius, its
+## hysteresis and the distance a live event is kept for her.
+func _stream_out(city: City, post: Vector2) -> void:
+	RunCity.events(city).stream_around(post + Vector2(Tuning.EVENT_STREAM_RADIUS
+			+ Tuning.EVENT_STREAM_HYSTERESIS + Tuning.OUT_OF_SIGHT + 100.0, 0.0))
+
+## Streams the plan standing at `post` back in, her taken back to it.
+func _stream_in(city: City, post: Vector2) -> void:
+	RunCity.events(city).stream_around(post)
 
 ## **A guard sees out of the band he belongs to, and only that one.** *(The comment of
 ## `EventInstance`'s own sight line, `_clear_line_to()`: "a guard sees out of the band he stands

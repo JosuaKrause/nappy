@@ -17,8 +17,8 @@ func run(t: TestRunner) -> void:
 	await _test_standing_at_the_door_completes_nothing(t)
 	_test_a_crossing_taken_back_does_not_do_day_nine(t)
 	_test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t)
-	_test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t)
-	_test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
+	await _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t)
+	await _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
 	await _test_the_frames_see_a_crossing(t)
 	_free_city()
 
@@ -294,7 +294,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 			# here; only the release moves her, so being moved is being let through.
 			t.check(player.global_position.distance_to(before) > 1.0,
 					"and the inspection lets her through")
-			_run_the_traps_warning("robber_giving_chase", player.global_position)
+			await _run_the_traps_warning("robber_giving_chase", player.global_position)
 			t.check(_robber_after_her(events) == null and _warning_for(events, "robber_giving_chase") == null,
 					"no robber is warned of or set on her by the inspected crossing")
 			pursuers = 0
@@ -356,7 +356,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 			t.check(_robber_after_her(events) == null
 					and _warning_for(events, "robber_giving_chase") != null,
 					"the inspected crossing warns of the robber first, with nobody in the world")
-			_run_the_traps_warning("robber_giving_chase", player.global_position)
+			await _run_the_traps_warning("robber_giving_chase", player.global_position)
 			var trap := _robber_after_her(events)
 			t.check(trap != null and trap.row_id() == "robber_giving_chase",
 					"the inspected crossing sends the robber after her")

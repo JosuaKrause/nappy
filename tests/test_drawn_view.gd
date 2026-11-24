@@ -396,7 +396,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 ## come off** — and with none up and none drawn there is nothing to redraw. The edge runs its own
 ## frames; a frame "redraws" when the engine drew the edge in it (its `draw` signal). The fire engine
 ## is moved by hand at its own speed over each frame's own length, and the manager's tick is off, so
-## nothing else moves it.
+## nothing else moves it, bar the one tick that retires it.
 func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunner) -> void:
 	# The page the badge's picture and the engine's are drawn from, as `main` hands the edge it.
 	var atlas := AtlasLibrary.new()
@@ -442,9 +442,14 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	t.check(await _redraws(t, edge, drawn) and not edge.badges().announcing().is_empty(),
 			"and it is redrawn every frame it stays up, the camera moving under it")
 
+	# One tick of the manager's own, switched on for it. What is read is the redraw, which the
+	# retirement itself causes: no check here reads the list the tick takes it off.
+	var drawn_before: int = drawn[0]
 	manager.retire(engine)
-	manager.streaming.retire_finished()
-	t.check(await _redraws(t, edge, drawn), "the frame it comes down redraws once to take it off")
+	manager.set_physics_process(true)
+	await PhysicsTicks.pass_ticks(t, 1)
+	manager.set_physics_process(false)
+	t.check(drawn[0] > drawn_before, "the frame it comes down redraws once to take it off")
 	t.check(not await _redraws(t, edge, drawn), "and then the empty edge is not redrawn again")
 	edge.free()
 	standing.free()
