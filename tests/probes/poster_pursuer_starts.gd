@@ -58,11 +58,11 @@ func run(t: TestRunner) -> void:
 				player.global_position = her
 				RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0), null)
-				RunCity.events(city).ahead.clear()
+				RunCity.events(city)._ahead.clear()
 				RunCity.events(city).send_a_pursuer()
 				var shown := 0.0
 				while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
-					RunCity.events(city).warnings.run(STEP, her)
+					RunCity.events(city)._warnings.run(STEP, her)
 					shown += STEP
 				var sent: EventInstance = null
 				for instance in RunCity.events(city).instances():
@@ -78,7 +78,7 @@ func run(t: TestRunner) -> void:
 				print("PP seed %d day %d tear %d at %s -> %s" % [seed_value, day, tears,
 						RunTrace.tile(tile), made])
 				printed += 1
-			RunCity.events(city).ahead.clear()
+			RunCity.events(city)._ahead.clear()
 			player.free()
 		city.free()
 	print("PP_TOTAL %d tears, %d sent nobody" % [printed, nobody])

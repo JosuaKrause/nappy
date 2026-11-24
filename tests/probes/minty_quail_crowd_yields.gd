@@ -216,7 +216,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		_take_out(city, before)
 		return
 	for tick in TICKS * 2:
-		RunCity.events(city).warnings.run(STEP, her)
+		RunCity.events(city)._warnings.run(STEP, her)
 		_tick_events(city)
 		meeting.tick_the_crowd()
 		meeting.observe(before, [])
@@ -229,8 +229,8 @@ func _tick_events(city: City) -> void:
 	var events := RunCity.events(city)
 	events._tell_them_where_she_is()
 	events._step_them(STEP)
-	events.ahead.let_the_officers_out()
-	events.streaming.retire_finished()
+	events._ahead.let_the_officers_out()
+	events._streaming.retire_finished()
 
 func _take_out(city: City, before: Array) -> void:
 	# Each element is read as a Variant: one may be freed by the time it is reached (the
@@ -238,7 +238,7 @@ func _take_out(city: City, before: Array) -> void:
 	for item: Variant in RunCity.events(city).instances().duplicate():
 		if not before.has(item) and is_instance_valid(item):
 			RunCity.events(city).retire(item as EventInstance)
-	RunCity.events(city).streaming.retire_finished()
+	RunCity.events(city)._streaming.retire_finished()
 
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at

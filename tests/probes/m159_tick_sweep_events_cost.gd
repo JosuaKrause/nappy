@@ -184,33 +184,33 @@ func _rng(stream: String, city_seed: int, day: int) -> RandomNumberGenerator:
 ## microseconds in `EVENT_PARTS` order; a call the step skips this tick reads 0.
 func _split_events(events: EventManager, delta: float) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	events.streaming.advance_the_broadcast(delta)
-	events.streaming.retire_finished()
+	events._streaming.advance_the_broadcast(delta)
+	events._streaming.retire_finished()
 	stamps.append(Time.get_ticks_usec())
 	var found := events.world.has_player()
 	if found:
 		events._look_through_the_camera()
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events.ahead.site_what_is_on_her_way(delta)
+		events._ahead.site_what_is_on_her_way(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events.stream_around(events.world.player().global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events.ahead.place_what_is_owed_ahead(delta)
+		events._ahead.place_what_is_owed_ahead(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.spawner.summon_what_has_been_sighted(events.plans())
+		events._spawner.summon_what_has_been_sighted(events.plans())
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.spawner.report_the_pelicans_in_view()
+		events._spawner.report_the_pelicans_in_view()
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._watch_the_encounters(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.warnings.run(delta, events.world.player().global_position)
+		events._warnings.run(delta, events.world.player().global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._tell_them_where_she_is()
@@ -218,16 +218,16 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 	events._step_them(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.ahead.let_the_officers_out()
+		events._ahead.let_the_officers_out()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.warnings.warn_about_the_ground_she_is_on()
+		events._warnings.warn_about_the_ground_she_is_on()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.checkpoints.watch_the_door_lines()
+		events._checkpoints.watch_the_door_lines()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.checkpoints.check_detentions()
+		events._checkpoints.check_detentions()
 	stamps.append(Time.get_ticks_usec())
 	events.check_hard_fails()
 	stamps.append(Time.get_ticks_usec())

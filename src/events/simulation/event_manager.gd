@@ -49,17 +49,17 @@ var world: EventWorld
 ## The walk's plans, read through one object (`walk_events()`).
 var _walk_events := WalkEvents.new()
 ## The live instances the walk's plans stream in as.
-var streaming: EventStreaming
+var _streaming: EventStreaming
 ## Every instance made, what a finished row leaves, the summons and the pelican bag.
-var spawner: EventSpawner
+var _spawner: EventSpawner
 ## The warnings up for something not in the world yet, and the mark over her head.
-var warnings: WarningBoard
+var _warnings: WarningBoard
 ## What the director puts in front of her while she walks.
-var ahead: EventsAhead
+var _ahead: EventsAhead
 ## **The district doors as she meets them** (`CheckpointController`): the holds, the releases, the
 ## walks under a raised boom and the guard a crossing sets on her, over this manager's own live
 ## instances.
-var checkpoints: CheckpointController
+var _checkpoints: CheckpointController
 ## **Hands in what a protest points at**, answering a world point or `Vector2.INF` for nothing: the
 ## resistance's (`ResistanceDirector.setup()`, its `_pointable_objective()`), asked on behalf of
 ## every instance made here, an instance made before it was handed included, since they share
@@ -73,7 +73,7 @@ func use_protest_target(where: Callable) -> void:
 ## at once, every unit of the day's drawn at the walk's start, which is what the escape's building
 ## and a test rig with no player want.
 func stream_within(radius: float) -> void:
-	streaming.stream_within(radius)
+	_streaming.stream_within(radius)
 
 var _hard_failed := false
 
@@ -100,20 +100,20 @@ var _recipe_plan := false
 ## none, and they are set up on open ground with every default, as a suite's manager is.
 func _init(surroundings: EventSurroundings = null) -> void:
 	world = EventWorld.new(surroundings)
-	warnings = WarningBoard.new(world)
+	_warnings = WarningBoard.new(world)
 	_planner = DayPlanner.new(world)
-	spawner = EventSpawner.new(world, warnings)
-	streaming = EventStreaming.new(world, spawner, _walk_events)
-	ahead = EventsAhead.new(world, streaming, spawner, warnings, _walk_events)
-	ahead.use_sitings(SitingMaker.new(world, _walk_events))
-	checkpoints = CheckpointController.new(world, spawner.spawn, EventCatalogue.door_guard())
+	_spawner = EventSpawner.new(world, _warnings)
+	_streaming = EventStreaming.new(world, _spawner, _walk_events)
+	_ahead = EventsAhead.new(world, _streaming, _spawner, _warnings, _walk_events)
+	_ahead.use_sitings(SitingMaker.new(world, _walk_events))
+	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard())
 	_encounters = EncounterWatch.new(world.reports())
-	_sources = EventSources.new(world, checkpoints)
-	checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
+	_sources = EventSources.new(world, _checkpoints)
+	_checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
 			door_crossed.emit(at, axis, inspected))
-	checkpoints.takes_her_in.connect(_take_her_in)
-	checkpoints.holds_her.connect(_hold_her)
-	checkpoints.lets_her_out.connect(_let_her_out)
+	_checkpoints.takes_her_in.connect(_take_her_in)
+	_checkpoints.holds_her.connect(_hold_her)
+	_checkpoints.lets_her_out.connect(_let_her_out)
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole catalogue,
 ## the checkpoint kit and the crater on one page (`EventPictures.ATLAS_GROUP`), for the manager's
@@ -136,8 +136,8 @@ func _exit_tree() -> void:
 ## the parts, the world and its map alive past the manager.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		warnings.clear()
-		ahead.clear()
+		_warnings.clear()
+		_ahead.clear()
 
 ## **Hands the manager the parts of its world that are not what its events are set up in**: the run
 ## its events belong to, today's streets (`DayStreets`), the city's own, which a day is planned
@@ -168,7 +168,7 @@ func setup(run: RunState, streets: DayStreets = null, poster_walls: PosterWalls 
 	var director := EventDirector.new(map, world.navigator())
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
-	ahead.use_director(director, _spawn_siting)
+	_ahead.use_director(director, _spawn_siting)
 
 ## **Where something sent at her may start in the city** (`SpawnSiting`): made once, in `setup()`,
 ## over the map against the navigator, this manager's own view of her and the day's region, and
@@ -211,7 +211,7 @@ func use_controls(covering: ScreenCover) -> void:
 ## `--force <id> [seconds]`: the one row the director hands out from the next day on, every
 ## `interval` seconds, or "" for the ordinary day. See `EventDirector.force()`.
 func force(row: String, interval: float) -> void:
-	ahead.force(row, interval)
+	_ahead.force(row, interval)
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day she is walking.
@@ -225,7 +225,7 @@ func force(row: String, interval: float) -> void:
 func _owe_the_return() -> void:
 	if not _owes_a_return or _recipe_plan:
 		return
-	ahead.owe_the_return(world.day())
+	_ahead.owe_the_return(world.day())
 
 ## **Starts a walk: clears whatever was here and plans `spec`'s** — a day, the escape's city or the
 ## escape's building — on `rng`, through the planner chosen by the spec (`DayPlanner`), and takes
@@ -249,7 +249,7 @@ func _owe_the_return() -> void:
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
 	_begin(spec)
-	streaming.use_the_spent_one_shots(consumed_one_shots)
+	_streaming.use_the_spent_one_shots(consumed_one_shots)
 	var plan := _planner.plan(spec, rng, consumed_one_shots)
 	_take(spec, plan, focus, plan.belongs_to_a_day())
 
@@ -289,19 +289,19 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bod
 	if records_its_bodies:
 		for placed in plan.placements():
 			if placed.is_placed():
-				spawner.record_the_body(placed.get_instance_id(), placed.row(),
+				_spawner.record_the_body(placed.get_instance_id(), placed.row(),
 						placed.placed_at(), placed.faces())
 	if plan.belongs_to_a_day():
-		ahead.start_day(world.day(), plan.walk() as RouteTree)
+		_ahead.start_day(world.day(), plan.walk() as RouteTree)
 	else:
-		streaming.find_what_repeats()
-		ahead.start_a_given_walk(world.day())
+		_streaming.find_what_repeats()
+		_ahead.start_a_given_walk(world.day())
 	# What works out the route of a row the director sends ahead of her as it goes (`WayOn`): made
 	# once a walk, after the walk's bodies are recorded, so the dawn's seals, the region wall and its
 	# doors, or a scene recipe's rows, are in its through roads with the day's closures. A body put
 	# down later is asked of the ground leg by leg.
-	if world.city_map() and ahead.director():
-		ahead.director().use_way_on(WayOn.new(world.city_map(), world.navigator(),
+	if world.city_map() and _ahead.director():
+		_ahead.director().use_way_on(WayOn.new(world.city_map(), world.navigator(),
 				ThroughRoads.over(world.city_map(), Mover.vehicle())))
 	# The day's units round where she starts draw before anything streams in (`stream_around()`).
 	stream_around(focus)
@@ -362,7 +362,7 @@ func stand_down() -> void:
 ## own defaults).
 func use_the_spec(spec: DaySpec) -> void:
 	_owes_a_return = spec.owes_her_a_return()
-	ahead.use_the_walk_of(spec)
+	_ahead.use_the_walk_of(spec)
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
 ## report_the_charge_cut_short()`): asked by `DayDirector.finish_day()` as a day ends, before the
@@ -378,18 +378,18 @@ func _clear() -> void:
 	# hears nowhere, not where she stood at the end of the last one.
 	world.where_she_is().forget()
 	end_the_charges_still_running()
-	ahead.clear()
+	_ahead.clear()
 	for instance in world.instances():
 		instance.take_out()
 	world.let_go_of_every_event()
-	streaming.clear()
+	_streaming.clear()
 	# Yesterday's bodies go with yesterday's events, the same once-a-day sweep `clear_day_holds()`
 	# and `clear_day_soft_seals()` get — every owner in the record is a plan or an instance this
 	# call has just thrown away.
 	world.map().clear_day_obstructions()
-	checkpoints.clear()
-	spawner.clear()
-	warnings.clear()
+	_checkpoints.clear()
+	_spawner.clear()
+	_warnings.clear()
 	_encounters.end_day()
 
 ## The page's counter's encounters and bouts of running — see `EncounterWatch`. Telemetry only: it
@@ -414,7 +414,7 @@ func _watch_the_encounters(delta: float) -> void:
 	var stroller := world.player() as Stroller
 	var running := stroller != null and stroller.run_excess_ratio() > 0.0
 	_encounters.tick(delta, world.instances(), world.visible_view(), world.player().global_position, running,
-			checkpoints.hold_that_would_begin)
+			_checkpoints.hold_that_would_begin)
 
 ## What she can see this frame — see `world.visible_view()`.
 func visible_view() -> VisibleView:
@@ -459,7 +459,7 @@ func instances() -> Array[EventInstance]:
 ## or commands it (a scene recipe's runtime sets it on her, keeps it coming or holds it). A caller
 ## that only asks something of a plan asks the plan (`EventPlan.is_in_the_world()`).
 func event_of(plan: EventPlan) -> EventInstance:
-	return streaming.event_of(plan)
+	return _streaming.event_of(plan)
 
 # ------------------------------------------------------------ WorldContext ---
 
@@ -478,7 +478,7 @@ func excitement_sources() -> EventSources:
 ## inside, or null: `CheckpointController.door_holding_her_at()`. Inside a door, the door's toll is
 ## the only thing that charges (`EventSources.holds_her_alone()`).
 func door_holding_her_at(world_position: Vector2) -> EventInstance:
-	return checkpoints.door_holding_her_at(world_position)
+	return _checkpoints.door_holding_her_at(world_position)
 
 # ------------------------------------------------------------------ ticking ---
 
@@ -493,19 +493,19 @@ func _physics_process(delta: float) -> void:
 
 ## The manager's own tick, timed under `FrameTiming.EVENTS`.
 func _tick_the_events(delta: float) -> void:
-	streaming.advance_the_broadcast(delta)
-	streaming.retire_finished()
-	streaming.bring_back_what_repeats(delta)
+	_streaming.advance_the_broadcast(delta)
+	_streaming.retire_finished()
+	_streaming.bring_back_what_repeats(delta)
 	var she_is_here := world.has_player()
 	if she_is_here:
 		step_what_is_ahead(delta)
-		spawner.summon_what_has_been_sighted(_walk_events.plans())
-		spawner.report_the_pelicans_in_view()
+		_spawner.summon_what_has_been_sighted(_walk_events.plans())
+		_spawner.report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
-		warnings.run(delta, world.player().global_position)
+		_warnings.run(delta, world.player().global_position)
 	step_the_encounters(delta)
 	if she_is_here:
-		warnings.warn_about_the_ground_she_is_on()
+		_warnings.warn_about_the_ground_she_is_on()
 	step_the_doors(delta)
 	# Last, on the same tick as the step that caught her, and on every event's committed pose: each
 	# step above has been proposed, checked and committed (`EventInstance.step()`).
@@ -520,9 +520,9 @@ func _tick_the_events(delta: float) -> void:
 func step_the_doors(delta: float) -> void:
 	if not world.has_player():
 		return
-	checkpoints.warn_at_the_doors()
-	checkpoints.watch_the_door_lines(delta)
-	checkpoints.check_detentions()
+	_checkpoints.warn_at_the_doors()
+	_checkpoints.watch_the_door_lines(delta)
+	_checkpoints.check_detentions()
 
 ## **What the director puts in front of her, in the order the tick takes it**: the tick's whole
 ## stretch from her camera's view to what is owed, and nothing else of the tick, with her in the
@@ -542,12 +542,12 @@ func step_what_is_ahead(delta: float) -> void:
 	if not world.has_player():
 		return
 	_look_through_the_camera()
-	ahead.draw_what_comes_near(world.player().global_position, streaming.stream_radius())
-	if not _recipe_plan and ahead.has_director():
-		ahead.site_what_is_on_her_way(delta)
-	streaming.stream_around(world.player().global_position)
-	if not _recipe_plan and ahead.has_director():
-		ahead.place_what_is_owed_ahead(delta)
+	_ahead.draw_what_comes_near(world.player().global_position, _streaming.stream_radius())
+	if not _recipe_plan and _ahead.has_director():
+		_ahead.site_what_is_on_her_way(delta)
+	_streaming.stream_around(world.player().global_position)
+	if not _recipe_plan and _ahead.has_director():
+		_ahead.place_what_is_owed_ahead(delta)
 
 ## **The encounters' own step, in the order the tick takes it**: with her in the world, every
 ## instance is told where she is, then every live event takes its step (with or without her), then
@@ -561,7 +561,7 @@ func step_the_encounters(delta: float) -> void:
 	# Then every live event takes its step, having been told where she is, with or without her.
 	_step_them(delta)
 	if she_is_here:
-		ahead.let_the_officers_out()
+		_ahead.let_the_officers_out()
 
 ## **Every live event's step, once a physics tick, in the order they live in `world.instances()`**
 ## (`EventInstance.step()`). What the tick made before it (a successor, a repeat, a streamed or
@@ -670,55 +670,55 @@ func _let_her_out(at: Vector2) -> void:
 ## a walk starts and wherever she is put down (her doorstep, a scene's start, the developer's
 ## `--spawn`).
 func stream_around(at: Vector2) -> void:
-	ahead.draw_the_ground_round(at, streaming.stream_radius())
-	streaming.stream_around(at)
+	_ahead.draw_the_ground_round(at, _streaming.stream_radius())
+	_streaming.stream_around(at)
 
 ## The planned instance of the row `id` within a tile of `at`, put in the world and kept there
 ## (`EventStreaming.keep_live()`).
 func keep_live(id: String, at: Vector2) -> EventInstance:
-	return streaming.keep_live(id, at)
+	return _streaming.keep_live(id, at)
 
 ## Takes today's plans of the rows `ids` inside `rect` out of the day
 ## (`EventStreaming.take_away_within()`), the units over `rect` drawn first
 ## (`_draw_the_ground_over()`).
 func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 	_draw_the_ground_over(rect)
-	return streaming.take_away_within(rect, ids)
+	return _streaming.take_away_within(rect, ids)
 
 ## Takes today's plans inside `rect` not yet in the world out of the day, all but the ambient rows
 ## (`EventStreaming.take_away_the_unseen_within()`), the units over `rect` drawn first
 ## (`_draw_the_ground_over()`).
 func take_away_the_unseen_within(rect: Rect2) -> int:
 	_draw_the_ground_over(rect)
-	return streaming.take_away_the_unseen_within(rect)
+	return _streaming.take_away_the_unseen_within(rect)
 
 ## **Draws every undrawn unit of the day any part of which lies within `reach` of `at`**, each after
 ## every unit it waits for (`EventsAhead.draw_the_ground_round()`): what a place the resistance
 ## sends her to asks before it looks at ground. Answers whether it drew any unit.
 func draw_the_ground_round(at: Vector2, reach: float) -> bool:
-	return ahead.draw_the_ground_round(at, reach)
+	return _ahead.draw_the_ground_round(at, reach)
 
 ## The units over `rect` drawn before an area is cleared of its rows (a frontage boarded up, a park
 ## cordoned off), so no unit draws a row there after it was cleared: round its centre, as far as
 ## half its diagonal.
 func _draw_the_ground_over(rect: Rect2) -> void:
-	ahead.draw_the_ground_round(rect.get_center(), rect.size.length() * 0.5)
+	_ahead.draw_the_ground_round(rect.get_center(), rect.size.length() * 0.5)
 
 ## Today's foot for a mast id (`EventStreaming.mast_foot()`).
 func mast_foot(mast_id: String) -> Vector2:
-	return streaming.mast_foot(mast_id)
+	return _streaming.mast_foot(mast_id)
 
 ## Silences one mast for the rest of the day (`EventStreaming.silence_mast()`).
 func silence_mast(mast_id: String) -> bool:
-	return streaming.silence_mast(mast_id)
+	return _streaming.silence_mast(mast_id)
 
 ## Silences every mast for the rest of the day (`EventStreaming.silence_all_masts()`).
 func silence_all_masts() -> int:
-	return streaming.silence_all_masts()
+	return _streaming.silence_all_masts()
 
 ## How many sited events the day is carrying (`EventStreaming.planned_count()`).
 func planned_count() -> int:
-	return streaming.planned_count()
+	return _streaming.planned_count()
 
 ## The day's plan, for the readouts and the telemetry. Not for anything that acts on it.
 func plans() -> Array[EventPlan]:
@@ -753,97 +753,97 @@ func plan_builder() -> PlanBuilder:
 
 ## Events the day owes the director to put in front of her and has not spent yet.
 func owed_ahead() -> int:
-	return ahead.owed_ahead()
+	return _ahead.owed_ahead()
 
 ## **Hands in what makes every siting the director's walk asks for** (`SitingMaker`), in place
 ## of the maker `_init()` makes over this manager's world and walk: the game keeps its own, and a
 ## test hands in a fake that answers the siting a check set and records each ask.
 func use_sitings(maker: SitingMaker) -> void:
-	ahead.use_sitings(maker)
+	_ahead.use_sitings(maker)
 
 ## **Today's copy of the row `id` as her route's bag hands it out**
 ## (`EventDirector.route_row()`), or null with no director or for a row the bag holds none of. No
 ## game class asks it: a suite reads the director's state through it, since the game shows that
 ## copy only by putting it down on a walk.
 func route_row(id: String) -> EventDef:
-	if not ahead.has_director():
+	if not _ahead.has_director():
 		return null
-	return ahead.director().route_row(id)
+	return _ahead.director().route_row(id)
 
 ## **The walk's way on** (`EventDirector.way_on()`: how a car the director sends drives on past
 ## its route), or null with no director. No game class asks it: a suite reads the director's
 ## state through it, since no run log line names a leg of a sent patrol's way.
 func way_on() -> WayOn:
-	if not ahead.has_director():
+	if not _ahead.has_director():
 		return null
-	return ahead.director().way_on()
+	return _ahead.director().way_on()
 
 ## The warnings up for something not in the world yet — what `DangerEdge` draws a badge for
 ## alongside `instances()` (`WarningBoard.pending_warnings()`).
 func pending_warnings() -> Array[PendingWarning]:
-	return warnings.pending_warnings()
+	return _warnings.pending_warnings()
 
 ## Puts up a warning for `def` with nothing in the world yet (`WarningBoard.warn_first()`).
 func warn_first(def: EventDef, her: Vector2, where: Callable,
 		arrive: Callable) -> PendingWarning:
-	return warnings.warn_first(def, her, where, arrive)
+	return _warnings.warn_first(def, her, where, arrive)
 
 ## Sends `def` at her from out of her sight, warned first, where `search` says he starts and
 ## `arrive` creates him (`WarningBoard.send_from_out_of_sight()`): a task's trap and day 13's task
 ## guard, as the resistance sends them.
 func send_from_out_of_sight(def: EventDef, her: Vector2, search: Callable,
 		arrive: Callable) -> PendingWarning:
-	return warnings.send_from_out_of_sight(def, her, search, arrive)
+	return _warnings.send_from_out_of_sight(def, her, search, arrive)
 
 ## Creates `def` on `path` for a row whose warning ran before it existed
 ## (`EventSpawner.spawn_warned()`).
 func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> EventInstance:
-	return spawner.spawn_warned(def, path, pelican)
+	return _spawner.spawn_warned(def, path, pelican)
 
 ## Adds an event outside the day's plan and outside the streaming, at a path the caller chose — the
 ## resistance's robbery, its neighbor, raid and column (`EventSpawner.spawn()`).
 func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> EventInstance:
-	return spawner.spawn(def, at, path)
+	return _spawner.spawn(def, at, path)
 
 ## Retires one unplanned instance (`EventSpawner.retire()`).
 func retire(instance: EventInstance) -> void:
-	spawner.retire(instance)
+	_spawner.retire(instance)
 
 ## Moves one unplanned instance with everything it is in the middle of
 ## (`EventSpawner.move_extra()`).
 func move_extra(instance: EventInstance, at: Vector2) -> void:
-	spawner.move_extra(instance, at)
+	_spawner.move_extra(instance, at)
 
 ## One more mast for day 11's task (`EventsAhead.queue_a_mast()`).
 func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
-	return ahead.queue_a_mast(offered)
+	return _ahead.queue_a_mast(offered)
 
 ## Day 13's task roadblock `plan` across a section of the day's locations, whatever it held spent
 ## (`EventsAhead.swap_in_a_section()`).
 func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
-	return ahead.swap_in_a_section(section, plan)
+	return _ahead.swap_in_a_section(section, plan)
 
 ## Rigs her route's bag for a task, its place laid just ahead of her where `just_ahead`
 ## (`EventsAhead.rig_her_route()`).
 func rig_her_route(ids: Array[String], size: int, just_ahead := false) -> Array:
-	return ahead.rig_her_route(ids, size, just_ahead)
+	return _ahead.rig_her_route(ids, size, just_ahead)
 
 ## Lights the set piece she never met, at dusk on a won day
 ## (`EventsAhead.light_what_she_never_met()`).
 func light_what_she_never_met(at: Vector2) -> bool:
-	return ahead.light_what_she_never_met(at)
+	return _ahead.light_what_she_never_met(at)
 
 ## A torn poster drew the pursuit marble (`EventsAhead.send_a_pursuer()`).
 func send_a_pursuer() -> void:
-	ahead.send_a_pursuer()
+	_ahead.send_a_pursuer()
 
 ## A scene's route, from the bag its recipe rigs, with everything the director does while she walks
 ## switched back on (`EventsAhead.start_recipe_route()`).
 func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
 	_recipe_plan = false
-	return ahead.start_recipe_route(marbles, pre_bag, owed, first_after)
+	return _ahead.start_recipe_route(marbles, pre_bag, owed, first_after)
 
 ## Hands in who is told the ground a body placed after dawn stands on, the crowd's call that
 ## recycles a car standing there (`EventStreaming.use_body_listener()`).
 func use_body_listener(listener: Callable) -> void:
-	streaming.use_body_listener(listener)
+	_streaming.use_body_listener(listener)

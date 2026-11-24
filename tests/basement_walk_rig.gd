@@ -114,8 +114,8 @@ func _blow_at(vent: EventPlan) -> EventInstance:
 ## no player in the rig the bangs outside charge nothing, and the masked man, never ticked, never
 ## runs out of the shaft to come again.
 func _tick(at: Vector2, awake: bool) -> float:
-	_events.streaming.retire_finished()
-	_events.streaming.bring_back_what_repeats(STEP)
+	_events._streaming.retire_finished()
+	_events._streaming.bring_back_what_repeats(STEP)
 	var incoming := 0.0
 	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
 	for instance in _events.instances():

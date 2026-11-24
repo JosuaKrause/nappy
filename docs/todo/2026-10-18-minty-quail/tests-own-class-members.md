@@ -31,10 +31,15 @@ silences that access's warning, counts as read. These thin out as `typed-everywh
 whatever the check then lists joins the scope.
 
 **What is left, by module.** Outside the events and the resistance, the `[own file only]` group holds
-no owner. Under `src/events/`, the events' suites and rigs
-still read the `[own file only]` group's event manager's `ahead`, `checkpoints`, `spawner`, `streaming` and
-`warnings`; the `[no reader]`
-group holds none of the events'. Nothing under `src/resistance/` is left in either group.
+no owner. Under `src/events/`, the events' suites and rigs read none of the `[own file only]` group, and the
+`[no reader]` group holds none of the events'. Nothing under `src/resistance/` is left in either group.
+
+**An unheld behavior of the event manager.** `EventManager._take()` records each plan's body with
+`EventSpawner.record_the_body()` when a scene recipe's walk is taken in, and no suite holds it: deleting that
+call fails neither the door suites nor `test_masts.gd`'s lorry case, nor any other. A check wanted here starts a
+walk through `start_recipe()` holding a body-carrying plan and asks what the recording makes true (the body's
+tiles are in the through roads the walk's way on drives by, or the lorry's body is found where it stands); the
+break that shows it is `_take()` skipping `record_the_body()`.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member

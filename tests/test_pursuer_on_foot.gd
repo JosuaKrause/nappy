@@ -314,9 +314,9 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 ## alike; in one a pursuer is sent and his warning run down, and then she walks the same minute in
 ## both with the director asked as the game asks it every tick
 ## (`EventsAhead.place_what_is_owed_ahead()`). The two days tell the run log the same `ahead`
-## lines, one after another at the same place, and leave the same number owed and the same plan, and the day's stream
-## stands where it stood. A queue, a clock or a bag he had moved would hand her another event, or
-## the same one at another moment.
+## lines, one after another at the same place, and leave the same number owed and the same plan,
+## and the day's stream stands where it stood. A queue, a clock or a bag he had moved would hand
+## her another event, or the same one at another moment.
 func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> void:
 	var days: Array[Dictionary] = []
 	for sends: bool in [false, true]:
