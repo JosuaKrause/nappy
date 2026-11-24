@@ -397,7 +397,7 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		blocked[tile] = true
 	return blocked
 
-## Margin added past a live lethal event's own `lethal_reach()` when deciding what ground to
+## Margin added past the ground a live lethal event's catch shuts when deciding what ground to
 ## keep off — `Tuning.PLAYER_BODY_RADIUS` (14px), the width of the body actually walking the
 ## boundary `_hazard_tiles()` draws. `_hazard_tiles()` tests each tile's own **nearest point**
 ## against the reach, not its centre, so this margin does not also have to cover a tile's own
@@ -412,8 +412,9 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 ## `_hazard_tiles()`'s own doc.
 const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
 
-## Whether `instance` is a lethal place worth planning a route around at all — live, and standing
-## where it is (`EventInstance.is_a_standing_lethal_place()`). A stationary kill (the guard
+## Whether `instance` is a lethal place worth planning a route around at all — live, and its catch
+## shutting ground where it holds its place (`EventInstance.catch_shuts_within()`, the one stated
+## fact `EventDef.catch_shuts_within()` answers). A stationary kill (the guard
 ## `alley_robbery` places over every mark, an idling `abduction` van, `reversing_lorry`,
 ## `car_accident`) is exactly the shape a route can
 ## detour once and stay clear of for the whole leg, the same as a parked obstruction. A moving
@@ -426,7 +427,7 @@ const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
 ## planned around from a distance; the rig has no reactive dodge, so it leaves a moving hazard to
 ## its ordinary stuck/obstruction handling instead of a dedicated avoidance.
 func _is_stationary_hazard(instance: EventInstance) -> bool:
-	return instance.is_a_standing_lethal_place()
+	return instance.catch_shuts_within() > 0.0
 
 ## Whether `point` sits within a live stationary lethal event's own kill reach plus
 ## `_HAZARD_MARGIN` — every mark is guarded (`docs/DECISIONS.md`, "every mark is guarded"), and the
@@ -437,7 +438,8 @@ func is_hazardous(point: Vector2) -> bool:
 	for instance: EventInstance in _events.instances():
 		if not _is_stationary_hazard(instance):
 			continue
-		if point.distance_to(instance.global_position) <= instance.lethal_reach() + _HAZARD_MARGIN:
+		var reach := instance.catch_shuts_within() + _HAZARD_MARGIN
+		if point.distance_to(instance.global_position) <= reach:
 			return true
 	return false
 
@@ -451,7 +453,7 @@ func _hazard_tiles() -> Dictionary:
 	for instance: EventInstance in _events.instances():
 		if not _is_stationary_hazard(instance):
 			continue
-		var reach := instance.lethal_reach() + _HAZARD_MARGIN
+		var reach := instance.catch_shuts_within() + _HAZARD_MARGIN
 		var centre := _map.world_to_tile(instance.global_position)
 		var radius_tiles := ceili(reach / Tuning.TILE_SIZE) + 1
 		for dy in range(-radius_tiles, radius_tiles + 1):

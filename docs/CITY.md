@@ -228,13 +228,13 @@ bodies never seal it off:
   line through its junctions, its walked sidewalk and a pacing beat's opening open (`RouteLineRule`,
   `RouteSidewalkRule`, `PacingOpeningRule`) and by the one that keeps its ground off the streets
   free (`RouteGroundRule`: no obstructing body's disc, no deadly row's catch round where it
-  holds its place and no counted
-  row's line reach covers a tile a route runs along on an alley, a park cut or a square), asked against everything already down,
-  the seals and the region wall's own bodies included. The run's scars and the park spoilers are
-  asked `RouteGroundRule` alone, with a street's route tiles and the street she starts on counted
-  too, since they stand where they stand rather than where a draw put them and the line rules are
-  not asked of them. So no body closes the tree, and nothing floods the city to see whether one
-  has. A soft seal stands only off the tree, so its bands never cut the tree's way to the place.
+  holds its place and no counted row's line reach covers a tile a route runs along on an alley, a
+  park cut or a square), asked against everything already down, the seals and the region wall's own
+  bodies included. The run's scars and the park spoilers are asked `RouteGroundRule` alone, with
+  a street's route tiles and the street she starts on counted too, since they stand where they
+  stand rather than where a draw put them and the line rules are not asked of them. So no body
+  closes the tree, and nothing floods the city to see whether one has. A soft seal stands only off
+  the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
 pool is the tiles the contact may stand on (`NarrowTargetPool.tiles`) that pass the

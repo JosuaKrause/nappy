@@ -386,7 +386,7 @@ opt-out line on the bus as the one file that cannot be typed, with its reason.
 | Stage a plan at an age, keep it in the world, make it a mast | plan `arrive_aged(seconds)` ok, `keep_in_the_world()` ok, `stand_as_a_mast(id)` ok, `telegraphs_for()` ok (the latest age it may be staged at), `is_in_the_world()` ok, `placed_at()` ok, `faces()` ok, `walks()` ok, `row_id()` ok | the plan |
 | The live event of a plan, to name or command it | `EventManager.event_of(plan)` ok, for a caller that commands it (the scene recipes); then live `notice_her_at()` ok, `forget_her_run()` ok (a relentless pursuer, through `EventPursuit.forget_her_run()`), `walks_straight_away()` ok and `hold_by_hand()` ok (a held event walked on by hand); what it watches, live `row_id()` ok, `pursues()` ok, `is_gone()` ok, `is_on_its_way_out()` ok, `is_waiting()` ok, `is_telegraphing()` ok, `drawn_box()` ok, and the manager's `visible_view()` ok | streaming |
 | The dev rig's spawn and follow targets, the auto screenshot's flee | live `row_id()` ok, `pursues()` ok; plan `row_id()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `placed_at()` ok, `faces()` ok | the plan, for its row; pursuit |
-| The route rig's hazards and bodies | live `is_a_standing_lethal_place()` ok, `lethal_reach()` ok, `stands_as_a_fixed_body()` ok; plan `stands_as_a_fixed_body()` ok, `ground_shape()` ok, `solid_reach()` ok, `gate()` ok; a planned body's pieces where they stand from `BodyStance.of_plan(plan).pieces()` ok (the records curly-stork and velvet-squirrel); plan `detains_again()` ok, `detain_distance()` ok, `where_it_stands_now()` ok, `faces_now()` ok; plan `its_event_is_gone()` ok for whether a door's live event is gone (the plan answers; the manager hands the live event only to a caller that commands it, inbox #1278 in olive-ferret) | lethal, body, hold |
+| The route rig's hazards and bodies | live `catch_shuts_within()` ok, `stands_as_a_fixed_body()` ok; plan `stands_as_a_fixed_body()` ok, `ground_shape()` ok, `solid_reach()` ok, `gate()` ok; a planned body's pieces where they stand from `BodyStance.of_plan(plan).pieces()` ok (the records curly-stork and velvet-squirrel); plan `detains_again()` ok, `detain_distance()` ok, `where_it_stands_now()` ok, `faces_now()` ok; plan `its_event_is_gone()` ok for whether a door's live event is gone (the plan answers; the manager hands the live event only to a caller that commands it, inbox #1278 in olive-ferret) | lethal, body, hold |
 
 ### 2.9 The tests
 
@@ -451,7 +451,7 @@ minty-quail-olive-finch).
 | `pursuit.speed if pursuit else (speed if mobile else 0.0)`, three times | `EventDef` | one private helper of the row |
 | a distance compared with `def.outer_radius` | the unmarked van's take | live `field_reaches(point)` ok, which the run log's observer already asks |
 | `distance <= def.inner_radius` | the resistance's contact point | live `core_reaches(point)` ok |
-| `not is_finished and def.hard_fail and not def.mobile` | the route rig | live `is_a_standing_lethal_place()` ok |
+| `not is_finished and def.hard_fail and not def.mobile` | the route rig | live `catch_shuts_within()` ok |
 | `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the spawner's own record (`EventSpawner.footprint_of()` of a stance, 3b) | row `stands_as_a_fixed_body()` ok |
 | `kind != AMBIENT and pursuit == null and vehicle == null and not warned_first and not starts_by(ARRIVES_CHASING)` | the park cordon | live `is_ambient()` ok, `was_sent_at_her()` ok, `drives()` ok |
 | `solid_when == WHILE_LOWERED`, five places; `redetains` read as "this is a door's hut or post", six places | the live event and its hold, the spawner, the resistance, the route rig (the checkpoint controller asks already) | row and live `is_a_boom()` ok, `detains_again()` ok; the plan's `is_a_boom()` ok and `detains_again()` ok |
@@ -847,7 +847,6 @@ each question as it was shown).
    minty-quail-dappled-llama). The ground a row that ends the day shuts is one stated fact,
    `EventDef.catch_shuts_within()`, which the plan's blocking disc (`EventPlan.blocking_radius()`)
    and the walk ground (`WalkGround.held_by()`) ask; `EventPlan.clearance()` reads the catch
-   itself, measured to her centre (the record 2026-10-18-minty-quail-calm-marmot). What is left is
-   the `--route` dev rig, which still works the fact out in its own words: it asks
-   `catch_shuts_within()` on the live event and `EventInstance.is_a_standing_lethal_place()` is
-   deleted (A1b of the design).
+   itself, measured to her centre (the record 2026-10-18-minty-quail-calm-marmot). The `--route`
+   dev rig asks the same fact of the live event (`EventInstance.catch_shuts_within()`), so
+   nothing is left of this point and it holds no open work.

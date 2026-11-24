@@ -2323,17 +2323,12 @@ func is_a_boom() -> bool:
 func solid_reach() -> float:
 	return _def.solid_reach()
 
-## **Whether it is a place that ends her day and stays where it stands**: not gone, its row ends the
-## day (`EventDef.ends_the_day()`) and does not move (`EventDef.moves()`). A guard over a mark, an
-## idling van, a reversing lorry: a hazard a route can go round once and stay clear of, where a
-## mover is somewhere else by the time the route gets there.
-func is_a_standing_lethal_place() -> bool:
-	return not is_gone() and _def.ends_the_day() and not _def.moves()
-
-## How far from its centre entering it ends her day (`EventDef.lethal_reach()`), or 0 for one that
-## does not.
-func lethal_reach() -> float:
-	return _def.lethal_reach()
+## **How far round where it holds its place its catch shuts the ground** while it is in the world
+## (`EventDef.catch_shuts_within()`), and 0 once it is gone or when its row moves or does not end
+## the day. A guard over a mark, an idling van, a reversing lorry: a hazard a route can go round
+## once and stay clear of, where a mover is somewhere else by the time the route gets there.
+func catch_shuts_within() -> float:
+	return 0.0 if is_gone() else _def.catch_shuts_within()
 
 ## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
 ## standing, solid, and no door's.
