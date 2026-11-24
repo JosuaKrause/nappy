@@ -8,4 +8,4 @@ priority: later
 
 **What a builder does.** Give the touch radius and the tiles within it one owner (the plan, or the ground class that already measures close by), and have the director choose its nearest reachable tile out of that owner's tiles. The two callers keep their different questions (every tile, the nearest reachable one); the radius and the walk are in one place.
 
-**Shown fixed.** `rg -n '_touched_from' src` finds one definition of the radius and the tile walk, and the suites for the roadblock ground and the resistance director's sections pass with unchanged check counts.
+**Shown fixed.** The touch radius (`blocking_radius() + Tuning.TILE_SIZE * 1.5`) and the walk over the tiles round the body each appear once (`rg -n 'TILE_SIZE \* 1.5' src/resistance src/events` finds one definition of the radius; the two callers may stay), and the suites for the roadblock ground and the resistance director's sections pass with unchanged check counts.

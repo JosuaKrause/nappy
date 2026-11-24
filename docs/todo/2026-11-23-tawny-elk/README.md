@@ -6,6 +6,6 @@ priority: later
 
 **Found by** the design of the scene recipes' pass (`.claude/briefs/designs/minty-quail-scene-recipes-pass.md`, untracked in the orchestrator's checkout).
 
-**What a builder does.** Either teach the check inner classes reached as `Outer.Inner` (listing today's reads in `tools/field_reads.txt`, a list that only shrinks), or put each of these behind methods by hand, and say which and why. The reads are found with `rg -n '\.(is_pickup|target_kind|bodies|def_ids)\b' src`, run again. A check's count change is explained to the check before the pull request opens.
+**What a builder does.** Either teach the check inner classes reached as `Outer.Inner` (listing today's reads in `tools/field_reads.txt`, a list that only shrinks), or put each of these behind methods by hand, and say which and why. The builder's list is every field of the three inner classes (`Candidate`'s `id`, `strength`, `def_ids`; `SitedSeal`'s `segment`, `candidate`, `along`, `bodies`; `Step`'s `index`, `title`, `is_pickup`, `target_kind`), and the reads are found by `rg -n '\.(id|strength|def_ids|segment|candidate|along|bodies|index|title|is_pickup|target_kind)\b' src`, run again and each hit judged by its receiver (`index` and `title` are read in `src/resistance/resistance_director.gd` and `src/ui/hud.gd`, among others). A check's count change is explained to the check before the pull request opens.
 
-**Shown fixed.** `tools/check_field_reads.py` fails on a read of one of these fields from another file, or no such read remains.
+**Shown fixed.** `tools/check_field_reads.py` lists today's reads of these fields in `tools/field_reads.txt` and fails on any new read of one from another file; or no read of these fields from another file remains and the check says so.

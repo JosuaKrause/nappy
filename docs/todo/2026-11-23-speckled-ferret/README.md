@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 # speckled-ferret — The placement probes plan with the plain roadblock row and never refresh the street trees · filed 2026-11-23
 
@@ -6,7 +6,7 @@ priority: later
 
 **Found by** pull request 1683's review.
 
-**Order.** This settles before minty-quail's end remeasure, which reads these probes, so its numbers are measured over the game's own rows. The `after:` line is not on minty-quail's side; minty-quail's remeasure waits on this entry by its builder reading the queue.
+**Order.** This settles before minty-quail's end remeasure, which reads these probes, so its numbers are measured over the game's own rows; that is why the band is `now` (newest first, so it prints at the head of the band, ahead of minty-quail). There is no `after:` line on minty-quail's side, since the remeasure is a step inside that entry and not an entry.
 
 **What a builder does.** Plan with the heated row as `DayPlanner` does, call `refresh_street_trees()` where the game does, and put the shared planning block in one helper both probes use.
 
