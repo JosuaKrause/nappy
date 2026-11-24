@@ -1913,7 +1913,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 
 	var car: CrowdAgent = null
 	for agent in RunCity.crowd(city).agents():
-		if agent.kind == CrowdAgent.Kind.CAR:
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
 			car = agent
 			break
 	t.check(car != null, "there is a car on the spine to test the gate against")

@@ -80,7 +80,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 ## anyone walks it.
 func _crowd(t: TestRunner, atlas: AtlasLibrary) -> Crowd:
 	var crowd := Crowd.new()
-	crowd.atlas = atlas
+	crowd.equip(null, CrowdTiming.new(), atlas)
 	var world := WorldContext.new()
 	t.add_child(world)
 	crowd.setup(world, StreetMap.full(), null, null)

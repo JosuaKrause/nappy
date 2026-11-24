@@ -79,7 +79,7 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 		RunCity.crowd(city).step(STEP)
 		for agent in RunCity.crowd(city).agents():
 			var caught := map.is_obstructed(map.world_to_tile(agent.position))
-			if agent.kind == CrowdAgent.Kind.WALKER:
+			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
 				walker_frames += 1
 				inside_walkers += 1 if caught else 0
 				var walker := agent.lane().strategy() as WalkerStrategy

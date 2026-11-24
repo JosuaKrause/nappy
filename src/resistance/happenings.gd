@@ -111,10 +111,6 @@ func use_bus(bus: _BUS) -> void:
 var _column_owed := false
 var column: Array[EventInstance] = []
 
-## Day 13's trucks, front first, once the column has come; empty before then (`column`).
-func column_trucks() -> Array[EventInstance]:
-	return column
-
 ## Where the raid may put what it brings (`SpawnSiting`), or null.
 var _spawn_siting: SpawnSiting
 ## Builds a plan at a tile (`PlanBuilder`), the day's events' own (`EventManager.plan_builder()`),
@@ -448,8 +444,8 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 	if not def or _map.main_road_corridor() < 0:
 		return null
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
-	var top := Tuning.TILE_SIZE * 0.5
-	var bottom := _map.size_in_tiles().y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
+	var top := _road_top()
+	var bottom := _road_bottom()
 	# About as far up the lane as the front truck is created, just out of sight.
 	var lead := SpawnSiting.lead_up_a_lane(EventFootprints.box_of(def))
 	# From the end with room for its place behind her, when only one end has it; with neither, from
@@ -465,7 +461,7 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 			var behind_here := her.y - top if going > 0.0 else bottom - her.y
 			if behind_here < (bottom - top) - behind_here:
 				going = -going
-	var lane_x := CrowdLanes.lane_centre(_map.main_road_corridor(), CrowdLanes.road_lane(true, going))
+	var lane_x := _column_lane(going)
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, Vector2(lane_x, 0.0), Vector2(0.0, going), top,
 				bottom, _events.visible_view())
@@ -478,19 +474,52 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 			Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 	return warning
 
+## The x of the main road's lane a column coming `going` (1 south, -1 north) drives in.
+func _column_lane(going: float) -> float:
+	return CrowdLanes.lane_centre(_map.main_road_corridor(), CrowdLanes.road_lane(true, going))
+
+## The first y a truck's centre may stand at on the main road, half a tile in from the map's edge.
+func _road_top() -> float:
+	return Tuning.TILE_SIZE * 0.5
+
+## The last y a truck's centre may stand at on the main road, half a tile in from the map's edge.
+func _road_bottom() -> float:
+	return _map.size_in_tiles().y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
+
+## Whether a column coming `going` (1 south, -1 north) with its front truck at `place` stands in
+## the main road's lane, its front and its back both on the map.
+func column_fits_at(place: Vector2, going: float) -> bool:
+	if _map.main_road_corridor() < 0:
+		return false
+	var top := _road_top()
+	var bottom := _road_bottom()
+	var back := place.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
+	return is_equal_approx(place.x, _column_lane(going)) \
+			and place.y >= top and place.y <= bottom and back >= top and back <= bottom
+
+## Creates the column's trucks with the front one at `place`, coming `going` (1 south, -1 north)
+## down the main road, and answers them, front first. `column_fits_at()` says whether the place
+## holds the whole column.
+func bring_the_column_at(place: Vector2, going: float) -> Array[EventInstance]:
+	return _bring_the_column(EventCatalogue.by_id("military_convoy"), place,
+			_column_lane(going), going, _road_top(), _road_bottom())
+
 ## Creates the column's trucks, front first, the front one at `place` and the rest behind it up the
-## road, each on its own path down the lane to the end of the road.
+## road, each on its own path down the lane to the end of the road; answers the ones it made.
 func _bring_the_column(def: EventDef, place: Vector2, lane_x: float, going: float, top: float,
-		bottom: float) -> void:
+		bottom: float) -> Array[EventInstance]:
 	var start_y := place.y
 	var far_y := bottom if going > 0.0 else top
+	var brought: Array[EventInstance] = []
 	for i in Tuning.COLUMN_TRUCKS:
 		var back := -going * Tuning.COLUMN_SPACING * i
 		var from := Vector2(lane_x, clampf(start_y + back, top, bottom))
 		var to := Vector2(lane_x, far_y)
-		column.append(_events.spawn_warned(def, PackedVector2Array([from, to])))
+		brought.append(_events.spawn_warned(def, PackedVector2Array([from, to])))
+	column.append_array(brought)
 	trace.note("contact", "a column of %d trucks comes down the main road %s" % [
 		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
+	return brought
 
 ## The neighbor, leaving for work as she does: out of the same door and along the same sidewalk,
 ## away from her, until the street runs out or something closes it, then off the ordinary way a

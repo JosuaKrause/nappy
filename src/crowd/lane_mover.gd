@@ -9,9 +9,10 @@ extends Node2D
 ## **A walker and a car are one mover with two strategies.** What both kinds share — the lane state,
 ## the look-ahead, the held step, placement and recycling, the junction and queue questions, the
 ## heading and the velocity — is here, and never asks which kind it is; what only one kind does is
-## its `_strategy`, a `WalkerStrategy` or a `CarStrategy` that `kind` installs (`LaneStrategy` says
-## what it is asked). The per-frame inputs `Crowd` works out for the cars and for the walkers at a
-## door it tells the mover through its lane (`Lane`'s events), which keeps them as fields.
+## its `_strategy`, a `WalkerStrategy` or a `CarStrategy` that `_take_kind()` installs
+## (`LaneStrategy` says what it is asked). The per-frame inputs `Crowd` works out for the cars
+## and for the walkers at a door it tells the mover through its lane (`Lane`'s events), which
+## keeps them as fields.
 ##
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
@@ -36,25 +37,29 @@ const STEER_SPEED := 90.0
 const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
 ## The same distance in tiles, for the scans that walk rather than probe. See `_way_is_blocked`.
 const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
-## Which kind of agent this is. Setting it installs that kind's `_strategy`, at construction or on a
-## hand-built agent afterwards, so the agent has that kind's rules from then on. Setting the kind
-## it already has changes nothing: a fresh strategy would drop a walker's hold on a hut without
-## letting go of it.
-var kind := Kind.WALKER:
-	set(value):
-		if value == kind and _strategy:
-			return
-		kind = value
-		_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
-		_kind_installed()
+## Which kind of agent this is, asked through `is_car()` and `Lane.kind()`. A walker until
+## `_take_kind()` is told another: by `CrowdAgent`'s constructor, and by `setup()` and
+## `setup_at()`.
+var _kind := Kind.WALKER
+
+## Takes up `value` as this agent's kind and installs that kind's `_strategy`, so the agent has
+## that kind's rules from then on. Taking the kind it already has changes nothing: a fresh
+## strategy would drop a walker's hold on a hut without letting go of it.
+func _take_kind(value: Kind) -> void:
+	if value == _kind and _strategy:
+		return
+	_kind = value
+	_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
+	_kind_installed()
 
 ## Whether this agent is a car rather than a walker: the one question about its kind that anything
 ## outside the crowd asks of it (the day director's tally, the developer's rigs and readouts).
 func is_car() -> bool:
-	return kind == Kind.CAR
+	return _kind == Kind.CAR
 
 ## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
-## `kind`. Everything here that differs between a walker and a car asks it. See `LaneStrategy`.
+## `_take_kind()`. Everything here that differs between a walker and a car asks it. See
+## `LaneStrategy`.
 var _strategy: LaneStrategy
 
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
@@ -230,7 +235,7 @@ class Lane:
 		return _of._map
 
 	func kind() -> Kind:
-		return _of.kind
+		return _of._kind
 
 	func strategy() -> LaneStrategy:
 		return _of._strategy
@@ -527,7 +532,7 @@ func _take_the_shape() -> void:
 ## The cross coordinate must already be the lane center; authoring never snaps a placement.
 func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		at: Vector2, direction: Vector2, speed: float) -> String:
-	kind = agent_kind as Kind
+	_take_kind(agent_kind as Kind)
 	_take_the_shape()
 	_map = map
 	_field = crowd_field
@@ -565,7 +570,7 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
-	kind = agent_kind
+	_take_kind(agent_kind)
 	_take_the_shape()
 	_map = map
 	_field = crowd_field
@@ -694,7 +699,7 @@ func _out_of_view() -> bool:
 	if not _field:
 		return true
 	if _field.has_stretch():
-		return _beyond_every_view(position)
+		return beyond_every_view(position)
 	return position.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
 
 ## **On a stretch, the camera's own view, in both presentations, with a body's room round it.** A
@@ -704,13 +709,13 @@ func _out_of_view() -> bool:
 ## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the square
 ## `CrowdView.beyond_every_view()` describes. The camera is the crowd's `view`; with none, or with
 ## the agent out of the tree — a rig that steps agents by hand — the played day's radius answers.
-func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
+func beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 	if view == null or not is_inside_tree():
 		return at.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
 	return view.beyond_every_view(at, room, _field.looking_at())
 
-## How far past a body's centre its picture may reach, for `_beyond_every_view()`: two tiles, more than
-## a car's half length and its shadow.
+## How far past a body's centre its picture may reach, for `beyond_every_view()`: two tiles,
+## more than a car's half length and its shadow.
 const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
@@ -1124,7 +1129,7 @@ func _look_ahead() -> void:
 		# the end is a wall like any other — a walker turns round at it and a car turns off before
 		# it or waits — since nothing may vanish where she can see it.
 		var ahead := here + step * i
-		if _map.is_cut_off(ahead) and _beyond_every_view(_map.tile_to_world(ahead)):
+		if _map.is_cut_off(ahead) and beyond_every_view(_map.tile_to_world(ahead)):
 			break
 		if _strategy.cannot_go_on(_vertical, here + step * i):
 			_blocked_in = i
@@ -1387,7 +1392,7 @@ func _walks_off_the_stretch() -> bool:
 ## built: "walkers and cars recycled at the stretch's ends".)* The scene's crowd is the street she
 ## walks and nothing beyond it exists, so an agent that walks off one end comes back in at an end,
 ## rolled from the field's own ends (`CrowdField.stretch_ends`) that are out of every view
-## (`_beyond_every_view()`), heading in: a car on the lane that drives that way, a walker on any
+## (`beyond_every_view()`), heading in: a car on the lane that drives that way, a walker on any
 ## lane its footway has there, each at its ordinary speed. The same ground and room a recycle
 ## anywhere asks for are asked here, for a handful of rolls, including the final queue position.
 ## With no accepted entry, or every end in view, it turns
@@ -1399,7 +1404,7 @@ func _enter_at_a_stretch_end() -> void:
 		var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
 		var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 				* Tuning.TILE_SIZE
-		if _beyond_every_view(Vector2(across, along) if end.vertical else Vector2(along, across)):
+		if beyond_every_view(Vector2(across, along) if end.vertical else Vector2(along, across)):
 			ends.append(end)
 	if ends.is_empty():
 		_turn_round()
@@ -1426,7 +1431,7 @@ func _enter_at_a_stretch_end() -> void:
 		_settle_junction()
 		# The lane can lie nearer the picture than the street's middle, and joining a queue can
 		# move it again. Check the final placement, not merely the candidate street end.
-		if not _beyond_every_view(position) or not _stands_on_a_street():
+		if not beyond_every_view(position) or not _stands_on_a_street():
 			continue
 		_strategy.claim_the_road_here()
 		_gap_ahead = INF
@@ -1520,7 +1525,7 @@ func _entry_band_fits() -> bool:
 # What a mover leaves to the crowd member built on it: the picture it keeps, the clocks only a crowd
 # member has, and what it wears. Each does nothing here.
 
-## Takes up whatever else depends on the kind, once `kind` has installed its strategy.
+## Takes up whatever else depends on the kind, once `_take_kind()` has installed its strategy.
 func _kind_installed() -> void:
 	pass
 

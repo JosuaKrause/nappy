@@ -65,8 +65,8 @@ class CountedCrowd extends CrowdAgent:
 		get:
 			return (_excitement as Source).sampling_runs
 
-	func _init() -> void:
-		super()
+	func _init(agent_kind := Kind.WALKER) -> void:
+		super(agent_kind)
 		var rim: SourceRim = _excitement.rim()
 		_excitement = Source.new(self)
 		_excitement.use_rim(rim)
@@ -94,8 +94,8 @@ class ReferenceEvent extends EventInstance:
 
 ## A crowd body whose source projects with the frozen reference instead.
 class ReferenceCrowd extends CrowdAgent:
-	func _init() -> void:
-		super()
+	func _init(agent_kind := Kind.WALKER) -> void:
+		super(agent_kind)
 		var rim: SourceRim = _excitement.rim()
 		_excitement = Source.new(self)
 		_excitement.use_rim(rim)
@@ -394,8 +394,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 
 func _test_crowd_mutations(t: TestRunner) -> void:
 	for kind: LaneMover.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
-		var source := CountedCrowd.new()
-		source.kind = kind
+		var source := CountedCrowd.new(kind)
 		source._speed = 60.0
 		var at := Vector2(-160.0, 12.0)
 		_crowd_parity(t, source, at, "crowd before player")
@@ -438,8 +437,6 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source.mood().set_her_motion(Vector2(0.0, 92.0), 0.0, 0.22)
 		_crowd_parity(t, source, at, "crowd sensitivity")
 		_crowd_parity(t, source, at + Vector2(20.0, 0.0), "crowd query position")
-		source.kind = CrowdAgent.Kind.CAR if kind == CrowdAgent.Kind.WALKER else CrowdAgent.Kind.WALKER
-		_crowd_parity(t, source, at, "crowd kind")
 		source.free()
 
 func _test_live_net_and_skipped_work(t: TestRunner) -> void:
@@ -478,8 +475,8 @@ func _test_consumer_order(t: TestRunner) -> void:
 	var cached := CountedEvent.new()
 	var reference_where := WhereSheIs.nowhere()
 	var reference := ReferenceEvent.new()
-	var car := CountedCrowd.new()
-	var reference_car := ReferenceCrowd.new()
+	var car := CountedCrowd.new(CrowdAgent.Kind.CAR)
+	var reference_car := ReferenceCrowd.new(CrowdAgent.Kind.CAR)
 	cached.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(cached_where))
@@ -487,7 +484,6 @@ func _test_consumer_order(t: TestRunner) -> void:
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(reference_where))
 	for source: CrowdAgent in [car, reference_car]:
-		source.kind = CrowdAgent.Kind.CAR
 		source._speed = 80.0
 	var sources: Array[ExcitementSource] = [cached.source(), reference.source(), car.mood(),
 			reference_car.mood()]
