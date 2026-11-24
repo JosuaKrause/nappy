@@ -302,6 +302,8 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 			_print("%s ahead at %s heading %s: cyclist/dog down her line, charger along %s" % [
 					label, tile, heading, line])
 			printed += 1
+		# The road tile against the kerb across from her when she stands on a sidewalk, from either
+		# of its two tiles; none where she is not on one.
 		var kerb := map.kerb_across_from(her)
 		if kerb != Vector2.INF:
 			for travel in headings:
