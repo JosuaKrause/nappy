@@ -1379,8 +1379,9 @@ func _activity_snapshot() -> Dictionary:
 					agent.lane().corridor_index()]
 			if not walker_streets.has(street):
 				walker_streets[street] = {"walkers": 0, "moving": 0}
-			result.walker_streets[street].walkers += 1
-			result.walker_streets[street].moving += int(not agent.velocity().is_zero_approx())
+			var counts: Dictionary = walker_streets[street]
+			counts["walkers"] = int(counts["walkers"]) + 1
+			counts["moving"] = int(counts["moving"]) + int(not agent.velocity().is_zero_approx())
 			result["walkers_left" if (transform * agent.global_position).x < view.size.x * 0.5
 					else "walkers_right"] += 1
 		if not agent.velocity().is_zero_approx():

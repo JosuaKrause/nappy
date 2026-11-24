@@ -78,14 +78,16 @@ func lifecycle(t: TestRunner, prefix: String) -> void:
 	t.check(later.bounded_returned,
 			"later-day bounded region bodies stay inside extent and real player exits and returns")
 	DirAccess.remove_absolute(later_day_path)
+	RecipeManifest.remove(_manifest_path("scripted"))
+	RecipeManifest.remove(_manifest_path("free"))
 
-## A boot of the recipe at `path` under `mode` ("free" or "scripted"), the reload it asks for handed
-## to `reloads` and its sitting parked in `home` as a real reload parks it at the root. Its save is
-## at a scratch path, which `Boot.Booted.free_all()` removes.
 ## Where the manifest of a boot under `mode` is written, which `_boot()` hands the runtime.
 static func _manifest_path(mode: String) -> String:
 	return RecipeManifest.scratch_path("lifecycle_" + mode)
 
+## A boot of the recipe at `path` under `mode` ("free" or "scripted"), the reload it asks for handed
+## to `reloads` and its sitting parked in `home` as a real reload parks it at the root. Its save is
+## at a scratch path, which `Boot.Booted.free_all()` removes.
 func _boot(t: TestRunner, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
 	var scratch := "user://scene_recipe_lifecycle_%s_%d.json" % [mode, OS.get_process_id()]
 	RecipeManifest.remove(_manifest_path(mode))

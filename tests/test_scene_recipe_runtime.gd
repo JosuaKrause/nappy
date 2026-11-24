@@ -613,6 +613,12 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	t.check(_task_record(placed).get("expired_tick") == RecipeManifest.ticks_of(runtime)
 			and not RecipeManifest.read(placed.manifest_path).get("setup_failed", false),
 			"a placed task that is gone expired at the tick it went: %s" % [_task_record(placed)])
+	# The expiry also takes the task out of the actors a capture lists, which a screenshot is handed.
+	runtime.prepare_capture()
+	var captured: Dictionary = RecipeManifest.read(placed.manifest_path).get("capture_actors", {})
+	t.check(not captured.is_empty() and not captured.has("task"),
+			"after the expiry a capture lists no task among its actors: %s" % [captured.keys()])
+	runtime.get_tree().paused = false
 	_free_task_scene(placed)
 	# Played by hand, the runtime's own tick is what notices the read, as it does in play. Day 10's
 	# neighbor is pinned to a start the day could not draw, which the read refuses.
