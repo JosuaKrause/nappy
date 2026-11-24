@@ -27,5 +27,6 @@ about 2.2 s on real ticks. The parked probe `basement_meter.gd` makes 1100 walks
 game time in arrivals alone): 297 s on main, an estimated 12 hours on real ticks, far past the design's
 fallback rule, so the rig stays hand-stepped.
 
-**Set aside.** Real ticks for the basement rig (the 12 hours above); real ticks for the roadblock Stage (no player, nothing for a tick to do); keeping the
-rig on the spawner (a hand-in only a test would use).
+**Set aside.** Real ticks for the basement rig (the 12 hours above); real ticks for the roadblock
+Stage (no player, nothing for a tick to do); keeping the rig on the spawner (a hand-in only a test
+would use).

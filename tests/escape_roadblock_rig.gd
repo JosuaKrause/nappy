@@ -154,9 +154,9 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 ## (`EventStreaming.add()`, then `stream_in()`, as the manager's `stream_around()` does when she
 ## comes near it), so the spawner makes the instance the way a day's is made, and `event_of()` is
 ## the Stage's to answer, never the manager's. An instance stands on the map, in the world's entity
-## layer, with its look's nodes to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
-## the plans recorded on the map and leaves the map as the stage found it, every plan stood out of
-## the world.
+## layer, with its look's nodes to attach on the next idle frame (`settle()`). `close()` frees the
+## world, gives back the bodies the plans recorded on the map and leaves the map as the stage found
+## it, every plan stood out of the world.
 class Stage extends RefCounted:
 	var world: WorldContext
 	var manager: EventManager
