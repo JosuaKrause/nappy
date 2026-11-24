@@ -16,11 +16,12 @@ as the colours the front paints wall and roof in (`FrontReads.colour_of()`), com
 courtyard lot.
 
 **Rejected.** A reader on `Building` for the extension, the tint or the size: nothing in the game reads them back.
-The extension of the unextended-roof sweep of `test_city_buildings.gd` is read off the drawn roof, so that check
-alone does not fail when `assign_roof_extensions()` stops handing the extension (every roof then reads as
-unextended and its units on the extension are filtered out); the sweep gained a check that it met extended roofs.
+
+**The unextended-roof sweep.** `test_city_buildings.gd`'s sweep reads the extension off the drawn roof, so that
+check alone does not fail when `assign_roof_extensions()` stops handing the extension (every roof
+then reads as unextended and its units on the extension are filtered out); the sweep gained a check that it met extended roofs.
 
 **The lazy probe.** `probes/lazy_scenery_measure.gd` measured the roof's north overhang from the extension and the
-footprint it read off the building. It reads the building's own scenery bounds now, so its
-`max_roof_north_overhang_px` includes the two tiles of margin the bounds keep (160 where it was 96); its
+footprint it read off the building. It reads the building's own scenery bounds now and takes off the two tiles of
+margin the bounds keep, so `max_roof_north_overhang_px` is the same 96 on the cities it measured, and its
 `roof_layers` are the same on both seeds (287 and 294).

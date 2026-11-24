@@ -109,14 +109,15 @@ func _coverage(city: City) -> void:
 	var roof_layers := 0
 	for building in city.buildings():
 		building_nodes += _nodes(building)
-		# How far the building's own scenery bounds reach north of its lot, which is the roof's
-		# extension and the two tiles of margin the bounds keep beyond it.
+		# How far the building's own scenery bounds reach north of its lot: the roof's extension and
+		# the two tiles of margin the bounds keep beyond it, which are taken off again.
 		var footprint_depth := map.tile_rect_to_world(building.lot_rect()).size.y
 		var reach := building.global_position.y - footprint_depth - building.residence().bounds().position.y
-		max_roof_north_overhang = maxf(max_roof_north_overhang, reach)
+		var extension_rows := maxi(0, roundi(reach / 32.0) - 2)
+		max_roof_north_overhang = maxf(max_roof_north_overhang, extension_rows * 32.0)
 		var extension: Array[int] = []
 		extension.resize(building.columns())
-		extension.fill(maxi(0, roundi(reach / 32.0) - 2))
+		extension.fill(extension_rows)
 		# The roof furniture each stands feet-anchored on its roof cell (read off where its roof
 		# objects stand, the building made resident for the read and handed back as it was): its
 		# picture rises from the floor line of its row by the region's height at the equipment's

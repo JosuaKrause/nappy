@@ -425,8 +425,8 @@ func _is_covered(col: int) -> bool:
 ## meet edge to edge with no gap and no overlap. Sized to `columns()`, or empty for a front covering
 ## nothing; `_extension_rows()` reads an index past the end as 0, the same convention
 ## `_is_covered()` already uses. A geometry fact, not a roll, but the roof furniture's own pool
-## reaches onto the extension (`_roof_layout()`), so the setter rebuilds rather than only
-## redrawing — before `add_child()`, where `City` already sets it, that is a no-op.
+## reaches onto the extension (`_roof_layout()`), so `extend_roof_over()` rebuilds rather than
+## only redrawing — before `add_child()`, where `City` already hands it over, that is a no-op.
 var _roof_extension_rows: Array[int] = []
 
 ## Hands the front the rows its roof runs on north over the covered building, one entry per
