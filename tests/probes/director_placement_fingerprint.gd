@@ -222,7 +222,7 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 	var vans: PackedVector2Array = happenings._raid_vans
 	var beat: PackedVector2Array = happenings._raid_beat
 	_print("%s raid plans vans %s beat %s" % [label, vans, beat])
-	var far := city.map.tile_to_world(Vector2i(city.map.size.x - 4, 3))
+	var far := city.map.tile_to_world(Vector2i(city.map.size_in_tiles().x - 4, 3))
 	var printed := 1
 	# Her far from her door, her screen on what the raid would put down.
 	for focus: Vector2 in [vans[0] if not vans.is_empty() else far,
@@ -253,7 +253,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 			* Tuning.TILE_SIZE
 	var printed := 0
 	var hers: Array[Vector2] = [Vector2(spine, 600.0), Vector2(spine + 90.0, 40.0),
-			Vector2(spine - 130.0, map.size.y * Tuning.TILE_SIZE - 50.0),
+			Vector2(spine - 130.0, map.size_in_tiles().y * Tuning.TILE_SIZE - 50.0),
 			Vector2(300.0, 900.0)]
 	for her in hers:
 		_stand(city, player, her)
@@ -316,7 +316,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 			_print("%s ahead at %s column going %s -> %s" % [label, tile, going,
 					_point(PendingWarning.in_its_lane(column, her, Vector2(her.x - 40.0, 0.0),
 							Vector2(0.0, going), 16.0,
-							map.size.y * Tuning.TILE_SIZE - 16.0, view))])
+							map.size_in_tiles().y * Tuning.TILE_SIZE - 16.0, view))])
 			printed += 1
 		# The men a hunting van owes get out beside it.
 		var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"),
@@ -349,8 +349,8 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
 					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):

@@ -104,8 +104,8 @@ func _test_an_arrow_exists_on_every_task_day(t: TestRunner) -> void:
 ## constructed case, or (-1, -1).
 func _open_run_for(before: int, after: int) -> Vector2i:
 	var map := _least_map
-	for y in range(8, map.size.y - 8):
-		for x in range(before + 1, map.size.x - after - 1):
+	for y in range(8, map.size_in_tiles().y - 8):
+		for x in range(before + 1, map.size_in_tiles().x - after - 1):
 			var open := true
 			for dx in range(-before, after + 1):
 				var tile := Vector2i(x + dx, y)

@@ -509,12 +509,12 @@ func _samples_along(plan: EventPlan) -> PackedVector2Array:
 ## overlap reports one row as the whole cause of a cut that needed two.
 func _blocked_counts(map: CityMap, rows: Array[Row], reading: Reading) -> PackedInt32Array:
 	var counts := PackedInt32Array()
-	counts.resize(map.size.x * map.size.y)
+	counts.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	counts.fill(0)
 	# Closures are counted in and never taken out again: a barrier is not a row anything can lift.
 	for tile: Vector2i in map.closed_tile_set():
 		if map.in_bounds(tile):
-			counts[tile.y * map.size.x + tile.x] += 1
+			counts[tile.y * map.size_in_tiles().x + tile.x] += 1
 	for row: Row in rows:
 		if reading == Reading.CATALOGUE_ONLY and row.source != Source.CATALOGUE:
 			continue
@@ -530,7 +530,7 @@ func _blocked_counts(map: CityMap, rows: Array[Row], reading: Reading) -> Packed
 ## the city — which is the difference between a probe that runs in minutes and one that does not.
 func _owners_of(map: CityMap, rows: Array[Row]) -> Array:
 	var owners: Array = []
-	owners.resize(map.size.x * map.size.y)
+	owners.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	for row: Row in rows:
 		for index in row.tiles:
 			var here: Variant = owners[index]
@@ -543,8 +543,8 @@ func _owners_of(map: CityMap, rows: Array[Row]) -> Array:
 ## The tiles one row denies under one reading, each named once. Every row still here paces or
 ## stands still — a mobile row that does not pace never reaches `_rows_of`'s result at all.
 func _row_tiles(map: CityMap, row: Row, reading: Reading) -> PackedInt32Array:
-	if _scratch.size() != map.size.x * map.size.y:
-		_scratch.resize(map.size.x * map.size.y)
+	if _scratch.size() != map.size_in_tiles().x * map.size_in_tiles().y:
+		_scratch.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 		_scratch.fill(0)
 	var found := PackedInt32Array()
 	var opening := reading == Reading.BEAT_OPENING or reading == Reading.CATALOGUE_ONLY
@@ -571,7 +571,7 @@ func _collect_disc(map: CityMap, at: Vector2, radius: float, found: PackedInt32A
 			var tile := centre + Vector2i(dx, dy)
 			if not map.in_bounds(tile):
 				continue
-			var index := tile.y * map.size.x + tile.x
+			var index := tile.y * map.size_in_tiles().x + tile.x
 			if _scratch[index] == 1:
 				continue
 			if map.tile_to_world(tile).distance_to(at) <= radius:
@@ -595,7 +595,7 @@ func _collect_always(map: CityMap, row: Row, found: PackedInt32Array) -> void:
 					always = false
 					break
 			if always:
-				var index := tile.y * map.size.x + tile.x
+				var index := tile.y * map.size_in_tiles().x + tile.x
 				_scratch[index] = 1
 				found.append(index)
 
@@ -607,7 +607,7 @@ func _collect_always(map: CityMap, row: Row, found: PackedInt32Array) -> void:
 func _allowed_mask(map: CityMap, route: Array, area_rect: Rect2i,
 		with_carriageway: bool) -> PackedByteArray:
 	var mask := PackedByteArray()
-	mask.resize(map.size.x * map.size.y)
+	mask.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	mask.fill(0)
 	for cell: Vector2i in route:
 		var origin: Vector2i = cell * ReachabilityGrid.CELL
@@ -672,7 +672,7 @@ func _add_junction(mask: PackedByteArray, map: CityMap, junction: Vector2i) -> v
 
 func _add_tile(mask: PackedByteArray, map: CityMap, tile: Vector2i) -> void:
 	if map.in_bounds(tile) and map.is_walkable(tile):
-		mask[tile.y * map.size.x + tile.x] = 1
+		mask[tile.y * map.size_in_tiles().x + tile.x] = 1
 
 # ---------------------------------------------------------------------- the flood fill ---
 
@@ -685,11 +685,11 @@ func _add_tile(mask: PackedByteArray, map: CityMap, tile: Vector2i) -> void:
 func _reach_from_home(map: CityMap, ground: PackedByteArray,
 		blocked: PackedInt32Array) -> PackedByteArray:
 	var reached := PackedByteArray()
-	reached.resize(map.size.x * map.size.y)
+	reached.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	reached.fill(0)
 	var queue: Array[Vector2i] = []
 	for tile in _home_tiles(map):
-		var index := tile.y * map.size.x + tile.x
+		var index := tile.y * map.size_in_tiles().x + tile.x
 		if ground[index] == 1 and blocked[index] <= 0 and reached[index] == 0:
 			reached[index] = 1
 			queue.append(tile)
@@ -701,7 +701,7 @@ func _reach_from_home(map: CityMap, ground: PackedByteArray,
 			var next: Vector2i = at + step
 			if not map.in_bounds(next):
 				continue
-			var index := next.y * map.size.x + next.x
+			var index := next.y * map.size_in_tiles().x + next.x
 			if reached[index] == 1 or ground[index] == 0 or blocked[index] > 0:
 				continue
 			reached[index] = 1
@@ -732,7 +732,7 @@ func _arrives(map: CityMap, reached: PackedByteArray, area_rect: Rect2i) -> bool
 			var tile := Vector2i(x, y)
 			if not map.in_bounds(tile) or not Tile.is_calm(map.tile_at(tile)):
 				continue
-			if reached[tile.y * map.size.x + tile.x] == 1:
+			if reached[tile.y * map.size_in_tiles().x + tile.x] == 1:
 				return true
 	return false
 
@@ -749,11 +749,11 @@ func _diagnose(map: CityMap, route: Array, area_rect: Rect2i, ground: PackedByte
 
 	# What the ground alone does, before a single row is blamed for it.
 	var bare := PackedInt32Array()
-	bare.resize(map.size.x * map.size.y)
+	bare.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	bare.fill(0)
 	for tile: Vector2i in map.closed_tile_set():
 		if map.in_bounds(tile):
-			bare[tile.y * map.size.x + tile.x] = 1
+			bare[tile.y * map.size_in_tiles().x + tile.x] = 1
 	var relaxed := _allowed_mask(map, route, area_rect, true)
 	if not _line_exists(map, relaxed, bare, area_rect):
 		verdict.shape = Shape.GROUND
@@ -780,7 +780,7 @@ func _diagnose(map: CityMap, route: Array, area_rect: Rect2i, ground: PackedByte
 			break
 		var frontier := _frontier(map, here, still, reached)
 		var culprits: Array[Row] = []
-		for row: Row in _rows_covering(owners, frontier, map.size.x):
+		for row: Row in _rows_covering(owners, frontier, map.size_in_tiles().x):
 			if not gone.has(row.get_instance_id()):
 				culprits.append(row)
 		var cut := _shape_of_a_cut(map, frontier, culprits, owners)
@@ -894,7 +894,7 @@ func _covers_the_crossing(map: CityMap, frontier: Array[Vector2i], culprits: Arr
 				var tile := Vector2i(x, y)
 				if not map.is_walkable(tile):
 					continue
-				var owning: Variant = owners[tile.y * map.size.x + tile.x]
+				var owning: Variant = owners[tile.y * map.size_in_tiles().x + tile.x]
 				var held := false
 				if owning != null:
 					for other: Row in (owning as Array):
@@ -948,7 +948,7 @@ func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment, rows: Arra
 			var tile := Vector2i(x, y)
 			if not map.is_walkable(tile) or _is_a_carriageway_tile(map, tile, segment.horizontal):
 				continue
-			var owning: Variant = owners[tile.y * map.size.x + tile.x]
+			var owning: Variant = owners[tile.y * map.size_in_tiles().x + tile.x]
 			if owning != null:
 				var taken := false
 				for row: Row in (owning as Array):
@@ -985,7 +985,7 @@ func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment, rows: Arra
 func _ids_over_the_home(map: CityMap, owners: Array) -> Array:
 	var found := {}
 	for tile in _home_tiles(map):
-		var here: Variant = owners[tile.y * map.size.x + tile.x]
+		var here: Variant = owners[tile.y * map.size_in_tiles().x + tile.x]
 		if here == null:
 			continue
 		for row: Row in (here as Array):
@@ -1007,12 +1007,12 @@ func _frontier(map: CityMap, here: PackedInt32Array, blocked: PackedInt32Array,
 	for index in here:
 		if reached[index] == 1 or blocked[index] <= 0:
 			continue
-		var tile := Vector2i(index % map.size.x, index / map.size.x)
+		var tile := Vector2i(index % map.size_in_tiles().x, index / map.size_in_tiles().x)
 		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var beside: Vector2i = tile + step
 			if not map.in_bounds(beside):
 				continue
-			if reached[beside.y * map.size.x + beside.x] == 1:
+			if reached[beside.y * map.size_in_tiles().x + beside.x] == 1:
 				found.append(tile)
 				break
 	return found

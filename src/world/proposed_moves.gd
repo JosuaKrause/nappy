@@ -1,11 +1,11 @@
 class_name ProposedMoves
 extends RefCounted
-## **One map's list of every mover's move** (`WorldMap.moves`): each mover that walks or drives
-## the world joins its `MoveProposal` while it stands there and leaves when it goes, so a pass over
-## every mover — changing a crowd body's proposal before its check, against everyone else's
-## committed pose (`MoveProposal`'s doc says which moves can be changed) — has one list to pass
-## over, in the order the movers joined. The world names no mover: what joins is the move, never
-## the event, the walker or the officer making it.
+## **One map's list of every mover's move** (`WorldMap.list_move()`): each mover that walks or
+## drives the world joins its `MoveProposal` while it stands there and leaves when it goes, so a
+## pass over every mover — changing a crowd body's proposal before its check, against everyone
+## else's committed pose (`MoveProposal`'s doc says which moves can be changed) — has one list
+## to pass over, in the order the movers joined. The world names no mover: what joins is the
+## move, never the event, the walker or the officer making it.
 
 var _moves: Array[MoveProposal] = []
 ## The same list's moves that do not give way (`MoveProposal.gives_way()` false), in the order they

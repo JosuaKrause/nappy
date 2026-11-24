@@ -120,7 +120,7 @@ func _vertical_rigs(map: CityMap) -> Array[Dictionary]:
 		return rigs
 	var lane_x := (float(column) + 0.5) * tile
 	var mid := 0
-	for y in range(12, map.size.y - 16):
+	for y in range(12, map.size_in_tiles().y - 16):
 		if map.is_crossing(Vector2i(column, y)) and map.tile_at(Vector2i(column, y - 5)) \
 				== GameEnums.TileType.ROAD:
 			mid = y
@@ -241,7 +241,7 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 	return report
 
 func _lane_to_the_main_road(map: CityMap) -> int:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
 				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
@@ -259,10 +259,10 @@ func _zebras_either_side(map: CityMap, lane_y: int, c: int) -> bool:
 					== GameEnums.TileType.ROAD
 
 func _a_zebra(map: CityMap) -> Vector2:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) < 0 or not CityMap.is_road_offset(CityMap.corridor_offset(y)):
 			continue
-		for x in range(12, map.size.x - 16):
+		for x in range(12, map.size_in_tiles().x - 16):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.CROSSING:
 				continue

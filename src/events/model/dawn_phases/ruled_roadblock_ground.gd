@@ -65,8 +65,8 @@ func reoffer_within() -> float:
 ## Overrides RoadblockGround.route_tiles.
 func route_tiles() -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in _map.size.y:
-		for x in _map.size.x:
+	for y in _map.size_in_tiles().y:
+		for x in _map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if _corridor.carries_a_route(tile) and _map.is_walkable(tile) \
 					and not _shut.has(tile):

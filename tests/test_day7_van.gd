@@ -92,7 +92,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var seen := {"van": null, "her": Vector2.INF, "heading": Vector2.ZERO,
 			"tiles": [] as Array[Vector2i], "met": false}
 	var tick := func() -> void:
-		var obstructed_before := map.obstructed_tiles.duplicate()
+		var obstructed_before := map.obstructed_tiles().duplicate()
 		var events := RunCity.events(city)
 		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
 		events.ahead.site_what_is_on_her_way(STEP)
@@ -111,7 +111,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 		seen["her"] = player.global_position
 		seen["heading"] = player.velocity.normalized()
 		var its: Array[Vector2i] = []
-		for tile: Vector2i in map.obstructed_tiles:
+		for tile: Vector2i in map.obstructed_tiles():
 			if not obstructed_before.has(tile):
 				its.append(tile)
 		seen["tiles"] = its

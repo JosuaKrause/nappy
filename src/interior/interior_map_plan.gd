@@ -219,12 +219,12 @@ func finish() -> void:
 	var box := footprint()
 	if box.position.x < 0 or box.position.y < 0:
 		push_error("the building reaches tile %s, west or north of its map's origin" % box.position)
-	size = box.end
+	_size = box.end
 	_grid = PackedByteArray()
-	_grid.resize(size.x * size.y)
+	_grid.resize(_size.x * _size.y)
 	for tile: Vector2i in _tiles:
 		if in_bounds(tile) and is_walkable(tile):
-			_grid[tile.y * size.x + tile.x] = 1
+			_grid[tile.y * _size.x + tile.x] = 1
 	_cut_cells.clear()
 	var bands := flight_bands()
 	for band: Dictionary in bands:

@@ -29,8 +29,9 @@ func _test_the_road_across_from_each_sidewalk_tile(t: TestRunner) -> void:
 		sidewalk_offsets.append(offset)
 		sidewalk_offsets.append(Tuning.STREET_WIDTH - 1 - offset)
 	var asked := {}
-	for y in map.size.y:
-		for x in map.size.x:
+	var size := map.size_in_tiles()
+	for y in size.y:
+		for x in size.x:
 			var tile := Vector2i(x, y)
 			var inward := map.pavement_inward(tile)
 			if inward == Vector2i.ZERO:
@@ -60,8 +61,9 @@ func _test_the_road_across_from_each_sidewalk_tile(t: TestRunner) -> void:
 
 ## The first carriageway tile found by scanning from the map's corner.
 func _a_road_tile(map: CityMap) -> Vector2i:
-	for y in map.size.y:
-		for x in map.size.x:
+	var size := map.size_in_tiles()
+	for y in size.y:
+		for x in size.x:
 			var tile := Vector2i(x, y)
 			if Tile.is_road(map.tile_type_at_world(map.tile_to_world(tile))):
 				return tile

@@ -19,9 +19,9 @@ extends RefCounted
 ## - **day 12's cordon** from the swing's touch, she at the swing, `CORDON_TICKS` ticks;
 ## - **day 13's column** sent down the main road toward her at the doorstep, `TICKS * 2` ticks.
 ##
-## **An event figure** is a move on the map's list (`WorldMap.moves`) that does not give way
-## (`MoveProposal.gives_way()` false) and has a body (`radius` above zero), by the rules the
-## crowd gives way by (`SeparationPass`): **for a walker**, one under way (moved in the last
+## **An event figure** is a move on the map's list (`WorldMap.list_move()`) that does not
+## give way (`MoveProposal.gives_way()` false) and has a body (`radius` above zero), by the rules
+## the crowd gives way by (`SeparationPass`): **for a walker**, one under way (moved in the last
 ## `SeparationPass.UNDER_WAY_TICKS` ticks) or standing with `stood_round`; **for a car**, one that
 ## has moved since the probe first saw it, as long as it stands. A step longer than
 ## `SeparationPass.PLACEMENT_STEP` is a placement and not a move. Every event the probe makes is
@@ -248,8 +248,8 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
 					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
@@ -345,7 +345,7 @@ class Meeting extends RefCounted:
 		# rules: walkers give way to one under way or standing round, cars to one that has moved.
 		var for_walkers: Array[MoveProposal] = []
 		var for_cars: Array[MoveProposal] = []
-		for move in _city.map.moves.keeping_their_course():
+		for move in _city.map.listed_moves().keeping_their_course():
 			if move.body_radius() <= 0.0:
 				continue
 			var seen: Array = _seen.get(move, [move.steps_to(), SeparationPass.NEVER_MOVED])

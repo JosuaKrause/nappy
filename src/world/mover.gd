@@ -34,26 +34,26 @@ const STREETS := 32
 const TODAY := CLOSED | SOFT_SEALS | BODIES
 
 ## The layers that stop this mover, `GROUND | POSTS | ...`.
-var blocked_by := GROUND | POSTS
+var _blocked_by := GROUND | POSTS
 ## How far its body reaches round the point it stands on, in px: a step is refused when this much
 ## past where it would land is solid (`Navigator.step()`).
-var radius := 0.0
+var _radius := 0.0
 
 func _init(layers := GROUND | POSTS, body_radius := 0.0) -> void:
-	blocked_by = layers
-	radius = body_radius
+	_blocked_by = layers
+	_radius = body_radius
 
-## Every layer this mover is stopped by, as the `blocked_by` bits.
+## Every layer this mover is stopped by, as the bits of the layer constants above.
 func layers_blocked() -> int:
-	return blocked_by
+	return _blocked_by
 
 ## The reach of the mover's body round its feet; zero for a point.
 func body_reach() -> float:
-	return radius
+	return _radius
 
 ## Whether `layer` (one of the constants above) stops this mover.
 func is_blocked_by(layer: int) -> bool:
-	return blocked_by & layer != 0
+	return _blocked_by & layer != 0
 
 ## The mover of no body stopped by `layers`, shared: one is built per set of layers and handed to
 ## every caller that asks, so a question asked every frame by hundreds of walkers builds nothing.

@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 	# border is held resident first, which is how the city painted its ground when this was written.
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
 	for key in _ground.keys_in(Rect2(Vector2.ONE * -depth,
-			Vector2(_city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)):
+			Vector2(_city.map.size_in_tiles()) * 32.0 + Vector2.ONE * depth * 2.0)):
 		_ground.prepare(key)
 	var tree := _city.streets().route_tree()
 	t.check(tree != null and not tree.branches().is_empty(), "real daily boot supplies route options")

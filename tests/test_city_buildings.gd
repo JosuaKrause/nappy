@@ -144,7 +144,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		for building: Building in buildings:
 			if building.covered_ground_cols().is_empty():
 				continue
-			if building.lot_rect().end.y >= map.size.y:
+			if building.lot_rect().end.y >= map.size_in_tiles().y:
 				edge_fronts += 1
 				t.check(not building.covered_ground_cols().has(true),
 						"seed %d: a front facing the map's edge at %s keeps its facade"

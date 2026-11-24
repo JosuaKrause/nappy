@@ -54,9 +54,9 @@ func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t: TestRunner) -> voi
 	source.now = ExcitementSource.WINDOW + 0.5
 	t.close_to(source.landed(), 5.0, "the first landing has left the window on the source's clock",
 			0.0001)
-	t.close_to(source.landed_ever, 15.0, "and what has ever landed is never pruned", 0.0001)
+	t.close_to(source.landed_ever(), 15.0, "and what has ever landed is never pruned", 0.0001)
 	source.accumulate_landed(0.0)
-	t.close_to(source.landed_ever, 15.0, "nothing lands for a share of zero", 0.0001)
+	t.close_to(source.landed_ever(), 15.0, "nothing lands for a share of zero", 0.0001)
 	body.free()
 
 func _test_the_first_landing_is_told_once(t: TestRunner) -> void:

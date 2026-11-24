@@ -1,13 +1,13 @@
 extends RefCounted
-## **Outside a step, every mover's move stands where the mover does** (`MoveProposal`), so the list a
-## pass over every mover reads (`WorldMap.moves`, which holds no mover, only their moves) never shows
-## a body somewhere it is not. Walked through a played day 12 on a booted `Main`: the crowd, the
-## events and the resistance ticked at the physics tick each tick, her walking toward the swing and
-## stood against a walker now and then so his bump pushes him, then the swing touched and the cordon
-## closing round the park with its officers and escorts walking. At the end of every tick each live
-## mover's move must be on its map's list, with `from` and `to` both at its pose and none open —
-## and so it must at dawn before anybody has stepped, and the moment the swing sets the cordon's
-## officers out, before any of them has:
+## **Outside a step, every mover's move stands where the mover does** (`MoveProposal`), so the
+## list a pass over every mover reads (`WorldMap.listed_moves()`, which holds no mover, only
+## their moves) never shows a body somewhere it is not. Walked through a played day 12 on a
+## booted `Main`: the crowd, the events and the resistance ticked at the physics tick each tick,
+## her walking toward the swing and stood against a walker now and then so his bump pushes him,
+## then the swing touched and the cordon closing round the park with its officers and escorts
+## walking. At the end of every tick each live mover's move must be on its map's list, with
+## `from` and `to` both at its pose and none open — and so it must at dawn before anybody has
+## stepped, and the moment the swing sets the cordon's officers out, before any of them has:
 ##
 ## - every event in the world (`EventManager.instances()`), whether it was there at dawn or came
 ##   into the world during the tick;
@@ -25,22 +25,24 @@ extends RefCounted
 ## suite would otherwise rest on a chance that any change to how the crowd moves can undo. The suite
 ## checks the day still runs when the swing is touched.
 ##
-## **The booted game is driven the way a player and the engine drive it** (`tests/booted_main.gd`):
-## the title's joystick button pressed through the viewport, her marks read through the contact's
-## own completion (`ContactPoint.complete_now()`), and every tick a real physics tick of the booted
-## game (`tests/physics_ticks.gd`): `main` ticks the resistance and the day, and the engine ticks the
-## events and the crowd, in the order the game runs them. Run at twice real time, so a tick is the
-## 1/30 s the walk always took. The move a mover stands is read off the list the game's own passes
-## read (`WorldMap.moves`), and the movers' poses off the nodes the game draws: an event's and a
-## crowd body's position, and the cordon's officers' figures (`CordonOfficer`).
+## **The booted game is driven the way a player and the engine drive it**
+## (`tests/booted_main.gd`): the title's joystick button pressed through the viewport, her marks
+## read through the contact's own completion (`ContactPoint.complete_now()`), and every tick a
+## real physics tick of the booted game (`tests/physics_ticks.gd`): `main` ticks the resistance
+## and the day, and the engine ticks the events and the crowd, in the order the game runs them.
+## Run at twice real time, so a tick is the 1/30 s the walk always took. The move a mover stands
+## is read off the list the game's own passes read (`WorldMap.listed_moves()`), and the movers'
+## poses off the nodes the game draws: an event's and a crowd body's position, and the cordon's
+## officers' figures (`CordonOfficer`).
 ##
-## **This suite combines modules, for a stated reason**: the guarantee is a contract *between* the
-## movers and the map's list (every mover's move is on `WorldMap.moves` and stands where the mover
-## does, at the end of every tick), so the crowd, the events, the resistance's cordon and the map are all
-## real and ticking together, as the game ticks them. A fake for any of them could not hold the one
-## thing checked, that a real mover of each kind leaves no stale or open move. It was named for the
-## player and her walk, and the movers are not hers; their own suites hold what each does alone. The
-## cities come from the cache of generated maps (`tests/city_map_cache.gd`).
+## **This suite combines modules, for a stated reason**: the guarantee is a contract *between*
+## the movers and the map's list (every mover's move is on `WorldMap.listed_moves()` and stands
+## where the mover does, at the end of every tick), so the crowd, the events, the resistance's
+## cordon and the map are all real and ticking together, as the game ticks them. A fake for any
+## of them could not hold the one thing checked, that a real mover of each kind leaves no stale
+## or open move. It was named for the player and her walk, and the movers are not hers; their
+## own suites hold what each does alone. The cities come from the cache of generated maps
+## (`tests/city_map_cache.gd`).
 ##
 ## Every seed plays a run of its own (`tests/seat.gd`), and every boot is handed
 ## a save at a scratch path (`main.use_save()`), so nothing here leaks into the next suite or
@@ -201,7 +203,7 @@ func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, co
 		if officer != null and not officer.is_queued_for_deletion():
 			counts["officers"] += 1
 			poses.append(["cordon officer", officer.position])
-	_check_the_moves(t, seed_value, tick, poses, city.map.moves.all(), counts)
+	_check_the_moves(t, seed_value, tick, poses, city.map.listed_moves().all(), counts)
 
 ## Every mover's pose has a move on the list standing there and closed, and every move on the list
 ## is some mover's: a move left behind, or one still open, would show a body where nobody is.

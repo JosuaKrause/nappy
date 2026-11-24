@@ -1,10 +1,10 @@
 class_name MoveProposal
 extends RefCounted
-## **One mover's move for one tick: proposed, checked, then committed.** Every mover that walks or
-## drives a world — an event's figure or car (`EventInstance`), a crowd walker or car (`LaneMover`),
-## day 12's cordon officers (`ParkCordon`) — keeps one of its own, and puts it on its map's list of
-## moves (`WorldMap.moves`, a `ProposedMoves`) for as long as it stands in that world. Each tick it
-## steps in three parts:
+## **One mover's move for one tick: proposed, checked, then committed.** Every mover that walks
+## or drives a world — an event's figure or car (`EventInstance`), a crowd walker or car
+## (`LaneMover`), day 12's cordon officers (`ParkCordon`) — keeps one of its own, and puts it on
+## its map's list of moves (`WorldMap.list_move()`, a `ProposedMoves`) for as long as it stands
+## in that world. Each tick it steps in three parts:
 ##
 ## 1. **Propose** (`propose()`): the tick opens its move at the pose it stands at, and works out
 ##    where it would go (its proposed end).

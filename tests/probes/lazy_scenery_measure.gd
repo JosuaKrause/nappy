@@ -188,7 +188,7 @@ func _coverage(city: City) -> void:
 func _prepare_every_region(ground: SceneryGround, city: City) -> void:
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
 	var world := Rect2(Vector2.ONE * -depth,
-			Vector2(city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)
+			Vector2(city.map.size_in_tiles()) * 32.0 + Vector2.ONE * depth * 2.0)
 	for key in ground.keys_in(world):
 		ground.prepare(key)
 
@@ -210,7 +210,7 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 		layer.tile_set = source.tile_set()
 		# Deliberately outside the tree: no renderer/physics/quadrant processing in this experiment.
 		var lo := Vector2i(-CityMap.OUTSIDE_DEPTH_TILES, -CityMap.OUTSIDE_DEPTH_TILES)
-		var hi := city.map.size + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
+		var hi := city.map.size_in_tiles() + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
 		if mode == "nearby":
 			lo = Vector2i((nearby.position / 32).floor())
 			hi = Vector2i((nearby.end / 32).ceil())
@@ -219,7 +219,8 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 		for y in range(lo.y, hi.y):
 			for x in range(lo.x, hi.x):
 				var tile := Vector2i(x, y)
-				var inside := x >= 0 and y >= 0 and x < city.map.size.x and y < city.map.size.y
+				var extent := city.map.size_in_tiles()
+				var inside := x >= 0 and y >= 0 and x < extent.x and y < extent.y
 				var source_id := GroundTiles.source_for(city.map, tile, 1) if inside \
 					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:

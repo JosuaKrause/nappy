@@ -84,11 +84,11 @@ func room_along(tile: Vector2i, direction: Vector2i) -> int:
 	var margin := CityMap.period()
 	var room := 0
 	if direction.x > 0:
-		room = _map.size.x - 1 - tile.x
+		room = _map.size_in_tiles().x - 1 - tile.x
 	elif direction.x < 0:
 		room = tile.x
 	elif direction.y > 0:
-		room = _map.size.y - 1 - tile.y
+		room = _map.size_in_tiles().y - 1 - tile.y
 	else:
 		room = tile.y
 	return maxi(0, room - margin)
@@ -150,7 +150,7 @@ func _along_street_path(tile: Vector2i, def: EventDef,
 	var finish := tile + along * length
 	var edge := CityMap.period()
 	var at_end: int = finish.x if along.x != 0 else finish.y
-	var limit: int = _map.size.x if along.x != 0 else _map.size.y
+	var limit: int = _map.size_in_tiles().x if along.x != 0 else _map.size_in_tiles().y
 	if at_end < edge or at_end > limit - edge:
 		return PackedVector2Array()
 

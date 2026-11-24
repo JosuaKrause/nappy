@@ -132,10 +132,10 @@ var _stood := {}
 func _init(map: CityMap, standing: Array[EventPlan] = [],
 		route: RouteSource = null) -> void:
 	_map = map
-	_columns = ceili(float(map.size.x * Tuning.TILE_SIZE) / STEP) + 1
-	_rows = ceili(float(map.size.y * Tuning.TILE_SIZE) / STEP) + 1
+	_columns = ceili(float(map.size_in_tiles().x * Tuning.TILE_SIZE) / STEP) + 1
+	_rows = ceili(float(map.size_in_tiles().y * Tuning.TILE_SIZE) / STEP) + 1
 	_fits.resize(_columns * _rows)
-	_tiles.resize(map.size.x * map.size.y)
+	_tiles.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	for plan in standing:
 		stand(plan)
 	if not route:
@@ -375,7 +375,7 @@ func _tile_open(at: Vector2) -> bool:
 	var tile := WorldMap.tile_of(at)
 	if not _map.in_bounds(tile):
 		return false
-	var index := tile.y * _map.size.x + tile.x
+	var index := tile.y * _map.size_in_tiles().x + tile.x
 	var known := _tiles[index]
 	if known == _UNASKED:
 		known = _FITS if _map.is_walkable(tile) and not _map.is_closed(tile) \

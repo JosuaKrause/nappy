@@ -181,8 +181,9 @@ static func _add_walkable(map: CityMap, rect: Rect2i, ground: Dictionary) -> voi
 ## `ground` as the recipe lists it: tile type name -> `[y, x_from, x_to]` runs, row by row.
 static func _tile_runs(map: CityMap, ground: Dictionary, dawn: PackedByteArray) -> Dictionary:
 	var runs := {}
+	var width := map.size_in_tiles().x
 	for tile: Vector2i in _sorted(ground):
-		var type := str(GameEnums.TileType.keys()[dawn[tile.y * map.size.x + tile.x]]).to_lower()
+		var type := str(GameEnums.TileType.keys()[dawn[tile.y * width + tile.x]]).to_lower()
 		if not runs.has(type):
 			runs[type] = []
 		var list: Array = runs[type]
@@ -261,9 +262,9 @@ static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
 			or (a.at.y == b.at.y and a.at.x < b.at.x))))
 	# Placed again on the stretch, the way the scene will place them.
 	var mask := PackedByteArray()
-	mask.resize(map.size.x * map.size.y)
+	mask.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	for tile: Vector2i in ground:
-		mask[tile.y * map.size.x + tile.x] = 1
+		mask[tile.y * map.size_in_tiles().x + tile.x] = 1
 	map.stretch = mask
 	map.stretch_active = true
 	var counts := {"walker": 0, "car": 0}

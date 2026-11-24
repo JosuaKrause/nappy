@@ -247,8 +247,8 @@ func _test_a_retried_section_restarts_the_clock(t: TestRunner) -> void:
 ## A point on the first sidewalk tile of `map`, where she can stand for a case that needs only a
 ## street under her feet.
 func _on_a_sidewalk(map: CityMap) -> Vector2:
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			if map.tile_at(Vector2i(x, y)) == GameEnums.TileType.SIDEWALK:
 				return map.tile_to_world(Vector2i(x, y))
 	return Vector2.ZERO
@@ -732,8 +732,8 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 ## `[lane centre, outward toward the sidewalk, along the street]` of the first east-west carriageway
 ## lane on `map` with a sidewalk tile on its north side, or empty.
 func _a_kerb(map: CityMap) -> Array:
-	for y in range(1, map.size.y - 1):
-		for x in range(8, map.size.x - 8):
+	for y in range(1, map.size_in_tiles().y - 1):
+		for x in range(8, map.size_in_tiles().x - 8):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.ROAD:
 				continue

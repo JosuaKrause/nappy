@@ -369,7 +369,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	# and the kid alone.
 	_quiet_day(events)
 	var her := CrowdLanes.arterial_pavement(map)
-	for _tile in map.size.y / 2:
+	for _tile in map.size_in_tiles().y / 2:
 		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 			break
 		her.y += Tuning.TILE_SIZE

@@ -89,10 +89,10 @@ static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 	return GameEnums.TileType.ROAD if (x_road or y_road) else GameEnums.TileType.SIDEWALK
 
 ## Every junction on the map's own border keeps only the arms that are actually streets. The map
-## simply stops at `map.size`, so a street meeting the border has nothing beyond it the same way a
-## dead end or an absorbed corridor does — `_street_tile` cannot see that, since it only ever
-## looks at one tile's own two offsets, so the border comes out painted as an ordinary four-way
-## with a zebra running off the edge of the world.
+## simply stops at `map.size_in_tiles()`, so a street meeting the border has nothing beyond it
+## the same way a dead end or an absorbed corridor does — `_street_tile` cannot see that, since
+## it only ever looks at one tile's own two offsets, so the border comes out painted as an
+## ordinary four-way with a zebra running off the edge of the world.
 ##
 ## Stated over **a side of the map**, not four rects written out by hand: the first pass to touch
 ## this wrote one border at a time, which is one bug per side waiting to happen. Every tile within

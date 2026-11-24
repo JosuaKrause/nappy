@@ -713,7 +713,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		var owed := events.start_recipe_route([def.id()], [def.id()], 1, 0.0)
 		t.check(owed == 1, "the director owes her '%s' (%d)" % [def.id(), owed])
 		var her := CrowdLanes.arterial_pavement(map)
-		for _tile in map.size.y / 2:
+		for _tile in map.size_in_tiles().y / 2:
 			if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 				break
 			her.y += Tuning.TILE_SIZE
@@ -849,7 +849,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
 	# out of sight ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
 	var her := CrowdLanes.arterial_pavement(map)
-	for _tile in map.size.y / 2:
+	for _tile in map.size_in_tiles().y / 2:
 		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 			break
 		her.y += Tuning.TILE_SIZE
@@ -1031,10 +1031,10 @@ func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
 ## the map, and the street's own axis there.
 func _kerbs(map: CityMap) -> Array[Array]:
 	var kerbs: Array[Array] = []
-	var tile_count := map.size.x * map.size.y
+	var tile_count := map.size_in_tiles().x * map.size_in_tiles().y
 	var step := maxi(1, tile_count / 160)
 	for index in range(0, tile_count, step):
-		var tile := Vector2i(index % map.size.x, index / map.size.x)
+		var tile := Vector2i(index % map.size_in_tiles().x, index / map.size_in_tiles().x)
 		var inward := map.pavement_inward(tile)
 		if inward == Vector2i.ZERO:
 			continue

@@ -47,7 +47,8 @@ func _test_water_ownership(t: TestRunner) -> void:
 	# carries its road on for as far as any view asks, so its columns are never water.
 	for key: Vector2i in city.scenery_ground.chunks():
 		var start := key * SceneryGround.CHUNK_TILES
-		for y in range(maxi(start.y, city.map.size.y + 1), start.y + SceneryGround.CHUNK_TILES):
+		var shore := city.map.size_in_tiles().y + 1
+		for y in range(maxi(start.y, shore), start.y + SceneryGround.CHUNK_TILES):
 			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
 				if x < bridge_left or x >= bridge_right:
 					expected[Vector2i(x, y)] = true
@@ -61,8 +62,9 @@ func _test_water_ownership(t: TestRunner) -> void:
 					"animated water has no duplicate pixel owner in the static TileMap")
 	t.check(actual == expected and actual.size() == count,
 			"resident water has one owner per cell and excludes the bridge columns at every depth")
-	for y in range(city.map.size.y + 1, city.map.size.y + CityMap.OUTSIDE_DEPTH_TILES):
-		for x in range(-CityMap.OUTSIDE_DEPTH_TILES, city.map.size.x + CityMap.OUTSIDE_DEPTH_TILES):
+	var size := city.map.size_in_tiles()
+	for y in range(size.y + 1, size.y + CityMap.OUTSIDE_DEPTH_TILES):
+		for x in range(-CityMap.OUTSIDE_DEPTH_TILES, size.x + CityMap.OUTSIDE_DEPTH_TILES):
 			if x < bridge_left or x >= bridge_right:
 				t.check(actual.has(Vector2i(x, y)),
 						"water fills the complete requested shore, south-west and south-east corners included")
