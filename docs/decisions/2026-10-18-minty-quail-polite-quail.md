@@ -23,19 +23,20 @@ manager's `checkpoints` and stepped the door watch by hand on a city that never 
 held (twice 46.0 s plus 30 s is 92.1 s). The orchestrator decided on the design's fallback,
 `step_the_doors()`. Locally the suite takes 114 s on real ticks and 57 to 69 s on the step.
 `test_checkpoints.gd` took 133.0 s against 71.2 s recorded (1.87x, under the condition) and stays
-on real ticks, as do `test_route_rig.gd` (43.3 s) and `test_encounters.gd` (11.5 s). CI's
-reading of the step is the proof.
+on real ticks, as do `test_route_rig.gd` (43.3 s) and `test_encounters.gd` (11.5 s). CI's run
+of the step gave `test_resistance_crossing.gd` 75.0 s (1.63 times and 29 s more than recorded,
+under the condition), on a loaded shard; hand-stepped runs of it in CI took 40.5 to 68.9 s.
 
 **Noted.**
 - The run logs on hand steps and on real ticks match.
-- In "the guard who warned is the guard who comes", the lane the far hut would take her in from
-  moved to 8px past the centre line, onto the carriageway the boom spans: a hut never takes her in
-  from the carriageway its boom spans (`CheckpointController._on_a_booms_carriageway()`), though she
-  is 59.5px from the far hut, inside its 80px reach. The far hut stays the nearer to her than the
-  one that warned her, so a controller that asked again for the farthest hut when it sets the
-  guard on her would pick the wrong one. The guard is read on the tick he is set on her.
-- `EventManager._take()` skipping `record_the_body()` fails none of the suites in D; nothing in
-  them holds that recording. The masts' lorry case, which #1703 moved onto `start_recipe()`,
-  holds it.
+- In "the guard who warned is the guard who comes", she stands 8px past the centre line, on the
+  carriageway the boom spans, since a hut never takes her in from there
+  (`CheckpointController._on_a_booms_carriageway()`), though she is 59.5px from the far hut, inside
+  its 80px reach. The far hut warned her and is the nearer of the two (59.5px against 74.7px), so a
+  controller that sent the guard from the other hut fails the case. The guard is read on the tick he
+  is set on her.
+- `EventManager._take()` skipping `record_the_body()` fails no suite: neither D's nor the masts'
+  lorry case, which #1703 moved onto `start_recipe()`. Nothing holds that recording; the gap is
+  filed.
 - A post begins no hold while another row's conversation runs: `test_checkpoints.gd`'s corner of
   two doors holds it through a walk the game can produce, and `test_encounters.gd` points there.
