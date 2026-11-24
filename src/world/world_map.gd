@@ -36,8 +36,8 @@ var _size := Vector2i.ZERO
 ## stationary solid body — as the one record every mover asks through `passable()`
 ## (`BlockedLayer`). The ground's own type is the map's (`_ground_lets()`).
 var _blocked := BlockedLayer.new()
-## Every tile the blocked record holds in `layers` (`Mover`'s layer bits), as one set: the ground a flood
-## over another grid is handed as shut (`BlockedLayer.tiles_of()`).
+## Every tile the blocked record holds in `layers` (`Mover`'s layer bits), as one set: the
+## ground a flood over another grid is handed as shut (`BlockedLayer.tiles_of()`).
 func tiles_shut_to(layers: int) -> Dictionary:
 	return _blocked.tiles_of(layers)
 

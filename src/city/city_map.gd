@@ -11,7 +11,7 @@ extends WorldMap
 ##
 ## so a coordinate's position within its period tells you which it is.
 ##
-## **The city's `WorldMap`**: the line walk, the wall's depth, the blocked record (`blocked`, the
+## **The city's `WorldMap`**: the line walk, the wall's depth, the blocked record (the
 ## base's) and the tile conversions are the interface's; this map answers for its own ground
 ## (`_ground_lets()`, `_open()`) and for the streets (`pavement_inward()`, `corridor_offsets()`, ...).
 
@@ -244,7 +244,7 @@ var _seed_used := 0
 ## it a closed street already gets. **A merely-`_shut_calm` area is not**: its ground stays exactly
 ## as open as any other calm ground, because nothing there blocks her — see `_shut_calm`.
 ##
-## Held on the map's blocked record (`blocked`), the one every mover asks through `passable()`.
+## Held on the map's blocked record, the one every mover asks through `passable()`.
 var _closed_tiles: Dictionary:
 	get:
 		return _blocked.todays_closed_tiles()
