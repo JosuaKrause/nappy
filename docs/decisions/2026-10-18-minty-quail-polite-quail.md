@@ -35,8 +35,8 @@ under the condition), on a loaded shard; hand-stepped runs of it in CI took 40.5
   its 80px reach. The far hut warned her and is the nearer of the two (59.5px against 74.7px), so a
   controller that sent the guard from the other hut fails the case. The guard is read on the tick he
   is set on her.
-- `EventManager._take()` skipping `record_the_body()` fails no suite: neither D's nor the masts'
-  lorry case, which #1703 moved onto `start_recipe()`. Nothing holds that recording; the gap is
-  filed.
+- `EventManager._take()` skipping `record_the_body()` fails neither D's door suites nor the masts'
+  lorry case, which #1703 moved onto `start_recipe()`; `test_event_manager.gd`'s "a scene's body is
+  in the through roads its sent cars drive by" and `test_crowd_bodies_on_a_real_day.gd` hold it.
 - A post begins no hold while another row's conversation runs: `test_checkpoints.gd`'s corner of
   two doors holds it through a walk the game can produce, and `test_encounters.gd` points there.

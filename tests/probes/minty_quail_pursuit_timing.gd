@@ -198,7 +198,7 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 			known.append(instance)
 	var run := Run.new(known)
 	for tick in TICKS + 300:
-		RunCity.events(city).warnings.run(STEP, her)
+		RunCity.events(city)._warnings.run(STEP, her)
 		_tick(city)
 		run.observe(city, her, tick)
 	_print("%s trap warnings %d %s | %s" % [label, sent, run.report(), " / ".join(_trace)])
@@ -258,7 +258,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		return
 	var run := Run.new(before)
 	for tick in TICKS * 2:
-		RunCity.events(city).warnings.run(STEP, her)
+		RunCity.events(city)._warnings.run(STEP, her)
 		_tick(city)
 		run.observe(city, her, tick)
 	_print("%s column trucks %d %s" % [label, happenings.column.size(), run.report()])
@@ -274,8 +274,8 @@ func _tick(city: City) -> void:
 		where.tell(where.at(), where.pram_at(), where.view(), true, where.baby_is_awake(),
 				where.is_held_at_a_door())
 	events._step_them(STEP)
-	events.ahead.let_the_officers_out()
-	events.streaming.retire_finished()
+	events._ahead.let_the_officers_out()
+	events._streaming.retire_finished()
 
 func _take_out(city: City, before: Array) -> void:
 	# Each element is read as a Variant: one may be freed by the time it is reached (the
@@ -283,7 +283,7 @@ func _take_out(city: City, before: Array) -> void:
 	for item: Variant in RunCity.events(city).instances().duplicate():
 		if not before.has(item) and is_instance_valid(item):
 			RunCity.events(city).retire(item as EventInstance)
-	RunCity.events(city).streaming.retire_finished()
+	RunCity.events(city)._streaming.retire_finished()
 
 ## Stands her at `at`, the day's view looked through about her as the camera would.
 func _stand(city: City, player: Stroller, at: Vector2) -> void:

@@ -216,7 +216,8 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	reader.event = live
 	t.add_child(reader)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(reader.read and not reader.listed_in_the_tick and not moves.has(move) and not is_instance_valid(live),
+	t.check(reader.read and not reader.listed_in_the_tick and not moves.has(move)
+			and not is_instance_valid(live),
 			"retired once finished, it is off the list in the tick that retires it, "
 			+ "before the frame's deletions")
 	reader.free()

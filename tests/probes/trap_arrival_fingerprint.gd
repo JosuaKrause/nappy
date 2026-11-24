@@ -152,7 +152,7 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 			if city.map.is_walkable(city.map.world_to_tile(stepped)):
 				her = stepped
 				_stand(city, player, her)
-		RunCity.events(city).warnings.run(STEP, her)
+		RunCity.events(city)._warnings.run(STEP, her)
 		shown += STEP
 	var sent: EventInstance = null
 	for instance in RunCity.events(city).instances():

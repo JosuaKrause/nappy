@@ -156,7 +156,7 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 	player.global_position = path[0]
 	var walked := 0.0
 	RunCity.events(city).use_player(player)
-	var bag := RunCity.events(city).ahead.director().route_bag()
+	var bag := RunCity.events(city)._ahead.director().route_bag()
 	while walked < 600.0 and bag and not bag.bag_in_front().is_empty():
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
@@ -169,8 +169,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		RunCity.events(city).ahead.site_what_is_on_her_way(STEP)
-		RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
+		RunCity.events(city)._ahead.site_what_is_on_her_way(STEP)
+		RunCity.events(city)._ahead.place_what_is_owed_ahead(STEP)
 		player.global_position += player.velocity * STEP
 		walked += STEP
 

@@ -144,12 +144,12 @@ class Walk extends RefCounted:
 
 	func _tick(player: Stroller) -> void:
 		var events := RunCity.events(city)
-		events.ahead.site_what_is_on_her_way(STEP)
-		events.ahead.place_what_is_owed_ahead(STEP)
+		events._ahead.site_what_is_on_her_way(STEP)
+		events._ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
 		if van == null:
 			for plan in events.walk_events().plans():
-				if plan.row_id() == row and events.ahead.director().is_from_her_route(plan):
+				if plan.row_id() == row and events._ahead.director().is_from_her_route(plan):
 					van = plan
 					drawn_at = walked
 					drawn_phase = phase

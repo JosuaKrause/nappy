@@ -267,7 +267,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 		var pointed := warning.points_at()
 		var shown := 0.0
 		while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
-			RunCity.events(city).warnings.run(STEP, her)
+			RunCity.events(city)._warnings.run(STEP, her)
 			shown += STEP
 		var trucks: Array[String] = []
 		for truck in happenings.column:
@@ -325,7 +325,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 		RunCity.events(city).world.where_she_is().tell(her)
 		van.step(STEP)
 		var owed := van.officers_owed()
-		RunCity.events(city).ahead.let_the_officers_out()
+		RunCity.events(city)._ahead.let_the_officers_out()
 		var men: Array[String] = []
 		for man in MenLetOut.of(RunCity.events(city), van):
 			men.append(_point(man.global_position))
