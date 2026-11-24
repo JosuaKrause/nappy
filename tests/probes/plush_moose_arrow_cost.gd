@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/plush_moose_arrow_cost.gd      (prints PLUSH_MOOSE lines)
 ##
-## **The rig.** Per seed and day, a real city in a run of its own (`RunCity.with_own_run()`) through
+## **The rig.** Per seed and day, a real city in a run of its own (`RunCity.in_run()`) through
 ## the real day order (`CityState.begin_day()`, `City.start_day()`, `EventManager.start_day()`, then
 ## the director, handed her as `main` hands her), the mark read so the task is placed and her route
 ## rigged, and the day's longest route walked through

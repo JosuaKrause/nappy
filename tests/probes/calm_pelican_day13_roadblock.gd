@@ -13,7 +13,7 @@ extends RefCounted
 ## `City.start_day()`, `EventManager.start_day()`, then the director), her standing on the mark with
 ## the camera's unrotated view round her answering what is on screen, and the mark read, so the task
 ## is placed as a played day places it. Each city stands in a run of its own
-## (`RunCity.with_own_run()`), and she is handed to the director and the events as `main` hands her.
+## (`RunCity.in_run()`), and she is handed to the director and the events as `main` hands her.
 ## The arrow is then run to rest from where she stands the way the game runs it
 ## (`ResistanceDirector._retarget_the_arrow()`, then its physics ticks, `tick()`, until no sweep is
 ## under way), and again from each of `WALK_STOPS` points on her straight line toward the task's

@@ -18,7 +18,7 @@ extends RefCounted
 ## (`ResistanceDirector.tick()`, the step `main` runs every physics tick) run the arrow to rest and
 ## make one more of its choices, each of which asks the guard to follow it. She arrives within
 ## `ARRIVED` px of the roadblock's body. Each city stands in a run of its own
-## (`RunCity.with_own_run()`); she is handed to the director and the events as `main` hands her; the
+## (`RunCity.in_run()`); she is handed to the director and the events as `main` hands her; the
 ## guard is the live `task_guard` among the city's instances, and the arrow's roadblock the instance
 ## its `_arrow_key` names.
 ##
