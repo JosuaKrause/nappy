@@ -13,7 +13,7 @@ extends Node
 ## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`RunState.posters()`)
 ## holds it, so it survives a save and a lost day gives it back; this node is stood with every city
 ## (`SimulationBuilder`), handed the run, and hands each `Building` the cells it draws
-## (`Building.posters`) and whether the neighbor was taken (`Building.hand_over_posters()`). It
+## (the cells `Building.hand_over_posters()` takes) and whether the neighbor was taken (`Building.hand_over_posters()`). It
 ## draws nothing itself — the sheets are part of the front, drawn in the building's own `_draw()` on the Buildings layer, under
 ## every entity, so a crew and she stand in front of them.
 ##
@@ -141,7 +141,7 @@ var _run: RunState = null
 ## What is on the walls: the run's `PosterState`, taken off the run by `setup()`.
 var posters: PosterState = null
 ## The torn pictures the fronts draw their sheets through, handed in before `setup()` (`equip()`) and
-## on to every front (`Building.poster_art`).
+## on to every front (`Building.use_poster_art()`).
 var _art := PosterArt.new()
 ## The baked atlas pages the city draws from (`AtlasLibrary`), handed in (`equip()`) before
 ## `setup()`: the torn sheets are composed from its `buildings` page.
@@ -208,7 +208,7 @@ func setup(buildings: Array[Building], map: CityMap, run: RunState,
 			continue
 		for i in tiles.size():
 			_by_tile[tiles[i]] = Vector2i(_walls.size(), i)
-		building.poster_art = _art
+		building.use_poster_art(_art)
 		_walls.append({"building": building, "cols": cols, "tiles": tiles})
 	_art.prepare(atlas)
 

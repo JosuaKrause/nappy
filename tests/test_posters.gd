@@ -14,7 +14,7 @@ extends RefCounted
 ## tears are made the way the game makes them: a real `Stroller` in the city, a held movement key
 ## (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a frame), the
 ## city's buildings stopping her at the wall. What a test reads is what the game exposes: the run's
-## `PosterState`, what the fronts are handed to draw (`Building.posters`) and the sheets they draw
+## `PosterState`, what the fronts are handed to draw (`Building.hand_over_posters()`) and the sheets they draw
 ## through the art they are handed, the signals the counter listens to and the pursuer the events
 ## hold.
 ##
@@ -46,7 +46,7 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
 	_test_a_prepared_art_applies_the_mask_then_the_overlay_to_the_page_it_is_given(t)
-	_test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t)
+	await _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t)
 	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
 	await _test_the_wall_draws_the_crossed_notice_from_the_run(t)
 	_test_the_state_survives_a_round_trip_and_a_lost_day(t)
@@ -322,16 +322,26 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	_city.atlas = atlas
 	t.add_child(_city)
+	var recording := RecordingPosterArt.new()
 	var builder := RunCity.new_builder()
-	builder.use_poster_art(art)
+	builder.use_poster_art(recording)
 	RunCity.build(_city, _map, builder)
+	_run = _city.run
 	_walls = RunCity.poster_walls(_city)
 	var fronts: Array = _walls.fronts().keys()
-	var dressed := not fronts.is_empty()
+	var housed := not fronts.is_empty()
 	for tile: Vector2i in fronts:
 		var building := _building_of(tile)
-		dressed = dressed and building != null and building.poster_art == art
-	t.check(dressed, "the city's art reaches every front its walls dress")
+		housed = housed and building != null
+		if building != null:
+			# Its scenery stood up, as the residency stands a building in view up, so it draws.
+			building.residence().set_resident(true)
+		_run.posters().paste(tile, PosterArt.Kind.RULES, false, 1)
+	_walls.refresh()
+	await _frames(t, 2)
+	t.check(housed and recording.asked.size() == fronts.size(),
+			"the city's art reaches every front its walls dress: each draws its sheet through it (%d of %d)"
+			% [recording.asked.size(), fronts.size()])
 	_city.free()
 	atlas.release(PosterArt.ATLAS_GROUP)
 

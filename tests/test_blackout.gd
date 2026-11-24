@@ -6,7 +6,7 @@ extends RefCounted
 ## back. It builds no city and plans no day. The parts the blackout switches are stand-ins that keep
 ## what it did to them: the parts `Blackout` is handed (a hand-drawn map with a power station on it,
 ## a run's resistance, a `TrafficSignals` that holds the one `_powered` flag (`is_powered()`), a `FakeEventManager`
-## that counts the masts it is asked to silence) and three `Building`s that were never put in a
+## that counts the masts it is asked to silence) and three `Building`s (recording ones, `PowerSwitches`) that were never put in a
 ## world. The map's station is the lot seed 4242's generated city has, read off once.
 ##
 ## What each switched part does once it is off is that part's own suite: a hall and its clerestory
@@ -14,6 +14,20 @@ extends RefCounted
 ## (`tests/test_traffic_light.gd`, `tests/test_traffic_signals.gd`), the spine's traffic with its lights
 ## out (`tests/test_crowd_streets.gd`), every mast silenced (`tests/test_masts.gd`), and the escape
 ## building's lighting (`tests/test_interior.gd`).
+
+## A building that keeps what the blackout did to its power, since `Building` keeps no answer to read:
+## it starts lit, and `is_lit()` says whether the last `switch_power()` left it so.
+class PowerSwitches extends Building:
+	var _switched_on := true
+
+	## Overrides Building.switch_power.
+	func switch_power(on: bool) -> void:
+		_switched_on = on
+		super(on)
+
+	## Whether the last switch left this building's power on.
+	func is_lit() -> bool:
+		return _switched_on
 
 const BASE_SEED := 4242
 ## Seed 4242's generated power station: the pair of blocks it stands on and the door's tile rect.
@@ -30,6 +44,8 @@ var _map: CityMap
 var _signals: TrafficSignals
 var _events: FakeEventManager
 var _buildings: Array[Building] = []
+## The same buildings, as the recording kind `_powered_buildings()` asks.
+var _switches: Array[PowerSwitches] = []
 var _blackout: Blackout
 ## Her, once a test has stood her somewhere: a node handed to the blackout (`Blackout.use_player()`).
 var _her: Node2D
@@ -57,8 +73,11 @@ func _begin(t: TestRunner, from_the_start := false) -> void:
 	_events = FakeEventManager.new()
 	_events.masts_to_silence = 2
 	_buildings.clear()
+	_switches.clear()
 	for i in BUILDINGS:
-		_buildings.append(Building.new())
+		var building := PowerSwitches.new()
+		_buildings.append(building)
+		_switches.append(building)
 	_went_dark = 0
 	_went_quiet = 0
 	EventBus.city_gone_dark.connect(_count_dark)
@@ -118,8 +137,8 @@ func _is_dark() -> bool:
 ## How many of the buildings the blackout was handed still have their power.
 func _powered_buildings() -> int:
 	var count := 0
-	for building in _buildings:
-		if building.powered:
+	for building in _switches:
+		if building.is_lit():
 			count += 1
 	return count
 

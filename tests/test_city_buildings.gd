@@ -1,6 +1,6 @@
 extends RefCounted
 ## **What a real `City` hands its buildings**: `City._spawn_buildings()`'s own wiring of
-## `is_on_home_block()`, `door_world_x_range` and `covered_ground_cols()` off `CityMap.home_block_coordinate()`,
+## `is_on_home_block()`, `mark_door_span()` and `covered_ground_cols()` off `CityMap.home_block_coordinate()`,
 ## `map.home_rect` and `map.is_walkable()`, and `City.assign_roof_extensions()`'s of the roof rows,
 ## asked of whatever the generator actually builds across a spread of seeds, and that a dawn
 ## (`City.start_day()`) leaves every building and its collision shape as they were. What a building does with
@@ -343,7 +343,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 			% on_shallow_extension)
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
-## `City._spawn_buildings()`'s own wiring of `is_on_home_block()`, `door_world_x_range` and
+## `City._spawn_buildings()`'s own wiring of `is_on_home_block()`, `mark_door_span()` and
 ## `covered_ground_cols()` off `CityMap.home_block_coordinate()`, `map.home_rect` and `map.is_walkable()`,
 ## rather than a fixture set directly.
 func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunner) -> void:
@@ -380,7 +380,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 					checked_home_multistory += 1
 					var saw_a_window := false
 					for col in building.columns():
-						var under_door := _under_door(building, col)
+						var under_door := _under_door(building, col, map)
 						if under_door:
 							checked_door_columns += 1
 						t.check((front.window_at(col, 0) != &"") != under_door,
@@ -490,11 +490,14 @@ func _watch_the_fronts(t: TestRunner, city: City) -> Dictionary:
 static func _front_of(fronts: Dictionary, building: Building) -> FrontReads:
 	return fronts[building] as FrontReads
 
-## Whether ground-floor column `col` of `building` stands under its door, which `door_world_x_range`
-## says is where the door covers it: the column's own world span overlaps the door's.
-static func _under_door(building: Building, col: int) -> bool:
+## Whether ground-floor column `col` of `building` stands under the door of `map`'s home, worked out
+## from first principles: the door stands at the centre of the home's tile rect and covers half its
+## picture's baked width either side, so the column's own world span overlaps the door's.
+static func _under_door(building: Building, col: int, map: CityMap) -> bool:
+	var centre_x := map.tile_rect_to_world(map.home_tile_rect()).get_center().x
+	var half_width := AtlasTable.baked().native_size(City.DOOR_TEXTURE).x * 0.5
 	var min_x := building.global_position.x - building.columns() * Building.TILE * 0.5 + col * Building.TILE
-	return min_x < building.door_world_x_range.y and min_x + Building.TILE > building.door_world_x_range.x
+	return min_x < centre_x + half_width and min_x + Building.TILE > centre_x - half_width
 
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
 ## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's

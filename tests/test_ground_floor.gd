@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## PLAYTEST-124's own finding is the one further exception: the ground-floor column(s) her front
 ## door's own footprint overlaps draw no window either, even on her own building —
-## `Building.door_world_x_range` is the geometry fact `City._spawn_buildings()` hands the building
+## `Building.mark_door_span()` hands the building the geometry fact `City._spawn_buildings()` works out
 ## for it, and a column the door's footprint overlaps is the one that draws none. A geometry fact, not a roll, so it moves
 ## no RNG stream — only which of the already-computed windows gets painted where.
 ##
@@ -26,7 +26,7 @@ extends RefCounted
 ## lands on. `roof_extension_rows` itself is pure geometry, not a roll.
 ##
 ## **Every building here is set up by hand**, the way `City._spawn_buildings()` sets one up. What the
-## real city hands its buildings (`is_on_home_block()`, `door_world_x_range`, `covered_ground_cols()` and
+## real city hands its buildings (`is_on_home_block()`, the door span, `covered_ground_cols()` and
 ## the roof rows, off the generated map) is asked of generated cities in `tests/test_city_buildings.gd`.
 
 const RoofReads := preload("res://tests/roof_reads.gd")
@@ -127,8 +127,6 @@ func _test_her_own_building_keeps_ground_floor_windows(t: TestRunner) -> void:
 	var front: FrontReads = await _see(t, building)
 	t.check(building.is_on_home_block(), "the fixture is flagged as her own building")
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
-	t.check(building.door_world_x_range == Vector2.INF,
-			"a building nobody told about a door keeps the empty Vector2.INF sentinel")
 	for col in building.columns():
 		t.check(front.window_at(col, 0) != &"",
 				"her own building's ground floor still draws a window at every column (%d) with no door standing there"
@@ -142,7 +140,7 @@ func _test_the_door_blanks_only_the_columns_it_covers(t: TestRunner) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(160.0, 96.0), 64.0, true, position)
 	var boundary := building.global_position.x - building.columns() * Building.TILE * 0.5 \
 			+ 3 * Building.TILE
-	building.door_world_x_range = Vector2(boundary - 3.0, boundary + 3.0)
+	building.mark_door_span(Vector2(boundary - 3.0, boundary + 3.0))
 	var front: FrontReads = await _see(t, building)
 	for col in building.columns():
 		var under_door := col == 2 or col == 3
@@ -363,14 +361,14 @@ func _ground_floors_over_the_run(t: TestRunner, buildings: Array[Building]) -> A
 		drawn.append(none)
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for building in buildings:
-			building.day = day
+			building.show_day(day)
 		await UI.frames(t, 2)
 		for i in buildings.size():
 			var front: FrontReads = FrontReads.look(buildings[i])
 			for col in buildings[i].columns():
 				drawn[i].append(front.ground_floor_at(col))
 	for building in buildings:
-		building.day = 1
+		building.show_day(1)
 	return drawn
 
 
