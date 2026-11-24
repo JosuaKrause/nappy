@@ -92,7 +92,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 2. `tests-public-seams.md`: the rule the tests are written under (dependency injection, public
    APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md`
    for what its count cannot see. `tests-own-class-members.md` holds the members only their own
-   class and the tests use, which become internal. 3. **The rest goes module by module, in
+   class and the tests use, which become internal.
+3. **The rest goes module by module, in
    tracks that run in parallel** (inbox #1268 in olive-ferret). The design review found that the
    order converted the tests before the event code they read, so the largest group of suites
    would be mocked against fields and redone; shown its suggestion to go module by module, the
