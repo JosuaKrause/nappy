@@ -1403,6 +1403,26 @@ func pavement_inward(tile: Vector2i) -> Vector2i:
 		return axis
 	return Vector2i.ZERO
 
+## The nearest road tile across the kerb from the sidewalk point `at`, as the point straight across
+## the corridor from it: from either of the two sidewalk tiles beside one kerb it is the road tile
+## against that kerb, the carriageway's first tile on that side, so the block-side tile and the
+## kerb-side tile of a corridor's sidewalk answer the same tile. `Vector2.INF` where `at` is not on
+## a sidewalk beside a carriageway, a point with no kerb in front of it.
+##
+## `pavement_inward()` points away from the carriageway, so the road lies the other way; how many
+## tiles away it is follows from the point's offset in its corridor (`corridor_offsets()`): the
+## tiles of the sidewalk band that remain between the point and the carriageway.
+func kerb_across_from(at: Vector2) -> Vector2:
+	var tile := world_to_tile(at)
+	var inward := pavement_inward(tile)
+	if inward == Vector2i.ZERO:
+		return Vector2.INF
+	var offsets := corridor_offsets(tile)
+	var offset := offsets.x if inward.x != 0 else offsets.y
+	var tiles_to_the_road := (Tuning.SIDEWALK_WIDTH - offset if offset < Tuning.SIDEWALK_WIDTH
+			else offset - (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1))
+	return at - Vector2(inward) * (tiles_to_the_road * Tuning.TILE_SIZE)
+
 ## Walkable *and* open: what the player can actually use today. Anything choosing a place to
 ## put something — an event, a crowd agent, a resistance contact — wants this rather than
 ## `is_walkable`, or it will put it somewhere nobody can reach.

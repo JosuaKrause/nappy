@@ -182,7 +182,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		return
 	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
 			"its badge is up alone for at most a second")
-	var stop := EventSpawner._where_the_summoned_row_stops(_stage.map(), plan.placed_at())
+	var stop := _stage.map().kerb_across_from(plan.placed_at())
 	var offset := warning.points_at() - rig.global_position
 	var looked := [0]
 	var jumped := [0]

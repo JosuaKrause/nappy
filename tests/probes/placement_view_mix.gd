@@ -6,10 +6,12 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/placement_view_mix.gd
 ##
-## Each day is planned as the scheduler plans it (`EventScheduler.build_day()` on a repainted city
-## and its route tree), and every placed plan is counted under the view of the ground it stands on
-## (`Corridor.view_of()` for a street, `Corridor.view_of_ground()` for an alley, a lot or a junction
-## box), by row, against the number of locations each view has (`DayLocations.all()`).
+## Each day is planned as the game plans it (`DayPlanner._plan_a_day()`): its closures, holds, region
+## wall and seals first, the seals and the wall's bodies handed in as standing, then
+## `EventScheduler.build_day()` on the repainted city and its route tree. Every placed plan is
+## counted under the view of the ground it stands on (`Corridor.view_of()` for a street,
+## `Corridor.view_of_ground()` for an alley, a lot or a junction box), by row, against the number of
+## locations each view has (`DayLocations.all()`).
 ## The rows the director sites in front of her, which the day owes her but places nowhere, are
 ## counted apart (`MOMENTS`). `PV_VIEW` lines give each view's events per location and `PV_DAY`
 ## the day's whole count; the declared table's own cells, by view, kind of ground and act, are
@@ -38,6 +40,47 @@ func _mix_on(day: int) -> void:
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
+		var spec := DaySpec.for_day(day)
+		# The day's own closures, holds, region wall and seals, planned as the game plans them
+		# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
+		# stand as the day's standing and hold their locations.
+		var region_plan := RegionPlanner.plan_day(map, spec, tree)
+		var closure_rng := RandomNumberGenerator.new()
+		closure_rng.seed = hash("placement_view_mix closures:%d:%d" % [i, day])
+		var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+		map.close_streets(closures)
+		map.clear_day_holds()
+		for closure: RoadClosure in closures:
+			map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
+		for segment: StreetNetwork.Segment in region_plan.wall_segments():
+			map.hold_segment(segment.key(), HeldStreets.Why.WALL)
+		for segment: StreetNetwork.Segment in region_plan.door_segments():
+			map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
+		for segment: StreetNetwork.Segment in map.network.around_blocks(
+				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
+		var boundary := {}
+		for segment in region_plan.wall_segments():
+			boundary[segment.key()] = true
+		for segment in region_plan.door_segments():
+			boundary[segment.key()] = true
+		for rect in region_plan.walled_alleys():
+			boundary[rect.position] = true
+		for rect in region_plan.door_alleys():
+			boundary[rect.position] = true
+		var seal_rng := RandomNumberGenerator.new()
+		seal_rng.seed = hash("placement_view_mix seals:%d:%d" % [i, day])
+		var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary, map.held_streets())
+		for seal in seals:
+			seal.stand_as_a_seal()
+		var doors := PackedVector2Array()
+		for body in region_plan.door_plans():
+			doors.append(body.placed_at())
+		var standing: Array[EventPlan] = []
+		standing.append_array(seals)
+		standing.append_array(region_plan.wall_plans())
+		for body in region_plan.wall_plans():
+			body.stand_in_the_wall()
 		var corridor := Corridor.of(tree)
 		for location in DayLocations.lay_out(map, corridor).all():
 			if location.is_available():
@@ -45,8 +88,8 @@ func _mix_on(day: int) -> void:
 		var rng := _rng(i, day)
 		var guarded := ResistanceSteps.guarded_row_on(day)
 		var consumed: Array[String] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(sites).spent(consumed) \
-				.on(tree).roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements():
+		for plan in GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
+				.on(tree).doors(doors).standing(standing).roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements():
 			var mode := plan.spawn_mode_on(day)
 			# A row the director sends ahead of her is a moment where the dawn left it unplaced.
 			if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
