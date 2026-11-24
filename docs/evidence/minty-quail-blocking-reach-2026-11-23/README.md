@@ -14,7 +14,9 @@ play; whether the change reads right in a run is for a person to judge.
 `blocking_radius()` shuts. Orange: the ring `core_within()` (86px) shuts and `blocking_radius()`
 does not (empty on main, where the two are the same). Blue dot: a tile a route runs along. Green
 dot: ground she touches the plan from (walkable, left open, within the disc and a tile and a half
-of the body). Black cross: where the body stands. One tile is 12 pixels.
+of the body). Black cross: where the body stands. One tile is 12 pixels
+in the drawing (a tile is 32px in the game), so the discs read at the right size against the
+tiles.
 
 **Source.** `*_main.png`: main at d3faeaf8c. `*_branch.png`: branch
 feature-minty-quail-blocking-reach.
