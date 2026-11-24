@@ -65,7 +65,7 @@ var _at_the_start := {}
 func record(player: Node2D, world: DayWorld, neighbor: Node2D) -> void:
 	var map := world.city_map()
 	if _dawn_tiles.is_empty():
-		_dawn_tiles = map.tiles.duplicate()
+		_dawn_tiles = map.tiles_snapshot()
 		_context = RecipeCityContext.capture(map)
 		for instance in world.events().instances():
 			_at_the_start[map.world_to_tile(instance.global_position)] = true
@@ -183,7 +183,8 @@ static func _tile_runs(map: CityMap, ground: Dictionary, dawn: PackedByteArray) 
 	var runs := {}
 	var width := map.size_in_tiles().x
 	for tile: Vector2i in _sorted(ground):
-		var type := str(GameEnums.TileType.keys()[dawn[tile.y * width + tile.x]]).to_lower()
+		var index := tile.y * width + tile.x
+		var type := str(GameEnums.TileType.keys()[dawn[index]]).to_lower()
 		if not runs.has(type):
 			runs[type] = []
 		var list: Array = runs[type]
@@ -261,12 +262,10 @@ static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
 			return a.kind < b.kind or (a.kind == b.kind and (a.at.y < b.at.y
 			or (a.at.y == b.at.y and a.at.x < b.at.x))))
 	# Placed again on the stretch, the way the scene will place them.
-	var mask := PackedByteArray()
-	mask.resize(map.size_in_tiles().x * map.size_in_tiles().y)
+	map.begin_stretch()
 	for tile: Vector2i in ground:
-		mask[tile.y * map.size_in_tiles().x + tile.x] = 1
-	map.stretch = mask
-	map.stretch_active = true
+		map.add_stretch_tile(tile, map.tile_at(tile))
+	map.show_stretch()
 	var counts := {"walker": 0, "car": 0}
 	var actors: Array = []
 	var view := Rect2(start - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
@@ -287,8 +286,7 @@ static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
 		actors.append({"name": label, "kind": entry.kind,
 				"at": [snappedf(at.x, 0.01), snappedf(at.y, 0.01)],
 				"direction": entry.direction, "speed": snappedf(float(entry.speed), 0.0001)})
-	map.stretch_active = false
-	map.stretch = PackedByteArray()
+	map.drop_the_stretch()
 	return actors
 
 # ------------------------------------------------------------------ writing ---

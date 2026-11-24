@@ -813,7 +813,8 @@ func _inside_extent(at: Vector2) -> bool:
 	var map: CityMap = built.map
 	if map.has_stretch():
 		return map.in_stretch(map.world_to_tile(at))
-	return not map.recipe_bounds.has_area() or map.recipe_bounds.has_point(map.world_to_tile(at))
+	var window := map.recipe_window()
+	return not window.has_area() or window.has_point(map.world_to_tile(at))
 
 ## `setup.route_bag`: the director owes her route the recipe's marbles, drawn from its rigged bag
 ## by the game's own rules (`EventDirector.start_recipe_route()`). A scene with no route bag keeps
@@ -876,8 +877,8 @@ func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
 			if not _world.city_map().in_stretch(tile):
 				return false
 		return true
-	return not _world.city_map().recipe_bounds.has_area() \
-			or _world.city_map().recipe_bounds.encloses(segment.tile_rect())
+	var window := _world.city_map().recipe_window()
+	return not window.has_area() or window.encloses(segment.tile_rect())
 
 func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 	var plans: Array[EventPlan] = []
@@ -1111,9 +1112,8 @@ func begin() -> void:
 		_zoom = zoom
 		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
-		var world_map := _world.city_map()
-		var whole := Rect2i(Vector2i.ZERO, world_map.size_in_tiles())
-		var bounds := world_map.tile_rect_to_world(whole).grow(
+		var map := _world.city_map()
+		var bounds := map.tile_rect_to_world(Rect2i(Vector2i.ZERO, map.size_in_tiles())).grow(
 				float(camera.get("landscape_margin", 0)))
 		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))

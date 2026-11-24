@@ -58,8 +58,46 @@ func run(t: TestRunner) -> void:
 		t.check(errors.is_empty() and _emptied_pits(city.map).is_empty(), "reinstallation clears unselected fallen-tree state")
 		for tree in _street_trees(city):
 			t.check(tree.visible, "standing source trees return when no authored fallen tree selects them")
-	var authored_bounds := city.map.recipe_bounds
-	city.map.recipe_bounds = Rect2i(0, 0, 14, 14)
+	var start_tile := Vector2i(16, 16)
+	var tile_before := city.map.tile_at(start_tile)
+	var street_before := city.map.is_street(start_tile)
+	_test_a_bounded_scene_rejects_what_leaves_its_extent(t, data, own_run, player, baby)
+	t.check(city.map.tile_at(start_tile) == tile_before and city.map.is_street(start_tile) == street_before,
+			"the map after the bounded case is the map before it, at her start tile")
+	_test_an_authored_door_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
+	_test_an_authored_soft_seal_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
+	_test_a_column_scene_boards_the_neighbors_window(t, runtime, city, player, baby, own_run, data)
+	_test_the_scene_runs_under_the_spec_it_is_handed(t, runtime, city, player, baby, own_run)
+	runtime.free()
+	player.free()
+	city.free()
+
+## **A bounded scene rejects a gate, barrier or seal outside its extent** instead of silently dropping the
+## bodies. The scene is a city of its own, built from the recipe with a bounded extent through
+## `RecipeCityBuilder`, so the full-scope city the other cases use keeps its map.
+func _test_a_bounded_scene_rejects_what_leaves_its_extent(t: TestRunner, data: Dictionary, own_run: RunState,
+		player: Stroller, baby: Baby) -> void:
+	var bounded_data: Dictionary = data.duplicate(true)
+	bounded_data.extent = {"scope": "bounded", "bounds": [0, 0, 14, 14]}
+	var setup: Dictionary = bounded_data.setup
+	bounded_data.anchors = {"start": {"tile": [8, 8]}}
+	setup.player = {"at": [8, 8]}
+	var built := RecipeCityBuilder.build(bounded_data)
+	var build_errors: Array = built.errors
+	t.check(build_errors.is_empty(), "the bounded recipe builds: %s" % [build_errors])
+	if not build_errors.is_empty():
+		return
+	built.data = bounded_data
+	var packed: PackedScene = load("res://scenes/world/city.tscn")
+	var city: City = packed.instantiate()
+	city.run = own_run
+	t.add_child(city)
+	RunCity.build(city, built.map)
+	var state := CityState.new()
+	state.begin_day(city.map.plans_by_block(), 13)
+	city.start_recipe_day(state, 13, own_run.calendar().day_rng())
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), own_run)
 	for collection: String in ["gates", "barriers", "seals"]:
 		var entry := {"segment": [7, 6, 0]} if collection == "gates" else {"segment": [3, 5, 0]}
 		if collection == "barriers":
@@ -71,13 +109,7 @@ func run(t: TestRunner) -> void:
 		t.check("\n".join(errors).contains("leaves the authored extent"),
 				"%s outside a bounded scene rejects instead of silently dropping bodies" % collection)
 		setup.erase(collection)
-	city.map.recipe_bounds = authored_bounds
-	_test_an_authored_door_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
-	_test_an_authored_soft_seal_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
-	_test_a_column_scene_boards_the_neighbors_window(t, runtime, city, player, baby, own_run, data)
-	_test_the_scene_runs_under_the_spec_it_is_handed(t, runtime, city, player, baby, own_run)
 	runtime.free()
-	player.free()
 	city.free()
 
 ## **An authored checkpoint stands as the day's own door does**: the recipe selects one of the day's

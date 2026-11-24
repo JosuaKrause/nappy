@@ -30,10 +30,10 @@ const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 ## open. Open to overturn; `tests/test_bollards.gd` holds the walks.
 const BOLLARD_SPACING := 14.0
 
-var tiles: PackedByteArray
+var _tiles: PackedByteArray
 ## A recipe keeps its construction witness for global placement checks. Only this declared
 ## rectangle is presented; the exterior is experimental ground, never a generated street.
-var recipe_bounds := Rect2i()
+var _recipe_bounds := Rect2i()
 var _recipe_exterior := false
 var _recipe_diagnostics: Array[String] = []
 var _recipe_closures: Array[RoadClosure] = []
@@ -44,17 +44,17 @@ var _recipe_dawn_tiles := PackedByteArray()
 var _recipe_trees: Array[Vector2i] = []
 ## A task scene's **stretch**: the tiles of the streets she walks, read off the recipe
 ## (`docs/SCENE_RECIPES.md`, "The task scenes"), one byte per tile, 1 inside it. Empty for every
-## other city. While `stretch_active` is on, every single-tile question — `tile_at()`,
+## other city. While `_stretch_active` is on, every single-tile question — `tile_at()`,
 ## `is_street()`, `is_walkable()` — answers a tile outside it as `BUILDING`: the void, which is
 ## drawn as nothing and walked into by nobody, so whatever is placed while she walks stands on the
 ## streets the scene has. A distance measured by walking (`walk_field_from()`) and the dawn's plans
 ## (`witness_only()`: the route tree, the regions, the task's mark) read the explicit saved context
 ## underneath, with authored placements overlaid — questions such as how far day 10's neighbor
 ## walks home need the topology beyond the visible stretch too.
-var stretch := PackedByteArray()
+var _stretch := PackedByteArray()
 ## Whether the stretch is what the single-tile questions answer. On for the scene; switched off by
 ## `witness_only()` while a whole-city rule is stated.
-var stretch_active := false
+var _stretch_active := false
 ## The recipe's own cracks, tile -> `Vector2i(level, pattern)`, which `GroundTiles` draws in a
 ## stretch in place of its seeded roll; a tile not listed is uncracked.
 var _stretch_cracks := {}
@@ -68,34 +68,34 @@ var _stretch_props: Array[Dictionary] = []
 var _stretch_litter: Array[Dictionary] = []
 
 func has_stretch() -> bool:
-	return not stretch.is_empty()
+	return not _stretch.is_empty()
 
-## Whether `tile` is one of the stretch's own tiles, whatever `stretch_active` says.
+## Whether `tile` is one of the stretch's own tiles, whatever `_stretch_active` says.
 func in_stretch(tile: Vector2i) -> bool:
-	return in_bounds(tile) and stretch[tile.y * _size.x + tile.x] == 1
+	return in_bounds(tile) and _stretch[tile.y * _size.x + tile.x] == 1
 
 ## Whether `tile` is the void round a stretch: outside it while the stretch is what is shown.
 func is_void(tile: Vector2i) -> bool:
-	return stretch_active and not in_stretch(tile)
+	return _stretch_active and not in_stretch(tile)
 
 ## Whether `tile` is ground the stretch cut off: walkable in its saved context, void in the
 ## scene — the end of one of its streets rather than a wall it runs into.
 func is_cut_off(tile: Vector2i) -> bool:
-	return stretch_active and in_bounds(tile) and not in_stretch(tile) \
-			and _WALKABLE[tiles[tile.y * _size.x + tile.x]] == 1
+	return _stretch_active and in_bounds(tile) and not in_stretch(tile) \
+			and _WALKABLE[_tiles[tile.y * _size.x + tile.x]] == 1
 
 ## Switches the scene's own edges off — a bounded recipe's exterior and a stretch's void — so a
 ## rule stated over the whole lattice reads the saved spatial context, and answers what to hand
 ## `restore_edges()` once it is done.
 func witness_only() -> Array[bool]:
-	var was: Array[bool] = [_recipe_exterior, stretch_active]
+	var was: Array[bool] = [_recipe_exterior, _stretch_active]
 	_recipe_exterior = false
-	stretch_active = false
+	_stretch_active = false
 	return was
 
 func restore_edges(was: Array[bool]) -> void:
 	_recipe_exterior = was[0]
-	stretch_active = was[1]
+	_stretch_active = was[1]
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
 ##
 ## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone
@@ -235,7 +235,7 @@ var _seed_used := 0
 ## The streets closed today, as a set of tiles. Everything else here is fixed for the run or
 ## derived from a block's purpose, and neither of those may move a walkable tile. A closure is one
 ## of the two things that change where the player may walk, which is why it is a set that is
-## cleared every morning rather than an edit to `tiles`. See `RoadClosure` and docs/CITY.md, "Road
+## cleared every morning rather than an edit to `_tiles`. See `RoadClosure` and docs/CITY.md, "Road
 ## closures".
 ##
 ## **`_fenced_park`'s ground is in here too**, the one calm area barriers ever stand around: she
@@ -622,9 +622,9 @@ func has_recipe_exterior() -> bool:
 	return _recipe_exterior
 
 ## The rectangle a recipe declares, the only part of the map shown when `has_recipe_exterior()`
-## (`recipe_bounds`).
+## (`_recipe_bounds`).
 func recipe_window() -> Rect2i:
-	return recipe_bounds
+	return _recipe_bounds
 
 ## The road closures a recipe lists (`_recipe_closures`).
 func recipe_road_closures() -> Array[RoadClosure]:
@@ -689,9 +689,9 @@ func tree_move_sources() -> Array[Vector2i]:
 # method of its own here, so the builder writes none of the fields they are kept in.
 
 ## Shows the rectangle `window` and nothing round it: ground off the map reads as alley
-## (`recipe_bounds`, `_recipe_exterior`).
+## (`_recipe_bounds`, `_recipe_exterior`).
 func show_recipe_window(window: Rect2i) -> void:
-	recipe_bounds = window
+	_recipe_bounds = window
 	_recipe_exterior = true
 
 ## Lists the road closure `closure` among those a recipe hands the city (`_recipe_closures`).
@@ -703,16 +703,16 @@ func add_recipe_closure(closure: RoadClosure) -> void:
 func set_recipe_tree_moves(moves: Dictionary) -> void:
 	_recipe_tree_moves = moves
 
-## Starts the stretch: no tile is its own yet (`stretch`). `add_stretch_tile()` follows it, since
+## Starts the stretch: no tile is its own yet (`_stretch`). `add_stretch_tile()` follows it, since
 ## it indexes the tiles this sizes, and `show_stretch()` follows the tiles.
 func begin_stretch() -> void:
-	stretch.resize(_size.x * _size.y)
+	_stretch.resize(_size.x * _size.y)
 
-## Makes `tile` one of the stretch's own, standing as `type` (`stretch`, `tiles`).
+## Makes `tile` one of the stretch's own, standing as `type` (`_stretch`, `_tiles`).
 func add_stretch_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
 	var index := tile.y * _size.x + tile.x
-	stretch[index] = 1
-	tiles[index] = type
+	_stretch[index] = 1
+	_tiles[index] = type
 
 ## Replaces the lots of buildings the city stands (`_building_rects`).
 func set_building_lots(lots: Array[Rect2i]) -> void:
@@ -742,11 +742,17 @@ func add_stretch_crack(tile: Vector2i, crack: Vector2i) -> void:
 ## Keeps the ground as it stands as the authored scene's dawn ground, which repainting puts back
 ## in place of the block carves (`_recipe_dawn_tiles`).
 func keep_dawn_ground() -> void:
-	_recipe_dawn_tiles = tiles.duplicate()
+	_recipe_dawn_tiles = _tiles.duplicate()
 
-## Makes the stretch what the single-tile questions answer (`stretch_active`).
+## Makes the stretch what the single-tile questions answer (`_stretch_active`).
 func show_stretch() -> void:
-	stretch_active = true
+	_stretch_active = true
+
+## Empties the stretch and stops showing it, so the single-tile questions answer the whole map
+## again (`_stretch`, `_stretch_active`).
+func drop_the_stretch() -> void:
+	_stretch_active = false
+	_stretch = PackedByteArray()
 
 # ------------------------------------------------------ what the generator fixes in it ---
 # The generator and the recipe builders fill a map in as they decide each fact; each fact has a
@@ -881,13 +887,13 @@ func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i) -
 	_power_station_door_key = door_key
 	_power_station_door = door_rect
 
-## A copy of the tile bytes, to put back with `restore_tiles()` (`tiles`).
+## A copy of the tile bytes, to put back with `restore_tiles()` (`_tiles`).
 func tiles_snapshot() -> PackedByteArray:
-	return tiles.duplicate()
+	return _tiles.duplicate()
 
-## Puts back the tile bytes `tiles_snapshot()` copied (`tiles`).
+## Puts back the tile bytes `tiles_snapshot()` copied (`_tiles`).
 func restore_tiles(snapshot: PackedByteArray) -> void:
-	tiles = snapshot
+	_tiles = snapshot
 
 ## Whether `corridor` on the given axis is the spine — a fact about this city, read off the map
 ## rather than re-derived. There is one main road and it runs north to south, so `vertical` has to
@@ -976,8 +982,8 @@ static func is_road_offset(offset: int) -> bool:
 
 func _init(map_size: Vector2i = map_tiles()) -> void:
 	_size = map_size
-	tiles = PackedByteArray()
-	tiles.resize(_size.x * _size.y)
+	_tiles = PackedByteArray()
+	_tiles.resize(_size.x * _size.y)
 
 ## **A map of its own that answers every question this one does**: the ground, the lattice and
 ## everything generation fixed (the block plans and layouts, the zones, the absent and built-over
@@ -998,18 +1004,18 @@ func _init(map_size: Vector2i = map_tiles()) -> void:
 ## generation per seed, a copy per user.
 func copy() -> CityMap:
 	var twin := CityMap.new(_size)
-	twin.tiles = tiles.duplicate()
+	twin._tiles = _tiles.duplicate()
 	twin.blocked = blocked.copy()
 	twin._day_record_version = _day_record_version
-	twin.recipe_bounds = recipe_bounds
+	twin._recipe_bounds = _recipe_bounds
 	twin._recipe_exterior = _recipe_exterior
 	twin._recipe_diagnostics = _recipe_diagnostics.duplicate()
 	twin._recipe_closures = _recipe_closures.duplicate()
 	twin._recipe_tree_moves = _recipe_tree_moves.duplicate()
 	twin._recipe_dawn_tiles = _recipe_dawn_tiles.duplicate()
 	twin._recipe_trees = _recipe_trees.duplicate()
-	twin.stretch = stretch.duplicate()
-	twin.stretch_active = stretch_active
+	twin._stretch = _stretch.duplicate()
+	twin._stretch_active = _stretch_active
 	twin._stretch_cracks = _stretch_cracks.duplicate()
 	twin._stretch_buildings = _stretch_buildings.duplicate(true)
 	twin._stretch_props = _stretch_props.duplicate(true)
@@ -1099,7 +1105,7 @@ func capture() -> Dictionary:
 			"home_rect": _home_rect, "power_station": _power_station,
 			"power_station_door": _power_station_door,
 			"power_station_door_key": _power_station_door_key,
-			"tiles": tiles.duplicate(), "building_rects": _building_rects.duplicate(),
+			"tiles": _tiles.duplicate(), "building_rects": _building_rects.duplicate(),
 			"big_buildings": _big_buildings.duplicate(), "alley_rects": _alley_rects.duplicate(),
 			"square_rects": _square_rects.duplicate(), "courtyard_rects": _courtyard_rects.duplicate(),
 			"zones": zones, "block_plans": plans, "block_layouts": layouts,
@@ -1121,7 +1127,7 @@ static func restored(facts: Dictionary) -> CityMap:
 	map._power_station = facts["power_station"]
 	map._power_station_door = facts["power_station_door"]
 	map._power_station_door_key = facts["power_station_door_key"]
-	map.tiles = (facts["tiles"] as PackedByteArray).duplicate()
+	map._tiles = (facts["tiles"] as PackedByteArray).duplicate()
 	# Assigned into the typed arrays: an untyped `Array` put in an `Array[T]` field is dropped.
 	map._building_rects.assign(facts["building_rects"])
 	map._big_buildings.assign(facts["big_buildings"])
@@ -1152,17 +1158,17 @@ static func restored(facts: Dictionary) -> CityMap:
 	return map
 
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
-	if stretch_active and not in_stretch(tile):
+	if _stretch_active and not in_stretch(tile):
 		return GameEnums.TileType.BUILDING
-	if _recipe_exterior and not recipe_bounds.has_point(tile):
+	if _recipe_exterior and not _recipe_bounds.has_point(tile):
 		return GameEnums.TileType.ALLEY
 	if not in_bounds(tile):
 		return GameEnums.TileType.BUILDING
-	return tiles[tile.y * _size.x + tile.x] as GameEnums.TileType
+	return _tiles[tile.y * _size.x + tile.x] as GameEnums.TileType
 
 func set_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
 	if in_bounds(tile):
-		tiles[tile.y * _size.x + tile.x] = type
+		_tiles[tile.y * _size.x + tile.x] = type
 
 func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 	for y in range(rect.position.y, rect.end.y):
@@ -1235,7 +1241,7 @@ func has_ground() -> bool:
 
 ## Overrides WorldMap.walk_tiles.
 func walk_tiles() -> PackedByteArray:
-	return tiles
+	return _tiles
 
 ## Overrides WorldMap.walkable_lut.
 func walkable_lut() -> PackedByteArray:
@@ -1251,7 +1257,7 @@ func _ground_lets(tile: Vector2i, layers: int) -> bool:
 
 ## The ground a sweep over the whole map runs on for `mover`: each tile `UNREACHED`, or `BLOCKED`
 ## where a layer `mover` names stands today, and outside an authored scene's stretch. The ground's
-## own tile types are not laid out: a sweep reads them off `tiles` itself (`walkable_lut()`),
+## own tile types are not laid out: a sweep reads them off `_tiles` itself (`walkable_lut()`),
 ## since that is a lookup per neighbour against a call. What the red arrow's sweep and day 13's
 ## guard's walk to her run on (`WalkField`), laid out once for each state of the record
 ## (`day_record_version()`, `obstruction_version()`).
@@ -1261,7 +1267,7 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := super(mover)
 	# The authored scene's void is BUILDING to every single-tile question, while a sweep reads the
 	# saved context's raw tile array, so the boundary goes into the ground.
-	if stretch_active and mover.is_blocked_by(Mover.GROUND):
+	if _stretch_active and mover.is_blocked_by(Mover.GROUND):
 		var width := _size.x
 		for y in _size.y:
 			for x in _size.x:
@@ -1282,10 +1288,10 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 ##
 ## Overrides WorldMap._open.
 func _open(x: int, y: int) -> bool:
-	if _recipe_exterior or stretch_active:
+	if _recipe_exterior or _stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
 	return x >= 0 and y >= 0 and x < _size.x and y < _size.y \
-			and _WALKABLE[tiles[y * _size.x + x]] == 1
+			and _WALKABLE[_tiles[y * _size.x + x]] == 1
 
 ## Street ground: pavement, carriageway or crossing. Anything that travels the lattice asks
 ## this, because a corridor may simply not be there — a four-block calm zone is painted over the
@@ -1294,7 +1300,7 @@ func _open(x: int, y: int) -> bool:
 ##
 ## Overrides WorldMap.is_street.
 func is_street(tile: Vector2i) -> bool:
-	if _recipe_exterior and not recipe_bounds.has_point(tile):
+	if _recipe_exterior and not _recipe_bounds.has_point(tile):
 		return false
 	var type := tile_at(tile)
 	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
@@ -1616,7 +1622,7 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## calm, walkable ground; only `_fenced_park`, if one is chosen today, is actually closed.
 func repaint(state: CityState, trace: RunTrace = null) -> void:
 	if not _recipe_dawn_tiles.is_empty():
-		tiles = _recipe_dawn_tiles.duplicate()
+		_tiles = _recipe_dawn_tiles.duplicate()
 		_tiles_by_type.clear()
 		_closed_tiles.clear()
 		_shut_calm.clear()
@@ -1801,7 +1807,7 @@ func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Arr
 	queue.resize(cells)
 	var tail := 0
 	for tile: Vector2i in sources:
-		if not in_bounds(tile) or _WALKABLE[tiles[tile.y * width + tile.x]] == 0:
+		if not in_bounds(tile) or _WALKABLE[_tiles[tile.y * width + tile.x]] == 0:
 			continue
 		var index := tile.y * width + tile.x
 		if field[index] != UNREACHED:
@@ -1818,21 +1824,21 @@ func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Arr
 		# The row's own ends for left and right — the grid is one array, so a step off the left
 		# edge lands on the right end of the row above and would walk through the boundary wall.
 		var x := index % width
-		if x > 0 and field[index - 1] == UNREACHED and _WALKABLE[tiles[index - 1]] == 1:
+		if x > 0 and field[index - 1] == UNREACHED and _WALKABLE[_tiles[index - 1]] == 1:
 			field[index - 1] = next_distance
 			queue[tail] = index - 1
 			tail += 1
-		if x < width - 1 and field[index + 1] == UNREACHED and _WALKABLE[tiles[index + 1]] == 1:
+		if x < width - 1 and field[index + 1] == UNREACHED and _WALKABLE[_tiles[index + 1]] == 1:
 			field[index + 1] = next_distance
 			queue[tail] = index + 1
 			tail += 1
 		if index >= width and field[index - width] == UNREACHED \
-				and _WALKABLE[tiles[index - width]] == 1:
+				and _WALKABLE[_tiles[index - width]] == 1:
 			field[index - width] = next_distance
 			queue[tail] = index - width
 			tail += 1
 		if index + width < cells and field[index + width] == UNREACHED \
-				and _WALKABLE[tiles[index + width]] == 1:
+				and _WALKABLE[_tiles[index + width]] == 1:
 			field[index + width] = next_distance
 			queue[tail] = index + width
 			tail += 1
@@ -1859,7 +1865,7 @@ func reach_count(field: PackedInt32Array) -> int:
 
 func _count_walkable() -> int:
 	var total := 0
-	for type in tiles:
+	for type in _tiles:
 		total += _WALKABLE[type]
 	return total
 
@@ -1869,7 +1875,7 @@ func count_standable() -> int:
 	var total := _count_walkable()
 	for tile: Vector2i in blocked.tiles_of(Mover.POSTS):
 		if in_bounds(tile):
-			total -= _WALKABLE[tiles[tile.y * _size.x + tile.x]]
+			total -= _WALKABLE[_tiles[tile.y * _size.x + tile.x]]
 	return total
 
 ## Every calm tile in the city right now. It is the only ground a day can be won on, so it is what
@@ -1877,8 +1883,8 @@ func count_standable() -> int:
 func calm_tiles() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var width := _size.x
-	for index in tiles.size():
-		if _CALM[tiles[index]] == 1:
+	for index in _tiles.size():
+		if _CALM[_tiles[index]] == 1:
 			result.append(Vector2i(index % width, index / width))
 	return result
 

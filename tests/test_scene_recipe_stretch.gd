@@ -139,7 +139,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 ## run hand-edited to sidewalk, which the saved context still has as road: an edit an author makes
 ## is what the scene shows, and holds here as it holds in play.
 func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap, data: Dictionary) -> void:
-	t.check(map.has_stretch() and map.stretch_active, "the scene's map shows its stretch")
+	t.check(map.has_stretch() and map.is_void(Vector2i.ZERO), "the scene's map shows its stretch")
 	var context := RecipeCityContext.restore(data.context)
 	_check_the_ground(t, map, data, context, "the saved scene")
 	var edited := data.duplicate(true)
@@ -158,7 +158,7 @@ func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap, data: Dic
 	t.check(not map.in_stretch(outside) and map.tile_at(outside) == context.tile_at(outside),
 			"a whole-city rule reads the saved context while the edges are off")
 	map.restore_edges(edges)
-	t.check(map.stretch_active and map.tile_at(outside) == GameEnums.TileType.BUILDING,
+	t.check(map.is_void(outside) and map.tile_at(outside) == GameEnums.TileType.BUILDING,
 			"and the void is back once it is done")
 
 func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: CityMap, label: String) -> void:
@@ -202,7 +202,7 @@ func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: C
 ## scene's real walk must pick the one on the street she can walk to.
 func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	var raw_ground := PackedInt32Array()
-	raw_ground.resize(map.tiles.size())
+	raw_ground.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	raw_ground.fill(WalkField.UNREACHED)
 	var start := Vector2i.ZERO
 	for y in map.size_in_tiles().y:
@@ -258,7 +258,7 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 func _swept(map: CityMap, targets: Array[Dictionary], ground: PackedInt32Array) -> WalkField:
 	var field := WalkField.start(map, targets, Vector2i.ZERO)
 	while not field.is_done():
-		field.advance(map, ground, map.tiles.size())
+		field.advance(map, ground, map.size_in_tiles().x * map.size_in_tiles().y)
 	return field
 
 func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
@@ -267,7 +267,10 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	changed_seed.city.context_seed = 1
 	changed_seed.city.layouts = []
 	var independent := RecipeCityBuilder.build(changed_seed)
-	t.check(_diagnostics(independent).is_empty() and independent.map.tiles == original.map.tiles,
+	var independent_map: CityMap = independent.map
+	var original_map: CityMap = original.map
+	t.check(_diagnostics(independent).is_empty()
+			and independent_map.tiles_snapshot() == original_map.tiles_snapshot(),
 			"changing drafting inputs cannot regenerate or reject a saved layout")
 	var malformed := data.duplicate(true)
 	malformed.context.tiles[0] = [["sidewalk", -1]]

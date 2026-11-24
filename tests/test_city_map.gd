@@ -180,10 +180,10 @@ func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestR
 func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var map: CityMap = RecipeCityBuilder.build(data).map
-	t.check(map.stretch_active and map.has_recipe_dawn_ground(),
+	t.check(map.is_void(Vector2i.ZERO) and map.has_recipe_dawn_ground(),
 			"the authored map has an active stretch and saved dawn ground")
 	var twin := map.copy()
-	t.check(twin.stretch_active and twin.has_recipe_dawn_ground(),
+	t.check(twin.is_void(Vector2i.ZERO) and twin.has_recipe_dawn_ground(),
 			"the copy of an authored map keeps its stretch active and its dawn ground")
 	_check_the_same(t, map, twin, "the authored scene map")
 

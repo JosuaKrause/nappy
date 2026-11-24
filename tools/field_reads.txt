@@ -18,12 +18,6 @@ src/main.gd scenery_frame_locked
 src/main.gd skip_shadows
 src/main.gd trace
 
-# [CityMap] src/city/city_map.gd
-src/dev/scene_recipe_draft.gd stretch
-src/dev/scene_recipe_draft.gd stretch_active
-src/dev/scene_recipe_draft.gd tiles
-src/dev/scene_recipe_runtime.gd recipe_bounds
-
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
 src/city/city.gd kind
