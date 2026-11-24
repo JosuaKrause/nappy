@@ -50,6 +50,10 @@ const _ALLOWED_FILES := {
 
 ## One string in one file: a developer readout in a file whose other strings are held to the rule.
 const _ALLOWED_LITERALS := {
+	"res://src/city/city_dressing.gd": {
+		"roof_fixtures.lot: no complete production building at the authored footprint":
+				"the scene recipe's setup problem, printed by the runtime and kept in the manifest",
+	},
 	"res://src/finale/finale_planner.gd": {
 		"%s via %d calm, %d cells%s": "the planner's summary line, written to the run log",
 		"%d open streets, %d placements": "the planner's summary line, written to the run log",
