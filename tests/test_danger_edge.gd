@@ -9,6 +9,8 @@ extends RefCounted
 ## screen's edge, inside the badge's margin, is raised one fresh. The edge is hidden, so it draws
 ## nothing and is handed no atlas.
 
+const StandIns := preload("res://tests/edge_stand_ins.gd")
+
 func run(t: TestRunner) -> void:
 	await _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t)
 	await _test_nothing_in_the_margin_is_raised_a_badge_fresh(t)
@@ -71,12 +73,12 @@ func _test_nothing_in_the_margin_is_raised_a_badge_fresh(t: TestRunner) -> void:
 
 ## The edge watching the stand-in source, with her standing at the origin and the convoy at `at`.
 func _rig(t: TestRunner, at: Vector2) -> Dictionary:
-	var source := _Source.new()
+	var source := StandIns.Source.new()
 	source.visible_view().look_from(Vector2.ZERO)
 	t.add_child(source)
 	var her := Node2D.new()
 	t.add_child(her)
-	var convoy := _Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
+	var convoy := StandIns.Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
 	convoy.position = at
 	source.bring(convoy)
 	var edge := DangerEdge.new()
@@ -115,47 +117,3 @@ static func _next_frame(t: TestRunner) -> void:
 	var asked_in := Engine.get_process_frames()
 	while Engine.get_process_frames() == asked_in:
 		await t.get_tree().process_frame
-
-## The day's events, holding the live events it was brought. Its view is the manager's own, which the
-## rig looks through about her at the origin with nothing covering it; with no player handed in, the
-## manager's own tick never looks it through again.
-class _Source extends EventManager:
-	var _coming: Array[EventInstance] = []
-
-	## Puts `instance` in the world, among the live events.
-	func bring(instance: EventInstance) -> void:
-		add_child(instance)
-		instance.set_process(false)
-		_coming.append(instance)
-
-	## Overrides EventManager.instances.
-	func instances() -> Array[EventInstance]:
-		return _coming
-
-## A live event of `row` the edge reads: its row, its name in the log and the box it draws, standing
-## wherever it is put, set up for nothing else and hidden.
-class _Coming extends EventInstance:
-	var _row: EventDef
-	var _box: Rect2
-
-	func _init(the_row: EventDef, box: Rect2) -> void:
-		super()
-		_row = the_row
-		_box = box
-		visible = false
-
-	## Overrides EventInstance._ready.
-	func _ready() -> void:
-		pass
-
-	## Overrides EventInstance.row.
-	func row() -> EventDef:
-		return _row
-
-	## Overrides EventInstance.logged_name.
-	func logged_name() -> String:
-		return _row.id()
-
-	## Overrides EventInstance.drawn_box.
-	func drawn_box() -> Rect2:
-		return _box

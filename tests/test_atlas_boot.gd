@@ -33,6 +33,7 @@ const RUN_SEED := 2
 const UI := preload("res://tests/ui_screens.gd")
 const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
+const StandIns := preload("res://tests/edge_stand_ins.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 const RecordingAtlas := preload("res://tests/recording_atlas.gd")
@@ -146,13 +147,13 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## recording one (`tests/recording_atlas.gd`) and every help text, mode button, closure piece, the
 ## on-screen controls, the save symbol and the building standing must have asked it for its page,
 ## which a node handed another library, or none, did not. The badge acquires nothing, so a
-## stand-in danger is raised for it and the picture it draws is read off the sitting's library. Her
-## own page is taken in her `_enter_tree()`, and the events' manager's in its own, so the sitting's
-## library counts both among the askers. The cordon's figures, the contact and the crowd's agents
-## are handed theirs where they are made, and `test_park_cordon.gd`,
+## stand-in danger is raised for it and the picture it draws is read off the sitting's library.
+## Her own page is taken in her `_enter_tree()`, and the events' manager's in its own, so the
+## sitting's library counts both among the askers. The cordon's figures, the contact and the
+## crowd's agents are handed theirs where they are made, and `test_park_cordon.gd`,
 ## `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same off the library
-## each is handed. And the pages the boot took for the process are
-## the sitting's library's: they still answer on it once everything the boot built is gone.
+## each is handed. And the pages the boot took for the process are the sitting's library's: they
+## still answer on it once everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
 		var seat := Seat.new(t, func(run: RunState) -> void:
@@ -200,9 +201,9 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			if node.get("atlas") != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
 		# A guard that the sweep was not vacuous: the nodes holding a public library are the ones that
-		# draw from it themselves; a node handed its library through `use_atlas()` keeps it private and
-		# is held to the sitting's by what it asked of it, below. The building's boot builds none
-		# that holds one by name, so its sweep has nothing to find there and the day's still must.
+		# draw from it themselves; a node handed its library through `use_atlas()` keeps it
+		# private and is held to the sitting's by what it asked of it, below. The building's
+		# boot builds none that holds one by name, so only the day's sweep must find a node.
 		t.check(holders > 0 or section != DaySpec.Section.NONE,
 				"%s: the boot built nodes that draw from a library (%d)" % [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
@@ -386,21 +387,21 @@ func _sittings_in(home: Node) -> Array[Node]:
 			sittings.append(child)
 	return sittings
 
-## Raises the screen-edge badge a danger out of sight and closing on her, the military convoy, brings:
-## the booted edge, once the day is on screen, is pointed at a stand-in event source (`DangerEdge.setup()`, as the escape points
-## it at the building's), and the convoy is walked toward her until the edge has drawn. The badge
-## draws the convoy's silhouette from the library it was handed, so that picture is among what the
-## sitting's recording library was asked for.
+## Raises the screen-edge badge a danger out of sight and closing on her, the military convoy,
+## brings: the booted edge, once the day is on screen, is pointed at a stand-in event source
+## (`DangerEdge.setup()`, as the escape points it at the building's), and the convoy is walked
+## toward her until the edge has drawn. The badge draws the convoy's silhouette from the library
+## it was handed, so that picture is among what the sitting's recording library was asked for.
 func _raise_a_badge(t: TestRunner, main: MAIN_SCRIPT, edge: DangerEdge, player: Stroller,
 		recording: RecordingAtlas, where: String) -> void:
 	# The edge is drawn once the day is on screen; the title stands over it until it is tapped.
 	if not edge.is_visible_in_tree():
 		await _press_tap(t, main)
 	var row := EventCatalogue.by_id("military_convoy")
-	var source := _Source.new()
+	var source := StandIns.Source.new()
 	source.visible_view().look_from(player.global_position)
 	t.add_child(source)
-	var convoy := _Coming.new(row, EventFootprints.drawn_box_of(row, true))
+	var convoy := StandIns.Coming.new(row, EventFootprints.drawn_box_of(row, true))
 	convoy.position = player.global_position + Vector2(0.0, -421.0)
 	source.bring(convoy)
 	edge.setup(source, player)
@@ -459,46 +460,3 @@ func _page_objects(atlas: AtlasLibrary, watched: PageLog) -> Dictionary:
 func _a_region_of(group: StringName) -> StringName:
 	var names := BakedRegions.on(group)
 	return names[0] if not names.is_empty() else &""
-
-## The day's events, holding the live events it was brought, with a view of its own about her.
-class _Source extends EventManager:
-	var _coming: Array[EventInstance] = []
-
-	## Puts `instance` in the world, among the live events.
-	func bring(instance: EventInstance) -> void:
-		add_child(instance)
-		instance.set_process(false)
-		_coming.append(instance)
-
-	## Overrides EventManager.instances.
-	func instances() -> Array[EventInstance]:
-		return _coming
-
-
-## A live event of `row` the edge reads: its row, its name in the log and the box it draws, standing
-## wherever it is put, set up for nothing else and hidden.
-class _Coming extends EventInstance:
-	var _row: EventDef
-	var _box: Rect2
-
-	func _init(the_row: EventDef, box: Rect2) -> void:
-		super()
-		_row = the_row
-		_box = box
-		visible = false
-
-	## Overrides EventInstance._ready.
-	func _ready() -> void:
-		pass
-
-	## Overrides EventInstance.row.
-	func row() -> EventDef:
-		return _row
-
-	## Overrides EventInstance.logged_name.
-	func logged_name() -> String:
-		return _row.id()
-
-	## Overrides EventInstance.drawn_box.
-	func drawn_box() -> Rect2:
-		return _box
