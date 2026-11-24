@@ -524,7 +524,7 @@ each is stated where its decision is taken:
 | the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness stands in for, asserted directly |
 
 The count of *areas* is two because one may be spoiled with events while its ground remains
-walkable. A physically fenced area is removed from `calm_blocks` before this count; it cannot
+walkable. A physically fenced area is removed from `calm_blocks_now()` before this count; it cannot
 satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
@@ -2436,7 +2436,7 @@ Top-down camera with a fake vertical extrusion:
   and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one
   prop undrawn for the day. The planting itself never changes: where a city's trees stand is a
   fact about the run, which one is lying in the road is a fact about the day, so the day's answer
-  lives beside `closed_tiles` rather than inside `StreetTrees`.
+  lives beside `closed_tile_set()` rather than inside `StreetTrees`.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

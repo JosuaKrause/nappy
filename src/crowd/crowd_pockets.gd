@@ -23,7 +23,7 @@ extends RefCounted
 ## was answering the symptom.
 ##
 ## **It is a property of the day's map rather than a search an agent runs.** The inputs are the ones
-## the crowd already reads — `CityMap.held`, `closed_tiles` and which ground is driveable —
+## the crowd already reads — `CityMap.held`, `closed_tile_set()` and which ground is driveable —
 ## and they are fixed for the day, so one flood answers for every car for the whole of it. A
 ## per-agent version of the same question is a flood fill per placement, six times over per recycle,
 ## several times a second.

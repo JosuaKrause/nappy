@@ -10,7 +10,7 @@ extends RefCounted
 ## Nothing here knows what is closed or what is calm. The lattice is fixed for the run; what
 ## today has done to it arrives as a set of segment keys.
 ##
-## **An instance is one city's lattice, and each `CityMap` holds its own** (`CityMap.network`), so
+## **An instance is one city's lattice, and each `CityMap` holds its own** (`CityMap.street_network()`), so
 ## a planner is handed the streets with the map it is handed. The lattice is a function of
 ## `Tuning.CITY_BLOCKS` alone, a constant, so every network has the same streets in the same order
 ## and a segment key means the same street on all of them; a `Segment` object belongs to the

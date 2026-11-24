@@ -47,7 +47,7 @@ extends RefCounted
 ##   precinct is exempt** — it is paved frontage to frontage with no carriageway at all
 ##   (`CityMap.is_driveable`), so there is nothing there to cross.
 ## - **Both ends are exempt from being charged for their own doorway**, the same exemption the
-##   closure invariant already makes: the line starts anywhere in `CityMap.home_rect` (with the home
+##   closure invariant already makes: the line starts anywhere in `CityMap.home_tile_rect()` (with the home
 ##   street, which is never closed and never sealed, as ground) and arrives the moment it reaches
 ##   any calm tile of the area's own rect.
 ## - **A row blocks where it costs or where it stands**, and *where it costs* is the disc inside

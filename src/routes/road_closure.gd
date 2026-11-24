@@ -84,7 +84,7 @@ func street_key() -> Vector3i:
 
 ## Every tile of the street this closure's segment covers — the geometry, not the verdict.
 ##
-## **This is not the same set as what ends up in `CityMap.closed_tiles`.** The barriers stand at
+## **This is not the same set as what ends up in `CityMap.closed_tile_set()`.** The barriers stand at
 ## the two mouths, and ground between them that opens onto an alley or a courtyard archway mid-
 ## segment is still somewhere a pedestrian can get to from that side, whatever the two ends of the
 ## street say. Which of these tiles are genuinely unreachable is a question about the whole day's

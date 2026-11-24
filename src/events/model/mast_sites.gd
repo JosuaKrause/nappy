@@ -174,8 +174,8 @@ static func _square_sites(map: CityMap) -> Array[Vector2]:
 			found.append(snapped)
 	return found
 
-## One candidate per block along `map.main_road`'s own corridor — the spine every other siting
-## rule in the game reads off `CityMap.main_road` for, `SealPlanner._is_the_main_road()` included.
+## One candidate per block along `map.main_road_corridor()`'s own corridor — the spine every other siting
+## rule in the game reads off `CityMap.main_road_corridor()` for, `SealPlanner._is_the_main_road()` included.
 ## Sited at the **middle of a block**, never at a junction row, so the snap lands on an ordinary
 ## stretch of sidewalk rather than a crossing.
 static func _main_road_sites(map: CityMap) -> Array[Vector2]:
@@ -235,7 +235,7 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## where a region door could ever stand — every boundary segment's own door position, not only the
 ## doors today's `RegionPlanner.plan_day()` happens to open. `RegionPlanner.assign()` partitions
 ## the city into regions and decides which end of each boundary segment its wall stands at
-## (`map.boundary_wall_at_a`) once, at generation, before a day or a route tree exists
+## (`map.wall_stands_at_a()`) once, at generation, before a day or a route tree exists
 ## (`CityGenerator.generate()` calls it directly) — so a boundary segment's own door position is
 ## exactly as day-independent as `MastSites` itself, and refusing near it here keeps "the same
 ## places every day" rather than trading it for a per-day check. The three points a street door

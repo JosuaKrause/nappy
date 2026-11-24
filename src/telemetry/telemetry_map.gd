@@ -138,7 +138,7 @@ const BUILDING_GROUND := Color("211f26")
 
 ## The grid as an image: one `SCALE`-square block of flat colour per tile, then the marks.
 ##
-## `closed_today` is the day's closures rather than `map.closed_tiles`, because the caller has them
+## `closed_today` is the day's closures rather than `map.closed_tile_set()`, because the caller has them
 ## as objects and the mouths are what a reader is looking for — a closed street reads as a street
 ## with two crosses on it, which is what it looks like from the junction.
 ##

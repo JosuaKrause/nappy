@@ -38,7 +38,7 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------ generation ---
 
 ## One station on every seed, and it is one of the big buildings rather than a thing of its own:
-## the rolled count still bounds the lot, and the station is the pair `power_station` names.
+## the rolled count still bounds the lot, and the station is the pair `power_station_blocks()` names.
 func _test_every_city_has_exactly_one(t: TestRunner) -> void:
 	for map in _maps:
 		var problems := CityGenerator.validation_problems(map)

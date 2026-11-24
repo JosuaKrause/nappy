@@ -119,7 +119,7 @@ enum Source {
 	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted and recurring rows.
 	SEAL,             ## `SealPlanner.plan_day`, before the scheduler ever runs.
 	CALM_GROUND,      ## `DawnSpoilers` — asked only the routes' ground (`RouteGroundRule`).
-	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tiles` — a tile barrier, not a row.
+	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tile_set()` — a tile barrier, not a row.
 	REGION,           ## `RegionPlanner.plan_day`'s wall and door bodies.
 	OTHER,            ## ambient, scars, the taught-run pursuer — everything else `build_day` adds.
 }

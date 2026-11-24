@@ -49,14 +49,14 @@ in `docs/CITY.md`, "Calm zones"). Three consequences:
   `CityMap.blocked_segments()` merges the ones it does not with today's closures. **Every route search takes that
   merged set** — one that takes only the closures will happily route down the middle of a park and
   overstate the redundancy.
-- **A block is not the unit; a lot is.** `block_plans`, `block_layouts` and `calm_blocks` are keyed
+- **A block is not the unit; a lot is.** `block_plans`, `block_layouts` and the blocks `calm_blocks_now()` answers are keyed
   by the block that *anchors* a lot, so a zone is one entry with several blocks of ground. Anything
   counting calm areas counts a zone once. `CityMap.anchor_of()` and `lot_rect()` reach its other
   blocks.
 
 **An absorbed street is calm ground, not a closure.** The tiles are park and the player walks over
 them — a zone is a shortcut as well as a destination. Only the *lattice* lost the street, which is
-why the absent streets are a set of segment keys and `closed_tiles` is a set of tiles. **Anything that
+why the absent streets are a set of segment keys and `closed_tile_set()` is a set of tiles. **Anything that
 travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 
 ## Every day stays winnable, and always has somewhere else to go

@@ -172,7 +172,7 @@ func _plan_the_day(day: int, seed_value: int) -> void:
 ## her stroller set down there and one tick (`_relocate_round()`), the mark read off the street —
 ## and every answer is checked two ways: against `_day_reachability()`, the same rule the director
 ## keeps (every obstructing or lethal plan's disc and the day's closures), built afresh; and against
-## a plain walk from the doorstep over walkable ground minus `CityMap.closed_tiles`,
+## a plain walk from the doorstep over walkable ground minus `CityMap.closed_tile_set()`,
 ## `soft_sealed_tiles` and `obstructed_tiles` — the per-tile record of where a body stands, a
 ## second source the director's discs do not read. Two seeds and a tenth of the sidewalks keep the
 ## cost down: a relocation is linear in the alley count per tick.

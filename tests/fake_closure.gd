@@ -1,9 +1,9 @@
 class_name FakeClosure
 extends RoadClosure
-## A stand-in for a day's road closure whose ground a check sets: handed to `CityMap.close_streets()`
-## on a hand-drawn map in place of a planned one, so the check names the tiles that are shut and
-## plans no street. Its tiles and its two mouths both answer the tiles the check names, one tile
-## each, so the flood from the doorstep that `close_streets()` makes stops at each and closes it.
+## A stand-in for a day's road closure whose ground a check sets: handed to
+## `CityMap.close_streets()` on a hand-drawn map in place of a planned one, so the check names the
+## tiles that are shut and plans no street. Its tiles and its two mouths both answer the tiles the
+## check names, one tile each, so the flood from the doorstep that `close_streets()` makes stops at each and closes it.
 ## The real closure is checked in `tests/test_routes_closures_a.gd`. A helper, not a suite: the
 ## runner loads only `test_*.gd`.
 

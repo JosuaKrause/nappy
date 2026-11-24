@@ -497,8 +497,8 @@ func _sync_home_door() -> void:
 		_home_door.picture = _door_texture_for_today()
 
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
-## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
-## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
+## `map.home_tile_rect()` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
+## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_tile_rect()` and
 ## `AtlasTable` rather than on the door node, and handed to every home-block `Building` so it can
 ## blank the ground-floor column(s) standing behind the door instead of drawing a window there.
 func _door_world_x_range() -> Vector2:
@@ -936,7 +936,7 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## `_home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
 ## sets every building's height before `_spawn_home()` builds the door sprite it would otherwise
 ## read (see `build()`'s own ordering note) — `_door_world_x_range()` itself only needs
-## `map.home_rect`, already fixed by the generator by the time this runs. The lot depth this is
+## `map.home_tile_rect()`, already fixed by the generator by the time this runs. The lot depth this is
 ## measured against (`lot_depth_tiles`) is `CityGenerator`'s own carve of the home block, six tiles
 ## for the door building on every seed tested — comfortably clear of the four wall rows plus at
 ## least one roof row this asks for; a seed where it were not would have to be reported as a fork

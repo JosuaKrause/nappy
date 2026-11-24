@@ -577,7 +577,7 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 
 ## With every calm area handed over as used, the tree takes as many off as it may and no more: at
 ## least `MIN_CALM_AREAS_REACHABLE` of them are never excluded, and only the one fenced park, if any,
-## actually leaves `calm_blocks`.
+## actually leaves `calm_blocks_now()`.
 func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t: TestRunner) -> void:
 	for map in _maps:
 		for day: int in [1, 5, 9, 12, 14]:

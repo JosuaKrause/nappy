@@ -14,7 +14,7 @@ extends RefCounted
 ##   lethal plan's disc, region doors open;
 ## - **doors shut**: the same, with the region doors' own bodies counted as blocks — a mark only
 ##   reachable through a district door;
-## - **by tiles**: a plain walk over walkable ground minus `closed_tiles`, `soft_sealed_tiles` and
+## - **by tiles**: a plain walk over walkable ground minus `closed_tile_set()`, `soft_sealed_tiles` and
 ##   `obstructed_tiles`, the per-tile record of where a body stands, not the discs.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

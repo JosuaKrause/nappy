@@ -192,7 +192,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 
 ## The main road is refused as a seal candidate outright — see `CityMap.is_main_road` (which the planner asks) and
 ## its class doc, "The main road is exempt too". Checked over every real vertical segment at
-## `map.main_road`'s own corridor index, not only the ones sampled for the other tests, since a
+## `map.main_road_corridor()`'s own corridor index, not only the ones sampled for the other tests, since a
 ## seal here would wall the one street the design deliberately leaves open to cross.
 func _test_the_main_road_is_never_sealed(t: TestRunner) -> void:
 	for map in _maps:
@@ -292,7 +292,7 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		_add_circle(map, blocked, plan.placed_at(), plan.obstructs_within())
 	return blocked
 
-## Every tile of `map.main_road`'s own band, the width of the corridor and the height of the map —
+## Every tile of `map.main_road_corridor()`'s own band, the width of the corridor and the height of the map —
 ## the same rect `CityMap.street_kind_at(true, tile)` answers `MAIN` for, built directly rather
 ## than swept tile by tile, since the band is a single rect by construction.
 func _main_road_tiles(map: CityMap) -> Dictionary:
@@ -465,7 +465,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		var tree := RouteTree.for_day(map, day)
 		if tree.branches().is_empty():
 			continue
-		# Sealing (and its thinning pass) is run for its side effect on `map.closed_tiles`/RNG
+		# Sealing (and its thinning pass) is run for its side effect on `map.closed_tile_set()`/RNG
 		# consumption alone; the guarantee below is asked of the tree, which sealing never edits.
 		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false

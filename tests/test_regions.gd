@@ -242,7 +242,7 @@ func _test_precinct_spans_are_never_boundary(t: TestRunner) -> void:
 # ------------------------------------------------------------------------- the flood ---
 
 ## Which end of `segment`'s wall the map assigns, defaulting the same way `RegionPlanner.
-## _assign_wall_ends` does — a helper rather than reaching `map.boundary_wall_at_a` directly at
+## _assign_wall_ends` does — a helper rather than reaching `map.wall_stands_at_a()` directly at
 ## every call site below.
 func _wall_at_a(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
@@ -250,7 +250,7 @@ func _wall_at_a(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return map.wall_stands_at_a(segment.key(), default_at_a)
 
 ## The check a segment-level rule cannot do: block every boundary segment's one-tile mouth strip
-## (`Segment.mouth_rect`, at whichever end `map.boundary_wall_at_a` names) and both mouths of every
+## (`Segment.mouth_rect`, at whichever end `map.wall_stands_at_a()` names) and both mouths of every
 ## alley the day's plan lists, then flood from a street in **every** region. Every real segment's
 ## ground (`RegionPlanner.ground_region_of`, a boundary segment's **far** end) is reached from a
 ## region's seed exactly when it belongs to that region, so a crossing alley the plan missed would

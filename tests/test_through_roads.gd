@@ -69,7 +69,7 @@ func _test_a_box_paved_whole_takes_its_four_stretches(t: TestRunner) -> void:
 	t.check(_through(roads).size() == 8, "and the eight of the ring round it do (%s)"
 			% ", ".join(_through(roads)))
 
-## The stretch from the north-west box south closed (`CityMap.closed_tiles`, which stops a car): it
+## The stretch from the north-west box south closed (`CityMap.closed_tile_set()`, which stops a car): it
 ## is not a through road, and the north-west box is left one stretch, east, so that stub is dropped
 ## too, though every tile of it is a car's; the box east of it keeps two and stays. Fails with the
 ## dropping loop removed: the stub answers true.

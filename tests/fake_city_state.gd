@@ -4,8 +4,8 @@ extends CityState
 ## `CityMap.recompute_calm()` on a hand-drawn map in place of the run's, so the check names the
 ## blocks that are calm and builds no arcs. It answers what the map asks while it re-reads its calm
 ## blocks and playgrounds: the calm blocks, and the purpose of each, which is never a park, so no
-## playground is added on a hand map. The real state's own logic is checked in `tests/test_blocks.gd`.
-## A helper, not a suite: the runner loads only `test_*.gd`.
+## playground is added on a hand map. The real state's own logic is checked in
+## `tests/test_blocks.gd`. A helper, not a suite: the runner loads only `test_*.gd`.
 
 var _fake_calm: Array[Vector2i] = []
 

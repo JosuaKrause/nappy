@@ -23,7 +23,7 @@ extends Node
 ## - `calm` — the nearest calm area she can settle the baby in, by walking distance rather than a
 ##   straight line. She stops and presses nothing once she is there, and stays until the baby is
 ##   asleep, however long that takes — the day's own clock is what answers whether that fits.
-## - `home` — the doorstep's own block, the centre of `CityMap.home_rect`.
+## - `home` — the doorstep's own block, the centre of `CityMap.home_tile_rect()`.
 ## - `tunnel` and `bridge` — the escape city's two ways out (`DaySpec.exit_points()`, the last walkable tile
 ##   of the spine at each end), where reaching one wins the section. Unavailable on a day.
 ## - `spawn:<name>` — whatever `DevRig.for_spawn_target()` already knows how to find.

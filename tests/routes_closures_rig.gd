@@ -176,7 +176,7 @@ func case_most_of_a_closed_streets_ground_stays_closed(t: TestRunner) -> void:
 ## walkable ground partway along it (an alley mouth or a courtyard archway), barricading both of
 ## that segment's mouths still leaves the street tile beside the opening in the same component as
 ## the opening — the exact fact `CityMap.close_streets` relies on to leave that tile out of
-## `closed_tiles`.
+## `closed_tile_set()`.
 ## Capped per seed rather than exhaustive: a park's every bordering street qualifies as an
 ## opening, so an uncapped scan floods dozens of times per city for a fact the first handful
 ## already establish.
