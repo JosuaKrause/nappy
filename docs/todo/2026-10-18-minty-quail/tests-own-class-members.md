@@ -25,10 +25,10 @@ stay public for the same reason: the fairness tests check numbers against them.
 **Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope: every member under
 `[own file only]`, and every member under `[no reader]` apart from the lines `tests-unseen-reads.md` owns.
 
-**What the check still cannot see** (record minty-quail-feathery-finch): a member a game reader reaches through a
-receiver the check cannot type, an untyped value, a Variant, or an engine-typed value in a file whose opt-out line
-silences that access's warning, counts as read. These thin out as `typed-everywhere.md` types the remaining files, and
-whatever the check then lists joins the scope.
+**What the check still cannot see** (record minty-quail-feathery-finch): a member a game reader
+reaches through a receiver the check cannot type, an untyped value or a Variant, counts as read.
+No file carries the opt-out line, so the check sees every access GDScript can type, and whatever
+it lists joins the scope.
 
 **What is left, by module.** Outside the events and the resistance, the `[own file only]` group holds
 no owner. Under `src/events/`, the events' suites and rigs read none of the `[own file only]` group,

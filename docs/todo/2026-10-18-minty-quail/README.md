@@ -98,34 +98,30 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
    module: its dead code (`dead-code-sweep.md`), its interface and field reads, its receivers
-   typed with them (`tools/check_field_reads.py` holds both, its list `tools/field_reads.txt` empty), then its suites (`tests-one-module.md`), typed already but for two
-   files (`typed-everywhere.md`). The player approved going
-   module by module in parallel; the tracks are the design review's worked-out detail:
-   - **The design review's tracks are closed**, their records the ones named polite-tapir; the events'
-     rows that follow placement are this entry's, below, and the baseline readings are listed under step 4.
+   typed with them (`tools/check_field_reads.py` holds both, its list `tools/field_reads.txt`
+   empty), then its suites (`tests-one-module.md`), all typed. The player approved going module by
+   module in parallel; the tracks are the design review's worked-out detail:
+   - **The design review's tracks are closed**, their records the ones named polite-tapir; the
+     baseline readings are listed under step 4.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed and
      no read of another class's field is listed under it**: `tools/check_field_reads.py` fails a
      new read, and `tools/field_reads.txt` is empty. What the check cannot see is stated in its
      `--help`.
-   - **The city scene's lanes still to come**, from `.claude/briefs/designs/minty-quail-city-scene-pass.md`
-     (C6b, C7): C6b, the probes under `tests/probes/` hold the run, the trace and the atlas they hand
-     the city (every read of `city.run`, `city.trace` and `city.atlas` there becomes the object the
-     probe made); C7, `City.run`, `trace` and `atlas` become private (three renames in `city.gd`),
-     once C6b and the scene recipes' lane D2 have both merged; `tests/test_atlas_boot.gd`'s sweep
-     (`node.get("atlas")` over every node of a booted `main`) then asks the city's library through its
-     method, since a private field leaves the city out of the loop silently while its holder count
-     still passes on `Prop` and `PosterWalls`.
-   - **Tools:** `typed-everywhere.md`: code is
-     typed wherever the language can type it, the tests included.
-   - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
-     pursuit and the rest as parts an event has, and every caller asking through methods). Its
-     first steps, the callers outside the events folder and the live event's own behaviours and
-     looks, run beside the placement track; the dawn, the event manager's parts, the resistance
-     and the scene recipes follow placement; then a row written as its
-     parts, and the events' suites (what is left of `re-derived-cases.md`, a scene's walk working out
-     its route tree and locations again);
-     `system-map.md` once the redesign is complete.
+   - **The city scene's lanes still to come**, from
+     `.claude/briefs/designs/minty-quail-city-scene-pass.md` (C6b, C7): C6b, the probes under
+     `tests/probes/` hold the run, the trace and the atlas they hand the city (every read of
+     `city.run`, `city.trace` and `city.atlas` there becomes the object the probe made); C7,
+     `City.run`, `trace` and `atlas` become private (three renames in `city.gd`), once C6b has
+     merged; `tests/test_atlas_boot.gd`'s sweep (`node.get("atlas")` over every node of a booted
+     `main`) then asks the city's library through its method, since a private field leaves the
+     city out of the loop silently while its holder count still passes on `Prop` and
+     `PosterWalls`.
+   - **The events' interface is built**: a body, a hold on her, a lethal field, a pursuit and the
+     rest are parts an event has, and every caller asks through methods (`docs/EVENTS.md`
+     describes it; its records are listed by `tools/decisions.sh minty-quail`). What is left of
+     its track is `re-derived-cases.md`, a scene's walk working out its route tree and locations
+     again, and `system-map.md` once the redesign is complete.
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
@@ -155,8 +151,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`
    (the record minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
    fourth after the events' field-read conversion (the record polite-tapir-crisp-heron). Nothing is judged in the
-   readings: a number that moved is listed here for this remeasure, and no step waits on one. Three lists of
-   numbers are left for it:
+   readings: a number that moved is listed here for this remeasure, and no step waits on one. Four
+   lists of numbers are left for it:
 
    - **What moved after the events' field-read conversion** (the fourth column against the third, the record
      polite-tapir-crisp-heron): dawn planning (a copy of today's `placement_rows.gd` with the third column's
@@ -174,6 +170,20 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    - **Streaming's loop over every plan**: `EventStreaming.stream_around()`, which row 3b's design asked to be
      measured and which was not (the record minty-quail-gray-koala; the paragraph above says what this step
      measures of it).
+   - **The events' interface's timing readings**: the design asked each of 2a's and 2b's pull
+     requests to time five probes, main and the branch side by side in two worktrees run at the
+     same time, the totals over a probe's configurations compared, since one configuration alone
+     moves between rounds (the record minty-quail-brisk-lark):
+     `tests/probes/m159_tick_sweep_events_cost.gd` (the baby's sweep and the events' physics
+     step), `excitement_fingerprint.gd` (its `XF_COST` line, the halo's frame),
+     `calm_pelican_fields_layer_cost.gd`, `m159_crowd_tick_cost.gd` (the control) and
+     `look_fingerprint.gd` (its `LK_COST` line). Four of 2a's seven pull requests hold theirs in
+     their records (minty-quail-velvet-owl, -olive-finch, -tiny-alpaca and -tawny-swan); 2a's last
+     three (-striped-hawk, -striped-magpie and -silver-marmot) and 2b's six took none. Owed is one
+     reading of the probes from the merge of -tawny-swan to the merge of -calm-egret, and of
+     `LK_COST` from the merge of -polite-newt, the probe's own, to -calm-egret. It holds other
+     tracks' merges too, so what it shows is listed and judged by no step (the player: "get the
+     clean design first no matter the cost", inbox #1278 in olive-ferret).
 
 **The entry's list is frozen** (inbox #1268 in olive-ferret). The design review found that items had been added
 to this entry through three weeks with no stated end; shown "The entry has no stated end", the

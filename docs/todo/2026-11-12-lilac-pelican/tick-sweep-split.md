@@ -9,9 +9,9 @@ the split is still the step the game runs.
 
 **Its first failure:** its check that the split step changes every event, agent and meter exactly
 as the real one does fails on day 9: on seed 478156010, where day 14 fails the same way (the record
-2026-10-18-minty-quail-snowy-magpie), and on seed 4242's events walk on `main` after row 4b of
-minty-quail's `event-interface.md`. Its records still hash the same
-on `main` and on that pass's head, so it measures what it measured; whether the split measures the
+2026-10-18-minty-quail-snowy-magpie), and on seed 4242's events walk on `main` after minty-quail's
+row 4b, which wrote every row as its parts (its records are listed by `tools/decisions.sh
+minty-quail`). Its records still hash the same on `main` and on that pass's head, so it measures what it measured; whether the split measures the
 game's step is what fails.
 
 **A real difference, not only a stale probe, until shown otherwise.** Read against

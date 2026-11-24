@@ -18,17 +18,17 @@ test counts as another object under "fields are not API", "yes" (inbox #1182 in 
 gets a method, and suites move as a pull request touches them.
 
 **A suite that plans one city over many days hands in its mast sites worked out once per city**,
-as the game does (`EventWorld.work_out_mast_sites()` on the city as built): today about forty suites
-leave them to the shared helper's default (`tests/game_dawn.gd`), which works them out at each planned
-dawn, on the day's paint, so a test can measure
-masts that move between days, which the game never shows (the orchestrator's choice in placement
-step 3c, open to overturn). Each module's pass hoists them as it touches the suite.
+as the game does (`EventWorld.work_out_mast_sites()` on the city as built): a suite that leaves
+them to the shared helper's default (`tests/game_dawn.gd`) has them worked out at each planned
+dawn, on the day's paint, so a test can measure masts that move between days, which the game never
+shows (the orchestrator's choice in placement step 3c, open to overturn). Each module's pass
+hoists them as it touches the suite.
 
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first. Every entry has had its
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
--curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, row 5 of `event-interface.md`, done, the records
+-curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, done, the records
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
 -speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose, -frosty-tapir and
 -golden-finch, -coral-elk, -frosty-hedgehog and -round-magpie), and what each lists is what is left of it:
