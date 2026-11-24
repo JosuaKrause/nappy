@@ -413,6 +413,24 @@ func _repaint_for(map: CityMap, day: int) -> void:
 	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
+## `--spawn closure:0` reads the day's own closures rather than the tile grid: a planned day has a
+## closure to look at, and the target stands her on a walkable tile outside its barrier, not on the
+## doorstep it falls back to when the lookup finds none.
+func case_a_spawn_beside_a_closure_lands_on_walkable_ground(t: TestRunner) -> void:
+	var day := 6
+	var map := _maps[0]
+	var closures := _plan(map, day)
+	t.check(not closures.is_empty(), "day %d has a closure to look at" % day)
+	var streets := DayStreets.new()
+	streets.begin_day(_todays_tree(map, day), null, closures)
+	var header := RunHeader.new()
+	header.set_day(day)
+	var told: Array[String] = []
+	var at := DevRig.for_spawn_target("closure:0", map, null, streets, null, header,
+			RecordingTrace.new(told))
+	t.check(map.is_walkable(map.world_to_tile(at)),
+			"--spawn closure:0 lands on a walkable tile (%s)" % at)
+
 ## The real thing, with no memory of having been asked before — what `case_closures_are_
 ## deterministic` calls twice to find out whether `ClosurePlanner.plan_day` itself repeats itself,
 ## rather than whether a cache does.

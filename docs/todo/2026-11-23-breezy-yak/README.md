@@ -24,8 +24,6 @@ filed as an entry of its own; the nits are fixed in a docs-only pull request.
 - `WorldMap.size` and `WorldMap.moves` read in `src/events/` (`plan_builder.gd`, `walk_ground.gd`,
   `dawn_roadblock_count.gd`, `ruled_roadblock_ground.gd`, `event_instance.gd`); `field-reads.md`'s "world map's
   residue" leaves them to "whatever pass gives the blocked tiles an owner of their own", a pass no item names.
-- The debug view's suite pass (`tests-one-module.md`: "to move with the debug view's own suite pass"), which no
-  item holds a place for.
 
 **Record nits.** `docs/decisions/2026-10-18-minty-quail-speckled-hare.md` and
 `2026-10-18-minty-quail-jolly-ibis.md` end without a final newline; line 14 of
