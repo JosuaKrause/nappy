@@ -960,9 +960,9 @@ func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
 			% [wide.x, kerbs.size()] + "%d calm areas then lose a route)" % wide.y)
 
 ## The kerbs a summoned engine can park at on `map`, as `[park, along]`: the carriageway tile
-## against the kerb across from every sidewalk tile beside a carriageway (`CityMap.kerb_across_from()`,
-## the same tile from either sidewalk tile of a kerb), sampled across the map, and the street's own
-## axis there.
+## against the kerb across from every sidewalk tile beside a carriageway
+## (`CityMap.kerb_across_from()`, the same tile from either sidewalk tile of a kerb), sampled across
+## the map, and the street's own axis there.
 func _kerbs(map: CityMap) -> Array[Array]:
 	var kerbs: Array[Array] = []
 	var tile_count := map.size.x * map.size.y

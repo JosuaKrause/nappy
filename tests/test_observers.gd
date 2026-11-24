@@ -178,10 +178,9 @@ func _check_the_observer_runs_after(t: TestRunner, main: Node, world: Array, boo
 ## (`EventManager.warn_first()`, announced whether in sight or not), the tree is let run two real
 ## frames, in which the edge reads the warning and the observer, processing after it, watches the
 ## edge's badges, and is held still again; the run log then holds one `edge badge` line for it. The
-## engine's warning lasts `Tuning.WARNING_ALONE_MAX`, one second, about sixty frames, so it is still up
-## after the two and nothing of it has arrived. Asked once
-## the day's lines are taken for the baseline and the counter's names are read, so the frames it
-## lets pass add to neither.
+## engine's warning lasts `Tuning.WARNING_ALONE_MAX`, one second, about sixty frames, so it is
+## still up after the two and nothing of it has arrived. Asked once the day's lines are taken for
+## the baseline and the counter's names are read, so the frames it lets pass add to neither.
 func _check_the_badges_reach_the_observer(t: TestRunner, main: Node, run_log: RecordingLog) -> void:
 	var edge := _edge_of(main) as DangerEdge
 	var found := main.find_children("*", "TelemetryObserver", true, false)

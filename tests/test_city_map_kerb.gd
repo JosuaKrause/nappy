@@ -2,7 +2,8 @@ extends RefCounted
 ## `CityMap.kerb_beside()`: where the kerb runs beside the carriageway lane a point stands in, the
 ## place a row that spans the street stands its body (`EventDef.stands_at_its_kerb()`, the
 ## roadblock). It is the lattice's geometry, so it is asked of points on a north-south street at
-## tiles x 0..5, an east-west one at y 0..5, and the junction box where they meet, with no map; `kerb_across_from()` is asked of a generated one.
+## tiles x 0..5, an east-west one at y 0..5, and the junction box where they meet, with no map;
+## `kerb_across_from()` is asked of a generated one.
 
 ## A coordinate inside a block, three tiles past a corridor: ground off the streets.
 const OFF_THE_CORRIDOR := Tuning.STREET_WIDTH + 3
@@ -57,7 +58,7 @@ func _test_the_road_across_from_each_sidewalk_tile(t: TestRunner) -> void:
 	var road := map.tile_to_world(_a_road_tile(map))
 	t.check(map.kerb_across_from(road) == Vector2.INF, "a point on the carriageway has no kerb across")
 
-## A tile of a carriageway lane beside no junction, found by scanning from the corner.
+## The first carriageway tile found by scanning from the map's corner.
 func _a_road_tile(map: CityMap) -> Vector2i:
 	for y in map.size.y:
 		for x in map.size.x:
