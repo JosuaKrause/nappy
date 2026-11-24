@@ -8,6 +8,7 @@ extends RefCounted
 ## stood) are only observable on a city the game made. Split off the city, the suite would test the
 ## runtime against a stand-in whose answers are a copy of this city's.
 
+const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 
 func run(t: TestRunner) -> void:
 	# A run of its own, handed to the city and the scene as `main` hands them the game's.
@@ -73,6 +74,7 @@ func run(t: TestRunner) -> void:
 	city.map.recipe_bounds = authored_bounds
 	_test_an_authored_door_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
 	_test_an_authored_soft_seal_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
+	_test_a_column_scene_boards_the_neighbors_window(t, runtime, city, player, baby, own_run, data)
 	_test_the_scene_runs_under_the_spec_it_is_handed(t, runtime, city, player, baby, own_run)
 	runtime.free()
 	player.free()
@@ -109,6 +111,25 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 				and mine.faces() == theirs.faces()
 	t.check(same, "and each body stands where the day's does, as the same row")
 	setup.erase("gates")
+
+## **A scene on day 11 or later boards the neighbor's window**, as the happenings' day start does
+## for a played day (`ResistanceHappenings.start_day()`): the army column's happenings are handed the
+## city's fronts through the world's dressing, which board it. Day 13's column is the scene that
+## starts the happenings.
+func _test_a_column_scene_boards_the_neighbors_window(t: TestRunner, runtime: SceneRecipeRuntime,
+		city: City, player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
+	var building: Building = HomeDoorReads.building(city)
+	t.check(building != null and building.neighbor_window_col() == -1,
+			"the neighbor's window stands unboarded before the column scene installs")
+	if building == null:
+		return
+	var setup: Dictionary = data.setup
+	setup.column = {"at": [1904, 2312], "direction": "north"}
+	var errors := runtime.install(RunCity.world_of(city, player, baby),
+			DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+	t.check(errors.is_empty(), "the column scene installs: %s" % [errors])
+	t.check(building.neighbor_window_col() >= 0, "and the neighbor's window is boarded")
+	setup.erase("column")
 
 ## **An authored soft seal stands as the day's own would**: on an off-walk street the day may seal
 ## (`SealPlanner.may_seal()`), its two bodies stand where the day's pass sites the same picture
@@ -188,8 +209,8 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: Sc
 
 	var configured := RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true)
 	var day := DaySpec.for_day(own_run.header().day(), configured.day_length_for(own_run.header().day()))
-	t.check(is_equal_approx(day.length, 77.0),
-			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
+	t.check(is_equal_approx(day.seconds_on_the_clock(), 77.0),
+			"a day scene's walk is the configured day's length (%.1fs)" % day.seconds_on_the_clock())
 	errors = runtime.install(RunCity.world_of(city, player, baby), day)
 	t.check(errors.is_empty() and RunCity.events(city).ahead.holds_the_home_streets
 			and RunCity.events(city).ahead.sends_poster_pursuits,

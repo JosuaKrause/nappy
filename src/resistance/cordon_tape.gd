@@ -30,14 +30,14 @@ var _piece := Piece.TAPE
 ## Whether a stretch runs across the screen (a north or south side) rather than up it.
 var _across := true
 ## A stretch's length, in pixels along its line.
-var length := Tuning.TILE_SIZE * 1.0
+var _length := Tuning.TILE_SIZE * 1.0
 
 ## Sets this out as `which` piece, and for a tape its direction (across the way, `runs_across`, or
 ## along it) and its `reach` along that direction, once, before it enters the tree.
 func set_out(which: Piece, runs_across: bool, reach: float) -> void:
 	_piece = which
 	_across = runs_across
-	length = reach
+	_length = reach
 
 func _ready() -> void:
 	if _piece != Piece.TAPE:
@@ -45,9 +45,9 @@ func _ready() -> void:
 	var body := StaticBody2D.new()
 	var shape := CollisionShape2D.new()
 	var box := RectangleShape2D.new()
-	box.size = Vector2(length, DEPTH) if _across else Vector2(DEPTH, length)
+	box.size = Vector2(_length, DEPTH) if _across else Vector2(DEPTH, _length)
 	shape.shape = box
-	body.position = Vector2.ZERO if _across else Vector2(0.0, -length * 0.5)
+	body.position = Vector2.ZERO if _across else Vector2(0.0, -_length * 0.5)
 	body.add_child(shape)
 	add_child(body)
 
@@ -74,8 +74,8 @@ func _draw() -> void:
 	if _across:
 		var native := Vector2(AtlasTable.baked().native_size(TAPE_ACROSS))
 		draw_texture_rect(_atlas.region(TAPE_ACROSS),
-				Rect2(-length * 0.5, -native.y, length, native.y), false)
+				Rect2(-_length * 0.5, -native.y, _length, native.y), false)
 		return
 	var width := float(AtlasTable.baked().native_size(TAPE_ALONG).x)
 	draw_texture_rect(_atlas.region(TAPE_ALONG),
-			Rect2(-width * 0.5, -length - LIFT, width, length), false)
+			Rect2(-width * 0.5, -_length - LIFT, width, _length), false)

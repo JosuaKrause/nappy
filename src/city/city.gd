@@ -562,7 +562,7 @@ func furnish_a_roof(lot: Rect2i, fixtures: Array) -> Array[String]:
 			found = true
 			errors.append_array(building.author_roof_furniture(fixtures))
 	if not found:
-		errors.append("roof_fixtures.lot: no complete production building at the authored footprint")
+		errors.append(NO_BUILDING_ON_THE_LOT)
 	return errors
 
 ## Restarts the signals' cycle, runs it on `into_the_cycle` seconds and cuts their power when `dark`.
@@ -698,7 +698,7 @@ func _spawn_buildings() -> void:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.equip(atlas, roof_drawer, front_drawer)
-		building.scenery_clock = scenery_ground
+		building.use_scenery_clock(scenery_ground)
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.stand_on(rect, world.size, _variant_for(rect), map.starting_purpose(block_of(rect)),
@@ -716,7 +716,7 @@ func _spawn_buildings() -> void:
 			# every other home-block lot's world x sits entirely outside the door's span, since
 			# `CityGenerator._subtract_all()` cuts the notch's own columns out of them — but handing
 			# it to all of them costs nothing and needs no lookup for which one that is.
-			building.door_world_x_range = door_x_range
+			building.mark_door_span(door_x_range)
 		# Dressed here, before coverage and the roof extension below are computed, since
 		# `assign_roof_extensions()` needs to know which buildings are the power station to keep an
 		# extension off its yard (no roof stands there to extend).
@@ -1152,9 +1152,6 @@ func _is_on_the_tinted_route(tile: Vector2i) -> bool:
 func buildings() -> Array[Building]:
 	return _buildings
 
-## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
-## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
-## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
 ## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
 func traffic_signals() -> TrafficSignals:
 	return signals
@@ -1163,6 +1160,10 @@ func traffic_signals() -> TrafficSignals:
 func ground_mode_in_force() -> SceneryGround.Mode:
 	return ground_mode
 
+## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
+## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
+## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
+##
 ## Overrides CityDressing.props.
 func props() -> Array[Node2D]:
 	var all: Array[Node2D] = []
@@ -1179,6 +1180,8 @@ func streets() -> DayStreets:
 ## The fronts the run's story changes (`CityFronts`): the burnt frontage, the way in behind a
 ## sidewalk, a block shown during the day, the neighbor's window and her sealed door. Built once in
 ## `build()`, over the buildings and her door, which are fixed for the run.
+##
+## Overrides CityDressing.fronts.
 func fronts() -> CityFronts:
 	return _fronts
 
@@ -1305,7 +1308,7 @@ func _dress_blocks(state: CityState) -> void:
 		var listed: Dictionary = map.stretch_building_on(building.lot_rect())
 		building.show_condition(int(listed.condition) as Building.Condition if not listed.is_empty() \
 				else condition_for(state.purpose_of(map.plans_by_block(), block_of(building.lot_rect()))))
-		building.day = _day
+		building.show_day(_day)
 	_fronts.mark_the_burnt_frontage()
 
 ## A stretch's props are its recipe's (`CityMap.stretch_prop_list()`): every tree, swing frame, bollard

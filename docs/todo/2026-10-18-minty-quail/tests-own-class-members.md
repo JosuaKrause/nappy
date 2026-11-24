@@ -33,7 +33,7 @@ whatever the check then lists joins the scope.
 **What is left, by module.** Outside the events and the resistance, the `[own file only]` group holds
 one owner: the scene recipe runtime's `manifest`, `named`, `start_position` and `tick`
 (`src/dev/scene_recipe_runtime.gd`), which waits with the scene recipes for the events' interface
-row 3c and the scene recipes' own pass (`city-hand-ins.md`). Under `src/events/`, the events' suites and rigs
+row 3c and the scene recipes' own pass. Under `src/events/`, the events' suites and rigs
 still read the `[own file only]` group's calm areas' `unused`, the catalogue's `all` and the event manager's
 `ahead`, `checkpoints`, `spawner`, `streaming` and `warnings`; the `[no reader]`
 group holds none of the events'. Nothing under `src/resistance/` is left in either group.

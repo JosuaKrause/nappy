@@ -52,9 +52,9 @@ func _check_the_events_run_under(t: TestRunner, day: DayController, city: City, 
 			and RunCity.events(city).ahead.holds_the_home_streets
 					== day.spec().keeps_the_home_streets_clear(),
 			"%s's events run under the spec its clock runs on" % scene)
-	t.check(is_equal_approx(day.seconds_total(), day.spec().length),
+	t.check(is_equal_approx(day.seconds_total(), day.spec().seconds_on_the_clock()),
 			"%s's clock is started for that spec's length (%.1fs of %.1fs)"
-			% [scene, day.seconds_total(), day.spec().length])
+			% [scene, day.seconds_total(), day.spec().seconds_on_the_clock()])
 
 func _scratch(which: String) -> String:
 	return "user://test_scene_recipe_boot_%s_%d.json" % [which, OS.get_process_id()]

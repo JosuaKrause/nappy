@@ -25,6 +25,9 @@ extends WorldContext
 ## (`PosterWalls.dress_for()`). `spec` is the walk's, a day's where the caller handed none.
 signal day_dressed(day: int, spec: DaySpec)
 
+## What `furnish_a_roof()` answers when no building stands on the lot a recipe names.
+const NO_BUILDING_ON_THE_LOT := "roof_fixtures.lot: no complete production building at the authored footprint"
+
 ## Today's city: the run's city state `state` brought to `day`, the streets closed on `rng` where
 ## `spec` closes them and the street trees, then the day said dressed (`day_dressed`), which the
 ## poster walls paste by (`City.start_day()`). `spec` left out is a day's (`DaySpec.for_day()`).
@@ -59,7 +62,7 @@ func tint_the_route(_route: RouteSource) -> void:
 ## any from standing, and one problem naming the lot when no building stands on it, which is all
 ## this base can say.
 func furnish_a_roof(_lot: Rect2i, _fixtures: Array) -> Array[String]:
-	return ["roof_fixtures.lot: no complete production building at the authored footprint"]
+	return [NO_BUILDING_ON_THE_LOT]
 
 ## Restarts the traffic signals' cycle and runs it on `into_the_cycle` seconds, then cuts their
 ## power when `dark`: a scene set in the last night's blackout.
@@ -73,6 +76,11 @@ func buildings() -> Array[Building]:
 ## The props the city stands, none in this base.
 func props() -> Array[Node2D]:
 	return []
+
+## The fronts the run's story changes (`CityFronts`): the neighbor's boarded window, her sealed door
+## and the rest, which an authored scene hands the happenings it starts. None in this base.
+func fronts() -> CityFronts:
+	return null
 
 ## Everything the scenery draws within `view` prepared now rather than over the frames to come, so
 ## the first frame drawn round where she was put down has it all.

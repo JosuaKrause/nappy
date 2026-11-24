@@ -4,7 +4,8 @@ extends RefCounted
 ## (`DayWorldSource.stand()`, `RunFlow.world_stood`): the map of the ground she walks, the events
 ## walked among, her and the baby in it, where she is put down and which way she faces, the city's
 ## parts where the world is one (its map, today's streets, its crowd, its poster walls and what
-## dresses it for the day), and what the walk is won at in it — the map her front door is on, or the ways out of it.
+## dresses it for the day), and what the walk is won at in it — the map her front door is on, or
+## the ways out of it.
 ## The fourteen days and the escape's city section stand in a city; the escape's building has no
 ## streets and no crowd, only its events.
 ##
@@ -37,9 +38,9 @@ var _home_map: CityMap
 var _exits := {}
 
 ## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, the walls its posters
-## are pasted on `posters`, what dresses the city for the day `dressing` and its events, her and the baby in it, put down at `start` facing
-## `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk home,
-## null on one that is not — or at `exits`, the ways out of the city by `CityExit.Kind`, empty on a
+## are pasted on `posters`, what dresses the city for the day `dressing` and its events, her and the
+## baby in it, put down at `start` facing `facing`. Its walk is won at her front door on
+## `home_map` — the city's own map on a walk home, null on one that is not — or at `exits`, the ways out of the city by `CityExit.Kind`, empty on a
 ## walk with none. Its walk is planned on the spec's own stream of the run
 ## (`DaySpec.events_stream()`).
 ##

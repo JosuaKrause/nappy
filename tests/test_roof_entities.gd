@@ -13,7 +13,7 @@ const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
 const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 
-## The city's clock stood still at `at` seconds: all a building asks of it (`Building.scenery_clock`)
+## The city's clock stood still at `at` seconds: all a building asks of it (`Building.use_scenery_clock()`)
 ## is the time its rotors turn by.
 class FixedClock extends SceneryGround:
 	var at := 0.0
@@ -54,7 +54,7 @@ func _new_fixture(t: TestRunner, district: GameEnums.BlockPurpose, drawer: RoofD
 	building.position = Vector2(320.0, 320.0)
 	building.stand_on(Rect2i(), Vector2(256.0, 256.0), 0, district, 64.0)
 	building.put_roof_objects_in(entities)
-	building.scenery_clock = clock
+	building.use_scenery_clock(clock)
 	root.add_child(building)
 	# Equipped as the city equips it, the building waits for the residency, which stands a building
 	# in view up.

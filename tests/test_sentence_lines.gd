@@ -7,6 +7,7 @@ extends RefCounted
 ## `_title` unbroken, and `Texts.DAY_BRIEF`'s day-1 entry had no break in it at all — both pinned checks
 ## below would have read the whole thing as a single line with no `\n` in it.
 
+const UI := preload("res://tests/ui_screens.gd")
 const DaySummary := preload("res://src/ui/day_summary.gd")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
@@ -188,6 +189,6 @@ func _test_the_pause_screens_body_breaks_only_between_sentences(t: TestRunner) -
 		t.check(" ".join(lines) == source.replace(Texts.RUN_TOKEN, " ")
 				and symbols == ([&"ui/run"] if joystick else []),
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
-		pause.close()
+		UI.dismiss(pause)
 	pause.free()
 	controls.free()

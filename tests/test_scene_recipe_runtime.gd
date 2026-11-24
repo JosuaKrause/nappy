@@ -163,6 +163,7 @@ var _errors := RecipeErrors.new()
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_schema(t)
+	_test_a_world_with_no_city_is_refused(t)
 	_test_hold_is_for_a_straight_departure(t)
 	await _test_a_held_departure_places_its_move(t)
 	_test_charging_is_for_a_pursuer_that_waits(t)
@@ -258,7 +259,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 		t.check(dog.is_held_by_hand() and walked.length() > 0.0 and dog.position.distance_to(
 				player.global_position) > from.distance_to(player.global_position),
 				"the runtime walks the held dog on, farther from her: %s" % walked)
-		var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
+		var placed := city.map.moves.keeping_their_course().any(func(move: MoveProposal) -> bool:
 				return move.stands_at() == dog.position and move.steps_to() == dog.position)
 		t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
 		RunCity.events(city).retire(dog)
@@ -356,6 +357,21 @@ func _test_schema(t: TestRunner) -> void:
 	for recipe in invalid:
 		t.check(not _errors.errors_of(t, recipe).is_empty(),
 				"malformed runtime data is rejected: %s" % [recipe])
+
+## **A recipe is a city scene**: installed into the escape's building, a world with no city, the
+## runtime answers its one problem and records the setup as failed, before it asks the world for
+## anything of a city.
+func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"setup": {}}, "manifest": {}, "anchors": {}, "map": null},
+			_recipe_config(false), RunState.new())
+	var building := DayWorld.in_the_building(WorldMap.open_ground(), null, null, null, Vector2.ZERO,
+			Vector2.UP, null)
+	var errors := runtime.install(building, DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
+	t.check(errors.size() == 1 and errors[0].contains("city"),
+			"a world with no city is refused with one problem: %s" % [errors])
+	t.check(runtime.manifest.get("setup_failed", false), "and the setup is recorded as failed")
+	runtime.free()
 
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
 ## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
