@@ -1180,12 +1180,13 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	tree.physics_frame.disconnect(count)
 
 ## Puts the screens a focus check leaves behind away: the pause closed, the summary dismissed, the
-## tree running, and the window's own half second over.
+## tree running, and the viewport's input back on.
 func _reset_the_screens(t: TestRunner, main: Boot.MainScript) -> void:
 	UI.dismiss(_one(main, "PauseScreen") as PauseScreen)
 	(_one(main, "DaySummary") as DaySummaryScript).dismiss()
-	# The window's half second, which a focus check may have opened on the real clock, is over:
-	# the viewport it switched off is switched back on, as the window does once its time is past.
+	# The window's half second, which a focus check may have opened on the real clock, is left to
+	# end on the window's own frame; the viewport it switched off is switched back on here, and
+	# nothing reads the window's armed state.
 	t.get_viewport().set_disable_input(false)
 	t.get_tree().paused = false
 

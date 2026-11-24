@@ -245,11 +245,13 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 	_print("%s raid from %s: %d at %s" % [label, _point(far), happenings._raid.size(), at])
 	return printed + 1
 
-## The army's trucks standing in the day's events, which a column sent at her makes.
-func _convoy_trucks(city: City) -> Array[EventInstance]:
+## The army's trucks the day's events gained since `before` was taken, which a column sent at her
+## makes. A truck retired earlier stays in the list until the manager's next tick, so only those
+## not there before the column was sent count.
+func _convoy_trucks(city: City, before: Array[EventInstance]) -> Array[EventInstance]:
 	var trucks: Array[EventInstance] = []
 	for event in RunCity.events(city).instances():
-		if is_instance_valid(event) and event.row_id() == "military_convoy":
+		if not before.has(event) and event.row_id() == "military_convoy":
 			trucks.append(event)
 	return trucks
 
@@ -267,6 +269,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 	for her in hers:
 		_stand(city, player, her)
 		var before := happenings._rng.state
+		var standing: Array[EventInstance] = RunCity.events(city).instances().duplicate()
 		var warning := happenings._send_the_column(her)
 		if warning == null:
 			_print("%s column from %s: none (rng %d -> %d)" % [label, _point(her), before,
@@ -279,7 +282,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 			RunCity.events(city)._warnings.run(STEP, her)
 			shown += STEP
 		var trucks: Array[String] = []
-		for truck in _convoy_trucks(city):
+		for truck in _convoy_trucks(city, standing):
 			trucks.append(_point(truck.global_position))
 			RunCity.events(city).retire(truck)
 		_print("%s column from %s: badge %s withdrawn %s trucks %s (rng %d -> %d)" % [label,

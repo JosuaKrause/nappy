@@ -14,8 +14,8 @@ what each became. The entry is closed. What holds after it: the CI check of test
   under `tests/probes/` read them there, as the `military_convoy` events the real manager holds.
   Broken (one truck fewer sent), the suite fails its three column checks; restored, it passes.
 - **`SummaryModel.kind` and the enum `SummaryModel.Kind` are deleted.** The builders set the field
-  and nothing read it; the four summary suites' `kind ==` clauses asserted back what the builder had
-  just set. The same checks keep their outward clauses (the title, the heading, whether it offers a
+  and nothing read it; the `kind ==` clauses of four checks in `tests/test_summary_model.gd` asserted back what the
+  builder had just set. The same checks keep their outward clauses (the title, the heading, whether it offers a
   continue), which already told the four screens apart.
 - **`ReturnWindow.end()` is `_end()`.** Its tests let the window end the way the game does, a frame
   that reads the clock: a fake clock past the window's half second and two frames. The test's window
@@ -25,8 +25,11 @@ what each became. The entry is closed. What holds after it: the CI check of test
 - **`Footprint.tiles()` is deleted.** Nothing under `src/` called it; the game records a body's tiles
   through `StandingPiece.tiles()`. `tests/test_world_passability.gd` compares the plan's record with
   the instance's own standing pieces' tiles and lays the barrier's box down with
-  `GroundShape.tiles_under()`. That body-and-record check now compares two readings of the same
-  pieces, so it holds that the live instance and the plan agree, not that a third path does.
+  `GroundShape.tiles_under()`. The body-and-record check runs main's computation unchanged: it holds
+  that the plan's record (`EventSpawner.footprint_of()`) is the live instance's own laid-out pieces,
+  and fails when the record ignores a piece's direction (laid along `Vector2.RIGHT`, 5 of 60 bodies
+  differ). It does not read the physics body, and no suite checks that the physics body and the
+  record cover the same tiles (a body built along `Vector2.RIGHT` passes).
 
 ## Left as it was
 
