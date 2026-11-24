@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name SceneRecipeDraft
 extends RefCounted
 ## **The first draft of a task scene's stretch**: a recipe's seed and route turned into a recipe
@@ -53,7 +52,7 @@ static func base_of(recipe: Dictionary) -> Dictionary:
 	base.erase("context")
 	base["extent"] = {"scope": "full"}
 	var setup: Dictionary = base.get("setup", {})
-	for drafted in ["actors", "posters", "route_bag"]:
+	for drafted: String in ["actors", "posters", "route_bag"]:
 		setup.erase(drafted)
 	return base
 
@@ -87,7 +86,8 @@ func compose(recipe: Dictionary, run: RunState, world: DayWorld, start: Vector2,
 		_add_the_ground_of(map, map.world_to_tile(at), ground, false)
 	for tile: Vector2i in _at_the_start:
 		_add_the_ground_of(map, tile, ground)
-	for tile: Array in recipe.get("draft", {}).get("include", []):
+	var draft: Dictionary = recipe.get("draft", {})
+	for tile: Array in draft.get("include", []):
 		_add_the_ground_of(map, Vector2i(int(tile[0]), int(tile[1])), ground, false)
 	var stretch := {"tiles": _tile_runs(map, ground, _dawn_tiles)}
 	var buildings: Array = []
@@ -334,14 +334,14 @@ static func _whole(value: Variant) -> Variant:
 ## Whether a value reads best on one line: a list of scalars however long, or a short list or
 ## small object of scalars and pairs.
 static func _is_small(value: Variant) -> bool:
-	var items: Array = value.values() if value is Dictionary else value
+	var items: Array = (value as Dictionary).values() if value is Dictionary else value as Array
 	if value is Array and items.all(func(item: Variant) -> bool:
 			return not (item is Array or item is Dictionary)):
 		return true
 	for item: Variant in items:
 		if item is Dictionary:
 			return false
-		if item is Array and (item.size() > 4 or not (item as Array).all(
+		if item is Array and ((item as Array).size() > 4 or not (item as Array).all(
 				func(inner: Variant) -> bool: return not (inner is Array or inner is Dictionary))):
 			return false
 	return JSON.stringify(value, "", false).length() <= 120
