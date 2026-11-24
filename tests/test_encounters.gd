@@ -355,9 +355,9 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
 	lorry.free()
 
-	# A hold: the answer `CheckpointController.hold_that_would_begin()` gives for a lone post (the
-	# post itself with her inside its `detain_distance()`, nothing outside it), handed in as the
-	# watch is given it.
+	# A hold: the answer `CheckpointController.hold_that_would_begin()` gives for a lone post
+	# (the post itself with her inside its `detain_distance()`, nothing outside it), handed in as
+	# the watch is given it.
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)

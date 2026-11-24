@@ -156,12 +156,14 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t: TestRunner) -> void:
 		var axis := _door_axis(director)
 		await _step_to(t, player, at - axis * 40.0 * direction, true)
 		await _step_to(t, player, at + axis * 40.0 * direction)
-		t.check(await _a_guard_warns_her(t, events), "walking under the named boom starts its warning")
+		t.check(await _a_guard_warns_her(t, events),
+				"walking under the named boom starts its warning")
 		await _ticks(t, int(round(CheckpointController.CROSSING_WARNING * 0.5 / STEP)))
 		t.check(not director.contact().is_done,
 				"halfway through the crossing's warning the task is not done yet")
 		await _step_to(t, player, at - axis * 40.0 * direction)
-		t.check(not await _a_guard_warns_her(t, events), "stepping back across calls the crossing off")
+		t.check(not await _a_guard_warns_her(t, events),
+				"stepping back across calls the crossing off")
 		await _ticks(t, int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 		var guard_before := _guard_after_her(events)
 		t.check(not director.contact().is_done and not _a_guard_is_after_her(events),
@@ -510,8 +512,9 @@ func _ticks_while(t: TestRunner, still_going: Callable, at_most: int) -> int:
 			STEP * Engine.physics_ticks_per_second)
 	return passed[0] as int
 
-## One tick with her at `at`: the manager's own tick takes the doors' look at her. With `jump`, she is
-## put down there first (`Stroller.teleport_to()`), so the step is not seen as a walk across anything.
+## One tick with her at `at`: the manager's own tick takes the doors' look at her. With `jump`,
+## she is put down there first (`Stroller.teleport_to()`), so the step is not seen as a walk
+## across anything.
 func _step_to(t: TestRunner, player: Stroller, at: Vector2, jump := false) -> void:
 	if jump:
 		player.teleport_to(at)

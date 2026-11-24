@@ -617,8 +617,8 @@ func _free_manager(manager: EventManager) -> void:
 func _real_stroller(t: TestRunner) -> Stroller:
 	return _stroller_with(t, null)
 
-## The real stroller scene with a recording script on it: it keeps the scene's camera and body and
-## answers where the door put her down (`set_down()`).
+## The real stroller scene with a recording script on it: it keeps the scene's camera and body
+## and answers where the door put her down (`set_down()`).
 func _recording_stroller(t: TestRunner) -> RecordingStroller:
 	return _stroller_with(t, RecordingStroller) as RecordingStroller
 
@@ -637,12 +637,9 @@ func _stroller_with(t: TestRunner, script: Script) -> Stroller:
 
 ## A door body planned at a known position and along-axis, the same shape
 ## `RegionPlanner._add_door_bodies` gives one — `face` carries the street's own axis, which
-## `EventInstance.facing_now()` and `EventManager`'s detention teleport both read back — and put in
-## the world by the manager's own streaming (`EventStreaming.add()`, which the events ahead of her
-## call for a plan sited after dawn, then `EventManager.stream_around()`, which its tick and the
-## day's start call), as a day's plan would be. A gate's `gate_state` is the plan's, as the planner
-## hands it. `age` and `route` are the plan's: where its instance arrives in its life, and the path
-## a mover walks.
+## `EventInstance.facing_now()` and `EventManager`'s detention teleport both read back. A gate's
+## `gate_state` is the plan's, as the planner hands it. `age` and `route` are the plan's: where its
+## instance arrives in its life, and the path a mover walks. `_stand()` puts it in the world.
 func _door_plan(id: String, at: Vector2, face: Vector2, gate_state: GateState = null,
 		age := 0.0, route := PackedVector2Array()) -> EventPlan:
 	return _plan_of(EventCatalogue.by_id(id), at, face, gate_state, age, route)
@@ -656,10 +653,11 @@ func _plan_of(def: EventDef, at: Vector2, face: Vector2, gate_state: GateState =
 	plan.arrive_aged(age)
 	return plan
 
-## Starts a walk holding `plans`, as a scene recipe's runtime does (`EventManager.start_recipe()`:
-## the plans taken as a walk planned whole, their bodies recorded, nothing the director would send),
-## streamed round the first one, and answers each plan's live instance, in order. A walk started
-## again clears what the one before stood, so every body a case needs is handed in at once.
+## Starts a walk holding `plans`, as a scene recipe's runtime does
+## (`EventManager.start_recipe()`: the plans taken as a walk planned whole, their bodies recorded,
+## nothing the director would send), streamed round the first one, and answers each plan's live
+## instance, in order. A walk started again clears what the one before stood, so every body a case
+## needs is handed in at once.
 func _stand(manager: EventManager, plans: Array[EventPlan]) -> Array[EventInstance]:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	manager.start_recipe(plans, DaySpec.for_day(day), day, plans[0].placed_at())
@@ -672,7 +670,8 @@ func _stand(manager: EventManager, plans: Array[EventPlan]) -> Array[EventInstan
 func _door_instance(manager: EventManager, id: String, at: Vector2, face: Vector2,
 		gate_state: GateState = null, age := 0.0,
 		route := PackedVector2Array()) -> EventInstance:
-	return _stand(manager, [_door_plan(id, at, face, gate_state, age, route)] as Array[EventPlan])[0]
+	var plan := _door_plan(id, at, face, gate_state, age, route)
+	return _stand(manager, [plan] as Array[EventPlan])[0]
 
 ## A whole street door across an east-west street at (5200, 5200) — the northern hut, the gate and
 ## the southern hut, a tile apart across the street, the geometry `RegionPlanner._add_door_bodies`
@@ -1048,7 +1047,8 @@ func _test_a_corner_of_two_doors_is_one_toll(t: TestRunner) -> void:
 	var corner_doors := _stand(manager, [
 		_door_plan("checkpoint_hut", corner, Vector2.RIGHT),
 		_door_plan("checkpoint_hut", corner + Vector2(0.0, -48.0), Vector2.DOWN),
-		_door_plan("checkpoint_gate", corner + Vector2(0.0, -80.0), Vector2.DOWN)] as Array[EventPlan])
+		_door_plan("checkpoint_gate", corner + Vector2(0.0, -80.0), Vector2.DOWN)
+	] as Array[EventPlan])
 	var near_hut := corner_doors[0]
 	var cross_hut := corner_doors[1]
 	var cross_gate := corner_doors[2]
@@ -1885,7 +1885,8 @@ func _test_a_running_hold_begins_no_other_beside_a_post(t: TestRunner) -> void:
 		var post := stood[1]
 		if another_runs:
 			mother.start_chat()
-		stroller.global_position = post.global_position + Vector2(0.0, post.detain_distance() - 2.0)
+		stroller.global_position = post.global_position \
+				+ Vector2(0.0, post.detain_distance() - 2.0)
 		await PhysicsTicks.pass_ticks(t, 2)
 		t.check(post.is_chatting() != another_runs,
 				"inside a post's reach with %s, the post %s" % [
@@ -2298,7 +2299,8 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 			> far_lane.distance_to(far_hut.global_position),
 			"walked on to the far lane, the hut that warned her is now the nearer one")
 	# Until the guard is set on her, so that he is read where he steps out, before his first step.
-	await _ticks_until(t, func() -> bool: return _door_guard_after_her(RunCity.events(city)) != null,
+	await _ticks_until(t,
+			func() -> bool: return _door_guard_after_her(RunCity.events(city)) != null,
 			int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
@@ -2515,7 +2517,8 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 	var hut := doors[0]
 	var axis := hut.facing_now()
 	var her := hut.global_position - axis * 40.0 + Vector2(0.0, 16.0)
-	var robber := manager.spawn_extra(EventCatalogue.by_id("robber_giving_chase"), her - axis * 200.0)
+	var robber := manager.spawn_extra(EventCatalogue.by_id("robber_giving_chase"),
+			her - axis * 200.0)
 
 	stroller.global_position = her
 	await PhysicsTicks.pass_ticks(t, 1)
