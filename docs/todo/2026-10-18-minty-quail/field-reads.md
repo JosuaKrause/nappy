@@ -104,16 +104,11 @@ Left, each its own design question:
   pass gives the blocked tiles an owner of their own. The fields the events read of
   `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
   asked through their methods (row 4b of `event-interface.md`).
-  `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
-  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public, as are `Stroller.carrying` and `facing`, which the game
-  asks through `is_carrying()` and `facing_direction()` and the suites still read (`[kept]` lines);
+  `MoveProposal.yields` and `on_the_list`, `Stroller.atlas`, `carrying` and `facing`, and `DangerEdge.atlas` (the
+  screen-edge badge) are private: callers ask `gives_way()`, `is_on_the_list()`, `is_carrying()` and
+  `facing_direction()`; the suites set her heading through `turn_to()` and read which library the badge was handed
+  through `draws_from()`, both `[kept]` lines with their reasons;
   `VisibleView.controls` is private, set through `use_cover()`.
-- **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
-  screen-edge badge) are handed in through `use_atlas()` and read by their own files and
-  `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's name (`"atlas" in
-  node`, `node.get("atlas")`), so renaming either would make that walk skip it with no failure; the
-  badge acquires no page, so no count of what it asked can stand in. Both become underscore-private with the tests-one-module item (`tests-one-module.md`), when
-  that suite reads through a method the game also calls.
 - **The lines other work touches** are converted with that work:
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
