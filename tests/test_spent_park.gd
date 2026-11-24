@@ -20,6 +20,7 @@ extends RefCounted
 const SEEDS := 6
 const BASE_SEED := 14040
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 
 var _maps: Array[CityMap] = []
 
@@ -634,6 +635,31 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRu
 					"seed %d day %d: a repaint with nothing handed over shuts and fences nothing"
 					% [cmap.city_seed(), day])
 
+## Makes every marker resident, the way the scenery residency does for the ones near her, and
+## lets a frame draw them, so the recording drawer holds what each laid.
+func _let_them_draw(t: TestRunner, markers: Array[ClosureMarker]) -> void:
+	for marker in markers:
+		marker.residence().set_resident(true)
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+
+## What `marker` laid of `texture` the last time it drew, in order.
+func _laid(recording: RecordingSceneryDrawer, marker: ClosureMarker,
+		texture: Texture2D) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	for entry in recording.shown_on(marker):
+		if entry.texture == texture:
+			found.append(entry)
+	return found
+
+## Whether `marker` is the post a run of fence ends on: the one piece whose only picture is the
+## post's own.
+func _is_a_post(recording: RecordingSceneryDrawer, marker: ClosureMarker,
+		library: AtlasLibrary) -> bool:
+	var shown := recording.shown_on(marker)
+	return shown.size() == 1 and shown[0].texture in [library.region(ParkFenceMarker.JOINT),
+			library.region(ClosureMarker.POST)]
+
 ## Every closure picture the city stands, found the way any node is: down the city's own subtree,
 ## where `City` hands each piece to the entities layer (`add_entity()`) and to the scenery.
 func _closure_markers(node: Node, into: Array[ClosureMarker]) -> Array[ClosureMarker]:
@@ -660,8 +686,11 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var recording := RecordingSceneryDrawer.new()
+	city.draw_scenery_through(recording)
+	var library := AtlasLibrary.new()
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(BASE_SEED))
+	RunCity.build(city, CityGenerator.generate(BASE_SEED), null, false, library)
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(city.map.plans_by_block(), day)
@@ -683,15 +712,25 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	if city.map.fenced_park_block().x < 0:
 		city.free()
 		return
+	var markers := _closure_markers(city, [])
+	await _let_them_draw(t, markers)
+	var fenced_rect := ClosurePlanner.calm_area_rect(city.map, city.map.fenced_park_block())
+	var near_the_park := Rect2(city.map.tile_to_world(fenced_rect.position),
+			Vector2(fenced_rect.size) * Tuning.TILE_SIZE).grow(Tuning.TILE_SIZE)
 	var park_pictures := 0
-	for marker in _closure_markers(city, []):
-		if marker.kind == RoadClosure.Kind.PARK:
+	for marker in markers:
+		var drew_a_park_picture := false
+		for picture: StringName in [ParkFenceMarker.JOINT, ParkFenceMarker.MOUNTED_SIGN,
+				ParkFenceMarker.RAIL_ALONG]:
+			drew_a_park_picture = drew_a_park_picture \
+					or not _laid(recording, marker, library.region(picture)).is_empty()
+		if drew_a_park_picture:
 			park_pictures += 1
 			t.check(marker is ParkFenceMarker,
 					"the real city draws park pieces with the connected fence renderer")
-		else:
-			t.check(not marker is ParkFenceMarker,
-					"street closures retain their own barrier renderer")
+		if marker is ParkFenceMarker:
+			t.check(near_the_park.has_point(marker.position),
+					"a connected-fence piece stands within a tile of the fenced park")
 	t.check(park_pictures > 0, "the fenced park has runtime pictures to check")
 	await PhysicsTicks.pass_ticks(t, 1)
 	var block := city.map.fenced_park_block()
@@ -709,16 +748,20 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	t.check(entrances > 0, "fenced %s has ways in to stand bodies across" % block)
 	var fenced: Array[RoadClosure] = city.streets().closures().duplicate()
 	city.free()
-	_test_the_fence_pieces_stand_in_draw_order(t, fenced)
+	await _test_the_fence_pieces_stand_in_draw_order(t, fenced)
 
 ## The fence's pictures, drawn for the closures a recipe hands the city (`CityMap.recipe_road_closures()`, which
 ## `start_recipe_day()` stands): the park's own runs and a short archway besides. End-on terminal
 ## panels share the post's exact anchor: subpixel drift can reverse their draw order. The mounted
 ## sign has its own midpoint support on either axis.
-func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[RoadClosure]) -> void:
+func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner,
+		fenced: Array[RoadClosure]) -> void:
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var recording := RecordingSceneryDrawer.new()
+	city.draw_scenery_through(recording)
+	var library := AtlasLibrary.new()
 	t.add_child(city)
 	var map := CityGenerator.generate(BASE_SEED)
 	var short_run := ParkClosure.new(Vector2i.ZERO, Rect2i(117, 121, 4, 4),
@@ -726,7 +769,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[Roa
 	for closure in fenced:
 		map.add_recipe_closure(closure)
 	map.add_recipe_closure(short_run)
-	RunCity.build(city, map)
+	RunCity.build(city, map, null, false, library)
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
@@ -740,20 +783,26 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[Roa
 			for center in closure.mouth_centres(city.map):
 				sign_centers[center] = true
 	var markers := _closure_markers(city, [])
+	await _let_them_draw(t, markers)
 	for marker in markers:
 		if not marker is ParkFenceMarker:
 			continue
 		var fence_marker := marker as ParkFenceMarker
-		if fence_marker.piece == ClosureMarker.Piece.SIGN:
-			var sign_ground := fence_marker.position + fence_marker.sign_offset
+		var signs := _laid(recording, fence_marker, library.region(ParkFenceMarker.MOUNTED_SIGN))
+		if not signs.is_empty():
+			# The sign's ground is the foot of the rect it was laid in, on the panel's own feet.
+			var laid: Rect2 = signs[0].rect
+			var sign_ground := fence_marker.position + laid.position + Vector2(laid.size.x * 0.5,
+					laid.size.y)
 			t.check(sign_centers.has(sign_ground),
 					"each park sign stands at one run's exact midpoint")
 			sign_centers.erase(sign_ground)
-		if fence_marker.across or fence_marker.piece == ClosureMarker.Piece.POST:
+		if not _laid(recording, fence_marker, library.region(ClosureMarker.FENCE_ACROSS)).is_empty() \
+				or _is_a_post(recording, fence_marker, library):
 			continue
 		for other in markers:
 			var post := other as ParkFenceMarker
-			if not post or post.piece != ClosureMarker.Piece.POST:
+			if not post or not _is_a_post(recording, post, library):
 				continue
 			if fence_marker.position.distance_to(post.position) < 0.01:
 				shared_panel_posts += 1
