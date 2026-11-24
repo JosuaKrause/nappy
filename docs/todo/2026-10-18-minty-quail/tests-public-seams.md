@@ -9,7 +9,10 @@ second counts its lines that call a frame function or emit the frame signal by h
 Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
 well as the suites), and neither sees access through a variable holding the name, so
 `tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
-nothing, and a test or helper that makes them print anything is a breach.
+nothing, and a test or helper that makes them print anything is a breach. One stands:
+`tests/basement_walk_rig.gd` reads the event manager's private `_streaming` on two lines, to
+retire the finished blows and bring back what repeats (`retire_finished()` and
+`bring_back_what_repeats()`), and wants the manager's own step for it.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
