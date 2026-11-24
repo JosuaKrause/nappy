@@ -33,7 +33,7 @@ func _test_the_city_reads_the_group_once(t: TestRunner) -> void:
 	var pages := PageLog.new(atlas)
 	var map := MapCache.of(SEED)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	t.check(pages.loads(CityDecals.DECORATION_ATLAS) == 0,
 			"nothing reads the decoration page before the city is built")
@@ -58,7 +58,7 @@ func _test_the_group_is_released_when_the_city_is_freed(t: TestRunner) -> void:
 	var pages := PageLog.new(atlas)
 	var map := MapCache.of(SEED)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map, null, false, atlas)
 	t.check(pages.held(CityDecals.DECORATION_ATLAS),

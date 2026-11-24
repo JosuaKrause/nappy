@@ -301,7 +301,7 @@ func _test_the_barrier_rim_survives_the_departure(t: TestRunner) -> void:
 ## the instance forgets: shaken off and streamed out, it comes back as only the barrier.
 func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) -> void:
 	var run := RunCity.started_run(4242)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(4242))
 	# A post on open street with a clear line to where she stands: the notice needs one.

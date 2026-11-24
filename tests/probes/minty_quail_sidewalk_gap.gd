@@ -112,7 +112,7 @@ func _line(tally: Dictionary) -> String:
 func _start(t: TestRunner, seed_value: int) -> City:
 	var spec := DaySpec.for_day(DAY)
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	city.run.header().set_day(DAY)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))

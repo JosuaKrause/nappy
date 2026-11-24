@@ -52,7 +52,7 @@ func run(t: TestRunner) -> void:
 func _city_with_her(t: TestRunner, day: int, seed_value := SEED, on_map: CityMap = null) -> Array:
 	var map := on_map if on_map else MapCache.of(seed_value)
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the

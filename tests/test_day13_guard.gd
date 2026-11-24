@@ -1229,7 +1229,7 @@ func _task_guard() -> EventInstance:
 ## the steps done and the alleys used are this test's and gone with it.
 func _build_city(t: TestRunner, seed_value: int) -> City:
 	_run = RunCity.started_run(RUN_SEED)
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	RunCity.build(_city, _run, CityGenerator.generate(seed_value))
 	return _city

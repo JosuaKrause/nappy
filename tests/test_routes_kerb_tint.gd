@@ -34,7 +34,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(90210))
 

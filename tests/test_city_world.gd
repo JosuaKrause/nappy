@@ -19,7 +19,7 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 
 func run(t: TestRunner) -> void:
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var builder := RunCity.new_builder()
 	builder.leave_out(true, true, false)

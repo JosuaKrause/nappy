@@ -110,7 +110,7 @@ func _mixes() -> Array[Dictionary]:
 ## Every mix's plan for one seed, on the city a straight city boot builds.
 func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	var day := city.run.header().day()
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(city.run.header().run_seed()))

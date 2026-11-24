@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 	var out := OS.get_environment("CROWD_FRAMES_OUT")
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var builder := RunCity.new_builder()
 	var drawn := DrawnView.on(t)

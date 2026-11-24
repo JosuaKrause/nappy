@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 	var nobody := 0
 	for seed_value in range(1, SEEDS + 1):
 		var run := RunCity.started_run(seed_value)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in range(PosterWalls.FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):

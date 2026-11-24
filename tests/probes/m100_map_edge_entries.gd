@@ -111,7 +111,7 @@ func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 	for name: String in edges:
 		var at: Vector2 = edges[name]
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, map)
 		var rng := RandomNumberGenerator.new()

@@ -102,7 +102,7 @@ static func build_stage(t: TestRunner, bus: _BUS = null, on: CityMap = null) -> 
 ## `build_stage()`'s does; the stage frees the city.
 static func build_city_stage(t: TestRunner) -> Stage:
 	var run := RunCity.started_run(SEED)
-	var city := RunCity.in_run(CITY_SCENE, run)
+	var city := RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEED))
 	RunCity.events(city).stream_within(INF)

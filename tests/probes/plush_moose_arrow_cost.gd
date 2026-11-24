@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/plush_moose_arrow_cost.gd      (prints PLUSH_MOOSE lines)
 ##
-## **The rig.** Per seed and day, a real city in a run of its own (`RunCity.in_run()`) through
+## **The rig.** Per seed and day, a real city in a run of its own (`RunCity.new_city()`) through
 ## the real day order (`CityState.begin_day()`, `City.start_day()`, `EventManager.start_day()`, then
 ## the director, handed her as `main` hands her), the mark read so the task is placed and her route
 ## rigged, and the day's longest route walked through
@@ -53,7 +53,7 @@ func run(t: TestRunner) -> void:
 		var targets := 0
 		for seed_value in SEEDS:
 			var run := RunCity.started_run(RUN_SEED)
-			var city := RunCity.in_run(CITY_SCENE, run)
+			var city := RunCity.new_city(CITY_SCENE)
 			t.add_child(city)
 			RunCity.build(city, run, CityGenerator.generate(seed_value))
 			var director := _read_the_mark(t, city, day, seed_value)

@@ -55,7 +55,7 @@ func run(t: TestRunner) -> void:
 			"events", "crowd"])
 	for city_seed in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		for day in DAYS:

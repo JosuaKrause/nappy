@@ -1645,7 +1645,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t: TestRunner) -> 
 ## (`_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart`).
 func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
 	var run := RunCity.started_run(SEEDS[0])
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), 1)
@@ -1761,7 +1761,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the row's `aftermath.leaves_behind()`.
 	var run := RunCity.started_run(SEEDS[0])
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	RunCity.events(city).stream_within(INF)
@@ -2090,7 +2090,7 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
 	var run := RunCity.started_run(SEEDS[0])
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	run.header().set_day(an_act_iv_day)
@@ -2111,7 +2111,7 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 func _test_a_days_spec_owes_its_return_leg(t: TestRunner) -> void:
 	var an_act_iv_day := 13
 	var run := RunCity.started_run(SEEDS[0])
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	run.header().set_day(an_act_iv_day)

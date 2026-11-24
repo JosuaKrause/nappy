@@ -307,7 +307,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunn
 ## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s: the one case here that builds one.
 func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 	var run := RunCity.started_run(BASE_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")

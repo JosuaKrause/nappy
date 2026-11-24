@@ -53,7 +53,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## selects step 1 on a run that has done nothing, on the seed `RUN_SEED` names.
 func _build_day(t: TestRunner) -> void:
 	_run = RunCity.started_run(RUN_SEED)
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	RunCity.build(_city, _run, MapCache.of(SEED))
 	RunCity.events(_city).stream_within(INF)

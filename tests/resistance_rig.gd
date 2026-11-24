@@ -93,7 +93,7 @@ func _build_city_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
 	run.start_run(RUN_SEED)
 	_run = run
 	_library = AtlasLibrary.new()
-	_city = RunCity.in_run(CITY_SCENE, run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	RunCity.build(_city, run, MapCache.of(seed_value), null, false, _library)
 	return run

@@ -145,7 +145,7 @@ func _check(t: TestRunner, seed_value: int, m: Dictionary) -> void:
 func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	var run := RunState.new()
 	run.start_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var library := AtlasLibrary.new()
 	RunCity.build(city, run, CityGenerator.generate(seed_value), null, false, library)

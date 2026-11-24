@@ -46,7 +46,7 @@ func run(t: TestRunner) -> void:
 func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	var before: Array[Building] = city.buildings().duplicate()
@@ -93,7 +93,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, map, null, false, library)
@@ -146,7 +146,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, map, null, false, library)
@@ -200,7 +200,7 @@ func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: Test
 	for seed_value: int in [823576, 966118]:
 		var map := CityGenerator.generate(seed_value)
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, map, null, false, library)
@@ -265,7 +265,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
 				courtyard_lots.append(map.lot_rect(block))
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, map, null, false, library)
@@ -359,7 +359,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, map, null, false, library)
@@ -403,7 +403,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, map, null, false, library)
@@ -561,7 +561,7 @@ static func _under_door(building: Building, col: int, map: CityMap) -> bool:
 ## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	var run := RunCity.started_run(FIRE_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	run.header().set_day(4)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(FIRE_SEED))

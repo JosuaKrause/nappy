@@ -469,7 +469,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 
 func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, size: int) -> void:
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(SEED))
 	# What the events tell the run log: a place is put on her route when a line says so.

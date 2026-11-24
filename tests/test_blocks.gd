@@ -203,7 +203,7 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	for seed_value: int in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
 		var run := RunCity.started_run(BASE_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, map)
 		var state := CityState.new()
@@ -388,7 +388,7 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t: TestRunner) -> void:
 func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var run := RunCity.started_run(BASE_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var library := AtlasLibrary.new()
 	RunCity.build(city, run, map, null, false, library)

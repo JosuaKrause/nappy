@@ -77,7 +77,7 @@ func _build_city(t: TestRunner) -> void:
 	if _city != null:
 		_city.free()
 	_run = RunCity.started_run(SEED)
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	RunCity.build(_city, _run, MapCache.of(SEED))
 

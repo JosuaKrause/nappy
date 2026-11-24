@@ -70,7 +70,7 @@ func run(t: TestRunner) -> void:
 			_strikes += 1)
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var builder := RunCity.new_builder()
 		var drawn := DrawnView.on(t)

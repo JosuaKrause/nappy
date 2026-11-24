@@ -73,7 +73,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	var map: CityMap = loaded.map
 	var run := RunState.new()
 	run.start_run(STRETCH_SEED)
-	var city := RunCity.in_run(CITY_SCENE, run)
+	var city := RunCity.new_city(CITY_SCENE)
 	var drawn := DrawnView.on(t)
 	var view := ScreenCrowdView.new(t, drawn)
 	t.add_child(city)

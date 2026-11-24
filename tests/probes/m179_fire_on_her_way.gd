@@ -46,7 +46,7 @@ func run(t: TestRunner) -> void:
 	var attempt_frames: Array[float] = []
 	for seed_value: int in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)

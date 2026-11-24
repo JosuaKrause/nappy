@@ -447,7 +447,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	# No player in this rig, so nothing would ever stream in on its own — see
@@ -1876,7 +1876,7 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	var rng := RandomNumberGenerator.new()
@@ -1981,7 +1981,7 @@ func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
 func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	var stroller := _real_stroller(t)
@@ -2047,7 +2047,7 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	_repaint_for(map, day)

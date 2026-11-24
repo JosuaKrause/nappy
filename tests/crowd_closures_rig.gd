@@ -58,7 +58,7 @@ func run_scenarios(t: TestRunner, indices: Array[int]) -> void:
 	for index in indices:
 		var scenario := all[index]
 		var run := RunCity.started_run(SEED)
-		_city = RunCity.in_run(CITY_SCENE, run)
+		_city = RunCity.new_city(CITY_SCENE)
 		t.add_child(_city)
 		RunCity.build(_city, run, MapCache.of(SEED))
 		scenario.call(t)
@@ -678,7 +678,7 @@ func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 
@@ -782,7 +782,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var map := MapCache.of(SEED)
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	var door: StreetNetwork.Segment = null
@@ -1244,7 +1244,7 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 
@@ -1756,7 +1756,7 @@ func _entry_clearance(agent: CrowdAgent) -> float:
 func _test_day_start_keeps_room_for_its_own_picture(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	var size := map.world_size()

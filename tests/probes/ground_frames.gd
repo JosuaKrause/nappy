@@ -32,7 +32,7 @@ func _process(_delta: float) -> void:
 
 func _run() -> void:
 	var run := RunCity.started_run(4242)
-	_city = RunCity.in_run(CITY, run)
+	_city = RunCity.new_city(CITY)
 	add_child(_city)
 	RunCity.build(_city, run, CityGenerator.generate(4242))
 	_city.scenery.set_process(false)

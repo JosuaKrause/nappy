@@ -46,7 +46,7 @@ func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
 	var source := Vector2i(50, 74)
 	var destination := Vector2i(50, 71)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, built.map)
 	var trees := {}
@@ -70,7 +70,7 @@ func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
 		t.check(false, "street-tree recipe constructs: %s" % [built.errors])
 		return
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, built.map)
 	var trees := {}
@@ -110,7 +110,7 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 		return
 	var local: CityMap = bounded.map
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var library := AtlasLibrary.new()
 	RunCity.build(city, run, local, null, false, library)
@@ -139,7 +139,7 @@ func _test_the_examples(t: TestRunner) -> void:
 			continue
 		var map: CityMap = built.map
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		city.schedule_scenery(SceneryGround.Mode.ONE, true)
 		t.add_child(city)
 		RunCity.build(city, run, map)
@@ -202,7 +202,7 @@ func _test_the_days_preparation_keeps_the_manual_ground(t: TestRunner,
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), 7)
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	city.start_day(state, 7, RandomNumberGenerator.new(),
@@ -227,7 +227,7 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner,
 	t.check(_errors(built).is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
 	if _errors(built).is_empty():
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, built.map, null, false, library)
@@ -270,7 +270,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 	t.check(_errors(built).is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
 	if _errors(built).is_empty():
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var library := AtlasLibrary.new()
 		RunCity.build(city, run, built.map, null, false, library)
@@ -303,7 +303,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 ## in the void.
 func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void:
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	t.check(city.buildings().size() == map.stretch_building_lots().size(),

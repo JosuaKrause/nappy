@@ -35,7 +35,7 @@ func run(t: TestRunner, seed_value: int) -> void:
 ## resistance and the day's clock), and played on real physics ticks.
 func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(run.header().run_seed()))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is

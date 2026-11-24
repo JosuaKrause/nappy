@@ -75,7 +75,7 @@ func run(t: TestRunner) -> void:
 ## frame is bounded by (live cars) × (one `_horn()` call), measured directly rather than guessed.
 func _measure_cost(t: TestRunner) -> void:
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(4242))
 	RunCity.crowd(city).start_day(1, RandomNumberGenerator.new())

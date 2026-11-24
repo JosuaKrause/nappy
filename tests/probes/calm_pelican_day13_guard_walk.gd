@@ -18,7 +18,7 @@ extends RefCounted
 ## (`ResistanceDirector.tick()`, the step `main` runs every physics tick) run the arrow to rest and
 ## make one more of its choices, each of which asks the guard to follow it. She arrives within
 ## `ARRIVED` px of the roadblock's body. Each city stands in a run of its own
-## (`RunCity.in_run()`); she is handed to the director and the events as `main` hands her; the
+## (`RunCity.new_city()`); she is handed to the director and the events as `main` hands her; the
 ## guard is the live `task_guard` among the city's instances, and the arrow's roadblock the instance
 ## its `_arrow_key` names.
 ##
@@ -101,7 +101,7 @@ func run(t: TestRunner) -> void:
 ## step, mark}`, or empty when the day offers no roadblock task.
 func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 	var run := RunCity.started_run(RUN_SEED)
-	var city := RunCity.in_run(CITY_SCENE, run)
+	var city := RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var director := ResistanceDirector.new()

@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 	for i in EXTRA_SEEDS:
 		seeds.append(BASE_SEED + i * 7919)
 	for seed_value in seeds:
-		var city: City = RunCity.in_run(CITY_SCENE, own_run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, own_run, CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:

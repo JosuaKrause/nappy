@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 func _rig(t: TestRunner, day: int) -> Array:
 	var map := CityGenerator.generate(SEED)
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	# The lights are off from the first frame, as the escape's city is built (`DaySpec.dark_from_the_start`),
 	# so a red one cannot hold a car where the probe wants it to run.

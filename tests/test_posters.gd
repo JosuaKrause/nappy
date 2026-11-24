@@ -72,7 +72,7 @@ func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) ->
 	_map = MapCache.of(seed_value)
 	_run = RunCity.started_run(seed_value)
 	_library = AtlasLibrary.new()
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	var builder := RunCity.new_builder()
 	if art != null:
 		builder.use_poster_art(art)
@@ -322,7 +322,7 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 			"another art holds none of the first's pictures")
 	_map = MapCache.of(SEEDS[0])
 	_run = RunCity.started_run(SEEDS[0])
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	var recording := RecordingPosterArt.new()
 	var builder := RunCity.new_builder()
@@ -504,7 +504,7 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 	for seed_value: int in SEEDS:
 		var map := MapCache.of(seed_value)
 		var run := RunCity.started_run(seed_value)
-		var city := RunCity.in_run(CITY_SCENE, run)
+		var city := RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, map)
 		var walls := RunCity.poster_walls(city)

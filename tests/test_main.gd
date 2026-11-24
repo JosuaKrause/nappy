@@ -1355,7 +1355,7 @@ func _ground_of(city: City) -> SceneryGround:
 ## south-water cells rather than re-deriving what should be there.
 func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEED))
 	var ground := _ground_of(city)
@@ -1398,7 +1398,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 ## road carries on to any depth.
 func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEED))
 

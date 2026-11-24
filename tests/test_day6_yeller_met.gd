@@ -56,7 +56,7 @@ func run(t: TestRunner) -> void:
 ## the guarantee.
 func _walk(t: TestRunner, seed_value: int) -> Array:
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	# What the events tell the run log: a place is put on her route when a line says so.

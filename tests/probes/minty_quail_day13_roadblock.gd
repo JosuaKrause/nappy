@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 	var asked := 0
 	for seed_value in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
-		var city := RunCity.in_run(CITY_SCENE, run)
+		var city := RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()

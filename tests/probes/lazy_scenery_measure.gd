@@ -43,7 +43,7 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	# The run is held here: swapping the script drops the one the city was handed.
 	var own_run := city.run
 	city.set_script(TIMED_CITY)

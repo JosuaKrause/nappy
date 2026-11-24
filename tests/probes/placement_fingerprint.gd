@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 func _the_escape_city(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))
@@ -78,7 +78,7 @@ func _the_building(t: TestRunner, seed_value: int) -> int:
 func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var run := RunCity.started_run(seed_value)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))

@@ -105,7 +105,7 @@ func run(t: TestRunner) -> void:
 		var city_seed: int = rig[0]
 		var map := CityGenerator.generate(city_seed)
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, map)
 		for day: int in rig[1]:

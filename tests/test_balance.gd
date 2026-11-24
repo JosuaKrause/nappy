@@ -43,7 +43,7 @@ var _days: DayDirector
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_run = RunCity.started_run(RUN_SEED)
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	RunCity.build(_city, _run, CityGenerator.generate(SEED))
 	_build_rig(t)

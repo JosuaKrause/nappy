@@ -95,7 +95,7 @@ const PARTS := {
 ## Runs one part of `PARTS` in a city of its own and frees it.
 func run_part(t: TestRunner, part: String) -> void:
 	var run := RunCity.started_run(SEED)
-	_city = RunCity.in_run(CITY_SCENE, run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	RunCity.build(_city, run, CityGenerator.generate(SEED))
 	for case_name: String in PARTS[part]:
@@ -1967,7 +1967,7 @@ func _test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out(t: TestRunner)
 func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var map := CityGenerator.generate(SEED)
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	var door: StreetNetwork.Segment = null

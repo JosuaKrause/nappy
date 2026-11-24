@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 		walks[day] = [0, 0, 0, 0]
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in DAYS:

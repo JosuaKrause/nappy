@@ -76,7 +76,7 @@ func run(t: TestRunner) -> void:
 	]
 	for scenario in scenarios:
 		var run := RunCity.started_run(SEED)
-		_city = RunCity.in_run(CITY_SCENE, run)
+		_city = RunCity.new_city(CITY_SCENE)
 		t.add_child(_city)
 		RunCity.build(_city, run, MapCache.of(SEED))
 		_junction = _plain_junction()

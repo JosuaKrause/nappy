@@ -69,7 +69,7 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 	var map: CityMap = found["map"]
 	var block: Vector2i = found["block"]
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, map)
 
@@ -319,7 +319,7 @@ func _playground_settles(t: TestRunner) -> void:
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []

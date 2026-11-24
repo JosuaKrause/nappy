@@ -33,7 +33,7 @@ const REACTION := 2.0
 
 ## The city the running test stands in, made fresh by `_at_the_swing()` and freed by `_end()`.
 var _city: City
-## The run that city stands in, made fresh with it and handed to the city (`RunCity.in_run()`).
+## The run that city stands in, made fresh with it and handed to the city (`RunCity.build()`).
 var _run: RunState
 ## The library `_city` and its parts draw from, which the happenings and the cordons are handed.
 var _library: AtlasLibrary
@@ -86,7 +86,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 		before_the_day := Callable()) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
-	_city = RunCity.in_run(CITY_SCENE, _run)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	_library = AtlasLibrary.new()
 	RunCity.build(_city, _run, MapCache.of(SEED), null, false, _library)

@@ -586,7 +586,7 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t: TestRunner) -> void:
 func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	_clear()
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
@@ -648,7 +648,7 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	_clear()
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()

@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 
 func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	var run := RunCity.started_run(RUN_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var day := ResistanceSteps.swing_day()

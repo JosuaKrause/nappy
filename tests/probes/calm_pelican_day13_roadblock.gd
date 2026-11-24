@@ -13,7 +13,7 @@ extends RefCounted
 ## `City.start_day()`, `EventManager.start_day()`, then the director), her standing on the mark with
 ## the camera's unrotated view round her answering what is on screen, and the mark read, so the task
 ## is placed as a played day places it. Each city stands in a run of its own
-## (`RunCity.in_run()`), and she is handed to the director and the events as `main` hands her.
+## (`RunCity.new_city()`), and she is handed to the director and the events as `main` hands her.
 ## The arrow is then run to rest from where she stands the way the game runs it
 ## (`ResistanceDirector._retarget_the_arrow()`, then its physics ticks, `tick()`, until no sweep is
 ## under way), and again from each of `WALK_STOPS` points on her straight line toward the task's
@@ -55,7 +55,7 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 	var reading: Array[float] = []
 	for seed_value in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
-		var city := RunCity.in_run(CITY_SCENE, run)
+		var city := RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director: ResistanceDirector = FallbackDirector.new() if fallback \

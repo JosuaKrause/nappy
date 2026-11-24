@@ -150,7 +150,7 @@ func _run() -> void:
 	for spec: Array in [["south60", 60, Vector2.DOWN], ["south15", 15, Vector2.DOWN],
 			["diagonal15", 15, Vector2.ONE.normalized()]]:
 		var run := RunCity.started_run(4242)
-		_city = RunCity.in_run(CITY, run)
+		_city = RunCity.new_city(CITY)
 		# The launch's own `--ground-mode`, handed to the city as `Main` hands it (the city no
 		# longer reads the command line), so the mode a capture reports is the mode it ran.
 		_city.schedule_scenery(DevFlags.new(OS.get_cmdline_user_args(), "", true).ground_mode() \

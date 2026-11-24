@@ -22,7 +22,7 @@ const DAY := 8
 
 func run(t: TestRunner) -> void:
 	var run := RunCity.started_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var fronts := EventScheduler.row_ground(city.map()).tiles_for(

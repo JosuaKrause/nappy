@@ -29,7 +29,7 @@ func run(t: TestRunner) -> void:
 	for seed_value: int in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var run := RunCity.started_run(seed_value)
-		var city: City = RunCity.in_run(CITY_SCENE, run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		RunCity.build(city, run, map)
 		var state := CityState.new()
