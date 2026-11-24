@@ -127,6 +127,15 @@ class CompareTest(unittest.TestCase):
         other.write_text(HEAD.replace("RD 1 2", "RD 1 3", 1))
         self.assertIn("counts 3 cities, not 2", self.refuse_with(None, *self.sample(head=other)))
 
+    def test_a_line_of_a_day_outside_1_to_14_is_refused(self) -> None:
+        for line in ("RD 15 2 40 4", "RV 15 crate 0 10", "RV 0 crate 0 10", "RK 15 crate sidewalk 10"):
+            bad = self.roles.parent / "badday.log"
+            bad.write_text(HEAD + line + "\n")
+            self.assertIn("cannot read the line", self.refuse_with(None, *self.sample(head=bad)))
+        late = self.roles.parent / "lateroles.log"
+        late.write_text(ROLES + "ROLE 15 crate 1\n")
+        self.assertIn("cannot read the line", self.refuse_with(late, *self.sample()))
+
     def test_a_malformed_row_is_refused(self) -> None:
         for line in (
             "RV 1 crate -1 10",
