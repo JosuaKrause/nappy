@@ -10,8 +10,8 @@ extends RefCounted
 ## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road and the road,
 ##   read on its kerb, so it is refused across from a stall on the far one and stands alone, and a
 ##   stall drawn after it is refused across from it; beside a pole on the far sidewalk's outer row
-##   it stands, where read at its lane it would close the inner row too. Its band is its body at every heat: where its guard hunts (heat 4
-##   and 5) it still stands alone.
+##   it stands, where read at its lane it would close the inner row too. Its guard's catch lies inside its band, so the disc it is read at is
+##   its band at every heat: where its guard hunts (heat 4 and 5) it still stands alone.
 ## - **A street a seal already closes** refuses nothing.
 ## - **A body in the box at the street's end** reaching its last open sidewalk is refused.
 ## - **Only her routes' streets**: a street beside the routes and one off them keep their two

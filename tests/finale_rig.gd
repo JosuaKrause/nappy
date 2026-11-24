@@ -310,10 +310,12 @@ func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t: TestRun
 	t.check(bodies > 0, "there were escape bodies to stand in the way (%d)" % bodies)
 
 ## **And past every lethal reach that stands**: from the door both exits are reached with her
-## centre kept outside the reach of every row that stands, is lethal and does not pursue — the van's
-## 54px round where it is parked — as well as off every body. A sidewalk kept open past a van's body
-## but not past its reach is a walk that ends the section, so the walk rule keeps the reach as
-## ground (`WalkGround.held_by()`); a pursuer's reach moves with him and warns first.
+## centre kept outside the reach of every row that stands and ends the day — the van's 54px round
+## where it is parked — as well as off every body. A sidewalk kept open past a van's body
+## but not past its reach is a walk that ends the section, so the walk rule keeps the ground a
+## catch shuts where its row holds its place as ground (`WalkGround.held_by()`,
+## `EventDef.catch_shuts_within()`); a pursuer's post counts as well, and the roadblock guard's
+## catch lies inside the band.
 func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunner) -> void:
 	var reaches := 0
 	for seed_value: int in BODY_FLOOD_SEEDS:
@@ -338,7 +340,7 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(reaches > 0, "there were standing lethal reaches to keep out of (%d)" % reaches)
 	# The rule's own reading of one van and one roadblock, on open sidewalk: the van holds her off
-	# its 54px reach as well as its body, the roadblock — whose guard pursues — its band alone.
+	# its 54px reach as well as its body, the roadblock its guard's catch as well as its band.
 	var map: CityMap = _plan_for(SEEDS[0])["map"]
 	var ground := WalkGround.new(map)
 	var tile := Vector2i.ZERO
@@ -356,8 +358,23 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 			and not reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal + 2.0)),
 			"and that piece takes her centre exactly within %.0fpx" % lethal)
 	var band := EventPlan.new(EventCatalogue.escape_roadblock(), map.tile_to_world(tile))
-	t.check(ground.held_by(band).size() == ground.solids_of(band).size(),
-			"a roadblock, whose guard pursues, holds its band alone")
+	var band_held := ground.held_by(band)
+	var pieces := ground.solids_of(band)
+	t.check(band_held.size() == pieces.size() + 1,
+			"a roadblock holds one piece more than its band: its guard's catch")
+	var catch_disc: WalkGround.Solid = band_held[band_held.size() - 1]
+	var guard_catch := EventCatalogue.escape_roadblock().lethal_reach()
+	var inside_the_band := 0
+	for step in 24:
+		var around := Vector2.RIGHT.rotated(TAU * float(step) / 24.0)
+		var on_the_ring := catch_disc.centre + around * (guard_catch - 1.0)
+		var held_by_a_piece := false
+		for piece in pieces:
+			held_by_a_piece = held_by_a_piece or piece.stops_her_at(on_the_ring)
+		inside_the_band += 1 if held_by_a_piece else 0
+	t.check(inside_the_band == 24,
+			"and every point of a ring just inside that catch is stopped by the band's own pieces "
+			+ "(%d of 24)" % inside_the_band)
 
 ## **Where the reach is what decides it, the walk still gets through.** A bag of vans alone, a van on
 ## every street that takes one (`_escape_rows_from()` with a bag of `{"abduction": 1}`, one marble a
@@ -396,16 +413,16 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> voi
 					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(vans > 80, "there were streets full of vans to walk past (%d)" % vans)
 
-## Marks every grid point within the lethal reach of a row the plan stands that is not mobile, is
-## lethal and does not pursue, measured from where its `EventInstance` stands, and answers how
-## many reaches it marked.
+## Marks every grid point within the catch of a row the plan stands that is not mobile and ends the
+## day, a pursuer waiting at its post included, measured from where its `EventInstance` stands, and
+## answers how many reaches it marked.
 static func _block_every_standing_reach(t: TestRunner, map: CityMap,
 		placements: Array[EventPlan], blocked: Dictionary) -> int:
 	var stage := RoadblockRig.Stage.new(t, map)
 	var count := 0
 	for placement: EventPlan in placements:
 		var def := placement.row()
-		if def.moves() or not def.ends_the_day() or def.pursues():
+		if placement.catch_shuts_within() <= 0.0:
 			continue
 		var instance := stage.stand(placement)
 		count += 1

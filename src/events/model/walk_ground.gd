@@ -32,10 +32,13 @@ extends RefCounted
 ## rather than a disc at the tile it was rolled on, because the half tile between the two is what
 ## decides whether a lane survives.
 ##
-## **And a lethal reach that stands is counted as ground she cannot cross** (`held_by()`): the van's
-## 54px, round where it is parked, takes her however open the ground under it is, so a sidewalk kept
-## open past the van's 22px body but not past its reach is a walk that ends the section. A reach that
-## moves — a pursuer's, which warns before it charges — is the fairness contract's, not ground.
+## **And the ground a catch shuts where its row holds its place is counted as ground she cannot
+## cross** (`held_by()`, `EventDef.catch_shuts_within()`): the van's 54px, round where it is parked,
+## takes her however open the ground under it is, so a sidewalk kept open past the van's 22px body
+## but not past its reach is a walk that ends the section. A pursuer's post counts, since he notices
+## her before she could come within his catch; the roadblock guard's 28px lies inside his band, so
+## the band is what holds her there. A row that moves is somewhere else by the time the walk gets
+## there.
 ##
 ## **The seals are counted like everything else.** They stand on the streets and alleys the walk
 ## does not use, but an alley's mouth wall (`SealPlanner.alley_mouth_wall()`) lies along the street
@@ -181,16 +184,13 @@ func stand(plan: EventPlan) -> void:
 				bucket.append(solid)
 
 ## **The ground a placement holds her off for the whole walk**: its body (`solids_of()`), and the
-## lethal reach of a row that stands — not mobile, lethal and no pursuer — as a disc round where
-## its body stands, whose edge is where her centre is taken (`EventDef.lethal_reach()`, measured from
-## the instance to her centre, as `EventInstance` measures it). A reach no wider than her own body
-## holds nothing her body does not already.
+## ground its catch shuts where it holds its place (`EventPlan.catch_shuts_within()`) as a disc
+## round where its body stands, whose edge is where her centre is taken (measured from the instance
+## to her centre, as `EventInstance` measures it). A reach no wider than her own body holds nothing
+## her body does not already.
 func held_by(plan: EventPlan) -> Array[Solid]:
 	var found := solids_of(plan)
-	var def := plan.row()
-	if def.moves() or not def.ends_the_day() or def.pursues():
-		return found
-	var reach := def.lethal_reach() - Tuning.PLAYER_BODY_RADIUS
+	var reach := plan.catch_shuts_within() - Tuning.PLAYER_BODY_RADIUS
 	if reach <= 0.0:
 		return found
 	var stands := BodyStance.of_plan(_map, plan).center()
