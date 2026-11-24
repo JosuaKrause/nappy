@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for tools/field_to_method.py: the rewrite's pure parts, and the whole run against a stand-in engine.
+"""Tests for tools/field_to_method.py: the rewrite's pure parts, and whole runs against a replayed engine.
 
-The stand-in engine is a script that answers the way the parser does for a tiny fixture class: it reports
-"The property X is not present on the inferred type T" for each `.X` use of a renamed field that is not yet
-renamed, which is what the fix loop reads. No real engine is started.
+The engine is replaced by a script that prints, for each load of every script, the output a real Godot 4.7.2 gave
+for the same fixture project in the same tool run (`tools/field_to_method_recordings/`, one file per load, read
+with `ok-0.txt` the load before the rename, `ok-1.txt` the first after it, and so on). They were captured by
+running the tool with a wrapper around the engine that kept each load's output, over a project whose
+`project.godot` makes the three typing warnings errors as the game's does; the fixture below is that project. A
+change to the tool's loop that asks the engine something else fails the replay's count rather than passing on
+invented output.
 """
 
 from __future__ import annotations
@@ -45,26 +49,161 @@ func run(box: Box) -> int:
 	return other + box.size()
 """
 
-STUB_ENGINE = """#!{python}
-import re, sys
-args = sys.argv[1:]
-if "--import" in args:
+REPLAY_ENGINE = """#!{python}
+import pathlib, sys
+if "--import" in sys.argv:
     sys.exit(0)
-root = args[args.index("--path") + 1]
-import pathlib
-failed = 0
-for path in sorted(pathlib.Path(root).rglob("*.gd")):
-    rel = path.relative_to(root).as_posix()
-    if not rel.startswith(("src/", "tests/")):
-        continue
-    for n, line in enumerate(path.read_text().split("\\n"), start=1):
-        if line.lstrip().startswith("#"):
-            continue
-        if re.search(r"\\.size(?![A-Za-z0-9_(])", line):
-            print('SCRIPT ERROR: Parse Error: The property "size" is not present on the inferred type "Box"')
-            print("          at: GDScript::reload (res://%s:%d)" % (rel, n))
-print("PROBE_DONE 3 0")
+replay = pathlib.Path("{replay}")
+counter = replay / "count"
+n = int(counter.read_text()) if counter.exists() else 0
+source = replay / ("{kind}-%d.txt" % n)
+if not source.exists():
+    print("replay has no load number %d" % n, file=sys.stderr)
+    sys.exit(3)
+counter.write_text(str(n + 1))
+sys.stdout.write(source.read_text())
 """
+
+PROJECT = """config_version=5
+
+[application]
+config/name="fixture"
+
+[debug]
+gdscript/warnings/untyped_declaration=2
+gdscript/warnings/unsafe_property_access=2
+gdscript/warnings/unsafe_method_access=2
+"""
+BOX_GD = """class_name Box
+extends Node
+
+var size: int = 3
+
+
+func double() -> int:
+	return size * 2
+"""
+SUB_BOX_GD = """class_name SubBox
+extends Box
+"""
+BAD_BOX_GD = """class_name BadBox
+extends Box
+
+
+func twice() -> int:
+	return size * 2
+"""
+READER_GD = """extends Node
+
+
+func run(box: Box, sub: SubBox) -> int:
+	var both := box.size + box.size
+	var chained := (
+		box
+		.size
+	)
+	return both + chained + sub.size
+"""
+RECORDINGS = TOOLS / "field_to_method_recordings"
+
+
+class RunTests(unittest.TestCase):
+    def fixture(self, tmp: str, kind: str) -> tuple[Path, Path]:
+        """The recorded project (with a script that fails after the rename when kind is "bad") and its engine."""
+        root = Path(tmp) / "checkout"
+        for sub in ("src", "tests", "tools"):
+            (root / sub).mkdir(parents=True)
+        (root / "project.godot").write_text(PROJECT)
+        (root / "src" / "box.gd").write_text(BOX_GD)
+        (root / "src" / "sub_box.gd").write_text(SUB_BOX_GD)
+        (root / "tests" / "reader.gd").write_text(READER_GD)
+        if kind == "bad":
+            (root / "src" / "bad_box.gd").write_text(BAD_BOX_GD)
+        replay = Path(tmp) / "replay"
+        replay.mkdir()
+        for recording in RECORDINGS.glob(kind + "-*.txt"):
+            (replay / recording.name).write_text(recording.read_text())
+        engine = Path(tmp) / "engine"
+        engine.write_text(REPLAY_ENGINE.format(python=sys.executable, replay=replay, kind=kind))
+        engine.chmod(0o755)
+        return root, engine
+
+    def run_tool(self, root: Path, engine: Path, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(TOOLS / "field_to_method.py"), "--root", str(root), "--godot", str(engine), *args],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env={**os.environ},
+        )
+
+    def test_dry_run_lists_every_use_and_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, engine = self.fixture(tmp, "ok")
+            result = self.run_tool(root, engine, "--dry-run", "src/box.gd", "size")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # three loads after the rename: the engine refused 4 uses, then the 1 a second use on a line left, then none
+            self.assertIn("round 3: the engine refused 0 uses", result.stderr)
+            self.assertIn("4 uses on 3 lines in 1 files", result.stdout)
+            for use in ("tests/reader.gd:5:0 Box.size", "tests/reader.gd:5:1 Box.size", "tests/reader.gd:8:0 Box.size"):
+                self.assertIn(use, result.stdout)
+            # the subclass's use is a use of the class's field
+            self.assertIn("tests/reader.gd:10:0 SubBox.size", result.stdout)
+            self.assertIn("func size() -> int:", result.stdout)
+            self.assertEqual((root / "tests" / "reader.gd").read_text(), READER_GD)
+            self.assertEqual((root / "src" / "box.gd").read_text(), BOX_GD)
+
+    def test_run_rewrites_both_uses_of_a_line_a_broken_chain_and_a_subclass_use(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, engine = self.fixture(tmp, "ok")
+            result = self.run_tool(root, engine, "src/box.gd", "size")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            reader = (root / "tests" / "reader.gd").read_text()
+            self.assertIn("var both := box.size() + box.size()", reader)
+            self.assertIn("\t\t.size()\n", reader)
+            self.assertIn("return both + chained + sub.size()", reader)
+            box = (root / "src" / "box.gd").read_text()
+            self.assertIn("var _size: int = 3", box)
+            self.assertIn("return _size * 2", box)
+            # the stub is read from the class's text before the rename, so it names the declaration's type
+            self.assertIn("func size() -> int:\n\treturn _size", result.stdout)
+            self.assertNotIn("Variant", result.stdout)
+
+    def test_a_script_that_loaded_before_and_fails_after_is_refused_with_nothing_written(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, engine = self.fixture(tmp, "bad")
+            result = self.run_tool(root, engine, "src/box.gd", "size")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("refused, nothing written", result.stderr)
+            self.assertIn("src/bad_box.gd", result.stderr)
+            self.assertNotIn("tests/reader.gd\n", result.stderr.split("no use it could place:")[1])
+            self.assertEqual((root / "src" / "box.gd").read_text(), BOX_GD)
+            self.assertEqual((root / "tests" / "reader.gd").read_text(), READER_GD)
+
+    def test_a_field_not_declared_is_refused_before_the_engine_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, engine = self.fixture(tmp, "ok")
+            result = self.run_tool(root, engine, "--dry-run", "src/box.gd", "weight")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("declares no public var weight", result.stderr)
+            self.assertNotIn("copying", result.stderr)
+
+    def test_a_local_named_like_the_field_is_refused_before_the_engine_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, engine = self.fixture(tmp, "ok")
+            (root / "src" / "box.gd").write_text(BOX_GD + "\n\nfunc grow(size: int) -> void:\n\tpass\n")
+            result = self.run_tool(root, engine, "--dry-run", "src/box.gd", "size")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("names a local or a parameter size too", result.stderr)
+            self.assertIn("func grow(size: int)", result.stderr)
+            self.assertNotIn("copying", result.stderr)
+
+    def test_a_stray_word_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, engine = self.fixture(tmp, "ok")
+            result = self.run_tool(root, engine, "src/box.gd", "Size!")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("not FIELD or FIELD=METHOD", result.stderr)
 
 
 class PureTests(unittest.TestCase):
@@ -116,75 +255,6 @@ class PureTests(unittest.TestCase):
         stubs = ftm.stubs(BOX, [ftm.Spec("size", "size"), ftm.Spec("label", "label_text")])
         self.assertEqual(stubs[0], "func size() -> int:\n\treturn _size")
         self.assertEqual(stubs[1], "func label_text() -> Variant:\n\treturn _label")
-
-
-class RunTests(unittest.TestCase):
-    def fixture(self, root: Path) -> Path:
-        (root / "src").mkdir()
-        (root / "tests").mkdir()
-        (root / "tools").mkdir()
-        (root / "src" / "box.gd").write_text(BOX)
-        (root / "tests" / "reader.gd").write_text(READER)
-        (root / "project.godot").write_text("")
-        engine = root.parent / (root.name + "-engine")
-        engine.write_text(STUB_ENGINE.format(python=sys.executable))
-        engine.chmod(0o755)
-        return engine
-
-    def run_tool(self, root: Path, engine: Path, *args: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            [sys.executable, str(TOOLS / "field_to_method.py"), "--root", str(root), "--godot", str(engine), *args],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env={**os.environ},
-        )
-
-    def test_dry_run_lists_and_writes_nothing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "checkout"
-            root.mkdir()
-            engine = self.fixture(root)
-            result = self.run_tool(root, engine, "--dry-run", "src/box.gd", "size")
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("2 uses on 1 lines in 1 files", result.stdout)
-            self.assertIn("tests/reader.gd:4:0 Box.size", result.stdout)
-            self.assertIn("func size() -> int:", result.stdout)
-            self.assertEqual((root / "tests" / "reader.gd").read_text(), READER)
-            self.assertEqual((root / "src" / "box.gd").read_text(), BOX)
-
-    def test_run_rewrites_the_readers_and_renames_the_field(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "checkout"
-            root.mkdir()
-            engine = self.fixture(root)
-            result = self.run_tool(root, engine, "src/box.gd", "size")
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("var other := box.size() + box.size()", (root / "tests" / "reader.gd").read_text())
-            self.assertIn("var _size: int = 3", (root / "src" / "box.gd").read_text())
-            # a second run finds the field no longer public and refuses with nothing written
-            again = self.run_tool(root, engine, "src/box.gd", "size")
-            self.assertEqual(again.returncode, 1)
-            self.assertIn("refused, nothing written", again.stderr)
-
-    def test_a_field_not_declared_is_refused_before_the_engine_runs(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "checkout"
-            root.mkdir()
-            engine = self.fixture(root)
-            result = self.run_tool(root, engine, "--dry-run", "src/box.gd", "weight")
-            self.assertEqual(result.returncode, 1)
-            self.assertIn("declares no public var weight", result.stderr)
-            self.assertNotIn("copying", result.stderr)
-
-    def test_a_stray_word_is_rejected(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "checkout"
-            root.mkdir()
-            engine = self.fixture(root)
-            result = self.run_tool(root, engine, "src/box.gd", "Size!")
-            self.assertEqual(result.returncode, 1)
-            self.assertIn("not FIELD or FIELD=METHOD", result.stderr)
 
 
 if __name__ == "__main__":

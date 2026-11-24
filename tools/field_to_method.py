@@ -5,7 +5,8 @@ designing-classes' "Fields are not API": one object reaches another only through
 that turns `var map: CityMap` of a class into a private `_map` read through `map()`, in three steps:
 
 1. In a scratch copy of the checkout (never in the checkout itself), each field is renamed to `_name` in its class's
-   own file, where the class declares it: every use on a line that is not a whole-line comment, bare or after
+   own file (which refuses a local, loop variable or parameter of the same name first, since the rename is by
+   name), where the class declares it: every use on a line that is not a whole-line comment, bare or after
    `self.`, and never a call of a method of the same name. An inner class's block is left alone.
 2. The scratch copy is loaded script by script in the engine (`tools/field_to_method_probe.tscn`), which refuses every
    use of the field it can type outside the class's file as "The property X is not present on the inferred type T".
@@ -124,6 +125,25 @@ def declared_type(text: str, name: str) -> str | None:
     return m.group(1) if m else None
 
 
+def shadowing_locals(text: str, name: str) -> list[str]:
+    """The lines of a class's own text, outside inner classes and comments, where a local, a loop variable or a
+    parameter is named like the field: the rename is by name, so it would rename that one too."""
+    found: list[str] = []
+    inner = False
+    local = re.compile(r"^\s+(?:var|const)\s+" + re.escape(name) + r"\b|^\s+for\s+" + re.escape(name) + r"\b")
+    param = re.compile(r"^\s*(?:static\s+)?func\s+\w+\s*\((?:.*,)?\s*" + re.escape(name) + r"\s*[:,)=]")
+    for n, line in enumerate(text.split("\n"), start=1):
+        if re.match(r"class\s+\w+", line):
+            inner = True
+        elif line and not line[0].isspace() and not line.startswith("#"):
+            inner = False
+        if inner or line.lstrip().startswith("#"):
+            continue
+        if local.search(line) or param.search(line):
+            found.append(f"{n}: {line.strip()}")
+    return found
+
+
 def check_specs(path: str, text: str, specs: list[Spec]) -> None:
     """Refuses a class file that cannot take the rename: no class, a field not public, a name already taken."""
     if CLASS.search(text) is None:
@@ -143,6 +163,12 @@ def check_specs(path: str, text: str, specs: list[Spec]) -> None:
             raise Refusal(f"{path} already declares {spec.method}")
         if re.search(r"^\s*(static )?func\s+" + re.escape(spec.method) + r"\b", text, re.M):
             raise Refusal(f"{path} already declares a method {spec.method}()")
+        shadows = shadowing_locals(text, spec.name)
+        if shadows:
+            raise Refusal(
+                f"{path} names a local or a parameter {spec.name} too, which the rename by name would rename"
+                " with the field; rename it first:\n  " + "\n  ".join(shadows)
+            )
 
 
 def rename_fields(text: str, names: list[str]) -> str:
@@ -371,8 +397,9 @@ def make_scratch(root: Path, dest: Path) -> None:
 
 def plan(
     root: Path, class_path: str, specs: list[Spec], godot: str, log: Callable[[str], None]
-) -> tuple[dict[str, str], list[Reader], str]:
-    """Runs the three steps' reading half; returns the new text of each file to write, the uses and the class name."""
+) -> tuple[dict[str, str], list[Reader], str, str]:
+    """Runs the three steps' reading half; returns the new text of each file to write, the uses, the class name and
+    the class file's text as it was before the rename (the stub's types are read from it)."""
     class_file = root / class_path
     if not class_file.is_file():
         raise Refusal(f"{class_path} is not a file under {root}")
@@ -410,7 +437,7 @@ def plan(
         texts[rel], _ = rewrite_text(rel, text, uses, methods)
     base = texts.get(class_path, original)
     texts[class_path] = rename_fields(base, [s.name for s in specs])
-    return texts, readers, class_name
+    return texts, readers, class_name, original
 
 
 def stubs(original: str, specs: list[Spec]) -> list[str]:
@@ -456,7 +483,9 @@ def main(argv: list[str]) -> int:
         specs = parse_specs(args.fields)
         if not Path(args.godot).is_file() or not os.access(args.godot, os.X_OK):
             raise Refusal(f"no engine at {args.godot} (GODOT=... or --godot)")
-        texts, readers, class_name = plan(root, class_path, specs, args.godot, lambda s: print(s, file=sys.stderr))
+        texts, readers, class_name, original = plan(
+            root, class_path, specs, args.godot, lambda s: print(s, file=sys.stderr)
+        )
     except Refusal as why:
         print(f"refused, nothing written: {why}", file=sys.stderr)
         return 1
@@ -476,7 +505,7 @@ def main(argv: list[str]) -> int:
             (root / rel).write_text(text, encoding="utf-8")
         print(f"wrote {len(texts)} files")
     print("\nadd to " + class_path + " (with its doc line):")
-    for stub in stubs((root / class_path).read_text(encoding="utf-8"), specs):
+    for stub in stubs(original, specs):
         print("\n" + stub)
     left = remaining_hits(root, texts, specs)
     print(f"\nremaining uses of the old name without parentheses, or by string ({len(left)}); say why each stays:")

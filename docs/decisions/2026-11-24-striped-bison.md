@@ -11,7 +11,7 @@ copied again and edited for the class, which the repository's rule for a sequenc
 the project to a scratch directory, imports it, renames the fields in the class's file, runs
 `tools/field_to_method_probe.tscn` (loads every script under `src/`, `tests/` and `tools/`) until the engine refuses
 no use it can place, and then rewrites the checkout's uses `.field` to `.method()` and renames the field in the
-class's file. Where the readers' list holds a use it cannot place, a use already private, or a script that failed
+class's file. Where the readers' list holds a use it cannot place, a use already private, a local or parameter named like the field (the in-class rename is by name), or a script that failed
 after the rename and loaded before, it refuses before writing anything. `--dry-run` prints the list and the count.
 It prints the stub of the method, every remaining use of the old name without parentheses or by string, and the lines
 of `tools/field_reads.txt` and `tools/test_only_members.txt` that name the field, so the builder searches for the old
