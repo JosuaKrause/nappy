@@ -500,8 +500,7 @@ func _physics_process(delta: float) -> void:
 ## The manager's own tick, timed under `FrameTiming.EVENTS`.
 func _tick_the_events(delta: float) -> void:
 	_streaming.advance_the_broadcast(delta)
-	_streaming.retire_finished()
-	_streaming.bring_back_what_repeats(delta)
+	step_the_repeats(delta)
 	var she_is_here := world.has_player()
 	if she_is_here:
 		step_what_is_ahead(delta)
@@ -516,6 +515,15 @@ func _tick_the_events(delta: float) -> void:
 	# Last, on the same tick as the step that caught her, and on every event's committed pose: each
 	# step above has been proposed, checked and committed (`EventInstance.step()`).
 	check_hard_fails()
+
+## **The events that come and go, in the order the tick takes them**: the events that have finished
+## are retired, then those that repeat are brought back on their clocks. The tick takes it right
+## after the broadcast's clock moves, and a caller that ticks only some of the events by hand (a rig
+## that steps one row's instances) calls it in the tick's place, so that row comes back as it does
+## in play.
+func step_the_repeats(delta: float) -> void:
+	_streaming.retire_finished()
+	_streaming.bring_back_what_repeats(delta)
 
 ## **The doors' own step, in the order the tick takes it**: with her in the world, the guards' hands
 ## go up or down at the doors she is across, the doors' lines are watched for her crossing, and the

@@ -9,10 +9,7 @@ second counts its lines that call a frame function or emit the frame signal by h
 Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
 well as the suites), and neither sees access through a variable holding the name, so
 `tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
-nothing, and a test or helper that makes them print anything is a breach. One stands:
-`tests/basement_walk_rig.gd` reads the event manager's private `_streaming` on two lines, to
-retire the finished blows and bring back what repeats (`retire_finished()` and
-`bring_back_what_repeats()`), and wants the manager's own step for it.
+nothing, and a test or helper that makes them print anything is a breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
@@ -70,6 +67,9 @@ ticks give, and is kept with its reason:
 - `test_resistance_crossing.gd` calls `EventManager.step_the_doors()`, the tick's three door steps,
   and `step_the_encounters()` before it where a hut's hold runs, since real ticks over a whole day 9
   with every event live ran 94.2 s in CI against 46.0 s recorded (record minty-quail-polite-quail).
+- `tests/basement_walk_rig.gd` calls `EventManager.step_the_repeats()`, the tick's retire-and-repeat
+  step, with each blow's own `step()`: real ticks over 400 walks took 1.87 times as long
+  (about 45 s more, roughly 120 s across the probe's 1,100) and changed nothing a walk meets.
 - A crowd car at speed 700, and a walker at pace 0 other than a waiting one, are not reachable
   through `Crowd.add_recipe_actor()`; a stopped car is reached through `crashed_into()`, which the
   game calls.
