@@ -80,7 +80,7 @@ func _ready() -> void:
 				return
 	if setup.has("posters"):
 		for entry: Dictionary in setup.posters:
-			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
+			var tile := city.map().world_to_tile(Vector2(entry.at[0], entry.at[1]))
 			if not RunCity.poster_walls(city).fronts().has(tile) or run.posters().cells()[tile].kind \
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
@@ -101,7 +101,7 @@ func position_of(value: Variant, anchors: Dictionary, city: City) -> Vector2:
 		return Vector2(float(value[0]), float(value[1]))
 	if anchors.has(value):
 		return anchors[value]
-	return city.map.doorstep_world_position()
+	return city.map().doorstep_world_position()
 ## The run the booted `main` plays, off its sitting: its own child on a first boot, parked at the
 ## tree's root across a reload.
 func run_of(main: Node) -> RunState:

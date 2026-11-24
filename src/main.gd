@@ -442,8 +442,8 @@ func _ready() -> void:
 		var elapsed := Time.get_ticks_msec()
 		_build_the_city()
 		print("[Main] city generated in %d ms (seed %d)" % [
-			Time.get_ticks_msec() - elapsed, _city.map.city_seed()])
-		ground = _city.map.doorstep_world_position()
+			Time.get_ticks_msec() - elapsed, _city.map().city_seed()])
+		ground = _city.map().doorstep_world_position()
 	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_canvas_shaders()`
 	# awaits below draw the ground the title screen and the day itself will, rather than the
 	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once she has
@@ -458,7 +458,7 @@ func _ready() -> void:
 		_city.add_entity(_player)
 		_player.clear_camera_limits()
 		_baby = _player.get_node("Baby")
-		_put_her_in(_city.map, _city)
+		_put_her_in(_city.map(), _city)
 
 	_build_the_screens()
 
@@ -477,7 +477,7 @@ func _ready() -> void:
 		_resistance.use_atlas(_sitting.atlas())
 		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
-		_resistance.setup(_city.map, _run, events, _city.streets(), _city.fronts(), _city,
+		_resistance.setup(_city.map(), _run, events, _city.streets(), _city.fronts(), _city,
 				_city.navigator(), events.spawn_siting())
 		_resistance.use_player(_player)
 		# The director's own question about her view — no camera of its own, so it asks the day's
@@ -554,7 +554,7 @@ func _ready() -> void:
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
 		still_watch.use_trace(_the_trace())
-		still_watch.setup(_city.map, _city.traffic_signals(), _event_source(), _crowd_now(), _player,
+		still_watch.setup(_city.map(), _city.traffic_signals(), _event_source(), _crowd_now(), _player,
 				_day, config.quit_when_still_seconds(), StillWatch.telemetry_picture_dir(_run_log),
 				config.records_a_movie())
 
@@ -842,7 +842,7 @@ func _make_player() -> Stroller:
 func _build_the_city(dark_from_the_start := false) -> void:
 	_city = _new_city()
 	_city.build(_city_map())
-	_city_simulation = _simulation_builder().in_the_city(_city, _city.map, _city.navigator(),
+	_city_simulation = _simulation_builder().in_the_city(_city, _city.map(), _city.navigator(),
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
 ## **The boot's simulation builder**, made the first time a world needs one: equipped with this
@@ -950,13 +950,13 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 		_building_simulation.events().stand_down()
 	if _interior:
 		_interior.stop_the_night()
-	var home_map: CityMap = _city.map if spec.goal_kind() == DaySpec.Goal.HOME else null
+	var home_map: CityMap = _city.map() if spec.goal_kind() == DaySpec.Goal.HOME else null
 	var exits: Dictionary = _the_city_exits() if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
-	var start_at := _city.map.doorstep_world_position()
+	var start_at := _city.map().doorstep_world_position()
 	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
 		start_at = _finale_start_position()
 	# The city's parts, each on its own: a walk and an authored scene are handed the same world.
-	return DayWorld.in_the_city(_city, _city.map, _city.streets(), _city_simulation.crowd(),
+	return DayWorld.in_the_city(_city, _city.map(), _city.streets(), _city_simulation.crowd(),
 			_city_simulation.poster_walls(), _city_simulation.events(), _player, _baby, start_at,
 			home_map, exits, Vector2.DOWN)
 
@@ -1022,7 +1022,7 @@ func _walks_the_building() -> bool:
 func _world_map() -> WorldMap:
 	if _walks_the_building():
 		return _interior.map()
-	return _city.map if _city else null
+	return _city.map() if _city else null
 
 ## The world the current spec is walked in, as the scene that draws it (`WorldContext`): the
 ## building's in the escape's first section, the city's otherwise. The run flow asks it what its
@@ -1091,7 +1091,7 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 		_city.add_entity(_player)
 	# Told, not discovered: she now walks the street's map and the baby asks the street, not the
 	# building behind her.
-	_put_her_in(_city.map, _city)
+	_put_her_in(_city.map(), _city)
 	_player.clear_camera_limits()
 	# Built here for a boot straight onto the street, and pointed at the street here when she has
 	# walked out of the building, which built them first — see `_add_danger_edge()`.
@@ -1112,10 +1112,10 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 ## city actually happens.
 func _the_city_exits() -> Dictionary:
 	return {
-		CityExit.Kind.TUNNEL: _city.map.tile_to_world(
-				FinalePlanner.exit_tile(_city.map, CityExit.Kind.TUNNEL)),
-		CityExit.Kind.BRIDGE: _city.map.tile_to_world(
-				FinalePlanner.exit_tile(_city.map, CityExit.Kind.BRIDGE)),
+		CityExit.Kind.TUNNEL: _city.map().tile_to_world(
+				FinalePlanner.exit_tile(_city.map(), CityExit.Kind.TUNNEL)),
+		CityExit.Kind.BRIDGE: _city.map().tile_to_world(
+				FinalePlanner.exit_tile(_city.map(), CityExit.Kind.BRIDGE)),
 	}
 
 ## `--start-escape`'s raw word (`config.start_escape_at()`), mapped onto a building part's waypoint to
@@ -1159,7 +1159,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
 	_route_rig.use_trace(_the_trace())
-	_route_rig.setup(_city.map, _city_simulation.events(), _spawn_start, _player, _baby,
+	_route_rig.setup(_city.map(), _city_simulation.events(), _spawn_start, _player, _baby,
 			resistance, _day,
 			config.route_targets(), _run)
 	_flow.day_planned.connect(_route_rig.start_day.unbind(1))
@@ -1210,7 +1210,7 @@ func _show_the_section_brief() -> void:
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
-	return FinalePlanner.service_exit_world_position(_city.map)
+	return FinalePlanner.service_exit_world_position(_city.map())
 
 ## Both screens' own restart reaches the one thing that means it, and both screens' own way out
 ## reaches the same quit — pulled into its own function, called once `_summary` and `_pause` both
@@ -1692,7 +1692,7 @@ func _add_debug_layers() -> void:
 ## The day's planned routes over the city — see `DebugReadout.draw_routes()`.
 func _add_route_lines() -> void:
 	if _readout:
-		_readout.draw_routes(_city.map)
+		_readout.draw_routes(_city.map())
 
 ## A rig's lock-out — see `RigLock` — as early as this scene's script can act.
 func _add_the_rig_lock() -> void:
@@ -1887,7 +1887,7 @@ func _new_director() -> DayDirector:
 ## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director
 ## on the boot's first walk from her doorstep and by the route rig for a `spawn:<name>` word.
 func _spawn_start(target: String) -> Vector2:
-	return DevRig.for_spawn_target(target, _city.map, _city_simulation.events(), _city.streets(),
+	return DevRig.for_spawn_target(target, _city.map(), _city_simulation.events(), _city.streets(),
 			_resistance, _run.header(), _the_trace())
 
 ## `--recipe`: loads the scene recipe, lays its seed, day, escape part and parent on the run's
@@ -2321,7 +2321,7 @@ func _process(delta: float) -> void:
 		_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_flow.spec().goal_kind() == DaySpec.Goal.HOME
 			and _day.phase() == GameEnums.DayPhase.RETURNING,
-			_city.map.home_world_position() if _city else Vector2.ZERO)
+			_city.map().home_world_position() if _city else Vector2.ZERO)
 	# The red arrow: `ResistanceDirector.red_arrow_target()` is the one place that decides
 	# whether today's task is on offer with its mark already touched, and which of the places
 	# that answer it the arrow points at, so this is only ever a read of it, never a placement

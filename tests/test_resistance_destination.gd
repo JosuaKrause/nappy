@@ -40,13 +40,13 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 		run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
 		var state := run.attempt_spend().block_arcs()
 		state.reset()
-		state.begin_day(_city.map.plans_by_block(), day)
+		state.begin_day(_city.map().plans_by_block(), day)
 		_city.start_day(state, day, _rng(day, "closures"))
-		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+		director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 				RunCity.spawn_siting(_city))
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()

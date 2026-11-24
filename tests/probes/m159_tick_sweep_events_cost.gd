@@ -93,9 +93,9 @@ func run(t: TestRunner) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String,
 		walk: String) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng("closures", city_seed, day))
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	var consumed: Array[String] = []
 	var events := RunCity.events(city)
 	events.start_day(DaySpec.for_day(day), _rng("events", city_seed, day), consumed, start)

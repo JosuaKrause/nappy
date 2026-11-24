@@ -63,7 +63,7 @@ func run(t: TestRunner) -> void:
 			rng.seed = hash("polite-rabbit-walls:%d:%d" % [city_seed, day])
 			city.start_day(CityState.new(), day, rng)
 			var consumed: Array[String] = []
-			RunCity.events(city).start_day(DaySpec.for_day(day), rng, consumed, city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), rng, consumed, city.map().doorstep_world_position())
 			var events := [0.0, 0.0, 0.0]
 			var crowd := [0.0, 0.0, 0.0]
 			var seconds := 0.0
@@ -71,7 +71,7 @@ func run(t: TestRunner) -> void:
 			var tree := city.streets().route_tree()
 			for branch in tree.branches():
 				for route: Array in branch.routes:
-					var path := _waypoints(city.map, route)
+					var path := _waypoints(city.map(), route)
 					if path.size() < 2:
 						continue
 					routes += 1
@@ -124,7 +124,7 @@ func _waypoints(map: CityMap, route: Array) -> PackedVector2Array:
 ## `contribution_at()`.
 func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGenerator,
 		events: Array, crowd: Array) -> Vector2:
-	var map := city.map
+	var map := city.map()
 	var here := path[0]
 	RunCity.crowd(city).start_day(day, rng, here)
 	var next := 1

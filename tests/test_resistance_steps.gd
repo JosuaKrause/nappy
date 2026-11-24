@@ -394,7 +394,7 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) 
 	var run := _build_city_in_a_new_run(t)
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	for day: int in [9, 13, Tuning.RUN_LENGTH_DAYS]:
-		var first := _attempt_the_day(t, day, _city.map.doorstep_world_position(), false)
+		var first := _attempt_the_day(t, day, _city.map().doorstep_world_position(), false)
 		var retry := _attempt_the_day(t, day, first[0], true)
 		var dawn_guarded: bool = day != Tuning.RUN_LENGTH_DAYS
 		t.check(first[0] != Vector2.INF and (first[1] != Vector2.INF) == dawn_guarded,
@@ -427,9 +427,9 @@ func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Arra
 	GivenRun.alley_tiles(run, [])
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var player := _rig_player(t, her)
 	var director := _director(t)
 	director.use_player(player)
@@ -466,7 +466,7 @@ func _test_placement_is_deterministic(t: TestRunner) -> void:
 	first.start_day(6, _rng(6, "resistance"), 300.0)
 	var where := first.contact_position()
 	t.check(where != Vector2.INF, "day 6 puts a mark somewhere")
-	t.check(_city.map.tile_type_at_world(where) == GameEnums.TileType.ALLEY,
+	t.check(_city.map().tile_type_at_world(where) == GameEnums.TileType.ALLEY,
 			"and the chalk mark is in an alley")
 
 	var second := _director(t)
@@ -555,7 +555,7 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 		if guard:
 			t.check(distance >= min_distance - 0.5,
 					"day %d's guard stands at least 62px from the mark" % day)
-			var spot := _guard_spot_of(_city.map, at)
+			var spot := _guard_spot_of(_city.map(), at)
 			t.check(spot == Vector2.INF or guard.global_position.distance_to(spot) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
 					"day %d's guard stands two-thirds through the mark's alley, or at its courtyard's inner end" % day)
 			_seen_guard_distances.append(distance)
@@ -771,13 +771,13 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
 	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: the blackout the
 	# city watches for silences the masts of the day's real plans.
-	var site := MastSites.compute(_city.map)[0]
+	var site := MastSites.compute(_city.map())[0]
 	# The real day order, `City.start_day()` first: it is what holds today's region plan and
 	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
 	# without it the station's front door — and everything else outside the home's region — is
 	# measured against a day the game never starts.
 	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), Tuning.RUN_LENGTH_DAYS)
+	state.begin_day(_city.map().plans_by_block(), Tuning.RUN_LENGTH_DAYS)
 	_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
 	RunCity.events(_city).stream_within(INF)
 	RunCity.events(_city).start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
@@ -805,7 +805,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	var finale := director.current_step()
 	t.check(finale != null, "the last night has a contact")
 	t.check(finale != null and finale.needs_goal, "and it is the finale's own")
-	var door := _city.map.power_station_door_position()
+	var door := _city.map().power_station_door_position()
 	t.check(director.contact_position().distance_to(door) <= Tuning.TILE_SIZE,
 			"the contact stands on the pavement in front of the power station's front door")
 	t.check(director.red_arrow_target() == director.contact_position(),
@@ -816,8 +816,8 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	t.check(run.resistance().sabotage_went_through(), "completing it does the sabotage")
 	t.check(quiet.is_empty() and not mast.is_silenced(),
 			"and the masts are still speaking at the door: they stop with the power")
-	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
-			_city.map.power_station_blocks()))
+	var lot := _city.map().tile_rect_to_world(CityMap.blocks_tile_rect(
+			_city.map().power_station_blocks()))
 	# She walks far enough from the station, a physics tick or two (the blackout watches her there).
 	var she := _rig_player(t, Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
 	await PhysicsTicks.pass_ticks(t, 2)

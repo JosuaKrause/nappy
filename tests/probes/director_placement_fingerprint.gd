@@ -69,10 +69,10 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	run.header().set_day(day)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -81,21 +81,21 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.add_to_group("player")
-	player.global_position = city.map.doorstep_world_position()
+	player.global_position = city.map().doorstep_world_position()
 	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	_lines.clear()
 	director.use_trace(RecordingTrace.new(_lines))
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	var printed := 0
-	var doorstep := city.map.doorstep_world_position()
+	var doorstep := city.map().doorstep_world_position()
 	_stand(city, player, doorstep)
 	# The events' director half and the happenings, on the day's own morning.
 	printed += _the_events_ahead(city, player, label)
@@ -186,7 +186,7 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 		task: ResistanceSteps.Step, contact: Vector2, mark: Vector2, seed_value: int,
 		day: int) -> int:
 	var printed := 0
-	var sidewalk := city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
+	var sidewalk := city.map().tiles_of_type(GameEnums.TileType.SIDEWALK)
 	_stand(city, player, mark if mark != Vector2.INF else contact)
 	_print("%s nearest to the mark %s" % [label, _point(director._nearest_to_the_mark(sidewalk,
 			contact))])
@@ -222,7 +222,7 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 	var vans: PackedVector2Array = happenings._raid_vans
 	var beat: PackedVector2Array = happenings._raid_beat
 	_print("%s raid plans vans %s beat %s" % [label, vans, beat])
-	var far := city.map.tile_to_world(Vector2i(city.map.size_in_tiles().x - 4, 3))
+	var far := city.map().tile_to_world(Vector2i(city.map().size_in_tiles().x - 4, 3))
 	var printed := 1
 	# Her far from her door, her screen on what the raid would put down.
 	for focus: Vector2 in [vans[0] if not vans.is_empty() else far,
@@ -247,7 +247,7 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 ## Day 13's column sent at her from three places along the main road and one off it.
 func _the_column(city: City, director: ResistanceDirector, player: Stroller, label: String) -> int:
 	var happenings := director._happenings
-	var map := city.map
+	var map := city.map()
 	var spine := (float(map.main_road_corridor() * CityMap.period())
 			+ Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
@@ -285,7 +285,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 	var printed := 0
 	var view := RunCity.events(city).visible_view()
-	var map := city.map
+	var map := city.map()
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var dog := EventCatalogue.by_id("loose_dog")
 	var charger := EventCatalogue.by_id("charging_dog")
@@ -349,17 +349,17 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size_in_tiles().y:
-		for x in city.map.size_in_tiles().x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
-					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
+			if city.map().tile_at(tile) == GameEnums.TileType.SIDEWALK \
+					and city.map().is_walkable(tile) and not city.map().is_on_home_block(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = []
 	if sidewalk.is_empty():
 		return spots
 	for i in SPOTS:
-		spots.append(city.map.tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
+		spots.append(city.map().tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
 				+ sidewalk.size() / (SPOTS * 2)]))
 	return spots
 

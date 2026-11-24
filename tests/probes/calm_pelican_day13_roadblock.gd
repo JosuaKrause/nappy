@@ -98,8 +98,8 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 		var stayed := 0
 		for along in WALK_STOPS:
 			var at := mark_at.lerp(own.body_position(), along)
-			var tile := city.map.world_to_tile(at)
-			if not city.map.is_walkable(tile):
+			var tile := city.map().world_to_tile(at)
+			if not city.map().is_walkable(tile):
 				continue
 			player.global_position = at
 			_settle_the_arrow(director)
@@ -128,12 +128,12 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), DAY)
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map().doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
@@ -145,7 +145,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	RunCity.events(city).use_player(player)
 	director.use_player(player)
 	player.set_physics_process(false)
-	player.global_position = city.map.doorstep_world_position()
+	player.global_position = city.map().doorstep_world_position()
 	return player
 
 ## Runs the arrow to rest the way the game does: it chooses, then the physics ticks `main` runs sweep

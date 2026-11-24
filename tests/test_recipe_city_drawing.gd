@@ -45,11 +45,11 @@ func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
 	for node in city.props():
 		var prop := node as Prop
 		if prop != null and prop.kind() == Prop.Kind.STREET_TREE:
-			trees[city.map.world_to_tile(prop.position)] = prop
+			trees[city.map().world_to_tile(prop.position)] = prop
 	t.check(not trees.has(source) and trees.has(destination),
 			"real tree props use the relocated planning source")
 	var tree: Prop = trees.get(destination)
-	t.check(tree != null and tree.position == city.map.tile_to_world(destination),
+	t.check(tree != null and tree.position == city.map().tile_to_world(destination),
 			"relocation retains a real existing street-tree component")
 	city.free()
 
@@ -68,11 +68,11 @@ func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
 	for node in city.props():
 		var prop := node as Prop
 		if prop != null and prop.kind() == Prop.Kind.STREET_TREE:
-			trees[city.map.world_to_tile(prop.position)] = prop
+			trees[city.map().world_to_tile(prop.position)] = prop
 	t.check(trees.size() >= 2, "the city draws several street trees (%d)" % trees.size())
 	var emptied: Vector2i = trees.keys()[0]
 	var pits: Array[Vector2i] = [emptied]
-	city.map.set_seal_tree_pits(pits)
+	city.map().set_seal_tree_pits(pits)
 	city.refresh_street_trees()
 	var others_shown := true
 	for tile: Vector2i in trees:
@@ -83,7 +83,7 @@ func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
 			"the street tree whose pit is emptied is hidden after the refresh")
 	t.check(others_shown, "every other street tree stays shown")
 	var none: Array[Vector2i] = []
-	city.map.set_seal_tree_pits(none)
+	city.map().set_seal_tree_pits(none)
 	city.refresh_street_trees()
 	var all_shown := true
 	for tile: Vector2i in trees:

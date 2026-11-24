@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 		for spot in SPOTS:
 			if spot > 0:
 				_restart_the_day(city, director, seed_value)
-			var at := city.map.tile_to_world(route[(route.size() * spot) / SPOTS])
+			var at := city.map().tile_to_world(route[(route.size() * spot) / SPOTS])
 			var outcome := _read_the_mark_at(city, director, player, at)
 			outcomes[outcome[0]] = int(outcomes.get(outcome[0], 0)) + 1
 			if outcome[1] != INF:
@@ -69,7 +69,7 @@ func _count_the_dawn(city: City, seed_value: int) -> void:
 		if plan.row_id() != "roadblock" or not plan.is_placed() or plan.is_door() or wall.has(plan):
 			continue
 		standing += 1
-		if _beside(city.map, corridor, city.map.world_to_tile(plan.placed_at())):
+		if _beside(city.map(), corridor, city.map().world_to_tile(plan.placed_at())):
 			beside += 1
 	print("RB_DAWN seed %d | %d roadblocks the day placed | %d beside her routes"
 			% [seed_value, standing, beside])
@@ -125,10 +125,10 @@ static func _roadblock_step() -> ResistanceSteps.Step:
 func _route_tiles(city: City) -> Array[Vector2i]:
 	var corridor := Corridor.of(city.streets().route_tree())
 	var found: Array[Vector2i] = []
-	for y in city.map.size_in_tiles().y:
-		for x in city.map.size_in_tiles().x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if corridor.carries_a_route(tile) and city.map.passable(tile, Mover.lattice()):
+			if corridor.carries_a_route(tile) and city.map().passable(tile, Mover.lattice()):
 				found.append(tile)
 	return found
 
@@ -155,14 +155,14 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), DAY)
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+		director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 				RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 

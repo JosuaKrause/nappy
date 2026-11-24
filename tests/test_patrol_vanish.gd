@@ -96,7 +96,7 @@ func _lane_rig(t: TestRunner, def: EventDef) -> Array:
 	var rig := _rig(t, 8)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
-	var spot := _a_lane(city.map)
+	var spot := _a_lane(city.map())
 	t.check(spot.size() == 3, "found a stretch of carriageway between two junction boxes")
 	var route := PackedVector2Array([spot[0], spot[1]])
 	her.global_position = spot[2]

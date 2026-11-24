@@ -183,7 +183,7 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	return director
 
@@ -359,10 +359,10 @@ func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callabl
 	var tiles := _mark_tiles()
 	var away: Array[Vector2] = []
 	for tile in tiles:
-		away.append(_city.map.tile_to_world(tile))
+		away.append(_city.map().tile_to_world(tile))
 	var found: Array[Dictionary] = []
 	for tile in tiles:
-		var her: Vector2 = her_at.call(_city.map, tile)
+		var her: Vector2 = her_at.call(_city.map(), tile)
 		var mark := _relocate_round(director, player, her, away)
 		found.append({"tile": tile, "her": her, "mark": mark, "guard": _marks_guard_feet()})
 	player.free()
@@ -391,9 +391,9 @@ static func _on_the_tile(map: CityMap, tile: Vector2i) -> Vector2:
 ## rule has to fire.
 func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 	for tile in _through_alleys():
-		if not _is_one_in_from_a_mouth(_city.map, tile):
+		if not _is_one_in_from_a_mouth(_city.map(), tile):
 			continue
-		var world := _city.map.tile_to_world(tile)
+		var world := _city.map().tile_to_world(tile)
 		if world.distance_to(at) > min_distance:
 			return world
 	return Vector2.INF
@@ -403,9 +403,9 @@ func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 ## no list of them; it draws from the same walk over the map.
 func _mark_tiles() -> Array[Vector2i]:
 	var marks: Array[Vector2i] = []
-	for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
-		if _is_a_mouth(_city.map, tile):
-			marks.append(AlleyMarks.mark_tile_of_mouth(_city.map, tile))
+	for tile in _city.map().tiles_of_type(GameEnums.TileType.ALLEY):
+		if _is_a_mouth(_city.map(), tile):
+			marks.append(AlleyMarks.mark_tile_of_mouth(_city.map(), tile))
 	return marks
 
 ## Where the guard of a mark at `mark` stands before anything refuses his ground, worked out from the
@@ -423,7 +423,7 @@ static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 
 ## The test city's through-alley tiles — see `_through_alley_tiles()`.
 func _through_alleys() -> Array[Vector2i]:
-	return _through_alley_tiles(_city.map)
+	return _through_alley_tiles(_city.map())
 
 ## Every `ALLEY` tile of `map` that lies in a through-alley (`CityMap.alley_lots()`), in
 ## `CityMap.tiles_of_type()`'s own order: the marks whose robber stands at the alley's far end,
@@ -495,9 +495,9 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 	var day := ResistanceSteps.NEIGHBOR_DAY
 	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -524,7 +524,7 @@ func _walk_the_neighbor_home(walker: EventInstance) -> bool:
 
 ## Whether `walker`, the neighbor walking home, stands at her door.
 func _stands_at_her_door(walker: EventInstance) -> bool:
-	return walker.global_position.distance_to(_city.map.doorstep_world_position()) < 1.0
+	return walker.global_position.distance_to(_city.map().doorstep_world_position()) < 1.0
 
 ## The warning `events` has up for the row `id`, or null.
 func _warning_for(events: EventManager, id: String) -> PendingWarning:
@@ -540,7 +540,7 @@ func _warning_for(events: EventManager, id: String) -> PendingWarning:
 func _touched_from_standable_ground(t: TestRunner, director: ResistanceDirector, item: Vector2,
 		in_city: City = null) -> bool:
 	var city := in_city if in_city else _city
-	var map := city.map
+	var map := city.map()
 	var reachability := _day_reachability(city)
 	var grid: ReachabilityGrid = reachability[0]
 	var blocked: Dictionary = reachability[1]
@@ -570,7 +570,7 @@ func _obstruction_but_the_task(director: ResistanceDirector) -> Dictionary:
 ## circle round her — a tile at or past its edge is where that path reaches the edge. The
 ## obstruction is the day's, built independently of the director (`_day_reachability()`).
 func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
-	var map := _city.map
+	var map := _city.map()
 	var blocked: Dictionary = _obstruction_but_the_task(director)
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
@@ -599,7 +599,7 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 ## so if the two drift that check fails rather than passing silently.
 func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: float,
 		far: float) -> Dictionary:
-	var map := _city.map
+	var map := _city.map()
 	var blocked: Dictionary = _obstruction_but_the_task(director)
 	var found := {}
 	var start := map.world_to_tile(her)
@@ -640,7 +640,7 @@ func _the_way_has_drawn(tile: Vector2i) -> bool:
 	for k in range(0, way.size(), WayConfirmation.STEP):
 		asked.append(way[k])
 	for at in asked:
-		if not units.undrawn_within(_city.map.tile_to_world(at), Tuning.EVENT_DRAW_AHEAD) \
+		if not units.undrawn_within(_city.map().tile_to_world(at), Tuning.EVENT_DRAW_AHEAD) \
 				.is_empty():
 			return false
 	return true
@@ -656,10 +656,10 @@ func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 	GivenRun.alley_tiles(run, [])
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
-			_city.map.doorstep_world_position())
+			_city.map().doorstep_world_position())
 	var director := _director(t)
 	director.use_trace(RecordingTrace.new(trace_into))
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)

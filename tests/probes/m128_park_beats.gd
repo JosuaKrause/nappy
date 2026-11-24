@@ -322,10 +322,10 @@ func _playground_settles(t: TestRunner) -> void:
 		RunCity.build(city, CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []
 		var spec := DaySpec.for_day(1)
-		RigStreets.begin(city.streets(), city.map, spec)
+		RigStreets.begin(city.streets(), city.map(), spec)
 		RunCity.events(city).start_day(spec, _rng(city_seed), consumed)
-		for rect in city.map.playground_rects():
-			var at: Vector2 = city.map.tile_rect_to_world(rect).get_center()
+		for rect in city.map().playground_rects():
+			var at: Vector2 = city.map().tile_rect_to_world(rect).get_center()
 			RunCity.events(city).stream_around(at)
 			RunCity.crowd(city).start_day(1, _rng(city_seed), at)
 			var stroller := Stroller.new()

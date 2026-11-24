@@ -32,7 +32,7 @@ static func building(city: City) -> Building:
 		var candidate := child as Building
 		if candidate == null or not candidate.is_on_home_block():
 			continue
-		var world := city.map.tile_rect_to_world(candidate.lot_rect())
+		var world := city.map().tile_rect_to_world(candidate.lot_rect())
 		if world.position.x < right and world.end.x > left:
 			return candidate
 	return null

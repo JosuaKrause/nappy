@@ -72,7 +72,7 @@ func _ground_rates(t: TestRunner) -> void:
 ## paces back and forth along for the whole measurement, which keeps her on the ground the row is
 ## about — a park is 704px across and forty seconds of walking is 3,680.
 func _legs(city: City) -> Array[Dictionary]:
-	var map := city.map
+	var map := city.map()
 	var legs: Array[Dictionary] = []
 	var height := float(map.size_in_tiles().y) * Tuning.TILE_SIZE
 

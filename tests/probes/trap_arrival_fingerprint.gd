@@ -60,10 +60,10 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	city.run.header().set_day(day)
 	var state := city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -72,14 +72,14 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.add_to_group("player")
-	player.global_position = city.map.doorstep_world_position()
+	player.global_position = city.map().doorstep_world_position()
 	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	_lines.clear()
 	director.use_trace(RecordingTrace.new(_lines))
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).sees)
@@ -101,7 +101,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 			_point(director.contact_position()), _point(director.red_arrow_target())])
 	printed += 1
 	var her := director.contact_position()
-	if her != Vector2.INF and not city.map.is_walkable(city.map.world_to_tile(her)):
+	if her != Vector2.INF and not city.map().is_walkable(city.map().world_to_tile(her)):
 		her += Vector2(0.0, Tuning.TILE_SIZE)
 	if her != Vector2.INF:
 		_stand(city, player, her)
@@ -117,7 +117,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 			_stand(city, player, spot)
 			_lines.clear()
 			director._send_at_her(robber, front_door)
-			var where := RunTrace.tile(city.map.world_to_tile(spot))
+			var where := RunTrace.tile(city.map().world_to_tile(spot))
 			printed += _run_out(city, director, player, "%s sweep %s%s" % [label, where,
 					" front door" if front_door else ""], DRIFT)
 	director.free()
@@ -149,7 +149,7 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 		if not drifted and shown >= half and drift != Vector2.ZERO:
 			drifted = true
 			var stepped := her + drift
-			if city.map.is_walkable(city.map.world_to_tile(stepped)):
+			if city.map().is_walkable(city.map().world_to_tile(stepped)):
 				her = stepped
 				_stand(city, player, her)
 		RunCity.events(city)._warnings.run(STEP, her)
@@ -161,7 +161,7 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 	var made := "nobody (withdrawn)" if warning.was_withdrawn() else "nobody"
 	if sent != null and is_instance_valid(sent):
 		made = "%s at %s %s" % [sent.row_id(), _point(sent.global_position),
-				RunTrace.tile(city.map.world_to_tile(sent.global_position))]
+				RunTrace.tile(city.map().world_to_tile(sent.global_position))]
 	_print("%s %s badge %s -> %s | %s | rng %d" % [label, warning.row().id(), _point(pointed), made,
 			" / ".join(_lines), director._rng.state])
 	if sent != null and is_instance_valid(sent):
@@ -171,17 +171,17 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size_in_tiles().y:
-		for x in city.map.size_in_tiles().x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
-					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
+			if city.map().tile_at(tile) == GameEnums.TileType.SIDEWALK \
+					and city.map().is_walkable(tile) and not city.map().is_on_home_block(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = []
 	if sidewalk.is_empty():
 		return spots
 	for i in SPOTS:
-		spots.append(city.map.tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
+		spots.append(city.map().tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
 				+ sidewalk.size() / (SPOTS * 2)]))
 	return spots
 

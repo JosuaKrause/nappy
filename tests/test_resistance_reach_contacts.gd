@@ -73,10 +73,10 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			GivenRun.alley_tiles(run, [])
 			GivenRun.scars(run, [])
 			var closure_state := CityState.new()
-			closure_state.begin_day(city.map.plans_by_block(), day)
+			closure_state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+					city.map().doorstep_world_position())
 
 			var director := _director(t)
 			director.start_day(day, _production_rng(seed_value, day, "resistance"),
@@ -84,7 +84,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			# `main.gd`'s own order: the player is placed at the doorstep only after
 			# `_resistance.start_day()` returns, and the tree's first `_process()` runs after
 			# that — so a mark checked before this tick is checked somewhere she never sees.
-			var player := _rig_player(t, city.map.doorstep_world_position())
+			var player := _rig_player(t, city.map().doorstep_world_position())
 			director.use_player(player)
 			director.tick(STEP)
 
@@ -98,8 +98,8 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			var mark_step := director.current_step()
 			if mark_step != null:
 				checked += 1
-				var mark_tile := city.map.world_to_tile(director.contact_position())
-				t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false,
+				var mark_tile := city.map().world_to_tile(director.contact_position())
+				t.check(_stands_on_legal_ground(city.map(), mark_tile, walled_alleys, false,
 						grid, blocked, reached),
 						("seed %d day %d: step %d's mark stands on walkable, unobstructed, " +
 						"reachable ground at %s") % [seed_value, day, mark_step.index, mark_tile])
@@ -108,13 +108,13 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 				var task_step := director.current_step()
 				if task_step != null:
 					checked += 1
-					var task_tile := city.map.world_to_tile(director.contact_position())
+					var task_tile := city.map().world_to_tile(director.contact_position())
 					# Every contact stands on its item — a door on a wall, a van or a mast on its
 					# own body's tile — so what is asked is that she can touch it from ground
 					# she can stand on. Day 9's is crossed instead: its gatehouse stands on the
 					# door's own held pavement, which is asked as before.
 					if task_step.target_kind == ResistanceSteps.TargetKind.DOOR:
-						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
+						t.check(_stands_on_legal_ground(city.map(), task_tile, walled_alleys,
 								true, grid, blocked, reached),
 								("seed %d day %d: step %d's gatehouse stands on walkable, " +
 								"reachable ground at %s") % [seed_value, day, task_step.index,
@@ -165,8 +165,8 @@ func _test_the_director_hands_the_draw_its_own_predicates(t: TestRunner) -> void
 	var then := _dawn_mark_tile(t, 6, occupied)
 	t.check(then != Vector2i(-1, -1) and then != fell_on,
 			"with a body on the tile it fell on, the same dawn lands the mark on another")
-	t.check(not _city.map.is_obstructed(then)
-			and SpawnSiting.is_legal_ground(_city.map, then, _walled_alleys()),
+	t.check(not _city.map().is_obstructed(then)
+			and SpawnSiting.is_legal_ground(_city.map(), then, _walled_alleys()),
 			"and that tile is legal ground with no body on it")
 
 ## The tile day `day`'s mark falls on at dawn, on a city and run built for it, with `bodies` (when
@@ -176,15 +176,15 @@ func _dawn_mark_tile(t: TestRunner, day: int, bodies: Array[Vector2i]) -> Vector
 	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", SEED))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],
-			_city.map.doorstep_world_position())
+			_city.map().doorstep_world_position())
 	if not bodies.is_empty():
-		_city.map.obstruct_tiles(get_instance_id(), bodies)
+		_city.map().obstruct_tiles(get_instance_id(), bodies)
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance", SEED), 300.0)
 	var at := director.contact_position()
-	var tile := _city.map.world_to_tile(at) if at.is_finite() else Vector2i(-1, -1)
+	var tile := _city.map().world_to_tile(at) if at.is_finite() else Vector2i(-1, -1)
 	director.free()
 	return tile

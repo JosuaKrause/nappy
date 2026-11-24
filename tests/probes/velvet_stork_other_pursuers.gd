@@ -118,7 +118,7 @@ func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
 	var city: City = suite._build_city(t, seed_value)
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
 	var player: Stroller = suite._rig_player(t, director, director.contact_position())
-	var map := city.map
+	var map := city.map()
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var open: Array[Vector2i] = []

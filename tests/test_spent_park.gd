@@ -658,7 +658,7 @@ func _check_street_pieces_keep_their_own_renderer(t: TestRunner, city: City,
 	for closure in city.streets().closures():
 		if closure is ParkClosure:
 			continue
-		for mouth in closure.mouth_centres(city.map):
+		for mouth in closure.mouth_centres(city.map()):
 			for marker in markers:
 				if marker.position.distance_to(mouth) > closure.barrier_width() * 0.5 + 1.0:
 					continue
@@ -730,29 +730,29 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	RunCity.build(city, CityGenerator.generate(BASE_SEED), null, false, library)
 	var day := 9
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
-	city.map.repaint(state)
-	var calm: Array[Vector2i] = city.map.calm_blocks_now().duplicate()
+	state.begin_day(city.map().plans_by_block(), day)
+	city.map().repaint(state)
+	var calm: Array[Vector2i] = city.map().calm_blocks_now().duplicate()
 	t.check(calm.size() >= 1, "seed %d day %d has a calm area to use (%d)"
-			% [city.map.city_seed(), day, calm.size()])
+			% [city.map().city_seed(), day, calm.size()])
 	if calm.is_empty():
 		city.free()
 		return
 	var used: Array[Vector2i] = [calm[0]]
-	city.map.set_spent_calm(used)
-	city.map.set_fenced_park_state(Vector2i(-1, -1), 0, 3)
+	city.map().set_spent_calm(used)
+	city.map().set_fenced_park_state(Vector2i(-1, -1), 0, 3)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("spent-park:closures:%d" % day)
 	city.start_day(state, day, rng)
-	t.check(city.map.fenced_park_block().x >= 0, "the city fenced the park it was handed (%s)"
-			% [city.map.fenced_park_block()])
-	if city.map.fenced_park_block().x < 0:
+	t.check(city.map().fenced_park_block().x >= 0, "the city fenced the park it was handed (%s)"
+			% [city.map().fenced_park_block()])
+	if city.map().fenced_park_block().x < 0:
 		city.free()
 		return
 	var markers := _closure_markers(city, [])
 	await _let_them_draw(t, markers)
-	var fenced_rect := ClosurePlanner.calm_area_rect(city.map, city.map.fenced_park_block())
-	var near_the_park := Rect2(city.map.tile_to_world(fenced_rect.position),
+	var fenced_rect := ClosurePlanner.calm_area_rect(city.map(), city.map().fenced_park_block())
+	var near_the_park := Rect2(city.map().tile_to_world(fenced_rect.position),
 			Vector2(fenced_rect.size) * Tuning.TILE_SIZE).grow(Tuning.TILE_SIZE)
 	var park_pictures := 0
 	for marker in markers:
@@ -771,15 +771,15 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	t.check(park_pictures > 0, "the fenced park has runtime pictures to check")
 	_check_street_pieces_keep_their_own_renderer(t, city, markers, recording, library)
 	await PhysicsTicks.pass_ticks(t, 1)
-	var block := city.map.fenced_park_block()
-	var rect := ClosurePlanner.calm_area_rect(city.map, block)
+	var block := city.map().fenced_park_block()
+	var rect := ClosurePlanner.calm_area_rect(city.map(), block)
 	var entrances := 0
 	for out: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 		for tile in _edge_tiles(rect, out):
-			if not (city.map.is_walkable(tile) and city.map.is_walkable(tile + out)):
+			if not (city.map().is_walkable(tile) and city.map().is_walkable(tile + out)):
 				continue
 			entrances += 1
-			var crossing := city.map.tile_to_world(tile) \
+			var crossing := city.map().tile_to_world(tile) \
 					+ Vector2(out) * (Tuning.TILE_SIZE * 0.5 - 1.0)
 			t.check(_solid_at(city, crossing),
 					"a body stands across the way in at %s of fenced %s" % [tile, block])
@@ -813,12 +813,12 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner,
 	state.begin_day(map.plans_by_block(), day)
 	city.start_recipe_day(state, day, run.calendar().day_rng(day, "closures"))
 	var shared_panel_posts := 0
-	var short_end := short_run.posts(city.map).back() as Vector2
+	var short_end := short_run.posts(city.map()).back() as Vector2
 	var short_end_checked := false
 	var sign_centers := {}
 	for closure in city.streets().closures():
 		if closure is ParkClosure:
-			for center in closure.mouth_centres(city.map):
+			for center in closure.mouth_centres(city.map()):
 				sign_centers[center] = true
 	var markers := _closure_markers(city, [])
 	await _let_them_draw(t, markers)

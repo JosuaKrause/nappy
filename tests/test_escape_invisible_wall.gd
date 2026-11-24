@@ -68,9 +68,9 @@ func run(t: TestRunner) -> void:
 func _test_she_can_walk_north_from_where_the_player_stood(t: TestRunner, main: Node2D) -> void:
 	var player := Boot.player(main)
 	var city := Boot.city(main)
-	player.global_position = city.map.tile_to_world(WHERE_SHE_STOOD)
-	t.check(city.map.is_walkable(WHERE_SHE_STOOD + Vector2i.UP)
-			and city.map.is_walkable(WHERE_SHE_STOOD + Vector2i.UP * 2),
+	player.global_position = city.map().tile_to_world(WHERE_SHE_STOOD)
+	t.check(city.map().is_walkable(WHERE_SHE_STOOD + Vector2i.UP)
+			and city.map().is_walkable(WHERE_SHE_STOOD + Vector2i.UP * 2),
 			"the two tiles north of %s are walkable city ground" % WHERE_SHE_STOOD)
 	var hit := KinematicCollision2D.new()
 	var blocked := player.test_move(player.global_transform, Vector2.UP * Tuning.TILE_SIZE, hit)
@@ -84,7 +84,7 @@ func _test_she_can_walk_north_from_where_the_player_stood(t: TestRunner, main: N
 func _test_nothing_but_the_city_stands_on_the_escape_streets(t: TestRunner, main: Node2D) -> void:
 	var city := Boot.city(main)
 	var player := Boot.player(main)
-	var plan := FinalePlanner.route(city.map)
+	var plan := FinalePlanner.route(city.map())
 	var space := city.get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var circle := CircleShape2D.new()
@@ -99,10 +99,10 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t: TestRunner, main
 		for dy in ReachabilityGrid.CELL:
 			for dx in ReachabilityGrid.CELL:
 				var tile := cell * ReachabilityGrid.CELL + Vector2i(dx, dy)
-				if not city.map.is_walkable(tile):
+				if not city.map().is_walkable(tile):
 					continue
 				asked += 1
-				query.transform = Transform2D(0.0, city.map.tile_to_world(tile))
+				query.transform = Transform2D(0.0, city.map().tile_to_world(tile))
 				for found in space.intersect_shape(query, 8):
 					var body := found["collider"] as Node
 					if body == null or city.is_ancestor_of(body):

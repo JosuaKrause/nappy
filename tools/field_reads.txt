@@ -6,6 +6,3 @@
 # uses of that class's field; an inner class lifted into a file of its own), and a line whose read is gone fails as a
 # REMOVE line, so the pull request that moves a read behind a method deletes its line. A merge of main that
 # conflicts here takes either side and runs --write.
-
-# [City] src/city/city.gd
-src/main.gd map

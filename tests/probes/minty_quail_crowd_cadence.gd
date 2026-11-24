@@ -94,14 +94,14 @@ func run(t: TestRunner) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String,
 		per_tick: int) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
 	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.streets().region_plan().gate_states())
 	crowd._player = rig
@@ -116,7 +116,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		RunCity.events(city).use_player(rig)
 		meeting = YIELDS.Meeting.new(null, city, {"seed": city_seed, "day": day, "walk": walk})
 	var steps_its_agents := crowd.has_method("_step_the_agents")
-	var across := _crossing(city.map, start)
+	var across := _crossing(city.map(), start)
 	var here: Vector2 = across[0] if walk == "road" else start
 	var walk_file := "%d-%d-%s-%d.var" % [city_seed, day, walk, per_tick]
 	var recorded := PackedVector2Array()

@@ -113,12 +113,12 @@ func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Arr
 	var day := city.run.header().day()
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(city.run.header().run_seed()))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
-		var walk := FinalePlanner.route(city.map)
-		var row := _street_counts(city.map, walk, _plan(city.map, city.run, walk, day, mix))
+		var walk := FinalePlanner.route(city.map())
+		var row := _street_counts(city.map(), walk, _plan(city.map(), city.run, walk, day, mix))
 		row["mix"] = mix["name"]
 		row["seed"] = seed_value
 		print("ESCAPE_WINNABLE [%s] seed %d | %d streets, %d with none, %d dangers | %s" % [

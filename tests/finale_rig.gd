@@ -1173,7 +1173,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 	t.check(city != null and Boot.day(main).spec().section_kind() == DaySpec.Section.CITY,
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if city != null:
-		var map: CityMap = city.map
+		var map: CityMap = city.map()
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
 				run.calendar().day_rng(run.header().day(), "finale"), _city_spec(),
@@ -1648,7 +1648,7 @@ func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
 	var run := city.run
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
-	run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), 1)
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), 1)
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend().block_arcs(), 1, run.calendar().day_rng(1, "closures"), spec)
 	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),
@@ -1678,8 +1678,8 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 	# day's, hundreds strong.
 	t.check(RunCity.crowd(city).agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
 	var day := escape.run.header().day()
-	var corridor := Corridor.of(RouteTree.for_day(city.map, day))
-	var plan := FinalePlanner.route(city.map)
+	var corridor := Corridor.of(RouteTree.for_day(city.map(), day))
+	var plan := FinalePlanner.route(city.map())
 	var on_the_walk := {}
 	for segment in plan.open_streets:
 		on_the_walk[segment.key()] = true
@@ -1692,11 +1692,11 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 			"the first plan tints every kerb of the escape's streets and no other (%d wrong)"
 			% first.z)
 
-	city.tint_the_route(RouteTree.for_day(city.map, day))
+	city.tint_the_route(RouteTree.for_day(city.map(), day))
 	var on_the_day := 0
 	for tile in _kerb_tiles(city, day):
 		if corridor.depth(tile) == 0 and city.scenery_ground_source(tile) \
-				== GroundTiles.route_twin_of(GroundTiles.source_for(city.map, tile, day)):
+				== GroundTiles.route_twin_of(GroundTiles.source_for(city.map(), tile, day)):
 			on_the_day += 1
 	t.check(on_the_day > 0, "a day's route tints its own kerbs (%d)" % on_the_day)
 
@@ -1714,10 +1714,10 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 ## Every tile of `city` whose plain ground source is a kerb a route can tint.
 static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in city.map.size_in_tiles().y:
-		for x in city.map.size_in_tiles().x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if GroundTiles.source_for(city.map, tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
+			if GroundTiles.source_for(city.map(), tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
 				found.append(tile)
 	return found
 
@@ -1728,8 +1728,8 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 		corridor: Corridor) -> Vector4i:
 	var counted := Vector4i.ZERO
 	for tile in _kerb_tiles(city, day):
-		var source := GroundTiles.source_for(city.map, tile, day)
-		var segment := city.map.street_network().segment_containing(tile)
+		var source := GroundTiles.source_for(city.map(), tile, day)
+		var segment := city.map().street_network().segment_containing(tile)
 		var wanted := segment != null and on_the_walk.has(segment.key())
 		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
 				else source):
@@ -1764,9 +1764,9 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
 	RunCity.events(city).stream_within(INF)
-	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
+	var road := city.map().tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventPlan] = [
-		EventPlan.new(burst, city.map.tile_to_world(road))]
+		EventPlan.new(burst, city.map().tile_to_world(road))]
 	GivenPlanner.hand_in(RunCity.events(city), plans)
 	var none: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
@@ -2114,7 +2114,7 @@ func _test_a_days_spec_owes_its_return_leg(t: TestRunner) -> void:
 	city.run.header().set_day(an_act_iv_day)
 	var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
 	var consumed: Array[String] = []
-	RigStreets.begin(city.streets(), city.map, spec)
+	RigStreets.begin(city.streets(), city.map(), spec)
 	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(an_act_iv_day), consumed)
 	var before := RunCity.events(city).owed_ahead()
 	EventBus.return_phase_started.emit()

@@ -306,12 +306,12 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	# A post on open street with a clear line to where she stands: the notice needs one.
 	var post := Vector2.INF
 	var reach := _hot_roadblock().notice_within() - 10.0
-	var home := city.map.doorstep_world_position()
+	var home := city.map().doorstep_world_position()
 	for dy in range(-12, 13):
 		for dx in range(-12, 13):
-			var at: Vector2 = city.map.tile_to_world(city.map.world_to_tile(home) + Vector2i(dx, dy))
-			if post == Vector2.INF and city.map.clear_line(at, at + Vector2(0.0, reach)) \
-					and city.map.clear_line(at + Vector2(0.0, reach), at):
+			var at: Vector2 = city.map().tile_to_world(city.map().world_to_tile(home) + Vector2i(dx, dy))
+			if post == Vector2.INF and city.map().clear_line(at, at + Vector2(0.0, reach)) \
+					and city.map().clear_line(at + Vector2(0.0, reach), at):
 				post = at
 	t.check(post != Vector2.INF, "the city has an open stretch to stand a roadblock on")
 	if post == Vector2.INF:

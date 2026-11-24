@@ -50,7 +50,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var put_down: Array[String] = []
 	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), DAY)
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
@@ -62,7 +62,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	resistance.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var mark := resistance.current_step()
@@ -91,7 +91,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	player.set_physics_process(false)
 	RunCity.events(city).use_player(player)
 	t.check(path.size() >= 2 and RunCity.events(city).world.has_player(), "a route to walk and her on it")
-	var map := city.map
+	var map := city.map()
 	var seen := {"van": null, "her": Vector2.INF, "heading": Vector2.ZERO,
 			"tiles": [] as Array[Vector2i], "met": false}
 	var tick := func() -> void:
@@ -172,7 +172,7 @@ func _the_rigged_van(city: City, put_down: Array[String]) -> EventPlan:
 	var events := RunCity.events(city)
 	for plan in events.walk_events().plans():
 		if plan.row_id() == ROW and plan.is_placed() \
-				and PutOnHerRoute.says(put_down, city.map, plan):
+				and PutOnHerRoute.says(put_down, city.map(), plan):
 			return plan
 	return null
 
@@ -191,7 +191,7 @@ func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
 ## leads from their first cell to their last around every standing body but the one on `body`, and
 ## no longer does with it standing. A route's sidewalk the van leaves open is walked past it.
 static func _routes_it_cuts(city: City, body: Array[Vector2i]) -> Vector2i:
-	var map := city.map
+	var map := city.map()
 	var its := {}
 	for tile in body:
 		its[tile] = true

@@ -86,7 +86,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	var water_surfaces := 0
 	var before := OS.get_static_memory_usage()
 	# Four ordinary chunks and four shoreline chunks, all selected from current map state.
-	var shore_y := ceili(float(_city.map.size_in_tiles().y) / SceneryGround.CHUNK_TILES)
+	var shore_y := ceili(float(_city.map().size_in_tiles().y) / SceneryGround.CHUNK_TILES)
 	var keys: Array[Vector2i] = []
 	for x in 4:
 		keys.append(Vector2i(x + 1, 2))
@@ -120,7 +120,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 						water.append(tile)
 					elif source >= 0:
 						layer.set_cell(tile, source, GroundLayers.atlas_coords_for(source,
-								_city.map.city_seed(), tile, layer.tile_set))
+								_city.map().city_seed(), tile, layer.tile_set))
 					cells += int(source >= 0)
 			if not water.is_empty():
 				var surface := SceneryWater.new()
@@ -163,7 +163,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 
 func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Dictionary:
 	var ground := _city.scenery_ground
-	var at := _city.map.doorstep_world_position()
+	var at := _city.map().doorstep_world_position()
 	var initial := at
 	var extent := Tuning.VIEW_HALF_EXTENT * 2
 	ground.clear()

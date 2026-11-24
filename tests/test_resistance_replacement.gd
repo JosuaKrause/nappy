@@ -82,7 +82,7 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t: TestRunne
 ## still within `NOTICE_RADIUS` of it. A city with no such pair fails the test.
 func _test_a_mark_within_notice_radius_does_not_move(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
-	var map := _city.map
+	var map := _city.map()
 	var marks: Array[Vector2i] = []
 	for tile in _through_alleys():
 		if _is_one_in_from_a_mouth(map, tile):
@@ -161,7 +161,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t: TestRunne
 func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), 10)
+	state.begin_day(_city.map().plans_by_block(), 10)
 	_city.start_day(state, 10, RandomNumberGenerator.new())
 	var region := _city.streets().siting_region()
 	t.check(region != null and region.centres.size() > 0, "day 10 has a region wall and doors")
@@ -178,10 +178,10 @@ func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> vo
 	var alley := region.walled_alleys[0]
 	for x in range(alley.position.x, alley.end.x):
 		for y in range(alley.position.y, alley.end.y):
-			if walled.x < 0 and SpawnSiting.is_legal_ground(_city.map, Vector2i(x, y), []):
+			if walled.x < 0 and SpawnSiting.is_legal_ground(_city.map(), Vector2i(x, y), []):
 				walled = Vector2i(x, y)
 	t.check(walled.x >= 0 and not siting.allows(SpawnSiting.Rule.LEGAL_GROUND,
-			siting.ask_of_ground(), _city.map.tile_to_world(walled)),
+			siting.ask_of_ground(), _city.map().tile_to_world(walled)),
 			"and refuses as ground a tile of the alley the region walls off (%s)" % walled)
 
 ## brisk-wombat, "the mark and its robber never appear in front of her" — the mark's own half:
@@ -261,7 +261,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 	for seed_value: int in [4242, 555555]:
 		var run := _build_city_in_a_new_run(t, seed_value)
 		GivenRun.completed_steps(run, _completed_through(2))
-		var map := _city.map
+		var map := _city.map()
 		var director := _director(t)
 		director.start_day(7, _rng(7, "off-screen", seed_value), 300.0)
 		var player := _rig_player(t, director.contact_position())
@@ -365,11 +365,11 @@ func _test_nothing_appears_under_a_covered_corner(t: TestRunner) -> void:
 	var corner_size := corner.size * scale
 	var away: Array[Vector2] = []
 	for tile in _mark_tiles():
-		away.append(_city.map.tile_to_world(tile))
+		away.append(_city.map().tile_to_world(tile))
 	var nowhere := Rect2(Vector2(-4000.0, -4000.0), Tuning.VIEW_HALF_EXTENT * 2.0)
 	var refused := 0
 	for tile: Vector2i in _mark_tiles():
-		var mark := _city.map.tile_to_world(tile)
+		var mark := _city.map().tile_to_world(tile)
 		# The mark's centre at these shares of the corner, its whole picture inside it.
 		for share: Vector2 in [Vector2(0.2, 0.8), Vector2(0.5, 0.5), Vector2(0.8, 0.8),
 				Vector2(0.2, 0.2), Vector2(0.8, 0.2)]:
@@ -385,7 +385,7 @@ func _test_nothing_appears_under_a_covered_corner(t: TestRunner) -> void:
 			# covered corner or out of the view) is a case the whole view has to refuse.
 			var seen_by_the_visible_area := false
 			for box_at: Array in [[ResistanceDirector.MARK_BOX, mark],
-					[ResistanceDirector.GUARD_BOX, _guard_spot_of(_city.map, mark)]]:
+					[ResistanceDirector.GUARD_BOX, _guard_spot_of(_city.map(), mark)]]:
 				var drawn: Rect2 = box_at[0]
 				var drawn_at: Vector2 = box_at[1]
 				var middle := drawn_at + drawn.get_center()
@@ -500,16 +500,16 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var covered: Variant = TouchCover.joystick() if joystick else null
 		var day := ResistanceSteps.NEIGHBOR_DAY
 		var state := CityState.new()
-		state.begin_day(_city.map.plans_by_block(), day)
+		state.begin_day(_city.map().plans_by_block(), day)
 		_city.start_day(state, day, _rng(day, "closures"))
-		events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
-		var door := _city.map.doorstep_world_position()
+		events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
+		var door := _city.map().doorstep_world_position()
 		var her := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
 		# Where the raid stands is read off a first arrival with the camera nowhere near: the
 		# vans' feet and the patrol car's beat (`EventInstance.walks()`), which are put in the
 		# street and then taken out again before the raid this test waits for.
 		var scout := ResistanceHappenings.new()
-		scout.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+		scout.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
 				_city.atlas, null, RunCity.spawn_siting(_city))
 		scout.start_day(day)
 		events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
@@ -525,7 +525,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 				vans.append(arrived.global_position)
 			events.retire(arrived)
 		var happenings := ResistanceHappenings.new()
-		happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+		happenings.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
 				_city.atlas, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day)
 		t.check(beat.size() == 2 and vans.size() == 2,

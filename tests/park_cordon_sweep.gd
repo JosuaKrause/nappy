@@ -156,14 +156,14 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	run.header().set_day(day)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var result := {}
@@ -177,7 +177,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city,
+		happenings.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city,
 				city.atlas, null, RunCity.spawn_siting(city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
@@ -194,7 +194,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 	# The two tapers are the first two officers in the world; every other is an escort.
 	var people := maxi(0, CordonInTheWorld.officers(city).size() - 2)
-	var area := CordonInTheWorld.park_ground(city.map, CityGenerator.swing_park(city.map))
+	var area := CordonInTheWorld.park_ground(city.map(), CityGenerator.swing_park(city.map()))
 	for live in RunCity.events(city).instances():
 		var def := live.row()
 		if live.is_gone() or not live.is_on_its_way_out() or not area.has_point(live.global_position):
@@ -211,8 +211,8 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	_look(city, her[0])
 	happenings.tick(STEP, her[0], Vector2.ZERO)
 	var cordon := happenings.cordon
-	var park := CityGenerator.swing_park(city.map)
-	var result := {"park_size": CordonInTheWorld.park_ground(city.map, park).size,
+	var park := CityGenerator.swing_park(city.map())
+	var result := {"park_size": CordonInTheWorld.park_ground(city.map(), park).size,
 			"walk": swing.distance_to(cordon.last_gap)}
 	result.people = _people_taken_on(city, cordon)
 	_measure_the_gap(city, director, cordon, result)
@@ -223,7 +223,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	cordon.clear()
-	var again := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas,
+	var again := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, city.atlas,
 			park, RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
 	again.use_bus(EventBus)
 	her[0] = swing
@@ -248,13 +248,13 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 ## closed, and the officers' steps onto a body's ground (`_count_the_step()`).
 func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i,
 		swing: Vector2, place: Array) -> Dictionary:
-	var area := CordonInTheWorld.park_ground(city.map, park)
-	var line := CordonInTheWorld.tape_line(city.map, park)
+	var area := CordonInTheWorld.park_ground(city.map(), park)
+	var line := CordonInTheWorld.tape_line(city.map(), park)
 	var spot: Vector2 = area.position + area.size * (place[0] as Vector2) + (place[1] as Vector2)
 	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"), spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
-	var cordon := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas, park,
+	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, city.atlas, park,
 			RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
 	cordon.use_bus(EventBus)
 	var her := [swing]
@@ -293,7 +293,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		clock += STEP
 		if closed_at < 0.0 and cordon.is_closed():
 			closed_at = clock
-		_count_the_steps(city.map, before, counts)
+		_count_the_steps(city.map(), before, counts)
 		for tape in CordonInTheWorld.tapes(city):
 			if taped_at.has(tape.get_instance_id()):
 				continue
@@ -333,7 +333,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 ## one and the lethal reach of anything that ends the day.
 func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCordon,
 		result: Dictionary) -> void:
-	var map := city.map
+	var map := city.map()
 	var rect := ClosurePlanner.calm_area_rect(map, CityGenerator.swing_park(map))
 	var area := CordonInTheWorld.park_ground(map, CityGenerator.swing_park(map))
 	var blocked: Dictionary = ResistanceReads.day_reachability(city)[1]
@@ -386,7 +386,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool,
 		watch_stalls: bool) -> Dictionary:
 	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
-	var line := CordonInTheWorld.tape_line(city.map, CityGenerator.swing_park(city.map))
+	var line := CordonInTheWorld.tape_line(city.map(), CityGenerator.swing_park(city.map()))
 	var first_seen := -1.0
 	var clock := STEP
 	var gap := cordon.last_gap
@@ -410,7 +410,7 @@ func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: b
 			her[0] = (her[0] as Vector2).move_toward(target, Tuning.WALK_SPEED * STEP)
 		_tick(city, cordon, her[0])
 		clock += STEP
-		_count_the_steps(city.map, before, counts)
+		_count_the_steps(city.map(), before, counts)
 		if watch_stalls and not cordon.is_closed():
 			for officer: CordonOfficer in before:
 				if not is_instance_valid(officer) or officer.is_queued_for_deletion():

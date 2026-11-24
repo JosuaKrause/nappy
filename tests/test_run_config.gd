@@ -287,14 +287,14 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 			var her := Boot.player(booted.main)
 			# Far from the station on day 1, with no sabotage done: the lights go out only if the
 			# blackout was handed `--blackout`.
-			var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station_blocks()))
+			var lot := city.map().tile_rect_to_world(CityMap.blocks_tile_rect(city.map().power_station_blocks()))
 			her.set_physics_process(false)
 			her.global_position = Vector2(lot.get_center().x,
 					lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
 			await PhysicsTicks.pass_ticks(t, 2)
 			t.check(not city.traffic_signals().is_powered(),
 					"the blackout is handed --blackout: far from the station the lights go out")
-			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
+			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map())
 			t.check(first >= FORCED_INTERVAL - _walk_step() and first <= FORCED_WITHIN,
 					"the events are handed --force: the cyclist comes after its wait (%.1fs)" % first)
 		booted.free_all()
@@ -348,7 +348,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	# The view stands in the map's far south-east, away from the doorstep, with the load view's east
 	# edge a few pixels short of a region's border, which the second update's step then crosses.
 	var chunk := SceneryGround.CHUNK_PX
-	var far := Vector2(city.map.size_in_tiles()) * Tuning.TILE_SIZE * 0.75
+	var far := Vector2(city.map().size_in_tiles()) * Tuning.TILE_SIZE * 0.75
 	var border := floorf(far.x / chunk)
 	var first := Rect2(border * chunk - 8.0 - 640.0 - SceneryResidency.LOAD_MARGIN, far.y,
 			640.0, 480.0)
@@ -364,8 +364,8 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 			== EventSpawner.PelicanRig.ALWAYS,
 			"the events")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
-			city.map.power_station_blocks()))
+	var lot := city.map().tile_rect_to_world(CityMap.blocks_tile_rect(
+			city.map().power_station_blocks()))
 	var she := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -438,9 +438,9 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	rng.seed = SEED
 	var consumed: Array[String] = []
 	var spec := DaySpec.for_day(1)
-	RigStreets.begin(city.streets(), city.map, spec)
+	RigStreets.begin(city.streets(), city.map(), spec)
 	RunCity.events(city).start_day(spec, rng, consumed)
-	var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
+	var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map())
 	t.check(first < INF and first >= FORCED_INTERVAL - _walk_step(),
 			"the forced cyclist comes after the wait the flag names, not before (%.1fs)" % first)
 	t.check(first <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")

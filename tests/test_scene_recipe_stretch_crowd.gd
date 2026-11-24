@@ -82,7 +82,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	builder.use_the_crowds_screen(view, CrowdTiming.new())
 	RunCity.build(city, map, builder)
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), 1)
+	state.begin_day(city.map().plans_by_block(), 1)
 	city.start_recipe_day(state, 1, run.calendar().day_rng())
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -94,7 +94,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	crowd.use_stretch()
 	# The stretch's ends as the crowd enters it, which a field over the same map reads off the map's
 	# stretch the way the crowd's own does (`CrowdField.use_stretch()`).
-	var stretch := CrowdField.new(city.map)
+	var stretch := CrowdField.new(city.map())
 	stretch.use_stretch()
 	var ends := stretch.ends_of_the_stretch()
 	var watch := {"stays": true, "ends_seen": true, "safe": true, "entries": 0, "placed": 0,
@@ -115,7 +115,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 			crowd.use_focus(FakeCrowdFocus.new(looking))
 			watch.ends_seen = watch.ends_seen and aside < 4096.0 and (looking != middle
 					or not view.beyond_every_view(middle, CrowdAgent.ENTRY_PICTURE_ROOM, looking))
-			await _walk_every_end_off(crowd, city.map, camera, view, ends, looking, label, watch)
+			await _walk_every_end_off(crowd, city.map(), camera, view, ends, looking, label, watch)
 	t.check(watch.placed > 0, "%s: bodies are set walking off its ends (%d)" % [label, watch.placed])
 	t.check(watch.in_view > 0, "%s: some of them walk off an end in view (%d)" % [label, watch.in_view])
 	t.check(watch.stays, "%s: a body walking off an end in view turns round, it does not jump" % label)

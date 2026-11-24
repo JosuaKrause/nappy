@@ -86,20 +86,20 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := own_run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), 3)
+	state.begin_day(city.map().plans_by_block(), 3)
 	city.start_recipe_day(state, 3, own_run.calendar().day_rng(3, "closures"))
 	var from := Vector2i.ZERO
 	var found := false
-	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+	for tile in city.map().tiles_of_type(GameEnums.TileType.SIDEWALK):
 		var along := tile + Vector2i(tiles, 0)
-		if city.map.tile_at(along) == GameEnums.TileType.SIDEWALK and city.map.is_open(tile) \
-				and city.map.is_open(along) and CityMap.corridor_offset(along.y) in CrowdLanes.SIDEWALK_OFFSETS:
+		if city.map().tile_at(along) == GameEnums.TileType.SIDEWALK and city.map().is_open(tile) \
+				and city.map().is_open(along) and CityMap.corridor_offset(along.y) in CrowdLanes.SIDEWALK_OFFSETS:
 			from = tile
 			found = true
 			break
 	t.check(found, "a sidewalk tile with a sidewalk %d tiles east of it" % tiles)
-	var her := city.map.tile_to_world(from)
-	var there := city.map.tile_to_world(from + Vector2i(tiles, 0))
+	var her := city.map().tile_to_world(from)
+	var there := city.map().tile_to_world(from + Vector2i(tiles, 0))
 	# A walker pinned on a sidewalk stands exactly on its lane (`SceneRecipeRuntime` never snaps it).
 	there.y = CrowdLanes.walker_lane_centre(CrowdLanes.corridor_at(there.y),
 			CityMap.corridor_offset(from.y), CrowdLanes.SIDEWALK_OFFSETS)
@@ -118,7 +118,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 			"direction": "east"}]},
 			"playback": {"duration": 0.5, "settled_camera": true,
 			"observations": [{"tick": 5, "subject": "actor", "condition": "appeared"}]}},
-			"manifest": {}, "anchors": {}, "map": city.map},
+			"manifest": {}, "anchors": {}, "map": city.map()},
 			RunConfig.parse(PackedStringArray(["--recipe", "sight.json", "--recipe-mode", "scripted"]),
 					"", true),
 			own_run, func(code: int) -> void: ended.append(code))
@@ -493,7 +493,7 @@ func _drafted(t: TestRunner, city: City, data: Dictionary, walked: Array[Vector2
 	var draft := SceneRecipeDraft.new()
 	var walker := Node2D.new()
 	for tile in walked:
-		walker.position = city.map.tile_to_world(tile)
+		walker.position = city.map().tile_to_world(tile)
 		draft.record(walker, RunCity.world_of(city, null), null)
 	walker.free()
 	var own_run := RunState.new()
@@ -501,7 +501,7 @@ func _drafted(t: TestRunner, city: City, data: Dictionary, walked: Array[Vector2
 	own_run.header().set_day(7)
 	var problems: Array[String] = []
 	var drafted := draft.compose(data, own_run, RunCity.world_of(city, null),
-			city.map.tile_to_world(walked[0]), pinned, problems)
+			city.map().tile_to_world(walked[0]), pinned, problems)
 	return drafted
 
 ## The tiles a drafted recipe's `stretch.tiles` lists, as a set.

@@ -76,11 +76,11 @@ func run(t: TestRunner) -> void:
 			frames.append(_sweep_to_the_end(director, slices))
 			# And the same sweep at once, for scale.
 			var started := Time.get_ticks_usec()
-			var at_once := WalkField.start(city.map, found,
-					Vector2i(city.map.day_record_version(), city.map.obstruction_version()))
-			var ground := WalkField.ground_for(city.map)
-			at_once.advance(city.map, ground, 1 << 30)
-			at_once.advance(city.map, ground, 1 << 30)
+			var at_once := WalkField.start(city.map(), found,
+					Vector2i(city.map().day_record_version(), city.map().obstruction_version()))
+			var ground := WalkField.ground_for(city.map())
+			at_once.advance(city.map(), ground, 1 << 30)
+			at_once.advance(city.map(), ground, 1 << 30)
 			whole.append(Time.get_ticks_usec() - started)
 			for at in spots:
 				player.global_position = at
@@ -89,7 +89,7 @@ func run(t: TestRunner) -> void:
 				ticks.append(Time.get_ticks_usec() - chose)
 				# A choice that moved the arrow starts the sweep of the one it now points at.
 				frames.append(_sweep_to_the_end(director, slices))
-				if _arrow_nearest_at(director, city.map.world_to_tile(at)) == null:
+				if _arrow_nearest_at(director, city.map().world_to_tile(at)) == null:
 					unreached += 1
 			player.free()
 			director.free()
@@ -128,14 +128,14 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -182,12 +182,12 @@ func _the_longest_route(city: City) -> Array[Vector2]:
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(city.map.tile_to_world(longest[i] * ReachabilityGrid.CELL)
+		points.append(city.map().tile_to_world(longest[i] * ReachabilityGrid.CELL)
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5))
 	return points
 
 func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
-	var map := city.map
+	var map := city.map()
 	var sidewalk: Array[Vector2i] = []
 	for y in map.size_in_tiles().y:
 		for x in map.size_in_tiles().x:

@@ -108,7 +108,7 @@ static func _home_buildings_by_lot(city: City) -> Dictionary:
 ## Each is `[where, picture]`, `where` taken from the building's own origin so the same roof on two
 ## cities compares directly, in the layer's own order.
 static func _roof_units_on(city: City, building: Building) -> Array:
-	var lot := city.map.tile_rect_to_world(building.lot_rect())
+	var lot := city.map().tile_rect_to_world(building.lot_rect())
 	var units: Array = []
 	for node in city.get_node("Entities").get_children():
 		var unit := node as Building.RoofObject
@@ -416,7 +416,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
 	t.check(HomeDoorReads.is_sealed(city), "the door starts sealed, or this test checks nothing")
 	GivenRun.scars(run, [])
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), ResistanceSteps.NEIGHBOR_DAY)
+	state.begin_day(city.map().plans_by_block(), ResistanceSteps.NEIGHBOR_DAY)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1
 	city.start_day(state, ResistanceSteps.NEIGHBOR_DAY, rng)

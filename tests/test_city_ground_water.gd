@@ -24,8 +24,8 @@ func _test_water_ownership(t: TestRunner) -> void:
 	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
 	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
 	# home boot retains none of this water.
-	city.prepare_scenery_in(Rect2(Vector2(-shore_reach, city.map.world_size().y),
-			Vector2(city.map.world_size().x + 2.0 * shore_reach,
+	city.prepare_scenery_in(Rect2(Vector2(-shore_reach, city.map().world_size().y),
+			Vector2(city.map().world_size().x + 2.0 * shore_reach,
 					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)))
 	# Out of view, the city keeps the residency it was given: its own process frame would otherwise
 	# follow the camera home and release the shore this inspects.
@@ -41,13 +41,13 @@ func _test_water_ownership(t: TestRunner) -> void:
 			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
 	var expected: Dictionary[Vector2i, bool] = {}
-	var bridge_left := city.map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var bridge_left := city.map().main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
 	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
 	# carries its road on for as far as any view asks, so its columns are never water.
 	for key: Vector2i in city.scenery_ground.chunks():
 		var start := key * SceneryGround.CHUNK_TILES
-		var shore := city.map.size_in_tiles().y + 1
+		var shore := city.map().size_in_tiles().y + 1
 		for y in range(maxi(start.y, shore), start.y + SceneryGround.CHUNK_TILES):
 			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
 				if x < bridge_left or x >= bridge_right:
@@ -62,7 +62,7 @@ func _test_water_ownership(t: TestRunner) -> void:
 					"animated water has no duplicate pixel owner in the static TileMap")
 	t.check(actual == expected and actual.size() == count,
 			"resident water has one owner per cell and excludes the bridge columns at every depth")
-	var size := city.map.size_in_tiles()
+	var size := city.map().size_in_tiles()
 	for y in range(size.y + 1, size.y + CityMap.OUTSIDE_DEPTH_TILES):
 		for x in range(-CityMap.OUTSIDE_DEPTH_TILES, size.x + CityMap.OUTSIDE_DEPTH_TILES):
 			if x < bridge_left or x >= bridge_right:

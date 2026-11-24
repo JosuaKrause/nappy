@@ -242,10 +242,10 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	run.header().set_day(13)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), 13)
+	state.begin_day(_city.map().plans_by_block(), 13)
 	_city.start_day(state, 13, _rng(13, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(13), _rng(13, "events"), [],
-			_city.map.doorstep_world_position())
+			_city.map().doorstep_world_position())
 	var mark_row := EventCatalogue.mark_guard().id()
 	var task_row := EventCatalogue.task_guard().id()
 	var director := _director(t)
@@ -324,9 +324,9 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) ->
 		# ground-floor tile, which nobody can stand on: she touches it from the sidewalk tile
 		# straight below, inside its `DOOR_REACH`.
 		var her := director.contact_position()
-		if not _city.map.is_walkable(_city.map.world_to_tile(her)):
+		if not _city.map().is_walkable(_city.map().world_to_tile(her)):
 			her += Vector2(0.0, Tuning.TILE_SIZE)
-		t.check(_city.map.is_walkable(_city.map.world_to_tile(her))
+		t.check(_city.map().is_walkable(_city.map().world_to_tile(her))
 				and her.distance_to(director.contact_position()) <= director.contact().touch_reach(),
 				"day %d: she stands on open ground within the touch's reach" % day)
 		_watch_the_screen_round(director, her)
@@ -352,9 +352,9 @@ func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var before := _robbers_on_the_street()
 	var director := _director(t)
 	var mark_guards := _live(EventCatalogue.mark_guard().id())
@@ -389,8 +389,8 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 		var out := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 				+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 		var her := hut.placed_at() + hut.faces() * side * out
-		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
-				"day 9: the ground she is let out onto is open (%s)" % _city.map.world_to_tile(her))
+		t.check(_city.map().is_walkable(_city.map().world_to_tile(her)),
+				"day 9: the ground she is let out onto is open (%s)" % _city.map().world_to_tile(her))
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		_watch_the_screen_round(director, her)
@@ -539,7 +539,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 			through_a_door = true
 	t.check(not through_a_door,
 			"%s: his run at her from %s never crosses a district door's line"
-			% [label, _city.map.world_to_tile(start)])
+			% [label, _city.map().world_to_tile(start)])
 	t.check(siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, start),
 			"%s: on walkable ground nothing refuses" % label)
 	var clear := siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, start)
@@ -549,7 +549,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 					and siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, candidate)
 					and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
 					"%s: with no clear run from %s, none from %v off her either"
-					% [label, _city.map.world_to_tile(start), candidate - her])
+					% [label, _city.map().world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
 	# The tick that made him stepped him once: that step is his first frame.
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
@@ -679,7 +679,7 @@ func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector
 		director.use_bus(EventBus)
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(),
+		director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(),
 				_city)
 	var label := "the city's siting" if city_siting else "no siting handed"
 	director.start_day(6, _rng(6, "resistance"), 300.0)

@@ -24,22 +24,22 @@ func run(t: TestRunner) -> void:
 	# border is held resident first, which is how the city painted its ground when this was written.
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
 	for key in _ground.keys_in(Rect2(Vector2.ONE * -depth,
-			Vector2(_city.map.size_in_tiles()) * 32.0 + Vector2.ONE * depth * 2.0)):
+			Vector2(_city.map().size_in_tiles()) * 32.0 + Vector2.ONE * depth * 2.0)):
 		_ground.prepare(key)
 	var tree := _city.streets().route_tree()
 	t.check(tree != null and not tree.branches().is_empty(), "real daily boot supplies route options")
 	var home_tiles := _tiles_for_nodes(tree, tree._home)
-	home_tiles[_city.map.world_to_tile(_city.map.doorstep_world_position())] = true
+	home_tiles[_city.map().world_to_tile(_city.map().doorstep_world_position())] = true
 	var network_tiles := _tiles_for_nodes(tree, tree._colours)
 	var network_closed := _closed_count(network_tiles)
 	var offered := network_tiles.duplicate()
 	offered.merge(home_tiles)
 	var routes: Array[Dictionary] = []
-	var row := {"seed": _city.map.city_seed(), "day": seat.run.header().day(),
+	var row := {"seed": _city.map().city_seed(), "day": seat.run.header().day(),
 		"branches": tree.branches().size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
-		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map.closed_tile_set().size(),
+		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map().closed_tile_set().size(),
 		"events_planned": RunCity.events(_city).planned_count(),
 		"ground_prepared": GroundCells.used_cells(_ground).size(),
 		"buildings_prepared": _city.buildings().size(),
@@ -47,8 +47,8 @@ func run(t: TestRunner) -> void:
 		"network_and_home_lookahead_envelope": _coverage(offered, Stroller.CAMERA_LOOK_AHEAD),
 		"routes": routes}
 	var lines := RouteLines.new()
-	lines._map = _city.map
-	var areas := ClosurePlanner.calm_areas(_city.map)
+	lines._map = _city.map()
+	var areas := ClosurePlanner.calm_areas(_city.map())
 	var area_by_block := {}
 	for area in areas:
 		area_by_block[area.block] = area
@@ -100,7 +100,7 @@ func _tiles_for_nodes(tree: RouteTree, nodes: Dictionary) -> Dictionary:
 func _closed_count(tiles: Dictionary) -> int:
 	var result := 0
 	for tile: Vector2i in tiles:
-		result += int(_city.map.is_walkable(tile) and _city.map.closed_tile_set().has(tile))
+		result += int(_city.map().is_walkable(tile) and _city.map().closed_tile_set().has(tile))
 	return result
 
 ## View unions over offered open tile centers. A square 46px expansion is a conservative
@@ -110,10 +110,10 @@ func _coverage(tiles: Dictionary, margin: float) -> Dictionary:
 	var buildings_seen := {}
 	var centers := 0
 	for tile: Vector2i in tiles:
-		if not _city.map.is_open(tile):
+		if not _city.map().is_open(tile):
 			continue
 		centers += 1
-		var at := _city.map.tile_to_world(tile)
+		var at := _city.map().tile_to_world(tile)
 		var view := Rect2(at - HALF_VIEW, HALF_VIEW * 2).grow(margin)
 		var lo := Vector2i((view.position / 32).floor())
 		var hi := Vector2i((view.end / 32).ceil())
@@ -123,7 +123,7 @@ func _coverage(tiles: Dictionary, margin: float) -> Dictionary:
 				if GroundCells.source_id(_ground, cell) >= 0:
 					ground_seen[cell] = true
 		for building in _city.buildings():
-			if view.intersects(_city.map.tile_rect_to_world(building.lot_rect())):
+			if view.intersects(_city.map().tile_rect_to_world(building.lot_rect())):
 				buildings_seen[building.lot_rect()] = true
 	return {"open_camera_centers": centers, "ground_cells": ground_seen.size(),
 		"building_lots": buildings_seen.size()}

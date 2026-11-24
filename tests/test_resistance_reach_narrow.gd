@@ -71,7 +71,7 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 				var wider := _paths_reach_between(director, mark, 0.0,
 						ResistanceDirector.ROADBLOCK_WIDER_REACH.back()) if day == 13 else {}
 				var on_it := false
-				var centre := _city.map.world_to_tile(target)
+				var centre := _city.map().world_to_tile(target)
 				for step_to: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.RIGHT,
 						Vector2i.UP, Vector2i.DOWN]:
 					var tile := centre + step_to
@@ -80,7 +80,7 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 				var touch := EventPlan.new(EventCatalogue.by_id("roadblock"),
 						Vector2.ZERO).blocking_radius() + Tuning.TILE_SIZE * 1.5
 				for tile: Vector2i in wider:
-					if _city.map.tile_to_world(tile).distance_to(target) <= touch:
+					if _city.map().tile_to_world(tile).distance_to(target) <= touch:
 						on_it = true
 				# The nearest place stands in when nothing qualified: the director's run log says so
 				# (`_pick_near()` for a mark's task, `_place_at_a_mast()` for day 11's).
@@ -142,7 +142,7 @@ func _test_the_nearest_place_that_stands_in_is_confirmed(t: TestRunner) -> void:
 				> ResistanceDirector.NEAR_THE_MARK + Tuning.EVENT_DRAW_AHEAD,
 				"%.0fpx from the mark, beyond the ground drawn round where she read it"
 				% target.distance_to(mark))
-		t.check(_the_way_has_drawn(_city.map.world_to_tile(target)),
+		t.check(_the_way_has_drawn(_city.map().world_to_tile(target)),
 				"and the units along a way from home to it have drawn")
 	player.free()
 	director.free()
@@ -174,7 +174,7 @@ func _test_the_nearest_live_mast_that_stands_in_is_confirmed(t: TestRunner) -> v
 		t.check(at.distance_to(mark) > ResistanceDirector.NEAR_THE_MARK + Tuning.EVENT_DRAW_AHEAD,
 				"%.0fpx from the mark, beyond the ground drawn round where she read it"
 				% at.distance_to(mark))
-		var foot := _city.map.world_to_tile(at)
+		var foot := _city.map().world_to_tile(at)
 		var way := false
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			way = way or _the_way_has_drawn(foot + side)
@@ -222,7 +222,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 			var director: ResistanceDirector = read[0]
 			var player: Stroller = read[2]
 			var region_plan: RegionPlan = city.streets().region_plan()
-			var pool := NarrowTargetPool.tiles(step, city.map, region_plan)
+			var pool := NarrowTargetPool.tiles(step, city.map(), region_plan)
 			var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
 			var allow_held := ResistanceSteps.stands_on_held_ground(step)
 			var reachability := _day_reachability(city)
@@ -231,7 +231,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 			var reached: Dictionary = reachability[2]
 			var reachable := 0
 			for tile in pool:
-				if _stands_on_legal_ground(city.map, tile, walled, allow_held, grid, blocked,
+				if _stands_on_legal_ground(city.map(), tile, walled, allow_held, grid, blocked,
 						reached):
 					reachable += 1
 			checked += 1
@@ -247,12 +247,12 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 			var on_offer := director.current_step()
 			var at := director.contact_position() \
 					if on_offer != null and on_offer.index == step.index else Vector2.INF
-			var at_tile := city.map.world_to_tile(at) if at != Vector2.INF else Vector2i(-1, -1)
+			var at_tile := city.map().world_to_tile(at) if at != Vector2.INF else Vector2i(-1, -1)
 			# The station's contact stands on its door, on the facade, and is touched from the
 			# pavement straight below it, which is the ground asked about.
 			if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR and at != Vector2.INF:
-				at_tile = city.map.world_to_tile(at + Vector2.DOWN * Tuning.TILE_SIZE)
-			t.check(at != Vector2.INF and _stands_on_legal_ground(city.map, at_tile, walled,
+				at_tile = city.map().world_to_tile(at + Vector2.DOWN * Tuning.TILE_SIZE)
+			t.check(at != Vector2.INF and _stands_on_legal_ground(city.map(), at_tile, walled,
 					allow_held, grid, blocked, reached),
 					"seed %d day %d: step %d's contact stands on reachable ground at %s"
 					% [seed_value, day, step.index, at_tile])
@@ -269,19 +269,19 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 ## its `DayEvents`.
 func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked: Dictionary,
 		reached: Dictionary) -> bool:
-	var swing := CityGenerator.swing_park(city.map)
+	var swing := CityGenerator.swing_park(city.map())
 	var catalogue: Array[EventPlan] = []
 	for plan in RunCity.events(city).plans():
 		if plan.role() != GameEnums.BlockerRole.NONE or plan.mast_id() != "":
 			catalogue.append(plan)
-	for block in city.map.calm_blocks_now():
+	for block in city.map().calm_blocks_now():
 		if block == swing:
 			continue
-		var rect := ClosurePlanner.calm_area_rect(city.map, block)
-		var ground := city.map.tile_rect_to_world(rect)
+		var rect := ClosurePlanner.calm_area_rect(city.map(), block)
+		var ground := city.map().tile_rect_to_world(rect)
 		if catalogue.any(func(plan: EventPlan) -> bool: return plan.spoils(ground)):
 			continue
-		for tile in city.map.rect_tiles(rect):
-			if Tile.is_calm(city.map.tile_at(tile)) and grid.reaches(tile, blocked, reached):
+		for tile in city.map().rect_tiles(rect):
+			if Tile.is_calm(city.map().tile_at(tile)) and grid.reaches(tile, blocked, reached):
 				return true
 	return false

@@ -54,7 +54,7 @@ func _build_day(t: TestRunner) -> void:
 	RunCity.events(_city).stream_within(INF)
 
 	var state := CityState.new()
-	state.begin_day(_city.map.plans_by_block(), DAY)
+	state.begin_day(_city.map().plans_by_block(), DAY)
 	_city.start_day(state, DAY, _rng("closures"))
 	var consumed: Array[String] = []
 	RunCity.events(_city).start_day(DaySpec.for_day(DAY), _rng("events"), consumed)
@@ -62,7 +62,7 @@ func _build_day(t: TestRunner) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	_resistance.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
@@ -75,9 +75,9 @@ func _teardown(t: TestRunner) -> void:
 ## actually stand, which is the whole promise `for_spawn_target()` makes for every named target.
 func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 	for target: String in ["park", "alley"]:
-		var at := DevRig.for_spawn_target(target, _city.map, RunCity.events(_city), _city.streets(),
+		var at := DevRig.for_spawn_target(target, _city.map(), RunCity.events(_city), _city.streets(),
 				_resistance, _city.run.header(), _city.trace)
-		t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
+		t.check(_city.map().is_walkable(_city.map().world_to_tile(at)),
 				"--spawn %s lands on a walkable tile (%s)" % [target, at])
 
 ## `contact` reads `ResistanceDirector.contact_position()` rather than the map at all, so this is
@@ -86,7 +86,7 @@ func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> void:
 	var contact := _resistance.contact_position()
 	t.check(contact != Vector2.INF, "day %d has a resistance mark placed" % DAY)
-	var at := DevRig.for_spawn_target("contact", _city.map, RunCity.events(_city), _city.streets(),
+	var at := DevRig.for_spawn_target("contact", _city.map(), RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header(), _city.trace)
 	t.check(is_equal_approx(at.distance_to(contact), Vector2(70.0, 30.0).length()),
 			"--spawn contact stands off to the side of the mark rather than on top of it (%s)" % at)
@@ -95,9 +95,9 @@ func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> voi
 ## `for_spawn_target()` — this is what exercises them: a target matching nothing rolls all the way
 ## through and lands on the doorstep, with a warning rather than a silent wrong answer.
 func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
-	var at := DevRig.for_spawn_target("not-a-real-target", _city.map, RunCity.events(_city), _city.streets(),
+	var at := DevRig.for_spawn_target("not-a-real-target", _city.map(), RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header(), _city.trace)
-	t.check(at == _city.map.home_world_position(),
+	t.check(at == _city.map().home_world_position(),
 			"an unrecognised --spawn target falls back to the doorstep rather than guessing")
 
 ## Moved from `tests/test_main.gd`, where `_pavement_offset` lived before this milestone — see

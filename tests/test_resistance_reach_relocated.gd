@@ -53,13 +53,13 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		for plan in RunCity.events(_city).plans():
 			if plan.row_id() != "loudspeaker" or plan.mast_id().begins_with("added-") or plan.is_silenced():
 				continue
-			var foot_tile := _city.map.world_to_tile(plan.placed_at())
+			var foot_tile := _city.map().world_to_tile(plan.placed_at())
 			# The tile she touches it from: the first beside the foot she can stand on, the
 			# order `_place_at_a_mast()` asks them in.
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := foot_tile + side
-				if not SpawnSiting.is_legal_ground(_city.map, next,
-						_walled_alleys()) or _city.map.is_obstructed(next) \
+				if not SpawnSiting.is_legal_ground(_city.map(), next,
+						_walled_alleys()) or _city.map().is_obstructed(next) \
 						or not ResistanceReads.reaches_home(reach, next):
 					continue
 				if edge.has(next) or inside.has(next):
@@ -69,7 +69,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			added[0] += 1
 			var mast_id := added_plan.mast_id()
 			var foot := RunCity.events(_city).mast_foot(mast_id)
-			t.check(foot != Vector2.INF and edge.has(_city.map.world_to_tile(foot)),
+			t.check(foot != Vector2.INF and edge.has(_city.map().world_to_tile(foot)),
 					"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
 					% seed_value)
 			t.check(not _would_show(ResistanceDirector.TASK_BOX, foot),
@@ -143,8 +143,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 ## on the home block, or a district door's checkpoint within the gap and a mast's field of it
 ## (`DoorClearanceRule.clear_of_the_doors()`, the check the planning makes of every mast).
 func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
-	var tile := _city.map.world_to_tile(foot)
-	if _city.map.is_closed(tile) or _city.map.is_held_at(tile) or _city.map.is_on_home_block(tile):
+	var tile := _city.map().world_to_tile(foot)
+	if _city.map().is_closed(tile) or _city.map().is_held_at(tile) or _city.map().is_on_home_block(tile):
 		return true
 	var doors := PackedVector2Array()
 	var region_plan: RegionPlan = _city.streets().region_plan()
@@ -159,10 +159,10 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 func _plan_the_day(day: int, seed_value: int) -> void:
 	var state := _city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
-			_city.map.doorstep_world_position())
+			_city.map().doorstep_world_position())
 
 ## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
 ## be placed in an alley that is not reachable (ie sealed off)"*, olive-koala statement 9), on the
@@ -189,10 +189,10 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 		var city := _city
 		for day: int in REACHABILITY_SWEEP_DAYS:
 			var closure_state := CityState.new()
-			closure_state.begin_day(city.map.plans_by_block(), day)
+			closure_state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+					city.map().doorstep_world_position())
 
 			var director := _director(t)
 			director.start_day(day, _production_rng(seed_value, day, "resistance"),
@@ -211,34 +211,34 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 			var reached: Dictionary = reachability[2]
 
 			var by_tiles := {}
-			for tiles: Dictionary in [city.map.closed_tile_set(), city.map.soft_sealed_tiles(),
-					city.map.obstructed_tiles()]:
+			for tiles: Dictionary in [city.map().closed_tile_set(), city.map().soft_sealed_tiles(),
+					city.map().obstructed_tiles()]:
 				for tile: Vector2i in tiles:
 					by_tiles[tile] = true
-			var walk := city.map.walk_field(
-					city.map.world_to_tile(city.map.doorstep_world_position()), by_tiles)
+			var walk := city.map().walk_field(
+					city.map().world_to_tile(city.map().doorstep_world_position()), by_tiles)
 
 			var player := _rig_player(t, director.contact_position())
 			director.use_player(player)
 			var away: Array[Vector2] = []
 			for tile in _mark_tiles():
-				away.append(city.map.tile_to_world(tile))
-			var sidewalks := city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
+				away.append(city.map().tile_to_world(tile))
+			var sidewalks := city.map().tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for i in sidewalks.size():
 				if i % 10 != 0:
 					continue
-				var here := city.map.tile_to_world(sidewalks[i])
+				var here := city.map().tile_to_world(sidewalks[i])
 				var nearest := _relocate_round(director, player, here, away)
 				if nearest == Vector2.INF:
 					continue
 				checked += 1
-				var nearest_tile := city.map.world_to_tile(nearest)
-				t.check(_stands_on_legal_ground(city.map, nearest_tile, walled_alleys, false,
+				var nearest_tile := city.map().world_to_tile(nearest)
+				t.check(_stands_on_legal_ground(city.map(), nearest_tile, walled_alleys, false,
 						grid, blocked, reached),
 						("seed %d day %d: the alley a relocation from %s answers with is " +
 						"walkable, unobstructed and reachable from home, never sealed off")
 						% [seed_value, day, sidewalks[i]])
-				t.check(city.map.distance_at(walk, nearest_tile) >= 0,
+				t.check(city.map().distance_at(walk, nearest_tile) >= 0,
 						("seed %d day %d: and a walk from the doorstep around every closure, seal " +
 						"and body reaches it (%s, from %s)")
 						% [seed_value, day, nearest_tile, sidewalks[i]])

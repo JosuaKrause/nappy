@@ -53,14 +53,14 @@ func run(t: TestRunner) -> void:
 
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
 	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.streets().region_plan().gate_states())
 	crowd._player = rig

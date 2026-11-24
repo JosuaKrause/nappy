@@ -46,7 +46,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
@@ -59,7 +59,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	resistance.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var player := Stroller.new()
@@ -69,13 +69,13 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	player.global_position = city.map.doorstep_world_position()
+	player.global_position = city.map().doorstep_world_position()
 	RunCity.events(city).use_player(player)
 	var walk := Walk.new()
 	walk.city = city
 	walk.row = row
 	var mark := resistance.current_step()
-	var map := city.map
+	var map := city.map()
 	var outcome := "no mark"
 	if mark and mark.is_pickup:
 		var mark_at := resistance.contact_position()
@@ -167,7 +167,7 @@ class Walk extends RefCounted:
 				drawn_in_view_at_siting = view.intersects(Rect2(van.placed_at() + box.position,
 						box.size), true)
 				on_a_route = Corridor.of(city.streets().route_tree()).carries_a_route(
-						city.map.world_to_tile(van.placed_at()))
+						city.map().world_to_tile(van.placed_at()))
 			var off := (van.placed_at() - player.global_position).abs()
 			nearest_after = minf(nearest_after, van.placed_at().distance_to(player.global_position))
 			if seen_at < 0.0 and off.x <= Tuning.VIEW_HALF_EXTENT.x \

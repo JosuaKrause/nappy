@@ -103,10 +103,10 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	city.run.header().set_day(day)
 	var state := city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+			city.map().doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -116,12 +116,12 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	player.set_physics_process(false)
 	player.set_process(false)
 	player.add_to_group("player")
-	player.global_position = city.map.doorstep_world_position()
+	player.global_position = city.map().doorstep_world_position()
 	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).sees)
@@ -151,7 +151,7 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, label: D
 	var her := spot
 	_stand(city, player, her)
 	var at := her + Vector2(OFFSET, 0.0)
-	if not city.map.is_walkable(city.map.world_to_tile(at)):
+	if not city.map().is_walkable(city.map().world_to_tile(at)):
 		at = her + Vector2(0.0, OFFSET)
 	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
@@ -163,7 +163,7 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, label: D
 	var away := (her - at).normalized()
 	for tick in TICKS:
 		var next := her + away * Tuning.WALK_SPEED * STEP
-		if city.map.is_walkable(city.map.world_to_tile(next)):
+		if city.map().is_walkable(city.map().world_to_tile(next)):
 			her = next
 			_stand(city, player, her)
 			player.velocity = away * Tuning.WALK_SPEED
@@ -186,12 +186,12 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	_stand(city, player, swing)
 	RunCity.events(city).visible_view().look(camera, null)
 	happenings.tick(STEP, swing, Vector2.ZERO)
-	var park := CityGenerator.swing_park(city.map)
+	var park := CityGenerator.swing_park(city.map())
 	happenings.cordon.clear()
 	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas, park,
+	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, city.atlas, park,
 			RunCity.spawn_siting(city), RunCity.events(city).walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)
@@ -206,7 +206,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 ## Day 13's column sent down the main road toward her at the doorstep.
 func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		label: Dictionary) -> void:
-	var her := city.map.doorstep_world_position()
+	var her := city.map().doorstep_world_position()
 	_stand(city, player, her)
 	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
@@ -248,17 +248,17 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size_in_tiles().y:
-		for x in city.map.size_in_tiles().x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
-					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
+			if city.map().tile_at(tile) == GameEnums.TileType.SIDEWALK \
+					and city.map().is_walkable(tile) and not city.map().is_on_home_block(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = []
 	if sidewalk.is_empty():
 		return spots
 	for i in SPOTS:
-		spots.append(city.map.tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
+		spots.append(city.map().tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
 				+ sidewalk.size() / (SPOTS * 2)]))
 	return spots
 
@@ -345,7 +345,7 @@ class Meeting extends RefCounted:
 		# rules: walkers give way to one under way or standing round, cars to one that has moved.
 		var for_walkers: Array[MoveProposal] = []
 		var for_cars: Array[MoveProposal] = []
-		for move in _city.map.listed_moves().keeping_their_course():
+		for move in _city.map().listed_moves().keeping_their_course():
 			if move.body_radius() <= 0.0:
 				continue
 			var seen: Array = _seen.get(move, [move.steps_to(), SeparationPass.NEVER_MOVED])

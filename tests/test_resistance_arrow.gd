@@ -275,7 +275,7 @@ func _longest_route_points() -> Array[Vector2]:
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(_city.map.tile_to_world(longest[i] * ReachabilityGrid.CELL)
+		points.append(_city.map().tile_to_world(longest[i] * ReachabilityGrid.CELL)
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5))
 	return points
 
@@ -322,12 +322,12 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 
 ## A tile beside `foot` she can stand on to touch the mast there, as `_place_at_a_mast()` asks it.
 func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
-	var foot_tile := _city.map.world_to_tile(foot)
+	var foot_tile := _city.map().world_to_tile(foot)
 	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var tile := foot_tile + side
-		if SpawnSiting.is_legal_ground(_city.map, tile, _walled_alleys()) \
-				and not _city.map.is_obstructed(tile):
-			return _city.map.tile_to_world(tile)
+		if SpawnSiting.is_legal_ground(_city.map(), tile, _walled_alleys()) \
+				and not _city.map().is_obstructed(tile):
+			return _city.map().tile_to_world(tile)
 	return Vector2.INF
 
 ## Day 11, through the real rig: reading the mark rigs a mast onto her route, and walking the
@@ -533,13 +533,13 @@ func _start_the_finale(t: TestRunner, seed_value: int) -> Array:
 	GivenRun.alley_tiles(_city.run, [])
 	var state := _city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.plans_by_block(), day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
-			_city.map.doorstep_world_position())
+			_city.map().doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
-	var player := _rig_player(t, _city.map.doorstep_world_position())
+	var player := _rig_player(t, _city.map().doorstep_world_position())
 	director.use_player(player)
 	return [director, Vector2.INF, player]
 
@@ -561,10 +561,10 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 		ResistanceSteps.TargetKind.MAST:
 			return RunCity.events(_city).mast_foot(ResistanceReads.mast_at(director, RunCity.events(_city)))
 		ResistanceSteps.TargetKind.PARK_SWING:
-			var layout: BlockLayout = _city.map.layout_of(CityGenerator.swing_park(_city.map))
-			return _city.map.swing_position(layout.playground_rect()) if layout else Vector2.INF
+			var layout: BlockLayout = _city.map().layout_of(CityGenerator.swing_park(_city.map()))
+			return _city.map().swing_position(layout.playground_rect()) if layout else Vector2.INF
 		ResistanceSteps.TargetKind.STATION_DOOR:
-			var door := _city.map.power_station_door_position()
+			var door := _city.map().power_station_door_position()
 			return Vector2(door.x, door.y - Tuning.TILE_SIZE)
 	return Vector2.INF
 

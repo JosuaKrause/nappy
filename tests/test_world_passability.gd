@@ -435,9 +435,9 @@ func _in_a_day(t: TestRunner, check: Callable) -> void:
 	RunCity.build(city, MapCache.of(SEED))
 	var state := run_state.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.plans_by_block(), WALK_DAY)
+	state.begin_day(city.map().plans_by_block(), WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
-	RunCity.events(city).start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map().doorstep_world_position())
 	check.call(t, city)
 	city.free()
 
@@ -450,7 +450,7 @@ static func _rng(stream: String) -> RandomNumberGenerator:
 ## from: the instance's own pieces, where it stands and the way it lies, rasterised, are the plan's
 ## recorded tiles.
 func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var compared := 0
 	var differ := 0
 	for plan in RunCity.events(city).plans():
@@ -484,7 +484,7 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 ## line that stops her. Read off the solid the city put in the world at each mouth: its collision box,
 ## laid down the tiles it covers, is on closed ground.
 func _test_a_closure_barrier_stands_on_closed_ground(t: TestRunner, city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var lines := 0
 	var stood := 0
 	var outside := 0
@@ -514,7 +514,7 @@ func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
 ## and runs clear between, never out of or into a lot.
 func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var cat := EventCatalogue.by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
 	var director := _a_director_owing_the_cat(map)
@@ -559,7 +559,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 ## A dog that loses interest facing a building leaves round it: every frame of its departure is on
 ## ground it may stand on, and it gets away from her.
 func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var dog := EventCatalogue.by_id("loose_dog")
 	var start := Vector2.INF
 	var into := Vector2.ZERO
@@ -603,7 +603,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 ## may not. A far guard is the hunting roadblock's, which none of these rows is: his walk is the
 ## case after.
 func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var walked := 0
 	var steps := 0
 	var bad: Array[String] = []
@@ -659,7 +659,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 ## (`RoadblockParts`: the barrier post composed as the event composes it, driven a frame at a time). No
 ## step of his enters ground his mover may not, and he walks.
 func _test_the_far_guard_of_a_roadblock_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var row := EventCatalogue.escape_roadblock()
 	var mover := EventInstance.mover_for(row)
 	var at := _a_start_for(map, row, mover, map.doorstep_world_position())

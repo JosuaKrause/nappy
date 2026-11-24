@@ -62,7 +62,7 @@ func _measure(t: TestRunner, seed_value: int, walks: bool) -> void:
 		_finish(player, director, city)
 		return
 	_choose_again(director)
-	var map := city.map
+	var map := city.map()
 	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
 	director.contact().complete_now()

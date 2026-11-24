@@ -62,7 +62,7 @@ func _walk(t: TestRunner, seed_value: int) -> Array:
 	var put_down: Array[String] = []
 	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), DAY)
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
@@ -73,7 +73,7 @@ func _walk(t: TestRunner, seed_value: int) -> Array:
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	resistance.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
@@ -151,7 +151,7 @@ func _the_rigged_man(city: City, put_down: Array[String]) -> EventPlan:
 	var events := RunCity.events(city)
 	for plan in events.walk_events().plans():
 		if plan.row_id() == ROW and plan.is_placed() \
-				and PutOnHerRoute.says(put_down, city.map, plan):
+				and PutOnHerRoute.says(put_down, city.map(), plan):
 			return plan
 	return null
 

@@ -69,7 +69,7 @@ func _test_wherever_she_is_sent_a_way_stands_over_drawn_ground(t: TestRunner) ->
 		for day in DAYS:
 			_ask_the_task(t, day, seed_value, Vector2.INF, held)
 		for front in _fronts_across_the_city():
-			_ask_the_task(t, 8, seed_value, _city.map.tile_to_world(front), scars)
+			_ask_the_task(t, 8, seed_value, _city.map().tile_to_world(front), scars)
 		_ask_a_moved_mark(t, seed_value, moved)
 		_ask_the_arrows_mast(t, seed_value, arrows)
 		_ask_a_look_alike(t, seed_value, look_alikes)
@@ -107,7 +107,7 @@ func _ask_the_task(t: TestRunner, day: int, seed_value: int, scar_at: Vector2,
 	var mark: Vector2 = read[1]
 	var player: Stroller = read[2]
 	var label := "seed %d day %d%s" % [seed_value, day,
-			"" if scar_at == Vector2.INF else ", a scar at %s" % _city.map.world_to_tile(scar_at)]
+			"" if scar_at == Vector2.INF else ", a scar at %s" % _city.map().world_to_tile(scar_at)]
 	var step := director.current_step()
 	t.check(step != null and not step.is_pickup,
 			"%s: reading the mark puts its task on offer" % label)
@@ -135,7 +135,7 @@ func _ask_a_moved_mark(t: TestRunner, seed_value: int, held: Dictionary) -> void
 	GivenRun.scars(_city.run, no_scars)
 	var director := _start_the_day_on(t, MOVED_MARK_DAY, seed_value)
 	_look_at(Rect2())
-	var map := _city.map
+	var map := _city.map()
 	var door := map.doorstep_world_position()
 	var tiles := _mark_tiles()
 	tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
@@ -174,7 +174,7 @@ func _ask_the_arrows_mast(t: TestRunner, seed_value: int, held: Dictionary) -> v
 	var director: ResistanceDirector = read[0]
 	var mark: Vector2 = read[1]
 	var player: Stroller = read[2]
-	var map := _city.map
+	var map := _city.map()
 	var first := director.contact_position()
 	var reach := ResistanceReads.day_reachability(_city)
 	var far_foot := Vector2.INF
@@ -218,7 +218,7 @@ func _ask_a_look_alike(t: TestRunner, seed_value: int, held: Dictionary) -> void
 	var read := _read_the_mark_on(t, LOOK_ALIKE_DAY, seed_value)
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]
-	var map := _city.map
+	var map := _city.map()
 	var door := map.doorstep_world_position()
 	var reach := ResistanceReads.day_reachability(_city)
 	var far := Vector2.INF
@@ -247,7 +247,7 @@ func _ask_a_look_alike(t: TestRunner, seed_value: int, held: Dictionary) -> void
 ## `SCARS_A_CITY` of the fronts day 3's fire can catch on in the test city, spread through the
 ## list, which runs over the city row by row.
 func _fronts_across_the_city() -> Array[Vector2i]:
-	var fronts := EventScheduler.row_ground(_city.map).tiles_for(
+	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
 			EventCatalogue.by_id("burning_building"))
 	var found: Array[Vector2i] = []
 	for k in SCARS_A_CITY:
@@ -265,7 +265,7 @@ func _fronts_across_the_city() -> Array[Vector2i]:
 ## `OUT_OF_REACH` where no ground she can stand on and reach touches it at all; `NO_WAY`
 ## otherwise.
 func _how_a_way_stands(director: ResistanceDirector, her: Vector2) -> String:
-	var map := _city.map
+	var map := _city.map()
 	var items: Array[Vector2] = [director.contact_position()]
 	if director.rider() != null:
 		items.append(director.rider().global_position)
@@ -313,7 +313,7 @@ func _drawn_round(at: Vector2) -> float:
 ## **The ground within `CLEAR` of an undrawn unit**, a byte a tile in rows (`y * width + x`), 1
 ## where the tile's centre is that near the bounds of a unit that has not drawn.
 func _the_ground_near_an_undrawn_unit() -> PackedByteArray:
-	var size := _city.map.size_in_tiles()
+	var size := _city.map().size_in_tiles()
 	var near := PackedByteArray()
 	near.resize(size.x * size.y)
 	var tile_size := float(Tuning.TILE_SIZE)
@@ -337,7 +337,7 @@ func _the_ground_near_an_undrawn_unit() -> PackedByteArray:
 ## home is walked from wherever it is, but not where it is unclear: then the walk reaches nothing.
 func _walked_over_clear_ground(start: Vector2i, blocked: Dictionary, unclear: PackedByteArray,
 		centre: Vector2, within: float) -> Dictionary:
-	var map := _city.map
+	var map := _city.map()
 	var size := map.size_in_tiles()
 	var found := {}
 	if not Rect2i(Vector2i.ZERO, size).has_point(start) or unclear[start.y * size.x + start.x] == 1:
@@ -366,7 +366,7 @@ func _walked_over_clear_ground(start: Vector2i, blocked: Dictionary, unclear: Pa
 ## legal, reachable ground within `CROSSING_TILES` of the gatehouse the contact stands on.
 func _the_ground_she_touches_it_from(director: ResistanceDirector, items: Array[Vector2],
 		reach: Array) -> Array[Vector2i]:
-	var map := _city.map
+	var map := _city.map()
 	var step := director.current_step()
 	var crossed := step != null and step.target_kind == ResistanceSteps.TargetKind.DOOR
 	var span := CROSSING_TILES if crossed else TOUCH_TILES

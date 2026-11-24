@@ -31,7 +31,7 @@ func _test_the_bounding_box_layer_draws_every_enabled_body(t: TestRunner) -> voi
 
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var closures_rng := RandomNumberGenerator.new()
 	closures_rng.seed = hash("m100-debug-layers:closures:%d" % day)
 	city.start_day(state, day, closures_rng)

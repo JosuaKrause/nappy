@@ -125,7 +125,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	RunCity.events(city).stream_within(INF)
 
 	var state := CityState.new()
-	state.begin_day(city.map.plans_by_block(), day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(day, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
@@ -133,7 +133,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	var stroller: Stroller = STROLLER_SCENE.instantiate()
 	(stroller.get_node("Baby") as Baby).use_bus(EventBus)
 	t.add_child(stroller)
-	stroller.global_position = city.map.doorstep_world_position()
+	stroller.global_position = city.map().doorstep_world_position()
 	if her:
 		RunCity.events(city).use_player(stroller)
 		RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)
@@ -141,7 +141,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	if her:
 		resistance.use_player(stroller)
@@ -178,7 +178,7 @@ func _free_day() -> void:
 
 ## The planner the rig builds in its `setup()`, over the suite's day 6 and her.
 func _planner(resistance: ResistanceDirector = _resistance) -> RouteRigPlanner:
-	return RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, resistance, _clock)
+	return RouteRigPlanner.new(_city.map(), RunCity.events(_city), _no_spawn, _stroller, resistance, _clock)
 
 ## A spawn lookup that places nothing, for a planner whose checks never resolve a `spawn:` word.
 func _no_spawn(_name: String) -> Vector2:
@@ -187,7 +187,7 @@ func _no_spawn(_name: String) -> Vector2:
 ## A fixture's planner, the same shape.
 func _fixture_planner(fixture: Dictionary) -> RouteRigPlanner:
 	var city: City = fixture["city"]
-	return RouteRigPlanner.new(city.map, RunCity.events(city), _no_spawn, fixture["stroller"],
+	return RouteRigPlanner.new(city.map(), RunCity.events(city), _no_spawn, fixture["stroller"],
 			fixture["resistance"], _clock)
 
 func _release() -> void:
@@ -196,8 +196,8 @@ func _release() -> void:
 
 ## Whether `tile` is ground a straight cut may cross: open, unobstructed and not plain `ROAD`.
 func _cuttable(tile: Vector2i) -> bool:
-	return _city.map.is_open(tile) and not _city.map.is_obstructed(tile) \
-			and _city.map.tile_at(tile) != GameEnums.TileType.ROAD
+	return _city.map().is_open(tile) and not _city.map().is_obstructed(tile) \
+			and _city.map().tile_at(tile) != GameEnums.TileType.ROAD
 
 # ----------------------------------------------------------------- the rig ---
 
@@ -206,7 +206,7 @@ func _started_day(t: TestRunner, city: City, stroller: Stroller, run: RunState) 
 	var day := DayController.new()
 	t.add_child(day)
 	day.setup(run)
-	day.use_the_walk(city.map, stroller)
+	day.use_the_walk(city.map(), stroller)
 	day.set_process(false)
 	day.start(600.0)
 	return day
@@ -230,7 +230,7 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	_rig_city = city
 	_city_trace = RunCity.events(city).world.trace()
 	RunCity.events(city).world.surroundings().tracing_to(trace)
-	rig.setup(city.map, RunCity.events(city), _no_spawn, stroller, baby, resistance, day, targets, run)
+	rig.setup(city.map(), RunCity.events(city), _no_spawn, stroller, baby, resistance, day, targets, run)
 	rig.start_day(day.spec())
 	return rig
 
@@ -327,8 +327,8 @@ func _end_rig(rig: RouteRig, day: DayController) -> void:
 
 ## An open square of `size` tiles on cuttable ground, its top-left tile, scanned rather than hard-coded.
 func _find_open_square(t: TestRunner, size: int) -> Vector2i:
-	for y in range(3, _city.map.size_in_tiles().y - 3 - size):
-		for x in range(3, _city.map.size_in_tiles().x - 3 - size):
+	for y in range(3, _city.map().size_in_tiles().y - 3 - size):
+		for x in range(3, _city.map().size_in_tiles().x - 3 - size):
 			var fits := true
 			for dy in size:
 				for dx in size:
@@ -363,15 +363,15 @@ func _test_a_plan_never_cuts_a_true_diagonal(t: TestRunner) -> void:
 ## A stretch of plain `ROAD` down one column, `length` tiles, with open ground on both sides, so a
 ## cut down it fails on the tile type and nothing else; its top tile.
 func _find_road_column(t: TestRunner, length: int) -> Vector2i:
-	for y in range(4, _city.map.size_in_tiles().y - 4 - length):
-		for x in range(4, _city.map.size_in_tiles().x - 4):
+	for y in range(4, _city.map().size_in_tiles().y - 4 - length):
+		for x in range(4, _city.map().size_in_tiles().x - 4):
 			var fits := true
 			for k in length:
 				var here := Vector2i(x, y + k)
-				if _city.map.tile_at(here) != GameEnums.TileType.ROAD or not _city.map.is_open(here) \
-						or _city.map.is_obstructed(here) \
-						or not _city.map.is_open(here + Vector2i.LEFT) \
-						or not _city.map.is_open(here + Vector2i.RIGHT):
+				if _city.map().tile_at(here) != GameEnums.TileType.ROAD or not _city.map().is_open(here) \
+						or _city.map().is_obstructed(here) \
+						or not _city.map().is_open(here + Vector2i.LEFT) \
+						or not _city.map().is_open(here + Vector2i.RIGHT):
 					fits = false
 					break
 			if fits:
@@ -403,13 +403,13 @@ func _test_a_straight_run_on_plain_road_is_never_cut(t: TestRunner) -> void:
 ## either side of its line), and none of it a crossing already; answers `Vector2i(-1, -1)` if
 ## there is none. Scanned rather than hard-coded.
 func _find_cuttable_row(length: int) -> Vector2i:
-	for y in range(4, _city.map.size_in_tiles().y - 4):
-		for x in range(4, _city.map.size_in_tiles().x - 4 - length):
+	for y in range(4, _city.map().size_in_tiles().y - 4):
+		for x in range(4, _city.map().size_in_tiles().x - 4 - length):
 			var fits := true
 			for k in length:
 				for dy in range(-1, 2):
 					var tile := Vector2i(x + k, y + dy)
-					if not _cuttable(tile) or _city.map.tile_at(tile) == GameEnums.TileType.CROSSING:
+					if not _cuttable(tile) or _city.map().tile_at(tile) == GameEnums.TileType.CROSSING:
 						fits = false
 						break
 				if not fits:
@@ -440,11 +440,11 @@ func _test_a_straight_run_onto_a_crossing_is_cut(t: TestRunner) -> void:
 	var was := {}
 	for k in range(1, 4):
 		var tile := left + Vector2i(k, 0)
-		was[tile] = _city.map.tile_at(tile)
-		_city.map.set_tile(tile, GameEnums.TileType.CROSSING)
+		was[tile] = _city.map().tile_at(tile)
+		_city.map().set_tile(tile, GameEnums.TileType.CROSSING)
 	var crossed := _planner().plan(left, right)
 	for tile: Vector2i in was:
-		_city.map.set_tile(tile, was[tile])
+		_city.map().set_tile(tile, was[tile])
 	t.check(crossed.size() == 2,
 			"a crosswalk three tiles wide on the run %s to %s is cut straight across, not refused "
 			% [left, right] + "the way a ROAD tile is (%s)" % [crossed])
@@ -458,16 +458,16 @@ func _test_a_straight_run_onto_a_crossing_is_cut(t: TestRunner) -> void:
 ## carriageway that nothing here should be `ROAD` at all.
 func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t: TestRunner) -> void:
 	var planner := _planner()
-	var here := _city.map.world_to_tile(_city.map.doorstep_world_position())
-	var calm := _city.map.calm_tiles()
+	var here := _city.map().world_to_tile(_city.map().doorstep_world_position())
+	var calm := _city.map().calm_tiles()
 	t.check(not calm.is_empty(), "day %d has calm ground to route to" % DAY)
 	if calm.is_empty():
 		return
-	var field := _city.map.walk_field(here)
+	var field := _city.map().walk_field(here)
 	var nearest := calm[0]
-	var best := _city.map.distance_at(field, nearest)
+	var best := _city.map().distance_at(field, nearest)
 	for tile in calm:
-		var distance := _city.map.distance_at(field, tile)
+		var distance := _city.map().distance_at(field, tile)
 		if distance >= 0 and (best < 0 or distance < best):
 			best = distance
 			nearest = tile
@@ -475,7 +475,7 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t: Te
 	t.check(not path.is_empty(), "a path from the doorstep to the nearest calm tile exists")
 	var road_steps := 0
 	for tile in _walked_tiles(path):
-		if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
+		if _city.map().tile_at(tile) == GameEnums.TileType.ROAD:
 			road_steps += 1
 	t.check(road_steps == 0,
 			"the route to calm ground takes no plain ROAD tile when the sidewalk graph reaches it (%d found)"
@@ -490,14 +490,14 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t: Te
 ## Quiet (`_site_is_quiet()`). Scanned rather than hard-coded. Answers
 ## `Vector2i(-1, -1)` if none.
 func _find_kerb_site(t: TestRunner, planner: RouteRigPlanner) -> Vector2i:
-	var doorstep := _city.map.world_to_tile(_city.map.doorstep_world_position())
+	var doorstep := _city.map().world_to_tile(_city.map().doorstep_world_position())
 	var clear := planner.body_clear_tiles()
-	for y in range(4, _city.map.size_in_tiles().y - 4):
-		for x in range(4, _city.map.size_in_tiles().x - 4):
+	for y in range(4, _city.map().size_in_tiles().y - 4):
+		for x in range(4, _city.map().size_in_tiles().x - 4):
 			var kerb := Vector2i(x, y)
 			if absi(kerb.x - doorstep.x) + absi(kerb.y - doorstep.y) < 12:
 				continue
-			var inward := _city.map.pavement_inward(kerb)
+			var inward := _city.map().pavement_inward(kerb)
 			if inward == Vector2i.ZERO:
 				continue
 			if _kerb_site_fits(kerb, inward, clear) and _site_is_quiet(kerb):
@@ -511,7 +511,7 @@ func _find_kerb_site(t: TestRunner, planner: RouteRigPlanner) -> Vector2i:
 ## or a seal, which `_kerb_site_fits` cannot see in the tile record) can shut both, leaving a plan
 ## no way round the van's clearance: crossing a tile of it is then the right answer and not a fault.
 func _site_is_quiet(kerb: Vector2i) -> bool:
-	var at := _city.map.tile_to_world(kerb)
+	var at := _city.map().tile_to_world(kerb)
 	for instance: EventInstance in RunCity.events(_city).instances():
 		if instance.global_position.distance_to(at) < QUIET_SITE_TILES * Tuning.TILE_SIZE:
 			return false
@@ -521,14 +521,14 @@ func _kerb_site_fits(kerb: Vector2i, inward: Vector2i, clear: Dictionary) -> boo
 	var along := Vector2i(inward.y, inward.x)
 	for k in range(-3, 4):
 		var here := kerb + along * k
-		if _city.map.pavement_inward(here) != inward \
-				or _city.map.tile_at(here - inward) != GameEnums.TileType.ROAD \
-				or _city.map.tile_at(here - inward * 2) != GameEnums.TileType.ROAD \
-				or _city.map.tile_at(here + inward) != GameEnums.TileType.SIDEWALK \
-				or _city.map.is_walkable(here + inward * 2):
+		if _city.map().pavement_inward(here) != inward \
+				or _city.map().tile_at(here - inward) != GameEnums.TileType.ROAD \
+				or _city.map().tile_at(here - inward * 2) != GameEnums.TileType.ROAD \
+				or _city.map().tile_at(here + inward) != GameEnums.TileType.SIDEWALK \
+				or _city.map().is_walkable(here + inward * 2):
 			return false
 		for tile: Vector2i in [here, here + inward, here - inward, here - inward * 2]:
-			if not _city.map.is_open(tile) or _city.map.is_obstructed(tile) or clear.has(tile):
+			if not _city.map().is_open(tile) or _city.map().is_obstructed(tile) or clear.has(tile):
 				return false
 	return true
 
@@ -559,13 +559,13 @@ func _check_clearance_beside_a_kerbed_van(t: TestRunner, planner: RouteRigPlanne
 	var kerb := _find_kerb_site(t, planner)
 	if kerb == Vector2i(-1, -1):
 		return
-	var inward := _city.map.pavement_inward(kerb)
+	var inward := _city.map().pavement_inward(kerb)
 	var along := Vector2i(inward.y, inward.x)
 	var van := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("delivery_van"),
-			_city.map.tile_to_world(kerb))
+			_city.map().tile_to_world(kerb))
 	t.check(van.is_solid(), "the van stands with a solid body")
 	var frontage := kerb + inward
-	t.check(_city.map.is_obstructed(kerb) and not _city.map.is_obstructed(frontage),
+	t.check(_city.map().is_obstructed(kerb) and not _city.map().is_obstructed(frontage),
 			"the tile record has the van's kerb tile and not the frontage tile beside it")
 	var clear := planner.body_clear_tiles()
 	t.check(clear.has(frontage), "the frontage tile beside the van is kept clear of")
@@ -591,7 +591,7 @@ func _check_clearance_beside_a_kerbed_van(t: TestRunner, planner: RouteRigPlanne
 	t.check(pressed == 0, "no step of the plan past the van is one she cannot stand in the middle"
 			+ " of (%d found)" % pressed)
 	RunCity.events(_city).retire(van)
-	_city.map.release_obstruction(van.get_instance_id())
+	_city.map().release_obstruction(van.get_instance_id())
 
 ## **A tile of a body's clearance the plan chose to cross is walked at its roomiest point, not its
 ## centre.** The carriageway's first lane beside a kerbed `delivery_van` has its centre 10px from the
@@ -604,14 +604,14 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 	var kerb := _find_kerb_site(t, planner)
 	if kerb == Vector2i(-1, -1):
 		return
-	var inward := _city.map.pavement_inward(kerb)
+	var inward := _city.map().pavement_inward(kerb)
 	var along := Vector2i(inward.y, inward.x)
 	var van := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("delivery_van"),
-			_city.map.tile_to_world(kerb))
+			_city.map().tile_to_world(kerb))
 	var lane := kerb - inward
 	var surface := func(point: Vector2) -> float:
 		return van.global_position.distance_to(point) - van.ground_shape().reach()
-	var centre := _city.map.tile_to_world(lane)
+	var centre := _city.map().tile_to_world(lane)
 	t.check(surface.call(centre) < Tuning.PLAYER_BODY_RADIUS,
 			"the lane's centre is nearer the van's side than her radius (%.1fpx)" % surface.call(centre))
 	var keep_off := {}
@@ -625,12 +625,12 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 			"the crossed clearance tile stays a waypoint of its own (%s)" % [planned])
 	if planned.has(lane):
 		var moved: Vector2 = planner.to_world(planned)[planned.find(lane)]
-		t.check(_city.map.world_to_tile(moved) == lane
+		t.check(_city.map().world_to_tile(moved) == lane
 				and surface.call(moved) >= Tuning.PLAYER_BODY_RADIUS,
 				"and is walked at a point of its tile clear of the van by her radius (%.1fpx)"
 				% surface.call(moved))
 	RunCity.events(_city).retire(van)
-	_city.map.release_obstruction(van.get_instance_id())
+	_city.map().release_obstruction(van.get_instance_id())
 
 ## Every tile a walk down `waypoints` passes through, in order — a plan keeps only the ends of a
 ## straight run, and every run is along one row or column (a diagonal is never cut), so the tiles
@@ -638,7 +638,7 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 func _walked(waypoints: Array[Vector2]) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	for point in waypoints:
-		tiles.append(_city.map.world_to_tile(point))
+		tiles.append(_city.map().world_to_tile(point))
 	return _walked_tiles(tiles)
 
 func _walked_tiles(path: Array[Vector2i]) -> Array[Vector2i]:
@@ -669,13 +669,13 @@ func _step_toward(tile: Vector2i, to: Vector2i) -> Vector2i:
 ## what a plan does with that ground once a stall has named it.
 func _test_a_replan_keeps_off_the_ground_round_what_caught_her(t: TestRunner) -> void:
 	var planner := _planner()
-	_stroller.global_position = _city.map.doorstep_world_position()
+	_stroller.global_position = _city.map().doorstep_world_position()
 	var calm := planner.resolve("calm")
 	t.check(calm != Vector2.INF, "a calm target exists for this leg")
 	if calm == Vector2.INF:
 		return
 	var here := planner.standing_tile()
-	var to := _city.map.world_to_tile(calm)
+	var to := _city.map().world_to_tile(calm)
 	var first := _walked_tiles(planner.plan(here, to))
 	t.check(first.size() >= 5, "the ordinary plan to calm ground has a middle to take away")
 	if first.size() < 5:
@@ -690,7 +690,7 @@ func _test_a_replan_keeps_off_the_ground_round_what_caught_her(t: TestRunner) ->
 ## `RouteRig._UNSTICK_TRY_SECONDS` on the one direction that cannot work.
 func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t: TestRunner) -> void:
 	var planner := _planner()
-	_stroller.global_position = _city.map.doorstep_world_position()
+	_stroller.global_position = _city.map().doorstep_world_position()
 	var order := planner.unstick_order(Vector2.LEFT, 48.0)
 	t.check(order[0] == Vector2.LEFT, "the first direction tried is away from the body")
 	t.check(order[order.size() - 1] == Vector2.RIGHT, "the last is straight back into it")
@@ -705,24 +705,24 @@ func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t: TestRu
 ## body's reach of a post, and the pavement beside the row stays open, so there is a plan. The
 ## reach is the rig's own (a post's radius plus hers), copied here as the test's oracle.
 func _test_a_plan_never_goes_through_a_precincts_posts(t: TestRunner) -> void:
-	var posts := _city.map.post_positions()
+	var posts := _city.map().post_positions()
 	t.check(posts.size() >= 2, "the suite's city has a precinct with a row of posts")
 	if posts.size() < 2:
 		return
 	var planner := _planner()
 	var vertical := not is_equal_approx(posts[0].x, posts[1].x)
-	var count := posts.size() / (2 * _city.map.precinct_stretches().size())
+	var count := posts.size() / (2 * _city.map().precinct_stretches().size())
 	var middle := posts[count / 2]
 	var along := Vector2(0.0, 1.0) if vertical else Vector2(1.0, 0.0)
-	var from := _city.map.world_to_tile(middle - along * Tuning.TILE_SIZE * 3.0)
-	var to := _city.map.world_to_tile(middle + along * Tuning.TILE_SIZE * 3.0)
+	var from := _city.map().world_to_tile(middle - along * Tuning.TILE_SIZE * 3.0)
+	var to := _city.map().world_to_tile(middle + along * Tuning.TILE_SIZE * 3.0)
 	var reach := Prop.bollard_shape().rounding_radius() + Tuning.PLAYER_BODY_RADIUS
 	var shut := func(tile: Vector2i) -> bool:
 		for at in posts:
-			if _city.map.tile_to_world(tile).distance_to(at) < reach:
+			if _city.map().tile_to_world(tile).distance_to(at) < reach:
 				return true
 		return false
-	var aimed := planner.plan(from, _city.map.world_to_tile(middle))
+	var aimed := planner.plan(from, _city.map().world_to_tile(middle))
 	t.check(not aimed.is_empty() and not shut.call(aimed[aimed.size() - 1]),
 			"the row's own tile is blocked to every plan: one aimed at it ends beside the posts")
 	var planned := planner.plan(from, to)
@@ -748,7 +748,7 @@ func _test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t: Test
 			"'task' is unresolved while the mark is still the step on offer")
 
 func _test_resolve_target_home_is_the_home_rects_centre(t: TestRunner) -> void:
-	t.check(_planner().resolve("home") == _city.map.home_world_position(),
+	t.check(_planner().resolve("home") == _city.map().home_world_position(),
 			"'home' resolves to CityMap.home_world_position()")
 
 ## `spawn:<name>` is handed to the spawn lookup the planner was built with (`main` hands the one
@@ -756,7 +756,7 @@ func _test_resolve_target_home_is_the_home_rects_centre(t: TestRunner) -> void:
 ## goes in, and what it answers is the word's place.
 func _test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t: TestRunner) -> void:
 	var asked: Array[String] = []
-	var planner := RouteRigPlanner.new(_city.map, RunCity.events(_city),
+	var planner := RouteRigPlanner.new(_city.map(), RunCity.events(_city),
 			func(name: String) -> Vector2:
 				asked.append(name)
 				return Vector2(7.0, 9.0),
@@ -771,17 +771,17 @@ func _test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t: TestRunner
 func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestRunner) -> void:
 	var clock := DayController.new()
 	t.add_child(clock)
-	var planner := RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, _resistance,
+	var planner := RouteRigPlanner.new(_city.map(), RunCity.events(_city), _no_spawn, _stroller, _resistance,
 			clock)
 	t.check(planner.resolve("tunnel") == Vector2.INF and planner.resolve("bridge") \
 			== Vector2.INF, "a day has no tunnel or bridge to walk to")
-	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityExit.Kind.TUNNEL))
-	var bridge := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityExit.Kind.BRIDGE))
+	var tunnel := _city.map().tile_to_world(FinalePlanner.exit_tile(_city.map(), CityExit.Kind.TUNNEL))
+	var bridge := _city.map().tile_to_world(FinalePlanner.exit_tile(_city.map(), CityExit.Kind.BRIDGE))
 	clock.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	clock.spec().use_exits({CityExit.Kind.TUNNEL: tunnel, CityExit.Kind.BRIDGE: bridge})
 	t.check(planner.resolve("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(planner.resolve("bridge") == bridge, "'bridge' resolves to the spec's bridge")
-	var escape := RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, null, clock)
+	var escape := RouteRigPlanner.new(_city.map(), RunCity.events(_city), _no_spawn, _stroller, null, clock)
 	t.check(escape.resolve("mark") == Vector2.INF and escape.resolve("task") \
 			== Vector2.INF, "with no resistance director, 'mark' and 'task' are unavailable")
 	clock.free()
@@ -831,7 +831,7 @@ func _test_task_target_resolves_for_the_neighbor_task_on_day_10(t: TestRunner) -
 func _test_task_target_steps_off_obstructed_ground(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 10)
 	_touch_the_mark(fixture)
-	var map: CityMap = (fixture["city"] as City).map
+	var map: CityMap = (fixture["city"] as City).map()
 	var contact := (fixture["resistance"] as ResistanceDirector).contact_position()
 	var planner := _fixture_planner(fixture)
 	var contact_tile := map.world_to_tile(contact)
@@ -865,7 +865,7 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t: TestRunner) -> vo
 	# the leg aims at the open ground nearest it; where it is open — the mast put up beside the
 	# mark she read standing at the doorstep — at the foot itself. From either the touch completes.
 	var contact := director.contact_position()
-	var map := (fixture["city"] as City).map
+	var map := (fixture["city"] as City).map()
 	var foot := map.world_to_tile(contact)
 	var on_a_body := not map.is_walkable(foot) or map.is_obstructed(foot)
 	var touched := false
@@ -926,7 +926,7 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t: TestRu
 	t.check(planner.resolve("mark") == Vector2.INF,
 			"'mark' is unavailable on the last night, which has none")
 	var resolved := planner.resolve("task")
-	var map := (fixture["city"] as City).map
+	var map := (fixture["city"] as City).map()
 	var touched := false
 	if resolved != Vector2.INF:
 		touched = ContactTouches.touches_from_one(director, resolved)
@@ -955,19 +955,19 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t: TestRu
 ## rather than by playing a whole day forward to spoil one for real.
 func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t: TestRunner) -> void:
 	var planner := _planner()
-	_stroller.global_position = _city.map.doorstep_world_position()
+	_stroller.global_position = _city.map().doorstep_world_position()
 	var first := planner.resolve("calm")
 	t.check(first != Vector2.INF, "a calm tile is reachable from the doorstep")
 	if first == Vector2.INF:
 		return
-	var spoiled_tile := _city.map.world_to_tile(first)
-	var original := _city.map.tile_at(spoiled_tile)
-	_city.map.set_tile(spoiled_tile, GameEnums.TileType.SPOILED)
+	var spoiled_tile := _city.map().world_to_tile(first)
+	var original := _city.map().tile_at(spoiled_tile)
+	_city.map().set_tile(spoiled_tile, GameEnums.TileType.SPOILED)
 	var second := planner.resolve("calm")
 	t.check(second != first,
 			"once the nearest calm tile is spoiled, 'calm' answers a different one (%s vs %s)"
 			% [first, second])
-	_city.map.set_tile(spoiled_tile, original)
+	_city.map().set_tile(spoiled_tile, original)
 
 ## **Day 12: once the swing is reached, `calm` is the day's other calm area, not the swing's own
 ## park.** The park leaves `CityMap.calm_blocks_now()` the moment it is taken, but its grass stays grass
@@ -977,7 +977,7 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t: TestRunner) -> vo
 ## `CityState.take()` then `CityMap.recompute_calm()`, it is not.
 func _test_calm_leaves_the_park_being_taken(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 12)
-	var map: CityMap = (fixture["city"] as City).map
+	var map: CityMap = (fixture["city"] as City).map()
 	var stroller: Stroller = fixture["stroller"]
 	var planner := _fixture_planner(fixture)
 	_touch_the_mark(fixture)
@@ -1011,7 +1011,7 @@ func _test_calm_leaves_the_park_being_taken(t: TestRunner) -> void:
 ## sealed and obstructed ground — which is the reading both answers come from here.
 func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> void:
 	var planner := _planner()
-	var map := _city.map
+	var map := _city.map()
 	var stands := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 	var parted := false
 	var plain := Vector2.INF
@@ -1061,7 +1061,7 @@ func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> 
 ## A calm tile of the suite's city the rig settles on where she stands: the nearest calm ground to
 ## the doorstep, which the planner offers.
 func _settling_ground() -> Vector2:
-	_stroller.global_position = _city.map.doorstep_world_position()
+	_stroller.global_position = _city.map().doorstep_world_position()
 	return _planner().resolve("calm")
 
 ## A rig set down on calm ground with the baby awake, walking `targets` from there: its first leg
@@ -1081,7 +1081,7 @@ func _end_settling(settle: Dictionary) -> void:
 	var baby: Baby = settle["baby"]
 	baby.reset()
 	baby.set_physics_process(true)
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 
 ## Pacing presses toward the far end of its own short walk and nothing else — the regression for a
 ## stray `_advance_target()` once left at the end of `RouteRig._pace()`, which skipped the whole
@@ -1147,11 +1147,11 @@ func _test_calm_ground_gone_under_her_looks_again(t: TestRunner) -> void:
 	var settle := await _begin_settling(t, ["calm", "home"])
 	if settle.is_empty():
 		return
-	var tile := _city.map.world_to_tile(settle["at"])
-	var original := _city.map.tile_at(tile)
-	_city.map.set_tile(tile, GameEnums.TileType.SPOILED)
+	var tile := _city.map().world_to_tile(settle["at"])
+	var original := _city.map().tile_at(tile)
+	_city.map().set_tile(tile, GameEnums.TileType.SPOILED)
 	await _frames_for(t, 1.0)
-	_city.map.set_tile(tile, original)
+	_city.map().set_tile(tile, original)
 	t.check(_count("is gone, looking again") == 1 and _count("reached 'calm'") == 2
 			and _count("'home'") == 0,
 			"once the ground she paces on is spoiled she resolves 'calm' again rather than pacing on (%s)"
@@ -1165,7 +1165,7 @@ func _test_calm_ground_gone_under_her_looks_again(t: TestRunner) -> void:
 ## before the rig arrives. She stands on home ground a tile off its centre, walking `home`, and the
 ## baby falls asleep (`Baby.force_sleep()`), which wins the day on the spot.
 func _test_on_day_finished_won_still_finishes(t: TestRunner) -> void:
-	var map := _city.map
+	var map := _city.map()
 	var centre := map.home_world_position()
 	var stand := Vector2.INF
 	for offset: Vector2 in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
@@ -1206,7 +1206,7 @@ func _test_on_day_finished_won_still_finishes(t: TestRunner) -> void:
 ## nothing wrong with the ground, and no progress since the last check. Read off what the rig
 ## presses and the re-plans it writes, frame by frame.
 func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t: TestRunner) -> void:
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 	t.check(_planner().resolve("calm") != Vector2.INF, "a calm target exists for this leg")
 	_stroller.set_physics_process(false)
 	var day := _started_day(t, _city, _stroller, _run)
@@ -1259,7 +1259,7 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t: TestRunner) 
 			+ " (north first, then south)")
 	_end_rig(rig, day)
 	_stroller.set_physics_process(true)
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 
 ## The index of the first frame in `timeline` that `matches`, or -1.
 func _first_at(timeline: Array[Dictionary], matches: Callable) -> int:
@@ -1274,21 +1274,21 @@ func _first_at(timeline: Array[Dictionary], matches: Callable) -> int:
 ## The contact is moved by hand here (`ResistanceDirector.contact()`, its position the one thing the
 ## director's own move changes), and put back.
 func _test_a_mark_leg_follows_the_mark_when_it_moves(t: TestRunner) -> void:
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 	var dawn := _resistance.contact_position()
 	var day := _started_day(t, _city, _stroller, _run)
 	var rig := _started_rig(t, _city, _stroller, _resistance, day, _run, ["mark"])
 	await _frames_for(t, 0.7)
 	t.check(_count("moved to") == 0 and _pressed() != Vector2.ZERO,
 			"a mark still where the leg aimed is not re-planned to")
-	var moved := _city.map.home_world_position()
+	var moved := _city.map().home_world_position()
 	_resistance.contact().global_position = moved
 	await _frames_for(t, 0.6)
-	t.check(_count("'mark' moved to %s, re-planning" % RunTrace.tile(_city.map.world_to_tile(moved)))
+	t.check(_count("'mark' moved to %s, re-planning" % RunTrace.tile(_city.map().world_to_tile(moved)))
 			== 1, "a mark that has moved is re-planned to where it is now (%s)" % [_route_lines()])
 	_resistance.contact().global_position = dawn
 	_end_rig(rig, day)
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 
 ## A `mark` leg ends when the director records the mark completed, whatever the waypoints say —
 ## `ContactPoint.REACH` (36px) completes it before the last waypoint, which a body beside the mark
@@ -1325,7 +1325,7 @@ func _test_a_mark_leg_ends_when_the_director_records_the_mark(t: TestRunner) -> 
 ## back to the stale waypoints on the side she came from. She lands on the calm tile the leg walks
 ## to, so a plan from where she landed arrives at once.
 func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t: TestRunner) -> void:
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 	var calm := _planner().resolve("calm")
 	t.check(calm != Vector2.INF, "a calm target exists for this leg")
 	if calm == Vector2.INF:
@@ -1348,7 +1348,7 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t: TestRu
 	t.check(held_still and elapsed >= 1.9,
 			"while a door holds her the rig waits it out without counting a stall (%.1fs, %s)"
 			% [elapsed, _route_lines()])
-	var landed := _city.map.tile_to_world(_city.map.world_to_tile(calm))
+	var landed := _city.map().tile_to_world(_city.map().world_to_tile(calm))
 	_stroller.teleport_to(landed)
 	var replans_at_landing := _count("re-planned")
 	await _frames_for(t, 1.0)
@@ -1358,7 +1358,7 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t: TestRu
 	t.check(_count("reached 'calm'") == 1,
 			"the plan after the door starts where the door set her down (%s)" % [_route_lines()])
 	_end_rig(rig, day)
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 
 # ------------------------------------------------------------ end to end ---
 
@@ -1368,7 +1368,7 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t: TestRu
 ## right on the home block's own edge, so this leg is short and has nothing left to prove about
 ## calm ground or the baby's own settle that the dedicated tests above have not already covered.
 func _test_a_real_leg_walks_her_there_and_reports_it(t: TestRunner) -> void:
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 	var start_position := _stroller.global_position
 	var day := _started_day(t, _city, _stroller, _run)
 	var rig := _started_rig(t, _city, _stroller, _resistance, day, _run, ["home"])
@@ -1378,10 +1378,10 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t: TestRunner) -> void:
 			% [_route_lines()])
 	t.check(_stroller.global_position.distance_to(start_position) > 1.0,
 			"she actually moved from the doorstep rather than the leg completing vacuously")
-	t.check(_city.map.tile_type_at_world(_stroller.global_position) == GameEnums.TileType.HOME,
+	t.check(_city.map().tile_type_at_world(_stroller.global_position) == GameEnums.TileType.HOME,
 			"she actually stands on HOME ground once the leg reports done")
 	_end_rig(rig, day)
-	_stroller.reset_at(_city.map.doorstep_world_position())
+	_stroller.reset_at(_city.map().doorstep_world_position())
 
 # ---------------------------------------------------------------- doors ---
 
@@ -1452,14 +1452,14 @@ func _test_a_door_between_two_lanes_opens_both_as_its_crossing(t: TestRunner, do
 		return
 	var city: City = doors["city"]
 	var stroller: Stroller = doors["stroller"]
-	stroller.global_position = city.map.doorstep_world_position()
+	stroller.global_position = city.map().doorstep_world_position()
 	var reach := _fixture_planner(doors).door_tiles()
 	var axis := hut.facing_now().normalized()
 	var across := Vector2(-axis.y, axis.x)
 	var ahead := hut.global_position + axis * Tuning.TILE_SIZE
-	var lanes := [city.map.world_to_tile(ahead + across * 16.0),
-			city.map.world_to_tile(ahead - across * 16.0)]
-	var beyond := city.map.world_to_tile(ahead + across * 48.0)
+	var lanes := [city.map().world_to_tile(ahead + across * 16.0),
+			city.map().world_to_tile(ahead - across * 16.0)]
+	var beyond := city.map().world_to_tile(ahead + across * 48.0)
 	t.check(not reach.has(lanes[0]) and not reach.has(lanes[1]),
 			"both lanes either side of a door centred between them are its crossing line")
 	t.check(reach.has(beyond) and lanes[0] != lanes[1],
@@ -1474,7 +1474,7 @@ func _test_a_plan_never_goes_through_the_boom(t: TestRunner, doors: Dictionary) 
 	if not gate:
 		return
 	var city: City = doors["city"]
-	var map := city.map
+	var map := city.map()
 	var axis := gate.facing_now().normalized()
 	var from := map.world_to_tile(gate.global_position - axis * Tuning.TILE_SIZE * 4.0)
 	var to := map.world_to_tile(gate.global_position + axis * Tuning.TILE_SIZE * 4.0)
@@ -1508,7 +1508,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t: TestRun
 	if not hut:
 		return
 	var city: City = doors["city"]
-	var map := city.map
+	var map := city.map()
 	var stroller: Stroller = doors["stroller"]
 	var axis := hut.facing_now().normalized()
 	var across := Vector2(-axis.y, axis.x) * 16.0
@@ -1553,8 +1553,8 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	var reach := float(Tuning.TILE_SIZE) * 5.0
 	# On the carriageway either side of the boom, so the straight line — and the bare grid's
 	# shortest walk — is under it, and going through a hut is the detour the rig has to choose.
-	var from := _open_point_near(city.map, gate.global_position - axis * reach)
-	var to := _open_point_near(city.map, gate.global_position + axis * reach)
+	var from := _open_point_near(city.map(), gate.global_position - axis * reach)
+	var to := _open_point_near(city.map(), gate.global_position + axis * reach)
 	stroller.reset_at(from)
 	var day := _started_day(t, city, stroller, run)
 	day.spec().use_exits({CityExit.Kind.TUNNEL: to})
@@ -1571,7 +1571,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	var held: bool = seen["held"]
 	var crossed := (stroller.global_position - gate.global_position).dot(axis) > 0.0
 	print("[test_route_rig] through the door at %s: %s after %.1fs, held %s, %d walks under" % [
-		RunTrace.tile(city.map.world_to_tile(gate.global_position)),
+		RunTrace.tile(city.map().world_to_tile(gate.global_position)),
 		"arrived" if _count("route done") > 0 else "still walking", elapsed, held,
 		_walks_under_a_boom()])
 	t.check(crossed and held,
