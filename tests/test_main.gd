@@ -1378,7 +1378,8 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	var lo := city.map.world_to_tile(view.position)
 	var hi := city.map.world_to_tile(view.end - Vector2.ONE)
 	var middle_y := city.map.size_in_tiles().y / 2
-	var south_spine_x := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var south_spine_x := (city.map.main_road_corridor() * CityMap.period()
+			+ Tuning.SIDEWALK_WIDTH)
 	var keys := _ground_of(city).keys_in(view)
 
 	t.check(keys.has(SceneryGround.key_for(lo)) and keys.has(SceneryGround.key_for(hi)),

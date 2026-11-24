@@ -41,7 +41,7 @@ extends RefCounted
 ## rather than the first seed eating the map before the others start.
 ##
 ## **The wall stands at a boundary crossing's mouth, one tile deep, never its midpoint.** A segment
-## has two mouths and the wall stands at one of them (`CityMap.boundary_wall_at_a`, decided at
+## has two mouths and the wall stands at one of them (`CityMap.wall_stands_at_a()`, decided at
 ## generation); an alley has two mouths and, when it is a crossing, both are walled. A midpoint
 ## band reaches roughly two tiles either way at the checkpoint row's own radius, wide enough to
 ## cover a nearby alley's mouth outright — the mouth is one tile deep and never bleeds sideways.
@@ -491,7 +491,7 @@ static func _region_of_segment(map: CityMap, segment: StreetNetwork.Segment) -> 
 ## The region a segment's whole **ground** belongs to — the question the wall's mouth placement
 ## makes meaningful where `_region_of_segment` cannot answer at all. An interior segment's ground is
 ## simply its own region, the same answer either function gives. A boundary segment's wall stands
-## one tile deep at one mouth (`CityMap.boundary_wall_at_a`), so the rest of its length — right up
+## one tile deep at one mouth (`CityMap.wall_stands_at_a()`), so the rest of its length — right up
 ## to that one-tile band — is walkable from the **far** end and unreachable from the near one; this
 ## returns the far end's region. `-1` for an absent segment, same as `_region_of_segment`.
 ##

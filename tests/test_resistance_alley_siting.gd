@@ -455,7 +455,7 @@ func _test_reading_a_mark_never_lands_her_in_his_catch(t: TestRunner) -> void:
 ## fine. I encountered it in game and it worked well for me. you just have to lure the robber out
 ## first.")* Over the passage mark tiles of `SWEEP_SEEDS`' cities, each relocated onto with her
 ## outside its mouth (`_relocations_over_the_marks()`): the courtyard's inner end is the tile
-## farthest from the mark, found here independently from `CityMap.courtyard_rects`; the guard the
+## farthest from the mark, found here independently from `CityMap.courtyard_lots()`; the guard the
 ## street has stands inside that courtyard, within `FAR_END_REACH_IN` of that tile; and he is never
 ## within his catch (`EventDef.lethal_reach()`) of any point she can touch the mark from,
 ## `ContactPoint.REACH` around it. He may still wake as she reads it. The sweep says it met both kinds

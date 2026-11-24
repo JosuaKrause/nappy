@@ -14,7 +14,7 @@ extends RefCounted
 ##   lethal plan's disc, region doors open;
 ## - **doors shut**: the same, with the region doors' own bodies counted as blocks — a mark only
 ##   reachable through a district door;
-## - **by tiles**: a plain walk over walkable ground minus `closed_tiles`, `soft_sealed_tiles` and
+## - **by tiles**: a plain walk over walkable ground minus `closed_tile_set()`, `soft_sealed_tiles` and
 ##   `obstructed_tiles`, the per-tile record of where a body stands, not the discs.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -88,11 +88,11 @@ func _doors_shut(city: City) -> Array:
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)
-	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+	return [grid, blocked, grid.flood([city.map.home_tile_rect().position], blocked)]
 
 func _by_tiles(city: City) -> PackedInt32Array:
 	var blocked := {}
-	for tile: Vector2i in city.map.closed_tiles:
+	for tile: Vector2i in city.map.closed_tile_set():
 		blocked[tile] = true
 	for tile: Vector2i in city.map.soft_sealed_tiles():
 		blocked[tile] = true

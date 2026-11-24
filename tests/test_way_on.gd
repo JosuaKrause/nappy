@@ -45,13 +45,13 @@ static func _lane(index: int, direction: Vector2i) -> float:
 ## Closes both lanes of the stretch leaving `box` `toward`, a tile into it.
 static func _close(map: CityMap, box: Vector2i, toward: Vector2i) -> void:
 	var period := CityMap.period()
-	var closed := map.closed_tiles.duplicate()
+	var closed := map.closed_tile_set().duplicate()
 	for lane: int in CrowdLanes.ROAD_OFFSETS:
 		if toward.y != 0:
 			closed[Vector2i(box.x * period + lane, box.y * period + Tuning.STREET_WIDTH + 2)] = true
 		else:
 			closed[Vector2i(box.x * period + Tuning.STREET_WIDTH + 2, box.y * period + lane)] = true
-	map.closed_tiles = closed
+	map.close_streets([FakeClosure.over_set(closed)] as Array[RoadClosure])
 
 ## Whether every point of `leg`, every half tile, stands on carriageway.
 static func _on_carriageway(map: CityMap, leg: PackedVector2Array) -> bool:
@@ -181,7 +181,8 @@ func _test_what_a_car_may_drive(t: TestRunner) -> void:
 	t.check(_way_on(_lattice()).drives_clear(convoy, leg)
 			and not _way_on(park).drives_clear(convoy, leg), "nor a street a park took")
 	var closed := _lattice()
-	closed.closed_tiles = {Vector2i(int(south / TILE), 10): true}
+	closed.close_streets([FakeClosure.over_set(
+			{Vector2i(int(south / TILE), 10): true})] as Array[RoadClosure])
 	t.check(not _way_on(closed).drives_clear(_patrol, leg), "nor a closed street")
 	var off := PackedVector2Array([Vector2(south, 30.5 * TILE), Vector2(south, 36.5 * TILE)])
 	t.check(not _way_on(_lattice()).drives_clear(_patrol, off), "nor off the map")

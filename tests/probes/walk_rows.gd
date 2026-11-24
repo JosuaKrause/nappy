@@ -289,7 +289,7 @@ class _Day extends RefCounted:
 			map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 		for segment: StreetNetwork.Segment in region_plan.door_segments():
 			map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-		for segment: StreetNetwork.Segment in map.network.around_blocks(
+		for segment: StreetNetwork.Segment in map.street_network().around_blocks(
 				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 		var boundary := {}
@@ -407,7 +407,7 @@ func _walk_every_day(reach: float) -> void:
 				for x in map.size_in_tiles().x:
 					if corridor.carries_a_route(Vector2i(x, y)):
 						routes.append(Vector2i(x, y))
-			var reached_bare := grid.flood([map.home_tile()], map.closed_tiles)
+			var reached_bare := grid.flood([map.home_tile()], map.closed_tile_set())
 			if the_games:
 				cut_at_dawn += _report_cut_off(map, grid, routes, reached_bare, plans, day, i,
 						"dawn")
@@ -516,7 +516,7 @@ func _walk_every_day(reach: float) -> void:
 			for plan: EventPlan in counted:
 				placed += 1
 				var tile := map.world_to_tile(plan.placed_at())
-				var segment := map.network.segment_containing(tile)
+				var segment := map.street_network().segment_containing(tile)
 				var view := 0
 				if segment:
 					view = corridor.view_of(segment)
@@ -741,7 +741,7 @@ static func _cut_off(map: CityMap, grid: ReachabilityGrid, routes: Array[Vector2
 	var reached := grid.flood([map.home_tile()], blocked)
 	var cut: Array[Vector2i] = []
 	for tile in routes:
-		if not blocked.has(tile) and grid.reaches(tile, map.closed_tiles, reached_bare) \
+		if not blocked.has(tile) and grid.reaches(tile, map.closed_tile_set(), reached_bare) \
 				and not grid.reaches(tile, blocked, reached):
 			cut.append(tile)
 	return cut

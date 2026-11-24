@@ -74,7 +74,7 @@ extends RouteSource
 ##   `SealPlanner` refuses the spine as a candidate outright for its own reasons — see its doc.
 ## - **the ground of a calm area today's tree leaves alone** (`CityMap.shut_calm()`: one she has
 ##   already used this act), so no route goes through it, and none is grown to it either — the area
-##   stays calm, walkable ground (`CityMap.calm_blocks` still has it); it is only this graph, the one
+##   stays calm, walkable ground (`CityMap.calm_blocks_now()` still has it); it is only this graph, the one
 ##   the tree itself walks, that does not.
 ##
 ## `_is_off_the_growths_graph` is the whole of it and `_ways` is where it is applied. **It filters
@@ -103,7 +103,7 @@ extends RouteSource
 ## passing an untyped array into an `Array[T]` parameter retains its arguments and leaks at
 ## shutdown, so the element type is declared at the call sites that need one instead.
 class Branch extends RefCounted:
-	## The block that anchors the calm area, matching `CityMap.calm_blocks`.
+	## The block that anchors the calm area, matching `CityMap.calm_blocks_now()`.
 	var area: Vector2i
 	## One or two routes. The first is the random walk, the second — where the map allowed one —
 	## the shortest way that shares none of its ground.
@@ -246,7 +246,7 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 	return tree
 
 ## `ClosurePlanner.calm_areas(map)`, minus whatever `CityMap.shut_calm()` names today. **A shut area
-## is still in `map.calm_blocks`** — it stays calm ground for every guarantee stated over reachable
+## is still in `map.calm_blocks_now()`** — it stays calm ground for every guarantee stated over reachable
 ## calm, `ClosurePlanner`'s street-closure invariant among them — but it is not a destination this
 ## tree may grow a branch to: `_grow_a_branch()` would otherwise still reach its access streets and
 ## record a branch for it, even with its own interior tiles off the graph, which is a route "to" the
@@ -289,7 +289,7 @@ static func _grow_into(tree: RouteTree, map: CityMap, home: StreetNetwork.Segmen
 		if node >= 0:
 			tree._home[node] = true
 	# The order decides which area's probe gets home first and therefore which one the trunk
-	# belongs to, so it is rolled rather than left as `calm_blocks`' generation order — otherwise
+	# belongs to, so it is rolled rather than left as `calm_blocks_now()`' generation order — otherwise
 	# the same area anchors the tree on every day of the run.
 	for area in tree._in_a_rolled_order(areas, rng):
 		tree._grow_a_branch(map, area, rng)

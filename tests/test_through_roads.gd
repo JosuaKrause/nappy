@@ -69,7 +69,7 @@ func _test_a_box_paved_whole_takes_its_four_stretches(t: TestRunner) -> void:
 	t.check(_through(roads).size() == 8, "and the eight of the ring round it do (%s)"
 			% ", ".join(_through(roads)))
 
-## The stretch from the north-west box south closed (`CityMap.closed_tiles`, which stops a car): it
+## The stretch from the north-west box south closed (`CityMap.closed_tile_set()`, which stops a car): it
 ## is not a through road, and the north-west box is left one stretch, east, so that stub is dropped
 ## too, though every tile of it is a car's; the box east of it keeps two and stays. Fails with the
 ## dropping loop removed: the stub answers true.
@@ -79,7 +79,7 @@ func _test_a_closed_stretch_is_none_and_a_stub_it_leaves_is_dropped(t: TestRunne
 	var period := CityMap.period()
 	for lane: int in CrowdLanes.ROAD_OFFSETS:
 		closed[Vector2i(lane, period - 3)] = true
-	map.closed_tiles = closed
+	map.close_streets([FakeClosure.over_set(closed)] as Array[RoadClosure])
 	var roads := ThroughRoads.over(map, Mover.vehicle())
 	t.check(not roads.goes_on(Vector2i(0, 0), Vector2i.DOWN), "a closed stretch does not go on")
 	t.check(not roads.goes_on(Vector2i(0, 0), Vector2i.RIGHT),

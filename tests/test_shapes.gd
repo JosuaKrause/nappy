@@ -203,7 +203,7 @@ func _solid_at(node: Node2D, point: Vector2) -> bool:
 const _HARD_SEAL_SEED := 424242
 
 func _real_segment(map: CityMap, horizontal: bool) -> StreetNetwork.Segment:
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if segment.horizontal == horizontal and map.has_street(segment.key()):
 			return segment
 	return null

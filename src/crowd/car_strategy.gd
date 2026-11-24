@@ -1195,7 +1195,7 @@ func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 ## off the map, not a street at all, or a precinct.
 ##
 ## **Out of bounds is blocked**, with one exception: a car on the spine's own corridor
-## (`_map.main_road`) leaving by the tunnel to the north or the bridge to the south, the two edges
+## (`_map.main_road_corridor()`) leaving by the tunnel to the north or the bridge to the south, the two edges
 ## `City._spawn_spine_exits` places them at — `CityEdge` draws the carriageway going on there, and
 ## nowhere else does the border carry a road. Stated over which edge and which corridor rather than
 ## over "vertical and out of bounds", because the spine is the one corridor this is true of, not

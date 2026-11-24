@@ -19,7 +19,7 @@ extends RefCounted
 const GROUND := 1
 ## A precinct's posts (`CityMap.post_tiles()`).
 const POSTS := 2
-## Today's closures and the fenced park's ground (`CityMap.closed_tiles`).
+## Today's closures and the fenced park's ground (`CityMap.closed_tile_set()`).
 const CLOSED := 4
 ## The pavement tiles a soft seal shuts to walkers (`CityMap.soft_sealed_tiles()`).
 const SOFT_SEALS := 8

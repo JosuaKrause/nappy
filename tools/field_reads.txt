@@ -37,8 +37,6 @@ src/main.gd skip_shadows
 src/main.gd trace
 
 # [CityMap] src/city/city_map.gd
-src/city/city_generator.gd courtyard_rects
-src/city/city_generator.gd home_rect
 src/dev/scene_recipe_draft.gd stretch
 src/dev/scene_recipe_draft.gd stretch_active
 src/dev/scene_recipe_draft.gd tiles

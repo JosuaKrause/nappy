@@ -202,7 +202,7 @@ func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	var used := run.calendar().settled_this_act()
 	var home := map.home_world_position()
 	var best := Vector2.INF
-	for block: Vector2i in map.calm_blocks:
+	for block: Vector2i in map.calm_blocks_now():
 		var anchor := map.anchor_of(block)
 		if used.has(anchor) or map.shut_calm().has(anchor) or anchor == map.fenced_park_block():
 			continue

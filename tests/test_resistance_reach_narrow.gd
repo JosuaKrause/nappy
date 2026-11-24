@@ -274,7 +274,7 @@ func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked
 	for plan in RunCity.events(city).plans():
 		if plan.role() != GameEnums.BlockerRole.NONE or plan.mast_id() != "":
 			catalogue.append(plan)
-	for block in city.map.calm_blocks:
+	for block in city.map.calm_blocks_now():
 		if block == swing:
 			continue
 		var rect := ClosurePlanner.calm_area_rect(city.map, block)

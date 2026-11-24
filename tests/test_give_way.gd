@@ -37,7 +37,7 @@ func _test_the_stop_line_is_a_setback_short(t: TestRunner) -> void:
 func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t: TestRunner, map: CityMap) -> void:
 	t.check(not GiveWay.is_red(null, Vector2i.ZERO, true), "no signals, no red")
 	var signals := TrafficSignals.new(map)
-	var junction := Vector2i(map.main_road, 1)
+	var junction := Vector2i(map.main_road_corridor(), 1)
 	signals.restart_cycle()
 	while not signals.green_for(junction, true):
 		signals.advance(0.25)
@@ -60,7 +60,7 @@ func _test_the_main_road_does_not_give_way(t: TestRunner, map: CityMap) -> void:
 			ordinary + Vector2(0.0, float(Tuning.STREET_WIDTH) * TILE)),
 			"and not to somebody in the next street over")
 	# The spine runs north-south: a car driving along it is on the main road.
-	var at := map.tile_to_world(Vector2i(map.main_road * CityMap.period() + 3, 20))
+	var at := map.tile_to_world(Vector2i(map.main_road_corridor() * CityMap.period() + 3, 20))
 	t.check(map.street_kind_at(true, map.world_to_tile(at)) == GameEnums.StreetKind.MAIN,
 			"a column of the main road is the main road")
 	t.check(not GiveWay.owes_her_way(map, true, at, at), "the main road does not give way")
@@ -93,7 +93,7 @@ func _test_a_zebra_past_the_box(t: TestRunner, map: CityMap) -> void:
 	var period := CityMap.period()
 	var cross := (float(lane_y) + 0.5) * TILE
 	var c := -1
-	for candidate in range(1, map.main_road + 1):
+	for candidate in range(1, map.main_road_corridor() + 1):
 		if map.is_crossing(Vector2i(candidate * period + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, lane_y)):
 			c = candidate
 			break
@@ -110,7 +110,7 @@ func _test_a_zebra_past_the_box(t: TestRunner, map: CityMap) -> void:
 func _lane_to_the_main_road(map: CityMap) -> int:
 	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			return y
 	return -1

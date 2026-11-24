@@ -339,7 +339,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 	var blocked: Dictionary = ResistanceReads.day_reachability(city)[1]
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
-	var field := map.walk_field(map.home_rect.position, blocked)
+	var field := map.walk_field(map.home_tile_rect().position, blocked)
 	var reaches := not cordon.gap.is_empty()
 	var clear := true
 	var blocker := "none"

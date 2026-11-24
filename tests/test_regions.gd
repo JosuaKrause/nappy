@@ -86,9 +86,9 @@ func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) 
 
 func _main_road_tiles(map: CityMap) -> Dictionary[Vector2i, bool]:
 	var blocked: Dictionary[Vector2i, bool] = {}
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return blocked
-	var rect := Rect2i(Vector2i(map.main_road * CityMap.period(), 0),
+	var rect := Rect2i(Vector2i(map.main_road_corridor() * CityMap.period(), 0),
 			Vector2i(Tuning.STREET_WIDTH, map.size_in_tiles().y))
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
@@ -103,7 +103,7 @@ func _real_junctions(map: CityMap) -> Array[Vector2i]:
 	for y in count.y:
 		for x in count.x:
 			var junction := Vector2i(x, y)
-			for segment in map.network.at_junction(junction):
+			for segment in map.street_network().at_junction(junction):
 				if map.has_street(segment.key()):
 					found.append(junction)
 					break
@@ -230,7 +230,7 @@ func _test_precinct_spans_are_never_boundary(t: TestRunner) -> void:
 			var range_end := span.w + 1
 			for along in range(span.z, range_end):
 				var key := Vector3i(corridor, along, 1) if span.x == 1 else Vector3i(along, corridor, 0)
-				var segment := map.network.by_key(key)
+				var segment := map.street_network().by_key(key)
 				if not segment or not map.has_street(segment.key()):
 					continue
 				checked += 1
@@ -242,15 +242,15 @@ func _test_precinct_spans_are_never_boundary(t: TestRunner) -> void:
 # ------------------------------------------------------------------------- the flood ---
 
 ## Which end of `segment`'s wall the map assigns, defaulting the same way `RegionPlanner.
-## _assign_wall_ends` does — a helper rather than reaching `map.boundary_wall_at_a` directly at
+## _assign_wall_ends` does — a helper rather than reaching `map.wall_stands_at_a()` directly at
 ## every call site below.
 func _wall_at_a(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 			< RegionPlanner.region_of_junction(map, segment.b)
-	return map.boundary_wall_at_a.get(segment.key(), default_at_a)
+	return map.wall_stands_at_a(segment.key(), default_at_a)
 
 ## The check a segment-level rule cannot do: block every boundary segment's one-tile mouth strip
-## (`Segment.mouth_rect`, at whichever end `map.boundary_wall_at_a` names) and both mouths of every
+## (`Segment.mouth_rect`, at whichever end `map.wall_stands_at_a()` names) and both mouths of every
 ## alley the day's plan lists, then flood from a street in **every** region. Every real segment's
 ## ground (`RegionPlanner.ground_region_of`, a boundary segment's **far** end) is reached from a
 ## region's seed exactly when it belongs to that region, so a crossing alley the plan missed would
@@ -285,7 +285,7 @@ func _test_flood_matches_the_partition(t: TestRunner) -> void:
 		var grid := ReachabilityGrid.build(map)
 		# One flood per region, from the first open street tile that region's ground has.
 		var floods: Dictionary[int, Dictionary] = {}
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if not map.has_street(segment.key()):
 				continue
 			var region := RegionPlanner.ground_region_of(map, segment)
@@ -296,7 +296,7 @@ func _test_flood_matches_the_partition(t: TestRunner) -> void:
 		t.check(floods.size() == Tuning.REGION_COUNT,
 				"seed %d: every region has a street to flood from (%d of %d)"
 				% [map.city_seed(), floods.size(), Tuning.REGION_COUNT])
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if not map.has_street(segment.key()):
 				continue
 			var region := RegionPlanner.ground_region_of(map, segment)
@@ -686,14 +686,14 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
-			var blocked := map.closed_tiles.duplicate()
+			var blocked := map.closed_tile_set().duplicate()
 			for plan_item in seals:
 				_add_circle(map, blocked, plan_item.placed_at(), plan_item.obstructs_within())
 			for plan_item in region_plan.wall_plans():
 				_add_circle(map, blocked, plan_item.placed_at(), plan_item.obstructs_within())
 
 			var grid := ReachabilityGrid.build(map)
-			var reached := grid.flood([map.home_rect.position], blocked)
+			var reached := grid.flood([map.home_tile_rect().position], blocked)
 			var some_calm := false
 			for tile in map.calm_tiles():
 				if grid.reaches(tile, blocked, reached):
@@ -707,7 +707,7 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 			blocked_no_road.assign(blocked)
 			for tile: Vector2i in _main_road_tiles(map):
 				blocked_no_road[tile] = true
-			var reached_no_road := grid.flood([map.home_rect.position], blocked_no_road)
+			var reached_no_road := grid.flood([map.home_tile_rect().position], blocked_no_road)
 			without_main_road_days += 1
 			for tile in map.calm_tiles():
 				if grid.reaches(tile, blocked_no_road, reached_no_road):
@@ -747,7 +747,7 @@ func _test_closures_and_seals_never_land_on_a_boundary(t: TestRunner) -> void:
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 			for plan_item in seals:
-				var segment := map.network.segment_containing(map.world_to_tile(plan_item.placed_at()))
+				var segment := map.street_network().segment_containing(map.world_to_tile(plan_item.placed_at()))
 				if segment:
 					t.check(not boundary.has(segment.key()),
 							"seed %d day %d: seal at %s does not land on a region boundary"

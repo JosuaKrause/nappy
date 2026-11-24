@@ -649,7 +649,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 ## may not be inside the junction while its own arm is red.
 func _test_a_red_light_still_holds_a_car_that_is_turning(t: TestRunner) -> void:
 	var signals := _city.traffic_signals()
-	var box := Vector2i(_city.map.main_road, _junction.y)
+	var box := Vector2i(_city.map.main_road_corridor(), _junction.y)
 	t.check(signals != null and signals.is_signalled(box),
 			"the spine's junction in the rig is signalled, so there is a light to meet")
 	if signals == null or not signals.is_signalled(box):
@@ -695,7 +695,7 @@ func _test_a_car_turns_at_the_last_junction_before_the_boundary(t: TestRunner) -
 	# a car, so those are skipped.
 	var start := (StreetNetwork.junction_count().x - 1) * CityMap.period() - 4
 	var corridor := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 1
-	while corridor > 1 and (corridor == _city.map.main_road
+	while corridor > 1 and (corridor == _city.map.main_road_corridor()
 			or _city.map.street_kind(false, corridor, start) != GameEnums.StreetKind.ORDINARY):
 		corridor -= 1
 	# Started in the last block before the edge, heading east at it.
@@ -878,7 +878,7 @@ func _plain_junction() -> Vector2i:
 	for x in range(2, count.x - 2):
 		for y in range(2, count.y - 2):
 			var junction := Vector2i(x, y)
-			if x == _city.map.main_road:
+			if x == _city.map.main_road_corridor():
 				continue
 			if _all_four_arms_are_plain(junction):
 				return junction
@@ -890,7 +890,7 @@ func _all_four_arms_are_plain(junction: Vector2i) -> bool:
 			var key := _key_of(junction, vertical, direction)
 			if not _city.map.has_street(key):
 				return false
-			var segment := _city.map.network.by_key(key)
+			var segment := _city.map.street_network().by_key(key)
 			if _city.map.held_streets().has(segment.key()):
 				return false
 			var rect := segment.tile_rect()

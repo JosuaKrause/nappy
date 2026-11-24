@@ -115,7 +115,7 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 func _find_one_block_park() -> Dictionary:
 	for city_seed in SEEDS:
 		var map := CityGenerator.generate(city_seed)
-		for block in map.calm_blocks:
+		for block in map.calm_blocks_now():
 			if map.starting_purpose(map.anchor_of(block)) == GameEnums.BlockPurpose.PARK \
 					and map.calm_lot_blocks(block) == 1:
 				return {"map": map, "block": block}
@@ -324,7 +324,7 @@ func _playground_settles(t: TestRunner) -> void:
 		var spec := DaySpec.for_day(1)
 		RigStreets.begin(city.streets(), city.map, spec)
 		RunCity.events(city).start_day(spec, _rng(city_seed), consumed)
-		for rect in city.map.playgrounds:
+		for rect in city.map.playground_rects():
 			var at: Vector2 = city.map.tile_rect_to_world(rect).get_center()
 			RunCity.events(city).stream_around(at)
 			RunCity.crowd(city).start_day(1, _rng(city_seed), at)

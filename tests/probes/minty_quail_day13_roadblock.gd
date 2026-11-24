@@ -77,7 +77,7 @@ func _count_the_dawn(city: City, seed_value: int) -> void:
 ## On a street no route runs along, one of whose junction boxes a route crosses, and not the main
 ## road: the probe's own reading, so it reads the same before and after.
 static func _beside(map: CityMap, corridor: Corridor, tile: Vector2i) -> bool:
-	var segment := map.network.segment_containing(tile)
+	var segment := map.street_network().segment_containing(tile)
 	if not segment or map.is_main_road(not segment.horizontal, segment.a.x):
 		return false
 	for tile_on in map.rect_tiles(segment.tile_rect()):

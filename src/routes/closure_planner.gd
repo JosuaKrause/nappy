@@ -299,7 +299,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ##   park a route still has to be allowed through.
 ##
 ## `protected` is never excluded: day 12's park, whose swing is the day's task. An area that is not
-## calm today (requisitioned since, or never calm) is not in `map.calm_blocks` and is passed over.
+## calm today (requisitioned since, or never calm) is not in `map.calm_blocks_now()` and is passed over.
 ## A refused area is still one she has used, so `DawnSpoilers` spoils it
 ## — which every accepted area not chosen as `CityMap.fenced_park_block()` also gets, since exclusion from
 ## the tree is the only thing accepting an area here actually does.
@@ -394,10 +394,10 @@ static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Arra
 ## (`RouteTree.for_day`) and every closure is placed off the tree, so like the calm half this is the
 ## second opinion rather than the thing that keeps it.
 ##
-## **With today's fenced park closed as well** (`CityMap.fenced_park_block()`, in `map.closed_tiles` from
+## **With today's fenced park closed as well** (`CityMap.fenced_park_block()`, in `map.closed_tile_set()` from
 ## the repaint on): a street closure that leaves two areas reachable only through the one park that
 ## is actually fenced has left them unreachable. A merely-shut area (`CityMap.shut_calm()`) is not
-## in `closed_tiles` — its ground stays open, so a street closure may still rely on a route
+## in `closed_tile_set()` — its ground stays open, so a street closure may still rely on a route
 ## through it.
 static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[CalmArea],
 		today_closed: Dictionary, places: Array[Array] = []) -> bool:

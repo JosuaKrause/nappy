@@ -10,7 +10,7 @@ extends RefCounted
 ## the caller checks, so a rig that has quietly stopped testing anything says so.
 func a_straight_run(map: CityMap, length: int) -> Vector2i:
 	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
-		if corridor == map.main_road:
+		if corridor == map.main_road_corridor():
 			continue
 		for start in range(4, map.size_in_tiles().y - length - 4):
 			if _run_is_ordinary_street(map, corridor, start, length):

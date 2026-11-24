@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 		"branches": tree.branches().size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
-		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map.closed_tiles.size(),
+		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map.closed_tile_set().size(),
 		"events_planned": RunCity.events(_city).planned_count(),
 		"ground_prepared": GroundCells.used_cells(_ground).size(),
 		"buildings_prepared": _city.buildings().size(),
@@ -100,7 +100,7 @@ func _tiles_for_nodes(tree: RouteTree, nodes: Dictionary) -> Dictionary:
 func _closed_count(tiles: Dictionary) -> int:
 	var result := 0
 	for tile: Vector2i in tiles:
-		result += int(_city.map.is_walkable(tile) and _city.map.closed_tiles.has(tile))
+		result += int(_city.map.is_walkable(tile) and _city.map.closed_tile_set().has(tile))
 	return result
 
 ## View unions over offered open tile centers. A square 46px expansion is a conservative

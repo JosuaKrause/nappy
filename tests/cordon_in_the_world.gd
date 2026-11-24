@@ -32,7 +32,7 @@ static func officers(world: WorldContext) -> Array[CordonOfficer]:
 
 ## What shuts ground to someone on foot today: the closures and every solid body, the tape included.
 static func shut_tiles(map: CityMap) -> Dictionary:
-	var shut := map.closed_tiles.duplicate()
+	var shut := map.closed_tile_set().duplicate()
 	shut.merge(map.obstructed_tiles())
 	return shut
 
@@ -40,7 +40,7 @@ static func shut_tiles(map: CityMap) -> Dictionary:
 ## taped shut. Open ground reaches the home by way of the park's edge until the last gap is taped.
 static func is_shut(map: CityMap, inside: Vector2) -> bool:
 	var field := map.walk_field(map.world_to_tile(inside), shut_tiles(map))
-	return not map.reaches(field, map.home_rect.position)
+	return not map.reaches(field, map.home_tile_rect().position)
 
 ## The tape standing in `world` now: one `CordonTape` per taped stretch of the edge, each a static
 ## body the physics world blocks her with. The posts the officers plant at the stretches' ends are

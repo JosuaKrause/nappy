@@ -230,7 +230,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 		for segment in plan.door_segments():
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+			var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
 			for body in plan.door_plans():
 				if body.row_id() != "checkpoint_hut" and body.row_id() != "checkpoint_gate":
@@ -239,7 +239,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 					continue
 				checked += 1
 				var tile := map.world_to_tile(body.placed_at())
-				var containing := map.network.segment_containing(tile)
+				var containing := map.street_network().segment_containing(tile)
 				t.check(containing != null and containing.key() == segment.key(),
 						"seed %d day %d: door body %s at %s stands on its own segment %s (got %s)"
 						% [map.city_seed(), day, body.row_id(), body.placed_at(), segment.key(),
@@ -251,7 +251,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 			for segment in plan.door_segments():
 				var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 						< RegionPlanner.region_of_junction(map, segment.b)
-				var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+				var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 				var mouth_centre := map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center()
 				var distance := wall_body.placed_at().distance_to(mouth_centre)
 				t.check(distance > wall_body.obstructs_within(),
@@ -282,7 +282,7 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 		for segment in plan.door_segments():
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+			var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
 			var gate: EventPlan = null
 			var huts: Array[EventPlan] = []

@@ -30,12 +30,13 @@ func run(t: TestRunner) -> void:
 		var map := city.map
 		var barricade := EventCatalogue.by_id("barricade")
 		for going: float in [1.0, -1.0]:
-			if map.main_road < 0:
+			if map.main_road_corridor() < 0:
 				break
-			var lane_x := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
+			var lane_x := CrowdLanes.lane_centre(map.main_road_corridor(),
+					CrowdLanes.road_lane(true, going))
 			for y in range(0, map.size_in_tiles().y, 3):
 				var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
-				if map.network.segment_containing(tile) == null or not map.is_driveable_at(true, tile):
+				if map.street_network().segment_containing(tile) == null or not map.is_driveable_at(true, tile):
 					continue
 				var at := Vector2(lane_x, map.tile_to_world(tile).y)
 				_count(beats["barricade"], _gap(map, barricade, at, Vector2(0, going)))
@@ -72,7 +73,7 @@ func _gap(map: CityMap, def: EventDef, at: Vector2, facing: Vector2) -> String:
 	var foot := EventSpawner.footprint_of(BodyStance.of(map, def, at, facing))
 	if foot.is_empty():
 		return "no record"
-	var segment := map.network.segment_containing(map.world_to_tile(at))
+	var segment := map.street_network().segment_containing(map.world_to_tile(at))
 	if not segment:
 		return "off a street"
 	var rect := segment.tile_rect()

@@ -148,7 +148,7 @@ func _test_the_tree_only_uses_streets_that_are_there(t: TestRunner) -> void:
 ## not slip through.
 func _test_no_route_runs_along_the_main_road(t: TestRunner) -> void:
 	for planned in _days:
-		if planned.map.main_road < 0:
+		if planned.map.main_road_corridor() < 0:
 			continue
 		for branch in planned.tree.branches():
 			for route: Array in branch.routes:
@@ -190,7 +190,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t: TestRunner) -> vo
 				for cell: Vector2i in route:
 					for offset in _CELL_TILE_OFFSETS:
 						var tile: Vector2i = cell * ReachabilityGrid.CELL + offset
-						var segment := planned.map.network.segment_containing(tile)
+						var segment := planned.map.street_network().segment_containing(tile)
 						if not segment:
 							continue   # a junction box, or ground off the lattice
 						street_tiles += 1
@@ -281,7 +281,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t: TestRunner) -> void:
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
 		for area in planned.areas:
-			if planned.map.network.route_count(planned.home, area.access, planned.blocked, 1) < 1:
+			if planned.map.street_network().route_count(planned.home, area.access, planned.blocked, 1) < 1:
 				continue
 			var branch := _branch_for(planned.tree, area.block)
 			# A calm area next door to the home is arrived at without walking anywhere, so it has
@@ -313,7 +313,7 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t: TestRunner) -> 
 	for planned in _days:
 		for branch in planned.tree.branches():
 			var area := _area_of(planned, branch.area)
-			if not area or planned.map.network.route_count(
+			if not area or planned.map.street_network().route_count(
 					planned.home, area.access, planned.blocked, 2) < 2:
 				continue
 			possible += 1
@@ -342,7 +342,7 @@ func _test_a_gap_joins_two_parallel_strands(t: TestRunner) -> void:
 	for planned in _days:
 		for key in planned.tree.gaps():
 			total += 1
-			var segment := planned.map.network.by_key(key)
+			var segment := planned.map.street_network().by_key(key)
 			t.check(segment != null and not planned.tree.is_on_the_tree(key),
 					"seed %d day %d: the gap %s is a street off the tree"
 					% [planned.map.city_seed(), planned.day, key])
@@ -375,7 +375,7 @@ func _test_a_gap_is_a_small_part_of_the_rim(t: TestRunner) -> void:
 
 ## Whether a street of the tree meets this junction at right angles to a street running `along`.
 func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
-	for segment in planned.map.network.at_junction(junction):
+	for segment in planned.map.street_network().at_junction(junction):
 		var key := segment.key()
 		if key.z != along and planned.tree.is_on_the_tree(key):
 			return true

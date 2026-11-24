@@ -312,7 +312,7 @@ func _test_a_park_is_out_of_earshot_of_the_traffic(t: TestRunner) -> void:
 	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(1))
 	_advance(15.0)
-	for block in _city.map.calm_blocks:
+	for block in _city.map.calm_blocks_now():
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 		# Against what a park gives back rather than against the flat walking rate: calm ground
 		# has a multiplier of its own, so the raw constant is a number that is never applied here.
@@ -476,7 +476,7 @@ func _floor_on(at: Vector2) -> float:
 ## MULTIPLIER` ground, so what she pays is what the crowd loads minus what that ground gives back,
 ## and pricing it against the flat walking decay would flatter it by a third.
 func _crossing_the_main_road_costs() -> float:
-	var corridor := _city.map.main_road
+	var corridor := _city.map.main_road_corridor()
 	var from_x := CrowdLanes.lane_centre(corridor, 0)
 	var to_x := CrowdLanes.lane_centre(corridor, CrowdLanes.SIDEWALK_OFFSETS[-1])
 	var start := Vector2(from_x, float(_city.map.size_in_tiles().y / 2) * Tuning.TILE_SIZE)
@@ -1048,7 +1048,7 @@ func _test_a_main_road_is_kept_by_its_lights(t: TestRunner) -> void:
 	# always the middle corridor, so this used to assert `main_road == arterial_index`, which is
 	# the shape M46 found in `CrowdLanes._busyness`: a question about a city answered from a
 	# constant. What is worth pinning is that it is somewhere a main road can *be*.
-	var spine := _city.map.main_road
+	var spine := _city.map.main_road_corridor()
 	var corridors := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x)
 	t.check(spine >= 3 and spine <= corridors - 4,
 			"the spine leaves a city on both sides of it (corridor %d of %d)" % [spine, corridors])
@@ -1122,13 +1122,13 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 		# because a suite that spins prints nothing at all and reads as a hang rather than a
 		# failure — see `run_tests.gd`.
 		for tick in int(Tuning.signal_cycle_seconds() / 0.01) + 1:
-			if signals.green_for(Vector2i(_city.map.main_road, 8), true):
+			if signals.green_for(Vector2i(_city.map.main_road_corridor(), 8), true):
 				break
 			signals.advance(0.01)
 		for hop in 6:
 			signals.advance(travel)
 			arrivals += 1
-			if signals.green_for(Vector2i(_city.map.main_road, 8 - hop - 1), true):
+			if signals.green_for(Vector2i(_city.map.main_road_corridor(), 8 - hop - 1), true):
 				greens += 1
 	t.check(greens == arrivals,
 			"a car in the platoon never meets a red going the way the wave runs (%d of %d)"
@@ -1577,7 +1577,7 @@ func _sidewalk_lanes_beside_a_bucket_edge(bucket: float) -> Array[Dictionary]:
 	var above := {}
 	var map := _city.map
 	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
-		if corridor == map.main_road:
+		if corridor == map.main_road_corridor():
 			continue
 		for offset in CrowdLanes.SIDEWALK_OFFSETS:
 			var centre := CrowdLanes.walker_lane_centre(corridor, offset, CrowdLanes.SIDEWALK_OFFSETS)
@@ -1696,7 +1696,7 @@ func _a_straight_run_on(vertical: bool, length: int, wanted: Callable) -> Vector
 	var blocks := Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
 	var extent := map.size_in_tiles().y if vertical else map.size_in_tiles().x
 	for corridor in range(1, CrowdLanes.corridor_count(blocks) - 1):
-		if (vertical and corridor == map.main_road) or not wanted.call(corridor):
+		if (vertical and corridor == map.main_road_corridor()) or not wanted.call(corridor):
 			continue
 		for start in range(4, extent - length - 4):
 			var ordinary := true
@@ -1991,7 +1991,7 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 		return {}
 	var default_at_a := RegionPlanner.region_of_junction(map, door.a) \
 			< RegionPlanner.region_of_junction(map, door.b)
-	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
+	var at_a: bool = map.wall_stands_at_a(door.key(), default_at_a)
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
 	RunCity.crowd(city).use_focus(null)
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), mouth.get_center())
@@ -2133,7 +2133,7 @@ func _crossing_ahead_of(agent: CrowdAgent) -> Vector2:
 ## A grid where every street is equally loud is a grid with nothing to choose between. The
 ## arterial has to be the loud one, and it has to be the *same* one every morning.
 func _test_the_arterial_is_the_busiest_street(t: TestRunner) -> void:
-	var arterial := _city.map.main_road
+	var arterial := _city.map.main_road_corridor()
 	var busiest := CrowdLanes.busyness_for(_city.map, true, arterial, true)
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		if index == arterial:
@@ -2189,7 +2189,7 @@ func _test_nothing_walks_into_a_hard_blocker(t: TestRunner) -> void:
 	# a landmark or an apartment complex builds the whole street over.
 	var at := _city.map.doorstep_world_position()
 	for key: Vector3i in built_over:
-		var segment := _city.map.network.by_key(key)
+		var segment := _city.map.street_network().by_key(key)
 		if built_over[key] == segment.tile_rect():
 			continue
 		at = _city.map.tile_rect_to_world(segment.tile_rect()).get_center()
@@ -2307,9 +2307,10 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 ## carriageway the cars drive on.
 func _sidewalk_beside_the_spine() -> Vector2:
 	var row := _city.map.size_in_tiles().y / 2
-	for x in range(_city.map.main_road * CityMap.period(),
-			_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH + 1):
+	for x in range(_city.map.main_road_corridor() * CityMap.period(),
+			_city.map.main_road_corridor() * CityMap.period() + Tuning.STREET_WIDTH + 1):
 		var tile := Vector2i(x, row)
 		if _city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK:
 			return _city.map.tile_to_world(tile)
-	return _city.map.tile_to_world(Vector2i(_city.map.main_road * CityMap.period(), row))
+	return _city.map.tile_to_world(Vector2i(_city.map.main_road_corridor() * CityMap.period(),
+			row))

@@ -50,7 +50,7 @@ func case_every_planned_day_keeps_the_invariant(t: TestRunner) -> void:
 			var reachable := 0
 			var closed := map.blocked_segments(_closed_set(closures))
 			for area in ClosurePlanner.calm_areas(map):
-				if map.network.route_count(home, area.access, closed, 1) >= 1:
+				if map.street_network().route_count(home, area.access, closed, 1) >= 1:
 					reachable += 1
 			t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d calm areas can still be walked to, need %d"
@@ -176,7 +176,7 @@ func case_most_of_a_closed_streets_ground_stays_closed(t: TestRunner) -> void:
 ## walkable ground partway along it (an alley mouth or a courtyard archway), barricading both of
 ## that segment's mouths still leaves the street tile beside the opening in the same component as
 ## the opening — the exact fact `CityMap.close_streets` relies on to leave that tile out of
-## `closed_tiles`.
+## `closed_tile_set()`.
 ## Capped per seed rather than exhaustive: a park's every bordering street qualifies as an
 ## opening, so an uncapped scan floods dozens of times per city for a fact the first handful
 ## already establish.
@@ -187,7 +187,7 @@ func case_a_mid_segment_opening_stays_reachable_from_its_own_side(t: TestRunner)
 	for map in _maps:
 		var grid := ReachabilityGrid.build(map)
 		var found_this_seed := 0
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if found_this_seed >= _OPENINGS_PER_SEED:
 				break
 			if not map.has_street(segment.key()):
@@ -238,7 +238,7 @@ func case_calm_ground_is_still_walkable_to(t: TestRunner) -> void:
 		for day: int in [1, 6, 11, 14]:
 			map.close_streets(_plan(map, day))
 			var reached := map.walk_field(
-					map.world_to_tile(map.doorstep_world_position()), map.closed_tiles)
+					map.world_to_tile(map.doorstep_world_position()), map.closed_tile_set())
 			var found := false
 			for tile in map.calm_tiles():
 				if map.reaches(reached, tile):
@@ -283,7 +283,7 @@ func case_closures_land_where_a_wall_belongs(t: TestRunner) -> void:
 			var off := 0
 			var off_rim := 0
 			var off_gap := 0
-			for segment in map.network.segments():
+			for segment in map.street_network().segments():
 				var key := segment.key()
 				if map.has_street(key) and not tree.is_on_the_tree(key):
 					off += 1
@@ -334,7 +334,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary) -> bool:
 	var blocked := {}
 	for key: Vector3i in closed:
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		if not segment:
 			continue
 		for at_a: bool in [true, false]:
@@ -378,7 +378,7 @@ func case_a_wall_off_the_corridor_never_fails_the_invariant(t: TestRunner) -> vo
 			var areas := ClosurePlanner.calm_areas(map)
 			var closed := {}
 			var refused := 0
-			for segment in map.network.segments():
+			for segment in map.street_network().segments():
 				var key := segment.key()
 				if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 					continue
