@@ -45,19 +45,18 @@ func run(t: TestRunner) -> void:
 ## each, the two a site carries. The manager's streaming takes them as it takes a day's, and the
 ## dawn's own choice of them is `test_events_scheduler.gd`'s.
 func _start(with_the_announcement := false) -> void:
-	_manager.stand_down()
-	# The masts are the day the manager runs from here, so its physics (which standing down stops)
-	# runs again, as `start_day()` does for a day.
-	_manager.set_physics_process(true)
+	var plans: Array[EventPlan] = []
 	var loudspeaker := EventCatalogue.mast()
 	for site in _sites():
 		var mast := EventPlan.new(loudspeaker, site.foot())
 		mast.stand_as_a_mast(site.id())
-		_manager.streaming.add(mast)
+		plans.append(mast)
 		if with_the_announcement:
 			var announcement := EventPlan.new(EventCatalogue.by_id("curfew_announce"), site.foot())
 			announcement.stand_as_a_mast(site.id())
-			_manager.streaming.add(announcement)
+			plans.append(announcement)
+	# The focus is far off the map, so nothing streams in until a test walks to a mast.
+	_manager.start_recipe(plans, DaySpec.for_day(1), 1, Vector2(-1.0e6, -1.0e6))
 
 # ---------------------------------------------------------------- no floor ---
 

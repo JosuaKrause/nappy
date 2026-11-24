@@ -90,8 +90,9 @@ func _test_a_world_keeps_the_navigator_it_was_handed(t: TestRunner) -> void:
 	events.free()
 
 ## **A walk begins with nobody told where she is**: the world's word is forgotten as the walk
-## starts (`EventManager.start_day()`), so an event streamed in before the walk's first word does not hear
-## where she stood at the end of the last one.
+## starts (`EventManager.start_day()`, `start_recipe()` and `stand_down()` all reach
+## `_clear()`), so an event streamed in before the walk's first word does not hear where she stood
+## at the end of the last one.
 func _test_a_walk_starts_with_nobody_told_where_she_is(t: TestRunner) -> void:
 	var events := _stage.events()
 	events.world.where_she_is().tell(Vector2(700.0, 700.0), Vector2(714.0, 700.0),

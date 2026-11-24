@@ -16,8 +16,8 @@ them. They take three `[kept]` lines as deferrals, ending when the suites hold t
 library (C6a, C6b). Typing `city.gd` also unmasked two members the check had counted as read through an untyped `.clear()`
 in `city.gd`: `SceneryGround.clear`, read only by measuring probes and one residency suite, which takes a
 `[kept]` line listing every reader, and `EventManager.clear`, which becomes `_clear`: its suite and probe callers
-call `stand_down()`, the public end of a walk (`test_masts.gd` turns the manager's physics back on after it, since
-it runs the masts as a day). `City.build()` no longer makes a library when none was handed: it asserts that
+call `stand_down()`, the public end of a walk (`test_masts.gd` starts its masts through `start_recipe()` with a
+focus far off the map instead). `City.build()` no longer makes a library when none was handed: it asserts that
 `equip()` came first, which a suite cannot catch (an assert stops the run), so no check holds it.
 
 **The frame lock's check.** The design breaks `immediate = immediate or _frame_locked` in `update()`; a check
@@ -26,6 +26,11 @@ the residency is locked (`relocated`), and the lock's other uses in the same upd
 reads a second update that moves the view under the relocation distance so one ground region enters the load
 view past the guard: dropping the city's `lock_to_frames()` call fails it (a locked residency prepares the
 region in that call, an unlocked one queues it).
+
+**The touch controls' rotation has no check on `main`'s wiring.** A press at the pause button's presented
+position in `test_camera_start.gd`'s portrait boot gives the same answer with `main`'s `use_rotated()` call
+removed, because the press does not reach the controls in a boot with no walk; no suite reaches the wiring
+cheaply, and the controls' own handling of the rotation is `test_orientation.gd`'s.
 
 **Check counts.** `test_still_watch.gd` 29 to 30 (the watch's own check, that it writes its line into the
 trace it was handed); `test_run_config.gd` 84 to 85 (the city's ground and shadows, and the residency's lock,
