@@ -5,10 +5,11 @@ extends RefCounted
 ##
 ## **What is real and what is stood in for.** The vents, their clocks, the blows and the field each
 ## blow charges her with are the building's own plans on the day's `EventManager` and
-## `EventInstance` themselves, ticked the way the game ticks them; the corridor is `InteriorScene.basement_walk()`; the decay is the baby's own
-## rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING` times the scene's
-## `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she waits) and the
-## sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
+## `EventInstance` themselves, ticked the way the game ticks them (the manager's own
+## `step_the_repeats()`, then each blow's `step()`); the corridor is `InteriorScene.basement_walk()`;
+## the decay is the baby's own rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING`
+## times the scene's `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she
+## waits) and the sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
 ## `Tuning.WALK_SPEED` and held `HELD_OUT` from a vent whose body is down, which is what the
 ## physics does to her at a one-tile gate. **Steam alone**: the basement's mouse, the fire and the
 ## bangs are not ticked, so the figures are what the vents cost.
@@ -114,8 +115,7 @@ func _blow_at(vent: EventPlan) -> EventInstance:
 ## no player in the rig the bangs outside charge nothing, and the masked man, never ticked, never
 ## runs out of the shaft to come again.
 func _tick(at: Vector2, awake: bool) -> float:
-	_events._streaming.retire_finished()
-	_events._streaming.bring_back_what_repeats(STEP)
+	_events.step_the_repeats(STEP)
 	var incoming := 0.0
 	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
 	for instance in _events.instances():
