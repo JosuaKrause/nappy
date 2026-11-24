@@ -12,9 +12,10 @@ extends RefCounted
 ## stand it on the seed's generated map, whose day the dawn plans; the one case that asks the
 ## city's own dawn (`City.start_day()`) stands it in a city, because it is the dawn there that
 ## grows the route tree and holds the closures the manager's walk must be. No other case builds a
-## city. Two cases run after the others on the generated map: the cyclist's warning, which stands a manager of its own, and the parked fire engine's route
-## guarantee, which builds no manager and reads the map's street network. The last case asks the
-## spawner (`EventSpawner.as_warned()`) of each catalogue row and builds nothing: no suite is the
+## city. Two cases run after the others on the generated map: the cyclist's warning, which
+## stands a manager of its own, and the parked fire engine's route guarantee, which builds no
+## manager and reads the map's street network. The last case asks the spawner
+## (`EventSpawner.as_warned()`) of each catalogue row and builds nothing: no suite is the
 ## spawner's, and the spawner is one of the manager's parts, so its question is held here.
 ##
 ## **Three cases ask the dev rig's `--spawn event` target** (`DevRig.for_spawn_target()`) of a day the

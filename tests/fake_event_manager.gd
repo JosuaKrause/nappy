@@ -8,7 +8,20 @@ extends EventManager
 ## pacing `police_patrol`, read off a real city once). The resistance's director asks it three more
 ## things in the days it stands a task on: the instances it has put in the street (`instances()`),
 ## ending one (`retire()`), and rigging her route's bag (`rig_her_route()`), which a day with no
-## walk planned has nothing to rig. The real manager's own logic is checked in its own suites
+## walk planned has nothing to rig.
+##
+## **An authored scene starts its walk on it** (`SceneRecipeRuntime.install()`,
+## `start_recipe()`): it records the plans, the spec, the day, the focus, the calm areas and the
+## ground it is handed, and answers those plans (`plans()`), each standing in the world
+## (`EventPlan.is_in_the_world()`, `event_of()`), the calm areas (`calm_as_the_map_stands()`)
+## and the owed count a rigged route is handed back (`start_recipe_route()`), which the real
+## manager answers from its bag (read off a real day once). **Where it answers differently from
+## the real manager:** every plan is put in the world wherever it stands, where the real
+## streaming puts in only what lies within its radius, so the runtime's refusal of a plan that
+## is not live at its initial position never fires here; the calm areas are an empty
+## `FakeCalmAreas`, so no authored row is refused calm ground; and `spawn_warned()` is a plain
+## `spawn_extra()`, with neither the warning nor the warned age the real spawner gives. No case
+## reaches any of the three. The real manager's own logic is checked in its own suites
 ## (`tests/test_event_manager.gd` and the rest). A helper, not a suite: the runner loads only
 ## `test_*.gd`.
 ##
@@ -26,6 +39,19 @@ var masts_to_silence := 0
 ## How many times `silence_all_masts()` was asked.
 var silenced_all := 0
 
+## What `start_recipe()` was handed, and how many times it was.
+var _fake_recipe_plans: Array[EventPlan] = []
+var _fake_recipe_spec: DaySpec
+var _fake_recipe_day := -1
+var _fake_recipe_focus := Vector2.INF
+var _fake_recipe_calm: CalmAreas
+var _fake_recipe_ground: RowGround
+var _fake_recipes_started := 0
+## The live instance of each plan `start_recipe()` put in the world, by plan.
+var _fake_live := {}
+## What `start_recipe_route()` was handed, one entry per ask.
+var _fake_routes: Array[Dictionary] = []
+
 ## An instance of `def` at `at`, on `path`, in no world.
 ##
 ## Overrides EventManager.spawn_extra.
@@ -34,6 +60,13 @@ func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> Ev
 	instance.setup(def, at, path)
 	_made.append(instance)
 	return instance
+
+## An instance of `def` on `path`, in no world, as the real manager creates a row whose warning ran
+## before it existed (the resistance's column trucks).
+##
+## Overrides EventManager.spawn_warned.
+func spawn_warned(def: EventDef, path: PackedVector2Array, _pelican := false) -> EventInstance:
+	return spawn_extra(def, path[0], path)
 
 ## The instances `spawn_extra()` made, the ones still standing: what the street holds, as the real
 ## manager's street holds the ones it spawned. Not the ones freed since.
@@ -52,6 +85,82 @@ func instances() -> Array[EventInstance]:
 func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_gone():
 		instance.end_now()
+
+## Takes the recipe's plans as the walk, each standing in the world at its point on its path, and
+## notes what it was handed. Nothing is planned, sited or streamed.
+##
+## Overrides EventManager.start_recipe.
+func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int, focus: Vector2,
+		calm: CalmAreas = null, ground: RowGround = null) -> void:
+	_fake_recipe_plans = plans
+	_fake_recipe_spec = spec
+	_fake_recipe_day = day
+	_fake_recipe_focus = focus
+	_fake_recipe_calm = calm
+	_fake_recipe_ground = ground
+	_fake_recipes_started += 1
+	for plan in plans:
+		var instance := EventInstance.new()
+		instance.setup(plan.row(), plan.placed_at(), plan.walks())
+		_made.append(instance)
+		_fake_live[plan] = instance
+		plan.enter_the_world(instance.standing())
+
+## The plans `start_recipe()` was handed.
+##
+## Overrides EventManager.plans.
+func plans() -> Array[EventPlan]:
+	return _fake_recipe_plans
+
+## The live instance of `plan` where `start_recipe()` put it in the world, null for any other plan.
+##
+## Overrides EventManager.event_of.
+func event_of(plan: EventPlan) -> EventInstance:
+	return _fake_live.get(plan)
+
+## No calm areas: a `FakeCalmAreas` with none set, which the scene is placed against and hands back
+## to `start_recipe()`.
+##
+## Overrides EventManager.calm_as_the_map_stands.
+func calm_as_the_map_stands() -> CalmAreas:
+	return FakeCalmAreas.new()
+
+## Notes the rigged route and answers the owed count it was handed.
+##
+## Overrides EventManager.start_recipe_route.
+func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
+	_fake_routes.append({"marbles": marbles, "pre_bag": pre_bag, "owed": owed,
+			"first_after": first_after})
+	return owed
+
+## How many times `start_recipe()` was asked.
+func recipes_started() -> int:
+	return _fake_recipes_started
+
+## The spec the last `start_recipe()` was handed: the very object the scene was installed with.
+func recipe_spec() -> DaySpec:
+	return _fake_recipe_spec
+
+## The day the last `start_recipe()` was handed.
+func recipe_day() -> int:
+	return _fake_recipe_day
+
+## The point the last `start_recipe()` was handed to stream round.
+func recipe_focus() -> Vector2:
+	return _fake_recipe_focus
+
+## The calm areas the last `start_recipe()` was handed, null for none.
+func recipe_calm() -> CalmAreas:
+	return _fake_recipe_calm
+
+## The ground the last `start_recipe()` was handed, null for none.
+func recipe_ground() -> RowGround:
+	return _fake_recipe_ground
+
+## What each `start_recipe_route()` was handed, in order: `marbles`, `pre_bag`, `owed`,
+## `first_after`.
+func recipe_routes() -> Array[Dictionary]:
+	return _fake_routes
 
 ## Answers that nothing was rigged: no walk is planned here, so there is no bag whose next marbles to
 ## set, which is what the real manager answers for a rig that started no day.

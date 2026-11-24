@@ -24,6 +24,73 @@ func _recipe() -> Dictionary:
 func run(t: TestRunner) -> void:
 	await _test_the_bounded_context(t)
 	_test_the_examples(t)
+	_test_the_props_stand_a_relocated_tree(t)
+	_test_a_street_tree_with_an_emptied_pit_is_hidden(t)
+
+## **The city's props stand a tree the recipe relocates** across the road, where the builder's
+## planting has its pit now: the street tree the city draws stands at the destination pit's tile
+## and not at the source's, and is the real street-tree prop.
+func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
+	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
+	var built := RecipeCityBuilder.build(recipe)
+	if not _errors(built).is_empty():
+		t.check(false, "opposite-curb tree recipe constructs: %s" % [built.errors])
+		return
+	var source := Vector2i(50, 74)
+	var destination := Vector2i(50, 71)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	t.add_child(city)
+	RunCity.build(city, built.map)
+	var trees := {}
+	for node in city.props():
+		var prop := node as Prop
+		if prop != null and prop.kind() == Prop.Kind.STREET_TREE:
+			trees[city.map.world_to_tile(prop.position)] = prop
+	t.check(not trees.has(source) and trees.has(destination),
+			"real tree props use the relocated planning source")
+	var tree: Prop = trees.get(destination)
+	t.check(tree != null and tree.position == city.map.tile_to_world(destination),
+			"relocation retains a real existing street-tree component")
+	city.free()
+
+## **The city hides the street tree whose pit the day emptied** when it refreshes its trees, and
+## shows every tree again once no pit is emptied: a fallen tree stands where the street tree stood.
+func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
+	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
+	var built := RecipeCityBuilder.build(recipe)
+	if not _errors(built).is_empty():
+		t.check(false, "street-tree recipe constructs: %s" % [built.errors])
+		return
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	t.add_child(city)
+	RunCity.build(city, built.map)
+	var trees := {}
+	for node in city.props():
+		var prop := node as Prop
+		if prop != null and prop.kind() == Prop.Kind.STREET_TREE:
+			trees[city.map.world_to_tile(prop.position)] = prop
+	t.check(trees.size() >= 2, "the city draws several street trees (%d)" % trees.size())
+	var emptied: Vector2i = trees.keys()[0]
+	var pits: Array[Vector2i] = [emptied]
+	city.map.set_seal_tree_pits(pits)
+	city.refresh_street_trees()
+	var others_shown := true
+	for tile: Vector2i in trees:
+		var prop: Prop = trees[tile]
+		if tile != emptied and not prop.visible:
+			others_shown = false
+	t.check(not (trees[emptied] as Prop).visible,
+			"the street tree whose pit is emptied is hidden after the refresh")
+	t.check(others_shown, "every other street tree stays shown")
+	var none: Array[Vector2i] = []
+	city.map.set_seal_tree_pits(none)
+	city.refresh_street_trees()
+	var all_shown := true
+	for tile: Vector2i in trees:
+		if not (trees[tile] as Prop).visible:
+			all_shown = false
+	t.check(all_shown, "every street tree is shown again once no pit is emptied")
+	city.free()
 
 func _test_the_bounded_context(t: TestRunner) -> void:
 	var input := _recipe()

@@ -7,6 +7,7 @@ extends RefCounted
 ## tests the crowd.
 
 const Rig := preload("res://tests/crowd_street_rig.gd")
+const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 ## The seed of the map the crowd is built on.
 const MAP_SEED := 1917501
 
@@ -80,6 +81,102 @@ func run(t: TestRunner) -> void:
 			"the field follows its focus source on the rig's step(), which has no player in it")
 	crowd.start_day(1, rng, focus, false, true)
 	t.check(crowd.agent_count() == 0, "city-view extent does not enable unrequested population")
+	_rig.free_crowd(crowd)
+	_test_a_uniform_population_and_the_ordinary_day(t)
+
+## How many of the crowd's walkers stand on each corridor, keyed `v<n>` or `h<n>` by the axis and
+## the corridor their own lane key names.
+static func _walkers_by_corridor(crowd: Crowd) -> Dictionary:
+	var counts := {}
+	for agent in crowd.agents():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
+			continue
+		var parts := LANE_KEYS.parts_of(agent.lane_key())
+		var key := "%s%d" % ["v" if parts[0] else "h", parts[1]]
+		counts[key] = int(counts.get(key, 0)) + 1
+	return counts
+
+## **A scene recipe's uniform walkers** (`start_day()`'s `uniform_walkers` and
+## `walker_multiplier`) on the map its recipe builds: an authored walker overlapping the crowd
+## is refused without losing population; the walkers keep varied seeded headings within their
+## lanes, double only the walkers and leave the ordinary car population, and do not concentrate
+## on the main road, while still moving; and an ordinary day round the same point restores its
+## density and its street hierarchy, the main road holding clearly more walkers against the
+## busiest ordinary corridor than the uniform day's level.
+func _test_a_uniform_population_and_the_ordinary_day(t: TestRunner) -> void:
+	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
+	var built := RecipeCityBuilder.build(recipe)
+	var build_errors: Array = built.errors
+	t.check(build_errors.is_empty(), "the recipe's map builds: %s" % [build_errors])
+	if not build_errors.is_empty():
+		return
+	var map: CityMap = built.map
+	var crowd := _rig.a_crowd(t, map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	crowd.start_day(1, rng, Vector2(1952, 1936), true, false, true, 2)
+	var existing: CrowdAgent = crowd.agents()[0]
+	var population := crowd.agent_count()
+	var duplicate := crowd.add_recipe_actor("overlap", CrowdAgent.Kind.WALKER,
+			existing.position, existing.heading(), -1, 1)
+	t.check(str(duplicate.error).contains("overlaps an existing walker")
+			and crowd.agent_count() == population,
+			"authored walker overlapping background crowd is rejected without losing population")
+	var counts := {}
+	var before := {}
+	var cars := 0
+	var lane_directions := {}
+	for agent in crowd.agents():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
+			cars += 1
+			continue
+		# The agent's own lane key says its axis, corridor, lane and heading.
+		var parts := LANE_KEYS.parts_of(agent.lane_key())
+		var key := "%s%d" % ["v" if parts[0] else "h", parts[1]]
+		counts[key] = int(counts.get(key, 0)) + 1
+		var lane := "%s:%s" % [key, parts[2]]
+		if not lane_directions.has(lane):
+			lane_directions[lane] = {}
+		lane_directions[lane][parts[3]] = true
+		before[agent] = agent.position
+	var mixed := 0
+	for directions: Dictionary in lane_directions.values():
+		mixed += int(directions.size() == 2)
+	t.check(mixed > lane_directions.size() / 2,
+			"even density retains varied seeded headings within sidewalk lanes")
+	t.check(cars == Tuning.crowd_cars(1) and before.size() == Tuning.crowd_pedestrians(1) * 2,
+			"recipe increases only walkers while retaining ordinary car population")
+	var main_key := "v%d" % map.main_road_corridor()
+	var main_count := int(counts.get(main_key, 0))
+	var ordinary_max := 0
+	for key: String in counts:
+		if key != main_key:
+			ordinary_max = maxi(ordinary_max, counts[key])
+	t.check(main_count > 0 and ordinary_max > 0 and main_count < ordinary_max * 1.25,
+			("uniform pedestrian selection does not concentrate the field on the main road (%d of "
+			+ "the busiest other corridor's %d)") % [main_count, ordinary_max])
+	for frame in 30:
+		crowd.step(1.0 / 30.0)
+	var moving := 0
+	for agent: CrowdAgent in before:
+		var distance := agent.position.distance_to(before[agent])
+		moving += int(distance > 1 and distance < Tuning.PEDESTRIAN_SPEED.y * 1.5)
+	t.check(moving > before.size() / 2,
+			"authored density retains physically moving production walkers")
+	crowd.start_day(1, rng, Vector2(1952, 1936))
+	var ordinary_counts := _walkers_by_corridor(crowd)
+	var ordinary_main := int(ordinary_counts.get(main_key, 0))
+	var ordinary_rest := 0
+	for key: String in ordinary_counts:
+		if key != main_key:
+			ordinary_rest = maxi(ordinary_rest, ordinary_counts[key])
+	var uniform_share := float(main_count) / float(maxi(ordinary_max, 1))
+	var ordinary_share := float(ordinary_main) / float(maxi(ordinary_rest, 1))
+	t.check(ordinary_share > uniform_share * 1.25
+			and crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
+			("ordinary day restores its density and street hierarchy (the main road holds %.2f of the "
+			+ "busiest other corridor's walkers, against %.2f on the uniform day)")
+			% [ordinary_share, uniform_share])
 	_rig.free_crowd(crowd)
 
 ## Whether the crowd stands over the whole map: its bodies reach within a block of every edge.

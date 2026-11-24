@@ -14,6 +14,7 @@ to whoever asks (designing-classes). The dawn cases were built with `DayEvents` 
 makes one `RowGround` and hands it to its rows, its escape actors and its walk (the record
 2026-10-18-minty-quail-mossy-puffin). When the walk sites something (day 11's mast),
 `SitingMaker._assemble()` grows the route tree again, with the scene's edges shown, because
-`EventsAhead.start_a_given_walk()` (which `EventManager._take()` calls) never sets its `_day_tree`; and it lays out the day's
-locations again, though `SceneRecipeRuntime._event_plans()` already holds both. The fix is the
-runtime handing the walk the tree and the locations it holds, as it hands the ground.
+`EventsAhead.start_a_given_walk()` (which `EventManager._take()` calls) never sets its
+`_day_tree`; and it lays out the day's locations again, though
+`SceneRecipeRuntime._event_plans()` already holds both. The fix is the runtime handing the walk
+the tree and the locations it holds, as it hands the ground.
