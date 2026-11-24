@@ -1688,15 +1688,6 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 		_rebuild()
 	return errors
 
-## Lays `units` on the roof exactly as given, in place of the roll, and rebuilds: one entry per unit
-## in `_roof_layout()`'s own shape, which nothing here checks. The roof preview rig
-## (`src/dev/roof_network_preview.gd`) lays a vertical duct run with it, a shape no recipe fixture
-## names; a recipe's fixtures go through `author_roof_furniture()`, which checks each one against
-## the production roof.
-func lay_roof_furniture(units: Array[Dictionary]) -> void:
-	_recipe_roof_furniture = units
-	_rebuild()
-
 ## The cells a roof unit may stand on, in the fixed order `_roof_layout()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only
 ## below its own column's top (extension included) and leaving out any extension cell

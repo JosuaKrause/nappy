@@ -22,63 +22,63 @@ Every figure is on quiet sidewalk (ground multiplier 1.0) with nothing built bet
 Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a heading-free siting, no clock and no seed anywhere in the arithmetic — two runs on the same tree write the same bytes.
 ## Geometry and role
 
-| id                   |      role | intensity | core_intensity | core_radius | inner_radius | outer_radius | falloff_power | pulse_period | pulse_trough |     speed | walk_through_cost |
-| -------------------- | --------- | --------- | -------------- | ----------- | ------------ | ------------ | ------------- | ------------ | ------------ | --------- | ----------------- |
-| playground           |      none |       0.0 |              — |           — |         40.0 |        150.0 |           2.0 |          9.0 |          0.0 |         — |             -19.6 |
-| cat_dash             |      none |      17.0 |              — |           — |         30.0 |        120.0 |           2.0 |            — |            — |     240.0 |              17.6 |
-| alley_mouse          |  friction |      21.0 |              — |           — |         15.0 |         60.0 |           2.0 |            — |            — |     200.0 |              12.7 |
-| dog_walker           |  friction |      33.0 |              — |           — |         26.0 |        105.0 |           2.0 |          3.5 |          8.2 |      32.0 |              42.7 |
-| cafe_tables          |      wall |      12.0 |              — |           — |         38.0 |         64.0 |           2.0 |          6.0 |          3.0 |         — |               6.1 |
-| delivery_van         |      wall |       0.0 |              — |           — |         40.0 |        150.0 |           2.0 |            — |            — |         — |             -19.6 |
-| homeless_yeller      |  friction |      20.0 |              — |           — |         45.0 |        210.0 |           2.0 |          5.0 |          5.0 |      30.0 |              40.0 |
-| busker               |  friction |      19.3 |              — |           — |         45.0 |        190.0 |           2.0 |          7.0 |          4.8 |         — |              34.7 |
-| construction         |      wall |       0.0 |              — |           — |         46.0 |        200.0 |           2.0 |            — |            — |         — |             -26.1 |
-| fire_truck           |      wall |      26.0 |              — |           — |         70.0 |        340.0 |           2.0 |            — |            — |     190.0 |              97.0 |
-| burning_building     | set_piece |       0.0 |              — |           — |         60.0 |        260.0 |           2.0 |            — |            — |         — |             -33.9 |
-| burnt_shell          |  friction |       2.5 |              — |           — |         24.0 |         78.0 |           2.0 |            — |            — |         — |              -6.9 |
-| loose_dog            |      none |      39.0 |              — |           — |         30.0 |        140.0 |           2.0 |          2.2 |          9.8 |     132.0 |              69.3 |
-| market_stall         |      wall |      14.0 |              — |           — |         38.0 |         64.0 |           2.0 |          8.0 |          3.5 |         — |               8.5 |
-| leaf_blower          |      wall |      19.3 |           35.0 |        64.0 |         45.0 |        190.0 |           2.0 |          4.0 |          4.8 |         — |              52.9 |
-| pigeon_flock         |      none |      42.0 |              — |           — |         26.0 |        168.0 |           2.0 |            — |            — |         — |              44.9 |
-| cyclist              |      none |      18.0 |              — |           — |         33.0 |         90.0 |           2.0 |            — |            — |     165.0 |              16.0 |
-| ice_cream_van        |      wall |      13.0 |              — |           — |         48.0 |        240.0 |           2.0 |         11.0 |          3.2 |         — |              18.4 |
-| reversing_lorry      |      wall |      16.0 |              — |           — |         46.0 |        175.0 |           2.0 |          1.6 |          4.0 |         — |              23.1 |
-| charging_dog         |      none |      12.0 |              — |           — |         26.0 |        150.0 |           2.0 |            — |            — |     130.0 |               8.8 |
-| chatting_mother      |  friction |       4.5 |              — |           — |         56.0 |         70.0 |           2.0 |            — |            — |      26.0 |              -2.7 |
-| police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |           2.0 |            — |            — |      74.0 |               5.9 |
-| poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
-| poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
-| loudspeaker          |  friction |      20.0 |              — |           — |         45.0 |        210.0 |           2.0 |         22.0 |          5.0 |         — |              40.0 |
-| curfew_announce      |      wall |      30.0 |              — |           — |         45.0 |        210.0 |           2.0 |            — |            — |         — |              73.7 |
-| roadblock            |  friction |       0.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |             -23.3 |
-| checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
-| checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
-| door_guard           |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |           2.0 |            — |            — |         — |              47.7 |
-| alley_robbery        |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |           2.0 |          6.0 |          6.0 |         — |              83.9 |
-| military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |           2.0 |            — |            — |     120.0 |              68.6 |
-| barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| protest              |  friction |      19.5 |              — |           — |         39.0 |        269.0 |           2.0 |          8.0 |          4.9 |         — |              46.4 |
-| firefight            |      wall |      30.0 |              — |           — |         84.0 |        374.0 |           2.0 |          2.5 |          7.5 |         — |             132.1 |
-| fallen_tree          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| car_accident         |      wall |      50.0 |              — |           — |         24.0 |         96.0 |           2.0 |            — |            — |         — |              65.7 |
-| skip                 |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| scaffolding          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| burst_water_main     |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| moving_van           |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| burnt_out_car        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |           2.0 |            — |            — |      46.0 |              -5.2 |
-| robber_giving_chase  |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| van_guard_giving_chase |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| policeman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| guardsman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |           2.0 |            — |            — |         — |             165.2 |
-| impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| basement_steam       |  friction |      25.0 |              — |           — |         24.0 |         90.0 |           2.0 |          4.0 |          6.2 |         — |              25.2 |
+| id                   |      role | intensity | core_intensity | core_radius | inner_radius | outer_radius | pulse_period | pulse_trough |     speed | walk_through_cost |
+| -------------------- | --------- | --------- | -------------- | ----------- | ------------ | ------------ | ------------ | ------------ | --------- | ----------------- |
+| playground           |      none |       0.0 |              — |           — |         40.0 |        150.0 |          9.0 |          0.0 |         — |             -19.6 |
+| cat_dash             |      none |      17.0 |              — |           — |         30.0 |        120.0 |            — |            — |     240.0 |              17.6 |
+| alley_mouse          |  friction |      21.0 |              — |           — |         15.0 |         60.0 |            — |            — |     200.0 |              12.7 |
+| dog_walker           |  friction |      33.0 |              — |           — |         26.0 |        105.0 |          3.5 |          8.2 |      32.0 |              42.7 |
+| cafe_tables          |      wall |      12.0 |              — |           — |         38.0 |         64.0 |          6.0 |          3.0 |         — |               6.1 |
+| delivery_van         |      wall |       0.0 |              — |           — |         40.0 |        150.0 |            — |            — |         — |             -19.6 |
+| homeless_yeller      |  friction |      20.0 |              — |           — |         45.0 |        210.0 |          5.0 |          5.0 |      30.0 |              40.0 |
+| busker               |  friction |      19.3 |              — |           — |         45.0 |        190.0 |          7.0 |          4.8 |         — |              34.7 |
+| construction         |      wall |       0.0 |              — |           — |         46.0 |        200.0 |            — |            — |         — |             -26.1 |
+| fire_truck           |      wall |      26.0 |              — |           — |         70.0 |        340.0 |            — |            — |     190.0 |              97.0 |
+| burning_building     | set_piece |       0.0 |              — |           — |         60.0 |        260.0 |            — |            — |         — |             -33.9 |
+| burnt_shell          |  friction |       2.5 |              — |           — |         24.0 |         78.0 |            — |            — |         — |              -6.9 |
+| loose_dog            |      none |      39.0 |              — |           — |         30.0 |        140.0 |          2.2 |          9.8 |     132.0 |              69.3 |
+| market_stall         |      wall |      14.0 |              — |           — |         38.0 |         64.0 |          8.0 |          3.5 |         — |               8.5 |
+| leaf_blower          |      wall |      19.3 |           35.0 |        64.0 |         45.0 |        190.0 |          4.0 |          4.8 |         — |              52.9 |
+| pigeon_flock         |      none |      42.0 |              — |           — |         26.0 |        168.0 |            — |            — |         — |              44.9 |
+| cyclist              |      none |      18.0 |              — |           — |         33.0 |         90.0 |            — |            — |     165.0 |              16.0 |
+| ice_cream_van        |      wall |      13.0 |              — |           — |         48.0 |        240.0 |         11.0 |          3.2 |         — |              18.4 |
+| reversing_lorry      |      wall |      16.0 |              — |           — |         46.0 |        175.0 |          1.6 |          4.0 |         — |              23.1 |
+| charging_dog         |      none |      12.0 |              — |           — |         26.0 |        150.0 |            — |            — |     130.0 |               8.8 |
+| chatting_mother      |  friction |       4.5 |              — |           — |         56.0 |         70.0 |            — |            — |      26.0 |              -2.7 |
+| police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |            — |            — |      74.0 |               5.9 |
+| poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |            — |            — |         — |              -5.3 |
+| poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |            — |            — |         — |              -5.3 |
+| loudspeaker          |  friction |      20.0 |              — |           — |         45.0 |        210.0 |         22.0 |          5.0 |         — |              40.0 |
+| curfew_announce      |      wall |      30.0 |              — |           — |         45.0 |        210.0 |            — |            — |         — |              73.7 |
+| roadblock            |  friction |       0.0 |              — |           — |         86.0 |        179.0 |            — |            — |         — |             -23.3 |
+| checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |            — |            — |         — |              -4.7 |
+| checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |            — |            — |         — |             -15.7 |
+| checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |            — |            — |         — |              -4.7 |
+| door_guard           |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
+| abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |            — |            — |         — |              47.7 |
+| alley_robbery        |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |          6.0 |          6.0 |         — |              83.9 |
+| military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |            — |            — |     120.0 |              68.6 |
+| barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| protest              |  friction |      19.5 |              — |           — |         39.0 |        269.0 |          8.0 |          4.9 |         — |              46.4 |
+| firefight            |      wall |      30.0 |              — |           — |         84.0 |        374.0 |          2.5 |          7.5 |         — |             132.1 |
+| fallen_tree          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| car_accident         |      wall |      50.0 |              — |           — |         24.0 |         96.0 |            — |            — |         — |              65.7 |
+| skip                 |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| scaffolding          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| burst_water_main     |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| moving_van           |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| burnt_out_car        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |            — |            — |      46.0 |              -5.2 |
+| robber_giving_chase  |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| van_guard_giving_chase |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
+| policeman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| guardsman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |            — |            — |         — |             165.2 |
+| impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
+| basement_steam       |  friction |      25.0 |              — |           — |         24.0 |         90.0 |          4.0 |          6.2 |         — |              25.2 |
 
 ## Walking at a fixed distance — awake
 

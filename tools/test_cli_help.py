@@ -71,6 +71,7 @@ ENTRY_POINTS = (
     "field_to_method.py",
     "typing_census.py",
     "compare-placement-rows.py",
+    "dead_code.py",
 )
 
 SOUND_FILES = (
@@ -582,6 +583,11 @@ class CliHelpTests(unittest.TestCase):
             with self.subTest(tool=name):
                 result = self.run_tool(name, "--this-flag-does-not-exist")
                 self.assertNotEqual(result.returncode, 0, f"{name} accepted an unknown flag")
+
+    def test_dead_code_rejects_an_abbreviated_flag(self) -> None:
+        result = self.run_tool("dead_code.py", "--sec", "enums")
+        self.assertNotEqual(result.returncode, 0, "dead_code.py accepted an abbreviated flag")
+        self.assertNotIn("==", result.stdout)
 
     def test_agent_identity_help_and_unknown_flag_do_no_work(self) -> None:
         # run's own "role -- command" without the "--" is rejected the same way as an unknown

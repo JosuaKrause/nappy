@@ -139,7 +139,6 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 		"peak": field.at_peak(field.peak() + 3.0),
 		"inner radius": field.holding_to(lerpf(field.core_within(), field.heard_within(), 0.5)),
 		"outer radius": field.reaching(field.heard_within() + 3.0),
-		"falloff": field.falling_off(field.falloff() + 3.0),
 		"pulse": field.pulsing_every(field.pulses_every() + 3.0),
 	}
 	var rows := {}
