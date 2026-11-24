@@ -313,8 +313,11 @@ func _boot_catching_the_rig(t: TestRunner, seat: Seat, words: Array, entered: Ar
 ## `main` hands `--quit-when-still`'s watch the trace it hands every other writer
 ## (`StillWatch.use_trace()`, the session's): the line the watch writes as it fires reaches the
 ## recording run log the boot is handed (`tests/recording_log.gd`), which a trace nobody handed the
-## watch would drop. The boot's hold is short and she is moved past the watch's radius once and
-## then held still, so it fires; its picture's child is switched off the moment it arrives, as
+## watch would drop. The boot skips the crowd and the events and is invincible, so nothing but a red
+## light in view can hold the watch or end the day. A red light holds the watch until the light
+## lets her go, by design, so she is moved past the watch's radius on every tick of one signal
+## cycle (which arms it the tick the light lets her go) and then held still, and the wait is
+## bounded by one more cycle plus the hold and ends the moment the line is written. It fires; its picture's child is switched off the moment it arrives, as
 ## `tests/test_still_watch.gd` does, so a headless run does not quit.
 func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 	var run_log := RecordingLog.new()
@@ -322,7 +325,8 @@ func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
-			Boot.config(["--quit-when-still", "0.5"]),
+			Boot.config(["--quit-when-still", "0.5", "--skip", "crowd,events",
+					"--invincible"]),
 			func(main: Boot.MainScript) -> void:
 				main.use_sitting_home(home)
 				main.use_run_log(run_log))
@@ -340,8 +344,19 @@ func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 		var her := Boot.player(booted.main)
 		her.set_physics_process(false)
 		await PhysicsTicks.pass_ticks(t, 2)
-		her.global_position += Vector2(StillWatch.STILL_RADIUS + 50.0, 0.0)
-		await PhysicsTicks.pass_ticks(t, 90)
+		# A red light in view holds the watch and re-anchors it on every tick, so a single move
+		# while it is held never arms it. She is moved past the radius on every tick of one whole
+		# signal cycle, which reaches the tick the light lets her go and arms the watch there, then
+		# held still: it fires the first time she has stood still for the hold with the light
+		# letting her go, within one more cycle, and the wait ends the moment the line is written.
+		var cycle := PhysicsTicks.ticks_for(Tuning.signal_cycle_seconds())
+		var step := Vector2(StillWatch.STILL_RADIUS + 50.0, 0.0)
+		var bound := 2 * cycle + PhysicsTicks.ticks_for(0.5 + 1.0)
+		await PhysicsTicks.pass_ticks(t, bound, func(ran: int) -> bool:
+				if ran <= cycle:
+					her.global_position += step if ran % 2 == 0 else -step
+				return run_log.lines.any(func(line: String) -> bool:
+						return line.contains("still quit-when-still")))
 	t.check(run_log.lines.any(func(line: String) -> bool:
 				return line.contains("still quit-when-still")),
 			"and what the watch writes as it fires reaches the boot's run log (%s)"
