@@ -132,13 +132,6 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    the seals and the wall's bodies handed in as standing (the record minty-quail-tiny-magpie; placement step 3c
    moved main's own route-adjacent walls from 30.54 to 19.41 a city a day).
 
-   **One more thing is done before the remeasure runs** (pull request 1683's review found it): both placement
-   probes, `tests/probes/placement_rows.gd` and `tests/probes/placement_view_mix.gd`, plan with the heated roadblock
-   row, `EventCatalogue.heated(EventCatalogue.by_id(guarded), progress)`, as `DayPlanner` does, where they hand the
-   plain `EventCatalogue.by_id(guarded)`; they refresh the street trees (`refresh_street_trees()`) after the day's seals
-   are planned, as the game's own path does, which neither does; and they hold their shared planning block once, in a
-   helper both use (under `tests/probes/`), where each carries a copy.
-
    The "before" it compares with is the design review's baseline readings in
    `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`
    (the record minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
