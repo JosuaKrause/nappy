@@ -21,7 +21,7 @@ from the rule alone:
   should add the underscore", and of the pick that each becomes internal, its tests checking what
   the class does from outside, one staying public only where nothing outside can confirm the
   behavior, with its reason written down, "yes, that's cleaner" (curly-rabbit #1098). That pass is
-  `tests-own-class-members.md`.
+  done: the check's `[own file only]` group holds no line.
 - **A member with no reader at all goes.** Asked whether such members go, the player: "delete them
   if possible. most cases should allow similar things via mocking the affected object. if it is
   absolutely not possible to get this information otherwise *and* this information is necessary for
@@ -84,4 +84,4 @@ and `recipe_coverage`, `DayStreets.replace_region_plan`, `ResistanceDirector.rea
 `standing_pieces` and `is_solid`, `WorldMap.is_obstructed` and
 `VisibleView.visible_share`. The first reading above counts `src/dev` among the game's own classes,
 and the item's own seams `add_recipe_actor`, `place_at` and `read_mark` depend on it. The SELF-only
-readers (public, the only caller the defining file itself) are `tests-own-class-members.md`'s.
+readers (public, the only caller the defining file itself) are the check's `[own file only]` group's, which holds none.

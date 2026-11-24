@@ -53,7 +53,7 @@ func setup(viewport: Viewport, no_focus_pause: bool, rig: bool) -> void:
 	_viewport = viewport
 	_no_focus_pause = no_focus_pause
 	_rig = rig
-	end(true)
+	_end(true)
 	_viewport.set_disable_input(false)
 	_listen_on_the_web()
 
@@ -68,10 +68,10 @@ func _ignoring_input() -> bool:
 	return _clock.call() < _ignored_until_msec
 
 func _process(_delta: float) -> void:
-	end()
+	_end()
 
 func _exit_tree() -> void:
-	end(true)
+	_end(true)
 	_stop_listening_on_the_web()
 
 ## `NOTIFICATION_APPLICATION_FOCUS_OUT` is the one this game has one window to lose: the OS giving
@@ -100,7 +100,7 @@ func _arm() -> void:
 	_viewport.set_disable_input(true)
 
 ## Puts input back once the window has passed, or at once with `force`.
-func end(force := false) -> void:
+func _end(force := false) -> void:
 	if _ignored_until_msec == 0 or (not force and _ignoring_input()):
 		return
 	_ignored_until_msec = 0

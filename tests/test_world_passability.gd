@@ -1,7 +1,7 @@
 extends RefCounted
 ## The world's one answer to "can this mover stand here": the map's blocked record read through a
 ## `Mover` (`CityMap.passable()`, `CityMap.clear_line()`), a `Navigator` every mover moves by, and a
-## `Footprint` both a solid's body and its record come from.
+## `StandingPiece` layout both a solid's body and its record come from.
 ##
 ## The player: "I mean that happens with a lot of events (eg cat / bike just completely ignoring
 ## buildings; neighbor walking through barricades) we need to do a fix for this at some point but
@@ -446,7 +446,7 @@ static func _rng(stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("world-passability:%d:%s" % [SEED, stream])
 	return rng
 
-## Every planned body's record is the tiles of the footprint its instance builds its physics body
+## Every planned body's record is the tiles of the pieces its instance builds its physics body
 ## from: the instance's own pieces, where it stands and the way it lies, rasterised, are the plan's
 ## recorded tiles.
 func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) -> void:
@@ -464,10 +464,11 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 		instance.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
 				EventSurroundings.new().on(map) \
 					.drawing_nothing())
-		var built := Footprint.new()
+		var tiles: Array[Vector2i] = []
 		for piece in instance.standing_pieces():
-			built.add(piece.ground_shape(), piece.center() - instance.position, piece.axis())
-		var tiles := built.tiles(instance.position)
+			for tile in piece.tiles():
+				if not tiles.has(tile):
+					tiles.append(tile)
 		tiles.sort()
 		recorded.sort()
 		compared += 1
@@ -496,7 +497,7 @@ func _test_a_closure_barrier_stands_on_closed_ground(t: TestRunner, city: City) 
 				continue
 			stood += 1
 			var box := (body.get_child(0) as CollisionShape2D).shape as RectangleShape2D
-			for tile in Footprint.of(GroundShape.rect(box.size * 0.5)).tiles(mouth):
+			for tile in GroundShape.rect(box.size * 0.5).tiles_under(mouth):
 				if not map.is_closed(tile):
 					outside += 1
 	t.check(lines > 0, "the day has barrier lines to check (%d)" % lines)

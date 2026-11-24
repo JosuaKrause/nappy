@@ -258,11 +258,16 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		_print("%s column none" % label)
 		return
 	var run := Run.new(before)
+	var trucks := {}
 	for tick in TICKS * 2:
 		RunCity.events(city)._warnings.run(STEP, her)
 		_tick(city)
 		run.observe(city, her, tick)
-	_print("%s column trucks %d %s" % [label, happenings.column.size(), run.report()])
+		# Each truck is seen while it stands, since a finished one leaves the world's list.
+		for event in RunCity.events(city).instances():
+			if not before.has(event) and event.row_id() == "military_convoy":
+				trucks[event] = true
+	_print("%s column trucks %d %s" % [label, trucks.size(), run.report()])
 	_take_out(city, before)
 
 ## The movers' half of the event manager's tick (`EventManager._tick_the_events()`), without the

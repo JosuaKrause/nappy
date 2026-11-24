@@ -245,6 +245,14 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 	_print("%s raid from %s: %d at %s" % [label, _point(far), happenings._raid.size(), at])
 	return printed + 1
 
+## The army's trucks standing in the day's events, which a column sent at her makes.
+func _convoy_trucks(city: City) -> Array[EventInstance]:
+	var trucks: Array[EventInstance] = []
+	for event in RunCity.events(city).instances():
+		if is_instance_valid(event) and event.row_id() == "military_convoy":
+			trucks.append(event)
+	return trucks
+
 ## Day 13's column sent at her from three places along the main road and one off it.
 func _the_column(city: City, director: ResistanceDirector, player: Stroller, label: String) -> int:
 	var happenings := director._happenings
@@ -271,11 +279,9 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 			RunCity.events(city)._warnings.run(STEP, her)
 			shown += STEP
 		var trucks: Array[String] = []
-		for truck in happenings.column:
-			if is_instance_valid(truck):
-				trucks.append(_point(truck.global_position))
-				RunCity.events(city).retire(truck)
-		happenings.column.clear()
+		for truck in _convoy_trucks(city):
+			trucks.append(_point(truck.global_position))
+			RunCity.events(city).retire(truck)
 		_print("%s column from %s: badge %s withdrawn %s trucks %s (rng %d -> %d)" % [label,
 				_point(her), _point(pointed), warning.was_withdrawn(), trucks, before,
 				happenings._rng.state])
