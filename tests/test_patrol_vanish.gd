@@ -101,7 +101,8 @@ func _lane_rig(t: TestRunner, def: EventDef) -> Array:
 	var route := PackedVector2Array([spot[0], spot[1]])
 	her.global_position = spot[2]
 	var plan := EventPlan.new(def, route[0], route)
-	RunCity.events(city).streaming.add(plan)
+	var planned: Array[EventPlan] = [plan]
+	RunCity.events(city).start_recipe(planned, DaySpec.for_day(8), 8, spot[2])
 	RunCity.events(city).use_player(her)
 	return [city, her, plan, route]
 

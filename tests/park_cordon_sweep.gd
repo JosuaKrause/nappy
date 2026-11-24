@@ -72,7 +72,7 @@ func sweep(t: TestRunner, seeds: Array[int]) -> void:
 	var walked_out := 0
 	var largest := 0.0
 	for seed_value in seeds:
-		var m := measure(t, seed_value)
+		var m := await measure(t, seed_value)
 		if m.is_empty():
 			continue
 		measured += 1
@@ -181,7 +181,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 				city.atlas, null, RunCity.spawn_siting(city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
-		result = _measure_the_day(city, director, happenings, swing)
+		result = await _measure_the_day(city, director, happenings, swing)
 		happenings.start_day(day + 1)
 	director.free()
 	city.free()
@@ -234,7 +234,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	again.clear()
 	var runs: Array[Dictionary] = []
 	for place in PLACES:
-		runs.append(_walk_a_person_out(city, director, park, swing, place))
+		runs.append(await _walk_a_person_out(city, director, park, swing, place))
 	result.merge(runs[0])
 	result.people_runs = runs
 	return result
@@ -319,11 +319,11 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 			"closed_at": closed_at, "onto_bodies": counts.onto_bodies}
 	cordon.clear()
 	# Gone from the world the way the day's own frame retires him, his body's tiles given back
-	# (`EventStreaming.retire_finished()`, which nothing here ticks): left on the record, the
-	# ground he stood on would be solid for the next spot's run.
+	# (the manager's tick takes him out): left on the record, the ground he stood on would be
+	# solid for the next spot's run.
 	if not _gone(busker):
 		RunCity.events(city).retire(busker)
-	RunCity.events(city).streaming.retire_finished()
+	await PhysicsTicks.pass_ticks(city, 1)
 	return result
 
 ## Checks the chosen gap against the map: the tile beyond each of its stretches' edge tiles reached

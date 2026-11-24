@@ -31,11 +31,11 @@ func run(t: TestRunner) -> void:
 	_test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t)
 	_test_the_van_task_stands_unguarded_until_it_is_handed_over(t)
 	_test_the_roadblock_keeps_a_waiting_guard(t)
-	_test_every_guarded_target_sends_a_robber_from_off_screen(t)
+	await _test_every_guarded_target_sends_a_robber_from_off_screen(t)
 	await _test_the_handover_sets_a_robber_on_her_from_off_screen(t)
 	await _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t)
 	await _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t)
-	_test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
+	await _test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
 	await _test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
 	await _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t)
 	_test_the_robber_after_her_is_never_the_schedulers(t)
@@ -318,7 +318,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) ->
 		var front_door := task.target_kind == ResistanceSteps.TargetKind.STATION_DOOR \
 				or task.at_a_front_door
 		if day == 9:
-			_check_day_nines_trap_from_where_she_is_let_out(t, director)
+			await _check_day_nines_trap_from_where_she_is_let_out(t, director)
 			continue
 		# A door on a facade (the burnt building's, the station's) stands on the building's own
 		# ground-floor tile, which nobody can stand on: she touches it from the sidewalk tile
@@ -333,7 +333,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) ->
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		director.contact().complete_now()
-		_check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
+		await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
 				"day %d" % day, front_door)
 		player.free()
 		director.free()
@@ -400,7 +400,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 		if _warning_for(RunCity.events(_city), "robber_giving_chase") == null:
 			_check_no_start_was_passed_over(t, her, label)
 		else:
-			_check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", label)
+			await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", label)
 		player.free()
 		director.free()
 
@@ -442,11 +442,12 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 		_build_city_in_a_new_run(t)
 		var director := _director_on_the_yeller_perform(t)
 		var her := director.contact_position()
-		var player := Node2D.new()
-		t.add_child(player)
-		player.position = her
-		player.add_to_group("player")
+		var player := _her_for_the_events(t, her)
 		RunCity.events(_city).use_player(player)
+		RunCity.events(_city).use_controls(TouchCover.joystick() if joystick else null)
+		# Her camera is the one the tick looks through, so it is the camera that moves, not her.
+		var camera: Camera2D = player.get_node("Camera2D")
+		camera.global_position = her
 		var view := RunCity.events(_city).visible_view()
 		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
 		director.set_sight(RunCity.events(_city).sees)
@@ -458,12 +459,11 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 		if warning != null:
 			var initial := warning.points_at()
 			var bearing := (initial - her).normalized()
-			view.look(Rect2(her + bearing * 30.0 - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
-			RunCity.events(_city).warnings.run(warning.seconds_left() * 0.5, her)
+			camera.global_position = her + bearing * 30.0
+			await _let_the_events_tick(warning.seconds_left() * 0.5)
 			t.check(warning.points_at() == initial and _live("robber_giving_chase").is_empty(),
 					"camera movement neither moves the badge nor creates its trap early")
-			RunCity.events(_city).warnings.run(warning.seconds_left() + STEP, her)
+			await _let_the_events_tick(warning.seconds_left() + STEP)
 			var sent := _live("robber_giving_chase")
 			var trap: EventInstance = sent[0] if sent.size() == 1 else null
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
@@ -477,7 +477,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 						"warning expiry keeps the actual drawing outside the moved WHOLE camera")
 				t.check((trap.position - her).normalized().is_equal_approx(bearing),
 						"the trap keeps the badge's bearing when the camera moves")
-		player.free()
+		_let_her_go(player)
 		director.free()
 
 ## What every trap owes from the moment it is sent, on the real city. **Warned first**: the moment she
@@ -506,14 +506,15 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 		return Vector2.INF
 	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX + 0.001,
 			"%s: for %.2fs alone, at most a second" % [label, warning.seconds_left()])
-	var shown := _run_the_traps_warning(row_id, her)
+	var shown := await _run_the_traps_warning(row_id, her)
 	var sent := _live(row_id)
 	var chaser: EventInstance = sent[0] if sent.size() == 1 else null
 	t.check(chaser != null and chaser.row_id() == row_id,
 			"%s: %s is sent after her once it is over (%.2fs)" % [label, row_id, shown])
 	if chaser == null:
 		return Vector2.INF
-	var start := chaser.global_position
+	# Where he was made: the tick that makes him steps him once as well, like every event.
+	var start := chaser.walks()[0] if chaser.walks().size() > 0 else chaser.global_position
 	var view := VisibleView.around(her, null)
 	var siting := RunCity.spawn_siting(_city)
 	var asked := siting.ask(EventFootprints.footprint_of(chaser.row()), Mover.on_foot(EventInstance.FIGURE_RADIUS),
@@ -550,12 +551,13 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 					"%s: with no clear run from %s, none from %v off her either"
 					% [label, _city.map.world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
-	RunCity.events(_city).world.where_she_is().tell(her)
-	chaser.step(STEP)
+	# The tick that made him stepped him once: that step is his first frame.
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
 	t.check(closed > chaser.row().chase_speed() * STEP * 0.9 or (across and closed > 0.0),
 			"%s: and coming at her%s from his first frame" % [label,
 			"" if across else " at his own speed"])
+	RunCity.events(_city).world.where_she_is().tell(her)
+	chaser.step(STEP)
 	if not clear and not across:
 		return start
 	var caught := false
@@ -607,7 +609,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t: TestRunner) -> v
 			director.use_player(player)
 			await _step_a_frame(t)
 			t.check(director.contact().is_done, "seed %d: she hands the note over" % seed_value)
-			var start := _check_the_trap_comes_from_off_screen(t, her,
+			var start := await _check_the_trap_comes_from_off_screen(t, her,
 					"robber_giving_chase", "seed %d" % seed_value)
 			if start != Vector2.INF:
 				if not starts.is_empty():
@@ -639,7 +641,7 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t: TestRunner) -
 		director.use_player(player)
 		await _step_a_frame(t)
 		t.check(director.contact().is_done, "she hands the package over")
-		var start := _check_the_trap_comes_from_off_screen(t, her,
+		var start := await _check_the_trap_comes_from_off_screen(t, her,
 				"van_guard_giving_chase", "the van")
 		if start != Vector2.INF:
 			if not starts.is_empty():
@@ -688,7 +690,8 @@ func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector
 	director.use_player(player)
 	await _step_a_frame(t)
 	t.check(director.contact().is_done, "%s: she hands the note over" % label)
-	var start := _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", label)
+	var start := await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
+			label)
 	if city_siting and start != Vector2.INF:
 		var siting := RunCity.spawn_siting(_city)
 		var asked := siting.ask(EventFootprints.footprint_of(EventCatalogue.by_id("robber_giving_chase")),

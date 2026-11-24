@@ -44,10 +44,6 @@ src/run_config.gd parse  # the one builder of a run's configuration besides the 
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/dev/scene_recipe_runtime.gd manifest
-src/dev/scene_recipe_runtime.gd named
-src/dev/scene_recipe_runtime.gd start_position
-src/dev/scene_recipe_runtime.gd tick
 src/events/simulation/event_manager.gd ahead
 src/events/simulation/event_manager.gd checkpoints
 src/events/simulation/event_manager.gd spawner
