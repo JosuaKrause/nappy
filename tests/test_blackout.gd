@@ -125,7 +125,7 @@ func _powered_buildings() -> int:
 
 ## A point `distance` px straight south of the station's lot, the way she walks off from its door.
 func _south_of_the_station(distance: float) -> Vector2:
-	var lot := _map.tile_rect_to_world(CityMap.blocks_tile_rect(_map.power_station))
+	var lot := _map.tile_rect_to_world(CityMap.blocks_tile_rect(_map.power_station_blocks()))
 	return Vector2(lot.get_center().x, lot.end.y + distance)
 
 # ---------------------------------------------------------------------- tests ---

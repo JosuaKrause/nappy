@@ -358,7 +358,7 @@ func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 	var field := map.walk_field(map.world_to_tile(map.doorstep_world_position()))
 	var best := -1
 	var nearest := Vector2i(-1, -1)
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
 			var distance := map.distance_at(field, tile)
 			if distance >= 0 and (best < 0 or distance < best):
@@ -384,7 +384,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-	for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+	for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
@@ -511,7 +511,7 @@ func _blocked_counts(map: CityMap, rows: Array[Row], reading: Reading) -> Packed
 	counts.resize(map.size.x * map.size.y)
 	counts.fill(0)
 	# Closures are counted in and never taken out again: a barrier is not a row anything can lift.
-	for tile: Vector2i in map.closed_tiles:
+	for tile: Vector2i in map.closed_tile_set():
 		if map.in_bounds(tile):
 			counts[tile.y * map.size.x + tile.x] += 1
 	for row: Row in rows:
@@ -610,7 +610,7 @@ func _allowed_mask(map: CityMap, route: Array, area_rect: Rect2i,
 	mask.fill(0)
 	for cell: Vector2i in route:
 		var origin: Vector2i = cell * ReachabilityGrid.CELL
-		var segment := map.network.segment_containing(origin)
+		var segment := map.street_network().segment_containing(origin)
 		if segment:
 			_add_street(mask, map, segment, with_carriageway)
 			continue
@@ -625,8 +625,8 @@ func _allowed_mask(map: CityMap, route: Array, area_rect: Rect2i,
 	var home := ClosurePlanner.home_street(map)
 	if home:
 		_add_street(mask, map, home, with_carriageway)
-	for y in range(map.home_rect.position.y, map.home_rect.end.y):
-		for x in range(map.home_rect.position.x, map.home_rect.end.x):
+	for y in range(map.home_tile_rect().position.y, map.home_tile_rect().end.y):
+		for x in range(map.home_tile_rect().position.x, map.home_tile_rect().end.x):
 			_add_tile(mask, map, Vector2i(x, y))
 	for y in range(area_rect.position.y, area_rect.end.y):
 		for x in range(area_rect.position.x, area_rect.end.x):
@@ -710,8 +710,8 @@ func _reach_from_home(map: CityMap, ground: PackedByteArray,
 ## The doorstep, as the tiles a line may start on: the home notch and the street outside it.
 func _home_tiles(map: CityMap) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in range(map.home_rect.position.y, map.home_rect.end.y):
-		for x in range(map.home_rect.position.x, map.home_rect.end.x):
+	for y in range(map.home_tile_rect().position.y, map.home_tile_rect().end.y):
+		for x in range(map.home_tile_rect().position.x, map.home_tile_rect().end.x):
 			found.append(Vector2i(x, y))
 	var home := ClosurePlanner.home_street(map)
 	if home:
@@ -750,7 +750,7 @@ func _diagnose(map: CityMap, route: Array, area_rect: Rect2i, ground: PackedByte
 	var bare := PackedInt32Array()
 	bare.resize(map.size.x * map.size.y)
 	bare.fill(0)
-	for tile: Vector2i in map.closed_tiles:
+	for tile: Vector2i in map.closed_tile_set():
 		if map.in_bounds(tile):
 			bare[tile.y * map.size.x + tile.x] = 1
 	var relaxed := _allowed_mask(map, route, area_rect, true)
@@ -1035,7 +1035,7 @@ func _rows_covering(owners: Array, frontier: Array[Vector2i], width: int) -> Arr
 func _segment_of(map: CityMap, frontier: Array[Vector2i]) -> StreetNetwork.Segment:
 	var counts := {}
 	for tile in frontier:
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		if segment:
 			counts[segment.key()] = int(counts.get(segment.key(), 0)) + 1
 	var best := Vector3i.ZERO
@@ -1044,7 +1044,7 @@ func _segment_of(map: CityMap, frontier: Array[Vector2i]) -> StreetNetwork.Segme
 		if int(counts[key]) > most:
 			most = int(counts[key])
 			best = key
-	return map.network.by_key(best) if most > 0 else null
+	return map.street_network().by_key(best) if most > 0 else null
 
 func _stretch_of(map: CityMap, frontier: Array[Vector2i]) -> String:
 	var segment := _segment_of(map, frontier)
@@ -1097,7 +1097,7 @@ func _mid_block_crossings_of(map: CityMap, route: Array) -> Array[GameEnums.Stre
 		var after: Vector2i = route[i + 1]
 		if not _is_a_mid_block_road_cell(map, middle):
 			continue
-		var segment := map.network.segment_containing(middle * ReachabilityGrid.CELL)
+		var segment := map.street_network().segment_containing(middle * ReachabilityGrid.CELL)
 		if not segment:
 			continue
 		var one := _pavement_band(before * ReachabilityGrid.CELL, segment)
@@ -1112,7 +1112,7 @@ func _mid_block_crossings_of(map: CityMap, route: Array) -> Array[GameEnums.Stre
 ## whether the tree ever goes near it. `RouteTree` refuses to grow **along** the spine and lets a
 ## route cross it freely.
 func _touches_the_spine(map: CityMap, route: Array) -> bool:
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return false
 	for cell: Vector2i in route:
 		var origin: Vector2i = cell * ReachabilityGrid.CELL
@@ -1126,7 +1126,7 @@ func _road_stretches_of(map: CityMap, route: Array) -> String:
 	for cell: Vector2i in route:
 		if not _is_a_mid_block_road_cell(map, cell):
 			continue
-		var segment := map.network.segment_containing(cell * ReachabilityGrid.CELL)
+		var segment := map.street_network().segment_containing(cell * ReachabilityGrid.CELL)
 		if segment:
 			found["%s %s" % [segment.key(), GameEnums.StreetKind.keys()[
 					map.street_kind_at(not segment.horizontal, cell * ReachabilityGrid.CELL)]]] = true
@@ -1138,7 +1138,7 @@ func _road_stretches_of(map: CityMap, route: Array) -> String:
 
 func _is_a_mid_block_road_cell(map: CityMap, cell: Vector2i) -> bool:
 	var origin: Vector2i = cell * ReachabilityGrid.CELL
-	var segment := map.network.segment_containing(origin)
+	var segment := map.street_network().segment_containing(origin)
 	return segment != null and _is_a_carriageway_tile(map, origin, segment.horizontal)
 
 # ---------------------------------------------------------------------- the report ---

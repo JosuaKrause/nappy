@@ -49,7 +49,7 @@ func _events_per_street_by_band() -> void:
 				seen[key] = true
 				streets[mini(int(depths[key]), 2)] += 1
 			# A street the tree never reached is as far out as this counts.
-			for segment in map.network.segments():
+			for segment in map.street_network().segments():
 				if not seen.has(segment.key()):
 					streets[2] += 1
 
@@ -62,7 +62,7 @@ func _events_per_street_by_band() -> void:
 				placed_total += 1
 				var tile := map.world_to_tile(plan.placed_at())
 				# Only a thing standing on a street can be met by somebody walking down it.
-				if not map.network.segment_containing(tile):
+				if not map.street_network().segment_containing(tile):
 					continue
 				on_street_total += 1
 				var band := mini(corridor.depth(tile), 2)

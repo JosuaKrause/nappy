@@ -914,7 +914,7 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 		layout.carve_passage(_passage_rect(lot, layout.open_ground(), rng))
 		map.fill_rect(layout.open_ground(), GameEnums.TileType.COURTYARD)
 		map.fill_rect(layout.passage_rect(), GameEnums.TileType.ALLEY)
-		map.courtyard_rects.append(layout.open_ground())
+		map.add_courtyard(layout.open_ground())
 		rects = _subtract_all(rects, layout.open_ground())
 		rects = _subtract_all(rects, layout.passage_rect())
 
@@ -1087,7 +1087,7 @@ static func _home_rect(block: Vector2i) -> Rect2i:
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:
 	map.fill_rect(home, GameEnums.TileType.HOME)
-	map.home_rect = home
+	map.lay_home(home)
 	map.record_home_block(block)
 	block_rects[block] = _keep_nonempty(_subtract_all(block_rects[block], home))
 
@@ -1630,7 +1630,7 @@ static func _validate(map: CityMap) -> String:
 ## diagnostic while silently hiding another. Ordinary generation keeps its fast first failure.
 static func validation_problems(map: CityMap, all_problems: bool = true) -> Array[String]:
 	var problems: Array[String] = []
-	if map.home_rect.size == Vector2i.ZERO:
+	if map.home_tile_rect().size == Vector2i.ZERO:
 		problems.append("no home was placed")
 		return problems # Remaining route checks require an actual home.
 

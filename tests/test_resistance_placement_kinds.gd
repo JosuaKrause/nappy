@@ -599,7 +599,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
 		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
 
-		var home_border := city.map.network.around_blocks(
+		var home_border := city.map.street_network().around_blocks(
 				Rect2i(city.map.home_block_coordinate(), Vector2i.ONE))
 		var home_border_keys := {}
 		for segment in home_border:
@@ -624,7 +624,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 			if at == Vector2.INF:
 				continue
 			checked += 1
-			var segment := city.map.network.segment_containing(city.map.world_to_tile(at))
+			var segment := city.map.street_network().segment_containing(city.map.world_to_tile(at))
 			var bordering := segment != null and home_border_keys.has(segment.key())
 			t.check(not bordering,
 					("seed %d day %d draw %d: the door task never sits on a segment bordering " +
@@ -637,7 +637,7 @@ func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 	var state := CityState.new()
 	state.begin_day(_city.map.plans_by_block(), 12)
 	_city.map.repaint(state)
-	t.check(not _city.map.playgrounds.is_empty(),
+	t.check(not _city.map.playground_rects().is_empty(),
 			"the test city has at least one open playground, or this test checks nothing")
 
 	var director := _director(t)
@@ -650,7 +650,7 @@ func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 
 	var at := director.contact_position()
 	var on_a_swing := false
-	for rect in _city.map.playgrounds:
+	for rect in _city.map.playground_rects():
 		if _city.map.world_to_tile(_city.map.swing_position(rect)) \
 				== _city.map.world_to_tile(at):
 			on_a_swing = true
@@ -691,7 +691,7 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 		if before != GameEnums.BlockPurpose.PARK:
 			forced += 1
 		t.check(state.purpose_of(map.plans_by_block(), park) == GameEnums.BlockPurpose.PARK
-				and park in map.calm_blocks,
+				and park in map.calm_blocks_now(),
 				"seed %d: on day 12 it is an open park (it was %s the day before)"
 				% [seed_value, GameEnums.BlockPurpose.keys()[before]])
 		var step := _perform_on(day)
@@ -1163,7 +1163,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	t.check(warning != null, "and its badge has somewhere to point")
 	var lead := SpawnSiting.least_distance()
 	if warning:
-		t.check(CrowdLanes.corridor_at(warning.points_at().x) == _city.map.main_road,
+		t.check(CrowdLanes.corridor_at(warning.points_at().x) == _city.map.main_road_corridor(),
 				"pointing up the main road")
 		t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
 				"for at most a second alone (%.2fs)" % warning.seconds_left())
@@ -1188,7 +1188,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 		var truck := trucks[i]
 		t.check(truck.row_id() == "military_convoy" and truck.walks().size() == 2,
 				"each is the catalogue's own truck on a path")
-		t.check(CrowdLanes.corridor_at(truck.walks()[0].x) == map.main_road
+		t.check(CrowdLanes.corridor_at(truck.walks()[0].x) == map.main_road_corridor()
 				and is_equal_approx(truck.walks()[0].x, truck.walks()[1].x),
 				"in one lane of the main road")
 		t.check(truck.walks()[0].distance_to(her) >= minf(lead, edge) - 1.0,

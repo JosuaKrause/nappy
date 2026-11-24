@@ -602,7 +602,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
 	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
 	# the station's own fronts, which the same lane offers any row that does not burn.
-	var station := CityMap.blocks_tile_rect(city.map.power_station)
+	var station := CityMap.blocks_tile_rect(city.map.power_station_blocks())
 	t.check(city.map.has_power_station(), "seed %d has a power station" % FIRE_SEED)
 	var station_fronts := 0
 	var lane_of_fronts := EventScheduler.row_ground(city.map).tiles_for(

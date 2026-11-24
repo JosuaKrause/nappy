@@ -47,7 +47,7 @@ func _test_every_city_has_exactly_one(t: TestRunner) -> void:
 		t.check(map.has_power_station(), "seed %d has a power station" % map.city_seed())
 		var matching := 0
 		for pair in map.big_building_pairs():
-			if pair == map.power_station:
+			if pair == map.power_station_blocks():
 				matching += 1
 		t.check(matching == 1,
 				"seed %d: exactly one big building is the power station (%d)" % [map.city_seed(), matching])
@@ -86,7 +86,7 @@ func _test_its_door_is_a_reasonable_walk_from_home(t: TestRunner) -> void:
 ## than a painted one.
 func _test_the_front_door_is_on_its_long_south_side(t: TestRunner) -> void:
 	for map in _maps:
-		var pair := map.power_station
+		var pair := map.power_station_blocks()
 		t.check(pair.size == Vector2i(2, 1),
 				"seed %d: the station is two blocks wide and one deep (%s)" % [map.city_seed(), pair])
 		var mass := CityMap.blocks_tile_rect(pair)
@@ -194,14 +194,14 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 		var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
-		var blocked := map.closed_tiles.duplicate()
+		var blocked := map.closed_tile_set().duplicate()
 		for item in seals:
 			_add_circle(map, blocked, item.placed_at(), item.obstructs_within())
 		for item in region_plan.wall_plans():
 			_add_circle(map, blocked, item.placed_at(), item.obstructs_within())
 		var grid := ReachabilityGrid.build(map)
 		var door := map.rect_tiles(map.power_station_door_tiles())
-		var reached := grid.flood([map.home_rect.position], blocked)
+		var reached := grid.flood([map.home_tile_rect().position], blocked)
 		t.check(_reaches_any(grid, reached, blocked, door),
 				"seed %d day %d: the front door is reachable with the day's walls, seals and "
 				% [map.city_seed(), day] + "%d closures in place" % closures.size())
@@ -210,7 +210,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		for segment in region_plan.door_segments():
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+			var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 			for tile in map.rect_tiles(segment.mouth_rect(at_a)):
 				shut[tile] = true
 		for rect in region_plan.door_alleys():
@@ -218,7 +218,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 			for at_start: bool in [true, false]:
 				for tile in map.rect_tiles(SealPlanner.alley_mouth_rect(rect, vertical, at_start)):
 					shut[tile] = true
-		var reached_shut := grid.flood([map.home_rect.position], shut)
+		var reached_shut := grid.flood([map.home_tile_rect().position], shut)
 		t.check(not _reaches_any(grid, reached_shut, shut, door),
 				"seed %d day %d: with the region doors shut the front door is out of reach"
 				% [map.city_seed(), day])
@@ -275,7 +275,7 @@ func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 ## the station for the whole run, the day's arcs advance around it, and the mass stays solid.
 func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunner) -> void:
 	var map := MapCache.of(BASE_SEED)
-	var block := map.power_station.position
+	var block := map.power_station_blocks().position
 	var plan: BlockPlan = map.plans_by_block()[block]
 	t.check(plan.step_count() == 1, "the station's block has a one-step arc (%d)" % plan.step_count())
 	var saved := {"stage": [{"x": block.x, "y": block.y, "v": 2}],
@@ -290,7 +290,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunn
 	t.check(state.purpose_of(map.plans_by_block(), block) == GameEnums.BlockPurpose.BIG_BUILDING,
 			"and stays the station once the day's arcs have advanced")
 	var solid := true
-	for tile in map.rect_tiles(CityMap.blocks_tile_rect(map.power_station)):
+	for tile in map.rect_tiles(CityMap.blocks_tile_rect(map.power_station_blocks())):
 		if map.is_walkable(tile):
 			solid = false
 			break
@@ -333,7 +333,7 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 		if node is Building.StationStack:
 			in_buildings += 1
 	t.check(in_buildings == 0, "no stack is left in the building layer (%d)" % in_buildings)
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station_blocks()))
 	var height := float(AtlasTable.baked().native_size(Building.POWER_STATION_STACK).y)
 	for i in mini(stacks.size(), feet.size()):
 		var stack := stacks[i]

@@ -1034,7 +1034,7 @@ func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> 
 	var kept := {}
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		kept[tile] = true
-	for tiles: Dictionary in [map.closed_tiles, map.soft_sealed_tiles(), map.obstructed_tiles]:
+	for tiles: Dictionary in [map.closed_tile_set(), map.soft_sealed_tiles(), map.obstructed_tiles]:
 		for tile: Vector2i in tiles:
 			kept[tile] = true
 	kept.erase(here)

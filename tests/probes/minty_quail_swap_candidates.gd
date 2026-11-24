@@ -43,8 +43,8 @@ func run(t: TestRunner) -> void:
 				adjacent.append(plan)
 				var key := "%s r%.0f" % [plan.row_id(), plan.blocking_radius()]
 				ids[key] = int(ids.get(key, 0)) + 1
-				var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
-				if segment and not segment.horizontal and segment.a.x == map.main_road:
+				var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
+				if segment and not segment.horizontal and segment.a.x == map.main_road_corridor():
 					counts["spine"] += 1
 		print("SC seed %d | on the routes %d | route-adjacent %d (on the main road %d) | deep %d"
 				% [seed_value, counts["on"], counts["adjacent"], counts["spine"], counts["deep"]])
@@ -60,8 +60,8 @@ func run(t: TestRunner) -> void:
 				if plan.blocking_radius() < width or not beat.stands_on(map.tile_at(tile)):
 					continue
 				fits.append(plan)
-				var segment := map.network.segment_containing(tile)
-				if segment and not segment.horizontal and segment.a.x == map.main_road:
+				var segment := map.street_network().segment_containing(tile)
+				if segment and not segment.horizontal and segment.a.x == map.main_road_corridor():
 					spine += 1
 			var kinds := {}
 			for plan in fits:
@@ -95,7 +95,7 @@ func _where(map: CityMap, corridor: Corridor, plan: EventPlan) -> String:
 	var tile := map.world_to_tile(plan.placed_at())
 	if corridor.carries_a_route(tile):
 		return "on"
-	var segment := map.network.segment_containing(tile)
+	var segment := map.street_network().segment_containing(tile)
 	if not segment:
 		return "deep"
 	for tile_on in map.rect_tiles(segment.tile_rect()):
@@ -144,13 +144,13 @@ func _bodies(city: City, seed_value: int) -> void:
 		var types := {}
 		var tiles := []
 		if id == "barricade":
-			if map.main_road < 0:
+			if map.main_road_corridor() < 0:
 				continue
 			for going: float in [1.0, -1.0]:
-				var lane_x := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
+				var lane_x := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 				for y in range(0, map.size.y, 3):
 					var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
-					if map.network.segment_containing(tile) == null or not map.is_driveable_at(true, tile):
+					if map.street_network().segment_containing(tile) == null or not map.is_driveable_at(true, tile):
 						continue
 					tiles.append([Vector2(lane_x, map.tile_to_world(tile).y), Vector2(0, going)])
 		else:
@@ -160,7 +160,7 @@ func _bodies(city: City, seed_value: int) -> void:
 		for site: Array in tiles:
 			var at: Vector2 = site[0]
 			var foot := EventSpawner.footprint_of(BodyStance.of(map, def, at, site[1]))
-			var segment := map.network.segment_containing(map.world_to_tile(at))
+			var segment := map.street_network().segment_containing(map.world_to_tile(at))
 			if not segment:
 				continue
 			sites += 1
@@ -196,17 +196,17 @@ func _bodies(city: City, seed_value: int) -> void:
 ## short of it to one a block-end past it. Counted: the stops whose disc leaves the street through.
 func _scar_discs(city: City, seed_value: int) -> void:
 	var map := city.map
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return
 	var grid := ReachabilityGrid.build(map)
 	var def := EventCatalogue.by_id("barricade")
 	var sites := 0
 	var through := 0
 	for going: float in [1.0, -1.0]:
-		var lane_x := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
+		var lane_x := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 		for y in range(0, map.size.y, 3):
 			var tile := map.world_to_tile(Vector2(lane_x, map.tile_to_world(Vector2i(0, y)).y))
-			var segment := map.network.segment_containing(tile)
+			var segment := map.street_network().segment_containing(tile)
 			if segment == null or segment.horizontal or not map.is_driveable_at(true, tile):
 				continue
 			var rect := segment.tile_rect()

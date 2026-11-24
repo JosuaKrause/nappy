@@ -400,7 +400,7 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t: TestRunner) -> void:
 	var seen := _colours_in(image)
 	t.check(seen.has(TelemetryMap.HOME_MARK), "the home is marked")
 	t.check(seen.has(TelemetryMap.CALM_MARK), "and every calm area is outlined")
-	t.check(map.main_road < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
+	t.check(map.main_road_corridor() < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
 	_check_a_precinct_shows_as_paving(t, map, image)
 	# A hard blocker nobody can find in the one picture built to check placements might as well
 	# not have been placed. It showed through as building at first, which is invisible.
@@ -681,11 +681,11 @@ func _tile_colour(image: Image, tile: Vector2i) -> Color:
 func _test_the_map_picture_reads_the_map_and_nothing_else(t: TestRunner) -> void:
 	var map := _picture_map()
 	var before := map.tiles.duplicate()
-	var calm_before := map.calm_blocks.size()
+	var calm_before := map.calm_blocks_now().size()
 	var first := TelemetryMap.render(map)
 	var second := TelemetryMap.render(map)
 	t.check(map.tiles == before, "rendering the grid does not repaint it")
-	t.check(map.calm_blocks.size() == calm_before, "and does not disturb what it counted")
+	t.check(map.calm_blocks_now().size() == calm_before, "and does not disturb what it counted")
 	t.check(first.get_data() == second.get_data(),
 			"and the same map twice is the same picture, pixel for pixel")
 
@@ -1113,9 +1113,9 @@ func _picture_map() -> CityMap:
 	var map := StreetMap.full()
 	map.generated_from(4242)
 	map.record_home_block(Vector2i(1, 1))
-	map.home_rect = Rect2i(CityMap.block_rect(Vector2i(1, 1)).position + Vector2i(2, 2),
-			Vector2i(3, 2))
-	map.calm_blocks = [Vector2i(8, 8)] as Array[Vector2i]
+	map.lay_home(Rect2i(CityMap.block_rect(Vector2i(1, 1)).position + Vector2i(2, 2),
+			Vector2i(3, 2)))
+	map.recompute_calm(FakeCityState.new().with_calm([Vector2i(8, 8)] as Array[Vector2i]))
 	var period := CityMap.period()
 	map.record_built_over(Vector3i(1, 4, 6), Rect2i(Vector2i(4 * period, 6 * period + 8),
 			Vector2i(Tuning.STREET_WIDTH, 2)))

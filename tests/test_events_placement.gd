@@ -55,7 +55,7 @@ var _route_plans := {}
 
 func _planned_on_the_route(map: CityMap, sites: Array[MastSites.Site], day: int,
 		tree: RouteTree) -> Array[EventPlan]:
-	assert(map.closed_tiles.is_empty(), "a plan shared by the suite is planned on an open map")
+	assert(map.closed_tile_set().is_empty(), "a plan shared by the suite is planned on an open map")
 	var key := "%d:%d:%d" % [map.city_seed(), day, map.blocked_segments().size()]
 	if not _route_plans.has(key):
 		var consumed: Array[String] = []
@@ -177,7 +177,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 			var tile := map.world_to_tile(plan.placed_at())
 			var away := corridor.depth(tile)
 			if plan.role() == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
-				var segment := map.network.segment_containing(tile)
+				var segment := map.street_network().segment_containing(tile)
 				if segment:
 					gaps_walled["%d:%s" % [day, segment.key()]] = true
 			if plan.role() == GameEnums.BlockerRole.WALL:
@@ -809,7 +809,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 	if free.is_empty():
 		return false
 	var arms: Array = []
-	for segment in map.network.at_junction(junction):
+	for segment in map.street_network().at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var open_here: Array[Vector2i] = []
@@ -897,7 +897,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 			# waiting rather than by a lane, and its own two rules are what govern it.
 			if plan.counts_against_the_line() and not plan.paces_a_beat():
 				counted.append(plan)
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			var rect := segment.tile_rect()
 			if corridor.depth(rect.position) != 0:
 				continue
@@ -983,7 +983,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 		for plan in counted:
 			if not plan.paces_a_beat():
 				continue
-			var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
+			var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
 			if segment and corridor.depth(segment.tile_rect().position) == 0:
 				streets[segment.key()] = segment
 		for key: Vector3i in streets:
@@ -1278,7 +1278,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.door_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+			for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
@@ -1393,7 +1393,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.door_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+			for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}

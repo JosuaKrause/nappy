@@ -84,7 +84,7 @@ func _loop() -> CityMap:
 	map.fill_rect(Rect2i(LEFT, BOTTOM, 40, 2), GameEnums.TileType.SIDEWALK)
 	map.fill_rect(Rect2i(LEFT, TOP, 2, BOTTOM - TOP + 2), GameEnums.TileType.SIDEWALK)
 	map.fill_rect(Rect2i(RIGHT, TOP, 2, BOTTOM - TOP + 2), GameEnums.TileType.SIDEWALK)
-	map.home_rect = Rect2i(LEFT, TOP, 1, 1)
+	map.lay_home(Rect2i(LEFT, TOP, 1, 1))
 	return map
 
 ## A barricade standing across the row at `row`, at tile column `ACROSS`.

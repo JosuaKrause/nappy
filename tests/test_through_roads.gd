@@ -79,7 +79,7 @@ func _test_a_closed_stretch_is_none_and_a_stub_it_leaves_is_dropped(t: TestRunne
 	var period := CityMap.period()
 	for lane: int in CrowdLanes.ROAD_OFFSETS:
 		closed[Vector2i(lane, period - 3)] = true
-	map.closed_tiles = closed
+	map.close_streets([FakeClosure.over_set(closed)] as Array[RoadClosure])
 	var roads := ThroughRoads.over(map, Mover.vehicle())
 	t.check(not roads.goes_on(Vector2i(0, 0), Vector2i.DOWN), "a closed stretch does not go on")
 	t.check(not roads.goes_on(Vector2i(0, 0), Vector2i.RIGHT),

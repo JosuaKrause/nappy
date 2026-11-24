@@ -88,11 +88,11 @@ func _doors_shut(city: City) -> Array:
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)
-	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+	return [grid, blocked, grid.flood([city.map.home_tile_rect().position], blocked)]
 
 func _by_tiles(city: City) -> PackedInt32Array:
 	var blocked := {}
-	for tile: Vector2i in city.map.closed_tiles:
+	for tile: Vector2i in city.map.closed_tile_set():
 		blocked[tile] = true
 	for tile: Vector2i in city.map.soft_sealed_tiles():
 		blocked[tile] = true

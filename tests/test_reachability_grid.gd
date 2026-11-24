@@ -118,7 +118,7 @@ func _test_a_sliver_building_is_not_walked_through(t: TestRunner) -> void:
 func _test_a_query_sees_a_blocked_tile_the_grid_was_not_built_with(t: TestRunner, maps: Array[CityMap]) -> void:
 	var map := maps[0]
 	var grid := ReachabilityGrid.build(map)
-	var home := map.world_to_tile(map.home_rect.position)
+	var home := map.world_to_tile(map.home_tile_rect().position)
 	var open := grid.flood([home])
 	var far: Vector2i = map.calm_tiles()[0]
 	t.check(grid.reaches(far, {}, open), "seed %d: some calm tile is reachable at all"

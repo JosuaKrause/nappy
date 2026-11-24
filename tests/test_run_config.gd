@@ -262,7 +262,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 			var her := Boot.player(booted.main)
 			# Far from the station on day 1, with no sabotage done: the lights go out only if the
 			# blackout was handed `--blackout`.
-			var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+			var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station_blocks()))
 			her.set_physics_process(false)
 			her.global_position = Vector2(lot.get_center().x,
 					lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
@@ -324,7 +324,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 			"the events")
 	t.check(RunCity.crowd(city).skip_motion and RunCity.crowd(city).skip_agent_drawing, "the crowd")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station_blocks()))
 	var she := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

@@ -99,7 +99,7 @@ func _seals_for(map: CityMap, day: int) -> Array[EventPlan]:
 func _candidate_segments(map: CityMap, tree: RouteTree,
 		home: StreetNetwork.Segment) -> Dictionary:
 	var found := {}
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		var key := segment.key()
 		if not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
@@ -115,7 +115,7 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 func _sealed_segments(map: CityMap, planned: Array[EventPlan]) -> Dictionary:
 	var found := {}
 	for plan in planned:
-		var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
+		var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
 		if segment:
 			found[segment.key()] = true
 	return found
@@ -180,7 +180,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 			var home := ClosurePlanner.home_street(map)
 			var planned := _seals_for(map, day)
 			for plan in planned:
-				var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
+				var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
 				if not segment:
 					continue
 				t.check(not tree.is_on_the_tree(segment.key()),
@@ -196,12 +196,12 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 ## seal here would wall the one street the design deliberately leaves open to cross.
 func _test_the_main_road_is_never_sealed(t: TestRunner) -> void:
 	for map in _maps:
-		if map.main_road < 0:
+		if map.main_road_corridor() < 0:
 			continue
 		for day: int in [1, 7, 14]:
 			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
-			for segment in map.network.segments():
+			for segment in map.street_network().segments():
 				if not map.is_main_road(not segment.horizontal, segment.a.x):
 					continue
 				t.check(not sealed.has(segment.key()),
@@ -252,7 +252,7 @@ func _test_the_doorstep_reaches_the_corridor(t: TestRunner) -> void:
 			total += 1
 			var joined := false
 			for junction: Vector2i in [home.a, home.b]:
-				for segment in map.network.at_junction(junction):
+				for segment in map.street_network().at_junction(junction):
 					if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 						joined = true
 			t.check(joined,
@@ -287,7 +287,7 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day), closure_rng, tree)
 	map.close_streets(closures)
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
-	var blocked := map.closed_tiles.duplicate()
+	var blocked := map.closed_tile_set().duplicate()
 	for plan in seals:
 		_add_circle(map, blocked, plan.placed_at(), plan.obstructs_within())
 	return blocked
@@ -297,16 +297,16 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 ## than swept tile by tile, since the band is a single rect by construction.
 func _main_road_tiles(map: CityMap) -> Dictionary:
 	var blocked := {}
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return blocked
-	var rect := Rect2i(Vector2i(map.main_road * CityMap.period(), 0),
+	var rect := Rect2i(Vector2i(map.main_road_corridor() * CityMap.period(), 0),
 			Vector2i(Tuning.STREET_WIDTH, map.size.y))
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
 	return blocked
 
 func _some_calm_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictionary) -> bool:
-	var reached := grid.flood([map.home_rect.position], blocked)
+	var reached := grid.flood([map.home_tile_rect().position], blocked)
 	for tile in map.calm_tiles():
 		if grid.reaches(tile, blocked, reached):
 			return true
@@ -357,7 +357,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 			var off_street_tiles := {}
 			for plan in planned:
 				var tile := map.world_to_tile(plan.placed_at())
-				if not map.network.segment_containing(tile):
+				if not map.street_network().segment_containing(tile):
 					off_street_tiles[tile] = true
 
 			for rect in map.alley_lots():
@@ -367,8 +367,8 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 				var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 				var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 				var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-				var segment_a := map.network.beside_block(block, side_a)
-				var segment_b := map.network.beside_block(block, side_b)
+				var segment_a := map.street_network().beside_block(block, side_a)
+				var segment_b := map.street_network().beside_block(block, side_b)
 				var rejoins := (segment_a != null and tree.is_on_the_tree(segment_a.key())) \
 						or (segment_b != null and tree.is_on_the_tree(segment_b.key()))
 				var sealed_here := false
@@ -470,7 +470,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false
 		for junction: Vector2i in [home.a, home.b]:
-			for segment in map.network.at_junction(junction):
+			for segment in map.street_network().at_junction(junction):
 				if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 					joined = true
 		t.check(joined,
@@ -482,7 +482,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 ## The first real street the map offers, for the two checks below — the geometry they check does
 ## not depend on which street it is, only that it is one `map.has_street` actually carries.
 func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if map.has_street(segment.key()):
 			return segment
 	return null
@@ -723,7 +723,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 					continue
 				found += 1
 				var tile := map.world_to_tile(plan.placed_at())
-				var segment := map.network.segment_containing(tile)
+				var segment := map.street_network().segment_containing(tile)
 				t.check(segment != null and lined.has(segment.key()),
 						"seed %d day %d: a fallen tree seals %s, which has no trees on it"
 						% [map.city_seed(), day, tile])
@@ -812,7 +812,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.door_segments():
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+			for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 			var boundary := {}
 			for segment in region_plan.wall_segments():
@@ -906,7 +906,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 	if free.is_empty():
 		return false
 	var arms: Array = []
-	for segment in map.network.at_junction(junction):
+	for segment in map.street_network().at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var step := segment.other_end(junction) - junction

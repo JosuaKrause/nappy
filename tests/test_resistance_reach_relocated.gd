@@ -211,7 +211,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 			var reached: Dictionary = reachability[2]
 
 			var by_tiles := {}
-			for tiles: Dictionary in [city.map.closed_tiles, city.map.soft_sealed_tiles(),
+			for tiles: Dictionary in [city.map.closed_tile_set(), city.map.soft_sealed_tiles(),
 					city.map.obstructed_tiles]:
 				for tile: Vector2i in tiles:
 					by_tiles[tile] = true

@@ -532,7 +532,7 @@ func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), 13)
 	map.repaint(state)
-	var used: Array[Vector2i] = [map.calm_blocks[0]]
+	var used: Array[Vector2i] = [map.calm_blocks_now()[0]]
 	map.set_spent_calm(used)
 	map.set_fenced_park_state(run.facts().fenced_park(), run.facts().fenced_park_act(), 4)
 	map.repaint(state)

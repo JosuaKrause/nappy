@@ -214,9 +214,9 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t: TestRunner) -> vo
 func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
-	if _city.map.playgrounds.is_empty():
+	if _city.map.playground_rects().is_empty():
 		return  # This city rolled no PARK-purpose block; nothing here to check.
-	var at: Vector2 = _city.map.tile_rect_to_world(_city.map.playgrounds[0]).get_center()
+	var at: Vector2 = _city.map.tile_rect_to_world(_city.map.playground_rects()[0]).get_center()
 	_stand_at(at)
 	_place_rig(at)
 	var settled := await _walk_until_asleep(t, at, Tuning.day_length(1))
@@ -237,7 +237,7 @@ func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 func _quietest_park() -> Vector2:
 	var best := _city.map.home_world_position()
 	var quietest := INF
-	for block in _city.map.calm_blocks:
+	for block in _city.map.calm_blocks_now():
 		var spot := CalmSpot.of(_city.map, block)
 		if spot == Vector2.INF:
 			continue

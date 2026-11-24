@@ -8,7 +8,7 @@ func run(_t: TestRunner) -> void:
 	var built := RecipeCityBuilder.build(data)
 	var map: CityMap = built.map
 	print("HOME ", map.doorstep_world_position())
-	print("MAIN_ROAD ", map.main_road, " north lane=", CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, -1)))
+	print("MAIN_ROAD ", map.main_road_corridor(), " north lane=", CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, -1)))
 	var own_run := RunState.new()
 	for day: int in [1, 13]:
 		own_run.start_run(11)

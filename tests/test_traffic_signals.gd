@@ -18,7 +18,7 @@ func run(t: TestRunner) -> void:
 func _test_a_dark_junction_is_negotiated(t: TestRunner) -> void:
 	var map := StreetMap.full()
 	var signals := TrafficSignals.new(map)
-	var junction := Vector2i(map.main_road, 3)
+	var junction := Vector2i(map.main_road_corridor(), 3)
 	var reds := 0
 	# One cycle of the day's signal clock in 24 steps, as the crowd's ticks advance it.
 	for i in 24:

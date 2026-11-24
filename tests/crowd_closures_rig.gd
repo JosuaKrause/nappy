@@ -128,7 +128,7 @@ func _advance(seconds: float) -> void:
 ## this one and not whatever the seed rolled.
 func _test_a_hard_seal_shuts_its_street_to_the_crowd(t: TestRunner) -> void:
 	var segment: StreetNetwork.Segment = null
-	for candidate in _city.map.network.segments():
+	for candidate in _city.map.street_network().segments():
 		if _city.map.has_street(candidate.key()):
 			segment = candidate
 			break
@@ -639,15 +639,15 @@ func _advance_watching(seconds: float, at: Vector2) -> void:
 ## crossroads the finding is about. Empty, with a failed check, where this city has none.
 func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 	var home := {}
-	for segment in _city.map.network.around_blocks(Rect2i(_city.map.home_block_coordinate(), Vector2i.ONE)):
+	for segment in _city.map.street_network().around_blocks(Rect2i(_city.map.home_block_coordinate(), Vector2i.ONE)):
 		home[segment.key()] = true
 	var count := StreetNetwork.junction_count()
 	for y in range(1, count.y - 1):
 		for x in range(1, count.x - 1):
 			var junction := Vector2i(x, y)
-			if junction.x == _city.map.main_road:
+			if junction.x == _city.map.main_road_corridor():
 				continue
-			var arms := _city.map.network.at_junction(junction)
+			var arms := _city.map.street_network().at_junction(junction)
 			if arms.size() != 4:
 				continue
 			var ordinary := true
@@ -713,7 +713,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 	# (much shorter) rect for the same reason and the same way.
 	var default_at_a := RegionPlanner.region_of_junction(map, wall_segment.a) \
 			< RegionPlanner.region_of_junction(map, wall_segment.b)
-	var at_a: bool = map.boundary_wall_at_a.get(wall_segment.key(), default_at_a)
+	var at_a: bool = map.wall_stands_at_a(wall_segment.key(), default_at_a)
 	var mouth := wall_segment.mouth_rect(at_a)
 	var at := map.tile_rect_to_world(mouth).get_center()
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), at)
@@ -803,7 +803,7 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 		return {}
 	var default_at_a := RegionPlanner.region_of_junction(map, door.a) \
 			< RegionPlanner.region_of_junction(map, door.b)
-	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
+	var at_a: bool = map.wall_stands_at_a(door.key(), default_at_a)
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
 	RunCity.crowd(city).use_focus(null)
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), mouth.get_center())
@@ -1153,7 +1153,7 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> vo
 	var both_sealed: StreetNetwork.Segment = null
 	var thinned: StreetNetwork.Segment = null
 	var thinned_open: Array[Vector2i] = []
-	for segment in _city.map.network.segments():
+	for segment in _city.map.street_network().segments():
 		if not _city.map.has_street(segment.key()):
 			continue
 		# Ordinary streets only: a precinct has no pavement/carriageway split for a soft seal to
@@ -1254,7 +1254,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
-	var home_segments := map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE))
+	var home_segments := map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE))
 	t.check(not home_segments.is_empty(), "the home block has bordering streets")
 	var home_keys := {}
 	var held_home := false
@@ -1280,7 +1280,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 	for frame in int(round(12.0 / STEP)):
 		RunCity.crowd(city).step(STEP)
 		for agent in RunCity.crowd(city).agents():
-			var segment := map.network.segment_containing(map.world_to_tile(agent.position))
+			var segment := map.street_network().segment_containing(map.world_to_tile(agent.position))
 			if segment == null or not home_keys.has(segment.key()):
 				continue
 			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
@@ -1302,7 +1302,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 ## reach beyond the edge) on its way in, which is the whole of how it looks like it drives across
 ## rather than stopping dead at the kerb.
 func _test_only_cars_go_over_the_bridge(t: TestRunner) -> void:
-	var spine_x := (_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
+	var spine_x := (_city.map.main_road_corridor() * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 			* float(Tuning.TILE_SIZE)
 	var limit := _city.map.world_size().y
 	var at := Vector2(spine_x, limit - Tuning.TILE_SIZE)
@@ -1399,7 +1399,7 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t: TestRunner) -> void:
 ## sentence (nobody at all, rather than no walker and no off-spine car). Running both was the same
 ## refusal paid for twice.
 func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t: TestRunner) -> void:
-	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_lo := _city.map.main_road_corridor() * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
 	var edges: Array[Vector2] = [
@@ -1452,7 +1452,7 @@ class Landings extends RefCounted:
 ## the crowd's own spine cars are recycled as they leave the field, and the landings past the edge
 ## are read.
 func _test_spine_cars_are_put_out_of_sight(t: TestRunner) -> void:
-	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_lo := _city.map.main_road_corridor() * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
 	var ends := {
@@ -1498,7 +1498,7 @@ func _test_spine_cars_are_put_out_of_sight(t: TestRunner) -> void:
 ## never drives off the end of its deck. Stood at each end, the furthest any spine car gets past the
 ## map edge is measured over thirty seconds, by which time the furthest has settled.
 func _test_cars_do_not_drive_on_across_the_mountain(t: TestRunner) -> void:
-	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_lo := _city.map.main_road_corridor() * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
 	var ends := {
@@ -1547,7 +1547,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t: TestRunner) -> void:
 ## outbound ones, and a handful — the fallback of six missed rolls, which is the reported state —
 ## is what the check has to refuse.
 func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t: TestRunner) -> void:
-	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_lo := _city.map.main_road_corridor() * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
 	var ends := {
@@ -1595,7 +1595,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t: TestRunner) -> void
 ## on_the_spine` does: against `CityMap.in_bounds`, not a pixel tolerance, so a walker standing on
 ## the mountain, the forest or the water band is exactly what fails this.
 func _test_nobody_enters_across_a_plain_edge(t: TestRunner) -> void:
-	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_lo := _city.map.main_road_corridor() * CityMap.period() * float(Tuning.TILE_SIZE)
 	var away_from_spine := spine_lo * 0.5
 	var size := _city.map.world_size()
 	var edges := {

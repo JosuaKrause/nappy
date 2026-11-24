@@ -41,7 +41,7 @@ func _test_water_ownership(t: TestRunner) -> void:
 			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
 	var expected: Dictionary[Vector2i, bool] = {}
-	var bridge_left := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var bridge_left := city.map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
 	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
 	# carries its road on for as far as any view asks, so its columns are never water.
