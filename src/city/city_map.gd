@@ -72,7 +72,7 @@ func has_stretch() -> bool:
 
 ## Whether `tile` is one of the stretch's own tiles, whatever `_stretch_active` says.
 func in_stretch(tile: Vector2i) -> bool:
-	return in_bounds(tile) and _stretch[tile.y * size.x + tile.x] == 1
+	return in_bounds(tile) and _stretch[tile.y * _size.x + tile.x] == 1
 
 ## Whether `tile` is the void round a stretch: outside it while the stretch is what is shown.
 func is_void(tile: Vector2i) -> bool:
@@ -82,7 +82,7 @@ func is_void(tile: Vector2i) -> bool:
 ## scene — the end of one of its streets rather than a wall it runs into.
 func is_cut_off(tile: Vector2i) -> bool:
 	return _stretch_active and in_bounds(tile) and not in_stretch(tile) \
-			and _WALKABLE[_tiles[tile.y * size.x + tile.x]] == 1
+			and _WALKABLE[_tiles[tile.y * _size.x + tile.x]] == 1
 
 ## Switches the scene's own edges off — a bounded recipe's exterior and a stretch's void — so a
 ## rule stated over the whole lattice reads the saved spatial context, and answers what to hand
@@ -333,7 +333,7 @@ func held_streets() -> HeldStreets:
 	return _held
 
 ## Every write to the three per-day records above and below — the holds, the soft seals and the
-## closures — bumps `day_record_version` (the base's). **One reader, and it exists because the
+## closures — bumps the base's `day_record_version()`. **One reader, and it exists because the
 ## record can move under something that has already read it.** `CrowdPockets` floods the day's open
 ## lanes once and hands the same answer to every agent for the rest of the day, and a seal planned
 ## — or a test standing one — after that flood would otherwise be invisible to the crowd until
@@ -343,12 +343,12 @@ func held_streets() -> HeldStreets:
 ## `held_streets()`.
 func clear_day_holds() -> void:
 	_held.clear()
-	day_record_version += 1
+	_day_record_version += 1
 
 ## Marks one segment as held for today, for `why`. See `held_streets()`.
 func hold_segment(key: Vector3i, why: HeldStreets.Why) -> void:
 	_held.hold(key, why)
-	day_record_version += 1
+	_day_record_version += 1
 
 ## Whether `segment` is held today. Null answers false, so a caller need not check for a real
 ## street first.
@@ -404,12 +404,12 @@ func soft_sealed_tiles() -> Dictionary:
 ## Clears today's soft seals. See `soft_sealed_tiles()`.
 func clear_day_soft_seals() -> void:
 	soft_sealed_tiles().clear()
-	day_record_version += 1
+	_day_record_version += 1
 
 ## Marks one tile as soft-sealed to walkers for today. See `soft_sealed_tiles()`.
 func seal_soft_tile(tile: Vector2i) -> void:
 	soft_sealed_tiles()[tile] = true
-	day_record_version += 1
+	_day_record_version += 1
 
 # The day's stationary solid bodies are the base's record (`WorldMap.obstructed_tiles`,
 # `obstruct_tiles()`), filled by `EventManager.start_day` from the dawn's plan, by each unit of the
@@ -706,11 +706,11 @@ func set_recipe_tree_moves(moves: Dictionary) -> void:
 ## Starts the stretch: no tile is its own yet (`_stretch`). `add_stretch_tile()` follows it, since
 ## it indexes the tiles this sizes, and `show_stretch()` follows the tiles.
 func begin_stretch() -> void:
-	_stretch.resize(size.x * size.y)
+	_stretch.resize(_size.x * _size.y)
 
 ## Makes `tile` one of the stretch's own, standing as `type` (`_stretch`, `_tiles`).
 func add_stretch_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
-	var index := tile.y * size.x + tile.x
+	var index := tile.y * _size.x + tile.x
 	_stretch[index] = 1
 	_tiles[index] = type
 
@@ -981,9 +981,9 @@ static func is_road_offset(offset: int) -> bool:
 # ------------------------------------------------------------------- tiles ---
 
 func _init(map_size: Vector2i = map_tiles()) -> void:
-	size = map_size
+	_size = map_size
 	_tiles = PackedByteArray()
-	_tiles.resize(size.x * size.y)
+	_tiles.resize(_size.x * _size.y)
 
 ## **A map of its own that answers every question this one does**: the ground, the lattice and
 ## everything generation fixed (the block plans and layouts, the zones, the absent and built-over
@@ -1003,10 +1003,10 @@ func _init(map_size: Vector2i = map_tiles()) -> void:
 ## What the cities a test process generates are handed out as (`tests/city_map_cache.gd`): one
 ## generation per seed, a copy per user.
 func copy() -> CityMap:
-	var twin := CityMap.new(size)
+	var twin := CityMap.new(_size)
 	twin._tiles = _tiles.duplicate()
 	twin.blocked = blocked.copy()
-	twin.day_record_version = day_record_version
+	twin._day_record_version = _day_record_version
 	twin._recipe_bounds = _recipe_bounds
 	twin._recipe_exterior = _recipe_exterior
 	twin._recipe_diagnostics = _recipe_diagnostics.duplicate()
@@ -1100,7 +1100,7 @@ func capture() -> Dictionary:
 	var trees: Array[Vector2i] = []
 	for tree in StreetTrees.planted(self):
 		trees.append(tree.tile)
-	return {"size": size, "seed": _seed_used, "main_road": _main_road,
+	return {"size": _size, "seed": _seed_used, "main_road": _main_road,
 			"home_block": _home_block,
 			"home_rect": _home_rect, "power_station": _power_station,
 			"power_station_door": _power_station_door,
@@ -1164,11 +1164,11 @@ func tile_at(tile: Vector2i) -> GameEnums.TileType:
 		return GameEnums.TileType.ALLEY
 	if not in_bounds(tile):
 		return GameEnums.TileType.BUILDING
-	return _tiles[tile.y * size.x + tile.x] as GameEnums.TileType
+	return _tiles[tile.y * _size.x + tile.x] as GameEnums.TileType
 
 func set_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
 	if in_bounds(tile):
-		_tiles[tile.y * size.x + tile.x] = type
+		_tiles[tile.y * _size.x + tile.x] = type
 
 func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 	for y in range(rect.position.y, rect.end.y):
@@ -1260,7 +1260,7 @@ func _ground_lets(tile: Vector2i, layers: int) -> bool:
 ## own tile types are not laid out: a sweep reads them off `_tiles` itself (`walkable_lut()`),
 ## since that is a lookup per neighbour against a call. What the red arrow's sweep and day 13's
 ## guard's walk to her run on (`WalkField`), laid out once for each state of the record
-## (`day_record_version`, `obstruction_version`).
+## (`day_record_version()`, `obstruction_version()`).
 ##
 ## Overrides WorldMap.ground_for.
 func ground_for(mover: Mover) -> PackedInt32Array:
@@ -1268,9 +1268,9 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 	# The authored scene's void is BUILDING to every single-tile question, while a sweep reads the
 	# saved context's raw tile array, so the boundary goes into the ground.
 	if _stretch_active and mover.is_blocked_by(Mover.GROUND):
-		var width := size.x
-		for y in size.y:
-			for x in size.x:
+		var width := _size.x
+		for y in _size.y:
+			for x in _size.x:
 				if not in_stretch(Vector2i(x, y)):
 					ground[y * width + x] = BLOCKED
 	return ground
@@ -1290,8 +1290,8 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 func _open(x: int, y: int) -> bool:
 	if _recipe_exterior or _stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
-	return x >= 0 and y >= 0 and x < size.x and y < size.y \
-			and _WALKABLE[_tiles[y * size.x + x]] == 1
+	return x >= 0 and y >= 0 and x < _size.x and y < _size.y \
+			and _WALKABLE[_tiles[y * _size.x + x]] == 1
 
 ## Street ground: pavement, carriageway or crossing. Anything that travels the lattice asks
 ## this, because a corridor may simply not be there — a four-block calm zone is painted over the
@@ -1520,7 +1520,7 @@ func anchor_of(block: Vector2i) -> Vector2i:
 ## anything needs to route around.
 func close_streets(closures: Array[RoadClosure]) -> void:
 	_closed_tiles.clear()
-	day_record_version += 1
+	_day_record_version += 1
 	_closed_tiles.merge(_fenced_tiles)
 	var streets: Array[RoadClosure] = []
 	for closure in closures:
@@ -1551,7 +1551,7 @@ func swing_position(playground: Rect2i) -> Vector2:
 	return Vector2(world.get_center().x, world.end.y - 8.0)
 
 func world_size() -> Vector2:
-	return Vector2(size) * Tuning.TILE_SIZE
+	return Vector2(_size) * Tuning.TILE_SIZE
 
 func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
 	return tile_at(world_to_tile(world_position))
@@ -1704,7 +1704,7 @@ func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 				_fenced_tiles[tile] = true
 	_recompute_calm(state)
 	_closed_tiles.merge(_fenced_tiles)
-	day_record_version += 1
+	_day_record_version += 1
 
 func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	var layout: BlockLayout = _block_layouts.get(block)
@@ -1791,8 +1791,8 @@ func walk_field(from: Vector2i, blocked: Dictionary = {}) -> PackedInt32Array:
 ## Multi-source version: distance to the nearest of `sources`. One sweep answers
 ## "how far is the nearest park from anywhere", which is how the home is placed.
 func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Array:
-	var width := size.x
-	var cells := width * size.y
+	var width := _size.x
+	var cells := width * _size.y
 	var field := PackedInt32Array()
 	field.resize(cells)
 	field.fill(UNREACHED)
@@ -1847,13 +1847,13 @@ func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Arr
 ## Whether a sweep reached a tile. Out of bounds is not reached rather than an error, which is
 ## what every caller means by it.
 func reaches(field: PackedInt32Array, tile: Vector2i) -> bool:
-	return in_bounds(tile) and field[tile.y * size.x + tile.x] >= 0
+	return in_bounds(tile) and field[tile.y * _size.x + tile.x] >= 0
 
 ## How far a sweep had to walk to a tile, or -1 if it never got there.
 func distance_at(field: PackedInt32Array, tile: Vector2i) -> int:
 	if not in_bounds(tile):
 		return -1
-	return maxi(-1, field[tile.y * size.x + tile.x])
+	return maxi(-1, field[tile.y * _size.x + tile.x])
 
 ## How many tiles a sweep reached.
 func reach_count(field: PackedInt32Array) -> int:
@@ -1875,14 +1875,14 @@ func count_standable() -> int:
 	var total := _count_walkable()
 	for tile: Vector2i in blocked.tiles_of(Mover.POSTS):
 		if in_bounds(tile):
-			total -= _WALKABLE[_tiles[tile.y * size.x + tile.x]]
+			total -= _WALKABLE[_tiles[tile.y * _size.x + tile.x]]
 	return total
 
 ## Every calm tile in the city right now. It is the only ground a day can be won on, so it is what
 ## "how hard is today" actually means.
 func calm_tiles() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	var width := size.x
+	var width := _size.x
 	for index in _tiles.size():
 		if _CALM[_tiles[index]] == 1:
 			result.append(Vector2i(index % width, index / width))
@@ -1920,8 +1920,8 @@ func tiles_of_type(type: GameEnums.TileType) -> Array[Vector2i]:
 	if _tiles_by_type.has(type):
 		return _tiles_by_type[type]
 	var found: Array[Vector2i] = []
-	for y in size.y:
-		for x in size.x:
+	for y in _size.y:
+		for x in _size.x:
 			if tile_at(Vector2i(x, y)) == type:
 				found.append(Vector2i(x, y))
 	_tiles_by_type[type] = found

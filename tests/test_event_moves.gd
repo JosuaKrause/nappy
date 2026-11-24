@@ -1,11 +1,11 @@
 extends RefCounted
 ## What the live event and the event manager hand the crowd's separation pass: the move each
-## figure puts on its map's list (`WorldMap.moves`), which the pass reads and never the event
-## behind it. A row's body's `is_walked_round()` and `parks()` reaching its move, an event
+## figure puts on its map's list (`WorldMap.listed_moves()`), which the pass reads and never the
+## event behind it. A row's body's `is_walked_round()` and `parks()` reaching its move, an event
 ## leaving the list where it goes, and a moved figure standing where it was put. The crowd's own
 ## half, how a walker and a car answer a move, is `test_crowd_yields.gd`'s, which puts moves on
-## the list by hand. A real `EventInstance` and a real `EventManager` are built here because they are what
-## is under test; each stands on a map of its own, never a city.
+## the list by hand. A real `EventInstance` and a real `EventManager` are built here because
+## they are what is under test; each stands on a map of its own, never a city.
 
 const SEED := 4242
 
@@ -51,9 +51,9 @@ func _a_row_on_a_map(t: TestRunner, id: String,
 			EventSurroundings.new().on(map) \
 				.drawing_nothing())
 	t.add_child(instance)
-	var listed := map.moves.keeping_their_course()
+	var listed := map.listed_moves().keeping_their_course()
 	return {"instance": instance, "map": map,
-			"move": listed[0] if listed.size() == 1 and map.moves.size() == 1 else null}
+			"move": listed[0] if listed.size() == 1 and map.listed_moves().size() == 1 else null}
 
 ## **A row's body's `is_walked_round()` reaches its move** (`EventInstance.setup()`): the patrol car, a vehicle, is
 ## walked round while it stands; the charging dog, an animal, is not, so the dog waiting on the map
@@ -161,7 +161,7 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
-	var listed := map.moves.keeping_their_course()
+	var listed := map.listed_moves().keeping_their_course()
 	return {"world": world, "manager": manager, "plan": plan,
 			"move": listed[0] if listed.size() == 1 else null}
 
@@ -178,7 +178,7 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	var at := Vector2(5000.0, 5000.0)
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
-	var moves: ProposedMoves = manager.world.map().moves
+	var moves: ProposedMoves = manager.world.map().listed_moves()
 	var live: EventInstance = manager.event_of(rig.plan)
 	var move: MoveProposal = rig.move
 	t.check(live != null and move != null and moves.has(move), "a streamed-in event is on the list")
@@ -194,7 +194,7 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 
 	rig = _a_manager_with_a_live_event(t, at)
 	manager = rig.manager
-	moves = manager.world.map().moves
+	moves = manager.world.map().listed_moves()
 	live = manager.event_of(rig.plan)
 	move = rig.move
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
@@ -207,7 +207,7 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 
 	rig = _a_manager_with_a_live_event(t, at)
 	manager = rig.manager
-	moves = manager.world.map().moves
+	moves = manager.world.map().listed_moves()
 	move = rig.move
 	t.check(move != null and moves.has(move), "a streamed-in event is on the list to be cleared")
 	manager.clear()

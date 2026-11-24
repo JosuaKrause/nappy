@@ -6,13 +6,14 @@ extends RefCounted
 ## figure in its lane, moving or standing, never drives through one and never stands in a junction
 ## box for one, and turns round behind one that has parked (inbox #909 in freckled-moose).
 ##
-## The rig is `test_crowd_bodies.gd`'s: a crowd on a real generated map (no city around it, no day
-## planned on it), agents placed by hand on a straight stretch of street this seed's map has, and the crowd stepped as it
-## is in the game (`Crowd.step()`, which gathers the map's separation pass first). The figure is a
-## move put on the map's list by hand (`WorldMap.moves`), since what the crowd reads is the move and
-## never the event behind it. **The events' own half** — a row's body's `is_walked_round()` and `parks()`
-## reaching its move, an event leaving the list of moves where it goes, and a placement leaving the
-## move where it was put — is `test_event_moves.gd`'s.
+## The rig is `test_crowd_bodies.gd`'s: a crowd on a real generated map (no city around it, no
+## day planned on it), agents placed by hand on a straight stretch of street this seed's map
+## has, and the crowd stepped as it is in the game (`Crowd.step()`, which gathers the map's
+## separation pass first). The figure is a move put on the map's list by hand
+## (`WorldMap.list_move()`), since what the crowd reads is the move and never the event behind
+## it. **The events' own half** — a row's body's `is_walked_round()` and `parks()` reaching its
+## move, an event leaving the list of moves where it goes, and a placement leaving the move
+## where it was put — is `test_event_moves.gd`'s.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RIG := preload("res://tests/test_crowd_bodies.gd")
@@ -44,7 +45,7 @@ func _a_figure(map: WorldMap, at: Vector2, stood_round: bool) -> MoveProposal:
 	var move := MoveProposal.new()
 	move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	move.be_walked_round(stood_round)
-	map.moves.join(move, at)
+	map.list_move(move, at)
 	return move
 
 ## Walks one walker down its lane at a figure standing on that lane five tiles ahead, for six
@@ -72,7 +73,7 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		crowd.step(STEP)
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
-	map.moves.leave(figure)
+	map.unlist_move(figure)
 	return {"closest": closest,
 			"touching": walker.lane().shape().reach() + figure.body_radius(),
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
@@ -84,7 +85,7 @@ func _a_vehicle(map: CityMap, at: Vector2, parked: bool) -> MoveProposal:
 	move.use_body_radius(EventCatalogue.by_id("police_patrol").ground_shape().reach())
 	move.be_walked_round(true)
 	move.be_parked(parked)
-	map.moves.join(move, at)
+	map.list_move(move, at)
 	return move
 
 ## A vertical corridor of ordinary street holding a whole block's stretch, the junction box after it
@@ -126,7 +127,7 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 			figure.place(at)
 		if frame == int(round(stand / STEP)):
 			speed_when_it_left = car.speed()
-			map.moves.leave(figure)
+			map.unlist_move(figure)
 		crowd.step(STEP)
 		if figure.is_on_the_list() and _overlaps(car, figure):
 			overlapping += 1
@@ -134,7 +135,7 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 		if _rig.still_driving_down(car, corridor):
 			deepest = maxf(deepest, car.position.y)
 	if figure.is_on_the_list():
-		map.moves.leave(figure)
+		map.unlist_move(figure)
 	var turned: bool = not _rig.still_driving_down(car, corridor)
 	return {"overlapping": overlapping, "in_the_box": in_the_box, "speed": speed_when_it_left,
 			"turned": turned, "deepest": deepest, "at": at, "car": car}
@@ -163,7 +164,7 @@ func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var map := WorldMap.open_ground()
 	var placed := _a_figure(map, at, false)
-	var pass_over := SeparationPass.new(map.moves)
+	var pass_over := map.course_keepers()
 	pass_over.gather()
 	placed.place(at + Vector2(400.0, 0.0))
 	pass_over.gather()

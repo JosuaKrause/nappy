@@ -33,8 +33,8 @@ func run(context: DawnContext) -> void:
 			covered[reached] = true
 	var tiles := 0
 	var left := 0
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if not corridor.carries_a_route(tile) or not map.is_walkable(tile) or shut.has(tile):
 				continue

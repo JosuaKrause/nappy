@@ -69,11 +69,12 @@ func _done(city: City, her: Node2D) -> void:
 ## off the home block, with a sidewalk on its north side: `[west end, east end, sidewalk point
 ## opposite the middle]`, all in world px, or empty. No zebra and no signal stands on it.
 func _a_lane(map: CityMap, tiles := 8) -> Array:
-	for y in range(2, map.size.y - 2):
+	var size := map.size_in_tiles()
+	for y in range(2, size.y - 2):
 		var x := 12
-		while x < map.size.x - 12:
+		while x < size.x - 12:
 			var start := x
-			while x < map.size.x - 12 and map.tile_at(Vector2i(x, y)) == GameEnums.TileType.ROAD \
+			while x < size.x - 12 and map.tile_at(Vector2i(x, y)) == GameEnums.TileType.ROAD \
 					and CityMap.junction_at(Vector2i(x, y)) == Vector2i(-1, -1) \
 					and map.tile_at(Vector2i(x, y - 1)) == GameEnums.TileType.SIDEWALK:
 				x += 1

@@ -996,8 +996,8 @@ func _a_chasing_robber(t: TestRunner, map: CityMap, where: WhereSheIs) -> EventI
 	var def := EventCatalogue.by_id("alley_robbery")
 	var run := def.notice_within() - 10.0
 	var origin := Vector2.INF
-	for tile_y in range(map.size.y / 2, map.size.y - 2):
-		for tile_x in range(2, map.size.x - 2):
+	for tile_y in range(map.size_in_tiles().y / 2, map.size_in_tiles().y - 2):
+		for tile_x in range(2, map.size_in_tiles().x - 2):
 			var at := map.tile_to_world(Vector2i(tile_x, tile_y))
 			if map.is_walkable(Vector2i(tile_x, tile_y)) \
 					and _sampled_line_is_walkable(map, at, at + Vector2(run, 0.0), 0.1):

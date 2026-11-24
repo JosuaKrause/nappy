@@ -46,12 +46,12 @@ func _ready() -> void:
 	add_child(_entities)
 
 	var building := Building.new()
-	building.atlas = _atlas
+	building.equip(_atlas, RoofDrawer.new(_atlas), FrontDrawer.new(_atlas))
+	building.residence().set_resident(true)
 	building.name = "ReviewRoof"
 	building.position = Vector2(640, 576)
-	building.footprint = Vector2(1088, 384)
-	building.draw_as(GameEnums.BlockPurpose.BIG_BUILDING, 4, 64)
-	building.roof_object_parent = _entities
+	building.stand_on(Rect2i(), Vector2(1088, 384), 4, GameEnums.BlockPurpose.BIG_BUILDING, 64)
+	building.put_roof_objects_in(_entities)
 	_buildings.add_child(building)
 
 	for index in EQUIPMENT.size():

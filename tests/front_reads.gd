@@ -40,12 +40,12 @@ static func new_building() -> Building:
 	return made
 
 ## Hands a building a recording drawer in place of the real one a city gave it, the way the city
-## hands one (`Building.equip()`, over the building's own library, with a roof drawer of its own),
-## has its scenery resident, and asks for a redraw. `equip()` gives the building a standing of its
+## hands one (`Building.equip()`, over `library`, the one the building draws from, with a roof
+## drawer of its own), has its scenery resident, and asks for a redraw. `equip()` gives the building a standing of its
 ## own, made resident here, which the city's residency does not hold: a suite that watches a
 ## building does not move the view off it.
-static func watch(building: Building) -> void:
-	_equip(building, building.atlas)
+static func watch(building: Building, library: AtlasLibrary) -> void:
+	_equip(building, library)
 	building.residence().set_resident(true)
 	building.queue_redraw()
 
@@ -242,6 +242,24 @@ func roof_rows_at(col: int) -> int:
 		if entry.picture == Building.ROOF and entry.col == col:
 			rows += 1
 	return rows
+
+## The rows the roof is drawn taller than the building's own at each column, which is the extension
+## the city handed it (`Building.extend_roof_over()`), read off the roof pictures (0 where the
+## front draws no roof, as over a power station's yard).
+func roof_extension() -> Array[int]:
+	var rows: Array[int] = []
+	for col in building.columns():
+		rows.append(maxi(0, roof_rows_at(col) - building.roof_tiles()))
+	return rows
+
+## The colour the front's first cell of `picture` is painted in (the wall and the roof are tinted
+## from the palette entry the front's variant picks), or a transparent colour for a front that
+## paints none.
+func colour_of(picture: StringName) -> Color:
+	for entry in painted():
+		if entry.picture == picture:
+			return entry.colour
+	return Color.TRANSPARENT
 
 ## The lips drawn on roof cell (`col`, `row`), as `Building.ROOF_EDGE_BIT_*` flags, or 0 for a cell
 ## that is no roof or has none. Row 0 is the front lip, directly above the wall.

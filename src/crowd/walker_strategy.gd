@@ -635,7 +635,7 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 ##
 ## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
-	var separation := _map.separation
+	var separation := _map.course_keepers()
 	if not separation.walker_is_near(_move.stands_at(), Tuning.CROWD_YIELD_DISTANCE):
 		return
 	var move := _move
@@ -972,7 +972,7 @@ const BODY_SCAN_TILES := WALKER_BODY_SIDESTEP_TILES + LaneMover.LOOKAHEAD_TILES
 ## on. Ties go to `_lane` for the same reason — that is what makes "and steps back after" happen at
 ## all rather than leaving a walker one lane over for the rest of the street.
 func _step_around_a_body(here: Vector2i) -> void:
-	if _map.obstructed_tiles.is_empty():
+	if not _map.has_solid_bodies():
 		_stop_going_round_a_body()
 		return
 	var along_tile := here.y if _lane.is_vertical() else here.x
@@ -1034,7 +1034,7 @@ func _sidewalk_after_a_turn(vertical: bool, corridor: int, direction: float) -> 
 	var cross := _mover.position.x if vertical else _mover.position.y
 	var along := _mover.position.y if vertical else _mover.position.x
 	var lane := CrowdLanes.nearest_sidewalk(corridor, cross)
-	if _map.obstructed_tiles.is_empty():
+	if not _map.has_solid_bodies():
 		return lane
 	var along_tile := floori(along / float(Tuning.TILE_SIZE))
 	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)

@@ -9,6 +9,8 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
+const FrontReads := preload("res://tests/front_reads.gd")
+const UI := preload("res://tests/ui_screens.gd")
 
 ## The diagnostics a builder's answer carries.
 func _errors(result: Dictionary) -> Array[String]:
@@ -20,7 +22,7 @@ func _recipe() -> Dictionary:
 			"anchors": {"door": "power_station_door"}, "setup": {}, "playback": {}}
 
 func run(t: TestRunner) -> void:
-	_test_the_bounded_context(t)
+	await _test_the_bounded_context(t)
 	_test_the_examples(t)
 
 func _test_the_bounded_context(t: TestRunner) -> void:
@@ -42,8 +44,10 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 			station = building
 	t.check(station != null, "bounded rendering includes the real power station")
 	if station:
+		FrontReads.watch(station, city.atlas)
+		await UI.frames(t, 2)
 		var extended := 0
-		for rows: int in station.roof_extension_rows:
+		for rows: int in FrontReads.look(station).roof_extension():
 			extended += rows
 		t.check(extended > 0, "actual City construction extends the hall roof over its adjoining wall")
 	city.free()

@@ -255,7 +255,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t: TestRunner) -> voi
 			# It is stopped at its aim point with the landing taken and it has not reversed. That is
 			# the whole assertion; now let the lane clear and watch it take the arc it was refused.
 			waited = true
-			_city.map.moves.leave(figure)
+			_city.map.unlist_move(figure)
 	t.check(waited, "the car reached its aim point and waited for the lane its half turn lands in "
 			+ "rather than finding it empty")
 	t.check(not flipped, "it did not reverse on the spot while the landing was taken")
@@ -823,7 +823,7 @@ func _a_figure(at: Vector2) -> MoveProposal:
 	var move := MoveProposal.new()
 	move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	move.be_walked_round(true)
-	_city.map.moves.join(move, at)
+	_city.map.list_move(move, at)
 	return move
 
 ## Which way along its street a car points once it is out of a turn: plus or minus one.

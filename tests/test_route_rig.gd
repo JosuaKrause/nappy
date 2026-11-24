@@ -327,8 +327,8 @@ func _end_rig(rig: RouteRig, day: DayController) -> void:
 
 ## An open square of `size` tiles on cuttable ground, its top-left tile, scanned rather than hard-coded.
 func _find_open_square(t: TestRunner, size: int) -> Vector2i:
-	for y in range(3, _city.map.size.y - 3 - size):
-		for x in range(3, _city.map.size.x - 3 - size):
+	for y in range(3, _city.map.size_in_tiles().y - 3 - size):
+		for x in range(3, _city.map.size_in_tiles().x - 3 - size):
 			var fits := true
 			for dy in size:
 				for dx in size:
@@ -363,8 +363,8 @@ func _test_a_plan_never_cuts_a_true_diagonal(t: TestRunner) -> void:
 ## A stretch of plain `ROAD` down one column, `length` tiles, with open ground on both sides, so a
 ## cut down it fails on the tile type and nothing else; its top tile.
 func _find_road_column(t: TestRunner, length: int) -> Vector2i:
-	for y in range(4, _city.map.size.y - 4 - length):
-		for x in range(4, _city.map.size.x - 4):
+	for y in range(4, _city.map.size_in_tiles().y - 4 - length):
+		for x in range(4, _city.map.size_in_tiles().x - 4):
 			var fits := true
 			for k in length:
 				var here := Vector2i(x, y + k)
@@ -403,8 +403,8 @@ func _test_a_straight_run_on_plain_road_is_never_cut(t: TestRunner) -> void:
 ## either side of its line), and none of it a crossing already; answers `Vector2i(-1, -1)` if
 ## there is none. Scanned rather than hard-coded.
 func _find_cuttable_row(length: int) -> Vector2i:
-	for y in range(4, _city.map.size.y - 4):
-		for x in range(4, _city.map.size.x - 4 - length):
+	for y in range(4, _city.map.size_in_tiles().y - 4):
+		for x in range(4, _city.map.size_in_tiles().x - 4 - length):
 			var fits := true
 			for k in length:
 				for dy in range(-1, 2):
@@ -492,8 +492,8 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t: Te
 func _find_kerb_site(t: TestRunner, planner: RouteRigPlanner) -> Vector2i:
 	var doorstep := _city.map.world_to_tile(_city.map.doorstep_world_position())
 	var clear := planner.body_clear_tiles()
-	for y in range(4, _city.map.size.y - 4):
-		for x in range(4, _city.map.size.x - 4):
+	for y in range(4, _city.map.size_in_tiles().y - 4):
+		for x in range(4, _city.map.size_in_tiles().x - 4):
 			var kerb := Vector2i(x, y)
 			if absi(kerb.x - doorstep.x) + absi(kerb.y - doorstep.y) < 12:
 				continue
@@ -1034,8 +1034,9 @@ func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> 
 	var kept := {}
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		kept[tile] = true
-	for tiles: Dictionary in [map.closed_tile_set(), map.soft_sealed_tiles(),
-			map.obstructed_tiles]:
+	var held: Array[Dictionary] = [
+			map.closed_tile_set(), map.soft_sealed_tiles(), map.obstructed_tiles()]
+	for tiles: Dictionary in held:
 		for tile: Vector2i in tiles:
 			kept[tile] = true
 	kept.erase(here)

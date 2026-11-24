@@ -34,7 +34,7 @@ extends StaticBody2D
 ##
 ## **A column with no walkable ground directly south of it draws no facade at all** —
 ## `_covered_ground_cols` — and whichever building stands there instead draws its own roof further
-## north to meet it, `roof_extension_rows` deep past its own lot's own north edge, so the two
+## north to meet it, `_roof_extension_rows` deep past its own lot's own north edge, so the two
 ## roofs read as one continuous surface rather than a floating wall with nobody able to stand in
 ## front of it. See each property's own doc.
 
@@ -51,8 +51,8 @@ const NORTH_EDGE_INSET := 6.0
 
 ## Every picture below is a region name on the `buildings` atlas group — `AtlasLibrary.
 ## region_name_for()`'s own rule, written as a literal since the group is baked before this file
-## ever runs. `_enter_tree()`/`_exit_tree()` acquire and release the group on `atlas`, so
-## `atlas.region()` only ever runs while it is held.
+## ever runs. `_enter_tree()`/`_exit_tree()` acquire and release the group on `_atlas`, so
+## `_atlas.region()` only ever runs while it is held.
 const WALL := &"buildings/wall"
 const WALL_BASE := &"buildings/wall_base"
 const WALL_EDGE_W := &"buildings/wall_edge_w"
@@ -290,10 +290,7 @@ const _FURNITURE_DENSITY := {
 const VENT_FRAME_INTERVAL := 1.4
 
 ## Lot size in px: x = width, y = depth (how far north it extends).
-@export var footprint := Vector2(96.0, 96.0):
-	set(value):
-		footprint = value
-		_rebuild()
+var _footprint := Vector2(96.0, 96.0)
 
 ## Requested extruded height in px (`height()`). Snapped down to whole tiles, and always left at
 ## least one tile of roof unless the lot is a single tile deep. Handed over with the lot's other
@@ -396,7 +393,7 @@ func mark_door_span(span: Vector2) -> void:
 ## tier), so `mark_covered_ground_cols()` rebuilds rather than only redrawing — before
 ## `add_child()`, where `City` already hands it over, that is a no-op, as `_rebuild()` is for any
 ## building outside the tree. `_draw()`
-## skips a covered column's whole facade, wall and window alike — see `roof_extension_rows` for
+## skips a covered column's whole facade, wall and window alike — see `_roof_extension_rows` for
 ## what stands in its place.
 var _covered_ground_cols: Array[bool] = []
 
@@ -428,12 +425,15 @@ func _is_covered(col: int) -> bool:
 ## meet edge to edge with no gap and no overlap. Sized to `columns()`, or empty for a front covering
 ## nothing; `_extension_rows()` reads an index past the end as 0, the same convention
 ## `_is_covered()` already uses. A geometry fact, not a roll, but the roof furniture's own pool
-## reaches onto the extension (`_roof_layout()`), so the setter rebuilds rather than only
-## redrawing — before `add_child()`, where `City` already sets it, that is a no-op.
-@export var roof_extension_rows: Array[int] = []:
-	set(value):
-		roof_extension_rows = value
-		_rebuild()
+## reaches onto the extension (`_roof_layout()`), so `extend_roof_over()` rebuilds rather than
+## only redrawing — before `add_child()`, where `City` already hands it over, that is a no-op.
+var _roof_extension_rows: Array[int] = []
+
+## Hands the front the rows its roof runs on north over the covered building, one entry per
+## column (`_roof_extension_rows`), and rebuilds it (`City.assign_roof_extensions()`'s call).
+func extend_roof_over(rows: Array[int]) -> void:
+	_roof_extension_rows = rows
+	_rebuild()
 
 ## Per-column: whether this front's own extension at that column reaches into another rectangle
 ## of the *same* courtyard lot rather than a genuinely separate building. A single-block or
@@ -445,7 +445,7 @@ func _is_covered(col: int) -> bool:
 ## two separate buildings the extension still caps, since that lip is the real, visible step
 ## between two roofs. Sized to `columns()`, or empty when nothing needs the distinction;
 ## `_extension_is_seamless()` reads an index past the end as false, the same convention
-## `roof_extension_rows` and `_covered_ground_cols` already use. Drawing only, so a redraw is all a
+## `_roof_extension_rows` and `_covered_ground_cols` already use. Drawing only, so a redraw is all a
 ## change needs. Handed over with `_seamless_cover_cols` by `mark_courtyard_seams()`.
 var _roof_extension_seamless: Array[bool] = []
 
@@ -472,15 +472,18 @@ func mark_courtyard_seams(extension: Array[bool], covered: Array[bool]) -> void:
 ## because `_variant` also seeds the windows, the front, the door, the fire escape and the roof
 ## furniture, and sharing it would give every piece the same rolls as well as the same colour.
 ## Drawing only, so a redraw is all a change needs.
-@export var tint_variant := -1:
-	set(value):
-		tint_variant = value
-		queue_redraw()
+var _tint_variant := -1
 
-## How many extra roof rows column `col` draws (`roof_extension_rows`), defaulting to 0 for an
+## Hands the front the palette entry its wall and roof are tinted from, so every piece of one
+## courtyard lot carries the same colour (`City._share_courtyard_tint()`), and redraws it.
+func share_tint(variant: int) -> void:
+	_tint_variant = variant
+	queue_redraw()
+
+## How many extra roof rows column `col` draws (`_roof_extension_rows`), defaulting to 0 for an
 ## index the array does not reach.
 func _extension_rows(col: int) -> int:
-	return roof_extension_rows[col] if col >= 0 and col < roof_extension_rows.size() else 0
+	return _roof_extension_rows[col] if col >= 0 and col < _roof_extension_rows.size() else 0
 
 ## Whether column `col`'s own extension is seamless (`_roof_extension_seamless`), defaulting to
 ## false for an index the array does not reach.
@@ -539,20 +542,20 @@ var _neighbor_taken := false
 
 ## Equips the building before the city adds it: its atlas and the roof and front drawers it draws
 ## through. The city registers it with the scenery itself, so it is not resident on its own
-## (`residence()`). See `atlas`, `_roof_drawer` and `_front_drawer`.
+## (`residence()`). See `_atlas`, `_roof_drawer` and `_front_drawer`.
 func equip(library: AtlasLibrary, roofs: RoofDrawer, fronts: FrontDrawer) -> void:
-	atlas = library
+	_atlas = library
 	_roof_drawer = roofs
 	_front_drawer = fronts
 	_residence = _new_residence(false)
 
 ## Sizes the building to its lot before the city adds it: `size` px wide and deep, `with_variant`
 ## picking the roof colour and windows, in a block that starts as `purpose`, `wall_height` px tall,
-## standing on `lot_rect_in_tiles`. See `footprint`, `_variant`, `_district`, `_height` and `_lot`.
+## standing on `lot_rect_in_tiles`. See `_footprint`, `_variant`, `_district`, `_height` and `_lot`.
 ## A building in the tree rebuilds once the facts are all in.
 func stand_on(lot_rect_in_tiles: Rect2i, size: Vector2, with_variant: int,
 		purpose: GameEnums.BlockPurpose, wall_height: float) -> void:
-	footprint = size
+	_footprint = size
 	_variant = with_variant
 	_district = purpose
 	_height = wall_height
@@ -597,9 +600,9 @@ func stand_on_home_block(on_it: bool) -> void:
 	_rebuild()
 
 ## Has the building put its roof objects in `parent`, the y-sorted layer at their feet (see
-## `roof_object_parent`).
+## `_roof_object_parent`).
 func put_roof_objects_in(parent: Node2D) -> void:
-	roof_object_parent = parent
+	_roof_object_parent = parent
 
 ## Hands this front the cells it draws and whether the neighbor was taken (see `_posters` and
 ## `_neighbor_taken`): `PosterWalls.refresh()`'s one hand-over, which redraws the front.
@@ -661,10 +664,10 @@ var _lot := Rect2i()
 
 ## This building's own ground shape — a rectangle the one place `GroundShape` is a rectangle
 ## rather than a point or a band: nothing else in the game has a footprint that is not already one
-## of those two. Half `footprint` on the south-north axis less `NORTH_EDGE_INSET`, not half
-## `footprint` outright — see `_rebuild()` — so the body's own north edge sits `NORTH_EDGE_INSET`
-## south of the lot's. Kept in step with `footprint` in `_rebuild()`, since the `@export` setter
-## can still reassign it. Read for its body alone: the one-tile shadow every building casts is
+## of those two. Half `_footprint` on the south-north axis less `NORTH_EDGE_INSET`, not half
+## `_footprint` outright — see `_rebuild()` — so the body's own north edge sits `NORTH_EDGE_INSET`
+## south of the lot's. Kept in step with `_footprint` in `_rebuild()`, since `stand_on()`
+## can reassign it. Read for its body alone: the one-tile shadow every building casts is
 ## computed from the whole city's lot rectangles at once (`BuildingShadows`, so two buildings that
 ## share an edge shade as one), not from this shape.
 var _shape: GroundShape
@@ -723,39 +726,39 @@ var _roof_objects: Array[RoofObject] = []
 var _station_layer: Node2D
 ## Parent for roof art that must participate in world y-sorting. City sets this before the building
 ## enters the tree; a null parent retains the standalone Building path used by focused fixtures.
-var roof_object_parent: Node2D
+var _roof_object_parent: Node2D
 ## What the roof units are drawn through (`RoofDrawer`), one `draw()` per unit of the roof layout:
 ## handed by the city before the building enters the tree, the same one to every building it
-## builds; a building nobody handed one makes its own over its `atlas` when it first enters the
+## builds; a building nobody handed one makes its own over its `_atlas` when it first enters the
 ## tree.
 var _roof_drawer: RoofDrawer = null
 ## What the front's pictures are painted through (`FrontDrawer`), one call per picture `_draw()`
 ## puts on the wall and the roof: handed by the city before the building enters the tree, the same
-## one to every building it builds; a building nobody handed one makes its own over its `atlas`
+## one to every building it builds; a building nobody handed one makes its own over its `_atlas`
 ## when it first enters the tree.
 var _front_drawer: FrontDrawer = null
 ## The baked atlas pages this front draws from (`AtlasLibrary`), handed by the city before the
 ## building enters the tree and handed on to its roof objects; a building nobody handed one (a
 ## suite's) makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
 
 ## Acquires the `buildings` atlas group rather than `_ready()`, so a building added and removed
 ## from the tree more than once stays paired with `_exit_tree()` — `_ready()` only ever runs the
 ## first time. `AtlasLibrary` reference-counts, so any number of buildings acquiring the same
 ## group is one page load.
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
 	if _roof_drawer == null:
-		_roof_drawer = RoofDrawer.new(atlas)
+		_roof_drawer = RoofDrawer.new(_atlas)
 	if _front_drawer == null:
-		_front_drawer = FrontDrawer.new(atlas)
-	atlas.acquire(&"buildings")
+		_front_drawer = FrontDrawer.new(_atlas)
+	_atlas.acquire(&"buildings")
 
 func _exit_tree() -> void:
 	_clear_roof_layers()
 	_clear_roof_objects()
-	atlas.release(&"buildings")
+	_atlas.release(&"buildings")
 	request_ready()
 
 func _ready() -> void:
@@ -783,8 +786,8 @@ func _rebuild() -> void:
 	# body and the shape cannot disagree. The south-north half-extent shrinks by half the inset and
 	# the shape's centre (`_collision.position`) shifts south by the same half, which is what keeps
 	# the south edge — the lot's own kerb — exactly where it was.
-	var depth := maxf(footprint.y - NORTH_EDGE_INSET, TILE)
-	_shape = GroundShape.rect(Vector2(footprint.x * 0.5, depth * 0.5))
+	var depth := maxf(_footprint.y - NORTH_EDGE_INSET, TILE)
+	_shape = GroundShape.rect(Vector2(_footprint.x * 0.5, depth * 0.5))
 	_collision.shape = _shape.collision_shape()
 	_collision.position = Vector2(0.0, -_shape.rect_half_extents().y)
 	_build_front()
@@ -821,12 +824,12 @@ func _apply_residence(resident: bool) -> void:
 
 func _scenery_bounds() -> Rect2:
 	var extension := 0
-	for rows_above in roof_extension_rows:
+	for rows_above in _roof_extension_rows:
 		extension = maxi(extension, rows_above)
 	# Furniture may rise above the extended roof; the bound includes the full tile canvases.
-	return Rect2(global_position - Vector2(footprint.x * 0.5 + TILE,
-			footprint.y + extension * TILE + TILE * 2),
-			footprint + Vector2(TILE * 2, extension * TILE + TILE * 3))
+	return Rect2(global_position - Vector2(_footprint.x * 0.5 + TILE,
+			_footprint.y + extension * TILE + TILE * 2),
+			_footprint + Vector2(TILE * 2, extension * TILE + TILE * 3))
 
 func _prepare_scenery() -> void:
 	if _scenery_clock:
@@ -842,11 +845,11 @@ func _prepare_scenery() -> void:
 
 ## Lot width in whole tiles.
 func columns() -> int:
-	return maxi(1, roundi(footprint.x / TILE))
+	return maxi(1, roundi(_footprint.x / TILE))
 
 ## Lot depth in whole tiles.
 func rows() -> int:
-	return maxi(1, roundi(footprint.y / TILE))
+	return maxi(1, roundi(_footprint.y / TILE))
 
 ## Rows of front wall. A one-tile sliver is all wall and no roof — anything else would have
 ## to overhang the lot behind it, and the whole point of the layout is that it never does.
@@ -1141,7 +1144,7 @@ func _draw() -> void:
 	var cols := columns()
 	var wall_rows := wall_tiles()
 	var roof_rows := roof_tiles()
-	var tint := _variant if tint_variant < 0 else tint_variant
+	var tint := _variant if _tint_variant < 0 else _tint_variant
 	var wall_colour := Palette.building_wall(tint)
 	var roof_colour := Palette.building_roof(tint)
 	if _condition == Condition.BURNT:
@@ -1186,13 +1189,13 @@ func _draw() -> void:
 	for col in range(hall.x, hall.y if not _power_station else hall.x):
 		var ground_name := _ground_floor_texture(col)
 		if ground_name != &"":
-			var y_offset := TILE - atlas.region(ground_name).get_height()
+			var y_offset := TILE - _atlas.region(ground_name).get_height()
 			_front_drawer.paint(self, ground_name, _cell(col, 0) + Vector2(0.0, y_offset))
 
 	_draw_posters()
 	_draw_front_overlay()
 
-	# A covered column's own extension (`roof_extension_rows`) makes this roof taller than
+	# A covered column's own extension (`_roof_extension_rows`) makes this roof taller than
 	# `roof_rows` there, continuing this same fill and colour north to meet the covered front's own
 	# roof, so the row bound is read per column rather than once for the whole building. Which lips
 	# each cell draws is `_roof_cell_edges()`'s answer, the one place it is decided.
@@ -1437,11 +1440,11 @@ func _draw_posters() -> void:
 		var side := float(cell["side"])
 		var over := Vector2.ZERO
 		if int(cell["under"]) != PosterState.NONE:
-			draw_texture(_poster_art.texture_for(atlas, int(cell["under"]), int(cell["under_tear"]),
+			draw_texture(_poster_art.texture_for(_atlas, int(cell["under"]), int(cell["under_tear"]),
 					_neighbor_taken),
 					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
 			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
-		draw_texture(_poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]),
+		draw_texture(_poster_art.texture_for(_atlas, int(cell["kind"]), int(cell["tear"]),
 				_neighbor_taken), at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
@@ -1566,7 +1569,7 @@ func _build_roof_furniture() -> void:
 ## one under three columns wide, or whose tallest column, extension included, is under three rows
 ## deep.
 ##
-## **An extended roof carries furniture too** (`roof_extension_rows`): the pool reaches onto the
+## **An extended roof carries furniture too** (`_roof_extension_rows`): the pool reaches onto the
 ## extension as anywhere else on the roof, so a building whose own roof is too shallow for an
 ## interior cell carries units once its extension gives it one. A covering building's pool is
 ## larger than its unextended roof's, so its whole layout is a different shuffle from the one the
@@ -1770,13 +1773,13 @@ static func _shuffle(cells: Array[Vector2i], rng: RandomNumberGenerator) -> void
 
 ## Hands each unit of the cached roof layout to the `_roof_drawer`, foot first: a unit stands
 ## centred across its span of columns with its foot on the floor line of its cell's row. A live
-## City supplies `roof_object_parent`, so each roof unit becomes a feet-anchored entity and
+## City supplies `_roof_object_parent`, so each roof unit becomes a feet-anchored entity and
 ## y-sorts against street actors. A standalone fixture parents the same visual-only objects to the
 ## building at their local feet; it does not retain a second rendering path for the direct PNGs.
 func _build_roof_layers() -> void:
 	_clear_roof_layers()
 	_clear_roof_objects()
-	var parent: Node2D = roof_object_parent if roof_object_parent != null else self
+	var parent: Node2D = _roof_object_parent if _roof_object_parent != null else self
 	for entry in _roof_furniture:
 		var cell: Vector2i = entry["cell"]
 		var span: int = entry["span"]

@@ -192,14 +192,15 @@ func _test_hold_is_for_a_straight_departure(t: TestRunner) -> void:
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
 
-## A held event is walked away by the runtime itself (`SceneRecipeRuntime._process()`, which walks
-## the events a recipe `hold`s once a drawn frame, `EventInstance.walk_on_by_hand()`): away from
-## her at its departure's pace, and moved outside its own step, so its move stands where it now
-## does (`MoveProposal.place()`): the crowd's separation pass reads the map's moves (`WorldMap.moves`),
-## not the node, and a move left behind would have the crowd step round a dog that is no longer
-## there. The dog is a real one, installed by a recipe's `hold` through the runtime's own `install()`
-## and `begin()` in a city of its own run's, turned away from her by its own departure
-## (`EventInstance.leave_for_a_completed_task()`); the walking is whatever real frames make of it.
+## A held event is walked away by the runtime itself (`SceneRecipeRuntime._process()`, which
+## walks the events a recipe `hold`s once a drawn frame, `EventInstance.walk_on_by_hand()`):
+## away from her at its departure's pace, and moved outside its own step, so its move stands
+## where it now does (`MoveProposal.place()`): the crowd's separation pass reads the map's moves
+## (`WorldMap.listed_moves()`), not the node, and a move left behind would have the crowd step
+## round a dog that is no longer there. The dog is a real one, installed by a recipe's `hold`
+## through the runtime's own `install()` and `begin()` in a city of its own run's, turned away
+## from her by its own departure (`EventInstance.leave_for_a_completed_task()`); the walking is
+## whatever real frames make of it.
 func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
 	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
@@ -259,8 +260,9 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 		t.check(dog.is_held_by_hand() and walked.length() > 0.0 and dog.position.distance_to(
 				player.global_position) > from.distance_to(player.global_position),
 				"the runtime walks the held dog on, farther from her: %s" % walked)
-		var placed := city.map.moves.keeping_their_course().any(func(move: MoveProposal) -> bool:
-				return move.stands_at() == dog.position and move.steps_to() == dog.position)
+		var placed := city.map.listed_moves().keeping_their_course().any(
+				func(move: MoveProposal) -> bool:
+					return move.stands_at() == dog.position and move.steps_to() == dog.position)
 		t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
 		RunCity.events(city).retire(dog)
 	runtime.free()

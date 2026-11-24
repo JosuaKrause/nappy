@@ -317,7 +317,7 @@ func _test_rect_collision_shape(t: TestRunner) -> void:
 func _test_a_built_building_carries_its_own_footprint_as_its_body(t: TestRunner) -> void:
 	var footprint := Vector2(96.0, 160.0)
 	var building := Building.new()
-	building.footprint = footprint
+	building.stand_on(Rect2i(), footprint, building.look_variant(), building.district(), building.height())
 	t.add_child(building)
 	# The body the physics engine reads: the building's collision child.
 	var body: RectangleShape2D = null

@@ -51,8 +51,8 @@ func _clear_line_starts(seed_value: int) -> void:
 	var tries := 0
 	while trials < CLEAR_TRIALS and tries < 5000:
 		tries += 1
-		var her_tile := Vector2i(rng.randi_range(0, map.size.x - 1),
-				rng.randi_range(0, map.size.y - 1))
+		var her_tile := Vector2i(rng.randi_range(0, map.size_in_tiles().x - 1),
+				rng.randi_range(0, map.size_in_tiles().y - 1))
 		if not map.is_walkable(her_tile):
 			continue
 		var her := map.tile_to_world(her_tile)
@@ -122,8 +122,8 @@ func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var open: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile) and not map.is_closed(tile) and not map.is_obstructed(tile) \
 					and not map.soft_sealed_tiles().has(tile):

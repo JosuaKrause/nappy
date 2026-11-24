@@ -54,9 +54,9 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			events.seed = hash("bodies-events:%d:%d" % [city_seed, day])
 			var consumed: Array[String] = []
 			RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
-			t.check(map.obstructed_tiles.size() > 0,
+			t.check(map.obstructed_tiles().size() > 0,
 					"seed %d day %d stands solid bodies somewhere to be asked about (%d tiles)"
-					% [city_seed, day, map.obstructed_tiles.size()])
+					% [city_seed, day, map.obstructed_tiles().size()])
 
 			var at := map.doorstep_world_position()
 			var crowd_rng := RandomNumberGenerator.new()

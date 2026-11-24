@@ -394,9 +394,9 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 ## The west end of a run of `length` front tiles on `map` (the sidewalk in front of a block's south
 ## face, where a poster crew stands), or (-1, -1) for none: the cells a building's front pastes on.
 static func _a_front(map: CityMap, length: int) -> Vector2i:
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var run := 0
-		for x in map.size.x:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.pavement_inward(tile) == Vector2i.UP \
 					and map.tile_at(tile + Vector2i.UP) == GameEnums.TileType.BUILDING:

@@ -77,7 +77,7 @@ func run(t: TestRunner) -> void:
 			# And the same sweep at once, for scale.
 			var started := Time.get_ticks_usec()
 			var at_once := WalkField.start(city.map, found,
-					Vector2i(city.map.day_record_version, city.map.obstruction_version))
+					Vector2i(city.map.day_record_version(), city.map.obstruction_version()))
 			var ground := WalkField.ground_for(city.map)
 			at_once.advance(city.map, ground, 1 << 30)
 			at_once.advance(city.map, ground, 1 << 30)
@@ -189,8 +189,8 @@ func _the_longest_route(city: City) -> Array[Vector2]:
 func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 	var map := city.map
 	var sidewalk: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not map.is_obstructed(tile) \
 					and director._reachable_from_home(tile):

@@ -11,8 +11,8 @@ extends RefCounted
 ## hands it to each day's city, which hands it down through `PosterWalls` to every `Building`
 ## that draws a sheet, so the day's city, rebuilt daily, does not compose them again. The sheets
 ## themselves are regions of the baked page, so the intact picture is a lookup in the library the
-## drawing front holds (`Building.atlas`), which it hands in with each ask; this object holds the
-## composed pictures and no library.
+## drawing front was equipped with (`Building.equip()`), which it hands in with each ask; this
+## object holds the composed pictures and no library.
 ##
 ## **Why the pixels and not a shader.** A mask on a canvas item needs either a material on the
 ## whole building (which would mask its walls too) or a node per torn sheet, and a composed

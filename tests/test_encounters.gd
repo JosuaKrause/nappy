@@ -326,8 +326,9 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	var watch := _watch()
 	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
 	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
-	t.check(dog.is_chasing() and dog.source().landed_ever < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
-			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.source().landed_ever)
+	var landed := dog.source().landed_ever()
+	t.check(dog.is_chasing() and landed < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
+			"the dog is chasing her and has landed less than the threshold (%.1f)" % landed)
 	t.check(_influenced == ["%d:charging_dog:seen" % DAY],
 			"the chase is an influence all the same (%s)" % [_influenced])
 	dog.free()
@@ -350,7 +351,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	t.check(not lorry.is_telegraphing() and lorry.is_lethal_at(inside),
 			"the lorry is now past its telegraph and the game's own test catches her")
 	_stand(watch, [lorry] as Array[EventInstance], inside)
-	t.check(_influenced.size() == 1 and lorry.source().landed_ever == 0.0,
+	t.check(_influenced.size() == 1 and lorry.source().landed_ever() == 0.0,
 			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
 	lorry.free()
 
@@ -367,7 +368,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
 	var held := Vector2(0.0, hold_reach - 2.0)
 	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
-	t.check(_influenced.size() == 1 and post.source().landed_ever == 0.0,
+	t.check(_influenced.size() == 1 and post.source().landed_ever() == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
 	manager.clear()
 	_free_manager(manager)

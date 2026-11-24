@@ -168,9 +168,10 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t: TestRunner)
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := _home_buildings_by_lot(short)
 	var other_by_lot := _home_buildings_by_lot(other)
-	for by_lot: Dictionary in [short_by_lot, other_by_lot]:
-		for lot: Rect2i in by_lot:
-			FrontReads.watch(by_lot[lot])
+	for lot: Rect2i in short_by_lot:
+		FrontReads.watch(short_by_lot[lot], short.atlas)
+	for lot: Rect2i in other_by_lot:
+		FrontReads.watch(other_by_lot[lot], other.atlas)
 	await UI.frames(t, 2)
 	t.check(short_by_lot.size() == 3 and other_by_lot.size() == 3,
 			"both seeds build all three home-block buildings (%d vs %d)"

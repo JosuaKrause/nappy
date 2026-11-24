@@ -16,6 +16,8 @@ const RUN_SEED := 2
 const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
+const FrontReads := preload("res://tests/front_reads.gd")
+const UI := preload("res://tests/ui_screens.gd")
 
 ## The diagnostics a builder's answer carries.
 func _diagnostics(result: Dictionary) -> Array[String]:
@@ -35,8 +37,8 @@ func run(t: TestRunner) -> void:
 	_test_the_stretch_is_the_only_ground(t, map, data)
 	_test_the_arrow_stays_on_the_stretch(t, map)
 	_test_saved_layout_is_independent(t, data)
-	_test_authored_building_values_drive_live_joins(t, data)
-	_test_authored_partial_courtyard_controls_live_tint(t)
+	await _test_authored_building_values_drive_live_joins(t, data)
+	await _test_authored_partial_courtyard_controls_live_tint(t)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
 	_test_the_draft_takes_whole_streets(t, data)
@@ -169,8 +171,8 @@ func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: C
 	var void_elsewhere := true
 	var cut_off := 0
 	var cut_off_was_ground := true
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.in_stretch(tile) != listed.has(tile):
 				as_listed = false
@@ -203,8 +205,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	raw_ground.resize(map.tiles_snapshot().size())
 	raw_ground.fill(WalkField.UNREACHED)
 	var start := Vector2i.ZERO
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			if start == Vector2i.ZERO and map.in_stretch(Vector2i(x, y)) \
 					and map.is_walkable(Vector2i(x, y)):
 				start = Vector2i(x, y)
@@ -216,8 +218,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	# target seeds the tiles within a tile of it, which would reach the stretch from the edge).
 	var through_void := Vector2i(-1, -1)
 	var nearest_hidden := INF
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if not map.is_cut_off(tile) or raw.length_at(tile) < 0 \
 					or raw.length_at(tile) >= nearest_hidden:
@@ -234,8 +236,8 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	# The stretch's tile farthest from her by the authored walk, which the context's walk puts
 	# farther than the hidden ground too.
 	var on_stretch := start
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.in_stretch(tile) and authored.length_at(tile) > authored.length_at(on_stretch):
 				on_stretch = tile
@@ -355,10 +357,12 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 		t.check(back != null and front != null,
 				"both pieces of the edited day-7 join stand in the live City")
 		if back != null and front != null:
+			FrontReads.watch(front, city.atlas)
+			await UI.frames(t, 2)
+			var drawn_extension := FrontReads.look(front).roof_extension()
 			var expected_extension: Array[int] = [4, 4]
-			t.check(back.wall_tiles() == 4 and front.roof_extension_rows == expected_extension,
-					"the front roof reaches the edited four-row rear wall: %s"
-					% [front.roof_extension_rows])
+			t.check(back.wall_tiles() == 4 and drawn_extension == expected_extension,
+					"the front roof reaches the edited four-row rear wall: %s" % [drawn_extension])
 		city.free()
 
 ## A stretch keeps the complete courtyard as hidden context but draws only its authored members.
@@ -396,10 +400,15 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 			t.check(tint_source.look_variant() == authored_variant
 					and visible_sibling.look_variant() == sibling_variant,
 					"each visible piece keeps its own authored variant")
-			t.check(tint_source.tint_variant == authored_variant
-					and visible_sibling.tint_variant == authored_variant,
+			FrontReads.watch(tint_source, city.atlas)
+			FrontReads.watch(visible_sibling, city.atlas)
+			await UI.frames(t, 2)
+			var source_wall := FrontReads.look(tint_source).colour_of(Building.WALL)
+			var sibling_wall := FrontReads.look(visible_sibling).colour_of(Building.WALL)
+			var authored_wall := Palette.building_wall(authored_variant)
+			t.check(source_wall == authored_wall and sibling_wall == authored_wall,
 					("the first visible piece controls the partial courtyard's live tint: %s, %s")
-					% [tint_source.tint_variant, visible_sibling.tint_variant])
+					% [source_wall, sibling_wall])
 		city.free()
 
 func _test_the_schema(t: TestRunner, data: Dictionary) -> void:
@@ -558,7 +567,7 @@ func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void
 	var edge := city.get_node_or_null("VoidEdge")
 	t.check(edge != null and edge.get_child_count() > 0, "and the void round the stretch is walled off")
 	var cracked := 0
-	for tile: Vector2i in map.rect_tiles(Rect2i(Vector2i.ZERO, map.size)):
+	for tile: Vector2i in map.rect_tiles(Rect2i(Vector2i.ZERO, map.size_in_tiles())):
 		if map.stretch_crack_at(tile) == null:
 			continue
 		var plain := GroundTiles.source_for(map, tile, 7)

@@ -82,27 +82,15 @@ Left, each its own design question:
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
   - A field only a test still reads outside its own class and the code that writes it
-    (`Building.roof_extension_rows`, `tint_variant`, `atlas`, `footprint`, `roof_object_parent`,
-    `SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
+    (`SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
     `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
     `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
-    city scene, the roof previews, the simulation builder, `main`) and goes with the
+    city scene, the simulation builder, `main`) and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
-- **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
-  read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
-  `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. *Read as* (the orchestrator's reading): they are converted with whatever
-  pass gives the blocked tiles an owner of their own. The fields the events read of
-  `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
-  asked through their methods (row 4b of `event-interface.md`).
-  `MoveProposal.yields` and `on_the_list`, `Stroller.atlas`, `carrying` and `facing`, and `DangerEdge.atlas` (the
-  screen-edge badge) are private: callers ask `gives_way()`, `is_on_the_list()`, `is_carrying()` and
-  `facing_direction()`, and the suites set her heading through `reset_at()` or by steering her with analog input;
-  `VisibleView.controls` is private, set through `use_cover()`.
 - **The lines other work touches** are converted with that work:
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's own pass (minty-quail's README, "The modules

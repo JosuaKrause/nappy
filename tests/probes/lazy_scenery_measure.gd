@@ -109,16 +109,22 @@ func _coverage(city: City) -> void:
 	var roof_layers := 0
 	for building in city.buildings():
 		building_nodes += _nodes(building)
-		for col in building.columns():
-			max_roof_north_overhang = maxf(max_roof_north_overhang,
-				(building.roof_extension_rows[col] if col < building.roof_extension_rows.size() else 0) * 32.0)
+		# How far the building's own scenery bounds reach north of its lot: the roof's extension and
+		# the two tiles of margin the bounds keep beyond it, which are taken off again.
+		var footprint_depth := map.tile_rect_to_world(building.lot_rect()).size.y
+		var reach := building.global_position.y - footprint_depth - building.residence().bounds().position.y
+		var extension_rows := maxi(0, roundi(reach / 32.0) - 2)
+		max_roof_north_overhang = maxf(max_roof_north_overhang, extension_rows * 32.0)
+		var extension: Array[int] = []
+		extension.resize(building.columns())
+		extension.fill(extension_rows)
 		# The roof furniture each stands feet-anchored on its roof cell (read off where its roof
 		# objects stand, the building made resident for the read and handed back as it was): its
 		# picture rises from the floor line of its row by the region's height at the equipment's
 		# scale, and how far that clears the lot's north edge (-footprint.y) is the overhang.
 		var was_resident := building.residence().is_resident()
 		building.residence().set_resident(true)
-		var units := RoofReads.units_of(building)
+		var units := RoofReads.units_of(building, extension, city.layers().node(DrawLayer.Layer.ENTITIES))
 		building.residence().set_resident(was_resident)
 		for unit: Dictionary in units:
 			roof_layers += 1
@@ -126,7 +132,7 @@ func _coverage(city: City) -> void:
 			var rise := picture.get_height() * RoofReads.equipment_scale(unit["texture"])
 			var foot := -float(building.wall_tiles() + (unit["cell"] as Vector2i).y) * 32.0
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
-					-(foot - rise) - building.footprint.y)
+					-(foot - rise) - footprint_depth)
 	print("LAZY_BOOT " + JSON.stringify({"seed": map.city_seed(),
 		"viewport_world": str(view), "home_block_world": str(home_rect),
 		"ground_prepared": cells.size(), "visible_ground_inside_home": boot_inside,
@@ -188,7 +194,7 @@ func _coverage(city: City) -> void:
 func _prepare_every_region(ground: SceneryGround, city: City) -> void:
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
 	var world := Rect2(Vector2.ONE * -depth,
-			Vector2(city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)
+			Vector2(city.map.size_in_tiles()) * 32.0 + Vector2.ONE * depth * 2.0)
 	for key in ground.keys_in(world):
 		ground.prepare(key)
 
@@ -210,7 +216,7 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 		layer.tile_set = source.tile_set()
 		# Deliberately outside the tree: no renderer/physics/quadrant processing in this experiment.
 		var lo := Vector2i(-CityMap.OUTSIDE_DEPTH_TILES, -CityMap.OUTSIDE_DEPTH_TILES)
-		var hi := city.map.size + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
+		var hi := city.map.size_in_tiles() + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
 		if mode == "nearby":
 			lo = Vector2i((nearby.position / 32).floor())
 			hi = Vector2i((nearby.end / 32).ceil())
@@ -219,7 +225,8 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 		for y in range(lo.y, hi.y):
 			for x in range(lo.x, hi.x):
 				var tile := Vector2i(x, y)
-				var inside := x >= 0 and y >= 0 and x < city.map.size.x and y < city.map.size.y
+				var extent := city.map.size_in_tiles()
+				var inside := x >= 0 and y >= 0 and x < extent.x and y < extent.y
 				var source_id := GroundTiles.source_for(city.map, tile, 1) if inside \
 					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:

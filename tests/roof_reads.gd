@@ -15,15 +15,17 @@ const TILE := Building.TILE
 ## (the neighbours it joins, as bits 0 to 3). A unit's span is the columns its picture covers at
 ## the scale it is drawn (`equipment_scale()`), a duct section always one, so the cell is read back
 ## from the object's place. A live `City` parents the objects under its entity layer
-## (`Building.roof_object_parent`), shared by every building, so an object is this building's when
-## that read lands on a whole cell inside its columns and its roof, extension included. Empty while
+## (the one handed to `Building.put_roof_objects_in()`), shared by every building, so an object is
+## this building's when that read lands on a whole cell inside its columns and its roof, extension
+## included. `parent` is the layer the suite knows the roof objects stand in (the city's entity
+## layer, or the building itself when nothing was handed one) and `extension` the rows the suite
+## handed the building (`Building.extend_roof_over()`) or read off its drawn roof. Empty while
 ## the building's scenery is not resident and for a roof with no interior.
-static func units_of(building: Building) -> Array[Dictionary]:
+static func units_of(building: Building, extension: Array[int], parent: Node) -> Array[Dictionary]:
 	var units: Array[Dictionary] = []
-	var parent: Node = building.roof_object_parent if building.roof_object_parent != null else building
 	var deepest := building.roof_tiles()
 	for col in building.columns():
-		deepest = maxi(deepest, building.roof_tiles() + extension_of(building, col))
+		deepest = maxi(deepest, building.roof_tiles() + extension_of(extension, col))
 	for child in parent.get_children():
 		if not child is Building.RoofObject:
 			continue
@@ -72,24 +74,24 @@ static func equipment_scale(texture: StringName) -> float:
 		return Building.ACCESS_ROOM_SCALE
 	return 1.0
 
-## The rows the roof is taller than the building's own at column `col`, as `City` sets them
-## (`Building.roof_extension_rows`), 0 where it sets none.
-static func extension_of(building: Building, col: int) -> int:
-	return building.roof_extension_rows[col] if col >= 0 and col < building.roof_extension_rows.size() else 0
+## The rows the roof is taller than the building's own at column `col`, as `City` hands them
+## (`Building.extend_roof_over()`), 0 where `extension` holds none.
+static func extension_of(extension: Array[int], col: int) -> int:
+	return extension[col] if col >= 0 and col < extension.size() else 0
 
 ## The roof rows of `building` from its own wall up to its tallest column, extension included.
-static func tallest_of(building: Building) -> int:
+static func tallest_of(building: Building, extension: Array[int]) -> int:
 	var tallest := building.roof_tiles()
 	for col in building.columns():
-		tallest = maxi(tallest, building.roof_tiles() + extension_of(building, col))
+		tallest = maxi(tallest, building.roof_tiles() + extension_of(extension, col))
 	return tallest
 
 ## Whether `cell` is on the roof interior ignoring the lips a step or seam draws: off the
 ## perimeter, from row 1 up to one short of its own column's top, extension included. A roof under
 ## three columns wide, or whose tallest column is under three rows deep, has none. Which interior
 ## cells a lip rules out is read off the front (`FrontReads.roof_edges_at()`), where a suite asks.
-static func on_the_interior(building: Building, cell: Vector2i) -> bool:
-	if building.columns() < 3 or tallest_of(building) < 3:
+static func on_the_interior(building: Building, extension: Array[int], cell: Vector2i) -> bool:
+	if building.columns() < 3 or tallest_of(building, extension) < 3:
 		return false
 	return cell.x >= 1 and cell.x <= building.columns() - 2 and cell.y >= 1 \
-			and cell.y < building.roof_tiles() + extension_of(building, cell.x) - 1
+			and cell.y < building.roof_tiles() + extension_of(extension, cell.x) - 1

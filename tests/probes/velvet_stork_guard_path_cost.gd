@@ -120,8 +120,8 @@ static func walk_away_from(map: CityMap, from: Vector2) -> PackedVector2Array:
 	var origin := map.world_to_tile(from)
 	var out := map.walk_field(origin)
 	var far := origin
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.distance_at(out, tile) > map.distance_at(out, far):
 				far = tile

@@ -70,8 +70,8 @@ func _test_calm_ground_fills_sleepiness_faster_than_the_street(t: TestRunner, ci
 	var map: CityMap = city.map
 	var calm := Vector2i(-1, -1)
 	var ordinary := Vector2i(-1, -1)
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if Tile.is_calm(map.tile_at(tile)):
 				# The largest lot, so a gain read off the wrong block count is not equal by luck.

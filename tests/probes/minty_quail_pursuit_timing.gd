@@ -294,8 +294,8 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map.size_in_tiles().y:
+		for x in city.map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
 					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):

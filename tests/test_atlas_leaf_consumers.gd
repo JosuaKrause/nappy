@@ -86,11 +86,11 @@ func _test_building_acquires_and_releases_buildings(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var a := Building.new()
-	a.atlas = atlas
+	a.equip(atlas, RoofDrawer.new(atlas), FrontDrawer.new(atlas))
 	t.add_child(a)
 	t.check(pages.held(&"buildings"), "the first building takes the page")
 	var b := Building.new()
-	b.atlas = atlas
+	b.equip(atlas, RoofDrawer.new(atlas), FrontDrawer.new(atlas))
 	t.add_child(b)
 	t.check(pages.loads(&"buildings") == 1,
 			"a second building shares the page rather than reading a second one")

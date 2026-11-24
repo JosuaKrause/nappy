@@ -54,9 +54,9 @@ var _built_from := -1
 func refresh(map: CityMap) -> void:
 	if map == null:
 		return
-	if map.day_record_version == _built_from and map.size_in_tiles() == _size:
+	if map.day_record_version() == _built_from and map.size_in_tiles() == _size:
 		return
-	_built_from = map.day_record_version
+	_built_from = map.day_record_version()
 	_size = map.size_in_tiles()
 	_cars = _flood(map)
 

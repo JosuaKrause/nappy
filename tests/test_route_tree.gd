@@ -655,8 +655,8 @@ func _test_off_the_tree_nothing_is_ahead_and_a_place_counts_as_ahead(t: TestRunn
 	var asked := 0
 	for planned in _days:
 		var off := Vector2.INF
-		for x in range(0, planned.map.size.x, 5):
-			for y in range(0, planned.map.size.y, 5):
+		for x in range(0, planned.map.size_in_tiles().x, 5):
+			for y in range(0, planned.map.size_in_tiles().y, 5):
 				if planned.tree.branches_on(Vector2i(x, y)).is_empty() \
 						and planned.tree.reachability_grid().node_at(Vector2i(x, y)) >= 0:
 					off = planned.map.tile_to_world(Vector2i(x, y))

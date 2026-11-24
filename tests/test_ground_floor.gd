@@ -18,12 +18,12 @@ extends RefCounted
 ## off `CityMap.is_walkable()`), that column draws no facade at all — no wall, no window at any
 ## floor, no storefront, no blank-wall plinth, no door, no portico, no fire escape. The building
 ## that covers it draws its own roof further north instead, up to exactly the covered building's
-## own roof line (`Building.roof_extension_rows`, `City.assign_roof_extensions()`) — roof meets
+## own roof line (`Building.extend_roof_over()`, `City.assign_roof_extensions()`) — roof meets
 ## roof, so nothing is drawn on a wall nobody can stand in front of. Every roll runs as far on a
 ## covered front as on an open one (the storefront pair, the portico, the door's own covered filter,
 ## the fire escape's drop in `_build_front()`); coverage
 ## decides only which of the answers gets painted, or in the door's case which reachable column it
-## lands on. `roof_extension_rows` itself is pure geometry, not a roll.
+## lands on. The extension itself is pure geometry, not a roll.
 ##
 ## **Every building here is set up by hand**, the way `City._spawn_buildings()` sets one up. What the
 ## real city hands its buildings (`is_on_home_block()`, the door span, `covered_ground_cols()` and
@@ -385,12 +385,6 @@ static func _pots_of(front: FrontReads) -> Dictionary:
 			pots[col][row] = picture == Building.FIRE_ESCAPE_A or picture == Building.FIRE_ESCAPE_PLATFORM_A
 	return pots
 
-
-
-## The rows the roof is taller than the building's own at column `col`, as `City` sets them
-## (`Building.roof_extension_rows`), 0 where it sets none.
-static func _extension_of(building: Building, col: int) -> int:
-	return building.roof_extension_rows[col] if col >= 0 and col < building.roof_extension_rows.size() else 0
 
 
 ## The reads of `building`'s front once it has been drawn: two frames pass first.
@@ -770,7 +764,7 @@ func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t:
 					"column %d: an uncovered column of the same front keeps its plain-wall ground floor" % col)
 	building.free()
 
-## `roof_extension_rows` is a geometry fact the city hands each building, per column: a column's
+## The roof extension is a geometry fact the city hands each building, per column: a column's
 ## roof is drawn that many rows taller than the building's own, and a building nobody told about one
 ## draws only its own roof.
 func _test_the_roof_is_as_tall_as_its_extension_per_column(t: TestRunner) -> void:
@@ -780,7 +774,7 @@ func _test_the_roof_is_as_tall_as_its_extension_per_column(t: TestRunner) -> voi
 		t.check(plain.roof_rows_at(col) == building.roof_tiles(),
 				"column %d: a building nobody told about an extension draws only its own roof" % col)
 	var extension: Array[int] = [0, 3, 0, 5]
-	building.roof_extension_rows = extension
+	building.extend_roof_over(extension)
 	var extended: FrontReads = await _see(t, building)
 	for col in building.columns():
 		t.check(extended.roof_rows_at(col) == building.roof_tiles() + extension[col],
@@ -796,7 +790,7 @@ func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(
 	var front_building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
 			Vector2(4 * Building.TILE, 5 * Building.TILE), 64.0)
 	t.check(front_building.roof_tiles() == 3, "the fixture front has three roof rows of its own")
-	front_building.roof_extension_rows = [0, 2, 2, 0]
+	front_building.extend_roof_over([0, 2, 2, 0])
 	var no_seams: Array[bool] = []
 	var extension_seams: Array[bool] = [false, true, false, false]
 	front_building.mark_courtyard_seams(extension_seams, no_seams)
@@ -837,22 +831,25 @@ func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(
 	front_building.free()
 	back_building.free()
 
-## The roof furniture reads `roof_extension_rows`, so a value set after the building is in the tree
-## rolls the same roof as one set before it — the setter rebuilds rather than only redrawing.
+## The roof furniture reads the roof extension, so one handed after the building is in the tree
+## rolls the same roof as one handed before it — `extend_roof_over()` rebuilds rather than only
+## redrawing.
 func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t: TestRunner) -> void:
 	var footprint := Vector2(6 * Building.TILE, 7 * Building.TILE)
 	var at := Vector2(4321.0, 8765.0)
+	var extension: Array[int] = [0, 4, 4, 4, 4, 0]
 	var early := Building.new()
 	early.stand_on(Rect2i(), footprint, 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
 	early.position = at
-	early.roof_extension_rows = [0, 4, 4, 4, 4, 0]
+	early.extend_roof_over(extension)
 	t.add_child(early)
 	var late := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, footprint, 64.0, false, at)
-	late.roof_extension_rows = [0, 4, 4, 4, 4, 0]
-	t.check(not RoofReads.units_of(early).is_empty() and RoofReads.units_of(late) == RoofReads.units_of(early),
+	late.extend_roof_over(extension)
+	var early_units := RoofReads.units_of(early, extension, early)
+	t.check(not early_units.is_empty() and RoofReads.units_of(late, extension, late) == early_units,
 			"an extension set after entering the tree rolls the same furniture as one set before")
 	var on_extension := 0
-	for unit: Dictionary in RoofReads.units_of(early):
+	for unit: Dictionary in early_units:
 		if (unit["cell"] as Vector2i).y >= early.roof_tiles():
 			on_extension += 1
 	t.check(on_extension > 0, "the fixture's furniture reaches onto the extension (%d)" % on_extension)
@@ -868,16 +865,19 @@ func _test_a_shallow_roof_carries_furniture_on_its_extension(t: TestRunner) -> v
 	var bare := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, 64.0, false, at)
 	t.check(bare.roof_tiles() < 3,
 			"the fixture's own roof is too shallow for an interior cell (%d rows)" % bare.roof_tiles())
-	t.check(RoofReads.units_of(bare).is_empty(),
+	var none: Array[int] = []
+	t.check(RoofReads.units_of(bare, none, bare).is_empty(),
 			"with nothing to cover, the shallow roof has no pool and carries nothing")
 	var covering := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, 64.0, false, at)
-	covering.roof_extension_rows = [0, 2, 4, 4, 2, 0]
+	var extension: Array[int] = [0, 2, 4, 4, 2, 0]
+	covering.extend_roof_over(extension)
 	var front: FrontReads = await _see(t, covering)
-	t.check(RoofReads.tallest_of(covering) >= 3,
+	var units := RoofReads.units_of(covering, extension, covering)
+	t.check(RoofReads.tallest_of(covering, extension) >= 3,
 			"the extended shallow roof is deep enough, at its tallest column, for interior cells")
-	t.check(not RoofReads.units_of(covering).is_empty(),
-			"the extended shallow roof carries at least one unit (%d)" % RoofReads.units_of(covering).size())
-	for unit: Dictionary in RoofReads.units_of(covering):
+	t.check(not units.is_empty(),
+			"the extended shallow roof carries at least one unit (%d)" % units.size())
+	for unit: Dictionary in units:
 		var cell: Vector2i = unit["cell"]
 		t.check(front.roof_edges_at(cell.x, cell.y) == 0,
 				"a unit on the extended shallow roof sits on a cell with no lip (%s)" % cell)
@@ -896,13 +896,13 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t: TestRunner) ->
 		var building := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL,
 				Vector2(6 * Building.TILE, lot_rows * Building.TILE), 64.0, false,
 				Vector2(1111.0 * lot_rows, 2222.0))
-		building.roof_extension_rows = extension
+		building.extend_roof_over(extension)
 		var front: FrontReads = await _see(t, building)
 		var expected: Array[Vector2i] = []
 		var lipped := 0
 		for row in range(1, building.roof_tiles() + 4 - 1):
 			for col in range(1, building.columns() - 1):
-				if row >= building.roof_tiles() + _extension_of(building, col) - 1:
+				if row >= building.roof_tiles() + RoofReads.extension_of(extension, col) - 1:
 					continue
 				if front.roof_edges_at(col, row) == 0:
 					expected.append(Vector2i(col, row))
@@ -915,7 +915,7 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t: TestRunner) ->
 		var reached := {}
 		for variant in 120:
 			building.draw_as(building.district(), variant, building.height())
-			for unit: Dictionary in RoofReads.units_of(building):
+			for unit: Dictionary in RoofReads.units_of(building, extension, building):
 				for cell: Vector2i in unit["cells"]:
 					reached[cell] = true
 		t.check(expected.all(func(cell: Vector2i) -> bool: return reached.has(cell))
@@ -924,10 +924,11 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t: TestRunner) ->
 		var drawn := 0
 		for child in building.get_children():
 			drawn += 1 if child is Building.RoofObject else 0
-		t.check(RoofReads.units_of(building).size() == drawn,
+		var standing := RoofReads.units_of(building, extension, building)
+		t.check(standing.size() == drawn,
 				"roof of %d rows: every roof object the building stands is read back as a unit" % roof)
 		found_units += drawn
-		for unit: Dictionary in RoofReads.units_of(building):
+		for unit: Dictionary in standing:
 			var cell: Vector2i = unit["cell"]
 			for step in int(unit["span"]):
 				t.check(expected.has(cell + Vector2i(step, 0)),

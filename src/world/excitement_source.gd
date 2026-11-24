@@ -129,10 +129,14 @@ func set_expected_total_gross(total: float) -> void:
 ## still inside `WINDOW`. Lazily grown: a source that has never landed anything keeps it empty.
 var _landed_history: Array = []
 
+## The running total behind `landed_ever()`.
+var _landed_ever := 0.0
+
 ## Every point this source has ever landed on her meter, never pruned — the running total
 ## `EncounterWatch` measures an encounter's share against, since `landed()` keeps only `WINDOW`
 ## and an encounter can be longer. Telemetry only: nothing that decides anything reads it.
-var landed_ever := 0.0
+func landed_ever() -> float:
+	return _landed_ever
 
 ## Called once, on the first point this source lands on her, or not at all while unset: how a
 ## creator hears that a source reached her without this source knowing who asked
@@ -154,7 +158,7 @@ func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
 		_landed_history.append([clock(), points])
-		landed_ever += points
+		_landed_ever += points
 		if _on_first_landing.is_valid() and not _first_landing_told:
 			_first_landing_told = true
 			_on_first_landing.call()
