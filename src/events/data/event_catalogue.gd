@@ -461,7 +461,7 @@ static func neighbor_heading_home() -> EventDef:
 	return draft.build()
 
 ## A permanent feature of the calmest ground in the city, and free: the swing frame it draws is
-## `map.playgrounds`' own prop (`City._dress_blocks`), not this row.
+## `map.playground_rects()`' own prop (`City._dress_blocks`), not this row.
 ##
 ## **Free because a one-block park otherwise has nowhere left to settle her.** outer radius
 ## (150) reaches past half of a 256px park block, so a playground with any real cost denied

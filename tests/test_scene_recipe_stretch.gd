@@ -459,7 +459,7 @@ func _test_the_draft_takes_whole_streets(t: TestRunner, data: Dictionary) -> voi
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, witness)
-	var segment := witness.network.by_key(Vector3i(5, 5, 1))
+	var segment := witness.street_network().by_key(Vector3i(5, 5, 1))
 	var drafted := _drafted(t, city, data, [Vector2i(segment.tile_rect().get_center())], [])
 	var ground := _listed(drafted)
 	var whole := true

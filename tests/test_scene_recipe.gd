@@ -103,7 +103,8 @@ func _test_station_pins(t: TestRunner) -> void:
 	accepted = RecipeCityBuilder.build(input)
 	t.check(_errors(accepted).is_empty(), "eligible authored pair overrides industrial preference: %s" % [accepted.errors])
 	if _errors(accepted).is_empty():
-		t.check(accepted.map.power_station == Rect2i(2, 1, 2, 1),
+		var map: CityMap = accepted.map
+		t.check(map.power_station_blocks() == Rect2i(2, 1, 2, 1),
 				"explicit station footprint survives candidate ranking")
 
 func _test_fixture(t: TestRunner) -> void:

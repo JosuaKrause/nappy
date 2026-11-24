@@ -48,7 +48,7 @@ static func build(data: Dictionary) -> Dictionary:
 		if not Rect2i(Vector2i.ZERO, Tuning.CITY_BLOCKS).has_point(block):
 			errors.append("layout.block: pin outside the block lattice")
 	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
-	# every city's map holds (`CityMap.network`).
+	# every city's map holds (`CityMap.street_network()`).
 	var lattice := StreetNetwork.new()
 	for pin: Dictionary in choices.get("dead_ends", []):
 		var key := Vector3i(int(pin["segment"][0]), int(pin["segment"][1]), int(pin["segment"][2]))

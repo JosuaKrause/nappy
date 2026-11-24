@@ -158,7 +158,7 @@ class _Route extends Corridor:
 ## `ROUTE_SIDEWALK_ROWS`.
 static func _alley_map() -> CityMap:
 	var map := StreetMap.full()
-	map.home_rect = HOME
+	map.lay_home(HOME)
 	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
 	for y in range(origin.y, origin.y + Tuning.BLOCK_SIZE):
 		for x in range(origin.x, origin.x + Tuning.BLOCK_SIZE):

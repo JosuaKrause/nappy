@@ -68,8 +68,8 @@ var _day: DayController
 
 ## Every `ROAD` tile in the map, built once — the lattice itself never changes within a run, only
 ## which blocks are calm and which streets are closed today, neither of which moves a `ROAD` tile.
-## Kept out of `_blocked_for_phase()`'s own per-call cost, which only has `closed_tiles` (small,
-## and genuinely different every day) left to copy.
+## Kept out of `_blocked_for_phase()`'s own per-call cost, which only has `closed_tile_set()`
+## (small, and genuinely different every day) left to copy.
 var _road_tiles: Dictionary = {}
 
 ## The rig's planner over the city's `map` and its `events`, for her (`player`), today's
@@ -349,22 +349,22 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 
 # ----------------------------------------------------------------- planning ---
 
-## Today's `closed_tiles`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
+## Today's `closed_tile_set()`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
 ## (`CityMap.soft_sealed_tiles()`), the ground a street door's boom would take her on
 ## (`_gate_ground()`), the ground under a door body that has just let her out
 ## (`_latched_door_bodies()`) and the ground round a precinct's posts (`_post_tiles()`), which block
 ## a plan whatever else it asks, plus `_road_tiles` while `sidewalk_only`; `hazards` (see
 ## `_hazard_tiles()`) and `avoid` (ground the tile grid calls open but she cannot stand in the
 ## middle of or should keep off, see `plan()`) are added on top of all of that. Built fresh every
-## call since `closed_tiles`, every live obstruction's own footprint and every live hazard's own
-## position genuinely change day to day and frame to frame, and a stale copy would let a plan walk
-## through today's own barrier, a body parked since the last check, or yesterday's guard.
-## `CityMap.obstructed_tiles` (`src/city/ city_map.gd`) is what the rig's re-plan check reads —
-## folding it in here too is what makes a replan actually route around the thing it just detected,
-## rather than recomputing the identical path onto the same obstruction and re-detecting it
-## forever; a plan that never looked at `obstructed_tiles` at all was the shape of that bug.
-## `hazards` is taken as a dictionary rather than computed here so a caller can drop the one tile
-## it is actually trying to reach from it first — see `_cheapest()`.
+## call since `closed_tile_set()`, every live obstruction's own footprint and every live
+## hazard's own position genuinely change day to day and frame to frame, and a stale copy would
+## let a plan walk through today's own barrier, a body parked since the last check, or
+## yesterday's guard. `CityMap.obstructed_tiles` (`src/city/ city_map.gd`) is what the rig's
+## re-plan check reads — folding it in here too is what makes a replan actually route around the
+## thing it just detected, rather than recomputing the identical path onto the same obstruction
+## and re-detecting it forever; a plan that never looked at `obstructed_tiles` at all was the
+## shape of that bug. `hazards` is taken as a dictionary rather than computed here so a caller
+## can drop the one tile it is actually trying to reach from it first — see `_cheapest()`.
 ##
 ## **A soft seal (`skip`/`scaffolding`, `moving_van`) shuts its pavement to a walker in every plan,
 ## not only while `sidewalk_only`.** `WalkerStrategy.cannot_go_on()` refuses

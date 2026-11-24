@@ -107,7 +107,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -
 			t.check(site.foot().distance_to(home) >= home_margin,
 					"seed %d: '%s' is not on the home street" % [seed_value, site.id()])
 			var seen := {}
-			for block in map.calm_blocks:
+			for block in map.calm_blocks_now():
 				var anchor := map.anchor_of(block)
 				if seen.has(anchor):
 					continue

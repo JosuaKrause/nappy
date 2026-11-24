@@ -74,10 +74,7 @@ Left, each its own design question:
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
   by class: the city map's (`CityMap`) in the scene recipes' draft and runtime (`stretch`,
   `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets; its
-  `block_plans` is private, asked through `plans_by_block()`. The dawn asks the map's
-  methods; `network`, `main_road`, `calm_blocks`, `closed_tiles`, `power_station`,
-  `boundary_wall_at_a` and `playgrounds` stay public for the city suites only, as `[kept]` lines
-  until those suites test one module each (`tests-one-module.md`). `RoadClosure.segment` is
+  `block_plans` is private, asked through `plans_by_block()`. `RoadClosure.segment` is
   private: every reader asks `street_key()`, `street_words()`, `mouth_rects()`, `cause_centre()`
   or `covers_tile()`. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
@@ -85,8 +82,7 @@ Left, each its own design question:
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
   - A field only a test still reads outside its own class and the code that writes it
-    (`CityMap.home_rect`, `courtyard_rects`,
-    `Building.roof_extension_rows`, `tint_variant`, `atlas`, `footprint`, `roof_object_parent`,
+    (`Building.roof_extension_rows`, `tint_variant`, `atlas`, `footprint`, `roof_object_parent`,
     `SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
     `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
     `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the

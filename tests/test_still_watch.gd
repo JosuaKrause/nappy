@@ -273,7 +273,7 @@ func _signalled_map() -> CityMap:
 ## The signalled junction `row` blocks down the main road. At row 0 `TrafficSignals._offset()`
 ## answers zero, so `elapsed` alone drives the phase with nothing else to account for.
 func _main_junction(map: CityMap, row: int) -> Vector2i:
-	return Vector2i(map.main_road, row)
+	return Vector2i(map.main_road_corridor(), row)
 
 ## The tile `offset` tiles into a junction's box from its corner. Offset (1, 1) sits on both
 ## corridors' sidewalk band (`SIDEWALK_WIDTH` is 2) and (3, 3) on both corridors' road band, the same

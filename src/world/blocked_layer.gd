@@ -53,7 +53,7 @@ func lay_posts(at: Array[Vector2i]) -> void:
 		_posts[tile] = true
 
 ## Today's closed ground as the record itself, tile -> true, not a copy: what a closure writes into
-## and a flood reads (`CityMap.closed_tiles`).
+## and a flood reads (`CityMap.closed_tile_set()`).
 func todays_closed_tiles() -> Dictionary:
 	return _closed
 

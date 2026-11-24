@@ -1566,7 +1566,7 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 	return ends
 
 ## The courtyard's inner end from a mark at `at` in its passage: the centre of the courtyard tile
-## farthest from the mark, in the courtyard whose rect (`CityMap.courtyard_rects`) holds `entrance`,
+## farthest from the mark, in the courtyard whose rect (`CityMap.courtyard_lots()`) holds `entrance`,
 ## the first courtyard tile past the passage — "as far from the mark as the courtyard allows".
 ## Ties go to the first tile in row order, so the answer is the same every time it is asked.
 ## `Vector2.INF` when no courtyard rect holds `entrance`.
@@ -3691,8 +3691,8 @@ static func _mast_reach() -> float:
 
 ## The ground every sweep of the arrow starts from (`WalkField.advance()`): each tile
 ## `WalkField.UNREACHED`, or `WalkField.BLOCKED` where she cannot walk right now — today's
-## closures (`CityMap.closed_tiles`, the fenced park's ground included), the soft seals shut to
-## walkers (`soft_sealed_tiles`) and the tile under every stationary solid body standing
+## closures (`CityMap.closed_tile_set()`, the fenced park's ground included), the soft seals
+## shut to walkers (`soft_sealed_tiles`) and the tile under every stationary solid body standing
 ## (`obstructed_tiles`), which holds what was put down after dawn too: a body rigged onto her route,
 ## the task's own rider, a roadblock put on her route after the mark. What that record leaves out
 ## she walks through here as she does in the street: a mobile row, which moves out of her way, and a

@@ -56,7 +56,7 @@ func _mix_on(day: int) -> void:
 			map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 		for segment: StreetNetwork.Segment in region_plan.door_segments():
 			map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-		for segment: StreetNetwork.Segment in map.network.around_blocks(
+		for segment: StreetNetwork.Segment in map.street_network().around_blocks(
 				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 		var boundary := {}
@@ -100,7 +100,7 @@ func _mix_on(day: int) -> void:
 				continue
 			placed += 1
 			var tile := map.world_to_tile(plan.placed_at())
-			var segment := map.network.segment_containing(tile)
+			var segment := map.street_network().segment_containing(tile)
 			var view := corridor.view_of(segment) if segment else \
 					corridor.view_of_ground(Rect2i(tile, Vector2i.ONE))
 			var row: Dictionary = counts[view]

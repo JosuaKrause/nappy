@@ -317,7 +317,7 @@ enum Condition {
 }
 
 ## Whether this building is the city's power station — see the section above, and
-## `CityMap.power_station`. `_station_door_col` and `_station_yard_cols` say where its parts are;
+## `CityMap.power_station_blocks()`. `_station_door_col` and `_station_yard_cols` say where its parts are;
 ## all three are handed over at once by `dress_as_power_station()`, and asked by
 ## `is_power_station()`.
 var _power_station := false
@@ -364,12 +364,13 @@ var _is_home_building := false
 ## about one — the same "no such point" sentinel the touch controls' direct heading setter reads as
 ## "her own position" and `home_arrow.gd`'s `target` already use, and `_column_under_door()`'s
 ## overlap test always answers false against it, since nothing is ever greater than `INF`. Set by `City._spawn_buildings()` for
-## every building on the home block, from the same `map.home_rect` centre `City._spawn_home()`
-## places the door sprite at: the door is a separate sprite standing in front of whatever the wall
-## would otherwise draw, so the column(s) behind it (`_column_under_door()`) draw plain wall
-## instead of a window regardless of `_is_home_building`. Meaningless off `_is_home_building`, since
-## nobody else ever draws a ground-floor window to begin with. A geometry fact, not a roll, so
-## handing it over only needs a redraw.
+## every building on the home block, from the same `map.home_tile_rect()` centre
+## `City._spawn_home()` places the door sprite at: the door is a separate sprite standing in
+## front of whatever the wall would otherwise draw, so the column(s) behind it
+## (`_column_under_door()`) draw plain wall instead of a window regardless of
+## `_is_home_building`. Meaningless off `_is_home_building`, since nobody else ever draws a
+## ground-floor window to begin with. A geometry fact, not a roll, so handing it over only needs
+## a redraw.
 var _door_span := Vector2.INF
 
 ## Hands the building the world x span the home door's sprite covers (`City._spawn_buildings()`'s

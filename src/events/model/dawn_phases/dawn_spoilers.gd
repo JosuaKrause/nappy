@@ -19,7 +19,7 @@ extends DawnPhase
 ## area whose exclusion the guarantees allow on a day in act III or later (`Tuning.ACT_START_DAYS`),
 ## fenced for the rest of that act and never chosen again. *(PLAYTEST-140: "doing it for one park,
 ## sure, more towards the later stages of the game once but not for regular".)* It is never in
-## `map.calm_blocks`, so it is skipped here by the same test that skips anywhere no longer calm —
+## `map.calm_blocks_now()`, so it is skipped here by the same test that skips anywhere no longer calm —
 ## its fence is the whole of what it shows, and a spoiler behind it would be noise on the pavement
 ## beside a park nobody can enter.
 ##
@@ -61,7 +61,7 @@ extends DawnPhase
 ## have to fight — an act's worth of days plus one in reserve.
 ##
 ## Silent for anywhere she did not settle, that is no longer calm, or that is `CityMap.fenced_park_block()`
-## today — the last because it is left out of `map.calm_blocks`, and said again here so the reason
+## today — the last because it is left out of `map.calm_blocks_now()`, and said again here so the reason
 ## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
 ## is exactly what stands in it.
 ##

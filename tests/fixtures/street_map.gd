@@ -18,7 +18,7 @@ const MAIN_ROAD := 5
 ## The streets of a full-size map, with the main road on vertical corridor `main_road`.
 static func full(main_road := MAIN_ROAD) -> CityMap:
 	var map := CityMap.new()
-	map.main_road = main_road
+	map.lay_main_road(main_road)
 	map.index_posts()
 	StreetLayout.lay(map)
 	return map

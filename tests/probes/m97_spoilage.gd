@@ -71,7 +71,7 @@ func _reproduce_zero_density_visits() -> void:
 			var settle_state := CityState.new()
 			settle_state.begin_day(map.plans_by_block(), settle_day)
 			map.repaint(settle_state)
-			var candidates := map.calm_blocks.duplicate()
+			var candidates := map.calm_blocks_now().duplicate()
 
 			# The city as it is the next day, when the roll fires.
 			var state := CityState.new()
@@ -88,7 +88,7 @@ func _reproduce_zero_density_visits() -> void:
 					if not map.is_closed(tile):
 						open_tiles.append(tile)
 
-				var still_calm := block in map.calm_blocks
+				var still_calm := block in map.calm_blocks_now()
 				if not still_calm:
 					not_calm_count += 1
 					continue

@@ -292,7 +292,7 @@ func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t: Tes
 	var director: ResistanceDirector = fixture.director
 	t.check(state.purpose_of(_city.map.plans_by_block(), park) == GameEnums.BlockPurpose.REQUISITIONED,
 			"reaching the swing takes the park")
-	t.check(not (park in _city.map.calm_blocks), "and the city stops counting it as calm")
+	t.check(not (park in _city.map.calm_blocks_now()), "and the city stops counting it as calm")
 	var rect := ClosurePlanner.calm_area_rect(_city.map, park)
 	var area := _city.map.tile_rect_to_world(rect)
 	var inside := area.get_center()
@@ -433,14 +433,18 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 				first = tile
 			if tile.x + tile.y > last.x + last.y:
 				last = tile
+		var walled: Array[Vector2i] = []
 		var tile := first - along
 		while tile != last + along * 2:
-			_city.map.closed_tiles[tile + outward * 2] = true
+			walled.append(tile + outward * 2)
 			tile += along
 		for end: Vector2i in [first - along, last + along]:
-			_city.map.closed_tiles[end + outward] = true
+			walled.append(end + outward)
 			if not rect.has_point(end):
-				_city.map.closed_tiles[end] = true
+				walled.append(end)
+		var closures: Array[RoadClosure] = _city.streets().closures().duplicate()
+		closures.append(FakeClosure.new(walled))
+		_city.map.close_streets(closures)
 		side.pocket = _city.map.tile_to_world((first + last) / 2 + outward)
 		side.outward = Vector2(outward)
 	var fixture := _at_the_swing(t, Callable(), true, seal)

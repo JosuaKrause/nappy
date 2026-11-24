@@ -212,11 +212,11 @@ func _test_every_street_off_the_chains_is_sealed(t: TestRunner) -> void:
 				sealed_at[map.world_to_tile(placement.placed_at())] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
-		var hers := map.network.segment_containing(
+		var hers := map.street_network().segment_containing(
 				map.world_to_tile(FinalePlanner.service_exit_world_position(map)))
 		var open_and_unsealed := 0
 		var closed := 0
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if not map.has_street(segment.key()):
 				continue
 			if SealPlanner.runs_through(segment, plan.open_cells):
@@ -1158,10 +1158,10 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 				run.calendar().day_rng(run.header().day(), "finale"), _city_spec(),
 				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
-		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
+		var hers := map.street_network().segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
 		for band_plan in bands:
-			var street := map.network.segment_containing(map.world_to_tile(band_plan.placed_at()))
+			var street := map.street_network().segment_containing(map.world_to_tile(band_plan.placed_at()))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
 		t.check(hers != null and on_her_street <= 1,
@@ -1511,7 +1511,7 @@ func _test_the_service_exit_is_beside_the_home_block(t: TestRunner) -> void:
 		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block_coordinate()))
 		var beside := tile.x == lot.position.x - 1 or tile.x == lot.end.x
 		t.check(beside, "seed %d: it is on one of the home lot's two side streets" % seed_value)
-		var spine := map.main_road * CityMap.period()
+		var spine := map.main_road_corridor() * CityMap.period()
 		var on_the_spine := tile.x >= spine and tile.x < spine + Tuning.STREET_WIDTH
 		t.check(not on_the_spine, "seed %d: and not on the main road's own frontage" % seed_value)
 
@@ -1708,7 +1708,7 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 	var counted := Vector4i.ZERO
 	for tile in _kerb_tiles(city, day):
 		var source := GroundTiles.source_for(city.map, tile, day)
-		var segment := city.map.network.segment_containing(tile)
+		var segment := city.map.street_network().segment_containing(tile)
 		var wanted := segment != null and on_the_walk.has(segment.key())
 		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
 				else source):

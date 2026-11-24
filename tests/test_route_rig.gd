@@ -970,7 +970,7 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t: TestRunner) -> vo
 	_city.map.set_tile(spoiled_tile, original)
 
 ## **Day 12: once the swing is reached, `calm` is the day's other calm area, not the swing's own
-## park.** The park leaves `CityMap.calm_blocks` the moment it is taken, but its grass stays grass
+## park.** The park leaves `CityMap.calm_blocks_now()` the moment it is taken, but its grass stays grass
 ## while the police cordon it off (`ParkCordon`), so all of it still reads calm tile by tile — and
 ## she is standing in it, so the nearest calm tile by walking is in it. On an ordinary morning that
 ## park is calm ground like any other; taken here the way `Happenings.take_the_park()` takes it,
@@ -1034,7 +1034,8 @@ func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> 
 	var kept := {}
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		kept[tile] = true
-	for tiles: Dictionary in [map.closed_tiles, map.soft_sealed_tiles(), map.obstructed_tiles]:
+	for tiles: Dictionary in [map.closed_tile_set(), map.soft_sealed_tiles(),
+			map.obstructed_tiles]:
 		for tile: Vector2i in tiles:
 			kept[tile] = true
 	kept.erase(here)

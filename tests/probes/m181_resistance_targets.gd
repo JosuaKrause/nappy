@@ -68,7 +68,7 @@ func run(t: TestRunner) -> void:
 					blockers.append(plan)
 			var grid := ReachabilityGrid.build(city.map)
 			var blocked := EventScheduler.blocked_by(city.map, blockers)
-			var reached := grid.flood([city.map.home_rect.position], blocked)
+			var reached := grid.flood([city.map.home_tile_rect().position], blocked)
 			var legal := 0
 			var open := 0
 			var reach := 0

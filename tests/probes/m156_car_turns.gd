@@ -76,7 +76,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var segment_owner := {}
 	for index in bodies.size():
 		var body: Dictionary = bodies[index]
-		var segment := map.network.segment_containing(body["at"])
+		var segment := map.street_network().segment_containing(body["at"])
 		if segment != null and map.held_streets().has(segment.key()):
 			segment_owner[segment.key()] = index
 
@@ -115,7 +115,7 @@ func _classify(map: CityMap, agent: CrowdAgent, city_seed: int, day: int,
 		cause = "closed tile"
 	elif agent._segment_is_shut(tile):
 		cause = "held segment"
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		index = int(segment_owner.get(segment.key(), -1)) if segment else -1
 		how = "held"
 	elif map.is_obstructed(tile):

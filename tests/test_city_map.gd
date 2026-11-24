@@ -28,7 +28,7 @@ const SEEDS: Array[int] = [4242, 1, 77]
 const SCENE := "res://scene-recipes/task-07-package.json"
 
 ## What the member comparison leaves out, with `copy()`'s doc saying why for each.
-const _NOT_COMPARED: Array[String] = ["world", "_navigator", "moves", "separation", "network",
+const _NOT_COMPARED: Array[String] = ["world", "_navigator", "moves", "separation", "_network",
 		"_tiles_by_type"]
 
 ## How far apart the tiles are that `_answers()` asks one tile at a time, each way.

@@ -119,7 +119,7 @@ enum Source {
 	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted and recurring rows.
 	SEAL,             ## `SealPlanner.plan_day`, before the scheduler ever runs.
 	CALM_GROUND,      ## `DawnSpoilers` — asked only the routes' ground (`RouteGroundRule`).
-	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tiles` — a tile barrier, not a row.
+	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tile_set()` — a tile barrier, not a row.
 	REGION,           ## `RegionPlanner.plan_day`'s wall and door bodies.
 	OTHER,            ## ambient, scars, the taught-run pursuer — everything else `build_day` adds.
 }
@@ -288,7 +288,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-	for segment: StreetNetwork.Segment in map.network.around_blocks(
+	for segment: StreetNetwork.Segment in map.street_network().around_blocks(
 			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
@@ -384,7 +384,7 @@ func _tag_new(planned: Array[EventPlan], provenance: Dictionary, before: int,
 func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 		position: Vector2) -> bool:
 	var tile := map.world_to_tile(position)
-	var segment := map.network.segment_containing(tile)
+	var segment := map.street_network().segment_containing(tile)
 	if not segment or corridor.depth(segment.tile_rect().position) != 0:
 		return false
 	for band: Rect2i in Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal):

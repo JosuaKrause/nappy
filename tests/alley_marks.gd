@@ -94,14 +94,14 @@ static func courtyard_of(map: CityMap, tile: Vector2i) -> Rect2i:
 	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			return Rect2i()
-	for court in map.courtyard_rects:
+	for court in map.courtyard_lots():
 		if court.has_point(tile):
 			return court
 	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 		var at := tile
 		while map.tile_at(at) == GameEnums.TileType.ALLEY:
 			at += step
-		for court in map.courtyard_rects:
+		for court in map.courtyard_lots():
 			if court.has_point(at):
 				return court
 	return Rect2i()
