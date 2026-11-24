@@ -17,7 +17,7 @@ func _errors(result: Dictionary) -> Array[String]:
 static func _walkers_by_corridor(crowd: Crowd) -> Dictionary:
 	var counts := {}
 	for agent in crowd.agents():
-		if agent.kind == CrowdAgent.Kind.CAR:
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
 			continue
 		var parts := LANE_KEYS.parts_of(agent.lane_key())
 		var key := "%s%d" % ["v" if parts[0] else "h", parts[1]]
@@ -64,7 +64,7 @@ func run(t: TestRunner) -> void:
 	var cars := 0
 	var lane_directions := {}
 	for agent in RunCity.crowd(city).agents():
-		if agent.kind == CrowdAgent.Kind.CAR:
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
 			cars += 1
 			continue
 		# The agent's own lane key says its axis, corridor, lane and heading.

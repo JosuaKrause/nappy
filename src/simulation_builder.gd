@@ -130,11 +130,8 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 
 	var crowd := Crowd.new()
 	crowd.name = "Crowd"
-	crowd.skip_agent_drawing = _skip_crowd_drawing
-	crowd.skip_motion = _skip_crowd_motion
-	crowd.view = _crowd_view
-	crowd.timing = _crowd_timing
-	crowd.atlas = _atlas
+	crowd.leave_out(_skip_crowd_drawing, _skip_crowd_motion)
+	crowd.equip(_crowd_view, _crowd_timing, _atlas)
 	crowd.use_bus(_bus)
 	simulation.add_child(crowd)
 	crowd.setup(world, map, signals, streets, navigator)

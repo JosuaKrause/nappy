@@ -23,13 +23,6 @@ src/city/city.gd across
 src/city/city.gd kind
 src/city/city.gd piece
 
-# [Crowd] src/crowd/crowd.gd
-src/simulation_builder.gd atlas
-src/simulation_builder.gd skip_agent_drawing
-src/simulation_builder.gd skip_motion
-src/simulation_builder.gd timing
-src/simulation_builder.gd view
-
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd sign_offset
 

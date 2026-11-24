@@ -208,6 +208,14 @@ func _her_excitement_rises(t: TestRunner, baby: Baby, own: WorldContext) -> bool
 	loud.free()
 	return rose
 
+## How many of `agents` stand somewhere other than `at`, their places a while ago.
+func _how_many_moved(agents: Array[CrowdAgent], at: Array[Vector2]) -> int:
+	var moved := 0
+	for i in agents.size():
+		if agents[i].global_position != at[i]:
+			moved += 1
+	return moved
+
 ## `main` is the one place the configuration is read: the baby, the city it builds and the parts
 ## its builder stands in the city are handed plain values, and none reads a flag of its own.
 func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
@@ -246,9 +254,8 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		# (`main._simulation_builder()`).
 		var city := Boot.city(booted.main)
 		t.check(city != null and RunCity.events(city).world.surroundings().draws()
-				and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist"))
-				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
-				"and the events and the crowd it stands are handed theirs")
+				and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
+				"and the events it stands are handed theirs")
 		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
 		# that nothing but a win ends (`DayController.set_invincible()`), so a walk can take its time.
 		if invincible and city != null:
@@ -259,6 +266,23 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 				await Boot.press_title(t, booted.main)
 			if t.get_tree().paused:
 				await Boot.press_continue(t, booted.main)
+			# `--skip motion`: the crowd the builder stood stands where the day placed it while
+			# the game runs, and walks once it is let (the control, so the ticks did run it).
+			var crowd := RunCity.crowd(city)
+			var agents := crowd.agents()
+			var at: Array[Vector2] = []
+			for agent in agents:
+				at.append(agent.global_position)
+			await PhysicsTicks.pass_ticks(t, 30)
+			var walked := _how_many_moved(agents, at)
+			t.check(not agents.is_empty() and walked == 0,
+					"the crowd is handed --skip motion: it has not moved (%d of %d moved)"
+					% [walked, agents.size()])
+			crowd.leave_out(false, false)
+			await PhysicsTicks.pass_ticks(t, 30)
+			walked = _how_many_moved(agents, at)
+			t.check(walked > 0,
+					"and walks once it is let (%d of %d moved)" % [walked, agents.size()])
 			var her := Boot.player(booted.main)
 			# Far from the station on day 1, with no sabotage done: the lights go out only if the
 			# blackout was handed `--blackout`.
@@ -322,7 +346,6 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	t.check(not RunCity.events(city).world.surroundings().draws()
 			and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"the events")
-	t.check(RunCity.crowd(city).skip_motion and RunCity.crowd(city).skip_agent_drawing, "the crowd")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
 	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
 			city.map.power_station_blocks()))
@@ -353,10 +376,10 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	for i in agents.size():
 		if agents[i].global_position != at[i]:
 			moved += 1
-	t.check(moved == 0, "and the crowd's physics frames under its skip_motion move none of them (%d moved)" % moved)
+	t.check(moved == 0, "and the crowd's physics frames under --skip motion move none of them (%d moved)" % moved)
 	# The control: the same crowd without the flags does move and draw on the same frames, so the
 	# frames above really ran the crowd and would have drawn it.
-	RunCity.crowd(city).skip_motion = false
+	RunCity.crowd(city).leave_out(true, false)
 	for agent in agents:
 		agent.skip_drawing(false)
 		agent.queue_redraw()
