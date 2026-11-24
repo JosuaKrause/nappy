@@ -1,8 +1,9 @@
 class_name AgentLook
 extends RefCounted
 ## How a crowd member looks: the picture it is drawn in, the state that picture keeps, and what the
-## redraw gate reads of it. `WalkerLook` and `CarLook` answer for their kind, and `CrowdAgent.kind`
-## installs one beside the kind's `LaneStrategy`, so the agent never asks which kind it is to draw.
+## redraw gate reads of it. `WalkerLook` and `CarLook` answer for their kind, and a `CrowdAgent`
+## installs one beside the kind's `LaneStrategy` when it takes its kind, so the agent never asks
+## which kind it is to draw.
 ##
 ## **A look reads the agent and never writes it.** It holds the state only the picture has (the
 ## sector last drawn, a walker's stride, a car's travelled ground) and reads the agent's lane state,

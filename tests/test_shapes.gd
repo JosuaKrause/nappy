@@ -363,8 +363,7 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t: TestRunner)
 ## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
 ## fails, the strike box is not this commit's to change — report it instead.
 func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t: TestRunner) -> void:
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	var shape: GroundShape = car.lane().strategy().ground_shape()
 	car.free()
 	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,

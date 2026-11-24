@@ -82,7 +82,7 @@ func _measure_cost(t: TestRunner) -> void:
 	var live_cars := 0
 	var sample: CrowdAgent = null
 	for agent in RunCity.crowd(city).agents():
-		if agent.kind != CrowdAgent.Kind.CAR:
+		if agent.lane().kind() != CrowdAgent.Kind.CAR:
 			continue
 		live_cars += 1
 		if sample == null:

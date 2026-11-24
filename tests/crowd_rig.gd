@@ -696,8 +696,7 @@ func _test_the_strike_box_never_crosses_the_kerb(t: TestRunner) -> void:
 ## that it does not jump at a sector boundary. Sampled the same way `Sprites.draw_standing` itself
 ## builds the rect, rather than by rasterising a frame.
 func _test_the_car_picture_agrees_with_its_strike_box(t: TestRunner) -> void:
-	var agent := CrowdAgent.new()
-	agent.kind = CrowdAgent.Kind.CAR
+	var agent := CrowdAgent.new(CrowdAgent.Kind.CAR)
 
 	# A front or back view's own bottom edge is the car's south end, so it belongs
 	# `CAR_STRIKE_HALF_LENGTH` south of the node — exactly where the strike box's own south edge
@@ -1872,19 +1871,19 @@ func _test_a_car_can_honour_the_headway_it_keeps(t: TestRunner) -> void:
 			% [Tuning.CAR_GAP_MIN, Tuning.CAR_STRIKE_HALF_LENGTH * 2.0])
 
 ## `--skip motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked"):
-## the crowd's `skip_motion` set steps nobody on its physics tick, and with it off the same tick
-## moves the agents as it always did.
+## the crowd left out of motion (`Crowd.leave_out()`) steps nobody on its physics tick, and with
+## it off the same tick moves the agents as it always did.
 func _test_the_motion_skip_stops_an_agent_in_its_tracks(t: TestRunner) -> void:
 	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(1))
 	var agent: CrowdAgent = RunCity.crowd(_city).agents()[1]
 	var at := agent.global_position
-	RunCity.crowd(_city).skip_motion = true
+	RunCity.crowd(_city).leave_out(false, true)
 	await _let_the_physics_run(2.0)
 	t.check(agent.global_position == at,
 			"under --skip motion the crowd's tick steps nobody: an agent has not moved after two "
 			+ "seconds of ticks (%s)" % agent.global_position)
-	RunCity.crowd(_city).skip_motion = false
+	RunCity.crowd(_city).leave_out(false, false)
 	await _let_the_physics_run(2.0)
 	t.check(agent.global_position != at,
 			"with the flag off the tick steps it as it always does (%s -> %s)"
@@ -2288,7 +2287,7 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 		if ticks % 30 != 0:
 			return false
 		for agent in RunCity.crowd(_city).agents():
-			if agent.kind != CrowdAgent.Kind.CAR or not agent.travelling_vertically() \
+			if agent.lane().kind() != CrowdAgent.Kind.CAR or not agent.travelling_vertically() \
 					or not _city.map.is_main_road(true, CrowdLanes.corridor_at(agent.position.x)):
 				continue
 			totals.samples += 1
