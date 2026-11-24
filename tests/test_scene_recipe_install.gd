@@ -394,9 +394,9 @@ func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
 					return at
 	return Vector2.INF
 
-## Whether the install refuses a recipe's loudspeaker at `at` on `day`, as its own error names
-## the mast (`_mast_install_errors()`): false when the install fails for another reason or not
-## at all.
+## Whether the install takes a recipe's loudspeaker at `at` on `day`: false only when its errors
+## name the mast (`_mast_install_errors()`), so an install that fails for another reason counts as
+## taking it, and the case that a mast stands asserts no error at all.
 func _mast_installs(t: TestRunner, context: Dictionary, day: int, at: Vector2, shut := "") -> bool:
 	return not "\n".join(_mast_install_errors(t, context, day, at, shut)).contains("event mast fails")
 
