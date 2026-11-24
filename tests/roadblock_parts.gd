@@ -14,18 +14,22 @@ var departure: EventDeparture
 ## The event whose figure they move.
 var _host: EventInstance
 
+## The parts of the event `host`, whose figure they move; `on()` builds them.
+func _init(host: EventInstance) -> void:
+	_host = host
+
 ## The parts of `row` standing on `band` over `map`, told where she is by `where`, with `host`
 ## put in `t`'s tree so that its body is down. Free it with `release()`.
 static func on(t: Node, row: EventDef, band: Vector2, map: WorldMap,
 		where: WhereSheIs) -> RoadblockParts:
-	var parts := RoadblockParts.new()
 	var surroundings := EventSurroundings.new().on(map).hearing(where)
-	parts._host = EventInstance.new()
-	parts._host.setup(row, band, PackedVector2Array(), Vector2.RIGHT, surroundings)
-	t.add_child(parts._host)
-	parts._host.set_process(false)
+	var host := EventInstance.new()
+	host.setup(row, band, PackedVector2Array(), Vector2.RIGHT, surroundings)
+	t.add_child(host)
+	host.set_process(false)
+	var parts := RoadblockParts.new(host)
 	var composed := EventBehaviours.compose(row, where.handle_for_an_event(),
-			EventInstance.Figure.new(parts._host), surroundings.map(), surroundings.navigator(),
+			EventInstance.Figure.new(host), surroundings.map(), surroundings.navigator(),
 			EventInstance.mover_for(row), surroundings.trace(), surroundings.lights(),
 			MoveProposal.new())
 	parts.post = composed.barrier_post()
