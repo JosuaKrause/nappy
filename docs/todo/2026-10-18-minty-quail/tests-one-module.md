@@ -33,8 +33,9 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 -speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose, -frosty-tapir and
 -golden-finch and -coral-elk), and what each lists is what is left of it:
 
-1. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
-   and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
+1. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`'s mast install cases (its
+   director cases are `test_resistance_recipe_task`'s, on a map with no city),
+   `test_scene_recipe_stretch` and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
    `City`, so a stand-in can be handed in;
 2. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
