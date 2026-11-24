@@ -19,12 +19,13 @@ the design names. The five `[own file only]` lines stay until the pull request t
   Stage. The finale's mark-over-her-head case starts a walk (`start_recipe()`), streams through
   `stream_around()` (one check added: the band is out of the world once she is away), and asks a
   `WarningBoard` of its own with the manager's tick off.
-- `basement_walk_rig.gd` steps the manager with real physics ticks (`pass_ticks_faster`, delta `STEP`);
-  `walk()` is awaited, and the parked probe `basement_meter.gd` awaits it.
+- `basement_walk_rig.gd` keeps its hand steps: its two reads of the manager's `streaming` stay until the
+  pull request that renames them with the probes'.
 
-**Measured.** One basement walk (`walk(0, 0, false)`, 5.3 s of game time) gives the same peak (3.8),
-seconds and held list on both; it takes 15 ms hand-stepped and about 2.2 s on real ticks, so the parked
-probe, which makes hundreds of walks, runs far longer than before and was not run to the end.
+**Measured.** One basement walk (`walk(0, 0, false)`, 5.3 s of game time) takes 15 ms hand-stepped and
+about 2.2 s on real ticks. The parked probe `basement_meter.gd` makes 1100 walks (about 96,000 s of
+game time in arrivals alone): 297 s on main, an estimated 12 hours on real ticks, far past the design's
+fallback rule, so the rig stays hand-stepped.
 
-**Set aside.** Real ticks for the roadblock Stage (no player, nothing for a tick to do); keeping the
+**Set aside.** Real ticks for the basement rig (the 12 hours above); real ticks for the roadblock Stage (no player, nothing for a tick to do); keeping the
 rig on the spawner (a hand-in only a test would use).

@@ -9,7 +9,8 @@ extends RefCounted
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
 ## handed the same one (`EventWorld.surroundings()`). An event keeps what it read of it when it was
 ## set up, so a later hand-in reaches only the events made after it; what an event asks each time
-## follows a later hand-in, which is only where a protest points (`pointing_protests_with()`). It
+## follows a later hand-in: where a protest points (`pointing_protests_with()`) and the pelican rig
+## the spawner asks on every roll (`rigging_the_pelican()`). It
 ## hears where she is through a handle on the one `WhereSheIs`, which the manager tells each tick.
 ## The game hands it nothing after the manager is set up but where a protest points, since the
 ## resistance that answers is built over the events.

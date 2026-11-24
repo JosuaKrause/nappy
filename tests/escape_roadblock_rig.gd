@@ -147,13 +147,14 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 			return false
 	return true
 
-## A world of its own for events to stand in, and the manager that puts them there: the world
+## A world of its own for events to stand in, and a manager over it: the world
 ## node a city or a building is to its map (`WorldContext`, which the map is handed as its own), a
 ## run of its own and an `EventManager` over them, its physics off so nothing steps but the caller.
-## A `EventPlan` is handed to the manager's streaming (`EventStreaming.add()`, then `stream_in()`, as
-## the manager's `stream_around()` does when she comes near it), so the spawner makes the
-## instance the way a day's is made: on the map, in the world's entity layer, with its look's nodes
-## to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
+## The Stage's own `EventStreaming` and `EventSpawner` over that manager's world put each plan in
+## (`EventStreaming.add()`, then `stream_in()`, as the manager's `stream_around()` does when she
+## comes near it), so the spawner makes the instance the way a day's is made, and `event_of()` is
+## the Stage's to answer, never the manager's. An instance stands on the map, in the world's entity
+## layer, with its look's nodes to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
 ## the plans recorded on the map and leaves the map as the stage found it, every plan stood out of
 ## the world.
 class Stage extends RefCounted:
