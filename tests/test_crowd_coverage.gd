@@ -150,8 +150,9 @@ func _test_a_uniform_population_and_the_ordinary_day(t: TestRunner) -> void:
 	for key: String in counts:
 		if key != main_key:
 			ordinary_max = maxi(ordinary_max, counts[key])
-	t.check(main_count > 0 and ordinary_max > 0 and main_count < ordinary_max * 2,
-			"uniform pedestrian selection does not concentrate the field on the main road")
+	t.check(main_count > 0 and ordinary_max > 0 and main_count < ordinary_max * 1.25,
+			("uniform pedestrian selection does not concentrate the field on the main road (%d of "
+			+ "the busiest other corridor's %d)") % [main_count, ordinary_max])
 	for frame in 30:
 		crowd.step(1.0 / 30.0)
 	var moving := 0
