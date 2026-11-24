@@ -38,9 +38,9 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 ## with no standing bodies (a beat is judged among the walk's whole plan, the seals and the wall
 ## included), its `roomiest` setting off (the first tile no rule refuses: nothing ranks a tile
 ## by room) and a route kept on its location's run (`DawnDraw.ROUTES_STAY_ON_THE_RUN`); the
-## locations, the walk's or, for a walk that carries none (a scene recipe's), laid out here; the
-## tiles a row may stand on (`SitedGround`) over `fronts`, the fronts a crew may paste (empty
-## for a walk with no city).
+## locations, the walk's or, for a walk that carries none (a rig's recipe walk), laid out
+## here; the tiles a row may stand on (`SitedGround`) over `fronts`, the fronts a crew may paste
+## (empty for a walk with no city).
 static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int) -> WalkSiting:
 	var the_tree := tree if tree else RouteTree.for_day(map, day)

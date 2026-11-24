@@ -65,7 +65,8 @@ class Planned extends FakeEventManager:
 		return CalmAreas.of(map)
 	## Overrides EventManager.start_recipe.
 	func start_recipe(_plans: Array[EventPlan], _spec: DaySpec, _day: int, _focus: Vector2,
-			_calm: CalmAreas = null, _ground: RowGround = null) -> void:
+			_calm: CalmAreas = null, _ground: RowGround = null, _tree: RouteTree = null,
+			_locations: DayLocations = null) -> void:
 		pass
 	## Overrides EventManager.plans.
 	func plans() -> Array[EventPlan]:

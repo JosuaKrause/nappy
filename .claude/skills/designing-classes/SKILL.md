@@ -79,6 +79,7 @@ fresh, which also makes it keep to the current principles. A member only tests r
 **writing-tests**' to rule on (the kept groups of
 `tools/test_only_members.txt`), so "nothing reaches" does not delete one a test holds on purpose, and
 the exception above, for a minimal fix ordered before the refactor, does not reach this rule.
+`tools/dead_code.py` lists the candidates.
 
 **An event is asked through one consistent interface** (inbox #1173 in gray-dolphin). A caller uses it without
 knowing its details: it never reads an event's settings or fields to work out an answer the event can

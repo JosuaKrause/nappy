@@ -48,8 +48,9 @@ class Plan extends RefCounted:
 	func placements() -> Array[EventPlan]:
 		return _placements
 
-	## The walk the placements are stated against (`RouteSource`): the day's route tree, the
-	## escape's two chains (`FinalePlanner.Plan`), or null in the building.
+	## The walk the placements are stated against (`RouteSource`): the day's route tree, a scene
+	## recipe's (the one its rows were placed against, null for a rig's), the escape's two
+	## chains (`FinalePlanner.Plan`), or null in the building.
 	func walk() -> RouteSource:
 		return _walk
 
@@ -73,8 +74,10 @@ class Plan extends RefCounted:
 	func use_calm(calm: CalmAreas) -> void:
 		_calm = calm
 
-	## The day's locations, as the dawn's context laid them out (`DawnContext.locations()`), which
-	## the walk hands day 13's task (`WalkEvents.locations()`); null on a day that laid none out.
+	## The day's locations, as the dawn's context laid them out (`DawnContext.locations()`) or a
+	## scene recipe laid them out for its rows (`EventManager.start_recipe()`), which the walk
+	## hands day 13's task and every siting made as she walks (`WalkEvents.locations()`); null
+	## on a day that laid none out and for a rig's recipe walk.
 	var _locations: DayLocations = null
 
 	## The day's locations. See `_locations`.

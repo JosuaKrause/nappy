@@ -112,8 +112,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    - **The events' interface is built**: a body, a hold on her, a lethal field, a pursuit and the
      rest are parts an event has, and every caller asks through methods (`docs/EVENTS.md`
      describes it; its records are listed by `tools/decisions.sh minty-quail`). What is left of
-     its track is `re-derived-cases.md`, a scene's walk working out its route tree and locations
-     again, and `system-map.md` once the redesign is complete.
+     its track is `system-map.md`, once the redesign is complete.
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each

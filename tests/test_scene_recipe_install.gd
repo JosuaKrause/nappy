@@ -46,6 +46,7 @@ func run(t: TestRunner) -> void:
 	_test_a_column_scene_hands_the_happenings_the_dressings_fronts(t, built, data, own_run)
 	_test_the_scene_runs_under_the_spec_it_is_handed(t, built, data, own_run)
 	_test_the_walk_is_handed_the_scenes_ground(t, built, data, own_run)
+	_test_the_walk_is_handed_the_scenes_tree_and_locations(t, built, data, own_run)
 	_test_an_oversized_uniform_population_is_refused(t)
 	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
 
@@ -321,6 +322,53 @@ func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary
 		t.check(kept_off, "and the ground it is handed, made on the map as the install held it, "
 				+ "offers none of it")
 	_free(stood)
+
+## **The scene's route tree and locations are handed to the walk**: `start_recipe()` is handed
+## the tree the day's streets hold (the one the rows' corridor is made of) and the locations
+## laid out over that corridor, so a siting made as she walks grows and lays out neither again;
+## a scene with no route tree is handed neither.
+func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built: Dictionary,
+		data: Dictionary, own_run: RunState) -> void:
+	var stood := _stand(built, data, own_run)
+	var made: SceneWorld = stood[0]
+	var runtime: SceneRecipeRuntime = stood[1]
+	var errors := runtime.install(made.world, _day_spec(own_run))
+	t.check(errors.is_empty() and made.streets.route_tree() != null
+			and made.events.recipe_tree() == made.streets.route_tree(),
+			"the walk is handed the route tree the day's streets hold: %s" % [errors])
+	var handed := made.events.recipe_locations()
+	var over_its_corridor := DayLocations.lay_out(made.map,
+			Corridor.of(made.streets.route_tree()))
+	var with_no_corridor := DayLocations.lay_out(made.map, Corridor.of(null))
+	var views_handed := _views_of(handed)
+	var views_over_corridor := _views_of(over_its_corridor)
+	t.check(views_over_corridor != _views_of(with_no_corridor),
+			"fixture: on this scene a layout with no corridor tells the views differently")
+	t.check(not views_handed.is_empty() and views_handed == views_over_corridor,
+			"and the locations are the ones laid out over its corridor, with its views (%d)"
+			% views_handed.size())
+	_free(stood)
+	# A scene with no route tree lays its locations out under a corridor that answers none, so
+	# the walk is handed neither.
+	var treeless := _stand(built, data, own_run)
+	var bare: SceneWorld = treeless[0]
+	bare.streets.begin_day(null, null, [] as Array[RoadClosure])
+	var bare_runtime: SceneRecipeRuntime = treeless[1]
+	var bare_errors := bare_runtime.install(bare.world, _day_spec(own_run))
+	t.check(bare_errors.is_empty() and bare.events.recipe_tree() == null
+			and bare.events.recipe_locations() == null,
+			"a scene with no route tree hands the walk neither: %s" % [bare_errors])
+	_free(treeless)
+
+## The view each of `locations`' locations has of the routes, in the order they are laid out:
+## what a layout over a corridor tells that one with no corridor does not. Empty for none.
+func _views_of(locations: DayLocations) -> Array[int]:
+	var views: Array[int] = []
+	if locations == null:
+		return views
+	for location in locations.all():
+		views.append(location.view())
+	return views
 
 ## **An oversized city-wide uniform population is refused, not truncated**: the crowd placed fewer
 ## walkers than the recipe's area and multiplier asked for (8,444 of the 8,540 asked, read off the

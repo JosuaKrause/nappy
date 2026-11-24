@@ -46,6 +46,8 @@ var _fake_recipe_day := -1
 var _fake_recipe_focus := Vector2.INF
 var _fake_recipe_calm: CalmAreas
 var _fake_recipe_ground: RowGround
+var _fake_recipe_tree: RouteTree
+var _fake_recipe_locations: DayLocations
 var _fake_recipes_started := 0
 ## The live instance of each plan `start_recipe()` put in the world, by plan.
 var _fake_live := {}
@@ -91,13 +93,16 @@ func retire(instance: EventInstance) -> void:
 ##
 ## Overrides EventManager.start_recipe.
 func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int, focus: Vector2,
-		calm: CalmAreas = null, ground: RowGround = null) -> void:
+		calm: CalmAreas = null, ground: RowGround = null, tree: RouteTree = null,
+		locations: DayLocations = null) -> void:
 	_fake_recipe_plans = plans
 	_fake_recipe_spec = spec
 	_fake_recipe_day = day
 	_fake_recipe_focus = focus
 	_fake_recipe_calm = calm
 	_fake_recipe_ground = ground
+	_fake_recipe_tree = tree
+	_fake_recipe_locations = locations
 	_fake_recipes_started += 1
 	for plan in plans:
 		var instance := EventInstance.new()
@@ -156,6 +161,14 @@ func recipe_calm() -> CalmAreas:
 ## The ground the last `start_recipe()` was handed, null for none.
 func recipe_ground() -> RowGround:
 	return _fake_recipe_ground
+
+## The route tree the last `start_recipe()` was handed, null for none.
+func recipe_tree() -> RouteTree:
+	return _fake_recipe_tree
+
+## The locations the last `start_recipe()` was handed, null for none.
+func recipe_locations() -> DayLocations:
+	return _fake_recipe_locations
 
 ## What each `start_recipe_route()` was handed, in order: `marbles`, `pre_bag`, `owed`,
 ## `first_after`.
