@@ -272,6 +272,10 @@ func _test_a_stretch_recipes_runtime_refusals(t: TestRunner) -> void:
 	place.setup.route_bag = {"marbles": ["burning_building"]}
 	t.check("\n".join(_errors.errors_of(t, place)).contains("not a row the director sites"),
 			"a marble names a row the director sites that day")
+	var mapped := data.duplicate(true)
+	mapped.setup.route_bag = {"marbles": ["pigeon_flock"]}
+	t.check("\n".join(_errors.errors_of(t, mapped)).contains("not a row the director sites"),
+			"a row available that day but placed on the map is not one the director sites")
 	var asked := data.duplicate(true)
 	(asked.playback.observations as Array).append(
 			{"tick": 1, "subject": "mark", "condition": "crowd", "walkers": 1})
