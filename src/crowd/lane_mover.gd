@@ -709,8 +709,8 @@ func beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 		return at.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
 	return view.beyond_every_view(at, room, _field.looking_at())
 
-## How far past a body's centre its picture may reach, for `beyond_every_view()`: two tiles, more than
-## a car's half length and its shadow.
+## How far past a body's centre its picture may reach, for `beyond_every_view()`: two tiles,
+## more than a car's half length and its shadow.
 const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for

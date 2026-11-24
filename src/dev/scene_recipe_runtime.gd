@@ -770,8 +770,8 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var going := -1.0 if column.direction == "north" else 1.0
 	var happening := ResistanceHappenings.new()
 	happening.use_trace(_trace)
-	happening.setup(map, _run, _world.events(), _world.streets(), null, null, null, null,
-			_world.events().spawn_siting())
+	happening.setup(map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
+			null, null, _world.events().spawn_siting())
 	happening.start_day(_run.header().day())
 	if not happening.column_fits_at(at, going):
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
@@ -1333,7 +1333,8 @@ func activity_snapshot() -> Dictionary:
 		var key := "visible_cars" if agent.is_car() else "visible_walkers"
 		result[key] += 1
 		if not agent.is_car():
-			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.lane().corridor_index()]
+			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h",
+					agent.lane().corridor_index()]
 			if not result.walker_streets.has(street):
 				result.walker_streets[street] = {"walkers": 0, "moving": 0}
 			result.walker_streets[street].walkers += 1
