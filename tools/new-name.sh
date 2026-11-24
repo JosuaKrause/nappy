@@ -14,9 +14,9 @@
 # a pair is used once across docs/todo, docs/decisions, docs/review and docs/playtests, whatever
 # the date, since two things spoken "busy-badger" would be one name for two things. The names the
 # open pull requests' branches already hold count as used too (`gh pr list`, then `git ls-tree`
-# of each head, taken from the head `gh` reports and never from a stale origin ref), so two branches cut from the same main do not draw the same name; with no `gh`,
-# no network or an unreadable branch the script says so on stderr and goes on with the tree it
-# runs in.
+# of each head, taken from the head `gh` reports and never from a stale origin ref), so two
+# branches cut from the same main do not draw the same name; with no `gh`, no network or an
+# unreadable branch the script says so on stderr and goes on with the tree it runs in.
 #
 # A decision and a review item usually take the name of the entry they come from (`--entry`), as
 # `<entry name>.md`; when that is taken, a second one is named `<entry name>-<adjective>-<animal>.md`,
@@ -41,9 +41,9 @@ usage: tools/new-name.sh [--help|-h] [--date YYYY-MM-DD] [--entry NAME] [--prior
 
 Makes a name <date>-<adjective>-<animal> unused across docs/todo, docs/decisions, docs/review and
 docs/playtests, writes the thing it names with a heading and the date, and prints the name.
-A name that an open pull request's branch holds (read with `gh pr list` and `git ls-tree`) counts
-as used; when `gh`, the network or a branch cannot be read, a note on stderr says so and the
-name is checked against this tree alone.
+A name that an open pull request's branch holds (read with `gh pr list` and `git ls-tree`)
+counts as used; when `gh`, the network or a branch cannot be read, a note on stderr says so and
+the name is checked against this tree alone.
 
   kind        todo       docs/todo/<name>/README.md, the entry's context file, opening with its
                          band line (`priority: later` unless --priority says otherwise)
@@ -138,10 +138,11 @@ done
 folders=("$root/docs/todo" "$root/docs/decisions" "$root/docs/review" "$root/docs/playtests")
 
 # The names the open pull requests' branches hold, one "<folder>/<name>" per line
-# (decisions/<name>), or nothing. A branch that cannot be read is skipped with a note, so the draw works offline.
+# (decisions/<name>), or nothing. A branch that cannot be read is skipped with a note, so the
+# draw works offline.
 remote_taken=""
 load_remote_names() {
-    local heads head oid cross ref tree private
+    local heads head oid cross ref have tree private
     git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || {
         echo "new-name.sh: not a git checkout; names on open pull requests are not checked" >&2
         return 0
@@ -168,20 +169,23 @@ load_remote_names() {
         # the ref is deleted after the read.
         ref="origin/$head"
         private=""
-        if [[ "$(git -C "$root" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null)" != "$oid" ]]; then
+        have="$(git -C "$root" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null)"
+        if [[ "$have" != "$oid" ]]; then
             if git -C "$root" rev-parse --verify --quiet "$oid^{commit}" >/dev/null 2>&1; then
                 ref="$oid"
             else
                 private="refs/new-name/$$"
-                if git -C "$root" fetch --quiet --no-write-fetch-head origin "+refs/heads/$head:$private" >/dev/null 2>&1; then
+                if git -C "$root" fetch --quiet --no-write-fetch-head origin \
+                    "+refs/heads/$head:$private" >/dev/null 2>&1; then
                     ref="$private"
                 else
                     ref=""
                 fi
             fi
         fi
-        if [[ -z "$ref" ]] || ! tree="$(git -C "$root" ls-tree -r --name-only "$ref" -- docs/todo \
-            docs/decisions docs/review docs/playtests 2>/dev/null)"; then
+        if [[ -z "$ref" ]] \
+            || ! tree="$(git -C "$root" ls-tree -r --name-only "$ref" -- docs/todo \
+                docs/decisions docs/review docs/playtests 2>/dev/null)"; then
             echo "new-name.sh: cannot read branch $head; skipped" >&2
             [[ -n "$private" ]] && git -C "$root" update-ref -d "$private" 2>/dev/null
             continue
@@ -189,7 +193,8 @@ load_remote_names() {
         [[ -n "$private" ]] && git -C "$root" update-ref -d "$private" 2>/dev/null
         remote_taken="$remote_taken
 $(printf '%s\n' "$tree" \
-    | sed -n -E 's#^docs/(todo|decisions|review|playtests)/([^/]+).*#\1/\2#p' | sed 's/\.md$//')"
+    | sed -n -E 's#^docs/(todo|decisions|review|playtests)/([^/]+).*#\1/\2#p' \
+    | sed 's/\.md$//')"
     done <<EOF
 $heads
 EOF
@@ -242,11 +247,13 @@ draw_pair() {
 }
 
 # <base> when $1/<base>.md is free here and on the open branches, otherwise
-# <base>-<adjective>-<animal> with a pair no name uses: a further file of an entry is named, never numbered.
+# <base>-<adjective>-<animal> with a pair no name uses: a further file of an entry is named,
+# never numbered.
 free_name() {
     local folder="$1" base="$2" pair
     if [[ ! -e "$folder/$base.md" ]] \
-        && ! printf '%s\n' "$remote_taken" | grep -Fx "$(basename "$folder")/$base" >/dev/null; then
+        && ! printf '%s\n' "$remote_taken" \
+            | grep -Fx "$(basename "$folder")/$base" >/dev/null; then
         printf '%s\n' "$base"
         return 0
     fi
