@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 	built.data = data
 	var packed: PackedScene = load("res://scenes/world/city.tscn")
 	var city: City = packed.instantiate()
-	city.run = own_run
+	city.use_run(own_run)
 	t.add_child(city)
 	RunCity.build(city, built.map)
 	var state := CityState.new()

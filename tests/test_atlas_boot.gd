@@ -422,9 +422,8 @@ func _rng(tag: String) -> RandomNumberGenerator:
 
 func _city(t: TestRunner, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.atlas = atlas
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED), null, false, atlas)
 	return city
 
 ## A hand-built rig, the shape `tests/test_stroller.gd` uses: a `Camera2D` named for the lookup

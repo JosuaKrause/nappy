@@ -87,7 +87,7 @@ func _build_city_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	_city = CITY_SCENE.instantiate()
-	_city.run = run
+	_city.use_run(run)
 	t.add_child(_city)
 	RunCity.build(_city, MapCache.of(seed_value))
 	return run

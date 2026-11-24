@@ -436,7 +436,7 @@ the extent are omitted. This exterior is neither a generated street nor evidence
 route guarantee. The data retains its context for dependent validation, while gameplay queries
 outside the authored bounds see only the fallback surface.
 
-A scripted scene's city is built frame-locked (`City.scenery_frame_locked`, from the run's
+A scripted scene's city is built frame-locked (`City.schedule_scenery()` is handed the lock, from the run's
 configuration, `RunConfig.plays_the_recipe_scripted()`). Scenery preparation
 then completes the camera's whole loading area synchronously and ignores the ordinary CPU
 preparation budget, including during a zoom. Free play leaves ordinary streaming enabled.

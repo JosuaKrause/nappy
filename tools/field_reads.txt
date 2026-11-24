@@ -8,15 +8,7 @@
 # conflicts here takes either side and runs --write.
 
 # [City] src/city/city.gd
-src/main.gd atlas
-src/main.gd frame_timing
-src/main.gd ground_mode
-src/main.gd ground_recipe
 src/main.gd map
-src/main.gd run
-src/main.gd scenery_frame_locked
-src/main.gd skip_shadows
-src/main.gd trace
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
@@ -32,12 +24,3 @@ src/simulation_builder.gd view
 
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd sign_offset
-
-# [SceneryResidency] src/city/scenery_residency.gd
-src/city/city.gd frame_locked
-
-# [StillWatch] src/dev/still_watch.gd
-src/main.gd trace
-
-# [TouchControls] src/ui/touch_controls.gd
-src/main.gd rotated
