@@ -14,7 +14,8 @@ it once in `RowGround`; a scene recipe still scanned for itself in three places:
   `recipe_placement()` (a required parameter), to `_finale_placement()` and to
   `EventManager.start_recipe()` (an optional one), which puts it on the walk's plan; the walk's
   events and `_ground_of_the_walk()` read it. A rig that hands none keeps the fallback.
-- `re-derived-cases.md` leaves the queue: every case it listed derives its fact once.
+- The ground case of `re-derived-cases.md` is closed; what is left of it is a scene's walk working
+  out its route tree and locations again (a review of this pull request found it).
 
 **Noted.**
 - Made inside the witness bracket, the ground keeps the answers the install judged while she walks a
