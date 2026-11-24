@@ -55,13 +55,13 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GivenRun.completed_steps(city.run, done)
+	GivenRun.completed_steps(run, done)
 	# A read mark's alley is remembered and never chosen again; each walk's run starts with none.
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	resistance.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()

@@ -94,7 +94,7 @@ static func _arrow_tile(director: ResistanceDirector, map: CityMap) -> Vector2i:
 
 func _the_arrow(t: TestRunner, day: int, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
-	var director := _read_the_mark(t, city, day, seed_value)
+	var director := _read_the_mark(t, city, _run, day, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
 	var label := "D2_PARITY arrow day %d seed %d" % [day, seed_value]
 	var step := director.current_step()
@@ -140,12 +140,12 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		spots.append(map.tile_to_world(sidewalk[i]))
 	return spots
 
-func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> ResistanceDirector:
+func _read_the_mark(t: TestRunner, city: City, run: RunState, day: int,
+		seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	var run: RunState = city.run
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
@@ -156,8 +156,8 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(day, _day_rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:

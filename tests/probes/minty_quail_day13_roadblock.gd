@@ -31,12 +31,12 @@ func run(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
-		var player := _start_the_day(t, city, director, seed_value)
+		var player := _start_the_day(t, city, run, director, seed_value)
 		_count_the_dawn(city, seed_value)
 		var route := _route_tiles(city)
 		for spot in SPOTS:
 			if spot > 0:
-				_restart_the_day(city, director, seed_value)
+				_restart_the_day(city, run, director, seed_value)
 			var at := city.map().tile_to_world(route[(route.size() * spot) / SPOTS])
 			var outcome := _read_the_mark_at(city, director, player, at)
 			outcomes[outcome[0]] = int(outcomes.get(outcome[0], 0)) + 1
@@ -133,8 +133,9 @@ func _route_tiles(city: City) -> Array[Vector2i]:
 				found.append(tile)
 	return found
 
-func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
-	_restart_the_day(city, director, seed_value, t)
+func _start_the_day(t: TestRunner, city: City, run: RunState, director: ResistanceDirector,
+		seed_value: int) -> Stroller:
+	_restart_the_day(city, run, director, seed_value, t)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -146,12 +147,12 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	player.set_physics_process(false)
 	return player
 
-func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t: TestRunner = null) -> void:
+func _restart_the_day(city: City, run: RunState, director: ResistanceDirector, seed_value: int,
+		t: TestRunner = null) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	var run: RunState = city.run
 	run.header().set_day(DAY)
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
@@ -163,8 +164,8 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-				RunCity.spawn_siting(city))
+		director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+				city, null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

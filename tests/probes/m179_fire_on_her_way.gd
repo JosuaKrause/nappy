@@ -51,7 +51,7 @@ func run(t: TestRunner) -> void:
 		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for walk_name: String in ["out and back", "turns back", "off the path", "stays near home"]:
-			var result := _walk_one(t, city, seed_value, walk_name)
+			var result := _walk_one(t, city, run, seed_value, walk_name)
 			walks += 1
 			if result.get("met", false):
 				met += 1
@@ -78,10 +78,11 @@ func run(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------ the walks ---
 
-func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) -> Dictionary:
+func _walk_one(t: TestRunner, city: City, run: RunState, seed_value: int,
+		walk_name: String) -> Dictionary:
 	var day := Tuning.RUN_TAUGHT_DAY
 	# Every walk on this city's run starts from the scars it began with.
-	var scars := city.run.attempt_spend().scars().duplicate()
+	var scars := run.attempt_spend().scars().duplicate()
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
@@ -135,7 +136,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 					% [RunTrace.tile(city.map().world_to_tile(plan.placed_at())),
 					plan.placed_at().distance_to(rig.global_position)])
 	rig.free()
-	GivenRun.scars(city.run, scars)
+	GivenRun.scars(run, scars)
 	var out := state.duplicate()
 	out["met"] = met
 	out["never_real"] = never_real

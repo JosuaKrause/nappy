@@ -70,15 +70,16 @@ func run(t: TestRunner) -> void:
 			_strikes += 1)
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
 		var run := RunCity.started_run(RUN_SEED)
+		var library := AtlasLibrary.new()
 		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
 		var builder := RunCity.new_builder()
 		var drawn := DrawnView.on(t)
 		builder.use_the_drawn_view(drawn)
 		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
-		RunCity.build(city, run, CityGenerator.generate(seed_value), builder)
+		RunCity.build(city, run, CityGenerator.generate(seed_value), builder, false, library)
 		for day: int in [3, 12, 13]:
-			_a_day(t, city, seed_value, day)
+			_a_day(t, city, run, library, seed_value, day)
 		RunCity.crowd(city)._player = null
 		RunCity.crowd(city).use_focus(null)
 		city.free()
@@ -92,17 +93,18 @@ func _listed(name: String, fallback: Array[int]) -> Array[int]:
 		listed.append(int(part))
 	return listed
 
-func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
+func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, seed_value: int,
+		day: int) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.index <= 2 * (day - 6):
 			done.append(step.index)
-	GivenRun.completed_steps(city.run, done)
-	city.run.resistance().set_progress(0)
-	GivenRun.alley_tiles(city.run, [])
-	GivenRun.scars(city.run, [])
-	city.run.header().set_day(day)
-	var state := city.run.attempt_spend().block_arcs()
+	GivenRun.completed_steps(run, done)
+	run.resistance().set_progress(0)
+	GivenRun.alley_tiles(run, [])
+	GivenRun.scars(run, [])
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
@@ -122,8 +124,8 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -141,7 +143,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 		director._on_contact_completed(offered.index)
 	var task := director.current_step()
 	if day == 12 and task and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-		_the_cordon(city, director, player, task, label.merged({"run": "cordon"}))
+		_the_cordon(city, library, director, player, task, label.merged({"run": "cordon"}))
 	if day == ResistanceHappenings.COLUMN_DAY:
 		_the_column(city, director, player, label.merged({"run": "column"}))
 	director.free()
@@ -177,8 +179,8 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, label: D
 	_take_out(city, before)
 
 ## Day 12's cordon from the swing's touch, she at the swing.
-func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
-		task: ResistanceSteps.Step, label: Dictionary) -> void:
+func _the_cordon(city: City, library: AtlasLibrary, director: ResistanceDirector,
+		player: Stroller, task: ResistanceSteps.Step, label: Dictionary) -> void:
 	var swing := director.contact_position()
 	director._on_contact_completed(task.index)
 	var happenings: ResistanceHappenings = director._happenings
@@ -192,8 +194,9 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, city.atlas, park,
-			RunCity.spawn_siting(city), RunCity.events(city).walk_events().reach().shut())
+	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
+			library, park, RunCity.spawn_siting(city),
+			RunCity.events(city).walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)
 		RunCity.events(city).visible_view().look(camera, null)

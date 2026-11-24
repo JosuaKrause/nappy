@@ -105,7 +105,7 @@ func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var director := ResistanceDirector.new()
-	var player := _start_the_day(t, city, director, seed_value)
+	var player := _start_the_day(t, city, run, director, seed_value)
 	var day := {"city": city, "director": director, "player": player}
 	var mark := director.current_step()
 	if mark == null or not mark.is_pickup:
@@ -326,12 +326,12 @@ static func _settle_the_arrow(director: ResistanceDirector) -> void:
 static func _choose_again(director: ResistanceDirector) -> void:
 	director.tick(ResistanceDirector.ARROW_RETARGET_SECONDS)
 
-func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
+func _start_the_day(t: TestRunner, city: City, run: RunState, director: ResistanceDirector,
+		seed_value: int) -> Stroller:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	var run: RunState = city.run
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
@@ -340,8 +340,8 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map().doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()

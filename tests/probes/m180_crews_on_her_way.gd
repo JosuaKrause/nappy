@@ -26,17 +26,18 @@ func run(t: TestRunner) -> void:
 		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for day: int in DAYS:
 			for walk_name: String in ["out and back", "turns back"]:
-				_walk_one(t, city, seed_value, day, walk_name)
+				_walk_one(t, city, run, seed_value, day, walk_name)
 		city.free()
 	t.check(true, "m180_crews_on_her_way probe ran")
 
-func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
-	city.run.posters().reset()
+func _walk_one(t: TestRunner, city: City, run: RunState, seed_value: int, day: int,
+		walk_name: String) -> void:
+	run.posters().reset()
 	var tree := RouteTree.for_day(city.map(), day)
 	var no_closures: Array[RoadClosure] = []
 	city.streets().begin_day(tree, null, no_closures)
 	RunCity.poster_walls(city).dress_for(day, DaySpec.for_day(day))
-	var before := _pasted_cells(city)
+	var before := _pasted_cells(run)
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
@@ -79,14 +80,14 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 		met += 1 if plan.has_been_in_the_world() else 0
 	var siting := siting_maker.latest()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
-			sited, met, first_sited, _pasted_cells(city) - before,
+			sited, met, first_sited, _pasted_cells(run) - before,
 			_refusal_summary(siting.waits() if siting else {})])
 	rig.free()
 
 ## Every cell with a sheet on it, however it got there.
-func _pasted_cells(city: City) -> int:
+func _pasted_cells(run: RunState) -> int:
 	var count := 0
-	for tile: Vector2i in city.run.posters().cells():
+	for tile: Vector2i in run.posters().cells():
 		count += 1
 	return count
 
