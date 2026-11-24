@@ -23,6 +23,9 @@ var _manifest: Dictionary = {}
 ## The actors an observation can name, by their recipe names (`player`, an event's or an actor's
 ## `name`, `mark`, `task`, `rider`, `truck_N`).
 var _named: Dictionary = {}
+## The recipe's entry for each event plan the scene built (the plan to its authored entry), which
+## names the plan's event, and whether it is held, charging or relentless, once the walk starts.
+var _entry_of_plan: Dictionary = {}
 var _scripted := false
 ## The physics ticks the scene has counted: its clock (`elapsed()`).
 var _tick := 0
@@ -630,7 +633,8 @@ func _install(world: DayWorld, spec: DaySpec, resistance: ResistanceDirector) ->
 	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
 		for plan in world.events().plans():
-			if plan.get_meta("recipe_name", "") == entry.name:
+			var planned: Dictionary = _entry_of_plan.get(plan, {})
+			if planned.get("name", "") == entry.name:
 				if not plan.is_in_the_world():
 					errors.append("event %s is not live at its required initial position" % entry.name)
 				else:
@@ -638,13 +642,13 @@ func _install(world: DayWorld, spec: DaySpec, resistance: ResistanceDirector) ->
 					# event to the caller that commands it.
 					var event := world.events().event_of(plan)
 					_named[entry.name] = event
-					if plan.get_meta("recipe_charging", false):
+					if bool(planned.get("charging", false)):
 						# Set on her from the first frame, as a guard sent after her is: no radius
 						# to cross and no warning to stand through.
 						event.notice_her_at(at, 0.0)
-					if plan.get_meta("recipe_relentless", false):
+					if bool(planned.get("relentless", false)):
 						_relentless.append(event)
-					if plan.get_meta("recipe_hold", false):
+					if bool(planned.get("hold", false)):
 						_held.append(event)
 						# Never streamed out either, however far she runs from it.
 						plan.keep_in_the_world()
@@ -1036,20 +1040,17 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		plan.arrive_aged(age)
 		if age > plan.telegraphs_for():
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
-		plan.set_meta("recipe_name", entry.name)
+		_entry_of_plan[plan] = entry
 		if bool(entry.get("hold", false)):
 			if hold_refusal(def) != "":
 				errors.append(hold_refusal_message(str(entry.name), def))
-		plan.set_meta("recipe_hold", bool(entry.get("hold", false)))
 		if bool(entry.get("charging", false)):
 			if charging_refusal(plan.row()) != "":
 				errors.append("event %s.charging is refused: row %s %s"
 						% [entry.name, plan.row_id(), charging_refusal(plan.row())])
-		plan.set_meta("recipe_charging", bool(entry.get("charging", false)))
 		if bool(entry.get("relentless", false)) and relentless_refusal(plan.row()) != "":
 			errors.append("event %s.relentless is refused: row %s %s"
 					% [entry.name, plan.row_id(), relentless_refusal(plan.row())])
-		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
 		if def.is_a_mast():
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.

@@ -57,11 +57,8 @@ design review's (inbox #1268 in olive-ferret), and its mechanism is built: `proj
 three typing warnings (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access`)
 errors. What remains is this item's own conversion, which predates the design review.
 
-**What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the two scene recipe files, typed by open work or after it:
-
-- The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
-  row 3c's.
+**Every file under `src/` is typed**: `rg -l '@warning_ignore_start' src` lists none, so every receiver has a
+class the check can tell.
 
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
