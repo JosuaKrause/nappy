@@ -101,7 +101,7 @@ func _send_from_behind_far() -> EventInstance:
 	var her := _rig.global_position
 	var place := her + Vector2.DOWN * 700.0
 	var path := PendingWarning.route_down_her_line(null, place, her, Vector2.DOWN)
-	var made := _events.spawner.spawn(def, path[0], path)
+	var made := _events.spawn_extra(def, path[0], path)
 	made.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 	return made
 
