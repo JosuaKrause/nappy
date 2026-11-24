@@ -216,7 +216,8 @@ func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 	_start_day(t, 1)
 	if _city.map().playground_rects().is_empty():
 		return  # This city rolled no PARK-purpose block; nothing here to check.
-	var at: Vector2 = _city.map().tile_rect_to_world(_city.map().playground_rects()[0]).get_center()
+	var park_rect: Rect2i = _city.map().playground_rects()[0]
+	var at: Vector2 = _city.map().tile_rect_to_world(park_rect).get_center()
 	_stand_at(at)
 	_place_rig(at)
 	var settled := await _walk_until_asleep(t, at, Tuning.day_length(1))

@@ -1554,7 +1554,8 @@ func scenery_ground_source(tile: Vector2i) -> int:
 func _recipe_contains(at: Vector2) -> bool:
 	if _map.has_stretch():
 		return _map.in_stretch(_map.world_to_tile(at))
-	return not _map.has_recipe_exterior() or _map.recipe_window().has_point(_map.world_to_tile(at))
+	return not _map.has_recipe_exterior() \
+			or _map.recipe_window().has_point(_map.world_to_tile(at))
 
 ## Whether a building on `lot` is shown: every one in a city, those inside a bounded recipe's
 ## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_building_lots()`).

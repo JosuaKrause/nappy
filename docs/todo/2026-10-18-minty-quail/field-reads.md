@@ -76,9 +76,7 @@ Left, each its own design question:
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
 - **The lines other work touches** are converted with that work:
-  - `main.gd`'s reads of the city's map and its navigator, which go with the city scene's own pass
-    (minty-quail's README, "The modules that do not wait for the events"); `day_director.gd`'s
-    reads of other classes' fields wait for those classes' passes;
+  - `day_director.gd`'s reads of other classes' fields wait for those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface

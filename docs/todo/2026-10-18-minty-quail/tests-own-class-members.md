@@ -31,10 +31,13 @@ silences that access's warning, counts as read. These thin out as `typed-everywh
 whatever the check then lists joins the scope.
 
 **What is left, by module.** Outside the events and the resistance, the `[own file only]` group holds
-no owner. Under `src/events/`, the events' suites and rigs read none of the `[own file only]` group, and the
-`[no reader]` group holds none of the events'. Nothing under `src/resistance/` is left in either group. Four `[kept]` lines still name this entry as
-the place their members become internal: `happenings.gd`'s `column`, `summary_model.gd`'s `kind`,
-`return_window.gd`'s `end` and `footprint.gd`'s `tiles`.
+no owner. Under `src/events/`, the events' suites and rigs read none of the `[own file only]` group,
+and the `[no reader]` group holds none of the events'. Nothing under `src/resistance/` is left in
+either group. Four `[kept]` lines still name this entry. Three are members that become internal:
+`happenings.gd`'s `column`, `summary_model.gd`'s `kind` and `return_window.gd`'s `end`. The
+fourth, `footprint.gd`'s `tiles`, has no reader under `src/`, so its member goes to the
+`[no reader]` group.
+
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member

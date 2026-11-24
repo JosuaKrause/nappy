@@ -690,7 +690,8 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void:
 		var park := CityGenerator.swing_park(_city.map())
-		var area := _city.map().tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map(), park))
+		var swing_rect := ClosurePlanner.calm_area_rect(_city.map(), park)
+		var area := _city.map().tile_rect_to_world(swing_rect)
 		person[0] = RunCity.events(_city).spawn_extra(EventCatalogue.by_id("busker"),
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings

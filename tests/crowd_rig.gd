@@ -2311,5 +2311,5 @@ func _sidewalk_beside_the_spine() -> Vector2:
 		var tile := Vector2i(x, row)
 		if _city.map().tile_at(tile) == GameEnums.TileType.SIDEWALK:
 			return _city.map().tile_to_world(tile)
-	return _city.map().tile_to_world(Vector2i(_city.map().main_road_corridor() * CityMap.period(),
-			row))
+	return _city.map().tile_to_world(Vector2i(
+			_city.map().main_road_corridor() * CityMap.period(), row))

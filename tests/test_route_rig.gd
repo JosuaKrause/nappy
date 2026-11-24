@@ -528,7 +528,8 @@ func _kerb_site_fits(kerb: Vector2i, inward: Vector2i, clear: Dictionary) -> boo
 				or _city.map().is_walkable(here + inward * 2):
 			return false
 		for tile: Vector2i in [here, here + inward, here - inward, here - inward * 2]:
-			if not _city.map().is_open(tile) or _city.map().is_obstructed(tile) or clear.has(tile):
+			if not _city.map().is_open(tile) or _city.map().is_obstructed(tile) \
+					or clear.has(tile):
 				return false
 	return true
 

@@ -178,8 +178,10 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: 
 	var near := foot + Vector2.DOWN * (sidewalk * 0.5 - 4.0)
 	var far := foot + Vector2.DOWN * (sidewalk * 0.5 + 4.0)
 	var past := foot + Vector2.DOWN * (sidewalk + Tuning.TILE_SIZE * 0.5)
-	t.check(_city.map().tile_at(_city.map().world_to_tile(near)) == GameEnums.TileType.SIDEWALK
-			and _city.map().tile_at(_city.map().world_to_tile(far)) == GameEnums.TileType.SIDEWALK,
+	t.check(_city.map().tile_at(_city.map().world_to_tile(near))
+				== GameEnums.TileType.SIDEWALK
+			and _city.map().tile_at(_city.map().world_to_tile(far))
+				== GameEnums.TileType.SIDEWALK,
 			"the two halves in front of the door at %s are sidewalk" % door)
 	var player := _rig_player(t, past)
 	director.use_player(player)

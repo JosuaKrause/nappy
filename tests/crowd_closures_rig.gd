@@ -659,7 +659,8 @@ func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 				continue
 			var rect := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
 			var centre := rect.get_center()
-			if not _city.map().is_street(centre) or not _city.map().is_driveable_at(true, centre):
+			if not _city.map().is_street(centre) \
+					or not _city.map().is_driveable_at(true, centre):
 				continue
 			return {"arms": arms, "rect": rect,
 					"at": _city.map().tile_rect_to_world(rect).get_center()}
