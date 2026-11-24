@@ -35,7 +35,7 @@ reading of the step is the proof.
   one that warned her, so a controller that asked again for the farthest hut when it sets the
   guard on her would pick the wrong one. The guard is read on the tick he is set on her.
 - `EventManager._take()` skipping `record_the_body()` fails none of the suites in D; nothing in
-  them holds that recording. The masts' lorry case, which #1703 moves onto `start_recipe()`,
-  holds it once merged.
+  them holds that recording. The masts' lorry case, which #1703 moved onto `start_recipe()`,
+  holds it.
 - A post begins no hold while another row's conversation runs: `test_checkpoints.gd`'s corner of
   two doors holds it through a walk the game can produce, and `test_encounters.gd` points there.

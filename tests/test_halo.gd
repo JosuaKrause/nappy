@@ -1038,10 +1038,11 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t: Te
 	t.check(probe.held == EntityHalo.RIM_BUDGET,
 			"the budget is full of fading rims (%d held)" % probe.held)
 
-	# Taken out the way the manager takes a retired event out (`EventManager.retire()` finishes it,
-	# `EventStreaming.retire_finished()` takes it out of the list and `take_out()`s it, which queues
-	# it for deletion) -- here between the frame's physics step and the halo's pass, where nothing
-	# deletes it before the pass.
+	# Taken out the way the manager takes every event out when it stands down
+	# (`EventManager.stand_down()` empties its list and queues each body for deletion), here
+	# between the frame's physics step and the halo's pass, where nothing deletes it before the
+	# pass. The manager's own retirement sweep runs inside the physics step, whose end deletes
+	# what it queued before the pass.
 	var retired: EventInstance = held[0]
 	var retired_rim := retired.rim().get_instance_id()
 	var retired_id := retired.get_instance_id()
@@ -1052,8 +1053,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t: Te
 	retired.tree_exiting.connect(func() -> void:
 		held_as_the_body_left[0] = retired_rim_of.is_held()
 		probe.events.append(["body", retired_id]))
-	manager.retire(retired)
-	manager.streaming.retire_finished()
+	manager.stand_down()
 	var fresh := manager.spawn_extra(_def("fresh", 20.0), Vector2(5000.0, 0.0))
 	player.global_position = fresh.global_position
 	await _frames_until(t, clock, func() -> bool: return probe.when("body", retired_id) >= 0, 1.0)

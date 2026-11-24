@@ -540,7 +540,7 @@ func step_the_doors(delta: float) -> void:
 	if not world.has_player():
 		return
 	checkpoints.warn_at_the_doors()
-checkpoints.watch_the_door_lines(delta)
+	checkpoints.watch_the_door_lines(delta)
 	checkpoints.check_detentions()
 
 ## **The encounters' own step, in the order the tick takes it**: with her in the world, every
@@ -748,6 +748,29 @@ func plan_builder() -> PlanBuilder:
 ## Events the day owes the director to put in front of her and has not spent yet.
 func owed_ahead() -> int:
 	return ahead.owed_ahead()
+
+## **Hands in what makes every siting the director's walk asks for** (`SitingMaker`), in place
+## of the maker `_init()` makes over this manager's world and walk: the game keeps its own, and a
+## test hands in a fake that answers the siting a check set and records each ask.
+func use_sitings(maker: SitingMaker) -> void:
+	ahead.use_sitings(maker)
+
+## **Today's copy of the row `id` as her route's bag hands it out**
+## (`EventDirector.route_row()`), or null with no director or for a row the bag holds none of. No
+## game class asks it: a suite reads the director's state through it, since the game shows that
+## copy only by putting it down on a walk.
+func route_row(id: String) -> EventDef:
+	if not ahead.has_director():
+		return null
+	return ahead.director().route_row(id)
+
+## **The walk's way on** (`EventDirector.way_on()`: how a car the director sends drives on past
+## its route), or null with no director. No game class asks it: a suite reads the director's
+## state through it, since no run log line names a leg of a sent patrol's way.
+func way_on() -> WayOn:
+	if not ahead.has_director():
+		return null
+	return ahead.director().way_on()
 
 ## The warnings up for something not in the world yet — what `DangerEdge` draws a badge for
 ## alongside `instances()` (`WarningBoard.pending_warnings()`).

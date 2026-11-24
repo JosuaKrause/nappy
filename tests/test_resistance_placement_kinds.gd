@@ -49,7 +49,7 @@ func run(t: TestRunner) -> void:
 	_test_the_morning_neighbors_way_is_over_drawn_ground(t)
 	_test_the_neighbors_walk_home_is_over_drawn_ground(t)
 	_test_the_market_is_found_gone(t)
-	_test_the_column_comes_down_the_main_road(t)
+	await _test_the_column_comes_down_the_main_road(t)
 	_free_city()
 
 func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
@@ -1162,6 +1162,8 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 			"near it, the column's warning goes up with no truck in the world yet")
 	var warning := _warning_for(RunCity.events(_city), "military_convoy")
 	t.check(warning != null, "and its badge has somewhere to point")
+	var body := _her_for_the_events(t, her)
+	RunCity.events(_city).use_player(body)
 	var lead := SpawnSiting.least_distance()
 	if warning:
 		t.check(CrowdLanes.corridor_at(warning.points_at().x) == _city.map.main_road_corridor(),
@@ -1171,13 +1173,16 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 		# She walks along the road while it is coming: the badge keeps its offset from her.
 		var was := warning.points_at() - her
 		her.y += Tuning.WALK_SPEED * 0.5
-		RunCity.events(_city).warnings.run(STEP, her)
+		body.global_position = her
+		await _let_the_events_tick(STEP)
 		t.check((warning.points_at() - her).is_equal_approx(was),
 				"and it holds still against her rather than coming sooner or jumping")
-	# The rest of the warning, frame by frame, the way `EventManager._physics_process` runs it.
-	while warning and RunCity.events(_city).pending_warnings().has(warning) \
-			and warning.shown_for() < Tuning.WARNING_ALONE_MAX + 5.0:
-		RunCity.events(_city).warnings.run(STEP, her)
+	# The rest of the warning, tick by tick, the way the manager's own tick runs it.
+	var most := Tuning.WARNING_ALONE_MAX + 5.0
+	var events := RunCity.events(_city)
+	if warning:
+		await _let_the_events_tick(most, func(_ticks: int) -> bool:
+			return not events.pending_warnings().has(warning) or warning.shown_for() >= most)
 	var trucks := happenings.column
 	t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
 			"once the warning is over, a column of %d trucks comes (%d)"
@@ -1204,10 +1209,12 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	# from the badge to the first frame its field reaches her.
 	if warning and not trucks.is_empty():
 		var front := trucks[0]
+		# Where it was made: the tick that makes it steps it once as well.
+		var made_at := front.walks()[0]
 		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
-				EventFootprints.footprint_of(front.row()), her, front.global_position)
-				and absf(front.global_position.x - warning.points_at().x) < 1.0
-				and signf(front.global_position.y - her.y) == signf(warning.points_at().y - her.y),
+				EventFootprints.footprint_of(front.row()), her, made_at)
+				and absf(made_at.x - warning.points_at().x) < 1.0
+				and signf(made_at.y - her.y) == signf(warning.points_at().y - her.y),
 				"its front truck is created just out of sight, up the lane the badge pointed")
 		var to_reach := 0.0
 		while front.source().contribution_at(her) <= 0.0 and to_reach < 10.0:
@@ -1225,8 +1232,11 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 
 	happenings.start_day(ResistanceHappenings.COLUMN_DAY)
 	happenings.tick(ResistanceHappenings.COLUMN_BY, far_from_it, Vector2.ZERO)
-	RunCity.events(_city).warnings.run(convoy.telegraphs_for() + STEP, far_from_it)
+	body.global_position = far_from_it
+	await _let_the_events_tick(convoy.telegraphs_for() + STEP, func(_ticks: int) -> bool:
+		return _warning_for(RunCity.events(_city), "military_convoy") == null)
 	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
 			"at COLUMN_BY it comes wherever she is")
 	for truck in happenings.column:
 		RunCity.events(_city).retire(truck)
+	_let_her_go(body)

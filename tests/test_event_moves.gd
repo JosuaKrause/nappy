@@ -12,7 +12,7 @@ const SEED := 4242
 func run(t: TestRunner) -> void:
 	_test_a_row_hands_what_it_stands_as_to_its_move(t)
 	_test_a_row_hands_whether_it_has_parked_to_its_move(t)
-	_test_an_event_leaves_the_list_of_moves_where_it_goes(t)
+	await _test_an_event_leaves_the_list_of_moves_where_it_goes(t)
 	_test_a_moved_figure_stands_where_it_is_put(t)
 
 ## The seconds a tick of an event steps by, and the most ticks a case lets an event take to reach
@@ -146,9 +146,8 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 ## An event manager over a bare map, with `alley_robbery` planned at `at` and streamed in: the rig
 ## `test_event_behaviours.gd` streams a plan with. The manager is set up as the escape's building
 ## is (`EventSurroundings.on()` a map, then `EventManager.setup()` a run of its own, here a fresh
-## `RunState`), the plan joins the day's as one planned after dawn does (`EventStreaming.add()`,
-## which the events ahead of her call) and is streamed in around `at`. `move` is the one move
-## the streamed-in event put on the map's list.
+## `RunState`), the plan is a walk's (`EventManager.start_recipe()`) and is streamed in
+## around `at`. `move` is the one move the streamed-in event put on the map's list.
 func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var world := WorldContext.new()
 	t.add_child(world)
@@ -159,8 +158,8 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	manager.setup(run)
 	t.add_child(manager)
 	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
-	manager.streaming.add(plan)
-	manager.stream_around(at)
+	var planned: Array[EventPlan] = [plan]
+	manager.start_recipe(planned, DaySpec.for_day(1), 1, at)
 	var listed := map.listed_moves().keeping_their_course()
 	return {"world": world, "manager": manager, "plan": plan,
 			"move": listed[0] if listed.size() == 1 else null}
@@ -171,10 +170,32 @@ func _free_the_manager(rig: Dictionary) -> void:
 	manager.free()
 	world.free()
 
+## Reads once whether a move is on the list: in the tick its event is first queued for deletion,
+## after the manager's own step and before the frame's deletions. A later tick's reading, after the
+## node's leaving the tree has unlisted the move, would hide a removal left to that, so the first
+## reading is the one kept.
+class _ListReader extends Node:
+	var moves: ProposedMoves
+	var move: MoveProposal
+	var event: Node
+	var read := false
+	var listed_in_the_tick := true
+
+	func _init() -> void:
+		process_physics_priority = 1
+
+	func _physics_process(_delta: float) -> void:
+		if read or not is_instance_valid(event) or not event.is_queued_for_deletion():
+			return
+		read = true
+		listed_in_the_tick = moves.has(move)
+
 ## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
 ## frame when its node leaves the tree: a finished one, one streamed out, and every one `stand_down()`
-## throws away. Nothing here ends a frame, as the probes' loops do not.
+## throws away. A finished one leaves with the tick that retires it, the one tick the manager is
+## given here.
 func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> void:
+	await PhysicsTicks.settle(t)
 	var at := Vector2(5000.0, 5000.0)
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
@@ -187,9 +208,18 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 		return
 	live.end_now()
 	t.check(moves.has(move), "a finished event stays until the manager retires it")
-	manager.streaming.retire_finished()
-	t.check(not moves.has(move) and live.is_queued_for_deletion(),
-			"retired once finished, it is off the list in the same call, with no frame between")
+	# Read inside the tick that retires it, after the manager's own step and before the frame's
+	# deletions, so a removal left to the node's leaving the tree does not pass.
+	var reader := _ListReader.new()
+	reader.moves = moves
+	reader.move = move
+	reader.event = live
+	t.add_child(reader)
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(reader.read and not reader.listed_in_the_tick and not moves.has(move) and not is_instance_valid(live),
+			"retired once finished, it is off the list in the tick that retires it, "
+			+ "before the frame's deletions")
+	reader.free()
 	_free_the_manager(rig)
 
 	rig = _a_manager_with_a_live_event(t, at)

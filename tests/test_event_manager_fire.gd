@@ -289,30 +289,30 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 	var sighted: Array[String] = []
 	var on_sighted := func(id: String) -> void: sighted.append(id)
 	EventBus.event_sighted.connect(on_sighted)
-	var day_plans := events.plans().duplicate()
 	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
-	# off the view's centre at zoom 2.
+	# off the view's centre at zoom 2. The manager takes the view from where she stands, a body
+	# with no camera, so she is stood at its centre.
 	var corner := TouchCover.joystick().left_corner().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
-	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var her := CharacterBody2D.new()
+	t.add_child(her)
+	her.global_position = at - corner * 0.5
+	events.use_player(her)
+	var day := Tuning.RUN_TAUGHT_DAY
 	for joystick: bool in [true, false]:
-		var plan := EventPlan.new(def, at)
-		var instance := EventInstance.new()
-		instance.setup(def, at)
-		_stage.events().world.drawn_in().add_child(instance)
-		plan.enter_the_world(instance.standing())
-		events.streaming.add(plan)
+		# A walk holding the fire alone, started again for each scheme, which clears what the
+		# one before put up.
+		var plans: Array[EventPlan] = [EventPlan.new(def, at)]
+		events.start_recipe(plans, DaySpec.for_day(day), day, at)
+		events.use_controls(TouchCover.joystick() if joystick else null)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
-		events.world.visible_view().look(view, TouchCover.joystick() if joystick else null)
-		events.spawner.summon_what_has_been_sighted(events.plans())
+		await PhysicsTicks.pass_ticks(t, 1)
 		var summoned := events.pending_warnings().size() > warnings_before
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
 				"%s scheme: the fire under the left corner is %s" % ["joystick" if joystick else "tap",
 				"neither sighted nor sends for the engine" if joystick else "sighted, and sends for the engine"])
-		var walk := events.walk_events()
-		walk.take(day_plans.duplicate(), walk.calm(), walk.doors())
-		events.warnings.clear()
-		instance.free()
+	events.use_player(null)
+	her.free()
 	EventBus.event_sighted.disconnect(on_sighted)
 
 func _fire_plan() -> EventPlan:

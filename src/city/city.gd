@@ -220,8 +220,9 @@ var _ground_recipe := GroundRecipe.new()
 ## exits, lights, markers, ground and decals. `main` and `RunCity` hand it in; `build()` refuses a
 ## city never equipped.
 var atlas: AtlasLibrary = null
-## What the decals and every vent's turning rotor lay their pictures through (`SceneryDrawer`):
-## the one drawer, handed to the decals and, inside the roof drawer, to every building.
+## What the decals, every vent's turning rotor and every closure piece lay their pictures through
+## (`SceneryDrawer`): the one drawer, handed to the decals, to every closure piece and, inside the
+## roof drawer, to every building.
 var _scenery_drawer := SceneryDrawer.new()
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
@@ -315,6 +316,12 @@ func schedule_scenery(mode: SceneryGround.Mode, frame_locked: bool) -> void:
 ## `SimulationBuilder.leave_out()` is.
 func leave_out(shadows: bool) -> void:
 	_skip_shadows = shadows
+
+## What the decals, every vent's turning rotor and every closure piece lay their pictures through,
+## in place of the one the city makes; before `build()`. The game uses the default, a suite hands
+## a recording drawer.
+func draw_scenery_through(drawer: SceneryDrawer) -> void:
+	_scenery_drawer = drawer
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
@@ -1220,8 +1227,8 @@ func _spawn_closure(closure: RoadClosure) -> void:
 	for feet in closure.posts(map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		post.use_atlas(atlas)
-		post.piece = ClosureMarker.Piece.POST
-		post.kind = closure.kind()
+		post.draw_through(_scenery_drawer)
+		post.stand_as(ClosureMarker.Piece.POST, closure.kind(), true)
 		post.position = feet
 		_add_closure_node(post, true)
 	for mouth in closure.mouth_centres(map):
@@ -1229,9 +1236,8 @@ func _spawn_closure(closure: RoadClosure) -> void:
 	if ClosureMarker.CAUSES.has(closure.kind()):
 		var cause := ClosureMarker.new()
 		cause.use_atlas(atlas)
-		cause.piece = ClosureMarker.Piece.CAUSE
-		cause.kind = closure.kind()
-		cause.across = closure.barrier_runs_across()
+		cause.draw_through(_scenery_drawer)
+		cause.stand_as(ClosureMarker.Piece.CAUSE, closure.kind(), closure.barrier_runs_across())
 		cause.position = closure.cause_centre(map)
 		_add_closure_node(cause, true)
 
@@ -1280,14 +1286,14 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		panel.use_atlas(atlas)
-		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
-		panel.kind = closure.kind()
-		panel.across = across
+		panel.draw_through(_scenery_drawer)
+		panel.stand_as(ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE,
+				closure.kind(), across)
 		panel.cover_slice(span, closure.end_on_rise())
 		if panel is ParkFenceMarker:
 			(panel as ParkFenceMarker).mount_rail(i < panels - 1,
 					-(closure as ParkClosure).outward().x * 4.0)
-			(panel as ParkFenceMarker).sign_offset = at - feet[i]
+			(panel as ParkFenceMarker).mount_sign(at - feet[i])
 		slices.append(panel)
 	DrawLayer.add_slices(self, slices, feet)
 	for panel in slices:
