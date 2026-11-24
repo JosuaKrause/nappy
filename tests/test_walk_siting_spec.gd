@@ -28,6 +28,7 @@ const SEED := 4242
 func run(t: TestRunner) -> void:
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_the_events_ask_the_maker_they_are_handed_for_every_siting(t)
+	_test_a_given_walk_sites_over_the_tree_it_is_handed(t)
 	_test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t, MapCache.of(SEED))
 
 func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void:
@@ -178,6 +179,33 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 			"a walk of a spec that holds the home's streets is handed a ground that keeps off the home street")
 	t.check(not_holding.tiles_for(def) == leaves_it,
 			"and one that does not hold them is handed a ground that offers it")
+
+## **A walk placed whole sites over the tree it was placed against** (`EventsAhead.start_a_given_walk()`'s
+## `tree`): a mast queued on it asks the maker for a siting over that very tree, never over null,
+## which makes the maker grow one again (`SitingMaker.make()`); a walk handed none asks with null,
+## and does not keep the tree of a walk before it.
+func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
+	var map: CityMap = MapCache.of(SEED)
+	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	world.use_run(RunState.new())
+	var board := WarningBoard.new(world)
+	var spawner := EventSpawner.new(world, board)
+	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
+	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
+	var ahead := EventsAhead.new(world, streaming, spawner, board, FakeWalkEvents.new())
+	ahead.use_director(EventDirector.new(map, world.navigator()), null)
+	ahead.use_sitings(maker)
+	ahead.use_the_walk_of(_spec_that(true))
+	var tree := FakeRouteTree.new(map)
+	var offered: Array[Vector2i] = [Vector2i(1, 1)]
+	ahead.start_a_given_walk(DAY, tree)
+	ahead.queue_a_mast(offered)
+	t.check(maker.made.size() == 1 and maker.made[0][1] == tree,
+			"a mast queued on a walk handed a tree is sited over it (%d asks)" % maker.made.size())
+	ahead.start_a_given_walk(DAY)
+	ahead.queue_a_mast(offered)
+	t.check(maker.made.size() == 2 and maker.made[1][1] == null,
+			"and on the next walk, handed none, over none: the first walk's tree is not kept")
 
 ## A walk's spec that holds the home's streets (a day's), or one that does not (the escape's).
 func _spec_that(holds: bool) -> DaySpec:

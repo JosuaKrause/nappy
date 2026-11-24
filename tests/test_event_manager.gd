@@ -46,6 +46,7 @@ func run(t: TestRunner) -> void:
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
 		_test_a_recipes_bodies_are_in_its_way_on,
 		_test_a_recipes_walk_sites_on_the_ground_it_is_handed,
+		_test_a_recipes_walk_sites_over_the_tree_and_locations_it_is_handed,
 	]
 	for test in on_streets:
 		_stage = Rig.build_stage(t, null, StreetMap.full())
@@ -226,6 +227,33 @@ func _test_a_recipes_walk_sites_on_the_ground_it_is_handed(t: TestRunner) -> voi
 	t.check(maker.made.size() == 1 and maker.made[0][2] == handed,
 			"a recipe's mast is sited on the ground the recipe's walk was handed (%d sitings)"
 			% maker.made.size())
+	events.use_sitings(SitingMaker.new(events.world, events.walk_events()))
+
+## **A recipe's walk sites over the route tree and the locations it is handed**
+## (`EventManager.start_recipe()`'s `tree` and `locations`): the walk's events answer the very
+## locations, and a mast queued on day 11 is sited over the very tree, where a recipe handed none
+## has the maker grow one.
+func _test_a_recipes_walk_sites_over_the_tree_and_locations_it_is_handed(t: TestRunner) -> void:
+	var events := _stage.events()
+	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
+	events.use_sitings(maker)
+	var day := 11
+	var tree := FakeRouteTree.new(_stage.map())
+	var locations := DayLocations.lay_out(_stage.map(), Corridor.of(null))
+	var nothing: Array[EventPlan] = []
+	events.start_recipe(nothing, DaySpec.for_day(day), day, Vector2.ZERO, null, null, tree,
+			locations)
+	var offered: Array[Vector2i] = [Vector2i(1, 1)]
+	events.queue_a_mast(offered)
+	t.check(events.walk_events().locations() == locations,
+			"a recipe's walk answers the locations it was handed")
+	t.check(maker.made.size() == 1 and maker.made[0][1] == tree,
+			"and sites a mast over the tree it was handed (%d sitings)" % maker.made.size())
+	events.start_recipe(nothing, DaySpec.for_day(day), day, Vector2.ZERO)
+	events.queue_a_mast(offered)
+	t.check(events.walk_events().locations() == null and maker.made.size() == 2
+			and maker.made[1][1] == null,
+			"a recipe handed neither has the walk lay out and grow its own")
 	events.use_sitings(SitingMaker.new(events.world, events.walk_events()))
 
 func _start(day: int) -> void:

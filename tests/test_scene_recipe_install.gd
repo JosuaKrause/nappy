@@ -46,6 +46,7 @@ func run(t: TestRunner) -> void:
 	_test_a_column_scene_hands_the_happenings_the_dressings_fronts(t, built, data, own_run)
 	_test_the_scene_runs_under_the_spec_it_is_handed(t, built, data, own_run)
 	_test_the_walk_is_handed_the_scenes_ground(t, built, data, own_run)
+	_test_the_walk_is_handed_the_scenes_tree_and_locations(t, built, data, own_run)
 	_test_an_oversized_uniform_population_is_refused(t)
 	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
 
@@ -320,6 +321,22 @@ func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary
 			kept_off = kept_off and not home.has_point(tile)
 		t.check(kept_off, "and the ground it is handed, made on the map as the install held it, "
 				+ "offers none of it")
+	_free(stood)
+
+## **The scene's route tree and locations are handed to the walk**: `start_recipe()` is handed the
+## tree the day's streets hold (the one the rows' corridor is made of) and the locations laid
+## out over that corridor, so a siting made as she walks grows and lays out neither again.
+func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built: Dictionary,
+		data: Dictionary, own_run: RunState) -> void:
+	var stood := _stand(built, data, own_run)
+	var made: SceneWorld = stood[0]
+	var runtime: SceneRecipeRuntime = stood[1]
+	var errors := runtime.install(made.world, _day_spec(own_run))
+	t.check(errors.is_empty() and made.streets.route_tree() != null
+			and made.events.recipe_tree() == made.streets.route_tree(),
+			"the walk is handed the route tree the day's streets hold: %s" % [errors])
+	t.check(made.events.recipe_locations() != null,
+			"and the locations laid out over its corridor")
 	_free(stood)
 
 ## **An oversized city-wide uniform population is refused, not truncated**: the crowd placed fewer

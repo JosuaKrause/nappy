@@ -116,11 +116,15 @@ func _ground_of_the_walk() -> RowGround:
 		return dawns
 	return EventScheduler.row_ground(world.city_map(), null, _holds_the_home_streets)
 
-## Starts the director over a walk whose plan was handed in whole. It owes nothing — every such
-## placement is `MAP`-sited — but it is started anyway so that `owed_ahead()` and its own per-day
-## state answer for this walk rather than for whatever ran before it.
-func start_a_given_walk(day: int) -> void:
+## Starts the director over a walk whose plan was handed in whole, kept with `tree`, the route tree
+## it was placed against where it has one (a scene recipe's), so a mast queued later is sited over
+## it rather than over a tree grown again; a walk handed none (a rig's) grows one then. The
+## director owes nothing — every such placement is `MAP`-sited — but it is started anyway so that
+## `owed_ahead()` and its own per-day state answer for this walk rather than for whatever ran
+## before it.
+func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
 	_siting = null
+	_day_tree = tree
 	if _director:
 		_director.start_day(day, _walk.plans(),
 				world.run().calendar().day_rng(day, "finale-ahead"))
@@ -157,8 +161,9 @@ var _siting: WalkSiting = null
 ## What makes a siting (`SitingMaker`), handed in by the manager (`use_sitings()`): this class makes
 ## none itself, so a suite hands in a maker that answers a stand-in, or keeps what it made.
 var _sitings: SitingMaker
-## The day's own route tree, as `start_day()` handed it to `build_day`, kept for a placement made
-## later in the day that has no `_siting` to read it from (`queue_a_mast()`).
+## The walk's route tree, as `start_day()` handed it to `build_day` or `start_a_given_walk()` was
+## handed the one a scene recipe placed against, kept for a placement made later that has no
+## `_siting` to read it from (`queue_a_mast()`); null for a walk handed none.
 var _day_tree: RouteTree = null
 
 ## `--force <id> [seconds]`, kept here so a director made again by `setup()` is handed it too.

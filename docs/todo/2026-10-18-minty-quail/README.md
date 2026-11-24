@@ -123,8 +123,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      first steps, the callers outside the events folder and the live event's own behaviours and
      looks, run beside the placement track; the dawn, the event manager's parts, the resistance
      and the scene recipes follow placement; then a row written as its
-     parts, and the events' suites (what is left of `re-derived-cases.md`, a scene's walk working out
-     its route tree and locations again);
+     parts, and the events' suites;
      `system-map.md` once the redesign is complete.
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against

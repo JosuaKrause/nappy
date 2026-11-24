@@ -96,6 +96,19 @@ class Plan extends RefCounted:
 	func ground() -> RowGround:
 		return _ground
 
+	## The route tree a scene recipe's walk was placed against (`EventManager.start_recipe()`),
+	## which what is sited while she walks grows no second one of; null for a walk handed none (a
+	## rig's recipe walk) and for every other plan, a day's tree being its `walk()`.
+	var _tree: RouteTree = null
+
+	## The recipe's route tree. See `_tree`.
+	func tree() -> RouteTree:
+		return _tree
+
+	## Hands the plan the route tree its walk was placed against. See `_tree`.
+	func use_tree(tree: RouteTree) -> void:
+		_tree = tree
+
 	## Hands the plan the day's ground for a row. See `_ground`.
 	func use_ground(ground: RowGround) -> void:
 		_ground = ground

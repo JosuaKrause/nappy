@@ -52,6 +52,13 @@ var _world: DayWorld
 ## answered with the edges shown, as its side test reads `tile_at()`, `pavement_inward()` and
 ## `is_street()`.
 var _ground: RowGround
+## The route tree and the day's locations the recipe's rows are placed against, made once by
+## `_event_plans()` and handed to the scene's walk beside the ground, so a siting made as she walks
+## grows and lays out none of its own. A scene with no route tree lays its locations out under
+## a corridor that answers none, so it hands the walk neither and the walk makes both when it
+## needs them.
+var _route_tree: RouteTree
+var _locations: DayLocations
 ## Where the army column's lines go, handed in by `use_trace()`; a trace that writes nowhere until then.
 var _trace := RunTrace.new()
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
@@ -635,7 +642,8 @@ func _install(world: DayWorld, spec: DaySpec, resistance: ResistanceDirector) ->
 	# sites against after.
 	var calm := world.events().calm_as_the_map_stands()
 	var plans := _event_plans(at, errors, calm)
-	world.events().start_recipe(plans, spec, _run.header().day(), at, calm, _ground)
+	world.events().start_recipe(plans, spec, _run.header().day(), at, calm, _ground, _route_tree,
+			_locations if _route_tree else null)
 	world.dressing().refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -990,7 +998,8 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	var counts := {}
 	# The day's locations, laid out once: an authored row's tile names the one it stands in.
 	# A scene with no route tree lays its locations out under a corridor that answers none.
-	var locations := DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
+	_route_tree = tree
+	_locations = DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
 	# The scene's one ground, made now that the authored seals and the home's holds are on the
 	# map.
 	_ground = EventScheduler.row_ground(map, corridor,
@@ -1027,7 +1036,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		else:
 			plan = EventScheduler.recipe_placement(def, _run.header().day(), map, builder, at,
 					int(entry.get("route_seed", 1)), plans, corridor, _ground, doors, calm,
-					standing, locations, why)
+					standing, _locations, why)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement%s"
 					% [entry.name, (": " + "; ".join(why)) if not why.is_empty() else ""])
