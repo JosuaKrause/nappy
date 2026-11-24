@@ -16,6 +16,10 @@ extends RefCounted
 ## guarantee, which builds no manager and reads the map's street network. The last case asks the
 ## spawner (`EventSpawner.as_warned()`) of each catalogue row and builds nothing: no suite is the
 ## spawner's, and the spawner is one of the manager's parts, so its question is held here.
+##
+## **Three cases ask the dev rig's `--spawn event` target** (`DevRig.for_spawn_target()`) of a day the
+## manager planned on the generated map: the target reads the manager's placed plans, so where it
+## stands her is the placement's answer.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
 const STEP := 1.0 / 60.0
@@ -48,6 +52,9 @@ func run(t: TestRunner) -> void:
 		_stage.free_events()
 	var on_the_generated_map: Array[Callable] = [
 		_test_day_populates_the_manager,
+		_test_the_spawn_target_event_lands_near_a_placed_event,
+		_test_a_queue_fed_row_refuses_the_spawn_target_by_name,
+		_test_a_waiting_row_stands_outside_its_trigger_at_the_spawn_target,
 		_test_the_walk_is_handed_the_ground_the_dawn_made,
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 	]
@@ -276,6 +283,65 @@ func _test_day_populates_the_manager(t: TestRunner) -> void:
 	for instance in _stage.events().instances():
 		t.check(is_instance_valid(instance), "every tracked instance is a live node")
 		t.check(instance.row() != null, "every tracked instance has a def")
+
+## The day the `--spawn` target cases plan: one that places events by the plan, before any is sited
+## from her walk.
+const _SPAWN_DAY := 6
+
+## `DevRig.for_spawn_target()` as `main` asks it: the stage's day, no resistance mark.
+func _spawn_at(target: String, told: Array[String]) -> Vector2:
+	return DevRig.for_spawn_target(target, _stage.map(), _stage.events(), _stage.streets(), null,
+			_stage.run().header(), RecordingTrace.new(told))
+
+## `--spawn event` takes the first non-ambient placed plan: `start_day()` with streaming reaching
+## the whole map places every plan without a player to stream one in, so the day's set has at least
+## one, and the target puts her on a walkable tile beside it.
+func _test_the_spawn_target_event_lands_near_a_placed_event(t: TestRunner) -> void:
+	_start(_SPAWN_DAY)
+	var told: Array[String] = []
+	var at := _spawn_at("event", told)
+	t.check(_stage.map().is_walkable(_stage.map().world_to_tile(at)),
+			"--spawn event lands on a walkable tile (%s)" % at)
+
+## A row sited from her walk (`cat_dash`) has no position at dawn, so `event:cat_dash` refuses
+## rather than starting her on the doorstep as if nothing were wrong: the row and the reason land in
+## the run log through the trace it is handed, and she is left on the doorstep.
+func _test_a_queue_fed_row_refuses_the_spawn_target_by_name(t: TestRunner) -> void:
+	_start(_SPAWN_DAY)
+	var lines: Array[String] = []
+	var at := _spawn_at("event:cat_dash", lines)
+	t.check(at == _stage.map().home_world_position(),
+			"a queue-fed row still leaves her somewhere to stand: the doorstep")
+	var named := false
+	for line in lines:
+		if line.contains("spawn") and line.contains("cat_dash"):
+			named = true
+	t.check(named, "the refusal names the row in the run log (got %s)" % [lines])
+
+## A row that waits (`EventDef.waits_for_her()`: the pigeon flock, the charging dog) and has a copy
+## placed on the day: `event:<row>` stands her outside both its wait trigger and its field. The
+## offset has to clear the larger of the two plus a tile's margin. The first such row the day placed
+## is asked, since which rows a day places moves with the declared table (`PlacementDensity`).
+func _test_a_waiting_row_stands_outside_its_trigger_at_the_spawn_target(t: TestRunner) -> void:
+	_start(_SPAWN_DAY)
+	_stage.events().draw_the_ground_round(Vector2.ZERO, INF)
+	var found: EventPlan = null
+	for plan in _stage.events().plans():
+		if plan.notice_within() > 0.0 and plan.is_placed():
+			found = plan
+			break
+	t.check(found != null, "day %d has a placed row that waits to stand outside of" % _SPAWN_DAY)
+	if found == null:
+		return
+	var told: Array[String] = []
+	var at := _spawn_at("event:" + found.row_id(), told)
+	var dist := at.distance_to(found.placed_at())
+	t.check(dist > found.notice_within(),
+			"stands outside the wait trigger, %.0fpx > its notice's %.0fpx"
+					% [dist, found.notice_within()])
+	t.check(dist > found.heard_within(),
+			"and outside the field itself, %.0fpx > outer_radius %.0fpx"
+					% [dist, found.heard_within()])
 
 ## Before a day there is no plan to count, so the run log's `events:` line says none; once a walk's
 ## plans are taken it names each row the plan holds.

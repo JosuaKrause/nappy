@@ -516,7 +516,7 @@ func _strollers_on(scene: InteriorScene, tiles: Array[Vector2i]) -> Array[Stroll
 	var walkers: Array[Stroller] = []
 	for tile in tiles:
 		var walker: Stroller = packed.instantiate()
-		walker.carrying = true
+		walker.use_carrying_rig()
 		walker.set_map(scene.map())
 		scene.add_entity(walker)
 		walker.collision_layer = 0

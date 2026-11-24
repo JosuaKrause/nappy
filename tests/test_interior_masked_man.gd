@@ -63,7 +63,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 	scene.build()
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
-	player.carrying = true
+	player.use_carrying_rig()
 	player.set_map(scene.map())
 	scene.add_entity(player)
 	var body_collision := player.get_node("CollisionShape2D") as CollisionShape2D
