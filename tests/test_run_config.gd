@@ -228,31 +228,31 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		# The run this boot plays is the test's own, parked in a home the game takes it from.
 		var run := RunState.new()
 		var home := Boot.home_playing(t, run)
-		# The city's flags as it enters the tree: `main` adds it before `build()`, which is where
-		# they take effect, so what is read here is what `build()` reads.
-		var entered := {}
-		var catch := func(node: Node) -> void:
-			if node is City:
-				var c := node as City
-				entered["flags"] = {"ground_mode": c.ground_mode, "skip_shadows": c.skip_shadows,
-						"scenery_frame_locked": c.scenery_frame_locked}
-		t.get_tree().node_added.connect(catch)
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
 				func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
-		t.get_tree().node_added.disconnect(catch)
 		var baby := Boot.baby(booted.main)
 		var rises := false
 		if baby:
 			rises = await _her_excitement_rises(t, baby, Boot.city(booted.main))
 		t.check(baby != null and rises != invincible,
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
-		var f: Dictionary = entered.get("flags", {})
-		t.check(not f.is_empty() and f["ground_mode"] == SceneryGround.Mode.ALL
-				and f["skip_shadows"] and not f["scenery_frame_locked"],
-				"the city is handed what the flags chose for its own ground before it builds")
+		# The city's own ground and shadows are read outward: the mode the flags chose, and a shadow
+		# layer that draws nothing once every chunk it stands is asked to draw again.
+		var city := Boot.city(booted.main)
+		var shadows := city.get_node("BuildingShadows") as BuildingShadows
+		var shade := RecordingShadowDrawer.new()
+		shadows.draw_through(shade)
+		var chunks := 0
+		for chunk in shadows.get_children():
+			if chunk is CanvasItem:
+				(chunk as CanvasItem).queue_redraw()
+				chunks += 1
+		await t.get_tree().process_frame
+		t.check(city.ground_mode_in_force() == SceneryGround.Mode.ALL and chunks > 0
+				and shade.draws.is_empty(),
+				"the city is handed what the flags chose for its own ground and shadows")
 		# The parts the builder stood are handed what the flags chose for each
 		# (`main._simulation_builder()`).
-		var city := Boot.city(booted.main)
 		t.check(city != null and RunCity.events(city).world.surroundings().draws()
 				and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 				"and the events it stands are handed theirs")
@@ -301,7 +301,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 
 ## **An atlas library that counts the crowd's pictures it hands out**, the `crowd/` regions a walker's
 ## or a car's look asks for as it draws (`CrowdAgent.picture_region()`). Handed to the city the way
-## `main` hands it the sitting's library (`City.atlas`); the simulation's builder is equipped with
+## `main` hands it the sitting's library (`City.equip()`); the simulation's builder is equipped with
 ## the same library (`RunCity.build()`, as `main` equips its own), hands it the crowd, and the crowd
 ## every agent it makes.
 class CrowdPictureCount extends AtlasLibrary:
@@ -317,10 +317,8 @@ class CrowdPictureCount extends AtlasLibrary:
 func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	var pictures := CrowdPictureCount.new()
-	city.atlas = pictures
-	city.ground_mode = SceneryGround.Mode.STEPPED
-	city.scenery_frame_locked = true
-	city.skip_shadows = true
+	city.schedule_scenery(SceneryGround.Mode.STEPPED, true)
+	city.leave_out(true)
 	t.add_child(city)
 	# The other seven are the simulation's, handed to its builder as `main._simulation_builder()`
 	# hands them.
@@ -328,7 +326,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	builder.leave_out(true, true, true)
 	builder.force_the_blackout()
 	builder.make_every_cyclist_a_pelican()
-	RunCity.build(city, MapCache.of(SEED), builder)
+	RunCity.build(city, MapCache.of(SEED), builder, false, pictures)
 	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
 	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
 	# stands asked to draw again: under `--skip shadows` none draws a tile.
@@ -341,8 +339,25 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 			(chunk as CanvasItem).queue_redraw()
 			chunks += 1
 	await t.get_tree().process_frame
-	t.check(city.scenery_ground.mode() == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
-			and chunks > 0 and shade.draws.is_empty(), "the ground, the scenery and the shadows")
+	t.check(city.ground_mode_in_force() == SceneryGround.Mode.STEPPED and chunks > 0
+			and shade.draws.is_empty(), "the ground and the shadows")
+	# The frame lock reaches the residency: an ordinary update under the stepped mode, after the
+	# view's first (which prepares what it shows wherever it stands), prepares the whole ground
+	# region that enters the load view in that one call, where an unlocked residency queues it.
+	# The view stands in the map's far south-east, away from the doorstep, with the load view's east
+	# edge a few pixels short of a region's border, which the second update's step then crosses.
+	var chunk := SceneryGround.CHUNK_PX
+	var far := Vector2(city.map.size_in_tiles()) * Tuning.TILE_SIZE * 0.75
+	var border := floorf(far.x / chunk)
+	var first := Rect2(border * chunk - 8.0 - 640.0 - SceneryResidency.LOAD_MARGIN, far.y,
+			640.0, 480.0)
+	city.scenery.update(first)
+	city.scenery.update(Rect2(first.position + Vector2(64.0, 0.0), first.size))
+	var entered := false
+	for key: Vector2i in city.scenery_ground.chunks():
+		entered = entered or key.x == int(border)
+	t.check(entered and city.scenery_ground.pending().is_empty(),
+			"and the scenery, whose update prepares the whole load view in one frame")
 	t.check(not RunCity.events(city).world.surroundings().draws()
 			and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"the events")

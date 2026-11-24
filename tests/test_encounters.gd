@@ -370,7 +370,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.size() == 1 and post.source().landed_ever() == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
-	manager.clear()
+	manager.stand_down()
 	_free_manager(manager)
 
 ## Three frames with her standing at `at` and the view about her.
@@ -440,7 +440,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	_stand(_watch(), both, at_post, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.is_empty(),
 			"inside a post's reach while another hold runs is no hold (%s)" % [_influenced])
-	manager.clear()
+	manager.stand_down()
 	_free_manager(manager)
 
 ## *(calm-pelican.)* A hut inspection sets her down within reach of a cyclist past its warning on
@@ -501,7 +501,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 			and counted_when_struck[0].has(caught) and cyclist_seen_before_the_strike,
 			"and the catch was counted on that tick, without another watch frame (%s)"
 			% [counted_when_struck])
-	manager.clear()
+	manager.stand_down()
 	manager.use_player(null)
 	stroller.free()
 	_free_manager(manager)

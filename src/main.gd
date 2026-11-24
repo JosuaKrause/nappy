@@ -553,7 +553,7 @@ func _ready() -> void:
 		var still_watch := StillWatch.new()
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
-		still_watch.trace = _the_trace()
+		still_watch.use_trace(_the_trace())
 		still_watch.setup(_city.map, _city.traffic_signals(), _event_source(), _crowd_now(), _player,
 				_day, config.quit_when_still_seconds(), StillWatch.telemetry_picture_dir(_run_log),
 				config.records_a_movie())
@@ -873,14 +873,12 @@ func _simulation_builder() -> SimulationBuilder:
 ## scenery before `build()` reads it.
 func _new_city() -> City:
 	var city: City = CITY.instantiate()
-	city.trace = _the_trace()
-	city.run = _run
-	city.ground_recipe = _sitting.ground_recipe()
-	city.atlas = _sitting.atlas()
-	city.ground_mode = config.ground_mode() as SceneryGround.Mode
-	city.scenery_frame_locked = config.plays_the_recipe_scripted()
-	city.skip_shadows = config.leaves_out_the_shadows()
-	city.frame_timing = _sitting.kept_frame_timing()
+	city.equip(_the_trace(), _sitting.atlas(), _sitting.kept_frame_timing())
+	city.use_ground_recipe(_sitting.ground_recipe())
+	city.use_run(_run)
+	city.schedule_scenery(config.ground_mode() as SceneryGround.Mode,
+			config.plays_the_recipe_scripted())
+	city.leave_out(config.leaves_out_the_shadows())
 	add_child(city)
 	_pauses_with_the_game(city)
 	return city
@@ -1742,7 +1740,7 @@ func _add_touch_controls() -> void:
 	_touch_controls.use_atlas(_sitting.atlas())
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
-	_touch_controls.rotated = _rotated
+	_touch_controls.use_rotated(_rotated)
 	var word := config.controls_word()
 	if (_flow.escape_from_a_run() or _flow.opening() == RunFlow.Opening.CARRIED_FROM_CHECKPOINT) \
 			and _sitting.controls_word() != "":
@@ -1818,7 +1816,7 @@ func _apply_orientation() -> void:
 		return
 	_rotated = rotate
 	ScreenOrientation.apply_to_camera(_player.camera(), rotate)
-	_touch_controls.rotated = rotate
+	_touch_controls.use_rotated(rotate)
 	# `_edge` (the screen-edge badge) is built with the first world the boot builds — see
 	# `_add_danger_edge()` — so it is null only for a script-only `main` a test drives by hand.
 	if _edge:

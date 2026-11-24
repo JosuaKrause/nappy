@@ -59,9 +59,10 @@ func handle_for_an_event() -> WhereSheIs:
 	handle._word = _told()
 	return handle
 
-## **Forgets every word as a walk begins** (`EventManager.clear()`): back to nowhere in place, since
-## every handle keeps this object, so an event streamed in before the walk's first word does not
-## hear the last walk's. A point an event saw itself expires with it.
+## **Forgets every word as a walk begins or ends** (`EventManager.start_day()`, `start_recipe()`
+## and `stand_down()`, which all reach `_clear()`): back to nowhere in place, since every handle
+## keeps this object, so an event streamed in before the walk's first word does not hear the last
+## walk's. A point an event saw itself expires with it.
 func forget() -> void:
 	_at = Vector2.INF
 	_pram_at = Vector2.INF

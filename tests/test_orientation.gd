@@ -105,7 +105,7 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	var probe := PauseProbe.new()
 	t.add_child(probe)
-	controls.rotated = true
+	controls.use_rotated(true)
 
 	var screen_pause := ScreenOrientation.to_presented_space(TouchControls.PAUSE_CENTRE, true)
 	_finger(controls, 0, screen_pause, true)
@@ -120,7 +120,7 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: TestRunner) -> void:
 	# The geometry the release itself asks is answered in design space -- the remap above is what
 	# has to hand it the right point, which is exactly what this whole suite is checking. Unrotated,
 	# the same press and lift at the unrotated position fires too.
-	controls.rotated = false
+	controls.use_rotated(false)
 	_finger(controls, 0, TouchControls.PAUSE_CENTRE, true)
 	_finger(controls, 0, TouchControls.PAUSE_CENTRE, false)
 	Input.flush_buffered_events()
@@ -140,7 +140,7 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: TestRunn
 	rig.add_to_group("player")
 	t.add_child(rig)
 	var controls := await _controls(t)
-	controls.rotated = true
+	controls.use_rotated(true)
 
 	var screen_point := ScreenOrientation.to_presented_space(Vector2(400.0, 400.0), true)
 	_finger(controls, 0, screen_point, true)
@@ -181,7 +181,7 @@ func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: TestR
 	camera.force_update_scroll()
 
 	var controls := await _controls(t)
-	controls.rotated = true
+	controls.use_rotated(true)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 
 	# West of the left focus, in design space -- the same offset `test_touch.gd`'s own (unrotated)

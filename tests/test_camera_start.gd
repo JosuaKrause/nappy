@@ -147,7 +147,10 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 			"and the boot camera is turned with it, so the city it shows is not drawn upright")
 
 	await Boot.until_booted(t, main)
-	t.check(Boot.touch_controls(main).rotated, "the finished boot has turned the whole presentation")
+	var her := Boot.player(main)
+	t.check(her != null and not her.camera().ignore_rotation
+			and is_equal_approx(her.camera().rotation, -deg_to_rad(90.0)),
+			"the finished boot has turned the whole presentation, her camera with it")
 	t.check(Boot.carries_the_rotation(Boot.title(main)),
 			"including the title it opens on")
 

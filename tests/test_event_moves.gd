@@ -172,7 +172,7 @@ func _free_the_manager(rig: Dictionary) -> void:
 	world.free()
 
 ## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
-## frame when its node leaves the tree: a finished one, one streamed out, and every one `clear()`
+## frame when its node leaves the tree: a finished one, one streamed out, and every one `stand_down()`
 ## throws away. Nothing here ends a frame, as the probes' loops do not.
 func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
@@ -210,9 +210,9 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	moves = manager.world.map().listed_moves()
 	move = rig.move
 	t.check(move != null and moves.has(move), "a streamed-in event is on the list to be cleared")
-	manager.clear()
+	manager.stand_down()
 	t.check(move != null and not moves.has(move) and moves.size() == 0,
-			"EventManager.clear() empties the list (%d left)" % moves.size())
+			"EventManager.stand_down() empties the list (%d left)" % moves.size())
 	_free_the_manager(rig)
 
 ## **A figure the manager moves is placed where it is put** (`EventManager.move_extra()`, the task

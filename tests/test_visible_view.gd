@@ -42,7 +42,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 	var row := EventCatalogue.by_id("cyclist")
 	var at := player.global_position
 	for rotated: bool in [false, true]:
-		controls.rotated = rotated
+		controls.use_rotated(rotated)
 		for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
 			controls.set_mode(ControlsMode.Mode.JOYSTICK, side)
 			var other := TouchControls.FOCUS_LEFT if side == ControlsMode.Side.RIGHT \

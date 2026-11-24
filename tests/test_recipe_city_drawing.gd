@@ -61,7 +61,7 @@ func _test_the_examples(t: TestRunner) -> void:
 			continue
 		var map: CityMap = built.map
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		city.scenery_frame_locked = true
+		city.schedule_scenery(SceneryGround.Mode.ONE, true)
 		t.add_child(city)
 		RunCity.build(city, map)
 		var wall_tile := Vector2i(118 if side == "hall" else 132, 14)

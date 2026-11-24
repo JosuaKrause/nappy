@@ -58,9 +58,8 @@ three typing warnings (`untyped_declaration`, `unsafe_property_access`, `unsafe_
 errors. What remains is this item's own conversion, which predates the design review.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the files open work rewrites, typed by that work or after it:
+is the two scene recipe files, typed by open work or after it:
 
-- The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
 
@@ -80,15 +79,13 @@ Left, each its own design question:
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
   - A field only a test still reads outside its own class and the code that writes it
-    (`SceneryResidency.frame_locked`, `ClosureMarker.piece`, `kind`, `across`,
-    `ParkFenceMarker.sign_offset`, `StillWatch.trace`, `TouchControls.rotated`) keeps its direct
-    write in the game (the city, the city scene, `main`) and goes with the tests-one-module item
+    (`ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`) keeps its direct
+    write in the game (the city scene) and goes with the tests-one-module item
     (`tests-one-module.md`), when its tests read through a method the game also calls.
 - **The lines other work touches** are converted with that work:
-  - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
-    hands the city), which go with the city scene's own pass (minty-quail's README, "The modules
-    that do not wait for the events"); `day_director.gd`'s reads of other classes' fields wait for
-    those classes' passes;
+  - `main.gd`'s reads of the city's map and its navigator, which go with the city scene's own pass
+    (minty-quail's README, "The modules that do not wait for the events"); `day_director.gd`'s
+    reads of other classes' fields wait for those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface
