@@ -54,7 +54,7 @@ func _ready() -> void:
 	for entry: Dictionary in setup.get("events", []):
 		var matched := false
 		for plan in RunCity.events(city).plans():
-			if plan.get_meta("recipe_name", "") == entry.name:
+			if plan.row_id() == entry.row:
 				matched = plan.placed_at().is_equal_approx(position_of(entry.at, anchors, city))
 		if not matched:
 			fail("construction moved the pinned subject")

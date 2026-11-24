@@ -55,6 +55,12 @@ ticks give, and is kept with its reason:
 - `test_pursuer_on_foot.gd` calls `EventManager.step_the_encounters()` and `check_hard_fails()`,
   the two steps the manager's own tick calls, since real manager ticks over its whole encounters run
   past four hundred seconds against about thirty (record minty-quail-snowy-panda).
+- `test_route_bag.gd`, `test_day7_van.gd`, `test_day6_yeller_met.gd` and `test_resistance_arrow.gd` call
+  `EventManager.step_what_is_ahead()`, the tick's own stretch from her camera's view to what is owed,
+  as they walk her down a day's longest route: real ticks there ran what the hand steps never ran and
+  no case asks about (a district door's hold that put her down elsewhere, a chatting mother, an extra
+  row the director sent) and took 1.1 to 2.1 times as long. `test_pursuer_on_foot.gd`'s walk, whose
+  run log real ticks left as it was, takes real ticks.
 - `test_checkpoints.gd` drives a standalone guard's `step()` in the pursuit simulations
   (`_guard_rig()`), and the gate rig's `RunCity.crowd(city).step()`: a real tick passes the car at
   another time than the rig's own. Its street-door rigs take real ticks.
@@ -67,10 +73,6 @@ ticks give, and is kept with its reason:
 
 **Open: what a test still reads that the game does not, or does not check.**
 
-- **`test_route_bag.gd`** reads a place waiting for its site in the director's private
-  list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
-  `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
-  resistance director to answer what is in front of her.
 - **`RouteLines.routes()`** is kept in `tools/test_only_members.txt` as the only handle on the drawn
   polylines, as `EventRouteLines.routes()` is.
 - **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
