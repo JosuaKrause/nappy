@@ -317,10 +317,18 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	t.check(city.ground_mode_in_force() == SceneryGround.Mode.STEPPED and chunks > 0
 			and shade.draws.is_empty(), "the ground and the shadows")
-	# The frame lock reaches the residency: an ordinary update under the stepped mode prepares
-	# every ground region of the load view at once, where an unlocked one leaves them queued.
-	city.scenery.update(Rect2(-20000, -20000, 640, 480))
-	t.check(not city.scenery_ground.chunks().is_empty() and city.scenery_ground.pending().is_empty(),
+	# The frame lock reaches the residency: an ordinary update under the stepped mode, after the
+	# view's first (which prepares what it shows wherever it stands), prepares the whole ground
+	# region that enters the load view in that one call, where an unlocked residency queues it.
+	var chunk := SceneryGround.CHUNK_PX
+	var first := Rect2(-150.0 * chunk - 8.0 - 640.0 - SceneryResidency.LOAD_MARGIN, -20000.0,
+			640.0, 480.0)
+	city.scenery.update(first)
+	city.scenery.update(Rect2(first.position + Vector2(64.0, 0.0), first.size))
+	var entered := false
+	for key: Vector2i in city.scenery_ground.chunks():
+		entered = entered or key.x == -150
+	t.check(entered and city.scenery_ground.pending().is_empty(),
 			"and the scenery, whose update prepares the whole load view in one frame")
 	t.check(not RunCity.events(city).world.surroundings().draws()
 			and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
