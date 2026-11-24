@@ -35,7 +35,7 @@ var _decals: CityDecals
 ## A scripted recipe's frame-locked playback: every update prepares its whole load view in that
 ## frame, with no budget and no deferral, so a recorded frame never shows unprepared ground. Handed
 ## in by the city that builds this. Free play keeps ordinary streaming.
-var frame_locked := false
+var _frame_locked := false
 ## The view the last update prepared for (`view()`); empty until the first.
 var _view := Rect2()
 ## The standings of everything registered: a building, the home door and every `ScenerySprite`,
@@ -68,6 +68,11 @@ func setup(world: CanvasItem, map: CityMap, ground: SceneryGround, shadows: Buil
 ## Hands in where an update charges its time to the frame record, before the first update.
 func use_frame_timing(record: FrameTiming) -> void:
 	_timing = record
+
+## Hands in whether a scripted recipe's playback is locked to frames: every update then prepares
+## its whole load view in that frame, with no budget and no deferral.
+func lock_to_frames(locked: bool) -> void:
+	_frame_locked = locked
 
 ## The view the last update prepared for, or an empty rectangle before the first.
 func view() -> Rect2:
@@ -113,7 +118,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 	if recording:
 		outer = _timing.enter(FrameTiming.SCENERY)
 		_record_deferred_scenery.call_deferred(true)
-	immediate = immediate or frame_locked
+	immediate = immediate or _frame_locked
 	var started := Time.get_ticks_usec()
 	var relocated := not _view.has_area() or _view.size != next_view.size \
 			or _view.get_center().distance_to(next_view.get_center()) > GUARD_MARGIN
@@ -195,13 +200,13 @@ func update(next_view: Rect2, immediate := false) -> void:
 	# (or this update's own bookkeeping) has already spent it in: the heaviest frames.
 	var ran := 0
 	for job: Dictionary in pending:
-		if not frame_locked and ran > 0 \
+		if not _frame_locked and ran > 0 \
 				and Time.get_ticks_usec() - started >= budget_usec:
 			_pending = true
 			break
 		if job.has("ground_key"):
 			var key: Vector2i = job["ground_key"]
-			if frame_locked or ground.mode() == SceneryGround.Mode.ALL:
+			if _frame_locked or ground.mode() == SceneryGround.Mode.ALL:
 				ground.prepare(key)
 				ran += 1
 				if recording:

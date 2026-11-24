@@ -68,7 +68,7 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city,
 			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
 			start)
-	RunCity.events(city).clear()
+	RunCity.events(city).stand_down()
 	city.free()
 	return printed
 
@@ -89,7 +89,7 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	var printed := _walk(t, "escape seed %d" % seed_value, city,
 			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
 			start)
-	RunCity.events(city).clear()
+	RunCity.events(city).stand_down()
 	city.free()
 	return printed
 
@@ -105,7 +105,7 @@ func _the_building(t: TestRunner, seed_value: int) -> int:
 	var sets: Array[ExcitementSources] = [events.excitement_sources()]
 	var printed := _walk(t, "building seed %d" % seed_value, scene, sets, events, null,
 			scene.map().start_world_position(), BUILDING_TICKS)
-	events.clear()
+	events.stand_down()
 	events.free()
 	scene.free()
 	return printed

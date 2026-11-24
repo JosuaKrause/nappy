@@ -119,7 +119,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	run.start_run(run_seed)
 	run.resistance().set_progress(progress_at_dawn)
 	var city: City = CITY_SCENE.instantiate()
-	city.run = run
+	city.use_run(run)
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
 	RunCity.events(city).stream_within(INF)

@@ -140,7 +140,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 		t.check(_cause_sent() == case[2], ("with the cyclist landing %.0f and the pelican %.0f, "
 				+ "the crying day is lost to the %s (got %s)") % [kid_landed, pelican_landed,
 				case[2], _cause_sent()])
-		events.clear()
+		events.stand_down()
 		_put_away(rig)
 
 func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:

@@ -319,12 +319,11 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 			"another art holds none of the first's pictures")
 	_map = MapCache.of(SEEDS[0])
 	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
-	_city.atlas = atlas
 	t.add_child(_city)
 	var recording := RecordingPosterArt.new()
 	var builder := RunCity.new_builder()
 	builder.use_poster_art(recording)
-	RunCity.build(_city, _map, builder)
+	RunCity.build(_city, _map, builder, false, atlas)
 	_run = _city.run
 	_walls = RunCity.poster_walls(_city)
 	var fronts: Array = _walls.fronts().keys()

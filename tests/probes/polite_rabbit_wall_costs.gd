@@ -78,7 +78,7 @@ func run(t: TestRunner) -> void:
 					var walked := _walk(city, path, day, rng, events, crowd)
 					seconds += walked.x
 					mismatches += int(walked.y)
-			RunCity.events(city).clear()
+			RunCity.events(city).stand_down()
 			print("  %6d %4d %6d %8.0f   %s   %s" % [city_seed, day, routes, seconds,
 					_three(events), _three(crowd)])
 			for i in 3:

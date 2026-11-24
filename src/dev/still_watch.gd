@@ -105,9 +105,13 @@ var _elapsed := 0.0
 ## Set the moment the picture is asked for, so a still-running instance (the capture itself takes
 ## a frame or two to land) never asks twice.
 var _done := false
-## Where its `still` line goes: the boot's run trace, which `main` hands it before `setup()`; one
-## nobody handed writes nowhere.
-var trace := RunTrace.new()
+## Where its `still` line goes: the boot's run trace, which `main` hands it (`use_trace()`) before
+## `setup()`; one nobody handed writes nowhere.
+var _trace := RunTrace.new()
+
+## Hands in where its `still` line goes, before `setup()`.
+func use_trace(run_trace: RunTrace) -> void:
+	_trace = run_trace
 
 func setup(map: CityMap, signals: TrafficSignals, events: EventManager, crowd: Crowd,
 		player: Stroller, day: DayController, hold_seconds: float, picture_dir: String,
@@ -271,7 +275,7 @@ static func _nearest_visible_signalled_junction(map: CityMap, signals: TrafficSi
 func _trigger() -> void:
 	_done = true
 	set_physics_process(false)
-	trace.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
+	_trace.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
 		_seconds, RunTrace.tile(_map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 

@@ -74,7 +74,7 @@ func _visible_view(t: TestRunner) -> void:
 			ScreenOrientation.apply_to_camera(camera, rotated)
 			camera.force_update_scroll()
 			for scheme: Array in schemes:
-				controls.rotated = rotated
+				controls.use_rotated(rotated)
 				controls.set_mode(scheme[1], scheme[2])
 				var label := "%s rotated=%s at=%s" % [scheme[0], rotated, centre]
 				var joystick: bool = scheme[1] == ControlsMode.Mode.JOYSTICK

@@ -1327,7 +1327,7 @@ func _test_a_press_on_runs_side_never_steers(t: TestRunner) -> void:
 		var toward_run := signf(run.x - steering.x)
 		for rotate: bool in [false, true]:
 			var controls := await _controls(t)
-			controls.rotated = rotate
+			controls.use_rotated(rotate)
 			controls.set_mode(ControlsMode.Mode.JOYSTICK, side)
 			t.check(controls.run_button_center() == run,
 					"Run is on the far side from the first frame (side=%d rotated=%s)" % [side, rotate])
@@ -1401,7 +1401,7 @@ func _test_round_button_margins_and_unchanged_dead_zones(t: TestRunner) -> void:
 	for rotate: bool in [false, true]:
 		var controls := await _controls(t)
 		controls.set_mode(ControlsMode.Mode.JOYSTICK)
-		controls.rotated = rotate
+		controls.use_rotated(rotate)
 		var catch_ratio := TouchControls.PAUSE_CATCH_RADIUS / TouchControls.PAUSE_RADIUS
 		for ratio: float in [1.051, catch_ratio - 0.01, catch_ratio + 0.01]:
 			var pause_at := ScreenOrientation.to_presented_space(TouchControls.PAUSE_CENTRE

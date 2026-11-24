@@ -520,7 +520,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 
 	# The day is retried (the same shape a new day takes): the read mark is freed outright. The day
 	# is not given back, so it offers no mark and no new guard: the old guard stays standing in the
-	# street (`EventManager.clear()` retires it in the real game).
+	# street (a walk's start retires it in the real game).
 	director.start_day(9, _rng(9, "resistance"), 300.0)
 	t.check(mark_contact.is_queued_for_deletion(), "the read mark is freed at the day's end")
 	t.check(director.read_mark() == null, "and no mark is tracked as read")

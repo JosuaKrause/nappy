@@ -46,12 +46,11 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	# The run is held here: swapping the script drops the one the city was handed.
 	var own_run := city.run
 	city.set_script(TIMED_CITY)
-	city.run = own_run
-	city.atlas = _atlas
+	city.use_run(own_run)
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()
-	RunCity.build(city, map)
+	RunCity.build(city, map, null, false, _atlas)
 	var built_spans: Dictionary = city.get("spans")
 	var row := built_spans.duplicate()
 	row.merge({"seed": seed_value, "trial": trial, "stage": "build",
