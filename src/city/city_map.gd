@@ -1395,6 +1395,21 @@ func pavement_inward(tile: Vector2i) -> Vector2i:
 		return axis
 	return Vector2i.ZERO
 
+## Where a row summoned on sight comes to rest: the near kerb across from `at`, which is the
+## sidewalk point the row that summoned it is standing on. `Vector2.INF` where `at` is not beside a
+## carriageway at all, which is a point with no kerb to park at. `EventSpawner` sends the fire
+## engine here.
+##
+## `pavement_inward()` points away from the carriageway, into the block she is walking beside, so
+## the road is the other way; `burning_building`'s `AT_THE_FRONT` puts `at` on the sidewalk tile
+## touching the building's front, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from
+## the kerb, and the near edge of the carriageway is that many tiles further in `-inward`.
+func kerb_across_from(at: Vector2) -> Vector2:
+	var inward := pavement_inward(world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return Vector2.INF
+	return at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+
 ## Walkable *and* open: what the player can actually use today. Anything choosing a place to
 ## put something — an event, a crowd agent, a resistance contact — wants this rather than
 ## `is_walkable`, or it will put it somewhere nobody can reach.
