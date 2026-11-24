@@ -52,7 +52,8 @@ manager's own suites off them.
   a swap of the two changes no answer under them. The escape building's spec
   (`DaySpec.Section.BUILDING`) sets them apart (no poster pursuer, the home's streets held), and
   `test_walk_siting_spec.gd` runs a case under it (the ground its siting is asked on keeps the home's
-  streets; a torn poster sends nobody), which fails with the two settings swapped (3 failures). Each setting set always true fails the three suites.
+  streets; a torn poster sends nobody), which fails with the two settings swapped (3 failures).
+  Each setting set always true fails the three suites.
 - Mutations shown failing: the summons deleted from the tick (the covered-corner tap case and four
   more), `warnings.run` deleted (the cyclist's four), `use_sitings` not forwarding (the counting-ground
   and both home-street cases), the way on made before the bodies are recorded (the way-on case), the

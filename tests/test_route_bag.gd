@@ -471,6 +471,9 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(SEED))
+	# What the events tell the run log: a place is put on her route when a line says so.
+	var put_down: Array[String] = []
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
 	state.begin_day(city.map.plans_by_block(), day)
 	var rng := RandomNumberGenerator.new()
@@ -543,15 +546,14 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
 		var owed_before := RunCity.events(city).owed_ahead()
 		var plans_before := RunCity.events(city).plans().size()
-		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-		RunCity.events(city).ahead.site_what_is_on_her_way(STEP)
-		RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
+		# The tick's stretch from her camera's view to what is owed, in the tick's own order.
+		RunCity.events(city).step_what_is_ahead(STEP)
 		if RunCity.events(city).owed_ahead() < owed_before:
 			handed += 1
 		# Only the place her route's marble handed to her walk: a unit the siting drew round its
 		# pick may have drawn the same row, a place of its own.
 		for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
-			if plan.row_id() == row and RunCity.events(city).ahead.director().is_from_her_route(plan):
+			if plan.row_id() == row and PutOnHerRoute.says(put_down, city.map, plan):
 				placed.append(plan)
 				her_at_siting = player.global_position
 		player.global_position += player.velocity * STEP

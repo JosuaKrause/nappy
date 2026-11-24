@@ -159,7 +159,11 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 			"with no crowd and no walls")
 	t.check(simulation.events().world.navigator() == navigator,
 			"and its events move by the navigator the builder was handed")
-	t.check(simulation.events().streaming.stream_radius() == INF,
+	var far_off := Vector2(1.0e5, 1.0e5)
+	var far_plan := EventPlan.new(EventCatalogue.by_id("loose_dog"), far_off)
+	simulation.events().start_recipe([far_plan] as Array[EventPlan], DaySpec.for_day(1), 1,
+			Vector2.ZERO)
+	t.check(simulation.events().event_of(far_plan) != null,
 			"its events stream the whole plan, since the building is walked through doors")
 	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
 	var at := map.tile_to_world(Vector2i(stretch.x * CityMap.period() + 1, stretch.y + 2))
@@ -282,15 +286,9 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	t.check(nothing.box() == Rect2() and nothing.shows(far_off, Rect2(-1.0, -1.0, 2.0, 2.0)),
 			"and its events are handed a view with no screen: no box, and everything shows")
 	far_off.free()
-	# Not every cyclist is the pelican without `--pelican`: a full bag of 399 cyclists and one
-	# pelican (`EventSpawner.CYCLISTS_IN_THE_BAG`) rolls the pelican once, whatever the run's seed.
-	var cyclist := EventCatalogue.by_id("cyclist")
-	var pelicans := 0
-	for _roll in EventSpawner.CYCLISTS_IN_THE_BAG + EventSpawner.PELICANS_IN_THE_BAG:
-		if events.spawner.rolls_a_pelican(cyclist):
-			pelicans += 1
-	t.check(pelicans == EventSpawner.PELICANS_IN_THE_BAG,
-			"a builder handed no --pelican leaves the pelican to the run's bag (%d of a full bag)" % pelicans)
+	# The bag's own roll (one pelican in a full bag) is `test_pelican.gd`'s.
+	t.check(events.world.surroundings().pelican_rig() == EventSpawner.PelicanRig.BAG,
+			"a builder handed no --pelican leaves the pelican to the run's bag")
 	var walking := await _the_crowd_runs(t, ordinary)
 	t.check(int(walking["agents"]) > 0 and int(walking["moved"]) > 0 and pictures.asked > 0,
 			"and its crowd walks and asks for its pictures from the atlas it was equipped with "
@@ -314,7 +312,7 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 			"--skip crowd and motion reach the crowd: it stands where it was placed and asks "
 			+ "for no picture (%d agents, %d moved, %d pictures)"
 			% [standing["agents"], standing["moved"], atlas.asked])
-	t.check(events.spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
+	t.check(events.world.surroundings().pelican_rig() == EventSpawner.PelicanRig.ALWAYS,
 			"--pelican reaches the events")
 	# The events' pages are the ones handed in when the manager has acquired their group on them
 	# (it does on entering the tree), so a picture of the group is there to be had.

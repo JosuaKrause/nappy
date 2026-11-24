@@ -314,8 +314,8 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		RunCity.events(_city).ahead.site_what_is_on_her_way(step)
-		RunCity.events(_city).ahead.place_what_is_owed_ahead(step)
+		# The tick's stretch from her camera's view to what is owed, in the tick's own order.
+		RunCity.events(_city).step_what_is_ahead(step)
 		player.global_position += player.velocity * step
 		walked += step
 	return ""
@@ -369,7 +369,7 @@ func _a_mast_can_be_sited_along_her_route() -> bool:
 	var events := RunCity.events(_city)
 	var siting := SitingMaker.new(events.world, events.walk_events()).make(
 			11, _city.streets().route_tree(), events.walk_events().ground())
-	var def: EventDef = events.ahead.director().route_row(EventCatalogue.mast().id())
+	var def: EventDef = events.route_row(EventCatalogue.mast().id())
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()

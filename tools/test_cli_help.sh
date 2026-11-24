@@ -1064,6 +1064,66 @@ else
     echo "skip decisions.sh's search cases: rg is not on PATH"
 fi
 
+# ------------------------------------ new-name.sh checks the open pull requests' branches too ---
+# A scratch git checkout whose `gh` stub lists three open branches: `other`, whose head holds a
+# review item named busy-badger while the checkout's own origin/other is stale (an older commit
+# without it), `gone`, which cannot be read, and `fork`, a fork's pull request. Two branches cut
+# from the same main must not draw the same pair, so the draw skips busy-badger, reads the pull
+# request's head rather than the stale ref, leaves the caller's FETCH_HEAD and refs/ as they were,
+# and says that it skipped `gone` and `fork`; with a `gh` that fails (no network) it draws from
+# this tree alone.
+pr_repo="$work_dir/names-pr-repo"
+pr_bin="$work_dir/names-pr-bin"
+mkdir -p "$pr_repo/tools/names" "$pr_repo/docs/todo" "$pr_repo/docs/decisions" "$pr_repo/docs/review" \
+    "$pr_repo/docs/playtests" "$pr_bin"
+cp "$root/tools/new-name.sh" "$pr_repo/tools/"
+printf 'busy\n' > "$pr_repo/tools/names/adjectives.txt"
+printf 'badger\notter\n' > "$pr_repo/tools/names/animals.txt"
+touch "$pr_repo/docs/review/.gitkeep"
+(
+    cd "$pr_repo" || exit 1
+    git init --quiet
+    git add -A
+    git -c user.name=t -c user.email=t@example.com commit --quiet -m main
+    git init --quiet --bare "$pr_repo.origin.git"
+    git remote add origin "$pr_repo.origin.git"
+    git update-ref refs/remotes/origin/other HEAD
+    git checkout --quiet -b other
+    printf '# busy-badger — Taken elsewhere\n' > docs/review/2026-09-02-busy-badger.md
+    git add -A
+    git -c user.name=t -c user.email=t@example.com commit --quiet -m other
+    git push --quiet origin other
+    git rev-parse HEAD > "$pr_repo.other-oid"
+    git checkout --quiet -
+    git branch --quiet -D other
+    printf 'kept\n' > .git/FETCH_HEAD
+)
+pr_oid="$(cat "$pr_repo.other-oid")"
+printf '#!/usr/bin/env bash\nprintf "other\\t%s\\tfalse\\ngone\\t%s\\tfalse\\nfork\\t%s\\ttrue\\n"\n' \
+    "$pr_oid" "$(printf '%040d' 1)" "$pr_oid" > "$pr_bin/gh"
+chmod +x "$pr_bin/gh"
+# With the one pair the other branch holds as the only one, the draw has nothing free (a draw that
+# ignored the branch would take it).
+printf 'badger\n' > "$pr_repo/tools/names/animals.txt"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Only" 2>&1)"; pr_status=$?
+check_that "new-name.sh finds no free pair when an open branch holds the only one" \
+    '[[ $pr_status -ne 0 && "$pr_out" == *"no free adjective-animal pair"* ]]'
+printf 'badger\notter\n' > "$pr_repo/tools/names/animals.txt"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Second" 2>&1)"
+check_that "new-name.sh passes over a name an open pull request's branch holds" \
+    '[[ "$pr_out" == *"2026-09-27-busy-otter"* && -s "$pr_repo/docs/playtests/2026-09-27-busy-otter.md" ]]'
+check_that "new-name.sh says that it skipped a branch it cannot read, and goes on" \
+    '[[ "$pr_out" == *"cannot read branch gone; skipped"* ]]'
+check_that "new-name.sh skips a fork's pull request with a note" \
+    '[[ "$pr_out" == *"fork is from a fork; skipped"* ]]'
+check_that "new-name.sh leaves the caller's FETCH_HEAD and refs/new-name alone" \
+    '[[ "$(cat "$pr_repo/.git/FETCH_HEAD")" == kept && -z "$(git -C "$pr_repo" for-each-ref refs/new-name)" ]]'
+rm -f "$pr_repo/docs/playtests/2026-09-27-busy-otter.md"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$pr_bin/gh"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Offline" 2>&1)"
+check_that "new-name.sh offline says so and draws from its own tree" \
+    '[[ "$pr_out" == *"gh pr list failed; names on open pull requests are not checked"* && -n "$(ls "$pr_repo/docs/playtests")" ]]'
+
 # ------------------------------------------------------- lint.sh's checks of the queue's layout ---
 # On the same scratch tree: an entry, its review items and an old entry's decision share names on
 # purpose and pass; a second use of a pair of words, a checkbox in a queue file, and a link in

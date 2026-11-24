@@ -54,10 +54,10 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
 
-## **The escape building's spec splits the two settings** the day's and the escape city's spec keep
-## alike: it holds the home's streets (the ground its siting is asked on keeps the street) and sends no
-## poster pursuer (a torn poster there sends nobody, where a day's sends one). A swap of the two
-## settings in `EventsAhead.use_the_walk_of()` fails here and nowhere else.
+## **The escape building's spec splits the two settings** the day's and the escape city's spec
+## keep alike: it holds the home's streets (the ground its siting is asked on keeps the street)
+## and sends no poster pursuer (a torn poster there sends nobody, where a day's sends one). A
+## swap of the two settings in `EventsAhead.use_the_walk_of()` fails here and nowhere else.
 func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
 		t: TestRunner, map: CityMap) -> void:
 	var def := EventCatalogue.by_id("burning_building")
