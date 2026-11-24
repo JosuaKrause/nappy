@@ -869,7 +869,7 @@ func remember_before_pause() -> void:
 	_run_before_pause = _run_active
 
 ## The other half of *"Pause can keep the last direction just don't overwrite it from the button
-## press."* Called by `PauseScreen.close()`, once the tree is actually running again, so the
+## press."* Called by `PauseScreen._close()`, once the tree is actually running again, so the
 ## heading that was locked in before the pause is what she walks off with — **not** the press that
 ## dismissed the screen, which `_on_pointer()`'s own `get_tree().paused` guard already keeps from
 ## ever being armed for a heading of its own (see that function's own doc). A no-op while standing:

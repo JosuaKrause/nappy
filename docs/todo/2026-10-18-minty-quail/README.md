@@ -134,13 +134,10 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    step says whether a cheaper lookup is worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
    refactor's head and compares the two with `tools/compare-placement-rows.py`, which applies the
    rule the record grassy-magpie states (that record carries the output of the hand-run script it
-   replaced, with that step's own list). Before it does, the tool is made to refuse a log line of
-   a day outside 1 to 14, which it reads today though `placement_rows.gd` cannot print one, and both
-   probes are settled
-   on `DayPlanner`'s planning: `placement_rows.gd` plans each day's closures, region wall and seals
-   and hands the seals and the wall's bodies in as standing since placement step 3c, which moved
-   main's own route-adjacent walls from 30.54 to 19.41 a city a day, and
-   `tests/probes/placement_view_mix.gd` still plans no closures or seals.
+   replaced, with that step's own list). The tool refuses a log line of a day outside 1 to
+   14, and both probes plan a day the way `DayPlanner` does: each day's closures, holds, region wall and seals,
+   the seals and the wall's bodies handed in as standing (the record minty-quail-tiny-magpie; placement step 3c
+   moved main's own route-adjacent walls from 30.54 to 19.41 a city a day).
 
    The "before" it compares with is the design review's baseline readings in
    `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`

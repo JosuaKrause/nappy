@@ -136,7 +136,7 @@ func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t: TestRunner
 	t.check(pause.is_open(),
 			"and the click the engine emulates ahead of the real press never resumes the day instead")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -174,7 +174,7 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t: TestRunner) -> v
 	t.check(restarts[0] == 1, "and the eventual release does not restart it a second time")
 	t.check(pause.is_open(), "never having resumed along the way")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -229,7 +229,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t: TestRunner
 			"and exactly half full on a clock that stands half a hold on", 0.001)
 
 	UI.push(pause, UI.touch_at(pause_at, false, 0))
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -287,7 +287,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 			"halfway through a mouse hold, the pause screen's disc reads the brighter hover fill")
 
 	_send(UI.mouse_at(pause_at, false))
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -305,7 +305,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 			+ "(got %s, wanted the mouse hold's %s)" % [touch_bg, mouse_bg])
 
 	_send(UI.touch_at(pause_at, false, 0))
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -382,7 +382,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRu
 		t.check(stayed, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
 
 		if screen is PauseScreen:
-			(screen as PauseScreen).close()
+			UI.dismiss(screen as PauseScreen)
 		t.get_tree().paused = false
 		screen.free()
 

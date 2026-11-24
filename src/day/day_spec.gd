@@ -77,7 +77,7 @@ var goal := Goal.HOME
 ## `use_exits()`); empty for any other goal. Read through `exit_points()`.
 var _exits := {}
 ## Seconds on the clock.
-var length := Tuning.DAY_LENGTH_SECONDS
+var _length := Tuning.DAY_LENGTH_SECONDS
 ## Whether the clock reads to the hundredth and tells the HUD every frame, rather than to the whole
 ## second *(inbox #746 in woolly-penguin)*: the escape's tension is its clock.
 var clock_hundredths := false
@@ -268,7 +268,7 @@ var _region_wall_stands := false
 static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpec:
 	var spec := DaySpec.new()
 	spec._number = day
-	spec.length = day_length
+	spec._length = day_length
 	spec._region_wall_stands = day >= Tuning.REGION_WALL_FIRST_DAY
 	if spec.region_wall_stands():
 		spec.wall_row_share = GATEHOUSE_DAY_WALL_ROW_SHARE
@@ -280,7 +280,7 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
 	var spec := DaySpec.new()
 	spec._section = which
-	spec.length = section_length
+	spec._length = section_length
 	spec._title = section_title
 	spec.clock_hundredths = true
 	spec._daylight_runs_down = false
@@ -369,9 +369,9 @@ func world_kind() -> World:
 func title() -> String:
 	return _title
 
-## The seconds the walk's clock starts with (`length`).
+## The seconds the walk's clock starts with (`_length`).
 func seconds_on_the_clock() -> float:
-	return length
+	return _length
 
 ## How many of the act's walkers and cars are on the walk's streets, as a share of the act's own
 ## (`crowd_density`): nobody at `0.0`.
