@@ -430,8 +430,8 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	cyclist.free()
 
 	# A hold already running: the controller begins no other (`hold_that_would_begin()` answers
-	# nothing while any instance is chatting; tests/test_checkpoints.gd holds that), so the watch
-	# is handed no hold and counts none.
+	# nothing while any instance is chatting; `_test_a_corner_of_two_doors_is_one_toll` in
+	# tests/test_checkpoints.gd holds that), so the watch is handed no hold and counts none.
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)

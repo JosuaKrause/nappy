@@ -83,7 +83,6 @@ func run(t: TestRunner) -> void:
 	_test_the_release_latch(t)
 	await _test_walking_back_redetains_her(t)
 	await _test_the_chatting_mother_still_detains_once(t)
-	await _test_a_running_hold_begins_no_other_beside_a_post(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
 	await _test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
@@ -1865,35 +1864,6 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 
 	stroller.free()
 	_free_manager(manager)
-
-## **One hold at a time, whatever the rows**: with a conversation already running (a chatting
-## mother's), a post she walks into begins none of its own
-## (`CheckpointController.hold_that_would_begin()`, which `EncounterWatch` is handed). Without the
-## running conversation the same post takes her in, so the first half is not vacuous.
-func _test_a_running_hold_begins_no_other_beside_a_post(t: TestRunner) -> void:
-	for another_runs: bool in [false, true]:
-		var manager := _manager(t)
-		var stroller := _real_stroller(t)
-		manager.use_player(stroller)
-		var at := Vector2(6000.0, 6000.0)
-		var stood := _stand(manager, [
-			_plan_of(EventCatalogue.by_id("chatting_mother"), at, Vector2.RIGHT, null, 0.0,
-					PackedVector2Array([at, at + Vector2(256.0, 0.0)])),
-			_door_plan("checkpoint_post", at + Vector2(0.0, 500.0), Vector2.RIGHT)
-		] as Array[EventPlan])
-		var mother := stood[0]
-		var post := stood[1]
-		if another_runs:
-			mother.start_chat()
-		stroller.global_position = post.global_position \
-				+ Vector2(0.0, post.detain_distance() - 2.0)
-		await PhysicsTicks.pass_ticks(t, 2)
-		t.check(post.is_chatting() != another_runs,
-				"inside a post's reach with %s, the post %s" % [
-				"another hold running" if another_runs else "no other hold",
-				"begins none" if another_runs else "takes her in"])
-		stroller.free()
-		_free_manager(manager)
 
 # ------------------------------------------------------------------------ the gate ---
 

@@ -525,12 +525,23 @@ func _tick_the_events(delta: float) -> void:
 	step_the_encounters(delta)
 	if she_is_here:
 		warnings.warn_about_the_ground_she_is_on()
-		checkpoints.warn_at_the_doors()
-		checkpoints.watch_the_door_lines(delta)
-		checkpoints.check_detentions()
+	step_the_doors(delta)
 	# Last, on the same tick as the step that caught her, and on every event's committed pose: each
 	# step above has been proposed, checked and committed (`EventInstance.step()`).
 	check_hard_fails()
+
+## **The doors' own step, in the order the tick takes it**: with her in the world, the guards' hands
+## go up or down at the doors she is across, the doors' lines are watched for her crossing, and the
+## holds she walks into are begun and released. The tick calls it after the encounters' step; a caller
+## that wants only the doors (a suite that walks her across a door's line for minutes of play) calls
+## it and nothing else of the tick, with `step_the_encounters()` before it where a hut's or a guard's
+## own step is wanted.
+func step_the_doors(delta: float) -> void:
+	if not world.has_player():
+		return
+	checkpoints.warn_at_the_doors()
+checkpoints.watch_the_door_lines(delta)
+	checkpoints.check_detentions()
 
 ## **The encounters' own step, in the order the tick takes it**: with her in the world, every
 ## instance is told where she is, then every live event takes its step (with or without her), then
