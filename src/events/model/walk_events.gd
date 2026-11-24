@@ -113,9 +113,11 @@ func calm() -> CalmAreas:
 func reach() -> DayReach:
 	return _reach
 
-## The day's locations as dawn laid them out (`DayLocations`): day 13's, whose route-adjacent
-## sections the task's swap takes from (`ResistanceDirector._place_the_roadblock_near()`); null on a
-## day that laid none out and before a walk starts.
+## The day's locations as dawn laid them out (`DayLocations`), or as a scene recipe laid them
+## out for its rows: what every siting made as she walks reads, and day 13's task, whose
+## route-adjacent sections the swap takes from
+## (`ResistanceDirector._place_the_roadblock_near()`); null on a day that laid none out, for a
+## rig's recipe walk and before a walk starts.
 func locations() -> DayLocations:
 	return _locations
 
