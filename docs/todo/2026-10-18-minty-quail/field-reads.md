@@ -72,9 +72,9 @@ fields are the most read, so the events go first, as the ask says.
 Left, each its own design question:
 
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
-  by class: the city map's (`CityMap`) in the scene recipes' draft and runtime (`stretch`,
-  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets; its
-  `block_plans` is private, asked through `plans_by_block()`. `RoadClosure.segment` is
+  by class. The city map's (`CityMap`) `tiles`, `stretch`, `stretch_active`, `recipe_bounds` and
+  `block_plans` are private: the scene recipes' draft and runtime ask its methods (the record
+  2026-10-18-minty-quail-sandy-llama). `RoadClosure.segment` is
   private: every reader asks `street_key()`, `street_words()`, `mouth_rects()`, `cause_centre()`
   or `covers_tile()`. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
