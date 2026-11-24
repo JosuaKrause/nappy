@@ -76,6 +76,9 @@ func _ready() -> void:
 	if not _assert_pass_offsets_match():
 		get_tree().quit(1)
 		return
+	if not _assert_every_row_is_on_a_day(rows):
+		get_tree().quit(1)
+		return
 
 	var tables := _build_tables(rows)
 	var content := _render(tables)
@@ -110,6 +113,23 @@ func _pass_excluded(def: EventDef) -> bool:
 	return def.pursues() or def.waits_for_her()
 
 # ------------------------------------------------------------------------ asserts ---
+
+## The guard behind `tests/catalogue_rows.gd`: the suites sweep the rows `available_on()`
+## returns on days 0 to the run's length, so a row of `all()` available on none of them would drop out of
+## every sweep unseen. It fails here, naming the row.
+func _assert_every_row_is_on_a_day(rows: Array[EventDef]) -> bool:
+	var ok := true
+	for def in rows:
+		var on_a_day := false
+		for day: int in range(0, Tuning.RUN_LENGTH_DAYS + 1):
+			if def.available_on(day):
+				on_a_day = true
+				break
+		if not on_a_day:
+			push_error(("tools/cost_table.gd: %s is available on no day from 0 to %d, so the "
+					% [def.id(), Tuning.RUN_LENGTH_DAYS]) + "suites' CatalogueRows.every() never walks it")
+			ok = false
+	return ok
 
 func _assert_distances_clear_every_outer_radius(rows: Array[EventDef]) -> bool:
 	var last: float = DISTANCES[DISTANCES.size() - 1]
