@@ -279,7 +279,7 @@ func _her_for_the_events(t: Node, at: Vector2) -> Stroller:
 	return player
 
 ## Takes `body` (`_her_for_the_events()`) out of the city's events, and hands the poster walls and
-## the blackout the rig's own player again, as they had her before `body` was made.
+## the blackout the rig's own player (`_player`, or nobody when it is gone).
 func _let_her_go(body: Stroller) -> void:
 	RunCity.events(_city).use_player(null)
 	var hers: Stroller = _player if is_instance_valid(_player) else null

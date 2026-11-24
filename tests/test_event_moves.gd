@@ -170,16 +170,24 @@ func _free_the_manager(rig: Dictionary) -> void:
 	manager.free()
 	world.free()
 
-## Reads whether a move is on the list in each physics tick, after the manager's own step.
+## Reads once whether a move is on the list: in the tick its event is first queued for deletion,
+## after the manager's own step and before the frame's deletions. A later tick's reading, after the
+## node's leaving the tree has unlisted the move, would hide a removal left to that, so the first
+## reading is the one kept.
 class _ListReader extends Node:
 	var moves: ProposedMoves
 	var move: MoveProposal
+	var event: Node
+	var read := false
 	var listed_in_the_tick := true
 
 	func _init() -> void:
 		process_physics_priority = 1
 
 	func _physics_process(_delta: float) -> void:
+		if read or not is_instance_valid(event) or not event.is_queued_for_deletion():
+			return
+		read = true
 		listed_in_the_tick = moves.has(move)
 
 ## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
@@ -187,6 +195,7 @@ class _ListReader extends Node:
 ## throws away. A finished one leaves with the tick that retires it, the one tick the manager is
 ## given here.
 func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> void:
+	await PhysicsTicks.settle(t)
 	var at := Vector2(5000.0, 5000.0)
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
@@ -204,9 +213,10 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	var reader := _ListReader.new()
 	reader.moves = moves
 	reader.move = move
+	reader.event = live
 	t.add_child(reader)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not reader.listed_in_the_tick and not moves.has(move) and not is_instance_valid(live),
+	t.check(reader.read and not reader.listed_in_the_tick and not moves.has(move) and not is_instance_valid(live),
 			"retired once finished, it is off the list in the tick that retires it, "
 			+ "before the frame's deletions")
 	reader.free()
