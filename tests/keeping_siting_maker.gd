@@ -1,10 +1,9 @@
 class_name KeepingSitingMaker
 extends SitingMaker
 ## The game's maker (`SitingMaker`) that keeps every siting it makes, for a suite or a probe that
-## reads what the day's siting did (`WalkSiting.waits()`) or asks it a
-## question of its own, since `EventsAhead` keeps its siting to itself. It is handed to
-## `EventsAhead.use_sitings()` before the day starts (`on()`). A helper, not a suite: the runner
-## loads only `test_*.gd`.
+## reads what the day's siting did (`WalkSiting.waits()`) or asks it a question of its own, since
+## `EventsAhead` keeps its siting to itself. It is handed to `EventManager.use_sitings()` before
+## the day starts (`on()`). A helper, not a suite: the runner loads only `test_*.gd`.
 
 ## Every siting made, in order.
 var made: Array[WalkSiting] = []
@@ -13,7 +12,7 @@ var made: Array[WalkSiting] = []
 ## from here on.
 static func on(events: EventManager) -> KeepingSitingMaker:
 	var keeper := KeepingSitingMaker.new(events.world, events.walk_events())
-	events.ahead.use_sitings(keeper)
+	events.use_sitings(keeper)
 	return keeper
 
 ## The siting made last: the day's once the day has one; else the one a queued mast made (a day with

@@ -2,12 +2,11 @@ extends RefCounted
 ## **A booted scene recipe runs under the walk its clock runs on**: `main` hands the authored scene
 ## (`SceneRecipeRuntime.install()`) the spec the run flow started — a day's, or the escape city's
 ## section's, both through the one start (`DayDirector.start()`, which installs the scene in place of
-## the plan) — and the day's clock is started on that same spec. Read off the booted game: the clock's spec
-## (`DayController.spec()`) and its length, and the settings the scene's events took from the spec
-## they were installed under (`EventManager.use_the_spec()`: whether a torn poster sends a pursuer,
-## whether what is sited after dawn keeps off the home's streets). A suite that boots `main`: every
-## boot plays a run of its own (`tests/seat.gd`) and is handed a scratch-path save
-## (`tests/booted_main.gd`).
+## the plan) — and the day's clock is started on that same spec. Read off the booted game: the
+## clock's spec (`DayController.spec()`) and its length, and whether a torn poster sends the
+## scene's events a pursuer, which they took from the spec they were installed under
+## (`EventManager.use_the_spec()`). A suite that boots `main`: every boot plays a run of its own
+## (`tests/seat.gd`) and is handed a scratch-path save (`tests/booted_main.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
@@ -48,10 +47,13 @@ func _test_an_escape_scene_runs_under_the_sections_spec(t: TestRunner) -> void:
 ## The scene's events took their settings from the spec the clock runs on, and the clock was
 ## started for that spec's length.
 func _check_the_events_run_under(t: TestRunner, day: DayController, city: City, scene: String) -> void:
-	t.check(RunCity.events(city).ahead.sends_poster_pursuits == day.spec().sends_a_pursuer_for_a_torn_poster()
-			and RunCity.events(city).ahead.holds_the_home_streets
-					== day.spec().keeps_the_home_streets_clear(),
-			"%s's events run under the spec its clock runs on" % scene)
+	var events := RunCity.events(city)
+	var before := events.pending_warnings().size()
+	events.send_a_pursuer()
+	var sent := events.pending_warnings().size() - before
+	t.check(sent == (1 if day.spec().sends_a_pursuer_for_a_torn_poster() else 0),
+			"%s's events run under the spec its clock runs on: a torn poster sends %d"
+			% [scene, sent])
 	t.check(is_equal_approx(day.seconds_total(), day.spec().seconds_on_the_clock()),
 			"%s's clock is started for that spec's length (%.1fs of %.1fs)"
 			% [scene, day.seconds_total(), day.spec().seconds_on_the_clock()])

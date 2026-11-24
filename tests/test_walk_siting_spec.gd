@@ -13,8 +13,10 @@ extends RefCounted
 ## siting made at the day's start asks it, and this suite holds the rule is read off the walk's spec,
 ## and that every siting `EventsAhead` needs (the day's, a rigged route's and a mast's) is asked of
 ## the maker it is handed, with the walk's ground. It builds a real `EventManager` over a generated
-## city for the parts it hands `EventsAhead` (the world, streaming, spawner and board), which a
-## hand-made one would only restate: `EventsAhead` is the module under test, the maker is a fake.
+## city for the first case, which asks the manager through its face (`use_the_spec()`,
+## `queue_a_mast()`), and builds the parts it hands `EventsAhead` (the world, streaming, spawner
+## and board) the way `EventManager._init()` does for the second: `EventsAhead` is the module
+## under test, the maker is a fake.
 ## **The director is real**, over that map (`EventDirector`); the siting the fake maker answers is a
 ## stand-in (`FakeWalkSiting`), so no siting is built over a city.
 
@@ -26,32 +28,89 @@ const SEED := 4242
 func run(t: TestRunner) -> void:
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_the_events_ask_the_maker_they_are_handed_for_every_siting(t)
+	_test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t, MapCache.of(SEED))
 
 func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void:
-	var manager := EventManager.new()
+	var map: CityMap = MapCache.of(SEED)
+	var def := EventCatalogue.by_id("burning_building")
+	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
+	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
+	t.check(holds_it != leaves_it,
+			"the two rules differ on this city's ground (there was a rule to keep)")
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(map))
+	manager.setup(RunState.new())
+	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
+	manager.use_sitings(maker)
+	var offered: Array[Vector2i] = [Vector2i(1, 1)]
 	manager.use_the_spec(DaySpec.for_day(DAY))
-	t.check(manager.ahead.holds_the_home_streets, "a day's spec holds the home's streets after dawn")
+	manager.queue_a_mast(offered)
+	t.check(maker.made.size() == 1
+			and (maker.made[0][2] as RowGround).tiles_for(def) == holds_it,
+			"a day's spec holds the home's streets after dawn")
 	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
-	t.check(not manager.ahead.holds_the_home_streets,
+	manager.queue_a_mast(offered)
+	t.check(maker.made.size() == 2
+			and (maker.made[1][2] as RowGround).tiles_for(def) == leaves_it,
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
+
+## **The escape building's spec splits the two settings** the day's and the escape city's spec keep
+## alike: it holds the home's streets (the ground its siting is asked on keeps the street) and sends no
+## poster pursuer (a torn poster there sends nobody, where a day's sends one). A swap of the two
+## settings in `EventsAhead.use_the_walk_of()` fails here and nowhere else.
+func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
+		t: TestRunner, map: CityMap) -> void:
+	var def := EventCatalogue.by_id("burning_building")
+	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
+	var building := DaySpec.for_section(DaySpec.Section.BUILDING, RunConfig.FINALE_LENGTH_SECONDS)
+	var asked := 0
+	var pursuers := {}
+	for spec: DaySpec in [DaySpec.for_day(DAY), building]:
+		var manager := EventManager.new(EventSurroundings.new().in_the_city(map))
+		manager.setup(RunState.new())
+		var maker := FakeSitingMaker.new(FakeWalkSiting.new())
+		manager.use_sitings(maker)
+		var her := Node2D.new()
+		t.add_child(her)
+		her.global_position = map.tile_to_world(Vector2i(16, 16))
+		manager.use_player(her)
+		manager.use_the_spec(spec)
+		var offered: Array[Vector2i] = [Vector2i(1, 1)]
+		manager.queue_a_mast(offered)
+		manager.send_a_pursuer()
+		pursuers[spec] = manager.pending_warnings().size()
+		if spec == building:
+			asked = maker.made.size()
+			t.check(asked == 1 and (maker.made[0][2] as RowGround).tiles_for(def) == holds_it,
+					"the building's spec holds the home's streets after dawn")
+		manager.use_player(null)
+		her.free()
+		manager.free()
+	t.check(pursuers[building] == 0, "and a torn poster under it sends no pursuer (%d warnings)"
+			% pursuers[building])
+	t.check(pursuers.values().max() == 1 and pursuers.values().min() == 0,
+			"where a day's spec does send one, so the pursuer's absence is the spec's (%s)"
+			% [pursuers.values()])
 
 ## **Every siting `EventsAhead` needs is asked of the maker it is handed**, with the walk's ground:
 ## at the day's start when a plan is left for her walk, on a rigged route (`rig_her_route()`) and for
 ## a mast (`queue_a_mast()`) of a day with none. The ground is the walk's own where the walk carries
-## one, and where it carries none a ground made under the home-street rule the walk was started under
-## (`holds_the_home_streets`). Neither the ground nor the maker shows in any siting's answers, so
-## the maker is a fake that records what it was asked, handed in as the game hands the real one
-## (`EventsAhead.use_sitings()`). A siting no caller asks of the maker is a siting made by the class
-## itself, which this holds cannot happen.
+## one, and where it carries none a ground made under the home-street rule the walk was started
+## under (`EventsAhead.use_the_walk_of()`). Neither the ground nor the maker shows in any siting's
+## answers, so the maker is a fake that records what it was asked, handed in as the game hands the
+## real one (`EventsAhead.use_sitings()`). A siting no caller asks of the maker is a siting made by
+## the class itself, which this holds cannot happen.
 func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
 	var def := EventCatalogue.by_id("burning_building")
 	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
 	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
 	t.check(holds_it != leaves_it, "the two rules differ on this city's ground (there was a rule to keep)")
-	var manager := EventManager.new(EventSurroundings.new().in_the_city(map))
-	manager.setup(RunState.new())
+	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	world.use_run(RunState.new())
+	var board := WarningBoard.new(world)
+	var spawner := EventSpawner.new(world, board)
+	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
 	var tree := FakeRouteTree.new(map)
 	var walk := FakeWalkEvents.new()
 	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
@@ -59,11 +118,10 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	walk.set_plans(plans)
 	var siting := FakeWalkSiting.new()
 	var maker := FakeSitingMaker.new(siting)
-	var ahead := EventsAhead.new(manager.world, manager.streaming, manager.spawner,
-			manager.warnings, walk)
-	ahead.use_director(EventDirector.new(map, manager.world.navigator()), null)
+	var ahead := EventsAhead.new(world, streaming, spawner, board, walk)
+	ahead.use_director(EventDirector.new(map, world.navigator()), null)
 	ahead.use_sitings(maker)
-	ahead.holds_the_home_streets = true
+	ahead.use_the_walk_of(_spec_that(true))
 	ahead.start_day(DAY, tree)
 	t.check(maker.made.size() == 1,
 			"a day with a plan left for her walk asks the maker once at its start (%d)"
@@ -88,14 +146,14 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	t.check(maker.made.size() == before + 1
 			and (maker.made.back()[2] as RowGround).tiles_for(def) == holds_it,
 			"on a ground that keeps off the home street where the spec holds the home's streets")
-	ahead.holds_the_home_streets = false
+	ahead.use_the_walk_of(_spec_that(false))
 	ahead.start_day(DAY, tree)
 	before = maker.made.size()
 	ahead.rig_her_route([EventCatalogue.mast().id()], 4)
 	t.check(maker.made.size() == before + 1
 			and (maker.made.back()[2] as RowGround).tiles_for(def) == leaves_it,
 			"and on one that offers it where the spec does not")
-	ahead.holds_the_home_streets = true
+	ahead.use_the_walk_of(_spec_that(true))
 	ahead.start_day(DAY, tree)
 	before = maker.made.size()
 	var offered: Array[Vector2i] = [Vector2i(1, 1)]
@@ -107,11 +165,10 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	var carried := EventScheduler.row_ground(map, null, true)
 	var carrying := _CarryingWalk.new(carried)
 	var carried_asks := FakeSitingMaker.new(siting)
-	var on_a_carried_walk := EventsAhead.new(manager.world, manager.streaming, manager.spawner,
-			manager.warnings, carrying)
+	var on_a_carried_walk := EventsAhead.new(world, streaming, spawner, board, carrying)
 	on_a_carried_walk.use_sitings(carried_asks)
-	on_a_carried_walk.use_director(EventDirector.new(map, manager.world.navigator()), null)
-	on_a_carried_walk.holds_the_home_streets = false
+	on_a_carried_walk.use_director(EventDirector.new(map, world.navigator()), null)
+	on_a_carried_walk.use_the_walk_of(_spec_that(false))
 	on_a_carried_walk.queue_a_mast(offered)
 	t.check(carried_asks.made.size() == 1 and carried_asks.made[0][2] == carried,
 			"a walk that carries a ground has it handed, whatever the spec holds")
@@ -121,12 +178,17 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 			"a walk of a spec that holds the home's streets is handed a ground that keeps off the home street")
 	t.check(not_holding.tiles_for(def) == leaves_it,
 			"and one that does not hold them is handed a ground that offers it")
-	manager.free()
+
+## A walk's spec that holds the home's streets (a day's), or one that does not (the escape's).
+func _spec_that(holds: bool) -> DaySpec:
+	if holds:
+		return DaySpec.for_day(DAY)
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 
 ## The ground a mast queued on a day with no siting is made over, under `holds`.
 func _the_ground_asked_of(maker: FakeSitingMaker, ahead: EventsAhead, holds: bool,
 		offered: Array[Vector2i]) -> RowGround:
-	ahead.holds_the_home_streets = holds
+	ahead.use_the_walk_of(_spec_that(holds))
 	ahead.start_a_given_walk(DAY)
 	ahead.queue_a_mast(offered)
 	return maker.made.back()[2] as RowGround
