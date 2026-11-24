@@ -82,7 +82,6 @@ static func _centre(tile: Vector2i) -> Vector2:
 func _test_each_mover_is_stopped_by_its_own_layers(t: TestRunner) -> void:
 	var map := _yard_with_a_street_shut()
 	var building := Vector2i(1, 1)
-	var post := Vector2i(2, 1)
 	var closed := Vector2i(3, CityMap.period() / 2)
 	var soft := Vector2i(4, 1)
 	var body := Vector2i(5, 1)
@@ -90,7 +89,14 @@ func _test_each_mover_is_stopped_by_its_own_layers(t: TestRunner) -> void:
 	var park := Vector2i(7, 1)
 	map.set_tile(building, GameEnums.TileType.BUILDING)
 	map.set_tile(park, GameEnums.TileType.PARK)
-	map.blocked.lay_posts([post] as Array[Vector2i])
+	# A precinct on the lattice's vertical street at the origin: its posts stand where the game
+	# records them (`CityMap.index_posts()`), and the fixture takes the first of them.
+	map.add_precinct(Vector4i(1, 0, 0, 0))
+	map.index_posts()
+	var post: Vector2i = map.tiles_shut_to(Mover.POSTS).keys()[0]
+	t.check(not [building, closed, soft, body, open, park].has(post)
+			and Tile.is_walkable(map.tile_at(post)),
+			"fixture: a post stands on ground of its own, open to walk but for the post")
 	t.check(map.is_closed(closed), "fixture: the shut street holds the closed tile")
 	map.seal_soft_tile(soft)
 	var covered: Array[Vector2i] = [body]

@@ -33,7 +33,7 @@ const MARK := &"props/chalk_mark"
 const MARK_TOUCHED := &"props/chalk_mark_touched"
 
 var step: ResistanceSteps.Step
-var is_done := false
+var _is_done := false
 ## How close she must be for this contact's touch to complete: `REACH` for a bare point with no
 ## size of its own (a chalk mark), `ResistanceDirector.DOOR_REACH` for a door on a facade (day 8's,
 ## the last night's), the mast's body reach on day 11 — and, for a chalk mark, how far out its
@@ -87,7 +87,7 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 
 ## Whether the task this point marks is done.
 func is_finished() -> bool:
-	return is_done
+	return _is_done
 
 ## The task this point marks.
 func task_step() -> ResistanceSteps.Step:
@@ -118,7 +118,7 @@ func use_player(player: Stroller) -> void:
 	_player = player
 
 func _physics_process(delta: float) -> void:
-	if is_done:
+	if _is_done:
 		return
 	_pulse += delta
 	if _rider:
@@ -160,7 +160,7 @@ func would_complete_at(her: Vector2) -> bool:
 ## Completes a task that is done by an action rather than a place (`by_crossing`) — the director's
 ## call the moment she has crossed. Nothing once it is done.
 func complete_now() -> void:
-	if not is_done:
+	if not _is_done:
 		_complete()
 
 ## Whether her body — a disc of `Tuning.PLAYER_BODY_RADIUS` round `her` — overlaps the ground ellipse
@@ -208,7 +208,7 @@ static func touches_the_body(instance: EventInstance, at: Vector2, within := REA
 	return at.distance_to(instance.body_position()) <= body_reach(instance, within)
 
 func _complete() -> void:
-	is_done = true
+	_is_done = true
 	completed.emit(step.index)
 	queue_redraw()
 
@@ -227,14 +227,14 @@ func _draw() -> void:
 func draws_a_mark() -> bool:
 	return step != null and step.is_pickup
 
-## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once `is_done`,
-## drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this node's
-## own position the way the code-drawn circle and cross used to be centred on `Vector2.ZERO`.
-## "A picture is an asset, never code": the mark no longer strokes an arc and two lines by
+## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once the task is
+## done, drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this
+## node's own position the way the code-drawn circle and cross used to be centred on
+## `Vector2.ZERO`. "A picture is an asset, never code": the mark no longer strokes an arc and two lines by
 ## hand, and the two prepared pictures already carry the same 11px-radius circle and cross at
 ## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
 func _draw_chalk() -> void:
-	var picture := MARK_TOUCHED if is_done else MARK
+	var picture := MARK_TOUCHED if _is_done else MARK
 	var texture := _atlas.region(picture)
 	if not texture:
 		return

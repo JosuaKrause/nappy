@@ -137,8 +137,9 @@ func end_the_frame(delta: float) -> bool:
 	# (`CrowdView.drawn_box()`) redraws it from what it is now, caret included, which is before the
 	# margin has let any of it onto the screen. An agent with no view, or out of the tree, is always
 	# drawn: a hand-built rig has no screen to be off.
-	if view != null and is_inside_tree() \
-			and not view.drawn_box().intersects(Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size)):
+	if _view != null and is_inside_tree() \
+			and not _view.drawn_box().intersects(
+					Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size)):
 		_picture_is_stale = true
 		return false
 	if changed or _picture_is_stale:
