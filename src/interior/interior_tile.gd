@@ -8,24 +8,13 @@ extends RefCounted
 
 enum Kind {
 	NONE,                  ## No floor and no wall: absent from a map's own floor and wall tiles.
-	HALLWAY_FLOOR,          ## Plain hallway ground. Unused while the hallway is only two tiles
-	                        ## deep — every row is one of the four edges below — kept for a wider
-	                        ## hallway later.
 	HALLWAY_FLOOR_EDGE_N,   ## Against the north wall.
-	HALLWAY_FLOOR_EDGE_E,   ## Unused now that both hallway ends are doors — see
-	                        ## `InteriorMap._build_hallway()`. Kept for a hallway that does not end
-	                        ## in one.
 	HALLWAY_FLOOR_EDGE_S,   ## The south edge; its own picture implies the apartment doors below
 	                        ## the view.
-	HALLWAY_FLOOR_EDGE_W,   ## Unused for the same reason as the east edge above.
 	STAIRWELL_FLOOR,        ## The mechanical floor a `DOOR` tile's own threshold stands on.
-	STAIR_FLIGHT_E,         ## A retained diagonal tread descending south-east, available to the
-	                        ## tileset but currently unused.
-	STAIR_FLIGHT_W,         ## Its retained mirror, available to the tileset but currently unused.
 	STAIR_DOWN,             ## The basement entry's own stair: one level walkable cell seen from
 	                        ## the front, its treads narrowing away from her. No slope, so a
 	                        ## sideways press on it is a sideways step — see `flight_direction()`.
-	LANDING,                ## The retained old flat stair platform kind, currently unused.
 	STAIR_TOP_E,            ## `t`: the reviewed upper stair-side role, walkable toward east.
 	STAIR_MIDDLE_E,         ## `m`: the reviewed lower stair-side role, walkable toward east.
 	STAIR_TOP_W,            ## `T`: the mirrored upper role, walkable toward west.
@@ -36,9 +25,7 @@ enum Kind {
 	BASEMENT_FLOOR,         ## The short jogs connecting one basement stretch to the next — see
 	                         ## `InteriorMap._build_basement()`.
 	BASEMENT_FLOOR_EDGE_N,
-	BASEMENT_FLOOR_EDGE_E,
 	BASEMENT_FLOOR_EDGE_S,
-	BASEMENT_FLOOR_EDGE_W,
 	PUDDLE,                 ## A decal over basement floor. Never placed as a floor tile of its
 	                         ## own — see `InteriorMapPlan.decal_tiles()` — since it changes nothing about
 	                         ## what is beneath it.
@@ -64,25 +51,17 @@ enum Kind {
 ## or decoration and never walkable. Written as a lookup rather than a `match` over two dozen arms,
 ## so a kind newly added as a floor tile cannot be silently left off an arm nobody remembered to extend.
 const _WALKABLE := {
-	Kind.HALLWAY_FLOOR: true,
 	Kind.HALLWAY_FLOOR_EDGE_N: true,
-	Kind.HALLWAY_FLOOR_EDGE_E: true,
 	Kind.HALLWAY_FLOOR_EDGE_S: true,
-	Kind.HALLWAY_FLOOR_EDGE_W: true,
 	Kind.STAIRWELL_FLOOR: true,
-	Kind.STAIR_FLIGHT_E: true,
-	Kind.STAIR_FLIGHT_W: true,
 	Kind.STAIR_DOWN: true,
-	Kind.LANDING: true,
 	Kind.STAIR_TOP_E: true,
 	Kind.STAIR_MIDDLE_E: true,
 	Kind.STAIR_TOP_W: true,
 	Kind.STAIR_MIDDLE_W: true,
 	Kind.BASEMENT_FLOOR: true,
 	Kind.BASEMENT_FLOOR_EDGE_N: true,
-	Kind.BASEMENT_FLOOR_EDGE_E: true,
 	Kind.BASEMENT_FLOOR_EDGE_S: true,
-	Kind.BASEMENT_FLOOR_EDGE_W: true,
 	Kind.PUDDLE: true,
 	Kind.DOOR: true,
 	Kind.EMERGENCY_EXIT: true,
@@ -97,8 +76,8 @@ static func is_walkable(kind: Kind) -> bool:
 ## diagonal tread and a sideways press on it has no slope to be redirected along. This is the one
 ## number `Stroller`'s own slope redirection needs; see `InteriorMapPlan.slope_dir_at()`.
 static func flight_direction(kind: Kind) -> int:
-	if kind in [Kind.STAIR_FLIGHT_E, Kind.STAIR_TOP_E, Kind.STAIR_MIDDLE_E]:
+	if kind in [Kind.STAIR_TOP_E, Kind.STAIR_MIDDLE_E]:
 		return 1
-	if kind in [Kind.STAIR_FLIGHT_W, Kind.STAIR_TOP_W, Kind.STAIR_MIDDLE_W]:
+	if kind in [Kind.STAIR_TOP_W, Kind.STAIR_MIDDLE_W]:
 		return -1
 	return 0

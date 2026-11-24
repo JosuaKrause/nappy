@@ -44,10 +44,10 @@ const PASS_COLS: Array[String] = ["p0", "p20", "p40", "p80", "p120"]
 const PASS_HEADERS: Array[String] = ["0px", "20px", "40px", "80px", "120px"]
 
 const GEOMETRY_COLS: Array[String] = ["role", "intensity", "core_intensity", "core_radius",
-		"inner_radius", "outer_radius", "falloff_power", "pulse_period", "pulse_trough", "speed",
+		"inner_radius", "outer_radius", "pulse_period", "pulse_trough", "speed",
 		"walk_through_cost"]
 const GEOMETRY_HEADERS: Array[String] = ["role", "intensity", "core_intensity", "core_radius",
-		"inner_radius", "outer_radius", "falloff_power", "pulse_period", "pulse_trough", "speed",
+		"inner_radius", "outer_radius", "pulse_period", "pulse_trough", "speed",
 		"walk_through_cost"]
 
 const TITLE_GEOMETRY := "Geometry and role"
@@ -176,7 +176,6 @@ func _geometry_row(def: EventDef) -> Dictionary:
 		row["core_radius"] = "—"
 	row["inner_radius"] = "%.1f" % def.core_within()
 	row["outer_radius"] = "%.1f" % def.heard_within()
-	row["falloff_power"] = "%.1f" % def.falloff()
 	if def.pulses_every() > 0.0:
 		row["pulse_period"] = "%.1f" % def.pulses_every()
 		row["pulse_trough"] = "%.1f" % (def.peak() * 0.25)

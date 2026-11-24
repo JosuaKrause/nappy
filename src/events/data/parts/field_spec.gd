@@ -31,11 +31,6 @@ var _outer := 0.0
 var _core_rate := 0.0
 var _core_reach := 0.0
 
-## **The exponent on the drop between the two radii**: `peak * (1 - t ** falloff)`. 2.0 is the
-## curve the whole catalogue is measured at (three quarters of the peak still there at the midpoint
-## of the band), and every row is at it.
-const _FALLOFF := 2.0
-
 ## Seconds per cycle of its beat, for a row that pulses rather than holds. 0 is constant.
 var _pulse := 0.0
 
@@ -165,10 +160,6 @@ func core_rate() -> float:
 func core_reach() -> float:
 	return _core_reach
 
-## The exponent on the drop between its two radii.
-func falloff() -> float:
-	return _FALLOFF
-
 ## How many seconds one beat of its pulse lasts, or 0 for a field that does not pulse.
 func pulses_every() -> float:
 	return _pulse
@@ -220,25 +211,25 @@ func peak_through(age: float, into_its_burst: float, lasts: float, beat := -1.0)
 ## steps and holds that.
 func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> float:
 	var peak := _peak if at_intensity < 0.0 else at_intensity
-	var field := Field.falloff(at_distance, peak, _inner, _outer, _FALLOFF)
+	var field := Field.falloff(at_distance, peak, _inner, _outer)
 	if _core_rate <= 0.0:
 		return field
 	var core := _core_rate
 	if at_intensity >= 0.0 and _peak > 0.0:
 		core *= at_intensity / _peak
-	return maxf(field, Field.falloff(at_distance, core, _inner, _core_reach, _FALLOFF))
+	return maxf(field, Field.falloff(at_distance, core, _inner, _core_reach))
 
 ## What one of a flock's birds emits at `at_distance` from the bird, carrying `share` of the peak
 ## over a field that ends at `outer`: its own core edge and its own drop-off. Each bird is its own
 ## point, so a flock is priced as the sum of these, by the row and by its live event alike.
 func bird_emission_at(at_distance: float, share: float, outer: float) -> float:
-	return Field.falloff(at_distance, share, _inner, outer, _FALLOFF)
+	return Field.falloff(at_distance, share, _inner, outer)
 
 ## How far from the centre the field still emits more than `rate`, over both parts of it: the field
 ## itself, and the core where it has one (a cored row's loud part can outlive its quiet one).
 func reach_above(rate: float) -> float:
-	return maxf(_band_crossing(_peak, _inner, _outer, rate, _FALLOFF),
-			_band_crossing(_core_rate, _inner, _core_reach, rate, _FALLOFF))
+	return maxf(_band_crossing(_peak, _inner, _outer, rate),
+			_band_crossing(_core_rate, _inner, _core_reach, rate))
 
 ## A straight-line distance from the centre beyond which the field is exactly zero, whatever its
 ## rate, speed, heading or the way its body lies, not counting that body's own reach, so an event's
@@ -259,16 +250,13 @@ func silent_beyond() -> float:
 # ---------------------------------------------------------------- inside ---
 
 ## Where one falloff band crosses `rate`, or zero if it is never above it: `Field.falloff`'s
-## `1 − t^power` inverted for the `t` at which it equals `rate`, with the field's own power.
-static func _band_crossing(rate_at_centre: float, inner: float, outer: float, rate: float,
-		power: float) -> float:
+## `1 − t²` inverted for the `t` at which it equals `rate`.
+static func _band_crossing(rate_at_centre: float, inner: float, outer: float,
+		rate: float) -> float:
 	if rate_at_centre <= rate or outer <= inner:
 		return 0.0
 	var left := 1.0 - rate / rate_at_centre
-	# `sqrt` at the default rather than `pow(x, 0.5)`, as `Field.falloff` writes its own default
-	# out: the two may differ in the last bit, and every catalogued radius was measured here.
-	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
-	return inner + t * (outer - inner)
+	return inner + sqrt(left) * (outer - inner)
 
 ## This value with what is worked out from its settings worked out.
 func _made() -> FieldSpec:

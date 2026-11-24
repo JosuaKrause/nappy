@@ -372,15 +372,14 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: TestRunner) -> void:
 
 	# Every shaft picture the whole TileSet carries, by its own region name. `interior/stairwell_
 	# floor` is the level `F` ground and the tread under each `D`; the basement's own
-	# front-facing stair and the retained diagonal treads and landing are the rest of the stair
-	# vocabulary. Anything else showing up here is an assembly source coming back.
+	# front-facing stair is the rest of the stair vocabulary. Anything else showing up here is an
+	# assembly source coming back.
 	var kit := {
 		&"interior/m158_stair_side_upper_e": true, &"interior/m158_stair_side_lower_e": true,
 		&"interior/m158_stair_side_upper_w": true, &"interior/m158_stair_side_lower_w": true,
 		&"interior/m158_stair_side_continue_e": true, &"interior/m158_stair_side_continue_w": true,
 		&"interior/m158_stair_side_block": true, &"interior/stair_down": true,
-		&"interior/stair_flight_e": true, &"interior/stair_flight_w": true,
-		&"interior/stair_landing": true, &"interior/stairwell_floor": true,
+		&"interior/stairwell_floor": true,
 	}
 	var interior_names := BakedRegions.on(&"interior")
 	var name_at: Dictionary = {}
@@ -1644,7 +1643,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 		var shut := _longest_both_shut(a, b, steam)
 		var half := a.placed_at().distance_to(b.placed_at()) * 0.5
 		var rate := 2.0 * Field.falloff(half, steam.peak(), steam.core_within(),
-				steam.heard_within(), steam.field().falloff())
+				steam.heard_within())
 		t.check(shut * rate < Tuning.METER_MAX,
 				("a pocket %.0fpx wide is shut at both ends for at most %.2fs at %.1f/s, "
 				% [half * 2.0, shut, rate])

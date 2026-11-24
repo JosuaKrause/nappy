@@ -1673,10 +1673,6 @@ func core_rate() -> float:
 func core_reach() -> float:
 	return _field.core_reach()
 
-## The exponent on the drop of its field between its two radii.
-func falloff() -> float:
-	return _field.falloff()
-
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its body's shape, or none — a point at its centre — for a row whose
 ## field is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) or that has no
