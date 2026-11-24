@@ -841,12 +841,13 @@ each question as it was shown).
    numbers. Each is its own small pull request after the step that names it, saying what it
    changes, and playtests decide what then needs fixing. Tell me if you meant only the field's
    shape.": "whatever is the *correct* implementation. if that is b then let's do that" (inbox
-   #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
-   read-back's, which is what the player answered: each is a pull request of its own after the step
-   that gives it a name, not a change inside that step, saying what it changes in play and in the
-   run log, with its pictures. Playtests decide what then needs fixing.
-   - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
-   - The ground a row that ends the day shuts is stated four ways (`clearance()`,
-     `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
-     lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
-     made correct means they become one stated fact, asked under one name.
+   #1278 in olive-ferret). **Read as:** every answer is made correct, each as a pull request of its own after the step
+   that gave it a name, saying what it changes in play and in the run log, with its pictures;
+   playtests decide what then needs fixing. The field's real shape is built (the record
+   minty-quail-dappled-llama). The ground a row that ends the day shuts is one stated fact,
+   `EventDef.catch_shuts_within()`, which the plan's blocking disc (`EventPlan.blocking_radius()`)
+   and the walk ground (`WalkGround.held_by()`) ask; `EventPlan.clearance()` reads the catch
+   itself, measured to her centre (the record 2026-10-18-minty-quail-calm-marmot). What is left is
+   the `--route` dev rig, which still works the fact out in its own words: it asks
+   `catch_shuts_within()` on the live event and `EventInstance.is_a_standing_lethal_place()` is
+   deleted (A1b of the design).

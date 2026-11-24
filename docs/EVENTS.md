@@ -2540,12 +2540,14 @@ junction asked of a box round the placement, its whole rim the arms) — which i
 in the middle of a block open as well as the street it opens onto. The bodies are counted as they
 stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
 after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
-the way a live event's body (`EventBody`) builds it, and the seals with them. **A lethal reach that stands is counted
-as ground she cannot cross**, as well as the body under it: the parked van's 54px round where it
-stands (`WalkGround.held_by()`), since a sidewalk left open past its 22px body but inside its reach
-is a walk that ends the section; a pursuer's reach moves with him and warns first, so a roadblock
-counts at its band. A refused candidate is never a fallback, so a street with no such ground simply
-carries one fewer. The rule is one class
+the way a live event's body (`EventBody`) builds it, and the seals with them. **The ground a
+deadly row's catch shuts where it holds its place is counted as ground she cannot cross**, as
+well as the body under it: the parked van's 54px round where it stands (`WalkGround.held_by()`,
+`EventDef.catch_shuts_within()`), since a sidewalk left open past its 22px body but inside its
+reach is a walk that ends the section. A pursuer's post counts, since he notices her before she
+could come within his catch, and the hunting roadblock's guard catches inside his band, so a
+roadblock counts at its band. A refused candidate is never a fallback, so a street with no such
+ground simply carries one fewer. The rule is one class
 (`WalkGround`), stated over the walk it is handed (`RouteSource`), which any spec that keeps the
 walk open (`DaySpec.keeps_her_walk_open()`, the city section's) has the judge ask; a day keeps its
 routes through its corridor's own rules instead.
@@ -2581,9 +2583,11 @@ row's line reach covers a tile a route runs along (`RouteGroundRule`), which is 
 for a way round: a body or a cost never stands on a route tile there even where a detour exists.
 And on a day's walk, a street of her routes never has both its sidewalks closed by bodies a draw
 put on them (`OneSidewalkOpenRule`). Hard-fail events count
-as bodies for both, by their lethal inner disc: an abduction in progress is not something you
-walk through to reach the park behind it. The one-sidewalk rule reads a roadblock at its band at
-every heat (`docs/CITY.md`, "A street of her routes keeps one sidewalk past its bodies"). The run's scars and the park spoilers, which the line
+as bodies for both, by the ground their catch shuts where they hold their place: an abduction in
+progress is not something you walk through to reach the park behind it. The hunting roadblock's
+catch lies inside its band, so the one-sidewalk rule reads every row at `blocking_radius()` with no
+exception for the roadblock (`docs/CITY.md`, "A street of her routes keeps one sidewalk past its
+bodies"). The run's scars and the park spoilers, which the line
 rules are not asked of, are asked `RouteGroundRule` alone with a street's route tiles counted too,
 and the street she starts on, every route's first stretch, which the tree does not carry: a
 barricade the run left across a route's sidewalk or across her own street is not stood that day,

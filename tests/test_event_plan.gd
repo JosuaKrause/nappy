@@ -10,6 +10,7 @@ func run(t: TestRunner) -> void:
 	_test_a_door_body_never_blocks_the_way(t)
 	_test_the_wall_s_body_says_so(t)
 	_test_what_stands_clear_of_it(t)
+	_test_the_ground_it_shuts(t)
 	_test_which_plans_are_fixed_parts(t)
 	_test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t)
 	_test_what_its_field_reaches(t)
@@ -82,6 +83,46 @@ func _test_what_stands_clear_of_it(t: TestRunner) -> void:
 			"a body with a field asks its field (%.0fpx)" % field.clearance(her))
 	t.check(body.where_it_stands_now() == Vector2(320, 320),
 			"and it stands where it was placed while it is not in the world")
+	var cored := bare.redraft()
+	cored.lethal(LethalSpec.at_its_core())
+	cored.field(FieldSpec.of(10.0, 40.0, 46.0))
+	var cored_def := cored.build()
+	var catch_only := EventPlan.new(cored_def, Vector2(320, 320))
+	t.check(cored_def.field_reach() - cored_def.lethal_reach() < her
+			and is_equal_approx(catch_only.clearance(her), cored_def.field_reach()),
+			"a catch is measured to her centre: with a field reaching less than her shape past it, "
+			+ "the field is what a point has to clear (%.0fpx)" % catch_only.clearance(her))
+
+## **The ground a deadly event shuts where it holds its place** (`EventDef.catch_shuts_within()`,
+## asked through `blocking_radius()` and `obstructs()`): the wider of its body and its catch for a
+## row that ends the day and stays where it is placed, its catch even for a pursuer waiting at its
+## post, nothing for a row that moves.
+func _test_the_ground_it_shuts(t: TestRunner) -> void:
+	var at := Vector2(320, 320)
+	var van_def := EventCatalogue.by_id("abduction")
+	var van := EventPlan.new(van_def, at)
+	t.check(van_def.obstructs_within() < van_def.lethal_reach()
+			and is_equal_approx(van.blocking_radius(), van_def.lethal_reach()) and van.obstructs(),
+			"a van shuts the ground its catch covers, wider than its body (%.0fpx)"
+			% van.blocking_radius())
+	var hunting_def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"),
+			EventDef.HEAT_HUNTS_LEVEL)
+	var hunting := EventPlan.new(hunting_def, at)
+	t.check(hunting.blocking_radius() < hunting_def.core_within()
+			and is_equal_approx(hunting.blocking_radius(),
+			maxf(hunting_def.obstructs_within(), hunting_def.lethal_reach())),
+			"a hunting roadblock shuts the wider of its band and its guard's catch, not its field's "
+			+ "core (%.0fpx of %.0fpx)" % [hunting.blocking_radius(), hunting_def.core_within()])
+	var robbery_def := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventPlan.new(robbery_def, at)
+	t.check(robbery_def.pursues() and is_equal_approx(
+			robbery.blocking_radius(), robbery_def.lethal_reach()),
+			"a pursuer waiting at its post shuts the ground its catch covers (%.0fpx)"
+			% robbery.blocking_radius())
+	var cyclist := EventPlan.new(EventCatalogue.by_id("cyclist"), at)
+	t.check(cyclist.row().ends_the_day() and cyclist.row().moves()
+			and cyclist.blocking_radius() == 0.0 and not cyclist.obstructs(),
+			"a row that ends the day and moves shuts nothing")
 
 
 ## **Which plans are the city's fixed parts rather than the day's events** (`is_a_fixed_part()`,

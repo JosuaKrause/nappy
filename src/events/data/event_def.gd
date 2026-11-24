@@ -872,6 +872,18 @@ func lethal() -> LethalSpec:
 func lethal_reach() -> float:
 	return _lethal.reach_from(core_within())
 
+## **How far round where it holds its place its catch shuts the ground** to her centre: its catch
+## (`lethal_reach()`) for a row that ends the day and does not move along a route of its own
+## (`moves()`), and 0 for every other row. A pursuer waiting at its post counts: it notices her
+## before she could come within its catch, so no walk crosses that ground clear of its chase. A row
+## that moves is somewhere else by the time a route or a walk gets there. The one statement of the
+## ground a deadly event shuts: the day's discs (`EventPlan.blocking_radius()`) and the escape's
+## walk (`WalkGround.held_by()`) ask it.
+func catch_shuts_within() -> float:
+	if not ends_the_day() or moves():
+		return 0.0
+	return lethal_reach()
+
 ## What `PursuitSpec.standoff()` is stated over for this row: its `PursuitSpec.lunge_reach()`
 ## where it sets one, the catch (`lethal_reach()`) otherwise.
 func standoff_reach() -> float:

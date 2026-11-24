@@ -257,9 +257,10 @@ func role() -> GameEnums.BlockerRole:
 
 ## **How far from this event a point has to be to stand clear of it**, for a figure `her_reach`
 ## across: its body and her whole shape, the field it carries where it carries one (a car
-## crash's, there to stop her walking past it), and a hard fail's lethal reach and her shape;
-## 0 for an event that neither stands in the way nor ends the day. What the park cordon's last
-## gap is kept clear of (`ParkCordon._clear_of_the_day()`).
+## crash's, there to stop her walking past it), and a hard fail's catch, measured to her centre as
+## the park cordon tests her centre (a body stops her shape, a catch does not); 0 for an event
+## that neither stands in the way nor ends the day. What the park cordon's last gap is kept
+## clear of (`ParkCordon._clear_of_the_day()`).
 func clearance(her_reach: float) -> float:
 	if _def.obstructs_within() <= 0.0 and not _def.ends_the_day():
 		return 0.0
@@ -267,7 +268,7 @@ func clearance(her_reach: float) -> float:
 	if _def.has_a_field():
 		reach = maxf(reach, _def.field_reach())
 	if _def.ends_the_day():
-		reach = maxf(reach, _def.lethal_reach() + her_reach)
+		reach = maxf(reach, _def.lethal_reach())
 	return reach
 
 ## Where this event stands now: its instance's position while it is in the world, where it stands
@@ -305,16 +306,22 @@ func spoils(ground: Rect2) -> bool:
 	return reaches(ground)
 
 ## **Whether this event blocks the way**: placed, not a region door's body (`is_door()`), and
-## either a body she cannot pass (`obstructs_within()`) or a hard fail. An abduction in progress is
-## not something she walks through to reach the park behind it; a door is a crossing she walks
-## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
+## either a body she cannot pass (`obstructs_within()`) or a catch that shuts ground
+## (`catch_shuts_within()`). An abduction in progress is not something she walks through to
+## reach the park behind it; a door is a crossing she walks through. What the day's reach
+## (`DayReach`) stands as discs (`blocking_radius()`).
 func obstructs() -> bool:
-	return is_placed() and not _is_door and (_def.obstructs_within() > 0.0 or _def.ends_the_day())
+	return is_placed() and not _is_door and blocking_radius() > 0.0
 
-## The disc this event blocks the way with: its body's radius, or a hard fail's inner radius
-## when that is wider.
+## The disc this event blocks the way with: the wider of its body and the ground its catch shuts
+## where it holds its place (`EventDef.catch_shuts_within()`).
 func blocking_radius() -> float:
-	return maxf(_def.obstructs_within(), _def.core_within() if _def.ends_the_day() else 0.0)
+	return maxf(_def.obstructs_within(), _def.catch_shuts_within())
+
+## How far round where it holds its place its catch shuts the ground
+## (`EventDef.catch_shuts_within()`): what the walk ground holds her off for.
+func catch_shuts_within() -> float:
+	return _def.catch_shuts_within()
 
 ## The points that bound this event — the corners of its route, or the one place it stands.
 func _ends() -> PackedVector2Array:
