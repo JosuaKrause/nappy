@@ -37,12 +37,12 @@ var _plan_rng: RandomNumberGenerator
 var _home_map: CityMap
 var _exits := {}
 
-## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, the walls its posters
-## are pasted on `posters`, what dresses the city for the day `dressing` and its events, her and the
-## baby in it, put down at `start` facing `facing`. Its walk is won at her front door on
-## `home_map` — the city's own map on a walk home, null on one that is not — or at `exits`, the ways out of the city by `CityExit.Kind`, empty on a
-## walk with none. Its walk is planned on the spec's own stream of the run
-## (`DaySpec.events_stream()`).
+## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, the walls its
+## posters are pasted on `posters`, what dresses the city for the day `dressing` and its events,
+## her and the baby in it, put down at `start` facing `facing`. Its walk is won at her front door
+## on `home_map` — the city's own map on a walk home, null on one that is not — or at `exits`, the
+## ways out of the city by `CityExit.Kind`, empty on a walk with none. Its walk is planned on the
+## spec's own stream of the run (`DaySpec.events_stream()`).
 ##
 ## **A city has all five of its parts**, so a world is a city or it is not (`is_in_a_city()`), and
 ## nothing that walks it asks which parts it has. Refused, null, when the dressing, the map, the
