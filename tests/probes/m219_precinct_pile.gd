@@ -37,7 +37,7 @@ func run(t: TestRunner) -> void:
 			RunCity.crowd(city).step(STEP)
 			var near := 0
 			for agent in RunCity.crowd(city).agents():
-				if agent.kind == CrowdAgent.Kind.WALKER \
+				if agent.lane().kind() == CrowdAgent.Kind.WALKER \
 						and agent.position.distance_to(at) < 1.5 * Tuning.TILE_SIZE:
 					near += 1
 			most = maxi(most, near)

@@ -66,6 +66,12 @@ func _process(delta: float) -> void:
 	_camera.position = Vector2(pose.x, pose.y)
 	_camera.zoom = Vector2.ONE * pose.z
 
+## Sets the pose for the clock's current reading and stops moving, so a held screenshot draws
+## the moment it was taken at.
+func hold_still() -> void:
+	_process(0.0)
+	set_process(false)
+
 func _start() -> void:
 	_start_zoom = _from.zoom.x if _from else 2.0
 	_start_position = _from.get_screen_center_position() if _from else _end_position

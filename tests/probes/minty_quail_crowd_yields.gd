@@ -369,7 +369,7 @@ class Meeting extends RefCounted:
 		_most_figures = maxi(_most_figures, figures.size())
 		var now := {}
 		for agent in RunCity.crowd(_city).agents():
-			var is_car := agent.kind == CrowdAgent.Kind.CAR
+			var is_car := agent.lane().kind() == CrowdAgent.Kind.CAR
 			var here := agent.global_position
 			var forward := agent.heading()
 			var side := Vector2(-forward.y, forward.x)

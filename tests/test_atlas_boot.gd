@@ -175,6 +175,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		var save_symbols := 0
 		var buildings := 0
 		var managers := 0
+		var crowds := 0
 		var strollers := 0
 		var edge: DangerEdge = null
 		var player: Stroller = null
@@ -190,6 +191,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			save_symbols += 1 if node is SaveIndicator else 0
 			buildings += 1 if node is InteriorScene else 0
 			managers += 1 if node is EventManager else 0
+			crowds += 1 if node is Crowd and not (node as Crowd).agents().is_empty() else 0
 			strollers += 1 if node is Stroller else 0
 			if node is Stroller and player == null:
 				player = node
@@ -242,6 +244,13 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		t.check(managers > 0 and manager_asks >= managers,
 				"%s: the event manager asked the sitting's library for its page (%d of %d)"
 				% [where, manager_asks, managers])
+		# The crowd keeps its library private too and takes its page when its first day starts, so
+		# a crowd with agents standing asked the sitting's, or one handed another library asked
+		# that.
+		var crowd_asks := recording.acquired_from("res://src/crowd/crowd.gd")
+		t.check(section != DaySpec.Section.NONE or (crowds > 0 and crowd_asks >= crowds),
+				"%s: the crowd asked the sitting's library for its page (%d of %d)"
+				% [where, crowd_asks, crowds])
 		var stroller_asks := recording.acquired_from("res://src/player/stroller.gd")
 		t.check(strollers > 0 and stroller_asks >= strollers,
 				"%s: her own rig asked the sitting's library for its pages (%d of %d)"

@@ -120,7 +120,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			row = _split_tick(crowd)
 		chain = _chain(chain, crowd)
 		for agent in crowd.agents():
-			if agent.kind == CrowdAgent.Kind.WALKER:
+			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
 				if agent.is_touched():
 					contact_ticks += 1
 				var walker: WalkerStrategy = agent.lane().strategy()
@@ -185,7 +185,7 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
 	var best := INF
 	var target := here
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.WALKER:
+		if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 			continue
 		var distance := agent.global_position.distance_squared_to(here)
 		if distance < best:

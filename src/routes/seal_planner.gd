@@ -160,9 +160,16 @@ class Candidate extends RefCounted:
 	var strength := Strength.SOFT
 	var def_ids: Array[String] = []
 
-## The day's eight pictures. Built fresh by every call, so no caller holds another's table.
+## The table's pictures. Built fresh by every call, so no caller holds another's table.
 static func candidates() -> Array[Candidate]:
 	return _build_candidates()
+
+## The production picture called `id`, or null when there is none.
+static func candidate_named(id: String) -> Candidate:
+	for candidate in candidates():
+		if candidate.id == id:
+			return candidate
+	return null
 
 ## The only place a new picture is added. See the class doc.
 ##
@@ -259,7 +266,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		map.set_seal_tree_pits([] as Array[Vector2i])
 		return planned
 	var day := spec.day_number()
-	var pictures := pictures_for(spec)
+	var pictures := _pictures_for(spec)
 	# The city's standing street trees, asked once rather than once per street. `trees` is the
 	# ground no seal body may stand on (`_seal_along_tile` steps along the street until it is
 	# clear); `lined` is which streets may carry a fallen tree at all; `emptied` collects the pits
@@ -289,7 +296,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		if candidate.strength == Strength.SOFT:
 			soft_pairs.append(sited)
 		else:
-			planned.append_array(sited.bodies)
+			planned.append_array(sited.bodies())
 			if held != null:
 				held.hold(key, HeldStreets.Why.SEAL)
 	map.set_seal_tree_pits(emptied)
@@ -350,7 +357,7 @@ static func _escape_candidates() -> Array[Candidate]:
 	return _build_escape_candidates()
 
 ## The pictures `spec` seals with (`DaySpec.seal_pictures()`).
-static func pictures_for(spec: DaySpec) -> Array[Candidate]:
+static func _pictures_for(spec: DaySpec) -> Array[Candidate]:
 	if spec.seal_pictures() == DaySpec.SealPictures.ESCAPE:
 		return _escape_candidates()
 	return candidates()
@@ -435,14 +442,27 @@ class SitedSeal extends RefCounted:
 	var segment: StreetNetwork.Segment
 	var candidate: Candidate
 	var along := -1
-	var bodies: Array[EventPlan] = []
+	var _bodies: Array[EventPlan] = []
 
 	func _init(the_segment: StreetNetwork.Segment, the_candidate: Candidate, at: int,
 			placed: Array[EventPlan]) -> void:
 		segment = the_segment
 		candidate = the_candidate
 		along = at
-		bodies = placed
+		_bodies = placed
+
+	## The seal's bodies, as they stand on the street.
+	func bodies() -> Array[EventPlan]:
+		return _bodies
+
+	## What follows an authored seal, which `seal_street()` leaves to its caller: a hard seal's
+	## street held on the map, a soft seal's two sidewalks shut.
+	func stand_whole(map: CityMap) -> void:
+		if candidate.strength == Strength.HARD:
+			map.hold_segment(segment.key(), HeldStreets.Why.SEAL)
+		else:
+			shut_the_sidewalk(map, true)
+			shut_the_sidewalk(map, false)
 
 	## Shuts one pavement of a soft seal to walkers (`CityMap.soft_sealed_tiles()`): both lanes of
 	## the near side (`near`, the lower end of the street's cross-section) or of the far one, at the
@@ -630,7 +650,7 @@ static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenera
 	for sited: SitedSeal in pairs:
 		# Shut at the along tile `seal_street()` chose for this pair, so the tiles marked shut to
 		# walkers are the ones the bodies actually stand on rather than the street's own midpoint.
-		var pair := sited.bodies
+		var pair := sited.bodies()
 		if pair.size() == 2 and rng.randf() < SEAL_THINNING_FRACTION:
 			var side := rng.randi_range(0, 1)
 			kept.append(pair[side])
@@ -789,7 +809,7 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventPlan]:
 	var planned: Array[EventPlan] = []
 	var day := spec.day_number()
-	var def_id := _alley_mouth_def(pictures_for(spec), day)
+	var def_id := _alley_mouth_def(_pictures_for(spec), day)
 	if def_id == "":
 		return planned
 	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)

@@ -118,7 +118,7 @@ func run(t: TestRunner) -> void:
 func _moving_car_nearest(crowd: Crowd, at: Vector2) -> CrowdAgent:
 	var best: CrowdAgent = null
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.CAR or agent.speed() < 60.0:
+		if agent.lane().kind() != CrowdAgent.Kind.CAR or agent.speed() < 60.0:
 			continue
 		if best == null or agent.global_position.distance_squared_to(at) \
 				< best.global_position.distance_squared_to(at):

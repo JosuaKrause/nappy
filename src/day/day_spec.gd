@@ -205,7 +205,7 @@ var _keeps_the_walk_open := false
 
 ## Which seal pictures close the streets off the walk (`SealPlanner.plan_day()`).
 enum SealPictures {
-	## The day's eight, soft and hard, each from its own act on (`SealPlanner.candidates()`).
+	## The table's pictures, soft and hard, each from its own act on (`SealPlanner.candidates()`).
 	DAY,
 	## The escape's four, all hard (`SealPlanner._escape_candidates()`).
 	ESCAPE,
