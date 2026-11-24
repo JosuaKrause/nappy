@@ -82,20 +82,18 @@ Left, each its own design question:
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
   - A field only a test still reads outside its own class and the code that writes it
-    (`SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
-    `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
-    `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
-    city scene, the simulation builder, `main`) and goes with the
+    (`Crowd.view`, `timing`, `atlas`, `skip_motion`, `skip_agent_drawing`, `ClosureMarker.piece`,
+    `kind`, `across`, `ParkFenceMarker.sign_offset`) keeps its direct write in the game (the city
+    scene, the simulation builder) and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
 - **The lines other work touches** are converted with that work:
-  - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
-    hands the city), which go with the city scene's own pass (minty-quail's README, "The modules
-    that do not wait for the events"); `day_director.gd`'s reads of other classes' fields wait for
-    those classes' passes;
+  - `main.gd`'s reads of the city's map and its navigator, which go with the city scene's own pass
+    (minty-quail's README, "The modules that do not wait for the events"); `day_director.gd`'s
+    reads of other classes' fields wait for those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface
