@@ -414,10 +414,10 @@ const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
 
 ## Whether `instance` is a lethal place worth planning a route around at all — live, and its catch
 ## shutting ground where it holds its place (`EventInstance.catch_shuts_within()`, the one stated
-## fact `EventDef.catch_shuts_within()` answers). A stationary kill (the guard
-## `alley_robbery` places over every mark, an idling `abduction` van, `reversing_lorry`,
-## `car_accident`) is exactly the shape a route can
-## detour once and stay clear of for the whole leg, the same as a parked obstruction. A moving
+## fact `EventDef.catch_shuts_within()` answers). A stationary kill (the guard `alley_robbery`
+## places over every mark, an idling `abduction` van, `reversing_lorry`, `car_accident`) is exactly
+## the shape a route can detour once and stay clear of for the whole leg, the same as a parked
+## obstruction. A moving
 ## one (`cyclist`, `masked_pursuer`) is somewhere else by the time a replan's own path would get
 ## there — blocking around its instantaneous position chases a moving point with a stale detour,
 ## which is what turned day 6 seed 4242's 'task' leg (homeless_yeller's own pacing crossing a
@@ -429,7 +429,7 @@ const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
 func _is_stationary_hazard(instance: EventInstance) -> bool:
 	return instance.catch_shuts_within() > 0.0
 
-## Whether `point` sits within a live stationary lethal event's own kill reach plus
+## Whether `point` sits within the ground a live stationary lethal event's catch shuts plus
 ## `_HAZARD_MARGIN` — every mark is guarded (`docs/DECISIONS.md`, "every mark is guarded"), and the
 ## guard carries no body for `is_obstructed()` to see, only a radius that ends the day. A player
 ## backs off the instant the excitement meter spikes; this is what the same caution reads as for a

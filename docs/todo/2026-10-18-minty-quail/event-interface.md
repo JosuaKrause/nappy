@@ -848,5 +848,4 @@ each question as it was shown).
    `EventDef.catch_shuts_within()`, which the plan's blocking disc (`EventPlan.blocking_radius()`)
    and the walk ground (`WalkGround.held_by()`) ask; `EventPlan.clearance()` reads the catch
    itself, measured to her centre (the record 2026-10-18-minty-quail-calm-marmot). The `--route`
-   dev rig asks the same fact of the live event (`EventInstance.catch_shuts_within()`), so
-   nothing is left of this point and it holds no open work.
+   dev rig asks the same fact of the live event (`EventInstance.catch_shuts_within()`).
