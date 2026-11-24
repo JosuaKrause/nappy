@@ -1,8 +1,9 @@
-priority: bug
+priority: later
+after: 2026-10-18-minty-quail
 
 # grassy-badger — CityMap.tiles_of_type() keeps its per-type cache across witness_only() and restore_edges() · filed 2026-11-23
 
-**What is wrong.** `CityMap.tiles_of_type()` (`src/city/city_map.gd`) caches each type's tile list in `_tiles_by_type` and clears the cache only where tiles change (`repaint()` and the places that write tiles). `witness_only()` and `restore_edges()` switch a scene's edges off and on (`_recipe_exterior` and `stretch_active`), and `activate_stretch()` sets `stretch_active` too; that changes which tiles `tile_at()` answers, and none of the three clears the cache. A list asked for before or after the switch can then answer the other state's tiles. A city defect (**city** governs). A filing from a review, not from the player's words; the band, `bug`, follows the rule that a bug a refactor step finds is filed `bug`. The design of the refactor's scene recipes pass found it.
+**What is wrong.** `CityMap.tiles_of_type()` (`src/city/city_map.gd`) caches each type's tile list in `_tiles_by_type` and clears the cache only where tiles change (`repaint()` and the places that write tiles). `witness_only()` and `restore_edges()` switch a scene's edges off and on (`_recipe_exterior` and `stretch_active`), and `activate_stretch()` sets `stretch_active` too; that changes which tiles `tile_at()` answers, and none of the three clears the cache. A list asked for before or after the switch can then answer the other state's tiles. A city defect (**city** governs). A filing from a review, not from the player's words; the band, `later`, is the filer's proposal.
 
 **Found by** the design of the scene recipes' pass (`.claude/briefs/designs/minty-quail-scene-recipes-pass.md`, untracked in the orchestrator's checkout).
 
