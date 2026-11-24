@@ -260,7 +260,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	_check_coverage(t, scene, home)
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"relocation does not replace persistent building collision")
-	await _check_the_day_survives_eviction(t, scene, far)
+	await _check_what_the_front_is_told_survives_eviction(t, scene, far)
 	# Clock belongs to the city, so a newly entered shoreline resumes its neighbors' phase.
 	await _run_the_city_clock(t, scene, 3.75)
 	var shore := _view(Vector2(map.world_size().x * 0.5, map.world_size().y + 100))
@@ -416,11 +416,13 @@ func _redraw(t: TestRunner, scene: Scene) -> void:
 	await _frames(t, 2)
 	scene.scenery.set_process(true)
 
-## A lived-in commercial front whose storefront shutters follow the day shows the same shutters after
-## it is evicted and reconstructed as it showed before: the day it was handed survives the rebuild.
-## The building is one whose front differs between day 1 and the last day, so the picture says the day.
-func _check_the_day_survives_eviction(t: TestRunner, scene: Scene, far: Rect2) -> void:
+## What a lived-in commercial front is told survives its eviction, whether it was told while the front
+## stood loaded or while it was unloaded (the game's usual path: the dawn tells every building its day,
+## most of them out of view). The building is one whose front differs between day 1 and the last day
+## and has lit windows with the power on, so the picture says the day and the power.
+func _check_what_the_front_is_told_survives_eviction(t: TestRunner, scene: Scene, far: Rect2) -> void:
 	var last := Tuning.RUN_LENGTH_DAYS
+	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
 	for candidate in scene.buildings:
 		if candidate.district() != GameEnums.BlockPurpose.COMMERCIAL:
 			continue
@@ -434,15 +436,37 @@ func _check_the_day_survives_eviction(t: TestRunner, scene: Scene, far: Rect2) -
 		candidate.show_day(last)
 		await _redraw(t, scene)
 		var on_the_last_day := _fronts_of(candidate).pictures()
-		if on_day_one == on_the_last_day:
+		if on_day_one == on_the_last_day or not on_the_last_day.any(
+				func(picture: StringName) -> bool: return picture in lit):
 			continue
+		candidate.switch_power(false)
+		await _redraw(t, scene)
+		var in_the_dark := _fronts_of(candidate).pictures()
+		# Told while loaded: the front shows the last day's shutters after an eviction and a rebuild.
+		candidate.switch_power(true)
+		await _redraw(t, scene)
 		scene.scenery.update(far, true)
 		scene.scenery.update(view, true)
 		await _redraw(t, scene)
 		t.check(_fronts_of(candidate).pictures() == on_the_last_day,
 				"the day survives eviction: a commercial front's shutters stay those of day %d" % last)
+		# Told while unloaded: the day, the power and a sheet are handed to a front that is not resident.
+		candidate.switch_power(true)
+		candidate.show_day(1)
+		await _redraw(t, scene)
+		scene.scenery.update(far, true)
+		t.check(not candidate.residence().is_resident(), "the commercial front is unloaded when it is told")
+		candidate.show_day(last)
+		candidate.switch_power(false)
+		candidate.hand_over_posters({1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}, false)
+		scene.poster_art.asked = 0
+		scene.scenery.update(view, true)
+		await _redraw(t, scene)
+		t.check(_fronts_of(candidate).pictures() == in_the_dark,
+				"the day and the power told while unloaded show in the rebuilt front: last day, every window dark")
+		t.check(scene.poster_art.asked > 0, "and the sheets handed over while unloaded are drawn")
 		return
-	t.check(false, "a commercial front whose shutters follow the day was found to compare")
+	t.check(false, "a commercial front whose shutters follow the day, lit with the power on, was found to compare")
 
 ## Lets `count` process frames pass. The caller sits at the start of a frame, before that frame's
 ## `_process`, whenever it has just awaited one, so each await here is exactly one `_process` of

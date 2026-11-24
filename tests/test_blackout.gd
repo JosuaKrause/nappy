@@ -7,7 +7,8 @@ extends RefCounted
 ## what it did to them: the parts `Blackout` is handed (a hand-drawn map with a power station on it,
 ## a run's resistance, a `TrafficSignals` that holds the one `_powered` flag (`is_powered()`), a
 ## `FakeEventManager` that counts the masts it is asked to silence) and three `Building`s (recording
-## ones, `PowerSwitches`) that were never put in a world. The map's station is the lot seed 4242's generated city has, read off once.
+## ones, `PowerSwitches`) that were never put in a world. The map's station is the lot seed 4242's
+## generated city has, read off once.
 ##
 ## What each switched part does once it is off is that part's own suite: a hall and its clerestory
 ## (`tests/test_power_station.gd`), a signal head and a light that decides nothing
