@@ -336,7 +336,7 @@ func draw_scenery_through(drawer: SceneryDrawer) -> void:
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	if _run == null:
-		push_error("City.build(): the _run must be handed in first")
+		push_error("City.build(): the run must be handed in first")
 		return
 	assert(_atlas != null, "City.build(): equip() must hand the city its library first")
 	_map = city_map
