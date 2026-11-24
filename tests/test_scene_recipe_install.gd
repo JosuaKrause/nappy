@@ -323,9 +323,10 @@ func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary
 				+ "offers none of it")
 	_free(stood)
 
-## **The scene's route tree and locations are handed to the walk**: `start_recipe()` is handed the
-## tree the day's streets hold (the one the rows' corridor is made of) and the locations laid
-## out over that corridor, so a siting made as she walks grows and lays out neither again.
+## **The scene's route tree and locations are handed to the walk**: `start_recipe()` is handed
+## the tree the day's streets hold (the one the rows' corridor is made of) and the locations
+## laid out over that corridor, so a siting made as she walks grows and lays out neither again;
+## a scene with no route tree is handed neither.
 func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built: Dictionary,
 		data: Dictionary, own_run: RunState) -> void:
 	var stood := _stand(built, data, own_run)
@@ -335,9 +336,25 @@ func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built
 	t.check(errors.is_empty() and made.streets.route_tree() != null
 			and made.events.recipe_tree() == made.streets.route_tree(),
 			"the walk is handed the route tree the day's streets hold: %s" % [errors])
-	t.check(made.events.recipe_locations() != null,
-			"and the locations laid out over its corridor")
+	var handed := made.events.recipe_locations()
+	var over_its_corridor := DayLocations.lay_out(made.map,
+			Corridor.of(made.streets.route_tree()))
+	t.check(handed != null and not handed.all().is_empty()
+			and handed.all().size() == over_its_corridor.all().size(),
+			"and the locations laid out over its corridor (%d of %d)"
+			% [handed.all().size() if handed else -1, over_its_corridor.all().size()])
 	_free(stood)
+	# A scene with no route tree lays its locations out under a corridor that answers none, so
+	# the walk is handed neither.
+	var treeless := _stand(built, data, own_run)
+	var bare: SceneWorld = treeless[0]
+	bare.streets.begin_day(null, null, [] as Array[RoadClosure])
+	var bare_runtime: SceneRecipeRuntime = treeless[1]
+	var bare_errors := bare_runtime.install(bare.world, _day_spec(own_run))
+	t.check(bare_errors.is_empty() and bare.events.recipe_tree() == null
+			and bare.events.recipe_locations() == null,
+			"a scene with no route tree hands the walk neither: %s" % [bare_errors])
+	_free(treeless)
 
 ## **An oversized city-wide uniform population is refused, not truncated**: the crowd placed fewer
 ## walkers than the recipe's area and multiplier asked for (8,444 of the 8,540 asked, read off the

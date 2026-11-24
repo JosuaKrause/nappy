@@ -295,7 +295,7 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bod
 		_ahead.start_day(world.day(), plan.walk() as RouteTree)
 	else:
 		_streaming.find_what_repeats()
-		_ahead.start_a_given_walk(world.day(), plan.tree())
+		_ahead.start_a_given_walk(world.day(), plan.walk() as RouteTree)
 	# What works out the route of a row the director sends ahead of her as it goes (`WayOn`): made
 	# once a walk, after the walk's bodies are recorded, so the dawn's seals, the region wall and its
 	# doors, or a scene recipe's rows, are in its through roads with the day's closures. A body put
@@ -320,10 +320,10 @@ func walk() -> RouteSource:
 ## ground the recipe's rows were placed on (`EventScheduler.row_ground()`), which the walk's
 ## events answer (`WalkEvents.ground()`) so what is sited while she walks asks it rather than
 ## making one; a rig that hands none, whether it places rows or not, has the walk make its own as
-## a walk no dawn planned does. `tree` and `locations` are the route tree and the day's locations
-## the recipe's rows were placed against, which what is sited while she walks (day 11's queued
-## mast) is made over rather than growing and laying out its own; a rig that hands none has them
-## made then.
+## a walk no dawn planned does. `tree` and `locations` are the route tree and the day's
+## locations the recipe's rows were placed against, which what is sited while she walks (day
+## 11's queued mast, a rigged route) and day 13's task are handed rather than growing and laying
+## out their own; a rig that hands none has them made then.
 ##
 ## **The recipe's holds stay**: its builder holds what it placed (`SceneRecipeRuntime`), and nothing
 ## here rolls against them. Its plans are taken as a walk planned whole is (`start_day()`), with
@@ -331,10 +331,9 @@ func walk() -> RouteSource:
 func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 		focus: Vector2, calm: CalmAreas = null, ground: RowGround = null,
 		tree: RouteTree = null, locations: DayLocations = null) -> void:
-	var plan := DayPlanner.Plan.new(plans, null, PackedVector2Array(), false)
+	var plan := DayPlanner.Plan.new(plans, tree, PackedVector2Array(), false)
 	if ground:
 		plan.use_ground(ground)
-	plan.use_tree(tree)
 	plan.use_locations(locations)
 	# The recipe's walk is sited against the calm areas its rows were placed against, or, handed
 	# none, those a day's would be as the map stands.

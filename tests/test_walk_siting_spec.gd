@@ -180,10 +180,11 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	t.check(not_holding.tiles_for(def) == leaves_it,
 			"and one that does not hold them is handed a ground that offers it")
 
-## **A walk placed whole sites over the tree it was placed against** (`EventsAhead.start_a_given_walk()`'s
-## `tree`): a mast queued on it asks the maker for a siting over that very tree, never over null,
-## which makes the maker grow one again (`SitingMaker.make()`); a walk handed none asks with null,
-## and does not keep the tree of a walk before it.
+## **A walk placed whole sites over the tree it was placed against**
+## (`EventsAhead.start_a_given_walk()`'s `tree`): a mast queued on it asks the maker for a
+## siting over that very tree, never over null, which makes the maker grow one again
+## (`SitingMaker.make()`); a walk handed none asks with null, and does not keep the tree of
+## a walk before it.
 func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
 	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
@@ -201,7 +202,8 @@ func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 	ahead.start_a_given_walk(DAY, tree)
 	ahead.queue_a_mast(offered)
 	t.check(maker.made.size() == 1 and maker.made[0][1] == tree,
-			"a mast queued on a walk handed a tree is sited over it (%d asks)" % maker.made.size())
+			"a mast queued on a walk handed a tree is sited over it (%d asks)"
+			% maker.made.size())
 	ahead.start_a_given_walk(DAY)
 	ahead.queue_a_mast(offered)
 	t.check(maker.made.size() == 2 and maker.made[1][1] == null,

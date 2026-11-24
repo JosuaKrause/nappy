@@ -231,8 +231,8 @@ func _test_a_recipes_walk_sites_on_the_ground_it_is_handed(t: TestRunner) -> voi
 
 ## **A recipe's walk sites over the route tree and the locations it is handed**
 ## (`EventManager.start_recipe()`'s `tree` and `locations`): the walk's events answer the very
-## locations, and a mast queued on day 11 is sited over the very tree, where a recipe handed none
-## has the maker grow one.
+## locations, and a mast queued on day 11 is sited over the very tree, where a recipe handed
+## none has the maker grow one.
 func _test_a_recipes_walk_sites_over_the_tree_and_locations_it_is_handed(t: TestRunner) -> void:
 	var events := _stage.events()
 	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
