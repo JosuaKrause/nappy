@@ -97,8 +97,6 @@ func recipe_coverage() -> Dictionary:
 	return {}
 
 ## Frees what `add_recipe_actor()` made, beside the crowd's own letting go of its parts.
-##
-## Overrides Crowd._notification.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		for actor in _fake_made:

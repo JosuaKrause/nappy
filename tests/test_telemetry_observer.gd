@@ -143,7 +143,7 @@ class StandInEvents extends FakeEventManager:
 		placed.append(plan)
 		return plan
 
-	## Overrides EventManager.plans.
+	## Overrides FakeEventManager.plans.
 	func plans() -> Array[EventPlan]:
 		return placed
 
