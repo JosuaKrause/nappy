@@ -120,7 +120,7 @@ func _probe_the_camera() -> void:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure(loaded, _scripted(), _run)
 	add_child(runtime)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
+	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
 	if not errors.is_empty():
 		print(errors)
@@ -163,6 +163,7 @@ var _errors := RecipeErrors.new()
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_schema(t)
+	_test_a_world_with_no_city_is_refused(t)
 	_test_hold_is_for_a_straight_departure(t)
 	await _test_a_held_departure_places_its_move(t)
 	_test_charging_is_for_a_pursuer_that_waits(t)
@@ -235,7 +236,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 			"at": [at.x, at.y], "hold": true}], "player": {"at": [her.x, her.y]}}},
 			"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false), own_run)
 	t.add_child(runtime)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
+	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.is_empty(), "the held dog is installed: %s" % [errors])
 	runtime.begin()
@@ -359,6 +360,21 @@ func _test_schema(t: TestRunner) -> void:
 		t.check(not _errors.errors_of(t, recipe).is_empty(),
 				"malformed runtime data is rejected: %s" % [recipe])
 
+## **A recipe is a city scene**: installed into the escape's building, a world with no city, the
+## runtime answers its one problem and records the setup as failed, before it asks the world for
+## anything of a city.
+func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"setup": {}}, "manifest": {}, "anchors": {}, "map": null},
+			_recipe_config(false), RunState.new())
+	var building := DayWorld.in_the_building(WorldMap.open_ground(), null, null, null, Vector2.ZERO,
+			Vector2.UP, null)
+	var errors := runtime.install(building, DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
+	t.check(errors.size() == 1 and errors[0].contains("city"),
+			"a world with no city is refused with one problem: %s" % [errors])
+	t.check(runtime.manifest.get("setup_failed", false), "and the setup is recorded as failed")
+	runtime.free()
+
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
 ## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
 ## investigating copy that stops for her from `EventDef.HEAT_INVESTIGATE_WITHIN`, the shape a played
@@ -390,7 +406,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": [entry],
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map},
 				_recipe_config(false), own_run)
-		var errors := runtime.install(city, RunCity.simulation(city), player, baby,
+		var errors := runtime.install(RunCity.world_of(city, player, baby),
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		for plan in RunCity.events(city).plans():
 			if plan.get_meta("recipe_name", "") == "car":
@@ -449,7 +465,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": entries,
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
 				"map": city.map}, _recipe_config(false), own_run)
-		var errors := runtime.install(city, RunCity.simulation(city), player, baby,
+		var errors := runtime.install(RunCity.world_of(city, player, baby),
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		var capped := errors.any(func(e: String) -> bool:
 				return e.contains("exceeds the ordinary per-day cap"))
@@ -596,7 +612,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 			"player": {"at": [start.x, start.y]}}}, "manifest": {}, "anchors": {}, "map": map},
 			_recipe_config(false), own_run)
 	t.add_child(runtime)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
+	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), director)
 	if errors.is_empty():
 		runtime.begin()

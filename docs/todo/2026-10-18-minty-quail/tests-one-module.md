@@ -10,7 +10,7 @@ don't test the actual city" (inbox #1156 in gray-dolphin).
 **Read as:** the rules are writing-tests' (a hard rule with exceptions only for a stated reason; a
 realistic mock made in two steps; plain values built as they are; a check of another object's
 answers moved to that object's suite). This item is the pass that brings the existing suites to
-them, one module at a time, once the hand-ins (`city-hand-ins.md`) give each class something to hand
+them, one module at a time, once the hand-ins give each class something to hand
 a fake to. Each module's pull request says each suite's time before and after.
 
 **A test reads its subject only through methods** too: on the board's tests-read-fields, whether a

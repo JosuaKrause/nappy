@@ -64,6 +64,16 @@ static func build(city: City, map: CityMap, builder: SimulationBuilder = null,
 static func simulation(city: City) -> WorldSimulation:
 	return city.get_node(NodePath(WorldSimulation.NODE_NAME)) as WorldSimulation
 
+## A world standing for a walk in `city`, built of the city's own parts as `main` builds one
+## (`main._the_world_of()`): its map, streets, dressing (the city itself), crowd, poster walls and
+## events, her and the baby in it, put down at the doorstep, the walk won nowhere. For a suite that
+## hands an authored scene or a draft a world while it still builds a real city. `baby` is the one
+## under `player` where none is handed; `player` may be null where nobody is asked.
+static func world_of(city: City, player: Stroller, baby: Baby = null) -> DayWorld:
+	var carried := baby if baby else (player.get_node_or_null("Baby") as Baby if player else null)
+	return DayWorld.in_the_city(city, city.map, city.streets(), crowd(city), poster_walls(city),
+			events(city), player, carried, city.map.doorstep_world_position(), null, {})
+
 ## The day's events on `city`'s streets (`EventManager`).
 static func events(city: City) -> EventManager:
 	return simulation(city).events()

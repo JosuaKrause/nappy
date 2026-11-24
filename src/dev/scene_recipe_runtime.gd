@@ -30,10 +30,11 @@ var _run: RunState
 ## own way of ending it (`Main._end_with()`). Empty, the scene quits the tree itself.
 var _end_game := Callable()
 var _player: Stroller
-var _city: City
-## The simulation standing in `_city` (`WorldSimulation`): its events, its crowd and its poster
-## walls, handed in beside the city (`install()`).
-var _simulation: WorldSimulation
+## The world the scene was installed into (`install()`): its map, today's streets, the city scene's
+## dressing, its events, its crowd and its poster walls, her and the baby.
+var _world: DayWorld
+## Where the army column's lines go, handed in by `use_trace()`; a trace that writes nowhere until then.
+var _trace := RunTrace.new()
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
 var _plan: WalkPlan
 var _observations: Array = []
@@ -476,6 +477,11 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 	_number(value[0], where + "[0]", -1000000, 1000000, errors)
 	_number(value[1], where + "[1]", -1000000, 1000000, errors)
 
+## The trace the army column's lines go to (`ResistanceHappenings.use_trace()`): the run's own, as
+## `main` hands the city's.
+func use_trace(trace: RunTrace) -> void:
+	_trace = trace
+
 func configure(result: Dictionary, config: RunConfig, run: RunState,
 		end_game := Callable()) -> void:
 	_config = config
@@ -549,32 +555,28 @@ func plays_by_script() -> bool:
 ## recorded as failed in the manifest (`setup_failed`) as well as returned.
 ##
 ## Overrides AuthoredScene.install.
-func install(city: City, simulation: WorldSimulation, player: Stroller, baby: Baby,
-		spec: DaySpec, resistance: ResistanceDirector = null) -> Array[String]:
-	var errors := _install(city, simulation, player, baby, spec, resistance)
+func install(world: DayWorld, spec: DaySpec,
+		resistance: ResistanceDirector = null) -> Array[String]:
+	var errors := _install(world, spec, resistance)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
 	return errors
 
-func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: Baby,
-		spec: DaySpec, resistance: ResistanceDirector) -> Array[String]:
+func _install(world: DayWorld, spec: DaySpec, resistance: ResistanceDirector) -> Array[String]:
+	if not world.is_in_a_city():
+		return ["a scene recipe is installed into a city's world"]
 	_walk_spec = spec
-	_city = city
-	_simulation = simulation
+	_world = world
+	var player := world.player()
+	var baby := world.baby()
 	_player = player
 	_resistance = resistance
 	named = {"player": player}
 	var errors: Array[String] = []
 	var setup: Dictionary = _data.get("setup", {})
-	var map := city.map
+	var map := world.city_map()
 	for roof: Dictionary in setup.get("roof_fixtures", []):
-		var found := false
-		for building in city.buildings():
-			if building.lot_rect() == SceneRecipe.rect(roof.lot):
-				found = true
-				errors.append_array(building.author_roof_furniture(roof.fixtures))
-		if not found:
-			errors.append("roof_fixtures.lot: no complete production building at the authored footprint")
+		errors.append_array(world.dressing().furnish_a_roof(SceneRecipe.rect(roof.lot), roof.fixtures))
 	var at := position_of(setup.get("player", {}).get("at", "doorstep"), errors)
 	if not errors.is_empty():
 		return errors
@@ -585,23 +587,23 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	_select_structures(errors)
 	# One set of calm areas for the recipe's walk: what its rows are placed against and what the walk
 	# sites against after.
-	var calm := simulation.events().calm_as_the_map_stands()
+	var calm := world.events().calm_as_the_map_stands()
 	var plans := _event_plans(at, errors, calm)
-	simulation.events().start_recipe(plans, spec, _run.header().day(), at, calm)
-	city.refresh_street_trees()
+	world.events().start_recipe(plans, spec, _run.header().day(), at, calm)
+	world.dressing().refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
 		return errors
 	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
-		for plan in simulation.events().plans():
+		for plan in world.events().plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
 				if not plan.is_in_the_world():
 					errors.append("event %s is not live at its required initial position" % entry.name)
 				else:
 					# Named and commanded, so asked of the event manager, which hands a plan's live
 					# event to the caller that commands it.
-					var event := simulation.events().event_of(plan)
+					var event := world.events().event_of(plan)
 					named[entry.name] = event
 					if plan.get_meta("recipe_charging", false):
 						# Set on her from the first frame, as a guard sent after her is: no radius
@@ -613,7 +615,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 						_held.append(event)
 						# Never streamed out either, however far she runs from it.
 						plan.keep_in_the_world()
-	simulation.crowd().start_day(_run.header().day(),
+	world.crowd().start_day(_run.header().day(),
 			_run.calendar().day_rng(_run.header().day(), "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
@@ -623,11 +625,11 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 		var act := Tuning.act_for_day(_run.header().day())
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
-		if simulation.crowd().agent_count() != expected:
+		if world.crowd().agent_count() != expected:
 			errors.append("setup.background: too few eligible sidewalk positions for the requested uniform population")
 			return errors
-	if city.streets().region_plan():
-		simulation.crowd().set_gates(city.streets().region_plan().gate_states())
+	if world.streets().region_plan():
+		world.crowd().set_gates(world.streets().region_plan().gate_states())
 	for entry: Dictionary in setup.get("actors", []):
 		var actor_at := position_of(entry.at, errors)
 		if not errors.is_empty():
@@ -635,7 +637,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 		if not _inside_extent(actor_at):
 			errors.append("actor %s is outside authored bounds" % entry.name)
 			continue
-		var placed := simulation.crowd().add_recipe_actor(entry.name,
+		var placed := world.crowd().add_recipe_actor(entry.name,
 				CrowdAgent.Kind.CAR if entry.kind == "car" else CrowdAgent.Kind.WALKER,
 				actor_at, DIRECTIONS[entry.direction], float(entry.get("speed", -1)),
 				hash("actor:%s" % entry.name))
@@ -644,11 +646,9 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 		else:
 			named[entry.name] = placed.actor
 	if map.has_stretch():
-		simulation.crowd().use_stretch()
-	city.traffic_signals().restart_cycle()
-	city.traffic_signals().advance(float(setup.get("signal_time", 0)))
-	if setup.get("progression", {}).get("blackout", false):
-		city.traffic_signals().use_power(false)
+		world.crowd().use_stretch()
+	world.dressing().start_the_signals(float(setup.get("signal_time", 0)),
+			bool(setup.get("progression", {}).get("blackout", false)))
 	player.reset_at(at, DIRECTIONS[setup.get("player", {}).get("facing", "south")])
 	baby.reset()
 	var initial: Dictionary = setup.get("player", {})
@@ -662,7 +662,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = _snapshot()
 	manifest["installed_events"] = []
-	for plan in simulation.events().plans():
+	for plan in world.events().plans():
 		var placed := plan.placed_at()
 		var facing := plan.faces()
 		manifest.installed_events.append({"row": plan.row_id(),
@@ -693,11 +693,11 @@ func _start_the_task() -> bool:
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
-		var edges := _city.map.witness_only()
+		var edges := _world.city_map().witness_only()
 		errors = _resistance.start_recipe_task(_run.header().day(),
 				_run.calendar().day_rng(_run.header().day(), "resistance"),
 				_config.day_length_for(_run.header().day()), mark, neighbor)
-		_city.map.restore_edges(edges)
+		_world.city_map().restore_edges(edges)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
 		for problem in errors:
@@ -766,7 +766,7 @@ func _bind_task_names() -> void:
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
 func _install_column(column: Dictionary, errors: Array[String]) -> void:
-	var map := _city.map
+	var map := _world.city_map()
 	var at := position_of(column.at, errors)
 	if not errors.is_empty():
 		return
@@ -779,9 +779,9 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
 	var happening := ResistanceHappenings.new()
-	happening.use_trace(_city.trace)
-	happening.setup(map, _city.run, _simulation.events(), _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _simulation.events().spawn_siting())
+	happening.use_trace(_trace)
+	happening.setup(map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
+			null, null, _world.events().spawn_siting())
 	happening.start_day(_run.header().day())
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
 			bottom)
@@ -790,23 +790,23 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 		named["truck_%d" % (i + 1)] = trucks[i]
 
 func _install_posters(entries: Array, errors: Array[String]) -> void:
-	var fronts := _simulation.poster_walls().fronts()
+	var fronts := _world.poster_walls().fronts()
 	var used := {}
 	var recorded: Array[Dictionary] = []
 	for entry: Dictionary in entries:
 		var at := position_of(entry.at, errors)
 		if not errors.is_empty():
 			return
-		var tile := _city.map.world_to_tile(at)
+		var tile := _world.city_map().world_to_tile(at)
 		if not fronts.has(tile) or not _inside_extent(at) \
-				or not _city.map.tile_to_world(tile).is_equal_approx(at) or used.has(tile):
+				or not _world.city_map().tile_to_world(tile).is_equal_approx(at) or used.has(tile):
 			errors.append("poster must name a distinct production wall cell inside the scene")
 			continue
 		used[tile] = true
 		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
 		_run.posters().paste(tile, kind, false, 1)
 		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
-	_simulation.poster_walls().refresh()
+	_world.poster_walls().refresh()
 	manifest["authored_posters"] = recorded
 
 func _inside_extent(at: Vector2) -> bool:
@@ -824,21 +824,21 @@ func _start_the_route(setup: Dictionary) -> void:
 	var bag: Dictionary = setup.route_bag
 	var marbles: Array = bag.get("marbles", [])
 	var pre_bag: Array = bag.get("pre_bag", [])
-	var owed := _simulation.events().start_recipe_route(marbles, pre_bag,
+	var owed := _world.events().start_recipe_route(marbles, pre_bag,
 			int(bag.get("owed", marbles.size() + pre_bag.size())), float(bag.get("first_after", -1.0)))
 	manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag, "owed": owed}
 
 ## Keep only named production structures. The context plan supplies eligibility and geometry,
 ## never permission to install unrelated walls or checkpoint actors throughout the scene.
 func _select_structures(errors: Array[String]) -> void:
-	var region := _city.streets().region_plan()
+	var region := _world.streets().region_plan()
 	if not region:
 		return
 	var setup: Dictionary = _data.get("setup", {})
 	var selected := RegionPlan.new()
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.street_network().by_key(key)
+		var segment := _world.city_map().street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
@@ -849,46 +849,46 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
 					[region.door_segments().map(func(door): return door.key())])
 			continue
-		RegionPlanner.stand_door(_city.map, segment, selected)
+		RegionPlanner.stand_door(_world.city_map(), segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.street_network().by_key(key)
+		var segment := _world.city_map().street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
-		if not _city.map.has_street(key) or _city.streets().route_tree().is_on_the_tree(key) \
+		if not _world.city_map().has_street(key) or _world.streets().route_tree().is_on_the_tree(key) \
 				or not _walk_spec.region_wall_stands():
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.add_wall(segment)
 		# The wall's bodies say so, as the day's do (`EventPlan.stand_in_the_wall()`).
-		var bodies := SealPlanner.place_hard_on(_city.map, segment, "roadblock", entry.end == "a")
+		var bodies := SealPlanner.place_hard_on(_world.city_map(), segment, "roadblock", entry.end == "a")
 		for body in bodies:
 			body.stand_in_the_wall()
 		selected.add_wall_plans(bodies)
 	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
 	# wall, and the siting's region is built from the plan it is handed.
-	_city.streets().replace_region_plan(selected)
+	_world.streets().replace_region_plan(selected)
 
 func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
-	if _city.map.has_stretch():
-		for tile in _city.map.rect_tiles(segment.tile_rect()):
-			if not _city.map.in_stretch(tile):
+	if _world.city_map().has_stretch():
+		for tile in _world.city_map().rect_tiles(segment.tile_rect()):
+			if not _world.city_map().in_stretch(tile):
 				return false
 		return true
-	return not _city.map.recipe_bounds.has_area() \
-			or _city.map.recipe_bounds.encloses(segment.tile_rect())
+	return not _world.city_map().recipe_bounds.has_area() \
+			or _world.city_map().recipe_bounds.encloses(segment.tile_rect())
 
 func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 	var plans: Array[EventPlan] = []
-	var map := _city.map
+	var map := _world.city_map()
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
-	var route := _city.streets().route_tree()
+	var route := _world.streets().route_tree()
 	for entry: Dictionary in _data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.street_network().by_key(key)
+		var segment := _world.city_map().street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.seals: selected street leaves the authored extent")
 			continue
@@ -915,11 +915,11 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		standing: Array[EventPlan] = []) -> Array[EventPlan]:
 	var setup: Dictionary = _data.get("setup", {})
 	var plans: Array[EventPlan] = []
-	var map := _city.map
+	var map := _world.city_map()
 	# The scene's plan builder over the city's map, made here as the event manager makes the city's.
 	var builder := PlanBuilder.new(map, EventInstance.mover_for,
 			StreetInvalidation.room_around)
-	var tree := _city.streets().route_tree()
+	var tree := _world.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
@@ -934,11 +934,11 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 				errors.append("escape route construction could not complete its ordinary chains")
 		# The finale plan validates the real escape routes. Its randomly chosen scenery is
 		# not an authored scene's event list.
-	elif _city.streets().region_plan():
-		for body in _city.streets().region_plan().wall_plans():
+	elif _world.streets().region_plan():
+		for body in _world.streets().region_plan().wall_plans():
 			if _inside_extent(body.placed_at()):
 				plans.append(body)
-		for body in _city.streets().region_plan().door_plans():
+		for body in _world.streets().region_plan().door_plans():
 			doors.append(body.placed_at())
 			if _inside_extent(body.placed_at()):
 				plans.append(body)
@@ -1044,7 +1044,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 ## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
 func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 		prior: Array[EventPlan]) -> EventPlan:
-	var map := _city.map
+	var map := _world.city_map()
 	var tile := map.world_to_tile(at)
 	if _run.header().day() < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
@@ -1064,7 +1064,7 @@ func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_
 	if not rows.has(def.id()):
 		return null
 	def = rows[def.id()]
-	var map := _city.map
+	var map := _world.city_map()
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
 		return null
@@ -1111,8 +1111,9 @@ func begin() -> void:
 		_zoom = zoom
 		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
-		var whole := Rect2i(Vector2i.ZERO, _city.map.size_in_tiles())
-		var bounds := _city.map.tile_rect_to_world(whole).grow(
+		var world_map := _world.city_map()
+		var whole := Rect2i(Vector2i.ZERO, world_map.size_in_tiles())
+		var bounds := world_map.tile_rect_to_world(whole).grow(
 				float(camera.get("landscape_margin", 0)))
 		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))
@@ -1279,7 +1280,7 @@ func _physics_process(_delta: float) -> void:
 		var step := _resistance.current_step() if _resistance else null
 		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
 				and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR else null
-		_draft.record(_player, _city, _simulation.events(),
+		_draft.record(_player, _world,
 				walking_home if is_instance_valid(walking_home) else null)
 	if _capture_tick >= 0 and tick >= _capture_tick:
 		prepare_capture()
@@ -1327,8 +1328,8 @@ func prepare_capture() -> void:
 	get_tree().paused = true
 
 func _record_crowd(key: String) -> void:
-	if _simulation and _simulation.crowd():
-		manifest[key] = _simulation.crowd().recipe_coverage()
+	if _world and _world.crowd():
+		manifest[key] = _world.crowd().recipe_coverage()
 		manifest[key.trim_suffix("_crowd") + "_activity"] = activity_snapshot()
 
 ## Counts only live subjects whose ground positions are in the current picture. A visual review
@@ -1340,7 +1341,7 @@ func activity_snapshot() -> Dictionary:
 			"visible_events": {}}
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
-	for agent in _simulation.crowd().agents():
+	for agent in _world.crowd().agents():
 		if not view.has_point(transform * agent.global_position):
 			continue
 		var key := "visible_cars" if agent.is_car() else "visible_walkers"
@@ -1355,7 +1356,7 @@ func activity_snapshot() -> Dictionary:
 					else "walkers_right"] += 1
 		if not agent.velocity().is_zero_approx():
 			result.moving_crowd += 1
-	for event in _simulation.events().instances():
+	for event in _world.events().instances():
 		if view.has_point(transform * event.global_position):
 			result.visible_events[event.row_id()] = int(result.visible_events.get(event.row_id(), 0)) + 1
 	return result
@@ -1511,7 +1512,7 @@ func _in_the_picture(at: Vector2) -> bool:
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var covering := _simulation.events().visible_view().screen_cover() if _simulation else null
+	var covering := _world.events().visible_view().screen_cover() if _world else null
 	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
 	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0
@@ -1532,9 +1533,9 @@ func _camera_world_rect() -> Rect2:
 ## How many walkers and cars are moving in the picture now.
 func _moving_in_the_picture() -> Dictionary:
 	var counts := {"walkers": 0, "cars": 0}
-	if not _simulation or not _simulation.crowd():
+	if not _world or not _world.crowd():
 		return counts
-	for agent in _simulation.crowd().agents():
+	for agent in _world.crowd().agents():
 		if not agent.velocity().is_zero_approx() and _in_the_picture(agent.global_position):
 			counts["cars" if agent.is_car() else "walkers"] += 1
 	return counts
@@ -1544,9 +1545,9 @@ func _moving_in_the_picture() -> Dictionary:
 func subject_of(label: String) -> Node2D:
 	if not label.begins_with(ROW_SUBJECT):
 		return named[label] if is_instance_valid(named.get(label)) else null
-	if not _simulation or not _simulation.events():
+	if not _world or not _world.events():
 		return null
-	for instance in _simulation.events().instances():
+	for instance in _world.events().instances():
 		if instance.row_id() == label.trim_prefix(ROW_SUBJECT) and not instance.is_gone():
 			return instance
 	return null
@@ -1585,13 +1586,13 @@ func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 var _in_the_void := {}
 
 func _watch_the_void() -> void:
-	if not _city or not _city.map.has_stretch():
+	if not _world or not _world.city_map().has_stretch():
 		return
-	for instance in _simulation.events().instances():
+	for instance in _world.events().instances():
 		if _in_the_void.has(instance):
 			continue
-		var tile := _city.map.world_to_tile(instance.global_position)
-		if instance.is_waiting() and _city.map.is_void(tile):
+		var tile := _world.city_map().world_to_tile(instance.global_position)
+		if instance.is_waiting() and _world.city_map().is_void(tile):
 			_in_the_void[instance] = true
 			var found: Array = manifest.get("in_the_void", [])
 			found.append({"tile": [tile.x, tile.y], "row": instance.row_id(), "tick": tick})
@@ -1611,9 +1612,9 @@ const PICTURE_REACH := float(Tuning.TILE_SIZE)
 ## recorded in the manifest's `seen_to_jump`, which `tests/test_scene_recipe_stretch_crowd.gd` holds
 ## empty over every stretch scene.
 func _watch_the_crowd() -> void:
-	if not _city or not _city.map.has_stretch() or not _simulation.crowd():
+	if not _world or not _world.city_map().has_stretch() or not _world.crowd():
 		return
-	for agent in _simulation.crowd().agents():
+	for agent in _world.crowd().agents():
 		var at := agent.global_position
 		if _crowd_was.has(agent):
 			var was: Vector2 = _crowd_was[agent]
@@ -1635,7 +1636,7 @@ func _write_the_draft() -> int:
 	var errors: Array[String] = []
 	for field: String in _data.get("setup", {}).get("task", {}):
 		pinned.append(position_of(_data.setup.task[field], errors))
-	var drafted := _draft.compose(_written, _run, _city, _simulation.crowd(), start_position(),
+	var drafted := _draft.compose(_written, _run, _world, start_position(),
 			pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)

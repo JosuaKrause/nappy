@@ -14,7 +14,7 @@ directly (its body's width, whether it holds her again, how long, whether it end
 more classes read each other's fields. An event's abilities (a body, a hold on her, a lethal field, a
 pursuit) become parts it has, each answering its own questions, rather than subclasses or settings
 read from outside: composition over inheritance, the half of events-one-interface's context the
-player's "yes" accepted with the rest (inbox #1173 in gray-dolphin). It comes after the hand-ins (`city-hand-ins.md`), which move
+player's "yes" accepted with the rest (inbox #1173 in gray-dolphin). It comes after the hand-ins, which move
 many of the same reads.
 
 **The events' design is `event-interface.md`**: the parts, the questions callers ask, what replaces
@@ -94,8 +94,9 @@ Left, each its own design question:
     so a public writer would be called by tests alone.
 - **The lines other work touches** are converted with that work:
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
-    hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
-    reads of other classes' fields wait for those classes' passes;
+    hands the city), which go with the city scene's own pass (minty-quail's README, "The modules
+    that do not wait for the events"); `day_director.gd`'s reads of other classes' fields wait for
+    those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface
@@ -106,7 +107,7 @@ Left, each its own design question:
   - the region and seal planners' (`src/routes/`) reads of a plan and its row, with row 3a, which
     names both files;
   - the scene recipes' (`scene_recipe*`) reads of the map, with the tests-one-module item or the
-    scene recipes' own pass with `AuthoredScene` (`city-hand-ins.md`), since their tests set what no
+    scene recipes' own pass with `AuthoredScene`, since their tests set what no
     game method sets, and their one read of an event, a row's `id`, with row 4b of `event-interface.md`.
 
   The fields they read become underscore-private behind a method, which takes the field's name unless the field is a

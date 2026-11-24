@@ -551,6 +551,30 @@ func refresh_street_trees() -> void:
 		tree.visible = not map.is_tree_pit_emptied(tile)
 	_decals.refresh_street_tree_pits()
 
+## Sets a recipe's roof furniture on the building standing on `lot`
+## (`Building.author_roof_furniture()`), or answers the one problem that no building stands there.
+##
+## Overrides CityDressing.furnish_a_roof.
+func furnish_a_roof(lot: Rect2i, fixtures: Array) -> Array[String]:
+	var errors: Array[String] = []
+	var found := false
+	for building in _buildings:
+		if building.lot_rect() == lot:
+			found = true
+			errors.append_array(building.author_roof_furniture(fixtures))
+	if not found:
+		errors.append(NO_BUILDING_ON_THE_LOT)
+	return errors
+
+## Restarts the signals' cycle, runs it on `into_the_cycle` seconds and cuts their power when `dark`.
+##
+## Overrides CityDressing.start_the_signals.
+func start_the_signals(into_the_cycle: float, dark: bool) -> void:
+	signals.restart_cycle()
+	signals.advance(into_the_cycle)
+	if dark:
+		signals.use_power(false)
+
 ## What is on the far side of the streets that run along the boundary.
 ##
 ## **Something has to be**: the outermost corridor is a whole street, every interior street runs
@@ -1124,12 +1148,11 @@ func _is_on_the_tinted_route(tile: Vector2i) -> bool:
 
 ## Every building this city built, fixed for the run — read by `DebugLayers` so its bounding-box
 ## layer can trace each one's own `shape` rather than a second list of them.
+##
+## Overrides CityDressing.buildings.
 func buildings() -> Array[Building]:
 	return _buildings
 
-## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
-## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
-## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
 ## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
 func traffic_signals() -> TrafficSignals:
 	return signals
@@ -1138,6 +1161,11 @@ func traffic_signals() -> TrafficSignals:
 func ground_mode_in_force() -> SceneryGround.Mode:
 	return ground_mode
 
+## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
+## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
+## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
+##
+## Overrides CityDressing.props.
 func props() -> Array[Node2D]:
 	var all: Array[Node2D] = []
 	all.append_array(_props)
@@ -1153,6 +1181,8 @@ func streets() -> DayStreets:
 ## The fronts the run's story changes (`CityFronts`): the burnt frontage, the way in behind a
 ## sidewalk, a block shown during the day, the neighbor's window and her sealed door. Built once in
 ## `build()`, over the buildings and her door, which are fixed for the run.
+##
+## Overrides CityDressing.fronts.
 func fronts() -> CityFronts:
 	return _fronts
 

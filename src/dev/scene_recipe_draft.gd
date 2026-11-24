@@ -62,22 +62,23 @@ var _at_the_start := {}
 
 ## One tick of the walk: her tile, and the tile of a neighbor walking home (`neighbor`, or null).
 ## The first tick also takes the dawn's tiles and what stands in the world.
-func record(player: Node2D, city: City, events: EventManager, neighbor: Node2D) -> void:
+func record(player: Node2D, world: DayWorld, neighbor: Node2D) -> void:
+	var map := world.city_map()
 	if _dawn_tiles.is_empty():
-		_dawn_tiles = city.map.tiles.duplicate()
-		_context = RecipeCityContext.capture(city.map)
-		for instance in events.instances():
-			_at_the_start[city.map.world_to_tile(instance.global_position)] = true
-	_walked[city.map.world_to_tile(player.global_position)] = true
+		_dawn_tiles = map.tiles.duplicate()
+		_context = RecipeCityContext.capture(map)
+		for instance in world.events().instances():
+			_at_the_start[map.world_to_tile(instance.global_position)] = true
+	_walked[map.world_to_tile(player.global_position)] = true
 	if neighbor:
-		_walked[city.map.world_to_tile(neighbor.global_position)] = true
+		_walked[map.world_to_tile(neighbor.global_position)] = true
 
 ## The drafted recipe, built from `recipe` (the file as written, not `base_of()`'s copy) and the
 ## world `run` has left behind, `pinned` the places `setup.task` names. Fills `problems` with
 ## anything the draft could not place.
-func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start: Vector2,
+func compose(recipe: Dictionary, run: RunState, world: DayWorld, start: Vector2,
 		pinned: Array[Vector2], problems: Array[String]) -> Dictionary:
-	var map := city.map
+	var map := world.city_map()
 	var day := run.header().day()
 	var ground := {}
 	for tile: Vector2i in _walked:
@@ -90,7 +91,7 @@ func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start:
 		_add_the_ground_of(map, Vector2i(int(tile[0]), int(tile[1])), ground, false)
 	var stretch := {"tiles": _tile_runs(map, ground, _dawn_tiles)}
 	var buildings: Array = []
-	for building in city.buildings():
+	for building in world.dressing().buildings():
 		var lot := building.lot_rect()
 		if _fronts(map, lot, ground):
 			buildings.append({"lot": [lot.position.x, lot.position.y, lot.size.x, lot.size.y],
@@ -108,7 +109,7 @@ func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start:
 	trees.sort()
 	stretch["trees"] = trees
 	var props: Array = []
-	for node in city.props():
+	for node in world.dressing().props():
 		var prop := node as Prop
 		if not prop or prop.kind() == Prop.Kind.STREET_TREE \
 				or not ground.has(map.world_to_tile(prop.position)):
@@ -135,7 +136,7 @@ func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start:
 	drafted["context"] = _context
 	var setup: Dictionary = drafted.get("setup", {})
 	setup["posters"] = _posters(run, map, ground)
-	setup["actors"] = _starting_crowd(run, city, crowd, ground, start, problems)
+	setup["actors"] = _starting_crowd(run, world, ground, start, problems)
 	# A route bag the author has already rigged is theirs: it is about what she meets, not about
 	# where the stretch runs, so drafting the stretch again keeps it.
 	if not setup.has("route_bag"):
@@ -228,9 +229,10 @@ static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 ## (`Tuning.VIEW_HALF_EXTENT` round `start`): a scene's first frame is not a car already bearing
 ## down on a pram that has not taken a step — the start of a played day is her doorstep, on a street
 ## no car is in yet.
-static func _starting_crowd(run: RunState, city: City, crowd: Crowd, ground: Dictionary,
+static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
 		start: Vector2, problems: Array[String]) -> Array:
-	var map := city.map
+	var map := world.city_map()
+	var crowd := world.crowd()
 	var day := run.header().day()
 	var box := Rect2i()
 	for tile: Vector2i in ground:

@@ -125,7 +125,7 @@ func run(t: TestRunner) -> void:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"), DaySpec.for_day(city.run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(RunCity.world_of(city, player), DaySpec.for_day(city.run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	t.check("\n".join(errors).contains("too few eligible sidewalk positions"),
 			"oversized city-wide uniform population rejects instead of silently truncating")
 	runtime.free()
