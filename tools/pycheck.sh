@@ -88,6 +88,7 @@ run uv run python tools/test_check_field_reads.py
 run uv run python tools/test_field_answers.py
 run uv run python tools/test_field_to_method.py
 run uv run python tools/test_typing_census.py
+run uv run python tools/test_dead_code.py
 
 if [[ $status -ne 0 ]]; then
     echo

@@ -71,6 +71,7 @@ ENTRY_POINTS = (
     "field_to_method.py",
     "typing_census.py",
     "compare-placement-rows.py",
+    "dead_code.py",
 )
 
 SOUND_FILES = (
