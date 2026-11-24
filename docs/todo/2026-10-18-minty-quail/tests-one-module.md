@@ -13,26 +13,34 @@ answers moved to that object's suite). This item is the pass that brings the exi
 them, one module at a time, once the hand-ins give each class something to hand
 a fake to. Each module's pull request says each suite's time before and after.
 
-**A test reads its subject only through methods** too: on the board's tests-read-fields, whether a
-test counts as another object under "fields are not API", "yes" (inbox #1182 in gray-dolphin). A var a test reads
-gets a method, and suites move as a pull request touches them.
+**A test reads what it tests only through methods**: on the board's tests-read-fields, whether a
+test counts as another object under "fields are not API", "yes" (inbox #1182 in gray-dolphin). A
+var a test reads gets a method, and suites move as a pull request touches them. Every module has
+had its pass; the reads below are what the field-read check, which reads `src/` only
+(`tools/check_field_reads.py`'s header hands tests to this item), cannot count. They were found
+by running the check over a scratch copy of the tree with `tests/` moved under `src/`.
+
+**What breaks the rule today**, each read to be moved to the class's method or to what the class
+does outward:
+
+- `ContactPoint.is_done`: about twenty lines in the resistance suites (`test_resistance_crossing.gd`
+  holds the most) read the field where the game asks `is_finished()`; its line in
+  `tools/test_only_members.txt` defers to this item.
+- `Crowd.step()`: the crowd's rigs and suites (`tests/crowd_closures_rig.gd` and the rest) drive
+  it by hand; its line in `tools/test_only_members.txt` defers to this item.
+- `WorldMap.blocked`: `tests/test_world_passability.gd` and `tests/test_day13_guard.gd` read the
+  blocked layer's tiles and copy it.
+- `ExcitementSource.player_velocity`: `tests/fixtures/prediction_reference.gd` reads it.
+- `LaneMover.view`: `tests/test_drawn_view.gd` writes it on a car and a walker.
+
+**One kept exception.** `tests/test_crowd_bodies_on_a_real_day.gd` builds a real city for a
+guarantee that spans the event manager's plan, the city's start of the day and the crowd; its
+header gives the wiring as its reason.
 
 **A suite that plans one city over many days hands in its mast sites worked out once per city**,
-as the game does (`EventWorld.work_out_mast_sites()` on the city as built): today about forty suites
-leave them to the shared helper's default (`tests/game_dawn.gd`), which works them out at each planned
-dawn, on the day's paint, so a test can measure
-masts that move between days, which the game never shows (the orchestrator's choice in placement
-step 3c, open to overturn). Each module's pass hoists them as it touches the suite.
-
-**The order** is by module, those whose suites build a city before those that boot `main`, one
-pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
-`booted_main` and `build_day`/`start_day`/`begin_day` first. Every entry has had its
-pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
--curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, row 5 of `event-interface.md`, done, the records
-2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
--speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose, -frosty-tapir and
--golden-finch, -coral-elk, -frosty-hedgehog and -round-magpie), and what each lists is what is left of it:
-
-1. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
-   ground, its header giving the wiring between the manager's record and a live event as its reason
-   for a city.
+as the game does (`EventWorld.work_out_mast_sites()` on the city as built): 37 files under
+`tests/` use `GameDawn`, 15 of them hand sites in with `.masts(`, and the rest leave them to the
+helper's default (`tests/game_dawn.gd`), which works them out at each planned dawn, on the day's
+paint, so a test can measure masts that move between days, which the game never shows (the
+orchestrator's choice in placement step 3c, open to overturn). Whether each of the 15 works them
+out once per city is read by the builder. A pull request that touches such a suite hoists them.
