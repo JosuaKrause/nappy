@@ -20,7 +20,7 @@ A getter named for each field was rejected where a reader's question has a name 
 list, since a move is a pose nothing outward shows) and stands as a kept line of `tools/test_only_members.txt` with
 that reason.
 
-## Left as they are
+## The scene recipes' size reads
 
 The scene recipes' reads of the map's size (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`) are converted
 to `size_in_tiles()` too, since the field is gone; their untyped files keep the opt-out line for their other reads.

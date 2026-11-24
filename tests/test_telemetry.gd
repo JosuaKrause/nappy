@@ -1119,8 +1119,8 @@ func _picture_map() -> CityMap:
 	var period := CityMap.period()
 	map.record_built_over(Vector3i(1, 4, 6), Rect2i(Vector2i(4 * period, 6 * period + 8),
 			Vector2i(Tuning.STREET_WIDTH, 2)))
-	map.fill_rect(Rect2i(Vector2i(7 * period, 0), Vector2i(Tuning.STREET_WIDTH, map.size_in_tiles().y)),
-			GameEnums.TileType.SIDEWALK)
+	var street := Vector2i(Tuning.STREET_WIDTH, map.size_in_tiles().y)
+	map.fill_rect(Rect2i(Vector2i(7 * period, 0), street), GameEnums.TileType.SIDEWALK)
 	map.add_precinct(Vector4i(1, 7, 2, 3))
 	return map
 

@@ -1366,7 +1366,8 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
 
-	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size_in_tiles())).grow(512.0)
+	var whole := Rect2i(Vector2i.ZERO, city.map.size_in_tiles())
+	var bounds := city.map.tile_rect_to_world(whole).grow(512.0)
 	var viewport := Vector2(
 			ProjectSettings.get_setting("display/window/size/viewport_width"),
 			ProjectSettings.get_setting("display/window/size/viewport_height"))

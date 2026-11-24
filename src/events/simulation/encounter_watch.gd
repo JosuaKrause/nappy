@@ -174,7 +174,8 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 	var box := instance.drawn_box()
 	var world := Rect2(box.position + instance.global_position, box.size)
 	var record := _record_of(instance)
-	var landing := instance.source().landed_ever() > (record.landed_last if record != null else 0.0)
+	var landing := instance.source().landed_ever() \
+			> (record.landed_last if record != null else 0.0)
 	var share := visible.share_of(world)
 	var in_view := share > 0.0
 	if record == null:

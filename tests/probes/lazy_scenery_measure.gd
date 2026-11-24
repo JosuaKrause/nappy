@@ -219,7 +219,8 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 		for y in range(lo.y, hi.y):
 			for x in range(lo.x, hi.x):
 				var tile := Vector2i(x, y)
-				var inside := x >= 0 and y >= 0 and x < city.map.size_in_tiles().x and y < city.map.size_in_tiles().y
+				var extent := city.map.size_in_tiles()
+				var inside := x >= 0 and y >= 0 and x < extent.x and y < extent.y
 				var source_id := GroundTiles.source_for(city.map, tile, 1) if inside \
 					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:

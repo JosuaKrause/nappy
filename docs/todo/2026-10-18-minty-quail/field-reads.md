@@ -97,19 +97,13 @@ Left, each its own design question:
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
-- **The world map's and its movers' reads.** The world map (`WorldMap`, `src/world/world_map.gd`)
-  keeps its size, its list of moves, its separation pass and its day-record version private, and is
-  asked through `size_in_tiles()`, `list_move()` and `unlist_move()`, `course_keepers()`,
-  `day_record_version()`, `obstructed_tiles()`, `has_solid_bodies()` and `obstruction_version()`;
-  `Mover` keeps `blocked_by` and `radius` private, asked through `layers_blocked()` and
-  `body_reach()`; the excitement source keeps `landed_ever` private, asked through
-  `landed_ever()`. No later pass owns them. The fields the events read of
-  `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
-  asked through their methods (row 4b of `event-interface.md`).
-  `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
-  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public, as are `Stroller.carrying` and `facing`, which the game
-  asks through `is_carrying()` and `facing_direction()` and the suites still read (`[kept]` lines);
-  `VisibleView.controls` is private, set through `use_cover()`.
+- **What the events read of the world's other classes.** The fields the events read of
+  `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are
+  private, asked through their methods (row 4b of `event-interface.md`). `MoveProposal.yields`
+  and `on_the_list`, which nothing outside its file reads (callers ask `gives_way()` and
+  `is_on_the_list()`), and `Stroller.atlas` (below) are public, as are `Stroller.carrying` and
+  `facing`, which the game asks through `is_carrying()` and `facing_direction()` and the suites
+  still read (`[kept]` lines); `VisibleView.controls` is private, set through `use_cover()`.
 - **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
   screen-edge badge) are handed in through `use_atlas()` and read by their own files and
   `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's name (`"atlas" in

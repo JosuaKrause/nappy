@@ -458,8 +458,8 @@ class Lane:
 func _ready() -> void:
 	reset_physics_interpolation()
 
-## On its map's list of moves (`WorldMap.moves`) while it is in the world, so a pass over every
-## mover's proposal sees it.
+## On its map's list of moves (`WorldMap.list_move()`) while it is in the world, so a pass over
+## every mover's proposal sees it.
 func _enter_tree() -> void:
 	if _map:
 		_map.list_move(_move, position)
@@ -790,9 +790,10 @@ func step(delta: float) -> void:
 		_recycle()
 	end_the_frame(delta)
 
-## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
-## it is in the world: a crowd body's, the one kind that gives way (`MoveProposal.yields`), reaching
-## as far round its centre as its ground shape does (set in `setup_at()`).
+## Its move this tick (`MoveProposal`), its own, on its map's list of moves
+## (`WorldMap.list_move()`) while it is in the world: a crowd body's, the one kind that gives
+## way (`MoveProposal.yields`), reaching as far round its centre as its ground shape does (set
+## in `setup_at()`).
 var _move := MoveProposal.new(true)
 
 ## **Puts its move where it stands, after something outside its step has moved it**: a car carried

@@ -75,8 +75,8 @@ func todays_body_tiles() -> Dictionary:
 func body_ground_changes() -> int:
 	return _body_version
 
-## Whether anything on this record of `layers` (a `Mover`'s `blocked_by`, or part of it) stands on
-## `tile`. The ground's own type is the map's question (`CityMap.passable()`).
+## Whether anything on this record of `layers` (a `Mover`'s `layers_blocked()`, or part of it)
+## stands on `tile`. The ground's own type is the map's question (`CityMap.passable()`).
 func blocks(tile: Vector2i, layers: int) -> bool:
 	return (layers & Mover.POSTS != 0 and _posts.has(tile)) \
 			or (layers & Mover.CLOSED != 0 and _closed.has(tile)) \

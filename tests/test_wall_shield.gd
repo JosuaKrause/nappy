@@ -457,7 +457,8 @@ func _test_the_fields_layer_cuts_a_blocked_line_whole_and_draws_an_open_one(t: T
 					missed += 1
 		t.check(blocked > 50 and open_lines > 20 and missed == 0,
 				"on a %dx%d map a line a wall blocks is cut away whole and one it does not is drawn (%d of %d blocked, %d open, %d wrong)"
-				% [map.size_in_tiles().x, map.size_in_tiles().y, blocked, blocked + open_lines, open_lines, missed])
+				% [map.size_in_tiles().x, map.size_in_tiles().y, blocked, blocked + open_lines,
+				open_lines, missed])
 
 ## **The layer asks the grid nothing where no wall can block**: a source on open ground, or a building
 ## too far from the outline to wall a line, costs no wall question, which is what keeps most of a
@@ -484,7 +485,8 @@ class _CountingMap extends CityMap:
 
 	static func of(map: CityMap) -> _CountingMap:
 		var counting := _CountingMap.new(map.size_in_tiles())
-		counting.fill_rect(Rect2i(Vector2i.ZERO, map.size_in_tiles()), GameEnums.TileType.SIDEWALK)
+		var whole := Rect2i(Vector2i.ZERO, map.size_in_tiles())
+		counting.fill_rect(whole, GameEnums.TileType.SIDEWALK)
 		for y in map.size_in_tiles().y:
 			for x in map.size_in_tiles().x:
 				if not map.is_walkable(Vector2i(x, y)):

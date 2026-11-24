@@ -994,19 +994,21 @@ var _steps := PackedInt32Array()
 func _walkable_cells() -> PackedByteArray:
 	if _walkable.is_empty():
 		var map := _map
-		_walkable.resize(map.size_in_tiles().x * map.size_in_tiles().y)
-		for y in map.size_in_tiles().y:
-			for x in map.size_in_tiles().x:
-				_walkable[y * map.size_in_tiles().x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
+		var size := map.size_in_tiles()
+		_walkable.resize(size.x * size.y)
+		for y in size.y:
+			for x in size.x:
+				_walkable[y * size.x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
 	return _walkable
 
 func _base_steps() -> PackedInt32Array:
 	if _steps.is_empty():
 		var map := _map
-		_steps.resize(map.size_in_tiles().x * map.size_in_tiles().y)
+		var size := map.size_in_tiles()
+		_steps.resize(size.x * size.y)
 		_steps.fill(1)
 		for tile: Vector2i in _road_tiles:
-			_steps[tile.y * map.size_in_tiles().x + tile.x] = 1 + _ROAD_STEP_COST
+			_steps[tile.y * size.x + tile.x] = 1 + _ROAD_STEP_COST
 	return _steps
 
 func _smaller_neighbour(field: PackedInt32Array, tile: Vector2i) -> Vector2i:

@@ -604,11 +604,11 @@ func step(delta: float) -> void:
 	_tick(delta)
 	_commit_the_step()
 
-## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
-## it is in the world: one that keeps its course rather than giving way (`MoveProposal.yields`),
-## reaching as far round its centre as it walks or drives through the navigator (`mover_for()`).
-## Outside a step it stands where the event does: it joins there (`_enter_tree()`), and a move to
-## other ground (`move_to()`) puts it there too.
+## Its move this tick (`MoveProposal`), its own, on its map's list of moves
+## (`WorldMap.list_move()`) while it is in the world: one that keeps its course rather than
+## giving way (`MoveProposal.yields`), reaching as far round its centre as it walks or drives
+## through the navigator (`mover_for()`). Outside a step it stands where the event does: it
+## joins there (`_enter_tree()`), and a move to other ground (`move_to()`) puts it there too.
 var _move := MoveProposal.new()
 
 ## Opens the step at the pose it stands at; a car notes what its check will hold the step to.

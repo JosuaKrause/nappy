@@ -41,17 +41,18 @@ var blocked := BlockedLayer.new()
 func tiles_shut_to(layers: int) -> Dictionary:
 	return blocked.tiles_of(layers)
 
-## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked, then
-## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over. A mover
-## joins and leaves it through `list_move()` and `unlist_move()`.
+## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked,
+## then committed (`MoveProposal`): the one list a pass over every mover's proposal goes over. A
+## mover joins and leaves it through `list_move()` and `unlist_move()`.
 var _moves := ProposedMoves.new()
-## The pass a body that gives way asks at its own step about the movers on `_moves` that keep their
-## course (`SeparationPass`, handed out by `course_keepers()`): the crowd gives way to event figures
-## (inbox #884 in plaid-raven).
+## The pass a body that gives way asks at its own step about the movers on `_moves` that keep
+## their course (`SeparationPass`, handed out by `course_keepers()`): the crowd gives way to
+## event figures (inbox #884 in plaid-raven).
 var _separation := SeparationPass.new(_moves)
 ## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
 ## closures); `day_record_version()` answers it.
 var _day_record_version := 0
+
 ## Puts `move` on the list of moves in this world, standing at `at`.
 func list_move(move: MoveProposal, at: Vector2) -> void:
 	_moves.join(move, at)
@@ -166,8 +167,8 @@ func obstructed_tiles() -> Dictionary:
 func has_solid_bodies() -> bool:
 	return not blocked.todays_body_tiles().is_empty()
 
-## Changes whenever a tile enters or leaves `obstructed_tiles()`: a version a reader compares with
-## the one its own answer was built from (`BlockedLayer.body_ground_changes()`).
+## Changes whenever a tile enters or leaves `obstructed_tiles()`: a version a reader compares
+## with the one its own answer was built from (`BlockedLayer.body_ground_changes()`).
 func obstruction_version() -> int:
 	return blocked.body_ground_changes()
 

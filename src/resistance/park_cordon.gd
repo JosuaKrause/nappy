@@ -1390,7 +1390,7 @@ func _maybe_gone(officer: Officer) -> void:
 # ------------------------------------------------------------------ figures ---
 
 ## Takes an officer on: one of the cordon's from now, his move on the map's list of moves
-## (`WorldMap.moves`) and his figure in the world.
+## (`WorldMap.list_move()`) and his figure in the world.
 func _take_on(officer: Officer) -> void:
 	_officers.append(officer)
 	officer.move.use_body_radius(_officer_reach)

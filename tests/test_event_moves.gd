@@ -1,11 +1,11 @@
 extends RefCounted
 ## What the live event and the event manager hand the crowd's separation pass: the move each
-## figure puts on its map's list (`WorldMap.moves`), which the pass reads and never the event
-## behind it. A row's body's `is_walked_round()` and `parks()` reaching its move, an event
+## figure puts on its map's list (`WorldMap.listed_moves()`), which the pass reads and never the
+## event behind it. A row's body's `is_walked_round()` and `parks()` reaching its move, an event
 ## leaving the list where it goes, and a moved figure standing where it was put. The crowd's own
 ## half, how a walker and a car answer a move, is `test_crowd_yields.gd`'s, which puts moves on
-## the list by hand. A real `EventInstance` and a real `EventManager` are built here because they are what
-## is under test; each stands on a map of its own, never a city.
+## the list by hand. A real `EventInstance` and a real `EventManager` are built here because
+## they are what is under test; each stands on a map of its own, never a city.
 
 const SEED := 4242
 

@@ -219,7 +219,8 @@ func _test_across_the_street(t: TestRunner) -> void:
 			and siting.allows(SpawnSiting.Rule.REACHES_HER, asked, across),
 			"on open ground the nearest tile below her and out of sight is his start (%s)" % across)
 	t.check(is_equal_approx(across.x, her.x), "straight below her, the tie broken toward her")
-	var below := Rect2i(0, HER_TILE.y + 1, map.size_in_tiles().x, map.size_in_tiles().y - HER_TILE.y - 1)
+	var size := map.size_in_tiles()
+	var below := Rect2i(0, HER_TILE.y + 1, size.x, size.y - HER_TILE.y - 1)
 	map.fill_rect(below, GameEnums.TileType.BUILDING)
 	t.check(siting.across_the_street(asked) == Vector2.INF,
 			"with nothing but building below her, there is no start across the street")

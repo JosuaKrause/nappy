@@ -85,8 +85,9 @@ func _walker_on_a_lane_at(crowd: Crowd, here: Vector2) -> Dictionary:
 ## A sidewalk tile clear of the map's edge with open sidewalk all round it, so a push has somewhere
 ## to go.
 func _open_sidewalk(map: CityMap) -> Vector2i:
+	var size := map.size_in_tiles()
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if tile.x < 4 or tile.y < 4 or tile.x >= map.size_in_tiles().x - 4 or tile.y >= map.size_in_tiles().y - 4:
+		if tile.x < 4 or tile.y < 4 or tile.x >= size.x - 4 or tile.y >= size.y - 4:
 			continue
 		var open := true
 		for step: Vector2i in [Vector2i.ZERO, Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:

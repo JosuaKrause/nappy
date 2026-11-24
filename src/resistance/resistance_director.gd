@@ -3799,8 +3799,8 @@ func _sweep_the_arrow_fields(budget: int) -> void:
 	if not _arrow_nearest_next and not _arrow_own_next:
 		return
 	# Laying out what blocks her afresh is a tick's work of its own, like a field's own layout.
-	if Vector2i(_map.day_record_version(), _map.obstruction_version()) != _arrow_ground_versions \
-			or _arrow_ground.is_empty():
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
+	if versions != _arrow_ground_versions or _arrow_ground.is_empty():
 		_ground_for_the_arrow()
 		return
 	var finished := false

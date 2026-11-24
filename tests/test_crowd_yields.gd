@@ -6,13 +6,14 @@ extends RefCounted
 ## figure in its lane, moving or standing, never drives through one and never stands in a junction
 ## box for one, and turns round behind one that has parked (inbox #909 in freckled-moose).
 ##
-## The rig is `test_crowd_bodies.gd`'s: a crowd on a real generated map (no city around it, no day
-## planned on it), agents placed by hand on a straight stretch of street this seed's map has, and the crowd stepped as it
-## is in the game (`Crowd.step()`, which gathers the map's separation pass first). The figure is a
-## move put on the map's list by hand (`WorldMap.moves`), since what the crowd reads is the move and
-## never the event behind it. **The events' own half** — a row's body's `is_walked_round()` and `parks()`
-## reaching its move, an event leaving the list of moves where it goes, and a placement leaving the
-## move where it was put — is `test_event_moves.gd`'s.
+## The rig is `test_crowd_bodies.gd`'s: a crowd on a real generated map (no city around it, no
+## day planned on it), agents placed by hand on a straight stretch of street this seed's map
+## has, and the crowd stepped as it is in the game (`Crowd.step()`, which gathers the map's
+## separation pass first). The figure is a move put on the map's list by hand
+## (`WorldMap.list_move()`), since what the crowd reads is the move and never the event behind
+## it. **The events' own half** — a row's body's `is_walked_round()` and `parks()` reaching its
+## move, an event leaving the list of moves where it goes, and a placement leaving the move
+## where it was put — is `test_event_moves.gd`'s.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RIG := preload("res://tests/test_crowd_bodies.gd")
@@ -163,7 +164,7 @@ func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var map := WorldMap.open_ground()
 	var placed := _a_figure(map, at, false)
-	var pass_over := SeparationPass.new(map.listed_moves())
+	var pass_over := map.course_keepers()
 	pass_over.gather()
 	placed.place(at + Vector2(400.0, 0.0))
 	pass_over.gather()

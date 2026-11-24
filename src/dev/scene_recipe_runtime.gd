@@ -1111,7 +1111,8 @@ func begin() -> void:
 		_zoom = zoom
 		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
-		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size_in_tiles())).grow(
+		var whole := Rect2i(Vector2i.ZERO, _city.map.size_in_tiles())
+		var bounds := _city.map.tile_rect_to_world(whole).grow(
 				float(camera.get("landscape_margin", 0)))
 		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))

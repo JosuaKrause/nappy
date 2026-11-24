@@ -326,8 +326,9 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	var watch := _watch()
 	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
 	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
-	t.check(dog.is_chasing() and dog.source().landed_ever() < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
-			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.source().landed_ever())
+	var landed := dog.source().landed_ever()
+	t.check(dog.is_chasing() and landed < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
+			"the dog is chasing her and has landed less than the threshold (%.1f)" % landed)
 	t.check(_influenced == ["%d:charging_dog:seen" % DAY],
 			"the chase is an influence all the same (%s)" % [_influenced])
 	dog.free()
