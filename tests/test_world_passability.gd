@@ -609,7 +609,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 	var bad: Array[String] = []
 	var stalled: Array[String] = []
 	var anchor := map.doorstep_world_position()
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not (def.moves() or def.pursues() or def.is_a_flock()):
 			continue
 		var mover := EventInstance.mover_for(def)

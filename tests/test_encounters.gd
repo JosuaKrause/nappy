@@ -511,7 +511,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 ## full view, with her beside it, is seen and never influenced.
 func _test_a_static_row_is_seen_and_never_influenced(t: TestRunner) -> void:
 	var boxless: Array[String] = []
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if EventPictures.icon_for(def.picture()).is_empty():
 			continue
 		var instance := EventInstance.new()

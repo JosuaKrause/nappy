@@ -9,7 +9,7 @@ extends RefCounted
 
 func run(t: TestRunner) -> void:
 	for day: int in range(1, 15):
-		for def: EventDef in EventCatalogue.all():
+		for def: EventDef in CatalogueRows.every():
 			var role: int = EventScheduler.role_for(def, day)
 			if role == GameEnums.BlockerRole.WALL or role == GameEnums.BlockerRole.FRICTION:
 				print("ROLE %d %s %d" % [day, def.id(), role])

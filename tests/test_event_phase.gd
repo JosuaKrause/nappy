@@ -288,7 +288,7 @@ func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 ## the reverse. Across the body the capsule and the disc agree.
 func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRunner) -> void:
 	var tried := 0
-	for def: EventDef in EventCatalogue.all():
+	for def: EventDef in CatalogueRows.every():
 		var body := def.datum()
 		if body == null or not body.is_segment() or def.moves() or def.drives() \
 				or def.pursues() or def.is_a_flock():
@@ -625,7 +625,7 @@ func _test_no_field_reaches_past_silent_beyond(t: TestRunner) -> void:
 	var heard_inside := 0
 	var heard_past := 0
 	var rows := 0
-	for def: EventDef in EventCatalogue.all():
+	for def: EventDef in CatalogueRows.every():
 		if def.is_a_flock():
 			continue
 		rows += 1
@@ -656,7 +656,7 @@ func _test_no_field_reaches_past_silent_beyond(t: TestRunner) -> void:
 ## off the origin, so a bound measured from anywhere but the node the field is centred on fails.
 func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 	var rows: Array[EventDef] = []
-	for def: EventDef in EventCatalogue.all():
+	for def: EventDef in CatalogueRows.every():
 		if def.flock().count() <= 0:
 			rows.append(def)
 	for shape: GroundShape in [GroundShape.segment(500.0, 10.0),

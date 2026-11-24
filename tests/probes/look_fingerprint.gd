@@ -7,7 +7,7 @@ extends RefCounted
 ##     grep '^LK ' before.txt | shasum -a 256      (the same for after; `diff` the two `LK` files)
 ##
 ## **`LK` lines are the fingerprint**, deterministic and hashable. Every row of
-## `EventCatalogue.all()` is stood twice, on open ground and on an east-west street, the way
+## `CatalogueRows.every()` is stood twice, on open ground and on an east-west street, the way
 ## `tests/drawn_event.gd` stands one (a `RecordingEventDrawer` assigned before `setup()`, a map, a
 ## `WhereSheIs`), with an atlas that holds the events' group so that a crash's and a burst main's
 ## scenery is built. Each is stepped on a fixed tick (`1/30` s) through a drive, the same for every
@@ -58,7 +58,7 @@ extends RefCounted
 ## slice's place among the slices the drawer saw drawn (`RecordingEventDrawer.slices()`) and the far
 ## guard's node found by its name `FarGuard`. Of the look made round a fake: `drawn_rect_now()`,
 ## `mark_rect()`, `current_bob()`. Of the rows: `EventDef.id()`, `look`,
-## `speed`, `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`,
+## `speed`, `for_day()`, and `CatalogueRows.every()`, `heated()`, `heat_levels()`,
 ## `out_of_the_car()`, `building_fire()`, `task_guard_sent()`. A later change which makes one
 ## of those private changes this probe with it.
 
@@ -159,7 +159,7 @@ func run(t: TestRunner) -> void:
 ## `building_fire()`, `task_guard_sent()`).
 func _stand_the_rows() -> void:
 	var last_day := DaySpec.for_day(Tuning.RUN_LENGTH_DAYS)
-	for row in EventCatalogue.all():
+	for row in CatalogueRows.every():
 		_add_a_row(row, row.id())
 		var hot := EventCatalogue.heated(row, EventCatalogue.heat_levels() - 1)
 		if hot != row:

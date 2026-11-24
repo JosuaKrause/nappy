@@ -508,7 +508,7 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 
 func _widest_field() -> float:
 	var widest := 0.0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		widest = maxf(widest, def.heard_within())
 	return widest
 
@@ -700,7 +700,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 	var checked: Array[String] = []
 	var events := _stage.events()
 	var rig: Stroller = null
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.comes_down_her_line():
 			continue
 		checked.append(def.id())
@@ -1138,7 +1138,7 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 ## alone is at most `Tuning.WARNING_ALONE_MAX`.
 func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> void:
 	var sent := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.pursues() or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 			continue
 		sent += 1

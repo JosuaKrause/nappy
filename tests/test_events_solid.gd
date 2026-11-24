@@ -21,7 +21,7 @@ func run(t: TestRunner) -> void:
 ## milestones.
 func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		# A moving wall pins her against a building on a two-tile pavement, which is a different
 		# game from being priced out of a street. See `dog_walker`.
 		if def.moves() or def.pursues():
@@ -59,7 +59,7 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 ## the pram would have been held three pixels outside the thing that takes the baby.
 func _test_a_lethal_thing_can_still_be_reached(t: TestRunner) -> void:
 	var lethal := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.ends_the_day() or def.obstructs_within() <= 0.0:
 			continue
 		lethal += 1

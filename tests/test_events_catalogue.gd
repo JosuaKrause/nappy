@@ -68,7 +68,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	def = roadworks.build()
 	t.check(not def.lies_as_a_spread(), "drawing a spread's picture does not make a row a spread by itself")
 
-	for source in EventCatalogue.all():
+	for source in CatalogueRows.every():
 		var expected := _SPREAD_LOOKS.has(source.picture()) \
 				and source.picture() != EventDef.Look.PROTEST and source.picture() != EventDef.Look.FIREFIGHT
 		t.check(source.lies_as_a_spread() == expected,
@@ -95,7 +95,7 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 	t.check(construction.lies_as_a_spread(), "construction is a spread, so the copies below have an answer to keep")
 
 	var drafts: Array[EventDef] = []
-	for source in EventCatalogue.all():
+	for source in CatalogueRows.every():
 		drafts.append(source.redraft().build())
 		drafts.append(source.as_sent_ahead())
 		drafts.append(source.for_day(1))
@@ -197,7 +197,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) ->
 ## strongest thing standing at the same place, which is the one that actually bills her.
 func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t: TestRunner) -> void:
 	var barriers := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.counts_as_one_barrier():
 			continue
 		barriers += 1
@@ -214,7 +214,7 @@ func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t: TestRunner) -> v
 ## row warned of before it exists, so what is held against the floor is `EventDef.warning_time()`
 ## rather than the telegraph alone.
 func _test_catalogue_is_fair(t: TestRunner) -> void:
-	var defs := EventCatalogue.all()
+	var defs := CatalogueRows.every()
 	t.check(not defs.is_empty(), "the catalogue is not empty")
 	for def in defs:
 		t.check(def.id() != "", "every event has an id")
@@ -243,7 +243,7 @@ func _test_catalogue_is_fair(t: TestRunner) -> void:
 ## the planned convoy's in-world telegraph to it rather than carrying it over.
 func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 	var warned: Array[EventDef] = []
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.warns_before_it_exists():
 			warned.append(def)
 	var convoy := EventCatalogue.by_id("military_convoy")
@@ -331,7 +331,7 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t: TestRunner
 	t.check(not EventCatalogue.by_id("dog_walker").announces_its_coming(walk),
 			"nor a mover she can outwalk")
 	t.close_to(robber.approach_speed(), robber.chase_speed(), "a pursuer comes at its chase speed")
-	for row in EventCatalogue.all():
+	for row in CatalogueRows.every():
 		if row.announces_its_coming(walk):
 			t.check(not EventPictures.icon_for(row.picture()).is_empty(),
 					"'%s' is announced and has a silhouette for its badge" % row.id())
@@ -419,7 +419,7 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 ## rather than a single tile's, which is the ground they actually stand on.
 func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not _SPREAD_LOOKS.has(def.picture()) or def.ground_kinds().is_empty():
 			continue
 		var half := maxf(11.0, def.obstructs_within())
@@ -597,7 +597,7 @@ func _test_a_crash_is_two_cars_solid_inside_the_street_it_closes(t: TestRunner) 
 
 ## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
 func _test_every_other_row_is_one_body(t: TestRunner) -> void:
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.body().declared_pieces().size() > 1:
 			continue
 		var expected := 1 if def.body().ground_shape() != null else 0
@@ -621,7 +621,7 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 	# somewhere she cannot see, and what it leaves behind is a different row.
 	var invisible := ["playground", "curfew_announce", "finale_explosion"]
 	var owner_of := {}
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.picture() == EventDef.Look.NONE:
 			t.check(invisible.has(def.id()), "'%s' draws nothing on purpose" % def.id())
 			continue
@@ -644,7 +644,7 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 ## asserts the badge can never again show a delivery van for a fire engine.
 func _test_every_look_carries_its_own_silhouette(t: TestRunner) -> void:
 	var seen := {}
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.picture() == EventDef.Look.NONE:
 			continue
 		var icon := EventPictures.icon_for(def.picture())
@@ -694,7 +694,7 @@ func _test_a_one_shot_is_sited_on_her_way(t: TestRunner) -> void:
 ## alley breaks it.
 func _test_a_row_is_weighed_only_on_ground_it_stands_on(t: TestRunner) -> void:
 	var stray: Array[String] = []
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.is_weighed_on_ground_it_cannot_stand_on():
 			stray.append(def.id())
 	t.check(stray.is_empty(), "every catalogue row is weighed only where it stands (%s)" % [stray])

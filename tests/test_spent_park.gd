@@ -565,7 +565,7 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var calm := CalmAreas.of(map, used)
-			if not calm.unused().is_empty():
+			if not calm.unused_ground().is_empty():
 				continue
 			asked += 1
 			var events := GameDawn.of(DaySpec.for_day(day), rng, map).calm(calm).spent(no_one_shots) \

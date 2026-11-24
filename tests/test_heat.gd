@@ -44,7 +44,7 @@ func run(t: TestRunner) -> void:
 ## on. That is deliberate: this is the one property whose absence is invisible in play until the
 ## day somebody dies to an unfair event they could not have seen coming.
 func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			t.check(hot.validate(), "'%s' is fair at heat %d" % [def.id(), level])
@@ -56,7 +56,7 @@ func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
 ## does at every heat, `EventDef.drives()`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t: TestRunner) -> void:
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.answers_to_heat() or def.hunts_for_her():
 			continue
 		for level in EventCatalogue.heat_levels():
@@ -76,7 +76,7 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 ## without anybody having to remember to extend this loop.
 func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.hunts_for_her():
 			continue
 		checked += 1
@@ -208,7 +208,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 ## is a second row built for every candidate placement of every day.
 func _test_a_row_that_answers_to_nothing_is_untouched(t: TestRunner) -> void:
 	var untouched := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.answers_to_heat():
 			continue
 		untouched += 1
@@ -219,7 +219,7 @@ func _test_a_row_that_answers_to_nothing_is_untouched(t: TestRunner) -> void:
 	t.check(untouched > 0, "most of the catalogue answers to nothing")
 
 func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		# Cold is always the row itself, whatever the row answers to: level zero is *no* heat
 		# rather than a little of it.
 		t.check(EventCatalogue.heated(def, 0) == def,

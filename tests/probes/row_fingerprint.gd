@@ -73,7 +73,7 @@ func run(t: TestRunner) -> void:
 		"beat": [-1.0, 0.5], "vertical": [false, true], "scar_id": ["", "x"],
 		"kind": GameEnums.EventKind.values(),
 	}
-	var rows := EventCatalogue.all()
+	var rows := CatalogueRows.every()
 	for row in rows:
 		for line in _dump(row):
 			print("RF %s %s" % [row.id(), line])

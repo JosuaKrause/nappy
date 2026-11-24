@@ -262,7 +262,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	var flock_queries := 0
 	# The rows each kind of phase write moved the answer on.
 	var moved := {"noticed": 0, "lunged": 0, "silenced": 0, "leaving": 0, "retired": 0}
-	for definition: EventDef in EventCatalogue.all():
+	for definition: EventDef in CatalogueRows.every():
 		var source_where := WhereSheIs.nowhere()
 		var source := _swept_event(t, definition, source_where)
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id() + " before player")

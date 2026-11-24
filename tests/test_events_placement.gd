@@ -308,7 +308,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	for day: int in [8, 14]:
 		var map := _repainted_city(day)
 		var corridor := Corridor.of(RouteTree.for_day(map, day))
-		for def in EventCatalogue.all():
+		for def in CatalogueRows.every():
 			if not def.stands_on(GameEnums.TileType.SIDEWALK) or def.paces_a_beat():
 				continue
 			if _role_it_places_as(def, day, map, corridor) != GameEnums.BlockerRole.FRICTION:
@@ -329,7 +329,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	var cities := {}
 	for day: int in [8, 10, 14]:
 		cities[day] = _repainted_city(day)
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.stands_on(GameEnums.TileType.SIDEWALK) or def.paces_a_beat() or def.moves():
 			continue
 		if def.obstructs_within() <= 0.0:
@@ -443,7 +443,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 	var map := MapCache.of(4242)
 	var ground := EventScheduler.row_ground(map)
 	var asked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.sidewalk_lane() == EventDef.Pavement.ANY or def.ground_kinds().is_empty():
 			continue
 		var offered := {}
@@ -1101,7 +1101,7 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 ## no row reaches less than its own body.
 func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 	var lethal := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not def.ends_the_day():
 			continue
 		lethal += 1
@@ -1109,7 +1109,7 @@ func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 				"%s: a lethal row's line reach is its whole field (%.0fpx)"
 				% [def.id(), def.line_reach()])
 	t.check(lethal > 0, "the catalogue has lethal rows to ask (%d)" % lethal)
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		t.check(def.line_reach() >= def.obstructs_within(),
 				"%s: no row reaches less than its own body" % def.id())
 
