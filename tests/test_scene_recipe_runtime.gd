@@ -496,7 +496,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		for plan in RunCity.events(city).plans():
-			if plan.get_meta("recipe_name", "") == "car":
+			if plan.row_id() == "police_patrol":
 				installed[heat] = plan.row()
 		t.check(errors.is_empty(), "the patrol car is installed at heat %s: %s" % [heat, errors])
 		runtime.free()
