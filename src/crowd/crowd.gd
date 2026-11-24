@@ -197,35 +197,51 @@ var _field: CrowdField
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
 var _traffic := TrafficIndex.new()
 
+## What the crowd and every agent it makes are equipped with, before the first day: what the
+## screen shows (null for none: every agent drawn), the frame record's sink the crowd charges
+## its time to, and the baked atlas pages its group is held on (`SimulationBuilder` hands the
+## crowd what it is itself equipped with).
+func equip(screen: CrowdView, frame_timing: CrowdTiming, library: AtlasLibrary) -> void:
+	_view = screen
+	_timing = frame_timing
+	_atlas = library
+
+## `--skip crowd` and `--skip motion` (`DevFlags.skip_words()`), named as
+## `SimulationBuilder.leave_out()` is: whether every agent the crowd makes skips its own
+## drawing, and whether the crowd's tick steps nobody.
+func leave_out(drawing: bool, motion: bool) -> void:
+	_skip_agent_drawing = drawing
+	_skip_motion = motion
+
 ## Hands the crowd the index of where its cars are, which it fills every tick
 ## (`space_out_the_traffic()`), before a day starts: the agents a day makes are handed this one.
 func use_traffic(index: TrafficIndex) -> void:
 	_traffic = index
 ## What the screen shows, handed to every agent so none of them reaches for the viewport. See
 ## `CrowdView`. None is a crowd with no screen: every agent drawn, and the day's own radius for
-## "out of sight". Handed in by its builder (`SimulationBuilder`) before the day's agents are made.
-var view: CrowdView = null
+## "out of sight". Handed in by `equip()` before the day's agents are made.
+var _view: CrowdView = null
 ## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`; the null
-## sink until its builder (`SimulationBuilder`) hands another.
-var timing := CrowdTiming.new()
+## sink until `equip()` hands another.
+var _timing := CrowdTiming.new()
 ## The baked atlas pages the crowd holds `ATLAS_GROUP` on and every agent draws from
-## (`AtlasLibrary`), handed in by its builder (`SimulationBuilder`) before the first day and on to
-## every agent it makes; a crowd nobody handed one (a suite's) makes its own on its first day.
-var atlas: AtlasLibrary = null
+## (`AtlasLibrary`), handed in by `equip()` before the first day and on to every agent it makes;
+## a crowd nobody equipped (a suite's) makes its own on its first day.
+var _atlas: AtlasLibrary = null
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
 ## different city — see `step()`.
 var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
-## `--skip motion`, handed in by whoever builds the city. `_physics_process` returns before the
+## `--skip motion`, handed in by `leave_out()`. `_physics_process` returns before the
 ## agents step while it is set, so nothing the crowd ticks (every agent's motion, the signals, the
 ## pockets, the traffic spacing, the index, the junctions, the gates, the doors, the player's own
 ## make-way and bump scan, the strike and the horn) runs, and the day's population stands where it
 ## was placed. `step()`, the rig's own tick, is left alone: a rig asked to walk the crowd walks it.
-var skip_motion := false
+var _skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
-var skip_agent_drawing := false
+var _skip_agent_drawing := false
 ## Today's checkpoint gates — `GateState`, set once a day by `DayDirector.start()` from
 ## `DayStreets.region_plan().gate_states()`. Empty on any day before the wall stands, or in a rig with no
 ## city behind it. See `_stop_for_gates()`.
@@ -322,9 +338,9 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
 	if not _atlas_held:
-		if atlas == null:
-			atlas = AtlasLibrary.new()
-		atlas.acquire(ATLAS_GROUP)
+		if _atlas == null:
+			_atlas = AtlasLibrary.new()
+		_atlas.acquire(ATLAS_GROUP)
 		_atlas_held = true
 	_struck = false
 	# The lights go back to the top of their cycle with the traffic. They are a property of the
@@ -410,12 +426,12 @@ func _follow_the_focus() -> void:
 
 ## A new agent with everything the crowd hands every one it makes: the flags it runs under, the
 ## day's traffic, doors, home segments and pockets, what the screen shows and what it charges its
-## time to.
-func _make_an_agent() -> CrowdAgent:
-	var agent := CrowdAgent.new()
-	agent.skip_drawing(skip_agent_drawing)
-	agent.use_crowd_parts(_traffic, _pockets, view, timing)
-	agent.use_atlas(atlas)
+## time to. It is made of the `kind` it will be placed as.
+func _make_an_agent(kind: CrowdAgent.Kind) -> CrowdAgent:
+	var agent := CrowdAgent.new(kind)
+	agent.skip_drawing(_skip_agent_drawing)
+	agent.use_crowd_parts(_traffic, _pockets, _view, _timing)
+	agent.use_atlas(_atlas)
 	agent.mood().hear_in(_sources)
 	return agent
 
@@ -423,7 +439,7 @@ func _make_an_agent() -> CrowdAgent:
 ## placement is never replaced by a random one.
 func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vector2,
 		speed: float, seed_value: int) -> Dictionary:
-	var agent := _make_an_agent()
+	var agent := _make_an_agent(kind as CrowdAgent.Kind)
 	var problem := agent.setup_at(kind, _map, _field, seed_value, at, heading, speed)
 	if not problem.is_empty():
 		agent.free()
@@ -473,7 +489,7 @@ func recipe_coverage() -> Dictionary:
 		result[kind] += 1
 		local.total += 1
 		local[kind] += 1
-		if not skip_motion and not agent.velocity().is_zero_approx():
+		if not _skip_motion and not agent.velocity().is_zero_approx():
 			result.moving += 1
 			local.moving += 1
 			if is_a_car:
@@ -510,14 +526,14 @@ func clear() -> void:
 ## day.
 func _exit_tree() -> void:
 	if _atlas_held:
-		atlas.release(ATLAS_GROUP)
+		_atlas.release(ATLAS_GROUP)
 		_atlas_held = false
 
 ## Agents alternate axes rather than rolling for one, so a crowd is never accidentally all
 ## north-south on a day when the coin came up that way.
 func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) -> void:
 	for i in count:
-		var agent := _make_an_agent()
+		var agent := _make_an_agent(kind)
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_world.add_entity(agent)
 		_agents.append(agent)
@@ -543,7 +559,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 					var distance := (tile + 0.5) * Tuning.TILE_SIZE
 					var at := Vector2(cross, distance) if vertical else Vector2(distance, cross)
 					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if rng.randf() < 0.5 else -1)
-					var agent := _make_an_agent()
+					var agent := _make_an_agent(CrowdAgent.Kind.WALKER)
 					var problem := agent.setup_at(CrowdAgent.Kind.WALKER, _map, _field, rng.randi(), at, heading, -1)
 					if problem.is_empty():
 						candidates.append(agent)
@@ -1188,10 +1204,10 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 # shape and cost as the crowd's half of what the baby asks every physics frame (`CrowdSources`).
 
 func _physics_process(delta: float) -> void:
-	if timing.running():
-		var outer := timing.enter()
+	if _timing.running():
+		var outer := _timing.enter()
 		_tick_the_crowd(delta)
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_tick_the_crowd(delta)
 
@@ -1203,7 +1219,7 @@ func _tick_the_crowd(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before the agents step, so nothing below runs this tick, and `start_day` still placed the whole
 	# population, so the street stands full of standing people and parked cars.
-	if skip_motion:
+	if _skip_motion:
 		return
 	_advance_the_world(delta)
 	_follow_the_focus()

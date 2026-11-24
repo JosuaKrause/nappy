@@ -169,10 +169,7 @@ func _test_a_column_scene_boards_the_neighbors_window(t: TestRunner, runtime: Sc
 func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
 	var spec := DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS)
-	var cafe: SealPlanner.Candidate = null
-	for candidate in SealPlanner.candidates():
-		if candidate.id == "cafe_pair":
-			cafe = candidate
+	var cafe := SealPlanner.candidate_named("cafe_pair")
 	var street: StreetNetwork.Segment = null
 	for segment in city.map.street_network().segments():
 		if SealPlanner.may_seal(city.map, spec, city.streets().route_tree(), segment) \
@@ -198,7 +195,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 		if instance.row_id() == "cafe_tables":
 			stood.append(_along_and_side(street, centre, instance.position))
 	var where: Array[Vector2] = []
-	for body in expected.bodies:
+	for body in expected.bodies():
 		where.append(_along_and_side(street, centre, body.placed_at()))
 	stood.sort()
 	where.sort()

@@ -244,8 +244,8 @@ static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
 	for agent in crowd.agents():
 		if not ground.has(map.world_to_tile(agent.position)):
 			continue
-		var vertical: bool = agent.get("_vertical")
-		var direction: float = agent.get("_direction")
+		var vertical: bool = agent.lane().is_vertical()
+		var direction: float = agent.lane().direction()
 		# The along coordinate rounded to a hundredth of a pixel, for a recipe a person reads; the
 		# cross coordinate is the lane's centre and stays exact, since a placement must stand on it.
 		var at := agent.position
@@ -256,7 +256,7 @@ static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
 		var heading := "south" if vertical and direction > 0.0 else ("north" if vertical
 				else ("east" if direction > 0.0 else "west"))
 		found.append({"kind": "car" if agent.is_car() else "walker",
-				"at": at, "direction": heading, "speed": snappedf(float(agent.get("_speed")), 0.0001)})
+				"at": at, "direction": heading, "speed": snappedf(agent.speed(), 0.0001)})
 	crowd.clear()
 	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			return a.kind < b.kind or (a.kind == b.kind and (a.at.y < b.at.y

@@ -9,10 +9,3 @@
 
 # [City] src/city/city.gd
 src/main.gd map
-
-# [Crowd] src/crowd/crowd.gd
-src/simulation_builder.gd atlas
-src/simulation_builder.gd skip_agent_drawing
-src/simulation_builder.gd skip_motion
-src/simulation_builder.gd timing
-src/simulation_builder.gd view

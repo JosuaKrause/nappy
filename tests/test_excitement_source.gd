@@ -148,8 +148,7 @@ func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	instance.free()
 
 func _test_a_crowd_body_is_never_cached(t: TestRunner) -> void:
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
+	var walker := CrowdAgent.new(CrowdAgent.Kind.WALKER)
 	var at := Vector2(Tuning.PEDESTRIAN_INNER_RADIUS * 0.5, 0.0)
 	var before := walker.mood().contribution_at(at)
 	walker.position = Vector2(-Tuning.PEDESTRIAN_OUTER_RADIUS * 3.0, 0.0)
@@ -164,9 +163,8 @@ func _test_a_crowd_body_is_never_cached(t: TestRunner) -> void:
 func _test_a_crowd_body_jolt_widens_its_set(t: TestRunner) -> void:
 	var crowd := Crowd.new()
 	var narrow := crowd.sources().silent_beyond()
-	var car := CrowdAgent.new()
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	car.mood().hear_in(crowd.sources())
-	car.kind = CrowdAgent.Kind.CAR
 	car.mood().startle(30.0, 1.0, 45.0, 900.0)
 	t.check(crowd.sources().silent_beyond() >= 900.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 			and crowd.sources().silent_beyond() > narrow,

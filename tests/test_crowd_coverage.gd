@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 			continue
 		var quadrant := ("n" if at.y < middle.y else "s") + ("w" if at.x < middle.x else "e")
 		measured[quadrant].moving += 1
-		if agent.kind == CrowdAgent.Kind.CAR:
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
 			measured[quadrant].moving_cars += 1
 	var coverage := crowd.recipe_coverage()
 	t.check(coverage.scope == "city", "and the capture reports the city view it covers")

@@ -112,8 +112,7 @@ func _test_the_box_is_the_screen_grown_by_the_margin(t: TestRunner) -> void:
 ## A rig that steps an agent by hand outside any tree keeps the gate's old answer: there is no screen
 ## for it to be off, so every change still asks for its redraw.
 func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t: TestRunner) -> void:
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	car.position = Vector2(-5000.0, -5000.0)
 	t.check(car.end_the_frame(0.0),
 			"an agent in no tree still redraws its first picture, wherever it stands")
@@ -126,8 +125,7 @@ func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t: TestRunner) -> v
 ## before the gate redraws it.
 func _test_a_car_reach_holds_everything_it_draws(t: TestRunner) -> void:
 	var reach := CrowdAgent.DRAWN_REACH
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	for i in 16:
 		var heading := Vector2.RIGHT.rotated(TAU * float(i) / 16.0)
 		for view: String in CarLook.BODY_BY_VIEW:
@@ -164,8 +162,7 @@ func _test_a_car_reach_holds_everything_it_draws(t: TestRunner) -> void:
 func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestRunner) -> void:
 	var screen := _screen(t)
 	var shown := _world_shown(Vector2.ZERO)
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	car.set_process(false)
 	screen.add_child(car)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
@@ -227,8 +224,7 @@ func _the_gate_projected_her_caret(car: CrowdAgent, at: Vector2) -> bool:
 ## it), its view and stride where they were — still redraws on its first frame back, since what it shows was not kept.
 func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRunner) -> void:
 	var screen := _screen(t)
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
+	var walker := CrowdAgent.new(CrowdAgent.Kind.WALKER)
 	walker.set_process(false)
 	# Hidden, so the frames the view moves through never draw it (it was handed no atlas): the gate
 	# asks for a redraw whatever the agent's visibility, and that answer is what is checked.

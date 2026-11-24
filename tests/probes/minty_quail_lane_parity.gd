@@ -111,7 +111,7 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
 	var best := INF
 	var target := here
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.WALKER:
+		if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 			continue
 		var distance := agent.global_position.distance_squared_to(here)
 		if distance < best:

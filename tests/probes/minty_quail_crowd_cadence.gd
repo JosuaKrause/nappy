@@ -163,7 +163,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 			bumps_at_warmup = _bumps
 			strikes_at_warmup = _strikes
 		for agent in crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
 			var now_startled := agent.mood().is_startled()
 			var box := agent.junction_occupied()
@@ -247,7 +247,7 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
 	var best := INF
 	var target := here
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.WALKER:
+		if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 			continue
 		var distance := agent.global_position.distance_squared_to(here)
 		if distance < best:

@@ -73,19 +73,11 @@ Left, each its own design question:
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
   by class: the city map's (`CityMap`) `block_plans` is private, asked through `plans_by_block()`.
   `RoadClosure.segment` is private: every reader asks `street_key()`, `street_words()`,
-  `mouth_rects()`, `cause_centre()` or `covers_tile()`. Two groups have a home of their own:
+  `mouth_rects()`, `cause_centre()` or `covers_tile()`. One group has a home of its own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
     a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
-  - A field only a test still reads outside its own class and the code that writes it
-    (`Crowd.view`, `timing`, `atlas`, `skip_motion`, `skip_agent_drawing`) keeps its direct write in
-    the game (the simulation builder) and goes with the
-    tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
-    also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
-    outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
-    suites set it on the agents they build by hand (its setter installs the car or walker rules),
-    so a public writer would be called by tests alone.
 - **The lines other work touches** are converted with that work:
   - `main.gd`'s reads of the city's map and its navigator, which go with the city scene's own pass
     (minty-quail's README, "The modules that do not wait for the events"); `day_director.gd`'s

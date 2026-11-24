@@ -635,10 +635,11 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRu
 					"seed %d day %d: a repaint with nothing handed over shuts and fences nothing"
 					% [cmap.city_seed(), day])
 
-## A street closure's pieces keep the street barrier renderer: every piece standing at one of the day's
-## street closures' mouths (within half the barrier's width of its centre) is no `ParkFenceMarker`,
-## lays none of the park pictures and lays a street barrier picture (a post, a panel, a sign or a
-## cause). A street piece wrongly built as a park piece lays the park's pictures instead.
+## A street closure's pieces keep the street barrier renderer: every piece standing at one of
+## the day's street closures' mouths (within half the barrier's width of its centre) is no
+## `ParkFenceMarker`, lays none of the park pictures and lays a street barrier picture (a post,
+## a panel, a sign or a cause). A street piece wrongly built as a park piece lays the park's
+## pictures instead.
 func _check_street_pieces_keep_their_own_renderer(t: TestRunner, city: City,
 		markers: Array[ClosureMarker], recording: RecordingSceneryDrawer,
 		library: AtlasLibrary) -> void:
@@ -646,7 +647,8 @@ func _check_street_pieces_keep_their_own_renderer(t: TestRunner, city: City,
 	for picture: StringName in [ClosureMarker.FENCE_ACROSS, ClosureMarker.FENCE_ALONG,
 			ClosureMarker.SIGN, ClosureMarker.POST]:
 		street.append(library.region(picture))
-	for picture: StringName in ClosureMarker.CAUSES.values() + ClosureMarker.CAUSES_VERTICAL.values():
+	var causes: Array = ClosureMarker.CAUSES.values() + ClosureMarker.CAUSES_VERTICAL.values()
+	for picture: StringName in causes:
 		street.append(library.region(picture))
 	var park: Array[Texture2D] = []
 	for picture: StringName in [ParkFenceMarker.JOINT, ParkFenceMarker.MOUNTED_SIGN,
@@ -667,7 +669,7 @@ func _check_street_pieces_keep_their_own_renderer(t: TestRunner, city: City,
 					laid_street = laid_street or entry.texture in street
 					laid_park = laid_park or entry.texture in park
 				t.check(not marker is ParkFenceMarker and laid_street and not laid_park,
-						"a street closure's piece at %s keeps the street barrier renderer" % [mouth])
+						"a street closure's piece at %s keeps the street renderer" % [mouth])
 	t.check(checked > 0, "the day has a street closure's pieces to check (%d)" % checked)
 
 ## Makes every marker resident, the way the scenery residency does for the ones near her, and

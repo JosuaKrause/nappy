@@ -122,7 +122,7 @@ func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 		for agent in RunCity.crowd(city).agents():
 			total += 1
 			var limit: float = size.y if agent._vertical else size.x
-			var clearance := _picture_clearance(agent.kind, agent._vertical)
+			var clearance := _picture_clearance(agent.lane().kind(), agent._vertical)
 			var along := agent._along()
 			if along < 0.0 or along > limit:
 				out_of_bounds += 1
