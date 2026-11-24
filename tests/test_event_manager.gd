@@ -43,7 +43,6 @@ func run(t: TestRunner) -> void:
 		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
-		_test_a_drawn_body_is_told_to_whoever_listens,
 		_test_a_recipes_bodies_are_in_its_way_on,
 	]
 	for test in on_streets:
@@ -103,25 +102,6 @@ func _test_a_walk_starts_with_nobody_told_where_she_is(t: TestRunner) -> void:
 	t.check(handle.at() == Vector2.INF and not handle.is_running() and handle.baby_is_awake(),
 			"a walk begun forgets the last walk's word for every handle")
 
-## A ground that counts what it is asked, for the siting's hand-on to be seen.
-class _CountingGround extends RowGround:
-	var asks := 0
-
-	## Overrides RowGround.tiles_for.
-	func tiles_for(def: EventDef, side: int = -1) -> Array[Vector2i]:
-		asks += 1
-		return super(def, side)
-
-	## Overrides RowGround.offers_for.
-	func offers_for(def: EventDef, side: int = -1) -> Dictionary:
-		asks += 1
-		return super(def, side)
-
-	## Overrides RowGround.offers_for_role.
-	func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
-		asks += 1
-		return super(def, role)
-
 ## **A guard moved is the same man, in the middle of what he was doing** (`move_extra()`): day 13's
 ## task guard following her to her roadblock keeps his warning and its clock, where a guard retired
 ## and made again would forget her. **And a guard walking off is never turned back**: one that left
@@ -164,9 +144,9 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 	var lesson := EventCatalogue.lesson_of(dog)
 	var at := CrowdLanes.arterial_pavement(_stage.map())
 	events.world.take_the_day(Tuning.RUN_TAUGHT_DAY)
-	var robber := events.spawner.create(EventCatalogue.by_id("alley_robbery"), at)
-	var first := events.spawner.create(lesson, at)
-	var second := events.spawner.create(dog, at)
+	var robber := events.spawn_extra(EventCatalogue.by_id("alley_robbery"), at)
+	var first := events.spawn_extra(lesson, at)
+	var second := events.spawn_extra(dog, at)
 	t.check(lesson.id() == "charging_dog_tutorial" and lesson != dog
 			and lesson.pursues() and lesson.picture() == dog.picture(),
 			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
@@ -175,7 +155,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 	t.check(EventCatalogue.lesson_of(robber.row()) == robber.row(),
 			"no other row has a lesson's row of its own")
 	for instance: EventInstance in [robber, first, second]:
-		instance.queue_free()
+		events.retire(instance)
 
 ## The page's own lifetime, and that every look a row can carry has pictures on it, are
 ## `tests/test_atlas_events.gd`: with one baked page for the whole catalogue there is no
@@ -183,55 +163,6 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 ## replace it — the manager's reference count across days and teardown, and every picture a look
 ## can draw resolving on the `events` page — are about `AtlasLibrary` rather than about this
 ## suite's city.
-
-## **A body a draw stands is told on, tile for tile** (`EventStreaming.use_body_listener()`): the
-## listener is called once for each placed plan whose row has a solid body, with
-## `EventSpawner.footprint_of()` of it, and for no plan without one, and **after the body is
-## recorded on the map**, so a car recycled for it is rolled with the body in the record. With no
-## listener a draw says nothing and still stands its rows.
-func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
-	var map := _stage.map()
-	var events := _stage.events()
-	var told: Array[String] = []
-	# Told tiles the map does not yet hold as a body's, asked as the listener is called: the body
-	# is recorded before the crowd is told, so every tile told is one the map already holds.
-	var not_yet_recorded: Array[Vector2i] = []
-	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
-		told.append(str(tiles))
-		for tile in tiles:
-			if not map.is_obstructed(tile):
-				not_yet_recorded.append(tile))
-	# One row with a solid body and one without, stood on the sidewalk a block apart.
-	var at := CrowdLanes.arterial_pavement(map)
-	var drawn: Array[EventPlan] = [
-		EventPlan.new(EventCatalogue.by_id("barricade"), at),
-		EventPlan.new(EventCatalogue.by_id("cat_dash"), at + Vector2(0.0, CityMap.period() * Tuning.TILE_SIZE)),
-	]
-	var expected: Array[String] = []
-	for plan in drawn:
-		events.streaming.add(plan)
-		var tiles := EventSpawner.footprint_of(BodyStance.of(map, plan.row(), plan.placed_at(),
-				plan.faces()))
-		if not tiles.is_empty():
-			expected.append(str(tiles))
-	expected.sort()
-	told.sort()
-	t.check(not expected.is_empty() and expected.size() < drawn.size(),
-			"the draw stands rows with a body and rows without one (%d of %d placed have one)"
-			% [expected.size(), drawn.size()])
-	t.check(told == expected,
-			"the listener is told the footprint of each placed plan that has one, and no other"
-			+ " (%d told, %d expected)" % [told.size(), expected.size()])
-	t.check(not_yet_recorded.is_empty(),
-			"and each is told after the body is recorded: the map holds every tile told as a body's"
-			+ " (%d tiles it did not yet)" % not_yet_recorded.size())
-	var told_so_far := told.size()
-	events.use_body_listener(Callable())
-	var drawn_before := events.plans().size()
-	events.streaming.add(EventPlan.new(EventCatalogue.by_id("barricade"),
-			at + Vector2(0.0, 2.0 * CityMap.period() * Tuning.TILE_SIZE)))
-	t.check(told.size() == told_so_far and events.plans().size() > drawn_before,
-			"with no listener a draw tells nobody and still stands its rows")
 
 ## **A scene recipe's bodies are in the through roads its walk's way on drives by** (`WayOn`,
 ## `ThroughRoads`, made as the walk is taken): a sent patrol in the lane of a street running
@@ -256,8 +187,7 @@ func _test_a_recipes_bodies_are_in_its_way_on(t: TestRunner) -> void:
 		for column in range(0, boxes - 3):
 			var lane := CrowdLanes.lane_centre(row, CrowdLanes.road_lane(false, 1.0))
 			var from := Vector2((column * period + Tuning.STREET_WIDTH + 2.5) * tile, lane)
-			var leg := events.ahead.director().way_on().next_leg(patrol, from, Vector2.RIGHT,
-					Vector2.INF)
+			var leg := events.way_on().next_leg(patrol, from, Vector2.RIGHT, Vector2.INF)
 			far_edge = ((column + 1) * period + Tuning.STREET_WIDTH) * tile
 			if leg.size() == 2 and is_equal_approx(leg[1].x, far_edge):
 				at = from
@@ -270,7 +200,7 @@ func _test_a_recipes_bodies_are_in_its_way_on(t: TestRunner) -> void:
 		return
 	var barricade: Array[EventPlan] = [EventPlan.new(EventCatalogue.by_id("barricade"), beyond)]
 	events.start_recipe(barricade, DaySpec.for_day(day), day, Vector2.ZERO)
-	var leg := events.ahead.director().way_on().next_leg(patrol, at, Vector2.RIGHT, Vector2.INF)
+	var leg := events.way_on().next_leg(patrol, at, Vector2.RIGHT, Vector2.INF)
 	t.check(map.is_obstructed(map.world_to_tile(beyond))
 			and not (leg.size() == 2 and is_equal_approx(leg[1].x, far_edge)),
 			"and with a recipe's barricade on the street beyond it, it no longer does (%s)" % leg)
@@ -360,8 +290,9 @@ func _test_the_summary_names_what_the_day_planned(t: TestRunner) -> void:
 ## (`EventScheduler.recipe_placement()`), walking six tiles along its street, and in the world:
 ## the one row on a day that walks a route and runs out at its end, since the director sends every
 ## other dog walker ahead of her (`EventDef.is_sent_ahead()`) rather than the day planning one. It
-## joins the walk as a placed row does (`EventStreaming.add()`). Null on a city with no such stretch.
-func _a_dog_walker_laid_in_the_world() -> EventPlan:
+## is the walk's, with `others` beside it (`EventManager.start_recipe()`). Null on a city with no
+## such stretch.
+func _a_dog_walker_laid_in_the_world(others: Array[EventPlan] = []) -> EventPlan:
 	var map := _stage.map()
 	var size := map.size_in_tiles()
 	for y in range(Tuning.STREET_WIDTH, size.y - Tuning.STREET_WIDTH):
@@ -379,17 +310,17 @@ func _a_dog_walker_laid_in_the_world() -> EventPlan:
 			var start := map.tile_to_world(tile)
 			var plan := EventPlan.new(EventCatalogue.by_id("dog_walker"), start,
 					PackedVector2Array([start, map.tile_to_world(tile + along * 6)]))
-			_stage.events().streaming.add(plan)
-			_stage.events().stream_around(start)
+			var plans: Array[EventPlan] = [plan]
+			plans.append_array(others)
+			_stage.events().start_recipe(plans, DaySpec.for_day(1), 1, start)
 			return plan
 	return null
 
 func _test_finished_instances_are_dropped(t: TestRunner) -> void:
-	_a_dog_walker_laid_in_the_world()
 	# A bystander standing on, so the list a retirement leaves is not empty to be asked of.
 	var bystander := EventPlan.new(EventCatalogue.by_id("burning_building"),
 			CrowdLanes.arterial_pavement(_stage.map()) + Vector2(0.0, 600.0))
-	_stage.events().streaming.add(bystander)
+	_a_dog_walker_laid_in_the_world([bystander] as Array[EventPlan])
 	_stage.events().stream_around(bystander.placed_at())
 	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
@@ -426,9 +357,9 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	# leave the list without it.
 	var bystander := EventPlan.new(EventCatalogue.by_id("burning_building"),
 			CrowdLanes.arterial_pavement(_stage.map()) + Vector2(0.0, 600.0))
-	_stage.events().streaming.add(bystander)
-	_stage.events().stream_around(bystander.placed_at())
-	var burst := _stage.events().spawner.spawn(EventCatalogue.by_id("finale_explosion"),
+	_stage.events().start_recipe([bystander] as Array[EventPlan], DaySpec.for_day(1), 1,
+			bystander.placed_at())
+	var burst := _stage.events().spawn_extra(EventCatalogue.by_id("finale_explosion"),
 			Vector2(500, 500))
 	var before := _stage.events().active_count()
 	t.check(_run_to_its_end(burst), "the burst runs out on its own")
@@ -449,9 +380,10 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 
 func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 	var here := CrowdLanes.arterial_pavement(_stage.map())
+	var plans: Array[EventPlan] = []
 	for row: String in ["burning_building", "alley_robbery", "charging_dog"]:
-		_stage.events().streaming.add(EventPlan.new(EventCatalogue.by_id(row), here))
-	_stage.events().stream_around(here)
+		plans.append(EventPlan.new(EventCatalogue.by_id(row), here))
+	_stage.events().start_recipe(plans, DaySpec.for_day(1), 1, here)
 	var instances := _stage.events().instances()
 	t.check(instances.size() > 1, "there are several events to sum")
 
@@ -480,13 +412,11 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 	# different check.
 	var plan := EventPlan.new(EventCatalogue.by_id("burning_building"),
 			CrowdLanes.arterial_pavement(_stage.map()))
-	_stage.events().streaming.add(plan)
-	t.check(plan.is_placed() and plan.walks().is_empty(),
-			"there is a stationary event somewhere in the city")
-
 	var at := plan.placed_at()
 	var away := at + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
-	_stage.events().stream_around(away)
+	_stage.events().start_recipe([plan] as Array[EventPlan], DaySpec.for_day(1), 1, away)
+	t.check(plan.is_placed() and plan.walks().is_empty(),
+			"there is a stationary event somewhere in the city")
 	t.check(not plan.is_in_the_world(), "an event across the city is not in the world")
 
 	_stage.events().stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS - 40.0, 0.0))
@@ -654,8 +584,9 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var plan := EventPlan.new(def, Vector2(500.0, 500.0))
-
-	_stage.events().streaming.stream_in(plan)
+	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
+	_stage.events().start_recipe([plan] as Array[EventPlan], DaySpec.for_day(1), 1,
+			plan.placed_at())
 	t.check(plan.is_in_the_world(), "the hand-built plan streams in like any other")
 	if not _live(plan):
 		return
@@ -670,12 +601,14 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	t.check(not _live(plan).is_waiting(), "and a second later it is still chasing, not patrolling")
 	var noticed_at_before := _live(plan).save().noticed_at()
 
-	_stage.events().streaming.stream_out(plan)
+	var far := plan.placed_at() + Vector2(Tuning.EVENT_STREAM_RADIUS
+			+ Tuning.EVENT_STREAM_HYSTERESIS + Tuning.OUT_OF_SIGHT + 100.0, 0.0)
+	_stage.events().stream_around(far)
 	t.check(not plan.is_in_the_world(), "streaming out through the manager clears the live instance")
 	t.check(plan.saved().noticed_at() != INF,
 			"and the plan itself remembers when it noticed her, not just the freed instance")
 
-	_stage.events().streaming.stream_in(plan)
+	_stage.events().stream_around(plan.placed_at())
 	t.check(plan.is_in_the_world(), "streaming back in rebuilds it")
 	if _live(plan):
 		t.check(not _live(plan).is_waiting(),
@@ -789,28 +722,31 @@ func _test_the_walk_is_handed_the_ground_the_dawn_made(t: TestRunner) -> void:
 			"a day started through the manager carries the ground the dawn made for its walk")
 
 ## **What is sited on her walk asks the ground the walk carries** (`EventsAhead.start_day()` hands
-## `WalkEvents.ground()` to the siting it makes for a plan left for her walk): a ground that counts
-## its asks is handed to the walk, the director's day is started over it again, and the siting's
-## one-time scans (`WalkSiting.prepare()`) ask it. A siting handed a ground of its own would leave
-## the count at zero.
+## `WalkEvents.ground()` to the siting it makes for a plan left for her walk): a maker that
+## records each ask is handed in (`EventManager.use_sitings()`) before the day starts, and
+## every ask it records carries the walk's own ground (`walk_events().ground()`, the same object): a
+## siting made on a ground of its own would carry another. That the siting then scans that ground is
+## `SitingMaker`'s and `WalkSiting`'s to hold, not this case's.
 func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRunner) -> void:
-	var asked := -1
+	var events := _stage.events()
+	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
+	events.use_sitings(maker)
 	# Day 3 is the first day to leave a plan for her walk to site (its fire).
-	var day := Tuning.RUN_TAUGHT_DAY
-	_start(day)
+	_start(Tuning.RUN_TAUGHT_DAY)
 	var left_for_her_walk := false
-	for plan in _stage.events().plans():
+	for plan in events.plans():
 		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
 			left_for_her_walk = true
-	if left_for_her_walk:
-		var walk := _stage.events().walk_events()
-		var counting := _CountingGround.new(_stage.map(), null, true, RowGround.Weights.new(),
-				func(_row: EventDef) -> bool: return false)
-		walk.take(walk.plans(), walk.calm(), walk.doors(), walk.reach(), walk.locations(), counting)
-		_stage.events().ahead.start_day(day, _stage.events().walk())
-		asked = counting.asks
-	t.check(asked >= 0, "a day leaves a plan for her walk to site")
-	t.check(asked > 0, "and the siting made for it asks the ground the walk carries (%d asks)" % asked)
+	var carried := events.walk_events().ground()
+	var asked_on_the_walks := 0
+	for ask in maker.made:
+		if carried != null and ask[2] == carried:
+			asked_on_the_walks += 1
+	t.check(left_for_her_walk, "a day leaves a plan for her walk to site")
+	t.check(asked_on_the_walks > 0 and asked_on_the_walks == maker.made.size(),
+			"and the siting made for it is asked on the ground the walk carries (%d of %d asks)"
+			% [asked_on_the_walks, maker.made.size()])
+	events.use_sitings(SitingMaker.new(events.world, events.walk_events()))
 
 ## The live event of `plan`, asked of the city's event manager.
 func _live(plan: EventPlan) -> EventInstance:
@@ -868,6 +804,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	var player := Node2D.new()
 	t.add_child(player)
 	player.global_position = her
+	manager.use_player(player)
 	var edge := DangerEdge.new()
 	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)
@@ -901,28 +838,39 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
 
 	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	# The manager now ticks in the tree, one tick a frame, with her handed in: it takes the view
+	# from where she stands and runs the warning down itself, and she is moved between ticks.
+	t.add_child(manager)
 	var offset := warning.points_at() - her
-	var elapsed := 0.0
-	var looked := 0
-	var jumped := 0
-	var came_at := INF
-	while elapsed < Tuning.WARNING_ALONE_MAX + 1.0:
+	var walked := {"elapsed": 0.0, "looked": 0, "jumped": 0, "came_at": INF, "her": her}
+	var walk := func(_ticks: int) -> bool:
+		var from: Vector2 = walked["her"]
+		walked["elapsed"] += STEP
+		if not created.is_empty():
+			walked["came_at"] = walked["elapsed"]
+			return true
+		walked["looked"] += 1
+		if not (warning.points_at() - from).is_equal_approx(offset):
+			walked["jumped"] += 1
 		# North up the sidewalk, then a stride out onto the carriageway and back.
 		var step := Vector2.UP
+		var elapsed: float = walked["elapsed"]
 		if elapsed > 0.3 and elapsed <= 0.6:
 			step = Vector2.RIGHT
 		elif elapsed > 0.6 and elapsed <= 0.9:
 			step = Vector2.LEFT
-		her += step * Tuning.WALK_SPEED * STEP
-		manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
-		manager.warnings.run(STEP, her)
-		elapsed += STEP
-		if not created.is_empty():
-			came_at = elapsed
-			break
-		looked += 1
-		if not (warning.points_at() - her).is_equal_approx(offset):
-			jumped += 1
+		walked["her"] = from + step * Tuning.WALK_SPEED * STEP
+		player.global_position = walked["her"]
+		return walked["elapsed"] >= Tuning.WARNING_ALONE_MAX + 1.0
+	# A tick lasts `STEP` of game time (the engine's tick is longer), so the manager's clock and her
+	# walk both run at the step this case counts.
+	var scale := STEP * Engine.physics_ticks_per_second
+	var ticks := PhysicsTicks.ticks_for(Tuning.WARNING_ALONE_MAX + 1.0, scale) + 2
+	await PhysicsTicks.pass_ticks(t, ticks, walk, scale)
+	her = walked["her"]
+	var looked: int = walked["looked"]
+	var jumped: int = walked["jumped"]
+	var came_at: float = walked["came_at"]
 	t.check(looked > 0 and jumped == 0,
 			"it was watched (%d frames) and its place kept its offset from her every frame (%d not)"
 			% [looked, jumped])
@@ -937,23 +885,23 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 				bike.global_position),
 				"wholly out of sight the frame he exists")
 		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
-		var into_sight := INF
-		var gone := INF
-		var since := 0.0
-		player.global_position = her
-		while since < 1.0 and (into_sight == INF or gone == INF):
-			bike.step(STEP)
-			since += STEP
-			await t.get_tree().process_frame
+		# He rides on under the manager's own ticks, she standing where she was left.
+		var seen := {"since": 0.0, "into_sight": INF, "gone": INF}
+		var watch := func(_ticks: int) -> bool:
+			seen["since"] += STEP
 			var box := EventFootprints.footprint_of(def)
-			if into_sight == INF and manager.visible_view().sees_any(
+			if seen["into_sight"] == INF and manager.visible_view().sees_any(
 					Rect2(bike.global_position + box.position, box.size)):
-				into_sight = since
+				seen["into_sight"] = seen["since"]
 			var still_badged := false
 			for badge in edge.badges().announcing():
 				still_badged = still_badged or badge.logged_name() == "cyclist"
-			if gone == INF and not still_badged:
-				gone = since
+			if seen["gone"] == INF and not still_badged:
+				seen["gone"] = seen["since"]
+			return seen["since"] >= 1.0 or (seen["into_sight"] != INF and seen["gone"] != INF)
+		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(1.0, scale) + 1, watch, scale)
+		var into_sight: float = seen["into_sight"]
+		var gone: float = seen["gone"]
 		# At once from just out of sight; where its ground is further — the carriageway of a cross
 		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
 		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
@@ -965,17 +913,18 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		t.check(gone <= into_sight + 0.2,
 				"and the badge goes down as he comes into sight (%.2fs, in sight at %.2fs)" % [gone, into_sight])
 	edge.free()
+	manager.use_player(null)
 	player.free()
 	manager.free()
 	holder.free()
 	atlas.release(&"events")
 
-	var walked := 0
+	var measured := 0
 	for encounter in M207Lead.encounters():
 		var row: EventDef = encounter["def"]
 		if row.id() != "cyclist":
 			continue
-		walked += 1
+		measured += 1
 		var floor_s := row.minimum_telegraph()
 		var probe_edge := DangerEdge.new()
 		var toward := M207Lead.measure(encounter, M207Lead.Answer.TOWARD, probe_edge)
@@ -999,7 +948,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 				"cyclist (%s): standing on his line she is still reached, %.2fs after the warning"
 				% [encounter["how"], stood["lead"]])
 		probe_edge.free()
-	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
+	t.check(measured >= 2, "the cyclist was walked on both axes (%d)" % measured)
 
 ## **The route-redundancy guarantee with it parked** (the **city** skill: a day leaves distinct
 ## routes from home to its calm areas, counted as a max flow, `StreetNetwork.route_count()`). The

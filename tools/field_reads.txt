@@ -9,11 +9,3 @@
 
 # [City] src/city/city.gd
 src/main.gd map
-
-# [ClosureMarker] src/routes/closure_marker.gd
-src/city/city.gd across
-src/city/city.gd kind
-src/city/city.gd piece
-
-# [ParkFenceMarker] src/routes/park_fence_marker.gd
-src/city/city.gd sign_offset
