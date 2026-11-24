@@ -4,6 +4,7 @@ extends RefCounted
 
 const HeadIndicators := preload("res://tests/head_indicators.gd")
 const STEP := 1.0 / 60.0
+const KEYS: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"move_down"]
 
 ## The library her pages are acquired on, handed to every rig through `Stroller.use_atlas()`.
 var _library := AtlasLibrary.new()
@@ -55,10 +56,11 @@ func _through_the_atlas(path: String) -> Texture2D:
 ## share, and the marks ride on the UI's, which is loaded before any city exists — see
 ## `Stroller.MOTHER_ATLAS`'s own doc and `tests/test_atlas_loading.gd`.
 func _test_her_family_comes_from_its_baked_pages(t: TestRunner) -> void:
-	var rig := _rig(t)
 	var atlas: Texture2D = null
 	for carrying: bool in [false, true]:
-		rig.carrying = carrying
+		var rig := _rig(t)
+		if carrying:
+			rig.use_carrying_rig()
 		for direction in range(8):
 			rig.reset_at(Vector2.ZERO, _look(direction))
 			for frame in range(3):
@@ -76,7 +78,8 @@ func _test_her_family_comes_from_its_baked_pages(t: TestRunner) -> void:
 						StringName(rig.pose(1.0).mother_sources[frame]))
 				t.check(texture.get_size() == Vector2(native),
 						"and it is exactly the size of the picture it stands in for")
-	rig.carrying = false
+		rig.free()
+	var rig := _rig(t)
 	var pram_atlas: Texture2D = null
 	for direction in range(8):
 		rig.reset_at(Vector2.ZERO, _look(direction))
@@ -107,16 +110,31 @@ func _frames(t: TestRunner, count: int) -> void:
 	for _i in count:
 		await t.get_tree().physics_frame
 
-## Turns her to `degrees` and lets real frames carry the turn into the view she draws.
+## Holds the movement keys for a heading, as a player holds them: each axis pressed with the
+## strength of its component, all four let go for `Vector2.ZERO`.
+func _steer(heading: Vector2) -> void:
+	for key in KEYS:
+		Input.action_release(key)
+	if heading.x != 0.0:
+		Input.action_press(&"move_right" if heading.x > 0.0 else &"move_left",
+				minf(1.0, absf(heading.x)))
+	if heading.y != 0.0:
+		Input.action_press(&"move_down" if heading.y > 0.0 else &"move_up",
+				minf(1.0, absf(heading.y)))
+
+## Steers her to `degrees` and lets real frames carry the turn into the view she draws. She turns at
+## `Stroller.FACING_TURN_SPEED`, a half turn in under seventeen frames, and a steered turn ends
+## exactly on the heading.
 func _face(t: TestRunner, rig: Stroller, degrees: float) -> void:
-	rig.facing = Vector2.from_angle(deg_to_rad(degrees))
-	await _frames(t, 2)
+	_steer(Vector2.from_angle(deg_to_rad(degrees)))
+	await _frames(t, 17)
 
 func _test_all_eight_facings(t: TestRunner) -> void:
 	var rig := _rig(t)
 	for direction in range(8):
 		await _face(t, rig, direction * 45.0)
 		t.check(rig.pose(1.0).view == direction, "facing %d degrees selects direction %d" % [direction * 45, direction])
+	_steer(Vector2.ZERO)
 	rig.free()
 
 func _test_live_draw_selection(t: TestRunner) -> void:
@@ -178,6 +196,7 @@ func _test_boundary_hysteresis(t: TestRunner) -> void:
 	t.check(rig.pose(1.0).view == 1, "southeast holds while turning back inside the margin")
 	await _face(t, rig, 16.0)
 	t.check(rig.pose(1.0).view == 0, "southeast returns to east below the margin")
+	_steer(Vector2.ZERO)
 	rig.free()
 
 func _test_reset_settles_direction(t: TestRunner) -> void:
@@ -191,6 +210,7 @@ func _test_reset_settles_direction(t: TestRunner) -> void:
 	t.check(rig.pose(1.0).view == 1, "reset at 66 degrees chooses southeast without prior-view hold")
 	rig.reset_at(Vector2.ZERO, Vector2.from_angle(deg_to_rad(114.0)))
 	t.check(rig.pose(1.0).view == 3, "reset at 114 degrees chooses southwest without prior-view hold")
+	_steer(Vector2.ZERO)
 	rig.free()
 
 func _test_wrap_boundary_holds(t: TestRunner) -> void:
@@ -200,6 +220,7 @@ func _test_wrap_boundary_holds(t: TestRunner) -> void:
 	t.check(rig.pose(1.0).view == 7, "north-east holds through the zero degree wrap")
 	await _face(t, rig, 345.0)
 	t.check(rig.pose(1.0).view == 0, "east wins after crossing the wrapped boundary")
+	_steer(Vector2.ZERO)
 	rig.free()
 
 func _test_pram_offset_stays_continuous_through_side_facings(t: TestRunner) -> void:
@@ -209,11 +230,11 @@ func _test_pram_offset_stays_continuous_through_side_facings(t: TestRunner) -> v
 			Stroller.PRAM_HORIZONTAL_DISTANCE,
 			maxf(Stroller.PRAM_NORTH_DISTANCE, Stroller.PRAM_SOUTH_DISTANCE))
 	for side: float in [0.0, PI]:
-		rig.facing = Vector2.from_angle(side - epsilon)
+		rig.reset_at(Vector2.ZERO, Vector2.from_angle(side - epsilon))
 		var before := rig.pram_draw_offset()
-		rig.facing = Vector2.from_angle(side)
+		rig.reset_at(Vector2.ZERO, Vector2.from_angle(side))
 		var at_side := rig.pram_draw_offset()
-		rig.facing = Vector2.from_angle(side + epsilon)
+		rig.reset_at(Vector2.ZERO, Vector2.from_angle(side + epsilon))
 		var after := rig.pram_draw_offset()
 		# A one-sided distance choice is safe only because its directional term has reached zero
 		# here. Bound the movement by the turn itself, so this checks for a jump without pinning the
@@ -228,7 +249,7 @@ func _test_pram_offset_stays_continuous_through_side_facings(t: TestRunner) -> v
 ## presentation formula gives each facing are not pinned here: they are its constants read back.
 func _test_north_diagonal_contact_adjustment(t: TestRunner) -> void:
 	var rig := _rig(t)
-	rig.facing = Vector2.from_angle(-0.001)
+	rig.reset_at(Vector2.ZERO, Vector2.from_angle(-0.001))
 	t.check(absf(rig.pram_draw_offset().y - Stroller.PRAM_VERTICAL_LIFT) < 0.02,
 			"the north correction fades continuously into east")
 	rig.free()
@@ -253,11 +274,11 @@ func _test_the_pram_has_its_own_trailing_body(t: TestRunner) -> void:
 	t.check(not pram_collision.disabled, "and enabled while she is pushing the pram")
 
 	# On the circumference of her own circle, whichever way she is facing, never at the pram's own
-	# drawn distance. No input is pressed, so `_turn_toward()` never runs and `facing` stays exactly
-	# what this sets before each step.
+	# drawn distance. No input is pressed, so `_turn_toward()` never runs and her facing stays exactly
+	# what `reset_at()` sets before each step.
 	for facing: Vector2 in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT,
 			Vector2(1.0, 1.0).normalized()]:
-		rig.facing = facing
+		rig.reset_at(rig.global_position, facing)
 		await _frames(t, 2)
 		var visible_offset: Vector2 = rig.pram_draw_offset()
 		t.check(rig.pose(1.0).pram_offset.is_equal_approx(visible_offset),
@@ -274,7 +295,7 @@ func _test_the_pram_has_its_own_trailing_body(t: TestRunner) -> void:
 
 	# Carrying her in arms rather than pushing the pram: there is no pram to collide with either.
 	var carrying_rig: Stroller = scene.instantiate()
-	carrying_rig.carrying = true
+	carrying_rig.use_carrying_rig()
 	t.add_child(carrying_rig)
 	var carrying_collision := carrying_rig.get_node("PramCollisionShape2D") as CollisionShape2D
 	t.check(carrying_collision.disabled, "and disabled for the carrying rig, which has no pram")

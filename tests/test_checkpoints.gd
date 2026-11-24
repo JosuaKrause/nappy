@@ -1436,7 +1436,7 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 ## exact shape of the defect this suite is checking. `Stroller._physics_process()` is the one place
 ## that positions the pram's shape, so the rig lets one tick of hers pass and measures the result.
 func _reach_ahead(t: TestRunner, stroller: Stroller, facing: Vector2) -> float:
-	stroller.facing = facing
+	stroller.reset_at(stroller.global_position, facing)
 	await PhysicsTicks.pass_ticks(t, 1)
 	var reach := Tuning.PLAYER_BODY_RADIUS
 	var pram := stroller.get_node_or_null("PramCollisionShape2D") as CollisionShape2D
