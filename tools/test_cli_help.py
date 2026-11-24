@@ -584,6 +584,11 @@ class CliHelpTests(unittest.TestCase):
                 result = self.run_tool(name, "--this-flag-does-not-exist")
                 self.assertNotEqual(result.returncode, 0, f"{name} accepted an unknown flag")
 
+    def test_dead_code_rejects_an_abbreviated_flag(self) -> None:
+        result = self.run_tool("dead_code.py", "--sec", "enums")
+        self.assertNotEqual(result.returncode, 0, "dead_code.py accepted an abbreviated flag")
+        self.assertNotIn("==", result.stdout)
+
     def test_agent_identity_help_and_unknown_flag_do_no_work(self) -> None:
         # run's own "role -- command" without the "--" is rejected the same way as an unknown
         # flag: usage on stderr, before config_root() or the origin remote is ever touched.

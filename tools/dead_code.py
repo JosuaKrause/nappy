@@ -300,7 +300,7 @@ def enum_candidates(root: Path) -> list[Candidate]:
                 if totals[name] <= 1:
                     note = "named once"
                 elif only_keys(corpus, name, match.group(0)):
-                    note = "only a table key or match arm anywhere: nothing produces it"
+                    note = "only a table key, match arm or test anywhere: nothing produces it"
                 else:
                     continue
                 found.append(Candidate("enums", path, line, "enum value", f"{owner}.{name}", note, LOOKED_DEFINITIONS))
@@ -308,16 +308,20 @@ def enum_candidates(root: Path) -> list[Candidate]:
 
 
 def only_keys(corpus: Corpus, name: str, enum_text: str) -> bool:
-    """Whether every use of the word, but its own place in the enum, opens a line as a dictionary key or a match arm."""
-    key = re.compile(rf"^\s*(?:\w+\.)*{re.escape(name)}\s*:")
-    word = re.compile(rf"\b{re.escape(name)}\b")
+    """Whether every use of the word, but its own place in the enum, is a dictionary key or match arm opening a line,
+    a membership test (`in [...]`) or an equality test: all consumers of a value nothing makes."""
+    escaped = re.escape(name)
+    key = re.compile(rf"^\s*(?:\w+\.)*{escaped}\s*:")
+    # A membership or an equality test asks what a value is; it never makes one.
+    asks = re.compile(rf"\bin\s*\[[^\]]*\b{escaped}\b|[=!]=\s*(?:\w+\.)*{escaped}\b|\b{escaped}\s*[=!]=")
+    word = re.compile(rf"\b{escaped}\b")
     uses = 0
     for text in corpus.text.values():
         if name not in text:
             continue
         for line in text.replace(enum_text, "").split("\n"):
             if word.search(line):
-                if not key.match(line):
+                if not (key.match(line) or asks.search(line)):
                     return False
                 uses += 1
     return uses > 0
@@ -370,12 +374,24 @@ def file_candidates(root: Path) -> list[Candidate]:
         own = corpus.text[relative]
         if big.count(base) - own.count(base) > 0 or big.count(relative) - own.count(relative) > 0:
             continue
+        if folder_named(corpus, relative):
+            continue
         class_name = CLASS_NAME.search(own) if relative.endswith(".gd") else None
         if class_name and words[class_name.group(1)] - corpus.words[relative][class_name.group(1)] > 0:
             continue
         note = "named by no other file" + (f", class {class_name.group(1)} used nowhere" if class_name else "")
         found.append(Candidate("files", relative, 0, "file", base, note, LOOKED_FILES))
     return found
+
+
+def folder_named(corpus: Corpus, relative: str) -> bool:
+    """Whether another file names the file's folder, whole, as a path or a quoted name (a test reading the folder)."""
+    folder = relative.rsplit("/", 1)[0]
+    leaf = folder.rsplit("/", 1)[-1]
+    distinctive = "_" in leaf or "-" in leaf  # a plain word such as "dev" would name every folder of that name
+    names = re.escape(folder) + (rf"|[\"']{re.escape(leaf)}" if distinctive else "")
+    whole = re.compile(rf"(?:{names})/?(?=[\"'\s)`,]|$)")
+    return any(whole.search(text) for path, text in corpus.text.items() if path != relative)
 
 
 def tool_corpus(root: Path) -> Corpus:
@@ -454,6 +470,7 @@ def parse(argv: Sequence[str]) -> argparse.Namespace:
         description="Lists candidates for code nothing reaches in src/ and tools/. It lists and never deletes.",
         epilog=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
     )
     parser.add_argument("--section", action="append", choices=SECTIONS, help="a section to run (default: all)")
     parser.add_argument("--root", type=Path, default=ROOT, help="the checkout to survey (default: this one)")
