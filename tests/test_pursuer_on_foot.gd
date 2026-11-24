@@ -18,21 +18,24 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## The seconds a tick of her walk covers (`_what_the_walk_hands_her()`): the director's clock turns
+## on the tick, so what is asked of it is her walking, not a frame's.
+const WALK_TICK := 0.1
 
 func run(t: TestRunner) -> void:
 	_test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t)
 	_test_neither_is_ever_the_schedulers(t)
-	_test_day_8_is_a_policeman_and_day_9_a_guardsman(t)
-	_test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
-	_test_a_second_marble_while_he_is_after_her_sends_nobody(t)
-	_test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t)
+	await _test_day_8_is_a_policeman_and_day_9_a_guardsman(t)
+	await _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
+	await _test_a_second_marble_while_he_is_after_her_sends_nobody(t)
+	await _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t)
 	_test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t)
 	_test_his_catch_ends_the_day_with_its_own_line(t)
 	_test_the_man_out_of_the_car_owes_the_pursuit_contract(t)
 	_test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t)
 	_test_he_waits_outside_a_hold_to_stop_her(t)
 	_test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t)
-	_test_the_whole_encounter_from_calm_never_ends_the_day(t)
+	await _test_the_whole_encounter_from_calm_never_ends_the_day(t)
 	_test_an_investigating_car_never_stops_in_a_junction_box(t)
 	_test_the_car_does_not_notice_her_through_a_building(t)
 	_test_the_hunting_vans_hunt_on_foot(t)
@@ -136,12 +139,27 @@ func _the_pursuer_sent(city: City) -> EventInstance:
 			return instance
 	return null
 
-## Runs his warning down, a frame at a time, with her standing at `her`.
-func _run_the_warning(city: City, her: Node2D) -> void:
-	for i in int(1.0 / STEP):
-		RunCity.events(city).warnings.run(STEP, her.global_position)
-		if RunCity.events(city).pending_warnings().is_empty():
-			return
+## Runs his warning down on real physics ticks of `STEP` seconds, with her standing where she
+## is: the manager's own tick runs the board (`EventManager._tick_the_events()`), and the wait
+## ends on the tick that takes the badge down, for a second at most. Answers how many ticks it
+## took.
+func _run_the_warning(t: TestRunner, city: City) -> int:
+	var events := RunCity.events(city)
+	var passed := [0]
+	var down := func(ticks: int) -> bool:
+		passed[0] = ticks
+		return events.pending_warnings().is_empty()
+	await PhysicsTicks.pass_ticks_faster(t, _ticks_in_a_second(), PhysicsTicks.FASTER, down,
+			_scale())
+	return passed[0]
+
+## The speed that makes every physics tick cover `STEP` seconds.
+func _scale() -> float:
+	return STEP * Engine.physics_ticks_per_second
+
+## The ticks a second of `STEP` seconds each takes.
+func _ticks_in_a_second() -> int:
+	return PhysicsTicks.ticks_for(1.0, _scale())
 
 # ------------------------------------------------------------------ the rows ---
 
@@ -197,7 +215,7 @@ func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t: TestRunner) -> void:
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
 		RunCity.events(city).send_a_pursuer()
-		_run_the_warning(city, her)
+		await _run_the_warning(t, city)
 		var sent := _the_pursuer_sent(city)
 		var expected: EventDef.Look = EventDef.Look.GUARDSMAN_GIVING_CHASE if day == 9 \
 				else EventDef.Look.POLICEMAN_GIVING_CHASE
@@ -230,7 +248,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	t.check(RunCity.events(city).instances().size() == before and _the_pursuer_sent(city) == null,
 			"and nothing is in the world yet")
 	t.check(told[0] == 1, "the counter's poster-pursuit goes out as he is sent (%d)" % told[0])
-	_run_the_warning(city, her)
+	await _run_the_warning(t, city)
 	var sent := _the_pursuer_sent(city)
 	t.check(sent != null, "once the badge's time is up he is in the world")
 	var starts_clear := func(line: String) -> bool:
@@ -240,8 +258,11 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 			"and, from a sidewalk in the city, his start has a clear run at her (%s)" % [account])
 	if sent:
 		var view := SpawnSiting.seen_from(RunCity.events(city).visible_view(), her.global_position)
+		# The tick that made him gave him his first step, which a creation is read before: where
+		# he was made is one stride back along the way he is going (`travel_velocity()`).
+		var made_at := sent.global_position - sent.travel_velocity() * STEP
 		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.row()),
-				her.global_position, sent.global_position),
+				her.global_position, made_at),
 				"created wholly out of her sight (%.0fpx off)"
 				% sent.global_position.distance_to(her.global_position))
 		t.check(sent.was_warned_of() and not sent.is_telegraphing() and not sent.is_waiting(),
@@ -264,7 +285,7 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 	t.check(RunCity.events(city).pending_warnings().size() == 1 and told[0] == 1,
 			"a second marble while his badge is up sends nobody (%d warnings, %d told)"
 			% [RunCity.events(city).pending_warnings().size(), told[0]])
-	_run_the_warning(city, her)
+	await _run_the_warning(t, city)
 	var first := _the_pursuer_sent(city)
 	RunCity.events(city).send_a_pursuer()
 	t.check(RunCity.events(city).pending_warnings().is_empty() and told[0] == 1,
@@ -292,8 +313,8 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 ## they were. Read as the day it makes: two cities on the same map and the same run seed start day 6
 ## alike; in one a pursuer is sent and his warning run down, and then she walks the same minute in
 ## both with the director asked as the game asks it every tick
-## (`EventsAhead.place_what_is_owed_ahead()`). The two days hand her the same events, one after
-## another at the same place, and leave the same number owed and the same plan, and the day's stream
+## (`EventsAhead.place_what_is_owed_ahead()`). The two days tell the run log the same `ahead`
+## lines, one after another at the same place, and leave the same number owed and the same plan, and the day's stream
 ## stands where it stood. A queue, a clock or a bag he had moved would hand her another event, or
 ## the same one at another moment.
 func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> void:
@@ -308,29 +329,38 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 		var spec := DaySpec.for_day(6)
 		RigStreets.begin(city.streets(), city.map, spec)
 		RunCity.events(city).start_day(spec, rng, consumed, her.global_position)
-		var owed_at_dawn := RunCity.events(city).ahead.owed_ahead()
+		var owed_at_dawn := RunCity.events(city).owed_ahead()
 		var plans := RunCity.events(city).plans().size()
 		var state := rng.state
+		# Both days pass the same second of ticks before she walks on, so the clock every moving
+		# thing keeps is the same in both and only the tear differs.
+		var waited := 0
 		if sends:
 			RunCity.events(city).send_a_pursuer()
-			_run_the_warning(city, her)
+			waited = await _run_the_warning(t, city)
 			t.check(_the_pursuer_sent(city) != null, "on a planned day he is sent")
-			t.check(RunCity.events(city).ahead.owed_ahead() == owed_at_dawn and rng.state == state,
+			t.check(RunCity.events(city).owed_ahead() == owed_at_dawn and rng.state == state,
 					"the day's owed queue and its stream are untouched at once")
-		days.append({"city": city, "her": her, "handed": _what_the_walk_hands_her(city, her, 120.0),
-				"owed": RunCity.events(city).ahead.owed_ahead(), "plans": RunCity.events(city).plans().size(),
+		await PhysicsTicks.pass_ticks_faster(t, _ticks_in_a_second() - waited,
+				PhysicsTicks.FASTER, Callable(), _scale())
+		var handed := await _what_the_walk_hands_her(t, city, her, 120.0)
+		days.append({"city": city, "her": her, "handed": handed,
+				"owed": RunCity.events(city).owed_ahead(),
+				"plans": RunCity.events(city).plans().size(),
 				"stream": rng.state, "plans_at_dawn": plans})
 	var plain: Dictionary = days[0]
 	var torn: Dictionary = days[1]
 	t.check((plain["handed"] as Array).size() >= 2,
 			"the plain day hands her events to compare (%d)" % (plain["handed"] as Array).size())
 	t.check(plain["handed"] == torn["handed"],
-			"the same events at the same places, in the same order, on the day with a tear "
+			"the same `ahead` lines, in the same order, on the day with a tear "
 			+ "(%s, then %s)" % [plain["handed"], torn["handed"]])
 	t.check(plain["owed"] == torn["owed"] and plain["stream"] == torn["stream"],
 			"and as many still owed (%d, then %d), the stream where it was"
 			% [plain["owed"], torn["owed"]])
-	t.check(torn["plans"] == torn["plans_at_dawn"], "and nothing joins the day's plan")
+	t.check(torn["plans"] == plain["plans"],
+			"and nothing joins the day's plan (%d, then %d, from %d)"
+			% [plain["plans"], torn["plans"], plain["plans_at_dawn"]])
 	for day in days:
 		_done(day["city"], day["her"])
 
@@ -339,30 +369,34 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 ## asks it: she walks rather than marking time, since a row the director sends ahead of her is
 ## sent only where she is has ground for it (a sidewalk, a carriageway), its marble spent as it is
 ## drawn and the row waiting for a later turn of the director's clock, and standing still turns no
-## clock at all. `"id at x,y"` for each event that appears in the world, the torn poster's pursuer
-## left out.
-func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) -> Array:
+## clock at all. Read where the game writes it: each line the events tell the run log under the kind
+## `ahead` (a row sent at her, a place put on her route), since the streaming also brings in the
+## day's planned events on her way, which the director did not put there. The torn poster's pursuer
+## is no line of it.
+func _what_the_walk_hands_her(t: TestRunner, city: City, her: CharacterBody2D,
+		seconds: float) -> Array[String]:
+	var events := RunCity.events(city)
+	var told: Array[String] = []
+	events.world.surroundings().tracing_to(RecordingTrace.new(told))
 	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	var seen := {}
-	for instance in RunCity.events(city).instances():
-		seen[instance] = true
-	var handed := []
-	var elapsed := 0.0
 	var width := city.map.world_size().x
-	while elapsed < seconds:
-		RunCity.events(city).ahead.place_what_is_owed_ahead(0.1)
-		her.global_position += her.velocity * 0.1
+	# Real physics ticks of `WALK_TICK` seconds, the manager's own tick in the game's order; after
+	# each she is moved on. Ticks of `STEP` take 7,200 of them where these take 1,200, and the whole
+	# suite two and a half times as long.
+	var scale := WALK_TICK * Engine.physics_ticks_per_second
+	var each := func(_ticks: int) -> bool:
+		her.global_position += her.velocity * WALK_TICK
 		if her.global_position.x < Tuning.TILE_SIZE * 2.0 \
 				or her.global_position.x > width - Tuning.TILE_SIZE * 2.0:
 			her.velocity = -her.velocity
-		elapsed += 0.1
-		for instance in RunCity.events(city).instances():
-			if seen.has(instance):
-				continue
-			seen[instance] = true
-			handed.append("%s at %.0f,%.0f" % [instance.row_id(), instance.global_position.x,
-					instance.global_position.y])
+		return false
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(seconds, scale),
+			PhysicsTicks.FASTER, each, scale)
 	her.velocity = Vector2.ZERO
+	var handed: Array[String] = []
+	for line in told:
+		if line.begins_with("ahead "):
+			handed.append(line)
 	return handed
 
 # ------------------------------------------------------------- the chase ---
@@ -674,7 +708,7 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> vo
 		if spot.size() == 2:
 			var lane: Vector2 = spot[0]
 			her.global_position = spot[1]
-			var landed := _the_whole_encounter(city, her, hot,
+			var landed := await _the_whole_encounter(t, city, her, hot,
 					PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)]))
 			t.check(landed >= 0.0, "day %d: on the hand-made lane the man got out and was done" % day)
 			if landed >= 0.0:
@@ -694,7 +728,7 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> vo
 				if at == Vector2.INF:
 					continue
 				her.global_position = at
-				var landed := _the_whole_encounter(city, her, hot, route)
+				var landed := await _the_whole_encounter(t, city, her, hot, route)
 				if landed < 0.0:
 					continue
 				encounters += 1
@@ -720,7 +754,7 @@ const ENCOUNTER_MARGIN := 10.0
 ## she waits at, quiet, since it has not left her. Answers what landed on her, or -1 when the car
 ## never stopped for her or its man was not done. Everything the encounter put in the world is
 ## retired.
-func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
+func _the_whole_encounter(t: TestRunner, city: City, her: Node2D, hot: EventDef,
 		route: PackedVector2Array) -> float:
 	var events := RunCity.events(city)
 	events.world.surroundings().stopping_at(null)
@@ -743,7 +777,8 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 	var finished := officer != null and (not is_instance_valid(officer) or officer.is_gone())
 	for instance: EventInstance in events.instances().duplicate():
 		events.retire(instance)
-	events.streaming.retire_finished()
+	# The tick after the retiring sweeps them out of the world.
+	await PhysicsTicks.pass_ticks(t, 1)
 	return landed if finished else -1.0
 
 ## **It never stops in a junction box** *(sunny-finch: nothing enters a box it cannot leave)*, over
