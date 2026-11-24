@@ -10,13 +10,13 @@ extends RefCounted
 ## not, that the marble bag's shares are exact and its draws reproducible, and that a pursuit marble
 ## sends the pursuer on foot (`tests/test_pursuer_on_foot.gd` holds what he is and how he comes).
 ##
-## **Every test makes a run of its own and hands it to the city** (`RunCity.started_run()`), and the
-## tears are made the way the game makes them: a real `Stroller` in the city, a held movement key
-## (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a frame), the
-## city's buildings stopping her at the wall. What a test reads is what the game exposes: the run's
-## `PosterState`, what the fronts are handed to draw (`Building.hand_over_posters()`) and the sheets they draw
-## through the art they are handed, the signals the counter listens to and the pursuer the events
-## hold.
+## **Every test makes a run of its own and hands it to the city** (`RunCity.started_run()`), and
+## the tears are made the way the game makes them: a real `Stroller` in the city, a held movement
+## key (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a
+## frame), the city's buildings stopping her at the wall. What a test reads is what the game
+## exposes: the run's `PosterState`, what the fronts are handed to draw
+## (`Building.hand_over_posters()`) and the sheets they draw through the art they are handed, the
+## signals the counter listens to and the pursuer the events hold.
 ##
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
@@ -531,11 +531,11 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 			before = cells.size()
 			covered_on[day] = before
 			if day == PosterWalls.FIRST_DAY:
-				_check_the_density_floor(t, city, run, map, seed_value, day, FIRST_DAY_VIEW_FLOOR,
-						FIRST_DAY_ROUTE_FLOOR)
+				_check_the_density_floor(t, city, run, map, seed_value, day,
+						FIRST_DAY_VIEW_FLOOR, FIRST_DAY_ROUTE_FLOOR)
 			if day == Tuning.RUN_LENGTH_DAYS:
-				_check_the_density_floor(t, city, run, map, seed_value, day, LAST_DAY_VIEW_FLOOR,
-						LAST_DAY_ROUTE_FLOOR)
+				_check_the_density_floor(t, city, run, map, seed_value, day,
+						LAST_DAY_VIEW_FLOOR, LAST_DAY_ROUTE_FLOOR)
 			if day == 6:
 				_check_a_retry_pastes_the_same_dawn(t, city, run, state, day, seed_value)
 		t.check(int(covered_on[PosterWalls.FIRST_DAY]) > 0,

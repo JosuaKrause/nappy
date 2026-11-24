@@ -727,8 +727,8 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(map, own_run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(map, own_run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	t.add_child(player)

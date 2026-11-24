@@ -65,7 +65,8 @@ func _new_run() -> void:
 
 ## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start()`).
 func _start_day(t: TestRunner, day: int) -> void:
-	t.check(_run.header().day() == day, "the run is on day %d (%d)" % [day, _run.header().day()])
+	t.check(_run.header().day() == day,
+			"the run is on day %d (%d)" % [day, _run.header().day()])
 	_days.start(DaySpec.for_day(day, _config.day_length_for(day)))
 
 ## Puts the world around a point the way it would be for a player standing there.
@@ -113,8 +114,8 @@ func _build_rig(t: TestRunner) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
+	_resistance.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	_days = DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
 	_days.use_the_world(null, _resistance, _clock)
 	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))

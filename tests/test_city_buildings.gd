@@ -521,9 +521,9 @@ func _check_accessor_invariant(t: TestRunner, building: Building, front: FrontRe
 		t.check(not building.covered_ground_cols()[col] if col < building.covered_ground_cols().size() else true,
 				"seed %d: no accessor cell is a covered column — those draw no facade at all, never blank wall" % seed_used)
 
-## Hands every building of `city` a drawer that records, drawing from `library` (the one the city
-## was built with), has it drawn, and answers each building's reads of its front once two frames
-## have passed.
+## Hands every building of `city` a drawer that records, drawing from `library` (the one the
+## city was built with), has it drawn, and answers each building's reads of its front once two
+## frames have passed.
 func _watch_the_fronts(t: TestRunner, city: City, library: AtlasLibrary) -> Dictionary:
 	for building in city.buildings():
 		FrontReads.watch(building, library)

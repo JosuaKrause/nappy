@@ -108,8 +108,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director.contact().complete_now()
@@ -130,8 +130,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	else:
 		happenings = ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-				_library, null, RunCity.spawn_siting(_city))
+		happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(),
+				_city.fronts(), _city, _library, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,
@@ -650,8 +650,8 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map(), _city.navigator(), RunCity.events(_city), _city,
-					_library, fixture.park, RunCity.spawn_siting(_city),
+			var cordon := ParkCordon.new(_city.map(), _city.navigator(), RunCity.events(_city),
+					_city, _library, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:

@@ -378,8 +378,8 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	director.watched = _city
 	var seen := {}
 	var on_started := func() -> void:
@@ -1064,8 +1064,8 @@ func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-			_library, null, RunCity.spawn_siting(_city))
+	happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, _library, null, RunCity.spawn_siting(_city))
 	happenings.start_day(day)
 	return happenings
 

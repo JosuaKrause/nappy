@@ -679,8 +679,8 @@ func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector
 		director.use_bus(EventBus)
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
-				_city)
+		director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(),
+				_city.fronts(), _city)
 	var label := "the city's siting" if city_siting else "no siting handed"
 	director.start_day(6, _rng(6, "resistance"), 300.0)
 	_read_the_mark(director)

@@ -100,8 +100,8 @@ func tile_is_taken(city: City, tile: Vector2i) -> bool:
 	return not city.map().is_walkable(tile) or city.map().is_obstructed(tile)
 
 ## Day 8 started through the real order and its mark read, so the task is placed. Reading the mark
-## completes a step of `run`, the one the city stands in, so the run's resistance starts over for
-## each front.
+## completes a step of `run`, the one the city stands in, so the run's resistance starts over
+## for each front.
 func _task_on_offer(t: TestRunner, city: City, run: RunState) -> ResistanceDirector:
 	GivenRun.completed_steps(run, [])
 	GivenRun.failed_steps(run, [])
@@ -115,8 +115,8 @@ func _task_on_offer(t: TestRunner, city: City, run: RunState) -> ResistanceDirec
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()
 	return director

@@ -497,8 +497,8 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	resistance.use_trace(RecordingTrace.new(told))
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	var resistance_rng := RandomNumberGenerator.new()
 	resistance_rng.seed = hash("route-bag:%d:%d:resistance" % [SEED, day])
 	resistance.start_day(day, resistance_rng, 300.0)

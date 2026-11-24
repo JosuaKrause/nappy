@@ -73,8 +73,8 @@ func _step_a_frame(t: TestRunner) -> void:
 var _city: City
 ## The run `_city` stands in, which the directors built over it are handed.
 var _run: RunState
-## The library `_city` and its parts draw from, which a case that hands a director or a happening
-## the city's own pictures hands it.
+## The library `_city` and its parts draw from, which a case hands a director or a happening
+## where it hands them the city's own pictures.
 var _library: AtlasLibrary
 
 ## Freed rather than left standing: `RunCity.build()` stands an `EventManager` under the city's
@@ -191,8 +191,8 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	return director
 
 func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator:
