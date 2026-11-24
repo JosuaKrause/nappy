@@ -109,12 +109,6 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      no read of another class's field is listed under it**: `tools/check_field_reads.py` fails a
      new read, and `tools/field_reads.txt` is empty. What the check cannot see is stated in its
      `--help`.
-   - **The city scene's lane still to come**, from
-     `.claude/briefs/designs/minty-quail-city-scene-pass.md` (C7): `City.run`, `trace` and `atlas`
-     become private (three renames in `city.gd`); `tests/test_atlas_boot.gd`'s sweep
-     (`node.get("atlas")` over every node of a booted `main`) then asks the city's library through
-     its method, since a private field leaves the city out of the loop silently while its holder
-     count still passes on `Prop` and `PosterWalls`.
    - **The events' interface is built**: a body, a hold on her, a lethal field, a pursuit and the
      rest are parts an event has, and every caller asks through methods (`docs/EVENTS.md`
      describes it; its records are listed by `tools/decisions.sh minty-quail`). What is left of
