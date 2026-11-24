@@ -86,8 +86,7 @@ Left, each its own design question:
     private.
   - A field only a test still reads outside its own class and the code that writes it
     (`CityMap.home_rect`, `courtyard_rects`,
-    `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
-    `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
+    `Building.roof_extension_rows`, `tint_variant`, `atlas`, `footprint`, `roof_object_parent`,
     `SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
     `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
     `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
