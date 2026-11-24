@@ -635,6 +635,41 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRu
 					"seed %d day %d: a repaint with nothing handed over shuts and fences nothing"
 					% [cmap.city_seed(), day])
 
+## A street closure's pieces keep the street barrier renderer: every piece standing at one of the day's
+## street closures' mouths (within half the barrier's width of its centre) is no `ParkFenceMarker`,
+## lays none of the park pictures and lays a street barrier picture (a post, a panel, a sign or a
+## cause). A street piece wrongly built as a park piece lays the park's pictures instead.
+func _check_street_pieces_keep_their_own_renderer(t: TestRunner, city: City,
+		markers: Array[ClosureMarker], recording: RecordingSceneryDrawer,
+		library: AtlasLibrary) -> void:
+	var street: Array[Texture2D] = []
+	for picture: StringName in [ClosureMarker.FENCE_ACROSS, ClosureMarker.FENCE_ALONG,
+			ClosureMarker.SIGN, ClosureMarker.POST]:
+		street.append(library.region(picture))
+	for picture: StringName in ClosureMarker.CAUSES.values() + ClosureMarker.CAUSES_VERTICAL.values():
+		street.append(library.region(picture))
+	var park: Array[Texture2D] = []
+	for picture: StringName in [ParkFenceMarker.JOINT, ParkFenceMarker.MOUNTED_SIGN,
+			ParkFenceMarker.RAIL_ALONG]:
+		park.append(library.region(picture))
+	var checked := 0
+	for closure in city.streets().closures():
+		if closure is ParkClosure:
+			continue
+		for mouth in closure.mouth_centres(city.map):
+			for marker in markers:
+				if marker.position.distance_to(mouth) > closure.barrier_width() * 0.5 + 1.0:
+					continue
+				checked += 1
+				var laid_street := false
+				var laid_park := false
+				for entry in recording.shown_on(marker):
+					laid_street = laid_street or entry.texture in street
+					laid_park = laid_park or entry.texture in park
+				t.check(not marker is ParkFenceMarker and laid_street and not laid_park,
+						"a street closure's piece at %s keeps the street barrier renderer" % [mouth])
+	t.check(checked > 0, "the day has a street closure's pieces to check (%d)" % checked)
+
 ## Makes every marker resident, the way the scenery residency does for the ones near her, and
 ## lets a frame draw them, so the recording drawer holds what each laid.
 func _let_them_draw(t: TestRunner, markers: Array[ClosureMarker]) -> void:
@@ -732,6 +767,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 			t.check(near_the_park.has_point(marker.position),
 					"a connected-fence piece stands within a tile of the fenced park")
 	t.check(park_pictures > 0, "the fenced park has runtime pictures to check")
+	_check_street_pieces_keep_their_own_renderer(t, city, markers, recording, library)
 	await PhysicsTicks.pass_ticks(t, 1)
 	var block := city.map.fenced_park_block()
 	var rect := ClosurePlanner.calm_area_rect(city.map, block)
