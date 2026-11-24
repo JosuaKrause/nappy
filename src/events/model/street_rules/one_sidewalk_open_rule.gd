@@ -1,8 +1,8 @@
 class_name OneSidewalkOpenRule
 extends StreetRule
 ## **No street of her routes has both its sidewalks closed by bodies a draw put on them**: a
-## candidate that blocks the way (`EventPlan.obstructs()`, at `_closing_radius()`) is
-## refused where, for a street of her routes its body reaches, neither sidewalk can be walked
+## candidate that blocks the way (`EventPlan.obstructs()`, at `blocking_radius()`) is refused
+## where, for a street of her routes its body reaches, neither sidewalk can be walked
 ## junction to junction with it standing (`RouteSidewalkRule.closes_a_walked_sidewalk_band()`,
 ## asked of both of the street's bands against the bodies standing round it), and one could
 ## without it.
@@ -29,11 +29,11 @@ extends StreetRule
 ##   has no open sidewalk to keep, and nothing is refused there.
 ## - **A roadblock is asked too** (*inbox #747 in woolly-penguin: "roadblocks currently are
 ##   impossible to get past. one sidewalk must be open if they're en-route."*). It spans the street
-##   by design (`EventDef.spans_the_street()`), and its band, at every heat (`_closing_radius()`),
-##   stands on the kerb beside its lane (`EventPlan.body_at()`) and takes the sidewalk on its own
-##   side of the road and the road, leaving the far sidewalk whole, so it is refused where a body
-##   already closes that far sidewalk, and a body drawn after it is refused across from it the same
-##   way.
+##   by design (`EventDef.spans_the_street()`), and it is read at its band at every heat, since its
+##   guard's catch lies inside the band (`EventDef.catch_shuts_within()`). The band stands on the
+##   kerb beside its lane (`EventPlan.body_at()`) and takes the sidewalk on its own side of the
+##   road and the road, leaving the far sidewalk whole, so it is refused where a body already
+##   closes that far sidewalk, and a body drawn after it is refused across from it the same way.
 ##
 ## It asks a body, never a cost: a row whose field alone covers both sidewalks is the line rules'
 ## question. Model: no node.
@@ -58,9 +58,9 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 	return true
 
 ## The streets a body's disc reaches a tile of, with her own radius on it: a body stops her
-## `_closing_radius() + PLAYER_BODY_RADIUS` from where it stands. The streets this city has only.
+## `blocking_radius() + PLAYER_BODY_RADIUS` from where it stands. The streets this city has only.
 func _streets_reached_by(plan: EventPlan) -> Array[StreetNetwork.Segment]:
-	var reach := _closing_radius(plan) + Tuning.PLAYER_BODY_RADIUS
+	var reach := plan.blocking_radius() + Tuning.PLAYER_BODY_RADIUS
 	var at := plan.body_at()
 	var from := _map.world_to_tile(at - Vector2.ONE * reach)
 	var to := _map.world_to_tile(at + Vector2.ONE * reach)
@@ -90,7 +90,7 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 	for plan in around:
 		if plan == candidate or not plan.obstructs():
 			continue
-		var radius := _closing_radius(plan)
+		var radius := plan.blocking_radius()
 		var at := plan.body_at()
 		if world.grow(radius + Tuning.PLAYER_BODY_RADIUS).has_point(at):
 			bodies.append(Vector3(at.x, at.y, radius))
@@ -98,22 +98,8 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 	if not _one_is_open(bands, street.horizontal, bodies):
 		return false
 	var stands := candidate.body_at()
-	bodies.append(Vector3(stands.x, stands.y, _closing_radius(candidate)))
+	bodies.append(Vector3(stands.x, stands.y, candidate.blocking_radius()))
 	return not _one_is_open(bands, street.horizontal, bodies)
-
-## **The disc a body closes a sidewalk with, here: one place, so it is one change.** A body is read
-## at `EventPlan.blocking_radius()`, its body or a row's lethal inner disc, whichever is wider; **a
-## row that spans the street (`EventDef.spans_the_street()`, the roadblock) is read at its band,
-## its own body, at every heat**. From heat 4 the roadblock's copy hunts and its lethal inner
-## radius would take both sidewalks from either road row, so it would be refused on every route
-## street by itself. The other pursuers (the alley robbery, the charging dog) have no body and stay
-## read at their lethal disc, which takes one sidewalk; the roadblock is the one exception, read at
-## its band as the escape reads the same hunting roadblock (`WalkGround`). *Read as (the
-## orchestrator's, open to the player's correction):* the band is the roadblock's body at every heat.
-static func _closing_radius(plan: EventPlan) -> float:
-	if plan.spans_the_street():
-		return plan.obstructs_within()
-	return plan.blocking_radius()
 
 ## Whether one of `bands` can be walked junction to junction past `bodies`.
 func _one_is_open(bands: Array[Rect2i], horizontal: bool, bodies: Array) -> bool:

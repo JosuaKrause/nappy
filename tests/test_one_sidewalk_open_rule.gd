@@ -10,8 +10,8 @@ extends RefCounted
 ## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road and the road,
 ##   read on its kerb, so it is refused across from a stall on the far one and stands alone, and a
 ##   stall drawn after it is refused across from it; beside a pole on the far sidewalk's outer row
-##   it stands, where read at its lane it would close the inner row too. Its band is its body at every heat: where its guard hunts (heat 4
-##   and 5) it still stands alone.
+##   it stands, where read at its lane it would close the inner row too. Its guard's catch lies inside its band, so the disc it is read at is
+##   its band at every heat: where its guard hunts (heat 4 and 5) it still stands alone.
 ## - **A street a seal already closes** refuses nothing.
 ## - **A body in the box at the street's end** reaching its last open sidewalk is refused.
 ## - **Only her routes' streets**: a street beside the routes and one off them keep their two
@@ -95,6 +95,13 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 	t.check(pole.obstructs() and rule.allows(roadblock, at, with_the_pole, with_the_pole),
 			"a roadblock level with a pole on the far sidewalk's outer row stands: read on its "
 			+ "kerb, its band leaves the inner row open past the pole")
+	for level: int in [EventDef.HEAT_HUNTS_LEVEL, Tuning.RESISTANCE_GOAL]:
+		var hot := EventPlan.new(
+				EventCatalogue.heated(EventCatalogue.by_id("roadblock"), level),
+				_map.tile_to_world(at))
+		t.check(rule.allows(hot, at, with_the_pole, with_the_pole),
+				"at heat %d the hunting roadblock beside the pole stands too: its guard's catch lies "
+				% level + "inside its band, so its band is the disc read")
 
 func _test_a_street_a_seal_closes_refuses_nothing(t: TestRunner) -> void:
 	var rule := _rule()
