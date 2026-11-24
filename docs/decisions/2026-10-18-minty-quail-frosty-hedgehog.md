@@ -45,8 +45,8 @@ flag).
 
 - The runtime holds the home's streets for every spec, so the spec's home-street rule does
   nothing in a scene, and an escape scene's ground differs from the escape walk's own. Whether
-  that is intended is open: it is the queue item `scene-home-streets.md` in the minty-quail
-  entry.
+  that is intended is open: it is the queue entry woolly-trout, a scene holding the home's
+  streets for every spec.
 - A torn poster on an escape section's city sends nobody: held by
   `tests/test_scene_recipe_boot.gd` (the `trailer-chase` boot), the escape building section's
   version by `test_walk_siting_spec.gd`.
