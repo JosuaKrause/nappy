@@ -38,7 +38,6 @@ either group. Four `[kept]` lines still name this entry. Three are members that 
 fourth, `footprint.gd`'s `tiles`, has no reader under `src/`, so its member goes to the
 `[no reader]` group.
 
-
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member
 becomes internal, its tests moving to what the class does outward, or, where nothing outside can confirm the behavior,

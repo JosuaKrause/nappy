@@ -12,7 +12,11 @@ C5 of the city scene's pass (`.claude/briefs/designs/minty-quail-city-scene-pass
   engine: `City.map` renamed private in a scratch copy of main, every script under `src/`,
   `tests/` and `tools/` loaded, each use the parser refused listed as `file:line:index`.
 - `tools/field_reads.txt` loses its last line, `src/main.gd map` under `[City]`, and so its
-  group: no class's field is read across objects under `src/` any more.
+  group: the list is empty, and the check finds no read of another class's field under `src/`.
+  The entry `field-reads.md` (convert every cross-object read to a method, type every receiver) is
+  finished and its item file is deleted. What holds after it is `tools/check_field_reads.py` run
+  against the empty list, which fails any new read; the reads it cannot see are the blind spots its
+  `--help` states (a receiver typed too wide, a name read off a Variant in a file that opts out).
 
 ## Where the engine's list was short
 

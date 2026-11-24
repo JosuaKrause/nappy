@@ -4,8 +4,8 @@
 designing-classes' "Fields are not API" (inbox #1173 in gray-dolphin): one object never reads or writes another
 object's fields, every interaction goes through the other's methods. This finds the places that still do, and
 `tools/field_reads.txt` lists today's, grouped by the class whose field is read, one `<reader file> <field>`
-line per reader file and field. The list only shrinks, bar a read that only moved (below; minty-quail's
-`field-reads.md`, the board's field-read-check, inbox #1182 in gray-dolphin).
+line per reader file and field. The list only shrinks, bar a read that only moved (below; minty-quail, the board's
+field-read-check, inbox #1182 in gray-dolphin).
 
 **A read** is `receiver.name` (a plain read, an assignment, a compound assignment) where
 

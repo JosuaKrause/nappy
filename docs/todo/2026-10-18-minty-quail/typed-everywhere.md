@@ -1,6 +1,6 @@
 # Code is typed wherever the language can type it, the tests included
 
-**The ask**, three messages about the typed-access step (`field-reads.md`: GDScript's warnings for an
+**The ask**, three messages about the typed-access step (GDScript's warnings for an
 access the engine cannot type become errors, with a file-level ignore at the top of every file not
 yet converted), each quoted with what it answered (inbox #1280 in olive-ferret):
 
@@ -21,7 +21,7 @@ yet converted), each quoted with what it answered (inbox #1280 in olive-ferret):
 and in its tests alike, and a value the language cannot type is read through a typed name. A test
 that hands its fake in through a public seam (`tests-public-seams.md`) has a typed place for it, so
 no value stays untyped to make a test work. A new file is fully typed from its first line, a test,
-a rig, a fake or a probe included; the typed-access step of `field-reads.md` is what makes the
+a rig, a fake or a probe included; the typed-access step (the three warnings `project.godot` makes errors) is what makes the
 engine hold a file to that.
 
 **Build.**
@@ -43,7 +43,7 @@ engine hold a file to that.
   plainer alternative is a list matched by hand, which came back *not ready* on most of the first
   passes: inner classes, getters and an inherited getter missed, and a method credited for a value it
   only derives.
-- **The files under `src/` are typed in the module passes** (`field-reads.md`).
+- **The files under `src/` are typed in the module passes.**
 
 **Done when** no file under `tests/` carries a file-level ignore of the typing warnings, whichever of the
 three it names (`uv run python tools/check_field_reads.py --summary` counts the files by folder), and neither
