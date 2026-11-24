@@ -121,7 +121,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 					"", true),
 			own_run, func(code: int) -> void: ended.append(code))
 	viewport.add_child(runtime)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
+	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.is_empty(), "the sight scene is installed: %s" % [errors])
 	if errors.is_empty():
@@ -482,13 +482,13 @@ func _drafted(t: TestRunner, city: City, data: Dictionary, walked: Array[Vector2
 	var walker := Node2D.new()
 	for tile in walked:
 		walker.position = city.map.tile_to_world(tile)
-		draft.record(walker, city, RunCity.events(city), null)
+		draft.record(walker, RunCity.world_of(city, null), null)
 	walker.free()
 	var own_run := RunState.new()
 	own_run.start_run(7)
 	own_run.header().set_day(7)
 	var problems: Array[String] = []
-	var drafted := draft.compose(data, own_run, city, RunCity.crowd(city),
+	var drafted := draft.compose(data, own_run, RunCity.world_of(city, null),
 			city.map.tile_to_world(walked[0]), pinned, problems)
 	return drafted
 
