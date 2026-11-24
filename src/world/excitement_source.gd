@@ -99,7 +99,7 @@ func _her_at() -> Vector2:
 ## (`Baby.current_sensitivity()`): everything `expected_impact_at()` needs to answer "if she keeps
 ## doing what she is doing". The defaults answer held still, nothing given back and nothing damped,
 ## for any caller — a data-level test among them — that has not said otherwise.
-var player_velocity := Vector2.ZERO
+var _player_velocity := Vector2.ZERO
 var player_decay_rate := 0.0
 var _player_sensitivity := 1.0
 
@@ -113,7 +113,7 @@ var player_expected_total_gross := -1.0
 ## caret. Her motion only: where she is reaches a source another way (`_her_at()`).
 func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 		sensitivity: float = 1.0) -> void:
-	player_velocity = velocity
+	_player_velocity = velocity
 	player_decay_rate = decay_rate
 	_player_sensitivity = sensitivity
 
@@ -274,7 +274,7 @@ var _expected_landed_cache := 0.0
 ## she and it both carry on exactly as they are**, before her own decay is netted against it;
 ## `ExcitementHalo` sums it once a frame to learn what the horizon's decay is shared between
 ## *(2026-09-20: "caret communicates anticipated net gain. basically if I keep doing what I'm doing
-## I very likely get that amount in net gain")*. Her `player_velocity` moves her through the
+## I very likely get that amount in net gain")*. Her `_player_velocity` moves her through the
 ## projection as the source's own `_projection_velocity()` moves it.
 ##
 ## **Skipped without sampling once neither body is moving, or the pair's closing speed cannot cross
@@ -291,11 +291,11 @@ func expected_gross_at(player_position: Vector2) -> float:
 	if _outranked:
 		return 0.0
 	var velocity := _projection_velocity()
-	var closing := player_velocity - velocity
+	var closing := _player_velocity - velocity
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + _projection_reach()
 	if _body.global_position.distance_to(player_position) > reach:
 		return 0.0
-	if (velocity.is_zero_approx() and player_velocity.is_zero_approx()) or not _projects():
+	if (velocity.is_zero_approx() and _player_velocity.is_zero_approx()) or not _projects():
 		return 0.0
 	var current_rate := contribution_at(player_position)
 	_begin_the_projection(velocity)
@@ -325,10 +325,10 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2) -> flo
 	var grid := wall_grid()
 	for i in steps:
 		var t := float(i + 1) * dt
-		var sample := player_position + player_velocity * t - velocity * t
+		var sample := player_position + _player_velocity * t - velocity * t
 		var rate := _projected_field(sample, velocity)
 		if rate > 0.0 and grid != null and grid.wall_between(from + velocity * t,
-				player_position + player_velocity * t):
+				player_position + _player_velocity * t):
 			rate = 0.0
 		integral += rate * dt
 	return integral

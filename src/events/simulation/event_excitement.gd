@@ -141,7 +141,7 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 	if _flock:
 		return []
 	var row := _row
-	return [_from, player_position, player_velocity, velocity,
+	return [_from, player_position, _player_velocity, velocity,
 		_live_intensity, row.field(), _axis, row.ground_shape()]
 
 ## The field at the translated point, at the live rate, its ellipse oriented by the source's own

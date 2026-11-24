@@ -395,7 +395,8 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 		director.use_player(player)
 		_watch_the_screen_round(director, her)
 		RunCity.events(_city).door_crossed.emit(hut.placed_at(), hut.faces(), true)
-		t.check(director.contact().is_done, "day 9: an inspected crossing completes the task")
+		t.check(director.contact().is_finished(),
+				"day 9: an inspected crossing completes the task")
 		var label := "day 9, let out %.0fpx along the street from the gatehouse" % (side * out)
 		if _warning_for(RunCity.events(_city), "robber_giving_chase") == null:
 			_check_no_start_was_passed_over(t, her, label)
@@ -608,7 +609,8 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t: TestRunner) -> v
 			var player := _rig_player(t, her)
 			director.use_player(player)
 			await _step_a_frame(t)
-			t.check(director.contact().is_done, "seed %d: she hands the note over" % seed_value)
+			t.check(director.contact().is_finished(),
+					"seed %d: she hands the note over" % seed_value)
 			var start := await _check_the_trap_comes_from_off_screen(t, her,
 					"robber_giving_chase", "seed %d" % seed_value)
 			if start != Vector2.INF:
@@ -640,7 +642,7 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t: TestRunner) -
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		await _step_a_frame(t)
-		t.check(director.contact().is_done, "she hands the package over")
+		t.check(director.contact().is_finished(), "she hands the package over")
 		var start := await _check_the_trap_comes_from_off_screen(t, her,
 				"van_guard_giving_chase", "the van")
 		if start != Vector2.INF:
@@ -689,7 +691,7 @@ func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector
 	var player := _rig_player(t, her)
 	director.use_player(player)
 	await _step_a_frame(t)
-	t.check(director.contact().is_done, "%s: she hands the note over" % label)
+	t.check(director.contact().is_finished(), "%s: she hands the note over" % label)
 	var start := await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
 			label)
 	if city_siting and start != Vector2.INF:

@@ -73,7 +73,8 @@ func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t: TestRunner)
 	var task := van.current_step()
 	player.teleport_to(van.contact_position())
 	await _step_a_frame(t)
-	t.check(task != null and van.contact().is_done and van.red_arrow_target() == Vector2.INF,
+	t.check(task != null and van.contact().is_finished()
+			and van.red_arrow_target() == Vector2.INF,
 			"and it goes out once she has reached it")
 	player.free()
 	van.free()

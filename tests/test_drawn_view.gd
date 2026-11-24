@@ -167,7 +167,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	screen.add_child(car)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
 	var drawn := DrawnView.on(screen)
-	car.view = ScreenCrowdView.new(screen, drawn)
+	car.use_crowd_parts(null, null, ScreenCrowdView.new(screen, drawn), null)
 	var x := -700.0
 	var asked_since_off := false
 	var first_seen_asked := false
@@ -231,7 +231,7 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 	walker.visible = false
 	screen.add_child(walker)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
-	walker.view = ScreenCrowdView.new(screen, DrawnView.on(screen))
+	walker.use_crowd_parts(null, null, ScreenCrowdView.new(screen, DrawnView.on(screen)), null)
 	walker.position = Vector2(320.0, 180.0)
 	walker.end_the_frame(0.0)
 	t.check(not walker.end_the_frame(0.0),

@@ -59,7 +59,7 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 			# director activates the task.
 			if offered != null and offered.is_pickup:
 				director.contact().complete_now()
-			t.check(director.read_mark() != null and director.read_mark().is_done,
+			t.check(director.read_mark() != null and director.read_mark().is_finished(),
 					"day %d: the pickup is read" % day)
 		var task := director.current_step()
 		t.check(task != null and not task.is_pickup, "day %d: the task is on offer" % day)

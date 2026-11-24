@@ -81,7 +81,7 @@ var _field: CrowdField
 ## What the screen shows, held by reference and handed in by `Crowd` — the camera the stretch's
 ## recycling keeps out of sight of, and the box `CrowdAgent` draws within. Null for an agent built by
 ## hand, which then has no camera to be out of view of and no screen to be off. See `CrowdView`.
-var view: CrowdView = null
+var _view: CrowdView = null
 
 ## Where the other cars are, by lane, so a turn can look before it commits. Held by reference and
 ## refilled once a frame by `Crowd`; null for an agent built by hand in a test, which then turns
@@ -487,7 +487,7 @@ func use_crowd_parts(day_traffic: TrafficIndex, day_pockets: CrowdPockets, scree
 		charge_to: CrowdTiming) -> void:
 	_traffic = day_traffic
 	_pockets = day_pockets
-	view = screen
+	_view = screen
 	frame_timing = charge_to
 	_hand_the_strategy_its_parts()
 
@@ -707,12 +707,13 @@ func _out_of_view() -> bool:
 ## the radius a played day recycles beyond is not enough: nothing may appear or vanish where she can
 ## see it *(the player's rule, PR #597)*. True when no part of a body standing at `at` (`room`
 ## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the square
-## `CrowdView.beyond_every_view()` describes. The camera is the crowd's `view`; with none, or with
-## the agent out of the tree — a rig that steps agents by hand — the played day's radius answers.
+## `CrowdView.beyond_every_view()` describes. The camera is the screen the crowd hands in
+## (`use_crowd_parts()`); with none, or with the agent out of the tree — a rig that steps agents by
+## hand — the played day's radius answers.
 func beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
-	if view == null or not is_inside_tree():
+	if _view == null or not is_inside_tree():
 		return at.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
-	return view.beyond_every_view(at, room, _field.looking_at())
+	return _view.beyond_every_view(at, room, _field.looking_at())
 
 ## How far past a body's centre its picture may reach, for `beyond_every_view()`: two tiles,
 ## more than a car's half length and its shadow.

@@ -3,8 +3,9 @@ extends RefCounted
 ## **One map's record of what stands on its ground today**, the half of "can this mover stand
 ## here" that is not the ground's own tile type: a precinct's posts, today's closures, the tiles a
 ## soft seal shuts to walkers, and the tiles under every stationary solid body. A map owns one
-## (`CityMap.blocked`), and every question about walking — a step, a line, a flood, a placement —
-## reads it through a `Mover`, which names the layers that stop it (`CityMap.passable()`).
+## (held by `WorldMap`), and every question about walking — a step, a line, a flood, a
+## placement — reads it through a `Mover`, which names the layers that stop it
+## (`CityMap.passable()`).
 ##
 ## **A body is recorded from its pieces** (`StandingPiece.tiles()`), the same pieces that build
 ## its physics body (`Footprint.body()`), so what stops her and what stops a figure are one solid

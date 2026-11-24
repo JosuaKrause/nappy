@@ -81,7 +81,8 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 				break
 		t.check(_walks_under(walks_told) > walked_before,
 				"another district door's line was walked through")
-		t.check(not director.contact().is_done, "crossing another district door completes nothing")
+		t.check(not director.contact().is_finished(),
+				"crossing another district door completes nothing")
 		# **Only one walk-under guard exists at a time**, and that other door has just set one
 		# on her: left alone, the named crossing below spawns nobody and the check on a guard
 		# after her passes on this first one. So he is finished first and the named crossing
@@ -92,7 +93,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		if first_guard:
 			first_guard.give_up_the_chase()
 		_walk_through(_door_position(director), _door_axis(director), direction, player)
-		if director.contact().is_done:
+		if director.contact().is_finished():
 			crossings += 1
 		t.check(_robber_after_her(events) == null
 				and _warning_for(events, "robber_giving_chase") == null,
@@ -130,7 +131,7 @@ func _test_standing_at_the_door_completes_nothing(t: TestRunner) -> void:
 		var here := director.contact_position() if direction > 0.0 else _door_position(director)
 		player.teleport_to(here)
 		await _step_a_frame(t)
-		t.check(not director.contact().is_done,
+		t.check(not director.contact().is_finished(),
 				"standing at the gatehouse or under the boom completes nothing (%s)"
 				% ("gatehouse" if direction > 0.0 else "boom"))
 		_end_the_attempt(director, player)
@@ -159,18 +160,18 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t: TestRunner) -> void:
 		t.check(_a_guard_warns_her(events),
 				"walking under the named boom starts its warning")
 		_ticks(int(round(CheckpointController.CROSSING_WARNING * 0.5 / STEP)))
-		t.check(not director.contact().is_done,
+		t.check(not director.contact().is_finished(),
 				"halfway through the crossing's warning the task is not done yet")
 		_step_to(player, at - axis * 40.0 * direction)
 		t.check(not _a_guard_warns_her(events),
 				"stepping back across calls the crossing off")
 		_ticks(int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 		var guard_before := _guard_after_her(events)
-		t.check(not director.contact().is_done and not _a_guard_is_after_her(events),
+		t.check(not director.contact().is_finished() and not _a_guard_is_after_her(events),
 				"a crossing taken back does not do the task, and sets no guard on her")
 		_walk_through(at, axis, direction, player)
 		var guard := _guard_after_her(events)
-		t.check(director.contact().is_done and guard != null and guard != guard_before
+		t.check(director.contact().is_finished() and guard != null and guard != guard_before
 				and _a_guard_is_after_her(events),
 				"walked through and staying across, the same door does the task, its guard after her")
 		_end_the_attempt(director, player)
@@ -217,7 +218,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 			if b_walk != "none":
 				_step_to(player, b_at - b_axis * 40.0, true)
 				_step_to(player, b_at + b_axis * 40.0)
-				t.check(not director.contact().is_done,
+				t.check(not director.contact().is_finished(),
 						"%s: under the named door while A's warning runs, nothing is done yet" % name)
 				if b_walk == "back":
 					_step_to(player, b_at - b_axis * 40.0)
@@ -227,7 +228,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 			_ticks(int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 			var chased := _a_guard_is_after_her(events)
 			var done_expected := a_stays and b_walk == "stays"
-			t.check(chased == a_stays and director.contact().is_done == done_expected,
+			t.check(chased == a_stays and director.contact().is_finished() == done_expected,
 					"%s: A's guard %s and the task is %s" % [name,
 					"comes" if a_stays else "does not come", "done" if done_expected else "not done"])
 			_end_the_attempt(director, player)
@@ -251,7 +252,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 			continue
 		events.stream_around(player.global_position)
 		_walk_through(_door_position(director), _door_axis(director), direction, player)
-		t.check(director.contact().is_done, "walking under the named boom does the task")
+		t.check(director.contact().is_finished(), "walking under the named boom does the task")
 		var guard := _guard_after_her(events)
 		t.check(guard != null and guard.row_id() == "door_guard" and _a_guard_is_after_her(events)
 				and not guard.has_given_up(),
@@ -275,7 +276,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 					pursuers += 1
 			t.check(pursuers == 0 and _door_guards(events).all(func(each: EventInstance) -> bool: return each == guard),
 					"and nobody else is sent: no second guard is after her")
-			t.check(director.contact().is_done, "the task stays done")
+			t.check(director.contact().is_finished(), "the task stays done")
 			# **The moment day 9 sends the robber is the end of the hold**: the inspection
 			# lets her through (`CheckpointController._release_finished_holds()`,
 			# `door_crossed(…, true)`), which completes the crossing for a task done under
@@ -299,7 +300,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 						and not instance.is_gone() and not instance.is_on_its_way_out():
 					pursuers += 1
 			t.check(pursuers == 0, "and no guard or robber is live after her")
-			t.check(director.contact().is_done, "the task stays done")
+			t.check(director.contact().is_finished(), "the task stays done")
 		_end_the_attempt(director, player)
 
 ## feathery-marmot, day 9 let through after the inspection — the ordinary way through a door
@@ -341,9 +342,9 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 				_ticks_while(instance.is_chatting,
 						int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10)
 				if instance == other:
-					if not director.contact().is_done:
+					if not director.contact().is_finished():
 						elsewhere += 1
-			if director.contact().is_done:
+			if director.contact().is_finished():
 				crossings += 1
 			t.check(_robber_after_her(events) == null
 					and _warning_for(events, "robber_giving_chase") != null,

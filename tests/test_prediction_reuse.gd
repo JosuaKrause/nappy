@@ -10,24 +10,28 @@ const HaloRig = preload("res://tests/halo_rig.gd")
 ## The length of the straight route the sweep's events are set up on.
 const ROUTE_LENGTH := 600.0
 
-## An event's source that keeps the sensitivity the halo last told it (`set_her_motion()`), which the
-## frozen reference scales its projection by as the source scales its own.
+## An event's source that keeps the motion the halo last told it (`set_her_motion()`), which the
+## frozen reference projects and scales by as the source does.
 class ToldEventSource extends EventExcitement:
+	var told_velocity := Vector2.ZERO
 	var told_sensitivity := 1.0
 
 	## Overrides ExcitementSource.set_her_motion.
 	func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 			sensitivity: float = 1.0) -> void:
+		told_velocity = velocity
 		told_sensitivity = sensitivity
 		super(velocity, decay_rate, sensitivity)
 
-## A crowd body's source that keeps the sensitivity the halo last told it, as `ToldEventSource`.
+## A crowd body's source that keeps the motion the halo last told it, as `ToldEventSource`.
 class ToldCrowdSource extends CrowdExcitement:
+	var told_velocity := Vector2.ZERO
 	var told_sensitivity := 1.0
 
 	## Overrides ExcitementSource.set_her_motion.
 	func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 			sensitivity: float = 1.0) -> void:
+		told_velocity = velocity
 		told_sensitivity = sensitivity
 		super(velocity, decay_rate, sensitivity)
 
@@ -90,7 +94,7 @@ class ReferenceEvent extends EventInstance:
 	class Source extends ToldEventSource:
 		## Overrides ExcitementSource.expected_gross_at.
 		func expected_gross_at(at: Vector2) -> float:
-			return Reference.event_gross(_event, at, told_sensitivity)
+			return Reference.event_gross(_event, at, told_velocity, told_sensitivity)
 
 ## A crowd body whose source projects with the frozen reference instead.
 class ReferenceCrowd extends CrowdAgent:
@@ -103,7 +107,7 @@ class ReferenceCrowd extends CrowdAgent:
 	class Source extends ToldCrowdSource:
 		## Overrides ExcitementSource.expected_gross_at.
 		func expected_gross_at(at: Vector2) -> float:
-			return Reference.crowd_gross(_agent, at, told_sensitivity)
+			return Reference.crowd_gross(_agent, at, told_velocity, told_sensitivity)
 
 func run(t: TestRunner) -> void:
 	_test_catalogue_and_mutations(t)
@@ -192,15 +196,16 @@ func _projecting_copy(t: TestRunner, definition: EventDef, saved: EventSave,
 
 ## What the frozen reference projects from `source` at `at`.
 func _reference_of(source: CountedEvent, at: Vector2) -> float:
-	return Reference.event_gross(source, at, (source.source() as ToldEventSource).told_sensitivity)
+	var told := source.source() as ToldEventSource
+	return Reference.event_gross(source, at, told.told_velocity, told.told_sensitivity)
 
 ## One if what a write just made moved the reference's answer off `before`, else none.
 func _count_a_move(source: CountedEvent, at: Vector2, before: float) -> int:
 	return 0 if _same_bits(_reference_of(source, at), before) else 1
 
 func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
-	var expected := Reference.event_gross(source, at,
-			(source.source() as ToldEventSource).told_sensitivity)
+	var told := source.source() as ToldEventSource
+	var expected := Reference.event_gross(source, at, told.told_velocity, told.told_sensitivity)
 	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " repeats exactly")
@@ -208,8 +213,8 @@ func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: Stri
 		t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: String) -> void:
-	var expected := Reference.crowd_gross(source, at,
-			(source.mood() as ToldCrowdSource).told_sensitivity)
+	var told := source.mood() as ToldCrowdSource
+	var expected := Reference.crowd_gross(source, at, told.told_velocity, told.told_sensitivity)
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " repeats exactly")

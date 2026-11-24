@@ -764,7 +764,7 @@ func _test_the_guard_walks_round_a_building_to_her(t: TestRunner) -> void:
 	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var from := guard.global_position
 	# His walk to her goes round what stops a figure on foot today, as his sweep does.
-	var walk := map.walk_field(map.world_to_tile(from), map.blocked.tiles_of(Mover.TODAY))
+	var walk := map.walk_field(map.world_to_tile(from), map.tiles_shut_to(Mover.TODAY))
 	var at := Vector2.INF
 	var tiles_to_her := -1
 	for radius in range(5, 16):
@@ -1091,12 +1091,12 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 		if section != chosen:
 			locations.assign(section, EventPlan.new(def, section.centre()))
 	# A body is recorded under its plan and, while it is in the world, under its instance too.
-	var expected := map.blocked.copy()
+	var expected := map.copy()
 	for plan in held:
-		expected.release(plan.get_instance_id())
+		expected.release_obstruction(plan.get_instance_id())
 		var instance := RunCity.events(city).event_of(plan)
 		if instance:
-			expected.release(instance.get_instance_id())
+			expected.release_obstruction(instance.get_instance_id())
 	if director.current_step():
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
@@ -1106,13 +1106,13 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	for plan in held:
 		all_spent = all_spent and plan.is_spent()
 	t.check(all_spent, "(content) everything the section held is spent (%d)" % held.size())
-	var actual := map.blocked.copy()
+	var actual := map.copy()
 	for plan in RunCity.events(city).plans():
 		if roadblock != null and RunCity.events(city).event_of(plan) == roadblock:
-			actual.release(plan.get_instance_id())
-			actual.release(roadblock.get_instance_id())
-	t.check(actual.todays_body_tiles() == expected.todays_body_tiles() \
-			and actual.todays_soft_sealed_tiles() == expected.todays_soft_sealed_tiles(),
+			actual.release_obstruction(plan.get_instance_id())
+			actual.release_obstruction(roadblock.get_instance_id())
+	t.check(actual.obstructed_tiles() == expected.obstructed_tiles() \
+			and actual.soft_sealed_tiles() == expected.soft_sealed_tiles(),
 			"(content) the map keeps no body or shut tile of anything the section held")
 	_tear_down(player, director, city)
 

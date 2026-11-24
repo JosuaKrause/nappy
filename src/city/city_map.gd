@@ -11,7 +11,7 @@ extends WorldMap
 ##
 ## so a coordinate's position within its period tells you which it is.
 ##
-## **The city's `WorldMap`**: the line walk, the wall's depth, the blocked record (`blocked`, the
+## **The city's `WorldMap`**: the line walk, the wall's depth, the blocked record (the
 ## base's) and the tile conversions are the interface's; this map answers for its own ground
 ## (`_ground_lets()`, `_open()`) and for the streets (`pavement_inward()`, `corridor_offsets()`, ...).
 
@@ -244,12 +244,12 @@ var _seed_used := 0
 ## it a closed street already gets. **A merely-`_shut_calm` area is not**: its ground stays exactly
 ## as open as any other calm ground, because nothing there blocks her — see `_shut_calm`.
 ##
-## Held on the map's blocked record (`blocked`), the one every mover asks through `passable()`.
+## Held on the map's blocked record, the one every mover asks through `passable()`.
 var _closed_tiles: Dictionary:
 	get:
-		return blocked.todays_closed_tiles()
+		return _blocked.todays_closed_tiles()
 	set(value):
-		blocked.replace_closed_tiles(value)
+		_blocked.replace_closed_tiles(value)
 
 ## The calm areas taken off today's route tree, as the blocks that anchor them — the ones she has
 ## already used this act (`set_spent_calm()`) that `ClosurePlanner.calm_to_shut()` found could be
@@ -399,7 +399,7 @@ func is_in_walled_alley(tile: Vector2i, walled_alleys: Array[Rect2i]) -> bool:
 ## pavement's tiles out of this set entirely. Filled by `SealPlanner.plan_day`, which clears and
 ## refills it fresh on every call, the same as the holds are cleared and refilled once a day.
 func soft_sealed_tiles() -> Dictionary:
-	return blocked.todays_soft_sealed_tiles()
+	return _blocked.todays_soft_sealed_tiles()
 
 ## Clears today's soft seals. See `soft_sealed_tiles()`.
 func clear_day_soft_seals() -> void:
@@ -1005,7 +1005,7 @@ func _init(map_size: Vector2i = map_tiles()) -> void:
 func copy() -> CityMap:
 	var twin := CityMap.new(_size)
 	twin._tiles = _tiles.duplicate()
-	twin.blocked = blocked.copy()
+	twin._blocked = _blocked.copy()
 	twin._day_record_version = _day_record_version
 	twin._recipe_bounds = _recipe_bounds
 	twin._recipe_exterior = _recipe_exterior
@@ -1180,7 +1180,7 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 ##
 ## Overrides WorldMap.is_walkable.
 func is_walkable(tile: Vector2i) -> bool:
-	return Tile.is_walkable(tile_at(tile)) and not blocked.blocks(tile, Mover.POSTS)
+	return Tile.is_walkable(tile_at(tile)) and not _blocked.blocks(tile, Mover.POSTS)
 
 ## The tiles a precinct's posts stand on (`post_positions()`), the carriageway band at each
 ## mouth's two tiles at the row. The row shuts that band to her body *(2026-10-10, the player:
@@ -1195,14 +1195,14 @@ func is_walkable(tile: Vector2i) -> bool:
 ## the map answers, so the posts are a record and not worked out per call; this answers a copy of
 ## it, which nobody writes into.
 func post_tiles() -> Dictionary:
-	return blocked.tiles_of(Mover.POSTS)
+	return _blocked.tiles_of(Mover.POSTS)
 
 ## Records the post tiles from `_precinct_spans`. Call it again whenever the spans change.
 func index_posts() -> void:
 	var tiles: Array[Vector2i] = []
 	for at in post_positions():
 		tiles.append(world_to_tile(at))
-	blocked.lay_posts(tiles)
+	_blocked.lay_posts(tiles)
 
 ## Where each of a precinct's posts stands, in world space: a row of them across the carriageway
 ## band at each end of every precinct span, `BOLLARD_SPACING` apart and centred in the band. What
@@ -1251,7 +1251,7 @@ func walkable_lut() -> PackedByteArray:
 func _ground_lets(tile: Vector2i, layers: int) -> bool:
 	if layers & Mover.GROUND != 0 and not Tile.is_walkable(tile_at(tile)):
 		return false
-	if blocked.blocks(tile, layers & Mover.POSTS):
+	if _blocked.blocks(tile, layers & Mover.POSTS):
 		return false
 	return layers & Mover.STREETS == 0 or is_street(tile)
 
@@ -1873,7 +1873,7 @@ func _count_walkable() -> int:
 ## on (`post_tiles()`): what a sweep from the home (`walk_field()`) can reach at most.
 func count_standable() -> int:
 	var total := _count_walkable()
-	for tile: Vector2i in blocked.tiles_of(Mover.POSTS):
+	for tile: Vector2i in _blocked.tiles_of(Mover.POSTS):
 		if in_bounds(tile):
 			total -= _WALKABLE[_tiles[tile.y * _size.x + tile.x]]
 	return total

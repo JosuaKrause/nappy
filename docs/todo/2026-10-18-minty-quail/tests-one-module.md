@@ -15,23 +15,20 @@ a fake to. Each module's pull request says each suite's time before and after.
 
 **A test reads what it tests only through methods**: on the board's tests-read-fields, whether a
 test counts as another object under "fields are not API", "yes" (inbox #1182 in gray-dolphin). A
-var a test reads gets a method, and suites move as a pull request touches them. Every module has
-had its pass; the reads below are what the field-read check, which reads `src/` only
-(`tools/check_field_reads.py`'s header hands tests to this item), cannot count. They were found
-by running the check over a scratch copy of the tree with `tests/` moved under `src/`.
-
-**What breaks the rule today**, each read to be moved to the class's method or to what the class
-does outward:
-
-- `ContactPoint.is_done`: about twenty lines in the resistance suites (`test_resistance_crossing.gd`
-  holds the most) read the field where the game asks `is_finished()`; its line in
-  `tools/test_only_members.txt` defers to this item.
-- `Crowd.step()`: the crowd's rigs and suites (`tests/crowd_closures_rig.gd` and the rest) drive
-  it by hand; its line in `tools/test_only_members.txt` defers to this item.
-- `WorldMap.blocked`: `tests/test_world_passability.gd` and `tests/test_day13_guard.gd` read the
-  blocked layer's tiles and copy it.
-- `ExcitementSource.player_velocity`: `tests/fixtures/prediction_reference.gd` reads it.
-- `LaneMover.view`: `tests/test_drawn_view.gd` writes it on a car and a walker.
+var a test reads gets a method, and suites move as a pull request touches them. The field-read check
+reads `src/` only (`tools/check_field_reads.py`'s header hands tests to this item); the reads in the
+tests are found by running it over a scratch copy of the tree with `tests/` moved under `src/`
+(`--root` names the copy, `--list` prints every read). The reads of a class under `src/` that no
+line of `tools/test_only_members.txt` holds, and no conversion has moved yet, are five:
+`WalkerStrategy._yield_left` and `_door_state`, `CarTurn.travelled`, `LaneMover._speed` and
+`ExcitementSource.player_expected_total_gross`. The rest the check reports each have a `[kept]`
+line with its reason there: `EventManager.world`, `DaySpec.bag`, `DaySpec.wall_row_share`,
+`City.scenery` and `City.scenery_ground`, `SceneryWater.cells`, `SceneryResidency.budget_usec`,
+`ParkCordon.gap` and `last_gap`, `ResistanceHappenings.cordon`, `ModeButton.symbol` and
+`hold_progress`. The count leaves out the reads under `tests/probes/` (about sixty, nearly all of
+underscore fields) and the tests' own fakes: a probe is a measurement script run by name, and no suite
+runs it, while this item's rule is about suites (a reading of inbox #1182 in gray-dolphin, open to
+the player's correction). A builder reruns the check first, since the list moves.
 
 **One kept exception.** `tests/test_crowd_bodies_on_a_real_day.gd` builds a real city for a
 guarantee that spans the event manager's plan, the city's start of the day and the crowd; its

@@ -247,7 +247,7 @@ func _projection_reach() -> float:
 ##
 ## Overrides ExcitementSource._projection_key.
 func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
-	return [_agent.global_position, player_position, player_velocity, velocity, _car,
+	return [_agent.global_position, player_position, _player_velocity, velocity, _car,
 		_jolt, _jolt_for, _jolt_intensity, _jolt_inner, _jolt_outer]
 
 ## Where the body stands and how far its field reaches, read once before the projection samples,
