@@ -90,7 +90,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	for frame in int(round(SECONDS / STEP)):
 		RunCity.crowd(city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(city).agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
 			if agent._blocked_in > CrowdAgent.LOOKAHEAD_TILES:
 				continue

@@ -8,8 +8,8 @@ extends RefCounted
 ## **One object per agent, handed its mover once.** A strategy holds the state only its kind has (a
 ## walker's door hold and sidesteps, a car's turn planning) and reads and writes the mover's lane
 ## state directly: the two are one feature split by kind, and the lane state stays on the mover
-## because both kinds' every frame reads it. `LaneMover.kind` is what installs one, so setting the
-## kind on a hand-built agent gives it that kind's rules at once.
+## because both kinds' every frame reads it. `LaneMover._take_kind()` installs one, as the agent
+## is made of a kind (`CrowdAgent.new()`) and as `setup()` places it.
 ##
 ## The answers below are the neutral ones — what a body with no rule of its own about the question
 ## does — and each kind overrides the questions it has a rule for.

@@ -195,8 +195,8 @@ func crashed_into() -> void:
 
 # ---------------------------------------------------------------- drawing ---
 
-## How this agent is drawn, installed with `kind`: a `WalkerLook` or a `CarLook`. Everything the
-## drawing differs on between the two kinds asks it.
+## How this agent is drawn, installed with its kind (`_take_kind()`): a `WalkerLook` or a
+## `CarLook`. Everything the drawing differs on between the two kinds asks it.
 var _look: AgentLook
 ## The baked atlas pages the crowd holds its group on (`AtlasLibrary`), handed by the crowd that
 ## makes this agent; the look draws its regions from it.
@@ -214,18 +214,22 @@ func picture_region(name: StringName) -> AtlasTexture:
 ## member because the redraw gate reads it every frame of every agent.
 var _carets := false
 
-func _init() -> void:
+## A walker unless it is made `agent_kind`: the crowd makes each agent of the kind it will
+## place, and a hand-built agent of a suite is made one the same way. `setup()` and `setup_at()`
+## take the kind again, which changes nothing for the kind already taken.
+func _init(agent_kind := Kind.WALKER) -> void:
 	super()
 	_look = WalkerLook.new(self)
 	_excitement.use_rim(_rim)
+	_take_kind(agent_kind)
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
 ##
 ## Overrides LaneMover._kind_installed.
 func _kind_installed() -> void:
-	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
+	_look = CarLook.new(self) if is_car() else WalkerLook.new(self)
 	_carets = _look.carets()
-	_excitement.take_kind(kind)
+	_excitement.take_kind(_kind)
 
 ## Overrides LaneMover.restart_the_picture.
 func restart_the_picture() -> void:

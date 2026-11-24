@@ -224,7 +224,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 
 		before.clear()
 		for agent: CrowdAgent in RunCity.crowd(city).agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
 			var id := agent.get_instance_id()
 			seen_ids[id] = true
@@ -241,7 +241,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 		RunCity.crowd(city).step(STEP)
 
 		for agent: CrowdAgent in RunCity.crowd(city).agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
 			var was: Array = before.get(agent.get_instance_id(), [])
 			if was.is_empty():
@@ -496,7 +496,7 @@ func _why_it_was_shunted(city: City, agent: CrowdAgent, was: Array, before: Dict
 	var ahead: CrowdAgent = null
 	var nearest := INF
 	for other: CrowdAgent in RunCity.crowd(city).agents():
-		if other == agent or other.kind != CrowdAgent.Kind.CAR or other.lane_key() != key:
+		if other == agent or other.lane().kind() != CrowdAgent.Kind.CAR or other.lane_key() != key:
 			continue
 		var offset := other.queue_position() - agent.queue_position()
 		if offset > 0.0 and offset < nearest:
@@ -558,7 +558,7 @@ func _why_the_landing_retreated(city: City, landed: CrowdAgent, from: Vector2,
 	var at := (from.y if landed._vertical else from.x) * landed._direction
 	var nearest := INF
 	for other: CrowdAgent in RunCity.crowd(city).agents():
-		if other == landed or other.kind != CrowdAgent.Kind.CAR or other.lane_key() != key:
+		if other == landed or other.lane().kind() != CrowdAgent.Kind.CAR or other.lane_key() != key:
 			continue
 		var offset := other.queue_position() - at
 		if absf(offset) < absf(nearest):

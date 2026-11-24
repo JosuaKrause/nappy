@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_a_dark_city_says_so_on_the_bus_it_was_handed(t)
 	_test_both_worlds_events_report_on_the_bus_it_was_handed(t)
 	_test_the_dressed_day_pastes_the_walls(t)
-	_test_each_setting_reaches_its_part(t)
+	await _test_each_setting_reaches_its_part(t)
 	await _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t)
 	_test_a_body_on_a_lane_takes_the_car_there_away(t)
 
@@ -263,14 +263,18 @@ func _test_the_dressed_day_pastes_the_walls(t: TestRunner) -> void:
 	_free(made)
 
 ## **Each developer setting the builder is handed reaches the part it is for**, and a builder handed
-## none stands an ordinary run's parts.
+## none stands an ordinary run's parts. The crowd is read by what it does over a few seconds
+## of ticks: whether its agents move, whether they ask for their pictures (the atlas handed in
+## is one that counts the crowd's), and whether the screen and the frame record handed in are
+## asked.
 func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
-	var ordinary := _city(t)
+	var pictures := CrowdPictureCount.new()
+	var plain := SimulationBuilder.new()
+	plain.equip(RunTrace.new(), pictures, FrameTiming.new())
+	var ordinary := _city(t, plain)
 	var events := _simulation(ordinary).events()
-	var crowd := _simulation(ordinary).crowd()
-	t.check(events.world.surroundings().draws()
-			and not crowd.skip_agent_drawing and not crowd.skip_motion and crowd.view == null,
-			"a builder handed nothing stands an ordinary run's events and crowd")
+	t.check(events.world.surroundings().draws(),
+			"a builder handed no developer setting stands an ordinary run's events")
 	var nothing := events.world.surroundings().drawn_view()
 	var far_off := Node2D.new()
 	far_off.position = Vector2(1.0e6, 1.0e6)
@@ -287,35 +291,101 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 			pelicans += 1
 	t.check(pelicans == EventSpawner.PELICANS_IN_THE_BAG,
 			"a builder handed no --pelican leaves the pelican to the run's bag (%d of a full bag)" % pelicans)
+	var walking := await _the_crowd_runs(t, ordinary)
+	t.check(int(walking["agents"]) > 0 and int(walking["moved"]) > 0 and pictures.asked > 0,
+			"and its crowd walks and asks for its pictures from the atlas it was equipped with "
+			+ "(%d agents, %d moved, %d pictures)"
+			% [walking["agents"], walking["moved"], pictures.asked])
 	_free(ordinary)
 	var builder := SimulationBuilder.new()
 	builder.leave_out(true, true, true)
 	builder.make_every_cyclist_a_pelican()
-	var view := CrowdView.new()
-	var timing := CrowdTiming.new()
-	builder.use_the_crowds_screen(view, timing)
 	var drawn := DrawnView.new()
 	builder.use_the_drawn_view(drawn)
 	var trace := RunTrace.new()
-	var atlas := AtlasLibrary.new()
+	var atlas := CrowdPictureCount.new()
 	var frames := FrameTiming.new()
 	builder.equip(trace, atlas, frames)
 	var made := _city(t, builder)
 	events = _simulation(made).events()
-	crowd = _simulation(made).crowd()
-	t.check(not events.world.surroundings().draws() and crowd.skip_agent_drawing and crowd.skip_motion,
-			"--skip events, crowd and motion reach the events and the crowd")
+	t.check(not events.world.surroundings().draws(), "--skip events reaches the events")
+	var standing := await _the_crowd_runs(t, made)
+	t.check(int(standing["agents"]) > 0 and int(standing["moved"]) == 0 and atlas.asked == 0,
+			"--skip crowd and motion reach the crowd: it stands where it was placed and asks "
+			+ "for no picture (%d agents, %d moved, %d pictures)"
+			% [standing["agents"], standing["moved"], atlas.asked])
 	t.check(events.spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"--pelican reaches the events")
-	t.check(crowd.view == view and crowd.timing == timing, "the screen reaches the crowd")
 	# The events' pages are the ones handed in when the manager has acquired their group on them
 	# (it does on entering the tree), so a picture of the group is there to be had.
 	t.check(events.world.trace() == trace and events.world.surroundings().timing() == frames
-			and atlas.region(StringName(EventPictures.STEAM_GRATE)) != null and crowd.atlas == atlas,
-			"and what the events and the crowd are equipped with reaches each")
+			and atlas.region(StringName(EventPictures.STEAM_GRATE)) != null,
+			"and what the events are equipped with reaches them")
 	t.check(events.world.surroundings().drawn_view() == drawn,
 			"and the drawn view it was handed is the one its events are set up with")
 	_free(made)
+	var watched := WatchedView.new()
+	var timed := WatchedTiming.new()
+	var screened := SimulationBuilder.new()
+	screened.use_the_crowds_screen(watched, timed)
+	made = _city(t, screened)
+	await _the_crowd_runs(t, made)
+	t.check(watched.asked > 0 and timed.asked > 0,
+			"the screen and the frame record reach the crowd: its agents ask the screen what "
+			+ "is drawn (%d times) and its tick asks whether a record runs (%d times)"
+			% [watched.asked, timed.asked])
+	_free(made)
+
+## What `made`'s crowd does over thirty ticks of a day's first morning, on the hand-drawn map:
+## `{agents, moved}`, how many agents it placed and how many of them stood somewhere else
+## after. Every agent is asked to redraw at the end, so a crowd that draws shows it in the
+## pictures it asks for.
+func _the_crowd_runs(t: TestRunner, made: Dictionary) -> Dictionary:
+	var crowd := _simulation(made).crowd()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = RUN_SEED
+	crowd.start_day(1, rng)
+	var agents := crowd.agents()
+	var at: Array[Vector2] = []
+	for agent in agents:
+		at.append(agent.global_position)
+	await PhysicsTicks.pass_ticks(t, 30)
+	var moved := 0
+	for i in agents.size():
+		if agents[i].global_position != at[i]:
+			moved += 1
+		agents[i].queue_redraw()
+	await t.get_tree().process_frame
+	return {"agents": agents.size(), "moved": moved}
+
+## An atlas library that counts the crowd's pictures it hands out (the `crowd/` regions a
+## walker's or a car's look asks for as it draws).
+class CrowdPictureCount extends AtlasLibrary:
+	var asked := 0
+
+	## Overrides AtlasLibrary.region.
+	func region(name: StringName) -> AtlasTexture:
+		if String(name).begins_with("crowd/"):
+			asked += 1
+		return super.region(name)
+
+## A screen that counts how often the crowd's agents ask what it shows.
+class WatchedView extends CrowdView:
+	var asked := 0
+
+	## Overrides CrowdView.drawn_box.
+	func drawn_box() -> Rect2:
+		asked += 1
+		return super.drawn_box()
+
+## A frame record's sink that counts how often the crowd's tick asks whether a record runs.
+class WatchedTiming extends CrowdTiming:
+	var asked := 0
+
+	## Overrides CrowdTiming.running.
+	func running() -> bool:
+		asked += 1
+		return super.running()
 
 ## **Meeting her reaches the crowd, the walls and the blackout**, and nothing reaches them before:
 ## the crowd bumps her standing on a walker, a sheet she presses into tears, and a city counted as

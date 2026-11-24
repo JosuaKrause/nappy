@@ -516,8 +516,7 @@ func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t: TestRunne
 	# `CrowdExcitement`'s field reads only global_position, kind and the jolt fields -- none of
 	# which setup() touches -- so a bare .new() is enough, verified by reading the function rather
 	# than assumed.
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	car.mood().startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	var at_inner_radius := Vector2(Tuning.CAR_HORN_INNER_RADIUS, 0.0)
@@ -529,8 +528,7 @@ func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t: TestRunne
 func _test_an_ordinary_walker_is_a_candidate(t: TestRunner) -> void:
 	# No startle at all -- just the ambient PEDESTRIAN_INTENSITY, which is what "the crowd is the
 	# noise, and the noise is attributable" means in arithmetic.
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
+	var walker := CrowdAgent.new(CrowdAgent.Kind.WALKER)
 	var at_inner_radius := Vector2(Tuning.PEDESTRIAN_INNER_RADIUS, 0.0)
 	t.check(walker.mood().contribution_at(at_inner_radius) > ExcitementHalo.CONTRIBUTION_FLOOR,
 			"an ordinary, unstartled walker clears the floor at its own inner radius")
@@ -541,8 +539,7 @@ func _test_an_ordinary_walker_is_a_candidate(t: TestRunner) -> void:
 
 func _test_the_halo_takes_a_mixed_candidate_set(t: TestRunner) -> void:
 	var instance := _instance_at(_def("busker", 10.0), Vector2.ZERO)
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
 	car.position = Vector2(20.0, 0.0)
 	car.mood().startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
