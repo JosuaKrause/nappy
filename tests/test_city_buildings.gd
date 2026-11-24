@@ -88,13 +88,18 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 	}
 	var pinned := 0
 	var ordered := 0
+	var extended := 0
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		RunCity.build(city, map)
+		var fronts := await _watch_the_fronts(t, city)
+		var entities := city.layers().node(DrawLayer.Layer.ENTITIES)
 		for building: Building in city.buildings():
-			if building.roof_extension_rows.any(func(e: int) -> bool: return e > 0):
+			var extension := _front_of(fronts, building).roof_extension()
+			if extension.any(func(e: int) -> bool: return e > 0):
+				extended += 1
 				continue
 			var expected: Array[Vector2i] = []
 			if building.roof_tiles() >= 3 and building.columns() >= 3:
@@ -103,7 +108,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 						expected.append(Vector2i(col, row))
 			building.residence().set_resident(true)
 			var inside := true
-			for unit: Dictionary in RoofReads.units_of(building):
+			for unit: Dictionary in RoofReads.units_of(building, extension, entities):
 				for cell: Vector2i in unit["cells"]:
 					inside = inside and expected.has(cell)
 			t.check(inside, "seed %d: the unextended roof at %s stands its units on its interior"
@@ -111,7 +116,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 			ordered += 1
 			if map.city_seed() == BASE_SEED and main_layouts.has(building.lot_rect().position):
 				var layout: Array = []
-				for unit: Dictionary in RoofReads.units_of(building):
+				for unit: Dictionary in RoofReads.units_of(building, extension, entities):
 					layout.append([unit["cell"], unit["texture"]])
 				t.check(layout == main_layouts[building.lot_rect().position],
 						"seed %d: the roof at %s carries main's layout %s (got %s)"
@@ -120,11 +125,12 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 				pinned += 1
 		city.free()
 	t.check(ordered > 0, "the sweep met unextended roofs to ask (%d)" % ordered)
+	t.check(extended > 0, "the sweep met extended roofs to leave out (%d)" % extended)
 	t.check(pinned == 2, "both pinned roofs of seed %d were found (%d)" % [BASE_SEED, pinned])
 
 ## `City.assign_roof_extensions()`'s own wiring, asked of whatever the generator actually builds:
 ## every covered column's own south-neighbour tile that is still on the map belongs to some
-## building's lot, and that building's own `roof_extension_rows` at the matching column is exactly
+## building's lot, and that building's own drawn roof extension at the matching column is exactly
 ## the covered building's own `wall_tiles()` — enough roof to reach exactly the world row the
 ## covered building's own roof already starts at, never more and never less. `has_point()` over
 ## every building's own `lot` rather than a spatial index, since the whole set is small and this
@@ -243,8 +249,10 @@ func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: Test
 func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t: TestRunner) -> void:
 	var checked_courtyard := 0
 	var checked_ordinary := 0
+	var tints_compared := 0
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
+		var tint_seen := {}
 		var courtyard_lots: Array[Rect2i] = []
 		for block: Vector2i in map.blocks_with_layouts():
 			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
@@ -282,9 +290,12 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 				var expect_seamless := same_courtyard and building.roof_tiles() > 0
 				var local_col := south.x - front.lot_rect().position.x
 				if same_courtyard:
-					t.check(front.tint_variant >= 0 and front.tint_variant == building.tint_variant,
-							"seed %d: two pieces of one courtyard lot share one tint (%d, %d)"
-							% [map.city_seed(), front.tint_variant, building.tint_variant])
+					var compared := _compare_courtyard_colours(tint_seen, back_lot,
+							[_front_of(fronts, front), _front_of(fronts, building)])
+					tints_compared += compared.x
+					t.check(compared.y == 0,
+							"seed %d: two pieces of one courtyard lot paint wall and roof in one colour (%d differ)"
+							% [map.city_seed(), compared.y])
 				var extension: int = _front_of(fronts, front).roof_rows_at(local_col) - front.roof_tiles()
 				if extension <= 0 or building.roof_tiles() <= 0:
 					continue
@@ -306,6 +317,27 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 			"the sweep met at least one ordinary (non-courtyard) covered column to check (%d)" % checked_ordinary)
 	t.check(checked_courtyard > 0,
 			"the sweep met at least one courtyard seam to check seamlessness on (%d)" % checked_courtyard)
+	t.check(tints_compared > 0,
+			"the sweep compared the colours two pieces of one courtyard paint (%d)" % tints_compared)
+
+## Records the wall and roof colours `pieces` paint under the courtyard lot `lot` in `seen` (a
+## picture to colour for each lot), against what an earlier piece of that lot painted. Answers how many
+## colours were compared (`x`) and how many of them differ (`y`); a piece that paints no wall, or no
+## roof, gives none of that picture.
+static func _compare_courtyard_colours(seen: Dictionary, lot: int, pieces: Array) -> Vector2i:
+	var answer := Vector2i.ZERO
+	for piece: FrontReads in pieces:
+		for picture: StringName in [Building.WALL, Building.ROOF]:
+			var colour := piece.colour_of(picture)
+			if colour.a <= 0.0:
+				continue
+			var key := [lot, picture]
+			if seen.has(key):
+				answer.x += 1
+				answer.y += 1 if seen[key] != colour else 0
+			else:
+				seen[key] = colour
+	return answer
 
 ## No roof unit on any real building sits on a cell whose own lips are drawn, extended or not — the
 ## rule every roof keeps, asked of the extension too, where a taller column steps down beside a
@@ -324,7 +356,8 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 		for building: Building in city.buildings():
 			if building.is_power_station():
 				continue
-			for unit: Dictionary in RoofReads.units_of(building):
+			for unit: Dictionary in RoofReads.units_of(building, _front_of(fronts, building).roof_extension(),
+					city.layers().node(DrawLayer.Layer.ENTITIES)):
 				var cell: Vector2i = unit["cell"]
 				for step in int(unit["span"]):
 					var at := cell + Vector2i(step, 0)
@@ -479,7 +512,7 @@ func _check_accessor_invariant(t: TestRunner, building: Building, front: FrontRe
 ## reads of its front once two frames have passed.
 func _watch_the_fronts(t: TestRunner, city: City) -> Dictionary:
 	for building in city.buildings():
-		FrontReads.watch(building)
+		FrontReads.watch(building, city.atlas)
 	await UI.frames(t, 2)
 	var fronts := {}
 	for building in city.buildings():

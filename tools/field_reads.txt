@@ -7,19 +7,6 @@
 # REMOVE line, so the pull request that moves a read behind a method deletes its line. A merge of main that
 # conflicts here takes either side and runs --write.
 
-# [Building] src/city/building.gd
-src/city/city.gd roof_extension_rows
-src/city/city.gd tint_variant
-src/dev/roof_context_preview.gd atlas
-src/dev/roof_context_preview.gd footprint
-src/dev/roof_context_preview.gd roof_object_parent
-src/dev/roof_network_preview.gd atlas
-src/dev/roof_network_preview.gd footprint
-src/dev/roof_network_preview.gd roof_object_parent
-src/dev/roof_scale_preview.gd atlas
-src/dev/roof_scale_preview.gd footprint
-src/dev/roof_scale_preview.gd roof_object_parent
-
 # [City] src/city/city.gd
 src/main.gd atlas
 src/main.gd frame_timing

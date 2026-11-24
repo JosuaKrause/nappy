@@ -29,12 +29,13 @@ func _ready() -> void:
 
 	for index in 6:
 		var building := Building.new()
-		building.atlas = _atlas
+		building.equip(_atlas, RoofDrawer.new(_atlas), FrontDrawer.new(_atlas))
+		building.residence().set_resident(true)
 		building.name = "ReviewRoof%d" % index
 		building.position = Vector2(224 + (index % 3) * 416, 336 + (index / 3) * 352)
-		building.footprint = Vector2(320 - (index % 3) * 32, 256)
-		building.draw_as(GameEnums.BlockPurpose.INDUSTRIAL, index, 64)
-		building.roof_object_parent = _entities
+		building.stand_on(Rect2i(), Vector2(320 - (index % 3) * 32, 256), index,
+				GameEnums.BlockPurpose.INDUSTRIAL, 64)
+		building.put_roof_objects_in(_entities)
 		_buildings.add_child(building)
 		if index == 5:
 			_vertical_fixture(building)

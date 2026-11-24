@@ -24,8 +24,8 @@ func run(t: TestRunner) -> void:
 func _roof(t: TestRunner, footprint: Vector2, height: float, district: int,
 		drawer: RoofDrawer = null) -> Building:
 	var building := Building.new()
-	building.footprint = footprint
-	building.draw_as(district as GameEnums.BlockPurpose, building.look_variant(), height)
+	building.stand_on(Rect2i(), footprint, building.look_variant(), district as GameEnums.BlockPurpose,
+			height)
 	if drawer != null:
 		var atlas := AtlasLibrary.new()
 		building.equip(atlas, drawer, FrontDrawer.new(atlas))
@@ -78,6 +78,7 @@ func _test_authored_fixtures_replace_the_roll(t: TestRunner) -> void:
 	building.free()
 
 func _displayed_reservations(t: TestRunner) -> void:
+	var none: Array[int] = []
 	for fixture: Array in [
 		[GameEnums.BlockPurpose.CIVIC, "service_bulkhead"],
 		[GameEnums.BlockPurpose.CIVIC, "skylight_a"],
@@ -90,7 +91,7 @@ func _displayed_reservations(t: TestRunner) -> void:
 				"current production fixtures pass the public recipe schema")
 		t.check(building.author_roof_furniture(valid).is_empty(),
 				"wide fixture fits the last two interior columns")
-		var authored := RoofReads.units_of(building)
+		var authored := RoofReads.units_of(building, none, building)
 		var cells: Array[Vector2i] = authored[0].cells if authored.size() == 1 else ([] as Array[Vector2i])
 		t.check(authored.size() == 1 and authored[0].span == 2 and cells.has(Vector2i(6, 1)),
 				"displayed fixture reserves its full base including the east cell")
@@ -103,12 +104,12 @@ func _displayed_reservations(t: TestRunner) -> void:
 			[valid[0], {"cell": [6, 1], "kind": fixture[1]}]]:
 			t.check(not building.author_roof_furniture(invalid).is_empty(),
 					"wide fixtures reject edge overflow and east-cell overlap")
-			t.check(RoofReads.units_of(building) == authored,
+			t.check(RoofReads.units_of(building, none, building) == authored,
 					"failed width validation leaves the complete authored roof unchanged")
 		building.residence().set_resident(false)
 		building.residence().set_resident(true)
 		var standing := _roof_objects_on(building)
-		t.check(RoofReads.units_of(building) == authored and standing.size() == 1
+		t.check(RoofReads.units_of(building, none, building) == authored and standing.size() == 1
 				and standing[0].texture_key == authored[0].texture,
 				"streaming preserves the enlarged or wide fixture reservation")
 		t.check(building.author_roof_furniture([]).is_empty()

@@ -210,16 +210,17 @@ func _test_industrial_networks_fit_and_connect(t: TestRunner) -> void:
 	var building: Building = fixture["building"]
 	var signatures := {}
 	var branched := false
+	var extension: Array[int] = [0, 0, 1, 3, 3, 1, 0, 0]
 	for variant in 40:
 		building.draw_as(building.district(), variant, building.height())
-		building.roof_extension_rows = [0, 0, 1, 3, 3, 1, 0, 0]
+		building.extend_roof_over(extension)
 		var layout := drawer.layout()
 		var network := {}
 		var used := {}
 		var signature := ""
 		for entry: Dictionary in layout:
 			for cell: Vector2i in entry["cells"]:
-				t.check(RoofReads.on_the_interior(building, cell) and not used.has(cell),
+				t.check(RoofReads.on_the_interior(building, extension, cell) and not used.has(cell),
 						"every duct and equipment foot fits free interior roof, extensions included")
 				used[cell] = true
 			if entry.has("links"):
@@ -280,9 +281,11 @@ func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
 	var vertical := false
+	var unextended: Array[int] = []
 	for size: Vector2 in [Vector2(96, 448), Vector2(128, 128), Vector2(160, 192),
 			Vector2(288, 160), Vector2(192, 320)]:
-		building.footprint = size
+		building.stand_on(building.lot_rect(), size, building.look_variant(), building.district(),
+				building.height())
 		for variant in 12:
 			building.draw_as(building.district(), variant, building.height())
 			var layout := drawer.layout()
@@ -290,7 +293,7 @@ func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 			var network := {}
 			for entry: Dictionary in layout:
 				for cell: Vector2i in entry["cells"]:
-					t.check(RoofReads.on_the_interior(building, cell) and not occupied.has(cell),
+					t.check(RoofReads.on_the_interior(building, unextended, cell) and not occupied.has(cell),
 							"narrow and shallow roofs never reserve a lip, absent cell or occupied base")
 					occupied[cell] = true
 				if entry.has("links"):
@@ -299,7 +302,7 @@ func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 				vertical = true
 				for links: int in network.values():
 					t.check((links & 3) == 0, "a one-column network uses only north/south links")
-			if building.columns() >= 3 and RoofReads.tallest_of(building) >= 3:
+			if building.columns() >= 3 and RoofReads.tallest_of(building, unextended) >= 3:
 				t.check(layout.size() > network.size(),
 						"narrow and shallow roof layouts retain ordinary compact equipment")
 	t.check(vertical, "the narrow fixture exercises a generated purely vertical network")
@@ -324,8 +327,10 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t: TestRunner) -> v
 			var wide_fixture := _new_fixture(t, district, wide_drawer)
 			var narrow: Building = narrow_fixture["building"]
 			var wide: Building = wide_fixture["building"]
-			narrow.footprint = pair[0] * Building.TILE
-			wide.footprint = pair[1] * Building.TILE
+			narrow.stand_on(narrow.lot_rect(), pair[0] * Building.TILE, narrow.look_variant(),
+					narrow.district(), narrow.height())
+			wide.stand_on(wide.lot_rect(), pair[1] * Building.TILE, wide.look_variant(),
+					wide.district(), wide.height())
 			var cells := _interior_cells(narrow)
 			t.check(cells > 0 and cells == _interior_cells(wide),
 					"the two roofs offer as many interior cells (%d)" % cells)

@@ -36,8 +36,8 @@ func _ready() -> void:
 	_roof.real = RoofDrawer.new(_atlas)
 	_building = Building.new()
 	_building.equip(_atlas, _roof, FrontDrawer.new(_atlas))
-	_building.footprint = Vector2(192, 192)
-	_building.draw_as(GameEnums.BlockPurpose.INDUSTRIAL, _building.look_variant(), 64)
+	_building.stand_on(Rect2i(), Vector2(192, 192), _building.look_variant(),
+			GameEnums.BlockPurpose.INDUSTRIAL, 64)
 	_building.position = Vector2(205, 438)
 	_building.scale = Vector2.ONE * 1.7
 	_fixtures.add_child(_building)
