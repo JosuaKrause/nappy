@@ -13,8 +13,9 @@ extends RefCounted
 ## then `EventManager.setup()`, as the escape's building is set up), so its own tick hands every
 ## instance where she is, steps them, starts the hold and releases it, and hers runs the input
 ## lock down and moves her camera; a finger is a touch pushed through the viewport. The
-## street-door rigs further down stand a real city's door and call the controller's public frame
-## methods (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
+## street-door rigs further down stand a real city's door and let its manager tick as well, with
+## her moved in each tick. Door bodies are stood as a scene recipe's walk stands its plans
+## (`EventManager.start_recipe()`), all of a case's at once.
 
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const HaloRig := preload("res://tests/halo_rig.gd")
@@ -37,6 +38,20 @@ const WAIT_SCALE := 3.0
 const TOLL_TOLERANCE := 1.5
 
 var _maps: Array[CityMap] = []
+
+## A stroller that records where the door puts her down: the manager carries
+## `CheckpointController.lets_her_out` out as `Stroller.teleport_to()`.
+class RecordingStroller extends Stroller:
+	var _set_down: Array[Vector2] = []
+
+	## Overrides Stroller.teleport_to.
+	func teleport_to(where: Vector2) -> void:
+		_set_down.append(where)
+		super(where)
+
+	## Every point `teleport_to()` was asked for, in order.
+	func set_down() -> Array[Vector2]:
+		return _set_down
 
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
@@ -68,13 +83,14 @@ func run(t: TestRunner) -> void:
 	_test_the_release_latch(t)
 	await _test_walking_back_redetains_her(t)
 	await _test_the_chatting_mother_still_detains_once(t)
+	await _test_a_running_hold_begins_no_other_beside_a_post(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
 	await _test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
 	await _test_walking_under_the_boom_sets_a_guard_on_her(t)
-	_test_the_guard_who_warned_is_the_guard_who_comes(t)
+	await _test_the_guard_who_warned_is_the_guard_who_comes(t)
 	_test_the_guard_leaves_room_to_answer(t)
-	_test_a_walk_under_the_boom_is_seen(t)
+	await _test_a_walk_under_the_boom_is_seen(t)
 	await _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 	await _test_a_huts_hold_ends_the_door_guards_chase(t)
 	await _test_a_hold_at_the_guards_own_hut_ends_it_too(t)
@@ -599,8 +615,18 @@ func _free_manager(manager: EventManager) -> void:
 	manager.free()
 
 func _real_stroller(t: TestRunner) -> Stroller:
+	return _stroller_with(t, null)
+
+## The real stroller scene with a recording script on it: it keeps the scene's camera and body and
+## answers where the door put her down (`set_down()`).
+func _recording_stroller(t: TestRunner) -> RecordingStroller:
+	return _stroller_with(t, RecordingStroller) as RecordingStroller
+
+func _stroller_with(t: TestRunner, script: Script) -> Stroller:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
+	if script != null:
+		stroller.set_script(script)
 	t.add_child(stroller)
 	t.check(stroller.get_node_or_null("CollisionShape2D") != null,
 			"the real stroller scene carries a CollisionShape2D")
@@ -617,22 +643,36 @@ func _real_stroller(t: TestRunner) -> Stroller:
 ## day's start call), as a day's plan would be. A gate's `gate_state` is the plan's, as the planner
 ## hands it. `age` and `route` are the plan's: where its instance arrives in its life, and the path
 ## a mover walks.
-func _door_instance(manager: EventManager, id: String, at: Vector2, face: Vector2,
-		gate_state: GateState = null, age := 0.0,
-		route := PackedVector2Array()) -> EventInstance:
-	return _planned_instance(manager, EventCatalogue.by_id(id), at, face, gate_state, age, route)
+func _door_plan(id: String, at: Vector2, face: Vector2, gate_state: GateState = null,
+		age := 0.0, route := PackedVector2Array()) -> EventPlan:
+	return _plan_of(EventCatalogue.by_id(id), at, face, gate_state, age, route)
 
-## `_door_instance()` for a row that is not in the catalogue as it stands (a heated copy of one).
-func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: Vector2,
-		gate_state: GateState = null, age := 0.0,
-		route := PackedVector2Array()) -> EventInstance:
+## `_door_plan()` for a row that is not in the catalogue as it stands (a heated copy of one).
+func _plan_of(def: EventDef, at: Vector2, face: Vector2, gate_state: GateState = null,
+		age := 0.0, route := PackedVector2Array()) -> EventPlan:
 	var plan := EventPlan.new(def, at, route)
 	plan.face(face)
 	plan.stand_as_the_boom_of(gate_state)
 	plan.arrive_aged(age)
-	manager.streaming.add(plan)
-	manager.stream_around(at)
-	return manager.event_of(plan)
+	return plan
+
+## Starts a walk holding `plans`, as a scene recipe's runtime does (`EventManager.start_recipe()`:
+## the plans taken as a walk planned whole, their bodies recorded, nothing the director would send),
+## streamed round the first one, and answers each plan's live instance, in order. A walk started
+## again clears what the one before stood, so every body a case needs is handed in at once.
+func _stand(manager: EventManager, plans: Array[EventPlan]) -> Array[EventInstance]:
+	var day := Tuning.REGION_WALL_FIRST_DAY
+	manager.start_recipe(plans, DaySpec.for_day(day), day, plans[0].placed_at())
+	var stood: Array[EventInstance] = []
+	for plan in plans:
+		stood.append(manager.event_of(plan))
+	return stood
+
+## One body of a door stood alone: `_stand()` of a single plan.
+func _door_instance(manager: EventManager, id: String, at: Vector2, face: Vector2,
+		gate_state: GateState = null, age := 0.0,
+		route := PackedVector2Array()) -> EventInstance:
+	return _stand(manager, [_door_plan(id, at, face, gate_state, age, route)] as Array[EventPlan])[0]
 
 ## A whole street door across an east-west street at (5200, 5200) — the northern hut, the gate and
 ## the southern hut, a tile apart across the street, the geometry `RegionPlanner._add_door_bodies`
@@ -644,10 +684,10 @@ func _door_rig(t: TestRunner, gate_state: GateState = null) -> Dictionary:
 	manager.use_player(stroller)
 	var axis := Vector2.RIGHT
 	var road := Vector2(5200.0, 5200.0)
-	var doors: Array[EventInstance] = [
-		_door_instance(manager, "checkpoint_hut", road - Vector2(0.0, 64.0), axis),
-		_door_instance(manager, "checkpoint_gate", road, axis, gate_state),
-		_door_instance(manager, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)]
+	var doors := _stand(manager, [
+		_door_plan("checkpoint_hut", road - Vector2(0.0, 64.0), axis),
+		_door_plan("checkpoint_gate", road, axis, gate_state),
+		_door_plan("checkpoint_hut", road + Vector2(0.0, 64.0), axis)] as Array[EventPlan])
 	return {"manager": manager, "stroller": stroller, "doors": doors}
 
 func _free_door_rig(rig: Dictionary) -> void:
@@ -667,7 +707,7 @@ func _pass_the_hold(t: TestRunner, seconds: float) -> void:
 ## trigger. See `CheckpointController._release_finished_holds()`.
 func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 	var manager := _manager(t)
-	var stroller := _real_stroller(t)
+	var stroller := _recording_stroller(t)
 	manager.use_player(stroller)
 
 	var axis := Vector2.RIGHT
@@ -680,8 +720,7 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 	stroller.global_position = entry
 	# Where the door puts her down, as it says it (`CheckpointController.lets_her_out`, which the
 	# manager carries out on her), before her own tick moves her off it.
-	var set_down: Array[Vector2] = []
-	manager.checkpoints.lets_her_out.connect(func(at: Vector2) -> void: set_down.append(at))
+	var set_down := stroller.set_down()
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(stroller.is_detained(), "coming inside the hold's own trigger locks her input")
 	t.check(hut.is_chatting(), "and starts a conversation")
@@ -860,10 +899,13 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 
 	var axis := Vector2.RIGHT
 	var centre := Vector2(5200.0, 5200.0)
-	var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
 	# Past its own telegraph, so the field it is standing there with is the field it declares.
-	var loud := _door_instance(manager, "loudspeaker", centre + Vector2(0.0, 72.0), axis, null,
-			EventCatalogue.by_id("loudspeaker").telegraphs_for() + 1.0)
+	var stood := _stand(manager, [
+		_door_plan("checkpoint_hut", centre, axis),
+		_door_plan("loudspeaker", centre + Vector2(0.0, 72.0), axis, null,
+				EventCatalogue.by_id("loudspeaker").telegraphs_for() + 1.0)] as Array[EventPlan])
+	var hut := stood[0]
+	var loud := stood[1]
 
 	var entry := centre + axis * 60.0
 	stroller.global_position = entry
@@ -921,13 +963,14 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 
 	var here := Vector2(6400.0, 6400.0)
-	var kit: Array[EventInstance] = []
+	var kit_plans: Array[EventPlan] = []
 	for i in 3:
-		kit.append(_door_instance(manager, "checkpoint_post",
+		kit_plans.append(_door_plan("checkpoint_post",
 				here + Vector2(-56.0, -32.0 + i * 32.0), axis, null,
 				EventCatalogue.by_id("checkpoint_post").telegraphs_for() + 1.0))
-	kit.append(_door_instance(manager, "checkpoint_hut", here + Vector2(0.0, 54.0), axis))
-	kit.append(_door_instance(manager, "checkpoint_gate", here + Vector2(64.0, 54.0), axis))
+	kit_plans.append(_door_plan("checkpoint_hut", here + Vector2(0.0, 54.0), axis))
+	kit_plans.append(_door_plan("checkpoint_gate", here + Vector2(64.0, 54.0), axis))
+	var kit := _stand(manager, kit_plans)
 
 	# She walks in at the middle of the kit, is held and let out, and is left standing where the
 	# release sets her down: inside the fields of several of the boundary's bodies, latched against
@@ -995,20 +1038,23 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 ## back in.
 func _test_a_corner_of_two_doors_is_one_toll(t: TestRunner) -> void:
 	var manager := _manager(t)
-	var stroller := _real_stroller(t)
+	var stroller := _recording_stroller(t)
 	manager.use_player(stroller)
 
 	# One door across an east-west street, and the corner door across the north-south street it
 	# meets — its own huts facing along the other axis, the geometry `RegionPlanner._along_axis()`
 	# gives a crossing on each.
 	var corner := Vector2(6800.0, 6800.0)
-	var near_hut := _door_instance(manager, "checkpoint_hut", corner, Vector2.RIGHT)
-	var cross_hut := _door_instance(manager, "checkpoint_hut", corner + Vector2(0.0, -48.0), Vector2.DOWN)
-	var cross_gate := _door_instance(manager, "checkpoint_gate", corner + Vector2(0.0, -80.0), Vector2.DOWN)
+	var corner_doors := _stand(manager, [
+		_door_plan("checkpoint_hut", corner, Vector2.RIGHT),
+		_door_plan("checkpoint_hut", corner + Vector2(0.0, -48.0), Vector2.DOWN),
+		_door_plan("checkpoint_gate", corner + Vector2(0.0, -80.0), Vector2.DOWN)] as Array[EventPlan])
+	var near_hut := corner_doors[0]
+	var cross_hut := corner_doors[1]
+	var cross_gate := corner_doors[2]
 
 	stroller.global_position = corner + Vector2.RIGHT * 60.0
-	var set_down: Array[Vector2] = []
-	manager.checkpoints.lets_her_out.connect(func(at: Vector2) -> void: set_down.append(at))
+	var set_down := stroller.set_down()
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(near_hut.is_chatting(), "walking into the near hut starts one hold")
 	t.check(not cross_hut.is_chatting() and not cross_gate.is_chatting(),
@@ -1561,9 +1607,13 @@ func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 
 	var axis := Vector2.RIGHT
 	var road := Vector2(5600.0, 5600.0)
-	var hut := _door_instance(manager, "checkpoint_hut", road - Vector2(0.0, 64.0), axis)
-	var gate := _door_instance(manager, "checkpoint_gate", road, axis)
-	var far_hut := _door_instance(manager, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)
+	var street_door := _stand(manager, [
+		_door_plan("checkpoint_hut", road - Vector2(0.0, 64.0), axis),
+		_door_plan("checkpoint_gate", road, axis),
+		_door_plan("checkpoint_hut", road + Vector2(0.0, 64.0), axis)] as Array[EventPlan])
+	var hut := street_door[0]
+	var gate := street_door[1]
+	var far_hut := street_door[2]
 
 	# Walking east along the northern pavement, stopped where the hut's own body stops her.
 	var heading := Vector2.RIGHT
@@ -1691,10 +1741,10 @@ func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t: TestRunn
 
 		var axis := Vector2.RIGHT
 		var road := Vector2(5200.0, 5200.0)
-		var doors: Array[EventInstance] = [
-			_door_instance(manager, "checkpoint_hut", road - Vector2(0.0, 64.0), axis),
-			_door_instance(manager, "checkpoint_gate", road, axis),
-			_door_instance(manager, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)]
+		var doors := _stand(manager, [
+			_door_plan("checkpoint_hut", road - Vector2(0.0, 64.0), axis),
+			_door_plan("checkpoint_gate", road, axis),
+			_door_plan("checkpoint_hut", road + Vector2(0.0, 64.0), axis)] as Array[EventPlan])
 		var caught_by := doors[0]
 		var entry := road + from_road
 
@@ -1797,8 +1847,8 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(6000.0, 6000.0)
-	var mother := _planned_instance(manager, def, at, Vector2.RIGHT, null, 0.0,
-			PackedVector2Array([at, at + Vector2(256.0, 0.0)]))
+	var mother := _stand(manager, [_plan_of(def, at, Vector2.RIGHT, null, 0.0,
+			PackedVector2Array([at, at + Vector2(256.0, 0.0)]))] as Array[EventPlan])[0]
 
 	stroller.global_position = at
 	await PhysicsTicks.pass_ticks(t, 1)
@@ -1815,6 +1865,34 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 
 	stroller.free()
 	_free_manager(manager)
+
+## **One hold at a time, whatever the rows**: with a conversation already running (a chatting
+## mother's), a post she walks into begins none of its own
+## (`CheckpointController.hold_that_would_begin()`, which `EncounterWatch` is handed). Without the
+## running conversation the same post takes her in, so the first half is not vacuous.
+func _test_a_running_hold_begins_no_other_beside_a_post(t: TestRunner) -> void:
+	for another_runs: bool in [false, true]:
+		var manager := _manager(t)
+		var stroller := _real_stroller(t)
+		manager.use_player(stroller)
+		var at := Vector2(6000.0, 6000.0)
+		var stood := _stand(manager, [
+			_plan_of(EventCatalogue.by_id("chatting_mother"), at, Vector2.RIGHT, null, 0.0,
+					PackedVector2Array([at, at + Vector2(256.0, 0.0)])),
+			_door_plan("checkpoint_post", at + Vector2(0.0, 500.0), Vector2.RIGHT)
+		] as Array[EventPlan])
+		var mother := stood[0]
+		var post := stood[1]
+		if another_runs:
+			mother.start_chat()
+		stroller.global_position = post.global_position + Vector2(0.0, post.detain_distance() - 2.0)
+		await PhysicsTicks.pass_ticks(t, 2)
+		t.check(post.is_chatting() != another_runs,
+				"inside a post's reach with %s, the post %s" % [
+				"another hold running" if another_runs else "no other hold",
+				"begins none" if another_runs else "takes her in"])
+		stroller.free()
+		_free_manager(manager)
 
 # ------------------------------------------------------------------------ the gate ---
 
@@ -1966,10 +2044,10 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 
 	var axis := Vector2.RIGHT
 	var centre := Vector2(7000.0, 7000.0)
-	var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
 	var gate := GateState.new(centre + Vector2(0.0, 64.0))
 	gate.set_boom_up(true)
-	_door_instance(manager, "checkpoint_gate", gate.ground_point(), axis, gate)
+	var hut := _stand(manager, [_door_plan("checkpoint_hut", centre, axis),
+			_door_plan("checkpoint_gate", gate.ground_point(), axis, gate)] as Array[EventPlan])[0]
 
 	stroller.global_position = centre - axis * 60.0
 	await PhysicsTicks.pass_ticks(t, 1)
@@ -2006,20 +2084,27 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	var huts: Array[EventInstance] = []
 	if not plan.gate_states().is_empty():
 		state = plan.gate_states()[0]
+		# The planner's own plans, with their facing and the door's shared boom state, taken as a
+		# door day takes them: the gate's and the two huts on its line, in one walk.
+		var gate_plan: EventPlan = null
 		for body in plan.door_plans():
 			if body.gate() == state:
-				# The planner's own plan, put in by the city's streaming with its facing and the
-				# door's shared boom state, as a door day puts it in.
-				RunCity.events(city).streaming.add(body)
-				RunCity.events(city).stream_around(body.placed_at())
-				gate = RunCity.events(city).event_of(body)
-		for body in plan.door_plans():
-			if gate and body.row_id() == "checkpoint_hut" \
-					and absf((body.placed_at() - gate.global_position).dot(body.faces())) <= 1.0:
-				RunCity.events(city).streaming.add(body)
-				RunCity.events(city).stream_around(body.placed_at())
+				gate_plan = body
+		var hut_plans: Array[EventPlan] = []
+		if gate_plan:
+			for body in plan.door_plans():
+				if body.row_id() == "checkpoint_hut" and absf(
+						(body.placed_at() - gate_plan.placed_at()).dot(body.faces())) <= 1.0:
+					hut_plans.append(body)
+			var bodies: Array[EventPlan] = [gate_plan]
+			bodies.append_array(hut_plans)
+			_stand(RunCity.events(city), bodies)
+			gate = RunCity.events(city).event_of(gate_plan)
+			for body in hut_plans:
 				huts.append(RunCity.events(city).event_of(body))
 	var stroller := _real_stroller(t)
+	# Only the tests move her.
+	stroller.set_physics_process(false)
 	RunCity.events(city).use_player(stroller)
 	RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)
 	t.check(gate != null and huts.size() == 2,
@@ -2030,11 +2115,17 @@ func _free_street_door_rig(rig: Dictionary) -> void:
 	(rig["stroller"] as Stroller).free()
 	(rig["city"] as City).free()
 
-## Puts her at `at` and has the manager look at the door lines, the once-a-frame check its physics
-## tick runs.
-func _step_her_to(rig: Dictionary, at: Vector2) -> void:
+## Puts her at `at` and lets one physics tick of the city's manager pass (`_ticks()`), whose
+## door steps look at her there.
+func _step_her_to(t: TestRunner, rig: Dictionary, at: Vector2) -> void:
 	(rig["stroller"] as Stroller).global_position = at
-	RunCity.events((rig["city"] as City)).checkpoints.watch_the_door_lines()
+	await _ticks(t, 1)
+
+## `ticks` physics ticks of the manager, each stepping the game by `STEP`
+## (`PhysicsTicks.pass_ticks_faster()`).
+func _ticks(t: TestRunner, ticks: int) -> void:
+	await PhysicsTicks.pass_ticks_faster(t, ticks, PhysicsTicks.FASTER, Callable(),
+			STEP * Engine.physics_ticks_per_second)
 
 ## How many walks across a door's line the run log told of: the `checkpoint` line
 ## `CheckpointController.watch_the_door_lines()` writes for each, none for a release through it.
@@ -2065,39 +2156,38 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var across := Vector2(-axis.y, axis.x)
 	(rig["state"] as GateState).set_boom_up(true)
 	var lane := gate.global_position + across * 16.0
-	_step_her_to(rig, lane - axis * 20.0)
-	_step_her_to(rig, lane - axis * 2.0)
+	await _step_her_to(t, rig, lane - axis * 20.0)
+	await _step_her_to(t, rig, lane - axis * 2.0)
 	t.check(_walks_under(walks_told) == 0, "walking up to the line is nothing")
-	_step_her_to(rig, lane + axis * 20.0)
+	await _step_her_to(t, rig, lane + axis * 20.0)
 	t.check(_walks_under(walks_told) == 1, "walking across it under the boom is one")
-	_step_her_to(rig, lane - axis * 20.0)
+	await _step_her_to(t, rig, lane - axis * 20.0)
 	t.check(_walks_under(walks_told) == 2, "and walking back under it is another")
 
 	var before := _walks_under(walks_told)
 	var hut := huts[0]
 	var side := (hut.global_position - gate.global_position).normalized()
-	_step_her_to(rig, hut.global_position - axis * 60.0 + side * 8.0)
-	RunCity.events(city).checkpoints.check_detentions()
+	await _step_her_to(t, rig, hut.global_position - axis * 60.0 + side * 8.0)
 	t.check(hut.is_chatting(), "walking up the sidewalk to a hut starts its inspection")
-	for i in int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 5:
-		hut.step(STEP)
-		RunCity.events(city).checkpoints.watch_the_door_lines()
-		RunCity.events(city).checkpoints.check_detentions()
+	await _ticks(t, int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 5)
 	var released := (rig["stroller"] as Stroller).global_position
 	t.check((released - hut.global_position).dot(axis) > 0.0, "the release sets her across the line")
-	RunCity.events(city).checkpoints.watch_the_door_lines()
+	await _ticks(t, 1)
 	t.check(_walks_under(walks_told) == before,
 			"and being let through is not a walk under (%d, %d before)"
 			% [_walks_under(walks_told), before])
 	_free_street_door_rig(rig)
 
-## Holds her where she is for `seconds`, the door's lines watched every frame at `STEP` and its
-## hands raised as the game raises them.
-func _stand_for(rig: Dictionary, seconds: float) -> void:
-	var city: City = rig["city"]
-	for i in int(round(seconds / STEP)):
-		RunCity.events(city).checkpoints.warn_at_the_doors()
-		RunCity.events(city).checkpoints.watch_the_door_lines(STEP)
+## Ticks until `done` answers true or `at_most` ticks have passed.
+func _ticks_until(t: TestRunner, done: Callable, at_most: int) -> void:
+	await PhysicsTicks.pass_ticks_faster(t, at_most, PhysicsTicks.FASTER,
+			func(_ran: int) -> bool: return done.call() as bool,
+			STEP * Engine.physics_ticks_per_second)
+
+## Holds her where she is for `seconds` of ticks at `STEP`, the door's hands raised and its lines
+## watched as the manager's tick does.
+func _stand_for(t: TestRunner, rig: Dictionary, seconds: float) -> void:
+	await _ticks(t, int(round(seconds / STEP)))
 
 ## **A walk under the boom warns first, on a clock: going back calls it off, staying across sets
 ## the guard on her.** *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One
@@ -2128,28 +2218,28 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
 	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
-	_step_her_to(rig, lane - axis * 20.0)
-	_stand_for(rig, 0.5)
+	await _step_her_to(t, rig, lane - axis * 20.0)
+	await _stand_for(t, rig, 0.5)
 	t.check(not near_hut.is_its_guard_warning() and not far_hut.is_its_guard_warning(),
 			"walking up to the raised boom, no guard raises his hand")
 	var warned: Array[String] = []
 	var on_warned := func(id: String) -> void: warned.append(id)
 	EventBus.pursuit_warned.connect(on_warned)
 	# Across, and back before the warning runs: called off.
-	_step_her_to(rig, lane + axis * 20.0)
-	_stand_for(rig, CheckpointController.CROSSING_WARNING * 0.5)
+	await _step_her_to(t, rig, lane + axis * 20.0)
+	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING * 0.5)
 	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"the frame she crosses, the guard across the road raises his hand")
 	t.check(_door_guard_after_her(RunCity.events(city)) == null, "and nobody is after her yet")
-	_step_her_to(rig, lane - axis * 20.0)
-	_stand_for(rig, CheckpointController.CROSSING_WARNING * 2.0)
+	await _step_her_to(t, rig, lane - axis * 20.0)
+	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING * 2.0)
 	t.check(_door_guard_after_her(RunCity.events(city)) == null and not far_hut.is_its_guard_warning(),
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
-	_step_her_to(rig, lane + axis * 20.0)
-	_stand_for(rig, CheckpointController.CROSSING_WARNING - 0.1)
+	await _step_her_to(t, rig, lane + axis * 20.0)
+	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING - 0.1)
 	t.check(_door_guard_after_her(RunCity.events(city)) == null, "staying across, nobody comes before it runs")
-	_stand_for(rig, 0.2)
+	await _stand_for(t, rig, 0.2)
 	EventBus.pursuit_warned.disconnect(on_warned)
 	t.check(warned == ["door_guard", "door_guard"],
 			"and the page counts each crossing's warning once (%s)" % [warned])
@@ -2169,8 +2259,8 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 		t.check(not far_hut.is_gone() and not far_hut.is_its_guard_inside(),
 				"while the hut and its own guard stay where they are")
 	var walks := _walks_under(walks_told)
-	_step_her_to(rig, lane - axis * 20.0)
-	_stand_for(rig, CheckpointController.CROSSING_WARNING + 0.2)
+	await _step_her_to(t, rig, lane - axis * 20.0)
+	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING + 0.2)
 	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(RunCity.events(city)) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
@@ -2197,17 +2287,19 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
 	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
-	_step_her_to(rig, lane - axis * 20.0)
-	_step_her_to(rig, lane + axis * 20.0)
-	_stand_for(rig, 0.5)
+	await _step_her_to(t, rig, lane - axis * 20.0)
+	await _step_her_to(t, rig, lane + axis * 20.0)
+	await _stand_for(t, rig, 0.5)
 	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"crossing in the near lane, the guard across the road raises his hand")
-	var far_lane := gate.global_position - across * 60.0 + axis * 20.0
-	_step_her_to(rig, far_lane)
+	var far_lane := gate.global_position - across * 8.0 + axis * 20.0
+	await _step_her_to(t, rig, far_lane)
 	t.check(far_lane.distance_to(near_hut.global_position)
 			> far_lane.distance_to(far_hut.global_position),
 			"walked on to the far lane, the hut that warned her is now the nearer one")
-	_stand_for(rig, CheckpointController.CROSSING_WARNING)
+	# Until the guard is set on her, so that he is read where he steps out, before his first step.
+	await _ticks_until(t, func() -> bool: return _door_guard_after_her(RunCity.events(city)) != null,
+			int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
 			<= far_hut.row().obstructs_within() + 0.5,
@@ -2318,12 +2410,9 @@ func _guard_after_her_rig(t: TestRunner) -> Dictionary:
 	var axis := doors[0].facing_now()
 	var lane := doors[1].global_position + Vector2(-axis.y, axis.x) * 16.0
 	stroller.teleport_to(lane - axis * 20.0)
-	manager.checkpoints.watch_the_door_lines()
+	await _ticks(t, 1)
 	stroller.global_position = lane + axis * 20.0
-	manager.checkpoints.watch_the_door_lines()
-	for i in int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 1:
-		manager.checkpoints.warn_at_the_doors()
-		manager.checkpoints.watch_the_door_lines(STEP)
+	await _ticks(t, int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 2)
 	var guard := _door_guard_after_her(manager)
 	assert(guard != null, "the crossing's guard is in the world")
 	rig["doors"] = doors
@@ -2338,7 +2427,7 @@ func _free_guard_after_her_rig(rig: Dictionary) -> void:
 ## during the hold or after it.** She walks up to the far hut, never the one he stepped out of, and
 ## his chase ends exactly as it does when she outruns him.
 func _test_a_huts_hold_ends_the_door_guards_chase(t: TestRunner) -> void:
-	var rig := _guard_after_her_rig(t)
+	var rig := await _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
 	var doors: Array[EventInstance] = rig["doors"]
@@ -2363,7 +2452,7 @@ func _test_a_huts_hold_ends_the_door_guards_chase(t: TestRunner) -> void:
 ## **His own hut counts too.** "Any hut counts, the one he came out of included" — walking back into
 ## the hut he stepped out of is still a voluntary inspection, so it ends his chase the same way.
 func _test_a_hold_at_the_guards_own_hut_ends_it_too(t: TestRunner) -> void:
-	var rig := _guard_after_her_rig(t)
+	var rig := await _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
 	var doors: Array[EventInstance] = rig["doors"]
@@ -2388,7 +2477,7 @@ func _test_a_hold_at_the_guards_own_hut_ends_it_too(t: TestRunner) -> void:
 ## follows a fixed path rather than `EventPursuit` and never carries a `PursuitSpec`,
 ## so it has no give-up state to reach in the first place.)
 func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
-	var rig := _guard_after_her_rig(t)
+	var rig := await _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
 	var doors: Array[EventInstance] = rig["doors"]
@@ -2397,7 +2486,7 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	t.check(hot.pursues() and hot.ends_the_day(), "the heated roadblock hunts like any other pursuer")
 	var axis := far_hut.facing_now()
-	var road_guard := _planned_instance(manager, hot, far_hut.global_position + axis * 200.0, axis)
+	var road_guard := manager.spawn_extra(hot, far_hut.global_position + axis * 200.0)
 
 	stroller.global_position = road_guard.global_position + Vector2(0.0, 2000.0)
 	await PhysicsTicks.pass_ticks(t, 1)
@@ -2426,7 +2515,7 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 	var hut := doors[0]
 	var axis := hut.facing_now()
 	var her := hut.global_position - axis * 40.0 + Vector2(0.0, 16.0)
-	var robber := _door_instance(manager, "robber_giving_chase", her - axis * 200.0, axis)
+	var robber := manager.spawn_extra(EventCatalogue.by_id("robber_giving_chase"), her - axis * 200.0)
 
 	stroller.global_position = her
 	await PhysicsTicks.pass_ticks(t, 1)
@@ -2453,7 +2542,7 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 ## nowhere near a hut catches her as it always did, `CheckpointController.check_detentions()`
 ## running every frame beside it and finding nothing to hold her for.
 func _test_a_chase_with_no_hold_still_catches(t: TestRunner) -> void:
-	var rig := _guard_after_her_rig(t)
+	var rig := await _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
 	var guard: EventInstance = rig["guard"]

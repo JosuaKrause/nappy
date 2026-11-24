@@ -13,12 +13,12 @@ extends "res://tests/resistance_rig.gd"
 ## day's events.
 
 func run(t: TestRunner) -> void:
-	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
+	await _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
 	await _test_standing_at_the_door_completes_nothing(t)
-	_test_a_crossing_taken_back_does_not_do_day_nine(t)
-	_test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t)
-	_test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t)
-	_test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
+	await _test_a_crossing_taken_back_does_not_do_day_nine(t)
+	await _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t)
+	await _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t)
+	await _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
 	await _test_the_frames_see_a_crossing(t)
 	_free_city()
 
@@ -77,7 +77,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		for body in _city.streets().region_plan().door_plans():
 			if body.is_a_boom() \
 					and body.placed_at().distance_to(_door_position(director)) > 200.0:
-				_walk_through(body.placed_at(), body.faces(), direction, player)
+				await _walk_through(t, body.placed_at(), body.faces(), direction, player)
 				break
 		t.check(_walks_under(walks_told) > walked_before,
 				"another district door's line was walked through")
@@ -91,7 +91,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 				"the other door's walk under set its own guard on her")
 		if first_guard:
 			first_guard.give_up_the_chase()
-		_walk_through(_door_position(director), _door_axis(director), direction, player)
+		await _walk_through(t, _door_position(director), _door_axis(director), direction, player)
 		if director.contact().is_done:
 			crossings += 1
 		t.check(_robber_after_her(events) == null
@@ -154,21 +154,19 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t: TestRunner) -> void:
 			continue
 		var at := _door_position(director)
 		var axis := _door_axis(director)
-		_step_to(player, at - axis * 40.0 * direction, true)
-		_step_to(player, at + axis * 40.0 * direction)
-		t.check(_a_guard_warns_her(events), "walking under the named boom starts its warning")
-		for i in int(round(CheckpointController.CROSSING_WARNING * 0.5 / STEP)):
-			events.checkpoints.watch_the_door_lines(STEP)
+		await _step_to(t, player, at - axis * 40.0 * direction, true)
+		await _step_to(t, player, at + axis * 40.0 * direction)
+		t.check(await _a_guard_warns_her(t, events), "walking under the named boom starts its warning")
+		await _ticks(t, int(round(CheckpointController.CROSSING_WARNING * 0.5 / STEP)))
 		t.check(not director.contact().is_done,
 				"halfway through the crossing's warning the task is not done yet")
-		_step_to(player, at - axis * 40.0 * direction)
-		t.check(not _a_guard_warns_her(events), "stepping back across calls the crossing off")
-		for i in int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)):
-			events.checkpoints.watch_the_door_lines(STEP)
+		await _step_to(t, player, at - axis * 40.0 * direction)
+		t.check(not await _a_guard_warns_her(t, events), "stepping back across calls the crossing off")
+		await _ticks(t, int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 		var guard_before := _guard_after_her(events)
 		t.check(not director.contact().is_done and not _a_guard_is_after_her(events),
 				"a crossing taken back does not do the task, and sets no guard on her")
-		_walk_through(at, axis, direction, player)
+		await _walk_through(t, at, axis, direction, player)
 		var guard := _guard_after_her(events)
 		t.check(director.contact().is_done and guard != null and guard != guard_before
 				and _a_guard_is_after_her(events),
@@ -210,21 +208,21 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 					"none": "not crossed", "stays": "stayed across", "back": "taken back"}[b_walk]]
 			# Across A toward B's side of A's line, so that standing at B she is still across A.
 			var a_dir := signf((b_at - a_at).dot(a_axis))
-			_step_to(player, a_at - a_axis * 40.0 * a_dir, true)
-			_step_to(player, a_at + a_axis * 40.0 * a_dir)
-			t.check(_a_guard_warns_her(events), "%s: walking under A's boom starts its warning" % name)
+			await _step_to(t, player, a_at - a_axis * 40.0 * a_dir, true)
+			await _step_to(t, player, a_at + a_axis * 40.0 * a_dir)
+			t.check(await _a_guard_warns_her(t, events),
+					"%s: walking under A's boom starts its warning" % name)
 			if b_walk != "none":
-				_step_to(player, b_at - b_axis * 40.0, true)
-				_step_to(player, b_at + b_axis * 40.0)
+				await _step_to(t, player, b_at - b_axis * 40.0, true)
+				await _step_to(t, player, b_at + b_axis * 40.0)
 				t.check(not director.contact().is_done,
 						"%s: under the named door while A's warning runs, nothing is done yet" % name)
 				if b_walk == "back":
-					_step_to(player, b_at - b_axis * 40.0)
+					await _step_to(t, player, b_at - b_axis * 40.0)
 			if not a_stays:
-				_step_to(player, a_at + a_axis * 40.0 * a_dir, true)
-				_step_to(player, a_at - a_axis * 40.0 * a_dir)
-			for i in int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)):
-				events.checkpoints.watch_the_door_lines(STEP)
+				await _step_to(t, player, a_at + a_axis * 40.0 * a_dir, true)
+				await _step_to(t, player, a_at - a_axis * 40.0 * a_dir)
+			await _ticks(t, int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
 			var chased := _a_guard_is_after_her(events)
 			var done_expected := a_stays and b_walk == "stays"
 			t.check(chased == a_stays and director.contact().is_done == done_expected,
@@ -250,7 +248,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 			_end_the_attempt(director, player)
 			continue
 		events.stream_around(player.global_position)
-		_walk_through(_door_position(director), _door_axis(director), direction, player)
+		await _walk_through(t, _door_position(director), _door_axis(director), direction, player)
 		t.check(director.contact().is_done, "walking under the named boom does the task")
 		var guard := _guard_after_her(events)
 		t.check(guard != null and guard.row_id() == "door_guard" and _a_guard_is_after_her(events)
@@ -262,7 +260,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 		t.check(hut != null, "the named door has a hut to step into")
 		if guard and hut:
 			player.teleport_to(hut.global_position)
-			events.checkpoints.check_detentions()
+			await _ticks(t, 1)
 			t.check(hut.is_chatting(), "stepping into the hut is a hold")
 			t.check(guard.has_given_up() and (guard.is_on_its_way_out() or guard.is_gone()),
 					"the hold ends the walk under's guard: he gives up")
@@ -284,12 +282,8 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 			# is run out before anything is counted.
 			var before := player.global_position
 			var guard_steps := int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
-			while hut.is_chatting() and guard_steps > 0:
-				guard_steps -= 1
-				for instance in events.instances():
-					instance.step(STEP)
+			guard_steps -= await _ticks_while(t, hut.is_chatting, guard_steps)
 			t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
-			events.checkpoints.check_detentions()
 			# She stood at the hut's own centre, so which side she is put down on is not measured
 			# here; only the release moves her, so being moved is being let through.
 			t.check(player.global_position.distance_to(before) > 1.0,
@@ -341,13 +335,9 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 			for instance: EventInstance in [other, named]:
 				player.teleport_to(instance.global_position
 						- instance.facing_now() * 60.0 * entry_side)
-				events.checkpoints.check_detentions()
-				var guard_steps := int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
-				while instance.is_chatting() and guard_steps > 0:
-					guard_steps -= 1
-					for each in events.instances():
-						each.step(STEP)
-				events.checkpoints.check_detentions()
+				await _ticks(t, 1)
+				await _ticks_while(t, instance.is_chatting,
+						int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10)
 				if instance == other:
 					if not director.contact().is_done:
 						elsewhere += 1
@@ -397,11 +387,12 @@ func _test_the_frames_see_a_crossing(t: TestRunner) -> void:
 	var walked_before := _walks_under(walks_told)
 	player.teleport_to(at - axis * 40.0)
 	await _step_a_frame(t)
-	t.check(not _a_guard_warns_her(events), "put down beside the boom, no crossing is warning her")
+	t.check(not await _a_guard_warns_her(t, events),
+			"put down beside the boom, no crossing is warning her")
 	player.global_position = at + axis * 40.0
 	await _step_a_frame(t)
 	t.check(_walks_under(walks_told) > walked_before
-			and _a_guard_warns_her(events),
+			and await _a_guard_warns_her(t, events),
 			"a frame after she walks across the named boom's line its crossing is warning her")
 	_end_the_attempt(director, player)
 
@@ -486,11 +477,11 @@ func _robber_after_her(events: EventManager) -> EventInstance:
 	return null
 
 ## Whether a crossing is warning her: a gatehouse's guard has his hand raised at her
-## (`EventInstance.is_its_guard_warning()`), as the manager sets it every frame
-## (`CheckpointController.warn_at_the_doors()`). Calls it first, which sets the hands and counts a
-## raised one once: idempotent against the manager's own per-frame call, so a drive and not only a read.
-func _a_guard_warns_her(events: EventManager) -> bool:
-	events.checkpoints.warn_at_the_doors()
+## (`EventInstance.is_its_guard_warning()`), which the manager's tick sets
+## (`CheckpointController.warn_at_the_doors()`) a tick after the crossing starts its warning, so
+## one more tick passes before the hands are read.
+func _a_guard_warns_her(t: TestRunner, events: EventManager) -> bool:
+	await _ticks(t, 1)
 	for instance in events.instances():
 		if instance.detains_again() and instance.is_its_guard_warning():
 			return true
@@ -503,29 +494,41 @@ func _hut_of_the_named_door(director: ResistanceDirector) -> EventInstance:
 			return instance
 	return null
 
-## One look at her: she is at `at`, and the checkpoints take their per-frame look
-## (`CheckpointController.watch_the_door_lines()`). With `jump`, she is put down there first
-## (`Stroller.teleport_to()`), so the step is not seen as a walk across anything.
-func _step_to(player: Stroller, at: Vector2, jump := false) -> void:
+## `ticks` physics ticks of the manager, each stepping the game by `STEP`
+## (`PhysicsTicks.pass_ticks_faster()`). Her own physics is off, so only the test moves her.
+func _ticks(t: TestRunner, ticks: int) -> void:
+	await PhysicsTicks.pass_ticks_faster(t, ticks, PhysicsTicks.FASTER, Callable(),
+			STEP * Engine.physics_ticks_per_second)
+
+## Ticks until `still_going` answers false or `at_most` ticks have passed; the ticks passed.
+func _ticks_while(t: TestRunner, still_going: Callable, at_most: int) -> int:
+	var passed := [0]
+	await PhysicsTicks.pass_ticks_faster(t, at_most, PhysicsTicks.FASTER,
+			func(ran: int) -> bool:
+				passed[0] = ran
+				return not (still_going.call() as bool),
+			STEP * Engine.physics_ticks_per_second)
+	return passed[0] as int
+
+## One tick with her at `at`: the manager's own tick takes the doors' look at her. With `jump`, she is
+## put down there first (`Stroller.teleport_to()`), so the step is not seen as a walk across anything.
+func _step_to(t: TestRunner, player: Stroller, at: Vector2, jump := false) -> void:
 	if jump:
 		player.teleport_to(at)
 	else:
 		player.global_position = at
-	RunCity.events(_city).checkpoints.watch_the_door_lines(STEP)
+	await _ticks(t, 1)
 
-## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
-## `CheckpointController.watch_the_door_lines()` reads a frame: from 40px on one side to 40px on
-## the other, and stands there while the crossing's warning runs.
-func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Stroller) -> void:
-	var events := RunCity.events(_city)
-	player.teleport_to(at - axis * 40.0 * direction)
-	events.checkpoints.watch_the_door_lines()
-	player.global_position = at + axis * 40.0 * direction
-	events.checkpoints.watch_the_door_lines()
+## Walks her across a door's line at `at`, along `axis` in `direction`, in one tick the way the
+## doors' watch reads a frame: from 40px on one side to 40px on the other, and stands there while
+## the crossing's warning runs.
+func _walk_through(t: TestRunner, at: Vector2, axis: Vector2, direction: float,
+		player: Stroller) -> void:
+	await _step_to(t, player, at - axis * 40.0 * direction, true)
+	await _step_to(t, player, at + axis * 40.0 * direction)
 	# And stays across while the crossing's warning runs (`CheckpointController.CROSSING_WARNING`), so a crossing
 	# that sets a guard on her has set him by the time this returns.
-	for i in int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 1:
-		events.checkpoints.watch_the_door_lines(STEP)
+	await _ticks(t, int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 1)
 
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are
 # reached from such ground — `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from
