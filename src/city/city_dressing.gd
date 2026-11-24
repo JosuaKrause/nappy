@@ -1,10 +1,12 @@
 class_name CityDressing
 extends WorldContext
-## **What the day director asks of the city a walk starts in**: dress it for the day, put it under
-## the act's cast and the light, refresh its street trees once the day's seals are planned, tint the
-## kerbs of a walk handed in, and prepare the scenery round where she is put down
-## (`DayDirector.start()`). The city scene is the one that does each, so `City` extends this and
-## overrides every method; the director is handed it through the world it stands
+## **What the day director and an authored scene ask of the city a walk starts in**: dress it for
+## the day, put it under the act's cast and the light, refresh its street trees once the day's seals
+## are planned, tint the kerbs of a walk handed in, and prepare the scenery round where she is put
+## down (`DayDirector.start()`); and, for an authored scene, set a recipe's roof furniture, start
+## the traffic signals at the scene's moment and answer which buildings and props it stands
+## (`AuthoredScene.install()`). The city scene is the one that does each, so `City` extends this and
+## overrides every method; the director and the scene are handed it through the world it stands
 ## (`DayWorld.dressing()`) in place of the whole city, and a test hands a fake that notes what it
 ## was asked.
 ##
@@ -14,13 +16,17 @@ extends WorldContext
 ## questions about the ground, so this sits between the two: a fake of it is a world that answers
 ## the baby the neutral way and dresses nothing.
 ##
-## **This base dresses nothing**: every method does nothing, as a world with no city to dress would.
+## **This base dresses nothing**: every method does nothing or answers nothing, as a world with no
+## city to dress would.
 
 ## **The city is dressed for `day` under `spec`, and its streets stand as the day's dawn left
 ## them** (`start_day()`, `start_recipe_day()`, once the closures are placed): said for what the
 ## simulation lays on the dressed city, the poster walls pasting the dawn's sheets
 ## (`PosterWalls.dress_for()`). `spec` is the walk's, a day's where the caller handed none.
 signal day_dressed(day: int, spec: DaySpec)
+
+## What `furnish_a_roof()` answers when no building stands on the lot a recipe names.
+const NO_BUILDING_ON_THE_LOT := "roof_fixtures.lot: no complete production building at the authored footprint"
 
 ## Today's city: the run's city state `state` brought to `day`, the streets closed on `rng` where
 ## `spec` closes them and the street trees, then the day said dressed (`day_dressed`), which the
@@ -51,6 +57,30 @@ func refresh_street_trees() -> void:
 ## The kerbs of `route` tinted, for a walk handed in rather than grown (`City.tint_the_route()`).
 func tint_the_route(_route: RouteSource) -> void:
 	pass
+
+## Sets a recipe's roof furniture `fixtures` on the building standing on `lot`. Answers what kept
+## any from standing, and one problem naming the lot when no building stands on it, which is all
+## this base can say.
+func furnish_a_roof(_lot: Rect2i, _fixtures: Array) -> Array[String]:
+	return [NO_BUILDING_ON_THE_LOT]
+
+## Restarts the traffic signals' cycle and runs it on `into_the_cycle` seconds, then cuts their
+## power when `dark`: a scene set in the last night's blackout.
+func start_the_signals(_into_the_cycle: float, _dark: bool) -> void:
+	pass
+
+## The buildings the city stands, none in this base.
+func buildings() -> Array[Building]:
+	return []
+
+## The props the city stands, none in this base.
+func props() -> Array[Node2D]:
+	return []
+
+## The fronts the run's story changes (`CityFronts`): the neighbor's boarded window, her sealed door
+## and the rest, which an authored scene hands the happenings it starts. None in this base.
+func fronts() -> CityFronts:
+	return null
 
 ## Everything the scenery draws within `view` prepared now rather than over the frames to come, so
 ## the first frame drawn round where she was put down has it all.

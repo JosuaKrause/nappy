@@ -14,7 +14,7 @@ directly (its body's width, whether it holds her again, how long, whether it end
 more classes read each other's fields. An event's abilities (a body, a hold on her, a lethal field, a
 pursuit) become parts it has, each answering its own questions, rather than subclasses or settings
 read from outside: composition over inheritance, the half of events-one-interface's context the
-player's "yes" accepted with the rest (inbox #1173 in gray-dolphin). It comes after the hand-ins (`city-hand-ins.md`), which move
+player's "yes" accepted with the rest (inbox #1173 in gray-dolphin). It comes after the hand-ins, which move
 many of the same reads.
 
 **The events' design is `event-interface.md`**: the parts, the questions callers ask, what replaces
@@ -74,10 +74,7 @@ Left, each its own design question:
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
   by class: the city map's (`CityMap`) in the scene recipes' draft and runtime (`stretch`,
   `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets; its
-  `block_plans` is private, asked through `plans_by_block()`. The dawn asks the map's
-  methods; `network`, `main_road`, `calm_blocks`, `closed_tiles`, `power_station`,
-  `boundary_wall_at_a` and `playgrounds` stay public for the city suites only, as `[kept]` lines
-  until those suites test one module each (`tests-one-module.md`). `RoadClosure.segment` is
+  `block_plans` is private, asked through `plans_by_block()`. `RoadClosure.segment` is
   private: every reader asks `street_key()`, `street_words()`, `mouth_rects()`, `cause_centre()`
   or `covers_tile()`. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
@@ -85,13 +82,11 @@ Left, each its own design question:
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
   - A field only a test still reads outside its own class and the code that writes it
-    (`CityMap.home_rect`, `courtyard_rects`,
-    `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
-    `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
+    (`Building.roof_extension_rows`, `tint_variant`, `atlas`, `footprint`, `roof_object_parent`,
     `SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
     `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
     `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
-    city scene, the blackout, the poster walls, the roof previews, the simulation builder, `main`) and goes with the
+    city scene, the roof previews, the simulation builder, `main`) and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
@@ -104,20 +99,15 @@ Left, each its own design question:
   pass gives the blocked tiles an owner of their own. The fields the events read of
   `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
   asked through their methods (row 4b of `event-interface.md`).
-  `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
-  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public, as are `Stroller.carrying` and `facing`, which the game
-  asks through `is_carrying()` and `facing_direction()` and the suites still read (`[kept]` lines);
+  `MoveProposal.yields` and `on_the_list`, `Stroller.atlas`, `carrying` and `facing`, and `DangerEdge.atlas` (the
+  screen-edge badge) are private: callers ask `gives_way()`, `is_on_the_list()`, `is_carrying()` and
+  `facing_direction()`, and the suites set her heading through `reset_at()` or by steering her with analog input;
   `VisibleView.controls` is private, set through `use_cover()`.
-- **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
-  screen-edge badge) are handed in through `use_atlas()` and read by their own files and
-  `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's name (`"atlas" in
-  node`, `node.get("atlas")`), so renaming either would make that walk skip it with no failure; the
-  badge acquires no page, so no count of what it asked can stand in. Both become underscore-private with the tests-one-module item (`tests-one-module.md`), when
-  that suite reads through a method the game also calls.
 - **The lines other work touches** are converted with that work:
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
-    hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
-    reads of other classes' fields wait for those classes' passes;
+    hands the city), which go with the city scene's own pass (minty-quail's README, "The modules
+    that do not wait for the events"); `day_director.gd`'s reads of other classes' fields wait for
+    those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface
@@ -128,7 +118,7 @@ Left, each its own design question:
   - the region and seal planners' (`src/routes/`) reads of a plan and its row, with row 3a, which
     names both files;
   - the scene recipes' (`scene_recipe*`) reads of the map, with the tests-one-module item or the
-    scene recipes' own pass with `AuthoredScene` (`city-hand-ins.md`), since their tests set what no
+    scene recipes' own pass with `AuthoredScene`, since their tests set what no
     game method sets, and their one read of an event, a row's `id`, with row 4b of `event-interface.md`.
 
   The fields they read become underscore-private behind a method, which takes the field's name unless the field is a

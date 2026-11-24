@@ -605,7 +605,7 @@ func step(delta: float) -> void:
 	_commit_the_step()
 
 ## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
-## it is in the world: one that keeps its course rather than giving way (`MoveProposal.yields`),
+## it is in the world: one that keeps its course rather than giving way (`MoveProposal.gives_way()`),
 ## reaching as far round its centre as it walks or drives through the navigator (`mover_for()`).
 ## Outside a step it stands where the event does: it joins there (`_enter_tree()`), and a move to
 ## other ground (`move_to()`) puts it there too.
@@ -1157,7 +1157,7 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 ## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
 ## `EventDef.route().parks_where_it_arrives()` **parks**: the fire engine is sent to the near kerb
-## across from the building (`EventSpawner._where_the_summoned_row_stops()`) and stays there for the
+## across from the building (`CityMap.kerb_across_from()`) and stays there for the
 ## rest of the day, because a standing field beside a fire she was led to is the cost that makes the
 ## pair a street to turn round on rather than one to hurry past.
 ##

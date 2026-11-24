@@ -73,7 +73,7 @@ func _diagnose_recycle(map: CityMap) -> void:
 					# `CarStrategy.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
 					# the tunnel and the bridge, not this defect, so it is left out of the tally
 					# rather than counted as "unsafe".
-					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road:
+					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road_corridor():
 						continue
 					samples += 1
 					var along := agent._along()

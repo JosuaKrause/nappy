@@ -58,20 +58,20 @@ func _rigs(map: CityMap) -> Array[Dictionary]:
 			rig["axis"] = rig.get("axis", "x")
 		return rigs
 	var lane := float(lane_y) * tile + tile * 0.5
-	var box_x := float(map.main_road * CityMap.period()) * tile
+	var box_x := float(map.main_road_corridor() * CityMap.period()) * tile
 	for direction: float in [1.0, -1.0]:
 		var near: float = box_x if direction > 0.0 else box_x + float(Tuning.STREET_WIDTH) * tile
 		var start := Vector2(near - direction * 260.0, lane)
 		rigs.append({"name": "red_%d" % int(direction), "route": PackedVector2Array(
 				[start, start + Vector2(direction * 660.0, 0.0)]), "her": Vector2.INF,
-				"red": true, "junction": Vector2i(map.main_road, CityMap.junction_index(lane_y))})
+				"red": true, "junction": Vector2i(map.main_road_corridor(), CityMap.junction_index(lane_y))})
 	var period := CityMap.period()
 	var ordinary := -1
-	for c in range(1, map.main_road):
+	for c in range(1, map.main_road_corridor()):
 		if _zebras_either_side(map, lane_y, c):
 			ordinary = c
 			break
-	for c: int in [ordinary, map.main_road]:
+	for c: int in [ordinary, map.main_road_corridor()]:
 		if c < 0 or not _zebras_either_side(map, lane_y, c):
 			continue
 		for direction: float in [1.0, -1.0]:
@@ -85,7 +85,7 @@ func _rigs(map: CityMap) -> Array[Dictionary]:
 					rigs.append({"name": "far_%d_%d_%d_%d" % [c, int(direction), k, int(out)],
 							"route": PackedVector2Array([start, start + Vector2(direction * 820.0, 0.0)]),
 							"her": Vector2((float(first + k) + 0.5) * tile, lane - out),
-							"red": false, "junction": Vector2i(map.main_road, CityMap.junction_index(lane_y)),
+							"red": false, "junction": Vector2i(map.main_road_corridor(), CityMap.junction_index(lane_y)),
 							"green": true})
 	rigs.append_array(_vertical_rigs(map))
 	for rig: Dictionary in rigs:
@@ -103,7 +103,7 @@ func _vertical_rigs(map: CityMap) -> Array[Dictionary]:
 	if spine_x >= 0:
 		var lane := (float(spine_x) + 0.5) * tile
 		for c in range(1, 4):
-			var junction := Vector2i(map.main_road, c)
+			var junction := Vector2i(map.main_road_corridor(), c)
 			if not _signals_of(map).is_signalled(junction):
 				continue
 			for direction: float in [1.0, -1.0]:
@@ -132,7 +132,7 @@ func _vertical_rigs(map: CityMap) -> Array[Dictionary]:
 			rigs.append({"name": "vzebra_%d" % int(direction), "axis": "y", "route":
 					PackedVector2Array([start, start + Vector2(0.0, 560.0 * direction)]),
 					"her": her, "red": false, "leave": Vector2(160.0, 0.0)})
-	for c in range(1, map.main_road):
+	for c in range(1, map.main_road_corridor()):
 		if not _zebras_either_side_v(map, column, c):
 			continue
 		for direction: float in [1.0, -1.0]:
@@ -156,8 +156,8 @@ func _signals_of(map: CityMap) -> TrafficSignals:
 
 ## A column of the main road a north-south lane runs down, or -1.
 func _spine_lane(map: CityMap) -> int:
-	for x in range(map.main_road * CityMap.period(), map.main_road * CityMap.period()
-			+ Tuning.STREET_WIDTH):
+	for x in range(map.main_road_corridor() * CityMap.period(),
+			map.main_road_corridor() * CityMap.period() + Tuning.STREET_WIDTH):
 		if CityMap.corridor_offset(x) == Tuning.SIDEWALK_WIDTH \
 				and map.tile_at(Vector2i(x, 4 * CityMap.period() - 4)) == GameEnums.TileType.ROAD:
 			return x
@@ -165,7 +165,7 @@ func _spine_lane(map: CityMap) -> int:
 
 ## A column off the main road with a lane in it, where a street's own zebras lie, or -1.
 func _ordinary_column(map: CityMap) -> int:
-	for x in range(CityMap.period(), map.main_road * CityMap.period()):
+	for x in range(CityMap.period(), map.main_road_corridor() * CityMap.period()):
 		if CityMap.corridor_offset(x) == Tuning.SIDEWALK_WIDTH \
 				and map.street_kind_at(true, Vector2i(x, 20)) != GameEnums.StreetKind.MAIN \
 				and map.tile_at(Vector2i(x, 20)) == GameEnums.TileType.ROAD:
@@ -243,7 +243,7 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 func _lane_to_the_main_road(map: CityMap) -> int:
 	for y in range(1, map.size.y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			return y
 	return -1

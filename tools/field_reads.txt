@@ -8,13 +8,8 @@
 # conflicts here takes either side and runs --write.
 
 # [Building] src/city/building.gd
-src/city/blackout.gd powered
-src/city/city.gd day
-src/city/city.gd door_world_x_range
 src/city/city.gd roof_extension_rows
-src/city/city.gd scenery_clock
 src/city/city.gd tint_variant
-src/city/poster_walls.gd poster_art
 src/dev/roof_context_preview.gd atlas
 src/dev/roof_context_preview.gd footprint
 src/dev/roof_context_preview.gd roof_object_parent
@@ -26,11 +21,6 @@ src/dev/roof_scale_preview.gd footprint
 src/dev/roof_scale_preview.gd roof_object_parent
 
 # [City] src/city/city.gd
-src/dev/scene_recipe_draft.gd map
-src/dev/scene_recipe_runtime.gd atlas
-src/dev/scene_recipe_runtime.gd map
-src/dev/scene_recipe_runtime.gd run
-src/dev/scene_recipe_runtime.gd trace
 src/main.gd atlas
 src/main.gd frame_timing
 src/main.gd ground_mode
@@ -42,8 +32,6 @@ src/main.gd skip_shadows
 src/main.gd trace
 
 # [CityMap] src/city/city_map.gd
-src/city/city_generator.gd courtyard_rects
-src/city/city_generator.gd home_rect
 src/dev/scene_recipe_draft.gd stretch
 src/dev/scene_recipe_draft.gd stretch_active
 src/dev/scene_recipe_draft.gd tiles

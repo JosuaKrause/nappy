@@ -816,7 +816,8 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	t.check(run.resistance().sabotage_went_through(), "completing it does the sabotage")
 	t.check(quiet.is_empty() and not mast.is_silenced(),
 			"and the masts are still speaking at the door: they stop with the power")
-	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
+	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(
+			_city.map.power_station_blocks()))
 	# She walks far enough from the station, a physics tick or two (the blackout watches her there).
 	var she := _rig_player(t, Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
 	await PhysicsTicks.pass_ticks(t, 2)

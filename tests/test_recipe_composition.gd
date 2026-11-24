@@ -82,10 +82,10 @@ func run(t: TestRunner) -> void:
 	t.check(mixed > lane_directions.size() / 2, "even density retains varied seeded headings within sidewalk lanes")
 	t.check(cars == Tuning.crowd_cars(1) and before.size() == Tuning.crowd_pedestrians(1) * 2,
 			"recipe increases only walkers while retaining ordinary car population")
-	var main_count := int(counts.get("v%d" % city.map.main_road, 0))
+	var main_count := int(counts.get("v%d" % city.map.main_road_corridor(), 0))
 	var ordinary_max := 0
 	for key: String in counts:
-		if key != "v%d" % city.map.main_road:
+		if key != "v%d" % city.map.main_road_corridor():
 			ordinary_max = maxi(ordinary_max, counts[key])
 	t.check(main_count > 0 and ordinary_max > 0 and main_count < ordinary_max * 2,
 			"uniform pedestrian selection does not concentrate the field on the main road")
@@ -101,10 +101,10 @@ func run(t: TestRunner) -> void:
 	# the uniform day above, where the two stood level.
 	RunCity.crowd(city).start_day(1, rng, Vector2(1952, 1936))
 	var ordinary_counts := _walkers_by_corridor(RunCity.crowd(city))
-	var ordinary_main := int(ordinary_counts.get("v%d" % city.map.main_road, 0))
+	var ordinary_main := int(ordinary_counts.get("v%d" % city.map.main_road_corridor(), 0))
 	var ordinary_rest := 0
 	for key: String in ordinary_counts:
-		if key != "v%d" % city.map.main_road:
+		if key != "v%d" % city.map.main_road_corridor():
 			ordinary_rest = maxi(ordinary_rest, ordinary_counts[key])
 	var uniform_share := float(main_count) / float(maxi(ordinary_max, 1))
 	var ordinary_share := float(ordinary_main) / float(maxi(ordinary_rest, 1))
@@ -125,7 +125,7 @@ func run(t: TestRunner) -> void:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"), DaySpec.for_day(city.run.header().day(), Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(RunCity.world_of(city, player), DaySpec.for_day(city.run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	t.check("\n".join(errors).contains("too few eligible sidewalk positions"),
 			"oversized city-wide uniform population rejects instead of silently truncating")
 	runtime.free()

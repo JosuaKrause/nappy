@@ -83,7 +83,7 @@ static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Ar
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)
 	blocked.merge(city.map.soft_sealed_tiles())
-	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+	return [grid, blocked, grid.flood([city.map.home_tile_rect().position], blocked)]
 
 ## Whether `tile` is reachable from home in the `reach` `day_reachability()` answers.
 static func reaches_home(reach: Array, tile: Vector2i) -> bool:

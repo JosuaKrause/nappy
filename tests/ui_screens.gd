@@ -34,6 +34,14 @@ static func centre(button_node: ModeButton) -> Vector2:
 static func push(screen: Node, event: InputEvent) -> void:
 	screen.get_viewport().push_input(event, true)
 
+## Dismisses a pause screen the way a keyboard player does: `space`, the key every screen takes as
+## carry on, pushed through the viewport the screen is in. It closes at once, with no frame between.
+static func dismiss(screen: PauseScreen) -> void:
+	var event := InputEventAction.new()
+	event.action = &"ui_accept"
+	event.pressed = true
+	push(screen, event)
+
 ## Lets `count` frames pass. A `process_frame` resumes before the nodes' own `_process` of the frame
 ## it names, so two are what one full frame of processing takes.
 static func frames(t: TestRunner, count := 2) -> void:

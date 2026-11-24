@@ -497,10 +497,11 @@ func _sync_home_door() -> void:
 		_home_door.picture = _door_texture_for_today()
 
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
-## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
-## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
-## `AtlasTable` rather than on the door node, and handed to every home-block `Building` so it can
-## blank the ground-floor column(s) standing behind the door instead of drawing a window there.
+## `map.home_tile_rect()` the way `_spawn_home()`'s own sprite is. Read before the door itself
+## exists (`_spawn_buildings()` runs first — see `build()`), so it stands on
+## `map.home_tile_rect()` and `AtlasTable` rather than on the door node, and handed to every
+## home-block `Building` so it can blank the ground-floor column(s) standing behind the door
+## instead of drawing a window there.
 func _door_world_x_range() -> Vector2:
 	var centre_x := map.tile_rect_to_world(map.home_tile_rect()).get_center().x
 	var half_width := AtlasTable.baked().native_size(DOOR_TEXTURE).x * 0.5
@@ -549,6 +550,30 @@ func refresh_street_trees() -> void:
 		var tree: Prop = _street_tree_pits[tile]
 		tree.visible = not map.is_tree_pit_emptied(tile)
 	_decals.refresh_street_tree_pits()
+
+## Sets a recipe's roof furniture on the building standing on `lot`
+## (`Building.author_roof_furniture()`), or answers the one problem that no building stands there.
+##
+## Overrides CityDressing.furnish_a_roof.
+func furnish_a_roof(lot: Rect2i, fixtures: Array) -> Array[String]:
+	var errors: Array[String] = []
+	var found := false
+	for building in _buildings:
+		if building.lot_rect() == lot:
+			found = true
+			errors.append_array(building.author_roof_furniture(fixtures))
+	if not found:
+		errors.append(NO_BUILDING_ON_THE_LOT)
+	return errors
+
+## Restarts the signals' cycle, runs it on `into_the_cycle` seconds and cuts their power when `dark`.
+##
+## Overrides CityDressing.start_the_signals.
+func start_the_signals(into_the_cycle: float, dark: bool) -> void:
+	signals.restart_cycle()
+	signals.advance(into_the_cycle)
+	if dark:
+		signals.use_power(false)
 
 ## What is on the far side of the streets that run along the boundary.
 ##
@@ -674,7 +699,7 @@ func _spawn_buildings() -> void:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.equip(atlas, roof_drawer, front_drawer)
-		building.scenery_clock = scenery_ground
+		building.use_scenery_clock(scenery_ground)
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.stand_on(rect, world.size, _variant_for(rect), map.starting_purpose(block_of(rect)),
@@ -692,7 +717,7 @@ func _spawn_buildings() -> void:
 			# every other home-block lot's world x sits entirely outside the door's span, since
 			# `CityGenerator._subtract_all()` cuts the notch's own columns out of them — but handing
 			# it to all of them costs nothing and needs no lookup for which one that is.
-			building.door_world_x_range = door_x_range
+			building.mark_door_span(door_x_range)
 		# Dressed here, before coverage and the roof extension below are computed, since
 		# `assign_roof_extensions()` needs to know which buildings are the power station to keep an
 		# extension off its yard (no roof stands there to extend).
@@ -936,12 +961,12 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## `_home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
 ## sets every building's height before `_spawn_home()` builds the door sprite it would otherwise
 ## read (see `build()`'s own ordering note) — `_door_world_x_range()` itself only needs
-## `map.home_rect`, already fixed by the generator by the time this runs. The lot depth this is
-## measured against (`lot_depth_tiles`) is `CityGenerator`'s own carve of the home block, six tiles
-## for the door building on every seed tested — comfortably clear of the four wall rows plus at
-## least one roof row this asks for; a seed where it were not would have to be reported as a fork
-## rather than silently losing the roof, which is why this clamps to `rows() - 1` rather than
-## reaching for `MAX_HEIGHT_FRACTION` as well.
+## `map.home_tile_rect()`, already fixed by the generator by the time this runs. The lot depth
+## this is measured against (`lot_depth_tiles`) is `CityGenerator`'s own carve of the home
+## block, six tiles for the door building on every seed tested — comfortably clear of the four
+## wall rows plus at least one roof row this asks for; a seed where it were not would have to be
+## reported as a fork rather than silently losing the roof, which is why this clamps to
+## `rows() - 1` rather than reaching for `MAX_HEIGHT_FRACTION` as well.
 func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 	var world := map.tile_rect_to_world(rect)
 	var door_x_range := _door_world_x_range()
@@ -1123,12 +1148,11 @@ func _is_on_the_tinted_route(tile: Vector2i) -> bool:
 
 ## Every building this city built, fixed for the run — read by `DebugLayers` so its bounding-box
 ## layer can trace each one's own `shape` rather than a second list of them.
+##
+## Overrides CityDressing.buildings.
 func buildings() -> Array[Building]:
 	return _buildings
 
-## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
-## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
-## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
 ## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
 func traffic_signals() -> TrafficSignals:
 	return signals
@@ -1137,6 +1161,11 @@ func traffic_signals() -> TrafficSignals:
 func ground_mode_in_force() -> SceneryGround.Mode:
 	return ground_mode
 
+## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
+## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
+## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
+##
+## Overrides CityDressing.props.
 func props() -> Array[Node2D]:
 	var all: Array[Node2D] = []
 	all.append_array(_props)
@@ -1152,6 +1181,8 @@ func streets() -> DayStreets:
 ## The fronts the run's story changes (`CityFronts`): the burnt frontage, the way in behind a
 ## sidewalk, a block shown during the day, the neighbor's window and her sealed door. Built once in
 ## `build()`, over the buildings and her door, which are fixed for the run.
+##
+## Overrides CityDressing.fronts.
 func fronts() -> CityFronts:
 	return _fronts
 
@@ -1278,7 +1309,7 @@ func _dress_blocks(state: CityState) -> void:
 		var listed: Dictionary = map.stretch_building_on(building.lot_rect())
 		building.show_condition(int(listed.condition) as Building.Condition if not listed.is_empty() \
 				else condition_for(state.purpose_of(map.plans_by_block(), block_of(building.lot_rect()))))
-		building.day = _day
+		building.show_day(_day)
 	_fronts.mark_the_burnt_frontage()
 
 ## A stretch's props are its recipe's (`CityMap.stretch_prop_list()`): every tree, swing frame, bollard

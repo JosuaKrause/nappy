@@ -42,7 +42,7 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 | Kind | How many | What it is |
 | --- | --- | --- |
 | `ORDINARY` | everything else | Two lanes, a zebra at every junction with a carriageway on the far side, and traffic that gives way to somebody standing at the kerb. Where the far side is a precinct there is no carriageway to zebra: the street ends at the precinct's edge instead, a T rather than a crossroads. |
-| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Every crossing at one of its junctions — the side street's two arms as well as its own — is two dotted lines rather than a zebra, because one light governs all four and a zebra on any of them is a promise the traffic there does not make. `CityMap.main_road`. |
+| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Every crossing at one of its junctions — the side street's two arms as well as its own — is two dotted lines rather than a zebra, because one light governs all four and a zebra on any of them is a promise the traffic there does not make. `CityMap.main_road_corridor()`. |
 | `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_stretches()`. |
 
 **With one kind of street the only route question is *which way*; with three it is also *which
@@ -445,7 +445,7 @@ calm inside its 5–7 band throughout. Generation retries per city are **0.00**,
 home clearance stated as a distance instead: a courtyard cut beside the front door fails the
 home-distance guarantee and rolls the whole map again, where the clearance refuses the block.
 
-**The spine clause is stated over `map.main_road`** and nothing else. `CrowdLanes.arterial_index` is
+**The spine clause is stated over `map.main_road_corridor()`** and nothing else. `CrowdLanes.arterial_index` is
 the *default* a map is built from, and **asking it where the spine is is the trap**: it answers for
 both axes, which is how a phantom east-west arterial gets into a busyness curve and a zone that
 would absorb the middle east-west corridor gets refused. There is one main road, it runs north to
@@ -524,8 +524,8 @@ each is stated where its decision is taken:
 | the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness stands in for, asserted directly |
 
 The count of *areas* is two because one may be spoiled with events while its ground remains
-walkable. A physically fenced area is removed from `calm_blocks` before this count; it cannot
-satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
+walkable. A physically fenced area is removed from `calm_blocks_now()` before this count; it
+cannot satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
@@ -547,7 +547,7 @@ from `CityMap.repaint()` before the day's route tree is grown, decides which use
 neither grows a branch to nor routes through — `CityMap.shut_calm()` names which, `CityMap.is_shut()`
 which tiles — so the tree, the region plan and the street closures all plan around them. *(PLAYTEST-
 140, statement 8: "no route of the day goes through it".)* This costs the area nothing physical: it
-stays exactly as open as any other calm ground, in `CityMap.calm_blocks`, reachable by anyone who
+stays exactly as open as any other calm ground, in `CityMap.calm_blocks_now()`, reachable by anyone who
 walks there without a route pointing the way.
 
 - **It is the ones she used, not a roll over the map.** A calm area she has never settled in is
@@ -589,10 +589,10 @@ The lattice is a graph: a **junction** at each end of every block — one more p
 blocks — and the **streets** between them, each one block long and one corridor wide.
 `StreetNetwork` owns that view of the city, and a closure takes out one whole street. A few hundred
 segments is cheap enough that validating a whole day's closures costs less than one tile-level flood
-fill. Each `CityMap` holds its own (`map.network`), built with the map, and everything that asks
-about streets is handed it with the map rather than reading a lattice kept for the process; the
-lattice is a function of the block count alone, so every city's network has the same streets in the
-same order and a segment key names the same street on all of them.
+fill. Each `CityMap` holds its own (`map.street_network()`), built with the map, and everything
+that asks about streets is handed it with the map rather than reading a lattice kept for the
+process; the lattice is a function of the block count alone, so every city's network has the
+same streets in the same order and a segment key names the same street on all of them.
 
 Half a street would be a closure the player cannot see the shape of, and a whole corridor
 would delete a route rather than narrow the choice. A street is the unit the player already
@@ -887,7 +887,7 @@ door reachable, and finds it out of reach again with the doors shut. On every ot
 ignores the station, so nothing leads her there before she is sent.
 
 A city where no candidate passes has no station, and `CityGenerator.validation_problems()` refuses
-it like any other broken guarantee, so `generate` rolls the next seed. `CityMap.power_station` is
+it like any other broken guarantee, so `generate` rolls the next seed. `CityMap.power_station_blocks()` is
 the pair, `power_station_door_tiles()` the pavement in front of the door,
 `power_station_door_street()` the street it faces and `power_station_door_position()` the point she
 stands on to reach it.
@@ -896,7 +896,7 @@ stands on to reach it.
 sabotage is done (`run.resistance().sabotage_went_through()`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
-(`Building.powered`), every traffic light on the spine (`TrafficSignals.use_power()`, see "Traffic
+(`Building.switch_power()`), every traffic light on the spine (`TrafficSignals.use_power()`, see "Traffic
 signals") and every loudspeaker mast (`EventManager.silence_all_masts()`). *(The player,
 2026-09-20: "just wait until a certain distance away -- then everything is off at once".)* The
 station's own hall goes with them: on the last night its clerestory is dimly lit while the power
@@ -1524,12 +1524,12 @@ almost nothing. See `docs/DECISIONS.md` under M45 for the measurement.
 
 ### Everything else has to know
 
-A closed street's ground goes into `CityMap.closed_tiles` wherever the barriers actually cut it
-off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway can open
-onto the middle of a closed street, and the ground beside it is still reachable from that side
-however the two mouths are sealed. `ReachabilityGrid` is what tells the difference, flooding the
-day's tiles with every barrier tile added on top; what the flood never reaches is what
-`closed_tiles` holds.
+A closed street's ground goes into `CityMap.closed_tile_set()` wherever the barriers actually
+cut it off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway
+can open onto the middle of a closed street, and the ground beside it is still reachable from
+that side however the two mouths are sealed. `ReachabilityGrid` is what tells the difference,
+flooding the day's tiles with every barrier tile added on top; what the flood never reaches is
+what `closed_tile_set()` holds.
 
 - The **event scheduler** places nothing there, shortens a mobile event's route so it stops
   before a barrier, and counts closures as part of what is in the way when it checks that a
@@ -1538,12 +1538,12 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
   never do.
 - The **resistance** never puts a contact behind one. Steps expire, so that would silently
   cost a run its good ending.
-- **Every figure that moves** is stopped by it as she is. `closed_tiles` is one layer of the
-  map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts, the
-  soft seals and the stationary bodies; every step, walk, line and way a figure takes is asked of
-  that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves by), so a
-  dog, a bike or a pursuer never walks through a closure's barrier, and a closure's barrier body
-  stands on ground the closure took (`City._barrier_footprint()`).
+- **Every figure that moves** is stopped by it as she is. `closed_tile_set()` is one layer of
+  the map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts,
+  the soft seals and the stationary bodies; every step, walk, line and way a figure takes is
+  asked of that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves
+  by), so a dog, a bike or a pursuer never walks through a closure's barrier, and a closure's
+  barrier body stands on ground the closure took (`City._barrier_footprint()`).
 
 ### Sealing the tree
 
@@ -1716,7 +1716,7 @@ alley is a **crossing** instead when the ground at its two mouths (see below) be
 different regions; one whose two mouths agree is left untouched, exactly as it always was.
 
 **The wall stands at a crossing's mouth, one tile deep, never a segment's midpoint.** A boundary
-segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, decided at generation);
+segment's wall stands at one of its two ends (`CityMap.wall_stands_at_a()`, decided at generation);
 a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the roadblock
 row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
 alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
@@ -2272,7 +2272,7 @@ Top-down camera with a fake vertical extrusion:
   portico and the fire escape exactly where they already stand. A column she cannot stand in front
   of is the exception below. **Her own building is the other exception** and keeps its ground-floor
   windows, read off `CityMap.home_block_coordinate()` rather than off anything drawn — except the column(s) her
-  own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
+  own front door's footprint overlaps (`Building.mark_door_span()`), which draw plain wall
   instead, since a window behind a door she is standing in front of never showed anything. A
   facade only one wall row tall is not multi-story, so its single row is unaffected either way. Each complete
   two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
@@ -2435,7 +2435,7 @@ Top-down camera with a fake vertical extrusion:
   and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one
   prop undrawn for the day. The planting itself never changes: where a city's trees stand is a
   fact about the run, which one is lying in the road is a fact about the day, so the day's answer
-  lives beside `closed_tiles` rather than inside `StreetTrees`.
+  lives beside `closed_tile_set()` rather than inside `StreetTrees`.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

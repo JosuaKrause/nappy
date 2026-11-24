@@ -65,8 +65,7 @@ func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
 	player.set_physics_process(false)
-	player.global_position = at
-	player.facing = facing
+	player.reset_at(at, facing)
 	var pram := player.get_node("PramCollisionShape2D") as CollisionShape2D
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
@@ -75,7 +74,7 @@ func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 ## where her pram is.
 func _tell(where: WhereSheIs, player: Stroller) -> void:
 	where.tell(player.global_position,
-			player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS)
+			player.global_position + player.facing_direction() * Tuning.PLAYER_BODY_RADIUS)
 
 ## One frame of the car, its body's transform (the car and everything under it) pushed to the physics
 ## server at once rather than at the tree's next flush, which a synchronous sweep never reaches.
@@ -361,8 +360,7 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
 	# Standing for her, it stays harmless however she then steps into the road in front of it.
 	var nose := car.global_position + along * (car.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS
 			+ 3.0)
-	player.global_position = Vector2(nose.x, lane.y)
-	player.facing = -along
+	player.reset_at(Vector2(nose.x, lane.y), -along)
 	for i in int(3.0 / STEP):
 		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
@@ -601,7 +599,7 @@ func _test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t: TestR
 	for lane: int in CrowdLanes.ROAD_OFFSETS:
 		closed[Vector2i(period + Tuning.STREET_WIDTH + 2, period + lane)] = true
 		closed[Vector2i(period + lane, Tuning.STREET_WIDTH + 2)] = true
-	map.closed_tiles = closed
+	map.close_streets([FakeClosure.over_set(closed)] as Array[RoadClosure])
 	var way_on := WayOn.new(map, Navigator.new(map), ThroughRoads.over(map, Mover.vehicle()))
 	var east := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(false, 1.0))
 	var south := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(true, 1.0))
@@ -757,16 +755,16 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			lane_y = y
 			break
 	t.check(lane_y >= 0, "found an east-west lane coming to the main road")
 	if lane_y < 0:
 		return
-	var box_x := float(map.main_road * CityMap.period() * Tuning.TILE_SIZE)
+	var box_x := float(map.main_road_corridor() * CityMap.period() * Tuning.TILE_SIZE)
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
-	var junction := Vector2i(map.main_road, CityMap.junction_index(lane_y))
+	var junction := Vector2i(map.main_road_corridor(), CityMap.junction_index(lane_y))
 	# The main road's green, which is the side street's red.
 	signals.restart_cycle()
 	while not signals.green_for(junction, true):
@@ -803,7 +801,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			lane_y = y
 			break
@@ -820,24 +818,24 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 				and map.tile_at(Vector2i(c * period + Tuning.STREET_WIDTH + 4, lane_y)) \
 						== GameEnums.TileType.ROAD
 	var ordinary := -1
-	for c in range(1, map.main_road):
+	for c in range(1, map.main_road_corridor()):
 		if zebras.call(c):
 			ordinary = c
 			break
 	t.check(ordinary >= 0, "found an ordinary junction on that lane with zebras either side")
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
 	var signals := TrafficSignals.new(map)
-	var green := Vector2i(map.main_road, CityMap.junction_index(lane_y))
+	var green := Vector2i(map.main_road_corridor(), CityMap.junction_index(lane_y))
 	signals.restart_cycle()
 	while not signals.green_for(green, false):
 		signals.advance(0.25)
 	var tile := float(Tuning.TILE_SIZE)
 	var worst := -INF
 	var cases := 0
-	for c: int in [ordinary, map.main_road]:
+	for c: int in [ordinary, map.main_road_corridor()]:
 		if c < 0:
 			continue
-		var what := "the main road" if c == map.main_road else "an ordinary junction"
+		var what := "the main road" if c == map.main_road_corridor() else "an ordinary junction"
 		var low: float = float(c * period) * tile
 		for direction: float in [1.0, -1.0]:
 			var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile

@@ -33,6 +33,7 @@ const RUN_SEED := 2
 const UI := preload("res://tests/ui_screens.gd")
 const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
+const StandIns := preload("res://tests/edge_stand_ins.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 const RecordingAtlas := preload("res://tests/recording_atlas.gd")
@@ -145,13 +146,14 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## a node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
 ## recording one (`tests/recording_atlas.gd`) and every help text, mode button, closure piece, the
 ## on-screen controls, the save symbol and the building standing must have asked it for its page,
-## which a node handed another library, or none, did not. The badge acquires nothing, so it keeps
-## its library public for this walk (`DangerEdge.atlas`). The events' manager keeps its private and
-## takes its page in `_enter_tree()`, so the sitting's library counts it among the askers too. The cordon's figures, the contact and
-## the crowd's agents are handed theirs where they are made, and `test_park_cordon.gd`,
+## which a node handed another library, or none, did not. The badge acquires nothing, so a
+## stand-in danger is raised for it and the picture it draws is read off the sitting's library.
+## Her own page is taken in her `_enter_tree()`, and the events' manager's in its own, so the
+## sitting's library counts both among the askers. The cordon's figures, the contact and the
+## crowd's agents are handed theirs where they are made, and `test_park_cordon.gd`,
 ## `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same off the library
-## each is handed. And the pages the boot took for the process are
-## the sitting's library's: they still answer on it once everything the boot built is gone.
+## each is handed. And the pages the boot took for the process are the sitting's library's: they
+## still answer on it once everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
 		var seat := Seat.new(t, func(run: RunState) -> void:
@@ -173,6 +175,9 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		var save_symbols := 0
 		var buildings := 0
 		var managers := 0
+		var strollers := 0
+		var edge: DangerEdge = null
+		var player: Stroller = null
 		var strays: Array[String] = []
 		var stack: Array[Node] = [main]
 		while not stack.is_empty():
@@ -185,16 +190,22 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			save_symbols += 1 if node is SaveIndicator else 0
 			buildings += 1 if node is InteriorScene else 0
 			managers += 1 if node is EventManager else 0
+			strollers += 1 if node is Stroller else 0
+			if node is Stroller and player == null:
+				player = node
+			if node is DangerEdge and edge == null:
+				edge = node
 			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
 			if node.get("atlas") != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
 		# A guard that the sweep was not vacuous: the nodes holding a public library are the ones that
-		# draw from it themselves; a node handed its library through `use_atlas()` keeps it private and
-		# is held to the sitting's by what it asked of it, below.
-		t.check(holders > 0, "%s: the boot built nodes that draw from a library (%d)"
-				% [where, holders])
+		# draw from it themselves; a node handed its library through `use_atlas()` keeps it
+		# private and is held to the sitting's by what it asked of it, below. The building's
+		# boot builds none that holds one by name, so only the day's sweep must find a node.
+		t.check(holders > 0 or section != DaySpec.Section.NONE,
+				"%s: the boot built nodes that draw from a library (%d)" % [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
 				% [where, ", ".join(strays)])
 		# The nodes handed their library through `use_atlas()` keep it private, so what each asked is
@@ -231,6 +242,14 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		t.check(managers > 0 and manager_asks >= managers,
 				"%s: the event manager asked the sitting's library for its page (%d of %d)"
 				% [where, manager_asks, managers])
+		var stroller_asks := recording.acquired_from("res://src/player/stroller.gd")
+		t.check(strollers > 0 and stroller_asks >= strollers,
+				"%s: her own rig asked the sitting's library for its pages (%d of %d)"
+				% [where, stroller_asks, strollers])
+		t.check(edge != null and player != null,
+				"%s: the boot built the screen-edge badge and her rig to raise one for" % where)
+		if edge != null and player != null:
+			await _raise_a_badge(t, main, edge, player, recording, where)
 		var building_asks := recording.acquired_from("res://src/interior/interior_scene.gd")
 		t.check(section == DaySpec.Section.NONE or buildings > 0,
 				"%s: the escape stands the building to ask about (%d)" % [where, buildings])
@@ -367,6 +386,34 @@ func _sittings_in(home: Node) -> Array[Node]:
 		if child is Sitting:
 			sittings.append(child)
 	return sittings
+
+## Raises the screen-edge badge a danger out of sight and closing on her, the military convoy,
+## brings: the booted edge, once the day is on screen, is pointed at a stand-in event source
+## (`DangerEdge.setup()`, as the escape points it at the building's), and the convoy is walked
+## toward her until the edge has drawn. The badge draws the convoy's silhouette from the library
+## it was handed, so that picture is among what the sitting's recording library was asked for.
+func _raise_a_badge(t: TestRunner, main: MAIN_SCRIPT, edge: DangerEdge, player: Stroller,
+		recording: RecordingAtlas, where: String) -> void:
+	# The edge is drawn once the day is on screen; the title stands over it until it is tapped.
+	if not edge.is_visible_in_tree():
+		await _press_tap(t, main)
+	var row := EventCatalogue.by_id("military_convoy")
+	var source := StandIns.Source.new()
+	source.visible_view().look_from(player.global_position)
+	t.add_child(source)
+	var convoy := StandIns.Coming.new(row, EventFootprints.drawn_box_of(row, true))
+	convoy.position = player.global_position + Vector2(0.0, -421.0)
+	source.bring(convoy)
+	edge.setup(source, player)
+	recording.pictures_asked()
+	for _i in 30:
+		convoy.position.y += 8.0
+		await t.get_tree().process_frame
+	var picture := StringName(EventPictures.icon_for(row.picture()))
+	t.check(recording.pictures_asked().has(picture),
+			"%s: the screen-edge badge drew its picture from the sitting's library" % where)
+	edge.setup(null, player)
+	source.free()
 
 func _rng(tag: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

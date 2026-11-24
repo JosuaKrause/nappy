@@ -1130,8 +1130,8 @@ question of which walk it is. The world comes from a `DayWorldSource` it is hand
 a `DayWorld` (`src/day/day_world.gd`) — the map of the ground she walks, its events, her and the
 baby in it, where she is
 put down and facing which way, the city's parts where the world is one (its map, today's streets, its
-crowd and what dresses it for the day, `CityDressing`; the whole city only for an authored scene to
-install itself into), the
+crowd, its poster walls and what dresses it for the day, `CityDressing`; an authored scene is handed
+the same world and installs itself into it), the
 walk's own random stream where it has one (the building's), and what the walk is won at in it: the
 map her front door is on for a walk home, the ways out of the city for the escape's. The director
 hands those on, the ways out to the spec and her and the home's map to the day's clock

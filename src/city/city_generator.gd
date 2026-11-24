@@ -35,7 +35,7 @@ const _OPEN_CALM: Array[GameEnums.BlockPurpose] = [
 ]
 
 ## Every purpose that makes a block a **calm area**, which is what the spread guarantee is stated
-## over and what `map.calm_blocks` contains.
+## over and what `map.calm_blocks_now()` contains.
 ##
 ## **It is not `_OPEN_CALM`, and reading one for the other is a bug this project has shipped.**
 ## `_OPEN_CALM` is the list of purposes laid as *open ground*, which is a fact about what a
@@ -97,7 +97,7 @@ const REQUISITION_FIRST_DAY := 8
 const SQUARE_SIZE_TILES := 4
 
 ## Calm **areas**, not calm blocks: an area may be a single block or a multi-block zone, and what
-## these count is places to go rather than lots. The name is what `calm_blocks` returns — one entry
+## these count is places to go rather than lots. The name is what `calm_blocks_now()` returns — one entry
 ## per area — and renaming it would touch every guarantee stated over it without changing what any
 ## of them mean.
 ##
@@ -255,7 +255,7 @@ static func _assign_regions(map: CityMap) -> void:
 ## tolerance of 180, where a central spine gives well under it. A sliver has the spine's whole
 ## traffic funnelling through junctions that have nowhere to spread to.
 ##
-## `map.main_road` is the answer everywhere. `CrowdLanes.arterial_index` is only the *default* the
+## `map.main_road_corridor()` is the answer everywhere. `CrowdLanes.arterial_index` is only the *default* the
 ## map is built from, and **asking it which corridor is the main road is a fact about a city
 ## answered from a constant** — it answers for both axes, which is how a phantom east-west arterial
 ## gets into a busyness curve.
@@ -582,7 +582,7 @@ static func _touches_a_precinct(precinct_spans: Array[Vector4i], footprint: Rect
 ##   clause**, by the player's decision: if the eligible field ever gets too tight, this comes out
 ##   before `MIN_CALM_BLOCKS` or the non-adjacency rule are touched.
 ##
-## The spine clause is stated over **`map.main_road`**, which is the only thing that knows where the
+## The spine clause is stated over **`map.main_road_corridor()`**, which is the only thing that knows where the
 ## spine is. `CrowdLanes.arterial_index` is a *default* a map is built from, and reaching for it to
 ## answer a question about a city answers for both axes — which is how a phantom east-west arterial
 ## gets into a busyness curve, and how a zone that would absorb the middle east-west corridor gets
@@ -914,7 +914,7 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 		layout.carve_passage(_passage_rect(lot, layout.open_ground(), rng))
 		map.fill_rect(layout.open_ground(), GameEnums.TileType.COURTYARD)
 		map.fill_rect(layout.passage_rect(), GameEnums.TileType.ALLEY)
-		map.courtyard_rects.append(layout.open_ground())
+		map.add_courtyard(layout.open_ground())
 		rects = _subtract_all(rects, layout.open_ground())
 		rects = _subtract_all(rects, layout.passage_rect())
 
@@ -1087,7 +1087,7 @@ static func _home_rect(block: Vector2i) -> Rect2i:
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:
 	map.fill_rect(home, GameEnums.TileType.HOME)
-	map.home_rect = home
+	map.lay_home(home)
 	map.record_home_block(block)
 	block_rects[block] = _keep_nonempty(_subtract_all(block_rects[block], home))
 
@@ -1630,7 +1630,7 @@ static func _validate(map: CityMap) -> String:
 ## diagnostic while silently hiding another. Ordinary generation keeps its fast first failure.
 static func validation_problems(map: CityMap, all_problems: bool = true) -> Array[String]:
 	var problems: Array[String] = []
-	if map.home_rect.size == Vector2i.ZERO:
+	if map.home_tile_rect().size == Vector2i.ZERO:
 		problems.append("no home was placed")
 		return problems # Remaining route checks require an actual home.
 

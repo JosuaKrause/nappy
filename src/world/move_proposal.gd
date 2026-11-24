@@ -30,7 +30,7 @@ extends RefCounted
 ## its timing, so the crowd's moves are the ones a pass changes and everyone else's committed
 ## pose is what they yield to. **Each move carries what that pass reads about its mover**: how
 ## far its body reaches round its centre (`body_radius()`) and whether it is one that gives way
-## (`yields`). The pass is the map's `SeparationPass`, which each crowd body asks at its own
+## (`gives_way()`). The pass is the map's `SeparationPass`, which each crowd body asks at its own
 ## step, between its proposal and its check.
 ##
 ## **Outside a step the move stands where its mover does** (`stands_at()` and `steps_to()` both
@@ -55,7 +55,7 @@ var _radius := 0.0
 ## Whether its mover gives way to the others — a crowd walker or car — rather than keeping its own
 ## course and timing, as an event figure, an event car and a cordon officer do (inbox #884 in
 ## plaid-raven).
-var yields := false
+var _yields := false
 ## **Whether a walker goes round it while it stands still**, not only while it moves: true for an
 ## object or a vehicle, false for a person or an animal, whom a walker may walk through while they
 ## stand (inbox #905 in freckled-moose). Read by the pass a walker gives way through (`SeparationPass`); a crowd car
@@ -70,10 +70,10 @@ var _stood_round := false
 var _parked := false
 ## Whether it is on a world's list of moves (`ProposedMoves`) now: set when it joins, cleared when it
 ## leaves, so a pass over a copy of the list can tell a move whose mover has since gone.
-var on_the_list := false
+var _on_the_list := false
 
 func _init(gives_way := false) -> void:
-	yields = gives_way
+	_yields = gives_way
 
 ## Opens a move at `at`, proposing to stay there until the mover says where it would go.
 func propose(at: Vector2) -> void:
@@ -109,15 +109,15 @@ func use_body_radius(reach: float) -> void:
 
 ## Whether the mover gives way to every other body instead of being kept clear of.
 func gives_way() -> bool:
-	return yields
+	return _yields
 
 ## Whether the move stands on a world's list of moves.
 func is_on_the_list() -> bool:
-	return on_the_list
+	return _on_the_list
 
 ## Puts the move on a world's list or takes it off, as that list does.
 func stand_on_the_list(now: bool) -> void:
-	on_the_list = now
+	_on_the_list = now
 
 ## Whether a walker goes round the mover while it stands still: an object or a vehicle, not a
 ## person or an animal.

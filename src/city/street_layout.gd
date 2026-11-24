@@ -10,8 +10,9 @@ extends RefCounted
 ## assigned and before anything is built on the blocks between them.
 
 ## Paints `map`'s streets: every tile on a corridor the way its two offsets and kinds say, every
-## tile between them `BUILDING`, then the border's stubs sealed. Reads `map.main_road` and the
-## street kinds (`CityMap.street_kind_at()`), so both are set first.
+## tile between them `BUILDING`, then the border's stubs sealed. Reads
+## `map.main_road_corridor()` and the street kinds (`CityMap.street_kind_at()`), so both are set
+## first.
 static func lay(map: CityMap) -> void:
 	_lay_streets(map)
 	_seal_border_stubs(map)

@@ -3,6 +3,7 @@ extends RefCounted
 ## label's real width, takes exactly as many lines as `SentenceLines` broke it into. See
 ## `src/ui/sentence_lines.gd` for the rule and why a label that wraps a fitting line again is a bug.
 
+const UI := preload("res://tests/ui_screens.gd")
 const DaySummary := preload("res://src/ui/day_summary.gd")
 const Hud := preload("res://src/ui/hud.gd")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
@@ -52,7 +53,7 @@ func run(t: TestRunner) -> void:
 		pause.open()
 		var shown: String = Texts.WALKING_LESSON_PAUSE % (
 				Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
-		pause.close()
+		UI.dismiss(pause)
 		_check_help(t, shown, pause_body, "the pause body (joystick %s)" % joystick)
 	pause.free()
 	controls.free()

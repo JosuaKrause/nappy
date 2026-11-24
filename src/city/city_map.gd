@@ -116,9 +116,9 @@ var _zone_anchor := {}
 ## The street lattice as a graph, this city's own: every planner, placement and mover handed the
 ## map reads its streets here. Built with the map and never replaced; the same streets on every
 ## city, since the lattice is a function of `Tuning.CITY_BLOCKS` alone (`StreetNetwork`).
-var network := StreetNetwork.new()
+var _network := StreetNetwork.new()
 ## Segment keys this city does not have at all: the streets a four-block calm zone was painted
-## straight over. Fixed for the run, unlike `closed_tiles`, and a fact about the **lattice**
+## straight over. Fixed for the run, unlike `_closed_tiles`, and a fact about the **lattice**
 ## rather than about a day — the tiles are park, and the player walks on them quite happily.
 ##
 ## **`StreetNetwork` assumes a full grid and still enumerates one.** This is the set that is not
@@ -149,7 +149,7 @@ var _big_buildings: Array[Rect2i] = []
 ## which `CityGenerator.validation_problems()` refuses, so only a hand-built map ever reads it
 ## empty. Always two blocks wide and one deep: the front door is on its long south side, the one
 ## face the 2.5D view draws (see `Building`). See `CityGenerator._place_power_station`.
-var power_station := Rect2i()
+var _power_station := Rect2i()
 ## The street the power station's front door opens onto, as a `StreetNetwork.Segment.key()` — the
 ## real street south of one of its two blocks. See `power_station_door_street()`.
 var _power_station_door_key := Vector3i(-1, -1, -1)
@@ -164,13 +164,13 @@ const POWER_STATION_DOOR_TILES := 2
 ## Whether this city has its power station — false only on a map
 ## `CityGenerator.validation_problems()` would refuse.
 func has_power_station() -> bool:
-	return power_station.size != Vector2i.ZERO
+	return _power_station.size != Vector2i.ZERO
 
 ## The street the power station's front door faces, or null when there is no station.
 func power_station_door_street() -> StreetNetwork.Segment:
 	if not has_power_station():
 		return null
-	return network.by_key(_power_station_door_key)
+	return _network.by_key(_power_station_door_key)
 
 ## The world point in front of the power station's front door: the middle of the pavement tiles
 ## `_power_station_door` names, which is where she stands to reach it and what an arrow aims at.
@@ -202,13 +202,13 @@ var _region_has_calm := PackedByteArray()
 ## **crossings** — see `RegionPlanner.ground_region_of()`, which reads this to say which region a
 ## boundary segment's whole ground belongs to. Absent for an interior segment, which has no wall
 ## and therefore no end to choose.
-var boundary_wall_at_a := {}
+var _boundary_wall_at_a := {}
 
 ## The corridor index of the one main road, which runs north to south. `-1` before generation.
 ##
 ## One of it, and only on this axis. A spine that crosses itself is two spines; what makes a main
 ## road the main road is that there is nowhere else it could be.
-var main_road := -1
+var _main_road := -1
 
 ## The precincts, as stretches rather than corridors: `(axis, corridor, first block, last block)`
 ## with axis 1 for north-south. Three blocks long and two of them, so a precinct is a place you
@@ -223,14 +223,14 @@ var _precinct_spans: Array[Vector4i] = []
 var _building_rects: Array[Rect2i] = []
 ## Blocks that are calm ground *right now*. Recomputed by `repaint()`, because which ground
 ## is calm is the thing that changes over a run.
-var calm_blocks: Array[Vector2i] = []
+var _calm_blocks: Array[Vector2i] = []
 ## Tile rect of each playground currently in the city. A requisitioned park has none.
-var playgrounds: Array[Rect2i] = []
+var _playgrounds: Array[Rect2i] = []
 var _home_block := Vector2i.ZERO
 var _alley_rects: Array[Rect2i] = []
 var _square_rects: Array[Rect2i] = []
-var courtyard_rects: Array[Rect2i] = []
-var home_rect := Rect2i()
+var _courtyard_rects: Array[Rect2i] = []
+var _home_rect := Rect2i()
 var _seed_used := 0
 ## The streets closed today, as a set of tiles. Everything else here is fixed for the run or
 ## derived from a block's purpose, and neither of those may move a walkable tile. A closure is one
@@ -245,7 +245,7 @@ var _seed_used := 0
 ## as open as any other calm ground, because nothing there blocks her — see `_shut_calm`.
 ##
 ## Held on the map's blocked record (`blocked`), the one every mover asks through `passable()`.
-var closed_tiles: Dictionary:
+var _closed_tiles: Dictionary:
 	get:
 		return blocked.todays_closed_tiles()
 	set(value):
@@ -256,17 +256,17 @@ var closed_tiles: Dictionary:
 ## excluded without breaking a guarantee. *(PLAYTEST-140, statement 8: "a used park is shut by the
 ## events placed in it, as before... and no route of the day goes through it".)* Decided by
 ## `repaint()`, before anything grows the day's route tree, from candidates that stay in
-## `calm_blocks` and stay walkable: **the tree simply never plans a route to or through one**, so a
+## `_calm_blocks` and stay walkable: **the tree simply never plans a route to or through one**, so a
 ## used area is a place she is not sent rather than a place she cannot reach. She is stopped by what
 ## `DawnSpoilers` places there, not by the ground.
 ##
 ## `_fenced_park` is the one exception, and it is in this list too (a fenced area is also off the
-## tree) but carries the extra, physical closure `closed_tiles` and `ParkClosure` give it.
+## tree) but carries the extra, physical closure `_closed_tiles` and `ParkClosure` give it.
 var _shut_calm: Array[Vector2i] = []
 ## Every walkable tile of every area in `_shut_calm`, as a set — `is_shut()`, what keeps the route
 ## tree off all of them, `_fenced_park` included.
 var _shut_tiles := {}
-## Every walkable tile of `_fenced_park` alone, as a set — merged into `closed_tiles` on top of
+## Every walkable tile of `_fenced_park` alone, as a set — merged into `_closed_tiles` on top of
 ## `_shut_tiles`'s wider reach, and kept apart from it so a plain `_shut_calm` area's ground is never
 ## marked closed by the same pass that fences the one area that actually is.
 var _fenced_tiles := {}
@@ -358,7 +358,7 @@ func _is_held(segment: StreetNetwork.Segment) -> bool:
 ## Whether the street segment a tile stands on is held today. False for a tile inside a junction
 ## or a block interior, where `StreetNetwork.segment_containing` names no segment at all.
 func is_held_at(tile: Vector2i) -> bool:
-	return _is_held(network.segment_containing(tile))
+	return _is_held(_network.segment_containing(tile))
 
 ## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
 ## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue
@@ -422,7 +422,7 @@ func seal_soft_tile(tile: Vector2i) -> void:
 ## The street-tree pits today's fallen trees stand in, so the tree that fell is the one that is
 ## missing. `StreetTrees.planted()` is never touched: where a city's trees stand is a fact about
 ## the run, and which one is lying in the road is a fact about the day, so the day's answer lives
-## here beside `closed_tiles` and `soft_sealed_tiles()` rather than in the planting.
+## here beside `_closed_tiles` and `soft_sealed_tiles()` rather than in the planting.
 ##
 ## **Two dictionaries because two passes write them at two different moments.**
 ## `ClosurePlanner.plan_day` runs inside `City.start_day`; `SealPlanner.plan_day` runs later, in
@@ -487,22 +487,22 @@ static func corridor_offset(coordinate: int) -> int:
 # One method for each fact the generator fixed, so a caller asks the map and never reads the field
 # it is kept in: a fact worked out from other data later changes nowhere but here.
 
-## The street lattice as a graph (`network`).
+## The street lattice as a graph (`_network`).
 func street_network() -> StreetNetwork:
-	return network
+	return _network
 
-## The corridor index of the main road, `-1` before generation (`main_road`).
+## The corridor index of the main road, `-1` before generation (`_main_road`).
 func main_road_corridor() -> int:
-	return main_road
+	return _main_road
 
 ## The seed this city was generated from (`_seed_used`), which every placement keyed on the city
 ## rather than on the day hashes in.
 func city_seed() -> int:
 	return _seed_used
 
-## The tile rect of her own front-door notch (`home_rect`).
+## The tile rect of her own front-door notch (`_home_rect`).
 func home_tile_rect() -> Rect2i:
-	return home_rect
+	return _home_rect
 
 ## The coordinate of the block she lives on (`_home_block`).
 func home_block_coordinate() -> Vector2i:
@@ -512,9 +512,9 @@ func home_block_coordinate() -> Vector2i:
 func building_lots() -> Array[Rect2i]:
 	return _building_rects
 
-## The blocks that are calm ground right now, anchor blocks only (`calm_blocks`).
+## The blocks that are calm ground right now, anchor blocks only (`_calm_blocks`).
 func calm_blocks_now() -> Array[Vector2i]:
-	return calm_blocks
+	return _calm_blocks
 
 ## The one calm area barriers stand around today, or `Vector2i(-1, -1)` (`_fenced_park`).
 func fenced_park_block() -> Vector2i:
@@ -553,30 +553,30 @@ func region_has_calm() -> PackedByteArray:
 	return _region_has_calm
 
 ## Whether the wall of the boundary segment `key` stands at its `a` end, or `otherwise` for a
-## segment with no wall end recorded (`boundary_wall_at_a`).
+## segment with no wall end recorded (`_boundary_wall_at_a`).
 func wall_stands_at_a(key: Vector3i, otherwise: bool) -> bool:
-	return boundary_wall_at_a.get(key, otherwise)
+	return _boundary_wall_at_a.get(key, otherwise)
 
-## The tile rect of every courtyard's open ground (`courtyard_rects`).
+## The tile rect of every courtyard's open ground (`_courtyard_rects`).
 func courtyard_lots() -> Array[Rect2i]:
-	return courtyard_rects
+	return _courtyard_rects
 
-## The tile rect of each playground currently in the city (`playgrounds`).
+## The tile rect of each playground currently in the city (`_playgrounds`).
 func playground_rects() -> Array[Rect2i]:
-	return playgrounds
+	return _playgrounds
 
 ## The tile rects the city's streets were built over, by segment key (`_built_over`).
 func streets_built_over() -> Dictionary:
 	return _built_over
 
-## The tiles of the streets closed today, as a set (`closed_tiles`).
+## The tiles of the streets closed today, as a set (`_closed_tiles`).
 func closed_tile_set() -> Dictionary:
-	return closed_tiles
+	return _closed_tiles
 
 ## The pair of blocks the power station stands over, `Rect2i()` on a map that has none
-## (`power_station`).
+## (`_power_station`).
 func power_station_blocks() -> Rect2i:
-	return power_station
+	return _power_station
 
 ## The pavement tiles in front of the power station's door (`_power_station_door`).
 func power_station_door_tiles() -> Rect2i:
@@ -760,9 +760,17 @@ func generated_from(seed_value: int) -> void:
 func record_home_block(block: Vector2i) -> void:
 	_home_block = block
 
-## Records which corridor is the main road (`main_road`).
+## Records which corridor is the main road (`_main_road`).
 func lay_main_road(corridor: int) -> void:
-	main_road = corridor
+	_main_road = corridor
+
+## Records the tile rect of her own front-door notch (`_home_rect`).
+func lay_home(rect: Rect2i) -> void:
+	_home_rect = rect
+
+## Records one more courtyard's open ground, as a tile rect (`_courtyard_rects`).
+func add_courtyard(rect: Rect2i) -> void:
+	_courtyard_rects.append(rect)
 
 ## Forgets every precinct (`_precinct_spans`).
 func clear_precincts() -> void:
@@ -849,9 +857,9 @@ func record_calm_regions(calm: PackedByteArray) -> void:
 	_region_has_calm = calm
 
 ## Records the end each boundary segment's wall stands at, segment key -> `true` for its `a` end
-## (`boundary_wall_at_a`).
+## (`_boundary_wall_at_a`).
 func record_wall_ends(ends: Dictionary) -> void:
-	boundary_wall_at_a = ends
+	_boundary_wall_at_a = ends
 
 ## The landmarks, each as the pair of blocks it joins (`_big_buildings`).
 func big_building_pairs() -> Array[Rect2i]:
@@ -866,10 +874,10 @@ func drop_last_big_building() -> void:
 	_big_buildings.pop_back()
 
 ## Records the power station: the pair of blocks it stands over, the street its door opens onto and
-## the pavement tiles in front of the door (`power_station`, `_power_station_door_key`,
+## the pavement tiles in front of the door (`_power_station`, `_power_station_door_key`,
 ## `_power_station_door`).
 func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i) -> void:
-	power_station = pair
+	_power_station = pair
 	_power_station_door_key = door_key
 	_power_station_door = door_rect
 
@@ -889,7 +897,7 @@ func restore_tiles(snapshot: PackedByteArray) -> void:
 ## lanes and its agents, the seal planner — asks this instead, so a per-axis spine or a horizontal
 ## one on some seed changes one answer rather than six.
 func is_main_road(vertical: bool, corridor: int) -> bool:
-	return vertical and corridor == main_road
+	return vertical and corridor == _main_road
 
 ## What kind of street a stretch of corridor is: the axis, the corridor index, and how far along
 ## it in tiles. `ORDINARY` for anything outside the lattice, which is what every caller means by
@@ -1015,22 +1023,22 @@ func copy() -> CityMap:
 	twin._absent_segments = _absent_segments.duplicate()
 	twin._built_over = _built_over.duplicate()
 	twin._big_buildings = _big_buildings.duplicate()
-	twin.power_station = power_station
+	twin._power_station = _power_station
 	twin._power_station_door_key = _power_station_door_key
 	twin._power_station_door = _power_station_door
 	twin._region_of_junction = _region_of_junction.duplicate()
 	twin._region_has_calm = _region_has_calm.duplicate()
-	twin.boundary_wall_at_a = boundary_wall_at_a.duplicate()
-	twin.main_road = main_road
+	twin._boundary_wall_at_a = _boundary_wall_at_a.duplicate()
+	twin._main_road = _main_road
 	twin._precinct_spans = _precinct_spans.duplicate()
 	twin._building_rects = _building_rects.duplicate()
-	twin.calm_blocks = calm_blocks.duplicate()
-	twin.playgrounds = playgrounds.duplicate()
+	twin._calm_blocks = _calm_blocks.duplicate()
+	twin._playgrounds = _playgrounds.duplicate()
 	twin._home_block = _home_block
 	twin._alley_rects = _alley_rects.duplicate()
 	twin._square_rects = _square_rects.duplicate()
-	twin.courtyard_rects = courtyard_rects.duplicate()
-	twin.home_rect = home_rect
+	twin._courtyard_rects = _courtyard_rects.duplicate()
+	twin._home_rect = _home_rect
 	twin._seed_used = _seed_used
 	twin._shut_calm = _shut_calm.duplicate()
 	twin._shut_tiles = _shut_tiles.duplicate()
@@ -1086,18 +1094,19 @@ func capture() -> Dictionary:
 	var trees: Array[Vector2i] = []
 	for tree in StreetTrees.planted(self):
 		trees.append(tree.tile)
-	return {"size": size, "seed": _seed_used, "main_road": main_road, "home_block": _home_block,
-			"home_rect": home_rect, "power_station": power_station,
+	return {"size": size, "seed": _seed_used, "main_road": _main_road,
+			"home_block": _home_block,
+			"home_rect": _home_rect, "power_station": _power_station,
 			"power_station_door": _power_station_door,
 			"power_station_door_key": _power_station_door_key,
 			"tiles": tiles.duplicate(), "building_rects": _building_rects.duplicate(),
 			"big_buildings": _big_buildings.duplicate(), "alley_rects": _alley_rects.duplicate(),
-			"square_rects": _square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
+			"square_rects": _square_rects.duplicate(), "courtyard_rects": _courtyard_rects.duplicate(),
 			"zones": zones, "block_plans": plans, "block_layouts": layouts,
 			"precincts": _precinct_spans.duplicate(), "absent_segments": absent,
 			"built_over": _built_over.duplicate(), "region_of_junction": _region_of_junction.duplicate(),
 			"region_has_calm": _region_has_calm.duplicate(),
-			"boundary_wall_at_a": boundary_wall_at_a.duplicate(), "trees": trees}
+			"boundary_wall_at_a": _boundary_wall_at_a.duplicate(), "trees": trees}
 
 ## **The map `facts` describes**, `facts` being what `capture()` answers or the same facts read
 ## back from a saved scene. Its zones' members (`anchor_of()`) and its precincts' posts
@@ -1106,10 +1115,10 @@ func capture() -> Dictionary:
 static func restored(facts: Dictionary) -> CityMap:
 	var map := CityMap.new(facts["size"])
 	map._seed_used = facts["seed"]
-	map.main_road = facts["main_road"]
+	map._main_road = facts["main_road"]
 	map._home_block = facts["home_block"]
-	map.home_rect = facts["home_rect"]
-	map.power_station = facts["power_station"]
+	map._home_rect = facts["home_rect"]
+	map._power_station = facts["power_station"]
 	map._power_station_door = facts["power_station_door"]
 	map._power_station_door_key = facts["power_station_door_key"]
 	map.tiles = (facts["tiles"] as PackedByteArray).duplicate()
@@ -1118,7 +1127,7 @@ static func restored(facts: Dictionary) -> CityMap:
 	map._big_buildings.assign(facts["big_buildings"])
 	map._alley_rects.assign(facts["alley_rects"])
 	map._square_rects.assign(facts["square_rects"])
-	map.courtyard_rects.assign(facts["courtyard_rects"])
+	map._courtyard_rects.assign(facts["courtyard_rects"])
 	var plans: Dictionary = facts["block_plans"]
 	for block: Vector2i in plans:
 		map._block_plans[block] = (plans[block] as BlockPlan).copy()
@@ -1136,7 +1145,7 @@ static func restored(facts: Dictionary) -> CityMap:
 	for key: Vector3i in absent:
 		map._absent_segments[key] = true
 	map._built_over = (facts["built_over"] as Dictionary).duplicate()
-	map.boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
+	map._boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
 	map._region_of_junction = (facts["region_of_junction"] as PackedInt32Array).duplicate()
 	map._region_has_calm = (facts["region_has_calm"] as PackedByteArray).duplicate()
 	map._recipe_trees.assign(facts["trees"])
@@ -1335,7 +1344,7 @@ func lot_at(tile: Vector2i) -> Rect2i:
 	return Rect2i()
 
 func is_closed(tile: Vector2i) -> bool:
-	return closed_tiles.has(tile)
+	return _closed_tiles.has(tile)
 
 ## **Where the kerb runs beside the carriageway lane `at` stands in**: `at` moved across its street
 ## onto the line between that lane and the sidewalk on the lane's own side, kept where it is along
@@ -1395,11 +1404,31 @@ func pavement_inward(tile: Vector2i) -> Vector2i:
 		return axis
 	return Vector2i.ZERO
 
+## The nearest road tile across the kerb from the sidewalk point `at`, as the point straight across
+## the corridor from it: from either of the two sidewalk tiles beside one kerb it is the road tile
+## against that kerb, the carriageway's first tile on that side, so the block-side tile and the
+## kerb-side tile of a corridor's sidewalk answer the same tile. `Vector2.INF` where `at` is not on
+## a sidewalk beside a carriageway, a point with no kerb in front of it.
+##
+## `pavement_inward()` points away from the carriageway, so the road lies the other way; how many
+## tiles away it is follows from the point's offset in its corridor (`corridor_offsets()`): the
+## tiles of the sidewalk band that remain between the point and the carriageway.
+func kerb_across_from(at: Vector2) -> Vector2:
+	var tile := world_to_tile(at)
+	var inward := pavement_inward(tile)
+	if inward == Vector2i.ZERO:
+		return Vector2.INF
+	var offsets := corridor_offsets(tile)
+	var offset := offsets.x if inward.x != 0 else offsets.y
+	var tiles_to_the_road := (Tuning.SIDEWALK_WIDTH - offset if offset < Tuning.SIDEWALK_WIDTH
+			else offset - (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1))
+	return at - Vector2(inward) * (tiles_to_the_road * Tuning.TILE_SIZE)
+
 ## Walkable *and* open: what the player can actually use today. Anything choosing a place to
 ## put something — an event, a crowd agent, a resistance contact — wants this rather than
 ## `is_walkable`, or it will put it somewhere nobody can reach.
 func is_open(tile: Vector2i) -> bool:
-	return not closed_tiles.has(tile) and is_walkable(tile)
+	return not _closed_tiles.has(tile) and is_walkable(tile)
 
 ## The lattice as a route search must see it: the streets this city never had, plus whatever
 ## today has shut on top of them.
@@ -1425,7 +1454,7 @@ func has_street(key: Vector3i) -> bool:
 ## over (`DayLocations.lay_out()`).
 func street_segments() -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in network.segments():
+	for segment in _network.segments():
 		if has_street(segment.key()):
 			found.append(segment)
 	return found
@@ -1472,7 +1501,7 @@ func anchor_of(block: Vector2i) -> Vector2i:
 ## from that side, whichever end the barriers seal; a street with no such opening is unreachable
 ## end to end exactly as it always was. `ReachabilityGrid` is what tells the two apart: flood the
 ## day's tiles from the doorstep with every barrier tile added on top, and whatever a closed
-## street's own ground the flood never reaches is what goes in `closed_tiles`.
+## street's own ground the flood never reaches is what goes in `_closed_tiles`.
 ##
 ## Built once for every closure of the day together, not one at a time: whether a bypass survives
 ## can depend on ground a *different* closure also touches, so the barrier tiles of the whole set
@@ -1484,9 +1513,9 @@ func anchor_of(block: Vector2i) -> Vector2i:
 ## `_shut_calm` area that is not `_fenced_park` is not: its ground stays open, so it is not a barrier
 ## anything needs to route around.
 func close_streets(closures: Array[RoadClosure]) -> void:
-	closed_tiles.clear()
+	_closed_tiles.clear()
 	day_record_version += 1
-	closed_tiles.merge(_fenced_tiles)
+	_closed_tiles.merge(_fenced_tiles)
 	var streets: Array[RoadClosure] = []
 	for closure in closures:
 		if not closure is ParkClosure:
@@ -1503,7 +1532,7 @@ func close_streets(closures: Array[RoadClosure]) -> void:
 	for closure in streets:
 		for tile in closure.tiles(self):
 			if not grid.reaches(tile, barrier_tiles, reached):
-				closed_tiles[tile] = true
+				_closed_tiles[tile] = true
 
 # --------------------------------------------------------------- conversion ---
 
@@ -1533,17 +1562,17 @@ func is_calm_zone(world_position: Vector2) -> bool:
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(tile_type_at_world(world_position))
 
-## The home's first tile (`home_rect`'s corner): where a flood from home starts.
+## The home's first tile (`_home_rect`'s corner): where a flood from home starts.
 func home_tile() -> Vector2i:
-	return home_rect.position
+	return _home_rect.position
 
 func home_world_position() -> Vector2:
-	return tile_rect_to_world(home_rect).get_center()
+	return tile_rect_to_world(_home_rect).get_center()
 
 ## Where a day starts and ends: the pavement outside the front door, not the doorway
 ## itself. Spawning in the doorway drew her standing on top of the door.
 func doorstep_world_position() -> Vector2:
-	var tile := Vector2i(home_rect.position.x, home_rect.end.y)
+	var tile := Vector2i(_home_rect.position.x, _home_rect.end.y)
 	var beside := tile + Vector2i.RIGHT
 	if is_walkable(beside):
 		return (tile_to_world(tile) + tile_to_world(beside)) * 0.5
@@ -1589,7 +1618,7 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 	if not _recipe_dawn_tiles.is_empty():
 		tiles = _recipe_dawn_tiles.duplicate()
 		_tiles_by_type.clear()
-		closed_tiles.clear()
+		_closed_tiles.clear()
 		_shut_calm.clear()
 		_shut_tiles.clear()
 		_fenced_tiles.clear()
@@ -1608,12 +1637,12 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 	for block: Vector2i in _block_plans:
 		_repaint_block(block, state.purpose_of(_block_plans, block))
 	# The home notch is carved out of a block interior, so it has to go back on top.
-	if home_rect.size != Vector2i.ZERO:
-		fill_rect(home_rect, GameEnums.TileType.HOME)
+	if _home_rect.size != Vector2i.ZERO:
+		fill_rect(_home_rect, GameEnums.TileType.HOME)
 	_tiles_by_type.clear()
 	# Yesterday's closures are gone before today's are planned; the planner needs to see the
 	# whole lattice to decide what it can afford to take out of it.
-	closed_tiles.clear()
+	_closed_tiles.clear()
 	_shut_calm.clear()
 	_shut_tiles.clear()
 	_fenced_tiles.clear()
@@ -1646,7 +1675,7 @@ func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 	if spent.is_empty() and not already_fenced:
 		return
 	var protected: Array[Vector2i] = []
-	for block in calm_blocks:
+	for block in _calm_blocks:
 		if state.is_forced_open(block):
 			protected.append(block)
 	if already_fenced:
@@ -1668,7 +1697,7 @@ func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 			if is_walkable(tile):
 				_fenced_tiles[tile] = true
 	_recompute_calm(state)
-	closed_tiles.merge(_fenced_tiles)
+	_closed_tiles.merge(_fenced_tiles)
 	day_record_version += 1
 
 func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
@@ -1710,16 +1739,16 @@ func recompute_calm(state: CityState) -> void:
 ## Only `_fenced_park` is left out of the calm, and so is its playground — a merely-`_shut_calm` area
 ## stays calm ground, spoiled rather than gone (see `_shut_calm`'s own doc).
 func _recompute_calm(state: CityState) -> void:
-	calm_blocks = state.calm_blocks(_block_plans)
+	_calm_blocks = state.calm_blocks(_block_plans)
 	if _fenced_park.x >= 0:
-		calm_blocks.erase(_fenced_park)
-	playgrounds.clear()
-	for block in calm_blocks:
+		_calm_blocks.erase(_fenced_park)
+	_playgrounds.clear()
+	for block in _calm_blocks:
 		if state.purpose_of(_block_plans, block) != GameEnums.BlockPurpose.PARK:
 			continue
 		var layout: BlockLayout = _block_layouts.get(block)
 		if layout and layout.has_playground():
-			playgrounds.append(layout.playground_rect())
+			_playgrounds.append(layout.playground_rect())
 
 # --------------------------------------------------------------- traversal ---
 
@@ -1857,7 +1886,7 @@ func calm_tiles() -> Array[Vector2i]:
 func home_to_nearest_calm() -> int:
 	var field := walk_field_from(calm_tiles())
 	var best := -1
-	for tile in rect_tiles(home_rect):
+	for tile in rect_tiles(_home_rect):
 		var distance := distance_at(field, tile)
 		if distance >= 0 and (best == -1 or distance < best):
 			best = distance

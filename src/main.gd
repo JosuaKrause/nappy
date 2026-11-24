@@ -957,14 +957,10 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 	var start_at := _city.map.doorstep_world_position()
 	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
 		start_at = _finale_start_position()
-	# The city's parts, each on its own, and the city whole only where an authored scene installs
-	# itself into it (`DayWorld.scene_city()`).
-	var authored := _flow.plays_an_authored_scene()
-	var scene_city: City = _city if authored else null
-	var scene_simulation: WorldSimulation = _city_simulation if authored else null
+	# The city's parts, each on its own: a walk and an authored scene are handed the same world.
 	return DayWorld.in_the_city(_city, _city.map, _city.streets(), _city_simulation.crowd(),
-			_city_simulation.events(), _player, _baby, start_at, home_map, exits, Vector2.DOWN,
-			scene_city, scene_simulation)
+			_city_simulation.poster_walls(), _city_simulation.events(), _player, _baby, start_at,
+			home_map, exits, Vector2.DOWN)
 
 ## The first world a boot stands is where the run log's session is handed what it watches every
 ## walk with besides the walk's world — the day's clock, the resistance (none in the escape) and the
@@ -1909,6 +1905,7 @@ func _author_the_scene() -> bool:
 	configure(config.with_recipe(result["data"]))
 	var scene := SceneRecipeRuntime.new()
 	scene.configure(result, config, _run, _end_with)
+	scene.use_trace(_the_trace())
 	add_child(scene)
 	_flow.author(scene)
 	return true

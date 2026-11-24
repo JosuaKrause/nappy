@@ -212,11 +212,11 @@ func _test_every_street_off_the_chains_is_sealed(t: TestRunner) -> void:
 				sealed_at[map.world_to_tile(placement.placed_at())] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
-		var hers := map.network.segment_containing(
+		var hers := map.street_network().segment_containing(
 				map.world_to_tile(FinalePlanner.service_exit_world_position(map)))
 		var open_and_unsealed := 0
 		var closed := 0
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if not map.has_street(segment.key()):
 				continue
 			if SealPlanner.runs_through(segment, plan.open_cells):
@@ -1175,10 +1175,10 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 				run.calendar().day_rng(run.header().day(), "finale"), _city_spec(),
 				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
-		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
+		var hers := map.street_network().segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
 		for band_plan in bands:
-			var street := map.network.segment_containing(map.world_to_tile(band_plan.placed_at()))
+			var street := map.street_network().segment_containing(map.world_to_tile(band_plan.placed_at()))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
 		t.check(hers != null and on_her_street <= 1,
@@ -1528,7 +1528,7 @@ func _test_the_service_exit_is_beside_the_home_block(t: TestRunner) -> void:
 		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block_coordinate()))
 		var beside := tile.x == lot.position.x - 1 or tile.x == lot.end.x
 		t.check(beside, "seed %d: it is on one of the home lot's two side streets" % seed_value)
-		var spine := map.main_road * CityMap.period()
+		var spine := map.main_road_corridor() * CityMap.period()
 		var on_the_spine := tile.x >= spine and tile.x < spine + Tuning.STREET_WIDTH
 		t.check(not on_the_spine, "seed %d: and not on the main road's own frontage" % seed_value)
 
@@ -1725,7 +1725,7 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 	var counted := Vector4i.ZERO
 	for tile in _kerb_tiles(city, day):
 		var source := GroundTiles.source_for(city.map, tile, day)
-		var segment := city.map.network.segment_containing(tile)
+		var segment := city.map.street_network().segment_containing(tile)
 		var wanted := segment != null and on_the_walk.has(segment.key())
 		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
 				else source):
@@ -1833,7 +1833,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		var summary := Boot.summary(main)
 		var words := _section(section).title()
 		var nerves := escape.run.header().nerves()
-		var length: float = Boot.day(main).spec().length
+		var length: float = Boot.day(main).spec().seconds_on_the_clock()
 		var title: Label = summary.get_node("Root/Center/Lines/Title")
 		var body: Label = summary.get_node("Root/Center/Lines/Body")
 		t.check(Boot.day(main).spec().section_kind() == section and summary.is_showing(),
@@ -2205,7 +2205,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t: TestRunner) -> void:
 	t.check(pause.is_open(), "Esc opens the pause")
 	t.get_viewport().push_input(_key(KEY_Q))
 	t.check(calls["quits"] == 1, "Q on the open pause reaches the same quit a day's pause reaches")
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 
 	# Her heading, held by the on-screen controls: let go while the pause is up, and given back by
@@ -2240,7 +2240,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t: TestRunner) -> void:
 	t.get_viewport().push_input(_action("pause"))
 	t.get_viewport().push_input(_key(KEY_R))
 	t.check(calls["reloads"] == 1, "and R on the open pause reaches the same restart a day's does")
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	_free_the_escape(t, escape)
 
@@ -2283,7 +2283,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	t.check(not pause.is_open(), "losing focus does not open the pause over it")
 	t.get_viewport().push_input(_action("pause"))
 	t.check(pause.is_open(), "Esc does, as over a lost day's outcome screen")
-	pause.close()
+	UI.dismiss(pause)
 	t.check(t.get_tree().paused and summary.is_showing(),
 			"and closing it leaves the outcome screen up and the tree paused")
 
@@ -2332,7 +2332,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t: TestRun
 			func(node: Node) -> void: (node as Main).use_sitting_home(home))
 	var main := booted.main
 	var day := Boot.day(main)
-	var length: float = day.spec().length
+	var length: float = day.spec().seconds_on_the_clock()
 
 	t.check(day.spec().section_kind() == DaySpec.Section.BUILDING,
 			"the boot read the section off the save")
@@ -2437,7 +2437,8 @@ func _test_a_handover_does_not_open_on_the_title(t: TestRunner) -> void:
 	t.check(Boot.summary(main).is_showing() and title.text == "Escape the building",
 			"it opens straight on the section's own brief")
 	t.check(t.get_tree().paused and not Boot.day(main).can_process()
-			and is_equal_approx(Boot.day(main).seconds_left(), Boot.day(main).spec().length),
+			and is_equal_approx(Boot.day(main).seconds_left(),
+					Boot.day(main).spec().seconds_on_the_clock()),
 			"with the section's whole clock standing still behind it")
 	_free_the_escape(t, escape)
 
@@ -2456,7 +2457,7 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t: TestRunner) ->
 	await Boot.press_continue(t, main)
 	t.get_viewport().push_input(_action("pause"))
 	t.get_viewport().push_input(_key(KEY_R))
-	Boot.pause(main).close()
+	UI.dismiss(Boot.pause(main))
 	t.get_tree().paused = false
 	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
 	var sitting := escape.home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting

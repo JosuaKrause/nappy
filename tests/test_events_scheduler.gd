@@ -761,7 +761,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 			by_tile[map.world_to_tile(plan.placed_at())] = plan
 	for tile in stood:
 		var plan: EventPlan = by_tile.get(tile)
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		t.check(plan != null and segment != null
 				and corridor.view_of(segment) == PlacementView.View.ROUTE_ADJACENT
 				and not corridor.carries_a_route(tile)
@@ -867,7 +867,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	var target := NarrowTargetPool.tiles(ResistanceSteps.narrow_target_on(day), map, null)
 	var park := CityGenerator.swing_park(map)
 	var others: Array[Vector2i] = []
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		if block != park:
 			others.append(block)
 	t.check(not target.is_empty() and others.size() >= 2,
@@ -896,7 +896,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 		t.check(_keep_streets_to(map, to, walks[place]), "home reaches the %s on open streets" % place)
 		keep.merge(walks[place])
 	var shut: Array[RoadClosure] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not keep.has(segment.key()):
 			shut.append(RoadClosure.new(RoadClosure.Kind.ROADWORKS, segment))
 	map.close_streets(shut)
@@ -916,7 +916,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 		map.close_streets([])
 		return
 	var alone := EventScheduler.blocked_by(map, [cutting] as Array[EventPlan])
-	var reached_alone := grid.flood([map.home_rect.position], alone)
+	var reached_alone := grid.flood([map.home_tile_rect().position], alone)
 	t.check(not grid.reaches(calm_tile.call(clean_block), alone, reached_alone)
 			and grid.reaches(calm_tile.call(spoiled_block), alone, reached_alone),
 			"the case is live: that body alone cuts the clean area off and leaves the spoiled one reached")
@@ -941,7 +941,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 		stood_the_cut = stood_the_cut or (body.row_id() == _CUTTING_BODY and body.placed_at() == cutting.placed_at())
 	t.check(not stood_the_cut, "the scar across the clean area's one way in is not stood")
 	var blocked := EventScheduler.blocked_by(map, blockers)
-	var reached := grid.flood([map.home_rect.position], blocked)
+	var reached := grid.flood([map.home_tile_rect().position], blocked)
 	t.check(grid.reaches(calm_tile.call(clean_block), blocked, reached),
 			"with every body the day stands, the clean calm area is still reached from home")
 	map.close_streets([])
@@ -989,7 +989,8 @@ func _test_a_spoiler_on_a_route_stands_beside_it(t: TestRunner) -> void:
 	for block: Vector2i in [_USED_PARK, _OTHER_PARK]:
 		for tile in map.rect_tiles(CityMap.block_rect(block)):
 			map.set_tile(tile, GameEnums.TileType.PARK)
-	map.calm_blocks = [_USED_PARK, _OTHER_PARK] as Array[Vector2i]
+	map.recompute_calm(FakeCityState.new().with_calm(
+			[_USED_PARK, _OTHER_PARK] as Array[Vector2i]))
 	var park := CityMap.block_rect(_USED_PARK)
 	var inside := park.grow(-1)
 	var route_tiles: Array[Vector2i] = []
@@ -1044,7 +1045,7 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 		return false
 	var tile := to
 	while tile != start:
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		if segment:
 			keep[segment.key()] = segment
 		tile = came[tile]
@@ -1198,7 +1199,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 	# ones cannot), and plan every day.
 	var run := RunState.new()
 	run.start_run(SEED)
-	var home := _map().home_rect.position
+	var home := _map().home_tile_rect().position
 	for radius: int in [3, 5, 7]:
 		for step: Vector2i in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
 				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
@@ -1224,7 +1225,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 ## scheduler keeps true of the day it plans.
 func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventPlan]) -> bool:
 	var blocked := EventScheduler.blocked_by(_map(), blockers)
-	var reached := grid.flood([_map().home_rect.position], blocked)
+	var reached := grid.flood([_map().home_tile_rect().position], blocked)
 	for tile in _map().calm_tiles():
 		if grid.reaches(tile, blocked, reached):
 			return true
@@ -1334,7 +1335,7 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 		# reported: *"a restaurant — I never saw one."*
 		t.check(int(counts.get("cafe_tables", 0)) >= 2,
 				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
-	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
+	t.check(map.calm_blocks_now().size() > 0, "and the map still has calm ground on it")
 
 ## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
 ## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
@@ -1346,10 +1347,11 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var map := _map()
 	var sites := _sites()
-	t.check(map.calm_blocks.size() >= 2,
-			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
+	t.check(map.calm_blocks_now().size() >= 2,
+			"the map has calm ground to choose between (%d blocks)"
+			% map.calm_blocks_now().size())
 
-	var used: Vector2i = map.calm_blocks[0]
+	var used: Vector2i = map.calm_blocks_now()[0]
 	var used_set: Array[Vector2i] = [used]
 	var calm := CalmAreas.of(map, used_set)
 	var lot := calm.ground_of(used)
@@ -1388,10 +1390,10 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		# And the allowance is the lot's, not a constant:
 		# `DawnSpoilers._things_to_put_in_a_park()` lets a
 		# bigger park hold a bigger thing, because what matters is the share of the ground it
-		# takes. Asserting the constant instead passed for as long as `calm_blocks[0]` happened
-		# to be a single block, and failed the day a city had enough calm areas for a four-block
-		# zone to come first — which is the test restating a rule the scheduler owns rather than
-		# asking it.
+		# takes. Asserting the constant instead passed for as long as `calm_blocks_now()[0]`
+		# happened to be a single block, and failed the day a city had enough calm areas for a
+		# four-block zone to come first — which is the test restating a rule the scheduler owns
+		# rather than asking it.
 		for plan in planned:
 			if not plan.is_placed() or not lot.has_point(plan.placed_at()):
 				continue

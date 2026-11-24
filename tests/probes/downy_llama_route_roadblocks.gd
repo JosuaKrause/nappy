@@ -49,7 +49,7 @@ func _one_day(heat: int, day: int) -> void:
 			map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 		for segment: StreetNetwork.Segment in region_plan.door_segments():
 			map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-		for segment: StreetNetwork.Segment in map.network.around_blocks(
+		for segment: StreetNetwork.Segment in map.street_network().around_blocks(
 				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 		var boundary := {}
@@ -91,7 +91,7 @@ func _one_day(heat: int, day: int) -> void:
 			if CityMap.junction_at(tile) != Vector2i(-1, -1):
 				counts[3] += 1
 				continue
-			var segment := map.network.segment_containing(tile)
+			var segment := map.street_network().segment_containing(tile)
 			if segment:
 				counts[corridor.view_of(segment)] += 1
 	print("RB %d %d %d %d %d %d" % [heat, day, counts[0], counts[1], counts[2], counts[3]])

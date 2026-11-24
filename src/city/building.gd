@@ -320,7 +320,7 @@ enum Condition {
 }
 
 ## Whether this building is the city's power station — see the section above, and
-## `CityMap.power_station`. `_station_door_col` and `_station_yard_cols` say where its parts are;
+## `CityMap.power_station_blocks()`. `_station_door_col` and `_station_yard_cols` say where its parts are;
 ## all three are handed over at once by `dress_as_power_station()`, and asked by
 ## `is_power_station()`.
 var _power_station := false
@@ -360,23 +360,27 @@ func dress_as_power_station(door_col: int, yard_cols: Vector2i) -> void:
 ## front regardless of this flag — only whether the column is kept depends on it — so flipping this
 ## never moves any other roll on `_build_front()`'s own stream. Flipping it after the front is
 ## already built rebuilds the front (`_rebuild()`), so a fire escape rolled before the flag was set
-## does not survive it. The door's own column(s) still draw no window — see `door_world_x_range`.
+## does not survive it. The door's own column(s) still draw no window — see `_door_span`.
 var _is_home_building := false
 
 ## The door's own world-space x-span, `[min, max)`, or `Vector2.INF` for a building nobody told
 ## about one — the same "no such point" sentinel the touch controls' direct heading setter reads as
 ## "her own position" and `home_arrow.gd`'s `target` already use, and `_column_under_door()`'s
 ## overlap test always answers false against it, since nothing is ever greater than `INF`. Set by `City._spawn_buildings()` for
-## every building on the home block, from the same `map.home_rect` centre `City._spawn_home()`
-## places the door sprite at: the door is a separate sprite standing in front of whatever the wall
-## would otherwise draw, so the column(s) behind it (`_column_under_door()`) draw plain wall
-## instead of a window regardless of `_is_home_building`. Meaningless off `_is_home_building`, since
-## nobody else ever draws a ground-floor window to begin with. A geometry fact, not a roll, so
-## setting it only needs a redraw.
-@export var door_world_x_range := Vector2.INF:
-	set(value):
-		door_world_x_range = value
-		queue_redraw()
+## every building on the home block, from the same `map.home_tile_rect()` centre
+## `City._spawn_home()` places the door sprite at: the door is a separate sprite standing in
+## front of whatever the wall would otherwise draw, so the column(s) behind it
+## (`_column_under_door()`) draw plain wall instead of a window regardless of
+## `_is_home_building`. Meaningless off `_is_home_building`, since nobody else ever draws a
+## ground-floor window to begin with. A geometry fact, not a roll, so handing it over only needs
+## a redraw.
+var _door_span := Vector2.INF
+
+## Hands the building the world x span the home door's sprite covers (`City._spawn_buildings()`'s
+## one call): a redraw, since it moves which column draws plain wall.
+func mark_door_span(span: Vector2) -> void:
+	_door_span = span
+	queue_redraw()
 
 ## Per-column: true where the tile directly south of this front's own ground row is another
 ## building rather than walkable ground, so nobody can ever stand in front of that column, and that
@@ -515,19 +519,21 @@ func board_neighbor_window_at(col: int) -> void:
 
 ## The torn pictures this front draws its sheets through, handed over by `PosterWalls.setup()` to
 ## every front it dresses; a front with no posters needs none.
-var poster_art: PosterArt = null
+var _poster_art: PosterArt = null
+
+## Hands this front the torn pictures its sheets are drawn through (`PosterWalls.setup()`'s call
+## for every front it dresses).
+func use_poster_art(art: PosterArt) -> void:
+	_poster_art = art
 
 ## The posters on this front's blank ground-floor cells: column -> a cell as `PosterState` holds
 ## it (`kind`, `tear`, `under`, `under_tear`, `side`). Handed over whole by `PosterWalls.refresh()`,
 ## which owns what is pasted where; this only draws it. A column that is not blank is never handed
 ## one, so nothing here re-checks the window or door rules.
-var posters: Dictionary = {}:
-	set(value):
-		posters = value
-		queue_redraw()
+var _posters: Dictionary = {}
 
 ## Whether the neighbor has been taken, which draws this front's wanted notices with her face
-## crossed out (`PosterArt.texture_for()`). Handed over with `posters` by `PosterWalls.refresh()`,
+## crossed out (`PosterArt.texture_for()`). Handed over with `_posters` by `PosterWalls.refresh()`,
 ## which asks the run; a front holds no run of its own.
 var _neighbor_taken := false
 
@@ -595,11 +601,12 @@ func stand_on_home_block(on_it: bool) -> void:
 func put_roof_objects_in(parent: Node2D) -> void:
 	roof_object_parent = parent
 
-## Hands this front the cells it draws and whether the neighbor was taken (see `posters` and
+## Hands this front the cells it draws and whether the neighbor was taken (see `_posters` and
 ## `_neighbor_taken`): `PosterWalls.refresh()`'s one hand-over, which redraws the front.
 func hand_over_posters(cells: Dictionary, taken: bool) -> void:
 	_neighbor_taken = taken
-	posters = cells
+	_posters = cells
+	queue_redraw()
 
 var _condition := Condition.LIVED_IN
 
@@ -624,24 +631,30 @@ func is_burnt() -> bool:
 ## `Tuning.degradation_for(day)`, not stored anywhere the roll itself depends on, so changing it
 ## only ever needs a redraw rather than a full `_rebuild()` — and for whether the power station's
 ## hall is lit (`_clerestory_texture()`).
-@export var day := 1:
-	set(value):
-		if day == value:
-			return
-		day = value
-		queue_redraw()
+var _day := 1
+
+## Shows the building as day `day` says it is: a redraw, and nothing once it already shows it
+## (`City._dress_blocks()` hands it the day on every dress).
+func show_day(day: int) -> void:
+	if _day == day:
+		return
+	_day = day
+	queue_redraw()
 
 ## Whether the city has power. With it off every window is dark whatever `_condition` and the
 ## build-time roll say, and the power station's hall is dark too — the blackout's whole effect on a
 ## building, set on every one of them in the same frame by `Blackout`. Only a redraw: which windows
 ## *would* be lit is still `_windows`, untouched, so the power coming back (a retried day) puts
 ## exactly the same lights back on.
-@export var powered := true:
-	set(value):
-		if powered == value:
-			return
-		powered = value
-		queue_redraw()
+var _powered := true
+
+## Switches the building's power on or off (`Blackout`'s one effect on a building): a redraw, and
+## nothing once it already is that way.
+func switch_power(on: bool) -> void:
+	if _powered == on:
+		return
+	_powered = on
+	queue_redraw()
 
 ## The tile rect this building stands on, so the city can find its block again (`lot_rect()`).
 var _lot := Rect2i()
@@ -661,7 +674,12 @@ var _collision: CollisionShape2D
 ## roof descriptions and retained drawing are resident around the camera (`residence()`). An
 ## unequipped building stands resident on its own; `equip()` hands it to the residency unprepared.
 var _residence := _new_residence(true)
-var scenery_clock: SceneryGround
+var _scenery_clock: SceneryGround
+
+## Hands the building the city's scenery clock, the one its vents' frames follow
+## (`City._spawn_buildings()`'s call).
+func use_scenery_clock(clock: SceneryGround) -> void:
+	_scenery_clock = clock
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
 ## This building's own upper-floor window style — one of `_WindowStyle`, rolled once with
@@ -811,9 +829,9 @@ func _scenery_bounds() -> Rect2:
 			footprint + Vector2(TILE * 2, extension * TILE + TILE * 3))
 
 func _prepare_scenery() -> void:
-	if scenery_clock:
-		_vent_timer = fmod(scenery_clock.elapsed(), VENT_FRAME_INTERVAL)
-		_vent_frame_b = int(scenery_clock.elapsed() / VENT_FRAME_INTERVAL) % 2 == 1
+	if _scenery_clock:
+		_vent_timer = fmod(_scenery_clock.elapsed(), VENT_FRAME_INTERVAL)
+		_vent_frame_b = int(_scenery_clock.elapsed() / VENT_FRAME_INTERVAL) % 2 == 1
 	_build_windows()
 	_build_roof_furniture()
 	_build_roof_layers()
@@ -843,7 +861,7 @@ func roof_tiles() -> int:
 ## the same street with nobody in it, and that reads at a glance where a colour shift alone
 ## would not.
 func _lit(index: int) -> bool:
-	if _condition != Condition.LIVED_IN or not powered:
+	if _condition != Condition.LIVED_IN or not _powered:
 		return false
 	return _windows[index] if index < _windows.size() else false
 
@@ -1081,7 +1099,7 @@ func _entrance_door_texture() -> StringName:
 ## floor (`row == 0`) of a multi-story building that is not her own: a ground floor is shops or
 ## blank wall, never windows (`docs/CITY.md`, "A front is district and block purpose"), and a
 ## one-row facade has no upper floor to make it multi-story in the first place. Her own building
-## keeps its ground-floor windows too, except the column(s) `door_world_x_range` covers
+## keeps its ground-floor windows too, except the column(s) `_door_span` covers
 ## (`_column_under_door()`) — the door is a separate sprite standing in front of whatever the wall
 ## would otherwise draw there, so a window behind it never showed anything but the door's own back.
 ## `col` defaults to 0 for every caller that does not care, since it only matters where
@@ -1096,13 +1114,13 @@ func _draws_window_at(row: int, col: int = 0) -> bool:
 		return false
 	return row > 0 or _is_home_building or wall_tiles() < 2
 
-## Whether ground-floor column `col`'s own world-space footprint overlaps `door_world_x_range`.
+## Whether ground-floor column `col`'s own world-space footprint overlaps `_door_span`.
 ## The door is 26px wide against a `TILE` (32px) column, so it may straddle two of them; both then
 ## draw plain wall instead of a window. Called only from `_draws_window_at()`, and only once
 ## `_is_home_building` already is.
 func _column_under_door(col: int) -> bool:
 	var min_x := global_position.x + _cell(col, 0).x
-	return min_x < door_world_x_range.y and min_x + TILE > door_world_x_range.x
+	return min_x < _door_span.y and min_x + TILE > _door_span.x
 
 ## Column `col`'s own world-space horizontal centre — `CityFronts.board_neighbor_window()`'s own way of
 ## finding the column nearest the door without reaching into `_cell()`, which stays private to
@@ -1264,7 +1282,7 @@ func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
 ## one night she is sent to its door (`docs/NARRATIVE.md`, "What the tasks are for"); on every
 ## other day the station is a building she passes, drawn as it was approved, unlit.
 func _clerestory_texture() -> StringName:
-	if powered and day == Tuning.POWER_STATION_DAY:
+	if _powered and _day == Tuning.POWER_STATION_DAY:
 		return POWER_STATION_CLERESTORY_LIT
 	return POWER_STATION_CLERESTORY
 
@@ -1336,7 +1354,7 @@ func _ground_floor_texture(col: int) -> StringName:
 		return STOREFRONT_BURNT
 	var store := col / 2
 	var index: int = _storefront_variant[store]
-	var ambient_shutter := _storefront_shutter_severity[store] < Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE
+	var ambient_shutter := _storefront_shutter_severity[store] < Tuning.degradation_for(_day) * AMBIENT_SHUTTER_SHARE
 	if _condition == Condition.BOARDED or ambient_shutter:
 		return STOREFRONT_SHUTTERED_TEXTURES[index]
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
@@ -1405,25 +1423,25 @@ func blank_ground_floor_cells() -> Array[Rect2]:
 func _ground_cell(col: int) -> Rect2:
 	return Rect2(_cell(col, 0), Vector2(TILE, TILE))
 
-## The sheets on the blank ground-floor cells (`posters`), after the plinth and before the door and
+## The sheets on the blank ground-floor cells (`_posters`), after the plinth and before the door and
 ## fire escapes, so a fire escape's platform, whose brackets reach eight pixels into the columns
 ## beside it, still stands in front of a sheet pasted there. Drawn at their own colours, never the
 ## wall's tint. A burnt front has lost them with its paint. An older sheet showing under a newer
 ## one is drawn first, shifted the other way — see `PosterArt.UNDER_OFFSET`.
 func _draw_posters() -> void:
-	if posters.is_empty() or _condition == Condition.BURNT:
+	if _posters.is_empty() or _condition == Condition.BURNT:
 		return
-	for col: int in posters:
-		var cell: Dictionary = posters[col]
+	for col: int in _posters:
+		var cell: Dictionary = _posters[col]
 		var at := _cell(col, 0)
 		var side := float(cell["side"])
 		var over := Vector2.ZERO
 		if int(cell["under"]) != PosterState.NONE:
-			draw_texture(poster_art.texture_for(atlas, int(cell["under"]), int(cell["under_tear"]),
+			draw_texture(_poster_art.texture_for(atlas, int(cell["under"]), int(cell["under_tear"]),
 					_neighbor_taken),
 					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
 			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
-		draw_texture(poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]),
+		draw_texture(_poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]),
 				_neighbor_taken), at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than

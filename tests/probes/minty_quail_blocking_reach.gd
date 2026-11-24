@@ -68,7 +68,7 @@ func _one_day(day: int) -> int:
 			map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 		for segment: StreetNetwork.Segment in region_plan.door_segments():
 			map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-		for segment: StreetNetwork.Segment in map.network.around_blocks(
+		for segment: StreetNetwork.Segment in map.street_network().around_blocks(
 				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 		var boundary := {}
@@ -135,8 +135,9 @@ func _one_day(day: int) -> int:
 ## The route tiles of the whole map.
 static func corridor_tiles(map: CityMap, corridor: Corridor) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	var size := map.size_in_tiles()
+	for y in size.y:
+		for x in size.x:
 			var tile := Vector2i(x, y)
 			if corridor.carries_a_route(tile):
 				found.append(tile)

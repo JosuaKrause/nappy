@@ -259,7 +259,7 @@ func _scan(def: EventDef, side: int) -> Array[Vector2i]:
 		if home_street:
 			doorstep = home_street.tile_rect()
 	var trees := _tree_tiles()
-	# In tiles: `CityMap.power_station` names the station's two blocks.
+	# In tiles: `CityMap.power_station_blocks()` names the station's two blocks.
 	var station := CityMap.blocks_tile_rect(_map.power_station_blocks()) \
 			if def.burns_its_front() and _map.has_power_station() else Rect2i()
 	var precinct := _weights.precinct()
