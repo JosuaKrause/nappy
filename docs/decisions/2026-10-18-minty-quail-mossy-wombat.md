@@ -21,9 +21,10 @@ minty-quail's scene recipes' pass (`.claude/briefs/designs/minty-quail-scene-rec
 - The design's §2.8 has the column's happenings take no fronts. With none, the neighbor's window is
   not boarded on day 11 and later (`test_recipe_structures`), since the day start boards it through
   the fronts; the runtime still hands `_world.dressing().fronts()`, and no scene changes.
-- `SealPlanner.candidates()` and `pictures_for()` are internal (`_candidates()`, `_pictures_for()`): once the
-  runtime stopped reading the table, only the seal planner's own file and `test_seals` and `test_shapes`
-  did, and no `[kept]` line was written for them. The two suites ask the pictures through
-  `SealPlanner.candidate_named()` over the ids `tests/seal_picture_ids.gd` lists, and a check holds that every
-  row a day's sited seals stand is one of those pictures', so a picture added to the table and sited is found.
+- `SealPlanner.candidates()` stays public with a `[kept]` line for information that cannot be had another
+  way: once the runtime stopped reading the table, only `test_seals` and `test_shapes` do, and a placed
+  seal's plan does not say which picture or strength placed it, so only the table shows each picture's
+  strength and rows. `pictures_for()` is internal (`_pictures_for()`), read only by its own file. A hand list
+  of the ids in the tests copied the table into them and let a thirteenth picture of known rows pass unseen,
+  so the suites read the table directly.
 - Every scene recipe passes, and a `task-13-roadblock` draft is byte-identical before and after.

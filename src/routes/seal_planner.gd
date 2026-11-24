@@ -160,13 +160,13 @@ class Candidate extends RefCounted:
 	var strength := Strength.SOFT
 	var def_ids: Array[String] = []
 
-## The day's eight pictures. Built fresh by every call, so no caller holds another's table.
-static func _candidates() -> Array[Candidate]:
+## The table's pictures. Built fresh by every call, so no caller holds another's table.
+static func candidates() -> Array[Candidate]:
 	return _build_candidates()
 
 ## The production picture called `id`, or null when there is none.
 static func candidate_named(id: String) -> Candidate:
-	for candidate in _candidates():
+	for candidate in candidates():
 		if candidate.id == id:
 			return candidate
 	return null
@@ -352,7 +352,7 @@ static func _build_escape_candidates() -> Array[Candidate]:
 		_candidate("finale_craters", Strength.HARD, ["impact_crater"]),
 	]
 
-## The escape's four pictures, built fresh by every call like `_candidates()`.
+## The escape's four pictures, built fresh by every call like `candidates()`.
 static func _escape_candidates() -> Array[Candidate]:
 	return _build_escape_candidates()
 
@@ -360,7 +360,7 @@ static func _escape_candidates() -> Array[Candidate]:
 static func _pictures_for(spec: DaySpec) -> Array[Candidate]:
 	if spec.seal_pictures() == DaySpec.SealPictures.ESCAPE:
 		return _escape_candidates()
-	return _candidates()
+	return candidates()
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one

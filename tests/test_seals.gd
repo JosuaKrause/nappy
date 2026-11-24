@@ -34,7 +34,6 @@ func run(t: TestRunner) -> void:
 	_test_a_day_is_reachable_without_the_main_road(t)
 	_test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t)
 	_test_candidate_shapes(t)
-	_test_every_sited_seal_is_one_of_the_named_pictures(t)
 	_test_day_one_has_a_working_soft_pair(t)
 	_test_thinning_leaves_a_walkable_line(t)
 	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
@@ -388,42 +387,8 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 
 # --------------------------------------------------------------------- candidates ---
 
-## The seal pictures, each asked by its id (`SealPictureIds`); one the planner does not answer is
-## left out, and `_test_every_sited_seal_is_one_of_the_named_pictures()` fails it.
-func _pictures() -> Array[SealPlanner.Candidate]:
-	var found: Array[SealPlanner.Candidate] = []
-	for id in SealPictureIds.every():
-		var candidate := SealPlanner.candidate_named(id)
-		if candidate:
-			found.append(candidate)
-	return found
-
-## **The list of pictures is whole**: every row a day's sited seals stand, on every city and on
-## the days that sealed streets, is a row of one of the pictures `SealPictureIds` names, so a picture
-## the planner gains and sites is not left unchecked by the suites that walk the list.
-func _test_every_sited_seal_is_one_of_the_named_pictures(t: TestRunner) -> void:
-	var pictures := _pictures()
-	t.check(pictures.size() == SealPictureIds.every().size(),
-			"the seal planner answers every picture the suites name (%d of %d)"
-			% [pictures.size(), SealPictureIds.every().size()])
-	var named := {}
-	for candidate in pictures:
-		for id in candidate.def_ids:
-			named[id] = true
-	var strangers := {}
-	var sited := 0
-	for map in _maps:
-		for day: int in [1, 6, 12]:
-			for plan in _seals_for(map, day):
-				sited += 1
-				if not named.has(plan.row_id()):
-					strangers[plan.row_id()] = true
-	t.check(sited > 0, "some seals were sited (%d)" % sited)
-	t.check(strangers.is_empty(),
-			"every sited seal's row belongs to a named picture; the others: %s" % [strangers.keys()])
-
 func _test_candidate_shapes(t: TestRunner) -> void:
-	for candidate in _pictures():
+	for candidate in SealPlanner.candidates():
 		var wanted := 1 if candidate.strength == SealPlanner.Strength.HARD else 2
 		t.check(candidate.def_ids.size() == wanted,
 				"seal candidate %s names %d def(s), want %d for its strength"
@@ -442,7 +407,7 @@ func _test_candidate_shapes(t: TestRunner) -> void:
 ## alley's mouth can be walled with a soft picture's row too) is one of a soft picture's rows.
 func _test_day_one_has_a_working_soft_pair(t: TestRunner) -> void:
 	var soft_ids := {}
-	for candidate in _pictures():
+	for candidate in SealPlanner.candidates():
 		if candidate.strength == SealPlanner.Strength.SOFT:
 			for id in candidate.def_ids:
 				soft_ids[id] = true
@@ -475,7 +440,7 @@ func _test_thinning_leaves_a_walkable_line(t: TestRunner) -> void:
 	t.check(untouched_width >= Tuning.PLAYER_BODY_RADIUS * 2.0,
 			"the pram (%.0fpx across) fits the %dpx a thinned pair's far side never touches"
 			% [Tuning.PLAYER_BODY_RADIUS * 2.0, untouched_width])
-	for candidate in _pictures():
+	for candidate in SealPlanner.candidates():
 		if candidate.strength != SealPlanner.Strength.SOFT:
 			continue
 		for id in candidate.def_ids:
@@ -539,7 +504,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t: TestRunner) -> void:
 	var width := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
 	var world := map.tile_rect_to_world(segment.tile_rect())
 	var checked := 0
-	for candidate in _pictures():
+	for candidate in SealPlanner.candidates():
 		if candidate.strength != SealPlanner.Strength.HARD:
 			continue
 		var def := EventCatalogue.by_id(candidate.def_ids[0])

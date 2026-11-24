@@ -131,10 +131,7 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 
 func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
-	for picture_id in SealPictureIds.every():
-		var candidate := SealPlanner.candidate_named(picture_id)
-		if not candidate:
-			continue
+	for candidate in SealPlanner.candidates():
 		for id in candidate.def_ids:
 			var def := EventCatalogue.by_id(id)
 			t.check(def != null, "seal candidate '%s' names a real catalogue row" % id)
