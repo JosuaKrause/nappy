@@ -12,7 +12,7 @@ extends RefCounted
 ## `CityMap`/`RouteTree` pair every other route test works from directly.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const GroundCells := preload("res://tests/ground_cells.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
+## The seed of the run the city is handed (`RunCity.started_run()`).
 const RUN_SEED := 2
 
 ## What `_visit_every_neighborhood()` read off the ground: each cell's source id and atlas coordinates.
@@ -33,9 +33,10 @@ func run(t: TestRunner) -> void:
 func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(90210))
+	RunCity.build(city, run, CityGenerator.generate(90210))
 
 	var day := 1
 	var state := CityState.new()

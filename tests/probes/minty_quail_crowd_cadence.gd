@@ -73,13 +73,14 @@ func run(t: TestRunner) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in seeds:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
 		var builder := RunCity.new_builder()
 		var drawn := DrawnView.on(t)
 		builder.use_the_drawn_view(drawn)
 		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
-		RunCity.build(city, CityGenerator.generate(city_seed), builder)
+		RunCity.build(city, run, CityGenerator.generate(city_seed), builder)
 		for day in DAYS:
 			for walk in WALKS:
 				for per_tick in frames:

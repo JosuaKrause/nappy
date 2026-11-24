@@ -121,7 +121,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	var city: City = CITY_SCENE.instantiate()
 	city.use_run(run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, run, MapCache.of(SEED))
 	RunCity.events(city).stream_within(INF)
 
 	var state := CityState.new()
@@ -141,7 +141,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	if her:
 		resistance.use_player(stroller)

@@ -306,9 +306,10 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunn
 ## origin is north of that foot and under anything south of it — never in the `Buildings` layer,
 ## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s: the one case here that builds one.
 func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
+	var run := RunCity.started_run(BASE_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(BASE_SEED))
+	RunCity.build(city, run, MapCache.of(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")
 	var buildings: Node2D = city.get_node("Buildings")
 	t.check(entities.y_sort_enabled and entities.z_index > buildings.z_index,

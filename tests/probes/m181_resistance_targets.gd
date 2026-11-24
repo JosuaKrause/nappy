@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in seeds:
 		var city: City = RunCity.in_run(CITY_SCENE, own_run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, own_run, CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
 			var state := CityState.new()
 			state.begin_day(city.map().plans_by_block(), day)

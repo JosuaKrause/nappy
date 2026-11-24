@@ -1644,10 +1644,10 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t: TestRunner) -> 
 ## the day director's start's (`DaySpec.crowd_density`), held where the real city section is booted
 ## (`_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart`).
 func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
-	var run := city.run
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEEDS[0]))
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), 1)
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend().block_arcs(), 1, run.calendar().day_rng(1, "closures"), spec)
@@ -1760,9 +1760,10 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the row's `aftermath.leaves_behind()`.
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEEDS[0]))
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	RunCity.events(city).stream_within(INF)
 	var road := city.map().tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventPlan] = [
@@ -2088,10 +2089,11 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 	bare.owe_the_return(an_act_iv_day, 0)
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEEDS[0]))
-	city.run.header().set_day(an_act_iv_day)
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
+	run.header().set_day(an_act_iv_day)
 	GivenPlanner.hand_in(RunCity.events(city), [] as Array[EventPlan])
 	var none: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
@@ -2108,14 +2110,15 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 ## `_test_the_escape_owes_no_return_leg`'s, on the escape's own spec.
 func _test_a_days_spec_owes_its_return_leg(t: TestRunner) -> void:
 	var an_act_iv_day := 13
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEEDS[0]))
-	city.run.header().set_day(an_act_iv_day)
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
+	run.header().set_day(an_act_iv_day)
 	var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
 	var consumed: Array[String] = []
 	RigStreets.begin(city.streets(), city.map(), spec)
-	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(an_act_iv_day), consumed)
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(an_act_iv_day), consumed)
 	var before := RunCity.events(city).owed_ahead()
 	EventBus.return_phase_started.emit()
 	var owed := RunCity.events(city).owed_ahead() - before

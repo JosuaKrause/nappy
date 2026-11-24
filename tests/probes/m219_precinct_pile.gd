@@ -17,10 +17,11 @@ func run(t: TestRunner) -> void:
 		var seed_value: int = case[0]
 		var day: int = case[1]
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		city.run.header().set_day(day)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		city.run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), day)
 		city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"))
 		var doorstep := map.doorstep_world_position()

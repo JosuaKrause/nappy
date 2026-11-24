@@ -21,9 +21,10 @@ const SCREEN := Vector2(640.0, 360.0)
 
 func run(t: TestRunner) -> void:
 	for city_seed: int in [4242, 5551212]:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		var day := 1
 		var state := CityState.new()
 		state.begin_day(city.map().plans_by_block(), day)

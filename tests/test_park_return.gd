@@ -122,8 +122,10 @@ func _touch_the_swing(t: TestRunner, main: Node2D, through_the_director := false
 	var city := Boot.city(main)
 	_happenings = ResistanceHappenings.new()
 	_happenings.use_bus(EventBus)
-	_happenings.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city,
-			city.atlas, null, RunCity.spawn_siting(city))
+	# The library the booted city draws from is the one the sitting the suite parked keeps.
+	var parked := _home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
+	_happenings.setup(city.map(), _run, RunCity.events(city), city.streets(), city.fronts(), city,
+			parked.atlas(), null, RunCity.spawn_siting(city))
 	_happenings.start_day(_run.header().day(), false)
 	t.check(_happenings.take_the_park(ResistanceReads.day_reachability(Boot.city(main))[1]),
 			"reaching the swing takes the park")

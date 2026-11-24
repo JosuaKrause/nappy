@@ -54,9 +54,10 @@ func run(t: TestRunner) -> void:
 	print("  %6s %4s %6s %8s   %-26s   %-26s" % ["seed", "day", "routes", "seconds",
 			"events", "crowd"])
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		for day in DAYS:
 			city.run.header().set_day(day)
 			var rng := RandomNumberGenerator.new()

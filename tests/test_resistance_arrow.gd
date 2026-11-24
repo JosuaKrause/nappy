@@ -451,7 +451,7 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 			and ResistanceReads.mast_at(director, RunCity.events(_city)) == third,
 			"following her between masts moves the task to the one she actually touches")
 	await _step_a_frame(t)
-	t.check(step.index in _city.run.resistance().completed_steps(),
+	t.check(step.index in _run.resistance().completed_steps(),
 			"touching the third mast completes the task")
 	var silenced := {}
 	for plan in RunCity.events(_city).plans():
@@ -461,7 +461,7 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 			and not silenced.get(routed, true),
 			"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
 	var scarred := []
-	for scar: Dictionary in _city.run.attempt_spend().scars():
+	for scar: Dictionary in _run.attempt_spend().scars():
 		if String(scar["id"]) == DawnMasts.SILENCED_MAST:
 			scarred.append(scar["position"])
 	t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
@@ -529,9 +529,9 @@ func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t: TestRunner)
 ## rig]`, the shape `_read_the_mark_on()` answers, the finale having no mark.
 func _start_the_finale(t: TestRunner, seed_value: int) -> Array:
 	var day := Tuning.RUN_LENGTH_DAYS
-	GivenRun.completed_steps(_city.run, _all_but_the_finale())
-	GivenRun.alley_tiles(_city.run, [])
-	var state := _city.run.attempt_spend().block_arcs()
+	GivenRun.completed_steps(_run, _all_but_the_finale())
+	GivenRun.alley_tiles(_run, [])
+	var state := _run.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))

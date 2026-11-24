@@ -202,9 +202,10 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	var checked_any_pair := false
 	for seed_value: int in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
+		var run := RunCity.started_run(BASE_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), 1)
 		var rng := RandomNumberGenerator.new()
@@ -386,9 +387,11 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t: TestRunner) -> void:
 ## nor releases a chunk while the beds are read.
 func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
+	var run := RunCity.started_run(BASE_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, map)
+	var library := AtlasLibrary.new()
+	RunCity.build(city, run, map, null, false, library)
 	var decals: CityDecals = city.get_node("Decals")
 	var planted := StreetTrees.planted(map)
 	var recorder := RecordingSceneryDrawer.new()
@@ -408,7 +411,7 @@ func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	t.check(planted.size() > 0, "the rendering contract has a planted tree to inspect")
 	t.check(tree_count == planted.size() and tree_count > 0,
 			"each planted street tree keeps one upright entity")
-	var bed := city.atlas.region(CityDecals.TREE_PIT)
+	var bed := library.region(CityDecals.TREE_PIT)
 	_check_one_bed_for_each_tree(t, _beds_drawn(recorder.shown(), bed), bed, planted, map,
 			"the city's streamed decals")
 	t.check(not recorder.shown().is_empty()

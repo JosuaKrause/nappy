@@ -38,9 +38,10 @@ var _lines: Array[String] = []
 func run(t: TestRunner) -> void:
 	var printed := 0
 	for seed_value in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in DAYS:
 			printed += _a_day(t, city, seed_value, day)
 		city.free()

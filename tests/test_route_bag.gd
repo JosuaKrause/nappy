@@ -468,9 +468,10 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 			% [asked_for_the_mast, walked])
 
 func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, size: int) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(SEED))
+	RunCity.build(city, run, CityGenerator.generate(SEED))
 	# What the events tell the run log: a place is put on her route when a line says so.
 	var put_down: Array[String] = []
 	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
@@ -488,15 +489,15 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GivenRun.completed_steps(city.run, done)
-	GivenRun.failed_steps(city.run, [])
-	city.run.resistance().set_progress(0)
+	GivenRun.completed_steps(run, done)
+	GivenRun.failed_steps(run, [])
+	run.resistance().set_progress(0)
 	var resistance := ResistanceDirector.new()
 	var told: Array[String] = []
 	resistance.use_trace(RecordingTrace.new(told))
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	var resistance_rng := RandomNumberGenerator.new()
 	resistance_rng.seed = hash("route-bag:%d:%d:resistance" % [SEED, day])

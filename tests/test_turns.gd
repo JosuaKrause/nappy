@@ -75,9 +75,10 @@ func run(t: TestRunner) -> void:
 		_test_a_car_turns_at_the_last_junction_before_the_boundary,
 	]
 	for scenario in scenarios:
-		_city = RunCity.with_own_run(CITY_SCENE, SEED)
+		var run := RunCity.started_run(SEED)
+		_city = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(_city)
-		RunCity.build(_city, MapCache.of(SEED))
+		RunCity.build(_city, run, MapCache.of(SEED))
 		_junction = _plain_junction()
 		t.check(_junction.x >= 0, "this city has an ordinary four-way junction to turn at")
 		if _junction.x >= 0:

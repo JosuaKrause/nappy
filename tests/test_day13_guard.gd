@@ -69,6 +69,8 @@ var _view := Rect2():
 var _seen_through: VisibleView
 ## The city the test in progress built (`_build_city()`), in a run of its own.
 var _city: City
+## The run `_city` stands in.
+var _run: RunState
 ## What each day's streams are named after: this suite's own, or, empty, the day-13 probes' own
 ## (`tests/probes/calm_pelican_day13_guard_walk.gd`), so a day the probes measured is built again.
 var _streams := "day13-guard:"
@@ -1223,12 +1225,13 @@ func _task_guard() -> EventInstance:
 			return instance
 	return null
 
-## The city of `seed_value` in a run of its own (`RunCity.with_own_run()`, held by the city), so
+## The city of `seed_value` in a run of its own (`RunCity.started_run()`), so
 ## the steps done and the alleys used are this test's and gone with it.
 func _build_city(t: TestRunner, seed_value: int) -> City:
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	_run = RunCity.started_run(RUN_SEED)
+	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
-	RunCity.build(_city, CityGenerator.generate(seed_value))
+	RunCity.build(_city, _run, CityGenerator.generate(seed_value))
 	return _city
 
 func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDirector:
@@ -1236,7 +1239,7 @@ func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDir
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	var run: RunState = city.run
+	var run: RunState = _run
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
@@ -1246,7 +1249,7 @@ func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDir
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(),
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
 			city, null,
 			RunCity.spawn_siting(city))
 	_seen_through = RunCity.events(city).visible_view()

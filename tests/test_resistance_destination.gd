@@ -14,6 +14,8 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
 var _city: City
+## The run `_city` stands in.
+var _run: RunState
 
 func run(t: TestRunner) -> void:
 	_test_every_task_days_destination_holds_the_arrow(t)
@@ -21,7 +23,7 @@ func run(t: TestRunner) -> void:
 		_city.free()
 		_city = null
 
-## Through the real day order on every task day, each in a run of its own (the city holds it): the
+## Through the real day order on every task day, each in a run of its own: the
 ## pickup is on offer and read, the task its touch activates is on offer, and the red arrow ends on
 ## that task's destination. What each contact point draws is `test_destination_drawing`'s.
 func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
@@ -32,7 +34,7 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 			days.append(step.day)
 	for day in days:
 		_build_city(t)
-		var run := _city.run
+		var run := _run
 		var finale := day == finale_day
 		run.header().set_day(day)
 		GivenRun.completed_steps(run, _all_but_the_finale() if finale \
@@ -46,7 +48,7 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+		director.setup(_city.map(), run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 				RunCity.spawn_siting(_city))
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()
@@ -74,9 +76,10 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 func _build_city(t: TestRunner) -> void:
 	if _city != null:
 		_city.free()
-	_city = RunCity.with_own_run(CITY_SCENE, SEED)
+	_run = RunCity.started_run(SEED)
+	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
-	RunCity.build(_city, MapCache.of(SEED))
+	RunCity.build(_city, _run, MapCache.of(SEED))
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

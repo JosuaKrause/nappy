@@ -42,9 +42,10 @@ func run(t: TestRunner) -> void:
 		print("DAY7_VAN day %d %s, %d walks: %s" % [case[0], case[1], SEEDS.size(), tally])
 
 func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> String:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))

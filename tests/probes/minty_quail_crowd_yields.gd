@@ -69,13 +69,14 @@ func run(t: TestRunner) -> void:
 		if cause == "car_strike":
 			_strikes += 1)
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
 		var builder := RunCity.new_builder()
 		var drawn := DrawnView.on(t)
 		builder.use_the_drawn_view(drawn)
 		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
-		RunCity.build(city, CityGenerator.generate(seed_value), builder)
+		RunCity.build(city, run, CityGenerator.generate(seed_value), builder)
 		for day: int in [3, 12, 13]:
 			_a_day(t, city, seed_value, day)
 		RunCity.crowd(city)._player = null

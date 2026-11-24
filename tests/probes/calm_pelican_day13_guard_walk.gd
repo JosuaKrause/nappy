@@ -100,9 +100,10 @@ func run(t: TestRunner) -> void:
 ## A day 13 on `seed_value` with the mark read from where it stands: `{city, director, player,
 ## step, mark}`, or empty when the day offers no roadblock task.
 func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
-	var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city := RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var director := ResistanceDirector.new()
 	var player := _start_the_day(t, city, director, seed_value)
 	var day := {"city": city, "director": director, "player": player}

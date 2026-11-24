@@ -42,7 +42,8 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	var started := Time.get_ticks_usec()
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	# The run is held here: swapping the script drops the one the city was handed.
 	var own_run := city.run
 	city.set_script(TIMED_CITY)
@@ -50,7 +51,7 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()
-	RunCity.build(city, map, null, false, _atlas)
+	RunCity.build(city, own_run, map, null, false, _atlas)
 	var built_spans: Dictionary = city.get("spans")
 	var row := built_spans.duplicate()
 	row.merge({"seed": seed_value, "trial": trial, "stage": "build",

@@ -33,8 +33,10 @@ const REACTION := 2.0
 
 ## The city the running test stands in, made fresh by `_at_the_swing()` and freed by `_end()`.
 var _city: City
-## The run that city stands in, made fresh with it and handed to the city (`City.run`).
+## The run that city stands in, made fresh with it and handed to the city (`RunCity.in_run()`).
 var _run: RunState
+## The library `_city` and its parts draw from, which the happenings and the cordons are handed.
+var _library: AtlasLibrary
 ## Where the swing is, set by `_at_the_swing()` before it runs its `before_the_touch`.
 var _swing_now := Vector2.ZERO
 ## Seconds the suite has ticked the happenings since the touch: the time since the swing.
@@ -86,7 +88,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	_run.start_run(SEED)
 	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
-	RunCity.build(_city, MapCache.of(SEED))
+	_library = AtlasLibrary.new()
+	RunCity.build(_city, _run, MapCache.of(SEED), null, false, _library)
 	GivenRun.completed_steps(_run, [])
 	GivenRun.failed_steps(_run, [])
 	_run.resistance().set_progress(0)
@@ -105,7 +108,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -127,8 +130,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	else:
 		happenings = ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-				_city.atlas, null, RunCity.spawn_siting(_city))
+		happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+				_library, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,
@@ -648,7 +651,7 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
 			var cordon := ParkCordon.new(_city.map(), _city.navigator(), RunCity.events(_city), _city,
-					_city.atlas, fixture.park, RunCity.spawn_siting(_city),
+					_library, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:

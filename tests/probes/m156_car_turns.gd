@@ -47,9 +47,10 @@ var _rows := {}
 func run(t: TestRunner) -> void:
 	for city_seed: int in SEEDS:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		for day: int in DAYS:
 			_one_day(city, map, city_seed, day)
 		city.free()

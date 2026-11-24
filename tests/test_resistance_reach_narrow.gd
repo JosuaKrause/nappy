@@ -217,7 +217,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 			_build_city_in_a_new_run(t, seed_value)
 			var city := _city
 			if step.needs_goal:
-				city.run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+				_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 			var read := _read_the_mark_on(t, day, seed_value)
 			var director: ResistanceDirector = read[0]
 			var player: Stroller = read[2]

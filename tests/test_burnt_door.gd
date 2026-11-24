@@ -21,9 +21,10 @@ const SEED := 1
 const DAY := 8
 
 func run(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(SEED))
+	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var fronts := EventScheduler.row_ground(city.map()).tiles_for(
 			EventCatalogue.by_id("burning_building"))
 	t.check(not fronts.is_empty(), "the city has fronts a fire can catch on")
@@ -34,8 +35,8 @@ func run(t: TestRunner) -> void:
 	var step := maxi(1, fronts.size() / 10)
 	for i in range(0, fronts.size(), step):
 		var shell_at := city.map().tile_to_world(fronts[i])
-		GivenRun.scars(city.run, [{"id": "burnt_shell", "position": shell_at, "since_day": 3}])
-		var director := _task_on_offer(t, city)
+		GivenRun.scars(run, [{"id": "burnt_shell", "position": shell_at, "since_day": 3}])
+		var director := _task_on_offer(t, city, run)
 		var door := city.fronts().way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
 			director.free()
@@ -83,8 +84,8 @@ func run(t: TestRunner) -> void:
 			+ "being taken (%d)" % from_the_side)
 
 	# A run with no recorded scar burns a front for the task, and stands on that building's door too.
-	GivenRun.scars(city.run, [])
-	var director := _task_on_offer(t, city)
+	GivenRun.scars(run, [])
+	var director := _task_on_offer(t, city, run)
 	t.check(director.current_step() != null, "the fallback task is on offer")
 	if director.current_step() != null and director.rider() != null:
 		var door := city.fronts().way_in_behind(director.rider().global_position)
@@ -99,12 +100,13 @@ func tile_is_taken(city: City, tile: Vector2i) -> bool:
 	return not city.map().is_walkable(tile) or city.map().is_obstructed(tile)
 
 ## Day 8 started through the real order and its mark read, so the task is placed. Reading the mark
-## completes a step of the city's run, so the run's resistance starts over for each front.
-func _task_on_offer(t: TestRunner, city: City) -> ResistanceDirector:
-	GivenRun.completed_steps(city.run, [])
-	GivenRun.failed_steps(city.run, [])
-	city.run.resistance().set_progress(0)
-	var state := city.run.attempt_spend().block_arcs()
+## completes a step of `run`, the one the city stands in, so the run's resistance starts over for
+## each front.
+func _task_on_offer(t: TestRunner, city: City, run: RunState) -> ResistanceDirector:
+	GivenRun.completed_steps(run, [])
+	GivenRun.failed_steps(run, [])
+	run.resistance().set_progress(0)
+	var state := run.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng("closures"))
@@ -113,7 +115,7 @@ func _task_on_offer(t: TestRunner, city: City) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()

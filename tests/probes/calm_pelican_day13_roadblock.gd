@@ -54,9 +54,10 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 	var live_counts: Array[int] = []
 	var reading: Array[float] = []
 	for seed_value in SEEDS:
-		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city := RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director: ResistanceDirector = FallbackDirector.new() if fallback \
 				else ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)

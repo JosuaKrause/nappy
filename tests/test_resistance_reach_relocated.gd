@@ -77,7 +77,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			# Her touch on the task's contact, which silences the mast it stands at.
 			director.contact().complete_now()
 			var scarred := false
-			for scar: Dictionary in _city.run.attempt_spend().scars():
+			for scar: Dictionary in _run.attempt_spend().scars():
 				if String(scar["id"]) == DawnMasts.SILENCED_MAST \
 						and (scar["position"] as Vector2).distance_to(foot) < 1.0:
 					scarred = true
@@ -157,7 +157,7 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 ## Plans `day` on the test city in the real day order (closures, then events), from the run's own
 ## scars: what the game does at that day's dawn.
 func _plan_the_day(day: int, seed_value: int) -> void:
-	var state := _city.run.attempt_spend().block_arcs()
+	var state := _run.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))

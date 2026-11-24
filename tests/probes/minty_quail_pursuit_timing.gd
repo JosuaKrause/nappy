@@ -54,9 +54,10 @@ var _running := false
 
 func run(t: TestRunner) -> void:
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in _listed("PROBE_DAYS", DAYS):
 			_a_day(t, city, seed_value, day)
 		city.free()

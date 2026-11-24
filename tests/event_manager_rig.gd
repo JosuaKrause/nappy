@@ -101,11 +101,12 @@ static func build_stage(t: TestRunner, bus: _BUS = null, on: CityMap = null) -> 
 ## manager is the simulation's, standing as `main` stands it, streaming reaching the whole map as
 ## `build_stage()`'s does; the stage frees the city.
 static func build_city_stage(t: TestRunner) -> Stage:
-	var city := RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city := RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, run, MapCache.of(SEED))
 	RunCity.events(city).stream_within(INF)
-	return Stage.new(RunCity.events(city), city.map(), city.run, city.streets(), city)
+	return Stage.new(RunCity.events(city), city.map(), run, city.streets(), city)
 
 ## The stream a day's events are planned from.
 static func rng(day: int) -> RandomNumberGenerator:

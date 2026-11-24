@@ -9,12 +9,13 @@ extends RefCounted
 
 ## `{"cells", "with_sheet", "view_sum", "routes", "underfoot"}`: route cells walked, those with a
 ## sheet in view, the sum of sheets in view over all cells, then per route the distinct sheets
-## seen and the distinct sheets underfoot.
-static func walk(city: City, map: CityMap) -> Dictionary:
+## seen and the distinct sheets underfoot. `run` is the one the city stands in, whose posters are
+## the sheets on the walls.
+static func walk(city: City, run: RunState, map: CityMap) -> Dictionary:
 	var fronts: Array[Vector2i] = []
 	var sheets: Array[Vector2] = []
-	for tile: Vector2i in city.run.posters().cells():
-		if city.run.posters().has_intact_sheet(tile):
+	for tile: Vector2i in run.posters().cells():
+		if run.posters().has_intact_sheet(tile):
 			fronts.append(tile)
 			sheets.append(map.tile_to_world(tile) + Vector2(0, -Tuning.TILE_SIZE * 0.5))
 	var found := {"cells": 0, "with_sheet": 0, "view_sum": 0, "routes": [], "underfoot": []}

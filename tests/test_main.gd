@@ -1354,9 +1354,10 @@ func _ground_of(city: City) -> SceneryGround:
 ## steps. The check reads the actual static `TileMapLayer` cells plus the independently drawn
 ## south-water cells rather than re-deriving what should be there.
 func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, run, MapCache.of(SEED))
 	var ground := _ground_of(city)
 
 	var half := Tuning.VIEW_HALF_EXTENT
@@ -1396,9 +1397,10 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 ## west columns are forest, while the north and south bands own their corners and the bridge's
 ## road carries on to any depth.
 func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, run, MapCache.of(SEED))
 
 	var whole := Rect2i(Vector2i.ZERO, city.map().size_in_tiles())
 	var bounds := city.map().tile_rect_to_world(whole).grow(512.0)

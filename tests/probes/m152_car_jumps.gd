@@ -104,9 +104,10 @@ func run(t: TestRunner) -> void:
 	for rig: Array in rig_days():
 		var city_seed: int = rig[0]
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		for day: int in rig[1]:
 			var result := _watch(city, map, city_seed, day)
 			cars_seen += int(result["cars"])

@@ -31,9 +31,10 @@ func _process(_delta: float) -> void:
 		get_tree().quit(1)
 
 func _run() -> void:
-	_city = RunCity.with_own_run(CITY, 4242)
+	var run := RunCity.started_run(4242)
+	_city = RunCity.in_run(CITY, run)
 	add_child(_city)
-	RunCity.build(_city, CityGenerator.generate(4242))
+	RunCity.build(_city, run, CityGenerator.generate(4242))
 	_city.scenery.set_process(false)
 	_city.hide()
 	var trials: Array[Dictionary] = []

@@ -68,9 +68,10 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 		return
 	var map: CityMap = found["map"]
 	var block: Vector2i = found["block"]
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 
 	var busker_at: Vector2 = map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 	var real := EventCatalogue.by_id("busker")
@@ -317,9 +318,10 @@ func _playground_settles(t: TestRunner) -> void:
 	print("\n== a one-block park with a playground in it: can she settle at its own centre? ==")
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.in_run(CITY_SCENE, run)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []
 		var spec := DaySpec.for_day(1)
 		RigStreets.begin(city.streets(), city.map(), spec)

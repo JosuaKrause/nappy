@@ -27,6 +27,10 @@ const DAY := 6
 const RUN_SEED := 2
 
 var _city: City
+## Where `DevRig.for_spawn_target()` writes what it says, which no case reads back.
+var _trace := RunTrace.new()
+## The run `_city` stands in.
+var _run: RunState
 var _resistance: ResistanceDirector
 
 func run(t: TestRunner) -> void:
@@ -48,9 +52,10 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## manager suites' one city), and the resistance run over the city's own fresh run, so day 6
 ## selects step 1 on a run that has done nothing, on the seed `RUN_SEED` names.
 func _build_day(t: TestRunner) -> void:
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	_run = RunCity.started_run(RUN_SEED)
+	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
-	RunCity.build(_city, MapCache.of(SEED))
+	RunCity.build(_city, _run, MapCache.of(SEED))
 	RunCity.events(_city).stream_within(INF)
 
 	var state := CityState.new()
@@ -62,7 +67,7 @@ func _build_day(t: TestRunner) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	_resistance.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
@@ -76,7 +81,7 @@ func _teardown(t: TestRunner) -> void:
 func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 	for target: String in ["park", "alley"]:
 		var at := DevRig.for_spawn_target(target, _city.map(), RunCity.events(_city), _city.streets(),
-				_resistance, _city.run.header(), _city.trace)
+				_resistance, _run.header(), _trace)
 		t.check(_city.map().is_walkable(_city.map().world_to_tile(at)),
 				"--spawn %s lands on a walkable tile (%s)" % [target, at])
 
@@ -87,7 +92,7 @@ func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> voi
 	var contact := _resistance.contact_position()
 	t.check(contact != Vector2.INF, "day %d has a resistance mark placed" % DAY)
 	var at := DevRig.for_spawn_target("contact", _city.map(), RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header(), _city.trace)
+			_resistance, _run.header(), _trace)
 	t.check(is_equal_approx(at.distance_to(contact), Vector2(70.0, 30.0).length()),
 			"--spawn contact stands off to the side of the mark rather than on top of it (%s)" % at)
 
@@ -96,7 +101,7 @@ func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> voi
 ## through and lands on the doorstep, with a warning rather than a silent wrong answer.
 func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
 	var at := DevRig.for_spawn_target("not-a-real-target", _city.map(), RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header(), _city.trace)
+			_resistance, _run.header(), _trace)
 	t.check(at == _city.map().home_world_position(),
 			"an unrecognised --spawn target falls back to the doorstep rather than guessing")
 

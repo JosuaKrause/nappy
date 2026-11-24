@@ -147,7 +147,8 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	run.start_run(seed_value)
 	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	var library := AtlasLibrary.new()
+	RunCity.build(city, run, CityGenerator.generate(seed_value), null, false, library)
 	GivenRun.completed_steps(run, [])
 	GivenRun.failed_steps(run, [])
 	run.resistance().set_progress(0)
@@ -163,7 +164,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city, null,
 			RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var result := {}
@@ -177,11 +178,11 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city,
-				city.atlas, null, RunCity.spawn_siting(city))
+		happenings.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+				library, null, RunCity.spawn_siting(city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
-		result = await _measure_the_day(city, director, happenings, swing)
+		result = await _measure_the_day(city, library, director, happenings, swing)
 		happenings.start_day(day + 1)
 	director.free()
 	city.free()
@@ -204,7 +205,7 @@ func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 			people += 1
 	return people
 
-func _measure_the_day(city: City, director: ResistanceDirector,
+func _measure_the_day(city: City, library: AtlasLibrary, director: ResistanceDirector,
 		happenings: ResistanceHappenings, swing: Vector2) -> Dictionary:
 	var her := [swing]
 	var shows := _camera_on(her)
@@ -223,7 +224,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	cordon.clear()
-	var again := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, city.atlas,
+	var again := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, library,
 			park, RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
 	again.use_bus(EventBus)
 	her[0] = swing
@@ -234,7 +235,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	again.clear()
 	var runs: Array[Dictionary] = []
 	for place in PLACES:
-		runs.append(await _walk_a_person_out(city, director, park, swing, place))
+		runs.append(await _walk_a_person_out(city, library, director, park, swing, place))
 	result.merge(runs[0])
 	result.people_runs = runs
 	return result
@@ -246,15 +247,15 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 ## it, the steps he took across tape that was up, the tape put up with any part of him within reach
 ## of it (`ParkCordon.WALKER_REACH`) and when each piece went up (by the piece), when the cordon
 ## closed, and the officers' steps onto a body's ground (`_count_the_step()`).
-func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i,
-		swing: Vector2, place: Array) -> Dictionary:
+func _walk_a_person_out(city: City, library: AtlasLibrary, director: ResistanceDirector,
+		park: Vector2i, swing: Vector2, place: Array) -> Dictionary:
 	var area := CordonInTheWorld.park_ground(city.map(), park)
 	var line := CordonInTheWorld.tape_line(city.map(), park)
 	var spot: Vector2 = area.position + area.size * (place[0] as Vector2) + (place[1] as Vector2)
 	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"), spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
-	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, city.atlas, park,
+	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city, library, park,
 			RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
 	cordon.use_bus(EventBus)
 	var her := [swing]

@@ -35,9 +35,10 @@ func run(t: TestRunner) -> void:
 	t.check(printed > 0, "there were officers to print (%d)" % printed)
 
 func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var day := ResistanceSteps.swing_day()
 	city.run.header().set_day(day)
 	var state := city.run.attempt_spend().block_arcs()

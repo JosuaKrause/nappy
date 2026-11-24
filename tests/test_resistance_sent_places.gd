@@ -101,7 +101,7 @@ func _ask_the_task(t: TestRunner, day: int, seed_value: int, scar_at: Vector2,
 	var scars: Array[Dictionary] = []
 	if scar_at != Vector2.INF:
 		scars.append({"id": "burnt_shell", "position": scar_at, "since_day": 3})
-	GivenRun.scars(_city.run, scars)
+	GivenRun.scars(_run, scars)
 	var read := _read_the_mark_on(t, day, seed_value)
 	var director: ResistanceDirector = read[0]
 	var mark: Vector2 = read[1]
@@ -132,7 +132,7 @@ func _ask_the_task(t: TestRunner, day: int, seed_value: int, scar_at: Vector2,
 ## it, counted into `held`. The tiles farthest from her door are tried in turn until one takes it.
 func _ask_a_moved_mark(t: TestRunner, seed_value: int, held: Dictionary) -> void:
 	var no_scars: Array[Dictionary] = []
-	GivenRun.scars(_city.run, no_scars)
+	GivenRun.scars(_run, no_scars)
 	var director := _start_the_day_on(t, MOVED_MARK_DAY, seed_value)
 	_look_at(Rect2())
 	var map := _city.map()
@@ -169,7 +169,7 @@ func _ask_a_moved_mark(t: TestRunner, seed_value: int, held: Dictionary) -> void
 ## asked how a way stands to it, counted into `held`.
 func _ask_the_arrows_mast(t: TestRunner, seed_value: int, held: Dictionary) -> void:
 	var no_scars: Array[Dictionary] = []
-	GivenRun.scars(_city.run, no_scars)
+	GivenRun.scars(_run, no_scars)
 	var read := _read_the_mark_on(t, 11, seed_value)
 	var director: ResistanceDirector = read[0]
 	var mark: Vector2 = read[1]
@@ -214,7 +214,7 @@ func _ask_the_arrows_mast(t: TestRunner, seed_value: int, held: Dictionary) -> v
 ## The contact is asked how a way stands to it, counted into `held`.
 func _ask_a_look_alike(t: TestRunner, seed_value: int, held: Dictionary) -> void:
 	var no_scars: Array[Dictionary] = []
-	GivenRun.scars(_city.run, no_scars)
+	GivenRun.scars(_run, no_scars)
 	var read := _read_the_mark_on(t, LOOK_ALIKE_DAY, seed_value)
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]

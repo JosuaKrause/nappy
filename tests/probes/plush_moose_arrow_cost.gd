@@ -52,9 +52,10 @@ func run(t: TestRunner) -> void:
 		var unreached := 0
 		var targets := 0
 		for seed_value in SEEDS:
-			var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+			var run := RunCity.started_run(RUN_SEED)
+			var city := RunCity.in_run(CITY_SCENE, run)
 			t.add_child(city)
-			RunCity.build(city, CityGenerator.generate(seed_value))
+			RunCity.build(city, run, CityGenerator.generate(seed_value))
 			var director := _read_the_mark(t, city, day, seed_value)
 			var player := _rig_player(t, director.contact_position())
 			director.use_player(player)

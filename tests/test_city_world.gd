@@ -18,28 +18,30 @@ const SEED := 4216201080
 const MapCache := preload("res://tests/city_map_cache.gd")
 
 func run(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
 	var builder := RunCity.new_builder()
 	builder.leave_out(true, true, false)
-	RunCity.build(city, MapCache.of(SEED), builder)
+	RunCity.build(city, run, MapCache.of(SEED), builder)
 	_test_a_live_event_charges_the_spot_it_stands_on(t, city)
 	_test_calm_ground_fills_sleepiness_faster_than_the_street(t, city)
 	_test_the_camera_framing_is_less_the_look_ahead_it_is_handed(t, city)
-	_test_carrying_the_package_halves_every_streets_decay(t, city)
+	_test_carrying_the_package_halves_every_streets_decay(t, city, run)
 	city.free()
 
 ## Carrying the resistance's package makes every street after it decay slower
 ## (`City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER`): the city's answer to the baby at a spot, read before
 ## the run's flag is set and after. The flag is set on the run the city was handed; what sets it, the
 ## director's completing the package's task, is `tests/test_resistance_steps.gd`'s.
-func _test_carrying_the_package_halves_every_streets_decay(t: TestRunner, city: City) -> void:
+func _test_carrying_the_package_halves_every_streets_decay(t: TestRunner, city: City,
+		run: RunState) -> void:
 	var somewhere := city.map().tile_to_world(Vector2i(10, 10))
 	var before := city.decay_multiplier(somewhere)
-	city.run.resistance().pick_up_package()
+	run.resistance().pick_up_package()
 	t.close_to(city.decay_multiplier(somewhere), before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
 			"every street decays slower once she carries the package", 0.001)
-	city.run.resistance().put_down_package()
+	run.resistance().put_down_package()
 	t.close_to(city.decay_multiplier(somewhere), before,
 			"and as before once she has put it down", 0.001)
 

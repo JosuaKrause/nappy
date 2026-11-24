@@ -419,7 +419,7 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) 
 ## street (`_new_one()`): the mark's (`EventCatalogue.mark_guard()`) or a task's
 ## (`EventCatalogue.task_guard()`).
 func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
-	var run: RunState = _city.run
+	var run: RunState = _run
 	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)) \
 			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale())
 	# A lost day gives back what the attempt recorded (`RunCalendar.begin_day()`), the alley it read
