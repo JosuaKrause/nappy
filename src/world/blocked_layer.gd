@@ -6,7 +6,7 @@ extends RefCounted
 ## (`CityMap.blocked`), and every question about walking — a step, a line, a flood, a placement —
 ## reads it through a `Mover`, which names the layers that stop it (`CityMap.passable()`).
 ##
-## **A body is recorded from its footprint** (`Footprint.tiles()`), the same footprint that builds
+## **A body is recorded from its pieces** (`StandingPiece.tiles()`), the same pieces that build
 ## its physics body (`Footprint.body()`), so what stops her and what stops a figure are one solid
 ## read twice rather than two authored copies. The record counts bodies per tile rather than
 ## flagging tiles, because two bodies can overlap one tile and the first to go must not open ground

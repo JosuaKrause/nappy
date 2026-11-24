@@ -9,19 +9,6 @@ extends RefCounted
 ## Also the one place the run's standing (the day of fourteen and the nerves left) and the
 ## resistance tally are worded: the pause screen reads `standing_line()`.
 
-## Which screen this is.
-enum Kind {
-	## A day brief: a resumed day's, or a section's of the escape.
-	BRIEF,
-	## The summary of a day that ended, or of a lost section.
-	DAY,
-	## The end of a run.
-	ENDING,
-	## The escape's last screen, the way out behind her.
-	EPILOGUE,
-}
-
-var kind := Kind.BRIEF
 ## The big heading above the title; empty on a screen that has none, which hides it.
 var _heading := ""
 var _title := ""
@@ -91,7 +78,6 @@ func _plain_body(text: String) -> void:
 ## (`Texts.RESUMED_*`), or `""` for a save that cost nothing and for a section.
 static func brief_for(run: RunState, note_line := "", section_title := "") -> SummaryModel:
 	var model := SummaryModel.new()
-	model.kind = Kind.BRIEF
 	model._note = note_line
 	if section_title == "":
 		model._title = day_line(run.header().day())
@@ -117,7 +103,6 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 ## no morning line and no tally of its own.
 static func day_over(run: RunState, end: DayEnd, section_title := "") -> SummaryModel:
 	var model := SummaryModel.new()
-	model.kind = Kind.DAY
 	model._title = _clock_line(end.outcome(), end.loss_reason(), RunState.format_clock_seconds(end.lasted_seconds()))
 	model.title_is_prose = true
 	var day := run.header().day()
@@ -148,7 +133,6 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 ## that can end mid-day, and it is the last day played, never advanced past the day a run ends on.
 static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	var model := SummaryModel.new()
-	model.kind = Kind.ENDING
 	model._heading = Texts.ENDING_HEADING.get(which, Texts.ENDING_HEADING_DEFAULT)
 	model._title = Texts.ENDING_TITLE.get(which, Texts.ENDING_TITLE_DEFAULT)
 	model.body_prose = Texts.ENDING_BODY.get(which, "")
@@ -165,7 +149,6 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 ## this is the last screen of the sequence the run hands over to.
 static func epilogue(end: DayEnd) -> SummaryModel:
 	var model := SummaryModel.new()
-	model.kind = Kind.EPILOGUE
 	model._heading = Texts.FINALE_HEADING
 	model._title = Texts.FINALE_TITLE
 	model.body_prose = Texts.FINALE_BODY.get(end.exit_taken(), Texts.FINALE_BODY_DEFAULT)

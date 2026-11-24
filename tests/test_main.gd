@@ -442,7 +442,7 @@ func run(t: TestRunner) -> void:
 	_test_no_focus_pause_from_query(t)
 	await _test_return_ignores_input_for_half_a_second(t)
 	await _test_return_window_always_ends(t)
-	_test_return_window_needs_a_departure(t)
+	await _test_return_window_needs_a_departure(t)
 	_test_return_window_is_off_under_the_override(t)
 	_test_is_rig_from_args(t)
 	_test_rig_quit_seconds_from(t)
@@ -1180,11 +1180,14 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	tree.physics_frame.disconnect(count)
 
 ## Puts the screens a focus check leaves behind away: the pause closed, the summary dismissed, the
-## tree running, and the window's own half second over.
+## tree running, and the viewport's input back on.
 func _reset_the_screens(t: TestRunner, main: Boot.MainScript) -> void:
 	UI.dismiss(_one(main, "PauseScreen") as PauseScreen)
 	(_one(main, "DaySummary") as DaySummaryScript).dismiss()
-	(main.get_node("ReturnWindow") as ReturnWindow).end(true)
+	# The window's half second, which a focus check may have opened on the real clock, is left to
+	# end on the window's own frame; the viewport it switched off is switched back on here, and
+	# nothing reads the window's armed state.
+	t.get_viewport().set_disable_input(false)
 	t.get_tree().paused = false
 
 ## Losing focus on a played day, the summary and the ending over it, the pause already open. The
@@ -1469,9 +1472,17 @@ func _test_no_focus_pause_from_query(t: TestRunner) -> void:
 func _window(t: TestRunner, clock: UI.FakeClock, no_focus_pause := false, rig := false) -> ReturnWindow:
 	var window := ReturnWindow.new()
 	window.use_clock(clock.read)
+	# As under `main`, which runs always: the pause screen's pause does not stop its frames.
+	window.process_mode = Node.PROCESS_MODE_ALWAYS
 	t.add_child(window)
 	window.setup(t.get_viewport(), no_focus_pause, rig)
 	return window
+
+## A full frame of the tree runs, so a window in it reads its clock and ends once its time
+## is past.
+func _a_frame_passes(t: TestRunner) -> void:
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
 
 func _press_accept(t: TestRunner) -> void:
 	var press := InputEventAction.new()
@@ -1503,7 +1514,7 @@ func _test_return_ignores_input_for_half_a_second(t: TestRunner) -> void:
 		_press_accept(t)
 		t.check(pause.is_open(), "a press inside the window does not resume the pause (%d)" % what)
 		clock.now = float(ReturnWindow.IGNORED_MSEC) + 1.0
-		window.end()
+		await _a_frame_passes(t)
 		t.check(not t.get_viewport().is_input_disabled(), "the window's end switches it back on")
 		_press_accept(t)
 		t.check(not pause.is_open(), "the same press after the window resumes")
@@ -1516,7 +1527,7 @@ func _test_return_ignores_input_for_half_a_second(t: TestRunner) -> void:
 		_press_accept(t)
 		t.check(starts[0] == 0, "a press inside the window does not start the day from the brief")
 		clock.now += float(ReturnWindow.IGNORED_MSEC) + 1.0
-		window.end()
+		await _a_frame_passes(t)
 		_press_accept(t)
 		t.check(starts[0] == 1, "the same press after the window starts it")
 		t.get_viewport().set_disable_input(false)
@@ -1536,12 +1547,10 @@ func _test_return_window_always_ends(t: TestRunner) -> void:
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	window.on_web_event("focus", "visible")
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
+	await _a_frame_passes(t)
 	t.check(t.get_viewport().is_input_disabled(), "a frame inside the window leaves it running")
 	clock.now = float(ReturnWindow.IGNORED_MSEC) + 1.0
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
+	await _a_frame_passes(t)
 	t.check(not t.get_viewport().is_input_disabled(), "the first frame after it puts input back")
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
@@ -1563,7 +1572,8 @@ func _test_return_window_needs_a_departure(t: TestRunner) -> void:
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(t.get_viewport().is_input_disabled(), "a loss then a focus-in arms")
-	window.end(true)
+	clock.now += float(ReturnWindow.IGNORED_MSEC) + 1.0
+	await _a_frame_passes(t)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(not t.get_viewport().is_input_disabled(), "the departure is spent: a second focus-in does not arm")
 	# The web path.
@@ -1572,7 +1582,8 @@ func _test_return_window_needs_a_departure(t: TestRunner) -> void:
 	window.on_web_event("blur", "visible")
 	window.on_web_event("focus", "visible")
 	t.check(t.get_viewport().is_input_disabled(), "web: a blur then a focus arms")
-	window.end(true)
+	clock.now += float(ReturnWindow.IGNORED_MSEC) + 1.0
+	await _a_frame_passes(t)
 	window.on_web_event("visibilitychange", "hidden")
 	t.check(not t.get_viewport().is_input_disabled(), "web: the page going hidden does not arm")
 	window.on_web_event("visibilitychange", "visible")

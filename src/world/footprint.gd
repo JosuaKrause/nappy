@@ -1,10 +1,10 @@
 class_name Footprint
 extends RefCounted
-## **One solid's ground contact**, the one datum both of its answers to "is this ground taken" come
-## from: the physics body that stops her (`body()`) and the tiles a map's blocked record holds for
-## everything else that moves (`tiles()`, written into `BlockedLayer.obstruct()`). A solid with only
-## one of the two is solid to one side and see-through to the other; built from one footprint, the
-## body and the record cannot disagree.
+## **One solid's ground contact**: the physics body that stops her (`body()`) and the run a
+## drawing that slices the solid at the feet reads (`Piece.span()`). The tiles the map's blocked
+## record holds for everything else that moves are read off the same pieces laid out as
+## `StandingPiece`s (`StandingPiece.tiles()`, written into `BlockedLayer.obstruct()`), so the
+## body and the record are one layout of pieces.
 ##
 ## **A footprint is pieces**: each a `GroundShape` (a disc, a capsule or a rectangle) at an offset
 ## from the solid's own origin, its spine lying along an axis. Almost every solid is one piece at its
@@ -65,18 +65,6 @@ func add(shape: GroundShape, offset: Vector2, axis := Vector2.RIGHT) -> Footprin
 	piece.axis = axis
 	_pieces.append(piece)
 	return self
-
-## Every tile this footprint stands on with its origin at `at`, each once: a tile is in when a
-## piece covers its middle (`GroundShape.tiles_under()`, which says why the middle is the rule).
-func tiles(at: Vector2) -> Array[Vector2i]:
-	var covered: Array[Vector2i] = []
-	for piece in _pieces:
-		for tile in piece.shape.tiles_under(at + piece.offset, piece.axis):
-			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
-			# recorded one tile twice would need two releases to give it back.
-			if not covered.has(tile):
-				covered.append(tile)
-	return covered
 
 ## The physics body of this footprint, its origin at the body's own: one `StaticBody2D` with one
 ## `CollisionShape2D` per piece, each the piece's own collision resource

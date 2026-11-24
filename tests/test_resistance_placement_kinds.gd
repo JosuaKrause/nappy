@@ -1127,6 +1127,17 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	happenings.tick(STEP, door, Vector2.ZERO)
 	t.check(_boarded_among(state, candidates) == gone, "and the market is gone once")
 
+## The column's trucks in the day's events, front first: the `military_convoy` events not in
+## `before` (the day's events taken once its city is set up, before the column can come) and not
+## over. The day has a real plan, which may place convoys of its own from day 13, so only the
+## trucks the happenings sent after `before` count.
+func _the_column(before: Array[EventInstance]) -> Array[EventInstance]:
+	var trucks: Array[EventInstance] = []
+	for event in RunCity.events(_city).instances():
+		if not before.has(event) and not event.is_gone() and event.row_id() == "military_convoy":
+			trucks.append(event)
+	return trucks
+
 ## The blocks of `candidates` the city state has boarded up.
 func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vector2i]:
 	var boarded: Array[Vector2i] = []
@@ -1147,6 +1158,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var state := _run.attempt_spend().block_arcs()
 	state.reset()
 	var happenings := _happenings_on_day(ResistanceHappenings.COLUMN_DAY, state)
+	var planned: Array[EventInstance] = RunCity.events(_city).instances().duplicate()
 	var map := _city.map()
 	var door := map.doorstep_world_position()
 	# The main road's middle, across it: the corridor the map names as the main road, a street's
@@ -1156,11 +1168,11 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var far_from_it := Vector2(spine + ResistanceHappenings.COLUMN_WITHIN * 2.0, door.y)
 	# She has walked as long as a way takes to be chosen, far from the road.
 	happenings.tick(EventDirector.ON_HER_WAY_AFTER, far_from_it, Vector2.RIGHT * Tuning.WALK_SPEED)
-	t.check(happenings.column.is_empty(), "nothing comes while she is far from the main road")
+	t.check(_the_column(planned).is_empty(), "nothing comes while she is far from the main road")
 	var her := Vector2(spine - Tuning.STREET_WIDTH * 0.5 * Tuning.TILE_SIZE + Tuning.TILE_SIZE,
 			map.size_in_tiles().y * Tuning.TILE_SIZE * 0.5)
 	happenings.tick(STEP, her, Vector2.ZERO)
-	t.check(happenings.column.is_empty(),
+	t.check(_the_column(planned).is_empty(),
 			"near it, the column's warning goes up with no truck in the world yet")
 	var warning := _warning_for(RunCity.events(_city), "military_convoy")
 	t.check(warning != null, "and its badge has somewhere to point")
@@ -1185,7 +1197,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	if warning:
 		await _let_the_events_tick(most, func(_ticks: int) -> bool:
 			return not events.pending_warnings().has(warning) or warning.shown_for() >= most)
-	var trucks := happenings.column
+	var trucks := _the_column(planned)
 	t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
 			"once the warning is over, a column of %d trucks comes (%d)"
 			% [Tuning.COLUMN_TRUCKS, trucks.size()])
@@ -1228,7 +1240,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 				% (warning.shown_for() + to_reach))
 				+ "the %.2fs it is owed" % warning.row().minimum_telegraph())
 	happenings.tick(STEP, her, Vector2.ZERO)
-	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
+	t.check(_the_column(planned).size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 	for truck in trucks:
 		RunCity.events(_city).retire(truck)
 
@@ -1237,8 +1249,9 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	body.global_position = far_from_it
 	await _let_the_events_tick(convoy.telegraphs_for() + STEP, func(_ticks: int) -> bool:
 		return _warning_for(RunCity.events(_city), "military_convoy") == null)
-	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
+	var late := _the_column(planned)
+	t.check(late.size() == Tuning.COLUMN_TRUCKS,
 			"at COLUMN_BY it comes wherever she is")
-	for truck in happenings.column:
+	for truck in late:
 		RunCity.events(_city).retire(truck)
 	_let_her_go(body)

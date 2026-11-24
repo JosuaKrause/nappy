@@ -107,9 +107,8 @@ var _bus: _BUS
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
 
-## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
+## Whether today still owes the column.
 var _column_owed := false
-var column: Array[EventInstance] = []
 
 ## Where the raid may put what it brings (`SpawnSiting`), or null.
 var _spawn_siting: SpawnSiting
@@ -163,7 +162,6 @@ func start_day(day: int, with_its_events := true) -> void:
 	if cordon:
 		cordon.clear()
 	cordon = null
-	column.clear()
 	_market_owed = with_its_events and day == MARKET_DAY
 	_column_owed = with_its_events and day == COLUMN_DAY
 	if not with_its_events:
@@ -438,7 +436,8 @@ func _spine_x() -> float:
 
 ## Puts up the column's warning, coming down the main road toward the point level with `her` from
 ## whichever end the day's stream picks, and returns it — or null when there is no main road or no
-## row. `column` holds the trucks, front first, once they have arrived.
+## row. The trucks arrive in the day's events once its telegraph is over
+## (`_bring_the_column()`).
 func _send_the_column(her: Vector2) -> PendingWarning:
 	var def := EventCatalogue.by_id("military_convoy")
 	if not def or _map.main_road_corridor() < 0:
@@ -516,7 +515,6 @@ func _bring_the_column(def: EventDef, place: Vector2, lane_x: float, going: floa
 		var from := Vector2(lane_x, clampf(start_y + back, top, bottom))
 		var to := Vector2(lane_x, far_y)
 		brought.append(_events.spawn_warned(def, PackedVector2Array([from, to])))
-	column.append_array(brought)
 	trace.note("contact", "a column of %d trucks comes down the main road %s" % [
 		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 	return brought
