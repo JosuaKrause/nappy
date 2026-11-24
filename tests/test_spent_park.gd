@@ -20,7 +20,6 @@ extends RefCounted
 const SEEDS := 6
 const BASE_SEED := 14040
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const MapCache := preload("res://tests/city_map_cache.gd")
 
 var _maps: Array[CityMap] = []
 
@@ -29,7 +28,6 @@ func run(t: TestRunner) -> void:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 37))
 	_test_a_used_area_is_taken_off_the_tree_and_stays_open(t)
 	_test_the_one_fence_is_remembered_after_its_act(t)
-	_test_a_resumed_run_cannot_select_a_second_fence(t)
 	_test_the_fenced_park_closes_every_entrance(t)
 	_test_the_fence_turns_each_corner_on_one_post(t)
 	_test_the_guarantees_hold_with_the_fenced_park(t)
@@ -152,23 +150,6 @@ func _test_the_one_fence_is_remembered_after_its_act(t: TestRunner) -> void:
 	var used := _used_by(map, 13)
 	_repaint(map, 13, used)
 	t.check(map.fenced_park_block().x >= 0, "act IV can choose the run's first fence")
-
-## **A resumed run's map is handed the fence the run remembers**, which a save holds (its round trip is
-## `tests/test_save.gd`'s): a run resumed on day 13, in act IV, after its fence was chosen in act III, has
-## its used area shut and no second fence chosen.
-func _test_a_resumed_run_cannot_select_a_second_fence(t: TestRunner) -> void:
-	var remembered := Vector2i(6, 8)
-	var map := MapCache.of(BASE_SEED)
-	var state := CityState.new()
-	state.begin_day(map.plans_by_block(), 13)
-	map.repaint(state)
-	var used: Array[Vector2i] = [map.calm_blocks[0]]
-	map.set_spent_calm(used)
-	map.set_fenced_park_state(remembered, 3, 4)
-	map.repaint(state)
-	t.check(not map.shut_calm().is_empty(), "the resumed act has an accepted used area")
-	t.check(map.fenced_park_block() == Vector2i(-1, -1),
-			"the resumed run cannot select a second fence in act IV")
 
 ## The whole point, over the sweep: every area taken off the tree is one she used, its ground stays
 ## walkable and calm — open unless it is `fenced_park`, closed only if it is — and the day's tree

@@ -27,9 +27,10 @@ check, stays as it is.
   its one city, which `contact` needs: the resistance director places the chalk mark from the city's map,
   events and streets together.
 - **The fence round trip** is split at the map. `test_save` keeps the save's half (the fence survives the round
-  trip) and builds no map; the map's half (a run resumed in act IV, handed the remembered fence, shuts its used
-  area and chooses no second fence) is `_test_a_resumed_run_cannot_select_a_second_fence` in
-  `tests/test_spent_park.gd`, the suite of the fence's rule, on the same seed.
+  trip) and builds no map. The map's half (a run resumed in act IV, handed the remembered fence, shuts its used
+  area and chooses no second fence) is already held by `_test_the_one_fence_is_remembered_after_its_act` in
+  `tests/test_spent_park.gd`, which carries a fence chosen in act III through day 13 and asserts both; the
+  moved copy held nothing more (a literal fence rather than one the map chose) and is deleted.
 - **`tests-one-module.md`** loses its third entry and the wall-shield clause of its second; this record is
   added to its list.
 
@@ -38,9 +39,6 @@ check, stays as it is.
 - The dev rig's `--spawn` event, closure and door answers are asked of the modules' suites rather than rewritten
   over fakes, as the entry says ("to move with those modules"). Each moved case builds less than before (no
   city), but each still asks the dev rig, so those suites hold a dev-rig question.
-- The map suite for the fence is `test_spent_park.gd`, not `test_city_map.gd` (the copy and capture suite).
-  `_test_the_one_fence_is_remembered_after_its_act` in the same suite asks nearly the same of the map from a
-  chosen fence; the moved case starts from a remembered one in act IV with a literal fence, which that case does not.
 
 ## Verification
 
@@ -49,8 +47,9 @@ CI times, read from the shard logs (main's run of d3faeaf8c, then this branch's 
 Check counts by file name, main then branch (local runs): `test_wall_shield.gd` 84 to 53,
 `test_debug_layers.gd` 74 to 105 (the 31 moved), `test_dev_rig.gd` 21 to 7, `test_event_manager.gd` 827 to 833
 (the 6 of events), `test_routes_closures_a.gd` 792 to 794 (2), `test_checkpoints.gd` 18164 to 18170 (6),
-`test_save.gd` 302 to 300 and `test_spent_park.gd` 54602 to 54604 (the 2 of the fence). Each moved check has its
-old count: 14 left the dev rig for 6 + 2 + 6, the 2 left the save. Mutations, not committed: the hut's stand-off
+`test_save.gd` 302 to 300 and `test_spent_park.gd` 54602 unchanged (the fence's 2 checks are a duplicate of the
+existing case and are deleted, not moved). Each moved check has its old count: 14 left the dev rig for 6 + 2 + 6. Mutations, not committed: the hut's stand-off
 at twelve tiles fails the door case; the closure target returning a point off the map fails the closure case;
-the waiting row's stand-off clearance removed gives two failures in the event case. `tools/check.sh`,
+removing the waiting row's clearance alone fails nothing, since the snap away from the trigger
+(`_nearest_walkable()`'s `beyond`) masks it, and removing both gives two failures in the event case. `tools/check.sh`,
 `tools/lint.sh`, `check_field_reads.py`, `check_test_only_members.py` and `check_layers.py` pass.

@@ -517,8 +517,8 @@ func _test_completed_resistance_alley_tiles_survive_a_round_trip(t: TestRunner) 
 	_save.clear()
 
 ## Expiring the physical fence cannot reopen the once-per-run choice, including after a reload: the
-## save carries the original fence, which the map's own suite then holds against a second one
-## (`tests/test_spent_park.gd`).
+## save carries the original fence, which the fence's own suite holds against a second one
+## (`_test_the_one_fence_is_remembered_after_its_act` in `tests/test_spent_park.gd`).
 func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(14040)
 	GivenRun.fenced_park(run, Vector2i(6, 8), 3)
