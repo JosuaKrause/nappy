@@ -6,37 +6,95 @@ const AlleyMarks := preload("res://tests/alley_marks.gd")
 const EXAMPLE := "res://scene-recipes/power-station-hall.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 const PROBE := """extends Node
-class World extends Node2D:
+## Reads a scene's manifest file after the scene's own tick (its priority is the runtime's plus one
+## hundred), and says once that a failed observation stopped it before it reported success.
+class Watcher extends Node:
+	var manifest_path := ""
+	func _ready() -> void:
+		process_physics_priority = 200
+	func _physics_process(_delta: float) -> void:
+		var manifest := RecipeManifest.read(manifest_path)
+		var observed: Array = manifest.get("observations", [])
+		if observed.is_empty():
+			return
+		if not manifest.get("playback_complete", false) and observed.size() == 1 \
+				and not observed[0].passed:
+			print("OBSERVATION_STOPPED_BEFORE_SUCCESS")
+		set_physics_process(false)
+## Her, moving a pixel to the right on each physics tick the right input is pressed, as a stand-in the
+## scene is installed with: the body the scene names `player` and observes.
+class Pixel extends Stroller:
 	var frames := 0
+	var start := Vector2.INF
+	func _init() -> void:
+		use_carrying_rig()
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		camera.enabled = false
+		add_child(camera)
+	## Overrides Stroller.reset_at.
+	func reset_at(where: Vector2, _look: Vector2 = Vector2.DOWN) -> void:
+		start = where
+		position = where
+	## Overrides Stroller._physics_process.
 	func _physics_process(_delta: float) -> void:
 		frames += 1
 		if Input.is_action_pressed("move_right"):
 			position.x += 1
-		if frames == 2 and position.x == 1:
+		if frames == 2 and position.x == start.x + 1:
 			print("ONE_TICK_INPUT_COMPLETED")
-## Reads a scene's manifest after the scene's own tick (its priority is the runtime's plus one
-## hundred), and says once that a failed observation stopped it before it reported success.
-class Watcher extends Node:
-	var runtime: SceneRecipeRuntime
-	func _ready() -> void:
-		process_physics_priority = 200
-	func _physics_process(_delta: float) -> void:
-		var observed: Array = runtime.manifest.observations
-		if observed.is_empty():
-			return
-		if not runtime.manifest.playback_complete and observed.size() == 1 \
-				and not observed[0].passed:
-			print("OBSERVATION_STOPPED_BEFORE_SUCCESS")
-		set_physics_process(false)
+## The rest of a city's world as stand-ins that do nothing: no crowd to start, no events to plan, no
+## posters on the walls. The scene is installed over them and answers what it did to them.
+class Crowded extends Crowd:
+	## Overrides Crowd.start_day.
+	func start_day(_day: int, _rng: RandomNumberGenerator, _focus := Vector2.INF,
+			_populate := true, _city_view := false, _uniform_walkers := false,
+			_walker_multiplier := 1.0, _car_multiplier := 1.0) -> void:
+		pass
+	## Overrides Crowd.recipe_coverage.
+	func recipe_coverage() -> Dictionary:
+		return {}
+	## Overrides Crowd.agents.
+	func agents() -> Array[CrowdAgent]:
+		var none: Array[CrowdAgent] = []
+		return none
+class Planned extends FakeEventManager:
+	var map: CityMap
+	## Overrides EventManager.calm_as_the_map_stands.
+	func calm_as_the_map_stands() -> CalmAreas:
+		return CalmAreas.of(map)
+	## Overrides EventManager.start_recipe.
+	func start_recipe(_plans: Array[EventPlan], _spec: DaySpec, _day: int, _focus: Vector2,
+			_calm: CalmAreas = null) -> void:
+		pass
+	## Overrides EventManager.plans.
+	func plans() -> Array[EventPlan]:
+		var none: Array[EventPlan] = []
+		return none
+class Walls extends PosterWalls:
+	## Overrides PosterWalls.fronts.
+	func fronts() -> Dictionary:
+		return {}
+	## Overrides PosterWalls.refresh.
+	func refresh() -> void:
+		pass
 ## Where the probe's saves are kept: a scratch file, never the player's, since a policy that broke
 ## would write here rather than to the player's save.
 const _SCRATCH_SAVE := "user://test_scene_recipe_runtime_scratch.json"
 ## A run of the probe's own, which every runtime below is handed.
 var _run := RunState.new()
-## A scripted recipe's configuration, which is what the runtime probes below are handed.
+## The manifest file the child was given (`--recipe-manifest`), or "".
+func _manifest_path() -> String:
+	var args := OS.get_cmdline_user_args()
+	var given := args.find("--recipe-manifest")
+	return args[given + 1] if given >= 0 else ""
+## A scripted recipe's configuration, which is what the runtime probes below are handed, writing its
+## manifest where the child was told to.
 func _scripted() -> RunConfig:
-	return RunConfig.parse(PackedStringArray(["--recipe", "probe.json", "--recipe-mode", "scripted"]),
-			"", true)
+	var args := PackedStringArray(["--recipe", "probe.json", "--recipe-mode", "scripted"])
+	if _manifest_path() != "":
+		args.append_array(["--recipe-manifest", _manifest_path()])
+	return RunConfig.parse(args, "", true)
 func _ready() -> void:
 	var config := RunConfig.at_boot()
 	var save := GameSave.new(_SCRATCH_SAVE)
@@ -66,18 +124,7 @@ func _ready() -> void:
 		_probe_the_camera()
 		return
 	if "--probe-boundary" in OS.get_cmdline_user_args():
-		var runtime := SceneRecipeRuntime.new()
-		var seconds := 1.0 / Engine.physics_ticks_per_second
-		var data := {"name": "one tick input", "playback": {"duration": seconds * 2,
-			"walk": str(seconds) + "e1p", "observations": [
-			{"tick": 1, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0},
-			{"tick": 2, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0}]}}
-		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), _run)
-		var world := World.new()
-		add_child(world)
-		add_child(runtime)
-		runtime.named.world = world
-		runtime.begin()
+		_probe_the_boundary()
 		return
 	if "--probe-observation" not in OS.get_cmdline_user_args():
 		print("RECIPE_FLAGS_OK")
@@ -89,11 +136,45 @@ func _ready() -> void:
 	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), _run)
 	add_child(runtime)
 	var watcher := Watcher.new()
-	watcher.runtime = runtime
+	watcher.manifest_path = _manifest_path()
 	add_child(watcher)
 	# Begun as `main` begins it; its own physics tick observes and stops it, and its own quit(1) is
 	# the probe's exit status.
 	runtime.begin()
+## One pressed tick of input, observed after the world's own tick and completed on the final tick: the
+## scene is installed into a world of stand-ins (`Pixel` is her, on a map the recipe builder makes) and
+## its observations name her as `player`.
+func _probe_the_boundary() -> void:
+	var built := RecipeCityBuilder.build({"version": 1, "name": "one tick input", "seed": 1,
+			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}})
+	var map: CityMap = built.map
+	var start := map.doorstep_world_position()
+	var seconds := 1.0 / Engine.physics_ticks_per_second
+	var pressed := [start.x + 1.0, start.y]
+	var data := {"name": "one tick input", "playback": {"duration": seconds * 2,
+		"walk": str(seconds) + "e1p", "observations": [
+		{"tick": 1, "subject": "player", "condition": "near", "at": pressed, "distance": 0},
+		{"tick": 2, "subject": "player", "condition": "near", "at": pressed, "distance": 0}]}}
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": data, "anchors": {}, "manifest": {}, "map": map}, _scripted(), _run)
+	var her := Pixel.new()
+	her.name = "Stroller"
+	var baby := Baby.new()
+	baby.name = "Baby"
+	her.add_child(baby)
+	var events := Planned.new()
+	events.map = map
+	var world := DayWorld.in_the_city(CityDressing.new(), map, DayStreets.new(), Crowded.new(),
+			Walls.new(), events, her, baby, start, null, {})
+	for part: Node in [world.dressing(), world.crowd(), world.poster_walls(), events, her, runtime]:
+		add_child(part)
+	var errors := runtime.install(world, DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
+	if not errors.is_empty():
+		print(errors)
+		get_tree().quit(20)
+		return
+	runtime.begin()
+
 ## The example recipe installed into a city of the probe's run, begun as `main` begins it with a
 ## settled start, a fixed camera and a zoom out, and then held for a capture (`prepare_capture()`,
 ## which `main` hands the screenshot): the settled start leads her by her look-ahead, the fixed
@@ -240,7 +321,10 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.is_empty(), "the held dog is installed: %s" % [errors])
 	runtime.begin()
-	var dog: EventInstance = runtime.named.get("dog")
+	var dog: EventInstance = null
+	for instance in RunCity.events(city).instances():
+		if instance.row_id() == "charging_dog":
+			dog = instance
 	t.check(dog != null, "the recipe's dog is live")
 	if dog != null:
 		await t.get_tree().physics_frame
@@ -365,14 +449,17 @@ func _test_schema(t: TestRunner) -> void:
 ## anything of a city.
 func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
 	var runtime := SceneRecipeRuntime.new()
+	var manifest_path := RecipeManifest.scratch_path("no_city")
 	runtime.configure({"data": {"setup": {}}, "manifest": {}, "anchors": {}, "map": null},
-			_recipe_config(false), RunState.new())
+			_recipe_config(false, manifest_path), RunState.new())
 	var building := DayWorld.in_the_building(WorldMap.open_ground(), null, null, null, Vector2.ZERO,
 			Vector2.UP, null)
 	var errors := runtime.install(building, DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.size() == 1 and errors[0].contains("city"),
 			"a world with no city is refused with one problem: %s" % [errors])
-	t.check(runtime.manifest.get("setup_failed", false), "and the setup is recorded as failed")
+	t.check(RecipeManifest.read(manifest_path).get("setup_failed", false),
+			"and the setup is recorded as failed")
+	RecipeManifest.remove(manifest_path)
 	runtime.free()
 
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
@@ -509,13 +596,13 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	var runtime := placed.runtime
 	var director := placed.director
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(runtime.named.has("mark") and not _task_record(runtime).has("read_tick"),
+	t.check(_named_in(placed.manifest_path, "mark") and not _task_record(placed).has("read_tick"),
 			"before she reads it the mark stands unread and no task is named")
 	director.contact().complete_now()
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(runtime.named.has("task") and _task_record(runtime).get("read_tick") == runtime.tick,
+	t.check(_task_record(placed).get("read_tick") == RecipeManifest.ticks_of(runtime),
 			"the tick after she reads it, the task is named and the read is recorded: %s"
-			% [_task_record(runtime)])
+			% [_task_record(placed)])
 	# The thing the task rides on finishes before she gets there.
 	var rider := director.rider()
 	t.check(rider != null, "the task rides on a live event")
@@ -523,9 +610,9 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 		RunCity.events(placed.city).retire(rider)
 	director.tick(1.0 / Engine.physics_ticks_per_second)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(_task_record(runtime).get("expired_tick") == runtime.tick and not runtime.named.has("task")
-			and not runtime.manifest.get("setup_failed", false),
-			"a placed task that is gone expired at the tick it went: %s" % [_task_record(runtime)])
+	t.check(_task_record(placed).get("expired_tick") == RecipeManifest.ticks_of(runtime)
+			and not RecipeManifest.read(placed.manifest_path).get("setup_failed", false),
+			"a placed task that is gone expired at the tick it went: %s" % [_task_record(placed)])
 	_free_task_scene(placed)
 	# Played by hand, the runtime's own tick is what notices the read, as it does in play. Day 10's
 	# neighbor is pinned to a start the day could not draw, which the read refuses.
@@ -538,8 +625,9 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	OS.add_logger(printed)
 	await PhysicsTicks.pass_ticks(t, 1)
 	OS.remove_logger(printed)
-	t.check(runtime.tick == 1 and runtime.manifest.get("setup_failed", false)
-			and not _task_record(runtime).has("expired_tick"),
+	t.check(RecipeManifest.ticks_of(runtime) == 1
+			and RecipeManifest.read(refused.manifest_path).get("setup_failed", false)
+			and not _task_record(refused).has("expired_tick"),
 			"a task refused at the read fails the setup, noticed by a scene played by hand too")
 	var reason := "is not a start the day could draw"
 	t.check(Array(printed.lines).any(func(line: String) -> bool: return line.contains(reason)),
@@ -547,8 +635,16 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	_free_task_scene(refused)
 
 ## The manifest's record of the scene's task: when she read it, when it expired.
-func _task_record(runtime: SceneRecipeRuntime) -> Dictionary:
-	return runtime.manifest.task
+func _task_record(made: TaskScene) -> Dictionary:
+	var task: Dictionary = RecipeManifest.read(made.manifest_path).get("task", {})
+	return task
+
+## Whether the manifest at `path` records `label` among the actors the scene started with, as the
+## scene names them: the mark, which the scene names at `begin()` and the manifest's `initial_actors`
+## list in the same step.
+func _named_in(path: String, label: String) -> bool:
+	var actors: Dictionary = RecipeManifest.read(path).get("initial_actors", {})
+	return actors.has(label)
 
 ## Every line printed while it is attached (`OS.add_logger()`), so a test reads what a run prints.
 class PrintedLines extends Logger:
@@ -558,9 +654,12 @@ class PrintedLines extends Logger:
 		lines.append(message)
 
 ## The run configuration a recipe boot hands its runtime: a free-play recipe, or a scripted one.
-func _recipe_config(scripted: bool) -> RunConfig:
-	return RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode",
-			"scripted" if scripted else "free"]), "", true)
+func _recipe_config(scripted: bool, manifest_path := "") -> RunConfig:
+	var args := PackedStringArray(["--recipe", "test.json", "--recipe-mode",
+			"scripted" if scripted else "free"])
+	if manifest_path != "":
+		args.append_array(["--recipe-manifest", manifest_path])
+	return RunConfig.parse(args, "", true)
 
 ## The context city every task scene is built on (`test_scene_recipe_task.gd`'s), the alley mouth
 ## the day-7 and day-10 scenes start at, and the one the day-10 scene pins its neighbor's start near
@@ -608,9 +707,10 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 		pinned = {"mark": [mark.x, mark.y], "neighbor": [near.x, near.y]}
 	var start := map.tile_to_world(MOUTH)
 	var runtime := SceneRecipeRuntime.new()
+	var manifest_path := RecipeManifest.scratch_path("task_%d" % day)
 	runtime.configure({"data": {"setup": {"day": day, "task": pinned,
 			"player": {"at": [start.x, start.y]}}}, "manifest": {}, "anchors": {}, "map": map},
-			_recipe_config(false), own_run)
+			_recipe_config(false, manifest_path), own_run)
 	t.add_child(runtime)
 	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), director)
@@ -619,6 +719,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var made := TaskScene.new()
 	made.errors = errors
 	made.runtime = runtime
+	made.manifest_path = manifest_path
 	made.director = director
 	made.city = city
 	made.player = player
@@ -628,11 +729,13 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 class TaskScene:
 	var errors: Array[String] = []
 	var runtime: SceneRecipeRuntime
+	var manifest_path := ""
 	var director: ResistanceDirector
 	var city: City
 	var player: Stroller
 
 func _free_task_scene(made: TaskScene) -> void:
+	RecipeManifest.remove(made.manifest_path)
 	for node: Node in [made.runtime, made.player, made.director, made.city]:
 		node.free()
 
@@ -705,15 +808,17 @@ func _test_real_argv_and_failure(t: TestRunner) -> void:
 		var args := PackedStringArray(["--headless", "--path", ProjectSettings.globalize_path("res://"),
 				"--quit-after", "120", scene_path, "--", "--recipe", EXAMPLE,
 				"--recipe-mode", "free" if mode == "free" else "scripted"])
+		var manifest_path := RecipeManifest.scratch_path("probe_" + mode)
 		if mode == "failure":
-			args.append("--probe-observation")
+			args.append_array(["--probe-observation", "--recipe-manifest", manifest_path])
 		elif mode == "boundary":
-			args.append("--probe-boundary")
+			args.append_array(["--probe-boundary", "--recipe-manifest", manifest_path])
 		elif mode == "camera":
 			args.append("--probe-camera")
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), args, output, true)
 		var text_output := "\n".join(output)
+		RecipeManifest.remove(manifest_path)
 		t.check(not text_output.contains("SCRIPT ERROR") and not text_output.contains("ERROR:"),
 				"%s child completes without engine errors: %s" % [mode, text_output])
 		if mode == "failure":
