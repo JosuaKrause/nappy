@@ -16,7 +16,7 @@ extends RefCounted
 ## closures stand, its city is painted, and a calm area she settled in earlier in the act reads spent.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`), whose calendar draws each
+## The seed of the run the city is handed (`RunCity.started_run()`), whose calendar draws each
 ## day's streams.
 const RUN_SEED := 2
 ## The seed the city itself is generated from.
@@ -31,6 +31,8 @@ const TIME_SCALE := 4.0
 const ARTERIAL_WINDOW := 60.0
 
 var _city: City
+## The run `_city` stands in.
+var _run: RunState
 var _stroller: Stroller
 var _baby: Baby
 var _resistance: ResistanceDirector
@@ -40,9 +42,10 @@ var _days: DayDirector
 
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	_run = RunCity.started_run(RUN_SEED)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
-	RunCity.build(_city, CityGenerator.generate(SEED))
+	RunCity.build(_city, _run, CityGenerator.generate(SEED))
 	_build_rig(t)
 
 	await _test_a_calm_park_still_settles_her(t)
@@ -58,11 +61,12 @@ func run(t: TestRunner) -> void:
 ## A fresh run on `RUN_SEED`, at day 1: each test plays its days from the start of a run of its own,
 ## so none inherits the calm areas an earlier one used.
 func _new_run() -> void:
-	_city.run.start_run(RUN_SEED)
+	_run.start_run(RUN_SEED)
 
 ## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start()`).
 func _start_day(t: TestRunner, day: int) -> void:
-	t.check(_city.run.header().day() == day, "the run is on day %d (%d)" % [day, _city.run.header().day()])
+	t.check(_run.header().day() == day,
+			"the run is on day %d (%d)" % [day, _run.header().day()])
 	_days.start(DaySpec.for_day(day, _config.day_length_for(day)))
 
 ## Puts the world around a point the way it would be for a player standing there.
@@ -78,8 +82,8 @@ func _start_day(t: TestRunner, day: int) -> void:
 ## at.
 func _stand_at(at: Vector2) -> void:
 	RunCity.events(_city).stream_around(at)
-	var day := _city.run.header().day()
-	RunCity.crowd(_city).start_day(day, _city.run.calendar().day_rng(day, "crowd"), at)
+	var day := _run.header().day()
+	RunCity.crowd(_city).start_day(day, _run.calendar().day_rng(day, "crowd"), at)
 
 ## The rig, built once: her, walking on the spot, with the baby riding, shown to the city's walls
 ## and blackout as a walk shows her; the day's clock, set up the
@@ -106,13 +110,13 @@ func _build_rig(t: TestRunner) -> void:
 	_baby.use_bus(EventBus)
 	_clock = DayController.new()
 	t.add_child(_clock)
-	_clock.setup(_city.run)
+	_clock.setup(_run)
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
-	_days = DayDirector.new(_city.run.calendar(), _city.run.facts(), _city.run.attempt_spend())
+	_resistance.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
+	_days = DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
 	_days.use_the_world(null, _resistance, _clock)
 	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))
 
@@ -204,7 +208,7 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t: TestRunner) -> vo
 		_place_rig(park)
 		var settled := await _walk_until_asleep(t, park, Tuning.day_length(day))
 		t.check(settled > 0.0, "day %d has a park she can actually settle in" % day)
-		_city.run.calendar().finish_day(GameEnums.DayResult.WON)
+		_run.calendar().finish_day(GameEnums.DayResult.WON)
 
 ## M128: the playground itself costs nothing, or a one-block park with one in it has no ground
 ## left to settle her on — outer radius (150) reaches past half of a 256px block. Standing

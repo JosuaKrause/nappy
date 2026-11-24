@@ -430,9 +430,9 @@ func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t: TestR
 func _in_a_day(t: TestRunner, check: Callable) -> void:
 	var run_state := RunState.new()
 	run_state.start_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run_state)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, run_state, MapCache.of(SEED))
 	var state := run_state.attempt_spend().block_arcs()
 	state.reset()
 	state.begin_day(city.map().plans_by_block(), WALK_DAY)

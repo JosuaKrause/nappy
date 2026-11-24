@@ -51,10 +51,11 @@ func run(t: TestRunner) -> void:
 ## A day, as `DayDirector.start()` starts it: the city's own morning, the events and the crowd.
 func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header().set_day(day)
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(day)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
+	RunCity.build(city, run, CityGenerator.generate(seed_value), _builder(t))
 	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
@@ -76,10 +77,11 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header().set_day(day)
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(day)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
+	RunCity.build(city, run, CityGenerator.generate(seed_value), _builder(t))
 	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)

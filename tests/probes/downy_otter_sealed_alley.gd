@@ -25,9 +25,10 @@ const RUN_SEED := 2
 func run(t: TestRunner) -> void:
 	var totals := {"dawn": [0, 0, 0], "moved": [0, 0, 0]}
 	for seed_value in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in range(6, 14):
 			GivenRun.alley_tiles(city.run, [])
 			var done: Array[int] = []

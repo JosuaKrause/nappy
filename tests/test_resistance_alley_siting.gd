@@ -494,7 +494,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t: TestRun
 					"seed %d: the mark at %s" % [seed_value, tile])
 		# At dawn: every through-alley mark tile used, so the draw has only the passages.
 		var city_map := _city.map()
-		var run: RunState = _city.run
+		var run: RunState = _run
 		for tile in _mark_tiles():
 			if not AlleyMarks.through_ends(city_map, tile, city_map.tile_to_world(tile)).is_empty():
 				run.facts().record_completed_alley_tile(tile)

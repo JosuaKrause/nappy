@@ -48,9 +48,10 @@ func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> 
 	var no_clear_run := 0
 	var no_legal_start := 0
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)

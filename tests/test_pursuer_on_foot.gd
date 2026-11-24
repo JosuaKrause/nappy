@@ -45,15 +45,16 @@ func run(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------ the rig ---
 
-## A real city on `SEED`'s map in the tree, over a run of its own (`RunCity.with_own_run()`), its
+## A real city on `SEED`'s map in the tree, over a run of its own (`RunCity.started_run()`), its
 ## events told it is `day`, and a stand-in for her at a sidewalk beside a building, returned as
 ## `[city, her]`, on `on_map` when one is given. She is a body the events can read a velocity off (`EventsAhead.place_what_is_owed_ahead()`
 ## asks for a `CharacterBody2D`), standing still unless a check gives her one.
 func _city_with_her(t: TestRunner, day: int, seed_value := SEED, on_map: CityMap = null) -> Array:
 	var map := on_map if on_map else MapCache.of(seed_value)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
 	# checks plant what they watch themselves, and no day's seals or doors come with it.
 	var no_plans: Array[EventPlan] = []

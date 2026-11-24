@@ -10,13 +10,13 @@ extends RefCounted
 ## not, that the marble bag's shares are exact and its draws reproducible, and that a pursuit marble
 ## sends the pursuer on foot (`tests/test_pursuer_on_foot.gd` holds what he is and how he comes).
 ##
-## **Every test makes a run of its own and hands it to the city** (`RunCity.with_own_run()`), and the
-## tears are made the way the game makes them: a real `Stroller` in the city, a held movement key
-## (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a frame), the
-## city's buildings stopping her at the wall. What a test reads is what the game exposes: the run's
-## `PosterState`, what the fronts are handed to draw (`Building.hand_over_posters()`) and the sheets they draw
-## through the art they are handed, the signals the counter listens to and the pursuer the events
-## hold.
+## **Every test makes a run of its own and hands it to the city** (`RunCity.started_run()`), and
+## the tears are made the way the game makes them: a real `Stroller` in the city, a held movement
+## key (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a
+## frame), the city's buildings stopping her at the wall. What a test reads is what the game
+## exposes: the run's `PosterState`, what the fronts are handed to draw
+## (`Building.hand_over_posters()`) and the sheets they draw through the art they are handed, the
+## signals the counter listens to and the pursuer the events hold.
 ##
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
@@ -38,6 +38,8 @@ const KEYS: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"move
 var _map: CityMap
 var _city: City
 var _run: RunState
+## The library the city and its parts draw from, which the fronts' pictures are read against.
+var _library: AtlasLibrary
 var _her: Stroller
 var _walls: PosterWalls
 var _seen := {"torn": 0, "pursuit": 0}
@@ -68,13 +70,14 @@ func run(t: TestRunner) -> void:
 ## already pasted, so the walls hold what a test puts on them.
 func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) -> void:
 	_map = MapCache.of(seed_value)
-	_city = RunCity.with_own_run(CITY_SCENE, seed_value)
+	_run = RunCity.started_run(seed_value)
+	_library = AtlasLibrary.new()
+	_city = RunCity.new_city(CITY_SCENE)
 	var builder := RunCity.new_builder()
 	if art != null:
 		builder.use_poster_art(art)
-	_run = _city.run
 	t.add_child(_city)
-	RunCity.build(_city, _map, builder)
+	RunCity.build(_city, _run, _map, builder, false, _library)
 	_run.header().set_day(day)
 	GivenRun.pasted_through(_run, day)
 	_walls = RunCity.poster_walls(_city)
@@ -318,13 +321,13 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 	t.check(other.texture_for(atlas, kind, 0, false) == intact,
 			"another art holds none of the first's pictures")
 	_map = MapCache.of(SEEDS[0])
-	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	_run = RunCity.started_run(SEEDS[0])
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
 	var recording := RecordingPosterArt.new()
 	var builder := RunCity.new_builder()
 	builder.use_poster_art(recording)
-	RunCity.build(_city, _map, builder, false, atlas)
-	_run = _city.run
+	RunCity.build(_city, _run, _map, builder, false, atlas)
 	_walls = RunCity.poster_walls(_city)
 	var fronts: Array = _walls.fronts().keys()
 	var housed := not fronts.is_empty()
@@ -393,7 +396,7 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 	# Its scenery stood up, as the residency stands a building in view up, so it draws.
 	building.residence().set_resident(true)
 	# The fronts draw from the city's library, whose regions are its own pictures.
-	var drawn_from := _city.atlas
+	var drawn_from := _library
 	var plain := drawn_from.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := drawn_from.region(PosterArt.WANTED_CROSSED)
 	var intact := PosterState.INTACT
@@ -500,10 +503,10 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t: TestRunner) -> void
 func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 	for seed_value: int in SEEDS:
 		var map := MapCache.of(seed_value)
-		var city := RunCity.with_own_run(CITY_SCENE, seed_value)
-		var run := city.run
+		var run := RunCity.started_run(seed_value)
+		var city := RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		var walls := RunCity.poster_walls(city)
 		t.check(walls.fronts().size() > 0, "seed %d: there are fronts to paste on (%d)"
 				% [seed_value, walls.fronts().size()])
@@ -528,13 +531,13 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 			before = cells.size()
 			covered_on[day] = before
 			if day == PosterWalls.FIRST_DAY:
-				_check_the_density_floor(t, city, map, seed_value, day, FIRST_DAY_VIEW_FLOOR,
-						FIRST_DAY_ROUTE_FLOOR)
+				_check_the_density_floor(t, city, run, map, seed_value, day,
+						FIRST_DAY_VIEW_FLOOR, FIRST_DAY_ROUTE_FLOOR)
 			if day == Tuning.RUN_LENGTH_DAYS:
-				_check_the_density_floor(t, city, map, seed_value, day, LAST_DAY_VIEW_FLOOR,
-						LAST_DAY_ROUTE_FLOOR)
+				_check_the_density_floor(t, city, run, map, seed_value, day,
+						LAST_DAY_VIEW_FLOOR, LAST_DAY_ROUTE_FLOOR)
 			if day == 6:
-				_check_a_retry_pastes_the_same_dawn(t, city, state, day, seed_value)
+				_check_a_retry_pastes_the_same_dawn(t, city, run, state, day, seed_value)
 		t.check(int(covered_on[PosterWalls.FIRST_DAY]) > 0,
 				"seed %d: some posters are already up on day 4's morning" % seed_value)
 		t.check(int(covered_on[Tuning.RUN_LENGTH_DAYS]) > 2 * int(covered_on[PosterWalls.FIRST_DAY]),
@@ -564,9 +567,9 @@ const FIRST_DAY_ROUTE_FLOOR := 2
 const LAST_DAY_VIEW_FLOOR := 0.78
 const LAST_DAY_ROUTE_FLOOR := 10
 
-func _check_the_density_floor(t: TestRunner, city: City, map: CityMap, seed_value: int, day: int,
-		view_floor: float, route_floor: int) -> void:
-	var walked: Dictionary = POSTER_VIEW.walk(city, map)
+func _check_the_density_floor(t: TestRunner, city: City, run: RunState, map: CityMap,
+		seed_value: int, day: int, view_floor: float, route_floor: int) -> void:
+	var walked: Dictionary = POSTER_VIEW.walk(city, run, map)
 	var cells := int(walked["cells"])
 	var share := float(walked["with_sheet"]) / maxi(1, cells)
 	var fewest: int = (walked["routes"] as Array).min() if not (walked["routes"] as Array).is_empty() \
@@ -598,9 +601,8 @@ func _check_every_front_is_blank_wall(t: TestRunner, city: City, map: CityMap, s
 			% [seed_value, ", ".join(wrong.slice(0, 5))])
 
 ## A lost day gives the walls back and the retry's dawn pastes them again, identically.
-func _check_a_retry_pastes_the_same_dawn(t: TestRunner, city: City, state: CityState, day: int,
-		seed_value: int) -> void:
-	var run := city.run
+func _check_a_retry_pastes_the_same_dawn(t: TestRunner, city: City, run: RunState,
+		state: CityState, day: int, seed_value: int) -> void:
 	var first := run.posters().to_data()
 	run.posters().give_back()
 	GivenRun.pasted_through(run, mini(run.posters().pasted_through(), day - 1))

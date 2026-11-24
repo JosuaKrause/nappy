@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## With `trap_arrival_fingerprint.gd` (the pursuers the director sends) and
 ## `placement_fingerprint.gd` (the day's own plan) this covers everything placement does. Per seed
-## and day 1 to 14, a real city in a run of its own (`RunCity.with_own_run()`) through the real day
+## and day 1 to 14, a real city in a run of its own (`RunCity.new_city()`) through the real day
 ## order, and:
 ##
 ## - **the director's contact placements**: the day's mark and its guard, the task's contact and
@@ -46,9 +46,10 @@ func run(t: TestRunner) -> void:
 	# (a run hands it the autoload); a task's end is still said, by `RunState`.
 	var printed := 0
 	for seed_value in SEEDS:
-		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city := RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in DAYS:
 			printed += _a_day(t, city, seed_value, day)
 		city.free()

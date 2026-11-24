@@ -25,9 +25,10 @@ func run(t: TestRunner) -> void:
 	var printed := 0
 	var nobody := 0
 	for seed_value in range(1, SEEDS + 1):
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in range(PosterWalls.FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 			city.run.header().set_day(day)
 			var state := city.run.attempt_spend().block_arcs()

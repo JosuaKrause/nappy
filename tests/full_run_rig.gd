@@ -29,15 +29,15 @@ func run(t: TestRunner, seed_value: int) -> void:
 	await PhysicsTicks.settle(t)
 	await _play_a_run(t, seed_value)
 
-## One run: the city is built over a run of its own (`RunCity.with_own_run()`), and every day of it
-## is started the way the game starts one, through `DayDirector.start()` handed the pieces `main`
-## hands it (the city standing with her and the baby in it, `StandingCity`, the resistance and the
-## day's clock), and played on real physics ticks.
+## One run: the city is built over a run of its own (`RunCity.started_run()`), and every day of
+## it is started the way the game starts one, through `DayDirector.start()` handed the pieces
+## `main` hands it (the city standing with her and the baby in it, `StandingCity`, the
+## resistance and the day's clock), and played on real physics ticks.
 func _play_a_run(t: TestRunner, seed_value: int) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	var run := city.run
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(run.header().run_seed()))
+	RunCity.build(city, run, CityGenerator.generate(run.header().run_seed()))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is
 	# about a run's whole chain — one-shots, successors, scars — which is a property of the
 	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
@@ -47,8 +47,8 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	resistance.use_bus(EventBus)
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her
 	# parent; and the day's clock, handed the run the way `main` hands it, so falling asleep on calm

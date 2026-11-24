@@ -25,9 +25,10 @@ func run(t: TestRunner) -> void:
 ## every outline from, so a bug in that walk cannot hide from this test — and checks it finds the
 ## same bodies in the two trees.
 func _test_the_bounding_box_layer_draws_every_enabled_body(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, 5551212)
+	var run := RunCity.started_run(5551212)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(5551212))
+	RunCity.build(city, run, MapCache.of(5551212))
 
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var state := CityState.new()

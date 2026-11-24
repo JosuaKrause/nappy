@@ -109,11 +109,13 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      new read, and `tools/field_reads.txt` is empty. What the check cannot see is stated in its
      `--help`.
    - **The city scene's lanes still to come**, from `.claude/briefs/designs/minty-quail-city-scene-pass.md`
-     (C6a, C6b, C7): C6a, the suites and rigs outside `tests/probes/` hold the run, the trace and the
-     atlas they hand the city (every read of `city.run`, `city.trace` and `city.atlas` becomes the
-     object the suite made, and `RunCity.with_own_run()` goes); C6b, the probes under
-     `tests/probes/` do the same; C7, `City.run`, `trace` and `atlas` become private (three
-     renames in `city.gd`), once C6b and the scene recipes' lane D2 have both merged.
+     (C6b, C7): C6b, the probes under `tests/probes/` hold the run, the trace and the atlas they hand
+     the city (every read of `city.run`, `city.trace` and `city.atlas` there becomes the object the
+     probe made); C7, `City.run`, `trace` and `atlas` become private (three renames in `city.gd`),
+     once C6b and the scene recipes' lane D2 have both merged; `tests/test_atlas_boot.gd`'s sweep
+     (`node.get("atlas")` over every node of a booted `main`) then asks the city's library through its
+     method, since a private field leaves the city out of the loop silently while its holder count
+     still passes on `Prop` and `PosterWalls`.
    - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a

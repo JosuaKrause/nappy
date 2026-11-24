@@ -122,10 +122,11 @@ func _route_tiles(map: CityMap, corridor: Corridor) -> Array[Vector2i]:
 
 func _start(t: TestRunner, seed_value: int) -> City:
 	var spec := DaySpec.for_day(DAY)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header().set_day(DAY)
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(DAY)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	city.run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(city.run.attempt_spend().block_arcs(), DAY, city.run.calendar().day_rng(DAY, "closures"),
 			spec)

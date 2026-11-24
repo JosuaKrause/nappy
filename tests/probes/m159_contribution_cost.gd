@@ -10,9 +10,10 @@ const STEP := 1.0 / 30.0
 const BATCH := 32
 
 func run(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(4242))
+	RunCity.build(city, run, CityGenerator.generate(4242))
 	var reports: Array = []
 	for repetition in 3:
 		for day: int in [1, 9]:

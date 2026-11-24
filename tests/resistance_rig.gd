@@ -71,6 +71,11 @@ func _step_a_frame(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 
 var _city: City
+## The run `_city` stands in, which the directors built over it are handed.
+var _run: RunState
+## The library `_city` and its parts draw from, which a case hands a director or a happening
+## where it hands them the city's own pictures.
+var _library: AtlasLibrary
 
 ## Freed rather than left standing: `RunCity.build()` stands an `EventManager` under the city's
 ## simulation that acquires the "events" `AtlasLibrary` group in its own `_enter_tree()` and only
@@ -86,10 +91,11 @@ func _build_city_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
 	_free_city()
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
-	_city = CITY_SCENE.instantiate()
-	_city.use_run(run)
+	_run = run
+	_library = AtlasLibrary.new()
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
-	RunCity.build(_city, MapCache.of(seed_value))
+	RunCity.build(_city, run, MapCache.of(seed_value), null, false, _library)
 	return run
 
 ## Frees the test city when the suite built it one.
@@ -97,6 +103,8 @@ func _free_city() -> void:
 	if _city != null:
 		_city.free()
 	_city = null
+	_run = null
+	_library = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
 ## `ResistanceDirector.set_sight()` (handed `EventManager.sees`) and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
@@ -183,8 +191,8 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	return director
 
 func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator:
@@ -651,7 +659,7 @@ func _the_way_has_drawn(tile: Vector2i) -> bool:
 ## `trace_into`, the director is handed a trace that records its lines there, from the day's start.
 func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 		trace_into: Array[String] = []) -> ResistanceDirector:
-	var run: RunState = _city.run
+	var run: RunState = _run
 	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
 	GivenRun.alley_tiles(run, [])
 	var state := run.attempt_spend().block_arcs()

@@ -251,7 +251,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 ## through a drawer that records.
 func _doors_drawn_on(t: TestRunner, buildings: Array) -> Dictionary:
 	for building: Building in buildings:
-		FrontReads.watch(building, _city.atlas)
+		FrontReads.watch(building, _library)
 	await UI.frames(t, 2)
 	var doors := {}
 	for building: Building in buildings:
@@ -322,7 +322,7 @@ func _start_the_day(t: TestRunner, day: int, resistance: ResistanceDirector,
 		prepare := Callable(), started := Callable()) -> Array[Node]:
 	# The whole run, not only the snapshot's state parts: `start_run()` also resets the riders
 	# (`facts`: the escape section, used alleys, fenced park), the checkpoint and the mode.
-	var run: RunState = _city.run
+	var run: RunState = _run
 	run.start_run(SEED)
 	run.header().set_day(day)
 	if prepare.is_valid():
@@ -378,8 +378,8 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
-			RunCity.spawn_siting(_city))
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	director.watched = _city
 	var seen := {}
 	var on_started := func() -> void:
@@ -531,7 +531,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	# fresh one, once the old one is retired as the real game's clear does.
 	for guard in guards:
 		RunCity.events(_city).retire(guard)
-	_city.run.resistance().give_back()
+	_run.resistance().give_back()
 	var before := _live("alley_robbery")
 	director.start_day(9, _rng(9, "resistance"), 300.0)
 	t.check(_new_one("alley_robbery", before) != null,
@@ -1058,14 +1058,14 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 ## `state`, the run's own city state (`AttemptSpendState.block_arcs()`), which the happenings read, and hands back the happenings of
 ## that day, started.
 func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
-	var run: RunState = _city.run
+	var run: RunState = _run
 	run.header().set_day(day)
 	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map(), _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, RunCity.spawn_siting(_city))
+	happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, _library, null, RunCity.spawn_siting(_city))
 	happenings.start_day(day)
 	return happenings
 
@@ -1081,7 +1081,7 @@ func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
 ## `ResistanceHappenings.MARKET_GONE_BY`, the nearest block she cannot see goes.
 func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
-	var state := _city.run.attempt_spend().block_arcs()
+	var state := _run.attempt_spend().block_arcs()
 	state.reset()
 	var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
 	var door := _city.map().doorstep_world_position()
@@ -1144,7 +1144,7 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
 	_build_city_in_a_new_run(t)
-	var state := _city.run.attempt_spend().block_arcs()
+	var state := _run.attempt_spend().block_arcs()
 	state.reset()
 	var happenings := _happenings_on_day(ResistanceHappenings.COLUMN_DAY, state)
 	var map := _city.map()

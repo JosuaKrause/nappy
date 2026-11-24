@@ -41,9 +41,10 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.with_own_run(CITY_SCENE, city_seed)
+		var run := RunCity.started_run(city_seed)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		for day: int in [1, 6]:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)

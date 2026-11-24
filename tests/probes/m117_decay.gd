@@ -52,9 +52,10 @@ func _ground_rates(t: TestRunner) -> void:
 		print("  %-16s %8s %8s %8s %10s %8s  %s"
 				% ["ground", "crowd/s", "ground/s", "net/s", "clears in", "×", "seed"])
 		for city_seed: int in SEEDS:
-			var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+			var run := RunCity.started_run(RUN_SEED)
+			var city: City = RunCity.new_city(CITY_SCENE)
 			t.add_child(city)
-			RunCity.build(city, CityGenerator.generate(city_seed))
+			RunCity.build(city, run, CityGenerator.generate(city_seed))
 			for row: Dictionary in _legs(city):
 				var name: String = row["name"]
 				var result := _walk(city, row["from"], row["to"], day, city_seed)

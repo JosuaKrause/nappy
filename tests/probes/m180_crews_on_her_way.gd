@@ -19,9 +19,10 @@ const PAST_THE_FORK := 6
 func run(t: TestRunner) -> void:
 	print("seed   day walk          crews  sited  met  first sited  sheets pasted  waited on")
 	for seed_value: int in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for day: int in DAYS:
 			for walk_name: String in ["out and back", "turns back"]:

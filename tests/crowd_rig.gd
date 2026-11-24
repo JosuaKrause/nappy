@@ -94,9 +94,10 @@ const PARTS := {
 
 ## Runs one part of `PARTS` in a city of its own and frees it.
 func run_part(t: TestRunner, part: String) -> void:
-	_city = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
-	RunCity.build(_city, CityGenerator.generate(SEED))
+	RunCity.build(_city, run, CityGenerator.generate(SEED))
 	for case_name: String in PARTS[part]:
 		await Callable(self, case_name).call(t)
 	_city.free()
@@ -1965,9 +1966,10 @@ func _test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out(t: TestRunner)
 ## sidewalk of the mouth, as the crowd builds its own huts from them (`Crowd.start_day()`).
 func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	var door: StreetNetwork.Segment = null
 	var used_day := -1
 	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):

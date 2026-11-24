@@ -11,7 +11,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
+## The seed of the run the city is handed (`RunCity.started_run()`).
 const RUN_SEED := 2
 const SEED := 4242
 
@@ -32,11 +32,12 @@ func _test_the_city_reads_the_group_once(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var map := MapCache.of(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	t.check(pages.loads(CityDecals.DECORATION_ATLAS) == 0,
 			"nothing reads the decoration page before the city is built")
-	RunCity.build(city, map, null, false, atlas)
+	RunCity.build(city, run, map, null, false, atlas)
 	t.check(pages.held(CityDecals.DECORATION_ATLAS),
 			"City.build() acquires the decoration group")
 	t.check(pages.loads(CityDecals.DECORATION_ATLAS) == 1,
@@ -56,9 +57,10 @@ func _test_the_group_is_released_when_the_city_is_freed(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var map := MapCache.of(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map, null, false, atlas)
+	RunCity.build(city, run, map, null, false, atlas)
 	t.check(pages.held(CityDecals.DECORATION_ATLAS),
 			"the group is acquired while the city stands")
 	city.free()

@@ -316,7 +316,8 @@ class CrowdPictureCount extends AtlasLibrary:
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	var pictures := CrowdPictureCount.new()
 	city.schedule_scenery(SceneryGround.Mode.STEPPED, true)
 	city.leave_out(true)
@@ -327,7 +328,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	builder.leave_out(true, true, true)
 	builder.force_the_blackout()
 	builder.make_every_cyclist_a_pelican()
-	RunCity.build(city, MapCache.of(SEED), builder, false, pictures)
+	RunCity.build(city, run, MapCache.of(SEED), builder, false, pictures)
 	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
 	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
 	# stands asked to draw again: under `--skip shadows` none draws a tile.
@@ -419,11 +420,12 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 ## time, and a flag the director never took up would send no cyclist on day 1.
 func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var builder := RunCity.new_builder()
 	builder.force_a_row("cyclist", FORCED_INTERVAL)
-	RunCity.build(city, MapCache.of(SEED), builder)
+	RunCity.build(city, run, MapCache.of(SEED), builder)
 	RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var her := Stroller.new()
 	var camera := Camera2D.new()

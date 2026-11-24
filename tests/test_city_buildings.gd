@@ -22,7 +22,7 @@ const UI := preload("res://tests/ui_screens.gd")
 const FrontReads := preload("res://tests/front_reads.gd")
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
+## The seed of the run the city is handed (`RunCity.started_run()`).
 const RUN_SEED := 2
 ## A spread of cities, built in full.
 const SWEEP_SEEDS := 5
@@ -45,9 +45,10 @@ func run(t: TestRunner) -> void:
 ## persistent collision her route is walked against.
 func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	var before: Array[Building] = city.buildings().duplicate()
 	var shapes: Dictionary = {}
 	for building in before:
@@ -56,7 +57,7 @@ func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 			"every building holds a collision shape before the dawn (%d buildings)" % before.size())
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), 8)
-	city.start_day(state, 8, city.run.calendar().day_rng(8, "closures"))
+	city.start_day(state, 8, run.calendar().day_rng(8, "closures"))
 	var after: Array[Building] = city.buildings()
 	t.check(after == before, "a dawn leaves the city the same buildings, the same nodes")
 	var replaced := 0
@@ -91,10 +92,12 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 	var extended := 0
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
-		var fronts := await _watch_the_fronts(t, city)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, map, null, false, library)
+		var fronts := await _watch_the_fronts(t, city, library)
 		var entities := city.layers().node(DrawLayer.Layer.ENTITIES)
 		for building: Building in city.buildings():
 			var extension := _front_of(fronts, building).roof_extension()
@@ -142,10 +145,12 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 	var edge_fronts := 0
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
-		var fronts := await _watch_the_fronts(t, city)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, map, null, false, library)
+		var fronts := await _watch_the_fronts(t, city, library)
 		var buildings := city.buildings()
 		for building: Building in buildings:
 			if building.covered_ground_cols().is_empty():
@@ -194,10 +199,12 @@ func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: Test
 	var over_hall := 0
 	for seed_value: int in [823576, 966118]:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
-		var fronts := await _watch_the_fronts(t, city)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, map, null, false, library)
+		var fronts := await _watch_the_fronts(t, city, library)
 		var station: Building = null
 		for building: Building in city.buildings():
 			if building.is_power_station():
@@ -257,10 +264,12 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 		for block: Vector2i in map.blocks_with_layouts():
 			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
 				courtyard_lots.append(map.lot_rect(block))
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
-		var fronts := await _watch_the_fronts(t, city)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, map, null, false, library)
+		var fronts := await _watch_the_fronts(t, city, library)
 		var buildings := city.buildings()
 		for building: Building in buildings:
 			if building.is_power_station() or building.covered_ground_cols().is_empty():
@@ -349,10 +358,12 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 	var on_shallow_extension := 0
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
-		var fronts := await _watch_the_fronts(t, city)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, map, null, false, library)
+		var fronts := await _watch_the_fronts(t, city, library)
 		for building: Building in city.buildings():
 			if building.is_power_station():
 				continue
@@ -391,10 +402,12 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 	var checked_fully_covered_fronts := 0
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
-		var fronts := await _watch_the_fronts(t, city)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, map, null, false, library)
+		var fronts := await _watch_the_fronts(t, city, library)
 		for building: Building in city.buildings():
 			var front := _front_of(fronts, building)
 			_check_accessor_invariant(t, building, front, map.city_seed())
@@ -508,11 +521,12 @@ func _check_accessor_invariant(t: TestRunner, building: Building, front: FrontRe
 		t.check(not building.covered_ground_cols()[col] if col < building.covered_ground_cols().size() else true,
 				"seed %d: no accessor cell is a covered column — those draw no facade at all, never blank wall" % seed_used)
 
-## Hands every building of `city` a drawer that records, has it drawn, and answers each building's
-## reads of its front once two frames have passed.
-func _watch_the_fronts(t: TestRunner, city: City) -> Dictionary:
+## Hands every building of `city` a drawer that records, drawing from `library` (the one the
+## city was built with), has it drawn, and answers each building's reads of its front once two
+## frames have passed.
+func _watch_the_fronts(t: TestRunner, city: City, library: AtlasLibrary) -> Dictionary:
 	for building in city.buildings():
-		FrontReads.watch(building, city.atlas)
+		FrontReads.watch(building, library)
 	await UI.frames(t, 2)
 	var fronts := {}
 	for building in city.buildings():
@@ -546,10 +560,11 @@ static func _under_door(building: Building, col: int, map: CityMap) -> bool:
 ## not an object next to the building"* — through `City.start_day()`, the way a real morning
 ## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, FIRE_SEED)
-	city.run.header().set_day(4)
+	var run := RunCity.started_run(FIRE_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(4)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(FIRE_SEED))
+	RunCity.build(city, run, CityGenerator.generate(FIRE_SEED))
 
 	var sites := {}
 	for tile in EventScheduler.row_ground(city.map()).tiles_for(
@@ -667,7 +682,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	city.start_day(CityState.new(), 4, rng)
 	t.check(_burnt_count(city) == 0, "no building is burnt before any fire has left a scar")
 
-	city.run.add_scar("burnt_shell", city.map().tile_to_world(site))
+	run.add_scar("burnt_shell", city.map().tile_to_world(site))
 	city.start_day(CityState.new(), 4, rng)
 	t.check(scarred.condition() == Building.Condition.BURNT,
 			"the dawn after the fire, the building behind its scar is drawn burnt")

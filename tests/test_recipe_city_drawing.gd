@@ -12,7 +12,7 @@ extends RefCounted
 ## only the recipe's buildings and walls the void) is a guarantee between the recipe's map and
 ## the city, which the builder's suite (no city) and the city's (generated maps) cannot see.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
+## The seed of the run the city is handed (`RunCity.started_run()`).
 const RUN_SEED := 2
 const FrontReads := preload("res://tests/front_reads.gd")
 const UI := preload("res://tests/ui_screens.gd")
@@ -45,9 +45,10 @@ func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
 		return
 	var source := Vector2i(50, 74)
 	var destination := Vector2i(50, 71)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, built.map)
+	RunCity.build(city, run, built.map)
 	var trees := {}
 	for node in city.props():
 		var prop := node as Prop
@@ -68,9 +69,10 @@ func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
 	if not _errors(built).is_empty():
 		t.check(false, "street-tree recipe constructs: %s" % [built.errors])
 		return
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, built.map)
+	RunCity.build(city, run, built.map)
 	var trees := {}
 	for node in city.props():
 		var prop := node as Prop
@@ -107,9 +109,11 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 	if not _errors(bounded).is_empty():
 		return
 	var local: CityMap = bounded.map
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, local)
+	var library := AtlasLibrary.new()
+	RunCity.build(city, run, local, null, false, library)
 	t.check(city.scenery_ground_source(Vector2i(-100, -100)) == GroundTiles.ALLEY,
 			"exterior uses the plain documented ground texture")
 	var station: Building = null
@@ -118,7 +122,7 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 			station = building
 	t.check(station != null, "bounded rendering includes the real power station")
 	if station:
-		FrontReads.watch(station, city.atlas)
+		FrontReads.watch(station, library)
 		await UI.frames(t, 2)
 		var extended := 0
 		for rows: int in FrontReads.look(station).roof_extension():
@@ -134,10 +138,11 @@ func _test_the_examples(t: TestRunner) -> void:
 			t.check(false, "%s example builds: %s" % [side, built.errors])
 			continue
 		var map: CityMap = built.map
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		city.schedule_scenery(SceneryGround.Mode.ONE, true)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		var wall_tile := Vector2i(118 if side == "hall" else 132, 14)
 		var found := false
 		for building in city.buildings():
@@ -196,9 +201,10 @@ func _test_the_days_preparation_keeps_the_manual_ground(t: TestRunner,
 	var alley_tile := Vector2i(int(cleared[1]), int(cleared[0]))
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), 7)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	city.start_day(state, 7, RandomNumberGenerator.new(),
 			DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK
@@ -220,9 +226,11 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner,
 	var built := RecipeCityBuilder.build(edited)
 	t.check(_errors(built).is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
 	if _errors(built).is_empty():
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, built.map)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, built.map, null, false, library)
 		var back: Building = null
 		var front: Building = null
 		for building: Building in city.buildings():
@@ -233,7 +241,7 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner,
 		t.check(back != null and front != null,
 				"both pieces of the edited day-7 join stand in the live City")
 		if back != null and front != null:
-			FrontReads.watch(front, city.atlas)
+			FrontReads.watch(front, library)
 			await UI.frames(t, 2)
 			var drawn_extension := FrontReads.look(front).roof_extension()
 			var expected_extension: Array[int] = [4, 4]
@@ -261,9 +269,11 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 	var built := RecipeCityBuilder.build(edited)
 	t.check(_errors(built).is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
 	if _errors(built).is_empty():
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, built.map)
+		var library := AtlasLibrary.new()
+		RunCity.build(city, run, built.map, null, false, library)
 		var tint_source: Building = null
 		var visible_sibling: Building = null
 		for building: Building in city.buildings():
@@ -277,8 +287,8 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 			t.check(tint_source.look_variant() == authored_variant
 					and visible_sibling.look_variant() == sibling_variant,
 					"each visible piece keeps its own authored variant")
-			FrontReads.watch(tint_source, city.atlas)
-			FrontReads.watch(visible_sibling, city.atlas)
+			FrontReads.watch(tint_source, library)
+			FrontReads.watch(visible_sibling, library)
 			await UI.frames(t, 2)
 			var source_wall := FrontReads.look(tint_source).colour_of(Building.WALL)
 			var sibling_wall := FrontReads.look(visible_sibling).colour_of(Building.WALL)
@@ -292,9 +302,10 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 ## stretch is walled off, the recipe's cracks are what the ground draws, and no ground is drawn
 ## in the void.
 func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	t.check(city.buildings().size() == map.stretch_building_lots().size(),
 			"only the recipe's buildings stand (%d)" % city.buildings().size())
 	var edge := city.get_node_or_null("VoidEdge")

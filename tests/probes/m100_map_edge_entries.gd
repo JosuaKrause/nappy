@@ -110,9 +110,10 @@ func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 	}
 	for name: String in edges:
 		var at: Vector2 = edges[name]
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m100-probe-day-start:%s" % name)
 		RunCity.crowd(city).start_day(1, rng, at)

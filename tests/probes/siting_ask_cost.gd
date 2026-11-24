@@ -15,9 +15,10 @@ const CALLS := 4000
 const ROUNDS := 5
 
 func run(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(CITY_SEED))
+	RunCity.build(city, run, CityGenerator.generate(CITY_SEED))
 	for day in DAYS:
 		var state := CityState.new()
 		state.begin_day(city.map().plans_by_block(), day)

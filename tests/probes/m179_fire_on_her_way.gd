@@ -45,9 +45,10 @@ func run(t: TestRunner) -> void:
 	var worst_frame := 0.0
 	var attempt_frames: Array[float] = []
 	for seed_value: int in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for walk_name: String in ["out and back", "turns back", "off the path", "stays near home"]:
 			var result := _walk_one(t, city, seed_value, walk_name)

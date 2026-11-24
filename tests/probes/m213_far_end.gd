@@ -44,9 +44,10 @@ func _task_guards(t: TestRunner) -> void:
 	var unguarded := 0
 	var seen := 0
 	for seed_value in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day: int in [13]:
 			GivenRun.alley_tiles(city.run, [])
 			var done: Array[int] = []

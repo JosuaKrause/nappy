@@ -12,7 +12,7 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE: PackedScene = preload("res://scenes/player/stroller.tscn")
 const CONTROLS_SCENE: PackedScene = preload("res://scenes/ui/touch_controls.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
+## The seed of the run the city is handed (`RunCity.started_run()`).
 const RUN_SEED := 2
 const SEED := 4242
 const STEP := 1.0 / 60.0
@@ -585,9 +585,10 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t: TestRunner) -> void:
 ## everything should follow this (and treat it depending on the input mode)")*.
 func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	_clear()
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(SEED))
+	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var spec := DaySpec.for_day(DAY)
@@ -646,9 +647,10 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 ## `_watch_the_encounters()` leaves it passing, so it does not name that guard.
 func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	_clear()
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(SEED))
+	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var spec := DaySpec.for_day(DAY)

@@ -28,9 +28,10 @@ func run(t: TestRunner) -> void:
 	var rows := {}
 	for seed_value: int in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, map)
+		RunCity.build(city, run, map)
 		var state := CityState.new()
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.plans_by_block(), day)
@@ -69,7 +70,7 @@ func _measure(city: City, map: CityMap, day: int, rows: Dictionary) -> void:
 	var r: Dictionary = rows[day]
 	for tile: Vector2i in city.run.posters().cells():
 		r["city"] = int(r["city"]) + (1 if city.run.posters().has_intact_sheet(tile) else 0)
-	var w: Dictionary = POSTER_VIEW.walk(city, map)
+	var w: Dictionary = POSTER_VIEW.walk(city, city.run, map)
 	r["view_sum"] = int(r["view_sum"]) + int(w["view_sum"])
 	r["cells"] = int(r["cells"]) + int(w["cells"])
 	r["empty"] = int(r["empty"]) + int(w["cells"]) - int(w["with_sheet"])

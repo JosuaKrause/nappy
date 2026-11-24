@@ -57,9 +57,10 @@ func run_scenarios(t: TestRunner, indices: Array[int]) -> void:
 	var all := scenarios()
 	for index in indices:
 		var scenario := all[index]
-		_city = RunCity.with_own_run(CITY_SCENE, SEED)
+		var run := RunCity.started_run(SEED)
+		_city = RunCity.new_city(CITY_SCENE)
 		t.add_child(_city)
-		RunCity.build(_city, MapCache.of(SEED))
+		RunCity.build(_city, run, MapCache.of(SEED))
 		scenario.call(t)
 		_city.free()
 
@@ -676,9 +677,10 @@ func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 ## its own boundary at least once.
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 
 	var wall_segment: StreetNetwork.Segment = null
 	var door_segment: StreetNetwork.Segment = null
@@ -779,9 +781,10 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 ## runs first, because that is what builds the day's huts out of the region plan.
 func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var map := MapCache.of(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	var door: StreetNetwork.Segment = null
 	var used_day := -1
 	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
@@ -1240,9 +1243,10 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## non-empty around the home block for this to test anything rather than pass vacuously.
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 
 	var day := 1
 	var state := CityState.new()
@@ -1751,9 +1755,10 @@ func _entry_clearance(agent: CrowdAgent) -> float:
 ## has one: nothing another test closed or sealed stands in it.
 func _test_day_start_keeps_room_for_its_own_picture(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	var size := map.world_size()
 	var at := Vector2(Tuning.TILE_SIZE, size.y * 0.5)
 	RunCity.crowd(city).use_focus(null)

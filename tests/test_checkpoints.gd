@@ -446,9 +446,10 @@ func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	# No player in this rig, so nothing would ever stream in on its own — see
 	# `test_event_manager.gd`'s own `_build_city()` for the same reasoning.
 	RunCity.events(city).stream_within(INF)
@@ -1874,9 +1875,10 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 ## stop duration and the pass, per the milestone's own request.
 func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("checkpoint-gate-rig:%d" % BASE_SEED)
 	RunCity.crowd(city).start_day(1, rng, CrowdLanes.arterial_pavement(map))
@@ -1978,9 +1980,10 @@ func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
 ## `Crowd.step()`, which runs it with the rest of the tick's first half.
 func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	var stroller := _real_stroller(t)
 	RunCity.crowd(city).use_player(stroller)
 
@@ -2043,9 +2046,10 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 func _street_door_rig(t: TestRunner) -> Dictionary:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, run, map)
 	_repaint_for(map, day)
 	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
 	t.check(not plan.gate_states().is_empty(),

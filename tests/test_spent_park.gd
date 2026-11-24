@@ -722,12 +722,12 @@ func _solid_at(node: Node2D, point: Vector2) -> bool:
 func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	var recording := RecordingSceneryDrawer.new()
 	city.draw_scenery_through(recording)
 	var library := AtlasLibrary.new()
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(BASE_SEED), null, false, library)
+	RunCity.build(city, run, CityGenerator.generate(BASE_SEED), null, false, library)
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(city.map().plans_by_block(), day)
@@ -796,7 +796,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner,
 		fenced: Array[RoadClosure]) -> void:
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	var recording := RecordingSceneryDrawer.new()
 	city.draw_scenery_through(recording)
 	var library := AtlasLibrary.new()
@@ -807,7 +807,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner,
 	for closure in fenced:
 		map.add_recipe_closure(closure)
 	map.add_recipe_closure(short_run)
-	RunCity.build(city, map, null, false, library)
+	RunCity.build(city, run, map, null, false, library)
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)

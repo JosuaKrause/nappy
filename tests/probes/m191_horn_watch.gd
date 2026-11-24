@@ -74,9 +74,10 @@ func run(t: TestRunner) -> void:
 ## query, only a wider band of cars for which `_horn()` itself now runs. So the added cost per
 ## frame is bounded by (live cars) × (one `_horn()` call), measured directly rather than guessed.
 func _measure_cost(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(4242))
+	RunCity.build(city, run, CityGenerator.generate(4242))
 	RunCity.crowd(city).start_day(1, RandomNumberGenerator.new())
 	RunCity.crowd(city).use_bus(EventBus)
 	var live_cars := 0

@@ -55,9 +55,10 @@ func run(t: TestRunner) -> void:
 ## `[outcome, whether the in-the-world check ran]`: "kept", "no mark", "never laid", or what broke
 ## the guarantee.
 func _walk(t: TestRunner, seed_value: int) -> Array:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	# What the events tell the run log: a place is put on her route when a line says so.
 	var put_down: Array[String] = []
 	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
@@ -69,12 +70,12 @@ func _walk(t: TestRunner, seed_value: int) -> Array:
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
-			city.run.complete_resistance_step(step.index, step.grants_progress)
+			run.complete_resistance_step(step.index, step.grants_progress)
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
-			RunCity.spawn_siting(city))
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	resistance.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
