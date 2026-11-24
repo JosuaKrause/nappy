@@ -162,6 +162,9 @@ static var _explosion_outside: EventDef = null
 static func heat_levels() -> int:
 	return Tuning.RESISTANCE_GOAL + 1
 
+## Every row, built and validated once, in catalogue order: what `tools/cost_table.gd` walks, its
+## table's fixed row order being this one. The game asks per day (`available_on()`, `of_kind()`,
+## `by_id()`), and so does a suite (`CatalogueRows.every()`).
 static func all() -> Array[EventDef]:
 	if _all.is_empty():
 		_all = _build()

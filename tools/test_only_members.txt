@@ -51,8 +51,6 @@ src/dev/scene_recipe_runtime.gd manifest
 src/dev/scene_recipe_runtime.gd named
 src/dev/scene_recipe_runtime.gd start_position
 src/dev/scene_recipe_runtime.gd tick
-src/events/model/calm_areas.gd unused
-src/events/data/event_catalogue.gd all
 src/events/simulation/event_manager.gd ahead
 src/events/simulation/event_manager.gd checkpoints
 src/events/simulation/event_manager.gd spawner

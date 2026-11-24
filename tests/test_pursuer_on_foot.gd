@@ -870,7 +870,7 @@ func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 ## that drives pursues her at any heat.
 func _test_no_vehicle_pursues_her(t: TestRunner) -> void:
 	var vehicles := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not (def.drives() or EventPictures.WHEELS_BY_LOOK.has(def.picture())):
 			continue
 		vehicles += 1

@@ -103,7 +103,7 @@ func _shape_agrees(def: EventDef) -> bool:
 
 func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.picture() != EventDef.Look.NONE:
 			t.check(def.ground_shape() != null, "'%s' has a look and carries a shape" % def.id())
 		if def.obstructs_within() > 0.0:
@@ -116,7 +116,7 @@ func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 
 func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			checked += 1
@@ -127,7 +127,7 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 					"'%s' at heat %d: obstructs %.1fpx, shape reaches %.1fpx"
 					% [def.id(), level, hot.obstructs_within(),
 							hot.ground_shape().reach() if hot.ground_shape() else -1.0])
-	t.check(checked > EventCatalogue.all().size(), "every row was checked at every heat level")
+	t.check(checked > CatalogueRows.every().size(), "every row was checked at every heat level")
 
 func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
@@ -161,7 +161,7 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 func _test_every_spread_row_still_fills_the_pavement_it_blocked(t: TestRunner) -> void:
 	var half_band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not _SPREAD_LOOKS.has(def.picture()):
 			continue
 		var blocked_before := def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS > half_band
@@ -480,7 +480,7 @@ func _test_approaching_costs_more_than_receding(t: TestRunner) -> void:
 ## field — this is the regression guard.
 func _test_no_emitting_segment_row_moves(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.ground_shape() == null or not def.ground_shape().is_segment() or def.peak() <= 0.0:
 			continue
 		checked += 1

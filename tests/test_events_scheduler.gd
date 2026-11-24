@@ -477,7 +477,9 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 			var day: int = step["day"]
 			var calm: CalmAreas = step["calm"]
 			var events: DayEvents = step["events"]
-			for block in calm.unused():
+			for block in calm.blocks():
+				if calm.used().has(block):
+					continue
 				var near: Array[String] = []
 				for plan in events.spoilers_of(block):
 					near.append(plan.row_id())
@@ -486,7 +488,7 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 						% [run_seed, day, block, ", ".join(near)])
 
 func _test_successors_resolve(t: TestRunner) -> void:
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.leaves_behind() == "":
 			continue
 		t.check(EventCatalogue.by_id(def.leaves_behind()) != null,
@@ -498,7 +500,7 @@ func _test_successors_resolve(t: TestRunner) -> void:
 ## carries one today.
 func _test_sighted_successors_resolve(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.calls_in() == "":
 			continue
 		checked += 1

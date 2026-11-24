@@ -41,7 +41,7 @@ func run(t: TestRunner) -> void:
 static func _waiting_chargers() -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	var seen := {}
-	for row in EventCatalogue.all():
+	for row in CatalogueRows.every():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 				var def := EventCatalogue.heated(row, level).for_day(day)

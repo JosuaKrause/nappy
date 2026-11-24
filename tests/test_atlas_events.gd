@@ -97,7 +97,7 @@ func _collect_paths(value: Variant, found: Dictionary) -> void:
 ## enumerable at all; this is what stops a new `Look` being added with nothing listed for it.
 func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) -> void:
 	var looks: Dictionary = {}
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		looks[def.picture()] = def.id()
 	var checked := 0
 	for look: EventDef.Look in looks.keys():
@@ -120,7 +120,7 @@ func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) ->
 ## a silhouette missing from the page is an arrow that says nothing on a day the row appears.
 func _test_every_badge_silhouette_is_on_the_page(t: TestRunner) -> void:
 	var checked := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.picture() == EventDef.Look.NONE:
 			continue
 		var icon := EventPictures.icon_for(def.picture())

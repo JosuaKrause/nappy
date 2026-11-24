@@ -108,7 +108,7 @@ func _cost_to_run_through(def: EventDef) -> float:
 func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t: TestRunner) -> void:
 	var pursuers := 0
 	var running_is_cheaper := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.id() in _RUNNING_IS_CHEAPER:
 			running_is_cheaper += 1
 			t.check(_cost_to_run_through(def) < _cost_to_walk_through(def),
@@ -150,7 +150,7 @@ const CYCLIST_FULL_PASS_COST_TOLERANCE := 0.1
 
 func _test_the_cyclist_costs_what_he_did(t: TestRunner) -> void:
 	var found := false
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.id() != "cyclist":
 			continue
 		found = true
@@ -178,7 +178,7 @@ func _test_nothing_chases_her_before_the_run_is_taught(t: TestRunner) -> void:
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
 ## −0.1 points to walk straight through, so the correct play was to plough into it.
 func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void:
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if def.peak() <= 0.0 or def.id() in _SCENERY:
 			continue
 		if def.id() in _PRICED_BY_THEIR_CAPTURE:

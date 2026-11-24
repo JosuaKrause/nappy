@@ -47,7 +47,7 @@ func run(t: TestRunner) -> void:
 	print("%-22s %8s %10s %10s %10s %10s" % [
 			"id", "rate/s", "awake@3.5", "awake@6.0", "asleep@3.5", "asleep@6.0"])
 	var flagged: Array[String] = []
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		if not _walkable_beside(def):
 			continue
 		var rate := _mean_rate_at_inner_radius(def)

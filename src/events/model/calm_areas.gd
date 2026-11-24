@@ -83,14 +83,6 @@ func ground_of(block: Vector2i) -> Rect2:
 func used() -> Array[Vector2i]:
 	return _used.duplicate()
 
-## The calm areas she has not settled in this act, in the map's order.
-func unused() -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for block in blocks():
-		if not _used.has(block):
-			found.append(block)
-	return found
-
 ## **The calm ground nothing may be placed near today**: the ground of every calm area she has not
 ## settled in this act. *(2026-08-31: "why are 7-9 unvisited calm areas spoiled? Just don't place
 ## events there!")* A placement rule rather than a repair: the events go somewhere else instead,
@@ -102,8 +94,9 @@ func unused() -> Array[Vector2i]:
 ## contested rather than sterile.
 func unused_ground() -> Array[Rect2]:
 	var ground: Array[Rect2] = []
-	for block in unused():
-		ground.append(ground_of(block))
+	for block in blocks():
+		if not _used.has(block):
+			ground.append(ground_of(block))
 	return ground
 
 ## The area that does not count today, or `NONE`. See `of()`.

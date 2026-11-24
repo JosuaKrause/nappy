@@ -50,12 +50,16 @@ func _test_each_area_answers_its_own_calm_ground(t: TestRunner) -> void:
 func _test_used_and_unused_are_read_off_the_act(t: TestRunner) -> void:
 	var used: Array[Vector2i] = [TAKEN, COURT]
 	var calm := CalmAreas.of(_map(), used)
-	t.check(calm.unused() == ([PARK] as Array[Vector2i]),
-			"the calm areas she has not used are the rest, and a block no longer calm is not one")
+	var unused: Array[Vector2i] = []
+	for block in calm.blocks():
+		if not calm.used().has(block):
+			unused.append(block)
+	t.check(unused == ([PARK] as Array[Vector2i]),
+			"the calm areas she has not used are the rest of the calm blocks")
 	t.check(calm.unused_ground() == ([Rect2(192, 192, 256, 256)] as Array[Rect2]),
-			"and the ground nothing may be placed near is theirs")
+			"the ground nothing may be placed near is theirs")
 	var fresh := CalmAreas.of(_map())
-	t.check(fresh.unused().size() == 2,
+	t.check(fresh.unused_ground().size() == 2,
 			"with nothing used this act, every calm area is unused")
 
 ## The first day whose narrow resistance target (`ResistanceSteps.narrow_target_on()`) is another

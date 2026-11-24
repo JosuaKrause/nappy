@@ -19,7 +19,7 @@ const LEAVES_AT := 300
 
 func run(t: TestRunner) -> void:
 	var defs: Array[EventDef] = []
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			if hot.drives() and hot.moves() and not defs.has(hot):

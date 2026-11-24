@@ -7,7 +7,7 @@ const PASSES := 20000
 const PAIRS := 5
 
 func run(t: TestRunner) -> void:
-	var defs := EventCatalogue.all()
+	var defs := CatalogueRows.every()
 	t.check(not defs.is_empty(), "the classifier benchmark has catalogue definitions to read")
 	_measure_legacy(defs)
 	_measure_cached(defs)

@@ -153,7 +153,7 @@ func _test_the_crash_leaves_the_ground_between_its_cars_open(t: TestRunner) -> v
 ## The rows `EventDef.stands_on_its_band_middle()` holds for, whichever the catalogue has.
 func _rows_on_the_band_middle() -> Array[EventDef]:
 	var rows: Array[EventDef] = []
-	for row in EventCatalogue.all():
+	for row in CatalogueRows.every():
 		if row.stands_on_its_band_middle():
 			rows.append(row)
 	return rows
@@ -282,7 +282,7 @@ func _test_only_a_car_that_drives_lies_along_its_heading(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
 	var drivers := 0
 	var stood_still := 0
-	for row in EventCatalogue.all():
+	for row in CatalogueRows.every():
 		if row.body() == null or row.ground_shape() == null:
 			continue
 		var stance := BodyStance.of(map, row, _AT, Vector2.RIGHT)
@@ -313,7 +313,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	t.check(map.pavement_inward(lane) != Vector2i.ZERO, "the street has a pavement lane to stand a body on")
 	var at := map.tile_to_world(lane)
 	var solid_unpinned := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		var stands := BodyStance.of(map, def, at, Vector2.RIGHT).center()
 		var is_centred := def.stands_on_its_band_middle()
 		if is_centred:
@@ -324,7 +324,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var on_the_road := _carriageway_point()
 	t.check(on_the_road != Vector2.INF, "the street has a carriageway lane beside a kerb")
 	var at_the_kerb := 0
-	for def in EventCatalogue.all():
+	for def in CatalogueRows.every():
 		var stands := BodyStance.of(WorldMap.open_ground(), def, on_the_road, Vector2.RIGHT).center()
 		var kerbed := def.stands_at_its_kerb()
 		if kerbed:
