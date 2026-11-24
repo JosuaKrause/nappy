@@ -1065,10 +1065,13 @@ else
 fi
 
 # ------------------------------------ new-name.sh checks the open pull requests' branches too ---
-# A scratch git checkout whose `gh` stub lists two open branches: `other`, readable as
-# origin/other and holding a review item named busy-badger, and `gone`, which cannot be read. Two
-# branches cut from the same main must not draw the same pair, so the draw skips busy-badger and
-# says that it skipped `gone`; with a `gh` that fails (no network) it draws from this tree alone.
+# A scratch git checkout whose `gh` stub lists three open branches: `other`, whose head holds a
+# review item named busy-badger while the checkout's own origin/other is stale (an older commit
+# without it), `gone`, which cannot be read, and `fork`, a fork's pull request. Two branches cut
+# from the same main must not draw the same pair, so the draw skips busy-badger, reads the pull
+# request's head rather than the stale ref, leaves the caller's FETCH_HEAD and refs/ as they were,
+# and says that it skipped `gone` and `fork`; with a `gh` that fails (no network) it draws from
+# this tree alone.
 pr_repo="$work_dir/names-pr-repo"
 pr_bin="$work_dir/names-pr-bin"
 mkdir -p "$pr_repo/tools/names" "$pr_repo/docs/todo" "$pr_repo/docs/decisions" "$pr_repo/docs/review" \
@@ -1082,14 +1085,22 @@ touch "$pr_repo/docs/review/.gitkeep"
     git init --quiet
     git add -A
     git -c user.name=t -c user.email=t@example.com commit --quiet -m main
+    git init --quiet --bare "$pr_repo.origin.git"
+    git remote add origin "$pr_repo.origin.git"
+    git update-ref refs/remotes/origin/other HEAD
     git checkout --quiet -b other
     printf '# busy-badger — Taken elsewhere\n' > docs/review/2026-09-02-busy-badger.md
     git add -A
     git -c user.name=t -c user.email=t@example.com commit --quiet -m other
-    git update-ref refs/remotes/origin/other HEAD
+    git push --quiet origin other
+    git rev-parse HEAD > "$pr_repo.other-oid"
     git checkout --quiet -
+    git branch --quiet -D other
+    printf 'kept\n' > .git/FETCH_HEAD
 )
-printf '#!/usr/bin/env bash\nprintf "other\\ngone\\n"\n' > "$pr_bin/gh"
+pr_oid="$(cat "$pr_repo.other-oid")"
+printf '#!/usr/bin/env bash\nprintf "other\\t%s\\tfalse\\ngone\\t%s\\tfalse\\nfork\\t%s\\ttrue\\n"\n' \
+    "$pr_oid" "$(printf '%040d' 1)" "$pr_oid" > "$pr_bin/gh"
 chmod +x "$pr_bin/gh"
 # With the one pair the other branch holds as the only one, the draw has nothing free (a draw that
 # ignored the branch would take it).
@@ -1103,6 +1114,10 @@ check_that "new-name.sh passes over a name an open pull request's branch holds" 
     '[[ "$pr_out" == *"2026-09-27-busy-otter"* && -s "$pr_repo/docs/playtests/2026-09-27-busy-otter.md" ]]'
 check_that "new-name.sh says that it skipped a branch it cannot read, and goes on" \
     '[[ "$pr_out" == *"cannot read branch gone; skipped"* ]]'
+check_that "new-name.sh skips a fork's pull request with a note" \
+    '[[ "$pr_out" == *"fork is from a fork; skipped"* ]]'
+check_that "new-name.sh leaves the caller's FETCH_HEAD and refs/new-name alone" \
+    '[[ "$(cat "$pr_repo/.git/FETCH_HEAD")" == kept && -z "$(git -C "$pr_repo" for-each-ref refs/new-name)" ]]'
 rm -f "$pr_repo/docs/playtests/2026-09-27-busy-otter.md"
 printf '#!/usr/bin/env bash\nexit 1\n' > "$pr_bin/gh"
 pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Offline" 2>&1)"

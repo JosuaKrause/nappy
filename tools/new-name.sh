@@ -14,7 +14,7 @@
 # a pair is used once across docs/todo, docs/decisions, docs/review and docs/playtests, whatever
 # the date, since two things spoken "busy-badger" would be one name for two things. The names the
 # open pull requests' branches already hold count as used too (`gh pr list`, then `git ls-tree`
-# of each head), so two branches cut from the same main do not draw the same name; with no `gh`,
+# of each head, taken from the head `gh` reports and never from a stale origin ref), so two branches cut from the same main do not draw the same name; with no `gh`,
 # no network or an unreadable branch the script says so on stderr and goes on with the tree it
 # runs in.
 #
@@ -141,7 +141,7 @@ folders=("$root/docs/todo" "$root/docs/decisions" "$root/docs/review" "$root/doc
 # (decisions/<name>), or nothing. A branch that cannot be read is skipped with a note, so the draw works offline.
 remote_taken=""
 load_remote_names() {
-    local heads head ref tree
+    local heads head oid cross ref tree private
     git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || {
         echo "new-name.sh: not a git checkout; names on open pull requests are not checked" >&2
         return 0
@@ -150,23 +150,43 @@ load_remote_names() {
         echo "new-name.sh: no gh; names on open pull requests are not checked" >&2
         return 0
     }
-    heads="$(cd "$root" && gh pr list --state open --limit 200 --json headRefName \
-        --jq '.[].headRefName' 2>/dev/null)" || {
+    heads="$(cd "$root" && gh pr list --state open --limit 200 \
+        --json headRefName,headRefOid,isCrossRepository \
+        --jq '.[] | [.headRefName, .headRefOid, .isCrossRepository] | @tsv' 2>/dev/null)" || {
         echo "new-name.sh: gh pr list failed; names on open pull requests are not checked" >&2
         return 0
     }
-    while IFS= read -r head; do
+    while IFS=$'\t' read -r head oid cross; do
         [[ -n "$head" ]] || continue
+        if [[ "$cross" == true ]]; then
+            echo "new-name.sh: $head is from a fork; skipped" >&2
+            continue
+        fi
+        # The local origin/<head> may be older than the pull request's head, which is the case
+        # this check exists for: it is used only when it is that very commit, otherwise the
+        # branch is fetched into a private ref (never FETCH_HEAD, which is the caller's) and
+        # the ref is deleted after the read.
         ref="origin/$head"
-        if ! git -C "$root" rev-parse --verify --quiet "$ref^{tree}" >/dev/null 2>&1; then
-            ref="FETCH_HEAD"
-            git -C "$root" fetch --quiet origin "$head" >/dev/null 2>&1 || ref=""
+        private=""
+        if [[ "$(git -C "$root" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null)" != "$oid" ]]; then
+            if git -C "$root" rev-parse --verify --quiet "$oid^{commit}" >/dev/null 2>&1; then
+                ref="$oid"
+            else
+                private="refs/new-name/$$"
+                if git -C "$root" fetch --quiet --no-write-fetch-head origin "+refs/heads/$head:$private" >/dev/null 2>&1; then
+                    ref="$private"
+                else
+                    ref=""
+                fi
+            fi
         fi
         if [[ -z "$ref" ]] || ! tree="$(git -C "$root" ls-tree -r --name-only "$ref" -- docs/todo \
             docs/decisions docs/review docs/playtests 2>/dev/null)"; then
             echo "new-name.sh: cannot read branch $head; skipped" >&2
+            [[ -n "$private" ]] && git -C "$root" update-ref -d "$private" 2>/dev/null
             continue
         fi
+        [[ -n "$private" ]] && git -C "$root" update-ref -d "$private" 2>/dev/null
         remote_taken="$remote_taken
 $(printf '%s\n' "$tree" \
     | sed -n -E 's#^docs/(todo|decisions|review|playtests)/([^/]+).*#\1/\2#p' | sed 's/\.md$//')"
