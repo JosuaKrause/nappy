@@ -406,7 +406,8 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 func _test_crowd_mutations(t: TestRunner) -> void:
 	for kind: LaneMover.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var source := CountedCrowd.new(kind)
-		# The mover's own pace, set the way its strategy sets it: eased to the wanted one in a step.
+		# The mover's own pace, set the way its strategy sets it: eased to the wanted one in
+		# one step.
 		source.lane().ease_speed_toward(60.0, 1000.0)
 		var at := Vector2(-160.0, 12.0)
 		_crowd_parity(t, source, at, "crowd before player")
@@ -434,8 +435,8 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source._vertical = not source._vertical
 		_crowd_parity(t, source, at, "crowd heading")
 		if walking:
-			# The yield ends where the walker forgets what it was dodging; the door is entered the way
-			# the crowd's tick walks it in: seen ahead, joined, waited at and admitted.
+			# The yield ends where the walker forgets what it was dodging; the door is entered
+			# the way the crowd's tick walks it in: seen ahead, joined, waited at and admitted.
 			var walker := source.lane().strategy()
 			walker.forget_the_detour()
 			var hut := WalkerDoorHold.new()

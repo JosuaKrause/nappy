@@ -23,9 +23,18 @@ const BASE_SEED := 71717
 
 var _maps: Array[CityMap] = []
 
+## The run's mast sites on each city as it was built, worked out once and kept for the run as
+## the game does (`EventWorld.work_out_mast_sites()`), by the city's seed.
+var _mast_sites := {}
+
+func _masts_of(map: CityMap) -> Array[MastSites.Site]:
+	var sites: Array[MastSites.Site] = _mast_sites[map.city_seed()]
+	return sites
+
 func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 91))
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(_maps[i])
 	_test_off_tree_streets_are_sealed(t)
 	_test_the_tree_and_the_doorstep_are_never_sealed(t)
 	_test_the_main_road_is_never_sealed(t)
@@ -838,8 +847,9 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 			var rows := GameDawn.of(DaySpec.for_day(day), events_rng, map) \
-					.calm(CalmAreas.of(map, no_calm)).spent(no_one_shots).scars(no_scars).on(tree) \
-					.standing(standing).plan().placements()
+					.masts(_masts_of(map)).calm(CalmAreas.of(map, no_calm)) \
+					.spent(no_one_shots).scars(no_scars).on(tree).standing(standing) \
+					.plan().placements()
 
 			var corridor := Corridor.of(tree)
 			# The background every row is checked against: the day's own final set beside the
