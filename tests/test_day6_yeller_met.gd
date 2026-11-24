@@ -58,6 +58,9 @@ func _walk(t: TestRunner, seed_value: int) -> Array:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
+	# What the events tell the run log: a place is put on her route when a line says so.
+	var put_down: Array[String] = []
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
 	state.begin_day(city.map.plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
@@ -96,12 +99,11 @@ func _walk(t: TestRunner, seed_value: int) -> Array:
 				"nearest": INF, "laid": ""}
 		var tick := func() -> void:
 			var events := RunCity.events(city)
-			events.ahead.site_what_is_on_her_way(STEP)
-			events.ahead.place_what_is_owed_ahead(STEP)
-			events.stream_around(player.global_position)
+			# The tick's stretch from her camera's view to what is owed, in the tick's own order.
+			events.step_what_is_ahead(STEP)
 			var man: EventPlan = seen["man"]
 			if man == null:
-				man = _the_rigged_man(city)
+				man = _the_rigged_man(city, put_down)
 				if man == null:
 					return
 				seen["man"] = man
@@ -143,13 +145,13 @@ func _walk(t: TestRunner, seed_value: int) -> Array:
 	city.free()
 	return [outcome, asked]
 
-## The man shouting the mark rigged once her walk has laid him (the walk's plan of the row the
-## director put on her way, `EventDirector.is_from_her_route()`), or null while he is not laid.
-func _the_rigged_man(city: City) -> EventPlan:
+## The man shouting the mark rigged once her walk has laid him (the walk's plan of the row whose
+## place the run log says was put on her route), or null while he is not laid.
+func _the_rigged_man(city: City, put_down: Array[String]) -> EventPlan:
 	var events := RunCity.events(city)
 	for plan in events.walk_events().plans():
 		if plan.row_id() == ROW and plan.is_placed() \
-				and events.ahead.director().is_from_her_route(plan):
+				and PutOnHerRoute.says(put_down, city.map, plan):
 			return plan
 	return null
 

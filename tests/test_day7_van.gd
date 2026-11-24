@@ -46,6 +46,9 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
+	# What the events tell the run log: a place is put on her route when a line says so.
+	var put_down: Array[String] = []
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
 	state.begin_day(city.map.plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
@@ -71,7 +74,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	t.check(task_van != null and task_van.row_id() == ROW,
 			"seed %d: reading it puts the task's van near the mark" % seed_value)
 	var task_van_at := task_van.global_position if task_van else Vector2.INF
-	t.check(_the_rigged_van(city) == null,
+	t.check(_the_rigged_van(city, put_down) == null,
 			"seed %d: the rigged van is not laid yet as she reads the mark" % seed_value)
 
 	# Out from the doorstep end and back, so she is never put down on ground that has not drawn.
@@ -94,17 +97,15 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var tick := func() -> void:
 		var obstructed_before := map.obstructed_tiles().duplicate()
 		var events := RunCity.events(city)
-		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-		events.ahead.site_what_is_on_her_way(STEP)
-		events.ahead.place_what_is_owed_ahead(STEP)
-		events.stream_around(player.global_position)
+		# The tick's stretch from her camera's view to what is owed, in the tick's own order.
+		events.step_what_is_ahead(STEP)
 		var laid: EventPlan = seen["van"]
 		if laid != null:
 			var off := (laid.placed_at() - player.global_position).abs()
 			if off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y:
 				seen["met"] = true
 			return
-		var van := _the_rigged_van(city)
+		var van := _the_rigged_van(city, put_down)
 		if van == null:
 			return
 		seen["van"] = van
@@ -165,13 +166,13 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	city.free()
 	return plan != null and bool(seen["met"])
 
-## The van the mark rigged once her walk has laid it (the walk's plan of the row the director put on
-## her way, `EventDirector.is_from_her_route()`), or null while it is not laid.
-func _the_rigged_van(city: City) -> EventPlan:
+## The van the mark rigged once her walk has laid it (the walk's plan of the row whose place the
+## run log says was put on her route), or null while it is not laid.
+func _the_rigged_van(city: City, put_down: Array[String]) -> EventPlan:
 	var events := RunCity.events(city)
 	for plan in events.walk_events().plans():
 		if plan.row_id() == ROW and plan.is_placed() \
-				and events.ahead.director().is_from_her_route(plan):
+				and PutOnHerRoute.says(put_down, city.map, plan):
 			return plan
 	return null
 

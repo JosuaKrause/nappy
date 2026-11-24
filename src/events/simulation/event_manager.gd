@@ -502,22 +502,7 @@ func _tick_the_events(delta: float) -> void:
 	streaming.bring_back_what_repeats(delta)
 	var she_is_here := world.has_player()
 	if she_is_here:
-		# First, so everything below asks the same view of what she can see this frame.
-		_look_through_the_camera()
-		# The day's units she comes near draw first, before anything is streamed in: every unit
-		# within the stream radius of her whole, so the streaming finds no row of it missing
-		# (`EventsAhead.draw_what_comes_near()`). A beat sited below takes a location of a unit
-		# that has not drawn where her way has one, and that unit draws round it
-		# (`WalkSiting.lay_ahead()`).
-		ahead.draw_what_comes_near(world.player().global_position, streaming.stream_radius())
-		# Before the streaming, so a plan sited this frame is in the world on the same frame it
-		# would have been had the day placed it at dawn. Nothing is sited in a world with no
-		# director.
-		if not _recipe_plan and ahead.has_director():
-			ahead.site_what_is_on_her_way(delta)
-		streaming.stream_around(world.player().global_position)
-		if not _recipe_plan and ahead.has_director():
-			ahead.place_what_is_owed_ahead(delta)
+		step_what_is_ahead(delta)
 		spawner.summon_what_has_been_sighted(_walk_events.plans())
 		spawner.report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
@@ -531,6 +516,31 @@ func _tick_the_events(delta: float) -> void:
 	# Last, on the same tick as the step that caught her, and on every event's committed pose: each
 	# step above has been proposed, checked and committed (`EventInstance.step()`).
 	check_hard_fails()
+
+## **What the director puts in front of her, in the order the tick takes it**: the tick's whole
+## stretch from her camera's view to what is owed, and nothing else of the tick, with her in the
+## world (with none it returns at once). The view is set first, so everything after asks the
+## same view of what she can see this frame. The day's units she comes near draw next, before
+## anything is streamed in: every unit within the stream radius of her whole, so the streaming
+## finds no row of it missing (`EventsAhead.draw_what_comes_near()`); a beat sited below takes a
+## location of a unit that has not drawn where her way has one, and that unit draws round it
+## (`WalkSiting.lay_ahead()`). What her walk sites comes before the streaming, so a plan sited
+## this frame is in the world on the same frame it would have been had the day placed it at
+## dawn; nothing is sited in a world with no director or in a walk planned whole. What is owed
+## comes after it. The tick calls it, and a suite that walks her down a day's route and reads
+## what the director met on the way calls it in the tick's place: a real tick there also runs
+## the doors, the crowd's cars and the hard fails, which hold and move her where the walk is
+## about what the director puts in front of her.
+func step_what_is_ahead(delta: float) -> void:
+	if not world.has_player():
+		return
+	_look_through_the_camera()
+	ahead.draw_what_comes_near(world.player().global_position, streaming.stream_radius())
+	if not _recipe_plan and ahead.has_director():
+		ahead.site_what_is_on_her_way(delta)
+	streaming.stream_around(world.player().global_position)
+	if not _recipe_plan and ahead.has_director():
+		ahead.place_what_is_owed_ahead(delta)
 
 ## **The encounters' own step, in the order the tick takes it**: with her in the world, every
 ## instance is told where she is, then every live event takes its step (with or without her), then
