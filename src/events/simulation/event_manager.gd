@@ -528,9 +528,9 @@ func _tick_the_events(delta: float) -> void:
 ## this frame is in the world on the same frame it would have been had the day placed it at
 ## dawn; nothing is sited in a world with no director or in a walk planned whole. What is owed
 ## comes after it. The tick calls it, and a suite that walks her down a day's route and reads
-## what the director met on the way calls it in the tick's place: a real tick there also runs
-## the doors, the crowd's cars and the hard fails, which hold and move her where the walk is
-## about what the director puts in front of her.
+## what the director met on the way calls it in the tick's place: a real tick there also meets
+## what the walk is not about, measured in the run log: a district door's hold that put her down
+## elsewhere, a chatting mother on her way in, and an extra row the director sent.
 func step_what_is_ahead(delta: float) -> void:
 	if not world.has_player():
 		return

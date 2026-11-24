@@ -18,6 +18,9 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## The seconds a tick of her walk covers (`_what_the_walk_hands_her()`): the director's clock turns
+## on the tick, so what is asked of it is her walking, not a frame's.
+const WALK_TICK := 0.1
 
 func run(t: TestRunner) -> void:
 	_test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t)
@@ -310,8 +313,8 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 ## they were. Read as the day it makes: two cities on the same map and the same run seed start day 6
 ## alike; in one a pursuer is sent and his warning run down, and then she walks the same minute in
 ## both with the director asked as the game asks it every tick
-## (`EventsAhead.place_what_is_owed_ahead()`). The two days hand her the same events, one after
-## another at the same place, and leave the same number owed and the same plan, and the day's stream
+## (`EventsAhead.place_what_is_owed_ahead()`). The two days tell the run log the same `ahead`
+## lines, one after another at the same place, and leave the same number owed and the same plan, and the day's stream
 ## stands where it stood. A queue, a clock or a bag he had moved would hand her another event, or
 ## the same one at another moment.
 func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> void:
@@ -350,7 +353,7 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 	t.check((plain["handed"] as Array).size() >= 2,
 			"the plain day hands her events to compare (%d)" % (plain["handed"] as Array).size())
 	t.check(plain["handed"] == torn["handed"],
-			"the same events at the same places, in the same order, on the day with a tear "
+			"the same `ahead` lines, in the same order, on the day with a tear "
 			+ "(%s, then %s)" % [plain["handed"], torn["handed"]])
 	t.check(plain["owed"] == torn["owed"] and plain["stream"] == torn["stream"],
 			"and as many still owed (%d, then %d), the stream where it was"
@@ -366,35 +369,34 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 ## asks it: she walks rather than marking time, since a row the director sends ahead of her is
 ## sent only where she is has ground for it (a sidewalk, a carriageway), its marble spent as it is
 ## drawn and the row waiting for a later turn of the director's clock, and standing still turns no
-## clock at all. `"id at x,y"` for each event that appears in the world, the torn poster's pursuer
-## left out.
+## clock at all. Read where the game writes it: each line the events tell the run log under the kind
+## `ahead` (a row sent at her, a place put on her route), since the streaming also brings in the
+## day's planned events on her way, which the director did not put there. The torn poster's pursuer
+## is no line of it.
 func _what_the_walk_hands_her(t: TestRunner, city: City, her: CharacterBody2D,
-		seconds: float) -> Array:
+		seconds: float) -> Array[String]:
 	var events := RunCity.events(city)
+	var told: Array[String] = []
+	events.world.surroundings().tracing_to(RecordingTrace.new(told))
 	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	var seen := {}
-	for instance in events.instances():
-		seen[instance] = true
-	var handed := []
 	var width := city.map.world_size().x
-	# Real physics ticks of 0.1s, the manager's own tick in the game's order; after each she is
-	# moved on and what the tick put in the world is read.
+	# Real physics ticks of `WALK_TICK` seconds, the manager's own tick in the game's order; after
+	# each she is moved on. Ticks of `STEP` take 7,200 of them where these take 1,200, and the whole
+	# suite two and a half times as long.
+	var scale := WALK_TICK * Engine.physics_ticks_per_second
 	var each := func(_ticks: int) -> bool:
-		her.global_position += her.velocity * 0.1
+		her.global_position += her.velocity * WALK_TICK
 		if her.global_position.x < Tuning.TILE_SIZE * 2.0 \
 				or her.global_position.x > width - Tuning.TILE_SIZE * 2.0:
 			her.velocity = -her.velocity
-		for instance in events.instances():
-			if seen.has(instance):
-				continue
-			seen[instance] = true
-			handed.append("%s at %.0f,%.0f" % [instance.row_id(), instance.global_position.x,
-					instance.global_position.y])
 		return false
-	var scale := 0.1 * Engine.physics_ticks_per_second
 	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(seconds, scale),
 			PhysicsTicks.FASTER, each, scale)
 	her.velocity = Vector2.ZERO
+	var handed: Array[String] = []
+	for line in told:
+		if line.begins_with("ahead "):
+			handed.append(line)
 	return handed
 
 # ------------------------------------------------------------- the chase ---

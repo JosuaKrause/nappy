@@ -71,10 +71,6 @@ ticks give, and is kept with its reason:
 
 **Open: what a test still reads that the game does not, or does not check.**
 
-- **`test_route_bag.gd`, `test_day7_van.gd` and `test_day6_yeller_met.gd`** read what the run log says
-  (the "is put on her route" line, through a `RecordingTrace` on the events' surroundings) and the
-  walk's own plans. What they read of the director's state is gone, so this point has nothing left
-  open. `test_resistance_arrow.gd` reads the director's state through `EventManager.route_row()`, kept.
 - **`RouteLines.routes()`** is kept in `tools/test_only_members.txt` as the only handle on the drawn
   polylines, as `EventRouteLines.routes()` is.
 - **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
