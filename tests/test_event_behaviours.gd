@@ -358,8 +358,8 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	manager.setup(run)
 	t.add_child(manager)
 	var plan := EventPlan.new(def, at)
-	manager.streaming.add(plan)
-	manager.stream_around(at)
+	var planned: Array[EventPlan] = [plan]
+	manager.start_recipe(planned, DaySpec.for_day(1), 1, at)
 	var robber := manager.event_of(plan)
 	t.check(robber != null, "he is streamed in where the day planned him")
 	if robber == null:

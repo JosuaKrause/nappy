@@ -318,9 +318,10 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 			break
 	var lorry := EventPlan.new(lorry_def, map.tile_to_world(lorry_tile))
 	lorry.give_role(GameEnums.BlockerRole.FRICTION)
-	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
-	# planned row and its body is recorded where it stands.
-	manager.streaming.add(lorry)
+	# Planned with the walk, as a scene's recipe plans it: it streams in like any planned row
+	# and its body is recorded where it stands.
+	var planned: Array[EventPlan] = [lorry]
+	manager.start_recipe(planned, DaySpec.for_day(11), 11, lorry.placed_at())
 	var inside: Array[Vector2i] = []
 	var clear: Array[Vector2i] = []
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
