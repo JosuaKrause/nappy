@@ -21,9 +21,9 @@ Lines of the logs (a line of another kind is ignored; the runner's other output 
 
 Refused with exit 2, usage or message on stderr and nothing on stdout: an unreadable or non-UTF-8
 file; a log without exactly one RD line for each of the days 1 to 14 (cut short, or a day repeated)
-or with a malformed or out-of-range line; an RD line whose city count is not
-CITIES (so the two logs of a sample agree); a role table with no ROLE line or a malformed one; a
-CITIES that is not a positive decimal number.
+or with a malformed or out-of-range line, a line of a day outside 1 to 14 included (any of RD, RV,
+RK or ROLE); an RD line whose city count is not CITIES (so the two logs of a sample agree); a role
+table with no ROLE line or a malformed one; a CITIES that is not a positive decimal number.
 """
 
 from __future__ import annotations
@@ -62,6 +62,14 @@ def whole_number(text: str) -> int:
     return int(text)
 
 
+def day_number(text: str) -> int:
+    """A day of the run, 1 to DAYS, written in ASCII digits."""
+    day = whole_number(text)
+    if not 1 <= day <= DAYS:
+        raise ValueError(text)
+    return day
+
+
 def read_lines(path: Path) -> list[str]:
     try:
         return path.read_text(encoding="utf-8").splitlines()
@@ -81,7 +89,7 @@ def read_roles(path: Path) -> dict[tuple[int, str], str]:
         try:
             if len(f) != 4:
                 raise ValueError(line)
-            day, row, role = whole_number(f[1]), f[2], whole_number(f[3])
+            day, row, role = day_number(f[1]), f[2], whole_number(f[3])
         except ValueError as exc:
             raise InputError(f"{path}: cannot read the line {line!r}") from exc
         seen = True
@@ -101,7 +109,7 @@ def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
             continue
         try:
             if f[0] == "RD":
-                d = whole_number(f[1])
+                d = day_number(f[1])
                 if whole_number(f[2]) != cities:
                     raise InputError(f"{path}: the line {line!r} counts {f[2]} cities, not {cities}")
                 if d in days_seen:
@@ -109,7 +117,7 @@ def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
                 days_seen.add(d)
                 c[("the day's whole count", "", f"day {d}", 1)] += whole_number(f[3])
             elif f[0] == "RV":
-                d, row, v, n = whole_number(f[1]), f[2], whole_number(f[3]), whole_number(f[4])
+                d, row, v, n = day_number(f[1]), f[2], whole_number(f[3]), whole_number(f[4])
                 if v >= len(VIEWS):
                     raise ValueError(line)
                 c[("row by view", row, VIEWS[v], DAYS)] += n
@@ -121,6 +129,7 @@ def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
                     c[(f"{role} by view and day", VIEWS[v], f"day {d}", 1)] += n
                     c[(f"{role} by view", VIEWS[v], "all days", DAYS)] += n
             elif f[0] == "RK":
+                day_number(f[1])
                 c[("row by kind of ground", f[2], f[3], DAYS)] += whole_number(f[4])
         except (ValueError, IndexError) as exc:
             raise InputError(f"{path}: cannot read the line {line!r}") from exc
