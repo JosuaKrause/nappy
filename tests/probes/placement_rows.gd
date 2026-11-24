@@ -16,8 +16,9 @@ extends RefCounted
 ## apart. Prints `RD day seeds placed moments`, `RV day row view count` and `RK day row kind
 ## count`, each summed over the seeds. Each day is planned as the game plans it: its closures,
 ## holds, region wall and seals first, the seals and the wall's bodies handed in as standing,
-## the street trees refreshed, and the guarded-band roadblock row heated as `DayPlanner` heats
-## it (`PlacementProbeDay`, which both placement probes plan through).
+## the guarded-band roadblock row handed through `EventCatalogue.heated()` as `DayPlanner` does,
+## at heat 0 like every baseline reading, and the street trees refreshed after the dawn
+## (`PlacementProbeDay`, which both placement probes plan through).
 
 const SEEDS := 18
 const KINDS := ["sidewalk", "carriageway", "alley", "open", "junction", "other"]

@@ -7,41 +7,39 @@ extends RefCounted
 ##
 ## `prepared()` makes the city `BASE + i * STEP` and plans its day's closures, holds, region
 ## wall and seals (`City.start_day()`, `DayPlanner._plan_a_day()`), the seals and the wall's
-## bodies stood as the day's standing, then refreshes the street trees the seals' pits emptied
-## (`City.refresh_street_trees()`), as the game's own path does once the seals are planned.
-## `placements()` then plans the dawn: the day's guarded-band roadblock row heated to the run's
-## progress (`EventCatalogue.heated()`) as `DayPlanner` hands it, and the dawn told the same
-## progress. The run is the one that completes every task the calendar has offered before the
-## day (`progress_on()`), so the heat each day sees is the heat a run that does them all sees.
+## bodies stood as the day's standing. `placements()` then plans the dawn with the day's
+## guarded-band roadblock row through `EventCatalogue.heated()` as `DayPlanner` hands it, and
+## refreshes the street trees (`City.refresh_street_trees()`) once the dawn has placed, where
+## the game refreshes them (`DayDirector`, after `EventManager.start_day()`).
+##
+## **The dawn is planned at heat 0, a run with no resistance progress**: every baseline reading
+## of the placement (`docs/evidence/minty-quail-baseline-2026-11-09/`) was taken at that heat,
+## so a later reading compares with it count for count. At level 0 `heated()` returns the row
+## itself. A reading at another heat is a reading of its own beside this one, as
+## `downy_llama_route_roadblocks.gd` runs heats 0 and 4. The tree refresh only shows or hides
+## tree pictures and cannot move a count. The dawn gets `GameDawn`'s default calm areas, where
+## the game sets aside the day's narrow task spot (day 9's door, day 12's swing park, day 14's
+## station door), as the baseline's probes do.
 
 const BASE := 90210
 const STEP := 31
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed the city's run starts from: fixed, so every machine measures the same run.
 const RUN_SEED := 2
+## The resistance progress, and so the heat, every placement reading is taken at.
+const HEAT := 0
 
 var map: CityMap
 var city: City
-var tree: RouteTree
-var spec: DaySpec
+var _tree: RouteTree
+var _spec: DaySpec
 var corridor: Corridor
-var doors := PackedVector2Array()
-var seals: Array[EventPlan] = []
-var standing: Array[EventPlan] = []
+var _doors := PackedVector2Array()
+var _seals: Array[EventPlan] = []
+var _standing: Array[EventPlan] = []
 var _sites: Array[MastSites.Site] = []
 var _day := 0
 var _i := 0
-
-## The resistance progress of a run that completes every task offered before `day`: the finale's
-## day sees the goal, a day before the tasks begin none.
-static func progress_on(day: int) -> int:
-	if day >= Tuning.RUN_LENGTH_DAYS:
-		return Tuning.RESISTANCE_GOAL
-	var progress := 0
-	for step in ResistanceSteps.all():
-		if step.grants_progress and step.index <= 2 * (day - 6):
-			progress += 1
-	return mini(progress, Tuning.RESISTANCE_GOAL)
 
 ## Day `day` of the `i`th city, planned up to the dawn. `tag` names the probe whose streams the
 ## closures and the seals draw from, `parent` is where the city stands while it is asked: the
@@ -63,15 +61,15 @@ func _prepare(tag: String, parent: Node) -> void:
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), _day)
 	map.repaint(state)
-	tree = RouteTree.for_day(map, _day)
-	spec = DaySpec.for_day(_day)
+	_tree = RouteTree.for_day(map, _day)
+	_spec = DaySpec.for_day(_day)
 	# The day's own closures, holds, region wall and seals, planned as the game plans them
 	# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
 	# stand as the day's standing and hold their locations.
-	var region_plan := RegionPlanner.plan_day(map, spec, tree)
+	var region_plan := RegionPlanner.plan_day(map, _spec, _tree)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%s closures:%d:%d" % [tag, _i, _day])
-	var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+	var closures := ClosurePlanner.plan_day(map, _spec, closure_rng, _tree, region_plan)
 	map.close_streets(closures)
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
@@ -94,27 +92,27 @@ func _prepare(tag: String, parent: Node) -> void:
 		boundary[rect.position] = true
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("%s seals:%d:%d" % [tag, _i, _day])
-	seals = SealPlanner.plan_day(map, spec, tree, seal_rng, boundary, map.held_streets())
-	for seal in seals:
+	_seals = SealPlanner.plan_day(map, _spec, _tree, seal_rng, boundary, map.held_streets())
+	for seal in _seals:
 		seal.stand_as_a_seal()
-	# A fallen-tree seal empties a pit of its own; the day's start shows the trees that way.
-	city.refresh_street_trees()
 	for body in region_plan.door_plans():
-		doors.append(body.placed_at())
-	standing.append_array(seals)
-	standing.append_array(region_plan.wall_plans())
+		_doors.append(body.placed_at())
+	_standing.append_array(_seals)
+	_standing.append_array(region_plan.wall_plans())
 	for body in region_plan.wall_plans():
 		body.stand_in_the_wall()
-	corridor = Corridor.of(tree)
+	corridor = Corridor.of(_tree)
 
-## The dawn's placements, planned on the stream both probes use (`placement_view_mix:i:day`).
+## The dawn's placements, planned on the stream both probes use (`placement_view_mix:i:day`),
+## the street trees refreshed once it has placed.
 func placements() -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("placement_view_mix:%d:%d" % [_i, _day])
-	var progress := progress_on(_day)
 	var guarded := ResistanceSteps.guarded_row_on(_day)
-	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded), progress) \
+	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded), HEAT) \
 			if guarded != "" else null
 	var consumed: Array[String] = []
-	return GameDawn.of(spec, rng, map).masts(_sites).spent(consumed).heat(progress).on(tree) \
-			.doors(doors).standing(standing).roadblock(beside).plan().placements()
+	var placed := GameDawn.of(_spec, rng, map).masts(_sites).spent(consumed).heat(HEAT).on(_tree) \
+			.doors(_doors).standing(_standing).roadblock(beside).plan().placements()
+	city.refresh_street_trees()
+	return placed
