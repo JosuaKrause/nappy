@@ -13,6 +13,8 @@ frame of a walk.
 
 **Measured.** The probe `tests/probes/basement_meter.gd` printed the same BASEMENT lines before and
 after (18 lines, identical). Its run took 315 s before and 281 s after, on a machine shared with
-other runs. Real ticks were not tried: the rig has no frames to wait on (a walk is a loop of
-sixty steps a second of simulated time, and the probe makes 1100 walks of about 96,000 s in all),
-and a real tick would also run the rest of the manager, which no walk asks about.
+other runs. Real ticks, measured by the PR's review: 400 walks took 52.4 s and 52.6 s on `step_the_repeats()` and 97.5 s and 98.6 s with the rig calling
+`_tick_the_events(STEP)` (about 9 s of each is boot): 1.87 times gross and about 2.05 times net, about 45 s
+more per 400 walks, roughly 120 s across the probe's 1,100. The BASEMENT lines matched between the two,
+so real ticks did not change what a walk meets. The added time is well over 30 s and the ratio reaches
+2 times, so the public step is the choice.

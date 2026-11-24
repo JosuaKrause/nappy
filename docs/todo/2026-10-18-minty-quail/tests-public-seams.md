@@ -68,8 +68,8 @@ ticks give, and is kept with its reason:
   and `step_the_encounters()` before it where a hut's hold runs, since real ticks over a whole day 9
   with every event live ran 94.2 s in CI against 46.0 s recorded (record minty-quail-polite-quail).
 - `tests/basement_walk_rig.gd` calls `EventManager.step_the_repeats()`, the tick's retire-and-repeat
-  step, with each blow's own `step()`: the probe that loads it walks the corridor over a thousand
-  times with only the vents ticked, and has no frames to wait on.
+  step, with each blow's own `step()`: real ticks over 400 walks took 1.87 times as long
+  (about 45 s more, roughly 120 s across the probe's 1,100) and changed nothing a walk meets.
 - A crowd car at speed 700, and a walker at pace 0 other than a waiting one, are not reachable
   through `Crowd.add_recipe_actor()`; a stopped car is reached through `crashed_into()`, which the
   game calls.
