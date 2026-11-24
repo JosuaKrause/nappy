@@ -244,6 +244,7 @@ var _errors := RecipeErrors.new()
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_schema(t)
+	_test_a_stretch_recipes_runtime_refusals(t)
 	_test_a_world_with_no_city_is_refused(t)
 	_test_hold_is_for_a_straight_departure(t)
 	await _test_a_held_departure_places_its_move(t)
@@ -255,6 +256,32 @@ func run(t: TestRunner) -> void:
 	_test_arguments(t)
 	await _test_inputs(t)
 	_test_real_argv_and_failure(t)
+	await _test_appeared_requires_sight(t)
+
+## A stretch recipe's runtime refusals, asked as the game asks them (`RecipeErrors`, loading the
+## recipe through `SceneRecipeRuntime.load_recipe()`), of day 7's task scene: a stretch's crowd
+## is its listed starting population and never a rolled one, a marble of the rigged route names
+## a row the director sites that day, and a crowd observation asks about the picture round her.
+func _test_a_stretch_recipes_runtime_refusals(t: TestRunner) -> void:
+	var data: Dictionary = SceneRecipe.load_file(
+			"res://scene-recipes/task-07-package.json").data
+	var crowd := data.duplicate(true)
+	crowd.setup["background"] = {"crowd": true}
+	t.check("\n".join(_errors.errors_of(t, crowd)).contains("authored actors"),
+			"a stretch's crowd is its listed starting population, never a rolled one")
+	var place := data.duplicate(true)
+	place.setup.route_bag = {"marbles": ["burning_building"]}
+	t.check("\n".join(_errors.errors_of(t, place)).contains("not a row the director sites"),
+			"a marble names a row the director sites that day")
+	var mapped := data.duplicate(true)
+	mapped.setup.route_bag = {"marbles": ["pigeon_flock"]}
+	t.check("\n".join(_errors.errors_of(t, mapped)).contains("not a row the director sites"),
+			"a row available that day but placed on the map is not one the director sites")
+	var asked := data.duplicate(true)
+	(asked.playback.observations as Array).append(
+			{"tick": 1, "subject": "mark", "condition": "crowd", "walkers": 1})
+	t.check("\n".join(_errors.errors_of(t, asked)).contains("round the player"),
+			"a crowd observation asks about the picture round her")
 
 ## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
 ## else, with a reason that fits the row.
@@ -844,3 +871,100 @@ func _test_real_argv_and_failure(t: TestRunner) -> void:
 	DirAccess.remove_absolute(scene_path)
 	DirAccess.remove_absolute(script_path)
 	DirAccess.remove_absolute(script_path + ".uid")
+
+## `appeared` asks that a subject has been in the picture the camera draws, by the tick the
+## observation names: the camera's real view at its zoom, not a constant half-extent. A scripted
+## recipe installed into a world of stand-ins (`tests/scene_world.gd`) in a viewport of its own,
+## an actor named by its `setup.actors` (the one `FakeCrowd` places), begun and left to its own
+## physics ticks, ends the game (what `configure()` was handed, as `main` hands its own) with
+## status 0 when the observation holds and 1 when it does not. An actor wholly outside the view
+## fails whether it is far off or only just outside the real half-width at a close zoom (the
+## stale `Tuning.VIEW_HALF_EXTENT` constant, 320px, would have counted it); one inside it passes
+## at the default zoom and zoomed out.
+func _test_appeared_requires_sight(t: TestRunner) -> void:
+	var context: CityMap = RecipeCityBuilder.build({"version": 1, "name": "sight", "seed": 1,
+			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}}).map
+	var seen := await _sight(t, context, 1.0, 2)
+	t.check(seen == [0],
+			"at the default camera zoom, an actor in view counts once it enters view: %s"
+			% [seen])
+	var far := await _sight(t, context, 1.0, 36)
+	t.check(far == [1],
+			"an existing actor that never enters the camera does not satisfy appeared: %s"
+			% [far])
+	# At zoom 4 the real half-width is 160px of a 1280px window; an actor 7 tiles (224px) out
+	# has its body (32px) wholly outside it although inside `Tuning.VIEW_HALF_EXTENT.x` (320px),
+	# the stale constant this regression replaces.
+	var close := await _sight(t, context, 4.0, 7)
+	t.check(close == [1],
+			"at zoom 4, an actor wholly outside the actual camera half-width does not count: %s"
+			% [close])
+	# At zoom 0.5 the half-width is 1280px; 36 tiles (1152px) out the body is wholly inside it.
+	var wide := await _sight(t, context, 0.5, 36)
+	t.check(wide == [0], "zoomed out, an actor the actual camera includes counts: %s" % [wide])
+
+## The exit statuses a scripted scene ends its game with: a free-standing walker
+## (`setup.actors`) `tiles` tiles east of her on a sidewalk, a camera of hers at `zoom` in a
+## 1280x720 viewport, and the observation that the walker `appeared` by the fifth tick, left to
+## its own ticks past the scene's half second. Her and the world round her are the stand-ins of
+## `SceneWorld`, her camera the engine's: `FakeStroller` is given the `Camera2D` the stroller
+## scene gives her, named as the scene names it, and nothing else of the scene. The
+## world is made over a copy of `context`, which the day begun on it changes.
+func _sight(t: TestRunner, context: CityMap, zoom: float, tiles: int) -> Array[int]:
+	var own_run := RunState.new()
+	own_run.start_run(4242)
+	own_run.header().set_day(3)
+	var map := context.copy()
+	var made := SceneWorld.over(map, 3)
+	var from := Vector2i.ZERO
+	var found := false
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		var along := tile + Vector2i(tiles, 0)
+		if map.tile_at(along) == GameEnums.TileType.SIDEWALK and map.is_open(tile) \
+				and map.is_open(along) \
+						and CityMap.corridor_offset(along.y) in CrowdLanes.SIDEWALK_OFFSETS:
+			from = tile
+			found = true
+			break
+	t.check(found, "a sidewalk tile with a sidewalk %d tiles east of it" % tiles)
+	var her := map.tile_to_world(from)
+	var there := map.tile_to_world(from + Vector2i(tiles, 0))
+	# A walker pinned on a sidewalk stands exactly on its lane (`SceneRecipeRuntime` never snaps
+	# it).
+	there.y = CrowdLanes.walker_lane_centre(CrowdLanes.corridor_at(there.y),
+			CityMap.corridor_offset(from.y), CrowdLanes.SIDEWALK_OFFSETS)
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	t.add_child(viewport)
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	# The zoom is fixed before her camera enters the tree: a Camera2D applies a zoom it is
+	# changed to on its next process step, and `appeared` is asked of every tick from the first.
+	camera.zoom = Vector2.ONE * zoom
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	made.player.add_child(camera)
+	viewport.add_child(made.player)
+	camera.make_current()
+	var ended: Array[int] = []
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"name": "sight", "setup": {"day": 3, "player": {"at": [her.x,
+			her.y]},
+			"actors": [{"name": "actor", "kind": "walker", "at": [there.x, there.y],
+			"direction": "east"}]},
+			"playback": {"duration": 0.5, "settled_camera": true,
+			"observations": [{"tick": 5, "subject": "actor", "condition": "appeared"}]}},
+			"manifest": {}, "anchors": {}, "map": map},
+			RunConfig.parse(PackedStringArray(["--recipe", "sight.json", "--recipe-mode",
+					"scripted"]),
+					"", true),
+			own_run, func(code: int) -> void: ended.append(code))
+	viewport.add_child(runtime)
+	var errors := runtime.install(made.world, DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
+	t.check(errors.is_empty(), "the sight scene is installed: %s" % [errors])
+	if errors.is_empty():
+		runtime.begin()
+		await PhysicsTicks.pass_ticks(t, 20)
+	viewport.remove_child(made.player)
+	viewport.free()
+	made.free_all()
+	return ended

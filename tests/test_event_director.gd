@@ -2,21 +2,22 @@ extends RefCounted
 ## `EventDirector`'s siting of the rows it sends ahead of her (`EventDef.is_sent_ahead()`; inbox
 ## #1460 in silky-lemur): the dog walker down her own sidewalk toward her, the patrol down the
 ## carriageway lane that drives toward her, and the convoy in the lane beside her coming toward
-## her, its first leg
-## running past her to the far edge of the next junction box, on a street running north-south and
-## on one running east-west; a car's first leg sent only where the day's way on says a car may drive
-## it and go on from its end; a sent row refused, and asked again, where its first leg starts within
-## `EventScheduler.EVENT_SPACING_ANY` of a placed plan or runs through a field a plan keeps clear;
-## and a marble of her route sent ahead of her that has no room, which waits for room and lets the
-## marbles behind it through (calm-pelican-6); and its looks at what her walk lays (`site_what_is_on_her_way()`),
-## handed a stand-in for the day's siting (`FakeWalkSiting`): a look asks each plan owed once,
-## between one `begin_look()` and one `end_look()`, no oftener than once a walking second; a placed plan behind her
-## for three walking seconds is asked again and one that has been in the world never; the next crew waits
-## while one is laid and not yet real; and a place a rig puts on her route
-## (`rig_her_route()`) is handed to her walk when its marble is drawn and not before, laid by
-## `WalkSiting.lay_just_ahead()` where the rig asked for that and by `lay_ahead()` where it did not,
-## joins the day's plan as a place from her route (`is_from_her_route()`), and is not rigged under
-## `--force`.
+## her, its first leg running past her to the far edge of the next junction box, on a street
+## running north-south and on one running east-west; a car's first leg sent only where the day's
+## way on says a car may drive it and go on from its end; a sent row refused, and asked again,
+## where its first leg starts within `EventScheduler.EVENT_SPACING_ANY` of a placed plan or runs
+## through a field a plan keeps clear; and a marble of her route sent ahead of her that has no
+## room, which waits for room and lets the marbles behind it through (calm-pelican-6); and its
+## looks at what her walk lays (`site_what_is_on_her_way()`), handed a stand-in for the day's
+## siting (`FakeWalkSiting`): a look asks each plan owed once, between one `begin_look()` and
+## one `end_look()`, no oftener than once a walking second; a placed plan behind her for three
+## walking seconds is asked again and one that has been in the world never; the next crew waits
+## while one is laid and not yet real; and a place a rig puts on her route (`rig_her_route()`)
+## is handed to her walk when its marble is drawn and not before, laid by
+## `WalkSiting.lay_just_ahead()` where the rig asked for that and by `lay_ahead()` where it did
+## not, joins the day's plan as a place from her route (`is_from_her_route()`), and is not
+## rigged under `--force`; and the route a scene rigs (`start_recipe_route()`): it is owed the
+## count the scene says, and the marbles it puts in the bag first are drawn first.
 ##
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
 ## the same map turned), with plans made by hand: plans and rows are data, built as they are, and
@@ -83,6 +84,7 @@ func run(t: TestRunner) -> void:
 	_test_a_place_rigged_without_the_setting_is_laid_past_the_band(t)
 	_test_nothing_is_rigged_under_force(t)
 	_test_the_copy_on_her_route_shares_its_rows_body(t)
+	_test_a_rigged_route_is_owed_its_count_and_pre_bag(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -590,6 +592,19 @@ func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
 				"the copy of '%s' on her route is the row's own body" % id)
 		t.check(routed.ground_shape() == EventCatalogue.by_id(id).ground_shape(),
 				"and it stands on the row's own shape")
+
+## **A scene rigs her route's bag** (`start_recipe_route()`, as a task scene's `setup.route_bag`
+## does): she is owed the count the scene gives, whatever the bag holds, and the marble the
+## scene put in the pre-bag is the first one drawn, before the ordinary marbles.
+func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
+	var director := EventDirector.new(_street())
+	director.use_way_on(FakeWayOn.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	director.start_day(7, _no_plans(), rng)
+	director.start_recipe_route(["cyclist", "cyclist"], ["cat_dash"], 3, 2.0, 0)
+	t.check(director.owed() == 3, "the route is owed what the recipe says")
+	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
 
 ## Walks her on the street past `ON_HER_WAY_AFTER`, rigs the man shouting as the next marble on her
 ## route (`just_ahead` as given), and walks on, the clock and her walk's looks ticking together a

@@ -31,9 +31,8 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 -curly-hawk, -merry-goose and -dotted-pelican; the events and the resistance, row 5 of `event-interface.md`, done, the records
 2026-10-18-minty-quail-gentle-bison, -pebbly-plover, -grassy-quail, -amber-elk, -sunny-sparrow, -mossy-panda,
 -speckled-hare, -jolly-ibis, -tawny-bunny, -curly-hedgehog, -spry-moose, -frosty-tapir and
--golden-finch, -coral-elk and -frosty-hedgehog), and what each lists is what is left of it:
+-golden-finch, -coral-elk, -frosty-hedgehog and -round-magpie), and what each lists is what is left of it:
 
-1. scene recipes: `test_scene_recipe_stretch`, on the same stand-ins (`tests/scene_world.gd`);
-2. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
+1. the crowd: `test_crowd_bodies_on_a_real_day` keeps its check that a crash's cars stand on recorded
    ground, its header giving the wiring between the manager's record and a live event as its reason
    for a city.
