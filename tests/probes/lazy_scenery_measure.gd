@@ -44,10 +44,9 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
 	var run := RunCity.started_run(seed_value)
 	var city: City = RunCity.new_city(CITY_SCENE)
-	# The run is held here: swapping the script drops the one the city was handed.
-	var own_run := city.run
+	# The run is held here: `build()` hands it to the city after the script is swapped.
+	var own_run := run
 	city.set_script(TIMED_CITY)
-	city.use_run(own_run)
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()

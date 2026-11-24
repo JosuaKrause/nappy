@@ -19,7 +19,7 @@ func run(t: TestRunner) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var run := RunCity.started_run(seed_value)
 		var city: City = RunCity.new_city(CITY_SCENE)
-		city.run.header().set_day(day)
+		run.header().set_day(day)
 		t.add_child(city)
 		RunCity.build(city, run, map)
 		city.run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), day)
