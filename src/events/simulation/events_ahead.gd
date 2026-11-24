@@ -24,12 +24,12 @@ var _spawner: EventSpawner
 var _warnings: WarningBoard
 ## Whether a torn poster sends a pursuer on this walk
 ## (`DaySpec.sends_a_pursuer_for_a_torn_poster()`), as `use_the_walk_of()` takes it from the spec.
-var sends_poster_pursuits := true
+var _sends_poster_pursuits := true
 ## Whether the home's streets are the walk's (`DaySpec.keeps_the_home_streets_clear()`), as
 ## `use_the_walk_of()` takes it from the spec: the rule the ground of a walk no dawn planned is
 ## made under (`_ground_of_the_walk()`), so what is sited while she walks keeps the rule the walk
 ## was started under. A day's ground, made at dawn, carries the day's own.
-var holds_the_home_streets := true
+var _holds_the_home_streets := true
 ## The walk's spec, as the manager is handed it: whether the region wall stands in it says which man
 ## is the pursuer on foot (`EventCatalogue.on_foot_on()`). Until one is handed in, one with no wall.
 var _spec := DaySpec.new()
@@ -39,8 +39,8 @@ var _spec := DaySpec.new()
 ## streets are the walk's. Nothing else in the game writes the two, so in play they are always the spec's.
 func use_the_walk_of(spec: DaySpec) -> void:
 	_spec = spec
-	sends_poster_pursuits = spec.sends_a_pursuer_for_a_torn_poster()
-	holds_the_home_streets = spec.keeps_the_home_streets_clear()
+	_sends_poster_pursuits = spec.sends_a_pursuer_for_a_torn_poster()
+	_holds_the_home_streets = spec.keeps_the_home_streets_clear()
 
 func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawner,
 		warnings: WarningBoard, walk: WalkEvents) -> void:
@@ -108,12 +108,12 @@ func _a_siting(day: int, tree: RouteTree) -> WalkSiting:
 ## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
 ## worked out, and it stands on the ground the day was planned on. A walk no dawn of a day planned
 ## (a scene recipe's, a rig's) has none, and its siting is handed one made here under the walk's
-## own home-street rule (`holds_the_home_streets`).
+## own home-street rule (`_holds_the_home_streets`).
 func _ground_of_the_walk() -> RowGround:
 	var dawns := _walk.ground()
 	if dawns:
 		return dawns
-	return EventScheduler.row_ground(world.city_map(), null, holds_the_home_streets)
+	return EventScheduler.row_ground(world.city_map(), null, _holds_the_home_streets)
 
 ## Starts the director over a walk whose plan was handed in whole. It owes nothing — every such
 ## placement is `MAP`-sited — but it is started anyway so that `owed_ahead()` and its own per-day
@@ -207,7 +207,7 @@ var _sent_warning: PendingWarning = null
 ## of sandy-ferret.)* `EventBus.poster_pursuit_sent` fires only when this sends one, the moment his
 ## warning goes up, so the counter's `poster-pursuit` is one per pursuer sent.
 func send_a_pursuer() -> void:
-	if not sends_poster_pursuits or not world.has_player() or _a_pursuer_is_after_her() \
+	if not _sends_poster_pursuits or not world.has_player() or _a_pursuer_is_after_her() \
 			or not _spawn_siting:
 		return
 	var def := EventCatalogue.on_foot_on(_spec)

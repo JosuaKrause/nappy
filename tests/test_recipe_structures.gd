@@ -231,27 +231,21 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: Sc
 	RunCity.events(city).use_player(player)
 	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var errors := runtime.install(RunCity.world_of(city, player, baby), escape)
-	t.check(errors.is_empty() and not RunCity.events(city).ahead.holds_the_home_streets,
-			"an escape scene is installed into the spec it is handed, whose siting keeps off no home street: %s"
-			% [errors])
-	t.check(not RunCity.events(city).ahead.sends_poster_pursuits,
-			"and its events send no poster pursuer")
 	RunCity.events(city).send_a_pursuer()
-	t.check(RunCity.events(city).pending_warnings().is_empty(), "so a torn poster there sends nobody")
+	t.check(errors.is_empty() and RunCity.events(city).pending_warnings().is_empty(),
+			"an escape scene is installed into the spec it is handed, whose events send no"
+			+ " poster pursuer, so a torn poster there sends nobody: %s" % [errors])
 
 	var configured := RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true)
 	var day := DaySpec.for_day(own_run.header().day(), configured.day_length_for(own_run.header().day()))
 	t.check(is_equal_approx(day.seconds_on_the_clock(), 77.0),
 			"a day scene's walk is the configured day's length (%.1fs)" % day.seconds_on_the_clock())
 	errors = runtime.install(RunCity.world_of(city, player, baby), day)
-	t.check(errors.is_empty() and RunCity.events(city).ahead.holds_the_home_streets
-			and RunCity.events(city).ahead.sends_poster_pursuits,
-			"and the same spec, with a day's settings, is the one its events run under: %s" % [errors])
 	RunCity.events(city).send_a_pursuer()
-	t.check(RunCity.events(city).pending_warnings().size() == 1,
-			"so a torn poster on a day scene sends its pursuer (%d warnings)"
-			% RunCity.events(city).pending_warnings().size())
-	RunCity.events(city).warnings.clear()
+	t.check(errors.is_empty() and RunCity.events(city).pending_warnings().size() == 1,
+			"and the same spec, with a day's settings, is the one its events run under, so a"
+			+ " torn poster on a day scene sends its pursuer (%d warnings): %s"
+			% [RunCity.events(city).pending_warnings().size(), errors])
 
 ## The street trees' pits the day has emptied (`CityMap.is_tree_pit_emptied()`, what the city reads
 ## to hide a tree).
