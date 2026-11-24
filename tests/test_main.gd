@@ -41,6 +41,8 @@ const STROLLER_SCENE: PackedScene = preload("res://scenes/player/stroller.tscn")
 const SEED := 4242
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_main_scratch.json"
+## The factor the still-watch check's wait runs at, in ticks of that many times real time.
+const _SCALE := 4.0
 var _save := GameSave.new(_SCRATCH_SAVE)
 
 ## A map source that records what it is asked and hands back the cache's city of that seed, the
@@ -313,20 +315,20 @@ func _boot_catching_the_rig(t: TestRunner, seat: Seat, words: Array, entered: Ar
 ## `main` hands `--quit-when-still`'s watch the trace it hands every other writer
 ## (`StillWatch.use_trace()`, the session's): the line the watch writes as it fires reaches the
 ## recording run log the boot is handed (`tests/recording_log.gd`), which a trace nobody handed the
-## watch would drop. The boot skips the crowd and the events and is invincible, so nothing but a red
-## light in view can hold the watch or end the day. A red light holds the watch until the light
-## lets her go, by design, so she is moved past the watch's radius on every tick of one signal
-## cycle (which arms it the tick the light lets her go) and then held still, and the wait is
-## bounded by one more cycle plus the hold and ends the moment the line is written. It fires; its picture's child is switched off the moment it arrives, as
-## `tests/test_still_watch.gd` does, so a headless run does not quit.
+## watch would drop. Two things keep the boot steady: her physics is off (a bump only stores a push
+## her own tick would apply) and the boot is invincible, so only a red light in view can hold the
+## watch. A red light holds it until the light lets her go, by design, so she is moved past the
+## watch's radius on every tick of one signal cycle (which arms it the tick the light lets her go)
+## and then held still; the wait is bounded by one more cycle plus the hold and ends the moment the
+## line is written, run at `_SCALE` times real time. Its picture's child is switched off the moment
+## it arrives, as `tests/test_still_watch.gd` does, so a headless run does not quit.
 func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED)
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
-			Boot.config(["--quit-when-still", "0.5", "--skip", "crowd,events",
-					"--invincible"]),
+			Boot.config(["--quit-when-still", "0.5", "--invincible"]),
 			func(main: Boot.MainScript) -> void:
 				main.use_sitting_home(home)
 				main.use_run_log(run_log))
@@ -349,14 +351,14 @@ func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 		# signal cycle, which reaches the tick the light lets her go and arms the watch there, then
 		# held still: it fires the first time she has stood still for the hold with the light
 		# letting her go, within one more cycle, and the wait ends the moment the line is written.
-		var cycle := PhysicsTicks.ticks_for(Tuning.signal_cycle_seconds())
+		var cycle := PhysicsTicks.ticks_for(Tuning.signal_cycle_seconds(), _SCALE)
 		var step := Vector2(StillWatch.STILL_RADIUS + 50.0, 0.0)
-		var bound := 2 * cycle + PhysicsTicks.ticks_for(0.5 + 1.0)
+		var bound := 2 * cycle + PhysicsTicks.ticks_for(0.5 + 1.0, _SCALE)
 		await PhysicsTicks.pass_ticks(t, bound, func(ran: int) -> bool:
 				if ran <= cycle:
 					her.global_position += step if ran % 2 == 0 else -step
 				return run_log.lines.any(func(line: String) -> bool:
-						return line.contains("still quit-when-still")))
+						return line.contains("still quit-when-still")), _SCALE)
 	t.check(run_log.lines.any(func(line: String) -> bool:
 				return line.contains("still quit-when-still")),
 			"and what the watch writes as it fires reaches the boot's run log (%s)"
