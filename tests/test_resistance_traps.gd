@@ -477,8 +477,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 						"warning expiry keeps the actual drawing outside the moved WHOLE camera")
 				t.check((trap.position - her).normalized().is_equal_approx(bearing),
 						"the trap keeps the badge's bearing when the camera moves")
-		RunCity.events(_city).use_player(null)
-		player.free()
+		_let_her_go(player)
 		director.free()
 
 ## What every trap owes from the moment it is sent, on the real city. **Warned first**: the moment she
@@ -552,12 +551,13 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 					"%s: with no clear run from %s, none from %v off her either"
 					% [label, _city.map.world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
-	RunCity.events(_city).world.where_she_is().tell(her)
-	chaser.step(STEP)
+	# The tick that made him stepped him once: that step is his first frame.
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
 	t.check(closed > chaser.row().chase_speed() * STEP * 0.9 or (across and closed > 0.0),
 			"%s: and coming at her%s from his first frame" % [label,
 			"" if across else " at his own speed"])
+	RunCity.events(_city).world.where_she_is().tell(her)
+	chaser.step(STEP)
 	if not clear and not across:
 		return start
 	var caught := false

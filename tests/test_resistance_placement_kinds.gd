@@ -1239,5 +1239,4 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 			"at COLUMN_BY it comes wherever she is")
 	for truck in happenings.column:
 		RunCity.events(_city).retire(truck)
-	RunCity.events(_city).use_player(null)
-	body.free()
+	_let_her_go(body)

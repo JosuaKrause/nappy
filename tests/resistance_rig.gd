@@ -278,6 +278,14 @@ func _her_for_the_events(t: Node, at: Vector2) -> Stroller:
 	camera.enabled = false
 	return player
 
+## Takes `body` (`_her_for_the_events()`) out of the city's events, and hands the poster walls and
+## the blackout the rig's own player again, as they had her before `body` was made.
+func _let_her_go(body: Stroller) -> void:
+	RunCity.events(_city).use_player(null)
+	var hers: Stroller = _player if is_instance_valid(_player) else null
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, hers)
+	body.free()
+
 ## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
 ## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does. The
 ## test city's poster walls and blackout, where it stands, are handed her here, as a walk hands her.
@@ -479,8 +487,7 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 	await _let_the_events_tick(5.0 + STEP, func(_ticks: int) -> bool:
 		return not events.pending_warnings().has(warning) or warning.shown_for() >= 5.0)
 	if body != null:
-		events.use_player(null)
-		body.free()
+		_let_her_go(body)
 	return warning.shown_for()
 
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned

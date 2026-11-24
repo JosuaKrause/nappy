@@ -170,6 +170,18 @@ func _free_the_manager(rig: Dictionary) -> void:
 	manager.free()
 	world.free()
 
+## Reads whether a move is on the list in each physics tick, after the manager's own step.
+class _ListReader extends Node:
+	var moves: ProposedMoves
+	var move: MoveProposal
+	var listed_in_the_tick := true
+
+	func _init() -> void:
+		process_physics_priority = 1
+
+	func _physics_process(_delta: float) -> void:
+		listed_in_the_tick = moves.has(move)
+
 ## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
 ## frame when its node leaves the tree: a finished one, one streamed out, and every one `stand_down()`
 ## throws away. A finished one leaves with the tick that retires it, the one tick the manager is
@@ -187,10 +199,17 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 		return
 	live.end_now()
 	t.check(moves.has(move), "a finished event stays until the manager retires it")
+	# Read inside the tick that retires it, after the manager's own step and before the frame's
+	# deletions, so a removal left to the node's leaving the tree does not pass.
+	var reader := _ListReader.new()
+	reader.moves = moves
+	reader.move = move
+	t.add_child(reader)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not moves.has(move) and not is_instance_valid(live),
-			"retired once finished, it is off the list once the tick that retires it has run, "
-			+ "before the next tick's separation")
+	t.check(not reader.listed_in_the_tick and not moves.has(move) and not is_instance_valid(live),
+			"retired once finished, it is off the list in the tick that retires it, "
+			+ "before the frame's deletions")
+	reader.free()
 	_free_the_manager(rig)
 
 	rig = _a_manager_with_a_live_event(t, at)

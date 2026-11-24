@@ -446,7 +446,8 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	t.check(await _redraws(t, edge, drawn) and not edge.badges().announcing().is_empty(),
 			"and it is redrawn every frame it stays up, the camera moving under it")
 
-	# The manager's own tick takes it out of the list, switched on for that one tick.
+	# One tick of the manager's own, switched on for it. What is read is the redraw, which the
+	# retirement itself causes: no check here reads the list the tick takes it off.
 	var drawn_before: int = drawn[0]
 	manager.retire(engine)
 	manager.set_physics_process(true)
