@@ -40,6 +40,7 @@ extends RefCounted
 ## reload), a guarantee between the save, the title, the pause, the day and the reload that only the
 ## real `main` composes.
 
+const UI := preload("res://tests/ui_screens.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
@@ -225,14 +226,14 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t: TestRunner) ->
 	t.check(pause.is_open(), "focus loss still opens the pause, exactly as before this milestone")
 	t.check(run.header().day() == day and run.header().nerves() == nerves,
 			"and neither the day nor the nerve count moved — a focus loss alone never spends one")
-	pause.close()
+	UI.dismiss(pause)
 
 	_save.clear()
 	t.get_tree().paused = false
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(pause.is_open(), "focus loss still opens the pause")
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "but writes nothing")
-	pause.close()
+	UI.dismiss(pause)
 
 	main.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and neither does the window-close notification")

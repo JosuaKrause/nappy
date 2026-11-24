@@ -674,7 +674,7 @@ func _spawn_buildings() -> void:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.equip(atlas, roof_drawer, front_drawer)
-		building.scenery_clock = scenery_ground
+		building.use_scenery_clock(scenery_ground)
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.stand_on(rect, world.size, _variant_for(rect), map.starting_purpose(block_of(rect)),
@@ -692,7 +692,7 @@ func _spawn_buildings() -> void:
 			# every other home-block lot's world x sits entirely outside the door's span, since
 			# `CityGenerator._subtract_all()` cuts the notch's own columns out of them — but handing
 			# it to all of them costs nothing and needs no lookup for which one that is.
-			building.door_world_x_range = door_x_range
+			building.mark_door_span(door_x_range)
 		# Dressed here, before coverage and the roof extension below are computed, since
 		# `assign_roof_extensions()` needs to know which buildings are the power station to keep an
 		# extension off its yard (no roof stands there to extend).
@@ -1278,7 +1278,7 @@ func _dress_blocks(state: CityState) -> void:
 		var listed: Dictionary = map.stretch_building_on(building.lot_rect())
 		building.show_condition(int(listed.condition) as Building.Condition if not listed.is_empty() \
 				else condition_for(state.purpose_of(map.plans_by_block(), block_of(building.lot_rect()))))
-		building.day = _day
+		building.show_day(_day)
 	_fronts.mark_the_burnt_frontage()
 
 ## A stretch's props are its recipe's (`CityMap.stretch_prop_list()`): every tree, swing frame, bollard

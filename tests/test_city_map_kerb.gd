@@ -2,16 +2,72 @@ extends RefCounted
 ## `CityMap.kerb_beside()`: where the kerb runs beside the carriageway lane a point stands in, the
 ## place a row that spans the street stands its body (`EventDef.stands_at_its_kerb()`, the
 ## roadblock). It is the lattice's geometry, so it is asked of points on a north-south street at
-## tiles x 0..5, an east-west one at y 0..5, and the junction box where they meet, with no map.
+## tiles x 0..5, an east-west one at y 0..5, and the junction box where they meet, with no map;
+## `kerb_across_from()` is asked of a generated one.
 
 ## A coordinate inside a block, three tiles past a corridor: ground off the streets.
 const OFF_THE_CORRIDOR := Tuning.STREET_WIDTH + 3
 const TILE := float(Tuning.TILE_SIZE)
 
 func run(t: TestRunner) -> void:
+	_test_the_road_across_from_each_sidewalk_tile(t)
 	_test_a_lane_point_goes_to_its_own_kerb(t)
 	_test_a_point_on_a_kerb_stays(t)
 	_test_no_kerb_outside_one_corridors_carriageway(t)
+
+## `CityMap.kerb_across_from()` on a generated map: from each of the two sidewalk tiles beside a
+## kerb, on either side of a corridor and along either axis, it is the road tile against that kerb,
+## the same tile from both, with the point's own place along the street kept. The first sidewalk
+## tile found at each offset of the sidewalk bands is asked, so each of the eight answers is its own
+## check; the generated map is the one that has corridors, junctions and blocks round them.
+func _test_the_road_across_from_each_sidewalk_tile(t: TestRunner) -> void:
+	var map := CityGenerator.generate(4242)
+	var near_road := Tuning.SIDEWALK_WIDTH
+	var far_road := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1
+	var sidewalk_offsets: Array[int] = []
+	for offset in Tuning.SIDEWALK_WIDTH:
+		sidewalk_offsets.append(offset)
+		sidewalk_offsets.append(Tuning.STREET_WIDTH - 1 - offset)
+	var asked := {}
+	var size := map.size_in_tiles()
+	for y in size.y:
+		for x in size.x:
+			var tile := Vector2i(x, y)
+			var inward := map.pavement_inward(tile)
+			if inward == Vector2i.ZERO:
+				continue
+			var along_x := inward.x != 0
+			var offset := CityMap.corridor_offset(x if along_x else y)
+			var key := "%s:%d" % ["x" if along_x else "y", offset]
+			if asked.has(key) or not sidewalk_offsets.has(offset):
+				continue
+			asked[key] = true
+			var base := (x if along_x else y) - offset
+			var road := base + (near_road if offset < Tuning.SIDEWALK_WIDTH else far_road)
+			var at := map.tile_to_world(tile)
+			var answer := map.kerb_across_from(at)
+			var answered := map.world_to_tile(answer)
+			var road_tile := Vector2i(road, y) if along_x else Vector2i(x, road)
+			t.check(answered == road_tile and Tile.is_road(map.tile_type_at_world(answer)),
+					"from the sidewalk tile at offset %d of an %s-axis corridor the road tile "
+					% [offset, key.left(1)] + "against its kerb is at %s (it answers %s)"
+					% [road_tile, answered])
+			var along := y if along_x else x
+			t.check(answer.y == at.y if along_x else answer.x == at.x,
+					"%s keeps its place along the street (%d)" % [key, along])
+	t.check(asked.size() == 8, "all eight sidewalk offsets were found and asked (%d)" % asked.size())
+	var road := map.tile_to_world(_a_road_tile(map))
+	t.check(map.kerb_across_from(road) == Vector2.INF, "a point on the carriageway has no kerb across")
+
+## The first carriageway tile found by scanning from the map's corner.
+func _a_road_tile(map: CityMap) -> Vector2i:
+	var size := map.size_in_tiles()
+	for y in size.y:
+		for x in size.x:
+			var tile := Vector2i(x, y)
+			if Tile.is_road(map.tile_type_at_world(map.tile_to_world(tile))):
+				return tile
+	return Vector2i.ZERO
 
 ## A point in either carriageway lane goes across its street to the kerb on its own side, 64px or
 ## 128px from the corridor's edge, and stays where it was along the street.

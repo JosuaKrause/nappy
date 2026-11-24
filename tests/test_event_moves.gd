@@ -161,7 +161,7 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
-	var listed := map.listed_moves().all()
+	var listed := map.listed_moves().keeping_their_course()
 	return {"world": world, "manager": manager, "plan": plan,
 			"move": listed[0] if listed.size() == 1 else null}
 

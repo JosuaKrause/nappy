@@ -155,7 +155,7 @@ func _test_boarded_storefronts_and_windows_shutter(t: TestRunner) -> void:
 	building.stand_on(Rect2i(), Vector2(96.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 	t.add_child(building)
 	building.show_condition(Building.Condition.BOARDED)
-	building.day = Tuning.RUN_LENGTH_DAYS
+	building.show_day(Tuning.RUN_LENGTH_DAYS)
 	await UI.frames(t, 2)
 	var front := FrontReads.look(building)
 	t.check(_variants(front).size() == building.columns() / 2,
@@ -210,7 +210,7 @@ func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 		# Equipped as the city equips it, it waits for the residency to stand it up.
 		building.residence().set_resident(true)
 		building.show_condition(Building.Condition.BURNT)
-		building.day = Tuning.RUN_LENGTH_DAYS
+		building.show_day(Tuning.RUN_LENGTH_DAYS)
 		buildings.append(building)
 		fronts.append(front)
 	await UI.frames(t, 2)
@@ -258,7 +258,7 @@ func _test_ambient_shuttering_waits_for_the_curve(t: TestRunner) -> void:
 		building.position = Vector2(i * 200.0, i * 137.0)
 		t.add_child(building)
 		building.show_condition(Building.Condition.LIVED_IN)
-		building.day = 1
+		building.show_day(1)
 		buildings.append(building)
 	await UI.frames(t, 2)
 	for building in buildings:
@@ -266,7 +266,7 @@ func _test_ambient_shuttering_waits_for_the_curve(t: TestRunner) -> void:
 		for col in building.columns():
 			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(front.ground_floor_at(col)):
 				any_shuttered_early = true
-		building.day = Tuning.RUN_LENGTH_DAYS
+		building.show_day(Tuning.RUN_LENGTH_DAYS)
 	await UI.frames(t, 2)
 	for building in buildings:
 		var front := FrontReads.look(building)
@@ -326,7 +326,7 @@ func _test_storefront_variants_use_seeded_bags(t: TestRunner) -> void:
 	var variants_before_state_changes := _variants(FrontReads.look(sampled[0])).duplicate()
 	sampled[0].draw_as(sampled[0].district(), sampled[0].look_variant(), 96.0)
 	sampled[0].draw_as(sampled[0].district(), sampled[0].look_variant(), 64.0)
-	sampled[0].day = Tuning.RUN_LENGTH_DAYS
+	sampled[0].show_day(Tuning.RUN_LENGTH_DAYS)
 	sampled[0].show_condition(Building.Condition.BOARDED)
 	await UI.frames(t, 2)
 	t.check(_variants(FrontReads.look(sampled[0])) == variants_before_state_changes,

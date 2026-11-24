@@ -86,12 +86,11 @@ Left, each its own design question:
     private.
   - A field only a test still reads outside its own class and the code that writes it
     (`CityMap.home_rect`, `courtyard_rects`,
-    `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
-    `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
+    `Building.roof_extension_rows`, `tint_variant`, `atlas`, `footprint`, `roof_object_parent`,
     `SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
     `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
     `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
-    city scene, the blackout, the poster walls, the roof previews, the simulation builder, `main`) and goes with the
+    city scene, the roof previews, the simulation builder, `main`) and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while

@@ -25,6 +25,7 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
+const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const AUTHORED_GROUND: TileSet = preload("res://assets/ground_tileset.tres")
 
 ## The building shadows the residency is handed, asked for a view and drawing none: the shadows'
@@ -33,6 +34,15 @@ class IdleShadows extends BuildingShadows:
 	## Overrides BuildingShadows.update_view.
 	func update_view(_load_view: Rect2, _retained: Rect2, _enqueue := Callable()) -> void:
 		pass
+
+## A poster art that counts the sheets the fronts draw through it, as it answers what the real art does.
+class RecordingPosterArt extends PosterArt:
+	var asked := 0
+
+	## Overrides PosterArt.texture_for.
+	func texture_for(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
+		asked += 1
+		return super(atlas, kind, tear, neighbor_taken)
 
 ## The decals the residency is handed, asked for a view and drawing none.
 class IdleDecals extends CityDecals:
@@ -52,7 +62,7 @@ class Scene extends RefCounted:
 	var scenery := SceneryResidency.new()
 	var shadows := IdleShadows.new()
 	var decals := IdleDecals.new()
-	var poster_art := PosterArt.new()
+	var poster_art := RecordingPosterArt.new()
 	var buildings: Array[Building] = []
 
 	## What each tile of the ground is painted from: the map's own answer inside it, water past its
@@ -80,6 +90,8 @@ class Scene extends RefCounted:
 ## off its own, since a building's roof is placed by its own rolls and drawn through
 ## the drawer `Building.equip()` handed it, as the city hands it.
 var _drawers := {}
+## What each building was told to draw its front with, by building.
+var _fronts := {}
 
 func run(t: TestRunner) -> void:
 	for seed_value: int in [4242, 3265820891]:
@@ -118,9 +130,10 @@ func _scene_for(t: TestRunner, seed_value: int) -> Scene:
 		var drawer := RecordingRoofDrawer.new()
 		drawer.real = RoofDrawer.new(scene.atlas)
 		var building := Building.new()
-		building.equip(scene.atlas, drawer, FrontDrawer.new(scene.atlas))
-		building.scenery_clock = scene.ground
-		building.poster_art = scene.poster_art
+		var front := RecordingFrontDrawer.new()
+		building.equip(scene.atlas, drawer, front)
+		building.use_scenery_clock(scene.ground)
+		building.use_poster_art(scene.poster_art)
 		building.position = Vector2(lot.get_center().x, lot.end.y)
 		building.stand_on(rect, lot.size,
 				absi(hash("%d:%d:%d" % [scene.map.city_seed(), rect.position.x, rect.position.y])),
@@ -131,11 +144,13 @@ func _scene_for(t: TestRunner, seed_value: int) -> Scene:
 		scene.buildings.append(building)
 		scene.scenery.register(building.residence())
 		_drawers[building] = drawer
+		_fronts[building] = front
 	scene.scenery.update(scene.home_view(), true)
 	return scene
 
 func _free(scene: Scene) -> void:
 	_drawers.clear()
+	_fronts.clear()
 	scene.free_all()
 
 func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
@@ -169,7 +184,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	scene.scenery.update(target, true)
 	# Lived in and powered, so the pictures say which windows the roll lit.
 	building.show_condition(Building.Condition.LIVED_IN)
-	building.powered = true
+	building.switch_power(true)
 	var windows := _window_pictures(building)
 	t.check(_lit_windows(building) > 0, "the building watched has lit windows to compare")
 	var roof := _drawer_of(building).drawn()
@@ -202,9 +217,9 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 		if not far.grow(SceneryResidency.RETAIN_MARGIN).intersects(
 				SceneryGround.bounds(SceneryGround.key_for(tile))):
 			t.check(GroundCells.source_id(scene.ground, tile) == -1, "distant cells have no resident owner")
-	building.day = 12
+	building.show_day(12)
 	building.show_condition(Building.Condition.BOARDED)
-	building.powered = false
+	building.switch_power(false)
 	building.board_neighbor_window_at(2)
 	building.hand_over_posters({1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}, false)
 	seed(91234)
@@ -215,20 +230,29 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"residency preserves building identity and its collision resource")
 	building.show_condition(Building.Condition.LIVED_IN)
-	building.powered = true
+	building.switch_power(true)
 	t.check(_window_pictures(building) == windows and _drawer_of(building).drawn() == roof,
 			"returning artwork reconstructs the same seeded window and furniture layout")
 	building.show_condition(Building.Condition.BOARDED)
-	building.powered = false
+	building.switch_power(false)
 	_check_roof_ownership(t, scene)
 	for cycle in 3:
 		scene.scenery.update(far, true)
 		await _run_the_city_clock(t, scene, Building.VENT_FRAME_INTERVAL * 1.25)
 		scene.scenery.update(target, true)
 		_check_roof_ownership(t, scene)
-	t.check(building.day == 12 and building.condition() == Building.Condition.BOARDED \
-			and not building.powered and building.neighbor_window_col() == 2 \
-			and building.posters.has(1), "changes while unloaded survive reconstruction")
+	scene.poster_art.asked = 0
+	await _redraw(t, scene)
+	t.check(building.condition() == Building.Condition.BOARDED and building.neighbor_window_col() == 2
+			and scene.poster_art.asked > 0, "changes while unloaded survive reconstruction: boarded, the "
+			+ "neighbor's window column, a sheet drawn")
+	# The power was switched off while the building stood loaded, and every eviction since leaves it
+	# off: lived in again (a boarded block draws no lit window whatever the power), no window is lit.
+	building.show_condition(Building.Condition.LIVED_IN)
+	await _redraw(t, scene)
+	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
+	t.check(not _fronts_of(building).pictures().any(func(picture: StringName) -> bool: return picture in lit),
+			"and the power switched off survives it: every window stays dark")
 	_check_coverage(t, scene, target)
 	scene.scenery.update(far, true)
 	_check_coverage(t, scene, far)
@@ -236,6 +260,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	_check_coverage(t, scene, home)
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"relocation does not replace persistent building collision")
+	await _check_what_the_front_is_told_survives_eviction(t, scene, far)
 	# Clock belongs to the city, so a newly entered shoreline resumes its neighbors' phase.
 	await _run_the_city_clock(t, scene, 3.75)
 	var shore := _view(Vector2(map.world_size().x * 0.5, map.world_size().y + 100))
@@ -323,6 +348,10 @@ func _cell_and_picture(unit: Dictionary) -> Array:
 func _drawer_of(building: Building) -> RecordingRoofDrawer:
 	return _drawers[building]
 
+## The recording front drawer `building` was equipped with.
+func _fronts_of(building: Building) -> RecordingFrontDrawer:
+	return _fronts[building]
+
 ## The roof objects the building has standing: its draws whose object it has not freed.
 func _objects_of(building: Building) -> Array[Building.RoofObject]:
 	var objects: Array[Building.RoofObject] = []
@@ -378,6 +407,66 @@ func _run_the_city_clock(t: TestRunner, scene: Scene, seconds: float) -> void:
 	t.check(ground.elapsed() >= until,
 			"the ground's clock ran its %.2f s within 600 frames (it reached %.2f of %.2f)"
 			% [seconds, ground.elapsed(), until])
+
+## Lets two frames pass, which is how long a changed front takes to redraw, with the residency's own
+## per-frame work paused as `_run_the_city_clock()` pauses it: its `_process()` would otherwise move the
+## camera-less view back to her doorstep.
+func _redraw(t: TestRunner, scene: Scene) -> void:
+	scene.scenery.set_process(false)
+	await _frames(t, 2)
+	scene.scenery.set_process(true)
+
+## What a lived-in commercial front is told survives its eviction, whether it was told while the front
+## stood loaded or while it was unloaded (the game's usual path: the dawn tells every building its day,
+## most of them out of view). The building is one whose front differs between day 1 and the last day
+## and has lit windows with the power on, so the picture says the day and the power.
+func _check_what_the_front_is_told_survives_eviction(t: TestRunner, scene: Scene, far: Rect2) -> void:
+	var last := Tuning.RUN_LENGTH_DAYS
+	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
+	for candidate in scene.buildings:
+		if candidate.district() != GameEnums.BlockPurpose.COMMERCIAL:
+			continue
+		var view := _view(candidate.residence().bounds().get_center())
+		scene.scenery.update(view, true)
+		candidate.show_condition(Building.Condition.LIVED_IN)
+		candidate.switch_power(true)
+		candidate.show_day(1)
+		await _redraw(t, scene)
+		var on_day_one := _fronts_of(candidate).pictures()
+		candidate.show_day(last)
+		await _redraw(t, scene)
+		var on_the_last_day := _fronts_of(candidate).pictures()
+		if on_day_one == on_the_last_day or not on_the_last_day.any(
+				func(picture: StringName) -> bool: return picture in lit):
+			continue
+		candidate.switch_power(false)
+		await _redraw(t, scene)
+		var in_the_dark := _fronts_of(candidate).pictures()
+		# Told while loaded: the front shows the last day's shutters after an eviction and a rebuild.
+		candidate.switch_power(true)
+		await _redraw(t, scene)
+		scene.scenery.update(far, true)
+		scene.scenery.update(view, true)
+		await _redraw(t, scene)
+		t.check(_fronts_of(candidate).pictures() == on_the_last_day,
+				"the day survives eviction: a commercial front's shutters stay those of day %d" % last)
+		# Told while unloaded: the day, the power and a sheet are handed to a front that is not resident.
+		candidate.switch_power(true)
+		candidate.show_day(1)
+		await _redraw(t, scene)
+		scene.scenery.update(far, true)
+		t.check(not candidate.residence().is_resident(), "the commercial front is unloaded when it is told")
+		candidate.show_day(last)
+		candidate.switch_power(false)
+		candidate.hand_over_posters({1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}, false)
+		scene.poster_art.asked = 0
+		scene.scenery.update(view, true)
+		await _redraw(t, scene)
+		t.check(_fronts_of(candidate).pictures() == in_the_dark,
+				"the day and the power told while unloaded show in the rebuilt front: last day, every window dark")
+		t.check(scene.poster_art.asked > 0, "and the sheets handed over while unloaded are drawn")
+		return
+	t.check(false, "a commercial front whose shutters follow the day, lit with the power on, was found to compare")
 
 ## Lets `count` process frames pass. The caller sits at the start of a frame, before that frame's
 ## `_process`, whenever it has just awaited one, so each await here is exactly one `_process` of

@@ -26,7 +26,7 @@ extends RefCounted
 ##   day 13's column sent at her from a few places along the main road;
 ## - **the events' director half**: where a row comes down her line (`down_her_line()`, the
 ##   cyclist and the loose dog), along her heading (`along_her_heading()`, the charging dog), on
-##   its route (`on_its_route()`, the fire engine to the kerb `_where_the_summoned_row_stops()`
+##   its route (`on_its_route()`, the fire engine to the kerb `CityMap.kerb_across_from()`
 ##   gives), in its lane (`in_its_lane()`, the column), and where the men a hunting van owes get out
 ##   (`let_the_officers_out()`).
 
@@ -302,7 +302,9 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 			_print("%s ahead at %s heading %s: cyclist/dog down her line, charger along %s" % [
 					label, tile, heading, line])
 			printed += 1
-		var kerb := EventSpawner._where_the_summoned_row_stops(map, her)
+		# The road tile against the kerb across from her when she stands on a sidewalk, from either
+		# of its two tiles; none where she is not on one.
+		var kerb := map.kerb_across_from(her)
 		if kerb != Vector2.INF:
 			for travel in headings:
 				_print("%s ahead at %s engine to %s travel %s -> %s" % [label, tile, _point(kerb),

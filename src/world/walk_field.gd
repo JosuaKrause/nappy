@@ -29,7 +29,7 @@ const UNREACHED := -1
 const BLOCKED := -2
 
 ## The key of each target, by label: an `EventInstance`'s instance id or a mast's id.
-var keys: Array = []
+var _keys: Array = []
 ## Where each key stood when the sweep started (`_anchor_of()`), so a caller can tell whether the
 ## targets are still the ones this field measures.
 var anchors := {}
@@ -66,7 +66,7 @@ static func start(map: WorldMap, targets: Array[Dictionary],
 	field.versions = blocked_versions
 	field._targets = targets
 	for target in targets:
-		field.keys.append(target["key"])
+		field._keys.append(target["key"])
 		field.anchors[target["key"]] = _anchor_of(map, target)
 	return field
 
@@ -207,7 +207,7 @@ func started_under() -> Vector2i:
 
 ## The key of the target at `index`, in the order the targets were given.
 func key_at(index: int) -> Variant:
-	return keys[index]
+	return _keys[index]
 
 ## Whether this field (finished or under way) was swept from exactly `found`, each standing where it
 ## stood then (`_anchor_of()`), under the blocking `blocked_versions`.
@@ -232,7 +232,7 @@ func length_at(tile: Vector2i) -> int:
 ## The key of the target nearest `tile` on foot, or null when none can be walked to from it.
 func nearest_at(tile: Vector2i) -> Variant:
 	var index := _best_index(tile)
-	return keys[_label[index]] if index >= 0 else null
+	return _keys[_label[index]] if index >= 0 else null
 
 func _index_of(tile: Vector2i) -> int:
 	if tile.x < 0 or tile.y < 0 or tile.x >= _width or tile.y * _width + tile.x >= _cells:

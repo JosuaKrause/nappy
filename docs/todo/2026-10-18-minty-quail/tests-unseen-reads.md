@@ -48,9 +48,6 @@ reaches alone:
   planning a day.
 - `run.resistance.sabotage_done = true` where the state the suite needs the run to be in is not
   what it tests, and playing the finale to reach it would be.
-- `building.powered`, `day` and `condition` on a hand-built `Building.new()` or a sampled building
-  (`test_blackout.gd`, `test_city_decay.gd`, `test_scenery_residency.gd`): the city writes them for
-  every building at once, and these suites test what one building draws or does given its state.
 - `test_invincible.gd` sets `noise` on its own fake world, a test double's state no game path sets,
   and `test_excitement_source.gd` hands a world its excitement sources, the hand-in `main.gd` and
   `City` make.
