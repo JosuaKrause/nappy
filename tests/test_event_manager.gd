@@ -7,12 +7,12 @@ extends RefCounted
 ##
 ## **What each case stands the manager on.** Most cases ask of the streets only a stretch of
 ## sidewalk to stand on, so they stand it on drawn streets (`StreetMap.full()`) with plans of their
-## own. The cases that start a day through the manager (the manager's plan taken as the walk's, the
-## ground the dawn made handed to the walk) stand it on the seed's generated map, whose day the dawn
-## plans; the one case that asks the city's own dawn (`City.start_day()`) stands it in a city,
-## because it is the dawn there that grows the route tree and holds the closures the manager's walk
-## must be. No other case builds a city. Two cases run after the others on the generated map: the
-## cyclist's warning, which stands a manager of its own, and the parked fire engine's route
+## own, a scene recipe's walk handed a ground included. The cases that start a day through the
+## manager (the manager's plan taken as the walk's, the ground the dawn made handed to the walk)
+## stand it on the seed's generated map, whose day the dawn plans; the one case that asks the
+## city's own dawn (`City.start_day()`) stands it in a city, because it is the dawn there that
+## grows the route tree and holds the closures the manager's walk must be. No other case builds a
+## city. Two cases run after the others on the generated map: the cyclist's warning, which stands a manager of its own, and the parked fire engine's route
 ## guarantee, which builds no manager and reads the map's street network. The last case asks the
 ## spawner (`EventSpawner.as_warned()`) of each catalogue row and builds nothing: no suite is the
 ## spawner's, and the spawner is one of the manager's parts, so its question is held here.
@@ -44,6 +44,7 @@ func run(t: TestRunner) -> void:
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
 		_test_a_recipes_bodies_are_in_its_way_on,
+		_test_a_recipes_walk_sites_on_the_ground_it_is_handed,
 	]
 	for test in on_streets:
 		_stage = Rig.build_stage(t, null, StreetMap.full())
@@ -204,6 +205,27 @@ func _test_a_recipes_bodies_are_in_its_way_on(t: TestRunner) -> void:
 	t.check(map.is_obstructed(map.world_to_tile(beyond))
 			and not (leg.size() == 2 and is_equal_approx(leg[1].x, far_edge)),
 			"and with a recipe's barricade on the street beyond it, it no longer does (%s)" % leg)
+
+## **A recipe's walk sites on the ground it is handed** (`EventManager.start_recipe()`'s
+## `ground`, `DayPlanner.Plan.use_ground()`, `WalkEvents.ground()`): a recipe started with the
+## ground its rows were placed on, then asked for a mast on day 11 (`queue_a_mast()`), makes its
+## siting on that very ground, never on one the walk scans the city for again
+## (`EventsAhead._ground_of_the_walk()`'s fallback, which a recipe handed none keeps). The maker
+## records each ask (`FakeSitingMaker`).
+func _test_a_recipes_walk_sites_on_the_ground_it_is_handed(t: TestRunner) -> void:
+	var events := _stage.events()
+	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
+	events.use_sitings(maker)
+	var day := 11
+	var handed := EventScheduler.row_ground(_stage.map())
+	var nothing: Array[EventPlan] = []
+	events.start_recipe(nothing, DaySpec.for_day(day), day, Vector2.ZERO, null, handed)
+	var offered: Array[Vector2i] = [Vector2i(1, 1)]
+	events.queue_a_mast(offered)
+	t.check(maker.made.size() == 1 and maker.made[0][2] == handed,
+			"a recipe's mast is sited on the ground the recipe's walk was handed (%d sitings)"
+			% maker.made.size())
+	events.use_sitings(SitingMaker.new(events.world, events.walk_events()))
 
 func _start(day: int) -> void:
 	Rig.start(_stage, day)
