@@ -128,7 +128,7 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	var local := charged_at - scene.map().tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
 	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx on a tick (the catch is %.1fpx)"
 			% [s, route, pace, (local / InteriorScene.TILE).snapped(Vector2(0.01, 0.01)),
-			charged_range, outcome, elapsed, charged_for, closest_on_tick, man.lethal_reach()])
+			charged_range, outcome, elapsed, charged_for, closest_on_tick, man.row().lethal_reach()])
 	player.free()
 	events.free()
 	scene.free()

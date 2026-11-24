@@ -337,7 +337,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	# the lorry is past its telegraph and not before, with her inside the same reach.
 	_clear()
 	var lorry := _instance(t, "reversing_lorry", Vector2.ZERO)
-	var reach := lorry.lethal_reach()
+	var reach := lorry.row().lethal_reach()
 	var outside := Vector2(0.0, reach + 40.0)
 	_run(watch, [lorry] as Array[EventInstance], outside, 0.5)
 	t.check(_seen.size() == 1 and _influenced.is_empty(),
@@ -401,7 +401,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	var her := Vector2(134.0, 122.0)
 	t.check(guard.ends_the_day() and not guard.is_telegraphing() and not guard.is_waiting()
 			and not guard.is_chasing()
-			and guard.global_position.distance_to(her) < guard.lethal_reach(),
+			and guard.global_position.distance_to(her) < guard.row().lethal_reach(),
 			"the guard is past his telegraph, not yet reported chasing, and she is inside his reach")
 	t.check(not guard.is_lethal_at(her), "but the game does not call it a catch, a corner between")
 	var watch := _watch()
@@ -420,7 +420,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	_clear()
 	var cyclist := _instance(t, "cyclist", Vector2.ZERO)
 	var warned: Array[EventInstance] = [cyclist]
-	var near := Vector2(0.0, cyclist.lethal_reach() - 2.0)
+	var near := Vector2(0.0, cyclist.row().lethal_reach() - 2.0)
 	_stand(watch, warned, near)
 	t.check(cyclist.is_telegraphing() and not cyclist.is_lethal_at(near) and _influenced.is_empty(),
 			"a cyclist still only warned is not a catch, and not an influence (%s)" % [_influenced])
@@ -469,7 +469,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	cyclist.restore(EventSave.new(cyclist.telegraphs_for() + 0.1, 0.0, 0.0))
 	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
 	cyclist.hold_by_hand()
-	var reach := cyclist.lethal_reach()
+	var reach := cyclist.row().lethal_reach()
 	t.check(entry.distance_to(cyclist.global_position) > reach
 			and not cyclist.is_telegraphing(),
 			"the cyclist is past its warning and out of reach of where she walks into the hut")

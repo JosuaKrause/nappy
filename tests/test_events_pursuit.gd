@@ -1031,7 +1031,7 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t: TestRunner) -> void:
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(), "he is chasing")
 	instance.position = corner + d1 * 1.0 - d2 * 7.0
 	var behind_the_wall := corner - d1 * 4.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-	var reach := instance.lethal_reach()
+	var reach := instance.row().lethal_reach()
 	t.check(instance.global_position.distance_to(behind_the_wall) < reach,
 			"she is inside his catch in a straight line (%.1fpx < %.1fpx)"
 			% [instance.global_position.distance_to(behind_the_wall), reach])

@@ -37,8 +37,8 @@ extends RefCounted
 ## takes her however open the ground under it is, so a sidewalk kept open past the van's 22px body
 ## but not past its reach is a walk that ends the section. A pursuer's post counts, since he notices
 ## her before she could come within his catch; the roadblock guard's 28px lies inside his band, so
-## the band is what holds her there. A row that moves is somewhere else by the time the walk gets
-## there.
+## the band is what holds her there. A row that moves is somewhere else by the time the walk
+## gets there.
 ##
 ## **The seals are counted like everything else.** They stand on the streets and alleys the walk
 ## does not use, but an alley's mouth wall (`SealPlanner.alley_mouth_wall()`) lies along the street

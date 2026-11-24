@@ -20,6 +20,7 @@ func run(t: TestRunner) -> void:
 	_test_a_held_notice_comes_back_as_far_run(t)
 	_test_a_badge_up_alone_points_and_counts_down(t)
 	_test_a_live_event_answers_for_its_row(t)
+	_test_a_live_event_shuts_the_ground_its_catch_shuts(t)
 	_test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t)
 	_test_a_mover_reaches_as_the_ellipse_its_field_is(t)
 	_test_a_flock_reaches_where_one_of_its_birds_does(t)
@@ -281,6 +282,27 @@ func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 			t.check(instance.field_reaches(at) == (def.emission_at_distance(distance) > 0.0),
 					"'%s' reaches %.0fpx out exactly where its row's field is heard" % [id, distance])
 		instance.free()
+
+## **A live event shuts the ground its row's catch shuts while it stands, and none once it is gone**
+## (`EventDef.catch_shuts_within()`): a guard over a mark and a parked van answer their row's, a
+## cyclist, which moves, and a cafe's tables, which end nothing, answer none.
+func _test_a_live_event_shuts_the_ground_its_catch_shuts(t: TestRunner) -> void:
+	for id: String in ["alley_robbery", "abduction", "cyclist", "cafe_tables"]:
+		var def := EventCatalogue.by_id(id)
+		var instance := EventInstance.new()
+		instance.setup(def, Vector2.ZERO)
+		t.close_to(instance.catch_shuts_within(), def.catch_shuts_within(),
+				"'%s' shuts the ground its row's catch shuts while it stands" % id)
+		t.check((instance.catch_shuts_within() > 0.0) == (def.ends_the_day() and not def.moves()),
+				"'%s' shuts ground exactly when its row ends the day and holds its place" % id)
+		instance.free()
+	var robbery := EventInstance.new()
+	robbery.setup(EventCatalogue.by_id("alley_robbery"), Vector2.ZERO)
+	var shut_while_standing := robbery.catch_shuts_within()
+	robbery.end_now()
+	t.check(shut_while_standing > 0.0 and robbery.catch_shuts_within() == 0.0,
+			"a guard shuts ground while he stands and none once he is gone")
+	robbery.free()
 
 ## **A row with a long body reaches as far along that body as its field runs**: the field is a capsule
 ## about the spine, so a point one pixel inside it past the row's outer radius from the centre is
