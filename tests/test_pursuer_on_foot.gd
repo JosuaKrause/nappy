@@ -255,10 +255,9 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 			"and, from a sidewalk in the city, his start has a clear run at her (%s)" % [account])
 	if sent:
 		var view := SpawnSiting.seen_from(RunCity.events(city).visible_view(), her.global_position)
-		# The tick that made him gave him his first step toward her, which a creation is read
-		# before: where he was made is one stride back along the way he came.
-		var away := (sent.global_position - her.global_position).normalized()
-		var made_at := sent.global_position + away * sent.row().chase_speed() * STEP
+		# The tick that made him gave him his first step, which a creation is read before: where
+		# he was made is one stride back along the way he is going (`travel_velocity()`).
+		var made_at := sent.global_position - sent.travel_velocity() * STEP
 		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.row()),
 				her.global_position, made_at),
 				"created wholly out of her sight (%.0fpx off)"
