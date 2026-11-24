@@ -31,15 +31,10 @@ settings it still writes into the city's fields (`trace`, `run`, `ground_recipe`
 ground and scenery, and stay fields until the city scene's own pass (minty-quail's README, "The
 modules that do not wait for the events"), not this item.
 
-**Other readers of a whole `City` under `src/`**, which #1166's row does not list:
-
-- `src/day/day_world.gd` holds the city whole only for an authored scene to install itself into
-  (`DayWorld.scene_city()`): the main scene hands it only when a scene is played, and the day
-  director passes it to `AuthoredScene.install()`, which waits with the scene recipes below.
-- The scene recipes take the city whole: `SceneRecipeRuntime.install()` (and the `AuthoredScene`
-  it extends, `src/run/authored_scene.gd`), and `SceneRecipeDraft.record()` and `compose()`
-  (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 1 waits for `install()` to take a
-  narrow interface instead.
+**The authored scenes take no whole `City` either:** an authored scene installs itself into the world the day
+director stands (`AuthoredScene.install(world, spec, resistance)`, the record 2026-10-18-minty-quail-round-hare),
+and the scene recipes' runtime and draft read the city's parts through it; `tests-one-module.md`'s entry 1, the
+four recipe suites to one module each, builds on that.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
