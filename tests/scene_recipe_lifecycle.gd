@@ -201,7 +201,7 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 	_press(Vector2.ZERO)
 	t.check(direction != Vector2.ZERO and player.global_position.distance_to(start) >= 3.0,
 			"%s physical Input actions move the real player" % label)
-	if map.recipe_bounds.has_area():
+	if map.recipe_window().has_area():
 		result.bounded_returned = await _go_out_and_back(t, main, map, label)
 		t.check(result.bounded_returned, "%s permits physical exit and return without resetting" % label)
 	if map.has_stretch():
@@ -257,7 +257,7 @@ func _lose_the_escape(t: TestRunner, recipe: SceneRecipeRuntime, reloads: Array[
 func _go_out_and_back(t: TestRunner, main: Node, map: CityMap, label: String) -> bool:
 	var player := Boot.player(main)
 	for plan: EventPlan in RunCity.events(Boot.city(main)).plans():
-		if not map.recipe_bounds.has_point(map.world_to_tile(plan.placed_at())):
+		if not map.recipe_window().has_point(map.world_to_tile(plan.placed_at())):
 			t.check(false, "%s: bounded region installs event bodies outside authored ground" % label)
 			return false
 	var return_at := player.global_position
@@ -268,7 +268,7 @@ func _go_out_and_back(t: TestRunner, main: Node, map: CityMap, label: String) ->
 	for tile in path:
 		if not await _walk_to(t, player, map.tile_to_world(tile), label):
 			return false
-	if map.recipe_bounds.has_point(map.world_to_tile(player.global_position)):
+	if map.recipe_window().has_point(map.world_to_tile(player.global_position)):
 		t.check(false, "%s: bounded walk crosses the authored boundary" % label)
 		return false
 	path.reverse()
@@ -357,7 +357,7 @@ func exterior_path(map: CityMap, start: Vector2i) -> Array[Vector2i]:
 	while cursor < pending.size():
 		var tile := pending[cursor]
 		cursor += 1
-		if not map.recipe_bounds.has_point(tile):
+		if not map.recipe_window().has_point(tile):
 			var path: Array[Vector2i] = [tile]
 			while tile != start:
 				tile = previous[tile]

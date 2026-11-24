@@ -681,11 +681,11 @@ func _tile_colour(image: Image, tile: Vector2i) -> Color:
 ## check because this one draws from a `CityMap` that is mutable by design.
 func _test_the_map_picture_reads_the_map_and_nothing_else(t: TestRunner) -> void:
 	var map := _picture_map()
-	var before := map.tiles.duplicate()
+	var before := map.tiles_snapshot()
 	var calm_before := map.calm_blocks_now().size()
 	var first := TelemetryMap.render(map)
 	var second := TelemetryMap.render(map)
-	t.check(map.tiles == before, "rendering the grid does not repaint it")
+	t.check(map.tiles_snapshot() == before, "rendering the grid does not repaint it")
 	t.check(map.calm_blocks_now().size() == calm_before, "and does not disturb what it counted")
 	t.check(first.get_data() == second.get_data(),
 			"and the same map twice is the same picture, pixel for pixel")

@@ -81,7 +81,7 @@ func _test_an_authored_scenes_map_wins_over_the_map_source(t: TestRunner) -> voi
 	var city := Boot.city(booted.main)
 	t.check(source.seeds.is_empty(),
 			"a boot of an authored scene never asks the map source (asked: %s)" % [source.seeds])
-	t.check(city != null and city.map.stretch_active,
+	t.check(city != null and city.map.is_void(Vector2i.ZERO),
 			"the city of an authored scene stands on the scene's own map")
 	booted.free_all()
 	seat.end()

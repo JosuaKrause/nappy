@@ -58,8 +58,8 @@ func run(t: TestRunner) -> void:
 		t.check(errors.is_empty() and _emptied_pits(city.map).is_empty(), "reinstallation clears unselected fallen-tree state")
 		for tree in _street_trees(city):
 			t.check(tree.visible, "standing source trees return when no authored fallen tree selects them")
-	var authored_bounds := city.map.recipe_bounds
-	city.map.recipe_bounds = Rect2i(0, 0, 14, 14)
+	var authored_bounds := city.map.recipe_window()
+	city.map.show_recipe_window(Rect2i(0, 0, 14, 14))
 	for collection: String in ["gates", "barriers", "seals"]:
 		var entry := {"segment": [7, 6, 0]} if collection == "gates" else {"segment": [3, 5, 0]}
 		if collection == "barriers":
@@ -71,7 +71,7 @@ func run(t: TestRunner) -> void:
 		t.check("\n".join(errors).contains("leaves the authored extent"),
 				"%s outside a bounded scene rejects instead of silently dropping bodies" % collection)
 		setup.erase(collection)
-	city.map.recipe_bounds = authored_bounds
+	city.map.show_recipe_window(authored_bounds)
 	_test_an_authored_door_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
 	_test_an_authored_soft_seal_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
 	_test_a_column_scene_boards_the_neighbors_window(t, runtime, city, player, baby, own_run, data)

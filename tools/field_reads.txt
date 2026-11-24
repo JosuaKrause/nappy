@@ -31,12 +31,6 @@ src/main.gd scenery_frame_locked
 src/main.gd skip_shadows
 src/main.gd trace
 
-# [CityMap] src/city/city_map.gd
-src/dev/scene_recipe_draft.gd stretch
-src/dev/scene_recipe_draft.gd stretch_active
-src/dev/scene_recipe_draft.gd tiles
-src/dev/scene_recipe_runtime.gd recipe_bounds
-
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
 src/city/city.gd kind
@@ -78,8 +72,6 @@ src/crowd/walker_strategy.gd separation
 src/dev/dev_rig.gd size
 src/dev/route_rig_planner.gd obstructed_tiles
 src/dev/route_rig_planner.gd size
-src/dev/scene_recipe_draft.gd size
-src/dev/scene_recipe_runtime.gd size
 src/events/model/dawn_phases/dawn_roadblock_count.gd size
 src/events/model/dawn_phases/ruled_roadblock_ground.gd size
 src/events/model/plan_builder.gd size

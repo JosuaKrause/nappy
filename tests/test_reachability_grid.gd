@@ -35,8 +35,7 @@ func _test_the_mask_table(t: TestRunner) -> void:
 	}
 	var slot_tiles: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
 	for mask in 16:
-		var map := CityMap.new(Vector2i(2, 2))
-		map.tiles.fill(GameEnums.TileType.BUILDING)
+		var map := _map_of(Vector2i(2, 2), GameEnums.TileType.BUILDING)
 		for slot in 4:
 			if mask & (1 << slot) != 0:
 				map.set_tile(slot_tiles[slot], GameEnums.TileType.SIDEWALK)
@@ -99,8 +98,7 @@ func _test_every_walkable_tile_has_a_node(t: TestRunner, maps: Array[CityMap]) -
 ## see two components (or, once neighbours are counted, two islands that only reconnect around
 ## the sliver) instead.
 func _test_a_sliver_building_is_not_walked_through(t: TestRunner) -> void:
-	var map := CityMap.new(Vector2i(8, 4))
-	map.tiles.fill(GameEnums.TileType.SIDEWALK)
+	var map := _map_of(Vector2i(8, 4), GameEnums.TileType.SIDEWALK)
 	# A wall down the middle column, two tiles tall — a sliver exactly one tile wide.
 	for y in 4:
 		map.set_tile(Vector2i(4, y), GameEnums.TileType.BUILDING)
@@ -142,8 +140,7 @@ func _test_a_query_sees_a_blocked_tile_the_grid_was_not_built_with(t: TestRunner
 ## tiles rather than by generation. The map is exactly the one cell, so there is no way round it:
 ## anything that reconnects NE and SW would have to be the grid seeing them as one component.
 func _test_a_diagonal_split_is_two_components(t: TestRunner) -> void:
-	var map := CityMap.new(Vector2i(2, 2))
-	map.tiles.fill(GameEnums.TileType.SIDEWALK)
+	var map := _map_of(Vector2i(2, 2), GameEnums.TileType.SIDEWALK)
 	var grid := ReachabilityGrid.build(map)
 	# Block NW and SE: NE and SW survive and are not adjacent to each other, only diagonal.
 	var blocked := {Vector2i(0, 0): true, Vector2i(1, 1): true}
@@ -160,8 +157,7 @@ func _test_a_diagonal_split_is_two_components(t: TestRunner) -> void:
 ## unreachable. Asked through the answers only: flood round one blocked tile, ask for the tiles
 ## of its cell.
 func _test_reaches_uses_the_dirty_set_flood_already_built(t: TestRunner) -> void:
-	var map := CityMap.new(Vector2i(4, 4))
-	map.tiles.fill(GameEnums.TileType.SIDEWALK)
+	var map := _map_of(Vector2i(4, 4), GameEnums.TileType.SIDEWALK)
 	var grid := ReachabilityGrid.build(map)
 	var blocked := {Vector2i(2, 2): true}
 	var reached := grid.flood([Vector2i(0, 0)], blocked)
@@ -179,3 +175,11 @@ func _test_reaches_uses_the_dirty_set_flood_already_built(t: TestRunner) -> void
 			"a reached dictionary with no dirty stash at all still answers, rather than crashing")
 	t.check(not grid.reaches(Vector2i(3, 3), blocked, bare),
 			"and only for the node it holds")
+
+## A map of `size` whose every tile is `type`.
+func _map_of(size: Vector2i, type: GameEnums.TileType) -> CityMap:
+	var map := CityMap.new(size)
+	var ground := map.tiles_snapshot()
+	ground.fill(type)
+	map.restore_tiles(ground)
+	return map

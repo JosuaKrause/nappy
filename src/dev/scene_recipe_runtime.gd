@@ -773,7 +773,7 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var going := -1.0 if column.direction == "north" else 1.0
 	var lane := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 	var top := Tuning.TILE_SIZE * 0.5
-	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
+	var bottom := map.size_in_tiles().y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	var back := at.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
 	if not is_equal_approx(at.x, lane) or at.y < top or at.y > bottom or back < top or back > bottom:
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
@@ -813,7 +813,8 @@ func _inside_extent(at: Vector2) -> bool:
 	var map: CityMap = built.map
 	if map.has_stretch():
 		return map.in_stretch(map.world_to_tile(at))
-	return not map.recipe_bounds.has_area() or map.recipe_bounds.has_point(map.world_to_tile(at))
+	var window := map.recipe_window()
+	return not window.has_area() or window.has_point(map.world_to_tile(at))
 
 ## `setup.route_bag`: the director owes her route the recipe's marbles, drawn from its rigged bag
 ## by the game's own rules (`EventDirector.start_recipe_route()`). A scene with no route bag keeps
@@ -876,8 +877,8 @@ func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
 			if not _world.city_map().in_stretch(tile):
 				return false
 		return true
-	return not _world.city_map().recipe_bounds.has_area() \
-			or _world.city_map().recipe_bounds.encloses(segment.tile_rect())
+	var window := _world.city_map().recipe_window()
+	return not window.has_area() or window.encloses(segment.tile_rect())
 
 func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 	var plans: Array[EventPlan] = []
@@ -1111,7 +1112,8 @@ func begin() -> void:
 		_zoom = zoom
 		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
-		var bounds := _world.city_map().tile_rect_to_world(Rect2i(Vector2i.ZERO, _world.city_map().size)).grow(
+		var map := _world.city_map()
+		var bounds := map.tile_rect_to_world(Rect2i(Vector2i.ZERO, map.size_in_tiles())).grow(
 				float(camera.get("landscape_margin", 0)))
 		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))
