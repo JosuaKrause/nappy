@@ -722,10 +722,11 @@ func _test_the_walk_is_handed_the_ground_the_dawn_made(t: TestRunner) -> void:
 			"a day started through the manager carries the ground the dawn made for its walk")
 
 ## **What is sited on her walk asks the ground the walk carries** (`EventsAhead.start_day()` hands
-## `WalkEvents.ground()` to the siting it makes for a plan left for her walk): a ground that counts
-## its asks is handed to the walk, the director's day is started over it again, and the siting's
-## one-time scans (`WalkSiting.prepare()`) ask it. A siting handed a ground of its own would leave
-## the count at zero.
+## `WalkEvents.ground()` to the siting it makes for a plan left for her walk): a maker that
+## records each ask is handed in (`EventManager.use_sitings()`) before the day starts, and
+## every ask it records carries the walk's own ground (`walk_events().ground()`, the same object): a
+## siting made on a ground of its own would carry another. That the siting then scans that ground is
+## `SitingMaker`'s and `WalkSiting`'s to hold, not this case's.
 func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRunner) -> void:
 	var events := _stage.events()
 	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
@@ -861,8 +862,11 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		walked["her"] = from + step * Tuning.WALK_SPEED * STEP
 		player.global_position = walked["her"]
 		return walked["elapsed"] >= Tuning.WARNING_ALONE_MAX + 1.0
-	var ticks := PhysicsTicks.ticks_for(Tuning.WARNING_ALONE_MAX + 1.0) + 2
-	await PhysicsTicks.pass_ticks(t, ticks, walk)
+	# A tick lasts `STEP` of game time (the engine's tick is longer), so the manager's clock and her
+	# walk both run at the step this case counts.
+	var scale := STEP * Engine.physics_ticks_per_second
+	var ticks := PhysicsTicks.ticks_for(Tuning.WARNING_ALONE_MAX + 1.0, scale) + 2
+	await PhysicsTicks.pass_ticks(t, ticks, walk, scale)
 	her = walked["her"]
 	var looked: int = walked["looked"]
 	var jumped: int = walked["jumped"]
@@ -895,7 +899,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 			if seen["gone"] == INF and not still_badged:
 				seen["gone"] = seen["since"]
 			return seen["since"] >= 1.0 or (seen["into_sight"] != INF and seen["gone"] != INF)
-		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(1.0) + 1, watch)
+		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(1.0, scale) + 1, watch, scale)
 		var into_sight: float = seen["into_sight"]
 		var gone: float = seen["gone"]
 		# At once from just out of sight; where its ground is further — the carriageway of a cross

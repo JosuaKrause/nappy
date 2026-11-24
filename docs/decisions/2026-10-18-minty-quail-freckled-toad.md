@@ -39,15 +39,20 @@ manager's own suites off them.
   `test_event_manager_fire.gd` 58 to 58.
 - `test_recipe_structures.gd`: the two field reads of the poster setting and the field read of the
   home-street setting hold nothing once the field is private. The home-street half could not be
-  asked of the scene's city through the maker either: on that city (the trailer-trucks recipe's
-  160 by 160 map) the ground a walk holding the home's streets is handed and the one it is not
-  handed offer the same tiles for every row of the catalogue, so the check could not fail. The rule's
-  link from the spec to the ground stays held by `test_walk_siting_spec.gd`, and which spec the scene's
-  events took by the torn-poster half, since both settings come from the one `use_the_walk_of()`.
-  `test_scene_recipe_boot.gd` drops its home-street half the same way.
-- The design's mutation that swaps `use_the_walk_of()`'s two settings fails nothing, because every
-  spec sets both alike (a day's both true, the escape's both false); each setting set always true
-  fails the three suites.
+  asked of the installed scene through the maker: on the trailer-trucks recipe's 160 by 160 map the
+  ground a walk holding the home's streets is handed and the one it is not handed differ for 22 of the
+  catalogue's 55 rows before an install (the burning building: 864 tiles against 870), but the install
+  holds the home street (`CityMap.is_held_at()` is true on it afterwards), which both rules refuse, so
+  after an install the two grounds offer the same tiles for every row (856 for the burning building) and
+  a check through `FakeSitingMaker` cannot fail there. The rule's link from the spec to the ground stays
+  held by `test_walk_siting_spec.gd`, and which spec the scene's events took by the torn-poster half,
+  since both settings come from the one `use_the_walk_of()`. `test_scene_recipe_boot.gd` drops its
+  home-street half the same way.
+- The design's mutation that swaps `use_the_walk_of()`'s two settings fails nothing: the suites use a
+  day's spec (both settings true) and the escape city's (both false), so swapping them changes no
+  answer. The escape building's spec (`DaySpec.Section.BUILDING`) sets them apart (no poster pursuer, the
+  home's streets held), and no suite runs under it, since the building has no home streets in play; a
+  case under that spec would catch the swap. Each setting set always true fails the three suites.
 - Mutations shown failing: the summons deleted from the tick (the covered-corner tap case and four
   more), `warnings.run` deleted (the cyclist's four), `use_sitings` not forwarding (the counting-ground
   and both home-street cases), the way on made before the bodies are recorded (the way-on case), the
