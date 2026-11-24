@@ -379,7 +379,7 @@ func _test_the_city_learns_where_she_settled(t: TestRunner) -> void:
 	# Asleep on calm ground records the block she is standing in.
 	_build(t)
 	_day.start(300.0)
-	var calm: Vector2i = _map.calm_blocks[0]
+	var calm: Vector2i = _map.calm_blocks_now()[0]
 	_player.global_position = _map.tile_rect_to_world(CityMap.block_rect(calm)).get_center()
 	EventBus.return_phase_started.emit()
 	t.check(GivenRun.settled_on(run, 1) == calm,

@@ -73,7 +73,7 @@ class Plan extends RouteSource:
 	var _ends: Array[Vector2] = []
 	## `open_streets`' keys, for the kerb tint's question about a tile.
 	var _open_keys := {}
-	## The escape city's street lattice (`CityMap.network`), which names the street a tile is on.
+	## The escape city's street lattice (`CityMap.street_network()`), which names the street a tile is on.
 	var _network: StreetNetwork
 
 	## Overrides RouteSource.streets_on_the_walk.

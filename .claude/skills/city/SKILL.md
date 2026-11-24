@@ -49,15 +49,15 @@ in `docs/CITY.md`, "Calm zones"). Three consequences:
   `CityMap.blocked_segments()` merges the ones it does not with today's closures. **Every route search takes that
   merged set** — one that takes only the closures will happily route down the middle of a park and
   overstate the redundancy.
-- **A block is not the unit; a lot is.** `block_plans`, `block_layouts` and `calm_blocks` are keyed
-  by the block that *anchors* a lot, so a zone is one entry with several blocks of ground. Anything
-  counting calm areas counts a zone once. `CityMap.anchor_of()` and `lot_rect()` reach its other
-  blocks.
+- **A block is not the unit; a lot is.** `block_plans`, `block_layouts` and the blocks
+  `calm_blocks_now()` answers are keyed by the block that *anchors* a lot, so a zone is one
+  entry with several blocks of ground. Anything counting calm areas counts a zone once.
+  `CityMap.anchor_of()` and `lot_rect()` reach its other blocks.
 
 **An absorbed street is calm ground, not a closure.** The tiles are park and the player walks over
 them — a zone is a shortcut as well as a destination. Only the *lattice* lost the street, which is
-why the absent streets are a set of segment keys and `closed_tiles` is a set of tiles. **Anything that
-travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
+why the absent streets are a set of segment keys and `closed_tile_set()` is a set of tiles.
+**Anything that travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 
 ## Every day stays winnable, and always has somewhere else to go
 
@@ -152,7 +152,7 @@ point somewhere** — a scheduler decision, not a change to what a closure is.
 
 ## The street hierarchy
 
-`CityGenerator._assign_street_kinds()` decides *where* (`CityMap.main_road`,
+`CityGenerator._assign_street_kinds()` decides *where* (`CityMap.main_road_corridor()`,
 `CityMap.precinct_stretches()`); `Tuning.PRECINCT_BLOCKS`, `CrowdLanes.PRECINCT_BUSYNESS`,
 `EventScheduler.EVENT_PRECINCT_WEIGHT` and `City`'s `EXCITEMENT_DECAY_*_MULTIPLIER` family decide
 *what it means*.

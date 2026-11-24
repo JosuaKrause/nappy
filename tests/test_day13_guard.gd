@@ -1173,8 +1173,8 @@ func _spots_to_walk_up_from(map: CityMap, roadblock: EventInstance) -> Array[Vec
 ## Whether two roadblocks stand on one street line: their streets run the same way along the same
 ## line of the lattice, so from out along it one stands behind the other.
 static func _on_one_street_line(map: CityMap, a: Vector2, b: Vector2) -> bool:
-	var first := map.network.segment_containing(map.world_to_tile(a))
-	var second := map.network.segment_containing(map.world_to_tile(b))
+	var first := map.street_network().segment_containing(map.world_to_tile(a))
+	var second := map.street_network().segment_containing(map.world_to_tile(b))
 	if first == null or second == null or first.horizontal != second.horizontal:
 		return false
 	return first.a.y == second.a.y if first.horizontal else first.a.x == second.a.x

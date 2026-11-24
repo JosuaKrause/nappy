@@ -599,7 +599,7 @@ func _test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t: TestR
 	for lane: int in CrowdLanes.ROAD_OFFSETS:
 		closed[Vector2i(period + Tuning.STREET_WIDTH + 2, period + lane)] = true
 		closed[Vector2i(period + lane, Tuning.STREET_WIDTH + 2)] = true
-	map.closed_tiles = closed
+	map.close_streets([FakeClosure.over_set(closed)] as Array[RoadClosure])
 	var way_on := WayOn.new(map, Navigator.new(map), ThroughRoads.over(map, Mover.vehicle()))
 	var east := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(false, 1.0))
 	var south := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(true, 1.0))
@@ -755,16 +755,16 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			lane_y = y
 			break
 	t.check(lane_y >= 0, "found an east-west lane coming to the main road")
 	if lane_y < 0:
 		return
-	var box_x := float(map.main_road * CityMap.period() * Tuning.TILE_SIZE)
+	var box_x := float(map.main_road_corridor() * CityMap.period() * Tuning.TILE_SIZE)
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
-	var junction := Vector2i(map.main_road, CityMap.junction_index(lane_y))
+	var junction := Vector2i(map.main_road_corridor(), CityMap.junction_index(lane_y))
 	# The main road's green, which is the side street's red.
 	signals.restart_cycle()
 	while not signals.green_for(junction, true):
@@ -801,7 +801,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			lane_y = y
 			break
@@ -818,24 +818,24 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 				and map.tile_at(Vector2i(c * period + Tuning.STREET_WIDTH + 4, lane_y)) \
 						== GameEnums.TileType.ROAD
 	var ordinary := -1
-	for c in range(1, map.main_road):
+	for c in range(1, map.main_road_corridor()):
 		if zebras.call(c):
 			ordinary = c
 			break
 	t.check(ordinary >= 0, "found an ordinary junction on that lane with zebras either side")
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
 	var signals := TrafficSignals.new(map)
-	var green := Vector2i(map.main_road, CityMap.junction_index(lane_y))
+	var green := Vector2i(map.main_road_corridor(), CityMap.junction_index(lane_y))
 	signals.restart_cycle()
 	while not signals.green_for(green, false):
 		signals.advance(0.25)
 	var tile := float(Tuning.TILE_SIZE)
 	var worst := -INF
 	var cases := 0
-	for c: int in [ordinary, map.main_road]:
+	for c: int in [ordinary, map.main_road_corridor()]:
 		if c < 0:
 			continue
-		var what := "the main road" if c == map.main_road else "an ordinary junction"
+		var what := "the main road" if c == map.main_road_corridor() else "an ordinary junction"
 		var low: float = float(c * period) * tile
 		for direction: float in [1.0, -1.0]:
 			var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile

@@ -23,7 +23,7 @@ func _street() -> CityMap:
 	var map := CityMap.new(Vector2i(40, 12))
 	map.fill_rect(Rect2i(0, 0, 40, 12), GameEnums.TileType.BUILDING)
 	map.fill_rect(Rect2i(0, 5, 40, 2), GameEnums.TileType.SIDEWALK)
-	map.home_rect = Rect2i(0, 5, 1, 1)
+	map.lay_home(Rect2i(0, 5, 1, 1))
 	return map
 
 ## `id` standing across the sidewalk at tile column `x`.
@@ -66,7 +66,7 @@ func _test_a_soft_seal_band_and_a_closure_are_shut(t: TestRunner) -> void:
 	t.check(not DayReach.of(map, [] as Array[EventPlan]).reaches(BEYOND),
 			"a soft seal's band across the sidewalk shuts it: the red arrow cannot walk it")
 	map.clear_day_soft_seals()
-	map.closed_tiles = band.duplicate()
+	map.close_streets([FakeClosure.over_set(band)] as Array[RoadClosure])
 	t.check(not DayReach.of(map, [] as Array[EventPlan]).reaches(BEYOND),
 			"and so does today's closure")
 
@@ -167,7 +167,7 @@ func _test_a_tile_found_by_a_longer_walk_is_walked_to_by_the_shorter(t: TestRunn
 	map.fill_rect(Rect2i(0, 1, 5, 3), GameEnums.TileType.SIDEWALK)
 	map.fill_rect(Rect2i(3, 1, 1, 1), GameEnums.TileType.BUILDING)
 	map.fill_rect(Rect2i(3, 3, 1, 1), GameEnums.TileType.BUILDING)
-	map.home_rect = Rect2i(0, 1, 1, 1)
+	map.lay_home(Rect2i(0, 1, 1, 1))
 	var way := DayReach.of(map, [] as Array[EventPlan]).way_from_home(Vector2i(4, 3))
 	t.check(way.size() == 4 + 2 + 1 and way.has(Vector2i(2, 2)),
 			"a tile first found by a walk of five steps is walked to by the walk of three, and the "

@@ -1,7 +1,7 @@
 extends RefCounted
 ## **What a real `City` hands its buildings**: `City._spawn_buildings()`'s own wiring of
 ## `is_on_home_block()`, `mark_door_span()` and `covered_ground_cols()` off `CityMap.home_block_coordinate()`,
-## `map.home_rect` and `map.is_walkable()`, and `City.assign_roof_extensions()`'s of the roof rows,
+## `map.home_tile_rect()` and `map.is_walkable()`, and `City.assign_roof_extensions()`'s of the roof rows,
 ## asked of whatever the generator actually builds across a spread of seeds, and that a dawn
 ## (`City.start_day()`) leaves every building and its collision shape as they were. What a building does with
 ## those facts once it has them (which window, door, escape or roof unit it draws) is
@@ -344,7 +344,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
 ## `City._spawn_buildings()`'s own wiring of `is_on_home_block()`, `mark_door_span()` and
-## `covered_ground_cols()` off `CityMap.home_block_coordinate()`, `map.home_rect` and `map.is_walkable()`,
+## `covered_ground_cols()` off `CityMap.home_block_coordinate()`, `map.home_tile_rect()` and `map.is_walkable()`,
 ## rather than a fixture set directly.
 func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunner) -> void:
 	var checked_non_home := 0
@@ -605,7 +605,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
 	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
 	# the station's own fronts, which the same lane offers any row that does not burn.
-	var station := CityMap.blocks_tile_rect(city.map.power_station)
+	var station := CityMap.blocks_tile_rect(city.map.power_station_blocks())
 	t.check(city.map.has_power_station(), "seed %d has a power station" % FIRE_SEED)
 	var station_fronts := 0
 	var lane_of_fronts := EventScheduler.row_ground(city.map).tiles_for(

@@ -31,7 +31,7 @@ func _map() -> CityMap:
 	var layout := BlockLayout.new()
 	layout.carve_open_ground(court)
 	map.carve_block(COURT, layout)
-	map.calm_blocks = [PARK, COURT] as Array[Vector2i]
+	map.recompute_calm(FakeCityState.new().with_calm([PARK, COURT] as Array[Vector2i]))
 	return map
 
 func _test_each_area_answers_its_own_calm_ground(t: TestRunner) -> void:
@@ -87,6 +87,6 @@ func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t: TestRunner) -> v
 			"and on a day whose narrow target is another place, with a target to reach, too")
 	t.check(CalmAreas.of(map, none, day, none).besides() == CalmAreas.NONE,
 			"and on the swing day with no swing to reach, every calm area counts")
-	map.calm_blocks = [COURT] as Array[Vector2i]
+	map.recompute_calm(FakeCityState.new().with_calm([COURT] as Array[Vector2i]))
 	t.check(CalmAreas.of(map, none, day, swing).besides() == CalmAreas.NONE,
 			"as it does once the swing's park is no longer calm")

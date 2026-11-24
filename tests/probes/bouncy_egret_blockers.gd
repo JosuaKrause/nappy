@@ -77,7 +77,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-	for segment: StreetNetwork.Segment in map.network.around_blocks(
+	for segment: StreetNetwork.Segment in map.street_network().around_blocks(
 			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
@@ -92,7 +92,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		boundary[rect.position] = true
 
 	var off_tree := 0
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if map.has_street(segment.key()) and not tree.is_on_the_tree(segment.key()):
 			off_tree += 1
 
@@ -105,7 +105,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		if map.tile_at(tile) == GameEnums.TileType.ALLEY:
 			mouths += 1
 			continue
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		if segment:
 			sealed[segment.key()] = true
 

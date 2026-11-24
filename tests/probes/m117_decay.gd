@@ -189,9 +189,9 @@ func _precinct_leg(map: CityMap) -> Array:
 
 ## A diagonal across the largest calm block, so the walk stays on grass while it paces.
 func _calm_leg(map: CityMap) -> Array:
-	if map.calm_blocks.is_empty():
+	if map.calm_blocks_now().is_empty():
 		return []
-	var rect := CityMap.block_rect(map.calm_blocks[0])
+	var rect := CityMap.block_rect(map.calm_blocks_now()[0])
 	var from := map.tile_to_world(rect.position + Vector2i.ONE)
 	var to := map.tile_to_world(rect.position + rect.size - Vector2i.ONE * 2)
 	return [from, to]

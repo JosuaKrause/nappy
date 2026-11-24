@@ -103,7 +103,7 @@ func _role_and_depth_sweep() -> void:
 				if depth == 0 and plan.role() == GameEnums.BlockerRole.FRICTION \
 						and not plan.row().moves() and plan.obstructs_within() > 0.0:
 					sum_solid_friction_on_corridor += 1
-					var segment := map.network.segment_containing(tile)
+					var segment := map.street_network().segment_containing(tile)
 					if segment:
 						crossing_streets[segment.key()] = true
 			sum_streets_with_a_crossing += crossing_streets.size()
@@ -262,7 +262,7 @@ func _candidates_without_access_filter(map: CityMap, home: StreetNetwork.Segment
 		gaps[key] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue

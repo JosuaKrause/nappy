@@ -57,7 +57,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 			var source := GroundTiles.source_for(city.map, tile, day)
 			if not (source in kerb_sources):
 				continue
-			var segment := city.map.network.segment_containing(tile)
+			var segment := city.map.street_network().segment_containing(tile)
 			if not segment:
 				continue
 			var entry: Dictionary = tiles_by_segment.get(segment.key(), {"tiles": {}, "sources": {}})
@@ -177,7 +177,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 
 	var main_road_off_tree := 0
 	for key: Vector3i in tiles_by_segment:
-		if key.z != 1 or key.x != city.map.main_road or tree.is_on_the_tree(key):
+		if key.z != 1 or key.x != city.map.main_road_corridor() or tree.is_on_the_tree(key):
 			continue
 		main_road_off_tree += 1
 		for tile: Vector2i in (tiles_by_segment[key]["tiles"] as Dictionary):
