@@ -54,14 +54,14 @@ func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = at
-	player.facing = facing
+	player.turn_to(facing)
 	var pram := player.get_node("PramCollisionShape2D") as CollisionShape2D
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
 
 func _step(engine: EventInstance, where: WhereSheIs, player: Stroller) -> void:
 	where.tell(player.global_position,
-			player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS)
+			player.global_position + player.facing_direction() * Tuning.PLAYER_BODY_RADIUS)
 	engine.step(STEP)
 	var body := _body_of(engine)
 	if body:

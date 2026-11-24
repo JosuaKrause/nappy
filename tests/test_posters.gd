@@ -124,7 +124,7 @@ func _wait_until(t: TestRunner, done: Callable, seconds: float) -> bool:
 ## `Stroller.PRAM_BODY_RADIUS`) the pram's body is against the face.
 func _stand_at(tile: Vector2i, dx: float, heading: Vector2, depth := 24.0) -> void:
 	var rect := _map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE))
-	_her.facing = Vector2.UP
+	_her.turn_to(Vector2.UP)
 	_her.teleport_to(Vector2(rect.position.x + dx, rect.position.y + depth))
 	_steer(heading)
 

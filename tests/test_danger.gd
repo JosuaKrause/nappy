@@ -373,7 +373,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t: TestRunner) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
 
-	rig.facing = Vector2.UP
+	rig.turn_to(Vector2.UP)
 	t.check(is_zero_approx(rig.baby_cue_aside()),
 			"walking north with nothing happening, the cue stays over the pram")
 	rig.warn(Stroller.Alert.SOON, 1.0, &"test")
@@ -386,7 +386,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t: TestRunner) -> void:
 	# conditional and left this one unconditional, on the true observation that walking south "above
 	# the pram" is over her own chest — which is an argument for **lifting** the cue over her head,
 	# not for pushing it off the pram sideways.
-	rig.facing = Vector2.DOWN
+	rig.turn_to(Vector2.DOWN)
 	t.check(is_zero_approx(rig.baby_cue_aside()),
 			"walking south with nothing happening, the cue also stays over the pram")
 	t.check(rig.baby_cue_lift() > Stroller.BABY_CUE_LIFT,
@@ -402,7 +402,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t: TestRunner) -> void:
 			"and it steps out of the mark's column there too, once there is a mark")
 	rig.stand_down(&"test")
 
-	rig.facing = Vector2.RIGHT
+	rig.turn_to(Vector2.RIGHT)
 	t.check(is_zero_approx(rig.baby_cue_aside()),
 			"and sideways there is nothing to step around at all")
 	t.check(is_equal_approx(rig.baby_cue_lift(), Stroller.BABY_CUE_LIFT),
@@ -419,7 +419,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t: TestRunner) -> void:
 	for facing: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT,
 			Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
 			Vector2(1, -1).normalized(), Vector2(-1, -1).normalized()]:
-		rig.facing = facing
+		rig.turn_to(facing)
 		var in_column := is_zero_approx(facing.x)
 		t.check(is_zero_approx(rig.baby_cue_aside()),
 				"facing %v with nothing happening, the cue sits on the pram" % facing)
@@ -437,7 +437,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t: TestRunner) -> void:
 func _test_the_carried_babys_cue_stays_over_her_head(t: TestRunner) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
-	rig.carrying = true
+	rig.use_carrying_rig()
 	# Just over her head: her height plus the clearance the cue keeps over a pram's art, 52px, and
 	# not a pram's height more (82px, where it floated with nothing under it).
 	var lift := Stroller.FIGURE_HEIGHT + (Stroller.BABY_CUE_LIFT - Stroller.PRAM_ART_HEIGHT)
@@ -445,7 +445,7 @@ func _test_the_carried_babys_cue_stays_over_her_head(t: TestRunner) -> void:
 	for facing: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT,
 			Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
 			Vector2(1, -1).normalized(), Vector2(-1, -1).normalized()]:
-		rig.facing = facing
+		rig.turn_to(facing)
 		t.check(is_equal_approx(rig.baby_cue_lift(), lift),
 				"carrying, facing %v the cue is over her head" % facing)
 		t.check(is_zero_approx(rig.baby_cue_aside()),

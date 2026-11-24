@@ -791,7 +791,7 @@ func step(delta: float) -> void:
 	end_the_frame(delta)
 
 ## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
-## it is in the world: a crowd body's, the one kind that gives way (`MoveProposal.yields`), reaching
+## it is in the world: a crowd body's, the one kind that gives way (`MoveProposal.gives_way()`), reaching
 ## as far round its centre as its ground shape does (set in `setup_at()`).
 var _move := MoveProposal.new(true)
 

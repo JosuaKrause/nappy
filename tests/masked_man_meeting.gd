@@ -48,7 +48,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 	var door: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
-	player.carrying = true
+	player.use_carrying_rig()
 	player.set_map(scene.map())
 	scene.add_entity(player)
 	events.use_player(player)
