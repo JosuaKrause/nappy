@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 		for i in PHASES:
 			var seen := {}
 			for d in DELAYS:
-				var r: Dictionary = rig.walk(float(i) * SPACING, float(d) * DELAY_STEP, asleep)
+				var r: Dictionary = await rig.walk(float(i) * SPACING, float(d) * DELAY_STEP, asleep)
 				if d == 0:
 					straight.append(r)
 				var key := str(r["held"])

@@ -3,8 +3,8 @@ extends RefCounted
 ## **What every live event of a world is set up in** (`EventInstance.setup()`): the map it
 ## stands on and the navigator it moves by, where she is, the world it is drawn in, the pictures
 ## and the drawer it paints through, the screen box its look is gated by, whether it draws at
-## all, where it charges its time, the run log it writes to, the lights a car of it stops at and
-## where a protest of it points its placards.
+## all, which riders are drawn as the pelican, where it charges its time, the run log it writes to,
+## the lights a car of it stops at and where a protest of it points its placards.
 ## **One value for a world's whole life**, built where the world is built and handed to its manager
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
 ## handed the same one (`EventWorld.surroundings()`). An event keeps what it read of it when it was
@@ -18,7 +18,8 @@ extends RefCounted
 ## returning the same object. It is the one place each default is stated: what is not handed is
 ## open ground with a navigator over it, a `WhereSheIs` that says she is nowhere, no world, a
 ## silent trace, the null timing sink, an atlas and a drawer of its own, a view with no screen
-## (everything is drawn), drawn, no lights, protests pointing at nothing.
+## (everything is drawn), drawn, the pelican left to the run's bag, no lights, protests pointing at
+## nothing.
 
 var _map: WorldMap = null
 var _city_map: CityMap = null
@@ -29,6 +30,7 @@ var _atlas: AtlasLibrary = null
 var _drawer: EventDrawer = null
 var _drawn_view := DrawnView.new()
 var _draws := true
+var _pelican_rig := EventSpawner.PelicanRig.BAG
 var _timing := FrameTiming.new()
 var _trace := RunTrace.new()
 var _lights: TrafficSignals = null
@@ -83,6 +85,12 @@ func shown_by(view: DrawnView) -> EventSurroundings:
 ## Nothing of it is drawn (`--skip events`).
 func drawing_nothing() -> EventSurroundings:
 	_draws = false
+	return self
+
+## Makes every rider the pelican, or none, or leaves it to the run's bag
+## (`EventSpawner.rolls_a_pelican()`): `--pelican` is `PelicanRig.ALWAYS` (`SimulationBuilder`).
+func rigging_the_pelican(rig: EventSpawner.PelicanRig) -> EventSurroundings:
+	_pelican_rig = rig
 	return self
 
 ## Where it charges its time to the frame record (`FrameTiming`).
@@ -156,6 +164,11 @@ func drawn_view() -> DrawnView:
 ## Whether it draws at all.
 func draws() -> bool:
 	return _draws
+
+## Which riders are drawn as the pelican: the run's bag's own marble unless a rig says otherwise
+## (`rigging_the_pelican()`).
+func pelican_rig() -> EventSpawner.PelicanRig:
+	return _pelican_rig
 
 ## Where it charges its time; the null sink where none was handed.
 func timing() -> FrameTiming:

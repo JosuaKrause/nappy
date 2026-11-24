@@ -254,7 +254,8 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		# The parts the builder stood are handed what the flags chose for each
 		# (`main._simulation_builder()`).
 		t.check(city != null and RunCity.events(city).world.surroundings().draws()
-				and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
+				and RunCity.events(city).world.surroundings().pelican_rig()
+				== EventSpawner.PelicanRig.ALWAYS,
 				"and the events it stands are handed theirs")
 		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
 		# that nothing but a win ends (`DayController.set_invincible()`), so a walk can take its time.
@@ -359,7 +360,8 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	t.check(entered and city.scenery_ground.pending().is_empty(),
 			"and the scenery, whose update prepares the whole load view in one frame")
 	t.check(not RunCity.events(city).world.surroundings().draws()
-			and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
+			and RunCity.events(city).world.surroundings().pelican_rig()
+			== EventSpawner.PelicanRig.ALWAYS,
 			"the events")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
 	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(

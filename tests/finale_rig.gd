@@ -593,9 +593,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 				"%s band costs nothing posted, warning, charging, left or gone (%.1f/s at most)"
 				% [name, strongest])
 		# Streamed out and back in, the plan carries the spent guard and it comes back as only the barrier.
-		stage.manager.streaming.stream_out(plan)
-		stage.manager.streaming.stream_in(plan)
-		var streamed := stage.manager.event_of(plan)
+		var streamed := stage.stream_out_and_in(plan)
 		t.check(streamed.has_lost_its_guard() and streamed.is_solid()
 				and streamed.source().contribution_at(beside) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
@@ -654,9 +652,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 		walked += 1
 	t.check(guard.get_parent().get_node_or_null("FarGuard") == null,
 			"his node goes with him (%d frames)" % walked)
-	stage.manager.streaming.stream_out(plan)
-	stage.manager.streaming.stream_in(plan)
-	var streamed := stage.manager.event_of(plan)
+	var streamed := stage.stream_out_and_in(plan)
 	await RoadblockRig.settle(t)
 	t.check(streamed.is_only_its_barrier()
 			and streamed.get_parent().get_node_or_null("FarGuard") == null,
@@ -806,12 +802,16 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	t.add_child(manager)
 	var band_plan := EventPlan.new(EventCatalogue.escape_roadblock(),
 			Vector2(1000.0, 1000.0))
-	manager.streaming.add(band_plan)
-	manager.streaming.stream_around(band_plan.placed_at())
+	manager.start_recipe([band_plan] as Array[EventPlan], DaySpec.for_day(1), 1,
+			band_plan.placed_at())
+	# The walk's own tick is off, so the only board at work is the rig's own, asked synchronously
+	# (a tick would step the band's guard first).
+	manager.set_physics_process(false)
+	var board := WarningBoard.new(manager.world)
 	var band := manager.event_of(band_plan)
 	var at: Vector2 = band.global_position + Vector2(0.0, band.heard_within() - 20.0)
 	var first := _stand_her_at(t, manager, at)
-	manager.warnings.warn_about_the_ground_she_is_on()
+	board.warn_about_the_ground_she_is_on()
 	t.check(first.alert_level() == Stroller.Alert.SOON,
 			"a posted band's guard waiting for her raises the mark inside its outer radius")
 	# Its guard noticing her, charging and shaken off, then the plan streamed out and in: the band
@@ -830,13 +830,17 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 		band.step(step)
 		frames += 1
 	t.check(band.has_given_up(), "the band's guard charges and is shaken off")
-	manager.streaming.stream_out(band_plan)
-	manager.streaming.stream_in(band_plan)
+	# Through the manager's own streaming: out beyond the radius and the hysteresis, and out of sight
+	# of the band, then back in as she comes near.
+	var beyond := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS + Tuning.OUT_OF_SIGHT
+	manager.stream_around(band_plan.placed_at() + Vector2(beyond + 100.0, 0.0))
+	t.check(manager.event_of(band_plan) == null, "the band is streamed out as she walks away")
+	manager.stream_around(band_plan.placed_at())
 	band = manager.event_of(band_plan)
 	# A stroller of her own for the spent band, so no mark of the posted one's is still up on her
 	# (a raised mark stays its hold, `WarningBoard.WARNING_HOLD`, a fresh one has none).
 	var second := _stand_her_at(t, manager, at)
-	manager.warnings.warn_about_the_ground_she_is_on()
+	board.warn_about_the_ground_she_is_on()
 	t.check(second.alert_level() == Stroller.Alert.NONE,
 			"a band whose guard has left for good raises nothing over her head")
 	for her: Stroller in [first, second]:

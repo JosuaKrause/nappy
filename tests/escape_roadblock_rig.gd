@@ -159,6 +159,10 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 class Stage extends RefCounted:
 	var world: WorldContext
 	var manager: EventManager
+	## The plans' own streaming and the spawner it makes instances through, over the manager's
+	## world: the manager never ticks, so nothing else streams them.
+	var _spawner: EventSpawner
+	var _streaming: EventStreaming
 	var _map: WorldMap
 	## Each plan stood.
 	var _stood: Array[EventPlan] = []
@@ -184,21 +188,34 @@ class Stage extends RefCounted:
 		manager.setup(run)
 		world.add_child(manager)
 		manager.set_physics_process(false)
+		_spawner = EventSpawner.new(manager.world, WarningBoard.new(manager.world))
+		_streaming = EventStreaming.new(manager.world, _spawner, WalkEvents.new())
 
 	## Puts `plan` in the world as the day's streaming does, and answers the instance, its
 	## own process off (a case that lets frames draw it turns it on).
 	func stand(plan: EventPlan) -> EventInstance:
 		_stood.append(plan)
-		manager.streaming.add(plan)
-		manager.streaming.stream_in(plan)
-		var instance := manager.event_of(plan)
+		_streaming.add(plan)
+		_streaming.stream_in(plan)
+		var instance := event_of(plan)
 		instance.set_process(false)
 		return instance
+
+	## The live instance of `plan`, null when it is out of the world.
+	func event_of(plan: EventPlan) -> EventInstance:
+		return _streaming.event_of(plan)
+
+	## Streams `plan` out of the world and in again, answering the instance streamed back in. A
+	## stage holds no player, so nothing is watching the plan go.
+	func stream_out_and_in(plan: EventPlan) -> EventInstance:
+		_streaming.stream_out(plan)
+		_streaming.stream_in(plan)
+		return event_of(plan)
 
 	## What `instance` leaves behind when it finishes, made where it stands as the spawner makes it
 	## (`EventSpawner.successor_of()`), or null for a row that leaves nothing.
 	func successor_of(instance: EventInstance) -> EventInstance:
-		var made := manager.spawner.successor_of(instance)
+		var made := _spawner.successor_of(instance)
 		if made != null:
 			_successors.append(made)
 		return made
@@ -210,7 +227,7 @@ class Stage extends RefCounted:
 		_stood.reverse()
 		for stood: EventPlan in _stood:
 			_map.release_obstruction(stood.get_instance_id())
-			var instance := manager.event_of(stood)
+			var instance := event_of(stood)
 			if instance != null and is_instance_valid(instance):
 				_map.release_obstruction(instance.get_instance_id())
 			stood.leave_the_world(stood.saved())

@@ -8,10 +8,12 @@ extends RefCounted
 ## `EventInstance` themselves, ticked the way the game ticks them; the corridor is `InteriorScene.basement_walk()`; the decay is the baby's own
 ## rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING` times the scene's
 ## `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she waits) and the
-## sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
-## `Tuning.WALK_SPEED` and held `HELD_OUT` from a vent whose body is down, which is what the
-## physics does to her at a one-tile gate. **Steam alone**: the basement's mouse, the fire and the
-## bangs are not ticked, so the figures are what the vents cost.
+## sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. A step is one real physics tick of the
+## manager, at the game's rate with the clock scaled so its delta is `STEP`, so a walk is awaited.
+## Her body is a point moving at `Tuning.WALK_SPEED` and held `HELD_OUT` from a vent whose body is
+## down, which is what the physics does to her at a one-tile gate. **Steam alone**: the basement's
+## mouse, the fire and the bangs tick with the rest but nothing of them reaches her, so the figures
+## are what the vents cost.
 ##
 ## **Timing is not a policy here.** A walk is an arrival phase and a start delay, and what decides
 ## it is which vents held her: `held` lists the vents (in the order she meets them) whose body was
@@ -27,11 +29,13 @@ const BuildingEvents := preload("res://tests/building_events.gd")
 
 var _scene: InteriorScene
 var _events: EventManager
+var _holder: Node
 ## The rig's run of its own, which its events are handed.
 var _run := RunState.new()
 var _points := PackedVector2Array()
 
 func _init(t: Node) -> void:
+	_holder = t
 	_scene = InteriorScene.new()
 	t.add_child(_scene)
 	var rng := RandomNumberGenerator.new()
@@ -54,7 +58,7 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 	var far := Vector2(1.0e6, 1.0e6)
 	var time := 0.0
 	while time < arrival:
-		_tick(far, true)
+		await _tick(far, true)
 		time += STEP
 	var sensitivity := Baby.SLEEPING_SENSITIVITY if asleep else 1.0
 	var pos := _points[0]
@@ -74,7 +78,7 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 				candidate = pos
 				if not held.has(by):
 					held.append(by)
-		var incoming := _tick(candidate, not asleep)
+		var incoming := await _tick(candidate, not asleep)
 		var rate := Baby.EXCITEMENT_DECAY_IDLE if stopped else Tuning.EXCITEMENT_DECAY_WALKING
 		var decay := rate * _scene.decay_multiplier(candidate)
 		meter = clampf(meter + (incoming * sensitivity - decay) * STEP, 0.0, Tuning.METER_MAX)
@@ -109,18 +113,17 @@ func _blow_at(vent: EventPlan) -> EventInstance:
 			return instance
 	return null
 
-## One frame of the vents alone (the fire, the bangs and the masked man are not ticked); what the
-## blows charge at `at`, per second. The manager's own repeats bring the blows on their clocks; with
-## no player in the rig the bangs outside charge nothing, and the masked man, never ticked, never
-## runs out of the shaft to come again.
+## One real tick of the manager, with her told to be at `at` (`awake`: whether the baby is); what the
+## vents' blows charge at `at`, per second. The manager's own tick retires the finished and brings
+## the blows back on their clocks, and steps the fire and the masked man too: with no player in the
+## rig nothing of them reaches her, and only the vents' charge is summed.
 func _tick(at: Vector2, awake: bool) -> float:
-	_events.streaming.retire_finished()
-	_events.streaming.bring_back_what_repeats(STEP)
-	var incoming := 0.0
 	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
+	await PhysicsTicks.pass_ticks_faster(_holder, 1, PhysicsTicks.FASTER, Callable(),
+			STEP * Engine.physics_ticks_per_second)
+	var incoming := 0.0
 	for instance in _events.instances():
 		if instance.row_id() != "basement_steam":
 			continue
-		instance.step(STEP)
 		incoming += instance.source().contribution_at(at)
 	return incoming

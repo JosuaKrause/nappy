@@ -75,10 +75,6 @@ func use_protest_target(where: Callable) -> void:
 func stream_within(radius: float) -> void:
 	streaming.stream_within(radius)
 
-## **Makes every rider the pelican, or none, or leaves it to the run's bag**
-## (`EventSpawner.rig_the_pelican()`): `--pelican` hands in `PelicanRig.ALWAYS`.
-func rig_the_pelican(rig: EventSpawner.PelicanRig) -> void:
-	spawner.rig_the_pelican(rig)
 var _hard_failed := false
 
 ## Whether falling asleep owes her a return on this walk (`DaySpec.owes_her_a_return()`), as the run flow

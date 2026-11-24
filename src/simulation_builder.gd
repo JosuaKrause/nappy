@@ -186,15 +186,14 @@ func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
 		surroundings.timed_by(_timing)
 	if _skip_event_drawing:
 		surroundings.drawing_nothing()
+	if _every_cyclist_a_pelican:
+		surroundings.rigging_the_pelican(EventSpawner.PelicanRig.ALWAYS)
 	return surroundings
 
 ## **An event manager over `surroundings`, equipped the one way for every world**: the bus it
-## reports on, and the pelican rig, which only a cyclist asks. Not yet in the tree: it takes its
-## atlas page as it enters.
+## reports on. Not yet in the tree: it takes its atlas page as it enters.
 func _new_events(surroundings: EventSurroundings) -> EventManager:
 	var events := EventManager.new(surroundings)
 	events.name = "Events"
 	events.use_bus(_bus)
-	if _every_cyclist_a_pelican:
-		events.rig_the_pelican(EventSpawner.PelicanRig.ALWAYS)
 	return events

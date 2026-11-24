@@ -108,7 +108,7 @@ func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t:
 			"%d of %d runs meet a pelican, against %.0f expected from %d cyclists in 400"
 			% [runs_with_one, SHARE_SEEDS, expected, CYCLISTS_PER_RUN])
 
-## Two managers on the same run roll the same riders, one draw per cyclist in the order they are
+## Two spawners on the same run roll the same riders, one draw per cyclist in the order they are
 ## created, whatever the day; another run rolls others.
 func _test_the_seed_decides_which_cyclist_is_the_pelican(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
@@ -121,40 +121,38 @@ func _test_the_seed_decides_which_cyclist_is_the_pelican(t: TestRunner) -> void:
 	t.check(first != other_run, "another run makes others the pelican")
 
 ## The bag is rebuilt when the run's seed or the count it was left at disagrees with it, and only
-## then: one manager kept across a new run, and across a count a lost day put back, draws what a
-## fresh manager would.
+## then: one spawner kept across a new run, and across a count a lost day put back, draws what a
+## fresh spawner would.
 func _test_the_bag_follows_the_run_and_the_count(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
-	var manager := EventManager.new()
-	manager.setup(_run)
+	var spawner := _spawner_over()
 	_new_run(11)
 	var first: Array[bool] = []
 	for _i in 400:
-		first.append(manager.spawner.rolls_a_pelican(cyclist))
+		first.append(spawner.rolls_a_pelican(cyclist))
 	var fresh_11 := _rolls_for(11, [cyclist], 400)
-	t.check(first == fresh_11, "a manager's draws are a fresh manager's")
+	t.check(first == fresh_11, "a spawner's draws are a fresh spawner's")
 	_new_run(12)
 	var other: Array[bool] = []
 	for _i in 400:
-		other.append(manager.spawner.rolls_a_pelican(cyclist))
+		other.append(spawner.rolls_a_pelican(cyclist))
 	t.check(other == _rolls_for(12, [cyclist], 400) and other != first,
-			"the same manager on another run's seed draws that run's bag")
+			"the same spawner on another run's seed draws that run's bag")
 	_new_run(12)
 	GivenRun.pelican_draws(_run, 0)
 	var again: Array[bool] = []
 	for _i in 400:
-		again.append(manager.spawner.rolls_a_pelican(cyclist))
+		again.append(spawner.rolls_a_pelican(cyclist))
 	t.check(again == other, "and a count put back to 0 starts that bag again")
 	GivenRun.pelican_draws(_run, 100)
 	var from_100: Array[bool] = []
 	for _i in 300:
-		from_100.append(manager.spawner.rolls_a_pelican(cyclist))
+		from_100.append(spawner.rolls_a_pelican(cyclist))
 	t.check(from_100 == other.slice(100), "and put back to 100 carries on from the hundredth")
-	manager.free()
 
-## `--pelican`, as the run hands it on: the configuration reads the flag, and the manager it reaches
-## (`PelicanRig.ALWAYS`, which the city sets from it) makes every cyclist the pelican while a loose
-## dog still is not, and the bag draws what it would have.
+## `--pelican`, as the run hands it on: the configuration reads the flag, and the surroundings it
+## rigs (`PelicanRig.ALWAYS`, which the city sets from it) make every cyclist the pelican while a
+## loose dog still is not, and the bag draws what it would have.
 func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var plain := _rolls_for(5, [cyclist], 40)
@@ -193,7 +191,7 @@ func _test_only_a_cyclist_draws_from_the_bag(t: TestRunner) -> void:
 
 ## *(inbox #575: "save it in the standard save file to reset the bag to the beginning of the day on
 ## a lost day".)* A lost day gives the count back to the day's dawn and a save written mid-day reads
-## it back, and a manager that meets either draws the cyclists, and the pelican, the day first drew.
+## it back, and a spawner that meets either draws the cyclists, and the pelican, the day first drew.
 func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	# Some run whose pelican is among the day's cyclists, so the comparison compares one.
@@ -235,28 +233,30 @@ func _new_run(run_seed: int) -> void:
 	_run.header().use_seed(run_seed)
 	_run.pelican().reset()
 
-## `count` answers of a fresh manager on run `run_seed`, asked for `defs` in turn, from a full bag.
+## A spawner of the suite's own over the suite's run, its surroundings rigged as `rig` says: the
+## bag is the spawner's, and no manager is asked for it.
+func _spawner_over(rig := EventSpawner.PelicanRig.BAG) -> EventSpawner:
+	var world := EventWorld.new(EventSurroundings.new().rigging_the_pelican(rig))
+	world.use_run(_run)
+	return EventSpawner.new(world, WarningBoard.new(world))
+
+## `count` answers of a fresh spawner on run `run_seed`, asked for `defs` in turn, from a full bag.
 func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
 		rig := EventSpawner.PelicanRig.BAG) -> Array[bool]:
 	_new_run(run_seed)
-	var manager := EventManager.new()
-	manager.setup(_run)
-	manager.rig_the_pelican(rig)
+	var spawner := _spawner_over(rig)
 	var answers: Array[bool] = []
 	for i in count:
-		answers.append(manager.spawner.rolls_a_pelican(defs[i % defs.size()]))
-	manager.free()
+		answers.append(spawner.rolls_a_pelican(defs[i % defs.size()]))
 	return answers
 
-## `count` answers of a fresh manager for the cyclist `def`, from wherever `_run.pelican()` stands.
+## `count` answers of a fresh spawner for the cyclist `def`, from wherever `_run.pelican()` stands.
 func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 	_run.header().use_seed(run_seed)
-	var manager := EventManager.new()
-	manager.setup(_run)
+	var spawner := _spawner_over()
 	var answers: Array[bool] = []
 	for _i in count:
-		answers.append(manager.spawner.rolls_a_pelican(def))
-	manager.free()
+		answers.append(spawner.rolls_a_pelican(def))
 	return answers
 
 ## A rider created as the pelican, through the path every cyclist takes (`spawn_warned()`, handed
@@ -410,7 +410,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	var owed := events.start_recipe_route(["cyclist"], ["cyclist"], 1, 0.0)
 	t.check(owed == 1, "the director owes her the one cyclist (%d)" % owed)
 	var before := events.instances().size()
-	events.rig_the_pelican(EventSpawner.PelicanRig.ALWAYS)
+	events.world.surroundings().rigging_the_pelican(EventSpawner.PelicanRig.ALWAYS)
 	# A lambda holds its own copy of a local, so the warning is carried out in an array.
 	var sent: Array[PendingWarning] = []
 	var walk := func(_n: int) -> void:
@@ -427,7 +427,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 		await PhysicsTicks.pass_ticks(t, 1, walk)
 		walked += 1
 	var warning: PendingWarning = sent[0] if not sent.is_empty() else null
-	events.rig_the_pelican(EventSpawner.PelicanRig.BAG)
+	events.world.surroundings().rigging_the_pelican(EventSpawner.PelicanRig.BAG)
 	stroller.velocity = Vector2.ZERO
 	t.check(warning != null and warning.logged_name() == "pelican",
 			"the roll is made as the warning goes up, so the warning is already the pelican's")
