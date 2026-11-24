@@ -35,11 +35,11 @@ var _size := Vector2i.ZERO
 ## What stands on the ground today — a precinct's posts, the closures, the soft seals and every
 ## stationary solid body — as the one record every mover asks through `passable()`
 ## (`BlockedLayer`). The ground's own type is the map's (`_ground_lets()`).
-var blocked := BlockedLayer.new()
-## Every tile `blocked` holds in `layers` (`Mover`'s layer bits), as one set: the ground a flood
+var _blocked := BlockedLayer.new()
+## Every tile the blocked record holds in `layers` (`Mover`'s layer bits), as one set: the ground a flood
 ## over another grid is handed as shut (`BlockedLayer.tiles_of()`).
 func tiles_shut_to(layers: int) -> Dictionary:
-	return blocked.tiles_of(layers)
+	return _blocked.tiles_of(layers)
 
 ## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked,
 ## then committed (`MoveProposal`): the one list a pass over every mover's proposal goes over. A
@@ -153,41 +153,41 @@ func walkable_lut() -> PackedByteArray:
 ## **Whether `mover` may stand on `tile`**: the one question every step, line, flood and placement
 ## asks of the ground, for the layers the mover names (`Mover`). The ground's own type, a post and
 ## street ground are the map as built (`_ground_lets()`); today's closures, soft seals and bodies are
-## the day's record (`blocked`).
+## the day's blocked record.
 func passable(tile: Vector2i, mover: Mover) -> bool:
 	var layers := mover.layers_blocked()
-	return _ground_lets(tile, layers) and not blocked.blocks(tile, layers & Mover.TODAY)
+	return _ground_lets(tile, layers) and not _blocked.blocks(tile, layers & Mover.TODAY)
 
 ## Tiles a stationary solid body stands on today, as tile -> how many bodies stand there
 ## (`BlockedLayer.todays_body_tiles()`).
 func obstructed_tiles() -> Dictionary:
-	return blocked.todays_body_tiles()
+	return _blocked.todays_body_tiles()
 
 ## Whether any stationary solid body stands on a tile today.
 func has_solid_bodies() -> bool:
-	return not blocked.todays_body_tiles().is_empty()
+	return not _blocked.todays_body_tiles().is_empty()
 
 ## Changes whenever a tile enters or leaves `obstructed_tiles()`: a version a reader compares
 ## with the one its own answer was built from (`BlockedLayer.body_ground_changes()`).
 func obstruction_version() -> int:
-	return blocked.body_ground_changes()
+	return _blocked.body_ground_changes()
 
 ## Clears today's solid bodies, once a day.
 func clear_day_obstructions() -> void:
-	blocked.clear_bodies()
+	_blocked.clear_bodies()
 
 ## Records one body's footprint under `owner`, an `Object.get_instance_id()` handed back later to
 ## `release_obstruction()`.
 func obstruct_tiles(owner: int, tiles_covered: Array[Vector2i]) -> void:
-	blocked.obstruct(owner, tiles_covered)
+	_blocked.obstruct(owner, tiles_covered)
 
 ## Gives one body's footprint back; an unknown owner is a no-op.
 func release_obstruction(owner: int) -> void:
-	blocked.release(owner)
+	_blocked.release(owner)
 
 ## Whether a stationary solid body is standing on a tile today.
 func is_obstructed(tile: Vector2i) -> bool:
-	return blocked.todays_body_tiles().has(tile)
+	return _blocked.todays_body_tiles().has(tile)
 
 # ---------------------------------------------------------------------- lines ---
 
@@ -230,7 +230,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 	if not _ground_lets(tile, layers) and _ground_stops(tile, layers, from, to):
 		return false
 	# Inside a solid of the day's it starts in: those layers are not asked until it is out.
-	var leaving := today != 0 and blocked.blocks(tile, today) and not own_tiles.has(tile)
+	var leaving := today != 0 and _blocked.blocks(tile, today) and not own_tiles.has(tile)
 	var last := world_to_tile(to)
 	var delta := to - from
 	var tile_size := float(Tuning.TILE_SIZE)
@@ -252,7 +252,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 			for side: Vector2i in [tile + Vector2i(step.x, 0), tile + Vector2i(0, step.y)]:
 				if not _ground_lets(side, layers) and _ground_stops(side, layers, from, to):
 					return false
-				if today != 0 and not leaving and blocked.blocks(side, today) \
+				if today != 0 and not leaving and _blocked.blocks(side, today) \
 						and not own_tiles.has(side) and not (to_somebody and side == last):
 					return false
 			tile += step
@@ -268,7 +268,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 			return false
 		if today == 0:
 			continue
-		if not blocked.blocks(tile, today) or own_tiles.has(tile):
+		if not _blocked.blocks(tile, today) or own_tiles.has(tile):
 			leaving = false
 		elif not leaving and not (to_somebody and tile == last):
 			return false
@@ -283,7 +283,7 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := PackedInt32Array()
 	ground.resize(_size.x * _size.y)
 	ground.fill(UNREACHED)
-	blocked.lay_out(ground, _size.x, _size.y, mover.layers_blocked(), BLOCKED)
+	_blocked.lay_out(ground, _size.x, _size.y, mover.layers_blocked(), BLOCKED)
 	return ground
 
 # ---------------------------------------------------------------------- walls ---

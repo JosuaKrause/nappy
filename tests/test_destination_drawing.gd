@@ -27,14 +27,18 @@ func _test_only_a_pickup_draws_a_mark_and_a_done_one_keeps_its_touched_picture(t
 		if step.is_pickup:
 			pickups += 1
 			t.check(contact.draws_a_mark(), "day %d: the mark on offer draws its chalk" % step.day)
+			t.check(not contact.is_finished(), "day %d: the mark on offer is not done" % step.day)
 			contact.complete_now()
+			t.check(contact.is_finished(), "day %d: the read mark is done" % step.day)
 			t.check(contact.draws_a_mark(),
 					"day %d: the read mark keeps its touched picture" % step.day)
 		else:
 			tasks += 1
 			t.check(not contact.draws_a_mark(),
 					"day %d: the task's destination draws no chalk" % step.day)
+			t.check(not contact.is_finished(), "day %d: the task is not done" % step.day)
 			contact.complete_now()
+			t.check(contact.is_finished(), "day %d: the task is done" % step.day)
 			t.check(not contact.draws_a_mark(),
 					"day %d: a done task draws no touched chalk" % step.day)
 		contact.free()

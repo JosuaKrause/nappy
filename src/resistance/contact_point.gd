@@ -229,10 +229,9 @@ func draws_a_mark() -> bool:
 
 ## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once the task is
 ## done, drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this
-## node's own position the way the code-drawn circle and cross used to be centred on
-## `Vector2.ZERO`. "A picture is an asset, never code": the mark no longer strokes an arc and two lines by
-## hand, and the two prepared pictures already carry the same 11px-radius circle and cross at
-## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
+## node's own position. "A picture is an asset, never code": the mark is a prepared picture, and
+## the two pictures carry the 11px-radius circle and cross at the 32×32 scale, so its size and
+## its reading on the pavement come from the art.
 func _draw_chalk() -> void:
 	var picture := MARK_TOUCHED if _is_done else MARK
 	var texture := _atlas.region(picture)

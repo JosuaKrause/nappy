@@ -707,8 +707,9 @@ func _out_of_view() -> bool:
 ## the radius a played day recycles beyond is not enough: nothing may appear or vanish where she can
 ## see it *(the player's rule, PR #597)*. True when no part of a body standing at `at` (`room`
 ## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the square
-## `CrowdView.beyond_every_view()` describes. The camera is the crowd's `view`; with none, or with
-## the agent out of the tree — a rig that steps agents by hand — the played day's radius answers.
+## `CrowdView.beyond_every_view()` describes. The camera is the screen the crowd hands in
+## (`use_crowd_parts()`); with none, or with the agent out of the tree — a rig that steps agents by
+## hand — the played day's radius answers.
 func beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 	if _view == null or not is_inside_tree():
 		return at.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT

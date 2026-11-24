@@ -1540,7 +1540,7 @@ what `closed_tile_set()` holds.
 - The **resistance** never puts a contact behind one. Steps expire, so that would silently
   cost a run its good ending.
 - **Every figure that moves** is stopped by it as she is. `closed_tile_set()` is one layer of
-  the map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts,
+  the map's one blocked record (a `BlockedLayer` the map holds), beside a precinct's posts,
   the soft seals and the stationary bodies; every step, walk, line and way a figure takes is
   asked of that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves
   by), so a dog, a bike or a pursuer never walks through a closure's barrier, and a closure's
