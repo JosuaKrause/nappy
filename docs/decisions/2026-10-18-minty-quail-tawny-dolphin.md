@@ -13,9 +13,12 @@ still watch its trace through `use_trace()` and the touch controls their rotatio
 only by `equip()` and `use_run()`, as the design says until C7, but the scene recipe runtime no longer
 reads them (D1 stopped that), so the only readers left are tests, and `check_test_only_members.py` fails
 them. They take three `[kept]` lines as deferrals, ending when the suites hold their own run, trace and
-library (C6a, C6b). Typing `city.gd` also unmasked two members the check had counted as read through an
-untyped `.clear()` in `city.gd`: `SceneryGround.clear` and `EventManager.clear`, read only by measuring
-probes; each takes a `[kept]` line with its reason, and a reviewer may prefer to rewrite the probes.
+library (C6a, C6b). Typing `city.gd` also unmasked two members the check had counted as read through an untyped `.clear()`
+in `city.gd`: `SceneryGround.clear`, read only by measuring probes and one residency suite, which takes a
+`[kept]` line listing every reader, and `EventManager.clear`, which becomes `_clear`: its suite and probe callers
+call `stand_down()`, the public end of a walk (`test_masts.gd` turns the manager's physics back on after it, since
+it runs the masts as a day). `City.build()` no longer makes a library when none was handed: it asserts that
+`equip()` came first, which a suite cannot catch (an assert stops the run), so no check holds it.
 
 **The frame lock's check.** The design breaks `immediate = immediate or _frame_locked` in `update()`; a check
 after one update does not fail on that, since an update's first call prepares what it shows whether or not

@@ -261,7 +261,7 @@ func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Ar
 ## (so the planning sees the map without yesterday's holds and bodies) and takes the walk's settings.
 func _begin(spec: DaySpec) -> void:
 	_recipe_plan = false
-	clear()
+	_clear()
 	set_physics_process(true)
 	_hard_failed = false
 	_struck_by = ""
@@ -352,7 +352,7 @@ func calm_as_the_map_stands() -> CalmAreas:
 ## she has walked out of its service exit into the city. Every instance goes, its charge counted cut
 ## short, and nothing comes again until a walk is started here once more (`start_day()`).
 func stand_down() -> void:
-	clear()
+	_clear()
 	set_physics_process(false)
 
 ## **The walk's own settings, out of the spec the run flow hands in**: whether falling asleep owes
@@ -370,14 +370,14 @@ func use_the_spec(spec: DaySpec) -> void:
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
 ## report_the_charge_cut_short()`): asked by `DayDirector.finish_day()` as a day ends, before the
-## day's own end is counted, and by `clear()` for anything a section's end leaves running. A charge
+## day's own end is counted, and by `_clear()` for anything a section's end leaves running. A charge
 ## that caught her, or is over, has already ended and is not counted twice. Telemetry only.
 func end_the_charges_still_running() -> void:
 	for instance in world.instances():
 		if is_instance_valid(instance):
 			instance.report_the_charge_cut_short()
 
-func clear() -> void:
+func _clear() -> void:
 	# The last walk's word is nobody's now: an event streamed in before the new walk's first word
 	# hears nowhere, not where she stood at the end of the last one.
 	world.where_she_is().forget()

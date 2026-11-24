@@ -217,8 +217,8 @@ var run: RunState = null
 var _ground_recipe := GroundRecipe.new()
 ## The baked atlas pages this city and everything it builds draw from (`AtlasLibrary`):
 ## `equip()` hands the sitting's, and the city hands it on to its buildings, props,
-## exits, lights, markers, ground and decals. A city nobody handed one (a suite's) makes its own in
-## `build()`.
+## exits, lights, markers, ground and decals. `main` and `RunCity` hand it in; `build()` refuses a
+## city never equipped.
 var atlas: AtlasLibrary = null
 ## What the decals and every vent's turning rotor lay their pictures through (`SceneryDrawer`):
 ## the one drawer, handed to the decals and, inside the roof drawer, to every building.
@@ -322,8 +322,7 @@ func build(city_map: CityMap) -> void:
 	if run == null:
 		push_error("City.build(): the run must be handed in first")
 		return
-	if atlas == null:
-		atlas = AtlasLibrary.new()
+	assert(atlas != null, "City.build(): equip() must hand the city its library first")
 	map = city_map
 	_navigator = Navigator.new(map)
 	scenery = SceneryResidency.new()

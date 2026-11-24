@@ -196,13 +196,13 @@ func _test_the_manager_holds_its_page_for_its_own_life(t: TestRunner) -> void:
 	_start_a_day(manager, 1)
 	t.check(pages.loads(group) == 1 and pages.releases(group) == 0,
 			"a day's events draw on the page the manager holds, reading nothing more")
-	manager.clear()
+	manager.stand_down()
 	t.check(pages.releases(group) == 0,
 			"clearing the day keeps the page held rather than releasing and reloading it")
 	_start_a_day(manager, 2)
 	t.check(pages.loads(group) == 1 and pages.releases(group) == 0,
 			"and a second day starts on the same page (%d loads)" % pages.loads(group))
-	manager.clear()
+	manager.stand_down()
 	manager.free()
 	t.check(pages.releases(group) == 1,
 			"freeing the manager is what finally gives the page back, with no reference left over")

@@ -176,8 +176,9 @@ func _close() -> void:
 	_restart_button.cancel_hold()
 
 ## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in from
-## `main`, because `TouchControls` is the only file `main._apply_orientation()` reaches with a
-## `rotated` property and this screen is not on that list (see `TouchControls._rotated`'s own doc).
+## `main`, because `main._apply_orientation()` hands its answer (`use_rotated()`) to the touch
+## controls, the edge badge and the arrows, and this screen is not on that list (see
+## `TouchControls._rotated`'s own doc).
 ## `ScreenOrientation.wants_rotation()` is a pure function of the same two facts `main` itself asks
 ## it with, so recomputing it here needs no wire of its own.
 func _wants_rotation() -> bool:

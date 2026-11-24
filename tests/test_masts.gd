@@ -45,7 +45,10 @@ func run(t: TestRunner) -> void:
 ## each, the two a site carries. The manager's streaming takes them as it takes a day's, and the
 ## dawn's own choice of them is `test_events_scheduler.gd`'s.
 func _start(with_the_announcement := false) -> void:
-	_manager.clear()
+	_manager.stand_down()
+	# The masts are the day the manager runs from here, so its physics (which standing down stops)
+	# runs again, as `start_day()` does for a day.
+	_manager.set_physics_process(true)
 	var loudspeaker := EventCatalogue.mast()
 	for site in _sites():
 		var mast := EventPlan.new(loudspeaker, site.foot())

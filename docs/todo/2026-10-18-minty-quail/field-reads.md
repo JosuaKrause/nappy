@@ -58,9 +58,8 @@ three typing warnings (`untyped_declaration`, `unsafe_property_access`, `unsafe_
 errors. What remains is this item's own conversion, which predates the design review.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the files open work rewrites, typed by that work or after it:
+is the two scene recipe files, typed by open work or after it:
 
-- The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
 

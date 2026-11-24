@@ -250,13 +250,13 @@ func controls_mode() -> ControlsMode.Mode:
 	return _mode
 
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
-## `ScreenOrientation`. Handed in (`use_rotated()`) rather than asked here, the same way `_touch` is a read
-## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
-## place that knows the window's own shape, and the pause button's own touch handling goes through
-## `ScreenOrientation.to_design_space()` with this flag before comparing a raw press to
-## `PAUSE_CENTRE`, which stays authored in the unrotated 1280x720 box regardless. A direction press
-## needs no such remap — it is turned straight into a world position through the viewport's own
-## canvas transform, which already carries the rotation.
+## `ScreenOrientation`. Handed in (`use_rotated()`) rather than asked here, the same way `_touch`
+## is a read of a platform fact rather than a query at each use site:
+## `main._apply_orientation()` is the one place that knows the window's own shape, and the pause
+## button's own touch handling goes through `ScreenOrientation.to_design_space()` with this flag
+## before comparing a raw press to `PAUSE_CENTRE`, which stays authored in the unrotated 1280x720
+## box regardless. A direction press needs no such remap — it is turned straight into a world
+## position through the viewport's own canvas transform, which already carries the rotation.
 var _rotated := false
 
 ## Hands the controls whether the window presents rotated: `main` hands its answer at boot and

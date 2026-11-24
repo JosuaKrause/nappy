@@ -320,14 +320,18 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	# The frame lock reaches the residency: an ordinary update under the stepped mode, after the
 	# view's first (which prepares what it shows wherever it stands), prepares the whole ground
 	# region that enters the load view in that one call, where an unlocked residency queues it.
+	# The view stands in the map's far south-east, away from the doorstep, with the load view's east
+	# edge a few pixels short of a region's border, which the second update's step then crosses.
 	var chunk := SceneryGround.CHUNK_PX
-	var first := Rect2(-150.0 * chunk - 8.0 - 640.0 - SceneryResidency.LOAD_MARGIN, -20000.0,
+	var far := Vector2(city.map.size_in_tiles()) * Tuning.TILE_SIZE * 0.75
+	var border := floorf(far.x / chunk)
+	var first := Rect2(border * chunk - 8.0 - 640.0 - SceneryResidency.LOAD_MARGIN, far.y,
 			640.0, 480.0)
 	city.scenery.update(first)
 	city.scenery.update(Rect2(first.position + Vector2(64.0, 0.0), first.size))
 	var entered := false
 	for key: Vector2i in city.scenery_ground.chunks():
-		entered = entered or key.x == -150
+		entered = entered or key.x == int(border)
 	t.check(entered and city.scenery_ground.pending().is_empty(),
 			"and the scenery, whose update prepares the whole load view in one frame")
 	t.check(not RunCity.events(city).world.surroundings().draws()

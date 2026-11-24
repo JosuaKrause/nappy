@@ -79,7 +79,7 @@ func run(t: TestRunner) -> void:
 							("seed %d, day %d, %s walk, repetition %d: the split step changes every "
 							+ "event, agent and meter exactly as the real one")
 							% [city_seed, day, walk, repetition])
-		RunCity.events(city).clear()
+		RunCity.events(city).stand_down()
 		RunCity.crowd(city)._player = null
 		RunCity.crowd(city).use_focus(null)
 		city.free()
