@@ -343,7 +343,7 @@ func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built
 	var views_handed := _views_of(handed)
 	var views_over_corridor := _views_of(over_its_corridor)
 	t.check(views_over_corridor != _views_of(with_no_corridor),
-			"fixture: on this scene a layout with no corridor tells the locations' views differently")
+			"fixture: on this scene a layout with no corridor tells the views differently")
 	t.check(not views_handed.is_empty() and views_handed == views_over_corridor,
 			"and the locations are the ones laid out over its corridor, with its views (%d)"
 			% views_handed.size())
@@ -360,8 +360,8 @@ func _test_the_walk_is_handed_the_scenes_tree_and_locations(t: TestRunner, built
 			"a scene with no route tree hands the walk neither: %s" % [bare_errors])
 	_free(treeless)
 
-## The view each of `locations`' locations has of the routes, in the order they are laid out: what
-## a layout over a corridor tells that one with no corridor does not. Empty for none.
+## The view each of `locations`' locations has of the routes, in the order they are laid out:
+## what a layout over a corridor tells that one with no corridor does not. Empty for none.
 func _views_of(locations: DayLocations) -> Array[int]:
 	var views: Array[int] = []
 	if locations == null:
