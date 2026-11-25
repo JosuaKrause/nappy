@@ -51,9 +51,10 @@ count as over.
 
 ## What became of the README's standing readings
 
-- **"No legacy shape is kept" (minty-dolphin #852)** is a standing design rule, the orchestrator's
-  ruling, and is carried into designing-classes ("Code is designed by layer"), with its reading
-  beyond the player's general words listed under "Proposed, not asked for".
+- **"A legacy implementation never holds back a clean design" (minty-dolphin #852)** is a standing
+  design rule, the orchestrator's ruling, and is carried into designing-classes ("Code is designed
+  by layer"), with its reading beyond the player's general words listed under "Proposed, not asked
+  for".
 - **"The parts end up independent; sequential now is fine" (minty-dolphin #845)** was this refactor's
   and is done: its parts are independent, and it ends here as history.
 - **"Nothing else is worked on until the refactor is done" (inbox #1210 in gentle-owl)** lifts with
@@ -80,10 +81,10 @@ count as over.
   API'" states the check's mechanism in the present tense (it fails any new read of another class's
   field, a file never gains the opt-out line, and it fails a read through a receiver whose class it
   cannot tell in every file under `src/`); the "Proposed" bullets say the same.
-- *Also:* "No legacy shape is kept" (minty-dolphin #852) is stated in the section; the "Proposed" bullet
+- *Also:* "A legacy implementation never holds back a clean design" (minty-dolphin #852) is stated in the section; the "Proposed" bullet
   on the unknown-receiver check is gone, since that behavior is the approved design's; and
   orchestrating's two sentences about the fence that keeps other work waiting "until the refactor is
-  done" now speak of a refactor entry in general.
+  done" now speak of the player having put one entry first.
 - *Showed at:* this closing pull request, the moment the entry's README said it would.
 
 **godot "Types" and its rare-traps reference, writing-tests, verify and using-tools** carried

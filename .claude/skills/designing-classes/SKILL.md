@@ -64,9 +64,8 @@ layer of the thing it draws. A fix lands in the shared mechanism rather than a b
 on one row's id or picture; new code follows these layers; a brief names the layer its work belongs
 to.
 
-**No legacy shape is kept** (minty-dolphin #852). A clean design is not held back by an old one: an
-old path, a forwarder kept for an old name so callers or tests need not change, or a rule that holds
-only "in practice" is replaced, not kept beside the new design.
+**A legacy implementation never holds back a clean design** (minty-dolphin #852): the clean design
+is established, and the old implementation is replaced, not kept beside it.
 
 **Code that nothing reaches is deleted, not kept, and so is code that only serves a feature the game
 no longer has** (inbox #1180 in gray-dolphin). It costs maintenance, and it misleads whoever reads it, an agent
@@ -210,9 +209,10 @@ that proposes it, and says so where the player's words name nothing on the point
   draws**, proposed by the layer map's builder (minty-quail-35). The player's words on the layers
   (inbox #904 in freckled-moose) decide the siblings and the map lookup, and name neither of
   these.
-- **"No legacy shape is kept" covers an old path, a forwarder kept for an old name and a rule that
-  holds only "in practice"**, the refactor entry's reading of minty-dolphin #852, whose words are
-  general: not to let legacy implementations prevent a clean design.
+- **"A legacy implementation never holds back a clean design" covers an old path, a forwarder kept
+  for an old name so callers or tests need not change, and a rule that holds only "in practice"**,
+  the filer's reading of minty-dolphin #852, whose words are general: not to let legacy
+  implementations prevent a clean design.
 - **A member a test holds on purpose is not deleted as unreached**, a reading of inbox #1180 in
   gray-dolphin.
 - **One interface and composition for anything many classes use, not only events**, a reading of
