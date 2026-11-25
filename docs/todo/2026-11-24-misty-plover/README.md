@@ -1,4 +1,5 @@
 priority: now
+after: 2026-10-18-minty-quail
 after: 2026-11-24-calm-hare
 
 # misty-plover — The escape's army trucks on her route are sent ahead of her · filed 2026-11-24
@@ -14,8 +15,9 @@ escape's bag) on her route are sent ahead of her as she walks, as a day's convoy
 #1460), and the barriers drawn as trucks that seal the streets off her walk stay placed at dawn as
 off-route blockades. The board pick, to keep them placed, is overturned by this answer.
 
-**Band and order, the filer's proposal:** `now`, the band of a note from playing, after calm-hare
-(the event director ignores the escape's settings), since the trucks are sent through the hand-off of
+**Band and order, the filer's proposal:** `now`, the band of a note from playing, after minty-quail
+(the refactor rule: nothing else is built until it closes, inbox #1210 in gentle-owl) and after
+calm-hare (the event director ignores the escape's settings), since the trucks are sent through the hand-off of
 the escape's spec to the director that entry builds. A filer never proposes `bug`
 (**playtest-feedback**).
 

@@ -5,8 +5,10 @@ implemented through the regular game engine's means" (inbox #785 in minty-lemur)
 no dog walkers in escape it's not a calm night where people walk their dogs" (inbox #1733 in
 spry-ferret).
 
-**Build, in one line:** the escape's day spec says what the director may send her (its ordinary
-rows nothing, and what the entry misty-plover adds), `EventsAhead.start_a_given_walk()` hands that to `EventDirector.start_day()`, and
+**Build, in one line:** the escape's day spec says what the director may send her (either none of an
+ordinary day's rows or a bag of its own, which is open below, and the army trucks on her route that
+the entry misty-plover adds), `EventsAhead.start_a_given_walk()` hands that to
+`EventDirector.start_day()`, and
 the day number stops deciding it: the route bag, the day-one rig and the sprinkled charging dog
 follow the walk's settings, so the escape city sends no dog walker on day 1 (the direct boot) and
 no charging dog on day 14 (from a run), and an ordinary day is unchanged.
