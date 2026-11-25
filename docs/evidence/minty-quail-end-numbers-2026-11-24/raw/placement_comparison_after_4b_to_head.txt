@@ -1,0 +1,15 @@
+(b) Outside 2σ pooled over all 18 cities (90210+31i (18)), events per city per day, after-4b → head:
+
+(c) Outside 2σ on at least two samples with the same sign (z per sample in the order of (b)):
+
+Summary, pooled over all 18 cities:
+- walls by view, on her route: 13.00 → 13.00 (+0%, z +0.0)
+- walls by view, route-adjacent: 23.89 → 23.89 (+0%, z +0.0)
+- walls by view, off the route: 21.58 → 21.58 (+0%, z +0.0)
+- friction by view, on her route: 6.57 → 6.57 (+0%, z +0.0)
+- friction by view, route-adjacent: 3.35 → 3.35 (+0%, z +0.0)
+- friction by view, off the route: 20.54 → 20.54 (+0%, z +0.0)
+- each row per kind of ground: 42 cells, every cell main or head has, from +0% (abduction junction) to +0% (roadblock carriageway); within 2σ, from +0% to +0%
+- each row per view: 55 cells, every cell main or head has, from +0% (abduction off the route) to +0% (roadblock route-adjacent); within 2σ, from +0% to +0%
+
+Cells compared: 476. Outside 2σ pooled: 0. Outside on two samples or more, same sign: 0.
