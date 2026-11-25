@@ -1,0 +1,15 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[test_events_pursuit] 'charging_dog' (stands), one radius 130px, warns 2.0s: walked in, warned 2.02s and charged at 65px; stood, charged at 118px; baited, closest 68px, got away; answered at the charge, closest 107px; walked away from the charge, caught 2.28s after it
+[test_events_pursuit] 'roadblock' (stands), one radius 180px, warns 2.0s: walked in, warned 2.02s and charged at 61px; stood, charged at 122px; baited, closest 72px, got away; answered at the charge, closest 111px; walked away from the charge, caught 2.33s after it
+[test_events_pursuit] 'alley_robbery' (walks), one radius 180px, warns 2.0s: walked in, warned 2.02s and charged at 31px; stood, charged at 114px; baited, closest 64px, got away; answered at the charge, closest 103px; walked away from the charge, caught 2.18s after it
+[test_events_pursuit] robber 20px into the alley, walked past: never charged, waiting again: true
+[test_events_pursuit] robber 40px into the alley, walked past: never charged, waiting again: true
+[test_events_pursuit] robber 60px into the alley, walked past: never charged, waiting again: true
+[test_events_pursuit] robber 90px into the alley, walked past: never charged, waiting again: true
+[test_events_pursuit] a walk past the alley mouth is charged at 0 of 4 depths
+-- test_events_pursuit.gd                  1945 ms
+
+290 checks, 0 failures
+PARTIAL RUN — only suites matching test_events_pursuit. Not a green build.

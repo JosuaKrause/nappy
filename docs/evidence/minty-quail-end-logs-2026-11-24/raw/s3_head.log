@@ -1,0 +1,130 @@
+nappy rig log  2026-11-24T21:03:52  version v0.29.2-714-gf98443b5b-dirty
+   0.0  texture  atlas page 'ui' loaded in the escape: 1.5 ms, 392 x 392
+   0.0  texture  atlas page 'stroller' loaded in the escape: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the escape: 2.9 ms, 570 x 394
+   0.0  texture  atlas page 'street_kit' loaded in the escape: 2.0 ms, 436 x 260
+   0.0  texture  atlas page 'ground' loaded in the escape: 1.5 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the escape: 1.1 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the escape: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the escape: 12.3 ms, 801 x 1100
+   0.0  texture  atlas page 'interior' loaded in the escape: 1.4 ms, 428 x 326
+   0.0  texture  atlas page 'mother' loaded in the escape: 1.1 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.9 ms
+
+day 16 Escape the city  run seed 4242  length 180.0s
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 21.6 ms
+   0.0  plan     every unit drawn before she sets off: 32 units, 20 rows
+   0.0  plan     finale: tunnel via 3 calm, 133 cells | bridge via 3 calm, 121 cells | 32 open streets, 628 placements
+   0.0  start    entered the city at (75,80), facing 180°
+   0.0  near     military_convoy (telegraph) at (72,81), 101px, exc 0, in 0.0/s (crowd 0.0, events 5.2), sleep 100
+   0.0  near     finale_explosion (telegraph) at (73,94), 453px, exc 0, in 0.0/s (crowd 0.0, events 5.2), sleep 100
+   0.7  frame    fps 6, worst frame 249.1ms, draws 0, objects 0, primitives 0, process 7.82ms, physics 211.56ms
+   1.6  near     abduction (telegraph) at (75,68), 248px, exc 0, in 1.8/s (crowd 0.0, events 3.3), sleep 100
+   1.8  frame    fps 114, worst frame 19.9ms, draws 0, objects 0, primitives 0, process 4.58ms, physics 15.46ms
+   2.8  frame    fps 143, worst frame 19.8ms, draws 0, objects 0, primitives 0, process 4.08ms, physics 15.97ms
+   2.8  near     abduction (telegraph) at (75,68), 135px, exc 0, in 3.1/s (crowd 0.0, events 5.6), sleep 100
+   3.8  frame    fps 142, worst frame 20.7ms, draws 0, objects 0, primitives 0, process 4.81ms, physics 16.08ms
+   4.1  taken    'abduction' takes a bystander
+   4.8  frame    fps 145, worst frame 21.0ms, draws 0, objects 0, primitives 0, process 4.51ms, physics 16.43ms
+   5.0  cue      the mark over her head: soon for 3.4s (0.0s of it on the road) | abduction 248px
+   5.8  frame    fps 141, worst frame 21.0ms, draws 0, objects 0, primitives 0, process 5.41ms, physics 16.51ms
+   6.8  frame    fps 142, worst frame 26.9ms, draws 0, objects 0, primitives 0, process 6.32ms, physics 21.69ms
+   7.8  frame    fps 130, worst frame 38.0ms, draws 0, objects 0, primitives 0, process 30.89ms, physics 33.20ms
+   8.6  cross    stepped into the road at (71,59), at a zebra
+   8.8  frame    fps 139, worst frame 27.5ms, draws 0, objects 0, primitives 0, process 11.98ms, physics 20.56ms
+   9.8  frame    fps 138, worst frame 18.7ms, draws 0, objects 0, primitives 0, process 20.56ms, physics 22.79ms
+  10.8  frame    fps 143, worst frame 18.7ms, draws 0, objects 0, primitives 0, process 6.31ms, physics 15.11ms
+  11.8  frame    fps 143, worst frame 21.0ms, draws 0, objects 0, primitives 0, process 9.37ms, physics 14.46ms
+  12.8  frame    fps 137, worst frame 35.0ms, draws 0, objects 0, primitives 0, process 15.38ms, physics 27.72ms
+  13.5  cross    stepped into the road at (71,45), at a zebra
+  13.8  frame    fps 142, worst frame 14.0ms, draws 0, objects 0, primitives 0, process 11.20ms, physics 17.89ms
+  14.8  frame    fps 142, worst frame 7.0ms, draws 0, objects 0, primitives 0, process 8.14ms, physics 15.53ms
+  14.9  cross    stepped into the road at (72,42), at a zebra
+  15.0  ahead    dog_walker comes at her from 374px in front of her at (72,42), unannounced
+  15.8  near     collapsed_frontage at (73,38), 129px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  15.8  frame    fps 141, worst frame 14.0ms, draws 0, objects 0, primitives 0, process 14.21ms, physics 16.95ms
+  16.8  frame    fps 144, worst frame 7.0ms, draws 0, objects 0, primitives 0, process 9.27ms, physics 13.48ms
+  16.9  calm     entered forest (5,2), sleep 100
+  17.8  frame    fps 143, worst frame 14.0ms, draws 0, objects 0, primitives 0, process 6.53ms, physics 16.43ms
+  18.6  near     abduction at (79,29), 248px, exc 0, in 0.3/s (crowd 0.0, events 0.5), sleep 100
+  18.8  frame    fps 142, worst frame 7.0ms, draws 0, objects 0, primitives 0, process 6.58ms, physics 14.15ms
+  19.3  left     left forest (5,2), sleep 100
+  19.8  frame    fps 144, worst frame 7.0ms, draws 0, objects 0, primitives 0, process 3.77ms, physics 13.65ms
+  20.3  cross    stepped into the road at (75,31), at a zebra
+  20.8  frame    fps 144, worst frame 7.0ms, draws 0, objects 0, primitives 0, process 4.20ms, physics 13.46ms
+  20.9  near     abduction at (79,29), 136px, exc 4, in 9.1/s (crowd 0.0, events 16.5), sleep 100
+  21.1  taken    'abduction' takes a bystander
+  21.9  frame    fps 144, worst frame 7.0ms, draws 0, objects 0, primitives 0, process 4.74ms, physics 13.88ms
+  22.0  cross    stepped into the road at (73,28), at a zebra
+  22.9  frame    fps 143, worst frame 16.5ms, draws 0, objects 0, primitives 0, process 4.89ms, physics 12.25ms
+  23.9  frame    fps 145, worst frame 15.8ms, draws 0, objects 0, primitives 0, process 4.55ms, physics 12.71ms
+  24.9  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.51ms, physics 12.38ms
+  25.9  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.88ms, physics 11.77ms
+  26.9  frame    fps 144, worst frame 17.7ms, draws 0, objects 0, primitives 0, process 6.50ms, physics 14.16ms
+  26.9  cross    stepped into the road at (59,28), at a zebra
+  27.9  frame    fps 139, worst frame 13.9ms, draws 0, objects 0, primitives 0, process 7.46ms, physics 39.39ms
+  28.0  near     impact_crater at (55,25), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  28.9  frame    fps 143, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 11.57ms, physics 16.05ms
+  29.1  route    day 16: re-planned to 'tunnel' (29.1s, 110 waypoints)
+  29.1  near     abduction at (47,24), 249px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  29.9  frame    fps 144, worst frame 41.7ms, draws 0, objects 0, primitives 0, process 3.43ms, physics 10.84ms
+  30.4  near     impact_crater at (48,25), 120px, exc 0, in 8.0/s (crowd 0.0, events 14.5), sleep 100
+  30.9  near     abduction at (47,24), 137px, exc 1, in 9.0/s (crowd 0.0, events 16.5), sleep 100
+  30.9  frame    fps 138, worst frame 13.9ms, draws 0, objects 0, primitives 0, process 7.36ms, physics 51.46ms
+  31.6  taken    'abduction' takes a bystander
+  31.8  cross    stepped into the road at (45,28), at a zebra
+  31.9  frame    fps 142, worst frame 13.9ms, draws 0, objects 0, primitives 0, process 11.15ms, physics 12.61ms
+  32.9  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 7.97ms, physics 13.26ms
+  33.9  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 6.82ms, physics 11.49ms
+  34.9  frame    fps 145, worst frame 7.2ms, draws 0, objects 0, primitives 0, process 3.82ms, physics 10.33ms
+  35.9  frame    fps 145, worst frame 13.5ms, draws 0, objects 0, primitives 0, process 3.92ms, physics 10.26ms
+  36.3  cross    stepped into the road at (43,17), at a zebra
+  36.6  ahead    dog_walker comes at her from 223px in front of her at (43,16), unannounced
+  36.9  frame    fps 145, worst frame 7.8ms, draws 0, objects 0, primitives 0, process 3.96ms, physics 10.18ms
+  37.6  cross    stepped into the road at (44,14), at a zebra
+  37.9  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 7.21ms, physics 10.18ms
+  38.9  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.15ms, physics 8.96ms
+  39.1  near     impact_crater at (44,9), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  39.3  near     impact_crater at (48,9), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  39.9  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.04ms, physics 8.92ms
+  40.1  near     impact_crater at (44,9), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  40.3  near     impact_crater at (48,9), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  41.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 5.61ms, physics 8.66ms
+  42.0  frame    fps 145, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 5.25ms, physics 8.18ms
+  42.1  cross    stepped into the road at (46,3), at a zebra
+  43.0  frame    fps 143, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 5.45ms, physics 8.40ms
+  44.0  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.62ms, physics 8.71ms
+  45.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.92ms, physics 8.55ms
+  46.0  frame    fps 145, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 3.69ms, physics 9.67ms
+  47.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 10.24ms, physics 9.88ms
+  48.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.52ms, physics 7.46ms
+  48.5  near     impact_crater at (63,3), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  49.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 8.11ms, physics 7.51ms
+  50.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.39ms, physics 7.30ms
+  51.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.87ms, physics 7.50ms
+  52.0  frame    fps 144, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 2.54ms, physics 7.19ms
+  53.0  frame    fps 143, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 16.60ms, physics 18.46ms
+  54.0  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.60ms, physics 10.83ms
+  55.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.44ms, physics 6.99ms
+  56.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.94ms, physics 6.75ms
+  57.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.41ms, physics 6.58ms
+  57.6  near     roadblock at (92,4), 198px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  57.8  chase    roadblock warned her at (91,4) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  57.9  ahead    loose_dog comes at her from 393px in front of her at (88,0), unannounced
+  58.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 6.25ms, physics 6.10ms
+  58.8  near     loose_dog at (96,0), 187px, exc 0, in 0.0/s (crowd 0.0, events 1.8), sleep 100
+  59.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.08ms, physics 6.40ms
+  59.2  near     loose_dog at (95,0), 97px, exc 1, in 12.2/s (crowd 0.0, events 21.6), sleep 100
+  59.4  near     loose_dog at (94,0), 52px, exc 2, in 10.0/s (crowd 0.0, events 17.1), sleep 100
+  59.5  near     loose_dog at (93,0), 22px, exc 3, in 7.6/s (crowd 0.0, events 13.0), sleep 100
+  59.9  chase    roadblock's warning ended in its charge after 2.0s — closest 112px | exc 3, in 5.1/s (crowd 0.0, events 9.2), sleep 100
+  59.9  chase    roadblock came for her at (91,3) | exc 3, in 5.1/s (crowd 0.0, events 9.2), sleep 100
+  60.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.69ms, physics 6.50ms
+  60.2  cue      the mark over her head: soon for 2.4s (0.0s of it on the road) | roadblock 161px
+  60.7  near     roadblock at (93,1), 108px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  61.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.66ms, physics 6.23ms
+  61.9  near     roadblock at (98,0), 58px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  62.1  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.78ms, physics 6.03ms
+  62.6  near     roadblock at (100,0), 32px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  62.7  lost     lost_hard_fail in the city after 62.7s to roadblock — It went wrong. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100 | near: roadblock 27px
+  62.7  route    day 16: day ended (LOST_HARD_FAIL) before reaching 'tunnel', 62.7s (day time)
