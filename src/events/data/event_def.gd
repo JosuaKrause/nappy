@@ -470,18 +470,32 @@ func is_set_off_by_a_place() -> bool:
 func sets_off_within() -> float:
 	return _set_off_within
 
-## **Whether walking into its place may set it off at once** (`as_set_off_at_once()`): where its
-## set-off distance alone, with no badge up first, keeps it as far from her as its warning owes
-## (`minimum_telegraph()`), as the masked man's 426px does against his catch. One whose field
-## already covers her where it is set off (the escape city's explosion, heard within 520px of a
-## place that sets it off at 520px) is warned for its own `warned_for()` whichever way she came in.
+## **Whether walking into its place may set it off at once** (`as_set_off_at_once()`): a thing
+## that comes at her from there, where its set-off distance alone, with no badge up first, keeps it
+## as far from her as its warning owes (`minimum_telegraph()`), as the masked man's 426px does
+## against his catch — the same reckoning `warning_time()` holds the copy to. **A thing that stands
+## where it comes is warned for its own `warned_for()` whichever way she came in** (the escape
+## city's explosion): it comes all at once, with no approach for her to watch, so the badge before
+## it is the whole of its notice *(minty-lemur #785: explosions off screen with a warning sign
+## showing the explosion)*.
 func may_be_set_off_at_once() -> bool:
-	if not is_set_off_by_a_place():
+	if not is_set_off_by_a_place() or comes_all_at_once():
 		return false
-	var reach := lethal_reach() if ends_the_day() else field_reach()
-	var created_at := maxf(Offscreen.min_boundary(), _set_off_within)
+	return _time_to_reach_from(_where_set_off_at_once()) + 0.001 >= minimum_telegraph()
+
+## How far from her the copy set off at once comes (`as_set_off_at_once()`): its set-off
+## distance, and never nearer than a thing just out of sight.
+func _where_set_off_at_once() -> float:
+	return maxf(Offscreen.min_boundary(), _set_off_within)
+
+## **How long after it is created `created_at` px from her it can first reach her**, both closing:
+## its own speed and her walk, to its reach (its lethal reach for a row that ends the day, its
+## field's otherwise). What `warning_time()` adds to the badge, and what decides whether a place
+## may set a row off at once (`may_be_set_off_at_once()`), so the two cannot reckon it apart.
+func _time_to_reach_from(created_at: float) -> float:
 	var closing := _route.speed() + Tuning.WALK_SPEED
-	return maxf(0.0, created_at - reach) / closing + 0.001 >= minimum_telegraph()
+	var reach := lethal_reach() if ends_the_day() else field_reach()
+	return maxf(0.0, created_at - reach) / closing
 
 ## **The copy a place sets off at once**: its badge up alone for no time, for her walking into its
 ## place, so it comes on the tick she reaches it, as near as its set-off distance; asked only of a
@@ -1479,12 +1493,10 @@ func nearest_crouch() -> float:
 func warning_time() -> float:
 	if not warns_before_it_exists():
 		return telegraphs_for()
-	var closing := _route.speed() + Tuning.WALK_SPEED
-	var reach := lethal_reach() if ends_the_day() else field_reach()
 	var created_at := Offscreen.min_boundary()
 	if is_set_off_by_a_place() and warned_for() <= 0.0:
-		created_at = maxf(created_at, _set_off_within)
-	return warned_for() + maxf(0.0, created_at - reach) / closing
+		created_at = _where_set_off_at_once()
+	return warned_for() + _time_to_reach_from(created_at)
 
 ## How long this row's badge is up alone, with nothing in the world, before it is placed just out of
 ## sight (`PendingWarning`), for a row warned of before it exists. A pursuer's is its
@@ -1828,19 +1840,27 @@ func reach_above(rate: float) -> float:
 
 ## **Whether its coming gets a badge at the screen edge**, for her walking at `walk_speed`: lethal
 ## always, and otherwise only what she cannot outwalk (a thing slower than a walk is one she can
-## turn round and leave). **A thing warned of before it exists that stands where it comes** is
-## one she cannot outwalk either: it comes all at once, its noise on her the moment it is there, so
-## its badge is the only notice of it she gets — the escape city's explosion *(minty-lemur #785:
-## explosions off screen with a warning sign showing the explosion)*. A thing that does not
-## telegraph its coming (`telegraphs_its_coming()`) is outside the badge.
+## turn round and leave). **A thing that comes all at once** (`comes_all_at_once()`) is one she
+## cannot outwalk either: its noise is on her the moment it is there, so its badge is the only
+## notice of it she gets — the escape city's explosion *(minty-lemur #785: explosions off screen
+## with a warning sign showing the explosion)*. A thing that does not telegraph its coming
+## (`telegraphs_its_coming()`) is outside the badge.
 func announces_its_coming(walk_speed: float) -> bool:
 	if not telegraphs_its_coming():
 		return false
 	if ends_the_day():
 		return true
-	if _warning.is_warned_first() and not _route.moves():
+	if comes_all_at_once():
 		return true
 	return _route.moves() and _route.speed() > walk_speed
+
+## **Whether it comes all at once**: warned of before it exists and standing where it comes, so
+## there is no approach for her to watch — the escape city's explosion. Its badge is the whole of
+## its notice: it gets one whatever its speed (`announces_its_coming()`), a place never sets it
+## off at once (`may_be_set_off_at_once()`), and a place puts its badge up only where her moving
+## during it cannot bring the place into her sight (`SetOffWatch`).
+func comes_all_at_once() -> bool:
+	return _warning.is_warned_first() and not _route.moves()
 
 ## How fast it comes at her under its own steam: its chase speed for a pursuer, otherwise its
 ## route's speed (`RouteSpec.speed()`). What the badge starts a thing that arrives under its warning

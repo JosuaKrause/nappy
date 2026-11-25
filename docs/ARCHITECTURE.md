@@ -509,6 +509,8 @@ src/
 	draw_layer.gd         the one list of draw layers both worlds share, the only place a
 	                      z_index is written, and a long footprint's feet-anchored slices
 	world_layers.gd       the node one world draws each of its layers in
+	flash_gap.gd          the least time between two flashes of the night outside, the building's
+	                      windows and the escape city's sky alike: no second holds more than three
 	mover.gd              who is asking whether ground can be walked: the layers that stop it
 	                      (the ground, the posts, the day's closures, soft seals and bodies) and
 	                      how wide it is
@@ -608,8 +610,8 @@ src/
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
 	blast_light.gd        the light of the bombs over the escape city: the city's light lifted by
 	                      each explosion's flash and the far ones between, her view shaken by a near one
-	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, never more
-	                      than three flashes in a second
+	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, spaced by
+	                      `FlashGap`
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on

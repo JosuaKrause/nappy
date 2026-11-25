@@ -69,7 +69,7 @@ func _test_a_bang_lights_at_once_or_within_the_gap(t: TestRunner) -> void:
 		clock += TICK
 		if rhythm.light() > was + 0.0001:
 			rose_at = clock
-	t.check(rose_at >= FlashRhythm.LEAST_GAP - 0.001 and rose_at <= FlashRhythm.LEAST_GAP + TICK * 3.0,
+	t.check(rose_at >= FlashGap.LEAST_GAP - 0.001 and rose_at <= FlashGap.LEAST_GAP + TICK * 3.0,
 			"a bang straight after a flash lights once the gap after its start has run (%.2fs)"
 			% rose_at)
 

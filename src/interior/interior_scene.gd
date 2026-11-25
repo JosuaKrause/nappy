@@ -390,10 +390,19 @@ func _windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
 
 ## **A bang outside** (`WorldContext.bang_outside()`): the explosion outside, as the day's events
-## bring it, lights every window at once.
+## bring it, lights every window at once, or as soon as the gap after the last flash allows
+## (`_gap`), before a distant flash that is due.
 ##
 ## Overrides WorldContext.bang_outside.
 func bang_outside() -> void:
+	if _gap.may_begin():
+		_begin_a_flash()
+	else:
+		_bang_waiting = true
+
+## A flash begins: every window lights, and the next flash waits for the gap from here.
+func _begin_a_flash() -> void:
+	_gap.begin()
 	_flash_windows()
 
 # ------------------------------------------------------------------ the night ---
@@ -412,6 +421,13 @@ func bang_outside() -> void:
 var _until_the_next_distant_flash := 0.0
 var _flashes := RandomNumberGenerator.new()
 var _night_running := false
+## **No flash begins within `FlashGap.LEAST_GAP` of the one before**, a bang's or a distant one's:
+## the escape city's limit for viewers, held in the building too (the orchestrator's pick on the
+## Nappy board, building-flash-limit, open to the player). The waits are the player's own curve
+## (`distant_flash_wait()`), and a wait shorter than the gap lasts the gap.
+var _gap := FlashGap.new()
+## A bang outside whose flash waits for the gap after the last.
+var _bang_waiting := false
 
 ## Starts the night over, its waits drawn from `seed` — the same seed the building's placements are
 ## drawn from (`BuildingPlan.plan()`), on a stream of its own. Called on every entry into the
@@ -429,13 +445,17 @@ func stop_the_night() -> void:
 ## Counted on the physics tick, as everything that keeps the game's time does, so it freezes behind
 ## a pause screen.
 func _physics_process(delta: float) -> void:
+	_gap.step(delta)
+	if _bang_waiting and _gap.may_begin():
+		_bang_waiting = false
+		_begin_a_flash()
 	if not _night_running:
 		return
 	_until_the_next_distant_flash -= delta
-	if _until_the_next_distant_flash > 0.0:
+	if _until_the_next_distant_flash > 0.0 or _bang_waiting or not _gap.may_begin():
 		return
 	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
-	_flash_windows()
+	_begin_a_flash()
 
 ## The wait a uniform draw `u` in `[0, 1)` gives: a scaled Kumaraswamy draw, short-biased and smooth,
 ## bounded by `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape

@@ -2072,18 +2072,23 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 	# is pinned above by the bounds, the mean, the median and the 95th percentile.
 	# Where the flashes fall: the night's waits are drawn from a stream of its own seeded from the
 	# building's seed, so the first of them fall on the ticks that stream's waits make. A flash is
-	# lit on the tick the wait runs out, and the next wait counts from that tick.
+	# lit on the tick the wait runs out, or the first tick after it on which the gap since the last
+	# flash's start has run (`FlashGap`), and the next wait counts from that tick.
 	var night := RandomNumberGenerator.new()
 	night.seed = events.get_meta(&"building_seed")
 	var tick_seconds := FLASH_SCALE / Engine.physics_ticks_per_second
 	var predicted: Array[int] = []
 	var left := InteriorScene.distant_flash_wait(night.randf())
 	var tick := 0
+	var clock := 0.0
+	var last_start := -INF
 	while tick * tick_seconds < EventCatalogue.FINALE_EXPLOSION_INTERVAL * 0.75:
 		tick += 1
+		clock += tick_seconds
 		left -= tick_seconds
-		if left <= 0.0:
+		if left <= 0.0 and clock - last_start >= FlashGap.LEAST_GAP:
 			predicted.append(tick)
+			last_start = clock
 			left = InteriorScene.distant_flash_wait(night.randf())
 	var seen_early: Array[int] = []
 	for lit_tick in when:
@@ -2095,6 +2100,18 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 	t.check(twin_when == when,
 			"the same seed flashes at the same instants (%d against %d)"
 			% [twin_when.size(), when.size()])
+	# **No flash starts within `FlashGap.LEAST_GAP` of the one before**, bangs and distant flashes
+	# alike, over the whole span: the escape city's limit for viewers, held in the building too.
+	var starts: Array[int] = []
+	for lit_tick in when:
+		if starts.is_empty() or not when.has(lit_tick - 1):
+			starts.append(lit_tick)
+	var closest := INF
+	for i in range(1, starts.size()):
+		closest = minf(closest, (starts[i] - starts[i - 1]) * tick_seconds)
+	t.check(starts.size() > bangs and closest >= FlashGap.LEAST_GAP - 0.001,
+			"no flash starts within %.1fs of the one before (closest %.3fs over %d flashes)"
+			% [FlashGap.LEAST_GAP, closest, starts.size()])
 
 	# A distant flash is a picture and nothing else: with the manager stopped, so that nothing it
 	# does can be mistaken for a flash's doing, the next one lights the corridor and adds no instance.

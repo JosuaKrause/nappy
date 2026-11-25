@@ -74,6 +74,12 @@ var _guard_sides: Array[int] = [-1, 1]
 ## The light is all it changes: the field, the cost and the crater are the row's own either way.
 var _flashes := false
 
+## **Whether its picture is drawn only in its screen-edge badge, never in the world**: the escape
+## city's explosion, whose mushroom of smoke the badge carries for a thing only ever heard on the
+## street. The row states it, as it states its flash, so nothing asks which picture a row has to
+## know whether that picture stands on the street.
+var _only_in_its_badge := false
+
 ## A row with no picture of its own: nothing is drawn for it.
 static func none() -> LookSpec:
 	return LookSpec.new()
@@ -128,6 +134,12 @@ func flashing_as_it_goes_off() -> LookSpec:
 	spec._flashes = true
 	return spec
 
+## The same look, its picture drawn only in its screen-edge badge and nothing of it in the world.
+func drawn_only_in_its_badge() -> LookSpec:
+	var spec := _copy()
+	spec._only_in_its_badge = true
+	return spec
+
 ## The same look posting a guard on `sides` of its band (`-1`/`+1`), and on none for an empty list.
 func guarded_on(sides: Array[int]) -> LookSpec:
 	var spec := _copy()
@@ -140,11 +152,12 @@ func picture() -> EventDef.Look:
 	return _picture
 
 ## **Whether anything of it is drawn in the world**: not for a row with no picture
-## (`EventDef.Look.NONE`), nor for the explosion, whose picture is drawn only in its screen-edge
-## badge (`EventDef.Look.EXPLOSION`). What a row puts on the street is measured only where this
-## holds (`EventFootprints.box_of()`), so a badge's picture is never taken for a thing standing there.
+## (`EventDef.Look.NONE`), nor for one whose picture is drawn only in its screen-edge badge
+## (`drawn_only_in_its_badge()`, the escape city's explosion). What a row puts on the street is
+## measured only where this holds (`EventFootprints.box_of()`), so a badge's picture is never
+## taken for a thing standing there, and only such a row owes a shape and, standing still, a body.
 func is_drawn_in_the_world() -> bool:
-	return _picture != EventDef.Look.NONE and _picture != EventDef.Look.EXPLOSION
+	return _picture != EventDef.Look.NONE and not _only_in_its_badge
 
 ## The picture it stands in while it warns, whose largest decides whether its warning would stand
 ## in her view.
@@ -186,4 +199,5 @@ func _copy() -> LookSpec:
 	spec._may_be_a_pelican = _may_be_a_pelican
 	spec._guard_sides = _guard_sides.duplicate()
 	spec._flashes = _flashes
+	spec._only_in_its_badge = _only_in_its_badge
 	return spec

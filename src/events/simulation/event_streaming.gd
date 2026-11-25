@@ -403,7 +403,8 @@ func planned_count() -> int:
 
 ## **Takes every finished instance out of the world, and puts in what one leaves as it goes off**
 ## (`EventInstance.take_what_it_leaves()`, `EventSpawner.successor_of()`): the escape's explosion's
-## crater, at its place, on the tick it bangs. Run every tick.
+## crater, at its place, on the tick it bangs where it did not come in already with the plan a place
+## set off (`set_off()`). Run every tick.
 func retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
 	var successors: Array[EventInstance] = []
@@ -499,7 +500,10 @@ func may_set_off(plan: EventPlan) -> bool:
 ## **Brings a plan a place set off into the world**, where its warning pointed, once the warning has
 ## run (`SetOffWatch`): created where it starts, told it came under a warning, its telegraph spent
 ## (`EventSpawner.age_when_warned()`), so from its first tick it is what it is after it. It stays
-## until it is done (`EventPlan.streaming_distance_from()`). Answers whether it came.
+## until it is done (`EventPlan.streaming_distance_from()`). **What it leaves where it goes off
+## comes with it, on this tick** (the escape city's explosion's crater): its place was cleared out
+## of her sight with that included (`EventFootprints.footprint_of()`) against the view of this
+## tick, which by the next she may have walked on toward. Answers whether it came.
 func set_off(plan: EventPlan) -> bool:
 	if not may_set_off(plan):
 		return false
@@ -510,6 +514,9 @@ func set_off(plan: EventPlan) -> bool:
 	_entry_of(plan).live = live
 	plan.enter_the_world(live.standing())
 	world.take_in(live)
+	var left := _spawner.successor_of(live)
+	if left:
+		world.take_in(left)
 	return true
 
 ## Finds the plans of the walk just started that come again (`_repeating`) and starts each one's clock

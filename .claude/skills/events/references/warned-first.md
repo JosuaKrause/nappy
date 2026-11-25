@@ -55,8 +55,12 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
   distance alone is the warning it owes (`EventDef.may_be_set_off_at_once()`,
   `as_set_off_at_once()`, the masked man), so it comes exactly as near as its set-off distance,
   which `EventDef.warning_time()` counts from, and with its row's own `warned_for()` where she is
-  inside it already or the distance is not warning enough (the explosion, whose noise is on her
-  the moment it goes off).
+  inside it already, where the distance is not warning enough, or for a thing that comes all at
+  once (`EventDef.comes_all_at_once()`: the explosion, whose badge is the whole of its notice).
+  **Such a thing's badge goes up only where her running for the whole of it cannot bring the place
+  into her sight**, so it never comes down without its bang (minty-dolphin #852), and the
+  explosion's set-off distance (`EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN`) is far enough
+  out that walking or running into it never makes the badge wait.
 
 **Every screen-edge badge comes from this path** (minty-dolphin #852): a warning, then the thing it
 created keeping the badge until any of it is in sight (`EventInstance.was_warned_of()`,

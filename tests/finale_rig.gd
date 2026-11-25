@@ -1791,8 +1791,6 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 			"the crater obstructs %.0fpx against a %.0fpx picture"
 			% [crater.obstructs_within(), drawn_width])
 
-	# And the wiring: a burst that has run its course is replaced by a crater standing where it
-	# was, through the row's `aftermath.leaves_behind()`.
 	# And the wiring: a burst's plan is not in the world with nobody near, since a place sets it off
 	# (`SetOffWatch`); one that arrives where its warning pointed, as a set-off one does, leaves its
 	# crater standing where it went off on the manager's next physics frame, while it still bangs, and
@@ -1838,6 +1836,11 @@ func _craters_of(city: City, crater: EventDef) -> int:
 				return -1
 	return craters
 
+# ------------------------------------------------------------------ the clock ---
+
+## *"The timer also shows milliseconds. This makes the timer appear faster than just the seconds
+## alone which adds additional tension."* Tried as hundredths (inbox #746 in woolly-penguin). The only thing that
+## changes, so both shapes are checked off the same signal and the same time.
 func _test_the_clock_reads_hundredths_only_in_the_finale(t: TestRunner) -> void:
 	var run := RunState.new()
 	var hud: Hud = HUD_SCENE.instantiate()

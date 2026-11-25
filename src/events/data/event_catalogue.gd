@@ -65,10 +65,22 @@ const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## `EventDirector.AHEAD_INTERVAL` band: eight of them over a 180s clock flash the hallway windows
 ## more than once without the basement becoming a drum.
 const FINALE_EXPLOSION_INTERVAL := 22.0
-## **How far the escape city's explosion is heard, and how near she comes before one goes off**, in
-## px: its field's outer radius and the distance its place sets it off at (`_finale_explosion()`),
-## one number, so an explosion set off is one whose noise reaches her where she stands.
+## **How far the escape city's explosion is heard**, in px: its field's outer radius
+## (`_finale_explosion()`).
 const FINALE_EXPLOSION_HEARD_WITHIN := 520.0
+## **How long the escape city's explosion's bang lasts**, in seconds: a sharp spike is a short
+## `duration` at high peak, since there is no `impulse` field (`CLAUDE.md`, "Things deliberately
+## not done"). What `FINALE_EXPLOSION_SET_OFF_WITHIN` is set against.
+const FINALE_EXPLOSION_SECONDS := 1.2
+## **How near she comes to an escape city's explosion before its place sets it off**, in px
+## (`_finale_explosion()`, `SetOffWatch`): its field's reach and as far again as she runs while
+## its badge is up (`Tuning.WARNING_ALONE_MAX`) and its bang lasts (`FINALE_EXPLOSION_SECONDS`),
+## about 890px. **Heading straight at one, at a walk or a run, she hears none of its bang**, and so
+## a runner is still out of its sight when its badge runs out (the view reaches about 400px ahead
+## of her), and the badge never comes down without its bang. Its bang reaches her only where she
+## comes at it from the side or turns toward it while it bangs.
+const FINALE_EXPLOSION_SET_OFF_WITHIN := FINALE_EXPLOSION_HEARD_WITHIN \
+		+ (Tuning.WARNING_ALONE_MAX + FINALE_EXPLOSION_SECONDS) * Tuning.RUN_SPEED
 ## How long after the masked man has finished his run before another one comes up the same shaft,
 ## in seconds: he respawns, forcing her to switch sides again.
 ##
@@ -2638,18 +2650,20 @@ static func _door_guard() -> EventDef:
 ## **Off screen, announced by its badge** *(minty-lemur #785: explosions have to happen off-screen
 ## with a warning sign showing the explosion; craters already there when she walks towards them)*.
 ## A place sets it off (`EventDraft.set_off_within()`, `SetOffWatch`): the plan the escape's bag put
-## on the road is not in the world until she comes within `FINALE_EXPLOSION_HEARD_WITHIN` of it,
-## its field's own reach. Then its screen-edge badge goes up, the mushroom cloud
-## (`EventDef.Look.EXPLOSION`, drawn only in the badge), pointing at the place, for
-## `Tuning.WARNING_ALONE_MAX`; and once that has run it goes off there, its telegraph spent, only
-## while everything it puts on the screen there is out of her sight, the crater it leaves included
-## (`EventFootprints.footprint_of()`), so no bang and no crater is ever in her view. Walking into
-## the place does not set it off at once (`EventDef.may_be_set_off_at_once()`): its noise is on her
-## the moment it goes off, so the badge is the whole of its notice. The badge stays on it until it
-## is over (`BadgeModel`).
+## on the road is not in the world until she comes within `FINALE_EXPLOSION_SET_OFF_WITHIN` of it,
+## far enough out that heading straight at it, walking or running, she hears none of its bang. Then its screen-edge badge goes up, the mushroom cloud
+## (`EventDef.Look.EXPLOSION`, drawn only in the badge, `LookSpec.drawn_only_in_its_badge()`),
+## pointing at the place, for `Tuning.WARNING_ALONE_MAX`; and once that has run it goes off there,
+## its telegraph spent, only while everything it puts on the screen there is out of her sight, the
+## crater it leaves included (`EventFootprints.footprint_of()`), so no bang and no crater is ever
+## in her view. It comes all at once (`EventDef.comes_all_at_once()`): walking into the place does
+## not set it off at once (`EventDef.may_be_set_off_at_once()`), since the badge is the whole of
+## its notice, and the badge goes up only where it cannot come down without its bang
+## (`SetOffWatch`). The badge stays on it until it is over (`BadgeModel`).
 ##
-## **The crater comes as it goes off** (`Aftermath.then()`, `EventStreaming`), at its place, so a
-## crater she walks toward is standing before she can see it.
+## **The crater comes as it goes off** (`Aftermath.then()`, `EventStreaming.set_off()`), at its
+## place on the tick its out-of-sight check passed, so a crater she walks toward is standing before
+## she can see it.
 ##
 ## **The sky lights up as it goes off** (`LookSpec.flashing_as_it_goes_off()`, `BlastLight`), and
 ## the screen shakes a little by how loud it lands where she is.
@@ -2668,15 +2682,14 @@ static func _door_guard() -> EventDef:
 static func _finale_explosion() -> EventDef:
 	var row := EventDraft.new("finale_explosion")
 	row.scripted_on(0, 4)
-	row.look(LookSpec.of(EventDef.Look.EXPLOSION).casting_no_shadow().flashing_as_it_goes_off())
+	row.look(LookSpec.of(EventDef.Look.EXPLOSION).drawn_only_in_its_badge().casting_no_shadow()
+			.flashing_as_it_goes_off())
 	row.body(BodySpec.none().unmet().parked())
 	row.ground([GameEnums.TileType.ROAD])
 	row.field(FieldSpec.of(24.0, 300.0, FINALE_EXPLOSION_HEARD_WITHIN))
 	row.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
-	row.set_off_within(FINALE_EXPLOSION_HEARD_WITHIN)
-	# Short and over: a sharp spike is a short `duration` at high peak, since there is no
-	# `impulse` field (`CLAUDE.md`, "Things deliberately not done").
-	row.lasts(1.2)
+	row.set_off_within(FINALE_EXPLOSION_SET_OFF_WITHIN)
+	row.lasts(FINALE_EXPLOSION_SECONDS)
 	row.aftermath(Aftermath.none().then("impact_crater"))
 	return row.build()
 

@@ -124,13 +124,15 @@ func run(t: TestRunner) -> void:
 		case.call(t, rig)
 		rig.done()
 	for case: Callable in [_test_walking_into_an_explosions_place_gives_its_badge_first,
-			_test_an_explosion_waits_while_its_crater_would_be_in_sight]:
+			_test_an_explosion_waits_while_its_crater_would_be_in_sight,
+			_test_running_into_an_explosions_place_still_brings_its_bang,
+			_test_an_explosions_badge_waits_while_a_run_could_bring_it_into_sight]:
 		var rig := Rig.new("finale_explosion")
 		case.call(t, rig)
 		rig.done()
 
-## **The escape city's explosion is never set off at once**: its noise is on her the moment it goes
-## off, so walking into its place puts its badge up for its own time first
+## **The escape city's explosion is never set off at once**: it comes all at once, so the badge is
+## the whole of its notice, and walking into its place puts its badge up for its own time first
 ## (`EventDef.may_be_set_off_at_once()`), where the masked man's walk-in gives none.
 func _test_walking_into_an_explosions_place_gives_its_badge_first(t: TestRunner, rig: Rig) -> void:
 	var within := rig.plan.sets_off_within()
@@ -156,6 +158,42 @@ func _test_an_explosion_waits_while_its_crater_would_be_in_sight(t: TestRunner, 
 	rig.world.look_from(clear)
 	t.check(rig.board.last_where().call(clear) == START,
 			"with the crater wholly out of sight, it goes off where it stands")
+
+## **A runner heading straight at an explosion along the screen's long axis still gets its bang**:
+## from where its place sets it off, running the whole of its badge leaves the place and its crater
+## out of her sight, so the badge runs out into the explosion going off rather than being withdrawn
+## (`EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN`, minty-dolphin #852).
+func _test_running_into_an_explosions_place_still_brings_its_bang(t: TestRunner, rig: Rig) -> void:
+	var within := rig.plan.sets_off_within()
+	var badge := rig.plan.row().warned_for()
+	rig.tick(START + Vector2(within + 10.0, 0.0))
+	rig.tick(START + Vector2(within - 10.0, 0.0))
+	var up := rig.board.last_up()
+	t.check(up != null, "running into its place, its badge goes up")
+	if up == null:
+		return
+	var ran_to := START + Vector2(within - 10.0 - Tuning.RUN_SPEED * badge, 0.0)
+	rig.world.look_from(ran_to)
+	t.check(up.tick(badge + 0.01, ran_to) and not up.was_withdrawn()
+			and rig.streaming.came() == [rig.plan],
+			"run %.0fpx on through its %.1fs badge, it goes off (%.0fpx from her)"
+			% [Tuning.RUN_SPEED * badge, badge, ran_to.distance_to(START)])
+
+## **Its badge never goes up where it could come down with nothing after it**: arriving 450px from
+## it, out of her sight but where a run for the whole badge would bring it into view, as a door
+## could put her, nothing goes up; from twice as far, it does.
+func _test_an_explosions_badge_waits_while_a_run_could_bring_it_into_sight(t: TestRunner,
+		rig: Rig) -> void:
+	var near := START + Vector2(450.0, 0.0)
+	rig.tick(near)
+	t.check(rig.board.rows().size() == 1 and rig.board.last_up() == null,
+			"450px off along her street, out of sight, no badge goes up yet")
+	rig.world.look_from(near)
+	t.check(rig.board.last_where().call(near) == START,
+			"though the place itself is out of her sight there")
+	var far := START + Vector2(700.0, 0.0)
+	rig.tick(far)
+	t.check(rig.board.last_up() != null, "700px off, its badge goes up")
 
 ## Her step from just outside his place to just inside it, 20px, sets him off at once: the copy with
 ## no time alone (`EventDef.as_set_off_at_once()`), on the tick she reaches it, and he comes on that

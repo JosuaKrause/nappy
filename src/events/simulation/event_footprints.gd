@@ -30,8 +30,8 @@ static func box_of(row: EventDef) -> Rect2:
 	return _standing_box(row.picture(), EventPictures.native_size(icon))
 
 ## The box a picture of `look` of `size` fills at the origin: on its feet, bottom-centre, or
-## round its middle for the one look registered there (the crater, a hole rather than a thing
-## standing; `EventPictures.is_registered_on_its_middle()`).
+## round its middle for a look whose picture is registered there (the crater, a hole rather than a
+## thing standing; `EventPictures.is_registered_on_its_middle()`, the picture table's own fact).
 static func _standing_box(look: EventDef.Look, size: Vector2) -> Rect2:
 	if EventPictures.is_registered_on_its_middle(look):
 		return Rect2(-size * 0.5, size)
@@ -72,7 +72,9 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## (`EventPictures.largest_mark_rect()`), which stands well above the picture. **And what it leaves
 ## where it goes off** (`EventDef.leaves_behind()`, the escape's explosion's crater), which comes
 ## the moment it goes off, so a thing created out of her sight leaves nothing in her view either.
-## Empty for a row that draws nothing of its own and leaves nothing.
+## Empty for a row with no picture that leaves nothing. A row whose picture is drawn only in its
+## badge (the explosion) has that picture counted as though it stood at its feet, which only makes
+## a check that it is out of sight stricter.
 static func footprint_of(row: EventDef) -> Rect2:
 	var box := _own_footprint_of(row)
 	if row.leaves_behind() == "":
