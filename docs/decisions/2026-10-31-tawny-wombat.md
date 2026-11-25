@@ -81,7 +81,9 @@ gets through (closest 24.6px, the walk-then-run turning at row 11); from the fir
 comes after his one-second badge, 270 to 294px from her, and she is back through the door 0.8 to
 1.1s later. `tests/test_interior_masked_man.gd` holds the same outcomes on the real body, and that
 each later man is warned for a second first, his warning going up six seconds after the last runs
-out of the top. `docs/COSTS.md` now prices his pass (8.0 points awake walking straight through his
+out of the top. In play (`docs/evidence/tawny-wombat-stairwell-man-set-off-2026-11-25/`, seed 4242,
+the building's own walker), his badge went up at 422px as he came, running, and came down 0.9s later
+as he ran into her view, 248px away. `docs/COSTS.md` now prices his pass (8.0 points awake walking straight through his
 line, 0.0 at 120px), since he no longer waits for her; the pass was dashed for him before.
 
 **Rejected.** A standing wait kept once he is placed (the entry's other reading: placed, standing,

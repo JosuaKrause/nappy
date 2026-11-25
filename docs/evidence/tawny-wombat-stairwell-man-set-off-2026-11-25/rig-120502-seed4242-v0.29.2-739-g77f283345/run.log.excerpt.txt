@@ -1,0 +1,12 @@
+  12.4  run      ran 0.4s, exc 0 -> 1, nearest when it started: burning_building 2042px (out of range)
+  12.8  frame    fps 456, worst frame 6.7ms, draws 128, objects 956, primitives 1944, process 9.05ms, physics 0.67ms
+  13.1  shot     burst started: asked for an animation burst at (0,0) | exc 4, sleep 100 | playing | asked/burst-16026366-001
+  13.1  cue      edge badge: masked_pursuer at 422px, closing 130px/s
+  13.8  frame    fps 421, worst frame 34.1ms, draws 134, objects 961, primitives 2074, process 6.70ms, physics 0.69ms
+  14.0  cue      edge badge gone: masked_pursuer after 0.9s, now 248px away
+  14.5  near     masked_pursuer at (132,20), 160px, exc 13, in 1.1/s (crowd 0.0, events 0.4), sleep 100
+  14.5  run      ran 2.0s, exc 0 -> 13, nearest when it started: burning_building 2038px (out of range)
+  14.8  frame    fps 222, worst frame 33.8ms, draws 132, objects 968, primitives 1992, process 34.03ms, physics 1.13ms
+  15.8  frame    fps 223, worst frame 33.6ms, draws 90, objects 917, primitives 1866, process 33.80ms, physics 1.16ms
+  16.1  shot     burst complete: 36 frames | duration
+  16.8  frame    fps 258, worst frame 30.0ms, draws 90, objects 927, primitives 1886, process 33.63ms, physics 7.77ms
