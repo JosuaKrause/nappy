@@ -1,31 +1,3 @@
-Mean luminance (0-255) of each frame of the three bursts (frame:mean). A flash is a
-spike; the explosions are the high ones (86, 89, 88), the fainter spikes (70-79) are the random
-distant flashes.
-burst-36861290-001 (1280, 720) dur 2.997625
-1:65 2:66 3:66 4:75 5:73 6:70 7:69 8:67 9:67 10:67 11:66 12:66 13:66 14:65 15:65 16:86 17:79 18:71 19:68 20:72 21:74 22:70 23:69 24:67 25:66 26:75 27:72 28:69 29:68 30:67 31:66 32:66 33:66 34:65 35:65 36:72
-burst-46859959-002 (1280, 720) dur 2.992825
-1:62 2:63 3:63 4:63 5:64 6:70 7:71 8:68 9:66 10:65 11:64 12:64 13:64 14:64 15:65 16:65 17:89 18:78 19:72 20:67 21:65 22:65 23:73 24:69 25:67 26:65 27:64 28:64 29:64 30:64 31:64 32:64 33:64 34:64 35:64 36:64
-burst-62860930-003 (1280, 720) dur 2.992739
-1:65 2:65 3:65 4:64 5:64 6:64 7:64 8:64 9:88 10:77 11:72 12:66 13:64 14:64 15:64 16:71 17:68 18:66 19:64 20:64 21:64 22:64 23:64 24:64 25:64 26:63 27:63 28:70 29:68 30:65 31:64 32:63 33:63 34:63 35:63 36:63
-Frame-to-frame world shift of burst 2 (frame@seconds:(dx,dy) screen pixels, phase correlation of
-the lower-left street region against the frame before). She walks at a steady (-16,0) px per
-frame; the vertical wobble of up to 4 px and the dx jitter at frames 17-20 (1.33-1.58 s) is the
-shake after the bang (flash peak at frame 17).
-2@0.08:(-26,-7) 3@0.17:(-26,-9) 4@0.26:(-27,-7) 5@0.33:(-20,-5) 6@0.42:(-20,-5) 7@0.50:(-20,-3) 8@0.58:(-19,-3) 9@0.67:(-18,-2) 10@0.76:(-19,-1) 11@0.83:(-15,-1) 12@0.92:(-16,-1) 13@1.00:(-16,-1) 14@1.08:(-16,0) 15@1.17:(-16,-1) 16@1.25:(-16,0) 17@1.33:(-18,-2) 18@1.42:(-11,4) 19@1.50:(-19,-4) 20@1.58:(-14,2) 21@1.67:(-16,-1) 22@1.75:(-15,0) 23@1.83:(-15,0) 24@1.92:(-16,0) 25@2.00:(-15,0) 26@2.08:(-15,0) 27@2.17:(-16,0) 28@2.25:(-15,0) 29@2.33:(-15,0) 30@2.42:(-16,0) 31@2.50:(-15,0) 32@2.58:(-16,0) 33@2.67:(-15,0) 34@2.75:(-15,0) 35@2.84:(-16,0) 36@2.92:(-15,0)
-run.log lines of the run (the log's time column reads 0.0 under --frame-trace; the order is the
-order of events):
-80:   0.0  shot     burst started: asked for an animation burst at (43,26) | exc 0, sleep 100 | playing | asked/burst-36861290-001
-81:   0.0  cue      edge badge: finale_explosion at 517px, closing 0px/s
-83:   0.0  near     finale_explosion at (44,9), 423px, exc 0, in 0.0/s (crowd 0.0, events 33.8), sleep 100
-86:   0.0  cue      edge badge gone: finale_explosion after 0.0s, no longer in the world
-89:   0.0  shot     burst complete: 36 frames | frame_cap
-103:   0.0  shot     burst started: asked for an animation burst at (46,0) | exc 0, sleep 100 | playing | asked/burst-46859959-002
-104:   0.0  cue      edge badge: finale_explosion at 520px, closing 0px/s
-106:   0.0  near     finale_explosion at (63,3), 430px, exc 0, in 0.0/s (crowd 0.0, events 15.7), sleep 100
-108:   0.0  cue      edge badge gone: finale_explosion after 0.0s, now 370px away
-110:   0.0  shot     burst complete: 36 frames | frame_cap
-127:   0.0  cue      edge badge: finale_explosion at 517px, closing 0px/s
-128:   0.0  shot     burst started: asked for an animation burst at (92,0) | exc 0, sleep 100 | playing | asked/burst-62860930-003
-132:   0.0  near     finale_explosion at (107,3), 427px, exc 0, in 0.0/s (crowd 0.0, events 16.0), sleep 100
-134:   0.0  cue      edge badge gone: finale_explosion after 0.0s, now 371px away
-139:   0.0  shot     burst complete: 36 frames | frame_cap
+size (720, 1280)
+lum [66, 66, 91, 79, 73, 67, 66, 73, 70, 67, 66, 65, 66, 66, 67, 67, 67, 67, 67, 68, 67, 67, 67, 67, 66, 66, 66, 65, 65, 72, 72, 68, 66, 65, 64, 71]
+shift [(0, 1), (-2, -1), (3, 1), (-2, -2), (1, 8), (0, 6), (0, 8), (0, 8), (0, 7), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 6)]

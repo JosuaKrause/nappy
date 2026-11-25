@@ -1,0 +1,8 @@
+34:   0.0  cue      edge badge: finale_explosion at 889px, closing 0px/s
+36:   0.0  shot     burst started: asked for an animation burst at (71,52) | exc 0, sleep 100 | playing | asked/burst-14538408-001
+38:   0.0  cue      edge badge gone: finale_explosion after 0.0s, no longer in the world
+42:   0.0  shot     burst complete: 36 frames | frame_cap
+58:   0.0  cue      edge badge: finale_explosion at 888px, closing 0px/s
+61:   0.0  shot     burst started: asked for an animation burst at (72,28) | exc 0, sleep 100 | playing | asked/burst-25843242-002
+63:   0.0  cue      edge badge gone: finale_explosion after 0.0s, no longer in the world
+65:   0.0  cue      edge badge: military_convoy at 408px, closing 120px/s

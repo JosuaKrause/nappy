@@ -62,10 +62,10 @@ walks toward is standing before she sees it.
 lift to when their windows flash (`BlastLight`), at brightness 0.6; the random distant flashes lift
 it to 0.2 and follow the building's own timing (`FlashRhythm`). A flash rises over 0.05 s and fades
 over 0.4 s. The HUD, badges and controls are never lit. Measured on a burst (the evidence folder
-`snowy-goose-explosion-badge-flash-shake-2026-11-25`): the explosions lift a frame's mean luminance
-from about 64 to 86-89, the distant flashes to 70-79. The burst was taken while an explosion was
-still set off at 520 px, so its badge reads about 24 m where one now reads more; the badge, the
-flash, the shake and the crater look the same.
+`snowy-goose-explosion-badge-flash-shake-2026-11-25`): an explosion set off at about 889 px lifts a
+frame's mean luminance from 66 to 91 and it is back to base within about 0.5 s; the badge reads
+about 42 m; the view is shaken by up to 3 px in the frames after the flash although the bang is
+out of the noise's reach.
 
 **The shake.** At most 3 px in world space (6 screen pixels), fading over 0.45 s, scaled by how near
 the explosion goes off (`ViewShake.share_at()`): full on top of her, falling in a straight line to
