@@ -79,6 +79,8 @@ static func of_plan(map: WorldMap, plan: EventPlan) -> BodyStance:
 ## rules have always read a sidewalk body where it was placed; the kerb changes what a band
 ## covers, the street's far sidewalk, and so is read here.
 static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
+	if row.stands_mid_street():
+		return CityMap.street_middle_beside(at)
 	return CityMap.kerb_beside(at) if row.stands_at_its_kerb() else at
 
 # ------------------------------------------------------------------ questions ---

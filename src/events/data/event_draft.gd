@@ -42,6 +42,7 @@ var _sent_ahead: SentAhead = null
 var _departs_at := 0.0
 var _pavement_side := EventDef.Pavement.ANY
 var _spans_the_street := false
+var _closes_its_street := false
 var _drawn_to_sack_piles := false
 var _role := EventDef.Role.NONE
 var _counts_charges_as := ""
@@ -94,6 +95,7 @@ func copy() -> EventDraft:
 	twin._departs_at = _departs_at
 	twin._pavement_side = _pavement_side
 	twin._spans_the_street = _spans_the_street
+	twin._closes_its_street = _closes_its_street
 	twin._drawn_to_sack_piles = _drawn_to_sack_piles
 	twin._role = _role
 	twin._counts_charges_as = _counts_charges_as
@@ -181,6 +183,12 @@ func in_the_lane(side: EventDef.Pavement) -> void:
 ## The row takes a whole section of its street rather than one sidewalk location.
 func spanning_the_street() -> void:
 	_spans_the_street = true
+
+
+## The row's body stands on the middle of its street and its band covers all of it, both
+## sidewalks included (`EventDef.stands_mid_street()`), rather than on the kerb.
+func closing_its_street() -> void:
+	_closes_its_street = true
 
 
 ## The row stands by a garbage-sack pile when the ground lets it.
@@ -430,6 +438,10 @@ func drafted_lane() -> EventDef.Pavement:
 
 func drafted_spans_the_street() -> bool:
 	return _spans_the_street
+
+
+func drafted_closes_its_street() -> bool:
+	return _closes_its_street
 
 
 func drafted_is_drawn_to_sack_piles() -> bool:

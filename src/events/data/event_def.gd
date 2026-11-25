@@ -196,6 +196,7 @@ func _init(draft: EventDraft) -> void:
 	_departs_at = draft.drafted_departs_at()
 	_pavement_side = draft.drafted_lane()
 	_spans_the_street = draft.drafted_spans_the_street()
+	_closes_its_street = draft.drafted_closes_its_street()
 	_drawn_to_sack_piles = draft.drafted_is_drawn_to_sack_piles()
 	_role = draft.drafted_role()
 	_counts_charges_as = draft.drafted_charges_counted_as()
@@ -822,6 +823,12 @@ func detain_distance() -> float:
 ## location (inbox #1185 in gentle-owl: "events that span the street get placed in a section (eg roadblock in the
 ## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
 var _spans_the_street: bool
+
+## Whether the row's band covers its whole street from the middle of it (`EventDraft.closing_its_street()`):
+## the closing roadblock, beside the open one that stands on its kerb and leaves the far sidewalk
+## whole ("there are two kinds of roadblocks. one that is open and one that is closing the street",
+## inbox #1491 in silky-lemur). Read through `stands_mid_street()`.
+var _closes_its_street: bool
 
 ## Whether the row stands by a garbage-sack pile when the ground lets it (`is_drawn_to_sack_piles()`):
 ## the alley mouse alone. Read through that method.
@@ -1627,7 +1634,13 @@ func stands_on_its_band_middle() -> bool:
 ## stand where they are put. Read by `BodyStance.stands_without_a_map()`, the one place that
 ## moves a body there.
 func stands_at_its_kerb() -> bool:
-	return _is_an_unpinned_standing_body() and _spans_the_street
+	return _is_an_unpinned_standing_body() and _spans_the_street and not _closes_its_street
+
+## Whether the row's body stands on the middle of the street its lane is in
+## (`CityMap.street_middle_beside()`): a stationary unpinned body that spans the street and closes
+## it. Read by `BodyStance.stands_without_a_map()`.
+func stands_mid_street() -> bool:
+	return _is_an_unpinned_standing_body() and _spans_the_street and _closes_its_street
 
 ## A stationary solid body that `_pavement_side` does not pin to an edge: the bodies that are moved
 ## from where they are placed to where they stand, onto a band's middle or onto a kerb.

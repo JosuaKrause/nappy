@@ -14,6 +14,7 @@ func run(t: TestRunner) -> void:
 	_test_a_lane_point_goes_to_its_own_kerb(t)
 	_test_a_point_on_a_kerb_stays(t)
 	_test_no_kerb_outside_one_corridors_carriageway(t)
+	_test_a_lane_point_goes_to_the_middle_of_its_street(t)
 
 ## `CityMap.kerb_across_from()` on a generated map: from each of the two sidewalk tiles beside a
 ## kerb, on either side of a corridor and along either axis, it is the road tile against that kerb,
@@ -96,6 +97,25 @@ func _test_a_point_on_a_kerb_stays(t: TestRunner) -> void:
 		var once := CityMap.kerb_beside(on_it + Vector2(-9.0, 0.0))
 		t.check(CityMap.kerb_beside(once) == once,
 				"a point 9px short of the kerb at %.0fpx, stood twice, stays where once put it" % kerb)
+
+## `CityMap.street_middle_beside()`: a point in either carriageway lane goes to the middle of its
+## street, whichever lane, on either axis, with its place along the street kept; a sidewalk, a
+## junction box and ground off the streets stay.
+func _test_a_lane_point_goes_to_the_middle_of_its_street(t: TestRunner) -> void:
+	var middle := Tuning.STREET_WIDTH * 0.5 * TILE
+	for lane: int in [Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1]:
+		var north_south := _centre(Vector2i(lane, OFF_THE_CORRIDOR)) + Vector2(3.0, 5.0)
+		t.check(CityMap.street_middle_beside(north_south).is_equal_approx(Vector2(middle, north_south.y)),
+				"a point in the lane at %.0fpx across a north-south street goes to its middle" % north_south.x)
+		var east_west := _centre(Vector2i(OFF_THE_CORRIDOR, lane)) + Vector2(-4.0, 2.0)
+		t.check(CityMap.street_middle_beside(east_west).is_equal_approx(Vector2(east_west.x, middle)),
+				"a point in the lane at %.0fpx across an east-west street goes to its middle" % east_west.y)
+	var sidewalk := _centre(Vector2i(1, OFF_THE_CORRIDOR))
+	t.check(CityMap.street_middle_beside(sidewalk) == sidewalk, "a sidewalk point stays")
+	var box_middle := _centre(Vector2i(Tuning.SIDEWALK_WIDTH, Tuning.SIDEWALK_WIDTH))
+	t.check(CityMap.street_middle_beside(box_middle) == box_middle, "a junction box point stays")
+	var block := _centre(Vector2i(OFF_THE_CORRIDOR, OFF_THE_CORRIDOR))
+	t.check(CityMap.street_middle_beside(block) == block, "a point off the streets stays")
 
 ## No kerb is beside a sidewalk, a junction box (in both corridors at once, with no one kerb) or
 ## ground off the streets: the point is kept.

@@ -1,0 +1,87 @@
+{
+ "version": 1,
+ "name": "Open and closing roadblocks",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "tile": [
+    75,
+    58
+   ]
+  },
+  "mark": {
+   "tile": [
+    92,
+    68
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 13,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "north"
+  },
+  "task": {
+   "mark": "mark"
+  },
+  "events": [
+   {
+    "name": "open",
+    "row": "roadblock",
+    "at": [
+     2352,
+     2096
+    ]
+   },
+   {
+    "name": "closing",
+    "row": "closing_roadblock",
+    "at": [
+     2352,
+     1648
+    ]
+   }
+  ],
+  "route_bag": {
+   "marbles": [
+    "cat_dash",
+    "cat_dash",
+    "cat_dash",
+    "cat_dash",
+    "cat_dash",
+    "loose_dog",
+    "loose_dog",
+    "loose_dog",
+    "loose_dog",
+    "loose_dog",
+    "loose_dog",
+    "cyclist",
+    "cyclist",
+    "cyclist"
+   ],
+   "owed": 14,
+   "pre_bag": [
+    "cat_dash"
+   ],
+   "first_after": 3
+  }
+ },
+ "playback": {
+  "settled_camera": true,
+  "duration": 1.5,
+  "capture_at": 1,
+  "camera": {
+   "zoom": 0.55
+  },
+  "observations": []
+ }
+}
