@@ -11,6 +11,7 @@ func run(t: TestRunner) -> void:
 	await _test_roof_rotors(t)
 	_test_both_rotor_phases_share_one_registration(t)
 	await _test_event_parts(t)
+	await _test_figure_parts(t)
 
 ## A roof that is told what to stand through a recording drawer (`tests/recording_roof_drawer.gd`,
 ## standing each unit for real so a vent has its rotor), handed in as the city hands its own
@@ -278,6 +279,120 @@ func _test_event_parts(t: TestRunner) -> void:
 			t.check(again.all(func(scenery: Variant) -> bool:
 					return not is_instance_valid(scenery)),
 					"removing an event releases its scenery")
+	atlas.release(&"events")
+
+## A figure whose idle frame moves only part of it (the busker's strumming arm, a poster crew's
+## brush pasting at the wall it faces, a café sitter's lean) stands as layers of its own
+## (`EventScenery`) on its event, or on its table's slice for a café, in its view's mirror. What is
+## held is the player's guarantee (sunny-lynx): the frame swaps the moving layers' pictures, and
+## the stationary layers, the event's own canvas and a café's slice and table are not drawn again
+## for it. Counted off each canvas's `draw` signal, which a headless run emits like any other.
+func _test_figure_parts(t: TestRunner) -> void:
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	# The row, the heading it is sited along, the street it stands on, the period it swaps on and
+	# whether its view is the mirrored one: 1 for mirrored, 0 for not, -1 for a café, whose sitters
+	# each face their own table (`tests/test_event_views.gd` holds which way).
+	var cases: Array = [
+		["busker", Vector2.RIGHT, false, EventPictures.BUSKER_STRUM_PERIOD, 0],
+		["busker", Vector2.LEFT, false, EventPictures.BUSKER_STRUM_PERIOD, 1],
+		["busker", Vector2.DOWN, false, EventPictures.BUSKER_STRUM_PERIOD, 0],
+		["poster_crew", Vector2.UP, false, EventPictures.POSTER_CREW_PASTE_PERIOD, 0],
+		["cafe_tables", Vector2.RIGHT, false, EventPictures.SITTER_IDLE_PERIOD, -1],
+		["cafe_tables", Vector2.RIGHT, true, EventPictures.SITTER_IDLE_PERIOD, -1],
+	]
+	for case: Array in cases:
+		var id: String = case[0]
+		var heading: Vector2 = case[1]
+		var vertical: bool = case[2]
+		var period: float = case[3]
+		var what := "%s sited %s%s" % [id, heading, " on a north-south street" if vertical else ""]
+		var instance := EventInstance.new()
+		var laid := RecordingSceneryDrawer.new()
+		var pictures := RecordingEventDrawer.new(atlas)
+		pictures.scenery_drawer = laid
+		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), heading,
+				EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+					.drawn_from(atlas) \
+					.drawing_through(pictures))
+		t.add_child(instance)
+		# A café's slices go into the world on the idle frame after it is made; every layer is drawn
+		# on the frame after that.
+		for i in 3:
+			await t.get_tree().process_frame
+		# Past its telegraph, whose end is a change of its picture.
+		instance.step(instance.telegraphs_for() + 0.01)
+		await t.get_tree().process_frame
+		var sceneries := _sceneries_of(pictures)
+		# The busker and a crew stand one figure; a café one sitter per table.
+		t.check(not sceneries.is_empty(), "%s stands its figures as layers of their own (%d)"
+				% [what, sceneries.size()])
+		var owners: Array[CanvasItem] = [instance]
+		var moving: Array[SceneryLayer] = []
+		var still: Array[SceneryLayer] = []
+		var mirrored_as_its_view := true
+		var inside := true
+		for figure in sceneries:
+			var entry: Dictionary = {}
+			for drawn in pictures.draws:
+				if drawn.canvas == figure:
+					entry = drawn
+			var holder := figure.get_parent() as CanvasItem
+			if holder != instance:
+				owners.append(holder)
+				for child in holder.get_children():
+					if child is CanvasItem and child != figure:
+						owners.append(child)
+			var mirror: int = case[4]
+			mirrored_as_its_view = mirrored_as_its_view and (mirror < 0 or entry.mirrored == (mirror == 1))
+			instance.set_process(false)
+			var split: Array = await _split_by_animation(t, figure, laid)
+			instance.set_process(true)
+			var turning: Array[SceneryLayer] = []
+			turning.assign(split[0])
+			var standing: Array[SceneryLayer] = []
+			standing.assign(split[1])
+			t.check(not turning.is_empty() and not standing.is_empty(),
+					"%s keeps a stationary layer and a moving one (%d, %d)"
+							% [what, standing.size(), turning.size()])
+			moving.append_array(turning)
+			still.append_array(standing)
+			# Every part is registered inside the figure's own canvas at its feet.
+			var whole := Rect2(-entry.size.x * 0.5, -entry.size.y, entry.size.x, entry.size.y)
+			for layer in turning + standing:
+				for part in laid.shown_on(layer):
+					var rect: Rect2 = part.rect
+					if not entry.mirrored:
+						rect.position -= entry.foot
+					inside = inside and whole.grow(0.01).encloses(rect)
+		t.check(mirrored_as_its_view, "%s mirrors its figures as their view does" % what)
+		t.check(inside, "%s registers every part inside its own canvas" % what)
+		var redraws := {}
+		for canvas: CanvasItem in owners + still:
+			redraws[canvas] = 0
+			canvas.draw.connect(func() -> void: redraws[canvas] += 1)
+		var before := {}
+		for layer in moving:
+			before[layer] = _pictures_on(laid, layer)
+		instance.step(period * 0.5)
+		await t.get_tree().process_frame
+		var turned := not moving.is_empty()
+		for layer in moving:
+			var earlier: Array[Texture2D] = before[layer]
+			turned = turned and _all_differ(_pictures_on(laid, layer), earlier)
+		t.check(turned, "%s's clock swaps every moving layer's picture" % what)
+		instance.step(period * 0.5)
+		await t.get_tree().process_frame
+		var still_drawn := 0
+		for canvas: CanvasItem in owners + still:
+			still_drawn += int(redraws[canvas])
+		t.check(still_drawn == 0,
+				"%s's two swaps draw none of its stationary layers, its event or its slice again (%d)"
+						% [what, still_drawn])
+		instance.free()
+		await t.get_tree().process_frame
+		t.check(sceneries.all(func(figure: Variant) -> bool: return not is_instance_valid(figure)),
+				"%s's figures go with their event" % what)
 	atlas.release(&"events")
 
 ## The pictures `layer` stood the last time it was drawn through `scenery`, in order.

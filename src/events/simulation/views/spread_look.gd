@@ -36,25 +36,31 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ## back first by its owner.
 signal letting_go_of_the_slices
 
-## The scenery behind each slice of a crash or a burst main, index for index with `_slices`.
+## The partly animated picture each slice holds (`EventScenery`), index for index with `_slices`:
+## the scenery behind each slice of a crash or a burst main, a café table's sitter. Empty for a look
+## whose slices hold none.
 var _sceneries: Array[EventScenery] = []
 
-## The crash's and the burst main's visible scene: retained painter-order layers behind each of
-## its slices (`EventScenery`), shown while the instance is, on the frame its own clock picks. The
-## whole A/B sources remain the badge and halo pictures.
+## The partly animated pictures its slices hold (`_sceneries`): retained painter-order layers,
+## shown while the instance is, on the frame its own clock picks (`_scenery_period()`). The whole
+## A/B sources remain the badge and halo pictures.
 ##
 ## Overrides EventLook._update_scenery.
 func _update_scenery() -> void:
 	if _sceneries.is_empty():
 		return
 	var shown := _shows_anything()
-	var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD \
-			if _look.picture() == EventDef.Look.CAR_ACCIDENT \
-			else EventPictures.BURST_MAIN_SPLASH_PERIOD
-	var frame_b := idle_is_stepping(period)
+	var frame_b := idle_is_stepping(_scenery_period())
 	for scenery in _sceneries:
 		scenery.visible = shown
 		scenery.set_frame(frame_b)
+
+## The idle period the scenery its slices hold swaps its two frames on: the crash's smoke, else
+## the burst main's fountain.
+func _scenery_period() -> float:
+	return EventPictures.CAR_ACCIDENT_SMOKE_PERIOD \
+			if _look.picture() == EventDef.Look.CAR_ACCIDENT \
+			else EventPictures.BURST_MAIN_SPLASH_PERIOD
 
 ## The draw size for one slice of a spread: `along` is its length down the axis it spreads on,
 ## `thickness` is its extent across that axis, swapped into `(x, y)` for whichever axis that is —
@@ -183,10 +189,16 @@ func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 ## goes when the event is freed; a slice is freed only at the end of that frame and may be asked to
 ## draw once more, and then it draws nothing. A strong reference would keep the look, and through it
 ## the freed event, alive until the slice goes, and the slice would draw from it.
+##
+## What it holds is drawn over what it draws itself, in the order it was put in: the scenery of a
+## crash or a burst main stands behind it instead (`show_behind_parent`), and a café's slice holds
+## its sitter's layers and then its table (`add_front()`), which goes over the sitter.
 class Slice extends Node2D:
 	var _look: WeakRef
 	## Which slice of the picture it is, far end first. Set once, by its constructor.
 	var _index: int
+	## What of the slice is drawn over everything put in it before (`Front`), or null.
+	var _front: Front = null
 
 	## Handed, as the look makes it, the look that draws it and which slice it is.
 	func _init(look: SpreadLook, at: int) -> void:
@@ -197,6 +209,35 @@ class Slice extends Node2D:
 		var look := _look.get_ref() as SpreadLook
 		if look != null:
 			look.draw_the_slice(self, _index)
+
+	## Puts in what of the slice is drawn over everything already in it
+	## (`SpreadLook.draw_the_slice_front()`), once.
+	func add_front() -> void:
+		_front = Front.new(_look, _index)
+		_front.name = "Front"
+		add_child(_front)
+
+	## Draws the slice again, its front with it: what a change of the picture asks of it.
+	func redraw() -> void:
+		queue_redraw()
+		if _front != null:
+			_front.queue_redraw()
+
+## **What of one slice is drawn over what the slice holds**: a node at the slice's own origin, drawing
+## through the look that made it (`draw_the_slice_front()`), redrawn with the slice
+## (`Slice.redraw()`). It holds its look weakly, for the slice's reason.
+class Front extends Node2D:
+	var _look: WeakRef
+	var _index: int
+
+	func _init(look: WeakRef, at: int) -> void:
+		_look = look
+		_index = at
+
+	func _draw() -> void:
+		var look := _look.get_ref() as SpreadLook
+		if look != null:
+			look.draw_the_slice_front(self, _index)
 
 ## The slices the event's picture is drawn in, far end first, and where each stands from the
 ## body (`body_position()`), index for index.
@@ -283,6 +324,7 @@ func _build_the_scenery_of(slice: Slice, index: int) -> void:
 			EventPictures.wide_scene_shadow(picture) if index == 0 \
 					else "", _wide_scene_band(index))
 	scenery.position = -_slice_feet[index]
+	scenery.show_behind_parent = true
 	slice.add_child(scenery)
 	_sceneries.append(scenery)
 
@@ -322,7 +364,7 @@ func _move_the_slices(redraw := false) -> void:
 			slice.global_position = feet
 		slice.visible = shown
 		if redraw:
-			slice.queue_redraw()
+			slice.redraw()
 
 ## Slice `index` of the picture, drawn on its own node, `canvas`, from the body's own origin: what a
 ## slice asks of the look that made it each time it is drawn. A crash's or a burst main's draws
@@ -339,6 +381,11 @@ func draw_the_slice(canvas: CanvasItem, index: int) -> void:
 		_:
 			var pictures := _spread_pictures()
 			_draw_spread_slices(pictures[0], pictures[1], canvas, origin, index, index)
+
+## What of slice `index` is drawn over what the slice holds, on its front (`Front`), from the body's
+## own origin: nothing, for a look whose slices put in no front.
+func draw_the_slice_front(_canvas: CanvasItem, _index: int) -> void:
+	pass
 
 ## Frees the slices with whatever they hold: the scenery, and a rim standing behind the first,
 ## given back on the spot as a rim always is (`EntityHalo.release()`).

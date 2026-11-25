@@ -22,6 +22,51 @@ const LAYERS := {
 		["burst_water_main_vertical_motion_5", 0, 82, 50, 40, true],
 		["burst_water_main_vertical_static_6", 14, 166, 22, 33, false],
 	],
+	"busker_back": [
+		["busker_back_static_0", 0, 2, 29, 42, false],
+		["busker_back_motion_1", 6, 12, 12, 19, true],
+		["busker_back_static_2", 8, 0, 16, 16, false],
+	],
+	"busker_back_diagonal": [
+		["busker_back_diagonal_static_0", 0, 1, 30, 43, false],
+		["busker_back_diagonal_motion_1", 6, 12, 12, 19, true],
+		["busker_back_diagonal_static_2", 8, 0, 17, 16, false],
+	],
+	"busker_front": [
+		["busker_front_static_0", 0, 2, 29, 42, false],
+		["busker_front_motion_1", 8, 12, 14, 15, true],
+		["busker_front_static_2", 8, 0, 16, 26, false],
+	],
+	"busker_front_diagonal": [
+		["busker_front_diagonal_static_0", 0, 1, 30, 43, false],
+		["busker_front_diagonal_motion_1", 8, 12, 15, 17, true],
+		["busker_front_diagonal_static_2", 8, 0, 18, 27, false],
+	],
+	"busker_side": [
+		["busker_side_static_0", 0, 2, 30, 42, false],
+		["busker_side_motion_1", 12, 12, 14, 16, true],
+		["busker_side_static_2", 9, 0, 17, 27, false],
+	],
+	"cafe_sitter_back": [
+		["cafe_sitter_back_static_0", 0, 20, 16, 10, false],
+		["cafe_sitter_back_motion_1", 1, 0, 15, 25, true],
+	],
+	"cafe_sitter_back_diagonal": [
+		["cafe_sitter_back_diagonal_static_0", 0, 18, 16, 12, false],
+		["cafe_sitter_back_diagonal_motion_1", 1, 0, 15, 27, true],
+	],
+	"cafe_sitter_front": [
+		["cafe_sitter_front_static_0", 0, 20, 16, 10, false],
+		["cafe_sitter_front_motion_1", 1, 0, 15, 25, true],
+	],
+	"cafe_sitter_front_diagonal": [
+		["cafe_sitter_front_diagonal_static_0", 0, 18, 16, 12, false],
+		["cafe_sitter_front_diagonal_motion_1", 1, 0, 15, 27, true],
+	],
+	"cafe_sitter_side": [
+		["cafe_sitter_side_static_0", 3, 19, 13, 11, false],
+		["cafe_sitter_side_motion_1", 2, 0, 14, 25, true],
+	],
 	"car_accident": [
 		["car_accident_static_0", 10, 5, 123, 45, false],
 		["car_accident_motion_1", 74, 0, 23, 14, true],
@@ -31,5 +76,12 @@ const LAYERS := {
 		["car_accident_vertical_static_0", 0, 1, 50, 118, false],
 		["car_accident_vertical_motion_1", 27, 48, 22, 19, true],
 		["car_accident_vertical_static_2", 15, 153, 20, 44, false],
+	],
+	"poster_crew_back": [
+		["poster_crew_back_static_0", 0, 28, 26, 16, false],
+		["poster_crew_back_motion_1", 18, 0, 12, 22, true],
+		["poster_crew_back_static_2", 6, 11, 18, 22, false],
+		["poster_crew_back_motion_3", 2, 0, 12, 33, true],
+		["poster_crew_back_static_4", 7, 0, 16, 16, false],
 	],
 }

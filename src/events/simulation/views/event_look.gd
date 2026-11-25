@@ -97,14 +97,16 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ## no redraw, never-settling pictures included, since most of a day's live instances are off screen
 ## and the key's caret was the projection's only caller there. The picture is left as it was, and
 ## the first drawn frame any of it is back inside the box redraws it from what it is now, caret included,
-## before the margin has let any of it onto the screen. The drawing nodes (`move_nodes()`) and the
-## scenery are still moved and shown. Answers whether it asked for a draw.
+## before the margin has let any of it onto the screen. The drawing nodes are still moved and shown
+## (`move_nodes()`); the moving layers of a partly animated picture turn to their frame only while
+## it is in the box (`_update_scenery()`), so the first frame back shows the frame its clock is on.
+## Answers whether it asked for a draw.
 func redraw_if_the_picture_changed() -> bool:
-	_update_scenery()
 	if not _in_the_drawn_view():
 		_picture_is_stale = true
 		move_nodes()
 		return false
+	_update_scenery()
 	var key := _picture_key()
 	var changed := key != _picture or _picture_is_stale
 	_picture = key
@@ -176,6 +178,17 @@ func _picture_never_settles() -> bool:
 	return _look.picture() == EventDef.Look.BURNING_BUILDING \
 			or _look.picture() == EventDef.Look.FIREFIGHT
 
+## Which of its two idle frames the event's own picture shows right now, for the key: false for a
+## look whose own canvas draws no idle frame. **Only the looks that actually read an idle timer
+## carry one.** `idle_is_stepping()` is a function of the clock alone and knows nothing about the
+## row asking, so handing it to every instance would flip every seal's key twice a second for an
+## animation it does not have — the gate would then be paying its whole cost and buying nothing. And
+## a frame its own moving layers show (`EventScenery`: the crash's smoke, the burst main's fountain,
+## a café sitter's lean, the busker's strum, a poster crew's brush) is left out too, since swapping
+## it redraws those layers and nothing of the owner's.
+func _idle_frame_in_key() -> bool:
+	return false
+
 ## Which heading the next draw would pick the event's eight-view sector from.
 ##
 ## Ordinarily `EventInstance.facing_now()`. Two exceptions. A robber who has not noticed her yet:
@@ -220,20 +233,7 @@ func _picture_key() -> Vector4i:
 	if caret > 0:
 		swell = _share_of_its_peak_now()
 		flashed_off = _mark_is_flashed_off()
-	# **Only the looks that actually read an idle timer carry one.** `idle_is_stepping()` is a
-	# function of the clock alone and knows nothing about the row asking, so handing it to every
-	# instance would flip every seal's key twice a second for an animation it does not have — the
-	# gate would then be paying its whole cost and buying nothing. Smoke and fountain phases
-	# belong to their own small layers, while the steam is already a cloud-only picture.
-	var idle := false
-	if picture == EventDef.Look.CAFE:
-		idle = idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
-	elif picture == EventDef.Look.BUSKER:
-		idle = idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD)
-	elif picture == EventDef.Look.POSTER_CREW:
-		idle = idle_is_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD)
-	elif picture == EventDef.Look.STEAM:
-		idle = idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
+	var idle := _idle_frame_in_key()
 	var flags := 0
 	flags = flags * 2 + (1 if event.is_gone() else 0)
 	flags = flags * 2 + (1 if EventFootprints.hidden_by_its_hold(event) else 0)
@@ -763,7 +763,9 @@ func draw_the_band(_canvas: CanvasItem, _at: Vector2) -> void:
 func _shows_its_nodes(_reach: Rect2) -> bool:
 	return false
 
-## The scenery's frame for this tick, on a look that has scenery.
+## The frame its clock is on for the moving layers of a partly animated picture (`EventScenery`),
+## and whether they are shown, on a look that has them: asked on every drawn frame the event is in
+## the box (`redraw_if_the_picture_changed()`).
 func _update_scenery() -> void:
 	pass
 

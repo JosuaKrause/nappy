@@ -60,8 +60,6 @@ func run(t: TestRunner) -> void:
 	_test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t)
 	_test_the_marks_flash_is_in_the_key(t)
 	_test_the_caret_strength_is_in_the_key(t)
-	_test_the_buskers_strum_moves_the_key_without_him_moving(t)
-	_test_the_cafe_sitters_lean_moves_the_key(t)
 	_test_separated_details_keep_the_owner_key_stable(t)
 	_test_a_waiting_robber_turning_to_face_her_moves_the_key(t)
 	_test_a_chatting_mother_moves_her_key_while_frozen(t)
@@ -339,56 +337,18 @@ func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 
 # ---------------------------------------------------------- the idle animations ---
 
-## The busker never moves an inch and never covers any ground, so his strum is driven by
-## `idle_is_stepping(BUSKER_STRUM_PERIOD)` rather than by the gait — the one animation in the game a
-## distance-driven key would have silenced outright.
-func _test_the_buskers_strum_moves_the_key_without_him_moving(t: TestRunner) -> void:
-	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.by_id("busker"))
-	_asks(look)
-	var asked := 0
-	var swaps := 0
-	var was := look.idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD)
-	for i in int(ceil(EventPictures.BUSKER_STRUM_PERIOD * 3.0 / STEP)):
-		event.tick(STEP, 0.0)
-		var now := look.idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD)
-		if now != was:
-			swaps += 1
-		was = now
-		if _asks(look):
-			asked += 1
-	t.check(swaps >= 2, "his strum swapped frames over three periods (%d)" % swaps)
-	t.check(asked == swaps, "and the key moves exactly when his frame swaps (%d, %d)" % [asked, swaps])
-	event.free()
-
-## The same for the café frontage's lean, on its own slower timer — the whole row leans together,
-## so one instance's key carries it for every sitter.
-func _test_the_cafe_sitters_lean_moves_the_key(t: TestRunner) -> void:
-	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.by_id("cafe_tables"))
-	var asked := 0
-	var swaps := 0
-	_asks(look)
-	var was := look.idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
-	for i in int(ceil(EventPictures.SITTER_IDLE_PERIOD * 2.5 / STEP)):
-		event.tick(STEP, 0.0)
-		var now := look.idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
-		if now != was:
-			swaps += 1
-		was = now
-		if _asks(look):
-			asked += 1
-	t.check(swaps >= 1 and asked == swaps,
-			"a café frontage's key moves exactly when its lean frame swaps (%d, %d)" % [asked, swaps])
-	event.free()
-
-## The crash's smoke, the burst main's fountain and the basement vent's steam alternate two frames
-## off `idle_is_stepping()` while standing perfectly still. The cloud-only steam moves its owner's
-## key; the other two scenes keep theirs stable because their small detail layers own each swap.
+## The crash's smoke, the burst main's fountain, the busker's strum, a café sitter's lean, a poster
+## crew's brush and the basement vent's steam alternate two frames off `idle_is_stepping()` while
+## standing perfectly still: none of them moves an inch or covers any ground, so a distance-driven
+## key would have silenced every one. The cloud-only steam moves its owner's key; the others keep
+## theirs stable because their small moving layers (`EventScenery`) own each swap.
 func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 	var periods := {
 		"car_accident": EventPictures.CAR_ACCIDENT_SMOKE_PERIOD,
 		"burst_water_main": EventPictures.BURST_MAIN_SPLASH_PERIOD,
+		"busker": EventPictures.BUSKER_STRUM_PERIOD,
+		"cafe_tables": EventPictures.SITTER_IDLE_PERIOD,
+		"poster_crew": EventPictures.POSTER_CREW_PASTE_PERIOD,
 		"basement_steam": EventPictures.STEAM_BILLOW_PERIOD,
 	}
 	for id: String in periods:

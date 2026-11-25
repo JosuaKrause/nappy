@@ -37,10 +37,14 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POSTER_CREW:
-			var crew := EventPictures.POSTER_CREW_BY_VIEW_B \
-					if idle_is_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD) \
-					else EventPictures.POSTER_CREW_BY_VIEW
-			_draw_eight_view(crew, event.facing_now(), canvas)
+			if _drawn_by_its_parts(canvas):
+				select_view(event.facing_now())
+				_draw_body_shadow(canvas)
+			else:
+				var crew := EventPictures.POSTER_CREW_BY_VIEW_B \
+						if idle_is_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD) \
+						else EventPictures.POSTER_CREW_BY_VIEW
+				_draw_eight_view(crew, event.facing_now(), canvas)
 		EventDef.Look.POSTER_CREW_SQUARE:
 			# Sited with no pavement side to turn it, so `PlanBuilder.build()` leaves its facing at
 			# due east and the row draws its `side` view unmirrored, every time — the same dead
@@ -129,6 +133,8 @@ func _draw_crater(canvas: CanvasItem) -> void:
 func _draw_busker(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var view := select_view(event.facing_now())
+	if _drawn_by_its_parts(canvas):
+		return
 	var mirror := is_mirrored()
 	var by_view := EventPictures.BUSKER_BY_VIEW_B \
 			if idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
@@ -201,3 +207,104 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 	var view := select_view(event.facing_now())
 	_drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
+
+# ------------------------------------------------------------- the moving parts ---
+# **A figure whose idle frame moves only part of it keeps the rest still**: the busker's strumming
+# arm and a poster crew's raised brush and sheet are the only spans of their pictures the second
+# frame changes (`EventSceneryParts`), so on the event's own canvas the figure stands as retained
+# layers of its own (`EventScenery`), over the shadow the event draws, and a swap redraws the
+# moving span's layer and nothing else. A view whose two frames are one picture (every poster crew
+# view but the back) has no layers and no swap at all. Any other canvas, a rim tracing the figure,
+# gets the whole picture of the frame it is on.
+
+## The figure's layers on the event's own canvas, or null for a view with no moving part.
+var _parts: EventScenery = null
+
+## The picture `_parts` stand (its first frame) and whether they are mirrored, so a change of view
+## builds them again.
+var _parts_picture := ""
+var _parts_mirrored := false
+
+## The first frame of the view the figure stands in now and whether it is mirrored, for a figure whose
+## two idle frames differ in that view; `["", false]` for any other.
+func _moving_view() -> Array:
+	var by_view: Dictionary = {}
+	var by_view_b: Dictionary = {}
+	match _look.picture():
+		EventDef.Look.BUSKER:
+			by_view = EventPictures.BUSKER_BY_VIEW
+			by_view_b = EventPictures.BUSKER_BY_VIEW_B
+		EventDef.Look.POSTER_CREW:
+			by_view = EventPictures.POSTER_CREW_BY_VIEW
+			by_view_b = EventPictures.POSTER_CREW_BY_VIEW_B
+		_:
+			return ["", false]
+	var sector := EightDirection.update(_view_sector, event.facing_now())
+	var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[sector]
+	var first: String = by_view[view]
+	if first == by_view_b[view]:
+		return ["", false]
+	return [first, EightDirection.is_mirrored(sector)]
+
+## Stands the figure's layers for the view it is in now, building them again only when the view
+## changed, and lets go of them for a view with no moving part.
+func _stand_the_parts() -> void:
+	if _skip_draw:
+		return
+	var wanted := _moving_view()
+	var picture: String = wanted[0]
+	var mirrored: bool = wanted[1]
+	if _parts != null and picture == _parts_picture and mirrored == _parts_mirrored:
+		return
+	if _parts != null:
+		_parts.queue_free()
+		_parts = null
+	_parts_picture = picture
+	_parts_mirrored = mirrored
+	if picture.is_empty():
+		return
+	_parts = _drawer.scenery(picture, EventPictures.native_size(picture), Vector2.ZERO, "",
+			Rect2(), mirrored)
+	_parts.name = "Parts"
+	event.add_child(_parts)
+	_update_scenery()
+
+## Whether the figure on `canvas` is left to its layers: on the event's own canvas, once they stand.
+func _drawn_by_its_parts(canvas: CanvasItem) -> bool:
+	return _parts != null and canvas == event
+
+## The idle period the figure's moving part swaps on.
+func _parts_period() -> float:
+	return EventPictures.BUSKER_STRUM_PERIOD if _look.picture() == EventDef.Look.BUSKER \
+			else EventPictures.POSTER_CREW_PASTE_PERIOD
+
+## Overrides EventLook.build_nodes.
+func build_nodes() -> void:
+	_stand_the_parts()
+
+## Stands the layers again when the picture changed, and shows them while the event is. They stay
+## the event's child while it is out of the tree and build their own pictures again as they come
+## back with it (`EventScenery`), so entering and leaving the tree ask nothing of this look.
+##
+## Overrides EventLook.move_nodes.
+func move_nodes(redraw := false) -> void:
+	if redraw:
+		_stand_the_parts()
+	if _parts != null:
+		_parts.visible = _shows_anything()
+
+## Overrides EventLook._update_scenery.
+func _update_scenery() -> void:
+	if _parts == null:
+		return
+	_parts.visible = _shows_anything()
+	_parts.set_frame(idle_is_stepping(_parts_period()))
+
+## The steam's billow, which is the whole cloud. The busker's strum and a poster crew's brush are
+## not in the key: their layers show them, and a view with no layers has one picture for both
+## frames.
+##
+## Overrides EventLook._idle_frame_in_key.
+func _idle_frame_in_key() -> bool:
+	return _look.picture() == EventDef.Look.STEAM \
+			and idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
