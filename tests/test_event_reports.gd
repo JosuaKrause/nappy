@@ -32,6 +32,7 @@ static func _tellers(instance: EventInstance) -> Array[Array]:
 		["tell_pursuit_ended", ["robber", true], "pursuit_ended"],
 		["tell_encounter_seen", [4, "street_musician"], "encounter_seen"],
 		["tell_encounter_influenced", [5, "dog_walker", false], "encounter_influenced"],
+		["tell_encounter_passed", [4, "street_musician"], "encounter_passed"],
 		["tell_run_bout_began", [6], "run_bout_began"],
 		["tell_pelican_spawned", [instance], "pelican_spawned"],
 		["tell_pelican_sighted", [instance], "pelican_sighted"],

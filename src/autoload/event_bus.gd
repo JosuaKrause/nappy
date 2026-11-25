@@ -148,6 +148,11 @@ signal encounter_seen(day: int, name: String)
 ## that encounter: a meaningful encounter is held until it is seen, and sent with `seen` false only
 ## once it is over without having been.
 signal encounter_influenced(day: int, name: String, seen: bool)
+## An encounter she had seen is over while the day goes on: its instance has been out of sight for
+## `EncounterWatch.ENCOUNTER_GAP` or is gone, so she has left it behind — once per encounter. An
+## encounter the day's end closes is not passed. Listen-only, for `VisitCounter` — see
+## docs/TELEMETRY.md, "The page counts visits".
+signal encounter_passed(day: int, name: String)
 ## She began running after at least `EncounterWatch.RUN_BOUT_GAP` of not running, or for the first time in
 ## the day.
 signal run_bout_began(day: int)
@@ -212,6 +217,14 @@ signal city_went_quiet()
 ## silence — unlike `city_went_quiet` above, this fires on every go-dark. Listen-only, for
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal city_gone_dark()
+## `DayController.tick()`'s own moment she steps from anywhere else onto the road or a crossing (a
+## carriageway tile), once per step onto it: the run log's `cross` line is the same moment. Listen-only,
+## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal road_entered()
+## `DayController.tick()`'s own moment she steps from anywhere else onto calm ground (a park, forest,
+## square, courtyard or alley tile, `Tile.is_calm()`), once per arrival: the run log's `calm` line is
+## the same moment. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal calm_ground_entered()
 
 # ------------------------------------------------------------------- escape ---
 # The escape's own moments, emitted by `main` as its sections begin and end, beside the start and
