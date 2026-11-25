@@ -250,7 +250,8 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 ## been up** (`EventDirector._holds_while_its_badge_is_up()`): its badge is up alone for
 ## `warned_for()` and the thing is created just out of sight of the camera then, a place that has
 ## moved along the road with her, so a start that is ground now and a break in the carriageway a
-## second of her running on would take the badge down with nothing behind it. A way on that lets a car
+## second of her running on would take the badge down with nothing behind it. A way on that lets
+## a car
 ## start only up to a cutoff down the road sites the convoy when the cutoff is further than she can
 ## run in that time and refuses it when it is nearer.
 func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
@@ -267,7 +268,8 @@ func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 		var way := _StartsAboveWayOn.new(wanted.y + reach + margin)
 		var sited := _due(_director(map, "military_convoy", _no_plans(), 1, way)).size() >= 2
 		t.check(sited == (margin > 0.0),
-				"with ground to set off from %.0fpx %s than she runs in the badge's time, the convoy is %s"
+				("with ground to set off from %.0fpx %s than she runs in the badge's time, "
+				+ "the convoy is %s")
 				% [absf(margin), "further" if margin > 0.0 else "nearer",
 				"sited" if margin > 0.0 else "refused"])
 
@@ -280,7 +282,7 @@ class _StartsAboveWayOn extends FakeWayOn:
 		super()
 		_cutoff = cutoff
 
-	## Overrides FakeWayOn.drives_clear.
+	## Overrides test_event_director.FakeWayOn.drives_clear.
 	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
 		return path.size() >= 2 and path[0].y <= _cutoff
 
@@ -325,8 +327,10 @@ func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner
 				"and %d of 8 are where both answer, each asked of its own leg and a way on from its "
 				% sited + "end (%d)" % asked_right)
 
-## **Where the lane beside her has no leg a car may drive, the convoy comes down the street she comes
-## to** (`EventDirector._down_the_street_she_comes_to()`): on her street crossed at the next junction
+## **Where the lane beside her has no leg a car may drive, the convoy comes down the street she
+## comes
+## to** (`EventDirector._down_the_street_she_comes_to()`): on her street crossed at the next
+## junction
 ## box ahead of her (`_crossroads()`), a way on that lets no car drive along her street sites the
 ## convoy in the carriageway of the street across, out of her sight up it, driving through the box
 ## she is walking to; one that lets no car drive either street sites none.
@@ -334,9 +338,10 @@ func _test_a_convoy_comes_down_the_street_she_comes_to_where_her_lane_has_none(
 		t: TestRunner) -> void:
 	var map := _crossroads()
 	var her := _turned(HER + Vector2i(CityMap.period(), 0), true)
-	var due := _due_at(_director(map, "military_convoy", _no_plans(), 1, _AcrossHerStreetWayOn.new()),
-			her)
-	t.check(due.size() >= 2, "with no leg along her street, the convoy is still sent (%d)" % due.size())
+	var across := _AcrossHerStreetWayOn.new()
+	var due := _due_at(_director(map, "military_convoy", _no_plans(), 1, across), her)
+	t.check(due.size() >= 2,
+			"with no leg along her street, the convoy is still sent (%d)" % due.size())
 	if due.size() < 2:
 		return
 	var leg := due[1] as PackedVector2Array
@@ -384,7 +389,7 @@ static func _crossroads() -> CityMap:
 
 ## A way on that lets a car drive only a leg running east-west, across the street she walks.
 class _AcrossHerStreetWayOn extends FakeWayOn:
-	## Overrides FakeWayOn.drives_clear.
+	## Overrides test_event_director.FakeWayOn.drives_clear.
 	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
 		return path.size() >= 2 and absf(path[path.size() - 1].y - path[0].y) < 1.0
 
@@ -712,7 +717,8 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 	t.check(director.owed() == 3, "the route is owed what the recipe says")
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
 
-## **A walk that sends its own trucks** (`DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`, the escape city's)
+## **A walk that sends its own trucks** (`DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`,
+## the escape city's)
 ## is owed one marble for each sent-ahead row its plan left unplaced, and none for a truck its
 ## plan placed or for a row it does not send: what she meets is the plan's trucks sent just ahead
 ## of her, and nothing else, whatever the day's number. The walk that sends nothing is owed none
@@ -752,7 +758,8 @@ static func _started(day: int, plans: Array[EventPlan], sends: DaySpec.DirectorS
 	return director
 
 ## **The share of the usual wait a walk names is the share of it that passes before the first
-## handout** (`DaySpec.handout_wait_share()`, `EventDirector.start_day()`): on one stream, the wait a
+## handout** (`DaySpec.handout_wait_share()`, `EventDirector.start_day()`): on one stream, the
+## wait a
 ## director is handed half of is half the wait of one handed all of it, to a tick.
 func _test_a_walk_lets_the_share_of_the_wait_it_names_pass_between_handouts(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("military_convoy")

@@ -2210,7 +2210,8 @@ static func _military_convoy() -> EventDef:
 	# **Sent ahead of her on an ordinary day** (`EventDraft.sent_ahead()`; inbox #1460 in silky-lemur, "the same for
 	# [...] the convoy"; "just spawn in the car just ahead of the player"): warned of first, its badge
 	# alone for a second, then created in the lane beside her just out of sight up the road ahead of
-	# her, as day 13's column is. The escape's trucks are this row too, handed to the director by its
+	# her, as day 13's column is. The escape's trucks are this row too, handed to the director
+	# by its
 	# plan (`DaySpec.hands_the_director()`).
 	row.sent_ahead(SentAhead.warned_first())
 	row.drawn(2.0, 1)

@@ -91,7 +91,8 @@ class _Placing extends RefCounted:
 ## `locations` records each draw (`DayLocations.record()`); `rows` the rows the
 ## bag's marbles name (`id -> EventDef`); `ground` the judge; `one_marble_a_unit`, the unit
 ## draws one marble and stops (the class comment); `hands_to_the_director`, `(row: EventDef) ->
-## bool`, says which drawn rows the director sends (`DaySpec.hands_the_director()`), none by default.
+## bool`, says which drawn rows the director sends (`DaySpec.hands_the_director()`), none by
+## default.
 func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
 		one_marble_a_unit := false, hands_to_the_director := Callable()) -> void:
 	_locations = locations

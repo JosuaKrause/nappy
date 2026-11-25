@@ -218,7 +218,8 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is; one that sends
 ## the rows of its own plan (`SENT_AHEAD_ROWS_OF_ITS_PLAN`) owes only the sent-ahead rows its plan
 ## left unplaced, in a route bag of those alone. There is no
-## default: a caller says what its walk sends. `wait_share` is the share of `AHEAD_INTERVAL` the walk
+## default: a caller says what its walk sends. `wait_share` is the share of `AHEAD_INTERVAL` the
+## walk
 ## lets pass between two handouts (`DaySpec.handout_wait_share()`).
 func start_day(day: int, plans: Array[EventPlan],
 		rng: RandomNumberGenerator, sends: DaySpec.DirectorSends,
@@ -285,7 +286,8 @@ func start_day(day: int, plans: Array[EventPlan],
 	_teach_the_run(day, lesson)
 	_rig_day_one(day, heat)
 
-## **The sent-ahead rows a walk's own plan left for the director** (`DaySpec.hands_the_director()`): each is
+## **The sent-ahead rows a walk's own plan left for the director**
+## (`DaySpec.hands_the_director()`): each is
 ## a marble of a route bag that holds them alone, and a slot owed, so she meets as many as the plan
 ## handed over, one at the director's usual pace, each sited ahead of her as a day's convoy is
 ## (`_routed()`). A truck is no row of the ordinary bag, so `max_per_day` caps none of them.
@@ -299,7 +301,8 @@ func _owe_its_trucks(trucks: Array[EventDef], heat: int) -> void:
 		_owed.append(null)
 	_route = MarbleBag.new([], marbles, hash("%d:route-bag" % _rng.seed))
 
-## The share of `AHEAD_INTERVAL` the walk lets pass between two handouts (`start_day()`'s `wait_share`).
+## The share of `AHEAD_INTERVAL` the walk lets pass between two handouts (`start_day()`'s
+## `wait_share`).
 var _wait_share := 1.0
 
 ## Whether today's route is the ordinary day's rows (`start_day()`'s `sends`). When it is not, the
@@ -1446,7 +1449,8 @@ func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 ## hers at the next junction box ahead of her, from either end, driving toward the box. Its place is
 ## level with her across that street, which is the box she is walking to, and just out of sight up
 ## it (`PendingWarning.in_its_lane()`), and its first leg runs through the box to its far edge
-## (`leg_in_the_lane()`), so it crosses her way ahead of her, warned of first and from where its badge
+## (`leg_in_the_lane()`), so it crosses her way ahead of her, warned of first and from where its
+## badge
 ## points, as the convoy in the lane beside her comes past her. It is held to everything the lane
 ## beside her is held to (`_down_the_lane()`, `clear_to_send()`).
 ##

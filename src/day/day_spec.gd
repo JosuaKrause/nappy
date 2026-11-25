@@ -46,8 +46,10 @@ const FINALE_BAG_VANS := 3
 ## bag draws are all owed to it, so at a day's pace of 11 to 26 seconds between handouts she would
 ## meet about half the trucks the escape met while they stood on its streets, and none at all in
 ## over half her walks. The filer's proposal, set by measurement
-## (`tests/probes/escape_winnable.gd`, twelve seeds and both exits) so that the trucks she meets a
-## minute and the walks that meet none are no worse than with the trucks placed; open to the player.
+## (`tests/probes/escape_winnable.gd`, twelve seeds and both exits) so that she meets as many
+## trucks a
+## minute as with the trucks placed; open to the player. It sets how many she meets, not which walks
+## meet one: where a truck can come is the lanes' (`docs/EVENTS.md`, the escape's section).
 const ESCAPE_HANDOUT_WAIT_SHARE := 0.25
 
 ## What the event director may send her while she walks (`director_sends()`).
@@ -505,7 +507,8 @@ func director_sends() -> DirectorSends:
 	return _director_sends
 
 ## **Whether a marble of the walk's bag that stands `row` is the director's to send ahead of her**
-## rather than a place on the street that drew it (`DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`): a row the
+## rather than a place on the street that drew it (`DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`):
+## a row the
 ## director sends ahead of her on a day (`EventDef.is_sent_ahead()`), the army truck. The street
 ## that draws one stands nothing, as for the poster crew's marble, and the director is owed the
 ## truck (`EventDirector.start_day()`); the barrier trucks that seal the streets off her walk stay
