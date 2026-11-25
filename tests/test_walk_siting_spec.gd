@@ -17,8 +17,9 @@ extends RefCounted
 ## `queue_a_mast()`), and builds the parts it hands `EventsAhead` (the world, streaming, spawner
 ## and board) the way `EventManager._init()` does for the second: `EventsAhead` is the module
 ## under test, the maker is a fake.
-## The director is a fake that records what it is handed (`_RecordingDirector`); the siting the
-## fake maker answers is a stand-in (`FakeWalkSiting`), so no siting is built over a city.
+## The director is real in the siting cases (a rigged route needs its route bag), over that map; in
+## the hand-off case it is a fake that records what it is handed (`_RecordingDirector`). The siting
+## the fake maker answers is a stand-in (`FakeWalkSiting`), so no siting is built over a city.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 
