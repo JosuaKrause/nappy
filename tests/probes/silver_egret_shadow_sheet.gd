@@ -3,10 +3,13 @@ extends RefCounted
 ## and vehicle the change reaches at all eight `EightDirection` sectors, each twice, over the shadow
 ## it cast before (its ground shape's own `GroundShape.shadow_outline()`, the one oval or capsule)
 ## and over the one it casts now (`EventLook.shadow_outlines()`, `AgentLook.shadow_outlines()`, one
-## oval per wheel pair). The riot van and the moving van keep their shadow
-## (`EventVehicleLook.SCENE_SHAPED`), so their two rows are the same shadow twice: they are drawn so the
-## player sees what stays. The shadows come from the game's own calls: a fake event's look and a crowd
-## car the game placed are asked for them, the same calls the draw and the debug view's shadow layer
+## oval per wheel pair). The riot van and the moving van, whose ground shape is their scene
+## (`EventVehicleLook.SCENE_SHAPED`), cast theirs under a body read off their picture. The swing
+## frame is drawn the same way, over the capsule it cast across its whole picture and over the one oval
+## under each A-frame it casts now (`Prop.shadow_outlines()`), and a third time with day 12's touch
+## spot traced round its base (`Prop.swing_frame_base()`), which the shadow no longer draws. The
+## shadows come from the game's own calls: a fake event's look, a crowd car the game placed and a
+## swing frame prop are asked for them, the same calls the draw and the debug view's shadow layer
 ## make. The pictures are re-rasterised from their authored SVGs, as
 ## `tests/probes/m108_event_vehicles_sheet.gd` does, and stood where the game stands them: on the
 ## node, or over the body for the cars that drive (`EventLook.body_anchor()`,
@@ -45,6 +48,7 @@ func run(t: TestRunner) -> void:
 	_event_rows("riot-van", "night_raid", EventPictures.RIOT_VAN_BY_VIEW, true)
 	_stationary_rows("burnt-out-car", "burnt_out_car", EventDef.Look.BURNT_OUT_CAR)
 	_stationary_rows("moving-van", "moving_van", EventDef.Look.MOVING_VAN)
+	_swing_frame_rows(t)
 	print("silver_egret_shadow_sheet: rows written under %s"
 			% ProjectSettings.globalize_path(OUT_DIR))
 	t.check(true, "silver_egret_shadow_sheet probe ran")
@@ -169,6 +173,41 @@ func _stationary_rows(name: String, def_id: String, look_id: EventDef.Look) -> v
 		instance.free()
 	_save_row(name + "-before", before)
 	_save_row(name + "-after", after)
+
+## The swing frame, the one picture it is ever drawn as: over the capsule it cast before (half its
+## picture's height round a spine reaching half its width less that), over the ovals it casts now,
+## and over those with day 12's touch spot traced round its base in `SPOT`.
+func _swing_frame_rows(t: TestRunner) -> void:
+	var frame := Prop.new()
+	frame.dress(null, Prop.Kind.PLAYGROUND_FRAME)
+	t.add_child(frame)
+	var now := frame.shadow_outlines(Vector2.ZERO)
+	frame.free()
+	var size := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME))
+	var old: Array[PackedVector2Array] = [GroundShape.segment(size.x * 0.5 - size.y * 0.5,
+			size.y * 0.5).shadow_outline(Vector2.ZERO, Vector2.RIGHT)]
+	var picture := _svg(Prop.SWING_FRAME)
+	var before: Array[Image] = [_cell(old, picture, Vector2.ZERO)]
+	var after: Array[Image] = [_cell(now, picture, Vector2.ZERO)]
+	var spot := _cell(now, picture, Vector2.ZERO)
+	_trace_ellipse(spot, Prop.swing_frame_base())
+	var spotted: Array[Image] = [spot]
+	_save_row("swing-frame-before", before)
+	_save_row("swing-frame-after", after)
+	_save_row("swing-frame-touch-spot", spotted)
+
+## The colour the touch spot's outline is traced in: nothing in the game draws it.
+const SPOT := Color("d04060")
+
+## Traces the ellipse of semi-axes `semi` round the node of `cell`, a pixel wide in `SPOT`.
+func _trace_ellipse(cell: Image, semi: Vector2) -> void:
+	var samples := 720
+	for i in samples:
+		var angle := TAU * float(i) / float(samples)
+		var world := NODE + Vector2(cos(angle) * semi.x, sin(angle) * semi.y)
+		var pixel := Vector2i((world * SCALE).round())
+		if Rect2i(Vector2i.ZERO, cell.get_size()).has_point(pixel):
+			cell.set_pixelv(pixel, SPOT)
 
 # ------------------------------------------------------------------ rendering ---
 
