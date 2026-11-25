@@ -1,4 +1,4 @@
-# minty-quail — The rules a test is written under move to writing-tests, and the two test items close (minty-quail, T2) · 2026-11-24
+# minty-quail — The rules a test is written under move to writing-tests, and the two test items close · 2026-11-24
 
 minty-quail's last two test items, `tests-public-seams.md` (tests drive public seams and real
 frames) and `tests-unseen-reads.md` (what the count cannot see), close. The rules they held are
@@ -11,9 +11,11 @@ measured. The pull request changes no code.
 **Where the rules came from.** The seam rule (a member made public or added has a caller among the
 game's own classes or is a dependency its code hands in; a public member only a test reads is not a
 seam) is the dependency-injection ask (minty-lemur #794) read with the zero-reader answer (inbox
-#1095 in curly-rabbit); the records minty-quail-44 and -47 applied it. The no-private-reads and
-no-hand-called-frames rule, with its two count commands, grew out of the same ask and inbox #1018
-in brisk-ferret. The commands' glob was `tests/*.gd` until minty-quail-spry-koala found it skipped
+#1095 in curly-rabbit); the records minty-quail-44 and -47 applied it. The player's "through public
+APIs" is inbox #813 in curly-moose. The no-hand-called-frames rule is the refactor ticket's own,
+in the records minty-quail (the runner lets frames pass) and minty-quail-47, and the player's words
+do not hold it. Inbox #1018 in brisk-ferret made the private-read part guidance, a sign to look
+again, not a hard rule. The two count commands came from that ticket. The commands' glob was `tests/*.gd` until minty-quail-spry-koala found it skipped
 `tests/fixtures/`; `tools/check_test_only_members.py` and `tools/check_field_reads.py` hold the
 rest.
 

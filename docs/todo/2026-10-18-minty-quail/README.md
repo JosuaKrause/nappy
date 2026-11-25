@@ -172,8 +172,9 @@ player: "also good points". *Read as, the orchestrator's, open to the player's c
 entry is done when the items in this folder are gone and the remeasure is taken, which comes after
 the design review's items too; a defect found in a pull request of this entry is fixed in that pull request,
 and anything else found from here on is filed as an entry of its own after this one, never as a new
-item here. The scene recipes' test gaps, which add tests and
-refactor nothing, are the entry snowy-plover (the scene recipes' untested corners), which waits for this one.
+item here. The scene recipes' test gaps, which add tests and, for two of them, a small hand-in
+in `src/dev`, are the entry snowy-plover (the scene recipes' untested corners), which waits for
+this one.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer",
 whose layering paragraph and closing list of proposals refer to this entry, **rewrites its
