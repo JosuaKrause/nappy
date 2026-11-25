@@ -863,9 +863,10 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t: TestRunner) 
 	guard.free()
 	_done(counter)
 
-## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` as his
-## hand goes up, `-chased` when he starts his run, and then `-caught` (the building's `EventManager`
-## reports his catch, as a day's does) or `-outlasted` when his run is over without one.
+## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` for his
+## badge and `-chased` for his run, both on his first tick, since a place set him off under a warning
+## that already ran (`EventSetOffRun`), and then `-caught` (the building's `EventManager` reports
+## his catch, as a day's does) or `-outlasted` when his run is over without one.
 func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
@@ -877,13 +878,14 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var man := EventInstance.new(ToldEvents.on(EventBus))
 	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(man_where))
+	man.arrive_from_its_warning()
+	man.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, man_where, Vector2(0.0, -(def.notice().runs_within() + 100.0)), 0.5)
-	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, man_where, Vector2(0.0, -(def.notice().runs_within() - 10.0)), 1.0 / 60.0)
+	t.check(counter.sent.is_empty(), "nothing is counted before his first tick (%s)" % [counter.sent])
+	_walk(man, man_where, Vector2(0.0, -300.0), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
-		"his run is counted chased (%s)" % [counter.sent])
+		"on his first tick his warning is counted warned and his run chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
 		man_where.tell(Vector2(200.0, 0.0))
 		man.step(1.0 / 60.0)
@@ -897,10 +899,11 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var caught := EventInstance.new(ToldEvents.on(EventBus))
 	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(caught_where))
+	caught.arrive_from_its_warning()
+	caught.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, caught_where, Vector2(0.0, -(def.notice().runs_within() - 10.0)),
-			Tuning.WARNING_ALONE_MAX + 0.1)
+	_walk(caught, caught_where, Vector2(0.0, -300.0), 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
 		"a run that catches her is counted caught (%s)" % [counter.sent])

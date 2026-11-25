@@ -109,16 +109,13 @@ func look_from(centre: Vector2) -> void:
 func share_of(rect: Rect2) -> float:
 	return _share(rect, _view, _joystick, _left, _right)
 
-## Whether a world point is in sight: inside the view, and not under a covered corner. `margin`
-## world px count as in sight as well, past the view's edge and into a corner — the badge's
-## hysteresis (`BadgeModel.SCREEN_MARGIN`), so a thing on the boundary does not trade places with its
-## own badge every frame.
-func sees(point: Vector2, margin := 0.0) -> bool:
-	if not _view.grow(margin).has_point(point):
+## Whether a world point is in sight: inside the view, and not under a covered corner.
+func sees(point: Vector2) -> bool:
+	if not _view.has_point(point):
 		return false
 	if not _joystick:
 		return true
-	return not (_left.grow(-margin).has_point(point) or _right.grow(-margin).has_point(point))
+	return not (_left.has_point(point) or _right.has_point(point))
 
 ## Whether any of `rect` (world space) is in sight.
 func sees_any(rect: Rect2) -> bool:

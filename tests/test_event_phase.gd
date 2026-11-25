@@ -127,7 +127,7 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 		frames += 1
 		if frames > 200:
 			break
-	t.check(instance.has_charged() and not instance.is_telegraphing(),
+	t.check(instance.is_chasing() and not instance.is_telegraphing(),
 			"staying inside, it charges once its warning has run (%d frames)" % frames)
 	t.close_to(frames * STEP, def.pursuit().warns_for(), "after its own warning", 2.0 * STEP)
 	instance.free()

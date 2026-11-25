@@ -199,6 +199,7 @@ func _init(draft: EventDraft) -> void:
 	_drawn_to_sack_piles = draft.drafted_is_drawn_to_sack_piles()
 	_role = draft.drafted_role()
 	_counts_charges_as = draft.drafted_charges_counted_as()
+	_set_off_within = draft.drafted_set_off_within()
 	_look = draft.drafted_look()
 	_body = draft.drafted_body()
 	_field = draft.drafted_field()
@@ -446,6 +447,33 @@ var _sent_ahead: SentAhead
 ## Whether the director sends it ahead of her on an ordinary day (`EventDraft.sent_ahead()`).
 func is_sent_ahead() -> bool:
 	return _sent_ahead != null
+
+## **How near she comes to where the row starts before it is set off**, in px, or 0 for a row no
+## place sets off (`EventDraft.set_off_within()`): the masked man on the escape's stairs. A plan of
+## such a row is not in the world until she comes within this of where it starts (`SetOffWatch`),
+## and then comes under its warning, its badge pointing at that place, with its telegraph spent.
+var _set_off_within := 0.0
+
+## Whether a place sets it off (`_set_off_within`): not in the world until she comes near where it
+## starts, then warned of first and created there.
+func is_set_off_by_a_place() -> bool:
+	return _set_off_within > 0.0
+
+## How near she comes to where it starts before it is set off, in px, or 0 for a row no place sets
+## off.
+func sets_off_within() -> float:
+	return _set_off_within
+
+## **The copy a place sets off at once**: its badge up alone for no time, for her walking into its
+## place, so it comes on the tick she reaches it, as near as its set-off distance. The row itself is
+## warned for its own `warned_for()` first, for her already inside its place when it may come, or
+## arriving inside it through a door (`SetOffWatch`). Validated as it is made.
+func as_set_off_at_once() -> EventDef:
+	var draft := redraft()
+	draft.warning(_warning.cut_to(0.0))
+	var variant := draft.build()
+	variant.validate()
+	return variant
 
 ## Whether the director warns of it first in the lane of the road beside her when it sends it
 ## ahead of her (`SentAhead.is_warned_first()`, a row of the road, `keeps_to_the_carriageway()`):
@@ -1301,12 +1329,13 @@ func validate() -> bool:
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
 				% [_id, _pursuit.lunge_reach(), lethal_reach()])
 		return false
-	# A row that runs its own line once she is near is a mobile row that does not pursue and notices
-	# her from further than it runs.
-	if _notice and _notice.runs_within() > 0.0 \
-			and (_pursuit or not _route.moves() or _notice.within() <= _notice.runs_within()):
-		push_error("event '%s' runs within %.0fpx but is not a mobile row that waits for her "
-				% [_id, _notice.runs_within()] + "from further than that")
+	# **A row a place sets off comes running its line under a warning first**: a mobile `MAP` row,
+	# warned of before it exists, that neither waits for her nor pursues her, since its place is
+	# its notice and its line is its run.
+	if is_set_off_by_a_place() and (not _warning.is_warned_first() or not _route.moves() \
+			or _spawn_mode != SpawnMode.MAP or _notice or _pursuit):
+		push_error("event '%s' is set off by a place but is not a mobile MAP row warned of first "
+				% _id + "that neither waits for her nor pursues her")
 		return false
 	if starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and _notice:
 		push_error("event '%s' charges at once but waits for her as well" % _id)
@@ -1424,13 +1453,17 @@ func nearest_crouch() -> float:
 ## where it is created. Created closest (`Offscreen.min_boundary()`, just out of sight on the
 ## view's short axis) and reaching her with her walking into it: at its lethal reach for a
 ## row that ends the day, and at its field's forward reach for any other. A field that already covers her
-## where it is created adds nothing.
+## where it is created adds nothing. **A row a place sets off at once** (`as_set_off_at_once()`,
+## its badge alone for no time) is created on the tick she walks into its place, so as far from
+## her as its set-off distance (`sets_off_within()`), never nearer than just out of sight.
 func warning_time() -> float:
 	if not warns_before_it_exists():
 		return telegraphs_for()
 	var closing := _route.speed() + Tuning.WALK_SPEED
 	var reach := lethal_reach() if ends_the_day() else field_reach()
 	var created_at := Offscreen.min_boundary()
+	if is_set_off_by_a_place() and warned_for() <= 0.0:
+		created_at = maxf(created_at, _set_off_within)
 	return warned_for() + maxf(0.0, created_at - reach) / closing
 
 ## How long this row's badge is up alone, with nothing in the world, before it is placed just out of
@@ -1449,11 +1482,6 @@ func holds_still() -> bool:
 ## telegraph and duration measured from that moment rather than from its birth.
 func waits_for_her() -> bool:
 	return _notice != null
-
-## Whether it runs its own line once she comes close (`NoticeSpec.runs_within()`), rather than
-## ending its notice on a clock: the masked man on the escape's stairs.
-func runs_its_own_line() -> bool:
-	return _notice != null and _notice.runs_within() > 0.0
 
 ## **Whether its warning emits only a telegraph's share of its peak**: its telegraph, and its wait
 ## where it has one. True for a row that does not wait and for one whose wait is quiet

@@ -61,13 +61,11 @@ var travels := false
 var is_a_car := false
 ## What its row says of its field: its peak (`peak()`), how long one beat of its pulse lasts
 ## (`pulses_every()`), how long its telegraph lasts (`telegraphs_for()`), how far its core
-## reaches (`core_within()`), how near she has to come for it to notice her (`notice_within()`)
-## and the rate it emits now (`current_intensity()`).
+## reaches (`core_within()`) and the rate it emits now (`current_intensity()`).
 var field_peak := 0.0
 var pulse_length := 0.0
 var telegraph_length := 0.0
 var core := 0.0
-var noticed_within := 0.0
 var emitting := 0.0
 ## Whether she is inside its core (`core_reaches()`): what the suite sets, and each point the
 ## question was asked about, in order. How far a core reaches is `core_within()`; the answer is not
@@ -165,7 +163,6 @@ static func answering_as(instance: EventInstance) -> FakeEvent:
 	fake.travelling_at = instance.travel_velocity()
 	fake.guard_lost = instance.has_lost_its_guard()
 	fake.solid_extent = instance.solid_reach()
-	fake.noticed_within = instance.notice_within()
 	fake.emitting = instance.current_intensity()
 	fake.shape = instance.ground_shape()
 	fake.box = instance.drawn_box()
@@ -349,10 +346,6 @@ func core_reaches(point: Vector2) -> bool:
 ## Overrides EventInstance.solid_reach.
 func solid_reach() -> float:
 	return solid_extent
-
-## Overrides EventInstance.notice_within.
-func notice_within() -> float:
-	return noticed_within
 
 ## Overrides EventInstance.current_intensity.
 func current_intensity(_pulse_multiplier_override := -1.0) -> float:

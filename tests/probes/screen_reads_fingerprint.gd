@@ -95,8 +95,7 @@ func _print_view(label: String, view: VisibleView, joystick: bool) -> void:
 		var x := -POINTS_STEP
 		while x < view.camera_view().size.x + POINTS_STEP:
 			var at := origin + Vector2(x, y)
-			row += ("1" if view.sees(at) else "0") + ("1" if view.sees(at, 9.0) else "0") \
-					+ ("1" if view.sees(at, -9.0) else "0")
+			row += "1" if view.sees(at) else "0"
 			x += POINTS_STEP * 0.5
 		seen.append(row)
 		y += POINTS_STEP * 0.5

@@ -6,7 +6,7 @@ extends RefCounted
 ## charge are all measured from the notice rather than from the row's birth.
 ##
 ## Carried by every row that waits — the alley robber, the alley mouse, the pigeon flock, the
-## masked man, the hunting and investigating copies `EventDef.at_heat()` makes, and `charging_dog`
+## hunting and investigating copies `EventDef.at_heat()` makes, and `charging_dog`
 ## once it is placed on the map (`EventDef.spawn_mode_on()`). A row with no `NoticeSpec` has no
 ## wait: its clock starts when it exists.
 ##
@@ -21,12 +21,6 @@ var _within := 0.0
 ## they go up (`pigeon_flock`). Off for a row whose waiting state is itself the threat.
 var _quiet := false
 
-## **How close she has to come before a row that runs its own line starts its run**, in px, or 0
-## for a row whose notice ends on its clock: the masked man on the escape's stairs, who warns while
-## she is inside `within` with no clock and runs the moment she comes within this (inbox #788 in
-## minty-lemur). One that notices her already inside it warns for `Tuning.WARNING_ALONE_MAX` first.
-var _runs_within := 0.0
-
 ## A notice at `radius`, the shape most rows carry.
 static func at(radius: float) -> NoticeSpec:
 	var spec := NoticeSpec.new()
@@ -39,12 +33,6 @@ func quietly() -> NoticeSpec:
 	spec._quiet = true
 	return spec
 
-## The same notice for a row that runs its own line, starting its run once she comes within `radius`.
-func running_within(radius: float) -> NoticeSpec:
-	var spec := _copy()
-	spec._runs_within = radius
-	return spec
-
 ## How close she has to come, in px, before it notices her.
 func within() -> float:
 	return _within
@@ -53,14 +41,8 @@ func within() -> float:
 func is_quiet() -> bool:
 	return _quiet
 
-## How close she has to come before a row that runs its own line starts its run, in px, or 0 for a
-## row whose notice ends on its clock.
-func runs_within() -> float:
-	return _runs_within
-
 func _copy() -> NoticeSpec:
 	var spec := NoticeSpec.new()
 	spec._within = _within
 	spec._quiet = _quiet
-	spec._runs_within = _runs_within
 	return spec

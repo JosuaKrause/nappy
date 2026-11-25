@@ -148,7 +148,7 @@ func run(t: TestRunner) -> void:
 	_test_robber_waiting_falls_back_to_its_siting_with_no_player(t)
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
-	await _test_masked_man_is_drawn_standing_until_he_goes(t)
+	await _test_masked_man_is_drawn_lunging_from_the_tick_he_comes(t)
 	await _test_the_waiting_dog_rests_stands_alert_and_gallops(t)
 	await _test_the_day_3_dog_gallops_through_its_approach(t)
 	await _test_the_robber_waits_walks_alert_and_lunges(t)
@@ -548,38 +548,27 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t: T
 	t.check(instance.is_chatting(), "and talking for the length of the conversation")
 	instance.free()
 
-## The masked man on the escape's stairs stands while he waits for her, stands with his hand raised
-## through his notice *(inbox #764 in minty-lemur, the player: an event that does not spawn already charging always
-## needs a warning)*, and is drawn lunging only once the notice is over
-## and he runs his line.
-func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
+## **The masked man on the escape's stairs is drawn lunging from the tick he comes** *(minty-dolphin
+## #852: "The stair guard can become a charger that is triggered by a location if necessary")*: a
+## place on the stairwell sets him off and his warning is his badge before he exists
+## (`SetOffWatch`), so he comes with his telegraph spent, running, and has no wait or notice to be
+## drawn standing through. Created as `EventStreaming.set_off()` creates him.
+func _test_masked_man_is_drawn_lunging_from_the_tick_he_comes(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where) \
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)]),
+			Vector2.RIGHT, EventSurroundings.new().hearing(instance_where) \
 				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
-	t.check(instance.is_waiting()
-			and await _drawn_from(t, instance, [EventPictures.GUARD_STANDING_BY_VIEW]),
-			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `EventDef.notice_within()` (900px), outside `NoticeSpec.runs_within()`:
-	# one step notices her, and he warns for as long as she stays there, longer than
-	# his `telegraphs_for()`.
-	instance_where.tell(Vector2(0.0, def.notice().runs_within() + 100.0))
-	instance.step(STEP)
-	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
-	var alert := true
-	for i in int(round((def.telegraphs_for() + 2.0) / STEP)):
-		alert = alert \
-				and await _drawn_from(t, instance, [EventPictures.GUARD_ALERT_BY_VIEW])
+	instance.arrive_from_its_warning()
+	instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
+	instance_where.tell(Vector2(0.0, -400.0))
+	var lunging := true
+	for i in int(round(1.0 / STEP)):
 		instance.step(STEP)
-	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
-	instance_where.tell(Vector2(0.0, def.notice().runs_within() - 10.0))
-	for i in int(round(0.1 / STEP)):
-		instance.step(STEP)
-	t.check(not instance.is_telegraphing()
-			and await _drawn_from(t, instance, [EventPictures.GUARD_LUNGING_BY_VIEW]),
-			"once she comes within his charge distance he is drawn lunging")
+		lunging = lunging and not instance.is_waiting() and not instance.is_telegraphing() \
+				and await _drawn_from(t, instance, [EventPictures.GUARD_LUNGING_BY_VIEW])
+	t.check(lunging, "from the tick he comes he is drawn lunging up his line")
 	instance.free()
 
 # ----------------------------------------------------------- every charger's three stages ---

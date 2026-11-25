@@ -467,6 +467,11 @@ func bring_back_what_repeats(delta: float) -> void:
 		if entry.waits_from_now:
 			entry.waits_from_now = false
 			continue
+		# A plan a place sets off is set off by her reaching its place (`SetOffWatch`), not by its
+		# clock: the clock only says when it may come (`may_set_off()`).
+		if plan.is_set_off_by_a_place():
+			entry.comes_in = maxf(entry.comes_in - delta, 0.0)
+			continue
 		entry.comes_in -= delta
 		if entry.live != null or entry.comes_in > 0.0:
 			continue
@@ -478,6 +483,31 @@ func bring_back_what_repeats(delta: float) -> void:
 				continue
 			plan.came_at(world.player().global_position)
 		stream_in(plan)
+
+## **Whether a plan a place sets off may come now** (`EventPlan.is_set_off_by_a_place()`,
+## `SetOffWatch`): placed and not spent, its instance not in the world, and, for one that comes again,
+## its wait since the last one run.
+func may_set_off(plan: EventPlan) -> bool:
+	if plan.is_spent() or not plan.is_placed():
+		return false
+	var entry: StreamedPlan = _state.get(plan)
+	return entry == null or (entry.live == null and entry.comes_in <= 0.0)
+
+## **Brings a plan a place set off into the world**, where its warning pointed, once the warning has
+## run (`SetOffWatch`): created where it starts, told it came under a warning, its telegraph spent
+## (`EventSpawner.age_when_warned()`), so from its first tick it is what it is after it. It stays
+## until it is done (`EventPlan.streaming_distance_from()`). Answers whether it came.
+func set_off(plan: EventPlan) -> bool:
+	if not may_set_off(plan):
+		return false
+	var live := _spawner.create(plan.row(), plan.placed_at(), plan.walks(),
+			not plan.has_been_in_the_world(), plan.faces(), plan.gate())
+	live.arrive_from_its_warning()
+	live.restore(EventSave.aged(EventSpawner.age_when_warned(plan.row())))
+	_entry_of(plan).live = live
+	plan.enter_the_world(live.standing())
+	world.take_in(live)
+	return true
 
 ## Finds the plans of the walk just started that come again (`_repeating`) and starts each one's clock
 ## from the seconds its first instance comes in (`EventPlan.first_comes_in()`). A day's own plan has

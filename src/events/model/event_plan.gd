@@ -349,9 +349,11 @@ func distance_from(at: Vector2) -> float:
 ## measures from where its body stands (`body_at()`, the kerb for a row that stands at its kerb): a
 ## streaming radius is a reach round where the day put the row, not round its body. Asked as one call
 ## because streaming puts the question to every plan of the walk on every physics tick: it is the one
-## question the loop puts to a plan (`EventStreaming.stream_around()`).
+## question the loop puts to a plan (`EventStreaming.stream_around()`). Infinite for a plan a place
+## sets off (`is_set_off_by_a_place()`), which her coming near it never streams in or out: it comes
+## when she reaches its place (`SetOffWatch`) and stays until it is done.
 func streaming_distance_from(at: Vector2) -> float:
-	if _spent or _position == Vector2.INF:
+	if _spent or _position == Vector2.INF or _def.is_set_off_by_a_place():
 		return INF
 	return _position.distance_to(at) if _path.size() < 2 else distance_from(at)
 
@@ -623,6 +625,14 @@ func spawn_mode_on(day: int) -> EventDef.SpawnMode:
 ## Whether the director sends its row ahead of her on an ordinary day (`EventDef.is_sent_ahead()`).
 func is_sent_ahead() -> bool:
 	return _def.is_sent_ahead()
+
+## Whether a place sets its row off (`EventDef.is_set_off_by_a_place()`): the masked man.
+func is_set_off_by_a_place() -> bool:
+	return _def.is_set_off_by_a_place()
+
+## How near she comes to where it stands before its row is set off (`EventDef.sets_off_within()`).
+func sets_off_within() -> float:
+	return _def.sets_off_within()
 
 ## Whether its row is a one-shot, a set piece a day owes once (`EventDef.is_a_one_shot()`).
 func is_a_one_shot() -> bool:
