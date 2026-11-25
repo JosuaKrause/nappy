@@ -8,9 +8,7 @@ we defined it. this sounds like what is implemented is pretty far off from what 
 earlier words on the escape: "there should be no dog walkers in escape it's not a calm night where
 people walk their dogs" (inbox #1733 in spry-ferret); "the escape is just like a normal day with
 some special settings", "there really should be no separate code for escape" and "all should be
-implemented through the regular game engine's means" (inbox #785 in minty-lemur). And of the
-escape's army trucks: "no, trucks get placed ahead of her if they're on route" (inbox #1740 in
-minty-hare).
+implemented through the regular game engine's means" (inbox #785 in minty-lemur).
 
 **The band `bug` is the one a refactor step's own defect takes** (inbox #1519 in breezy-magpie): the
 refactor made the escape a day spec (minty-quail), and the escape's spec does not reach the event
@@ -28,8 +26,8 @@ main at 47e465438; the ordinary day follows the player's rules, the escape's daw
 - **Booted straight into the escape** (`--start-escape`, `?escape=1`) the run is on day 1, so
   `_rig_day_one()` rigs two dog walkers among the first three marbles of the route bag, and
   `rig_her_route()` puts three route-bag slots on the owed list. She meets two dog walkers and one
-  more day-1 encounter (a cat, a cyclist, a loose dog or a dog walker) in her first three director
-  turns, about 33 to 78 s of walking. That fits inbox #1733 in spry-ferret.
+  more day-1 encounter (a cat, a loose dog or a dog walker; the cyclist's first day is 2) in her
+  first three director turns, about 33 to 78 s of walking. That fits inbox #1733 in spry-ferret.
 - **Reached from a run** the escape is day 14, and `_owe_the_sprinkled_dog()` sends the charging dog
   at her one escape in four (`CHARGING_DOG_SPRINKLE_CHANCE`, 0.25, on any day past 3).
 - `EventManager.step_what_is_ahead()` skips the director only for a scene recipe, never for a walk
@@ -37,9 +35,7 @@ main at 47e465438; the ordinary day follows the player's rules, the escape's daw
 - `tests/finale_rig.gd` checks that the escape owes no return leg on day 13 only, with one stream
   and an empty plan. No suite covers the escape city on day 1 or day 14.
 
-**What the context of inbox #1737 in minty-hare and the item no-dog-walkers of calm-walrus said**
-(main's escape sends nothing; its route bag is "never drawn from") **is wrong on the direct boot.**
-
-**Item:** `director-follows-the-spec.md`, which also holds that the escape's trucks on her route are
-sent ahead of her by the director (inbox #1740 in minty-hare). The escape's other gap against the player's words, the
-empty marbles' count, is lilac-marten's (a fuller escape); the explosions are snowy-goose's.
+**Item:** `director-follows-the-spec.md`. The escape's other gaps against the player's words are
+other entries': the empty marbles' count is lilac-marten's (a fuller escape), the explosions are
+snowy-goose's, and the army trucks on her route sent ahead of her are misty-plover's (the escape's
+army trucks on her route are sent ahead of her), which waits for this entry.

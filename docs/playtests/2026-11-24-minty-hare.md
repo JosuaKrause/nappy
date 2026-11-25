@@ -2,8 +2,9 @@
 
 2026-11-24.
 
-Two notes (#1737, then #1740), said in the orchestrating session's chat on 2026-11-25 (UTC) after an explanation of where
-the escape's dog walker comes from.
+Two notes, said in the orchestrating session's chat on 2026-11-25 (UTC): #1737 after an explanation
+of where the escape's dog walker comes from, #1740 answering the board question
+escape-convoy-at-dawn.
 
 ## #1737
 

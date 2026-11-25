@@ -8,7 +8,14 @@ which closed once the player had played v0.29.1 and found the escape empty (bree
 table); the record downy-tapir-2 holds two draws a street as an option it measured and set aside.
 The bag's empty marbles (`DaySpec.FINALE_BAG_EMPTY`) are counted to leave about a third of the
 streets with nothing, more than any row has, where the player's order has empty rarest
-(inbox #785 in minty-lemur); this entry sets the count. The bag holds 9 empty marbles, the second most after the trucks'
-10 (explosions 8, vans 3, roadblocks 2), where the player's order puts empty last, so the count
-that is set puts empty last in the bag. The player's order is of the bag (the record downy-tapir-2
-reports the answer "The bag" of 2026-10-19; no playtest file holds those words).
+(inbox #785 in minty-lemur); this entry sets the count. The bag holds 9 empty marbles, the second most after the
+trucks' 10 (explosions 8, vans 3, roadblocks 2), where the player's order puts empty last.
+
+**The count is open.** *Read as, the filer's:* the order is the bag's, so empty has the fewest
+marbles. The player answered "The bag" when asked whether the order meant the marbles or what stands
+on the streets, and added "Nobody ever claimed that the bag order would match the street order"
+(downy-tapir-2, 2026-10-19, in session). That reading would overturn polite-tapir-coral-badger, which
+kept nine empty marbles on the orchestrator's reading that the player's approval of the design
+review answers the question (inbox #1268 in olive-ferret), and whose measurement set one empty marble
+aside: 9% of streets empty and twice the vans. Whether the empty share may stay off the player's order
+is a question for the player, and stays one: asking them is an option beside setting the count.

@@ -1,6 +1,5 @@
 priority: now
 after: 2026-10-18-minty-quail
-after: 2026-11-24-calm-hare
 
 # calm-walrus — The escape holds no dog walkers and ends at the tunnel or the bridge · filed 2026-11-24
 
@@ -24,8 +23,7 @@ escape fixes the player named, snowy-goose and lilac-marten's fuller escape (gen
 not for this entry.
 
 **The dog-walker item waits for calm-hare (the event director ignores the escape's settings)**, which
-sends the two dog walkers on the direct boot; the entry's `after:` line says so, and the other item
-does not wait for it.
+sends the two dog walkers on the direct boot, and the other item does not wait for it.
 
 **Items:** `no-dog-walkers.md`, `ends-at-the-tunnel-or-bridge.md`. The remark "from what I saw
 that was the only actual obstacle showing up" is its own entry, sandy-goose (do the escape city's
