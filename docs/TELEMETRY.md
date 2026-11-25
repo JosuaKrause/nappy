@@ -132,14 +132,14 @@ The events:
   (`VisitCounter._charger_counter_name()` names it, `EventInstance.counts_a_charge()` says which):
   - `-warned` — its warning goes up (`EventBus.pursuit_warned`), the level below the charge: a
     charger that waited for her noticing her (the dog that waits past the teaching day, the alley
-    robber and the guards drawn from him, the hunting roadblock's guard), the masked man's raised
-    hand at the foot of the escape's stairwell, and the raised hand of the man a vehicle lets out
+    robber and the guards drawn from him, the hunting roadblock's guard), the masked man on the escape's
+    stairs on the tick he comes, with his charge, since his badge was his warning, and the raised hand of the man a vehicle lets out
     and of day 13's guard set on her in her view — each once per instance — and the checkpoint
     guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand
     from her crossing of the door's line (`CheckpointController.warn_at_the_doors()`).
   - `-chased` — its charge (`EventBus.pursuit_began`), never its warning: a waiting charger when
     its warning has run with her still inside its radius; a vehicle's man and day 13's guard in her
-    view when their raised hand has been up its second; the masked man when he starts his run; the
+    view when their raised hand has been up its second; the masked man from his first tick; the
     checkpoint guard from his first frame, once the crossing's warning has run with her still
     across, at a boom or an alley's door alike; the day-3 dog, whose approach is its telegraph, and
     every charger sent from off screen, from their first frame.
@@ -500,10 +500,10 @@ watched by the observer a day has, so what a day writes about the walk the escap
 ```
 day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    entered the building at (129,2), facing 0°
-   4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
-   9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
-  10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
-  11.0  lost     lost_hard_fail in the building after 11.0s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
+   4.2  cue      edge badge: masked_pursuer at 421px, closing 130px/s
+   5.9  cue      edge badge gone: masked_pursuer after 1.7s, now 175px away
+   6.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
+   6.9  lost     lost_hard_fail in the building after 6.9s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
 
 day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    restarted the building at (7,1), facing 0°

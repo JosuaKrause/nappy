@@ -35,9 +35,9 @@ extends RefCounted
 ## **The first warning** is, for a warned row, the frame its warning goes up: the badge is up from
 ## then (`DangerEdge.subject_for_def()`'s `announces` is asked, so a row the badge would not draw is never
 ## counted as warned). For any other row it is the first frame, once its own telegraph has started
-## (for a row that waits, once it has noticed her), at which either the thing itself is inside the
-## view — the `Tuning.VIEW_HALF_EXTENT` box about her, the camera being centred on her — or
-## `BadgeModel` would have its badge up: the game's own decision stepped each frame, not copied. **The earliest reach** is the first frame `EventInstance.is_lethal_at()` is true for a
+## (for a row that waits, once it has noticed her), at which the thing itself is inside the
+## view — the `Tuning.VIEW_HALF_EXTENT` box about her, the camera being centred on her — since
+## only a warning put up before its thing exists raises a badge (`BadgeModel`). **The earliest reach** is the first frame `EventInstance.is_lethal_at()` is true for a
 ## lethal row, and for any other row the first frame after its telegraph that its field
 ## charges her anything at all (`contribution_at()` above zero at full strength) — the moment the
 ## thing it was warning about is actually happening to her.
@@ -59,9 +59,6 @@ const STEP := 1.0 / 60.0
 ## Long enough for the slowest approach in the table to arrive, and short enough that "never" means
 ## never rather than eventually.
 const LIMIT := 30.0
-## `DangerEdge` measures in design-space screen px over a 1280x720 viewport at the camera's zoom 2,
-## so a screen margin is half as many world px.
-const ZOOM := 2.0
 
 enum Answer { TOWARD, STAND, AWAY, RUN }
 const ANSWERS: Array[Answer] = [Answer.TOWARD, Answer.STAND, Answer.AWAY]
@@ -196,7 +193,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		created_where.tell(her, Vector2.INF, Rect2(), answer == Answer.RUN)
 		instance.step(STEP)
 		var at := instance.global_position
-		var in_view := _in_view(at - her, 0.0)
+		var in_view := _in_view(at - her)
 		var since := clock - warned_at
 		if in_view and result["point_seen_at"] == INF:
 			result["point_seen_at"] = since
@@ -259,8 +256,8 @@ static func encounters() -> Array[Dictionary]:
 			"her": Vector2(0.0, mouse.notice_within() + 200.0), "heading": up, "warm": 0.0})
 
 	# `military_convoy` as a `MAP` mover: streamed in at `EVENT_STREAM_RADIUS` and driving straight
-	# down her street — the closest the city can bring one at her. Its lead is `BadgeModel.LEAD_TIME`
-	# and the street, not a siting rule.
+	# down her street — the closest the city can bring one at her. Not warned of before it exists,
+	# it carries no badge: its lead is the sight of it down the street, not a siting rule.
 	var convoy := EventCatalogue.by_id("military_convoy")
 	var streamed_from := Vector2(0.0, -Tuning.EVENT_STREAM_RADIUS)
 	list.append({"def": convoy, "how": "streamed in down her street",
@@ -387,7 +384,7 @@ static func _axis(heading: Vector2) -> String:
 
 ## One encounter walked with one answer: `{warned_at, reached_at, lead, why, by, created_at,
 ## created, pointed}`, seconds from the start of the encounter, `INF` where it never happened; `by`
-## is `"badge"` or `"sight"`, whichever the first warning was. For a row warned of before it exists,
+## is `"badge"` for a row warned of before it exists and `"sight"` for any other. For a row warned of before it exists,
 ## `created_at` is when it was created, `created` where, and `pointed` where the badge pointed on
 ## the frame it was created. Static and public so `tests/test_events_pursuit.gd` holds the cyclist
 ## to the identical walk this probe prints, rather than a second copy of it that could disagree.
@@ -410,14 +407,6 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var warm_steps := int(ceil(float(encounter["warm"]) / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
-	# The game's own badge decision, stepped with this walk's view (the box about her).
-	var her_box := {"at": her}
-	var model := BadgeModel.new()
-	var subject := DangerEdge.subject_for_def(def)
-	subject.key = 1
-	subject.logged_name = def.id()
-	var sees := func(point: Vector2, margin_px: float) -> bool:
-		return _in_view(point - her_box["at"], margin_px / ZOOM)
 	var elapsed := 0.0
 	while elapsed < LIMIT:
 		her += velocity * STEP
@@ -428,17 +417,10 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 			result["why"] = "it left"
 			break
 		var at := instance.global_position
-		var in_view := _in_view(at - her, 0.0)
-		her_box["at"] = her
-		subject.position = at
-		subject.shown = in_view
-		subject.charging = instance.has_charged()
-		subject.warned = instance.was_warned_of()
-		model.step(STEP, her, [subject], sees)
-		var badge := model.has_badges()
-		if result["warned_at"] == INF and not instance.is_waiting() and (in_view or badge):
+		var in_view := _in_view(at - her)
+		if result["warned_at"] == INF and not instance.is_waiting() and in_view:
 			result["warned_at"] = elapsed
-			result["by"] = "sight" if in_view else "badge"
+			result["by"] = "sight"
 			velocity = _answered(answer, heading)
 		if result["warned_at"] != INF and _reaches(instance, her):
 			result["reached_at"] = elapsed
@@ -515,9 +497,8 @@ static func _answered(answer: Answer, heading: Vector2) -> Vector2:
 			return -heading * Tuning.RUN_SPEED
 	return heading * Tuning.WALK_SPEED
 
-static func _in_view(offset: Vector2, margin: float) -> bool:
-	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x + margin \
-			and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y + margin
+static func _in_view(offset: Vector2) -> bool:
+	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
 
 static func _reaches(instance: EventInstance, her: Vector2) -> bool:
 	if instance.ends_the_day():

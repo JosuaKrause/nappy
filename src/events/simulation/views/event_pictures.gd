@@ -1210,8 +1210,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.MASKED_PURSUER, EventDef.Look.GUARDSMAN_GIVING_CHASE:
-			# The masked man's notice at the foot of the shaft, and the guardsman's out of a
-			# vehicle.
+			# The guardsman's notice out of a vehicle. The masked man is drawn lunging from the tick
+			# he comes, and keeps the guard family whose views his footprint is measured over.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.POLICEMAN_GIVING_CHASE:

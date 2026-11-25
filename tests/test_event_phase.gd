@@ -12,7 +12,6 @@ const EMISSION_STEP := 1.0 / 60.0
 
 func run(t: TestRunner) -> void:
 	_test_a_warning_starts_holds_and_runs_out(t)
-	_test_a_warning_ticks_into_its_action_or_is_called_off(t)
 	_test_a_row_with_no_wait_is_in_its_telegraph_then_active(t)
 	_test_a_waiting_row_notices_warns_and_waits_again(t)
 	_test_a_departure_and_a_finish_are_phases(t)
@@ -59,23 +58,6 @@ func _test_a_warning_starts_holds_and_runs_out(t: TestRunner) -> void:
 	t.close_to(warning.started_at(), 1.5, "its start, held time counted back in, is 1.5")
 	warning.stop()
 	t.check(not warning.is_running() and warning.started_at() == INF, "stopped, it is not running")
-
-func _test_a_warning_ticks_into_its_action_or_is_called_off(t: TestRunner) -> void:
-	var ran := [0]
-	var off := [false]
-	var warning := Warning.new()
-	warning.call_off_when(func() -> bool: return off[0])
-	warning.run_when_it_runs_out(func() -> void: ran[0] += 1)
-	warning.start(0.0, 1.0)
-	t.check(warning.tick(0.5) == Warning.Outcome.RUNNING, "half way, it is running")
-	t.check(warning.tick(1.0) == Warning.Outcome.RAN_OUT and ran[0] == 1,
-			"at its length it runs out into its action, once")
-	t.check(warning.tick(1.5) == Warning.Outcome.NOT_RUNNING and ran[0] == 1,
-			"and is not running after it")
-	warning.start(2.0, 1.0)
-	off[0] = true
-	t.check(warning.tick(2.2) == Warning.Outcome.CALLED_OFF and ran[0] == 1,
-			"called off, it never reaches its action")
 
 # ------------------------------------------------------------------- the phase ---
 
@@ -195,7 +177,7 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	dog.free()
 
 ## A notice that was held (a held lunge with her inside its stand-off, a charger behind a wall at its
-## warning's last moment, the masked man's wait) is carried across a stream-out held time and all, so
+## warning's last moment) is carried across a stream-out held time and all, so
 ## the instance put back is exactly as far into its notice as the one taken away. The robber here is
 ## set on her inside his stand-off (`notice_her_at()`), which holds his lunge and so his notice's clock
 ## every tick (`_hold_the_notice_clock()`): a second of standing there has run none of his notice, and

@@ -1712,9 +1712,13 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
-*(inbox #764 in minty-lemur, inbox #782 in minty-lemur)*, with no warning clock, the one waiting charger without one *(inbox
-#788 in minty-lemur, the player: "No delay, as on main")*, which coming down from the second floor is at the head of the second
+nearest corridor door and let him pass. **A place sets him off** *(minty-dolphin #852, the player:
+"The stair guard can become a charger that is triggered by a location if necessary")*: he is not in
+the world until she comes within 426px of the foot of the shaft *(inbox #764 in minty-lemur, inbox
+#782 in minty-lemur)*, and walking into that place puts his badge up and brings him there on the same
+tick, already running, with no warning clock *(inbox #788 in minty-lemur, the player: "No delay, as
+on main")*; inside the place already when he may come, his badge is up alone for a second first.
+Coming down from the second floor, that place begins at the head of the second
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
@@ -1722,8 +1726,8 @@ plain left from that landing tile gets through, and the margins are thin against
 *(inbox #865 in minty-dolphin)* (on the tightest runner's line, walking until he runs, then running, and turning plain
 left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
 down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
-late). In the stairwell his warning is off screen,
-and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
+late). In the stairwell the foot of the shaft is off screen,
+and only the screen-edge badge shows him coming, up from his warning until he is in her view *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 

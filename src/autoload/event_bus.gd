@@ -107,8 +107,8 @@ signal event_lit_unmet(id: String)
 # ending in exactly one of caught, cut short and ended.
 
 ## A charger's warning going up, the level below its charge, which `pursuit_began` is sent for: a
-## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man's raised hand,
-## the raised hand of the man a vehicle lets out and of day 13's guard in her view — once per
+## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man on the tick he
+## comes (his badge was his warning), the raised hand of the man a vehicle lets out and of day 13's guard in her view — once per
 ## instance — and a checkpoint hut's or post's guard raising his hand from her crossing of its
 ## door's line (`CheckpointController.warn_at_the_doors()`, `door_guard`), each time he does.
 signal pursuit_warned(id: String)

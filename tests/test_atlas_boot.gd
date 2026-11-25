@@ -401,8 +401,9 @@ func _sittings_in(home: Node) -> Array[Node]:
 			sittings.append(child)
 	return sittings
 
-## Raises the screen-edge badge a danger out of sight and closing on her, the military convoy,
-## brings: the booted edge, once the day is on screen, is pointed at a stand-in event source
+## Raises the screen-edge badge a danger out of sight and closing on her, the military convoy created
+## under its warning (`EventInstance.arrive_from_its_warning()`, as `EventManager.spawn_warned()`
+## creates it), brings: the booted edge, once the day is on screen, is pointed at a stand-in event source
 ## (`DangerEdge.setup()`, as the escape points it at the building's), and the convoy is walked
 ## toward her until the edge has drawn. The badge draws the convoy's silhouette from the library
 ## it was handed, so that picture is among what the sitting's recording library was asked for.
@@ -417,6 +418,7 @@ func _raise_a_badge(t: TestRunner, main: MAIN_SCRIPT, edge: DangerEdge, player: 
 	t.add_child(source)
 	var convoy := StandIns.Coming.new(row, EventFootprints.drawn_box_of(row, true))
 	convoy.position = player.global_position + Vector2(0.0, -421.0)
+	convoy.arrive_from_its_warning()
 	source.bring(convoy)
 	edge.setup(source, player)
 	recording.pictures_asked()

@@ -43,12 +43,14 @@ on, and verifying escape with the actual Baby meter.
   (`EventInstance._would_stand_in_her_view()`, the view `EventManager` tells it in
   `WhereSheIs.view()`); an instance stepped directly with no view told to it gets the radius
   alone, so a test of the view tells it one (`WhereSheIs.tell()`; `tests/escape_roadblock_rig.gd`,
-  `view_round()`). **The masked man is the one
-  exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
-  clear line, his notice asks no view, and he runs the moment she comes within his
-  `NoticeSpec.runs_within()` from outside it, with no warning clock; one who noticed her already
-  inside it warns for `Tuning.WARNING_ALONE_MAX` first (`EventNoticeRun`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
-  accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
+  `view_round()`). **The masked man does not
+  wait for her**: he runs a line rather than pursuing, and a place sets him off
+  (`EventDef.is_set_off_by_a_place()`, `SetOffWatch`; minty-dolphin #852): he is not in the world
+  until she comes within his `EventDef.sets_off_within()` of the foot of his shaft, and is then
+  warned of first (`warned-first.md`) and comes running, with no warning clock where she walks into
+  the place and `Tuning.WARNING_ALONE_MAX` alone where she is inside it already (inbox #788 in
+  minty-lemur). In the stairwell his coming is off screen, which the player accepted (inbox #782
+  in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
   door's line, the hut's guard across the road (or the post's) raises his hand for

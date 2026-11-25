@@ -29,7 +29,7 @@ area each, to be read whole before the first edit there:
 
 | Before touching | Read |
 |---|---|
-| `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`, a thing sent from out of her sight | `references/warned-first.md` |
+| `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`, `SetOffWatch`, a thing sent from out of her sight | `references/warned-first.md` |
 | `VehicleSpec`, `EventCarDriving`, the patrol car, the fire engine | `references/event-cars.md` |
 | `EventDef.pursuit()`, `EventDef.notice()`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
 | `EventDef.flock()`, `FlockSpec`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |

@@ -373,8 +373,7 @@ func _header_text() -> String:
 			"code. Dashed for a row that pursues or waits (`EventDef.pursues()` or " +
 			"`EventDef.waits_for_her()`: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
-			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, " +
-			"masked_pursuer) — its notice " +
+			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase) — its notice " +
 			"and chase " +
 			"state is driven by where the player is, which the rig never tells it, so there is no " +
 			"pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty " +
