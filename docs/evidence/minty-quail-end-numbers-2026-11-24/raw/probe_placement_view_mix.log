@@ -1,0 +1,357 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 1 | 88.9 placed, 26.0 moments owed, per day over 18 seeds
+PV_VIEW 1 on the route | 761 locations, 21.8 events, 2.87% of locations
+PV_ROWS 1 on the route | cafe_tables 9.3, homeless_yeller 3.6, delivery_van 2.8, market_stall 2.4, pigeon_flock 1.7, chatting_mother 1.7, playground 0.4
+PV_VIEW 1 route-adjacent | 580 locations, 36.2 events, 6.25% of locations
+PV_ROWS 1 route-adjacent | cafe_tables 14.7, leaf_blower 9.3, market_stall 7.3, pigeon_flock 1.2, homeless_yeller 1.2, delivery_van 1.2, playground 0.8, chatting_mother 0.4, alley_mouse 0.2
+PV_VIEW 1 off the route | 683 locations, 30.8 events, 4.52% of locations
+PV_ROWS 1 off the route | homeless_yeller 6.7, pigeon_flock 5.9, leaf_blower 5.2, alley_mouse 3.7, cafe_tables 3.6, market_stall 1.9, delivery_van 1.7, playground 1.2, chatting_mother 0.9
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 2 | 91.7 placed, 26.0 moments owed, per day over 18 seeds
+PV_VIEW 2 on the route | 753 locations, 23.2 events, 3.08% of locations
+PV_ROWS 2 on the route | cafe_tables 7.4, homeless_yeller 3.6, market_stall 2.9, delivery_van 2.6, pigeon_flock 2.2, chatting_mother 2.1, construction 1.7, playground 0.6
+PV_VIEW 2 route-adjacent | 620 locations, 35.7 events, 5.77% of locations
+PV_ROWS 2 route-adjacent | cafe_tables 12.3, leaf_blower 7.2, market_stall 5.2, construction 3.7, ice_cream_van 3.5, delivery_van 0.9, playground 0.8, pigeon_flock 0.7, homeless_yeller 0.6, alley_mouse 0.4, chatting_mother 0.4
+PV_VIEW 2 off the route | 711 locations, 32.8 events, 4.62% of locations
+PV_ROWS 2 off the route | leaf_blower 5.5, homeless_yeller 5.0, busker 4.1, pigeon_flock 4.1, cafe_tables 3.8, alley_mouse 2.8, ice_cream_van 1.6, market_stall 1.4, delivery_van 1.4, construction 1.1, playground 1.0, chatting_mother 1.0
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 3 | 86.6 placed, 26.1 moments owed, per day over 18 seeds
+PV_VIEW 3 on the route | 748 locations, 19.8 events, 2.65% of locations
+PV_ROWS 3 on the route | cafe_tables 6.8, market_stall 2.9, delivery_van 2.6, homeless_yeller 2.0, chatting_mother 1.8, pigeon_flock 1.6, construction 1.3, playground 0.8
+PV_VIEW 3 route-adjacent | 637 locations, 37.3 events, 5.86% of locations
+PV_ROWS 3 route-adjacent | cafe_tables 12.8, leaf_blower 6.3, market_stall 5.7, ice_cream_van 4.1, construction 3.8, pigeon_flock 1.3, delivery_van 0.9, homeless_yeller 0.8, playground 0.6, chatting_mother 0.5, reversing_lorry 0.4, alley_mouse 0.1
+PV_VIEW 3 off the route | 711 locations, 29.4 events, 4.14% of locations
+PV_ROWS 3 off the route | homeless_yeller 4.3, busker 4.1, leaf_blower 3.7, pigeon_flock 3.6, cafe_tables 3.3, alley_mouse 2.9, reversing_lorry 1.6, delivery_van 1.1, playground 1.1, construction 1.0, chatting_mother 0.9, market_stall 0.8, ice_cream_van 0.8
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 4 | 99.4 placed, 27.0 moments owed, per day over 18 seeds
+PV_VIEW 4 on the route | 790 locations, 29.7 events, 3.76% of locations
+PV_ROWS 4 on the route | cafe_tables 10.6, homeless_yeller 4.0, delivery_van 3.8, market_stall 3.5, chatting_mother 2.7, pigeon_flock 2.3, construction 2.1, playground 0.7, charging_dog 0.1
+PV_VIEW 4 route-adjacent | 504 locations, 33.4 events, 6.63% of locations
+PV_ROWS 4 route-adjacent | cafe_tables 10.5, leaf_blower 6.6, market_stall 4.8, construction 3.9, ice_cream_van 3.1, pigeon_flock 1.2, homeless_yeller 1.1, playground 0.9, chatting_mother 0.4, charging_dog 0.4, delivery_van 0.4, reversing_lorry 0.1, alley_mouse 0.1
+PV_VIEW 4 off the route | 566 locations, 36.3 events, 6.42% of locations
+PV_ROWS 4 off the route | homeless_yeller 5.0, busker 4.9, pigeon_flock 4.9, leaf_blower 4.3, charging_dog 4.1, cafe_tables 3.4, alley_mouse 2.6, reversing_lorry 1.4, chatting_mother 1.3, delivery_van 1.2, playground 0.8, construction 0.8, market_stall 0.8, ice_cream_van 0.7, poster_crew_square 0.1
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 5 | 105.9 placed, 27.0 moments owed, per day over 18 seeds
+PV_VIEW 5 on the route | 813 locations, 30.7 events, 3.77% of locations
+PV_ROWS 5 on the route | cafe_tables 9.0, homeless_yeller 4.2, delivery_van 3.6, market_stall 3.5, chatting_mother 3.3, construction 3.0, pigeon_flock 2.8, playground 0.6, loudspeaker 0.5, charging_dog 0.2
+PV_VIEW 5 route-adjacent | 512 locations, 34.4 events, 6.71% of locations
+PV_ROWS 5 route-adjacent | cafe_tables 11.4, leaf_blower 6.9, ice_cream_van 4.1, market_stall 4.0, construction 3.9, loudspeaker 0.8, pigeon_flock 0.7, playground 0.7, homeless_yeller 0.6, delivery_van 0.4, charging_dog 0.3, alley_mouse 0.2, chatting_mother 0.2, reversing_lorry 0.2
+PV_VIEW 5 off the route | 567 locations, 40.9 events, 7.22% of locations
+PV_ROWS 5 off the route | homeless_yeller 4.9, busker 4.7, pigeon_flock 4.6, loudspeaker 4.4, leaf_blower 3.6, cafe_tables 3.3, charging_dog 3.3, alley_mouse 2.8, reversing_lorry 2.1, chatting_mother 1.6, market_stall 1.3, delivery_van 1.3, ice_cream_van 1.2, playground 1.2, construction 0.6, poster_crew_square 0.1
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 6 | 110.3 placed, 27.0 moments owed, per day over 18 seeds
+PV_VIEW 6 on the route | 762 locations, 30.2 events, 3.97% of locations
+PV_ROWS 6 on the route | cafe_tables 8.6, homeless_yeller 4.3, market_stall 3.9, delivery_van 3.7, construction 2.7, pigeon_flock 2.7, chatting_mother 2.3, playground 0.7, loudspeaker 0.6, curfew_announce 0.6, charging_dog 0.2
+PV_VIEW 6 route-adjacent | 522 locations, 33.9 events, 6.50% of locations
+PV_ROWS 6 route-adjacent | cafe_tables 9.7, leaf_blower 6.4, market_stall 5.1, construction 3.4, ice_cream_van 3.1, homeless_yeller 1.3, pigeon_flock 1.1, delivery_van 0.9, playground 0.6, chatting_mother 0.6, loudspeaker 0.4, curfew_announce 0.4, alley_mouse 0.3, reversing_lorry 0.3, charging_dog 0.2, poster_crew_square 0.1
+PV_VIEW 6 off the route | 584 locations, 46.2 events, 7.91% of locations
+PV_ROWS 6 off the route | busker 4.9, leaf_blower 4.7, loudspeaker 4.6, curfew_announce 4.6, homeless_yeller 4.6, pigeon_flock 4.4, charging_dog 3.6, cafe_tables 2.7, alley_mouse 2.7, reversing_lorry 1.6, delivery_van 1.6, market_stall 1.6, construction 1.3, ice_cream_van 1.2, playground 1.1, chatting_mother 1.1, poster_crew_square 0.1
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 7 | 105.3 placed, 27.0 moments owed, per day over 18 seeds
+PV_VIEW 7 on the route | 787 locations, 28.9 events, 3.68% of locations
+PV_ROWS 7 on the route | cafe_tables 8.4, market_stall 3.5, homeless_yeller 3.4, pigeon_flock 3.1, roadblock 2.9, delivery_van 2.6, chatting_mother 2.3, construction 2.1, loudspeaker 0.5, playground 0.3, charging_dog 0.1
+PV_VIEW 7 route-adjacent | 519 locations, 33.6 events, 6.47% of locations
+PV_ROWS 7 route-adjacent | cafe_tables 9.8, leaf_blower 6.7, market_stall 4.1, construction 3.9, ice_cream_van 3.6, pigeon_flock 1.0, playground 0.9, roadblock 0.6, homeless_yeller 0.6, delivery_van 0.6, chatting_mother 0.6, loudspeaker 0.5, reversing_lorry 0.3, charging_dog 0.2, alley_mouse 0.2, poster_crew_square 0.1
+PV_VIEW 7 off the route | 586 locations, 42.8 events, 7.30% of locations
+PV_ROWS 7 off the route | homeless_yeller 5.9, loudspeaker 4.5, pigeon_flock 4.5, busker 4.3, leaf_blower 4.2, alley_mouse 3.6, charging_dog 3.3, cafe_tables 2.4, delivery_van 1.5, roadblock 1.4, reversing_lorry 1.4, chatting_mother 1.4, market_stall 1.3, playground 1.2, ice_cream_van 1.0, construction 0.7, poster_crew_square 0.1
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 8 | 126.4 placed, 29.0 moments owed, per day over 18 seeds
+PV_VIEW 8 on the route | 723 locations, 32.6 events, 4.51% of locations
+PV_ROWS 8 on the route | cafe_tables 9.5, homeless_yeller 3.8, delivery_van 3.5, market_stall 3.3, construction 3.2, roadblock 2.9, pigeon_flock 2.6, chatting_mother 2.5, loudspeaker 0.7, playground 0.5, charging_dog 0.1
+PV_VIEW 8 route-adjacent | 496 locations, 33.4 events, 6.73% of locations
+PV_ROWS 8 route-adjacent | cafe_tables 9.9, leaf_blower 5.7, market_stall 4.4, construction 3.4, ice_cream_van 3.3, pigeon_flock 1.2, homeless_yeller 0.9, delivery_van 0.8, roadblock 0.8, abduction 0.7, playground 0.7, loudspeaker 0.5, chatting_mother 0.3, reversing_lorry 0.2, alley_mouse 0.2, alley_robbery 0.2, charging_dog 0.1
+PV_VIEW 8 off the route | 630 locations, 60.4 events, 9.58% of locations
+PV_ROWS 8 off the route | abduction 12.4, homeless_yeller 5.7, busker 5.1, alley_robbery 4.8, loudspeaker 4.3, pigeon_flock 4.1, leaf_blower 3.5, cafe_tables 3.1, charging_dog 3.1, alley_mouse 2.7, reversing_lorry 2.1, roadblock 1.9, market_stall 1.4, construction 1.4, delivery_van 1.3, ice_cream_van 1.2, chatting_mother 1.1, playground 1.0, poster_crew_square 0.2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 9 | 83.1 placed, 29.0 moments owed, per day over 18 seeds
+PV_VIEW 9 on the route | 614 locations, 17.4 events, 2.84% of locations
+PV_ROWS 9 on the route | cafe_tables 3.7, roadblock 2.4, homeless_yeller 2.3, chatting_mother 2.2, pigeon_flock 1.9, delivery_van 1.7, market_stall 1.6, construction 0.7, playground 0.6, loudspeaker 0.4, charging_dog 0.1
+PV_VIEW 9 route-adjacent | 504 locations, 19.7 events, 3.91% of locations
+PV_ROWS 9 route-adjacent | cafe_tables 6.8, market_stall 2.8, leaf_blower 2.8, construction 1.6, ice_cream_van 1.1, pigeon_flock 1.0, playground 0.7, roadblock 0.7, loudspeaker 0.7, homeless_yeller 0.6, chatting_mother 0.3, abduction 0.3, delivery_van 0.2, alley_mouse 0.1, poster_crew_square 0.1, charging_dog 0.1
+PV_VIEW 9 off the route | 744 locations, 45.9 events, 6.17% of locations
+PV_ROWS 9 off the route | abduction 6.8, pigeon_flock 4.9, homeless_yeller 4.7, loudspeaker 4.6, busker 4.4, cafe_tables 2.8, roadblock 2.6, leaf_blower 2.5, alley_robbery 2.3, alley_mouse 2.1, charging_dog 1.6, reversing_lorry 1.4, chatting_mother 1.4, construction 1.3, delivery_van 0.9, playground 0.7, market_stall 0.6, ice_cream_van 0.4
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 10 | 82.9 placed, 29.0 moments owed, per day over 18 seeds
+PV_VIEW 10 on the route | 568 locations, 15.1 events, 2.66% of locations
+PV_ROWS 10 on the route | cafe_tables 3.6, homeless_yeller 2.2, pigeon_flock 1.9, chatting_mother 1.5, roadblock 1.4, delivery_van 1.3, market_stall 1.3, construction 0.8, loudspeaker 0.6, playground 0.4, charging_dog 0.1
+PV_VIEW 10 route-adjacent | 507 locations, 18.6 events, 3.67% of locations
+PV_ROWS 10 route-adjacent | cafe_tables 5.1, leaf_blower 3.1, market_stall 2.5, construction 1.8, ice_cream_van 1.5, homeless_yeller 0.8, pigeon_flock 0.7, night_raid 0.5, delivery_van 0.5, playground 0.5, roadblock 0.4, chatting_mother 0.4, abduction 0.3, loudspeaker 0.3, alley_mouse 0.2, reversing_lorry 0.1, charging_dog 0.1
+PV_VIEW 10 off the route | 804 locations, 49.2 events, 6.13% of locations
+PV_ROWS 10 off the route | abduction 8.9, homeless_yeller 5.4, loudspeaker 4.9, busker 4.7, pigeon_flock 4.3, alley_mouse 3.2, cafe_tables 2.5, alley_robbery 2.5, leaf_blower 2.3, roadblock 2.1, reversing_lorry 1.6, chatting_mother 1.3, construction 1.2, charging_dog 1.1, playground 0.9, ice_cream_van 0.7, delivery_van 0.6, market_stall 0.6, night_raid 0.5
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 11 | 82.0 placed, 29.0 moments owed, per day over 18 seeds
+PV_VIEW 11 on the route | 536 locations, 16.0 events, 2.98% of locations
+PV_ROWS 11 on the route | cafe_tables 3.3, homeless_yeller 3.1, roadblock 2.6, pigeon_flock 1.7, market_stall 1.3, chatting_mother 1.3, construction 1.1, delivery_van 1.1, loudspeaker 0.4, playground 0.1
+PV_VIEW 11 route-adjacent | 473 locations, 18.1 events, 3.83% of locations
+PV_ROWS 11 route-adjacent | cafe_tables 6.0, leaf_blower 2.9, market_stall 2.2, construction 1.6, ice_cream_van 1.2, homeless_yeller 0.9, playground 0.7, roadblock 0.6, pigeon_flock 0.4, chatting_mother 0.4, loudspeaker 0.3, abduction 0.3, delivery_van 0.2, alley_mouse 0.2, reversing_lorry 0.2, charging_dog 0.1
+PV_VIEW 11 off the route | 836 locations, 47.9 events, 5.73% of locations
+PV_ROWS 11 off the route | abduction 9.6, loudspeaker 4.9, busker 4.7, pigeon_flock 4.5, homeless_yeller 4.3, alley_mouse 3.1, cafe_tables 2.8, leaf_blower 2.6, charging_dog 2.2, roadblock 1.7, alley_robbery 1.7, reversing_lorry 1.1, chatting_mother 1.0, construction 0.8, playground 0.8, market_stall 0.8, delivery_van 0.7, ice_cream_van 0.6, poster_crew_square 0.1
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 12 | 97.9 placed, 32.0 moments owed, per day over 18 seeds
+PV_VIEW 12 on the route | 533 locations, 16.6 events, 3.11% of locations
+PV_ROWS 12 on the route | cafe_tables 4.3, roadblock 2.6, homeless_yeller 2.0, market_stall 1.5, pigeon_flock 1.4, chatting_mother 1.3, construction 1.2, delivery_van 1.2, loudspeaker 0.6, playground 0.3, charging_dog 0.2
+PV_VIEW 12 route-adjacent | 454 locations, 20.1 events, 4.43% of locations
+PV_ROWS 12 route-adjacent | cafe_tables 5.7, leaf_blower 3.9, market_stall 2.4, ice_cream_van 2.1, construction 1.6, homeless_yeller 0.8, pigeon_flock 0.7, playground 0.6, roadblock 0.5, delivery_van 0.4, reversing_lorry 0.3, loudspeaker 0.3, abduction 0.3, chatting_mother 0.3, charging_dog 0.1, alley_robbery 0.1, alley_mouse 0.1
+PV_VIEW 12 off the route | 827 locations, 61.3 events, 7.41% of locations
+PV_ROWS 12 off the route | abduction 9.4, protest 8.9, homeless_yeller 5.7, pigeon_flock 4.9, loudspeaker 4.8, busker 4.5, alley_mouse 3.5, leaf_blower 3.2, cafe_tables 2.7, roadblock 2.4, charging_dog 2.1, alley_robbery 1.6, market_stall 1.3, construction 1.2, reversing_lorry 1.2, delivery_van 1.1, playground 1.1, chatting_mother 0.9, ice_cream_van 0.7
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 13 | 115.4 placed, 32.0 moments owed, per day over 18 seeds
+PV_VIEW 13 on the route | 443 locations, 13.2 events, 2.99% of locations
+PV_ROWS 13 on the route | cafe_tables 3.8, homeless_yeller 2.3, market_stall 2.0, chatting_mother 1.4, delivery_van 1.1, construction 1.1, pigeon_flock 0.8, playground 0.4, loudspeaker 0.3, charging_dog 0.1
+PV_VIEW 13 route-adjacent | 405 locations, 33.7 events, 8.33% of locations
+PV_ROWS 13 route-adjacent | roadblock 18.8, cafe_tables 4.7, leaf_blower 2.6, market_stall 2.0, construction 1.7, ice_cream_van 1.2, homeless_yeller 0.6, pigeon_flock 0.6, chatting_mother 0.3, abduction 0.3, playground 0.3, delivery_van 0.2, loudspeaker 0.2, alley_mouse 0.1, reversing_lorry 0.1, alley_robbery 0.1, charging_dog 0.1
+PV_VIEW 13 off the route | 945 locations, 68.4 events, 7.24% of locations
+PV_ROWS 13 off the route | abduction 11.9, protest 10.1, homeless_yeller 5.9, pigeon_flock 5.9, loudspeaker 5.0, busker 4.7, alley_mouse 4.4, leaf_blower 3.6, cafe_tables 3.2, charging_dog 2.8, reversing_lorry 1.8, alley_robbery 1.6, chatting_mother 1.4, construction 1.3, ice_cream_van 1.3, delivery_van 1.1, firefight 1.0, market_stall 0.9, playground 0.5
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+PV_DAY 14 | 103.2 placed, 32.0 moments owed, per day over 18 seeds
+PV_VIEW 14 on the route | 449 locations, 12.9 events, 2.87% of locations
+PV_ROWS 14 on the route | cafe_tables 2.9, homeless_yeller 2.1, roadblock 1.6, market_stall 1.4, chatting_mother 1.3, pigeon_flock 1.1, delivery_van 1.1, construction 0.8, loudspeaker 0.4, playground 0.3
+PV_VIEW 14 route-adjacent | 394 locations, 18.4 events, 4.66% of locations
+PV_ROWS 14 route-adjacent | cafe_tables 5.9, leaf_blower 3.3, market_stall 2.3, construction 1.4, ice_cream_van 1.4, homeless_yeller 0.7, roadblock 0.6, chatting_mother 0.6, alley_mouse 0.4, delivery_van 0.3, abduction 0.3, playground 0.3, pigeon_flock 0.3, loudspeaker 0.2, reversing_lorry 0.2, charging_dog 0.1, alley_robbery 0.1
+PV_VIEW 14 off the route | 958 locations, 71.9 events, 7.51% of locations
+PV_ROWS 14 off the route | abduction 12.9, protest 9.4, homeless_yeller 5.8, pigeon_flock 5.3, loudspeaker 5.1, busker 4.9, alley_mouse 4.6, leaf_blower 3.3, cafe_tables 3.2, roadblock 3.2, charging_dog 2.8, reversing_lorry 2.2, alley_robbery 1.8, delivery_van 1.7, chatting_mother 1.4, ice_cream_van 1.4, market_stall 1.3, construction 0.9, playground 0.6
+-- placement_view_mix.gd                 727070 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/placement_view_mix.gd. Not a green build.

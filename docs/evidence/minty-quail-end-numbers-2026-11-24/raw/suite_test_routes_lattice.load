@@ -1,0 +1,2 @@
+21:13  up 3 days,  2:38, 6 users, load averages: 3.38 3.40 3.00
+77245 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/mq-r2 res://tests/tests.tscn -- probes/escape_winnable.gd

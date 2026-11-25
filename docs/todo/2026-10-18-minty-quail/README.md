@@ -88,8 +88,7 @@ parity**: every existing test passes, changed only as far as the code it reaches
 early to injected fakes and public APIs (**writing-tests**, "A test reaches the game the way the game does"); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
-1. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
-   table, GoatCounter's counts against `docs/stats/` (read after a release, since the live site counts
+1. **Remeasuring**, once, after the last item: GoatCounter's counts against `docs/stats/` (read after a release, since the live site counts
    released builds only; owed as an entry of its own, filed when this entry closes), and pictures of every behavior a step
    changed on purpose, those the remeasure could not stage being owed in the entry azure-yak, "The pictures the end remeasure could not stage". Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured
@@ -99,15 +98,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    worth an entry of its own. It measures streaming's tick (`EventStreaming.stream_around()`, the events' loop with
    the most turns) again too: row 3a's plan questions cost it about 60 µs a tick (record minty-quail-cozy-stork) and
    streaming's own table of state per plan about 25 to 50 µs more (#1598's measurement, on its pull request), and the
-   step says whether a cheaper lookup is worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
-   refactor's head and compares the two with `tools/compare-placement-rows.py`, which applies the
-   rule the record grassy-magpie states (that record carries the output of the hand-run script it
-   replaced, with that step's own list). The tool refuses a log line of a day outside 1 to
-   14, and both probes plan a day the way `DayPlanner` does: each day's closures, holds, region wall and seals,
-   the seals and the wall's bodies handed in as standing (the record minty-quail-tiny-magpie; placement step 3c
-   moved main's own route-adjacent walls from 30.54 to 19.41 a city a day).
-
-   The "before" it compares with is the design review's baseline readings in
+   step says whether a cheaper lookup is worth an entry of its own.
+   The "before" the remeasure compares with is the design review's baseline readings in
    `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`
    (the record minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
    fourth after the events' field-read conversion (the record polite-tapir-crisp-heron). Nothing is judged in the
@@ -119,8 +111,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      timers, set against the third column's own copy) inside `build_day()` 51.6 s to 44.1 s, inside
      `draw_every_unit()` 345.6 to 334.3, the whole probe 568.6 to 505.2; the crowd tick's mean whole-mode
      median about 2,466 µs to 2,351 µs; the frame profile's callback interval with `--invincible` 4.9 ms to 4.0
-     profiled and 7.5 to 6.3 with the profiler off; `test_acts`'s checks 349 to 45 (its sweep holds scripted rows
-     only) and `test_finale`'s 9,464 to 9,463; the unmodified frame-profile launcher's six runs all rejected by
+     profiled and 7.5 to 6.3 with the profiler off; the unmodified frame-profile launcher's six runs all rejected by
      the analyzer (an 8.3 ms callback interval), not looked into.
    - **Streaming's loop over every plan**: `EventStreaming.stream_around()`, which row 3b's design asked to be
      measured and which was not (the record minty-quail-gray-koala; the paragraph above says what this step

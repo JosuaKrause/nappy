@@ -1,0 +1,3 @@
+22:09  up 3 days,  3:34, 6 users, load averages: 4.26 3.81 3.67
+22045 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/rv-1732-lo res://tests/tests.tscn -- probes/escape_winnable.gd
+22076 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/rv-1732-lo/ -- --start-escape city --seed 4242 --route tunnel --no-save --no-title

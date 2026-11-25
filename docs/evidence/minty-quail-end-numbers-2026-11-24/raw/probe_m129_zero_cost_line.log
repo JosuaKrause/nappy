@@ -1,0 +1,51 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== M129: the zero-cost line, 6 seeds x one day per act [1, 5, 9, 13], used parks: none ==
+
+-- 24 days planned, 326.2 placed rows a day that a line has to avoid --
+
+-- routes with a zero-cost line: pacing rows only where their beat never opens (the primary reading) --
+   act 1   89 of  89  100.0%
+   act 2   89 of  89  100.0%
+   act 3   75 of  75  100.0%
+   act 4   46 of  46  100.0%
+   all    299 of 299  100.0%
+
+-- routes with a zero-cost line: pacing rows over their whole beat --
+   act 1   45 of  89   50.6%
+   act 2   33 of  89   37.1%
+   act 3   44 of  75   58.7%
+   act 4   24 of  46   52.2%
+   all    146 of 299   48.8%
+
+-- routes with a zero-cost line: primary, the day's own catalogue rows only (no seals or region wall) --
+   act 1   89 of  89  100.0%
+   act 2   89 of  89  100.0%
+   act 3   75 of  75  100.0%
+   act 4   46 of  46  100.0%
+   all    299 of 299  100.0%
+
+-- what broke the line (primary reading) --
+   routes = the first cut a walk out of the door runs into; cuts = every stretch on
+   every broken route, which is what a rule would have to cover.
+   routes   cuts  shape
+
+-- how much of a route is blocked (primary reading, 0 broken routes) --
+   separate stretches to clear before a line exists: 0.0 on average, 0 at worst
+   the rows standing in those stretches, by how many routes they break:
+
+-- the grower's own mid-block crossings --
+   routes with at least one cell on a carriageway between junctions: 0
+   complete mid-block crossings (pavement -> road -> far pavement): 0
+      on ORDINARY streets: 0
+      on MAIN streets: 0
+      on PEDESTRIAN streets: 0
+   routes with any cell on the spine at all: 167
+
+-- 57.2s --
+-- m129_zero_cost_line.gd                 58605 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m129_zero_cost_line.gd. Not a green build.
