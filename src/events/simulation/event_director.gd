@@ -213,14 +213,13 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## `RunState.resistance().progress()` the day's own placements were planned at.
 ##
 ## **`sends` is the walk's own setting of what the director may send her**
-## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends none
-## of an ordinary day's rows (`DaySpec.DirectorSends.NOTHING`) has no route bag, owes nothing
-## from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is; one that sends
-## the rows of its own plan (`SENT_AHEAD_ROWS_OF_ITS_PLAN`) owes only the sent-ahead rows its plan
-## left unplaced, in a route bag of those alone. There is no
-## default: a caller says what its walk sends. `wait_share` is the share of `AHEAD_INTERVAL` the
-## walk
-## lets pass between two handouts (`DaySpec.handout_wait_share()`).
+## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends
+## none of an ordinary day's rows (`DaySpec.DirectorSends.NOTHING`) has no route bag, owes
+## nothing from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is; one
+## that sends the rows of its own plan (`SENT_AHEAD_ROWS_OF_ITS_PLAN`) owes only the sent-ahead
+## rows its plan left unplaced, in a route bag of those alone. There is no default: a caller
+## says what its walk sends. `wait_share` is the share of `AHEAD_INTERVAL` the walk lets pass
+## between two handouts (`DaySpec.handout_wait_share()`).
 func start_day(day: int, plans: Array[EventPlan],
 		rng: RandomNumberGenerator, sends: DaySpec.DirectorSends,
 		siting: WalkSiting = null, heat: int = 0, wait_share := 1.0) -> void:
@@ -287,10 +286,10 @@ func start_day(day: int, plans: Array[EventPlan],
 	_rig_day_one(day, heat)
 
 ## **The sent-ahead rows a walk's own plan left for the director**
-## (`DaySpec.hands_the_director()`): each is
-## a marble of a route bag that holds them alone, and a slot owed, so she meets as many as the plan
-## handed over, one at the director's usual pace, each sited ahead of her as a day's convoy is
-## (`_routed()`). A truck is no row of the ordinary bag, so `max_per_day` caps none of them.
+## (`DaySpec.hands_the_director()`): each is a marble of a route bag that holds them alone, and
+## a slot owed, so she meets as many as the plan handed over, one at the director's usual pace,
+## each sited ahead of her as a day's convoy is (`_routed()`). A truck is no row of the ordinary
+## bag, so `max_per_day` caps none of them.
 func _owe_its_trucks(trucks: Array[EventDef], heat: int) -> void:
 	if trucks.is_empty():
 		return

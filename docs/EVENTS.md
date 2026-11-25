@@ -750,17 +750,18 @@ lasts `Tuning.PURSUIT_TIME`, a long cap (30s) rather than an end a walk can outl
 loses by construction from any start; running ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate. The cap
 exists so a pursuer stuck against a wall lets go in the end.
 
-**Two kinds of thing that come from off screen are not warned first:**
+**One kind of thing that comes from off screen is not warned first:**
 
 - **A patrol sent toward her on the road** (the director's, the return leg's among them) **is created at once**, in its lane just out of sight up the road, and telegraphs on its way in (1.97s) with no badge:
   the badge goes only to something lethal or faster than a walk, and a patrol is neither
   (slower than a walk, never lethal at any heat — its strike is a car's, in front of it on the
   carriageway, and warned as a car warns, "Solid things are solid"). It does not telegraph its
   coming ("What telegraphs"), and its in-world approach still meets the telegraph contract.
-- **A `MAP` mover** — the escape's `military_convoy` trucks — **is sent ahead of her by the
-  director like a day's convoy** (the escape's section below), so it is warned of first and created
-  just out of sight, and the fairness contract checks it like every row. It telegraphs: 120px/s
-  down the road she is on, about 30 points in a pass.
+
+**The escape's `military_convoy` trucks are not placed on the map**: they are sent ahead of her by
+the director like a day's convoy (the escape's section below), so they are warned of first and
+created just out of sight, and the fairness contract checks them like every row. They telegraph:
+120px/s down the road she is on, about 30 points in a pass.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
 `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a

@@ -19,11 +19,9 @@ wait between two (`DaySpec.ESCAPE_HANDOUT_WAIT_SHARE` 0.25 of `EventDirector.AHE
 26 seconds of walking, handed through `DaySpec.handout_wait_share()` and `EventDirector.start_day()`).
 A convoy is sited only where it could still be created from wherever the camera can be once its badge
 has been up (`EventDirector._holds_while_its_badge_is_up()`), so no badge goes down with nothing
-behind it ("a badge shouldn't disappear before the entity is visible", minty-dolphin #852). And where
-the lane beside her has no room for it, the director sends the convoy down the street crossing hers
-at the next junction box ahead of her, out of sight up it and through the box
-(`EventDirector._down_the_street_she_comes_to()`): a rule of every convoy the director sends, a
-day's from day 13 as well as the escape's.
+behind it ("a badge shouldn't disappear before the entity is visible", minty-dolphin #852). Where
+the lane beside her has no room for a truck, the director waits and asks again, as it does for a
+day's convoy, whose siting this change leaves as it was.
 
 **Which marbles are on her route.** Every street of the escape's plan is on one of her two ways out
 (the plan names only the streets its chains run along, `DayLocations.along()`; every other street is
@@ -51,27 +49,27 @@ lines in the run log less than 2.5 s apart):
 | main, trucks placed at dawn (`6cd1965eb`) | 28 | 1.56 | 4 | 2 of 15 | 34 | 0 | 10 |
 | sent ahead, a day's pace | 15 | 0.79 | 13 | 6 of 17 | 23 | 8 | 9 |
 | half a day's wait, badge held while it is up | 17 | 0.90 | 13 | 7 of 17 | 18 | 0 | 9 |
-| a quarter of a day's wait | 30 | 1.58 | 13 | 7 of 17 | 30 | 0 | 9 |
-| a quarter, and the street she comes to (this change) | 30 | 1.77 | 12 | 7 of 14 | 30 | 0 | 7 |
+| a quarter of a day's wait (this change) | 30 | 1.58 | 13 | 7 of 17 | 30 | 0 | 9 |
 
-The second row is the review's measurement of the first version. **The pace moves how many trucks she
-meets, not which walks meet one**: the same 13 walks met none at half and at a quarter of a day's
-wait, and 9 of the 12 walks to the bridge meet none in the last row. Logging every refused siting on
-two walks to the bridge found why: off a plain sidewalk edge there is no lane to site in, and on one
-every siting failed because the truck's leg up the lane is cut by an impact crater standing in the
-lane (`Navigator.trim()`: the crater is solid to 32 px and the truck, 26 px across, drives straight
-down its lane); down the street she comes to, every leg was refused, the cross streets off her walk
-being sealed by the barricade trucks. No check is stricter than the game needs: the badge-held check
-sweeps the camera along the lane, the one way her moving shifts the truck's place. The losses to the
-truck rows are trucks doing their job: three walks to the tunnel are lost to the baby crying (seeds
-9001, 11 and 808), and the wins fall from 9 to 7. The four-seed claim this record first carried (the
-tunnel out in 1 of 4 walks before and 3 of 4 after) came from the plan reshuffling once a truck was
-unplaced and is not a measure of how winnable the section is.
+The second row is the review's measurement of the first version; the last row's runs are the 24
+logs `rig-0841*` to `rig-0850*` of `95aef9e88-dirty`, the code this change carries. **The pace moves
+how many trucks she meets, not which walks meet one**: the same 13 walks met none at half and at a
+quarter of a day's wait, and 10 of the 12 walks to the bridge meet none (only seeds 2024, with one
+truck, and 11, with three, meet any); the other three walks meeting none are to the tunnel (seeds
+23, 5 and 7). Logging every refused siting on two walks to the bridge found why: off a plain
+sidewalk edge there is no lane to site in, and on one every siting failed because the truck's leg up
+the lane is cut by an impact crater standing in the lane (`Navigator.trim()`: the crater is solid
+to 32 px and the truck, 26 px across, drives straight down its lane). No check is stricter than the
+game needs: the badge-held check sweeps the camera along the lane, the one way her moving shifts the
+truck's place. Against main the wins go from 10 to 9; every walk lost in the last row is lost to a
+roadblock, none to the baby crying. The four-seed claim this record first carried (the tunnel out in
+1 of 4 walks before and 3 of 4 after) came from the plan reshuffling once a truck was unplaced and is
+not a measure of how winnable the section is.
 
 **The gap is accepted for now** (the board question escape-trucks-bridge, the orchestrator's pick):
 the escape meets as many trucks a minute as with the trucks placed, and the walks to the bridge that
 meet none go to lilac-marten (a fuller escape), whose `fuller-escape.md` names the craters in the
-lanes and the sealed cross streets for its builder.
+lanes for its builder.
 
 **Rejected:** a further yes-or-no on the spec (the value carries what is sent); a truck marble the
 director draws from a bag of its own beside the escape's (two bags for one count); keeping the trucks
@@ -79,14 +77,19 @@ placed on streets off her chosen branch (a street off the walk is sealed, so non
 share of the trucks placed at dawn beside her route (a truck on her route is sent ahead of her,
 inbox #1740 in minty-hare); a lower pace alone (it moves the count, not which walks meet one); the
 badge's place asked again only from where she is (8 of 23 badges went down with nothing behind them
-where the lane breaks a second on).
+where the lane breaks a second on); a convoy whose lane beside her has no room sent down the street
+crossing hers at the next junction box ahead of her instead, built and dropped before review closed:
+it changed every convoy the director sends on days 13 and 14 (over 18 seeds, 7 of the 28 handed out
+came down the cross street, where none had), which nobody asked for, it added no truck to the escape
+(30 met with and without it, and still 10 of the 12 walks to the bridge meeting none, the cross
+streets off her walk being sealed by the barricade trucks), and its runs lost three walks to the
+tunnel to the baby crying (seeds 9001, 11 and 808) and won 7, with a siting tick on day 13 up to
+115 ms at worst against 53 ms.
 
 **Tests.** `tests/test_event_director.gd` (a walk sending its own trucks is owed the unplaced ones,
 none for a placed one or another row, on day 1 and 14; a walk lets the share of the wait it names pass
-between handouts; a convoy is sited only where the ground holds while its badge is up; where the lane
-beside her has no leg a car may drive, the convoy comes down the street she comes to),
+between handouts; a convoy is sited only where the ground holds while its badge is up),
 `tests/test_marble_draw.gd` (a truck handed to the director is recorded unplaced, placed otherwise),
 `tests/test_walk_siting_spec.gd` (the hand-off and the pace) and `tests/finale_rig.gd` (no truck of
-the bag is placed at dawn). The first version's cases fail on main (the review ran them there), the
-street-she-comes-to case fails without its fallback, and calm-hare's test (the escape sends none of an
-ordinary day's rows) still holds.
+the bag is placed at dawn). The first version's cases fail on main (the review ran them there), and
+calm-hare's test (the escape sends none of an ordinary day's rows) still holds.

@@ -245,14 +245,13 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 	t.check(with_her == 0 and at_her > 0,
 			"and it comes toward her (%d toward her, %d from behind her)" % [at_her, with_her])
 
-## **A convoy is sited only where it could be created from wherever the camera is once its badge has
-## been up** (`EventDirector._holds_while_its_badge_is_up()`): its badge is up alone for
-## `warned_for()` and the thing is created just out of sight of the camera then, a place that has
-## moved along the road with her, so a start that is ground now and a break in the carriageway a
-## second of her running on would take the badge down with nothing behind it. A way on that lets
-## a car
-## start only up to a cutoff down the road sites the convoy when the cutoff is further than she can
-## run in that time and refuses it when it is nearer.
+## **A convoy is sited only where it could be created from wherever the camera is once its badge
+## has been up** (`EventDirector._holds_while_its_badge_is_up()`): its badge is up alone for
+## `warned_for()` and the thing is created just out of sight of the camera then, a place that
+## has moved along the road with her, so a start that is ground now and a break in the
+## carriageway a second of her running on would take the badge down with nothing behind it. A
+## way on that lets a car start only up to a cutoff down the road sites the convoy when the
+## cutoff is further than she can run in that time and refuses it when it is nearer.
 func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 		t: TestRunner) -> void:
 	var map := _street()
@@ -651,11 +650,11 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
 
 ## **A walk that sends its own trucks** (`DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`,
-## the escape city's)
-## is owed one marble for each sent-ahead row its plan left unplaced, and none for a truck its
-## plan placed or for a row it does not send: what she meets is the plan's trucks sent just ahead
-## of her, and nothing else, whatever the day's number. The walk that sends nothing is owed none
-## of the same plans, so the count is the setting's and not the plans'.
+## the escape city's) is owed one marble for each sent-ahead row its plan left unplaced, and
+## none for a truck its plan placed or for a row it does not send: what she meets is the plan's
+## trucks sent just ahead of her, and nothing else, whatever the day's number. The walk that
+## sends nothing is owed none of the same plans, so the count is the setting's and not the
+## plans'.
 func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unplaced(
 		t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("military_convoy")
@@ -692,8 +691,7 @@ static func _started(day: int, plans: Array[EventPlan], sends: DaySpec.DirectorS
 
 ## **The share of the usual wait a walk names is the share of it that passes before the first
 ## handout** (`DaySpec.handout_wait_share()`, `EventDirector.start_day()`): on one stream, the
-## wait a
-## director is handed half of is half the wait of one handed all of it, to a tick.
+## wait a director is handed half of is half the wait of one handed all of it, to a tick.
 func _test_a_walk_lets_the_share_of_the_wait_it_names_pass_between_handouts(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("military_convoy")
 	var plans: Array[EventPlan] = [EventPlan.new(truck, Vector2.INF)]

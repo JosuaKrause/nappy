@@ -236,18 +236,18 @@ func _owe_the_return() -> void:
 ## `focus` is where the player will be standing when the walk starts, so the events already
 ## around her are in the world on the first frame rather than appearing during it.
 ##
-## **A day is keyed by its own number** (`DaySpec.day_number()`): its streams and the rows it sends. **The
-## escape's sections keep the run's last day**, on whose streams their plans are drawn
-## (`DaySpec.day_number()`'s own doc), and count her encounters under their own number. A day leaves the
-## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
-## the crowd; a walk planned whole before she sets off owes the director no plan of the dawn's
-## and hands it the walk's own setting of what it may send her (`EventsAhead.start_a_given_walk()`,
-## `DaySpec.director_sends()`: its own trucks, for the escape's city), and a plan of it that
-## comes again
-## (`EventPlan.repeats()`) comes on its own clock
-## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
-## detentions and the hard fails are the same for all three: an explosion leaves its crater through
-## the same `aftermath.leaves_behind()` mechanism on the escape's streets as it would anywhere.
+## **A day is keyed by its own number** (`DaySpec.day_number()`): its streams and the rows it
+## sends. **The escape's sections keep the run's last day**, on whose streams their plans are
+## drawn (`DaySpec.day_number()`'s own doc), and count her encounters under their own number. A
+## day leaves the director what it owes her walk (`EventsAhead.start_day()`) and records its
+## bodies for the crowd; a walk planned whole before she sets off owes the director no plan of
+## the dawn's and hands it the walk's own setting of what it may send her
+## (`EventsAhead.start_a_given_walk()`, `DaySpec.director_sends()`: its own trucks, for the
+## escape's city), and a plan of it that comes again (`EventPlan.repeats()`) comes on its own
+## clock (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars,
+## the detentions and the hard fails are the same for all three: an explosion leaves its crater
+## through the same `aftermath.leaves_behind()` mechanism on the escape's streets as it would
+## anywhere.
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
 	_begin(spec)
