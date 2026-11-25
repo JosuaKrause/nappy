@@ -94,6 +94,10 @@ var _city: City
 ## `_run` and hands it, typed `RunState`, to `GameSave` and to every reader it builds. Null
 ## until a sitting is taken.
 var _run: RunState
+## How long the day that ended last lasted, in seconds (`DayEnd.lasted_seconds()`), for the
+## ending screen to show beside the run's total; negative until a day ends in this boot, as when
+## a saved ending is opened again.
+var _last_day_seconds := -1.0
 ## The parts of the run's state this node reads and writes most, taken off the run once and held.
 var _spend: AttemptSpendState
 var _facts: RunFacts
@@ -1979,6 +1983,7 @@ func _write_dawn_for_a_resumed_run() -> void:
 ## nothing should be different.")*
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var end := _new_director().finish_day(result)
+	_last_day_seconds = end.lasted_seconds()
 	if end.ends_a_section():
 		_finish_the_section(end)
 		return
@@ -2072,7 +2077,7 @@ func _finish_the_section(end: DayEnd) -> void:
 ## (`_unhandled_input()`, `_pause_on_focus_lost()`).
 func _walk_out_of_the_city(end: DayEnd) -> void:
 	if not is_inside_tree() or end.exit_taken() < 0:
-		_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+		_summary.show_summary(SummaryModel.epilogue(_run, end), _flow.mode())
 		return
 	_edge_layer.visible = false
 	get_tree().paused = true
@@ -2087,7 +2092,7 @@ func _walk_out_of_the_city(end: DayEnd) -> void:
 func _on_walked_in(end: DayEnd) -> void:
 	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_baby.process_mode = Node.PROCESS_MODE_INHERIT
-	_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+	_summary.show_summary(SummaryModel.epilogue(_run, end), _flow.mode())
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
 ## says: the screen decides it by the mode it was raised in (`raised_in`, a `RunFlow.Mode` sent with
@@ -2130,7 +2135,8 @@ func _on_summary_continued(raised_in: int) -> void:
 			# this is already the moment she is playing the next day, and the write says so at once.
 			_save_now(true)
 		RunFlow.Step.SHOW_ENDING:
-			_summary.show_summary(SummaryModel.ending(_run, _run.header().ending()), _flow.mode())
+			_summary.show_summary(SummaryModel.ending(_run, _run.header().ending(),
+					_last_day_seconds), _flow.mode())
 		RunFlow.Step.RESTART_RUN:
 			# A run that is over goes back to where a run begins, which is the title screen: an
 			# ending is not a dead end the player has to quit out of.

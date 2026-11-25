@@ -586,7 +586,7 @@ func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 			RunFlow.Mode.BRIEF)
 	t.check(note.visible, "a resumed day's brief shows its note")
 	var out := DayEnd.new(GameEnums.DayResult.WON, "", 42.0, CityExit.Kind.TUNNEL)
-	summary.show_summary(SummaryModel.epilogue(out), RunFlow.Mode.EPILOGUE)
+	summary.show_summary(SummaryModel.epilogue(run, out), RunFlow.Mode.EPILOGUE)
 	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
 	t.get_tree().paused = saved_paused
