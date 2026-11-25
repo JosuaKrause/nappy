@@ -187,8 +187,8 @@ static func charger_timing() -> ChargerTiming:
 
 ## **Builds every row from `timing` from now on**: the composition root hands it the run's own at
 ## boot (`main.configure()`, `RunConfig.charger_timing()`), before anything is built from a row.
-## A timing that plays every charger as the one in use changes nothing; another forgets every row
-## and derived copy built so far, so the next ask builds and validates them again from it.
+## A timing that plays every charger as the one in use changes nothing, the timing held included;
+## another forgets every row and derived copy, so the next ask builds and validates them again.
 static func use_charger_timing(timing: ChargerTiming) -> void:
 	if timing.same_as(_chargers):
 		return
@@ -1556,7 +1556,8 @@ static func _charging_dog() -> EventDef:
 	# through its whole telegraph, so a field narrower than that is a field it is never inside; the
 	# dog would spend the entire warning emitting nothing at her, the `!` over her head would never
 	# go up, and the trace would attribute the mark to "nothing in reach". `validate_pursuit`
-	# refuses the arrangement. Twenty pixels past its notice, so the meter says it is there before it
+	# refuses the arrangement. Twenty pixels past its notice, so the meter says it is there
+	# before it
 	# has noticed her, growing with the notice (`ChargerTiming.field_reach()`: 182.5px as shipped).
 	row.field(FieldSpec.of(12.0, 26.0, _chargers.field_reach(150.0, 130.0)))
 	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
@@ -1927,7 +1928,8 @@ static func _abduction() -> EventDef:
 ##   run's charger reach (225px as shipped): inside that he
 ##   stands up, turns to face her and walks at her slowly, at 40px/s (`PursuitSpec.walk_speed()`),
 ##   holding at his 116px stand-off, for his warning (`CHARGER_WARNING`, `PursuitSpec.warns_for()`;
-##   inbox #788 in minty-lemur), and if she is still inside his radius once it has run he lunges, and chases at
+##   inbox #788 in minty-lemur), and if she is still inside his radius once it has run he
+##   lunges, and chases at
 ##   130px/s until she has shaken him off. **Turning round from his warning is an answer**: she
 ##   outwalks his slow walk, and once she is outside his radius he stops where he is and waits
 ##   there (inbox #764 in minty-lemur). Once he has lunged, walking away does not work and running
@@ -1955,7 +1957,8 @@ static func _alley_robbery() -> EventDef:
 	# pixels between this and his notice are the row's first sentence, **on sight**, with
 	# somewhere to happen, and his slow walk is its second; they grow with his notice
 	# (`ChargerTiming.field_reach()`).
-	row.field(FieldSpec.of(16.0, 26.0, _chargers.field_reach(200.0, 180.0)))
+	var written := _robber_field()
+	row.field(written.reaching(_chargers.field_reach(written.heard_within(), 180.0)))
 	# Read only by the pursuit contract's notice clause (`Tuning.validate_pursuit()`): no robber's
 	# notice runs on it. One who notices her by sight warns for his `PursuitSpec.warns_for()`
 	# (`EventInstance.warns_by_radius()`), and day 13's guard set on her by the task has the task's
@@ -2031,6 +2034,12 @@ static func _alley_robbery() -> EventDef:
 ## once is more than a walker should answer is
 ## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
 ##
+## **The alley robber's field as written**: 16 over a 26 to 200px field, around his written 180px
+## notice. The waiting robber draws its outer edge at the run's charger reach
+## (`ChargerTiming.field_reach()`); every man sent at her charging keeps it as written.
+static func _robber_field() -> FieldSpec:
+	return FieldSpec.of(16.0, 26.0, 200.0)
+
 ## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, as `door_guard`
 ## draws a roadblock's guard: he never waits, so it is only ever the lunge, and the badge is the one
 ## view of it `ROBBER` does not already stand for.
@@ -2040,7 +2049,11 @@ static func _robber_giving_chase() -> EventDef:
 	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.ROBBER_GIVING_CHASE))
 	row.body(BodySpec.footprint(alley.ground_shape()).walked_through().going_on())
-	row.field(alley.field())
+	# The waiting robber's field as written, never as the run's charger reach draws it: the twenty
+	# pixels it keeps past his notice are for a man who waits for her, and this one arrives already
+	# charging, with no notice to feel him before. The charger timing moves notices and warnings
+	# (curly-moose #803); his cost moves only on the player's word (inbox #1278 in olive-ferret).
+	row.field(_robber_field())
 	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
 	var dog := _charging_dog()
 	row.warning(WarningSpec.lasting(0.0)
@@ -2655,7 +2668,8 @@ static func _checkpoint_post() -> EventDef:
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was set
 ## on her. From the frame she crosses the door's line, the guard at the hut across the road from her
 ## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's
-## guard; back across before his warning (`ChargerTiming.warning()`) has run, nobody comes, and still across once it has, this
+## guard; back across before his warning (`ChargerTiming.warning()`) has run, nobody comes, and
+## still across once it has, this
 ## man steps out of that hut or post and charges from his first frame (inbox #788 in minty-lemur).
 ## The answer is the warning, go back or go on running, which `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:

@@ -35,12 +35,14 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 func run(t: TestRunner) -> void:
 	_reachability(t)
 	# Measured at the notice radii as written and as shipped (`EventCatalogue.CHARGER_REACH`), at
-	# the shipped warning, so what a wider notice does to the guards is read side by side.
+	# the shipped warning, so what a wider notice does to the guards is read side by side. The
+	# shipped reach first: a timing that plays as the one in use leaves the one held, so handing
+	# `was` back after another puts the very object back.
 	var was := EventCatalogue.charger_timing()
-	for reach: float in [1.0, EventCatalogue.CHARGER_REACH]:
+	for reach: float in [EventCatalogue.CHARGER_REACH, 1.0]:
 		EventCatalogue.use_charger_timing(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
-		print("== robber notice %.0fpx (reach %.2f) ==" % [EventCatalogue.mark_guard().notice_within(),
-				reach])
+		var notice := EventCatalogue.mark_guard().notice_within()
+		print("== robber notice %.0fpx (reach %.2f) ==" % [notice, reach])
 		_on_screen(t)
 		_task_guards(t)
 	EventCatalogue.use_charger_timing(was)

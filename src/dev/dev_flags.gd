@@ -204,8 +204,8 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## these never touches the save a real player's page shares, as against `?debug=1` alone, which
 ## opens the bundle without using any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
-	"day", "invincible", "layers", "controls", "escape", "meters", "chargers", "daylength", "ending",
-	"blackout", "groundmode", "framerecord",
+	"day", "invincible", "layers", "controls", "escape", "meters", "chargers", "daylength",
+	"ending", "blackout", "groundmode", "framerecord",
 ]
 
 ## Whether the page's query named one of `live_debug_requested()`'s parameters while the bundle is
@@ -411,7 +411,8 @@ static func _meters_from_query(query: String) -> Vector2:
 
 ## `--chargers <warning> <reach>` (or `?chargers=warning,reach` in the open bundle): every charger
 ## warns for `warning` seconds and notices her within `reach` times the radius its row is written
-## with, in place of the shipped timing (`ChargerTiming`, `EventCatalogue.shipped_charger_timing()`),
+## with, in place of the shipped timing (`ChargerTiming`,
+## `EventCatalogue.shipped_charger_timing()`),
 ## so other numbers can be played on the released page without a rebuild (minty-dolphin #834).
 ## `(-1, -1)` for "not given".
 func charger_timing_override() -> Vector2:
@@ -437,14 +438,16 @@ static func _charger_timing_from_query(query: String) -> Vector2:
 		return Vector2(-1.0, -1.0)
 	return Vector2(-1.0, -1.0)
 
-## The bare parsing of a warning and a radius factor. A warning under `Tuning.OFFSCREEN_WARNING_MIN`,
+## The bare parsing of a warning and a radius factor. A warning under
+## `Tuning.OFFSCREEN_WARNING_MIN`,
 ## the heads-up every charger's warning is held to (`EventDef.validate()`), or a factor outside
 ## `ChargerTiming.LEAST_REACH` to `MOST_REACH` refuses the whole flag with `push_warning`, rather
 ## than being clamped: a run played at numbers nobody asked for would be judged as the asked ones.
 static func _parse_charger_timing(warning: String, reach: String) -> Vector2:
 	if warning.is_valid_float() and reach.is_valid_float() \
 			and float(warning) >= Tuning.OFFSCREEN_WARNING_MIN \
-			and float(reach) >= ChargerTiming.LEAST_REACH and float(reach) <= ChargerTiming.MOST_REACH:
+			and float(reach) >= ChargerTiming.LEAST_REACH \
+			and float(reach) <= ChargerTiming.MOST_REACH:
 		return Vector2(float(warning), float(reach))
 	push_warning(("--chargers: '%s %s' is not a warning of %.1fs or more and a radius factor from "
 			% [warning, reach, Tuning.OFFSCREEN_WARNING_MIN]) + "%.2f to %.2f, ignoring the flag"

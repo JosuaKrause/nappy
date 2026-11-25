@@ -80,6 +80,8 @@ var _frame_graph: FrameGraph
 ## The fixed note `?debug=1` adds for the whole session, which nothing removes — null unless the
 ## readout was asked for. An ordinary debug build shows the readout without it.
 var _debug_mode_note: DebugModeNote
+## How the run plays every charger, which the note names (`DebugModeNote.use_charger_timing()`).
+var _charger_timing: ChargerTiming = null
 ## The fields, shadows and bounding-box overlays, keys `1`–`3` — null unless the gate holds.
 var _debug_layers: DebugLayers
 ## The day's planned routes, key `5` — null unless the gate holds, and until a city stands.
@@ -110,6 +112,7 @@ func configure(config: RunConfig) -> void:
 	_layers_override = config.layers_override()
 	_layer_readout_on = not config.asks_for_the_player_view() or config.asks_for_the_readout()
 	_spikes_requested = config.asks_for_spikes()
+	_charger_timing = config.charger_timing()
 
 ## Builds what the gate allows on the readout's label and layer, and shows the readout in the shape
 ## this build should have. `run` is the run whose seed and calendar day it names (`run.header()`),
@@ -234,6 +237,7 @@ func _add_debug_mode_note() -> void:
 		return
 	_debug_mode_note = DebugModeNote.new()
 	_debug_mode_note.name = "DebugModeNote"
+	_debug_mode_note.use_charger_timing(_charger_timing)
 	add_child(_debug_mode_note)
 
 ## The graph lives beside the readout on the readout's own layer, on its own key, not among the

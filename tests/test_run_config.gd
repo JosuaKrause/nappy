@@ -134,7 +134,8 @@ func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 	t.check(base.seed_override() == 3 and base.day_override() == 2,
 			"and the config it was put on is unchanged")
 
-## **How a run plays every charger** (`RunConfig.charger_timing()`): a debug build's `--chargers`, or a
+## **How a run plays every charger** (`RunConfig.charger_timing()`): a debug build's
+## `--chargers`, or a
 ## release page's `?chargers=` once it asked `?debug=1`, which then counts as having used the
 ## bundle; anywhere else the shipped timing, the one the catalogue is built from unless told
 ## otherwise (minty-dolphin #834).
@@ -142,13 +143,15 @@ func _test_the_charger_timing_is_the_flags_or_the_shipped_one(t: TestRunner) -> 
 	var none := PackedStringArray()
 	var shipped := EventCatalogue.shipped_charger_timing()
 	var flagged := RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", true).charger_timing()
-	t.check(is_equal_approx(flagged.warning(), 1.5) and is_equal_approx(flagged.notice(100.0), 120.0),
+	t.check(is_equal_approx(flagged.warning(), 1.5)
+			and is_equal_approx(flagged.notice(100.0), 120.0),
 			"--chargers 1.5 1.2 warns for 1.5s with every radius at 1.2 times its own")
 	var page := RunConfig.parse(none, "?debug=1&chargers=1.25,0.85", false)
 	t.check(is_equal_approx(page.charger_timing().warning(), 1.25)
 			and is_equal_approx(page.charger_timing().notice(100.0), 85.0)
 			and page.used_a_web_debug_flag(),
-			"a release page that asked ?debug=1 reads ?chargers= and counts as having used the bundle")
+			"a release page that asked ?debug=1 reads ?chargers= and counts as having used"
+			+ " the bundle")
 	for config: RunConfig in [RunConfig.parse(none, "?chargers=1.25,0.85", false),
 			RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", false),
 			RunConfig.parse(none, "", true)]:

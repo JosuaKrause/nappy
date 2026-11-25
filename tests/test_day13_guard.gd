@@ -1184,7 +1184,8 @@ static func _on_one_street_line(map: CityMap, a: Vector2, b: Vector2) -> bool:
 	return first.a.y == second.a.y if first.horizontal else first.a.x == second.a.x
 
 ## Whether the street through a roadblock at `centre` runs on in `direction` to ground a guard may
-## stand on past its band, out to `ResistanceDirector.task_guard_farthest()`, with a clear line back to
+## stand on past its band, out to `ResistanceDirector.task_guard_farthest()`, with a clear line
+## back to
 ## it: a far side with room for him on the ring a move takes while the band is in her view. Asked of
 ## the city's siting (`SpawnSiting.CONTACT_GROUND`), the ground a guard's spot is asked of, and of
 ## the line his notice takes (`CityMap.clear_line()`, which anything standing between hides).

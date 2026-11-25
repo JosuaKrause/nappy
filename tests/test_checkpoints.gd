@@ -2181,7 +2181,8 @@ func _stand_for(t: TestRunner, rig: Dictionary, seconds: float) -> void:
 ## player goes back no charge happens but if they stay crossed the charge will start. Warning
 ## starts when the player is crossing".)* Walking up to the raised boom, nobody raises his hand. The
 ## frame she crosses, the guard at the hut across the road from her raises his
-## (`EventInstance.is_its_guard_warning()`), counted once on the page; for `ChargerTiming.warning()` nobody comes; back across the line
+## (`EventInstance.is_its_guard_warning()`), counted once on the page; for
+## `ChargerTiming.warning()` nobody comes; back across the line
 ## before it runs, it is called off and nobody comes after it either. Staying across, once it has
 ## run a `door_guard` steps out of the wall of that hut, on her side of the line, charging from his
 ## first frame, while the hut's own guard stays at his post; a second walk under while he is after

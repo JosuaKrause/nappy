@@ -959,7 +959,8 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## candidate is refused, with `on_screen_matters`, where he would be drawn in her view, and
 ## otherwise within his `EventDef.notice_within()` of `her` (`_refused_round_her()`;
 ## brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): his spot is worked
-## out from the contact alone, so those refusals are what keep him off her. `Vector2.INF` when no candidate
+## out from the contact alone, so those refusals are what keep him off her. `Vector2.INF` when
+## no candidate
 ## qualifies. Split out so a move of the roadblock's guard
 ## (`_move_the_task_guard_to_her_target()`) can ask where he would stand without spawning him.
 ## `approach` and `near_side_too` are the roadblock's alone (`_roadblock_guard_spot()`): the
@@ -1025,7 +1026,8 @@ func _refused_round_her(robbery: EventDef, her: Vector2, on_screen_matters: bool
 ## `EventDef.notice_within()` of `her` (`_refused_round_her()`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
-## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her view
+## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her
+## view
 ## when she stands beside the roadblock, and the street through it runs on past the view's edge.
 ## *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want. If we
 ## need to move multiple times so be it".)* On the ring no touch is within his notice; the task sets

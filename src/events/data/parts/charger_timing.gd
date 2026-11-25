@@ -21,9 +21,9 @@ extends RefCounted
 ## The least and the most a run may draw the notice radii at against their written ones
 ## (`DevFlags` refuses a factor outside them). Near the least, the waiting dog's radius comes down
 ## to its own stand-off, which the catalogue's pursuit contract refuses
-## (`Tuning.validate_pursuit()`); at the most, the alley robber's reaches half the view's width
-## (`Tuning.VIEW_HALF_EXTENT`), and a charger notices her only with his warning in her view, so a
-## radius past it would never be met.
+## (`Tuning.validate_pursuit()`). The most is the edge of the grid `tests/probes/charger_warning.gd`
+## walks: every waiting charger stays fair to it at every warning the flag accepts, and nothing
+## past it has been walked (the alley robber then notices her within 252px, his field 272px).
 const LEAST_REACH := 0.85
 const MOST_REACH := 1.4
 
@@ -59,4 +59,5 @@ func field_reach(written_outer: float, written_notice: float) -> float:
 
 ## Whether `other` plays every charger exactly as this one does.
 func same_as(other: ChargerTiming) -> bool:
-	return is_equal_approx(_warning, other.warning()) and is_equal_approx(notice(1.0), other.notice(1.0))
+	return is_equal_approx(_warning, other.warning()) \
+			and is_equal_approx(notice(1.0), other.notice(1.0))

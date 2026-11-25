@@ -42,7 +42,8 @@ var _guard: EventDef
 ## crossing".)*
 var _crossing_warns_for: float
 
-func _init(the_world: EventWorld, spawn: Callable, guard: EventDef, crossing_warning: float) -> void:
+func _init(the_world: EventWorld, spawn: Callable, guard: EventDef,
+		crossing_warning: float) -> void:
 	world = the_world
 	_spawn = spawn
 	_guard = guard

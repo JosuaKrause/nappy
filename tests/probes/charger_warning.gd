@@ -14,7 +14,8 @@ extends RefCounted
 ## post on the line between the band and her). The walks, from the frame his warning starts:
 ##
 ## - **back**: she turns `REACTION` later and runs back out. Fair if he never charges.
-## - **late**: she is first seen just outside his stand-off, deep inside his radius (round an alley's
+## - **late**: she is first seen just outside his stand-off, deep inside his radius (round an
+##   alley's
 ##   mouth, from behind a wall), walking in, turns `REACTION` later and runs back out. Fair if he
 ##   never charges; the margin is how long before his warning ran she was out.
 ## - **stand**: she stops and stands where she is. Fair if he charges and catches her.
@@ -43,7 +44,8 @@ func run(t: TestRunner) -> void:
 					if r["charged"]:
 						verdict += ", closest %.0fpx" % r["closest"]
 					elif walk in ["back", "late"]:
-						verdict += ", out %.2fs early" % (def.pursuit().warns_for() - float(r["out_after"]))
+						var early := def.pursuit().warns_for() - float(r["out_after"])
+						verdict += ", out %.2fs early" % early
 					said.append("%s: %s" % [walk, verdict])
 				print(("WARNING %s reach x%.2f warns %.2fs (radius %.0fpx, field %.0fpx, stand-off "
 						% [def.id(), reach, warning, def.notice_within(), def.heard_within()])
