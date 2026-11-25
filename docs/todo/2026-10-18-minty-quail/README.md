@@ -90,7 +90,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 
 1. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's counts against `docs/stats/` (read after a release, since the live site counts
-   released builds only; filed as an entry of its own after this one) and pictures of every behavior a step
+   released builds only; owed as an entry of its own, filed when this entry closes) and pictures of every behavior a step
    changed on purpose. Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured
    about 4.5% slower once the walker and the car share a mover base the crowd member extends
