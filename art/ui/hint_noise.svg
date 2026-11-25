@@ -1,0 +1,13 @@
+<!-- Walk wide of the noise: a loudspeaker giving off its sound, and a blue arrow bent
+     wide round it.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="3" y="12.4" width="3.4" height="4.6" fill="#5b5763"/>
+  <polygon points="6.4,12.4 10.4,9.6 10.4,19.4 6.4,17" fill="#77727e"/>
+  <path d="M12.6 12.2 Q14.4 14.5 12.6 16.8" fill="none" stroke-width="1.4"/>
+  <path d="M15.2 10.6 Q18.6 14.5 15.2 18.4" fill="none" stroke-width="1.4"/>
+  <path d="M2.4 9.6 Q11 -2.6 19.6 7.4" fill="none" stroke="#221f28" stroke-width="4"/>
+  <path d="M2.4 9.6 Q11 -2.6 19.6 7.4" fill="none" stroke="#3d78b8" stroke-width="2.2"/>
+  <polygon points="17.2,7.6 22.6,6.6 20.6,11.8" fill="#3d78b8" stroke="#221f28" stroke-width="0.9"/>
+</svg>
