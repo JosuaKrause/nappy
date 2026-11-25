@@ -694,8 +694,10 @@ static func _body_touch_reach(instance: EventInstance) -> float:
 ##   `_on_door_crossed()`): *"Should trigger on the action not on a proximity test"*;
 ## - **day 11's mast** within its body reach (`ContactPoint.body_reach()`'s sum for the pole: 6 + 14
 ##   + 36 = 56px from the foot), so she completes it from any side before she is stopped by it;
-## - **day 12's swing** by her body overlapping the ellipse at its base (`_swing_base()`): *"Place an
-##   ellipse at its base. That's the area to touch"*;
+## - **day 12's swing** by her body overlapping the ellipse at its base (`Prop.swing_frame_base()`,
+##   centred on `CityMap.swing_position()`, the bottom centre the frame is drawn standing on, its
+##   semi-axes half the frame's picture's width and half its height, so it spans the picture):
+##   *"Not the drawn swing. Place an ellipse at its base. That's the area to touch"*;
 ## - **the last night's station door** within `DOOR_REACH` of the door point on the facade, the rule
 ##   every door takes (sandy-egret: "the acceptance radius centered at the door should have a large
 ##   enough radius for half the sidewalk to be covered"; merry-koala).
@@ -707,22 +709,11 @@ func _shape_the_touch(contact: ContactPoint, step: ResistanceSteps.Step) -> void
 			contact.complete_within(EventCatalogue.mast().solid_reach()
 					+ Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH)
 		ResistanceSteps.TargetKind.PARK_SWING:
-			var base := _swing_base()
+			var base := Prop.swing_frame_base()
 			contact.complete_on_ellipse(base)
 			contact.complete_within(base.x + Tuning.PLAYER_BODY_RADIUS)
 		ResistanceSteps.TargetKind.STATION_DOOR:
 			contact.complete_within(DOOR_REACH)
-
-## **The ground ellipse at the swing frame's base** that day 12's task is touched at: semi-axes in
-## px, centred on `CityMap.swing_position()`, the bottom-centre the frame is drawn standing on. Read
-## off the shadow the frame casts there (`Prop._playground_frame_shape()`, drawn by
-## `GroundShape.draw_shadow()`), so what she touches is what she sees: that shadow is a capsule as
-## wide as the frame's picture and as deep as its height, from the region table, so the ellipse is
-## half its width across and its rounding up and down — 28 by 17px for `swing_frame.svg`'s 56 by 34.
-## *(The player: "Not the drawn swing. Place an ellipse at its base. That's the area to touch".)*
-static func _swing_base() -> Vector2:
-	var shadow := Prop._playground_frame_shape()
-	return Vector2(shadow.spine_half_length() + shadow.rounding_radius(), shadow.rounding_radius())
 
 ## Where the run recorded its scar `scar_id` (`RunState.attempt_spend().scars()`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
