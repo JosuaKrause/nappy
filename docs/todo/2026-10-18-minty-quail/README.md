@@ -141,11 +141,6 @@ item here. The scene recipes' test gaps, which add tests and, for two of them, a
 in `src/dev`, are the entry snowy-plover (the scene recipes' untested corners), which waits for
 this one.
 
-**The entry calm-hare (the event director ignores the escape's settings, band `bug`) is the
-refactor's own defect**, found by the end check's audit of the player's spawning rules, and is
-fixed before this entry's closing pull request, beside the remeasure: the remeasure's reading of the
-escape waits on it.
-
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer",
 whose layering paragraph and closing list of proposals refer to this entry, **rewrites its
 paragraph "Two lists hold..."** (both lists are empty: no read of another class's field is

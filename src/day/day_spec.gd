@@ -11,7 +11,9 @@ extends RefCounted
 ## (`SealPlanner.plan_day()`) and its events (`EventScheduler.build_day()`) are the same code
 ## for the fourteen days and the city's
 ## section. What differs between a day and a section of the escape is written here, as values, and
-## read where it matters, rather than asked of a global "are we in the escape" anywhere else.
+## read where it matters, rather than asked of a global "are we in the escape" anywhere else: the
+## walk's bag, what it holds standing and its seals, what the event director may send her while she
+## walks (`director_sends()`), who is on its streets, and what losing it costs.
 ##
 ## Data only: no node, no autoload, nothing that runs, and no words of its own — whoever builds one
 ## hands it its title, so this layer names nothing of the UI's. `for_day()` and `for_section()` are
@@ -38,6 +40,16 @@ const FINALE_BAG_ROADBLOCKS := 2
 ## the five and a plan has about 31 open streets.
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_VANS := 3
+
+## What the event director may send her while she walks (`director_sends()`). A walk that sends
+## something of its own (the escape's army trucks on her route) adds a value here.
+enum DirectorSends {
+	## The rows the calendar's day sends, by the day's number: the route's bag of cats, cyclists, dog
+	## walkers, patrols and the rest, with the day-one rig and the sprinkled charging dog.
+	THE_DAYS_ROWS,
+	## Nothing: no route bag, nothing owed from the plan, no rig and no sprinkled dog.
+	NOTHING,
+}
 
 ## Where the walk is: the city, or the building the escape starts in.
 enum World { CITY, BUILDING }
@@ -136,6 +148,8 @@ var _shuts_the_spent_calm := true
 ## events (`EventManager._owe_the_return()`): every day's does. A section is outbound from its first
 ## frame to its last, and the baby is put to sleep at the top of each attempt, so it owes none.
 var _owes_a_return := true
+## What the event director may send her (`director_sends()`).
+var _director_sends := DirectorSends.THE_DAYS_ROWS
 ## Whether a torn poster sends a pursuer on foot at her (`EventManager.send_a_pursuer()`): on every
 ## day, and never in the escape.
 var _poster_pursuits := true
@@ -336,6 +350,7 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
+	spec._director_sends = DirectorSends.NOTHING
 	spec._keeps_unused_calm_clear = false
 	spec._holds_the_home_streets = false
 	spec._one_event_a_street = true
@@ -464,6 +479,12 @@ func keeps_the_home_streets_clear() -> bool:
 ## section of the escape does not.
 func owes_her_a_return() -> bool:
 	return _owes_a_return
+
+## What the event director may send her while she walks this walk (`DirectorSends`): an ordinary
+## day's rows on a day, nothing on the escape's city, whose every danger is placed before she sets
+## off. The day's number decides none of it.
+func director_sends() -> DirectorSends:
+	return _director_sends
 
 ## Whether a torn poster sends a pursuer on foot at her on this walk (`_poster_pursuits`): every
 ## day's does, the escape's never.

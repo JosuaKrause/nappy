@@ -211,9 +211,14 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ##
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
 ## `RunState.resistance().progress()` the day's own placements were planned at.
+##
+## **`sends` is the walk's own setting of what the director may send her**
+## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends none
+## of an ordinary day's rows (`DaySpec.DirectorSends.NONE`) has no route bag, owes nothing from the
+## plan and rolls no sprinkled dog and no day-one rig, whatever `day` is.
 func start_day(day: int, plans: Array[EventPlan],
 		rng: RandomNumberGenerator, siting: WalkSiting = null,
-		heat: int = 0) -> void:
+		heat: int = 0, sends := DaySpec.DirectorSends.THE_DAYS_ROWS) -> void:
 	_owed.clear()
 	_lesson = null
 	_rng = rng
@@ -224,6 +229,7 @@ func start_day(day: int, plans: Array[EventPlan],
 	_just_ahead.clear()
 	_return_patrols_left = 0
 	_patrol_bag_left = 0
+	_sends_the_days_rows = sends == DaySpec.DirectorSends.THE_DAYS_ROWS
 	_fill_the_route_bag(day, heat, rng)
 	_return_owed = false
 	_return_pacing = false
@@ -247,6 +253,8 @@ func start_day(day: int, plans: Array[EventPlan],
 		# A place the day planned and left unsited, read off the same list for the same reason.
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_on_her_way.append(plan)
+		if not _sends_the_days_rows:
+			continue
 		var mode := plan.spawn_mode_on(day)
 		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
 		# (`DawnMoments`); placed, it is a place something else stood (the escape's bag, a recipe).
@@ -256,7 +264,8 @@ func start_day(day: int, plans: Array[EventPlan],
 				lesson = plan.row()
 			# The dawn decides how many the route is owed; the bag decides which each one is.
 			_owed.append(null if _route_rows.has(plan.row_id()) else plan.row())
-	_owe_the_sprinkled_dog(day)
+	if _sends_the_days_rows:
+		_owe_the_sprinkled_dog(day)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
@@ -265,6 +274,10 @@ func start_day(day: int, plans: Array[EventPlan],
 		return
 	_teach_the_run(day, lesson)
 	_rig_day_one(day, heat)
+
+## Whether today's route is the ordinary day's rows (`start_day()`'s `sends`). When it is not, the
+## director has no route bag and owes nothing from the plan.
+var _sends_the_days_rows := true
 
 ## How many dog walkers day one's first handouts hold (`_rig_day_one()`).
 const DAY_ONE_DOG_WALKERS := 2
@@ -458,6 +471,9 @@ func owed() -> int:
 func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> void:
 	_route_rows.clear()
 	_ordinary_rows.clear()
+	if not _sends_the_days_rows:
+		_route = null
+		return
 	for def in _route_rows_on(day, heat):
 		_route_rows[def.id()] = def
 		_ordinary_rows[def.id()] = true

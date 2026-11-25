@@ -16,15 +16,16 @@ vans and roadblocks do not show up on a build with minty-quail's escape work, th
 regression from the work that made the escape a day spec. It may also be lilac-marten's "basically
 empty" (curly-moose #803), which was said of v0.29.1's bag, and then it is already queued.
 
-**The dog walkers on the direct boot are explained** (the entry calm-hare, the event director
-ignoring the escape's settings: day one's rig sends two of her first three encounters as dog
-walkers under `--start-escape`), so this check no longer asks where the dog walker came from. **What
-remains is whether the trucks, explosions, vans and roadblocks show up on her way.** It runs after
-calm-hare's fix, or says that the director's day-one encounters were on the walk it measured.
+**The dog walkers are explained, and so is the build.** The player (inbox #1741 in tawny-raven): "I
+was watching your measurement runs". The escape they saw was the end remeasure's picture captures,
+windowed `--start-escape` runs on main, a direct boot on day 1, where the event director's day-one
+rig sent two dog walkers among her first three encounters; the event director now sends nothing of
+an ordinary day's rows in the escape (`DaySpec.director_sends()`), so those encounters are gone.
+This check no longer asks where the dog walker came from or which build the player played.
+**What remains is whether the escape's own trucks, explosions, vans and roadblocks show up on her
+way**, measured on a build with the director's fix.
 
 **Build:** a check, with a number, of whether the escape city's trucks, explosions, vans and
-roadblocks appear on her way in play, on main and on the build the player played. That build is
-unknown: the site serves v0.29.2 (the orchestrator's reading), and the player may have played main
-locally. The player is asked which, on the board, before the result is read against their remark.
-If the rows do not show on a build that has minty-quail's escape work, that is a defect to file as
+roadblocks appear on her way in play, on main. If the rows do not show on a build that has
+minty-quail's escape work, that is a defect to file as
 its own `bug` entry and fix; if they do, this entry closes with the measurement in a record.

@@ -28,6 +28,7 @@ const SEED := 4242
 func run(t: TestRunner) -> void:
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_the_events_ask_the_maker_they_are_handed_for_every_siting(t)
+	_test_a_given_walk_hands_the_director_what_its_spec_lets_it_send(t)
 	_test_a_given_walk_sites_over_the_tree_it_is_handed(t)
 	_test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t, MapCache.of(SEED))
 
@@ -147,12 +148,10 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	t.check(maker.made.size() == before + 1
 			and (maker.made.back()[2] as RowGround).tiles_for(def) == holds_it,
 			"on a ground that keeps off the home street where the spec holds the home's streets")
-	ahead.use_the_walk_of(_spec_that(false))
-	ahead.start_day(DAY, tree)
-	before = maker.made.size()
-	ahead.rig_her_route([EventCatalogue.mast().id()], 4)
-	t.check(maker.made.size() == before + 1
-			and (maker.made.back()[2] as RowGround).tiles_for(def) == leaves_it,
+	# The escape's walk is placed whole (`start_a_given_walk()`) and sends the director nothing, so
+	# it is a queued mast that asks the maker for the walk's siting there.
+	var mast_tiles: Array[Vector2i] = [Vector2i(1, 1)]
+	t.check(_the_ground_asked_of(maker, ahead, false, mast_tiles).tiles_for(def) == leaves_it,
 			"and on one that offers it where the spec does not")
 	ahead.use_the_walk_of(_spec_that(true))
 	ahead.start_day(DAY, tree)
@@ -208,6 +207,30 @@ func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 	ahead.queue_a_mast(offered)
 	t.check(maker.made.size() == 2 and maker.made[1][1] == null,
 			"and on the next walk, handed none, over none: the first walk's tree is not kept")
+
+## **A walk placed whole hands the director what its spec lets it send** (`DaySpec.director_sends()`),
+## through `EventsAhead.start_a_given_walk()` and not by the day's number: the escape city's spec
+## leaves a real director owing nothing on day 1 (the direct boot's day) and day 14 (a run's), and an
+## ordinary day's spec on day 1 leaves it owing day one's rigged encounters.
+func _test_a_given_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -> void:
+	var map: CityMap = MapCache.of(SEED)
+	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	world.use_run(RunState.new())
+	var board := WarningBoard.new(world)
+	var spawner := EventSpawner.new(world, board)
+	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
+	var ahead := EventsAhead.new(world, streaming, spawner, board, FakeWalkEvents.new())
+	ahead.use_director(EventDirector.new(map, world.navigator()), null)
+	ahead.use_sitings(FakeSitingMaker.new(FakeWalkSiting.new()))
+	ahead.use_the_walk_of(DaySpec.for_day(1))
+	ahead.start_a_given_walk(1)
+	t.check(ahead.director().owed() > 0, "a walk of an ordinary day owes the director its day's")
+	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
+		ahead.use_the_walk_of(escape)
+		ahead.start_a_given_walk(day)
+		t.check(ahead.director().owed() == 0,
+				"the escape city's walk owes it nothing on day %d" % day)
 
 ## A walk's spec that holds the home's streets (a day's), or one that does not (the escape's).
 func _spec_that(holds: bool) -> DaySpec:

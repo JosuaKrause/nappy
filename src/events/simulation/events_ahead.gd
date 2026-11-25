@@ -85,7 +85,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
 	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"), _siting,
-			world.run().resistance().progress())
+			world.run().resistance().progress(), _spec.director_sends())
 
 ## **The day's placement context for a row left for her walk to site** (`plan`), made the first
 ## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
@@ -119,15 +119,18 @@ func _ground_of_the_walk() -> RowGround:
 ## Starts the director over a walk whose plan was handed in whole, kept with `tree`, the route
 ## tree it was placed against where it has one (a scene recipe's), so a mast queued later is
 ## sited over it rather than over a tree grown again; a walk handed none (a rig's) grows one
-## then. The director owes nothing — every such placement is `MAP`-sited — but it is started
-## anyway so that `owed_ahead()` and its own per-day state answer for this walk rather than for
-## whatever ran before it.
+## then. **What the director may send her is the walk's own setting** (`DaySpec.director_sends()`,
+## handed in by `use_the_walk_of()`), never the day's number: the escape's city sends none of an
+## ordinary day's rows, whichever day the run is on, and a scene recipe's walk of an ordinary day
+## sends that day's. It is started either way so that `owed_ahead()` and its own per-day state
+## answer for this walk rather than for whatever ran before it.
 func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
 	_siting = null
 	_day_tree = tree
 	if _director:
 		_director.start_day(day, _walk.plans(),
-				world.run().calendar().day_rng(day, "finale-ahead"))
+				world.run().calendar().day_rng(day, "finale-ahead"), null, 0,
+				_spec.director_sends())
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day `day` at the run's heat.

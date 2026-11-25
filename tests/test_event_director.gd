@@ -85,6 +85,7 @@ func run(t: TestRunner) -> void:
 	_test_nothing_is_rigged_under_force(t)
 	_test_the_copy_on_her_route_shares_its_rows_body(t)
 	_test_a_rigged_route_is_owed_its_count_and_pre_bag(t)
+	_test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -605,6 +606,41 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 	director.start_recipe_route(["cyclist", "cyclist"], ["cat_dash"], 3, 2.0, 0)
 	t.check(director.owed() == 3, "the route is owed what the recipe says")
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
+
+## **A walk whose spec sends nothing** (`DaySpec.director_sends()`, the escape city's) hands the
+## director no route bag, owes nothing, rigs nothing and rolls no sprinkled dog, **whatever its day
+## number is**: day 1 is the direct boot's, whose ordinary day rigs two dog walkers among her first
+## three handouts, and day 14 is a run's, whose ordinary day can owe the charging dog. The same days
+## handed the ordinary setting do owe, so the check is not vacuous.
+func _test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t: TestRunner) -> void:
+	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	var ordinary_owed := 0
+	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
+		for seed_value in 12:
+			var ordinary := _walked_director(day, seed_value, DaySpec.for_day(day))
+			var sends_nothing := _walked_director(day, seed_value, escape)
+			ordinary_owed += 1 if ordinary.owed() > 0 else 0
+			t.check(sends_nothing.owed() == 0,
+					"the escape city owes the director nothing on day %d (seed %d)" % [day, seed_value])
+			t.check(sends_nothing.rig_her_route(["dog_walker"] as Array[String], 3).is_empty(),
+					"and has no route bag to rig on day %d" % day)
+			var handed: Array = []
+			for _tick in 30:
+				handed.append_array(sends_nothing.due(10.0, _her(),
+						Vector2.UP * Tuning.WALK_SPEED))
+			t.check(handed.is_empty(),
+					"and sends nothing in a long walk on day %d (seed %d)" % [day, seed_value])
+	t.check(ordinary_owed > 0, "an ordinary day 1 and day 14 owe her something (%d)" % ordinary_owed)
+
+## A director on the street with no plans, its day `day` started on a stream of `seed_value`, as
+## `spec` says what it may send.
+static func _walked_director(day: int, seed_value: int, spec: DaySpec) -> EventDirector:
+	var director := EventDirector.new(_street())
+	director.use_way_on(FakeWayOn.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	director.start_day(day, _no_plans(), rng, null, 0, spec.director_sends())
+	return director
 
 ## Walks her on the street past `ON_HER_WAY_AFTER`, rigs the man shouting as the next marble on her
 ## route (`just_ahead` as given), and walks on, the clock and her walk's looks ticking together a

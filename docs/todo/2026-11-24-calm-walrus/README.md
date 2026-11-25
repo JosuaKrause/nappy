@@ -1,7 +1,7 @@
 priority: now
 after: 2026-10-18-minty-quail
 
-# calm-walrus — The escape holds no dog walkers and ends at the tunnel or the bridge · filed 2026-11-24
+# calm-walrus — The escape ends at the tunnel or the bridge · filed 2026-11-24
 
 Written in the board's Quick notes with no band named, so the band is the filer's: `now`, the band
 of a note from playing, held behind minty-quail (one engine: the codebase refactored by layer, the
@@ -22,9 +22,7 @@ changes neither.
 escape fixes the player named, snowy-goose and lilac-marten's fuller escape (gentle-owl #1231), and
 not for this entry.
 
-**The dog-walker item waits for calm-hare (the event director ignores the escape's settings)**, which
-sends the two dog walkers on the direct boot, and the other item does not wait for it.
-
-**Items:** `no-dog-walkers.md`, `ends-at-the-tunnel-or-bridge.md`. The remark "from what I saw
+**Item:** `ends-at-the-tunnel-or-bridge.md`. The escape sends no dog walker: the event director sends
+nothing of an ordinary day's rows there (`DaySpec.director_sends()`). The remark "from what I saw
 that was the only actual obstacle showing up" is its own entry, sandy-goose (do the escape city's
 trucks, explosions, vans and roadblocks show up on her way).
