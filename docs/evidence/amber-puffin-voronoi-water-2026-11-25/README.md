@@ -64,7 +64,7 @@ is near the noise.
 Run from a fresh clone, one engine at a time, with a display (a headless run says so and exits):
 
 ```sh
-git fetch origin refs/pull/<PR>/head   # the pull request that added this folder
+git fetch origin refs/pull/1751/head  # the pull request that added this folder
 git checkout 50e3e4ab500f6da62351bbaea45ae9f6ff2265b6
 GODOT=/path/to/Godot ./tools/check.sh  # imports the project once
 out="$(mktemp -d)"
