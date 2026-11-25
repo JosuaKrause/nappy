@@ -74,7 +74,8 @@ Top to bottom, every part present even when empty:
    remark, without opening an issue (inbox #1626 in dappled-bison). Each recurring check reads it, and
    **captures each note into the inbox, word for word, before anything else** (**inbox**), then
    removes it from the board; the player's words are never reworded. Empty, it holds the section's
-   one line saying what it is for.
+   one line saying what it is for and, after it, a **You:** line to type on, written as a bold
+   label and a plain space like any You stub (inbox #1733 in spry-ferret).
 4. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
    they are, or until the chat has fully discussed them (see "Settling"), each as below.
 5. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
