@@ -1,0 +1,44 @@
+1c1,3
+< nappy rig log  2026-11-24T23:00:48  version v0.29.2
+---
+> nappy rig log  2026-11-24T22:59:46  version v0.29.2-716-g47e465438
+> 
+> day 6  act 2  run seed 11  city seed 1917501  length 180.0s
+6a9
+> run      ran 1.7s, exc 0 -> 0, nearest when it started: alley_robbery 266px (out of range)
+13c16
+< cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | alley_robbery 197px
+---
+> cue      the mark over her head: soon for 0.9s (0.0s of it on the road) | alley_robbery 197px
+16c19
+< cue      the mark over her head: soon for 0.0s (0.4s of it on the road) | a car, and she is in the road
+---
+> cue      the mark over her head: soon for 0.4s (0.4s of it on the road) | a car, and she is in the road
+19,25c22,28
+< near     homeless_yeller at (84,52), 209px, exc 1, in 12.9/s (crowd 0.0, events 13.2), sleep 3
+< near     cat_dash at (88,57), 117px, exc 1, in 16.0/s (crowd 0.0, events 16.2), sleep 3
+< near     cat_dash at (87,57), 62px, exc 4, in 22.6/s (crowd 0.0, events 22.7), sleep 3
+< near     cat_dash at (86,57), 31px, exc 7, in 25.1/s (crowd 0.0, events 25.1), sleep 3
+< near     cat_dash at (85,57), 14px, exc 8, in 26.2/s (crowd 0.0, events 26.1), sleep 3
+< near     homeless_yeller at (84,52), 112px, exc 17, in 14.0/s (crowd 0.0, events 13.9), sleep 4
+< near     homeless_yeller at (84,52), 59px, exc 21, in 15.5/s (crowd 4.2, events 11.2), sleep 4
+---
+> near     cat_dash at (89,57), 147px, exc 0, in 0.0/s (crowd 0.0, events 11.4), sleep 3
+> near     homeless_yeller at (84,52), 209px, exc 0, in 12.9/s (crowd 0.0, events 13.6), sleep 3
+> near     cat_dash at (87,57), 79px, exc 3, in 20.8/s (crowd 0.0, events 21.1), sleep 3
+> near     cat_dash at (86,57), 36px, exc 6, in 24.6/s (crowd 0.0, events 24.6), sleep 3
+> near     cat_dash at (85,57), 19px, exc 7, in 25.7/s (crowd 0.0, events 25.6), sleep 3
+> near     homeless_yeller at (84,52), 112px, exc 15, in 14.2/s (crowd 0.0, events 14.0), sleep 4
+> near     homeless_yeller at (84,52), 59px, exc 20, in 15.8/s (crowd 4.2, events 11.3), sleep 4
+28c31
+< cue      edge badge: robber_giving_chase at 214px, closing 0px/s
+---
+> cue      edge badge: robber_giving_chase at 217px, closing 130px/s
+30,32c33,35
+< chase    robber_giving_chase came for her at (85,46) | exc 27, in 7.4/s (crowd 1.5, events 11.5), sleep 4
+< cue      edge badge gone: robber_giving_chase after 0.0s, now 211px away
+< near     robber_giving_chase at (85,47), 198px, exc 30, in 16.4/s (crowd 3.4, events 13.6), sleep 3
+---
+> near     robber_giving_chase at (85,46), 224px, exc 25, in 7.9/s (crowd 2.2, events 11.6), sleep 3
+> chase    robber_giving_chase came for her at (85,46) | exc 25, in 7.9/s (crowd 2.2, events 11.6), sleep 3
+> cue      edge badge gone: robber_giving_chase after 0.6s, now 211px away
