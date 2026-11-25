@@ -1143,7 +1143,10 @@ func _test_nothing_leaves_the_tutorial_route_past_its_first_block(t: TestRunner)
 			for tile in map.rect_tiles(Rect2i(junction * CityMap.period(),
 					Vector2i(Tuning.STREET_WIDTH, Tuning.STREET_WIDTH))):
 				doorstep[tile] = true
-		var park := tutorial.park_rect()
+		var park := Rect2i()
+		for area in ClosurePlanner.calm_areas(map):
+			if area.block == tutorial.park_block():
+				park = area.rect
 		# What the flood may reach: the route's kept ground, which is its lesson streets and their
 		# junction boxes past the first, each side street's mouth half (where its seal stands, so
 		# the stub short of the seal is in it) and the park.
@@ -1155,9 +1158,10 @@ func _test_nothing_leaves_the_tutorial_route_past_its_first_block(t: TestRunner)
 				for tile in map.rect_tiles(segment.tile_rect()):
 					if not Tile.is_calm(map.tile_at(tile)):
 						allowed[tile] = true
+		# The route's walked ground: its lesson streets and junction boxes (the first box, the
+		# doorstep's, is taken out with the doorstep's street).
 		var sources: Array[Vector2i] = []
-		for segment in tutorial.lesson_streets():
-			sources.append_array(map.rect_tiles(segment.tile_rect()))
+		sources.assign(tutorial.walked_ground().keys())
 		var reached := _flood_day_one(map, sources, blocked, doorstep, park)
 		var leaks := 0
 		var first_leak := Vector2i(-1, -1)

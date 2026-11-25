@@ -10,6 +10,11 @@ const FIRST := Vector2i(2, 2)
 const TURN := Vector2i(2, 3)
 const FAR := Vector2i(3, 3)
 
+## The park's ground: the block south-east of the far junction.
+static func _park() -> Rect2i:
+	return Rect2i(FAR * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH,
+			Vector2i.ONE * (CityMap.period() - Tuning.STREET_WIDTH))
+
 func run(t: TestRunner) -> void:
 	var map := StreetMap.full()
 	var route := _route(map)
@@ -25,10 +30,8 @@ func _arm(map: CityMap, junction: Vector2i, toward: Vector2i) -> StreetNetwork.S
 func _route(map: CityMap) -> TutorialRoute:
 	var streets: Array[StreetNetwork.Segment] = [_arm(map, FIRST, TURN), _arm(map, TURN, FAR)]
 	var junctions: Array[Vector2i] = [FIRST, TURN, FAR]
-	var park := Rect2i(FAR * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH,
-			Vector2i.ONE * (CityMap.period() - Tuning.STREET_WIDTH))
 	return TutorialRoute.new(map, _arm(map, FIRST, FIRST + Vector2i.LEFT), streets, junctions,
-			FAR, park)
+			FAR, _park())
 
 ## Every street meeting the route at a junction past the first that is not a lesson street, once per
 ## end on the route, with the end that opens onto it; none at the first junction, where she may
@@ -56,7 +59,7 @@ func _test_the_side_streets_past_the_first_block(t: TestRunner, map: CityMap,
 ## half stay theirs.
 func _test_the_kept_ground(t: TestRunner, map: CityMap, route: TutorialRoute) -> void:
 	var kept := route.kept_ground()
-	for segment in route.lesson_streets():
+	for segment: StreetNetwork.Segment in [_arm(map, FIRST, TURN), _arm(map, TURN, FAR)]:
 		t.check(_all_in(map, segment.tile_rect(), kept),
 				"a lesson street %s is kept" % segment.key())
 	t.check(_all_in(map, _box(FAR), kept) and _all_in(map, _box(TURN), kept),
@@ -64,7 +67,7 @@ func _test_the_kept_ground(t: TestRunner, map: CityMap, route: TutorialRoute) ->
 	t.check(_none_in(map, _box(FIRST), kept), "the first junction box is not kept")
 	t.check(route.walked_ground().has(_box(FIRST).position),
 			"the route walks the first junction box all the same")
-	t.check(_all_in(map, route.park_rect(), kept), "the park is kept")
+	t.check(_all_in(map, _park(), kept), "the park is kept")
 	for mouth in route.side_street_mouths():
 		var segment: StreetNetwork.Segment = mouth[0]
 		var at_a: bool = mouth[1]

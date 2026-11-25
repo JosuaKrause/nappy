@@ -6,7 +6,7 @@ extends RefCounted
 ## once in the composition root (`main._build_the_city()`) and handed to `City`, which hands it on
 ## in the day's `DayStreets`; nothing derives it a second time, and a city handed none has none.
 ##
-## The design is `docs/CITY.md`, "Day 1's tutorial route". The player asked for day 1 sealed off
+## The design is `docs/CITY.md`, "How the corridor is built" and "Sealing the tree". The player asked for day 1 sealed off
 ## past its first block, both sidewalks of every side street blocked and the street open, so that no
 ## valid route leaves the tutorial route past the first block (gentle-owl #1253).
 ##
@@ -57,17 +57,9 @@ func _init(map: CityMap, home: StreetNetwork.Segment, streets: Array[StreetNetwo
 
 # ---------------------------------------------------------------- questions ---
 
-## The lesson streets, in the order she walks them.
-func lesson_streets() -> Array[StreetNetwork.Segment]:
-	return _streets
-
 ## The block that anchors the tutorial park, as `CityMap.calm_blocks_now()` names it.
 func park_block() -> Vector2i:
 	return _park_block
-
-## The tutorial park's own calm ground.
-func park_rect() -> Rect2i:
-	return _park_rect
 
 ## Every tile of the route past the doorstep's street, as a set: the junction it leaves that street
 ## at, the lesson streets, and the junction boxes between and after them. `RouteTree` grows the

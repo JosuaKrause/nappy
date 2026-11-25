@@ -65,7 +65,12 @@ func _measure_built(maps: Array[CityMap]) -> void:
 	var none := 0
 	for map in maps:
 		var route := TutorialRoute.for_city(map)
-		var streets := route.lesson_streets().size() + 1 if route else 0
+		# The junction boxes the route walks are one more than its lesson streets, and the doorstep's
+		# street is one more again.
+		var streets := 0
+		if route:
+			for tile: Vector2i in route.walked_ground():
+				streets += 1 if tile == CityMap.junction_at(tile) * CityMap.period() else 0
 		match streets:
 			6:
 				six += 1
