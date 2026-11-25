@@ -20,7 +20,8 @@ deleted, and `build_day()` no longer returns early for the escape. The bag holds
 
 **The empty marbles.** The player's order for the bag puts empty last ("trucks > explosions > vans >
 barriers > empty", inbox #785 in minty-lemur, and "The bag" when asked whether that meant the
-marbles), while a third of the streets stood empty, since a danger a street had no room for was
+marbles, words that the record downy-tapir-2 reports as said in session on 2026-10-19 and that no
+playtest file holds, so that citation does not resolve and the order rests on the first alone), while a third of the streets stood empty, since a danger a street had no room for was
 thrown away. Keeping a refused marble in the bag with one empty marble would leave 9% of streets
 empty and twice the vans, an escape nobody has walked. The design measured each count with a
 prototype over 24 seeds (752 streets), and nine keeps today's share:
