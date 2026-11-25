@@ -1,6 +1,6 @@
 extends FrontDrawer
 ## A front drawer that records what a building tells it to paint instead of painting it, handed to a
-## building through `Building.front_drawer` the way the city hands the real one. A check reads the
+## building through `Building.equip()` the way the city hands the real one. A check reads the
 ## pictures a front was drawn with off this, without reading what the building holds; which picture
 ## a front shows where is the building's to decide, and how a picture looks on a canvas is the real
 ## drawer's.

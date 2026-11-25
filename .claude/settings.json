@@ -3,7 +3,8 @@
   "permissions": {
     "allow": [
       "Bash(uv run python tools/agent-identity.py run claude-coder -- tools/prune-merged.sh:*)",
-      "Bash(uv run python tools/agent-identity.py run claude-orchestrator -- tools/prune-merged.sh:*)"
+      "Bash(uv run python tools/agent-identity.py run claude-orchestrator -- tools/prune-merged.sh:*)",
+      "Bash(uv run python tools/sweep-agent-leftovers.py --apply)"
     ]
   },
   "hooks": {
@@ -45,6 +46,17 @@
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/github-write-guard.sh\"",
             "timeout": 10,
             "statusMessage": "Checking for a GitHub write outside an agent identity"
+          }
+        ]
+      },
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/resume-guard.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking the size of the agent being resumed"
           }
         ]
       }

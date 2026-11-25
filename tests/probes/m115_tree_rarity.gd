@@ -8,7 +8,7 @@ extends RefCounted
 const SEEDS := 30
 const BASE_SEED := 505050
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var total_ordinary := 0
 	var total_lined := 0
 	var total_runs := 0
@@ -18,7 +18,7 @@ func run(t) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 13)
 		var ordinary := 0
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if not map.has_street(segment.key()):
 				continue
 			if StreetTrees._street_kind_of(map, segment) != GameEnums.StreetKind.ORDINARY:
@@ -35,7 +35,7 @@ func run(t) -> void:
 		total_pits += pits
 		worst = maxf(worst, float(lined) / float(maxi(1, ordinary)))
 		print("seed %d: %d ordinary streets, %d tree-lined (%.1f%%), %d runs, %d pits"
-				% [map.seed_used, ordinary, lined, 100.0 * lined / maxf(1.0, ordinary),
+				% [map.city_seed(), ordinary, lined, 100.0 * lined / maxf(1.0, ordinary),
 				runs.size(), pits])
 	print("MEAN tree-lined fraction %.3f (worst seed %.3f), mean %.1f runs, mean %.1f pits, %d seeds short of the run count"
 			% [float(total_lined) / float(total_ordinary), worst,

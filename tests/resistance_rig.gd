@@ -47,7 +47,7 @@ var _player: Stroller
 
 var _contact: ContactPoint
 
-func _build_pickup(t, step_index: int) -> void:
+func _build_pickup(t: TestRunner, step_index: int) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -66,30 +66,36 @@ func _build_pickup(t, step_index: int) -> void:
 ## `_physics_process()` once — a contact asks whether she is touching it — before the test reads on.
 ## `physics_frame` is emitted before the nodes take their step, so the process frame is what says
 ## the step has been taken.
-func _step_a_frame(t) -> void:
+func _step_a_frame(t: TestRunner) -> void:
 	await t.get_tree().physics_frame
 	await t.get_tree().process_frame
 
 var _city: City
+## The run `_city` stands in, which the directors built over it are handed.
+var _run: RunState
+## The library `_city` and its parts draw from, which a case hands a director or a happening
+## where it hands them the city's own pictures.
+var _library: AtlasLibrary
 
-## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
-## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
-## `_city` never freed between two builds would leave every earlier one standing, each holding
-## "events" resident for the rest of the process; `run()` frees whichever one is still around after
-## the last.
+## Freed rather than left standing: `RunCity.build()` stands an `EventManager` under the city's
+## simulation that acquires the "events" `AtlasLibrary` group in its own `_enter_tree()` and only
+## gives it back in `_exit_tree()` (`src/events/simulation/event_manager.gd`). A suite builds a city
+## many times over, so a `_city` never freed between two builds would leave every earlier one
+## standing, each holding "events" resident for the rest of the process; `run()` frees whichever one
+## is still around after the last.
 ##
 ## The city of `seed_value` in a run of its own, which it hands to every director built over it
 ## (`_director()`): the run starts fresh, with no step done, no alley used and no scar, and the test
 ## sets whatever else the day it asks about needs on it. Returns the run.
-func _build_city_in_a_new_run(t, seed_value := SEED) -> RunState:
+func _build_city_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
 	_free_city()
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
-	_city = CITY_SCENE.instantiate()
-	_city.run = run
+	_run = run
+	_library = AtlasLibrary.new()
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
-	_city.build(MapCache.of(seed_value))
+	RunCity.build(_city, run, MapCache.of(seed_value), null, false, _library)
 	return run
 
 ## Frees the test city when the suite built it one.
@@ -97,34 +103,96 @@ func _free_city() -> void:
 	if _city != null:
 		_city.free()
 	_city = null
+	_run = null
+	_library = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
-## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
+## `ResistanceDirector.set_sight()` (handed `EventManager.sees`) and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
 func _look_at(rect: Rect2) -> void:
-	_city.events.visible_view().look(rect, null)
+	RunCity.events(_city).visible_view().look(rect, null)
 
 ## Looks the day's view at the unrotated 640x360 screen round `her` (in the tap scheme the visible
 ## area is the whole view) and hands the director what she can see.
 func _watch_the_screen_round(director: ResistanceDirector, her: Vector2) -> void:
 	_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
-	director.set_sight(_city.events.sees)
+	director.set_sight(RunCity.events(_city).sees)
 
-## Today's walled-off crossing alleys, as the city's siting has them.
+## Today's walled-off crossing alleys, as the city's streets derive them and hand them to its siting
+## (`tests/test_resistance_replacement.gd` holds the handing).
 func _walled_alleys() -> Array[Rect2i]:
-	var region := _city.spawn_siting.region()
+	var region := _city.streets().siting_region()
 	return region.walled_alleys if region else ([] as Array[Rect2i])
 
 ## Whether a drawing of `box` about its feet, standing at `at`, would be drawn in the camera's view.
 func _would_show(box: Rect2, at: Vector2) -> bool:
-	return not _city.spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
-			_city.spawn_siting.ask_of_drawing(box), at)
+	return not RunCity.spawn_siting(_city).allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
+			RunCity.spawn_siting(_city).ask_of_drawing(box), at)
 
-func _director(t) -> ResistanceDirector:
+## The library the directors this rig builds are handed (`ResistanceDirector.use_atlas()`), or none
+## for a rig that hands nothing.
+var _handed_atlas: AtlasLibrary = null
+
+## **The least a director stands on**: a drawn city's map (the cached one of `seed_value`, no `City`),
+## a run of its own, a stand-in for the day's events (`FakeEventManager`) and a bare world to put its
+## contact in (`WorldContext`). A case whose subject is not where the city's siting puts things, but
+## what the director does with the step it has put on offer, builds this and not a city
+## (`_build_the_least_in_a_new_run()`), and no day is planned: the director's own placement of a
+## mark reads the map's alleys and the ground rules of its siting, which the map carries. Returns
+## the run; `_free_the_least()` frees what was built.
+var _least_map: CityMap
+var _least_run: RunState
+var _least_events: FakeEventManager
+var _least_world: WorldContext
+
+func _build_the_least_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
+	_free_the_least()
+	_least_run = RunState.new()
+	_least_run.start_run(RUN_SEED)
+	_least_map = MapCache.of(seed_value)
+	_least_events = FakeEventManager.new()
+	_least_world = WorldContext.new()
+	t.add_child(_least_world)
+	return _least_run
+
+func _free_the_least() -> void:
+	if _least_events != null:
+		_least_events.free()
+	if _least_world != null:
+		_least_world.free()
+	_least_events = null
+	_least_world = null
+	_least_map = null
+	_least_run = null
+
+## A director over the least (`_build_the_least_in_a_new_run()`), handed the same things the game's
+## hands it that the least has: no streets and no fronts, which it reads as none.
+func _director_on_the_least(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
+	director.use_bus(EventBus)
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	if _handed_atlas != null:
+		director.use_atlas(_handed_atlas)
+	director.setup(_least_map, _least_run, _least_events, null, null, _least_world)
+	return director
+
+## Day 6's mark read on the least's director, with step 2 (the yeller perform) active, as
+## `_director_on_the_yeller_perform()` hands one over the city.
+func _director_on_the_least_on_the_yeller_perform(t: TestRunner, seed_value := SEED) -> ResistanceDirector:
+	var director := _director_on_the_least(t)
+	director.start_day(6, _rng(6, "resistance", seed_value), 300.0)
+	_read_the_mark(director)
+	return director
+
+func _director(t: TestRunner) -> ResistanceDirector:
+	var director := ResistanceDirector.new()
+	director.use_bus(EventBus)
+	t.add_child(director)
+	director.set_process(false)
+	if _handed_atlas != null:
+		director.use_atlas(_handed_atlas)
+	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
 	return director
 
 func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator:
@@ -149,7 +217,7 @@ func _completed_through(last_index: int) -> Array[int]:
 ## need, since `start_day()` alone only ever offers a mark (`ResistanceSteps.for_day()`). Returns
 ## the director with step 2 (the yeller perform) already active: the mark is read with nobody in
 ## the world (`_read_the_mark()`).
-func _director_on_the_yeller_perform(t, seed_value := SEED) -> ResistanceDirector:
+func _director_on_the_yeller_perform(t: TestRunner, seed_value := SEED) -> ResistanceDirector:
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance", seed_value), 300.0)
 	_read_the_mark(director)
@@ -168,8 +236,8 @@ func _read_the_mark(director: ResistanceDirector) -> void:
 ## guards and pursuers the director has put there, read from the world rather than its fields.
 func _live(id: String) -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
-	for instance in _city.events.instances():
-		if instance.def.id == id and not instance.is_finished:
+	for instance in RunCity.events(_city).instances():
+		if instance.row_id() == id and not instance.is_gone():
 			found.append(instance)
 	return found
 
@@ -185,8 +253,8 @@ func _new_one(id: String, before: Array[EventInstance]) -> EventInstance:
 ## difference what the happening put there (`_raid_since()`).
 func _street() -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
-	for instance in _city.events.instances():
-		if not instance.is_finished:
+	for instance in RunCity.events(_city).instances():
+		if not instance.is_gone():
 			found.append(instance)
 	return found
 
@@ -198,7 +266,7 @@ func _raid_since(before: Array[EventInstance]) -> Array[EventInstance]:
 	for instance in _street():
 		if instance in before:
 			continue
-		if instance.def.id == "night_raid" or (instance.def.id == "police_patrol" and instance.def.paces):
+		if instance.row_id() == "night_raid" or (instance.row_id() == "police_patrol" and instance.row().paces_a_beat()):
 			found.append(instance)
 	return found
 
@@ -209,9 +277,27 @@ func _all_but_the_finale() -> Array[int]:
 			done.append(step.index)
 	return done
 
+## Her as `_rig_player()` makes her, for a suite that lets the events tick on her
+## (`EventManager.use_player()`): her camera is not the current one, so the view the tick looks
+## through is where she stands.
+func _her_for_the_events(t: Node, at: Vector2) -> Stroller:
+	var player := _rig_player(t, at)
+	var camera: Camera2D = player.get_node("Camera2D")
+	camera.enabled = false
+	return player
+
+## Takes `body` (`_her_for_the_events()`) out of the city's events, and hands the poster walls and
+## the blackout the rig's own player (`_player`, or nobody when it is gone).
+func _let_her_go(body: Stroller) -> void:
+	RunCity.events(_city).use_player(null)
+	var hers: Stroller = _player if is_instance_valid(_player) else null
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, hers)
+	body.free()
+
 ## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
-## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does.
-func _rig_player(t, at: Vector2) -> Stroller:
+## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does. The
+## test city's poster walls and blackout, where it stands, are handed her here, as a walk hands her.
+func _rig_player(t: Node, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -220,6 +306,8 @@ func _rig_player(t, at: Vector2) -> Stroller:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = at
+	if _city != null:
+		RunCity.show_her_to_the_walls_and_the_blackout(_city, player)
 	return player
 
 ## The cities a sweep relocates a mark over every mark tile of (`_relocations_over_the_marks()`): the
@@ -258,7 +346,7 @@ func _relocate_round(director: ResistanceDirector, player: Stroller, here: Vecto
 ## The feet of the chalk mark's guard as the street has him (the live `EventCatalogue.mark_guard()`
 ## among the test city's instances), or `Vector2.INF` when none stands, or more than one.
 func _marks_guard_feet() -> Vector2:
-	var guards := _live(EventCatalogue.mark_guard().id)
+	var guards := _live(EventCatalogue.mark_guard().id())
 	return guards[0].global_position if guards.size() == 1 else Vector2.INF
 
 ## **Every mark tile of the city of `seed_value`, relocated to in turn** (`_relocate_round()`), on
@@ -268,9 +356,9 @@ func _marks_guard_feet() -> Vector2:
 ## it did not move) and the guard's feet after it (`_marks_guard_feet()`). The relocation is the one
 ## placement a tick makes, so a sweep asks the director's rule of a hundred tiles in a few
 ## milliseconds; the city is the test's, freed by the next build or `_free_city()`.
-func _relocations_over_the_marks(t, seed_value: int, her_at: Callable) -> Array[Dictionary]:
+func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callable) -> Array[Dictionary]:
 	var run := _build_city_in_a_new_run(t, seed_value)
-	run.resistance.completed_steps = _completed_through(2)
+	GivenRun.completed_steps(run, _completed_through(2))
 	_look_at(Rect2())
 	var director := _director(t)
 	director.start_day(7, _rng(7, "resistance", seed_value), 300.0)
@@ -279,10 +367,10 @@ func _relocations_over_the_marks(t, seed_value: int, her_at: Callable) -> Array[
 	var tiles := _mark_tiles()
 	var away: Array[Vector2] = []
 	for tile in tiles:
-		away.append(_city.map.tile_to_world(tile))
+		away.append(_city.map().tile_to_world(tile))
 	var found: Array[Dictionary] = []
 	for tile in tiles:
-		var her: Vector2 = her_at.call(_city.map, tile)
+		var her: Vector2 = her_at.call(_city.map(), tile)
 		var mark := _relocate_round(director, player, her, away)
 		found.append({"tile": tile, "her": her, "mark": mark, "guard": _marks_guard_feet()})
 	player.free()
@@ -292,7 +380,7 @@ func _relocations_over_the_marks(t, seed_value: int, her_at: Callable) -> Array[
 ## Where she stands to have a mark relocated onto `tile` with nothing about her refusing its guard:
 ## four tiles out from it through its mouth, on the ground beyond the mouth, so the mark tile is the
 ## one nearest her (its twin across a two-tile alley is farther, another alley's across the street)
-## and its guard, further in, is past his notice of her (`EventDef.notice`) even at a small
+## and its guard, further in, is past his notice of her (`EventDef.notice_within()`) even at a small
 ## courtyard's inner end. The tile's own centre when it has no mouth beside it.
 static func _outside_its_mouth(map: CityMap, tile: Vector2i) -> Vector2:
 	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
@@ -300,6 +388,13 @@ static func _outside_its_mouth(map: CityMap, tile: Vector2i) -> Vector2:
 		if AlleyMarks.is_a_mouth(map, mouth) and AlleyMarks.mark_tile_of_mouth(map, mouth) == tile:
 			return map.tile_to_world(tile + step * 4)
 	return map.tile_to_world(tile)
+
+## **Where she stands to have a mark moved to the mark tile at `world`**: outside its alley's mouth
+## (`_outside_its_mouth()`), where that tile is the nearest a move may take and the guard its alley
+## would stand, two-thirds through, is out of his notice of her, which a move into an alley refuses
+## (brisk-wombat). On the tile itself he would stand within it, and the move goes elsewhere.
+func _outside_the_alley_at(world: Vector2) -> Vector2:
+	return _outside_its_mouth(_city.map(), _city.map().world_to_tile(world))
 
 ## Where she stands to have a mark relocated onto `tile` with her on it: its own centre.
 static func _on_the_tile(map: CityMap, tile: Vector2i) -> Vector2:
@@ -311,9 +406,9 @@ static func _on_the_tile(map: CityMap, tile: Vector2i) -> Vector2:
 ## rule has to fire.
 func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 	for tile in _through_alleys():
-		if not _is_one_in_from_a_mouth(_city.map, tile):
+		if not _is_one_in_from_a_mouth(_city.map(), tile):
 			continue
-		var world := _city.map.tile_to_world(tile)
+		var world := _city.map().tile_to_world(tile)
 		if world.distance_to(at) > min_distance:
 			return world
 	return Vector2.INF
@@ -323,9 +418,9 @@ func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 ## no list of them; it draws from the same walk over the map.
 func _mark_tiles() -> Array[Vector2i]:
 	var marks: Array[Vector2i] = []
-	for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
-		if _is_a_mouth(_city.map, tile):
-			marks.append(AlleyMarks.mark_tile_of_mouth(_city.map, tile))
+	for tile in _city.map().tiles_of_type(GameEnums.TileType.ALLEY):
+		if _is_a_mouth(_city.map(), tile):
+			marks.append(AlleyMarks.mark_tile_of_mouth(_city.map(), tile))
 	return marks
 
 ## Where the guard of a mark at `mark` stands before anything refuses his ground, worked out from the
@@ -335,7 +430,7 @@ static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 	var tile := map.world_to_tile(mark)
 	var robbery := EventCatalogue.mark_guard()
 	var spot := AlleyMarks.expected_guard_spot(map, tile, mark,
-			robbery.inner_radius + ContactPoint.REACH)
+			robbery.core_within() + ContactPoint.REACH)
 	if spot != Vector2.INF:
 		return spot
 	var court := AlleyMarks.courtyard_of(map, tile)
@@ -343,41 +438,26 @@ static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 
 ## The test city's through-alley tiles — see `_through_alley_tiles()`.
 func _through_alleys() -> Array[Vector2i]:
-	return _through_alley_tiles(_city.map)
+	return _through_alley_tiles(_city.map())
 
-## Every `ALLEY` tile of `map` that lies in a through-alley (`CityMap.alley_rects`), in
+## Every `ALLEY` tile of `map` that lies in a through-alley (`CityMap.alley_lots()`), in
 ## `CityMap.tiles_of_type()`'s own order: the marks whose robber stands at the alley's far end,
 ## rather than in a courtyard past a passage. The director never needs the split; the sweeps here
 ## ask each kind its own question.
 static func _through_alley_tiles(map: CityMap) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
-		for rect in map.alley_rects:
+		for rect in map.alley_lots():
 			if rect.has_point(tile):
 				tiles.append(tile)
 				break
 	return tiles
 
-## The two through-alley tiles closest together in the built test city — `[player_at, nearer,
-## other]`, `player_at` sitting exactly on `nearer` so it is always the globally nearest one to
-## itself, and `other` confirmed within `ResistanceDirector.NOTICE_RADIUS` of it. Empty if the city has no pair
-## that close, which the relocation test below skips on rather than asserting through.
-func _two_nearby_alleys() -> Array:
-	var alleys := _through_alleys()
-	for tile in alleys:
-		var at := _city.map.tile_to_world(tile)
-		for other in alleys:
-			if other == tile:
-				continue
-			if at.distance_to(_city.map.tile_to_world(other)) <= ResistanceDirector.NOTICE_RADIUS:
-				return [at, tile, other]
-	return []
-
 ## Whether `tile` is the one a mark stands on, worked out from the map alone: the second or the
 ## second-to-last tile of a through-alley along its long axis, or the walkable alley or courtyard
 ## tile beside a courtyard passage's mouth that is not itself a mouth.
 static func _is_one_in_from_a_mouth(map: CityMap, tile: Vector2i) -> bool:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			var vertical := rect.size.y >= rect.size.x
 			var along := tile.y - rect.position.y if vertical else tile.x - rect.position.x
@@ -398,25 +478,41 @@ static func _is_one_in_from_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 	return AlleyMarks.is_a_mouth(map, tile)
 
-## Runs the warning the trap row `row_id` is under to its end, frame by frame, with her standing at
-## `her`, the way `EventManager._physics_process` runs it. Returns how long it was up, or `INF` when
-## none was.
+## Lets real physics ticks of the city's events pass, `STEP` of game time each, until `seconds`
+## have passed or `done` (called after every tick with the count so far) answers true: the
+## manager's own tick (`EventManager._tick_the_events()`), on whoever it was handed
+## (`EventManager.use_player()`).
+func _let_the_events_tick(seconds: float, done := Callable()) -> void:
+	var scale := STEP * Engine.physics_ticks_per_second
+	await PhysicsTicks.pass_ticks_faster(_city, PhysicsTicks.ticks_for(seconds, scale),
+			PhysicsTicks.FASTER, done, scale)
+
+## Runs the warning the trap row `row_id` is under to its end, tick by tick, with her standing
+## at `her` (a body of the rig's own, handed to the events for the run, unless they already have
+## her). Returns how long it was up, or `INF` when none was.
 func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
-	var warning := _warning_for(_city.events, row_id)
+	var events := RunCity.events(_city)
+	var warning := _warning_for(events, row_id)
 	if warning == null:
 		return INF
-	while _city.events.pending_warnings().has(warning) and warning.shown < 5.0:
-		_city.events.warnings.run(STEP, her)
-	return warning.shown
+	var body: Stroller = null
+	if not events.world.has_player():
+		body = _her_for_the_events(_city, her)
+		events.use_player(body)
+	await _let_the_events_tick(5.0 + STEP, func(_ticks: int) -> bool:
+		return not events.pending_warnings().has(warning) or warning.shown_for() >= 5.0)
+	if body != null:
+		_let_her_go(body)
+	return warning.shown_for()
 
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
 ## through the real day order, since the walk is stated over the day's own closures and bodies.
-func _director_on_the_neighbor(t) -> ResistanceDirector:
-	var day := ResistanceHappenings.NEIGHBOR_DAY
+func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
+	var day := ResistanceSteps.NEIGHBOR_DAY
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -425,10 +521,30 @@ func _director_on_the_neighbor(t) -> ResistanceDirector:
 		_read_the_mark(director)
 	return director
 
+## Walks day 10's neighbor home by its own steps, the way its manager steps it each tick
+## (`EventManager._step_them()`), until it has parked at the end of its walk or the walk's time and
+## two seconds more have passed. Whether it parked. A step of a tenth of a second covers the same
+## ground as a frame, since the walk is driven by distance, and ends in the same place.
+func _walk_the_neighbor_home(walker: EventInstance) -> bool:
+	var length := 0.0
+	var walks := walker.walks()
+	for i in range(1, walks.size()):
+		length += walks[i - 1].distance_to(walks[i])
+	var step := 0.1
+	var time_left := length / walker.row().speed() + 2.0
+	while not walker.has_parked() and time_left > 0.0:
+		walker.step(step)
+		time_left -= step
+	return walker.has_parked()
+
+## Whether `walker`, the neighbor walking home, stands at her door.
+func _stands_at_her_door(walker: EventInstance) -> bool:
+	return walker.global_position.distance_to(_city.map().doorstep_world_position()) < 1.0
+
 ## The warning `events` has up for the row `id`, or null.
 func _warning_for(events: EventManager, id: String) -> PendingWarning:
 	for warning in events.pending_warnings():
-		if warning.def.id == id:
+		if warning.row().id() == id:
 			return warning
 	return null
 
@@ -436,10 +552,10 @@ func _warning_for(events: EventManager, id: String) -> PendingWarning:
 ## reachable from home under the day's whole obstruction, `_day_reachability()`) and standing at its
 ## centre for a physics frame completes today's contact (`ContactTouches.touches_from()`). On
 ## `in_city`, or the test city.
-func _touched_from_standable_ground(t, director: ResistanceDirector, item: Vector2,
+func _touched_from_standable_ground(t: TestRunner, director: ResistanceDirector, item: Vector2,
 		in_city: City = null) -> bool:
 	var city := in_city if in_city else _city
-	var map := city.map
+	var map := city.map()
 	var reachability := _day_reachability(city)
 	var grid: ReachabilityGrid = reachability[0]
 	var blocked: Dictionary = reachability[1]
@@ -453,7 +569,7 @@ func _touched_from_standable_ground(t, director: ResistanceDirector, item: Vecto
 					or not grid.reaches(tile, blocked, reached):
 				continue
 			places.append(map.tile_to_world(tile))
-	var touched := await ContactTouches.touches_from(t, director, places)
+	var touched := ContactTouches.touches_from(director, places)
 	return touched.has(true)
 
 ## The day's obstruction without the body of the task `director` offers (its contact's place and
@@ -469,7 +585,7 @@ func _obstruction_but_the_task(director: ResistanceDirector) -> Dictionary:
 ## circle round her — a tile at or past its edge is where that path reaches the edge. The
 ## obstruction is the day's, built independently of the director (`_day_reachability()`).
 func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
-	var map := _city.map
+	var map := _city.map()
 	var blocked: Dictionary = _obstruction_but_the_task(director)
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
@@ -498,7 +614,7 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 ## so if the two drift that check fails rather than passing silently.
 func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: float,
 		far: float) -> Dictionary:
-	var map := _city.map
+	var map := _city.map()
 	var blocked: Dictionary = _obstruction_but_the_task(director)
 	var found := {}
 	var start := map.world_to_tile(her)
@@ -524,27 +640,61 @@ func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: floa
 			queue.append(next)
 	return found
 
+## **Whether the ground along a way from home to `tile` has drawn**, as a place the director
+## confirmed has it (`WayConfirmation`): no undrawn unit of the day lies within
+## `Tuning.EVENT_DRAW_AHEAD` of every `WayConfirmation.STEP`th tile of a shortest way from home
+## over the walk's reach (`DayReach.way_from_home()`), nor of `tile` itself. False where the walk's
+## reach has no way to it.
+func _the_way_has_drawn(tile: Vector2i) -> bool:
+	var walk := RunCity.events(_city).walk_events()
+	var units := walk.unit_draw().units()
+	var way := walk.reach().way_from_home(tile)
+	if way.is_empty():
+		return false
+	var asked: Array[Vector2i] = [tile]
+	for k in range(0, way.size(), WayConfirmation.STEP):
+		asked.append(way[k])
+	for at in asked:
+		if not units.undrawn_within(_city.map().tile_to_world(at), Tuning.EVENT_DRAW_AHEAD) \
+				.is_empty():
+			return false
+	return true
+
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
-## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
-## `[director with the task active, the mark's position, her rig]`. With `trace_into`, the director
-## is handed a trace that records its lines there, from the day's start.
-func _read_the_mark_on(t, day: int, seed_value: int, trace_into: Array[String] = []) -> Array:
-	var run: RunState = _city.run
-	run.resistance.completed_steps = _completed_through(2 * (day - 6))
-	run.facts.completed_resistance_alley_tiles = []
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
-	state.begin_day(_city.map.block_plans, day)
+## `seed_value`, on a run whose earlier steps are done and whose alleys are unused, and answers the
+## director as the day starts: its mark placed and unread, nobody in the world yet. With
+## `trace_into`, the director is handed a trace that records its lines there, from the day's start.
+func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
+		trace_into: Array[String] = []) -> ResistanceDirector:
+	var run: RunState = _run
+	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
+	GivenRun.alley_tiles(run, [])
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
-			_city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+			_city.map().doorstep_world_position())
 	var director := _director(t)
-	director.trace = RunTrace.recording(trace_into)
+	director.use_trace(RecordingTrace.new(trace_into))
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
+	return director
+
+## Plans `day` on the test city as `_start_the_day_on()` does, and reads the day's mark standing on
+## it with her screen the view around her: `[director with the task active, the mark's position,
+## her rig]`. With `view_half`, the view around her is that far either way and not her screen's,
+## for a case that wants everything near her in her view.
+func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Array[String] = [],
+		view_half := Vector2.ZERO) -> Array:
+	var director := _start_the_day_on(t, day, seed_value, trace_into)
 	var mark := director.contact_position()
 	var player := _rig_player(t, mark)
 	director.use_player(player)
-	_watch_the_screen_round(director, mark)
+	if view_half == Vector2.ZERO:
+		_watch_the_screen_round(director, mark)
+	else:
+		_look_at(Rect2(mark - view_half, view_half * 2.0))
+		director.set_sight(RunCity.events(_city).sees)
 	var step := director.current_step()
 	if step != null and step.is_pickup:
 		_read_the_mark(director)
@@ -555,7 +705,7 @@ func _read_the_mark_on(t, day: int, seed_value: int, trace_into: Array[String] =
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
 ## The same hash the run calendar's `day_rng()` takes, built here without a run, whose
-## `header.run_seed` this sweep has no other use for — same stream a played day actually draws from, for a seed and a day
+## `header().run_seed()` this sweep has no other use for — same stream a played day actually draws from, for a seed and a day
 ## this test chooses rather than the run's own.
 func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

@@ -4,8 +4,8 @@ extends RefCounted
 
 const Rig := preload("res://tests/routes_closures_rig.gd")
 
-func run(t) -> void:
-	var rig = Rig.new()
+func run(t: TestRunner) -> void:
+	var rig: Rig = Rig.new()
 	rig.prepare(0, 6)
 	rig.case_every_planned_day_keeps_the_invariant(t)
 	rig.case_the_home_street_is_never_closed(t)
@@ -15,3 +15,4 @@ func run(t) -> void:
 	rig.case_a_mid_segment_opening_stays_reachable_from_its_own_side(t)
 	rig.case_closures_are_deterministic(t)
 	rig.case_a_closed_street_is_out_of_the_network(t)
+	rig.case_a_spawn_beside_a_closure_lands_on_walkable_ground(t)

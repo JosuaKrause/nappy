@@ -1,0 +1,9 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+-- test_routes_closures_a.gd             105657 ms
+-- test_routes_closures_b.gd              42289 ms
+-- test_routes_closures_c.gd              52154 ms
+
+1850 checks, 0 failures
+PARTIAL RUN — only suites matching test_routes_closures. Not a green build.

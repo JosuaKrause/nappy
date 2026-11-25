@@ -20,34 +20,54 @@ static func park_ground(map: CityMap, park: Vector2i) -> Rect2:
 static func tape_line(map: CityMap, park: Vector2i) -> Rect2:
 	return park_ground(map, park).grow(-Tuning.CLOSURE_BARRIER_DEPTH * 0.5)
 
-## The cordon's officers standing in the city now.
-static func officers(city: City) -> Array[CordonOfficer]:
+## The cordon's officers standing in `world` now, on its entity layer (a city's, or a bare
+## `WorldContext`'s).
+static func officers(world: WorldContext) -> Array[CordonOfficer]:
 	var found: Array[CordonOfficer] = []
-	for figure in city.get_node("Entities").get_children():
-		if figure is CordonOfficer and not figure.is_queued_for_deletion():
+	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
+		var figure := node as CordonOfficer
+		if figure != null and not figure.is_queued_for_deletion():
 			found.append(figure)
 	return found
 
 ## What shuts ground to someone on foot today: the closures and every solid body, the tape included.
 static func shut_tiles(map: CityMap) -> Dictionary:
-	var shut := map.closed_tiles.duplicate()
-	shut.merge(map.obstructed_tiles)
+	var shut := map.closed_tile_set().duplicate()
+	shut.merge(map.obstructed_tiles())
 	return shut
 
 ## Whether nobody on foot can get from `inside`, a point in the park, to the home: the park is
 ## taped shut. Open ground reaches the home by way of the park's edge until the last gap is taped.
 static func is_shut(map: CityMap, inside: Vector2) -> bool:
 	var field := map.walk_field(map.world_to_tile(inside), shut_tiles(map))
-	return not map.reaches(field, map.home_rect.position)
+	return not map.reaches(field, map.home_tile_rect().position)
 
-## The tape standing in the city now: one `CordonTape` per taped stretch of the edge, each a static
+## The tape standing in `world` now: one `CordonTape` per taped stretch of the edge, each a static
 ## body the physics world blocks her with. The posts the officers plant at the stretches' ends are
-## not tape, and a piece the cordon has let go (queued to be freed) is not standing.
-static func tapes(city: City) -> Array[CordonTape]:
+## not tape: a post has no body. A piece the cordon has let go (queued to be freed) is not standing.
+static func tapes(world: WorldContext) -> Array[CordonTape]:
 	var found: Array[CordonTape] = []
-	for piece in city.get_node("Entities").get_children():
-		if piece is CordonTape and piece.piece == CordonTape.Piece.TAPE \
-				and not piece.is_queued_for_deletion():
+	for piece in _pieces(world):
+		if body_rect(piece).has_area():
+			found.append(piece)
+	return found
+
+## The posts standing in `world` now: the cordon's pieces the officers plant at the stretches'
+## ends, each standing in the world with no body, since the tape strung between them is what stops
+## her.
+static func posts(world: WorldContext) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for piece in _pieces(world):
+		if not body_rect(piece).has_area():
+			found.append(piece)
+	return found
+
+## Every piece of the cordon standing on `world`'s entity layer, tape and post alike.
+static func _pieces(world: WorldContext) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for node in world.layers().node(DrawLayer.Layer.ENTITIES).get_children():
+		var piece := node as CordonTape
+		if piece != null and not piece.is_queued_for_deletion():
 			found.append(piece)
 	return found
 
@@ -56,16 +76,20 @@ static func tapes(city: City) -> Array[CordonTape]:
 static func body_rect(tape: CordonTape) -> Rect2:
 	for child in tape.get_children():
 		if child is StaticBody2D:
-			for part in child.get_children():
-				if part is CollisionShape2D and part.shape is RectangleShape2D:
-					var size: Vector2 = part.shape.size
-					return Rect2(part.global_position - size * 0.5, size)
+			for node in child.get_children():
+				var part := node as CollisionShape2D
+				if part != null and part.shape is RectangleShape2D:
+					var shape: RectangleShape2D = part.shape
+					return Rect2(part.global_position - shape.size * 0.5, shape.size)
 	return Rect2()
 
-## The two ends of the line a tape's body runs along, read off the body: the tape's length, centred.
+## The two ends of the line a tape's body runs along, read off the body: its long side, centred. A
+## stretch is about a tile long and its body `CordonTape.DEPTH` deep, so the long side is the line.
 static func ends(tape: CordonTape) -> PackedVector2Array:
-	var centre := body_rect(tape).get_center()
-	var half := Vector2(tape.length * 0.5, 0.0) if tape.across else Vector2(0.0, tape.length * 0.5)
+	var body := body_rect(tape)
+	var centre := body.get_center()
+	var half := Vector2(body.size.x * 0.5, 0.0) if body.size.x >= body.size.y \
+			else Vector2(0.0, body.size.y * 0.5)
 	return PackedVector2Array([centre - half, centre + half])
 
 ## Whether a body centred at `at` stands within `reach` of tape that is up.
@@ -102,7 +126,7 @@ static func edge_tiles_to_tape(map: CityMap, park: Vector2i) -> Array:
 	var needed: Array = []
 	for entry: Array in ring:
 		for run in runs:
-			if run.outward == entry[1] and run.segment.tile_rect().has_point(entry[0]):
+			if run.outward() == entry[1] and run.covers_tile(entry[0]):
 				needed.append(entry)
 				break
 	return needed

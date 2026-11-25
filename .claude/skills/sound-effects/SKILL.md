@@ -26,7 +26,8 @@ until the player separately asks for integration.
   prose.
 - `passes.json` names exactly one pass: the current proposal, with no pinned commit. A branch
   reaches `main` squashed, which would take a pin to one of its own commits with it, and a
-  rejected pass is not worth keeping alive anyway — its findings stay in `DECISIONS.md`. Make a
+  rejected pass is not worth keeping alive anyway — its findings stay in the decision records
+  under `docs/decisions/` (`tools/decisions.sh <name>` fetches one). Make a
   new pass by changing the generator's defaults or `passes.json`'s `args`, rebuilding with
   `tools/sound-lab.sh`, and listening; once it is worth keeping, overwrite `passes.json`'s
   `seed`/`args`/`label` and every hash with the new build's own. Live iteration on the generator

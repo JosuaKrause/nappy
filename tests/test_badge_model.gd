@@ -1,204 +1,174 @@
 extends RefCounted
-## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view, a number for the
-## clock — no scene, no camera, no frame timing. Which dangers get a screen-edge badge, when it goes
-## up and when it comes down is decided there, so it is checked there. The one exception is the
-## drawing test, which adds a real `DangerEdge` to the tree and waits for its draw, to check that it
-## draws exactly what the model lists.
+## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view — no scene, no
+## camera, no frame timing. Which warnings and which warned things carry a screen-edge badge, when it
+## comes down and the order the badges are listed in are decided there, so they are checked there;
+## which rows earn a badge at all is the row's own question (`EventDef.announces_its_coming()`,
+## checked in `tests/test_events_catalogue.gd`), handed to the model as an answer. The one
+## exception is the drawing test, which adds a real `DangerEdge` to the tree and waits for its
+## draw, to check that it draws exactly what the model lists.
 
 const STEP := 1.0 / 60.0
-## The camera's view about her at (0, 0): the world the badge asks "in sight?" of.
+## The camera's view about her at (0, 0): what is in sight.
 const VIEW := Rect2(-320.0, -180.0, 640.0, 360.0)
 
-func run(t) -> void:
-	_test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t)
-	_test_a_danger_walking_away_or_too_slow_gets_none(t)
-	_test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t)
-	_test_a_raised_badge_ends_when_its_danger_leaves_the_world(t)
-	_test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t)
-	_test_six_badges_at_once_are_all_drawn_and_none_drops_early(t)
-	await _test_the_drawing_shows_every_badge_the_model_lists(t)
-	_test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t)
-	_test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t)
-	_test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t)
-	_test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t)
+func run(t: TestRunner) -> void:
+	_test_a_danger_in_the_world_that_was_not_warned_of_has_no_badge(t)
 	_test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t)
+	_test_a_warned_thing_keeps_its_badge_while_it_stands_and_while_it_turns_away(t)
+	_test_a_warned_thing_seen_once_carries_no_badge_again(t)
+	_test_a_warned_badge_ends_when_its_danger_is_over_or_leaves_the_world(t)
+	_test_six_warned_things_at_once_are_all_badged_until_each_is_in_sight(t)
+	await _test_the_drawing_shows_every_badge_the_model_lists(t)
+	_test_a_row_that_does_not_announce_has_no_badge(t)
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
+	_test_a_pending_warning_is_listed_closing_at_its_approach_speed(t)
 	_test_every_badge_is_listed_soonest_arrival_first(t)
+	_test_the_warning_with_less_time_left_is_listed_first(t)
+	_test_a_pending_warning_is_ranked_by_its_arrival_among_warned_things(t)
 	_test_a_subject_no_longer_handed_over_is_forgotten(t)
-	_test_the_lead_window_is_a_time_and_not_a_distance(t)
-	_test_what_is_worth_an_arrow(t)
-
-## The view as the model asks it: `margin_px` screen px past the edge are in sight too, at the
-## camera's zoom of 2 (half a world px per screen px).
-static func _sees(point: Vector2, margin_px: float) -> bool:
-	return VIEW.grow(margin_px * 0.5).has_point(point)
 
 static func _vehicle(key: int, at: Vector2, speed := 190.0) -> BadgeModel.Subject:
 	var s := BadgeModel.Subject.new()
 	s.key = key
 	s.position = at
-	s.speed = speed
-	s.chase_speed = speed
-	s.hard_fail = true
-	s.mobile = true
+	s.approach_speed = speed
+	return s
+
+## A thing created where its warning pointed (`EventInstance.was_warned_of()`).
+static func _warned(key: int, at: Vector2, speed := 190.0) -> BadgeModel.Subject:
+	var s := _vehicle(key, at, speed)
+	s.warned = true
 	return s
 
 static func _step(model: BadgeModel, subjects: Array) -> void:
 	for s: BadgeModel.Subject in subjects:
-		s.shown = VIEW.has_point(s.position)
-	model.step(STEP, Vector2.ZERO, subjects, _sees, Tuning.WALK_SPEED)
+		if not s.pending:
+			s.shown = VIEW.has_point(s.position)
+	model.step(Vector2.ZERO, subjects)
 
 static func _up(model: BadgeModel, id: String) -> bool:
 	for b in model.announcing():
-		if b["id"] == id:
+		if b.logged_name() == id:
 			return true
 	return false
 
-func _test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t) -> void:
+## **One path, a warning put up before its danger is placed** *(minty-dolphin #852: "Don't let
+## legacy implementations prevent you from establishing a clean design")*: a fire engine closing on
+## her from off screen at 190 px/s, lethal and announcing, that was not created under a warning, is
+## never badged, however near it comes before it is in sight. Nothing in the world is measured.
+func _test_a_danger_in_the_world_that_was_not_warned_of_has_no_badge(t: TestRunner) -> void:
 	var model := BadgeModel.new()
-	var truck := _vehicle(1, Vector2(2000.0, 0.0))
+	var truck := _vehicle(1, Vector2(1200.0, 0.0))
 	truck.logged_name = "fire_truck"
-	var first_up := -1
-	var frames := 0
-	while truck.position.x > VIEW.end.x - 1.0 and frames < 2000:
-		truck.position.x -= truck.speed * STEP
+	var badged := 0
+	while not truck.shown:
+		truck.position.x -= truck.approach_speed * STEP
 		_step(model, [truck])
-		frames += 1
-		if first_up < 0 and _up(model, "fire_truck"):
-			first_up = frames
-			# 190 px/s for LEAD_TIME seconds is the line (the smoothed approach is within a frame of it).
-			t.check(truck.position.x - 0.0 <= 190.0 * BadgeModel.LEAD_TIME + 4.0,
-					"the badge goes up inside the lead window (at %.0fpx)" % truck.position.x)
-		elif first_up >= 0 and not truck.shown:
-			t.check(_up(model, "fire_truck"), "and stays up on frame %d until it is in view" % frames)
-	t.check(first_up > 0, "a fire-engine-fast thing closing from off screen is announced")
-	t.check(not _up(model, "fire_truck"), "and the badge is off once it is in view")
+		badged += 1 if _up(model, "fire_truck") else 0
+	t.check(badged == 0, "a danger closing from off screen with no warning first has no badge (%d frames)"
+			% badged)
 
-## The range limit is a window rather than a distance: the same 800px of clear ground is a fire
-## engine at 190px/s, four seconds away and announced, and a dawdler at 40px/s, twenty seconds away
-## and somebody else's problem for now. Nothing slower than a stroll is announced at any distance.
-## Each is closed in on for a second, long enough for the badge's smoothed approach to settle.
-func _test_the_lead_window_is_a_time_and_not_a_distance(t) -> void:
-	for case: Array in [[190.0, 800.0, true], [40.0, 800.0, false],
-			[BadgeModel.CLOSING_SPEED - 1.0, 400.0, false]]:
-		var model := BadgeModel.new()
-		var thing := _vehicle(1, Vector2(case[1], 0.0), case[0])
-		thing.logged_name = "thing"
-		for i in 60:
-			thing.position.x -= thing.speed * STEP
-			_step(model, [thing])
-		t.check(_up(model, "thing") == case[2],
-				"something doing %.0fpx/s with %.0fpx to go is %s" % [case[0], case[1],
-				"announced" if case[2] else "not announced"])
-
-func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
+func _test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t: TestRunner) -> void:
 	var model := BadgeModel.new()
-	var away := _vehicle(1, Vector2(500.0, 0.0))
-	var slow := _vehicle(2, Vector2(0.0, 500.0), 10.0)
+	var dog := _warned(1, Vector2(VIEW.end.x + 20.0, 0.0), 100.0)
+	dog.logged_name = "dog"
+	_step(model, [dog])
+	t.check(_up(model, "dog"), "created just out of sight under its warning, it is badged at once")
+	var kept := true
+	while not dog.shown:
+		_step(model, [dog])
+		kept = kept and (dog.shown or _up(model, "dog"))
+		dog.position.x -= 100.0 * STEP
+	_step(model, [dog])
+	t.check(kept, "and keeps it on every frame until it is in sight")
+	t.check(not _up(model, "dog"), "where the thing itself has done the badge's job")
+
+## *"Anyway a badge shouldn't disappear before the entity is visible"* (minty-dolphin #852): a warned
+## thing that stops out of sight, and one that turns away from her, keeps its badge.
+func _test_a_warned_thing_keeps_its_badge_while_it_stands_and_while_it_turns_away(t: TestRunner) -> void:
+	var model := BadgeModel.new()
+	var stands := _warned(1, Vector2(600.0, 0.0))
+	stands.logged_name = "stands"
+	var turns := _warned(2, Vector2(-600.0, 0.0))
+	turns.logged_name = "turns"
+	var kept := 0
 	for i in 120:
-		away.position.x += away.speed * STEP
-		slow.position.y -= slow.speed * STEP
-		_step(model, [away, slow])
-	t.check(model.coming.is_empty(), "a thing going away, and one closing slower than 20px/s, get no badge")
+		turns.position.x -= 190.0 * STEP
+		_step(model, [stands, turns])
+		kept += 1 if _up(model, "stands") and _up(model, "turns") else 0
+	t.check(kept == 120, "standing or going away out of sight, both keep their badges (%d of 120)" % kept)
 
-## A badge, once up, stays up until its danger is in sight or gone: standing still, turning away,
-## she walking away from it. For a lethal vehicle and for a cyclist (mobile, faster than a walk, not
-## lethal) alike; no timer ends it.
-func _test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t) -> void:
-	for kind: String in ["lethal vehicle", "cyclist"]:
-		var model := BadgeModel.new()
-		var thing := _vehicle(1, Vector2(1000.0 if kind == "lethal vehicle" else 560.0, 0.0),
-				190.0 if kind == "lethal vehicle" else 120.0)
-		thing.hard_fail = kind == "lethal vehicle"
-		thing.logged_name = "thing"
-		for i in 30:
-			thing.position.x -= thing.speed * STEP
-			_step(model, [thing])
-		t.check(_up(model, "thing"), "%s: up while closing" % kind)
-		var down := 0
-		for i in 120:
-			_step(model, [thing])  # standing still: far longer than any timer would keep it
-			down += 0 if _up(model, "thing") else 1
-		t.check(down == 0, "%s: still up after two seconds standing still (down on %d)" % [kind, down])
-		for i in 120:
-			thing.position.x += thing.speed * STEP  # turned away, running off
-			_step(model, [thing])
-			down += 0 if _up(model, "thing") else 1
-		t.check(down == 0, "%s: and while it runs away (down on %d)" % [kind, down])
-		thing.position = Vector2(100.0, 0.0)
-		_step(model, [thing])
-		t.check(not _up(model, "thing"), "%s: dropped the frame it is in sight" % kind)
-
-func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
-	for finished in [true, false]:
-		var model := BadgeModel.new()
-		var truck := _vehicle(1, Vector2(1000.0, 0.0))
-		truck.logged_name = "truck"
-		for i in 30:
-			truck.position.x -= truck.speed * STEP
-			_step(model, [truck])
-		t.check(_up(model, "truck"), "up while closing")
-		truck.finished = finished
-		_step(model, [truck] if finished else [])
-		t.check(not _up(model, "truck"),
-				"a danger that is finished (%s) or no longer handed over ends its badge" % finished)
-
-## Three badges raised, then their dangers stop (one turns away) and stay out of sight: all three are
-## kept and drawn. Fails if a badge ends when its
-## condition (the danger closing) lapses.
-func _test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t) -> void:
+## Once she has seen it, its badge has done its job: out of sight again, it carries none.
+func _test_a_warned_thing_seen_once_carries_no_badge_again(t: TestRunner) -> void:
 	var model := BadgeModel.new()
-	var subjects: Array = []
-	for i in 3:
-		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
-		v.logged_name = "k%d" % i
-		subjects.append(v)
-	for f in 40:
-		for v: BadgeModel.Subject in subjects:
-			v.position.x -= v.speed * STEP
-		_step(model, subjects)
-	t.check(model.announcing().size() == 3, "three raised while closing")
-	var missing := 0
-	for f in 120:
-		(subjects[1] as BadgeModel.Subject).position.x += 190.0 * STEP  # turned away
-		_step(model, subjects)  # the others stopped
-		missing += 3 - model.announcing().size()
-	t.check(missing == 0, "all three kept badges stay drawn after their dangers stopped or turned away (%d missing)" % missing)
+	var man := _warned(1, Vector2(0.0, 400.0), 130.0)
+	man.logged_name = "masked_pursuer"
+	_step(model, [man])
+	t.check(_up(model, "masked_pursuer"), "out of sight under his warning he is badged")
+	man.position = Vector2(0.0, 100.0)
+	_step(model, [man])
+	t.check(not _up(model, "masked_pursuer"), "in sight, he carries none")
+	man.position = Vector2(0.0, -400.0)
+	_step(model, [man])
+	t.check(not _up(model, "masked_pursuer"), "and past her and out of sight again, still none")
 
-## Six badges at once, all drawn, none dropped before its danger is in sight, however many there are. Five are kept
-## (stopped, out of sight) while a sixth keeps closing; then one comes into sight and only it goes.
-func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
+func _test_a_warned_badge_ends_when_its_danger_is_over_or_leaves_the_world(t: TestRunner) -> void:
+	var model := BadgeModel.new()
+	var truck := _warned(1, Vector2(900.0, 0.0))
+	truck.logged_name = "fire_truck"
+	_step(model, [truck])
+	t.check(_up(model, "fire_truck"), "a warned danger out of sight is badged")
+	truck.finished = true
+	_step(model, [truck])
+	t.check(not _up(model, "fire_truck"), "and loses its badge once it is over")
+	var cyclist := _warned(2, Vector2(900.0, 0.0))
+	cyclist.logged_name = "cyclist"
+	_step(model, [cyclist])
+	_step(model, [])
+	t.check(not _up(model, "cyclist"), "and one no longer handed over loses its badge")
+
+## No cap on how many are up (board `badge-cap`): six warned things out of sight at once are all
+## listed on every frame until each is in sight.
+func _test_six_warned_things_at_once_are_all_badged_until_each_is_in_sight(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
 	for i in 6:
-		var v := _vehicle(i + 1, Vector2(500.0 + 80.0 * i, 0.0))
+		var v := _warned(i + 1, Vector2(500.0 + 60.0 * i, -150.0 + 60.0 * i), 190.0)
 		v.logged_name = "v%d" % i
 		subjects.append(v)
-	for f in 40:
-		for v: BadgeModel.Subject in subjects:
-			v.position.x -= v.speed * STEP
-		_step(model, subjects)
-	t.check(model.announcing().size() == 6, "six drawn, not three (%d)" % model.announcing().size())
 	var short := 0
-	for f in 60:
-		(subjects[5] as BadgeModel.Subject).position.x -= 190.0 * STEP
-		_step(model, subjects)  # the first five stopped out of sight
-		short += 6 - model.announcing().size() if not (subjects[5] as BadgeModel.Subject).shown else 0
-	t.check(short == 0, "all six stay drawn while out of sight (%d short)" % short)
-	(subjects[0] as BadgeModel.Subject).position = Vector2(100.0, 0.0)
-	_step(model, subjects)
-	t.check(not _up(model, "v0") and _up(model, "v1") and _up(model, "v4"),
-			"only the one that came into sight is dropped")
+	var seen := {}
+	for f in 200:
+		for v: BadgeModel.Subject in subjects:
+			v.position.x -= v.approach_speed * STEP
+		_step(model, subjects)
+		var unseen := 0
+		for v: BadgeModel.Subject in subjects:
+			if v.shown:
+				seen[v.key] = true
+			unseen += 0 if seen.has(v.key) else 1
+		short += absi(unseen - model.announcing().size())
+	t.check(short == 0, "every warned thing not yet seen keeps its badge, six at once (%d short)" % short)
 
-## The drawing, not only the model: six warnings up at once, and after a real draw the control has put
-## six arrows on the edge. Fails if the drawing limits how many it shows. An arrow draws its event's
-## picture from the atlas the control is handed, so the pictures asked for in one draw pass are the
-## arrows drawn.
-func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
+## A row that does not announce its coming (`EventDef.announces_its_coming()` false, the loose dog)
+## has no badge, warned of or not.
+func _test_a_row_that_does_not_announce_has_no_badge(t: TestRunner) -> void:
+	var model := BadgeModel.new()
+	var dog := _warned(1, Vector2(900.0, 0.0), 60.0)
+	dog.announces = false
+	dog.logged_name = "loose_dog"
+	var pending := _vehicle(2, Vector2(900.0, 0.0), 60.0)
+	pending.pending = true
+	pending.left = 0.5
+	pending.announces = false
+	pending.logged_name = "loose_dog_warning"
+	_step(model, [dog, pending])
+	t.check(model.announcing().is_empty(), "neither has a badge (%d)" % model.announcing().size())
+
+func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 	var atlas := _PictureAtlas.new()
 	atlas.acquire(&"events")
 	var source := _Source.new()
-	t.add_child(source)
 	var player := Node2D.new()
 	t.add_child(player)
 	var def := EventCatalogue.by_id("fire_truck")
@@ -207,17 +177,17 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
 		var warning := PendingWarning.new(def,
 				func(_her: Vector2) -> Vector2: return at, func(_p: Vector2, _her: Vector2) -> bool: return true)
 		warning.put_up(Vector2.ZERO)
-		source.warnings.append(warning)
+		source.held.append(warning)
 	var edge := DangerEdge.new()
-	edge.atlas = atlas
+	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(source, player)
 	atlas.watch(edge)
 	for i in 4:
 		await t.get_tree().process_frame
-	t.check(edge.announcing().size() == 6, "six badges listed (%d)" % edge.announcing().size())
-	var body := StringName(EventPictures.icon_for(def.look))
+	t.check(edge.badges().announcing().size() == 6, "six badges listed (%d)" % edge.badges().announcing().size())
+	var body := StringName(EventPictures.icon_for(def.picture()))
 	var drawn := 0
 	if not atlas.passes.is_empty():
 		for name: StringName in atlas.passes[atlas.passes.size() - 1]:
@@ -247,184 +217,105 @@ class _PictureAtlas extends AtlasLibrary:
 		passes.append(_asked)
 		_asked = []
 
-## An event source with nothing in the world and the warnings it is given.
-class _Source extends Node:
-	var warnings: Array[PendingWarning] = []
-	func instances() -> Array[EventInstance]:
-		return []
+## The day's events with nothing in the world and the warnings it is given, standing in for the
+## warnings the manager's own board holds (`EventManager.pending_warnings()`). Its view is the
+## manager's own, never looked through here, so it sees nothing: a warning is announced on screen or
+## off, so the six are announced as the game announces them.
+class _Source extends EventManager:
+	var held: Array[PendingWarning] = []
+
+	## Overrides EventManager.pending_warnings.
 	func pending_warnings() -> Array[PendingWarning]:
-		return warnings
+		return held
 
-func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) -> void:
-	# Seen, then out past the edge but inside the margin band: the band only decides whether a badge
-	# goes up, so a seen, non-charging thing closing from inside it is not raised until it is past it.
-	var model := BadgeModel.new()
-	var truck := _vehicle(1, Vector2(300.0, 0.0))
-	truck.logged_name = "truck"
-	_step(model, [truck])
-	truck.position.x = VIEW.end.x + 30.0
-	for i in 5:
-		truck.position.x -= truck.speed * STEP
-		_step(model, [truck])
-	t.check(not _up(model, "truck"), "a seen thing closing inside the band is not badged until it is past it")
-	model = BadgeModel.new()
-	truck.position.x = VIEW.end.x + 200.0
-	for i in 12:
-		truck.position.x -= truck.speed * STEP
-		_step(model, [truck])
-	t.check(_up(model, "truck"), "past the band it is")
-
-func _test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t) -> void:
-	var model := BadgeModel.new()
-	var man := _vehicle(1, Vector2(300.0, 0.0), 112.0)
-	man.logged_name = "man"
-	_step(model, [man])
-	man.position.x = VIEW.end.x + 30.0
-	for i in 20:
-		_step(model, [man])
-	t.check(not _up(model, "man"), "standing in the band: nothing yet")
-	man.position.x -= 112.0 * STEP
-	man.charging = true
-	_step(model, [man])
-	t.check(_up(model, "man"), "the first frame he runs, from inside the band, his badge is up")
-
-func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t) -> void:
-	# Four starts in and around the band (px past the view's right edge), the way the camera's
-	# position decides where the stairwell lies against the view.
-	for start: float in [5.0, 25.0, 45.0, 64.0, 90.0]:
-		var model := BadgeModel.new()
-		var man := _vehicle(1, Vector2(VIEW.end.x - 20.0, 0.0), 112.0)
-		man.logged_name = "masked_pursuer"
-		_step(model, [man])
-		man.position.x = VIEW.end.x + start
-		for i in 30:
-			_step(model, [man])
-		var dropped := 0
-		var first := -1
-		var frame := 0
-		man.charging = true
-		while not VIEW.has_point(man.position) and frame < 600:
-			man.position.x -= 112.0 * STEP
-			_step(model, [man])
-			if not man.shown:
-				if _up(model, "masked_pursuer"):
-					if first < 0:
-						first = frame
-				else:
-					dropped += 1
-			frame += 1
-		t.check(first == 0 and dropped == 0,
-				"a masked man running from %.0fpx past the view: badge from frame 0, down on %d frames (first up %d)"
-				% [start, dropped, first])
-
-## **CI's shape.** The badge is up on his first frame (he starts beyond the margin band), and then he
-## runs into the band while still out of sight: she walks away at 92 px/s, he runs at 112, so the
-## view recedes from him at nearly his own pace and he stays in the band for a long while. The
-## badge is kept until he is in sight ("first up 0 frames in, down on N" was the old drop). The view
-## moves with her.
-func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t) -> void:
-	var model := BadgeModel.new()
-	var here := Vector2.ZERO
-	var man := _vehicle(1, Vector2(VIEW.end.x + 100.0, 0.0), 112.0)
-	man.logged_name = "masked_pursuer"
-	# A lambda captures by value, so the view reads her position from a holder it shares.
-	var her := {"at": Vector2.ZERO}
-	var in_view := func(p: Vector2, m: float) -> bool: return VIEW.grow(m * 0.5).has_point(p - her["at"])
-	for i in 10:
-		man.shown = VIEW.has_point(man.position - here)
-		model.step(STEP, here, [man], in_view, Tuning.WALK_SPEED)
-	man.charging = true
-	var first := -1
-	var dropped := 0
-	var frame := 0
-	var in_band_frames := 0
-	while frame < 1500:
-		man.position.x -= 112.0 * STEP
-		here.x -= 92.0 * STEP
-		her["at"] = here
-		man.shown = VIEW.has_point(man.position - here)
-		model.step(STEP, here, [man], in_view, Tuning.WALK_SPEED)
-		if man.shown:
-			break
-		var rel := man.position.x - here.x
-		if rel < VIEW.end.x + 65.0:
-			in_band_frames += 1
-		if _up(model, "masked_pursuer"):
-			if first < 0:
-				first = frame
-		else:
-			dropped += 1
-		frame += 1
-	t.check(in_band_frames * STEP > 0.8,
-			"he is out of sight in the band for longer than 0.8s, which only a timer would bridge (%.2fs)" % (in_band_frames * STEP))
-	t.check(first == 0 and dropped == 0,
-			"and the badge is up from the frame he runs until he is in view (first up %d, down on %d of %d frames)"
-			% [first, dropped, frame])
-
-func _test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t) -> void:
-	var model := BadgeModel.new()
-	var dog := _vehicle(1, Vector2(VIEW.end.x + 20.0, 0.0), 100.0)
-	dog.logged_name = "dog"
-	dog.warned = true
-	_step(model, [dog])
-	t.check(_up(model, "dog"), "created just out of sight under its warning, it is badged at once")
-	for i in 20:
-		dog.position.x -= 100.0 * STEP
-		_step(model, [dog])
-		if not dog.shown:
-			t.check(_up(model, "dog"), "and keeps it on frame %d until it is in sight" % i)
-
-func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
+func _test_a_pending_warning_is_announced_for_its_whole_warning(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var w := _vehicle(0, Vector2(0.0, 0.0), 190.0)
 	w.pending = true
 	w.position = Vector2(100.0, 0.0)  # in view: still announced, nothing there to see
 	w.left = 0.7
 	w.logged_name = "cyclist"
-	model.step(STEP, Vector2.ZERO, [w], _sees, Tuning.WALK_SPEED)
+	model.step(Vector2.ZERO, [w])
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
-	t.check(is_equal_approx(float(model.coming[0][0]), 0.7), "sorted by the seconds its warning has left")
 
-func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
+## A warning with nothing in the world yet is listed closing at the approach its subject carries, not
+## at nothing: the run log reads this number for the day's charging dog.
+func _test_a_pending_warning_is_listed_closing_at_its_approach_speed(t: TestRunner) -> void:
+	var model := BadgeModel.new()
+	var w := _vehicle(0, Vector2(900.0, 0.0), 240.0)
+	w.pending = true
+	w.left = 1.5
+	w.logged_name = "dog"
+	model.step(Vector2.ZERO, [w])
+	var listed := model.announcing()
+	t.check(listed.size() == 1 and is_equal_approx(listed[0].approach(), 240.0),
+			"a pending warning is listed closing at its approach speed (%s)"
+			% [listed.map(func(b: EdgeBadges.Badge) -> float: return b.approach())])
+
+## A pending warning with 0.7s left is ranked against a warned thing by when each arrives, at its own
+## approach to its field's edge: the warned one, still 0.6s off, is listed ahead of it, and once it
+## is 0.75s off the warning is. A warning's arrival time read wrong by a tenth of a second would swap
+## the second order.
+func _test_a_pending_warning_is_ranked_by_its_arrival_among_warned_things(t: TestRunner) -> void:
+	for arrives: float in [0.6, 0.75]:
+		var model := BadgeModel.new()
+		var live := _warned(1, Vector2(600.0 * arrives, 0.0) + Vector2(VIEW.end.x, 0.0), 600.0)
+		live.heard_within = VIEW.end.x
+		live.logged_name = "live"
+		var warning := _vehicle(2, Vector2(100.0, 0.0), 190.0)
+		warning.pending = true
+		warning.left = 0.7
+		warning.logged_name = "warning"
+		_step(model, [live, warning])
+		var names := []
+		for b in model.announcing():
+			names.append(b.logged_name())
+		var expected := ["live", "warning"] if arrives < 0.7 else ["warning", "live"]
+		t.check(names == expected, "%.2fs off, against a warning with 0.7s left: %s (%s)"
+				% [arrives, str(expected), str(names)])
+
+func _test_the_warning_with_less_time_left_is_listed_first(t: TestRunner) -> void:
+	for sooner_first: bool in [true, false]:
+		var model := BadgeModel.new()
+		var late := _vehicle(1, Vector2(100.0, 0.0))
+		late.pending = true
+		late.left = 2.0
+		late.logged_name = "late"
+		var soon := _vehicle(2, Vector2(100.0, 0.0))
+		soon.pending = true
+		soon.left = 0.7
+		soon.logged_name = "soon"
+		var handed: Array = [soon, late] if sooner_first else [late, soon]
+		model.step(Vector2.ZERO, handed)
+		var names := []
+		for b in model.announcing():
+			names.append(b.logged_name())
+		t.check(names == ["soon", "late"], "the warning with less time left is first, handed in either order (%s)" % str(names))
+
+func _test_every_badge_is_listed_soonest_arrival_first(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
-	for i in 5:
-		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
+	for i: int in [3, 0, 4, 1, 2]:
+		var v := _warned(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
 		v.logged_name = "v%d" % i
 		subjects.append(v)
-	for f in 40:
-		for v: BadgeModel.Subject in subjects:
-			v.position.x -= v.speed * STEP
-		_step(model, subjects)
+	_step(model, subjects)
 	var names := []
 	for b in model.announcing():
-		names.append(b["id"])
+		names.append(b.logged_name())
 	t.check(names == ["v0", "v1", "v2", "v3", "v4"], "all five, the soonest to arrive first (%s)" % str(names))
 
-func _test_a_subject_no_longer_handed_over_is_forgotten(t) -> void:
+## What forgetting shows: a warned thing seen once and then no longer handed over is forgotten, so
+## the model keeps nothing of things gone from the world. A thing handed over again under the same
+## key is what the game never makes (an instance id is never reused while the model runs), so the
+## check is the model's own: it holds no more keys than it is handed.
+func _test_a_subject_no_longer_handed_over_is_forgotten(t: TestRunner) -> void:
 	var model := BadgeModel.new()
-	var truck := _vehicle(7, Vector2(800.0, 0.0))
-	_step(model, [truck])
-	t.check(model.watch.has(7), "a handed-over subject has state")
+	var seen := _warned(7, Vector2(100.0, 0.0))
+	seen.logged_name = "seen"
+	_step(model, [seen])
+	t.check(not _up(model, "seen"), "a warned thing in sight has no badge")
 	_step(model, [])
-	t.check(not model.watch.has(7), "one no longer handed over is pruned")
-
-func _test_what_is_worth_an_arrow(t) -> void:
-	var walk := Tuning.WALK_SPEED
-	var s := _vehicle(1, Vector2.ZERO)
-	t.check(s.worth_an_arrow(walk), "lethal and fast")
-	s.telegraphs = false
-	t.check(not s.worth_an_arrow(walk), "a thing that does not telegraph is outside the badge")
-	s.telegraphs = true
-	s.has_icon = false
-	t.check(not s.worth_an_arrow(walk), "no silhouette, nothing to say")
-	s.has_icon = true
-	s.ahead_of_player = true
-	t.check(not s.worth_an_arrow(walk), "an ahead-of-her crossing is its own moment")
-	s.pursues = true
-	t.check(s.worth_an_arrow(walk), "except a pursuer")
-	var cyclist := _vehicle(2, Vector2.ZERO, walk + 10.0)
-	cyclist.hard_fail = false
-	t.check(cyclist.worth_an_arrow(walk), "faster than a walk")
-	cyclist.speed = walk - 10.0
-	t.check(not cyclist.worth_an_arrow(walk), "slower than a walk, not lethal: she can turn round")
+	seen.position = Vector2(900.0, 0.0)
+	_step(model, [seen])
+	t.check(_up(model, "seen"), "forgotten once it is gone, the same key out of sight is badged afresh")

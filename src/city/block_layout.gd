@@ -13,30 +13,108 @@ extends RefCounted
 ## The block's open ground: the whole lot for a park, a forest or a quiet square; the court
 ## for a courtyard block; empty for a plain built one. This is the rect whose tile type
 ## follows the purpose.
-var open_rect := Rect2i()
+var _open_rect := Rect2i()
 ## The playground inside a park. Only a park has one, and it goes with the park: a
 ## requisitioned park has no swings in it.
-var playground := Rect2i()
+var _playground := Rect2i()
 ## The market plaza carved out of a commercial block. Stays whatever happens to the block —
 ## paving does not care who is in charge.
-var square := Rect2i()
+var _square := Rect2i()
 ## The through-alley, if this block has one.
-var alley := Rect2i()
+var _alley := Rect2i()
 ## The archway from a courtyard out to the street. A court with no way in is a hole in the
 ## map, which is exactly what the first version of this was — the connectivity check caught
 ## it on every seed. It is paved as an alley on purpose: reaching hidden calm costs a few
 ## seconds of somewhere you would rather not be.
-var passage := Rect2i()
+var _passage := Rect2i()
 
 ## The same carves as a layout of its own (`CityMap.copy()`).
 func copy() -> BlockLayout:
 	var twin := BlockLayout.new()
-	twin.open_rect = open_rect
-	twin.playground = playground
-	twin.square = square
-	twin.alley = alley
-	twin.passage = passage
+	twin._open_rect = _open_rect
+	twin._playground = _playground
+	twin._square = _square
+	twin._alley = _alley
+	twin._passage = _passage
 	return twin
 
-static func has(rect: Rect2i) -> bool:
+## The block's open ground (`_open_rect`), empty for a plain built block.
+func open_ground() -> Rect2i:
+	return _open_rect
+
+## Whether the block has open ground.
+func has_open_ground() -> bool:
+	return _has(_open_rect)
+
+## Carves the block's open ground out of it at generation.
+func carve_open_ground(rect: Rect2i) -> void:
+	_open_rect = rect
+
+## The playground inside a park (`_playground`), empty on any other block.
+func playground_rect() -> Rect2i:
+	return _playground
+
+## Whether the block has a playground.
+func has_playground() -> bool:
+	return _has(_playground)
+
+## Carves the playground out of the park at generation.
+func carve_playground(rect: Rect2i) -> void:
+	_playground = rect
+
+## The market plaza of a commercial block (`_square`), empty on any other block.
+func square_rect() -> Rect2i:
+	return _square
+
+## Whether the block has a plaza.
+func has_square() -> bool:
+	return _has(_square)
+
+## Carves the plaza out of the block at generation.
+func carve_square(rect: Rect2i) -> void:
+	_square = rect
+
+## The through-alley (`_alley`), empty on a block with none.
+func alley_rect() -> Rect2i:
+	return _alley
+
+## Whether the block has a through-alley.
+func has_alley() -> bool:
+	return _has(_alley)
+
+## Carves the through-alley out of the block at generation.
+func carve_alley(rect: Rect2i) -> void:
+	_alley = rect
+
+## The archway from a courtyard to the street (`_passage`), empty on a block with none.
+func passage_rect() -> Rect2i:
+	return _passage
+
+## Whether the block has an archway.
+func has_passage() -> bool:
+	return _has(_passage)
+
+## Carves the archway out of the block at generation.
+func carve_passage(rect: Rect2i) -> void:
+	_passage = rect
+
+## The carves by name, each a tile rect, empty where the block has none: `open_rect`, `playground`,
+## `square`, `alley` and `passage`. What an authored scene saves of the block (`CityMap.capture()`)
+## and `restored()` makes the same layout from.
+func capture() -> Dictionary:
+	return {"open_rect": _open_rect, "playground": _playground, "square": _square, "alley": _alley,
+			"passage": _passage}
+
+## The layout `carves` describes, as `capture()` names them.
+static func restored(carves: Dictionary) -> BlockLayout:
+	var layout := BlockLayout.new()
+	layout._open_rect = carves["open_rect"]
+	layout._playground = carves["playground"]
+	layout._square = carves["square"]
+	layout._alley = carves["alley"]
+	layout._passage = carves["passage"]
+	return layout
+
+## Whether `rect` is a carve at all: an empty rect means the block has none of that.
+static func _has(rect: Rect2i) -> bool:
 	return rect.size.x > 0 and rect.size.y > 0

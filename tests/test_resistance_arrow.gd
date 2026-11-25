@@ -1,17 +1,28 @@
 extends "res://tests/resistance_rig.gd"
 ## The red arrow: what it points at, how it chooses and switches, and where every arrow ends.
 ##
-## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`) and plays the day it
-## asks about on it, so none leans on a step, a scar or a man shouting an earlier one left. What the
-## arrow has chosen is read the way the player reads it, from where its tip stands
+## Every test but four builds its city in a run of its own (`_build_city_in_a_new_run()`) and
+## plays the day it asks about on it, so none leans on a step, a scar or a man shouting an earlier
+## one left. What the arrow has chosen is read the way the player reads it, from where its tip stands
 ## (`ResistanceDirector.red_arrow_target()`) and what the street has there (`ResistanceReads`), with the
 ## contact (`contact()`, `contact_position()`) and what it rides (`rider()`); its choosing and
 ## sweeping are driven by `tick()`, the step `main` runs on every physics
 ## tick (`_settle_the_arrow()` below); and her touch is a real physics frame (`_step_a_frame()`).
+##
+## **A real city, for a stated reason**: the arrow chooses among marks, masts and doors that
+## stand on a day's real ground, planned by the day's events, so what it points at is a property
+## of the director, the events' plan and the map together. Four cases are not covered by this
+## reason and stand on the least (`_build_the_least_in_a_new_run()`: a cached map, a stand-in
+## for the day's events and no city): the three that stand men shouting in the street (the arrow choosing
+## by walking distance, switching as another target becomes closer, and leaving a freed instance at
+## once), which ask the arrow of the men and the map's bodies alone, and the one that checks the
+## contact draws from the library its director is handed. The men are real ones made by
+## `FakeEventManager.spawn_extra()`.
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
 	_test_an_arrow_exists_on_every_task_day(t)
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)
@@ -21,6 +32,7 @@ func run(t) -> void:
 	await _test_day_eleven_answers_at_any_live_mast(t)
 	await _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	await _test_the_swings_touch_is_the_ellipse_at_its_base(t)
+	_test_the_contact_draws_from_the_library_its_director_is_handed(t)
 	_free_city()
 
 ## Runs the arrow to rest the way the game does: the
@@ -33,7 +45,7 @@ func _settle_the_arrow(director: ResistanceDirector) -> void:
 ## Every built perform step earns the red arrow, the "any instance" ones (the man shouting, a
 ## roadblock) included. A mark never earns one, whichever task it unlocks. Each case plays its day
 ## on a city of its own.
-func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
+func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var mark_only := _director(t)
 	mark_only.start_day(6, _rng(6, "resistance"), 300.0)
@@ -61,7 +73,8 @@ func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
 	var task := van.current_step()
 	player.teleport_to(van.contact_position())
 	await _step_a_frame(t)
-	t.check(task != null and van.contact().is_done and van.red_arrow_target() == Vector2.INF,
+	t.check(task != null and van.contact().is_finished()
+			and van.red_arrow_target() == Vector2.INF,
 			"and it goes out once she has reached it")
 	player.free()
 	van.free()
@@ -69,12 +82,12 @@ func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
 
 ## plush-moose: an arrow exists on every task day, the any-instance days (6 and 13) and day 11's
 ## masts included, from the moment the mark is read, and the last night's from dawn.
-func _test_an_arrow_exists_on_every_task_day(t) -> void:
+func _test_an_arrow_exists_on_every_task_day(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	for day: int in range(6, Tuning.RUN_LENGTH_DAYS + 1):
-		run.attempt_spend.scars = []
-		run.resistance.progress = Tuning.RESISTANCE_GOAL if day == Tuning.RUN_LENGTH_DAYS else 0
-		run.resistance.sabotage_done = false
+		GivenRun.scars(run, [])
+		run.resistance().set_progress(Tuning.RESISTANCE_GOAL if day == Tuning.RUN_LENGTH_DAYS else 0)
+		GivenRun.sabotage(run, false)
 		var read := _read_the_mark_on(t, day, SEED) if day != Tuning.RUN_LENGTH_DAYS \
 				else _start_the_finale(t, SEED)
 		var director: ResistanceDirector = read[0]
@@ -91,9 +104,9 @@ func _test_an_arrow_exists_on_every_task_day(t) -> void:
 ## seal, no body standing — `before` tiles to its left and `after` to its right, for building a
 ## constructed case, or (-1, -1).
 func _open_run_for(before: int, after: int) -> Vector2i:
-	var map := _city.map
-	for y in range(8, map.size.y - 8):
-		for x in range(before + 1, map.size.x - after - 1):
+	var map := _least_map
+	for y in range(8, map.size_in_tiles().y - 8):
+		for x in range(before + 1, map.size_in_tiles().x - after - 1):
 			var open := true
 			for dx in range(-before, after + 1):
 				var tile := Vector2i(x + dx, y)
@@ -111,11 +124,11 @@ func _open_run_for(before: int, after: int) -> Vector2i:
 ## director ticked once, which is how the task comes to ride him (`tick()` retargets the contact onto
 ## the look-alike she is within reach of); then the day's own man, who rode the contact before, is
 ## retired along with the rest.
-func _yeller_arrow_case(t, before: int, after: int, offsets: Array) -> Array:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) -> Array:
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	var tile := _open_run_for(before, after)
-	var player := _rig_player(t, _city.map.tile_to_world(tile))
+	var player := _rig_player(t, _least_map.tile_to_world(tile))
 	director.use_player(player)
 	var men: Array[EventInstance] = []
 	if tile.x < 0:
@@ -124,21 +137,21 @@ func _yeller_arrow_case(t, before: int, after: int, offsets: Array) -> Array:
 		men.append(_put_a_yeller(tile + Vector2i(offset, 0)))
 	player.global_position = men[0].global_position
 	director.tick(STEP)
-	for instance in _city.events.instances():
-		if instance.def.id == "homeless_yeller" and instance not in men:
-			_city.events.retire(instance)
-	player.global_position = _city.map.tile_to_world(tile)
+	for instance in _least_events.instances():
+		if instance.row_id() == "homeless_yeller" and instance not in men:
+			_least_events.retire(instance)
+	player.global_position = _least_map.tile_to_world(tile)
 	return [director, player, tile, men]
 
 func _put_a_yeller(tile: Vector2i) -> EventInstance:
-	return _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
-			_city.map.tile_to_world(tile))
+	return _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+			_least_map.tile_to_world(tile))
 
 ## plush-moose, "closest here always means path closeness not crow closeness": a wall of standing
 ## bodies between her and the man who is nearer as the crow flies sends the arrow to the farther
 ## one she can walk to sooner. The wall goes up after the arrow has chosen, in the live record of
 ## bodies (`CityMap.obstruct_tiles()`), so this is also the arrow reading what blocks her now.
-func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
+func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t: TestRunner) -> void:
 	var made := _yeller_arrow_case(t, 15, 8, [6, -14])
 	var director: ResistanceDirector = made[0]
 	var player: Stroller = made[1]
@@ -158,15 +171,15 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 		for dy in range(-30, 31):
 			wall.append(here + Vector2i(3, dy))
 		var owner := get_instance_id()
-		_city.map.obstruct_tiles(owner, wall)
+		_least_map.obstruct_tiles(owner, wall)
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"behind a wall the arrow points at the one she can walk to sooner")
-		t.check(_city.events.points_at.call() == director.red_arrow_target(),
+		t.check(_least_events.world.surroundings().where_protests_point() == director.red_arrow_target(),
 				"and the protest cue points at the same chosen objective as the arrow")
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")
-		_city.map.release_obstruction(owner)
+		_least_map.release_obstruction(owner)
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) < 1.0,
 				"the wall taken down, the arrow goes back to the nearer one")
@@ -174,19 +187,19 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 		# (`CityMap.day_record_version`) rather than to the standing bodies, which the arrow's
 		# cached ground must also notice.
 		for tile in wall:
-			_city.map.seal_soft_tile(tile)
+			_least_map.seal_soft_tile(tile)
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"a wall of soft seals sent up after it has chosen sends the arrow to the one she can walk to")
-		_city.map.clear_day_soft_seals()
+		_least_map.clear_day_soft_seals()
 	player.free()
 	director.free()
-	_free_city()
+	_free_the_least()
 
 ## plush-moose, "might switch if another closest one comes close": as she walks the arrow moves to
 ## whichever target has become closer on foot, with a hold of `ARROW_HOLD_TILES` so two about-as-
 ## near ones do not make it flicker, and the tick moves it by itself.
-func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
+func _test_the_arrow_switches_as_another_target_becomes_closer(t: TestRunner) -> void:
 	var made := _yeller_arrow_case(t, 15, 15, [-6, 14])
 	var director: ResistanceDirector = made[0]
 	var player: Stroller = made[1]
@@ -199,29 +212,29 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 		t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 				"standing at the start the arrow points at the closer one")
 		# Walking east: the other becomes closer by more than the hold, and the tick moves it.
-		player.global_position = _city.map.tile_to_world(here + Vector2i(8, 0))
+		player.global_position = _least_map.tile_to_world(here + Vector2i(8, 0))
 		director.tick(ResistanceDirector.ARROW_RETARGET_SECONDS)
 		t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
 				"walking toward the other one, the arrow switches to it")
 		# Back to a spot about as near to both: it stays where it is.
-		player.global_position = _city.map.tile_to_world(here + Vector2i(4, 0))
+		player.global_position = _least_map.tile_to_world(here + Vector2i(4, 0))
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
 				"about as near to both, it does not flicker back")
 		# Ignoring the task and walking on west: it goes back to the first.
-		player.global_position = _city.map.tile_to_world(here + Vector2i(-4, 0))
+		player.global_position = _least_map.tile_to_world(here + Vector2i(-4, 0))
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 				"walking away from the task the arrow jumps to the closest on the other side")
 	player.free()
 	director.free()
-	_free_city()
+	_free_the_least()
 
 ## When the instance the arrow points at goes — freed as it streams out, the way
 ## `EventStreaming.stream_out()` frees it — asking for the arrow is still a read that answers a
 ## real place (the contact's own, never a freed one's and never (0, 0)), and the next frame points
 ## the arrow at a target that is still there.
-func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
+func _test_the_arrow_leaves_a_freed_instance_at_once(t: TestRunner) -> void:
 	# The contact rides the far man, as it rides a live man shouting all day.
 	var made := _yeller_arrow_case(t, 15, 15, [12, -4])
 	var director: ResistanceDirector = made[0]
@@ -235,10 +248,9 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near.global_position) < 1.0,
 				"the arrow is on the nearer man")
-		# Retired as the manager retires one, taken out of its list by the sweep, and then freed
-		# at once rather than at the frame's end: the arrow is asked about a freed man.
-		_city.events.retire(near)
-		_city.events.streaming.retire_finished()
+		# Retired as the manager retires one, and then freed at once rather than at the frame's end:
+		# the arrow is asked about a freed man.
+		_least_events.retire(near)
 		near.free()
 		var asked := director.red_arrow_target()
 		t.check(asked == director.contact_position() and asked != Vector2.ZERO,
@@ -251,20 +263,20 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 				"and stays there once the sweep without the freed one is done")
 	player.free()
 	director.free()
-	_free_city()
+	_free_the_least()
 
 ## The cell centres of the day's longest route, from the doorstep end out: the walk she takes, as
 ## `tests/test_route_bag.gd` walks it. A route names `ReachabilityGrid` cells, two tiles square, so
 ## a cell's centre is half a tile past its first tile's centre on both axes.
 func _longest_route_points() -> Array[Vector2]:
 	var longest: Array = []
-	for branch in _city.streets().route_tree().branches:
+	for branch in _city.streets().route_tree().branches():
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(_city.map.tile_to_world(longest[i] * ReachabilityGrid.CELL)
+		points.append(_city.map().tile_to_world(longest[i] * ReachabilityGrid.CELL)
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5))
 	return points
 
@@ -278,7 +290,7 @@ var _seconds_walked_to_the_route_mast := 0.0
 func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> String:
 	_seconds_walked_to_the_route_mast = 0.0
 	var path := _longest_route_points()
-	_city.events.use_player(player)
+	RunCity.events(_city).use_player(player)
 	if path.size() < 2:
 		return ""
 	var index := 0
@@ -287,11 +299,11 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 	var walked := 0.0
 	var step := 0.1
 	while walked < 600.0:
-		for plan in _city.events.plans():
-			if plan.def.role == EventDef.Role.MAST and plan.mast_id != "" \
-					and not at_the_mark.has(plan.mast_id):
+		for plan in RunCity.events(_city).plans():
+			if plan.is_a_mast() and plan.mast_id() != "" \
+					and not at_the_mark.has(plan.mast_id()):
 				_seconds_walked_to_the_route_mast = walked
-				return plan.mast_id
+				return plan.mast_id()
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
 		if next == Vector2.INF:
@@ -303,20 +315,20 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		_city.events.ahead.site_what_is_on_her_way(step)
-		_city.events.ahead.place_what_is_owed_ahead(step)
+		# The tick's stretch from her camera's view to what is owed, in the tick's own order.
+		RunCity.events(_city).step_what_is_ahead(step)
 		player.global_position += player.velocity * step
 		walked += step
 	return ""
 
 ## A tile beside `foot` she can stand on to touch the mast there, as `_place_at_a_mast()` asks it.
 func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
-	var foot_tile := _city.map.world_to_tile(foot)
+	var foot_tile := _city.map().world_to_tile(foot)
 	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var tile := foot_tile + side
-		if SpawnSiting.is_legal_ground(_city.map, tile, _walled_alleys()) \
-				and not _city.map.is_obstructed(tile):
-			return _city.map.tile_to_world(tile)
+		if SpawnSiting.is_legal_ground(_city.map(), tile, _walled_alleys()) \
+				and not _city.map().is_obstructed(tile):
+			return _city.map().tile_to_world(tile)
 	return Vector2.INF
 
 ## Day 11, through the real rig: reading the mark rigs a mast onto her route, and walking the
@@ -327,11 +339,11 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ##
 ## **The routed mast has a place on her route in every one of `DAY_ELEVEN_SEEDS`.** Every mast is
 ## exempt from the three rules that keep a line along her routes
-## (`Planned.counts_against_the_line()`; inbox #684 in coral-lark), so the walk down the longest route puts it
+## (`EventPlan.counts_against_the_line()`; inbox #684 in coral-lark), so the walk down the longest route puts it
 ## down in every city. The suite's own city is walked in full; the others are asked the one question
-## the walk asks, `WalkSiting.ahead_of()` from points along the longest route, without walking, which
+## the walk asks, `WalkSiting.lay_ahead()` from points along the longest route, without walking, which
 ## keeps six cities as cheap as one. A city that fails fails here rather than being skipped.
-func _test_day_eleven_answers_at_any_live_mast(t) -> void:
+func _test_day_eleven_answers_at_any_live_mast(t: TestRunner) -> void:
 	var routed_on := [-1]
 	var missed: Array[int] = []
 	for seed_value: int in DAY_ELEVEN_SEEDS:
@@ -350,22 +362,25 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 			% [DAY_ELEVEN_SEEDS, missed])
 	_free_city()
 
-## Whether `WalkSiting.ahead_of()` finds the routed mast a place from some point along the day's
+## Whether `WalkSiting.lay_ahead()` finds the routed mast a place from some point along the day's
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
+## The siting is the game's, made by the maker the events are handed (`SitingMaker`) over the day's
+## tree and the ground the walk carries.
 func _a_mast_can_be_sited_along_her_route() -> bool:
-	var siting: EventScheduler.WalkSiting = _city.events.ahead.walk_siting()
-	var def: EventDef = _city.events.ahead.director().route_row(EventCatalogue.mast().id)
-	# The band the director sites the walk's events in: from the streaming edge to the sight of a
-	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
-	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
+	var events := RunCity.events(_city)
+	var siting := SitingMaker.new(events.world, events.walk_events()).make(
+			11, _city.streets().route_tree(), events.walk_events().ground())
+	var def: EventDef = events.route_row(EventCatalogue.mast().id())
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()
-		if heading != Vector2.ZERO and siting.ahead_of(def, rng, _city.events.plans(), path[i],
-				heading, near, far) != null:
+		if heading == Vector2.ZERO:
+			continue
+		var mast := EventPlan.new(def, Vector2.INF)
+		siting.begin_look(path[i], heading)
+		var laid := siting.lay_ahead(mast)
+		siting.end_look()
+		if laid:
 			return true
 	return false
 
@@ -376,24 +391,24 @@ const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 314159, 555555, 8675
 
 ## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
 ## once its walk has put the routed mast down, and checks the rest only then.
-func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -> void:
+func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_on: Array) -> void:
 	var read := _read_the_mark_on(t, 11, seed_value)
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]
 	var step := director.current_step()
-	var near := ResistanceReads.mast_at(director, _city.events)
+	var near := ResistanceReads.mast_at(director, RunCity.events(_city))
 	t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
-	var before := [director.red_arrow_target(), ResistanceReads.mast_at(director, _city.events),
+	var before := [director.red_arrow_target(), ResistanceReads.mast_at(director, RunCity.events(_city)),
 			director.contact_position()]
 	var asked := director.red_arrow_target()
 	t.check(asked == director.contact_position()
-			and [director.red_arrow_target(), ResistanceReads.mast_at(director, _city.events),
+			and [director.red_arrow_target(), ResistanceReads.mast_at(director, RunCity.events(_city)),
 			director.contact_position()] == before,
 			"asking for the arrow chooses nothing and moves no contact")
 	var at_the_mark := {}
-	for plan in _city.events.plans():
-		if plan.mast_id != "":
-			at_the_mark[plan.mast_id] = true
+	for plan in RunCity.events(_city).plans():
+		if plan.mast_id() != "":
+			at_the_mark[plan.mast_id()] = true
 	var routed := _walk_until_the_route_mast(at_the_mark, player)
 	if routed == "" or step == null:
 		player.free()
@@ -405,50 +420,50 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 	# being where the task was put; each other live mast she can stand beside is asked in turn.
 	var answering: Array[String] = [near]
 	var third := ""
-	for plan in _city.events.plans():
-		if plan.mast_id == "" or plan.mast_id == near or plan.silenced:
+	for plan in RunCity.events(_city).plans():
+		if plan.mast_id() == "" or plan.mast_id() == near or plan.is_silenced():
 			continue
-		var beside := _beside_the_mast(director, _city.events.mast_foot(plan.mast_id))
+		var beside := _beside_the_mast(director, RunCity.events(_city).mast_foot(plan.mast_id()))
 		if beside == Vector2.INF:
 			continue
 		player.global_position = beside
 		director.tick(STEP)
-		if ResistanceReads.mast_at(director, _city.events) == plan.mast_id:
-			answering.append(plan.mast_id)
-			if plan.mast_id != routed:
-				third = plan.mast_id
+		if ResistanceReads.mast_at(director, RunCity.events(_city)) == plan.mast_id():
+			answering.append(plan.mast_id())
+			if plan.mast_id() != routed:
+				third = plan.mast_id()
 	t.check(near in answering and routed in answering and third != "",
 			"the near mast, the routed one and a third all answer (%s)" % [answering])
 	if third == "":
 		player.free()
 		director.free()
 		return
-	var third_foot := _city.events.mast_foot(third)
+	var third_foot := RunCity.events(_city).mast_foot(third)
 	# The task is on the routed mast, with her beside it, and the next choice is not yet made.
-	var routed_foot := _city.events.mast_foot(routed)
+	var routed_foot := RunCity.events(_city).mast_foot(routed)
 	player.global_position = _beside_the_mast(director, routed_foot)
 	director.tick(STEP)
 	player.global_position = _beside_the_mast(director, third_foot)
 	t.check(director.red_arrow_target().distance_to(routed_foot) < 1.0
-			and ResistanceReads.mast_at(director, _city.events) == routed,
+			and ResistanceReads.mast_at(director, RunCity.events(_city)) == routed,
 			"before the next choice the arrow and task still point at the mast they were on")
 	director.tick(STEP)
 	t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
-			and ResistanceReads.mast_at(director, _city.events) == third,
+			and ResistanceReads.mast_at(director, RunCity.events(_city)) == third,
 			"following her between masts moves the task to the one she actually touches")
 	await _step_a_frame(t)
-	t.check(step.index in _city.run.resistance.completed_steps,
+	t.check(step.index in _run.resistance().completed_steps(),
 			"touching the third mast completes the task")
 	var silenced := {}
-	for plan in _city.events.plans():
-		if plan.mast_id in [near, routed, third]:
-			silenced[plan.mast_id] = plan.silenced
+	for plan in RunCity.events(_city).plans():
+		if plan.mast_id() in [near, routed, third]:
+			silenced[plan.mast_id()] = plan.is_silenced()
 	t.check(silenced.get(third, false) and not silenced.get(near, true)
 			and not silenced.get(routed, true),
 			"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
 	var scarred := []
-	for scar: Dictionary in _city.run.attempt_spend.scars:
-		if String(scar["id"]) == EventScheduler.SILENCED_MAST:
+	for scar: Dictionary in _run.attempt_spend().scars():
+		if String(scar["id"]) == DawnMasts.SILENCED_MAST:
 			scarred.append(scar["position"])
 	t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
 			"and the one scar is that mast's foot")
@@ -456,7 +471,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 	director.free()
 
 ## A single-target task keeps its arrow on its contact exactly, retargeting or not.
-func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
+func _test_a_single_target_arrow_stays_on_its_contact(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 7, SEED)
 	var van: ResistanceDirector = read[0]
@@ -478,15 +493,15 @@ func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
 ## from some standable, reachable tile near it (day 9 is crossed instead, and its own test is
 ## below). Before, the arrow ended beside the mast (32px), on the swing's tile centre, on a pavement
 ## tile in front of the station door and on the middle of the district door's street.
-func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
+func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t: TestRunner) -> void:
 	var checked := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		var run := _build_city_in_a_new_run(t, seed_value)
 		for day: int in [7, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
-			run.attempt_spend.scars = []
-			run.resistance.progress = Tuning.RESISTANCE_GOAL \
-					if day == Tuning.RUN_LENGTH_DAYS else 0
-			run.resistance.sabotage_done = false
+			GivenRun.scars(run, [])
+			run.resistance().set_progress(Tuning.RESISTANCE_GOAL \
+					if day == Tuning.RUN_LENGTH_DAYS else 0)
+			GivenRun.sabotage(run, false)
 			var read := _read_the_mark_on(t, day, seed_value) if day != Tuning.RUN_LENGTH_DAYS \
 					else _start_the_finale(t, seed_value)
 			var director: ResistanceDirector = read[0]
@@ -513,19 +528,19 @@ func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
 
 ## The finale on the test city in the real day order, the goal met: `[director, Vector2.INF, her
 ## rig]`, the shape `_read_the_mark_on()` answers, the finale having no mark.
-func _start_the_finale(t, seed_value: int) -> Array:
+func _start_the_finale(t: TestRunner, seed_value: int) -> Array:
 	var day := Tuning.RUN_LENGTH_DAYS
-	_city.run.resistance.completed_steps = _all_but_the_finale()
-	_city.run.facts.completed_resistance_alley_tiles = []
-	var state := CityState.new()
-	_city.run.attempt_spend.city_state = state
-	state.begin_day(_city.map.block_plans, day)
+	GivenRun.completed_steps(_run, _all_but_the_finale())
+	GivenRun.alley_tiles(_run, [])
+	var state := _run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
-			_city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+			_city.map().doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
-	var player := _rig_player(t, _city.map.doorstep_world_position())
+	var player := _rig_player(t, _city.map().doorstep_world_position())
 	director.use_player(player)
 	return [director, Vector2.INF, player]
 
@@ -539,28 +554,50 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 			return director.rider().global_position if director.rider() else Vector2.INF
 		ResistanceSteps.TargetKind.DOOR:
 			var nearest := Vector2.INF
-			for body in _city.streets().region_plan().door_bodies:
-				if body.def.redetains and (nearest == Vector2.INF or body.position.distance_to(
+			for body in _city.streets().region_plan().door_plans():
+				if body.detains_again() and (nearest == Vector2.INF or body.placed_at().distance_to(
 						director.contact_position()) < nearest.distance_to(director.contact_position())):
-					nearest = body.position
+					nearest = body.placed_at()
 			return nearest
 		ResistanceSteps.TargetKind.MAST:
-			return _city.events.mast_foot(ResistanceReads.mast_at(director, _city.events))
+			return RunCity.events(_city).mast_foot(ResistanceReads.mast_at(director, RunCity.events(_city)))
 		ResistanceSteps.TargetKind.PARK_SWING:
-			var layout: BlockLayout = _city.map.block_layouts.get(CityGenerator.swing_park(_city.map))
-			return _city.map.swing_position(layout.playground) if layout else Vector2.INF
+			var layout: BlockLayout = _city.map().layout_of(CityGenerator.swing_park(_city.map()))
+			return _city.map().swing_position(layout.playground_rect()) if layout else Vector2.INF
 		ResistanceSteps.TargetKind.STATION_DOOR:
-			var door := _city.map.power_station_door_position()
+			var door := _city.map().power_station_door_position()
 			return Vector2(door.x, door.y - Tuning.TILE_SIZE)
 	return Vector2.INF
 
+## **The contact asks the library its director is handed** for its picture's page, not a library of
+## its own: the director is handed a recording one (`ResistanceDirector.use_atlas()`) before the day
+## starts, and the contact it offers has asked it, which a contact handed none would not have.
+func _test_the_contact_draws_from_the_library_its_director_is_handed(t: TestRunner) -> void:
+	_build_the_least_in_a_new_run(t)
+	var recording := RecordingAtlas.new()
+	_handed_atlas = recording
+	var director := _director_on_the_least(t)
+	_handed_atlas = null
+	director.start_day(7, _rng(7, "resistance"), 300.0)
+	t.check(director.contact() != null and director.contact().is_inside_tree(),
+			"the day offers a contact standing in the world")
+	t.check(recording.acquired_from("res://src/resistance/contact_point.gd") >= 1,
+			"the contact asked the director's library for its page (%d)"
+			% recording.acquired_from("res://src/resistance/contact_point.gd"))
+	director.free()
+	_free_the_least()
+
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,
-## the extent of the shadow the frame casts there (the ground shape a swing frame `Prop` takes as it
-## enters the tree, `Prop.shape`): the contact the director offers on day 12 carries that ellipse as
-## its `touch_ellipse`, and from eight bearings, standing with her edge a pixel inside the ellipse's
-## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
-func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
+## whose semi-axes are half the frame's picture's width and half its height (so it spans the
+## picture), read off the region table and not off
+## the frame's shadow, so the shadow lying under the frame's feet leaves day 12 no harder: the
+## contact the director offers on day 12 carries that ellipse as its `touch_ellipse`, and from
+## eight bearings, standing with her edge a pixel inside the ellipse's outline completes it, at each
+## side and each corner, and standing two pixels clear of it does not. The frame's shadow, one oval
+## under each A-frame (`Prop.shadow_outlines()`), lies inside the ellipse, so stepping onto it
+## completes the task.
+func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 12, SEED)
 	var director: ResistanceDirector = read[0]
@@ -573,14 +610,14 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 		player.free()
 		director.free()
 		return
-	var semi := contact.touch_ellipse
 	var frame := Prop.new()
-	frame.kind = Prop.Kind.PLAYGROUND_FRAME
+	frame.dress(null, Prop.Kind.PLAYGROUND_FRAME)
 	t.add_child(frame)
-	var shadow := frame.shape
+	var shadow := frame.shadow_outlines(Vector2.ZERO)
 	frame.free()
-	t.check(is_equal_approx(semi.x, shadow.reach()) and is_equal_approx(semi.y, shadow.across()),
-			"the ellipse spans the shadow the frame casts at its base (%s)" % semi)
+	# The places are derived from the frame's picture, the ellipse spanning its base; the contact is
+	# asked about them below, which only answers right if it carries that ellipse.
+	var semi := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME)) * 0.5
 	var places: Array[Vector2] = []
 	for i in 8:
 		var angle := TAU * float(i) / 8.0
@@ -588,7 +625,7 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 		var outward := Vector2(cos(angle) / semi.x, sin(angle) / semi.y).normalized()
 		places.append(contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS - 1.0))
 		places.append(contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS + 2.0))
-	var touched := await ContactTouches.touches_from(t, director, places)
+	var touched := ContactTouches.touches_from(director, places)
 	var touching := 0
 	var clear := 0
 	for i in 8:
@@ -599,5 +636,17 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 	t.check(touching == 8, "her body overlapping the swing's base ellipse completes it on every side and corner (%d of 8)" % touching)
 	t.check(clear == 8, "and two pixels clear of it, on every side and corner, does not (%d of 8)" % clear)
 	t.check(semi.x > semi.y and semi.y > 0.0, "the base is wider than it is deep, as the frame stands side-on")
+	var inside := 0
+	for outline in shadow:
+		var within := outline.size() > 0
+		for point in outline:
+			if (point.x * point.x) / (semi.x * semi.x) + (point.y * point.y) / (semi.y * semi.y) \
+					> 1.0 + 1e-4:
+				within = false
+		if within:
+			inside += 1
+	t.check(shadow.size() == 2 and inside == 2,
+			"the frame's shadow is an oval under each A-frame, both inside the spot (%d of %d)"
+			% [inside, shadow.size()])
 	player.free()
 	director.free()

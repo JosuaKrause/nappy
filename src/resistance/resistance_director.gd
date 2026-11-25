@@ -100,10 +100,10 @@ const NO_TILE := Vector2i(-1, -1)
 ## walking away from him afterward costs rather than being free the instant the note changes hands.
 ##
 ## **Chosen so the total plateaus near an ordinary pass, not so it is timed to hit one.** Walking
-## away from his `inner_radius` at `Tuning.WALK_SPEED` clears his `outer_radius` (210px, past which
-## his source's `ExcitementSource.contribution_at()` answers zero) in a little over two seconds;
-## this sits past that clearing point with a margin, so the total lands wherever the field's own
-## falloff already plateaus rather than depending on catching an exact frame.
+## away from his core (`EventDef.core_within()`) at `Tuning.WALK_SPEED` clears his `outer radius`
+## (210px, past which his source's `ExcitementSource.contribution_at()` answers zero) in a little
+## over two seconds; this sits past that clearing point with a margin, so the total lands wherever
+## the field's own falloff already plateaus rather than depending on catching an exact frame.
 ## `tests/probes/m205_note_handover.gd` measures the plateau at ~11.1 points awake and ~-3.2 asleep
 ## against an ordinary pass's own ~11.1/~-3.2 (`M174Pass.pass_net_averaged()` at 0px) — felt, open
 ## to overturn against a played day rather than against that printout.
@@ -129,6 +129,11 @@ var _atlas: AtlasLibrary
 ## Where a pursuer the director sends at her may start (`SpawnSiting`), handed in by `setup()`: the
 ## rules a start is held to and the searches that answer one (`_draw_arrival_position()`).
 var _spawn_siting: SpawnSiting
+## The walk's events (`WalkEvents`), the day's events' own (`EventManager.walk_events()`), from `setup()`.
+var _walk: WalkEvents
+## Builds a plan at a tile (`PlanBuilder`), the day's events' own (`EventManager.plan_builder()`),
+## from `setup()`; null for a rig with no events.
+var _builder: PlanBuilder
 var _contact: ContactPoint
 ## The mark's own touched `ContactPoint`, once she has read it — kept alive rather than freed the
 ## instant `_begin_step()` activates the perform it unlocks, so `chalk_mark_touched.svg` keeps
@@ -218,6 +223,14 @@ var _task_guard_found_nothing_for: Array = []
 var _task_guard_found_nothing_age := 0.0
 ## How long a failed search stands before it is made again: longer than the camera takes to settle.
 const TASK_GUARD_RETRY_SECONDS := 3.0
+## **The way she came to each roadblock from, decided once** (inbox #1185 in gentle-owl): the roadblock's place
+## (`_approach_key()`, the tile its body stands on) to the line from its body to her, as she stood
+## the first frame it was drawn on screen while it was the roadblock she approached
+## (`_note_her_approach()`). Keyed by the place its plan put it rather than by the instance, since a
+## roadblock that streams out and back in is a new instance of the same plan. Which side of it the
+## guard stands on reads it (`_approach_to()`), so the side does not change while she walks.
+## Emptied with the day.
+var _approaches := {}
 ## The stream the task guard's moves are drawn from — its own, seeded from the day's, so how often
 ## she changes target and how long a move waits on her view move nothing the day's own stream
 ## decides.
@@ -238,22 +251,43 @@ var _happenings := ResistanceHappenings.new()
 var _steps: Array[ResistanceSteps.Step] = ResistanceSteps.all()
 
 ## Where this director writes its own account of what it placed and why, for the run log — handed
-## in before `setup()`, which passes it on to the happenings; silent until then.
-var trace := RunTrace.new()
+## in by `use_trace()` before `setup()`, which passes it on to the happenings; silent until then.
+var _trace := RunTrace.new()
 
-## The day's own reachability answer, built lazily (`_ensure_reachability()`) the first time a
-## placement asks it and kept for the rest of the day — cleared in `start_day()` so a new day
-## never reads yesterday's obstruction. `ReachabilityGrid.build()` is cheap enough to do once a
-## day (`DayRepairs.ensure_the_city_is_still_walkable()`'s own doc says the same); this
-## director asks the same grid the same way, not a second implementation of it.
-var _reach_grid: ReachabilityGrid
-## `EventScheduler.blocked_by()`'s own set: today's closures plus every placed, obstructing or
-## hard-fail plan's own disc — the whole day's obstruction, exactly as it stands when this
-## director places, per M188's item 3.
-var _reach_blocked: Dictionary
-## `_reach_grid.flood()`'s own answer for `_reach_blocked`, from the home block — kept so
-## `reaches()` never has to recompute the dirty-cell set flood() already built.
-var _reach_reached: Dictionary
+## Hands the director the trace its account is written to, before `setup()`: `main` hands the
+## boot's run trace.
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
+
+## The signals the resistance reports on (`EventBus`'s script), so the bus it is handed has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## The bus a contact on offer and a chalk mark noticed are said on, handed in by `use_bus()`; none,
+## and the director tells nobody.
+var _bus: _BUS
+
+## Hands the director the bus it reports on, and on to its happenings, whose park cordon says she
+## is shut in on it: `main` hands the `EventBus` autoload, before `setup()`. A bus is handed
+## before the park is taken, since a cordon already standing is not handed one.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
+	_happenings.use_bus(bus)
+
+## Where she can get to from home today, for a walk the events started with none (`_reach()`): a
+## rig's, which places on a map no walk was started over. Built the first time it is asked, and
+## cleared in `start_day()`.
+var _own_reach: DayReach = null
+## **The ground she is sent to for the place being fixed**: the tile she stands on to touch the
+## contact, named by whichever search fixed the place (the tile a pick was made on, the tile
+## beside a mast's foot, the tile a roadblock is touched from, the frontage below a door, the
+## neighbor's start), and asked at the one point a step's contact is stood (`_begin_step()`,
+## `_she_can_be_sent_to()`). `NO_TILE` until a search names one, and a place no search named
+## ground for is refused there.
+var _ground := NO_TILE
+## The ground she can be sent to, as asked so far today (`tile -> true`,
+## `_she_can_be_sent_to()`): a place that passed keeps its way, since nothing drawn later reaches
+## it, so the point that stands a contact does not ask again what the search before it asked.
+## Emptied with the day.
+var _cleared := {}
 ## Every alley mouth of `_mouths_of` (`_alley_mouths()`), built the first time a mark asks.
 var _mouths: Array[Vector2i] = []
 var _mouths_of: CityMap
@@ -262,7 +296,7 @@ var _mouths_of: CityMap
 var _mark_tiles_of_mouths: Array[Vector2i] = []
 
 ## Hands the director the art's pages its marks and its happenings' cordon draw from — the city's
-## own (`City.atlas`), handed by `main` before `setup()`, which hands it on to the happenings. A
+## own (`City.atlas()`), handed by `main` before `setup()`, which hands it on to the happenings. A
 ## director handed none draws each mark from a library of the mark's own.
 func use_atlas(atlas: AtlasLibrary) -> void:
 	_atlas = atlas
@@ -270,10 +304,11 @@ func use_atlas(atlas: AtlasLibrary) -> void:
 ## Hands the director the map it places on, the run it belongs to, the day's events, today's
 ## streets, the fronts its tasks and happenings change and the world its marks are drawn in — the
 ## city's own, from `main`, or null for each but the map and the run for a rig that places on a map
-## alone — the navigator its happenings move by — the city's own (`City.navigator`), or the map's
-## own (`WorldMap.navigator()`) for a rig that hands none — and where a pursuer it sends may start:
+## alone — the navigator its happenings move by — the city's own (`City.navigator()`), or one over the
+## map (`Navigator.new(map)`) for a rig that hands none — and where a pursuer it sends may start:
 ## `spawn_siting`, the city's own, or, for a rig that hands none, one over `map` that sees the
 ## events' view and the streets' region where there are events and streets and neither where not.
+## The walk's events and the plan builder are the events' own, or none for a rig with no events.
 func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreets,
 		fronts: CityFronts, world: WorldContext, navigator: Navigator = null,
 		spawn_siting: SpawnSiting = null) -> void:
@@ -283,7 +318,9 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_streets = streets
 	_fronts = fronts
 	_world = world
-	var moves_by := navigator if navigator else map.navigator()
+	_walk = events.walk_events() if events else WalkEvents.new()
+	_builder = events.plan_builder() if events else null
+	var moves_by := navigator if navigator else Navigator.new(map)
 	if spawn_siting:
 		_spawn_siting = spawn_siting
 	else:
@@ -295,12 +332,26 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	# A protest's placards point where this director's red arrow does (`_pointable_objective()`):
 	# the day's events are handed the question rather than looking the director up.
 	if events:
-		events.points_at = _pointable_objective
+		events.use_protest_target(_pointable_objective)
 	_mark_drawn = _spawn_siting.ask_of_drawing(MARK_BOX)
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
-	_happenings.trace = trace
+	_happenings.use_trace(_trace)
 	_happenings.setup(map, _run, events, streets, fronts, world, _atlas, moves_by, _spawn_siting)
+
+# -------------------------------------------------------------------- telling ---
+# What the director says on its bus, one place a signal: with no bus handed (`use_bus()`) it tells
+# nobody.
+
+## That today's step has a contact on offer somewhere in the city.
+func _tell_a_contact_is_on_offer() -> void:
+	if _bus:
+		_bus.resistance_contact_available.emit(_step.index)
+
+## That she has noticed today's chalk mark.
+func _tell_the_mark_was_seen() -> void:
+	if _bus:
+		_bus.resistance_mark_seen.emit(_step.index)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
 ## a neighbor placed out of sight of and a task's arrow pointed from.
@@ -352,26 +403,18 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_task_guard_found_nothing_for = []
 	_task_guard_found_nothing_age = 0.0
 	_task_guard_moves = null
+	_approaches = {}
 	_taken_neighbor = null
-	# Rebuilt lazily on the first placement that asks — see `_ensure_reachability()` — rather than
-	# here, so a rig that never places anything today never pays for a grid it never needed.
-	_reach_grid = null
-	_reach_blocked = {}
-	_reach_reached = {}
+	_own_reach = null
+	_cleared = {}
 	# A fresh attempt at the day starts without the package, whether this is the first try
-	# or a retry after a nerve — see _run.resistance.carrying_package.
-	_run.resistance.carrying_package = false
+	# or a retry after a nerve — see _run.resistance().is_carrying_package().
+	_run.resistance().put_down_package()
 	_happenings.start_day(day, not _scene_task)
 
-	var step := ResistanceSteps.for_day(day, _run.resistance.completed_steps,
-			_run.resistance.failed_steps, _run.sabotage_available(), _steps)
+	var step := ResistanceSteps.for_day(day, _run.resistance().completed_steps(),
+			_run.resistance().failed_steps(), _run.sabotage_available(), _steps)
 	_begin_step(step, true)
-	# Day 13's roadblock is placed under the day's rules the moment she reads the mark; the scans that
-	# placement needs once a day are done now, at dawn, rather than on that frame.
-	var task := ResistanceSteps.by_index(step.index + 1, _steps) if step and step.is_pickup \
-			else null
-	if task and task.is_a_guarded_band and _events:
-		_events.prepare_a_task_row(EventCatalogue.by_id(task.task_event_id))
 
 ## **A scene recipe's task** (`SceneRecipeRuntime`, `setup.task`; `docs/SCENE_RECIPES.md`): the
 ## day's own step, offered the way `start_day()` offers it, except that the chalk mark stands at
@@ -446,6 +489,7 @@ func _the_pinned_mark() -> Vector2:
 	if refusal != "":
 		_scene_task_errors.append("setup.task.mark %s %s" % [_pinned_mark, refusal])
 		return Vector2.INF
+	_ground = tile
 	return _pinned_mark
 
 ## Places `step`'s own contact and offers it — a mark at dawn, or the perform half it unlocks a
@@ -463,6 +507,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	_forget_the_arrow()
 	if not _step:
 		return
+	_ground = NO_TILE
 
 	var scar_instance: EventInstance = null
 	var no_recorded_scar := false
@@ -477,7 +522,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			# a front day 3's fire could have caught on, and `_burn_a_front_for_the_task()`
 			# below records the scar there and burns the building behind it — never a step with
 			# nowhere to go, and never bare sidewalk.
-			trace.note("contact", ("step %d: no recorded scar for '%s' — a front the " +
+			_trace.note("contact", ("step %d: no recorded scar for '%s' — a front the " +
 					"fire could have caught on stands in for it") % [_step.index,
 					_step.task_event_id])
 
@@ -487,13 +532,15 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# The mark she has just read, when this is the task it unlocks: the task is placed near it
 	# (`NEAR_THE_MARK`). `Vector2.INF` at dawn, for a mark or the last night, which have none.
 	var mark := Vector2.INF
-	if _contact and is_instance_valid(_contact) and _contact.step != null \
-			and _contact.step.is_pickup:
+	if _contact and is_instance_valid(_contact) and _contact.task_step() != null \
+			and _contact.task_step().is_pickup:
 		mark = _contact.global_position
+	var her := _she_stands_at(mark)
 	var at: Vector2
-	# Day 13's roadblock, when one can be placed the way the day places one near the mark.
+	# Day 13's roadblock is one the day placed, or one put across a section in place of what it held;
+	# nothing is added in the walk (`_place_the_roadblock_near()`).
 	var placed_row: EventInstance = null
-	if _step.is_a_guarded_band and mark != Vector2.INF:
+	if _step.is_a_guarded_band:
 		placed_row = _place_the_roadblock_near(mark)
 	if scar_instance:
 		at = scar_instance.global_position
@@ -501,11 +548,30 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		at = neighbor.global_position
 	elif _step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR:
 		at = Vector2.INF
-	elif placed_row:
-		at = placed_row.global_position
+	elif _step.is_a_guarded_band:
+		at = placed_row.global_position if placed_row else Vector2.INF
 	else:
 		at = _place_contact(_step, _rng, mark)
+	# Day 8's contact stands on the door of the burnt building, which is touched from the
+	# frontage below it (`_the_door_behind()`).
+	var door := Vector2.INF
+	if at != Vector2.INF and _step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		door = _the_door_behind(at, her)
+	# **The one point a step's contact is stood, whichever search fixed its place**: the ground
+	# she is sent to (`_ground`) is asked by where it stands (`_she_can_be_sent_to()`), and
+	# asked before the contact is stood. What a search already put in the street stays (a mast
+	# near her, day 13's roadblock) or is retired on a refusal (day 10's neighbor). A place
+	# whose search asked already has its answer kept; one that named no ground is refused.
+	# **A refusal is a step with nowhere to go today**, as an empty pool is: no contact, no
+	# arrow, the step neither done nor failed.
+	if at != Vector2.INF and not _she_can_be_sent_to(_ground, her, _nothing_stands_on):
+		_trace.note("contact", "step %d: no way stands to %s over ground that has drawn; it has no place"
+				% [_step.index, "the place it was given" if _ground == NO_TILE
+				else RunTrace.tile(_ground)])
+		at = Vector2.INF
 	if at == Vector2.INF:
+		if neighbor:
+			_events.retire(neighbor)
 		# A scene's task says why in what `start_recipe_task()` answers instead.
 		if not _scene_task:
 			push_warning("resistance step %d has nowhere to go in this city" % _step.index)
@@ -518,19 +584,19 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# mark should vanish at once or stay, "Stays crossed, until the day ends". Anything else is
 	# freed.
 	if _contact and is_instance_valid(_contact):
-		if _contact.step != null and _contact.step.is_pickup:
+		if _contact.task_step() != null and _contact.task_step().is_pickup:
 			_read_mark = _contact
 		else:
 			_contact.queue_free()
 	_contact = ContactPoint.new()
-	_contact.atlas = _atlas
+	_contact.use_atlas(_atlas)
 	_contact.use_player(_player)
 	if neighbor:
 		_rider = neighbor
 		_contact.ride(_step, neighbor, Vector2.ZERO)
 	elif scar_instance:
 		_rider = scar_instance
-		_ride_to_the_door(scar_instance)
+		_ride_to_the_door(scar_instance, door)
 		at = _contact.global_position
 	elif _step.is_pickup or ResistanceSteps.sits_on_a_bare_point(_step):
 		_contact.setup(_step, at)
@@ -543,11 +609,11 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_step = null
 			_contact = null
 			return
-		_rider = placed_row if placed_row else _events.spawn_extra(task_def, at)
+		_rider = placed_row if _step.is_a_guarded_band else _events.spawn_extra(task_def, at)
 		if no_recorded_scar:
 			_burn_a_front_for_the_task(_rider)
 		if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
-			_ride_to_the_door(_rider)
+			_ride_to_the_door(_rider, door)
 		else:
 			_contact.ride(_step, _rider, Vector2.ZERO)
 		at = _contact.global_position
@@ -559,14 +625,14 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# `tick()` moves it to the closest on foot once the first sweep has finished.
 	if ResistanceSteps.answers_at_several_places(_step):
 		_arrow_key = _contact_key()
-	EventBus.resistance_contact_available.emit(_step.index)
-	trace.note("contact", "step %d on offer at %s" % [
+	_tell_a_contact_is_on_offer()
+	_trace.note("contact", "step %d on offer at %s" % [
 		_step.index, RunTrace.tile(_map.world_to_tile(at))])
 	if mark != Vector2.INF:
 		var target := red_arrow_target()
 		if target == Vector2.INF:
 			target = _rider.global_position if _rider else at
-		trace.note("contact", "step %d stands %.0fpx from the mark it was read at" % [
+		_trace.note("contact", "step %d stands %.0fpx from the mark it was read at" % [
 			_step.index, mark.distance_to(target)])
 
 	# A guard stands where a mark or a roadblock waits (`_keeps_a_waiting_guard()`). Every other task
@@ -590,17 +656,21 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# (`ContactPoint.touches_the_body()`), and the guard's band is worked out from that.
 	if _keeps_a_waiting_guard(_step):
 		var guarded_at := at
-		var guarded_reach := _contact.reach
+		var guarded_reach := _contact.touch_reach()
+		var approach := Vector2.ZERO
 		if _rider and ContactPoint.has_a_body(_rider) and _step.target_kind \
 				== ResistanceSteps.TargetKind.EVENT:
 			guarded_at = _rider.body_position()
 			guarded_reach = _body_touch_reach(_rider)
+			if _step.is_a_guarded_band:
+				_note_her_approach(_rider)
+				approach = _approach_to(_rider, _player_position())
 		if at_dawn:
 			_maybe_set_a_trap(_day, _rng, guarded_at, _step.is_pickup,
 					_map.doorstep_world_position(), false, guarded_reach)
 		else:
 			_maybe_set_a_trap(_day, _rng, guarded_at, _step.is_pickup, _player_position(), true,
-					guarded_reach)
+					guarded_reach, approach)
 		if not _step.is_pickup and _task_guard and _rider:
 			_task_guard_over = _rider.get_instance_id()
 			_task_guard_in_band = _step.is_a_guarded_band \
@@ -624,48 +694,37 @@ static func _body_touch_reach(instance: EventInstance) -> float:
 ##   `_on_door_crossed()`): *"Should trigger on the action not on a proximity test"*;
 ## - **day 11's mast** within its body reach (`ContactPoint.body_reach()`'s sum for the pole: 6 + 14
 ##   + 36 = 56px from the foot), so she completes it from any side before she is stopped by it;
-## - **day 12's swing** by her body overlapping the ellipse at its base (`_swing_base()`): *"Place an
-##   ellipse at its base. That's the area to touch"*;
+## - **day 12's swing** by her body overlapping the ellipse at its base (`Prop.swing_frame_base()`,
+##   centred on `CityMap.swing_position()`, the bottom centre the frame is drawn standing on, its
+##   semi-axes half the frame's picture's width and half its height, so it spans the picture):
+##   *"Not the drawn swing. Place an ellipse at its base. That's the area to touch"*;
 ## - **the last night's station door** within `DOOR_REACH` of the door point on the facade, the rule
 ##   every door takes (sandy-egret: "the acceptance radius centered at the door should have a large
 ##   enough radius for half the sidewalk to be covered"; merry-koala).
 func _shape_the_touch(contact: ContactPoint, step: ResistanceSteps.Step) -> void:
 	match step.target_kind:
 		ResistanceSteps.TargetKind.DOOR:
-			contact.by_crossing = true
+			contact.complete_by_crossing()
 		ResistanceSteps.TargetKind.MAST:
-			contact.reach = EventCatalogue.mast().solid_reach() \
-					+ Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
+			contact.complete_within(EventCatalogue.mast().solid_reach()
+					+ Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH)
 		ResistanceSteps.TargetKind.PARK_SWING:
-			contact.touch_ellipse = _swing_base()
-			contact.reach = contact.touch_ellipse.x + Tuning.PLAYER_BODY_RADIUS
+			var base := Prop.swing_frame_base()
+			contact.complete_on_ellipse(base)
+			contact.complete_within(base.x + Tuning.PLAYER_BODY_RADIUS)
 		ResistanceSteps.TargetKind.STATION_DOOR:
-			contact.reach = DOOR_REACH
+			contact.complete_within(DOOR_REACH)
 
-## **The ground ellipse at the swing frame's base** that day 12's task is touched at: semi-axes in
-## px, centred on `CityMap.swing_position()`, the bottom-centre the frame is drawn standing on. Read
-## off the shadow the frame casts there (`Prop._playground_frame_shape()`, drawn by
-## `GroundShape.draw_shadow()`), so what she touches is what she sees: that shadow is a capsule as
-## wide as the frame's picture and as deep as its height, from the region table, so the ellipse is
-## half its width across and its rounding up and down — 28 by 17px for `swing_frame.svg`'s 56 by 34.
-## *(The player: "Not the drawn swing. Place an ellipse at its base. That's the area to touch".)*
-static func _swing_base() -> Vector2:
-	var shadow := Prop._playground_frame_shape()
-	return Vector2(shadow.half_length + shadow.radius, shadow.radius)
-
-## Where the run recorded its scar `scar_id` (`RunState.attempt_spend.scars`), or `Vector2.INF` when it never
+## Where the run recorded its scar `scar_id` (`RunState.attempt_spend().scars()`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
 ## even at dusk.
 func _recorded_scar(scar_id: String) -> Vector2:
-	for scar: Dictionary in _run.attempt_spend.scars:
-		if String(scar["id"]) == scar_id:
-			return scar["position"]
-	return Vector2.INF
+	return _run.attempt_spend().scar_position(scar_id)
 
 ## The instance standing at the run's own recorded scar for `scar_id`, put in the world now and kept
 ## there for the rest of the day wherever she walks, or null when the run never recorded one
 ## (`_recorded_scar()`). The scheduler re-places the same def at the scar every day after
-## `since_day` (`EventScheduler._place_scars()`), and that plan is what this rides
+## `since_day` (`DawnScars`), and that plan is what this rides
 ## (`EventManager.keep_live()`): she may read the mark from anywhere in the city, far outside the
 ## streaming radius, and walk away from the shell again afterwards, and neither may leave the
 ## contact riding nothing. A scar today has no plan for (one recorded on this same day) gets an
@@ -687,7 +746,7 @@ func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 ## arc, since no fire burned.
 ##
 ## **Safe on a retry.** A lost day gives the scars back to their dawn copy
-## (`RunState.run_parts.give_back()`), and the retry's dawn dresses every building
+## (`RunState.run_parts().give_back()`), and the retry's dawn dresses every building
 ## again before this runs, so a lost attempt leaves neither a scar nor a burnt building behind it.
 ## On a won day the scar is kept, stamped with day 8 (`RunState.add_scar()`), so the scheduler
 ## stands the shell there again from day 9 on and every later dawn burns the same building, as it
@@ -710,30 +769,59 @@ func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 
 ## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
-## stands on the door of the building behind it (`CityFronts.way_in_behind()`) and reaches `DOOR_REACH`
-## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
-## building is what needs to be burnt, not an object next to the building"*. **Some ground within
-## `DOOR_REACH` of the door must be ground she can stand on** (`_door_can_be_touched()`); only a
-## door none of whose reachable frontage can be stood on today (shut off from home, or solid
-## bodies on all of it) gives way to the facade point straight behind the shell, one tile north of
-## it, which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws
+## stands on `door`, the door of the building behind it or the facade that stands in for it
+## (`_the_door_behind()`), and reaches `DOOR_REACH` from there. The shell has no body and draws
+## nothing, so the door is where the task *is* — *"the building is what needs to be burnt, not an
+## object next to the building"*.
+func _ride_to_the_door(shell: EventInstance, door: Vector2) -> void:
+	_contact.ride(_step, shell, door - shell.global_position)
+	_contact.complete_within(DOOR_REACH)
+
+## **Where day 8's contact stands for a burnt shell at `shell_at`, and the ground it is touched
+## from** (`_ground`): the door of the building behind the shell (`CityFronts.way_in_behind()`),
+## where some frontage within `DOOR_REACH` of it is ground she can be sent to
+## (`_frontage_she_can_be_sent_to()`); otherwise the facade point straight behind the shell, one
+## tile north of it, which `DOOR_REACH` covers from the shell's own frontage-lane tile the same
+## way, and the frontage below that. `her` is where she stands, `Vector2.INF` for nowhere. Draws
 ## nothing from `_rng`, so the day's later draws are unmoved.
-func _ride_to_the_door(shell: EventInstance) -> void:
-	var door := _fronts.way_in_behind(shell.global_position) if _fronts else Vector2.INF
-	if door != Vector2.INF and not _door_can_be_touched(door):
-		trace.note("contact", ("step %d: the burnt building's door at %s has no ground " +
+##
+## **A burnt building none of whose frontage she can be sent to keeps its contact on the facade
+## all the same** (`OUT_OF_REACH`): its place is where the fire burned, not a pick, so there is no
+## next place to take, and a task that cannot be done that day is one the day survives.
+func _the_door_behind(shell_at: Vector2, her: Vector2) -> Vector2:
+	var door := _fronts.way_in_behind(shell_at) if _fronts else Vector2.INF
+	if door != Vector2.INF:
+		_ground = _frontage_she_can_be_sent_to(door, her)
+		if _ground != NO_TILE:
+			return door
+		_trace.note("contact", ("step %d: the burnt building's door at %s has no ground " +
 				"within reach today — the facade behind the shell stands in")
 				% [_step.index, RunTrace.tile(_map.world_to_tile(door))])
-		door = Vector2.INF
-	if door == Vector2.INF:
-		door = shell.global_position + Vector2.UP * Tuning.TILE_SIZE
-	_contact.ride(_step, shell, door - shell.global_position)
-	_contact.reach = DOOR_REACH
+	door = shell_at + Vector2.UP * Tuning.TILE_SIZE
+	_ground = _frontage_she_can_be_sent_to(door, her)
+	if _ground == NO_TILE:
+		_ground = OUT_OF_REACH
+	return door
 
-## Whether she can stand within `DOOR_REACH` of the door point `door` today: one of the three
-## frontage-lane tiles the reach covers — the one straight below the door and the one either side of
-## it, those whose centre lies within `DOOR_REACH` (50.6px) of the door's point — is ground every
-## contact here keeps (`SpawnSiting.HELD_CONTACT_GROUND`, reachable from home). An
+## The ground named for a contact she cannot be sent to today and that stands all the same
+## (`_the_door_behind()`): off the grid, like `NO_TILE`, and the one ground
+## `_she_can_be_sent_to()` passes unasked.
+const OUT_OF_REACH := Vector2i(-2, -2)
+
+## **The frontage she can be sent to for the door point `door`**: the first of the frontage-lane
+## tiles within `DOOR_REACH` of it she can stand on today (`_frontage_below()`) that
+## `_she_can_be_sent_to()` passes from where she stands (`her`), or `NO_TILE` when none does.
+func _frontage_she_can_be_sent_to(door: Vector2, her: Vector2) -> Vector2i:
+	for tile in _frontage_below(door):
+		if _she_can_be_sent_to(tile, her, _can_be_stood_on_even_if_held):
+			return tile
+	return NO_TILE
+
+## **The frontage she can stand on within `DOOR_REACH` of the door point `door` today**: of the
+## three frontage-lane tiles the reach covers — the one straight below the door and the one either
+## side of it, those whose centre lies within `DOOR_REACH` (50.6px) of the door's point — the ones
+## that are ground every contact here keeps (`SpawnSiting.HELD_CONTACT_GROUND`) and reachable
+## from home, the one below the door first. An
 ## entrance door
 ## stands on a column's middle, so all three are 45px away; a storefront door stands on the seam
 ## between two tiles, where they are 35.8px, 35.8px and 57.7px away and the third is dropped.
@@ -742,30 +830,39 @@ func _ride_to_the_door(shell: EventInstance) -> void:
 ## ground she walks on like any other (`allow_held`, as day 9's door is placed), so a door on one
 ## is still the door. The shell's own tile is not what is asked, since the door can
 ## stand several columns from the shell along the front.
-func _door_can_be_touched(door: Vector2) -> bool:
+func _frontage_below(door: Vector2) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
 	var frontage := _map.world_to_tile(door) + Vector2i.DOWN
-	var ground := _spawn_siting.ask_of_ground()
-	for across in [0, -1, 1]:
+	for across: int in [0, -1, 1]:
 		var tile: Vector2i = frontage + Vector2i(across, 0)
 		if door.distance_to(_map.tile_to_world(tile)) <= DOOR_REACH \
-				and _spawn_siting.allows_every(SpawnSiting.HELD_CONTACT_GROUND, ground,
-						_map.tile_to_world(tile)) \
-				and _reachable_from_home(tile):
-			return true
-	return false
+				and _can_be_stood_on_even_if_held(tile) and _reachable_from_home(tile):
+			found.append(tile)
+	return found
+
+## Whether `tile` is ground a contact on a held street keeps
+## (`SpawnSiting.HELD_CONTACT_GROUND`): legal ground, a street held for the day included, with no
+## body standing on it.
+func _can_be_stood_on_even_if_held(tile: Vector2i) -> bool:
+	return _spawn_siting.allows_every(SpawnSiting.HELD_CONTACT_GROUND,
+			_spawn_siting.ask_of_ground(), _map.tile_to_world(tile))
 
 ## Day 3's fire, whose own siting rules `_fronts_a_fire_catches_on()` reuses.
 const FIRE_ROW := "burning_building"
 
 ## The ground day 8's task stands on when the run never recorded a scar: every front day 3's fire
-## itself could be sited on (`EventScheduler.open_ground_for()` with `burning_building`'s own
-## `AT_THE_FRONT`), each with a building directly north of it to burn. A fresh ground cache, since
-## the scheduler's own is the day's and this asks once.
+## itself could be sited on (`RowGround.tiles_for()` with `burning_building`'s own
+## `AT_THE_FRONT`), each with a building directly north of it to burn. Asked of the day's ground,
+## which the walk's events hand on from dawn (`WalkEvents.ground()`); a rig whose walk no dawn
+## planned has none, and is answered by a ground made here (`EventScheduler.row_ground()`).
 func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 	var fire := EventCatalogue.by_id(FIRE_ROW)
 	if not fire:
 		return []
-	return EventScheduler.open_ground_for(fire, _map, {})
+	var ground := _walk.ground()
+	if not ground:
+		ground = EventScheduler.row_ground(_map)
+	return ground.tiles_for(fire)
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor day 13's
 ## roadblock (`_keeps_a_waiting_guard()`) — a robber drawn from the band `alley_robbery`'s own
@@ -780,12 +877,12 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## (minty-hedgehog, statement 3), and, asked where he stands in an alley too short for two-thirds
 ## and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471). In a courtyard's passage he
 ## stands at the courtyard's inner end (`_draw_guard_position_near_far_mouth()`). The roadblock's
-## guard keeps a band between `inner_radius + reach` and `notice_within() + reach` round its own
+## guard keeps a band between `core_within() + reach` and `notice_within() + reach` round its own
 ## contact, on a spot with a clear line to it (`_roadblock_guard_spot()`). **`reach` is the
 ## contact's own**: a roadblock is touched
 ## from any side of its body, so it is guarded from the body's centre with `_body_touch_reach()`
 ## (`_begin_step()`). The band is worked out from the reach — nearer than
-## `inner_radius + reach` a touch from the edge of the reach can land her inside his catch, and
+## `core_within() + reach` a touch from the edge of the reach can land her inside his catch, and
 ## past `notice_within() + reach` no touch can wake him — so a wider reach with a narrower one's
 ## band is a guard standing nearer the ground she completes from than the band means.
 ##
@@ -803,8 +900,20 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## since her own position and the camera are still the previous attempt's (`_begin_step()`); in
 ## the day, her live position and `true`, for the roadblock's guard placed as she reads its mark and for
 ## `_move_the_mark()`'s relocation.
+##
+## **His spot is looked for on ground whose units have drawn**, with no draw of its own. A guard
+## is set for a mark or a roadblock she is sent to, and stands inside the alley of a mark and at
+## most `task_guard_farthest()` from a roadblock. **A place fixed beyond the ground drawn round
+## her** has the units round it drawn as it is confirmed, out to `Tuning.EVENT_DRAW_AHEAD`
+## (`_she_can_be_sent_to()`), and a roadblock swapped in has its section's surroundings drawn
+## (`EventManager.swap_in_a_section()`). **A place fixed inside the ground drawn round her** is a
+## roadblock her paths reach where she read the mark, round which the units have drawn as far as
+## it was looked for and `Tuning.EVENT_DRAW_AHEAD` beyond (`_place_the_roadblock_near()`), or a
+## mark moved near her (`_move_the_mark()`), within the stream radius of her as a roadblock he
+## follows her to is, where every unit has drawn.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_mark: bool,
-		her: Vector2, on_screen_matters: bool, reach := ContactPoint.REACH) -> void:
+		her: Vector2, on_screen_matters: bool, reach := ContactPoint.REACH,
+		approach := Vector2.ZERO) -> void:
 	if day < TRAP_FIRST_DAY:
 		return
 	var robbery := EventCatalogue.mark_guard() if for_mark else EventCatalogue.task_guard()
@@ -817,7 +926,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_guard = null
 	else:
 		_task_guard = null
-	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach)
+	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach, approach)
 	var placement := "band"
 	if for_mark:
 		placement = "two-thirds in" if not _through_alley_span(at).is_empty() \
@@ -830,10 +939,10 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		# unguarded today rather than guarded by a robber stuck for ever where nobody can ever
 		# meet him. `docs/DECISIONS.md`, M100, "The guard robber is placed inside a building,
 		# where he is stuck for ever".
-		trace.note("roll", "%s unguarded: no walkable ground for the robber in %d draws"
+		_trace.note("roll", "%s unguarded: no walkable ground for the robber in %d draws"
 				% [kind, TRAP_DRAW_LIMIT])
 		return
-	trace.note("roll", "%s guarded (%s): robber %.0fpx away"
+	_trace.note("roll", "%s guarded (%s): robber %.0fpx away"
 			% [kind, placement, at.distance_to(guard_at)])
 	if for_mark:
 		_guard = _events.spawn_extra(robbery, guard_at)
@@ -847,20 +956,23 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## `_maybe_set_a_trap()`). A mark stands only on a mark tile (`_marks()`; a recipe's pin off one is
 ## refused, `_the_pinned_mark()`), and every mark tile is in a through-alley or past a courtyard's
 ## passage, so a point on neither has no guard, as `_guard_spot()` answers off an alley. Every
-## candidate is refused within his `EventDef.notice` of `her` and, with `on_screen_matters`, where
-## he would be drawn in her view (brisk-wombat, "a robber also appeared out of nowhere and
-## instakilled me"): his spot is worked out from the contact alone, so those refusals are what keep
-## him off her. `Vector2.INF` when no candidate qualifies. Split out so a move of the roadblock's guard
+## candidate is refused within his `EventDef.notice_within()` of `her` and, with
+## `on_screen_matters`, where he would be drawn in her view (brisk-wombat, "a robber also
+## appeared out of nowhere and instakilled me"): his spot is worked out from the contact
+## alone, so those refusals are what keep him off her. `Vector2.INF` when no candidate
+## qualifies. Split out so a move of the roadblock's guard
 ## (`_move_the_task_guard_to_her_target()`) can ask where he would stand without spawning him.
-## `or_any` is the roadblock's alone (`_roadblock_guard_spot()`): true for the guard placed with the
-## task, false for a move of the guard already there, which is how
-## `_move_the_task_guard_to_her_target()` asks.
+## `approach` and `near_side_too` are the roadblock's alone (`_roadblock_guard_spot()`): the
+## way she comes to it, and true for the guard placed with the task, false for a move of the
+## guard already there, which is how `_move_the_task_guard_to_her_target()` asks.
 func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
-		on_screen_matters: bool, reach := ContactPoint.REACH, or_any := true) -> Vector2:
+		on_screen_matters: bool, reach := ContactPoint.REACH, approach := Vector2.ZERO,
+		near_side_too := true) -> Vector2:
 	if not for_mark:
-		return _roadblock_guard_spot(rng, at, reach, her, on_screen_matters, or_any)
+		return _roadblock_guard_spot(rng, at, reach, her, approach, on_screen_matters,
+				near_side_too)
 	var robbery := EventCatalogue.mark_guard()
-	var min_distance := robbery.inner_radius + reach
+	var min_distance := robbery.core_within() + reach
 	var max_distance := robbery.notice_within() + reach
 	var her_refuse_within := robbery.notice_within() if her != Vector2.INF else 0.0
 	var span := _through_alley_span(at)
@@ -875,56 +987,55 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
-## `_maybe_set_a_trap()` describes — from `inner_radius + reach`, so no touch lands her in his
+## `_maybe_set_a_trap()` describes — from `core_within() + reach`, so no touch lands her in his
 ## catch, to `notice_within() + reach`, past which no touch can wake him — with **a clear line to
 ## the body** (`CityMap.clear_line()`), since he notices her only along one *(leafy-puffin, inbox
 ## #648: "yes noticing needs a clear line")* and a guard behind a building from the roadblock guards
 ## nothing.
 ##
-## **Never on her only way to it.** Which side she comes from decides whether he notices her
-## (`docs/NARRATIVE.md`), so a spot is taken only where she can still walk from `her` to ground
-## within touch reach of the roadblock without coming within his notice
-## (`_leaves_her_a_way_past()`), and the spots on **the far side of the roadblock from her** are
-## tried first: the clear line puts most spots on the roadblock's own street, the street she walks
-## up, and one between her and it is a guard she walks into a second after he comes into view.
-## Within each side an `ALLEY` tile first, as the row's own placement is, then any other, each drawn
-## from `rng`; at most `GUARD_WAYS_ASKED` spots are asked, in that order.
+## **On the far side of the roadblock from the way she comes** (inbox #1185 in gentle-owl): `approach` points from
+## the body toward where she approaches it from (`_approach_to()`), and a spot counts as the far side
+## where it lies on the other side of the body from that, so she reaches ground she can touch the
+## roadblock from before she comes near him. Which side she comes from decides whether he notices her
+## (`docs/NARRATIVE.md`). Nothing is flooded or checked for a way past him: the side is the rule.
+## Within the band an `ALLEY` tile first, as the row's own placement is, then any other, each drawn
+## from `rng`.
 ##
 ## Refused, as every guard's ground is, where he may not stand (`SpawnSiting.CONTACT_GROUND`: not
 ## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — within
-## `EventDef.notice` of `her`, and, when `on_screen_matters`, anywhere any part of him would be on
-## screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
+## `EventDef.notice_within()` of `her`, and, when `on_screen_matters`, anywhere any part of him
+## would be on screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
-## `TASK_GUARD_FARTHEST`, nearest ring first and the far side first in each, on the same terms: the
-## band can be wholly in her view when she stands beside the roadblock, and the street through it
-## runs on past the view's edge. *(inbox #651 in lilac-marmot: "We can move the guard around
-## offscreen as much as we want. If we need to move multiple times so be it".)* On the ring no touch
-## is within his notice; the task sets him on her when she has done it, wherever he stands
-## (`_set_the_task_guard_on_her()`).
+## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her
+## view when she stands beside the roadblock, and the street through it runs on past the view's
+## edge. *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want.
+## If we need to move multiple times so be it".)* On the ring no touch is within his notice; the
+## task sets him on her when she has done it, wherever he stands (`_set_the_task_guard_on_her()`).
 ##
-## **Where no spot leaves her a way past him**, `or_any` decides: true, for the guard placed with the
-## task, the first spot in that order is taken anyway — far side first, so he is at least not between
-## them if he can help it — and the run log says so; false, for a move, `Vector2.INF`, and he stays
-## where he is, to be set on her when she has done the task. `Vector2.INF` too when no spot qualifies
-## at all. With `her` `Vector2.INF` (a rig with no one to keep a way for) nothing is asked of a way.
+## **Where the far side has no spot at all**, `near_side_too` decides: true, for the guard placed
+## with the task, the near side is drawn from the same way, and the run log says so; false, for a
+## move, `Vector2.INF`, and he stays where he is, to be set on her when she has done the task.
+## `Vector2.INF` too when no spot qualifies at all. With `approach` zero (a rig with no one to come
+## from) every spot is the far side.
 func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: float, her: Vector2,
-		on_screen_matters: bool, or_any := true) -> Vector2:
+		approach: Vector2, on_screen_matters: bool, near_side_too := true) -> Vector2:
 	var robbery := EventCatalogue.task_guard()
-	var nearest := robbery.inner_radius + reach
+	var nearest := robbery.core_within() + reach
 	var band_edge := robbery.notice_within() + reach
 	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
 	# [far alleys, far band, near alleys, near band]
 	var pools: Array = [[], [], [], []]
-	var beyond := {}
+	var beyond := [{}, {}]
 	var centre := _map.world_to_tile(body)
-	var span := ceili(TASK_GUARD_FARTHEST / Tuning.TILE_SIZE)
+	var farthest := task_guard_farthest(reach)
+	var span := ceili(farthest / Tuning.TILE_SIZE)
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre + Vector2i(dx, dy)
 			var spot := _map.tile_to_world(tile)
 			var distance := spot.distance_to(body)
-			if distance < nearest or distance > TASK_GUARD_FARTHEST:
+			if distance < nearest or distance > farthest:
 				continue
 			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot):
 				continue
@@ -935,41 +1046,40 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 				continue
 			if not _guards_along_a_clear_line(spot, body):
 				continue
-			var near_side := 2 if her != Vector2.INF and (spot - body).dot(her - body) > 0.0 else 0
+			var side := 0 if _on_the_far_side(spot, body, approach) else 1
 			if distance <= band_edge:
 				var alley := 0 if _map.tile_at(tile) == GameEnums.TileType.ALLEY else 1
-				(pools[near_side + alley] as Array).append(spot)
+				(pools[side * 2 + alley] as Array).append(spot)
 				continue
-			var ring := int((distance - band_edge) / Tuning.TILE_SIZE) * 2 + near_side / 2
-			if not beyond.has(ring):
-				beyond[ring] = []
-			(beyond[ring] as Array).append(spot)
-	var rings := beyond.keys()
-	rings.sort()
-	for ring: int in rings:
-		pools.append(beyond[ring])
+			var ring := int((distance - band_edge) / Tuning.TILE_SIZE)
+			var rings: Dictionary = beyond[side]
+			if not rings.has(ring):
+				rings[ring] = []
+			(rings[ring] as Array).append(spot)
 	var ordered: Array[Vector2] = []
-	for pool: Array in pools:
-		_shuffle(pool, rng)
-		for spot: Vector2 in pool:
-			ordered.append(spot)
+	for side in 2 if near_side_too else 1:
+		var side_pools: Array = [pools[side * 2], pools[side * 2 + 1]]
+		var rings: Dictionary = beyond[side]
+		var out := rings.keys()
+		out.sort()
+		for ring: int in out:
+			side_pools.append(rings[ring])
+		for pool: Array in side_pools:
+			_shuffle(pool, rng)
+			for spot: Vector2 in pool:
+				ordered.append(spot)
+		if side == 0 and not ordered.is_empty():
+			return ordered[0]
 	if ordered.is_empty():
 		return Vector2.INF
-	if her == Vector2.INF:
-		return ordered[0]
-	var her_side := HerSide.new(body, her)
-	for i in mini(ordered.size(), GUARD_WAYS_ASKED):
-		if _leaves_her_a_way_past(ordered[i], body, reach, her, her_side):
-			return ordered[i]
-	if not or_any:
-		return Vector2.INF
-	trace.note("roll", "no spot round the roadblock leaves her a way past its guard; "
-			+ "he stands at the first anyway, %.0fpx from it" % ordered[0].distance_to(body))
+	_trace.note("roll", "no spot on the far side of the roadblock from her takes its guard; "
+			+ "he stands on her side, %.0fpx from it" % ordered[0].distance_to(body))
 	return ordered[0]
 
-## How many of the spots `_roadblock_guard_spot()` orders it asks for a way past him, at most:
-## each is a flood fill round the roadblock, and a move is asked twice a second.
-const GUARD_WAYS_ASKED := 12
+## Whether `spot` is on the far side of the roadblock at `body` from the way she comes, `approach`
+## (`_roadblock_guard_spot()`): not toward her across the body. Every spot is, with no approach.
+static func _on_the_far_side(spot: Vector2, body: Vector2, approach: Vector2) -> bool:
+	return (spot - body).dot(approach) <= 0.0
 
 ## Shuffles `items` in place from `rng` (Fisher-Yates), so the order is the stream's.
 static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
@@ -979,116 +1089,24 @@ static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 		items[i] = items[j]
 		items[j] = kept
 
-## **Whether she can walk from `her` to ground she can touch the roadblock at `body` from without
-## coming within notice of a guard at `spot`**: a flood fill out from every open tile within `reach`
-## of the body, over the ground she can walk today (walkable, open, unsealed, no body standing on
-## it), never onto a tile whose centre is within his `EventDef.notice` along a clear line from him
-## (`CityMap.clear_line()`), the notice `EventPursuit` takes. It answers yes the moment it
-## reaches her tile, or a tile of `her_side` — the ground she reaches without coming near the
-## roadblock at all (`_on_her_side()`), where nothing of any guard round it stands in her way. Tile
-## centres stand in for her: a way that passes his notice by less than half a tile counts as a way.
-## **Bounded** to `GUARD_WAY_DETOUR` past that ground round the roadblock: from her beside the
-## roadblock, a way round longer than that is not a way she would take, and the fill stays a few
-## thousand tiles rather than the city.
-func _leaves_her_a_way_past(spot: Vector2, body: Vector2, reach: float, her: Vector2,
-		her_side: HerSide) -> bool:
-	var notice := EventCatalogue.task_guard().notice_within()
-	var bound := _guard_notice_reach() + GUARD_WAY_DETOUR
-	var her_tile := _map.world_to_tile(her)
-	var seen := {}
-	var queue: Array[Vector2i] = []
-	var centre := _map.world_to_tile(body)
-	var span := ceili(reach / Tuning.TILE_SIZE) + 1
-	for dy in range(-span, span + 1):
-		for dx in range(-span, span + 1):
-			var tile := centre + Vector2i(dx, dy)
-			if _map.tile_to_world(tile).distance_to(body) > reach \
-					or not SpawnSiting.is_open_to(_map, tile, Mover.on_foot()) \
-					or _noticed_from(spot, tile, notice):
-				continue
-			seen[tile] = true
-			queue.append(tile)
-	var head := 0
-	while head < queue.size():
-		var tile: Vector2i = queue[head]
-		head += 1
-		if tile == her_tile or _on_her_side(her_side, tile):
-			return true
-		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var next := tile + side
-			if seen.has(next):
-				continue
-			seen[next] = true
-			if next == her_tile or (SpawnSiting.is_open_to(_map, next, Mover.on_foot())
-					and not _noticed_from(spot, next, notice)
-					and _map.tile_to_world(next).distance_to(body) <= bound):
-				queue.append(next)
-	return false
-
-## How far past the ground any guard round a roadblock can notice her `_leaves_her_a_way_past()`
-## follows a way round: eight tiles, half a block and a street.
-const GUARD_WAY_DETOUR := 8.0 * Tuning.TILE_SIZE
-
-## **The ground she can walk to from `her` today without coming within `_guard_notice_reach()` of
-## the roadblock at `body`**: where any guard `_roadblock_guard_spot()` may put round it is too far to
-## notice her. None when she stands within that reach herself. Worked out at most once per search,
-## and only when a fill of `_leaves_her_a_way_past()` first steps out past that reach — a fill that
-## reaches her tile first, or never leaves the roadblock's ground, never needs it.
-class HerSide extends RefCounted:
-	var body: Vector2
-	var her: Vector2
-	## The tiles counted shut: the day's obstruction as the director's reachability reads it, and
-	## every tile within `_guard_notice_reach()` of the body.
-	var blocked := {}
-	## `ReachabilityGrid.flood()` from her tile under `blocked`. Empty until worked out.
-	var reached := {}
-	var made := false
-
-	func _init(at_body: Vector2, at_her: Vector2) -> void:
-		body = at_body
-		her = at_her
-
-## Whether `tile` is on `side`'s ground (`HerSide`), working that ground out the first time it is
-## asked: the director's reachability grid (`_ensure_reachability()`, two-tile cells, the day's
-## obstruction) flooded from her tile with every tile within `_guard_notice_reach()` of the body
-## shut as well — a fill over cells rather than over the city's tiles one by one.
-func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
-	var reach := _guard_notice_reach()
-	if _map.tile_to_world(tile).distance_to(side.body) < reach:
-		return false
-	if not side.made:
-		side.made = true
-		if side.her.distance_to(side.body) < reach:
-			return false
-		_ensure_reachability()
-		side.blocked = _reach_blocked.duplicate()
-		side.blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS | Mover.BODIES))
-		var centre := _map.world_to_tile(side.body)
-		var span := ceili(reach / Tuning.TILE_SIZE)
-		for dy in range(-span, span + 1):
-			for dx in range(-span, span + 1):
-				var near := centre + Vector2i(dx, dy)
-				if _map.tile_to_world(near).distance_to(side.body) < reach:
-					side.blocked[near] = true
-		side.reached = _reach_grid.flood([_map.world_to_tile(side.her)], side.blocked)
-	return _reach_grid.reaches(tile, side.blocked, side.reached)
-
-## How far from a roadblock's body any guard round it can notice her: the farthest he stands
-## (`TASK_GUARD_FARTHEST`), his notice (`EventDef.notice`), and a tile.
-static func _guard_notice_reach() -> float:
-	return TASK_GUARD_FARTHEST + EventCatalogue.task_guard().notice_within() \
-			+ Tuning.TILE_SIZE
-
-## Whether a guard at `spot` notices her standing on `tile`'s centre: within `notice` of him, along
-## a clear line.
-func _noticed_from(spot: Vector2, tile: Vector2i, notice: float) -> bool:
-	var at := _map.tile_to_world(tile)
-	return at.distance_to(spot) <= notice and _map.clear_line(spot, at, Mover.on_foot())
-
-## How far from a roadblock's body its guard may stand when its band is all refused
-## (`_roadblock_guard_spot()`): past the camera's half-width and its lead along the street from a
+## The least a roadblock's guard may stand from its body when its band is all refused
+## (`task_guard_farthest()`): past the camera's half-width and its lead along the street from a
 ## pram beside the roadblock — 320 + 46px, and his own half-width, 14px — with a tile to spare.
-const TASK_GUARD_FARTHEST := 14.0 * Tuning.TILE_SIZE
+const TASK_GUARD_FARTHEST_LEAST := 14.0 * Tuning.TILE_SIZE
+## How many whole tiles past his band's edge a roadblock's guard may stand when its band is all
+## refused (`task_guard_farthest()`): the ring a move takes while the band is in her view.
+const TASK_GUARD_RING_TILES := 3
+
+## **How far from a roadblock's body its guard may stand when its band is all refused**
+## (`_roadblock_guard_spot()`), for a roadblock touched from within `reach` of its body:
+## `TASK_GUARD_FARTHEST_LEAST`, or `TASK_GUARD_RING_TILES` past his band's edge rounded up to a
+## whole tile where that is farther. The band's edge is his notice as the run draws it
+## (`EventDef.notice_within()`, `ChargerTiming`) and the reach, so a wider notice keeps the ring
+## past the band rather than closing it (curly-moose #803).
+static func task_guard_farthest(reach: float) -> float:
+	var band_edge := EventCatalogue.task_guard().notice_within() + reach
+	var ring := (ceilf(band_edge / Tuning.TILE_SIZE) + TASK_GUARD_RING_TILES) * Tuning.TILE_SIZE
+	return maxf(TASK_GUARD_FARTHEST_LEAST, ring)
 
 ## Whether a guard standing at `feet` guards `roadblock` where he stands: in its band
 ## (`_roadblock_guard_spot()`), with a clear line to its body.
@@ -1096,7 +1114,8 @@ func _guards_the_roadblock(feet: Vector2, roadblock: EventInstance) -> bool:
 	var robbery := EventCatalogue.task_guard()
 	var reach := _body_touch_reach(roadblock)
 	var distance := feet.distance_to(roadblock.body_position())
-	return distance >= robbery.inner_radius + reach and distance <= robbery.notice_within() + reach \
+	return distance >= robbery.core_within() + reach \
+			and distance <= robbery.notice_within() + reach \
 			and _guards_along_a_clear_line(feet, roadblock.body_position())
 
 ## **Whether a guard standing at `feet` has a clear line to the roadblock body at `body`**: the line
@@ -1146,14 +1165,14 @@ static func _sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 ## calm-kestrel, inbox #559, and busy-quail, inbox #569, "1s warning should be enough -- let's apply
 ## that to the others as well")*: the screen-edge badge goes up alone at once, with nothing in the
 ## world, pointing at where he will start (`_draw_arrival_position()`), for the row's own
-## `offscreen_notice` (`EventDef.warned_for()`, at most `Tuning.WARNING_ALONE_MAX`); then he is
+## `EventDef.warned_for()` (at most `Tuning.WARNING_ALONE_MAX`); then he is
 ## created just out of sight that way from where she is by then, already chasing
 ## (`EventManager.send_from_out_of_sight()`), and the badge goes off as he comes into
 ## view. The badge's place moves only with her, so it never jumps (`PendingWarning`).
 ##
 ## **On the last night it chases her away from the station.** The hand-over is the sabotage, and
 ## the day still has to be won by walking home under the blackout before it goes on to the escape
-## (`RunState.calendar.earned_good_ending()`), so being caught there loses day 14 like any other
+## (`RunState.calendar().earned_good_ending()`), so being caught there loses day 14 like any other
 ## catch, and a lost day gives the sabotage back with the rest of what the attempt spent, so the
 ## retry starts at the station's door again.
 ##
@@ -1188,7 +1207,7 @@ func _send_at_her(def: EventDef, front_door: bool, who := "a robber") -> void:
 		_events.spawn_warned(def, PackedVector2Array([place]))
 		_note_the_trap(who, place, standing, start)
 	if not _events.send_from_out_of_sight(def, her, search, arrive):
-		trace.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
+		_trace.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
 				+ "in %d draws" % (TRAP_DRAW_LIMIT + 4))
 
 ## The run log's line for the pursuer a task has just sent at her, created at `at` with her at `her`,
@@ -1200,7 +1219,7 @@ func _note_the_trap(who: String, at: Vector2, her: Vector2, arrival: SpawnSiting
 	elif arrival.clear:
 		run = "a clear run at her along her street, beside her" if arrival.beside \
 				else "a clear run at her"
-	trace.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
+	_trace.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
 			% [who, RunTrace.tile(_map.world_to_tile(at)), her.distance_to(at), run])
 
 ## Where the pursuer a handed-over task sets on her starts: **just out of sight of her** along its
@@ -1313,13 +1332,13 @@ const FAR_END_REACH_IN := 96.0
 ## The mark's own through-alley, as `[nearer edge, farther edge]` along its long axis in the mark's
 ## own column or row — the outer edges of its two end tiles, so the span is the alley's whole length
 ## (`Tuning.BLOCK_SIZE`, 8 tiles, 256px, for a one-block lot) — or `[]` when `at` is in no
-## through-alley (`CityMap.alley_rects`): a courtyard's passage, or not an alley at all.
+## through-alley (`CityMap.alley_lots()`): a courtyard's passage, or not an alley at all.
 func _through_alley_span(at: Vector2) -> Array[Vector2]:
 	var span: Array[Vector2] = []
 	if not _map:
 		return span
 	var tile := _map.world_to_tile(at)
-	for rect in _map.alley_rects:
+	for rect in _map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		var ends := _alley_ends(at)
@@ -1344,14 +1363,14 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## `at` (`THROUGH_THE_ALLEY`) plus the tile the mark stands in from its mouth
 ## (`_depth_of_the_mark()`), so he is inside the alley rather than at its edge, the player's own
 ## reason, and as far from the mark as when it stood on the mouth. Where that point is
-## `notice_within() + ContactPoint.REACH` (216px) or more from the mark, a touch of the mark
+## `notice_within() + ContactPoint.REACH` (261px) or more from the mark, a touch of the mark
 ## from its own end never wakes him; in an alley too short for both — every one-block alley: a
 ## mark stands one tile in from its end tile (`_marks()`), 48px in, so he stands about
 ## 155px from it — he still stands two-thirds in, and reading the mark may wake him:
 ## *"Two-thirds wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those
 ## alleys.
 ##
-## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
+## **Never within `min_distance` of the mark** — `core_within()`, his catch, plus
 ## `ContactPoint.REACH`, 62px — kept as a floor that a mark at a mouth never reaches (two-thirds of
 ## any alley is far past 62px from its end tile), so it changes nothing for a mark; it holds for any
 ## other point a caller asks about.
@@ -1405,7 +1424,7 @@ func _guard_spot(at: Vector2) -> Vector2:
 	var axis := (span[1] - span[0]).normalized()
 	var along := maxf(span[0].distance_to(span[1]) * THROUGH_THE_ALLEY
 			+ _depth_of_the_mark(at, span[0], axis),
-			(at - span[0]).dot(axis) + robbery.inner_radius + ContactPoint.REACH)
+			(at - span[0]).dot(axis) + robbery.core_within() + ContactPoint.REACH)
 	return span[0] + axis * along
 
 ## Where a mark's guard stands in a courtyard's passage: at the courtyard's inner end (`far`, from
@@ -1414,13 +1433,14 @@ func _guard_spot(at: Vector2) -> Vector2:
 ## have to lure the robber out first.")* His distance from the mark is whatever the courtyard leaves.
 ##
 ## **Beyond `max_distance` of the mark wherever the courtyard is deep enough for that** —
-## `EventDef.notice` plus `ContactPoint.REACH`, so reading the mark leaves him asleep — drawn
-## anywhere from the inner end up to `FAR_END_REACH_IN` in from it but never nearer the mark than
-## that. **Where the inner end itself is nearer than that, he stands on it**: no farther place
-## exists. An ordinary courtyard is four tiles square, so he is often inside `max_distance` and may
-## wake as she reads the mark; she lures him out, as the player found in play.
+## `EventDef.notice_within()` plus `ContactPoint.REACH`, so reading the mark leaves him
+## asleep — drawn anywhere from the inner end up to `FAR_END_REACH_IN` in from it but never
+## nearer the mark than that. **Where the inner end itself is nearer than that, he stands on
+## it**: no farther place exists. An ordinary courtyard is four tiles square, so he is often
+## inside `max_distance` and may wake as she reads the mark; she lures him out, as the
+## player found in play.
 ##
-## **Never within `min_distance` of the mark**, whatever the ground — `inner_radius`, his catch
+## **Never within `min_distance` of the mark**, whatever the ground — `core_within()`, his catch
 ## (`EventDef.lethal_reach()`), plus `ContactPoint.REACH`: a touch from anywhere within reach of
 ## the mark never lands her inside his catch. `Vector2.INF` then, and whenever every candidate is
 ## refused — the inner end last of all, after `TRAP_DRAW_LIMIT` draws in from it.
@@ -1484,13 +1504,13 @@ func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
 
 ## The mark's own alley, as `[nearer, farther]`, or `[]` when `at` is on no `ALLEY` ground.
 ##
-## **A through-alley** (`CityMap.alley_rects`, one `Rect2i` each from `CityGenerator._alley_rect()`,
+## **A through-alley** (`CityMap.alley_lots()`, one `Rect2i` each from `CityGenerator._alley_rect()`,
 ## always `ALLEY_WIDTH_TILES` (2) wide and the rest of the lot long): the end tiles of its long axis
 ## in the mark's own column or row, ordered by distance from `at`.
 ##
 ## **A courtyard's passage** (`CityGenerator._passage_rect()`, the other `ALLEY` ground the city
 ## builds: one tile wide, closed at the courtyard): `[its street end, the courtyard's inner end]` —
-## see `_courtyard_inner_end()`. The passage's own far end is within `inner_radius` plus
+## see `_courtyard_inner_end()`. The passage's own far end is within `core_within()` plus
 ## `ContactPoint.REACH` of a mark in it, so the robber stands in the courtyard beyond. *(2026-09-27,
 ## the player: "robber at inner end of the courtyard is fine. I encountered it in game and it worked
 ## well for me. you just have to lure the robber out first.")*
@@ -1499,7 +1519,7 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 	if not _map:
 		return ends
 	var tile := _map.world_to_tile(at)
-	for rect in _map.alley_rects:
+	for rect in _map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		var a: Vector2
@@ -1552,12 +1572,12 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 	return ends
 
 ## The courtyard's inner end from a mark at `at` in its passage: the centre of the courtyard tile
-## farthest from the mark, in the courtyard whose rect (`CityMap.courtyard_rects`) holds `entrance`,
+## farthest from the mark, in the courtyard whose rect (`CityMap.courtyard_lots()`) holds `entrance`,
 ## the first courtyard tile past the passage — "as far from the mark as the courtyard allows".
 ## Ties go to the first tile in row order, so the answer is the same every time it is asked.
 ## `Vector2.INF` when no courtyard rect holds `entrance`.
 func _courtyard_inner_end(at: Vector2, entrance: Vector2i) -> Vector2:
-	for court in _map.courtyard_rects:
+	for court in _map.courtyard_lots():
 		if not court.has_point(entrance):
 			continue
 		var farthest := Vector2.INF
@@ -1590,25 +1610,27 @@ func _far_alley_mouth(at: Vector2) -> Vector2:
 ##
 ## **A task is placed near the mark that unlocked it** (`mark`; `_pick_near()`), where one of her
 ## paths from where she read it first reaches the edge of a `NEAR_THE_MARK` circle round her
-## (`_follow_the_paths_to_the_edge()`): the man shouting, the van, a roadblock, day 11's mast and
-## day 8's burnt building when the run has no fire of its own. *(feathery-marmot: "the van should spawn close to the mark not across the
+## (`_follow_the_paths_to_the_edge()`): the man shouting, the van, day 11's mast and day 8's burnt
+## building when the run has no fire of its own. Day 13's roadblock never comes here: it is one the
+## day placed, or one swapped in (`_place_the_roadblock_near()`). *(feathery-marmot: "the van should spawn close to the mark not across the
 ## city" · "this applies to almost all tasks".)* The ones whose place is fixed keep it: day 9's
 ## district door, day 12's swing park and the last night's station door are drawn from their own
 ## pools as before, day 10's neighbor walks home from wherever `_send_the_neighbor_home()` starts
 ## them, and day 8's burnt building is where day 3's fire burned whenever the run has one.
 func _place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 		mark := Vector2.INF) -> Vector2:
+	var her := _she_stands_at(mark)
 	if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR:
 		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
 		# asked for reachability like every other pool and always finds some — the pavement she
 		# stands on to touch the door. The contact itself is the door, on the facade above it.
-		var pavement := _pick_reachable(ResistanceSteps.target_candidates(step, _map,
-				_region_plan()), rng, true)
+		var pavement := _pick_reachable(NarrowTargetPool.tiles(step, _map,
+				_region_plan()), rng, true, her)
 		return Vector2.INF if pavement == Vector2.INF else station_door_point(_map)
 	if step.target_kind == ResistanceSteps.TargetKind.DOOR:
-		return _place_at_a_door(rng)
+		return _place_at_a_door(rng, her)
 	if step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-		return _place_at_a_swing(rng)
+		return _place_at_a_swing(rng, her)
 	if step.target_kind == ResistanceSteps.TargetKind.MAST:
 		return _place_at_a_mast(rng, mark)
 	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
@@ -1616,7 +1638,7 @@ func _place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	if step.is_pickup:
 		if _pinned_mark != Vector2.INF:
 			return _the_pinned_mark()
-		return _pick_reachable(_marks(), rng)
+		return _pick_reachable(_marks(), rng, false, her)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
@@ -1627,7 +1649,7 @@ func _place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 ## (`_marks()`). *(2026-10-03, quiet-yak, inbox #486, the player, asked whether a mark may sit
 ## in the middle of its alley: "Mouth only".)* A through-alley's mouths are
 ## its end tiles along its long axis, both of them across its two-tile width
-## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
+## (`CityMap.alley_lots()`), so four to an alley; a courtyard passage's is its tile that opens onto
 ## ground that is neither alley nor courtyard — the street end. In `CityMap.tiles_of_type()`'s own
 ## order, so a seeded draw over them is the same every time. Built once per map and kept.
 func _alley_mouths() -> Array[Vector2i]:
@@ -1647,7 +1669,7 @@ func _alley_mouths() -> Array[Vector2i]:
 ## centre, 48px in from the street's edge, takes her at least 12px inside the alley.
 ## *(2026-10-10, azure-puffin, inbox #664, the player: "let's move the chalk mark one tile into the
 ## alley so I actually have to enter the alley to activate it".)* Reachability, legal ground and the
-## tiles a completed step used (`RunState.facts.completed_resistance_alley_tiles`) are all asked of
+## tiles a completed step used (`RunState.facts().completed_resistance_alley_tiles()`) are all asked of
 ## these tiles. In `_alley_mouths()`'s order, so a seeded draw over them is the same every time.
 ## The director keeps its own list for every later draw and relocation.
 func _marks() -> Array[Vector2i]:
@@ -1655,11 +1677,11 @@ func _marks() -> Array[Vector2i]:
 	return _mark_tiles_of_mouths
 
 ## The tile a mark stands on for the alley whose mouth is `mouth`: one step in from it along the
-## alley's long axis for a through-alley (`CityMap.alley_rects`), and for a courtyard's passage the
+## alley's long axis for a through-alley (`CityMap.alley_lots()`), and for a courtyard's passage the
 ## next tile toward the courtyard, which is courtyard ground where the passage is one tile long.
 ## `mouth` itself when no tile lies in from it.
 static func _mark_tile_of(map: CityMap, mouth: Vector2i) -> Vector2i:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if not rect.has_point(mouth):
 			continue
 		var step := Vector2i.ZERO
@@ -1693,7 +1715,7 @@ static func _is_mark_tile(map: CityMap, tile: Vector2i) -> bool:
 static func _is_alley_mouth(map: CityMap, tile: Vector2i) -> bool:
 	if map.tile_at(tile) != GameEnums.TileType.ALLEY:
 		return false
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		if rect.size.y >= rect.size.x:
@@ -1715,7 +1737,7 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 
 ## **Where her paths first reach the edge of the circle** of `NEAR_THE_MARK` round `her`, where she
 ## read the mark, and the ground inside it they cross on the way: walked tile by tile from her own
-## tile over walkable ground the day's obstruction leaves open (`_reach_blocked`), going on only
+## tile over walkable ground the day's obstruction leaves open (`_reach()`), going on only
 ## from a tile inside the circle, so each tile at or past its edge is the first a path reaches it
 ## at. *(The player, quiet-yak, inbox #500: "create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the circle";
@@ -1723,7 +1745,7 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 ## anything like that".)* `_circle_edge` and `_circle_inside` hold the
 ## answer for the placement that follows; both are empty before one is measured.
 func _follow_the_paths_to_the_edge(her: Vector2) -> void:
-	_ensure_reachability()
+	var reach := _reach()
 	_circle_edge = {}
 	_circle_inside = {}
 	var start := _map.world_to_tile(her)
@@ -1740,7 +1762,7 @@ func _follow_the_paths_to_the_edge(her: Vector2) -> void:
 			var next := tile + step
 			if _circle_inside.has(next) or _circle_edge.has(next):
 				continue
-			if not _map.is_walkable(next) or _reach_blocked.has(next):
+			if not _map.is_walkable(next) or reach.is_shut(next):
 				continue
 			if _map.tile_to_world(next).distance_to(centre) >= NEAR_THE_MARK:
 				_circle_edge[next] = true
@@ -1754,7 +1776,7 @@ var _circle_edge := {}
 var _circle_inside := {}
 
 ## Half the box a task's rider is kept out of her view by when it is placed, around the tile it
-## stands on: three tiles either side and four up and down — more than a roadblock's 60px band and
+## stands on: three tiles either side and four up and down — more than a roadblock's 64px band and
 ## its guards, a van, or the burnt building the day-8 fallback burns behind its front, whose wall
 ## rises above the tile. She reads the mark standing on it, so a task placed near it could
 ## otherwise be put in the world, or a building burnt, in front of her. `docs/EVENTS.md`'s rule,
@@ -1772,18 +1794,20 @@ const TASK_HALF_EXTENT := Vector2(3.0, 4.0) * Tuning.TILE_SIZE
 func _pick_near(candidates: Array[Vector2i], rng: RandomNumberGenerator, mark: Vector2) -> Vector2:
 	if mark == Vector2.INF:
 		return _pick_reachable(candidates, rng)
-	_follow_the_paths_to_the_edge(_where_she_read_it(mark))
+	var her := _where_she_read_it(mark)
+	_draw_the_ground_round_her(mark)
+	_follow_the_paths_to_the_edge(her)
 	var near: Array[Vector2i] = []
 	for tile in candidates:
 		if not _circle_edge.has(tile) or not _spawn_siting.allows(
 				SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _task_drawn, _map.tile_to_world(tile)):
 			continue
 		near.append(tile)
-	var at := _pick_reachable(near, rng)
+	var at := _pick_reachable(near, rng, false, her)
 	if at != Vector2.INF:
 		return at
 	var nearest := _nearest_to_the_mark(candidates, mark)
-	trace.note("contact", ("nothing qualifies where a path reaches the %.0fpx circle round her; " +
+	_trace.note("contact", ("nothing qualifies where a path reaches the %.0fpx circle round her; " +
 			"the nearest that does is %s") % [NEAR_THE_MARK, "none" if nearest == Vector2.INF
 			else "%.0fpx away" % nearest.distance_to(mark)])
 	return nearest
@@ -1794,141 +1818,313 @@ func _where_she_read_it(mark: Vector2) -> Vector2:
 	var her := _player_position()
 	return her if her != Vector2.INF else mark
 
+## **Where she stands as a place is fixed for the task of the mark at `mark`**: where she read it
+## (`_where_she_read_it()`), or nowhere, `Vector2.INF`, with no mark. A place fixed with no mark
+## read is fixed at dawn, when her position is still the previous attempt's (`_begin_step()`), so
+## nothing about it may follow from where she is.
+func _she_stands_at(mark: Vector2) -> Vector2:
+	return Vector2.INF if mark == Vector2.INF else _where_she_read_it(mark)
+
 ## The tile of `candidates` nearest `mark` that every placement refusal here leaves alone — legal
-## ground (`SpawnSiting.CONTACT_GROUND`), reachable from home, off her screen — or
-## `Vector2.INF` when none does. `_pick_near()`'s fallback.
+## ground (`SpawnSiting.CONTACT_GROUND`), reachable from home, off her screen — and that she can
+## be sent to (`_she_can_be_sent_to()`, which, of a place beyond the ground drawn round her, asks
+## once more whether a body stands on it after the units round it have drawn), or `Vector2.INF`
+## when none does. `_pick_near()`'s fallback. **There is no cap on how far it stands**, so it may
+## stand beyond the ground drawn round where she read the mark (`_draw_the_ground_round_her()`):
+## the candidates are asked nearest first, each for what is cheap to ask before the units along
+## its way are drawn, the nearest found again by a scan after each refusal, so the first that
+## passes is the answer and neither is the pool drawn through nor the whole of it ordered.
 func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
-	var nearest := Vector2.INF
-	var nearest_distance := INF
-	for tile in candidates:
-		var world := _map.tile_to_world(tile)
-		var distance := world.distance_to(mark)
-		if distance >= nearest_distance:
-			continue
-		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
-				or not _reachable_from_home(tile) \
-				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
-			continue
-		nearest_distance = distance
-		nearest = world
-	return nearest
+	var refused := {}
+	while true:
+		# The nearest that passes the cheap checks, of two as near the earlier in the pool; a scan
+		# finds it again after each refusal, where ordering the whole pool would cost more than
+		# the one or two places that are asked.
+		var nearest := -1
+		var nearest_distance := INF
+		for index in candidates.size():
+			if refused.has(index):
+				continue
+			var world := _map.tile_to_world(candidates[index])
+			var distance := world.distance_to(mark)
+			if distance >= nearest_distance:
+				continue
+			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
+					or not _reachable_from_home(candidates[index]) \
+					or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
+				continue
+			nearest = index
+			nearest_distance = distance
+		if nearest < 0:
+			return Vector2.INF
+		var at := _map.tile_to_world(candidates[nearest])
+		var free := func(_tile: Vector2i) -> bool:
+			return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, at)
+		if _she_can_be_sent_to(candidates[nearest], _she_stands_at(mark), free):
+			_ground = candidates[nearest]
+			return at
+		refused[nearest] = true
+	return Vector2.INF
 
-## **Day 13's roadblock is placed the way the day places one, close by** *(inbox #650 in
-## mossy-beaver, the player: "let's not rig the roadblock let's place one properly and guide to that
-## -- just make sure it's closeby")*: generated by the scheduler's own acceptance
-## (`EventManager.queue_a_task_row()`), under every rule a roadblock the day plans is placed under,
-## and refused where it would close her way home or to a calm area — offered the road and crossing
-## tiles her paths from where she read the mark reach, out of her view (`TASK_HALF_EXTENT`) and
-## passing every refusal a contact's ground passes. Offered nearest first: where her paths first
-## reach the edge of the `NEAR_THE_MARK` circle round her (`_follow_the_paths_to_the_edge()`), the
-## ground every other task near its mark stands on; and only where the day's rules refuse all of
-## that, the ground her paths reach out to each of `ROADBLOCK_WIDER_REACH` in turn. Joined to the
-## day's plan, it is one more live roadblock the arrow chooses among. Null when none of it passes,
-## which leaves the task to the spawn on the edge every other task near its mark takes
-## (`_pick_near()`).
+## **Day 13's roadblock is one the day placed, close by** *(inbox #650 in mossy-beaver, the player:
+## "let's not rig the roadblock let's place one properly and guide to that -- just make sure it's
+## closeby"; inbox #1185 in gentle-owl: use a roadblock the day placed, and swap one in when none is close by)*.
+## Dawn stands roadblocks beside her routes so that one usually is
+## (`DawnRoadblocks`). Close by is walked from where she read the mark,
+## out to `NEAR_THE_MARK` and then each of `ROADBLOCK_WIDER_REACH` in turn, nearest first
+## (`_paths_reach_between()`), and a place counts when ground she can touch it from is reached and
+## is reachable from home (`_reachable_from_home()`):
+##
+## 1. **a roadblock the day placed** (`_a_roadblock_the_day_placed()`), put in the world now if it
+##    is not and kept there (`EventManager.keep_live()`); it may already be in her view, since it
+##    stood there all along;
+## 2. otherwise **a swap** (`_section_to_swap()`): the route-adjacent section of the day's
+##    locations nearest along her paths, out of her sight, whose whole content is replaced by a
+##    roadblock across it (`EventManager.swap_in_a_section()`; inbox #1185 in gentle-owl: "if we don't find one
+##    closeby we swap one off screen route adjacent event with a roadblock", "it replaces the content
+##    of the section with the roadblock"). Two things narrow it. Nothing of the section, neither what
+##    it holds nor the roadblock to come, may be in her view, which is the design's "off screen". And
+##    a section holding one of the city's fixed parts is passed over (`EventPlan.is_a_fixed_part()`):
+##    the region wall, the doors, the seals, the masts and the ambient rows, which the player gave
+##    phases of their own, the orchestrator's reading. Nothing else does: not how far it is, not
+##    whether what it holds stands still or has noticed her, and not a placement rule asked again.
+##
+## **The units round where she read the mark draw first**, out to the widest ring and
+## `Tuning.EVENT_DRAW_AHEAD` beyond (`_draw_the_ground_round_her()`), so her paths to a roadblock
+## the day placed are walked over ground no unit drawn later can shut, and it lies inside the
+## ground drawn round her; a section swapped in further off is asked like any place beyond that
+## ground (`_section_to_swap()`, `_she_can_be_sent_to()`).
+##
+## **Nothing is added in the walk** (inbox #1185 in gentle-owl): with neither, which only a day with no open
+## route-adjacent section reachable from her leaves, the task has no roadblock, and the run log says
+## so. Nothing is checked live: neither closes a route, since each stands off them.
+## Joined to the day's plan, the task's roadblock is one more live roadblock the arrow chooses among.
+## With no mark (a rig that starts the task without one) it is looked for from where she stands.
 func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
-	var def := EventCatalogue.by_id(_step.task_event_id) if _step else null
+	var def: EventDef = EventCatalogue.by_id(_step.task_event_id) if _step else null
 	if not def or not _events:
 		return null
 	var her := _where_she_read_it(mark)
-	_follow_the_paths_to_the_edge(her)
-	var placed := _events.queue_a_task_row(def, _roadblock_ground(def, _circle_edge), _rng,
-			her)
-	for reach: float in ROADBLOCK_WIDER_REACH:
-		if placed:
-			break
-		placed = _events.queue_a_task_row(def,
-				_roadblock_ground(def, _paths_reach_between(her, NEAR_THE_MARK, reach)), _rng, her)
-	if not placed:
-		trace.note("contact", ("no ground her paths reach within %.0fpx takes a roadblock " +
-				"under the day's rules; it is put on the edge of the %.0fpx circle instead")
-				% [ROADBLOCK_WIDER_REACH.back(), NEAR_THE_MARK])
+	if her == Vector2.INF:
 		return null
-	trace.note("contact", "a roadblock is placed at %s for the task, %.0fpx from the mark"
-			% [RunTrace.tile(_map.world_to_tile(placed.global_position)),
-			placed.global_position.distance_to(mark)])
-	return placed
+	var reaches: Array[float] = [NEAR_THE_MARK]
+	reaches.append_array(ROADBLOCK_WIDER_REACH)
+	# Before her paths are walked: a body a unit draws later must not shut one.
+	_draw_the_ground_round_her(her, reaches.back())
+	var paths := _paths_reach_between(her, 0.0, reaches.back())
+	for reach in reaches:
+		var found := _a_roadblock_the_day_placed(_step.task_event_id, paths, reach)
+		if found:
+			var kept := _events.keep_live(_step.task_event_id, found.placed_at())
+			if kept:
+				_ground = _touched_from(found, paths, reach)
+				_trace.note("contact", "the task takes the roadblock the day placed at %s, %.0fpx from the mark"
+						% [RunTrace.tile(_map.world_to_tile(found.placed_at())),
+						found.placed_at().distance_to(her)])
+				return kept
+	var to_swap := _section_to_swap(def, her, paths)
+	if to_swap:
+		var swapped := _events.swap_in_a_section(to_swap.section(), to_swap.roadblock())
+		if swapped:
+			_ground = to_swap.ground()
+			_trace.note("contact", "the task's roadblock is put across a section at %s, %.0fpx from the mark"
+					% [RunTrace.tile(_map.world_to_tile(swapped.body_position())),
+					swapped.body_position().distance_to(her)])
+			return swapped
+	_trace.note("contact", ("no roadblock the day placed is within %.0fpx of her paths and no " +
+			"section beside her routes can take one; the task has no roadblock") % reaches.back())
+	return null
 
-## How far out from where she read the mark day 13's roadblock is offered ground, in turn, where the
-## day's rules refuse every tile on the edge of the `NEAR_THE_MARK` circle: half a block and a
-## street further, then a whole block and a street — the next block out, still nearer than the far
-## side of a district. *(Proposed, not asked for: the player's "closeby" sets no number.)*
+## How far out from where she read the mark day 13's roadblock is looked for, in turn, past the
+## `NEAR_THE_MARK` circle: half a block and a street further, then a whole block and a street — the
+## next block out, still nearer than the far side of a district, and the widest dawn stands one
+## within of every stretch of her routes (`RuledRoadblockGround.TASK_ROW_CLOSE_BY`). *(Proposed, not
+## asked for: the player's "closeby" sets no number.)*
 const ROADBLOCK_WIDER_REACH: Array[float] = [
 	NEAR_THE_MARK + (Tuning.BLOCK_SIZE / 2.0 + Tuning.STREET_WIDTH) * Tuning.TILE_SIZE,
-	NEAR_THE_MARK + (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH) * Tuning.TILE_SIZE,
+	RuledRoadblockGround.TASK_ROW_CLOSE_BY,
 ]
 
-## The tiles of `tiles` (`tile -> true`) day 13's roadblock may be offered: of its own row's tile
-## types, out of her view (`TASK_HALF_EXTENT`), and passing every refusal a contact's ground passes
-## (`SpawnSiting.CONTACT_GROUND`, reachable from home). In
-## `CityMap.tiles_of_type()`'s own
-## order, so the scheduler's draw over them is the same every time.
-func _roadblock_ground(def: EventDef, tiles: Dictionary) -> Array[Vector2i]:
-	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
-	var offered: Array[Vector2i] = []
-	for type in def.placement:
-		for tile in _map.tiles_of_type(type as GameEnums.TileType):
-			var world := _map.tile_to_world(tile)
-			if not tiles.has(tile) or not _spawn_siting.allows(
-					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
+## **The nearest roadblock the day placed that her paths reach within `reach`**: a placed, unspent
+## plan of the row `id`, not a region door's body or the wall's own (`is_door()`,
+## `is_in_the_wall()`), with ground she can touch it from among `paths` (`tile -> its distance from
+## her`) closer than `reach` and reachable from home. Null when none is.
+func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
+		reach: float) -> EventPlan:
+	var nearest: EventPlan = null
+	var nearest_distance := INF
+	for plan in _walk.plans():
+		if plan.row_id() != id or not plan.is_placed() or plan.is_spent() or plan.is_door() \
+				or plan.is_in_the_wall():
+			continue
+		var from := _touched_from(plan, paths, reach)
+		var distance := float(paths[from]) if from != NO_TILE else INF
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = plan
+	return nearest
+
+## **The section day 13's task puts its roadblock across when none is close by**: the route-adjacent
+## section of the day's locations (`WalkEvents.locations()`) nearest along her paths from `her`, by
+## the nearest of its own tiles they reach that is reachable from home (`_reachable_from_home()`,
+## `DayLocations.nearest_section_in()`), with no cap on how far: `paths`, the paths the close-by
+## search walked, first, then her paths over the whole city where those reach none. Of those, the
+## first where the roadblock `def` stands across it (`EventScheduler.across_the_section()`: off the
+## main road, on its carriageway), with neither it, drawn where its body stands
+## (`EventPlan.body_at()`, on its kerb), nor anything the section holds in her view
+## (`_drawing_shows()`), and holding none of the city's fixed parts (`EventPlan.is_a_fixed_part()`).
+## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
+## draws nothing. **And it is one she can be sent to** (`_she_can_be_sent_to()`, asked of the
+## nearest of its tiles her paths reach that is reachable from home,
+## `_ground_she_can_be_sent_to_in()`), since a section across the city may lie beyond the ground
+## drawn round her: asked after the two checks that read nothing a unit draws and before what the
+## section holds is looked at, which a confirmation's own draw round the place may add to.
+## Answers the section, the roadblock checked across it and the ground asked (`SectionToSwap`),
+## the very plan whose place was asked of her view, so what is put there is what was checked; null
+## where none does or the walk has no locations. *Read as, the orchestrator's and open to
+## correction:* nearest along her paths, a section not yet drawn taken like any other (fork 7 of the
+## placement proposal); and the city's fixed parts, which the player gave phases of their own, are not
+## the day's events to replace, while the burnt shell, "just regular events" to the player, is
+## (inbox #1185 in gentle-owl).
+func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> SectionToSwap:
+	var locations := _walk.locations()
+	if not locations:
+		return null
+	var row := def.for_day(_day)
+	var checked := {}
+	var may_take := func(section: Location, searched: Dictionary) -> bool:
+		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
+		var across := EventScheduler.across_the_section(row, _builder, _map, section,
+				RandomNumberGenerator.new())
+		if across == null or _drawing_shows(row, across.body_at()):
+			return false
+		var ground := _ground_she_can_be_sent_to_in(section, searched, her)
+		if ground == NO_TILE:
+			return false
+		for plan in _walk.placed_within(_map.tile_rect_to_world(section.tiles())):
+			if plan.is_a_fixed_part() or _drawing_shows(plan.row(), plan.where_it_stands_now()):
+				return false
+		checked[section] = SectionToSwap.new(section, across, ground)
+		return true
+	var section := locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths,
+			_reachable_from_home, may_take.bind(paths))
+	if not section:
+		var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
+		var over_the_city := _paths_reach_between(her, 0.0, whole_city)
+		section = locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, over_the_city,
+				_reachable_from_home, may_take.bind(over_the_city))
+	return checked[section] if section else null
+
+## **The ground of `section` she can be sent to** (`_she_can_be_sent_to()`, from where she stands,
+## `her`): the nearest of its tiles along `paths` (`tile -> its distance from her`) that is
+## reachable from home, the tile `DayLocations.nearest_section_in()` ranks the section by, where
+## that one passes; `NO_TILE` where her paths reach none or it is refused.
+func _ground_she_can_be_sent_to_in(section: Location, paths: Dictionary, her: Vector2) -> Vector2i:
+	var tiles := section.tiles()
+	var nearest := NO_TILE
+	var nearest_distance := INF
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			var tile := Vector2i(x, y)
+			if paths.has(tile) and float(paths[tile]) < nearest_distance \
+					and _reachable_from_home(tile):
+				nearest_distance = float(paths[tile])
+				nearest = tile
+	# The roadblock replaces what the section holds, so nothing more is asked of the tile.
+	var whatever_stands_there := func(_tile: Vector2i) -> bool:
+		return true
+	if nearest == NO_TILE or not _she_can_be_sent_to(nearest, her, whatever_stands_there):
+		return NO_TILE
+	return nearest
+
+## **The section day 13's swap takes, the roadblock checked across it and the ground she is sent
+## to for it** (`_section_to_swap()`): the three answers one search found, kept together so the
+## roadblock placed is the one checked and the ground named is the one asked.
+class SectionToSwap extends RefCounted:
+	var _section: Location
+	var _roadblock: EventPlan
+	var _ground: Vector2i
+
+	func _init(section: Location, roadblock: EventPlan, ground: Vector2i) -> void:
+		_section = section
+		_roadblock = roadblock
+		_ground = ground
+
+	## The section the roadblock goes across.
+	func section() -> Location:
+		return _section
+
+	## The roadblock checked across it, out of her view.
+	func roadblock() -> EventPlan:
+		return _roadblock
+
+	## The tile of the section she is sent to, which passed
+	## `ResistanceDirector._she_can_be_sent_to()`.
+	func ground() -> Vector2i:
+		return _ground
+
+## **The nearest ground along her paths she can touch `plan` from** (`paths`, `tile -> its distance
+## from her`): a tile within a tile and a half of its body where it stands (`EventPlan.body_at()`),
+## reachable from home and closer along her paths than `reach`, or `NO_TILE` when none is.
+func _touched_from(plan: EventPlan, paths: Dictionary, reach: float) -> Vector2i:
+	var touch := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
+	var body := plan.body_at()
+	var centre := _map.world_to_tile(body)
+	var span := ceili(touch / Tuning.TILE_SIZE)
+	var from := NO_TILE
+	var nearest := INF
+	for dy in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if not paths.has(tile):
 				continue
-			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
+			var distance: float = paths[tile]
+			if distance >= reach or distance >= nearest \
+					or _map.tile_to_world(tile).distance_to(body) > touch \
 					or not _reachable_from_home(tile):
 				continue
-			offered.append(tile)
-	return offered
+			nearest = distance
+			from = tile
+	return from
 
 ## The tiles her paths from `her` reach at least `near` and less than `far` from her own tile's
 ## centre, walked tile by tile over walkable ground the day's obstruction leaves open
-## (`_reach_blocked`), as `_follow_the_paths_to_the_edge()` walks them but on past the circle's edge.
-## `tile -> true`.
+## (`DayReach.paths_within()`, the walk dawn measures close by with too), as
+## `_follow_the_paths_to_the_edge()` walks them but on past the circle's edge. `tile -> its distance
+## from her own tile's centre`.
 func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
-	_ensure_reachability()
-	var found := {}
 	var start := _map.world_to_tile(her)
 	if not _map.is_walkable(start):
-		return found
-	var centre := _map.tile_to_world(start)
-	var seen := {start: true}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	while head < queue.size():
-		var tile: Vector2i = queue[head]
-		head += 1
-		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var next := tile + step
-			if seen.has(next) or not _map.is_walkable(next) or _reach_blocked.has(next):
-				continue
-			seen[next] = true
-			var distance := _map.tile_to_world(next).distance_to(centre)
-			if distance >= far:
-				continue
-			if distance >= near:
-				found[next] = true
-			queue.append(next)
+		return {}
+	var found := {}
+	var reached := _reach().paths_within(_map, [start] as Array[Vector2i], _map.tile_to_world(start),
+			far)
+	for tile: Vector2i in reached:
+		if tile != start and reached[tile] >= near:
+			found[tile] = reached[tile]
 	return found
 
 ## Where day 9's task points: one of today's region-wall doors — a `StreetNetwork.Segment` from
-## `DayStreets.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
+## `DayStreets.region_plan().door_segments()` — at its own crossing tile, chosen the same reachable-among-
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
 ## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
-## equals the day this task is offered on. The pool is `ResistanceSteps.target_candidates()`,
+## equals the day this task is offered on. The pool is `NarrowTargetPool.tiles()`,
 ## which leaves out any door on a street bordering the home block — see that function's own doc for
 ## why `allow_held` below would otherwise let one through.
-func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
-	var candidates := ResistanceSteps.target_candidates(
+func _place_at_a_door(rng: RandomNumberGenerator, her := Vector2.INF) -> Vector2:
+	var candidates := NarrowTargetPool.tiles(
 			_step_of_kind(ResistanceSteps.TargetKind.DOOR), _map, _region_plan())
 	if candidates.is_empty():
 		return Vector2.INF
 	# `allow_held` is not optional here, it is the whole placement: every remaining tile sits on
 	# a segment `EventManager.start_day()` already held for the day (held so no catalogue row may
-	# be sited on a door — see `CityMap.held_segments`), and this director runs after that. The
+	# be sited on a door — see `CityMap.held`), and this director runs after that. The
 	# held filter would refuse the exact ground the task names: with it applied, every door
 	# candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to go" — so
 	# the crossing task never appeared at all. It does not reopen the home-block exemption: that
 	# ground was filtered out of the pool, before `allow_held` ever gets a say.
-	var tile := _pick_reachable(candidates, rng, true)
+	var tile := _pick_reachable(candidates, rng, true, her)
 	if tile == Vector2.INF:
 		return Vector2.INF
 	return _a_gatehouse_of_the_door_at(_map.world_to_tile(tile), rng)
@@ -1951,30 +2147,30 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 	var region_plan := _region_plan()
 	if not region_plan:
 		return _map.tile_to_world(tile)
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		if not segment.tile_rect().has_point(tile):
 			continue
 		var area := _map.tile_rect_to_world(segment.tile_rect())
-		var houses: Array[EventScheduler.Planned] = []
-		for body in region_plan.door_bodies:
-			if not area.has_point(body.position):
+		var houses: Array[EventPlan] = []
+		for body in region_plan.door_plans():
+			if not area.has_point(body.placed_at()):
 				continue
-			if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED:
-				_door_at = body.position
-				_door_axis = body.facing
-			elif body.def.redetains:
+			if body.is_a_boom():
+				_door_at = body.placed_at()
+				_door_axis = body.faces()
+			elif body.detains_again():
 				houses.append(body)
 		if houses.is_empty():
 			return _map.tile_to_world(tile)
-		houses.sort_custom(func(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
-			return a.position.x < b.position.x \
-					or (a.position.x == b.position.x and a.position.y < b.position.y))
+		houses.sort_custom(func(a: EventPlan, b: EventPlan) -> bool:
+			return a.placed_at().x < b.placed_at().x \
+					or (a.placed_at().x == b.placed_at().x and a.placed_at().y < b.placed_at().y))
 		# A door with no boom today: its line is one of its own gatehouses' — this door's own
 		# bodies share its street's axis, where another door's need not.
 		if _door_at == Vector2.INF:
-			_door_at = houses[0].position
-			_door_axis = houses[0].facing
-		return houses[rng.randi_range(0, houses.size() - 1)].position
+			_door_at = houses[0].placed_at()
+			_door_axis = houses[0].faces()
+		return houses[rng.randi_range(0, houses.size() - 1)].placed_at()
 	return _map.tile_to_world(tile)
 
 ## **Day 9 is done by crossing the door, never by standing near it** *(the player: "Cross at this
@@ -1993,12 +2189,12 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## that into `_on_contact_completed()`, which `complete_now()` calls before it returns.
 func _on_door_crossed(at: Vector2, axis: Vector2, inspected: bool) -> void:
 	if not _step or _step.target_kind != ResistanceSteps.TargetKind.DOOR or not _contact \
-			or _contact.is_done or _door_at == Vector2.INF:
+			or _contact.is_finished() or _door_at == Vector2.INF:
 		return
 	if absf((at - _door_at).dot(_door_axis)) > 1.0 or absf(axis.dot(_door_axis)) < 0.99 \
 			or at.distance_to(_door_at) > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
 		return
-	trace.note("contact", "step %d: she crossed the district door at %s, %s" % [_step.index,
+	_trace.note("contact", "step %d: she crossed the district door at %s, %s" % [_step.index,
 			RunTrace.tile(_map.world_to_tile(_door_at)),
 			"let through after the inspection" if inspected else "under the boom, not inspected"])
 	_walked_under_the_door = not inspected
@@ -2012,22 +2208,22 @@ var _walked_under_the_door := false
 ## Where day 12's task points: the swing of the one park the city chose for it
 ## (`CityGenerator.swing_park()`), forced open today whatever its arc has reached
 ## (`CityState.purpose_of()`), at the same point `City._dress_block()` draws the swing frame at
-## (`CityMap.swing_position()`). The pool is `ResistanceSteps.target_candidates()`, one tile, which
+## (`CityMap.swing_position()`). The pool is `NarrowTargetPool.tiles()`, one tile, which
 ## the day's planning keeps reachable from home; `Vector2.INF` only on a day that park is not open,
-## which on its own day is a city `CityGenerator.validate()` refused.
-func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
+## which on its own day is a city `CityGenerator.validation_problems()` refused.
+func _place_at_a_swing(rng: RandomNumberGenerator, her := Vector2.INF) -> Vector2:
 	if not _map:
 		return Vector2.INF
-	var tile := _pick_reachable(ResistanceSteps.target_candidates(
-			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng)
+	var tile := _pick_reachable(NarrowTargetPool.tiles(
+			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng, false, her)
 	if tile == Vector2.INF:
 		return Vector2.INF
-	var layout: BlockLayout = _map.block_layouts.get(CityGenerator.swing_park(_map))
-	return _map.swing_position(layout.playground) if layout else tile
+	var layout: BlockLayout = _map.layout_of(CityGenerator.swing_park(_map))
+	return _map.swing_position(layout.playground_rect()) if layout else tile
 
 ## **The station's door point on its facade**: the middle of the drawn door
 ## (`Building._draw_front_overlay()`, centred on the two pavement tiles of
-## `CityMap.power_station_door`), half a tile up the ground floor — the same point
+## `CityMap.power_station_door_tiles()`), half a tile up the ground floor — the same point
 ## `CityFronts.way_in_behind()` gives a building's door, so the same `DOOR_REACH` covers the pavement in
 ## front of it the same way. One tile above the pavement rect's centre, which is half a tile below
 ## the wall line.
@@ -2037,9 +2233,10 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## Where day 11's task points: beside the foot of one of today's live loudspeaker masts
 ## (`EventManager.mast_foot()`'s own point, the plan's position), drawn by the day's RNG among the
 ## masts she can reach, weighted toward the nearer ones (`_weighted_mast_index()`). `Vector2.INF`
-## when no mast stands near her and none can be put up there, and none stands anywhere else either —
-## from `Tuning.MAST_FIRST_DAY` on, only a day whose holds took every site, or a scene recipe, which
-## installs no mast it does not name.
+## when no mast stands near her, none can be put up there, and she can be sent to none standing
+## anywhere else: either none stands (from `Tuning.MAST_FIRST_DAY` on, only a day whose holds took
+## every site, or a scene recipe, which installs no mast it does not name), or each that does is
+## refused (`_nearest_confirmed_mast()`).
 ##
 ## **Reachable is asked of the ground beside the foot, not of the foot.** The pole is a body
 ## (`EventScheduler.blocked_by()` paints its disc over the foot's own tile), and she touches it
@@ -2060,63 +2257,111 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## far one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
 ## close by"* (2026-10-03, quiet-yak, inbox #486). Only where no ground near the mark can take one is the offered mast
-## nearest the mark the one. **No live mast anywhere is no mast near her**, so a mark still has one
-## put up beside it. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws among
+## nearest the mark that she can be sent to the one (`_nearest_confirmed_mast()`), and
+## where none is the task has no place, as with no live mast. **No live mast anywhere is no mast
+## near her**, so a mark still has one put up beside it. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws among
 ## them all.
+##
+## **The ground she is sent to is the tile beside the foot** (`_ground`): a mast near her stands
+## inside the ground drawn round where she read the mark (`_draw_the_ground_round_her()`), her
+## paths reaching the tile beside it.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:
 	_mast_id = ""
 	if not _events:
 		return Vector2.INF
+	_draw_the_ground_round_her(mark)
 	var ground := _spawn_siting.ask_of_ground()
-	var offered: Array[EventScheduler.Planned] = []
+	var offered: Array[EventPlan] = []
 	var beside: Array[Vector2i] = []
 	for plan in _events.plans():
-		if plan.mast_id == "" or plan.def.role != EventDef.Role.MAST or plan.silenced \
-				or not plan.is_placed():
-			continue
-		var foot := _map.world_to_tile(plan.position)
-		if _map.is_closed(foot) or _map.is_on_home_block(foot):
-			continue
-		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var tile := foot + side
-			if _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
-					_map.tile_to_world(tile)) and _reachable_from_home(tile):
-				offered.append(plan)
-				beside.append(tile)
-				break
+		var sides := _ground_beside_a_mast(plan, ground)
+		if not sides.is_empty():
+			offered.append(plan)
+			beside.append(sides[0])
 	# No live mast anywhere is no mast near, so a mark still has one put up beside it below — a day
 	# whose holds took every site, or a scene recipe, which installs no mast it does not name.
 	if offered.is_empty() and mark == Vector2.INF:
 		return Vector2.INF
 	if mark != Vector2.INF:
 		_follow_the_paths_to_the_edge(_where_she_read_it(mark))
-		var near_plans: Array[EventScheduler.Planned] = []
+		var near_plans: Array[EventPlan] = []
 		var near_beside: Array[Vector2i] = []
-		var nearest := 0
 		for i in offered.size():
-			var distance := _map.tile_to_world(beside[i]).distance_to(mark)
-			if distance < _map.tile_to_world(beside[nearest]).distance_to(mark):
-				nearest = i
 			if _circle_inside.has(beside[i]) or _circle_edge.has(beside[i]):
 				near_plans.append(offered[i])
 				near_beside.append(beside[i])
 		if near_plans.is_empty():
-			var added := _add_a_mast_near(mark, rng)
+			var added := _add_a_mast_near(mark)
 			if not added.is_empty():
-				_mast_id = EventScheduler.added_mast_id(_map.tile_to_world(added[0]))
+				_mast_id = DawnMasts.added_mast_id(_map.tile_to_world(added[0]))
+				_ground = added[1]
 				return _map.tile_to_world(added[0])
-			if offered.is_empty():
+			var stand_in := _nearest_confirmed_mast(offered, beside, ground, mark)
+			_trace.note("contact", ("no mast stands where a path reaches the %.0fpx circle round her and "
+					+ "none could be put up; the nearest live one a way is confirmed to is %s") % [
+					NEAR_THE_MARK, "none" if stand_in < 0
+					else "%.0fpx from the mark" % offered[stand_in].placed_at().distance_to(mark)])
+			if stand_in < 0:
 				return Vector2.INF
-			trace.note("contact", ("no mast stands where a path reaches the %.0fpx circle round her and "
-					+ "none could be put up; the nearest live one is %.0fpx from the mark") % [
-					NEAR_THE_MARK, offered[nearest].position.distance_to(mark)])
-			near_plans.append(offered[nearest])
-			near_beside.append(beside[nearest])
+			near_plans.append(offered[stand_in])
+			near_beside.append(beside[stand_in])
 		offered = near_plans
 		beside = near_beside
 	var index := _weighted_mast_index(beside, rng)
-	_mast_id = offered[index].mast_id
-	return offered[index].position
+	_mast_id = offered[index].mast_id()
+	_ground = beside[index]
+	return offered[index].placed_at()
+
+## The index in `offered` of the live mast nearest `mark` anywhere in the city that she can be sent
+## to (`_she_can_be_sent_to()`, which, of a mast beyond the ground drawn round her, draws the units
+## along a way from home and round the tile beside it, and asks once more that no body stands on
+## it), or -1 when none is. `_place_at_a_mast()`'s fallback, with no cap on how far it stands, so
+## it may stand beyond the ground drawn round where she read the mark: the masts are asked nearest
+## first (by `beside[i]`, the first side of each foot she touches it from) and the first that
+## passes is the answer, the nearest found again by a scan after each refusal, so a mast is asked
+## only where the ones nearer were refused and the whole list is never ordered. **Every side of a
+## foot she can touch it from is asked in turn** (`_ground_beside_a_mast()`), as the red arrow
+## counts a mast by any of them (`_mast_answers()`), and `beside[i]` is left the side that
+## passed.
+func _nearest_confirmed_mast(offered: Array[EventPlan], beside: Array[Vector2i],
+		ground: SpawnSiting.Ask, mark: Vector2) -> int:
+	var standing := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+				_map.tile_to_world(tile))
+	var her := _she_stands_at(mark)
+	var refused := {}
+	while refused.size() < offered.size():
+		var nearest := -1
+		var nearest_distance := INF
+		for i in offered.size():
+			var distance := _map.tile_to_world(beside[i]).distance_to(mark)
+			if not refused.has(i) and distance < nearest_distance:
+				nearest = i
+				nearest_distance = distance
+		for side in _ground_beside_a_mast(offered[nearest], ground):
+			if _she_can_be_sent_to(side, her, standing):
+				beside[nearest] = side
+				return nearest
+		refused[nearest] = true
+	return -1
+
+## **The ground beside the foot of the mast `plan` she touches it from**: the tiles beside its foot,
+## left, right, up and down in that order, that are legal, unobstructed ground (`ground`,
+## `SpawnSiting.CONTACT_GROUND`) reachable from home. Empty for a plan that is no live mast: not a
+## mast, silenced, not placed, or with its foot on a closed street or the home block.
+func _ground_beside_a_mast(plan: EventPlan, ground: SpawnSiting.Ask) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	if not plan.is_a_live_mast() or not plan.is_placed():
+		return found
+	var foot := _map.world_to_tile(plan.placed_at())
+	if _map.is_closed(foot) or _map.is_on_home_block(foot):
+		return found
+	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var tile := foot + side
+		if _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+				_map.tile_to_world(tile)) and _reachable_from_home(tile):
+			found.append(tile)
+	return found
 
 ## Queues one more mast near `mark` for day 11's task, when no live mast stands where her paths
 ## reach within the circle round her (`_place_at_a_mast()`), and answers `[its foot, the tile beside
@@ -2133,7 +2378,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 ##   from home);
 ## - ground a site would be offered on (`MastSites.is_eligible()`: off the home street, its field
 ##   off a calm interior and off every place a region door could stand).
-func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector2i]:
+func _add_a_mast_near(mark: Vector2) -> Array[Vector2i]:
 	var added: Array[Vector2i] = []
 	if not _events:
 		return added
@@ -2158,14 +2403,14 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 					feet.append(tile)
 					beside_of[tile] = next
 					break
-	var plan := _events.queue_a_mast(feet, rng)
+	var plan := _events.queue_a_mast(feet)
 	if not plan:
-		trace.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
+		_trace.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
 				% NEAR_THE_MARK)
 		return added
-	var foot := _map.world_to_tile(plan.position)
-	trace.note("contact", "a mast is generated at %s for the task, %.0fpx from the mark"
-			% [RunTrace.tile(foot), plan.position.distance_to(mark)])
+	var foot := _map.world_to_tile(plan.placed_at())
+	_trace.note("contact", "a mast is generated at %s for the task, %.0fpx from the mark"
+			% [RunTrace.tile(foot), plan.placed_at().distance_to(mark)])
 	added.append(foot)
 	added.append(beside_of.get(foot, foot))
 	return added
@@ -2207,7 +2452,7 @@ func _weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -
 
 ## Silences the mast day 11 sent her to, for the rest of the run: today through
 ## `EventManager.silence_mast()`, and every later day through the scar it leaves
-## (`EventScheduler.SILENCED_MAST`), which `EventScheduler._place_masts()` reads before a mast's plan
+## (`DawnMasts.SILENCED_MAST`), which `DawnMasts` reads before a mast's plan
 ## is ever made. A scar rather than a field of its own on `RunState` because it is exactly what a
 ## scar is — a permanent mark on the city left by what happened on an earlier day — and so it is
 ## saved, and given back with a lost day, by what already does both for the burnt shell.
@@ -2217,8 +2462,8 @@ func _silence_the_mast() -> void:
 	var foot := _events.mast_foot(_mast_id)
 	_events.silence_mast(_mast_id)
 	if foot != Vector2.INF:
-		_run.add_scar(EventScheduler.SILENCED_MAST, foot)
-	trace.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
+		_run.add_scar(DawnMasts.SILENCED_MAST, foot)
+	_trace.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
 
 ## How far from where she touched the mark the neighbor has to start, at least: off screen, so they
 ## walk into view rather than appear in it — the same distance an unseen mark is kept at.
@@ -2231,55 +2476,89 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ## Day 10's neighbor, out in the city and walking home: spawned on a sidewalk about
 ## `NEIGHBOR_WALK_HOME_SECONDS` of their own walk from her door, off screen from her, and
 ## given the walk itself as a path — down the day's own walking distance to the doorstep, over
-## ground the day's closures and bodies leave open (`_reach_blocked`, the director's own
+## ground the day's closures and bodies leave open (`_reach()`, the day's own
 ## reachability answer), on sidewalks and crossings where they reach and over any walkable ground
 ## where they do not. **The walk is the deadline**: `EventCatalogue.neighbor_heading_home()` stops
-## at the door (`stops_where_it_arrives`), and `tick()` reads a parked neighbor as the task
+## at the door (its route parks where it arrives), and `tick()` reads a parked neighbor as the task
 ## lost. Null when no start qualifies, which leaves the task with nowhere to go.
 ##
 ## The start is drawn by the day's RNG from the band of tiles `NEIGHBOR_WALK_BAND_TILES` either side
 ## of the walk asked for, in `tiles_of_type()`'s own order, so the same day draws the same start.
+##
+## **The units along the walk draw before the neighbor sets out** (`_draw_the_ground_along()`):
+## the start is blocks away, over ground her walk may not have come near, and a body a unit draws
+## there later would stand on the walk already given. So the walk is laid, the units round it
+## drawn, and where that drew any it is laid again over what they shut, from the same start while
+## that is still one the band offers, up to `WayConfirmation.PASSES` times; the neighbor is sent
+## down the first walk a pass draws nothing round, or down the last one laid.
+##
+## **The start is the ground she is sent to** (`_ground`), asked like any other place where the
+## contact is stood (`_begin_step()`): beyond the ground drawn round her, a way from home to it is
+## confirmed, which may be another than the walk the neighbor is given.
 func _send_the_neighbor_home() -> EventInstance:
 	if not _events:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
-	_ensure_reachability()
-	var on_foot := _reach_blocked.duplicate()
-	for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
-		on_foot[tile] = true
-	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
-	for blocked: Dictionary in [on_foot, _reach_blocked]:
-		var field := _map.walk_field(door, blocked)
-		var start := _a_neighbor_start(field, wanted)
-		if start == NO_TILE:
-			continue
-		var path := _walk_home(field, start)
-		trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
-				% [_map.distance_at(field, start), RunTrace.tile(start)])
-		return _events.spawn_extra(def, path[0], path)
+	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed() / Tuning.TILE_SIZE)
+	var ground := _spawn_siting.ask_of_ground()
+	var kept := NO_TILE
+	for pass_index in WayConfirmation.PASSES:
+		var shut := _reach().shut()
+		var on_foot := shut.duplicate()
+		for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
+			on_foot[tile] = true
+		var laid_again := false
+		for blocked: Dictionary in [on_foot, shut]:
+			var field := _map.walk_field(door, blocked)
+			var start := kept if _is_a_neighbor_start(field, wanted, kept, ground) \
+					else _a_neighbor_start(field, wanted, ground)
+			if start == NO_TILE:
+				continue
+			var path := _walk_home(field, start)
+			if _draw_the_ground_along(path) and pass_index + 1 < WayConfirmation.PASSES:
+				kept = start
+				laid_again = true
+				break
+			_trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
+					% [_map.distance_at(field, start), RunTrace.tile(start)])
+			_ground = start
+			return _events.spawn_extra(def, path[0], path)
+		if not laid_again:
+			break
 	if _pinned_neighbor != Vector2.INF:
 		_scene_task_errors.append(("setup.task.neighbor %s is not a start the day could draw: a " +
 				"sidewalk tile centre %d±%d tiles of walk from home, %.0fpx or more from her")
 				% [_pinned_neighbor, wanted, NEIGHBOR_WALK_BAND_TILES, NEIGHBOR_CLEAR_OF_HER])
 	return null
 
+## **Draws the units round a walk** given as its corners (`walk`): round each corner and every
+## `WayConfirmation.STEP` tiles of each run between two, out to `Tuning.EVENT_DRAW_AHEAD`
+## (`EventManager.draw_the_ground_round()`), so no unit drawn later stands a body on it. Answers
+## whether it drew any.
+func _draw_the_ground_along(walk: PackedVector2Array) -> bool:
+	var drew := false
+	var stride := float(WayConfirmation.STEP * Tuning.TILE_SIZE)
+	for k in walk.size():
+		drew = _events.draw_the_ground_round(walk[k], Tuning.EVENT_DRAW_AHEAD) or drew
+		if k + 1 == walk.size():
+			break
+		var along := stride
+		while along < walk[k].distance_to(walk[k + 1]):
+			drew = _events.draw_the_ground_round(walk[k].move_toward(walk[k + 1], along),
+					Tuning.EVENT_DRAW_AHEAD) or drew
+			along += stride
+	return drew
+
 ## A sidewalk tile whose walk home is within `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen
-## from her and on ground a contact may stand on, drawn by the day's RNG — or `NO_TILE`.
-func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
-	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
-	var ground := _spawn_siting.ask_of_ground()
+## from her and on ground a contact may stand on (`ground`, `SpawnSiting.ask_of_ground()`), drawn by
+## the day's RNG — or `NO_TILE`.
+func _a_neighbor_start(field: PackedInt32Array, wanted: int,
+		ground: SpawnSiting.Ask) -> Vector2i:
 	var offered: Array[Vector2i] = []
 	for tile in _map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		var walk := _map.distance_at(field, tile)
-		if walk < 0 or absi(walk - wanted) > NEIGHBOR_WALK_BAND_TILES:
-			continue
-		if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
-			continue
-		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
-				_map.tile_to_world(tile)):
-			continue
-		offered.append(tile)
+		if _is_a_neighbor_start(field, wanted, tile, ground):
+			offered.append(tile)
 	if _pinned_neighbor != Vector2.INF:
 		# A scene's pin (`start_recipe_task()`): one of the starts the draw below chooses among, or
 		# none — never the nearest one standing in for it.
@@ -2289,6 +2568,21 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 	if offered.is_empty():
 		return NO_TILE
 	return offered[_rng.randi_range(0, offered.size() - 1)]
+
+## Whether `tile` is a start the neighbor's draw offers over `field`: a walk home within
+## `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen from her, on ground a contact may stand on
+## (`ground`). False for `NO_TILE`.
+func _is_a_neighbor_start(field: PackedInt32Array, wanted: int, tile: Vector2i,
+		ground: SpawnSiting.Ask) -> bool:
+	if tile == NO_TILE:
+		return false
+	var walk := _map.distance_at(field, tile)
+	if walk < 0 or absi(walk - wanted) > NEIGHBOR_WALK_BAND_TILES:
+		return false
+	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
+	if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
+		return false
+	return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, _map.tile_to_world(tile))
 
 ## The walk from `start` down `field` to the doorstep, as the corners of it: each step goes to a
 ## neighbor one tile nearer home, keeping the heading it already has where that is one of them, so
@@ -2326,14 +2620,14 @@ func _take_the_neighbor_away() -> void:
 	if not _taken_neighbor or not is_instance_valid(_taken_neighbor):
 		_taken_neighbor = null
 		return
-	if _drawing_shows(_taken_neighbor.def, _taken_neighbor.global_position):
+	if _drawing_shows(_taken_neighbor.row(), _taken_neighbor.global_position):
 		return
 	_events.retire(_taken_neighbor)
 	_taken_neighbor = null
-	trace.note("contact", "the neighbor is taken with the raid")
+	_trace.note("contact", "the neighbor is taken with the raid")
 
 ## The calendar's one step that places its contact `kind`'s way — `DOOR` or `PARK_SWING` — so the
-## two placements above read their pool through `ResistanceSteps.target_candidates()`, the function
+## two placements above read their pool through `NarrowTargetPool.tiles()`, the function
 ## the day's planning reads it through, rather than a copy of it. Null if the calendar has none.
 ## The calendar is the one the director offers steps from (`_steps`, `use_steps()`).
 func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
@@ -2344,28 +2638,28 @@ func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
 
 ## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance_*.gd`
 ## build with no streets.
-func _region_plan() -> RegionPlanner.RegionPlan:
+func _region_plan() -> RegionPlan:
 	return _streets.region_plan() if _streets else null
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
-## day 12's swing or the power station's front door (`ResistanceSteps.target_candidates()`) that
-## pass every
-## refusal this director makes of a tile before it draws (`SpawnSiting.is_legal_ground()`), empty
-## on every other
-## day. `EventManager.start_day()` hands it to `EventScheduler.build_day()`, which keeps a route from
-## home to one of these tiles among the day's own bodies — so the tile `_pick_reachable()` then
-## draws, asked for reachability like every other pool, is always found. Asked once the day's holds
+## day 12's swing or the power station's front door (`NarrowTargetPool.tiles()`) that
+## pass every refusal this director makes of a tile before it draws (`SpawnSiting.is_legal_ground()`),
+## empty on every other day. `CalmAreas.of()` is handed it to set the swing's park aside. A route from
+## home to the place holds because the place is on the day's route tree and no body the dawn plans
+## closes a route (the route rules of `StreetInvalidation`, and `RouteGroundRule` for the scars and
+## the spoilers, which keep every body off a route's ground off the streets) — so the tile
+## `_pick_reachable()` then draws, asked for reachability like every other pool, is always found. Asked once the day's holds
 ## are all on the map and before any body is, which is why `is_obstructed()` is not part of it:
 ## the scheduler's own discs stand in for the bodies, the same discs `_reachable_from_home()` asks.
 static func target_ground(map: CityMap, day: int,
-		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
+		region_plan: RegionPlan) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	var step := ResistanceSteps.narrow_target_on(day)
 	if not step:
 		return found
-	var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+	var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
 	var allow_held := ResistanceSteps.stands_on_held_ground(step)
-	for tile in ResistanceSteps.target_candidates(step, map, region_plan):
+	for tile in NarrowTargetPool.tiles(step, map, region_plan):
 		if SpawnSiting.is_legal_ground(map, tile, walled, allow_held):
 			found.append(tile)
 	return found
@@ -2394,8 +2688,9 @@ static func target_ground(map: CityMap, day: int,
 ## **Never inside a solid event body, either — but checked after the draw, not folded into the
 ## pool.** `CityMap.is_obstructed()` is the day's own record of where a café's tables, a
 ## construction band, a kerbed van or any other stationary body stands, filled by
-## `EventManager.start_day()` from the whole day's plan before this director ever runs — an open,
-## walkable tile can still have a body parked on it, which `is_walkable()` has no way to see.
+## `EventManager.start_day()` from the dawn's plan before this director ever runs and by each unit
+## as it draws (`EventStreaming.add()`) — an open, walkable tile can still have a body parked on it,
+## which `is_walkable()` has no way to see.
 ## **Filtering it into the pool before the draw would move a placement that was never
 ## obstructed**: the draw below is one uniform pick over the whole pool, so removing even one
 ## unrelated candidate shifts which index every other candidate answers to. Checking the single
@@ -2406,7 +2701,13 @@ static func target_ground(map: CityMap, day: int,
 ## after-the-draw way as `is_obstructed()`, for the same reason.** A tile can be open, unheld,
 ## unwalled ground and still have every route to it closed by the union of today's events and
 ## seals, which none of the five pool refusals or `is_obstructed()` can see — each asks about the
-## tile itself, not the streets between it and the doorstep. See `_reachable_from_home()`.
+## tile itself, not the streets between it and the doorstep. See `_reachable_from_home()`. **And
+## one she can be sent to** (`_she_can_be_sent_to()`, from where she stands, `her`, or
+## `Vector2.INF` for a place fixed before she is put down), since a unit draws as she comes near
+## it and one still undrawn could shut the way later: a tile beyond the ground drawn round her has
+## a way from home confirmed, the units round it drawn, and whether a body stands on it is asked
+## again once they have drawn, since one of them may have stood one there. **The tile drawn is
+## the ground she is sent to** (`_ground`).
 ##
 ## **Two kinds of pool, and the check means something different in each.** A mark's alleys and a
 ## rider's sidewalks are hundreds of tiles across the whole city; the day's obstruction seals off
@@ -2420,14 +2721,14 @@ static func target_ground(map: CityMap, day: int,
 ## Landing a fresh mark back on the very alley an earlier step's mark stood at reads as the game
 ## reusing its own prop rather than "any alley she comes across" — but the avoidance never costs
 ## the placement guarantee itself: a candidate list whose only reachable tile happens to be a used
-## one still returns it rather than `Vector2.INF`. `RunState.facts.completed_resistance_alley_tiles`
+## one still returns it rather than `Vector2.INF`. `RunState.facts().completed_resistance_alley_tiles()`
 ## only ever holds the tiles a mark stood on (see `_on_contact_completed()`): `ALLEY` tiles, or the
 ## courtyard tile a one-tile passage puts its mark on. So this filter is a silent no-op against
 ## every other kind of placement.
 ##
 ## **`allow_held` skips only the `is_held_at` refusal, and only the two door placements pass it**
 ## (`ResistanceSteps.stands_on_held_ground()`), apart from day 8's burnt building door, which asks
-## whether she can stand by the door through `_door_can_be_touched()` instead of placing a contact
+## whether she can stand by the door through `_frontage_below()` instead of placing a contact
 ## from a pool. Held ground means *no hazard or catalogue row may be
 ## sited here*; a contact is neither, and for a step whose candidates are the held region-door
 ## segments themselves (`_place_at_a_door()`), or the station's front door on a street the spur
@@ -2439,21 +2740,26 @@ static func target_ground(map: CityMap, day: int,
 ## a tile inside the home block's own lot (its own doc says so); the streets around the block are
 ## the other half of "nothing on the home block", and normally that half is exactly what
 ## `is_held_at` catches — which `allow_held` would otherwise skip for a door candidate too.
-## `ResistanceSteps.target_candidates()` drops those candidates from the door pool, before any
+## `NarrowTargetPool.tiles()` drops those candidates from the door pool, before any
 ## candidate reaches this function, so `allow_held` never has to carry that exemption.
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
-		allow_held := false) -> Vector2:
+		allow_held := false, her := Vector2.INF) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
 	var legal := SpawnSiting.Rule.GROUND_EVEN_IF_HELD if allow_held \
 			else SpawnSiting.Rule.LEGAL_GROUND
 	var stands := func(tile: Vector2i) -> bool:
 		return _spawn_siting.allows(legal, ground, _map.tile_to_world(tile))
+	var free := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile))
 	var open := func(tile: Vector2i) -> bool:
-		return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile)) \
-				and _reachable_from_home(tile)
+		return free.call(tile) and _reachable_from_home(tile) \
+				and _she_can_be_sent_to(tile, her, free)
 	var tile := _draw_reachable(candidates, rng, stands, open,
-			_run.facts.completed_resistance_alley_tiles)
-	return _map.tile_to_world(tile) if tile != NO_TILE else Vector2.INF
+			_run.facts().completed_resistance_alley_tiles())
+	if tile == NO_TILE:
+		return Vector2.INF
+	_ground = tile
+	return _map.tile_to_world(tile)
 
 ## **The draw `_pick_reachable()` makes, as a pure function of what it is handed**: the
 ## candidates, the day's stream, whether a tile is legal ground to stand on (`stands`), whether
@@ -2505,83 +2811,103 @@ static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i,
 			nearest = tile
 	return nearest
 
-## Builds `_reach_grid`/`_reach_blocked`/`_reach_reached` the first time a placement in this file
-## asks whether a tile is reachable, and never again this day. `_reach_grid` alone is the sentinel:
-## a fresh `RandomNumberGenerator`-style build-once-per-day, not a per-call cost.
+## **Where she can get to from home today** (`DayReach`): the walk's own, worked out as the walk
+## started and told what each unit draws (`WalkEvents.reach()`), so this director's answer to "can
+## she get there" is the day's rather than a second reading of it. It asks whether *one specific
+## tile* is reachable, and never drops anything: a candidate that fails is redrawn, the same "reject
+## rather than repair" rule `_pick_reachable()` keeps for `is_obstructed()`.
 ##
-## **`EventScheduler.blocked_by()`, asked the same way
-## `DayRepairs.ensure_the_city_is_still_walkable()` asks it** — every placed plan whose
-## `obstructs_radius > 0.0` or `hard_fail` is true contributes its own disc, on top of
-## `_map.closed_tiles` — so this director's answer to "can she get there" is never a second
-## implementation of the city's own, only a second question put to it: that function asks
-## whether *some* calm area, and on a narrow target's day *some* tile of the target, is still
-## reachable, and drops the widest of the catalogue's obstructions until they are
-## (`docs/CITY.md`, "Guarantees"); this asks whether *one specific tile* is, and never drops
-## anything — a candidate that fails is redrawn, the same "reject rather than repair" rule
-## `_pick_reachable()` already keeps for `is_obstructed()`. The blockers are the same list both
-## times: the catalogue's own bodies, the seals and the region wall's, never a region door's.
+## **The soft seals' bands are shut in it, which the city's own question does not ask**: the red
+## arrow reads them as ground she cannot walk (`_ground_for_the_arrow()`), so a mark or contact
+## reached only through one is a place the arrow cannot lead her to.
 ##
-## **And the soft seals' bands on top (`CityMap.soft_sealed_tiles`), which the city's own question
-## does not ask**: the red arrow reads them as ground she cannot walk (`_ground_for_the_arrow()`),
-## so a mark or contact reached only through one is a place the arrow cannot lead her to. A thinned
-## soft pair's one body leaves a lane by its disc while its band shuts the whole sidewalk, so where
-## that band stands in front of an alley at both ends the disc alone answers the alley reachable and
-## the arrow does not.
-##
-## **Without events (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
-## built from an empty blocker list — today's closures alone, which is `{}` for the same rigs since
-## nothing ever calls `City.start_day()` on them either — so every walkable tile answers reachable
-## and this check is a silent no-op.
-func _ensure_reachability() -> void:
-	if _reach_grid:
-		return
-	_reach_grid = ReachabilityGrid.build(_map)
-	var blockers: Array[EventScheduler.Planned] = []
-	if _events:
-		# A region door's own bodies are never a block — `event_scheduler.gd`'s own corridor-cost
-		# rule already carries this exemption ("a region door costs by design ... `checkpoint_hut`
-		# and `checkpoint_gate` are never a block. The region wall's own body is not a door and
-		# still counts") and this check needs the same one, for the same reason. Found while
-		# building this item: with every door body counted, `blocked_by()`'s disc approximation —
-		# right for a point hazard, wrong for a hut-gate-hut door three tiles wide — closed every
-		# door in the wall along with it, so day 9 onward answered every mark and contact
-		# unreachable outside the home's own region, on a seed the real game's own route rig
-		# crosses those same doors on. `region_plan.door_bodies` is exactly the set the wall
-		# building code itself keeps apart from `wall_bodies` for this reason; excluded by identity
-		# rather than by matching `def.id`, so a new door-body row never needs a second list here.
-		var door_bodies: Array[EventScheduler.Planned] = []
-		var region_plan: RegionPlanner.RegionPlan = _streets.region_plan()
-		if region_plan:
-			door_bodies = region_plan.door_bodies
-		for plan in _events.plans():
-			if not plan.is_placed() or plan in door_bodies:
-				continue
-			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
-				blockers.append(plan)
-	_reach_blocked = EventScheduler.blocked_by(_map, blockers)
-	# The arrow's own reading of a soft seal; see the doc above.
-	_reach_blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS))
-	_reach_reached = _reach_grid.flood([_map.home_rect.position], _reach_blocked)
+## **A walk the events started with none** — a rig placing on a bare map, or on a city whose events
+## were never started — gets one of its own over this director's map and the walk's plans, built the
+## first time it is asked and kept for the day.
+func _reach() -> DayReach:
+	if _walk.reach():
+		return _walk.reach()
+	if not _own_reach:
+		_own_reach = DayReach.of(_map, _walk.plans())
+	return _own_reach
 
-## Whether `tile` is reachable from home under the day's full obstruction, as it stands right now:
-## closures alone can leave a mark's own alley reachable while the day's events and seals together
-## seal every route to it. `docs/CITY.md`'s guarantees promise a route to a calm area and to one
-## tile of the day's narrow resistance target (`target_ground()`), never to any one alley or
-## sidewalk, so this is asked of every draw. See `_ensure_reachability()`.
+## **Whether she can be sent to the place whose ground is `tile`: the one question every place
+## this director fixes for her to walk to is asked, by where it stands** (`WayConfirmation`). A
+## unit of the day's locations draws as she comes near it (`UnitDraw`), so a body a unit draws
+## later could stand on a place fixed before it drew, or shut the way the place was found
+## reachable by.
+##
+## - **A place inside the ground drawn round her** (`her`, where she stands) stands as it is,
+##   with no search and nothing drawn: her own paths reach it without coming within
+##   `WayConfirmation.CLEAR` of an undrawn unit. That ground is what the walk keeps drawn round
+##   her, the stream radius (`EventManager`'s tick), and, where she reads a mark, the ground a
+##   task looked for near her draws first (`_draw_the_ground_round_her()`).
+## - **A place beyond it** has a way from home confirmed: the units along the way and round the
+##   place are drawn first (`EventManager.draw_the_ground_round()`), what they draw shutting more
+##   of the reach, until a way stands that no undrawn unit lies near, and `still_stands`, the
+##   caller's own question of the tile (`func(tile: Vector2i) -> bool`, no body standing on it),
+##   is asked once more after they have drawn, since one of them may have stood a body there that
+##   shuts no way. With `her` `Vector2.INF` every place is beyond: a mark and the last night's
+##   door are fixed at dawn, before she is put down.
+##
+## **Asked wherever a contact's place is written, so no search can leave it out**: where a step's
+## contact is stood (`_begin_step()`, of `_ground`, the ground whichever search fixed the place
+## named), where an unseen mark is moved (`_move_the_mark()`), where the red arrow moves day
+## 11's contact to another mast (`_point_the_arrow_at()`), and where the contact rides onto a
+## look-alike beside her (`_follow_her_between_look_alikes()`). A search that tries several
+## places asks it of each (`_pick_reachable()`, `_nearest_to_the_mark()`,
+## `_nearest_confirmed_mast()`, `_section_to_swap()`, `_the_door_behind()`), taking the next
+## where one is refused, and its answer is kept for the day (`_cleared`), so the point that
+## stands the contact asks nothing twice. **A refusal there is said once**: the step has nowhere
+## to go today (`_begin_step()`), and a move is not made.
+##
+## `NO_TILE`, a place no search named ground for, is refused. `OUT_OF_REACH` passes unasked: day
+## 8's burnt building with no frontage she can be sent to, which stands all the same
+## (`_the_door_behind()`). Where nothing draws as she walks (no events: a rig placing on a bare
+## map; or a walk with no unit draw: a scene recipe's, the escape's), every place stands as it is
+## reached.
+func _she_can_be_sent_to(tile: Vector2i, her: Vector2, still_stands: Callable) -> bool:
+	if tile == NO_TILE:
+		return false
+	if tile == OUT_OF_REACH or _cleared.has(tile) or not _events or not _walk.unit_draw():
+		return true
+	var way := WayConfirmation.new(_map, _reach(), _events.draw_the_ground_round,
+			_walk.unit_draw().units().drawn_round)
+	if not way.a_way_stands(tile, her, still_stands):
+		return false
+	_cleared[tile] = true
+	return true
+
+## Whether no body stands on `tile` (`SpawnSiting.Rule.OPEN_TO_IT`): what a place is asked once
+## more where no search asked a question of its own.
+func _nothing_stands_on(tile: Vector2i) -> bool:
+	return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, _spawn_siting.ask_of_ground(),
+			_map.tile_to_world(tile))
+
+## **The units round where she read the mark at `mark` drawn first**, out to `reach`, how far from
+## her its task is looked for (the circle a task near it is placed on, or the widest ring day 13's
+## roadblock is looked for in), and `Tuning.EVENT_DRAW_AHEAD` beyond
+## (`EventManager.draw_the_ground_round()`): so what a place fixed while she is near is checked
+## against has drawn, her paths to it are walked over ground no unit drawn later can shut, and
+## the place lies inside the ground drawn round her (`_she_can_be_sent_to()`), wherever her walk's
+## own draw has got to. What her walk already drew is not drawn again. Nothing with no mark or no
+## events.
+func _draw_the_ground_round_her(mark: Vector2, reach := NEAR_THE_MARK) -> void:
+	if _events and mark != Vector2.INF:
+		_events.draw_the_ground_round(_where_she_read_it(mark), reach + Tuning.EVENT_DRAW_AHEAD)
+
+## Whether `tile` is reachable from home under the day's full obstruction (`_reach()`): closures
+## alone can leave a mark's own alley reachable while the day's events and seals together seal every
+## route to it. `docs/CITY.md`'s guarantees promise a route to a calm area and to one tile of the
+## day's narrow resistance target (`target_ground()`), never to any one alley or sidewalk, so this is
+## asked of every draw.
 func _reachable_from_home(tile: Vector2i) -> bool:
-	_ensure_reachability()
-	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
+	return _reach().reaches(tile)
 
-## **The tiles the day's obstruction shuts** (`tile -> true`: the catalogue's bodies and discs,
-## today's closures, the seals and the soft seals' bands), as they stood when the day's first
-## placement asked and until the day ends — a body a task puts up after that (day 11's added mast)
-## is not in it, so the ground its own task stands on is not shut by it. A read builds that snapshot
-## if no placement has asked yet (`start_day()` asks first, so on a played day it is the day's first
-## placement's). A copy; the director's own is never handed out. What the day leaves her of the way
-## home is `_reachable_from_home()`'s answer over these tiles.
+## **The tiles the day's obstruction shuts** (`tile -> true`: the bodies' discs, today's closures,
+## the seals and the soft seals' bands), as the walk stands (`_reach()`). A copy.
 func _reach_obstruction() -> Dictionary:
-	_ensure_reachability()
-	return _reach_blocked.duplicate()
+	return _reach().shut()
 
 ## **One tick of the resistance's day**, run by `main` on every physics tick the walk stepped, the
 ## same tick its play time counts (`main._physics_process()`): the happenings, the note's lingering
@@ -2595,14 +2921,14 @@ func tick(delta: float) -> void:
 		_take_the_neighbor_away()
 	if _lingering_rider:
 		_tick_lingering_rider(delta)
-	if not _step or _expired or not _contact or _contact.is_done:
+	if not _step or _expired or not _contact or _contact.is_finished():
 		return
 	_elapsed += delta
 	if _rider and not _contact.rider_alive():
 		_expire("lost its contact when the thing it rode on finished")
 		return
 	# Day 10's deadline: the neighbor reached the door before she reached them.
-	if _rider and _rider.is_parked and _step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR:
+	if _rider and _rider.has_parked() and _step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR:
 		_taken_neighbor = _rider
 		_expire("expired: the neighbor walked home into the vans")
 		return
@@ -2624,7 +2950,11 @@ func tick(delta: float) -> void:
 			_retarget_the_arrow()
 			_move_the_task_guard_to_her_target()
 		_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_TICK)
-		if not _same_key(_arrow_key, _task_guard_asked_for):
+		# The frame the roadblock she approaches is first on screen decides its guard's side, and a
+		# guard on her side of it then is moved at once.
+		var side_decided := _step.is_a_guarded_band \
+				and _note_her_approach(_live_instance(_arrow_key))
+		if side_decided or not _same_key(_arrow_key, _task_guard_asked_for):
 			_move_the_task_guard_to_her_target()
 		if _step.target_kind == ResistanceSteps.TargetKind.MAST:
 			_follow_her_between_masts()
@@ -2640,14 +2970,14 @@ func tick(delta: float) -> void:
 ## finished early (the day ending under her) clears the wait rather than erroring on a dead
 ## instance; nothing else needs telling, since a day that has ended has nothing left to charge.
 func _tick_lingering_rider(delta: float) -> void:
-	if not is_instance_valid(_lingering_rider) or _lingering_rider.is_finished:
+	if not is_instance_valid(_lingering_rider) or _lingering_rider.is_gone():
 		_lingering_rider = null
 		return
 	_lingering_remaining -= delta
 	if _lingering_remaining > 0.0:
 		return
 	_lingering_rider.leave_for_a_completed_task()
-	trace.note("contact", "he stops shouting and leaves")
+	_trace.note("contact", "he stops shouting and leaves")
 	_lingering_rider = null
 
 ## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
@@ -2680,7 +3010,7 @@ func _follow_her_between_look_alikes() -> void:
 	var best: EventInstance = null
 	var best_distance := INF
 	for instance in _events.instances():
-		if instance.def.id != _step.task_event_id or instance.is_finished:
+		if instance.row_id() != _step.task_event_id or instance.is_gone():
 			continue
 		var distance := here.distance_to(instance.global_position)
 		if distance > _touch_reach(instance) or distance >= best_distance:
@@ -2689,9 +3019,14 @@ func _follow_her_between_look_alikes() -> void:
 		best = instance
 	if best == null or best == _rider:
 		return
+	# She stands within reach of it, so the ground she is sent to is the ground she is on.
+	var where_she_stands := func(_tile: Vector2i) -> bool:
+		return true
+	if not _she_can_be_sent_to(_map.world_to_tile(here), here, where_she_stands):
+		return
 	_rider = best
 	_contact.ride(_step, best, Vector2.ZERO)
-	trace.note("contact", "step %d retargeted onto the nearest look-alike in reach"
+	_trace.note("contact", "step %d retargeted onto the nearest look-alike in reach"
 			% _step.index)
 
 ## The distance from `instance`'s own centre within which she can touch it: every point a touch of
@@ -2714,11 +3049,17 @@ static func _touch_reach(instance: EventInstance) -> float:
 ##   (`_guards_the_roadblock()`), as a guard over one of a line of roadblocks often is for the next:
 ##   nothing moves, and he is its guard from now on;
 ## - otherwise he is re-placed at the spot `_roadblock_guard_spot()` finds for it, in its band with a
-##   clear line to it and never on her only way to it, the far side first, or, where every such spot
-##   is in her view, on the ring just past the band, drawn from the stream of his own
+##   clear line to it on the far side of it from the way she comes (`_approach_to()`), or, where
+##   every such spot is in her view, on the ring just past the band, drawn from the stream of his own
 ##   (`_task_guard_moves`). A guard on that ring is moved again into the band as soon as a spot in
 ##   it is out of her view. On the ring no touch of the roadblock is within his notice.
-##   Where no spot round it leaves her a way past him, he stays where he is.
+##   Where the far side has no spot, he stays where he is.
+##
+## **The side is decided once, the first frame the roadblock is drawn on screen** while it is the one
+## she approaches (inbox #1185 in gentle-owl, `_note_her_approach()`): from then on the way she came is kept, and a
+## guard standing on her side of it then is moved to the far side as soon as he and the spot are out
+## of her view. Before it is on screen the side follows where she stands. Nothing is flooded or
+## checked for a way past him, then or later.
 ##
 ## **He moves only while both where he stands and where he goes are out of her view** — his whole
 ## body off the camera's view (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`), and a spot off it and outside his own trigger range
@@ -2738,18 +3079,22 @@ func _move_the_task_guard_to_her_target() -> void:
 	_task_guard_asked_for = _arrow_key
 	if _task_guard_over == null or _arrow_key == null:
 		return
-	var over := _same_key(_arrow_key, _task_guard_over)
-	if over and _task_guard_in_band:
-		return
-	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_finished \
-			or not _task_guard.is_waiting():
-		return
 	var target := _live_instance(_arrow_key)
 	if not target or not _events:
 		return
-	if _guards_the_roadblock(_task_guard.global_position, target):
+	var her := _player_position()
+	var approach := _approach_to(target, her)
+	var over := _same_key(_arrow_key, _task_guard_over)
+	if over and _task_guard_in_band and _task_guard and is_instance_valid(_task_guard) \
+			and _on_the_far_side(_task_guard.global_position, target.body_position(), approach):
+		return
+	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_gone() \
+			or not _task_guard.is_waiting():
+		return
+	if _guards_the_roadblock(_task_guard.global_position, target) \
+			and _on_the_far_side(_task_guard.global_position, target.body_position(), approach):
 		if not over:
-			trace.note("roll", "the task's guard already stands over the roadblock she "
+			_trace.note("roll", "the task's guard already stands over the roadblock she "
 					+ "approaches, %.0fpx from it"
 					% _task_guard.global_position.distance_to(target.body_position()))
 		_task_guard_over = _arrow_key
@@ -2759,20 +3104,20 @@ func _move_the_task_guard_to_her_target() -> void:
 			_task_guard.global_position):
 		return
 	# A search that found him nowhere better is not repeated until something it read has changed.
-	var her := _player_position()
-	var facing := _player.facing.snapped(Vector2.ONE * 0.5) if _player else Vector2.ZERO
+	var facing := _player.facing_direction().snapped(Vector2.ONE * 0.5) if _player else Vector2.ZERO
 	var asked := [_arrow_key, _map.world_to_tile(her), facing,
-			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version,
-			_map.day_record_version]
+			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version(),
+			_map.day_record_version(), _approaches.has(_approach_key(target))]
 	if asked == _task_guard_found_nothing_for \
 			and _task_guard_found_nothing_age < TASK_GUARD_RETRY_SECONDS:
 		return
 	var at := _guard_position(_task_guard_moves, target.body_position(), false, her, true,
-			_body_touch_reach(target), false)
+			_body_touch_reach(target), approach, false)
 	var in_band := at != Vector2.INF and _guards_the_roadblock(at, target)
-	# Nowhere, or already on the ring past this roadblock's band, where another spot on it is no
-	# nearer.
-	if at == Vector2.INF or (over and not in_band):
+	# Nowhere, or already on the far side's ring past this roadblock's band, where another spot on
+	# it is no nearer. One on her side of it is moved to any spot on the far side.
+	if at == Vector2.INF or (over and not in_band
+			and _on_the_far_side(_task_guard.global_position, target.body_position(), approach)):
 		_task_guard_found_nothing_for = asked
 		_task_guard_found_nothing_age = 0.0
 		return
@@ -2780,9 +3125,44 @@ func _move_the_task_guard_to_her_target() -> void:
 	_events.move_extra(_task_guard, at)
 	_task_guard_over = _arrow_key
 	_task_guard_in_band = in_band
-	trace.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
+	_trace.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
 			+ "%.0fpx from it%s" % [at.distance_to(target.body_position()),
 			"" if in_band else ", past its band"])
+
+## **Keeps the way she approaches `roadblock` from, the first frame it is drawn on screen** while
+## it is the one she approaches (inbox #1185 in gentle-owl): the line from its body to where she stands, kept for
+## the rest of the day in `_approaches`, so the side its guard takes (`_approach_to()`) is decided
+## then and does not change while she walks. On screen is the rider's box on her view
+## (`TASK_BOX`, `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`). Answers whether it was kept now: false
+## for a roadblock already kept, one not on screen, or with nobody to approach it.
+func _note_her_approach(roadblock: EventInstance) -> bool:
+	if roadblock == null or _approaches.has(_approach_key(roadblock)):
+		return false
+	var her := _player_position()
+	if her == Vector2.INF or _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
+			_task_drawn, roadblock.global_position):
+		return false
+	_approaches[_approach_key(roadblock)] = her - roadblock.body_position()
+	_trace.note("roll", "the roadblock at %s comes on screen: its guard's side is the far one from "
+			% RunTrace.tile(_map.world_to_tile(roadblock.body_position()))
+			+ "her, %.0fpx off" % her.distance_to(roadblock.body_position()))
+	return true
+
+## **The way she comes to `roadblock` from**, as its guard's side reads it
+## (`_roadblock_guard_spot()`): the way kept the first frame it was on screen
+## (`_note_her_approach()`), and before that the line from its body to `her`, where she stands now.
+## Zero with nobody there.
+func _approach_to(roadblock: EventInstance, her: Vector2) -> Vector2:
+	var kept: Variant = _approaches.get(_approach_key(roadblock))
+	if kept != null:
+		return kept
+	return Vector2.ZERO if her == Vector2.INF else her - roadblock.body_position()
+
+## **Which roadblock `roadblock` is, for its decided side** (`_approaches`): the tile its body stands
+## on. Its plan's place decides where every instance of it stands (`EventInstance.setup()`), so an
+## instance streamed in again answers the same.
+func _approach_key(roadblock: EventInstance) -> Vector2i:
+	return _map.world_to_tile(roadblock.body_position())
 
 ## **Day 13's done task sets its guard on her, wherever he stands** *(inbox #651 follow-up, the
 ## player, of a guard still at another roadblock when she reaches hers: "as long as he starts
@@ -2809,11 +3189,13 @@ func _move_the_task_guard_to_her_target() -> void:
 func _set_the_task_guard_on_her() -> void:
 	# A guard already warning her by sight is set on her too: left to his own warning, she could
 	# walk out of it and he would never come.
-	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_finished \
+	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_gone() \
 			or not (_task_guard.is_waiting()
 					or (_task_guard.is_telegraphing() and _task_guard.warns_by_radius())):
 		return
 	var her := _player_position()
+	# With no player (only a rig) the order's point is the contact's place: he is set heading there,
+	# and hears no word on where she is until a manager tells one.
 	if her == Vector2.INF and _contact:
 		her = _contact.global_position
 	if her == Vector2.INF:
@@ -2821,13 +3203,13 @@ func _set_the_task_guard_on_her() -> void:
 	if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
 			_task_guard.global_position):
 		_task_guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
-		trace.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
+		_trace.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
 				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
 		return
 	var away := _task_guard.global_position.distance_to(her)
 	_events.retire(_task_guard)
 	_task_guard = null
-	trace.note("roll", "the roadblock is done: the task's guard, out of her view %.0fpx away, "
+	_trace.note("roll", "the roadblock is done: the task's guard, out of her view %.0fpx away, "
 			% away + "is sent at her under a badge")
 	_send_at_her(EventCatalogue.task_guard_sent(), false)
 
@@ -2837,7 +3219,7 @@ static func _live_instance(key: Variant) -> EventInstance:
 		return null
 	var found := instance_from_id(key)
 	if is_instance_valid(found) and found is EventInstance \
-			and not (found as EventInstance).is_finished:
+			and not (found as EventInstance).is_gone():
 		return found as EventInstance
 	return null
 
@@ -2872,8 +3254,8 @@ func _track_sight_and_reposition(delta: float) -> void:
 				# `VisitCounter`'s own "mark-seen" — a perform step's own contact runs through this
 				# same tracking and never fires it, since the counter asks about the chalk mark, not
 				# about whatever the task rides on. See docs/TELEMETRY.md, "The page counts visits".
-				EventBus.resistance_mark_seen.emit(_step.index)
-			trace.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
+				_tell_the_mark_was_seen()
+			_trace.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
 				_step.index, RunTrace.tile(_map.world_to_tile(at)),
 				SEEN_DWELL_SECONDS, SEEN_DISTANCE])
 		return
@@ -2925,7 +3307,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 ##
 ## **Avoids a tile a completed step already used, the same rule and the same fallback
 ## `_pick_reachable()` applies to the dawn placement (M177):** the nearest eligible tile that is
-## not in `RunState.facts.completed_resistance_alley_tiles`, or the plain nearest eligible tile if
+## not in `RunState.facts().completed_resistance_alley_tiles()`, or the plain nearest eligible tile if
 ## avoiding them would leave nothing in reach at all — a relocation exists to keep the mark
 ## findable, and that guarantee outranks the avoidance.
 ##
@@ -2936,9 +3318,14 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## wherever she is standing or just beside it, which is on screen more often than not. The mark's
 ## picture is asked with its own size (`MARK_BOX`), and the spot in its alley where
 ## `_move_the_mark()` would stand the guard (`_guard_spot()`), with his (`GUARD_BOX`), so a
-## relocation never lands where its guard could only be placed in view or not at all. Both are
-## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
-## frame.
+## relocation never lands where its guard could only be placed in view or not at all. **Nor one
+## whose guard would stand within his notice of her** (`EventDef.notice_within()`, as the run's
+## charger timing draws it): no guard is placed within it (brisk-wombat, `_guard_position()`), so
+## a move there would leave the mark unguarded, and refusing the move keeps both. At the shipped
+## 225px a move from about one standing place in forty that would otherwise move the mark finds no
+## alley and leaves it where it is (`tests/probes/m213_far_end.gd`); at a notice under the view's
+## own half-height the view refuses those alleys first. All are asked only of a tile nearer than the
+## best found so far, which keeps this cheap enough for every frame.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	return _nearest_alley_among(_marks(), here)
 
@@ -2946,7 +3333,8 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 ## its candidates: every refusal above is asked of each (`Vector2.INF` when none passes).
 func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
-	var used := _run.facts.completed_resistance_alley_tiles
+	var used := _run.facts().completed_resistance_alley_tiles()
+	var notice := EventCatalogue.mark_guard().notice_within()
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
@@ -2962,9 +3350,11 @@ func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2
 		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 				or not _reachable_from_home(tile):
 			continue
+		var guard_at := _guard_spot(world)
 		if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _mark_drawn, world) \
 				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
-						_guard_spot(world)):
+						guard_at) \
+				or guard_at.distance_to(here) <= notice:
 			continue
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance
@@ -2977,33 +3367,40 @@ func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2
 
 ## Moves an unseen mark to the alley she has just come near, and moves its guard with it —
 ## `_maybe_set_a_trap()` retires the one standing over the old spot itself rather than leaving a
-## robber with nothing left to guard.
+## robber with nothing left to guard. **Where she can be sent to it** (`_she_can_be_sent_to()`):
+## an alley within `NOTICE_RADIUS` of her lies inside the ground the walk keeps drawn round her,
+## so in a played day it is; an alley that is refused keeps the mark where it stands, and the
+## search is made again on the next tick over the ground as the refusal's draw left it.
 func _move_the_mark(new_world: Vector2) -> void:
 	var old_tile := _map.world_to_tile(_contact.global_position)
 	var new_tile := _map.world_to_tile(new_world)
+	if not _she_can_be_sent_to(new_tile, _player_position(), _nothing_stands_on):
+		_trace.note("contact", "step %d stays at %s: no way stands to %s over ground that has drawn"
+				% [_step.index, RunTrace.tile(old_tile), RunTrace.tile(new_tile)])
+		return
 	_contact.global_position = new_world
-	trace.note("contact", "step %d moved to %s: never seen at %s" % [
+	_trace.note("contact", "step %d moved to %s: never seen at %s" % [
 		_step.index, RunTrace.tile(new_tile), RunTrace.tile(old_tile)])
 	_maybe_set_a_trap(_day, _rng, new_world, true, _player_position(), true)
 
 ## A warning delivered late is not a warning. The contact is gone for the rest of the run.
 func _expire(message: String) -> void:
 	_expired = true
-	trace.note("contact", "step %d %s; the contact is gone" % [_step.index, message])
+	_trace.note("contact", "step %d %s; the contact is gone" % [_step.index, message])
 	_run.fail_resistance_step(_step.index)
 	_clear()
 
 ## Records the step, and — for a mark — activates today's task right away, in the same
 ## `start_day()`'s RNG and guard state rather than waiting for tomorrow's dawn.
 func _on_contact_completed(step_index: int) -> void:
-	trace.note("contact", "step %d completed" % step_index)
+	_trace.note("contact", "step %d completed" % step_index)
 	var step := ResistanceSteps.by_index(step_index, _steps)
 	_run.complete_resistance_step(step_index, step == null or step.grants_progress)
 	# Only a pickup's mark ever stands on a mark tile (an `ALLEY` tile, or a courtyard tile past a
 	# one-tile passage) — every other kind of contact sits on a rider or a computed point — so this is the one completion worth recording for
 	# `_pick_reachable()`/`_nearest_alley_within()` to avoid reusing later (M177).
 	if step and step.is_pickup and _contact:
-		_run.facts.record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
+		_run.facts().record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
 	if step and step.is_pickup:
 		# The task is announced at the mark and nowhere else: `RunState.complete_resistance_
 		# step()` above already emitted `resistance_step_completed`, which is what `Hud` reads
@@ -3015,8 +3412,8 @@ func _on_contact_completed(step_index: int) -> void:
 		_rig_her_route_for(task)
 		return
 	if step and step.applies_package_weight:
-		_run.resistance.carrying_package = true
-		trace.note("contact", "the package is heavier now; the rest of today costs more")
+		_run.resistance().pick_up_package()
+		_trace.note("contact", "the package is heavier now; the rest of today costs more")
 	# A finished task is shown by the world, never by text: the man shouting she actually handed
 	# it to — `_rider` after any retargeting in `_follow_her_between_look_alikes()` — stops
 	# shouting and walks off screen, the same departure any finished event takes. Named by
@@ -3032,13 +3429,13 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.lingers_after_handover and _rider and is_instance_valid(_rider):
 		_lingering_rider = _rider
 		_lingering_remaining = NOTE_HANDOVER_LINGER_SECONDS
-		trace.note("contact", "he took it; keeps shouting for %.1fs before he leaves"
+		_trace.note("contact", "he took it; keeps shouting for %.1fs before he leaves"
 				% NOTE_HANDOVER_LINGER_SECONDS)
 	# Warned, the neighbor runs — away from her, and away from home.
 	if step and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR and _rider \
 			and is_instance_valid(_rider):
 		_rider.leave_for_a_completed_task()
-		trace.note("contact", "the neighbor is warned and runs")
+		_trace.note("contact", "the neighbor is warned and runs")
 	# The mast she reached goes quiet where she stands: its lamp goes out and its arcs stop, which
 	# is the world answering, and it stays quiet for the rest of the run.
 	if step and step.target_kind == ResistanceSteps.TargetKind.MAST:
@@ -3047,7 +3444,6 @@ func _on_contact_completed(step_index: int) -> void:
 	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`. Its last gap
 	# is checked under this director's own answer to what the day has blocked.
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-		_ensure_reachability()
 		_happenings.take_the_park(_reach_obstruction())
 	# Every task but the roadblock and the neighbor sends a pursuer after her from off screen; the
 	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`), and done, sets him
@@ -3058,12 +3454,12 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and _sets_a_trap_on_her(step) and not _walked_under_the_door:
 		_set_the_trap_on_her(step)
 	elif step and _sets_a_trap_on_her(step):
-		trace.note("roll", "task done under the boom: the door's own guard is after her, "
+		_trace.note("roll", "task done under the boom: the door's own guard is after her, "
 				+ "and nobody else is sent")
 	if not (step and step.needs_goal):
 		return
 
-	_run.resistance.sabotage_done = true
+	_run.resistance().record_the_sabotage()
 	# Nothing goes off here. The hand-over takes the man on the night shift minutes, so the city
 	# goes dark once she has walked far enough from the station — every window, every light and
 	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and
@@ -3077,7 +3473,11 @@ func _on_contact_completed(step_index: int) -> void:
 ## rigged with a bag of `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` (`VAN_WITHIN_THE_NEXT` for the van,
 ## `MAST_WITHIN_THE_NEXT` for the mast) marbles, the row and the rest drawn from the bag she was drawing from
 ## (`EventManager.rig_her_route()`), and the place it names is put ahead of her on the branch she is
-## walking. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
+## walking: just ahead of her and out of her view for the man shouting and the van
+## (`ResistanceSteps.Step.lays_its_rigged_row_just_ahead()`; inbox #1520 in breezy-magpie: "the bag
+## gets the biased bag in front (via the chained bags mechanism) and the next draw (whenever that
+## happens) will guarantee the shouting man"; inbox #1549: "you would draw only for the path and only
+## just ahead"), past the streaming band for the mast. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
 ## the man shouting is a look-alike the any-instance contact follows her onto
 ## (`_follow_her_between_look_alikes()`), the mast is a second one on her way while the task's
 ## arrow points at the one near the mark first (inbox #561 in coral-bunny: "let it point to the closest one first"),
@@ -3088,11 +3488,11 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 		return
 	if task.rigs_within <= 0:
 		return
-	var row := EventCatalogue.mast().id if task.target_kind == ResistanceSteps.TargetKind.MAST \
+	var row := EventCatalogue.mast().id() if task.target_kind == ResistanceSteps.TargetKind.MAST \
 			else task.task_event_id
 	var size := task.rigs_within
 	var ids: Array[String] = [row]
-	var rigged := _events.rig_her_route(ids, size)
+	var rigged := _events.rig_her_route(ids, size, task.lays_its_rigged_row_just_ahead())
 	if rigged.is_empty():
 		return
 	# Which marbles the rest of the rigged bag took depends on how far into her bag the day had got,
@@ -3100,7 +3500,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 	var names: Array[String] = []
 	for marble: Variant in rigged:
 		names.append(str(marble))
-	trace.note("roll", "the next %d on her route are drawn from a rigged bag: %s"
+	_trace.note("roll", "the next %d on her route are drawn from a rigged bag: %s"
 			% [rigged.size(), ", ".join(names)])
 
 func _clear() -> void:
@@ -3187,7 +3587,7 @@ func _pointable_objective() -> Vector2:
 ## (`_point_the_arrow_at()`), so the contact's position is the arrow's.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
-	if step == null or step.is_pickup or _contact.is_done:
+	if step == null or step.is_pickup or _contact.is_finished():
 		return Vector2.INF
 	if not ResistanceSteps.answers_at_several_places(step) \
 			or step.target_kind == ResistanceSteps.TargetKind.MAST:
@@ -3248,7 +3648,7 @@ func _arrow_position() -> Vector2:
 	if _arrow_key is int:
 		var found := instance_from_id(_arrow_key)
 		if is_instance_valid(found) and found is EventInstance \
-				and not (found as EventInstance).is_finished:
+				and not (found as EventInstance).is_gone():
 			return (found as EventInstance).global_position
 	elif _arrow_key is String and _events:
 		return _events.mast_foot(_arrow_key)
@@ -3279,14 +3679,14 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 		var ground := _spawn_siting.ask_of_ground()
 		for plan in _events.plans():
 			if _mast_answers(plan, ground):
-				found.append({"key": plan.mast_id, "at": plan.position, "reach": _mast_reach(),
+				found.append({"key": plan.mast_id(), "at": plan.placed_at(), "reach": _mast_reach(),
 						"beat": PackedVector2Array()})
 		return found
 	for instance in _events.instances():
-		if instance.def.id == step.task_event_id and not instance.is_finished:
+		if instance.row_id() == step.task_event_id and not instance.is_gone():
 			found.append({"key": instance.get_instance_id(), "at": instance.global_position,
 					"reach": _touch_reach(instance),
-					"beat": instance.path if instance.def.paces else PackedVector2Array()})
+					"beat": instance.beat()})
 	return found
 
 ## Whether `plan` is a mast that answers day 11's task: **any live mast does** *(the player, asked
@@ -3295,19 +3695,8 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 ## and every other. Live means the same offer `_place_at_a_mast()` makes: a placed, unsilenced mast
 ## off the home block whose foot has legal, unobstructed ground beside it that is reachable from
 ## home, so the arrow never moves the task onto a mast she cannot touch.
-func _mast_answers(plan: EventScheduler.Planned, ground: SpawnSiting.Ask) -> bool:
-	if plan.mast_id == "" or plan.def.role != EventDef.Role.MAST or plan.silenced \
-			or not plan.is_placed():
-		return false
-	var foot := _map.world_to_tile(plan.position)
-	if _map.is_closed(foot) or _map.is_on_home_block(foot):
-		return false
-	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-		var tile := foot + side
-		if _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
-				_map.tile_to_world(tile)) and _reachable_from_home(tile):
-			return true
-	return false
+func _mast_answers(plan: EventPlan, ground: SpawnSiting.Ask) -> bool:
+	return not _ground_beside_a_mast(plan, ground).is_empty()
 
 ## How far from a mast's foot a touch counts (`_shape_the_touch()`).
 static func _mast_reach() -> float:
@@ -3316,8 +3705,8 @@ static func _mast_reach() -> float:
 
 ## The ground every sweep of the arrow starts from (`WalkField.advance()`): each tile
 ## `WalkField.UNREACHED`, or `WalkField.BLOCKED` where she cannot walk right now — today's
-## closures (`CityMap.closed_tiles`, the fenced park's ground included), the soft seals shut to
-## walkers (`soft_sealed_tiles`) and the tile under every stationary solid body standing
+## closures (`CityMap.closed_tile_set()`, the fenced park's ground included), the soft seals
+## shut to walkers (`soft_sealed_tiles`) and the tile under every stationary solid body standing
 ## (`obstructed_tiles`), which holds what was put down after dawn too: a body rigged onto her route,
 ## the task's own rider, a roadblock put on her route after the mark. What that record leaves out
 ## she walks through here as she does in the street: a mobile row, which moves out of her way, and a
@@ -3328,7 +3717,7 @@ static func _mast_reach() -> float:
 ## copied whole by every sweep started under the same state. A sweep already finished keeps what
 ## blocked her when it began; a change starts a new one (`_retarget_the_arrow()`).
 func _ground_for_the_arrow() -> PackedInt32Array:
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
 	if versions == _arrow_ground_versions and not _arrow_ground.is_empty():
 		return _arrow_ground
 	_arrow_ground_versions = versions
@@ -3353,7 +3742,7 @@ func _retarget_the_arrow() -> void:
 	if not ResistanceSteps.answers_at_several_places(step):
 		return
 	var found := _arrow_candidates(step)
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
 	var newest := _arrow_nearest_next if _arrow_nearest_next else _arrow_nearest
 	if found.is_empty():
 		_arrow_nearest_next = null
@@ -3404,7 +3793,7 @@ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
 	if not _arrow_own:
 		# The first choice of the task: there is nothing yet for the arrow to flicker away from.
 		return nearest
-	if not _same_key(_arrow_own.keys[0], current):
+	if not _same_key(_arrow_own.key_at(0), current):
 		# How far the one it points at is has not been swept yet: it holds until it has.
 		return current
 	var current_length := _arrow_own.length_at(tile)
@@ -3415,13 +3804,7 @@ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
 ## Whether `field` (finished or under way) was swept from exactly `found`, each standing where it
 ## stood then (`WalkField.anchor_of()`), under the blocking `versions` name.
 func _swept_for(field: WalkField, found: Array[Dictionary], versions: Vector2i) -> bool:
-	if field == null or field.versions != versions or field.anchors.size() != found.size():
-		return false
-	for target in found:
-		var key: Variant = target["key"]
-		if not field.anchors.has(key) or field.anchors[key] != WalkField.anchor_of(_map, target):
-			return false
-	return true
+	return field != null and field.swept_for(_map, found, versions)
 
 ## Runs `budget` tiles of the sweeps under way, the field of every target first, and chooses again
 ## the moment one finishes. A tick that lays out the ground (`_ground_for_the_arrow()`) or a field
@@ -3430,36 +3813,62 @@ func _sweep_the_arrow_fields(budget: int) -> void:
 	if not _arrow_nearest_next and not _arrow_own_next:
 		return
 	# Laying out what blocks her afresh is a tick's work of its own, like a field's own layout.
-	if Vector2i(_map.day_record_version, _map.obstruction_version) != _arrow_ground_versions \
-			or _arrow_ground.is_empty():
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
+	if versions != _arrow_ground_versions or _arrow_ground.is_empty():
 		_ground_for_the_arrow()
 		return
 	var finished := false
 	if _arrow_nearest_next:
 		budget -= _arrow_nearest_next.advance(_map, _ground_for_the_arrow(), budget)
-		if _arrow_nearest_next.done:
+		if _arrow_nearest_next.is_done():
 			_arrow_nearest = _arrow_nearest_next
 			_arrow_nearest_next = null
 			finished = true
 	if _arrow_own_next and budget > 0:
 		_arrow_own_next.advance(_map, _ground_for_the_arrow(), budget)
-		if _arrow_own_next.done:
+		if _arrow_own_next.is_done():
 			_arrow_own = _arrow_own_next
 			_arrow_own_next = null
 			finished = true
 	if finished:
 		_retarget_the_arrow()
 
-## Points the arrow at `key`, and a mast's contact with it.
+## Points the arrow at `key`, and a mast's contact with it. **A man shouting or a roadblock the
+## arrow points at is one in the world**, which the streaming keeps to the ground drawn round her,
+## and the contact stays where it was stood: the arrow's choice among them is a choice, made again
+## twice a second over the ground as it has drawn (`_retarget_the_arrow()`). **A mast moves the
+## contact, so it is asked like any place she is sent to** (`_she_can_be_sent_to_the_mast()`):
+## the arrow stays on the mast it points at where the closer one is refused, and the choice is
+## made again on its next clock, over the ground as the refusal's draw left it.
 func _point_the_arrow_at(key: Variant, at: Vector2, step: ResistanceSteps.Step) -> void:
+	var moves_the_contact: bool = step.target_kind == ResistanceSteps.TargetKind.MAST \
+			and key is String and _contact != null and not _contact.is_finished()
+	if moves_the_contact and not _she_can_be_sent_to_the_mast(key):
+		return
 	if not _same_key(key, _arrow_key) and _arrow_key != null:
-		trace.note("contact", "step %d: the red arrow moves to a closer target on foot"
+		_trace.note("contact", "step %d: the red arrow moves to a closer target on foot"
 				% step.index)
 	_arrow_key = key
-	if step.target_kind == ResistanceSteps.TargetKind.MAST and key is String \
-			and _contact and not _contact.is_done:
+	if moves_the_contact:
 		_mast_id = key
 		_contact.global_position = at
+
+## Whether she can be sent to the live mast `mast_id` from where she stands
+## (`_she_can_be_sent_to()`): asked of each tile beside its foot she touches it from in turn
+## (`_ground_beside_a_mast()`), the first that passes answering. False for a mast that is not the
+## day's or has no such tile.
+func _she_can_be_sent_to_the_mast(mast_id: String) -> bool:
+	var ground := _spawn_siting.ask_of_ground()
+	var standing := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+				_map.tile_to_world(tile))
+	for plan in _events.plans():
+		if plan.mast_id() != mast_id:
+			continue
+		for side in _ground_beside_a_mast(plan, ground):
+			if _she_can_be_sent_to(side, _player_position(), standing):
+				return true
+	return false
 
 ## Day 11: a mast she is within touching reach of is the one a touch silences, however the arrow
 ## last chose — the arrow is chosen twice a second, and she covers ground in that time.
@@ -3472,8 +3881,8 @@ func _follow_her_between_masts() -> void:
 		return
 	var ground := _spawn_siting.ask_of_ground()
 	for plan in _events.plans():
-		if plan.mast_id == _mast_id or plan.position.distance_to(here) > reach:
+		if plan.mast_id() == _mast_id or plan.placed_at().distance_to(here) > reach:
 			continue
 		if _mast_answers(plan, ground):
-			_point_the_arrow_at(plan.mast_id, plan.position, _step)
+			_point_the_arrow_at(plan.mast_id(), plan.placed_at(), _step)
 			return

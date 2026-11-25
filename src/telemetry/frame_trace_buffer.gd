@@ -10,8 +10,8 @@ const COLUMNS := ["post_draw_usec", "process_frame", "draw_frame", "interval_use
 	"nodes", "objects", "orphan_nodes", "player_x_millipx", "player_y_millipx",
 	"day", "readout_on", "graph_on", "telemetry_on"]
 
-var count := 0
-var dropped := 0
+var _count := 0
+var _dropped := 0
 var _capacity: int
 var _values := PackedInt64Array()
 var _previous_usec := -1
@@ -20,6 +20,19 @@ func _init(capacity: int = CAPACITY) -> void:
 	_capacity = clampi(capacity, 1, CAPACITY)
 	_values.resize(_capacity * COLUMNS.size())
 
+## Whether no sample is held.
+func is_empty() -> bool:
+	return _count == 0
+
+## Whether the buffer holds as many samples as it can, so the next one is dropped.
+func is_full() -> bool:
+	return _count == _capacity
+
+## Counts one sample as dropped without taking it, for a caller that saw the buffer full before it
+## went to the trouble of making the sample.
+func drop_one() -> void:
+	_dropped += 1
+
 ## Pauses and title screens break the interval: resuming must not manufacture a slow frame.
 func break_interval() -> void:
 	_previous_usec = -1
@@ -27,10 +40,10 @@ func break_interval() -> void:
 func append(timestamp_usec: int, process_frame: int, draw_frame: int,
 		counters: PackedInt64Array) -> void:
 	assert(counters.size() == COLUMNS.size() - 4)
-	if count == _capacity:
-		dropped += 1
+	if _count == _capacity:
+		_dropped += 1
 		return
-	var offset := count * COLUMNS.size()
+	var offset := _count * COLUMNS.size()
 	_values[offset] = timestamp_usec
 	_values[offset + 1] = process_frame
 	_values[offset + 2] = draw_frame
@@ -38,14 +51,14 @@ func append(timestamp_usec: int, process_frame: int, draw_frame: int,
 	for i in counters.size():
 		_values[offset + 4 + i] = counters[i]
 	_previous_usec = timestamp_usec
-	count += 1
+	_count += 1
 
 ## Called only after capture. Nearest-rank percentiles and strict budget exceedances operate
 ## on retained positive intervals, excluding the anchor at the start of every segment.
 func report(refresh_hz: float) -> Dictionary:
 	var rows: Array = []
 	var intervals: Array[int] = []
-	for i in count:
+	for i in _count:
 		var offset := i * COLUMNS.size()
 		rows.append(Array(_values.slice(offset, offset + COLUMNS.size())))
 		if _values[offset + 3] > 0:
@@ -66,8 +79,8 @@ func report(refresh_hz: float) -> Dictionary:
 			summary.over_30hz_budget += 1
 		if refresh_hz > 0 and interval > 1000000.0 / refresh_hz:
 			summary.over_refresh_budget += 1
-	return {"schema_version": 1, "capacity": _capacity, "retained": count,
-		"dropped_after_capacity": dropped, "columns": COLUMNS, "samples": rows,
+	return {"schema_version": 1, "capacity": _capacity, "retained": _count,
+		"dropped_after_capacity": _dropped, "columns": COLUMNS, "samples": rows,
 		"summary": summary}
 
 func _percentile(sorted: Array[int], fraction: float) -> float:

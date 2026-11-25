@@ -1,13 +1,14 @@
 class_name Navigator
 extends RefCounted
-## **The one way anything that walks or drives across a world moves, bar the crowd's lane step**: each map builds one
-## (`WorldMap.navigator()`), and it is handed to every mover by whoever builds it — the city to its
-## event manager, its crowd and the resistance, the event manager to every figure it makes — rather
-## than fetched. A step, a walk down a list of points, a way round, a way out and whether a chase
-## reaches somebody (`reaches()`) are all asked of the map's one blocked record through the mover's
-## own layers (`Mover`, `WorldMap.passable()`), so a cat, a bike, a pursuer, a departing dog, a man
-## walking back to his van and the masked man on the building's stairs are all stopped by what stops
-## her.
+## **The one way anything that walks or drives across a world moves, bar the crowd's lane step**:
+## whoever builds a world builds one over its map (`City.build()`, `InteriorScene.build()`) and
+## hands it to every mover — the city to its event manager, its crowd and the resistance, the event
+## manager to every figure it makes — rather than fetched. **A navigator holds nothing but its map**,
+## so two over one map answer every question alike. A step, a walk down a list of points, a way
+## round, a way out and whether a chase reaches somebody (`reaches()`) are all asked of the map's one
+## blocked record through the mover's own layers (`Mover`, `WorldMap.passable()`), so a cat, a bike,
+## a pursuer, a departing dog, a man walking back to his van and the masked man on the building's
+## stairs are all stopped by what stops her.
 ##
 ## **Every step is swept**: the tiles the whole step crosses are asked, not only the one it lands
 ## on, so a long frame cannot carry a chaser through a wall a tile thick. And it keeps the mover's
@@ -18,8 +19,9 @@ extends RefCounted
 ## lane-following held step is a different motion model from the navigator's swept step, and it
 ## stays off the navigator (inbox #1155 in gray-dolphin).
 ##
-## A navigator over open ground (`open_ground()`, `WorldMap.open_ground()`) takes every step whole,
-## sees every line clear and walks every way straight: what a data rig with no world walks on.
+## A navigator over open ground (`Navigator.new()`, whose map is `WorldMap.open_ground()`) takes
+## every step whole, sees every line clear and walks every way straight: what a data rig with no
+## world walks on.
 
 ## How far, at most, past where a step lands the ground has to be open, whatever the mover's own
 ## radius: under half a tile, since every way between solids is a tile wide at least and a walk
@@ -36,19 +38,11 @@ var _map: WorldMap
 func _init(map: WorldMap = null) -> void:
 	_map = map if map else WorldMap.open_ground()
 
-## A navigator over open ground: every step is taken whole and every line is clear.
-static func open_ground() -> Navigator:
-	return Navigator.new()
-
 ## The map this navigator walks.
 func map() -> WorldMap:
 	return _map
 
-## Whether `mover` may stand on `tile` (`WorldMap.passable()`).
-func passable(tile: Vector2i, mover: Mover) -> bool:
-	return _map.passable(tile, mover)
-
-## Whether `mover` may stand at the world point `at`.
+## Whether `mover` may stand at the world point `at` (`WorldMap.passable()` of its tile).
 func passable_at(at: Vector2, mover: Mover) -> bool:
 	return _map.passable(_map.world_to_tile(at), mover)
 
@@ -101,11 +95,11 @@ func _sweep_is_clear(from: Vector2, delta: Vector2, mover: Mover) -> bool:
 	var start := _map.world_to_tile(from)
 	var asked := mover
 	if not _map.passable(start, mover):
-		var built := Mover.new(mover.blocked_by & ~Mover.TODAY)
+		var built := Mover.new(mover.layers_blocked() & ~Mover.TODAY)
 		if not _map.passable(start, built):
 			return true
 		asked = built
-	var reach := minf(mover.radius, REACH_LIMIT)
+	var reach := minf(mover.body_reach(), REACH_LIMIT)
 	var to := from + delta
 	if reach > 0.0:
 		to += delta.normalized() * reach
@@ -241,7 +235,9 @@ func _search(start: Vector2i, mover: Mover, avoid: Rect2i, arrived: Callable) ->
 	return PackedVector2Array()
 
 ## **A way for `mover` to follow somebody round the buildings between them** (`ChaseWay`), seeing
-## along `sight`: made once by a figure that is set on her from a city away, and kept by it.
+## along `sight`: made once by a pursuer that walks round buildings to her (the roadblock's posted
+## guard, from the start; day 13's task guard, when he is set on her from a city away), and kept by
+## it.
 func way_to(mover: Mover, sight: Mover) -> ChaseWay:
 	return ChaseWay.new(self, mover, sight)
 
@@ -261,8 +257,9 @@ const REACH_STEP := Tuning.TILE_SIZE / 8.0
 ## one coming round it.
 ##
 ## **The straight chase is the one a start is sited for.** Every pursuer sent at her from a start
-## chases straight; only day 13's task guard walks round buildings (`way_to()`), and he is in the
-## world already when he is set on her, so no start is sited for his way.
+## chases straight; only the roadblock's posted guard and day 13's task guard walk round buildings
+## (`way_to()`), and both are in the world already when they come for her, so no start is sited for
+## their way.
 func reaches(from: Vector2, to: Vector2, mover: Mover, limit: float,
 		avoid := Callable()) -> bool:
 	var at := from

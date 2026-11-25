@@ -31,7 +31,7 @@ def git_output(parser, root, *args):
 def validate_instrument_checkout(parser, checkout):
     if not checkout.is_dir():
         parser.error(f"checkout is not a directory: {checkout}")
-    required = ["src/events/event_instance.gd", "src/crowd/crowd_agent.gd",
+    required = ["src/events/simulation/event_instance.gd", "src/crowd/crowd_agent.gd",
                 "tests/probes/entity_frame_profile_observer.gd"]
     missing = [relative for relative in required if not (checkout / relative).is_file()]
     if missing:
@@ -132,7 +132,7 @@ def main():
                    if frame in frames) for index in range(4)] for kind in ["event", "crowd"]}
     result["instrumented_sha256"] = {
         relative: hashlib.sha256((args.checkout / relative).read_bytes()).hexdigest()
-        for relative in ["src/events/event_instance.gd", "src/crowd/crowd_agent.gd",
+        for relative in ["src/events/simulation/event_instance.gd", "src/crowd/crowd_agent.gd",
                          "tests/probes/entity_frame_profile_observer.gd"]}
     result["sampling_dt_seconds"] = 0.25
     result["samples_per_integral"] = 20

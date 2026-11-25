@@ -1,0 +1,19 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[RunState] run started, seed=2
+ESCAPE_DENSITY seed  4242 | 32 streets | military_convoy 8, abduction 4, roadblock 2, finale_explosion 8 | alley walls: impact_crater | planned in 376 ms
+ESCAPE_DENSITY seed     1 | 34 streets | military_convoy 7, abduction 3, roadblock 2, finale_explosion 8 | alley walls: impact_crater | planned in 334 ms
+ESCAPE_DENSITY seed    77 | 35 streets | military_convoy 7, abduction 4, roadblock 2, finale_explosion 8 | alley walls: impact_crater | planned in 360 ms
+ESCAPE_DENSITY seed  9001 | 32 streets | military_convoy 8, abduction 6, roadblock 1, finale_explosion 6 | alley walls: impact_crater | planned in 387 ms
+ESCAPE_DENSITY seed    23 | 33 streets | military_convoy 7, abduction 3, roadblock 3, finale_explosion 8 | alley walls: impact_crater | planned in 362 ms
+ESCAPE_DENSITY seed     5 | 29 streets | military_convoy 5, abduction 5, roadblock 2, finale_explosion 7 | alley walls: impact_crater | planned in 356 ms
+ESCAPE_DENSITY seed 31337 | 28 streets | military_convoy 7, abduction 3, roadblock 2, finale_explosion 7 | alley walls: impact_crater | planned in 343 ms
+ESCAPE_DENSITY seed  2024 | 28 streets | military_convoy 7, abduction 3, roadblock 1, finale_explosion 8 | alley walls: impact_crater | planned in 310 ms
+ESCAPE_DENSITY seed     7 | 31 streets | military_convoy 9, abduction 3, roadblock 2, finale_explosion 6 | alley walls: impact_crater | planned in 383 ms
+ESCAPE_DENSITY seed   808 | 27 streets | military_convoy 7, abduction 3, roadblock 1, finale_explosion 7 | alley walls: impact_crater | planned in 352 ms
+ESCAPE_DENSITY | 10 seeds | 309 streets | military_convoy 72, abduction 37, roadblock 18, finale_explosion 73
+-- escape_density.gd                       8750 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/escape_density.gd. Not a green build.

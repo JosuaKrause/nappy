@@ -6,8 +6,8 @@ extends RefCounted
 ## keeps, and for the same reason: the geometry she learns has to stay true.
 ##
 ## **A pure function of `CityMap`, not a scene.** `City._spawn_street_trees()` draws exactly the
-## positions this returns, `ClosurePlanner` reads `has_trees()` to decide where a `fallen_tree`
-## closure may happen at all, and `EventScheduler` reads `footprint_tiles()` to refuse that ground
+## positions this returns, `ClosurePlanner` reads `segment_keys_with_trees()` to decide where a
+## `fallen_tree` closure may happen at all, and `EventScheduler` reads `footprint_tiles()` to refuse that ground
 ## to the day's events — one source of truth for all three, so the drawing, the planting and the
 ## planning can never disagree about which street has trees on it.
 ##
@@ -17,8 +17,8 @@ extends RefCounted
 ## like yeller, dog walker, etc.")* A tree and an event never share ground, so every pit is a tile
 ## the day may not put a van, a café, a market stall, a yeller or a seal on. The four numbers that
 ## keep that bill small are `STREET_TREE_RUNS`, the two run-length bounds, and
-## `STREET_TREE_PIT_SPACING`; `STREET_TREE_MAX_LINED_FRACTION` is the ceiling they
-## are chosen under.
+## `STREET_TREE_PIT_SPACING`; `tests/test_blocks.gd` holds the quarter of ordinary streets they
+## may line at most.
 ##
 ## **The mouth margin is what keeps a pit off a crossing and off a checkpoint.** A boundary
 ## segment's wall or door structure always stands at one of its two one-tile-deep mouths
@@ -51,23 +51,10 @@ const _CURB_OFFSETS := [1, 4]
 ## bound rather than a `while true`, so a hostile seed ends with fewer runs instead of hanging.
 const _RUN_TRIES := 240
 
-## The fraction of a tree sprite's own width its ground shape reaches, out of
-## `Prop._compute_shape()` — the point the shadow is drawn from and the footprint an event is kept
-## out of. Mirrored here rather than read off a `Prop`, because every caller of `footprint_tiles()`
-## is a headless planner with no scene to build one in; `tests/test_blocks.gd` compares this
-## against a real street tree's own `shape.reach()` so the two cannot drift apart unnoticed.
-const _FOOTPRINT_FRACTION := 0.28
-
 ## Chance a candidate pit inside a run is actually planted, rolled in scan order. What stops a run
 ## from being a perfectly regular colonnade — the first roll to succeed sets the phase and
 ## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
 const STREET_TREE_PLANT_CHANCE := 0.55
-
-## The most of the city's ordinary streets that may carry trees, as a fraction. Not a dial — the
-## runs are — but the ceiling the run count is chosen under, asserted over a seed sweep in
-## `tests/test_blocks.gd` so that raising `STREET_TREE_RUNS` cannot quietly make a tree-lined
-## street the ordinary case again.
-const STREET_TREE_MAX_LINED_FRACTION := 0.25
 
 const STREET_TREE_RUN_MAX_BLOCKS := 5
 
@@ -80,9 +67,9 @@ const STREET_TREE_RUN_MIN_BLOCKS := 3
 ## How many tree-lined runs the city plants. A run is one straight stretch of consecutive blocks
 ## along a single street line, so this is the whole of "how much of the city has trees": at
 ## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
-## the quarter of ordinary streets `STREET_TREE_MAX_LINED_FRACTION` caps it at.
+## the quarter of ordinary streets `tests/test_blocks.gd` caps it at.
 ##
-## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
+## **The count is per city, not per block**, unlike the events' density: a tree-lined street is
 ## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
 ## way a density does.
 const STREET_TREE_RUNS := 6
@@ -126,13 +113,13 @@ class Run extends RefCounted:
 		return found
 
 ## One standing street tree: where it is, which tile it stands on, and which segment it belongs
-## to — the fact `has_trees()` groups by.
+## to — the fact `segment_keys_with_trees()` groups by.
 class Planted extends RefCounted:
 	var position: Vector2
 	var tile: Vector2i
 	var segment_key: Vector3i
 
-## The city's tree-lined runs, fixed for the run from `map.seed_used`.
+## The city's tree-lined runs, fixed for the run from `map.city_seed()`.
 ##
 ## **Placed at random across the map in both directions** *(2026-09-11, the player: "continuous
 ## segments of 3/4/5 blocks randomly placed on the map in both directions")*, and rejected whole
@@ -151,7 +138,7 @@ class Planted extends RefCounted:
 ## block — the only distance this stage can know ahead of the random planting itself.
 static func runs(map: CityMap) -> Array[Run]:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("street_tree_runs:%d" % map.seed_used)
+	rng.seed = hash("street_tree_runs:%d" % map.city_seed())
 	var found: Array[Run] = []
 	var taken := {}
 	for _try in _RUN_TRIES:
@@ -183,9 +170,9 @@ static func runs(map: CityMap) -> Array[Run]:
 ## street: the spacing accumulator crosses the junction between two blocks of the same run.
 static func planted(map: CityMap) -> Array[Planted]:
 	var found: Array[Planted] = []
-	if not map.recipe_dawn_tiles.is_empty():
-		for tile in map.recipe_trees:
-			var segment := map.network.segment_containing(tile)
+	if map.has_recipe_dawn_ground():
+		for tile in map.recipe_tree_tiles():
+			var segment := map.street_network().segment_containing(tile)
 			if not segment:
 				continue
 			var tree := Planted.new()
@@ -196,58 +183,42 @@ static func planted(map: CityMap) -> Array[Planted]:
 		return found
 	var door_tile := _door_tile(map)
 	for run in runs(map):
-		for offset in _CURB_OFFSETS:
+		for offset: int in _CURB_OFFSETS:
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("street_tree:%d:%d:%d:%d:%d" % [map.seed_used,
+			rng.seed = hash("street_tree:%d:%d:%d:%d:%d" % [map.city_seed(),
 					0 if run.horizontal else 1, run.index, run.first, offset])
 			found.append_array(_plant_side(run, offset, rng, door_tile))
 	for tree in found:
-		if map.recipe_tree_moves.has(tree.tile):
-			tree.tile = map.recipe_tree_moves[tree.tile]
+		if map.has_tree_move_from(tree.tile):
+			tree.tile = map.tree_move_from(tree.tile)
 			tree.position = map.tile_to_world(tree.tile)
 	return found
 
-## Whether `segment` carries a standing street tree — what `ClosurePlanner._pick_kind` and
-## `SealPlanner` read to decide whether a fallen tree may happen on this street at all. **A run
-## segment with no pit on it answers false**, and that is the point: a fallen tree has to take a
-## pit, so a street with none is not a street a tree can fall on.
-static func has_trees(map: CityMap, segment: StreetNetwork.Segment) -> bool:
-	return segment_keys_with_trees(map).has(segment.key())
-
-## `planted()`'s own segments, as a set — built once per call rather than once per candidate
-## closure, since `ClosurePlanner.plan_day` asks this at most once per day.
+## `planted()`'s own segments, as a set — what `ClosurePlanner` and `SealPlanner` read to decide
+## whether a fallen tree may happen on a street at all. **A run segment with no pit on it is not in
+## the set**, and that is the point: a fallen tree has to take a pit, so a street with none is not a
+## street a tree can fall on.
 static func segment_keys_with_trees(map: CityMap) -> Dictionary:
 	var keys := {}
 	for tree in planted(map):
 		keys[tree.segment_key] = true
 	return keys
 
-## How far a street tree's own ground shape reaches from its trunk, in px — `Prop`'s street tree
-## is a `GroundShape.point` of exactly this, and the widest of the sprites it may be drawn as is
-## what a planner has to keep clear, since which variant a pit gets is decided where the prop is
-## built rather than here. Read from `AtlasTable.native_size()`, which answers with nothing
-## acquired — every caller here runs ahead of any `City` existing. The planners' determinism rests
-## on this number, and the region table's size is the source picture's own:
-## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` compares every baked
-## region, `props/tree_a` and `props/tree_b` included, against the imported picture pixel for
-## pixel, size included.
-static func footprint_radius() -> float:
-	var widest := 0.0
-	for name: StringName in Prop.TREES:
-		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * _FOOTPRINT_FRACTION)
-	return widest
-
 ## Every tile a standing street tree stands on or reaches over, as a set — the ground
-## `EventScheduler.open_ground_for` refuses a candidate row, the same way it refuses a closed
+## `RowGround.tiles_for()` refuses a candidate row, the same way it refuses a closed
 ## street, and the ground `SealPlanner` steps its own bodies aside from.
 ##
 ## **Every pit, including one today's fallen tree empties.** An emptied pit is on a street that is
 ## closed or hard-sealed for the day, so it is already refused by the segment it is on; keeping
 ## this answer a fact about the *city* rather than about the day is what lets it be asked before
 ## the day's plan exists.
+##
+## **The reach is the widest tree picture's** (`TreePictures.widest_reach()`), the same answer the
+## street tree's prop takes its ground shape from, since which picture a pit gets is decided where
+## the prop is built rather than here.
 static func footprint_tiles(map: CityMap) -> Dictionary:
 	var tiles := {}
-	var radius := footprint_radius()
+	var radius := TreePictures.widest_reach()
 	for tree in planted(map):
 		var low := ((tree.position - Vector2.ONE * radius) / float(Tuning.TILE_SIZE)).floor()
 		var high := ((tree.position + Vector2.ONE * radius) / float(Tuning.TILE_SIZE)).floor()
@@ -281,7 +252,7 @@ static func _run_is_plantable(map: CityMap, run: Run, taken: Dictionary) -> bool
 	for key in run.segment_keys():
 		if taken.has(key) or not map.has_street(key):
 			return false
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		if not segment:
 			return false
 		if _street_kind_of(map, segment) != GameEnums.StreetKind.ORDINARY:
@@ -333,7 +304,7 @@ static func _bordering_blocks(segment: StreetNetwork.Segment) -> Array[Vector2i]
 
 static func _fronts_a_qualifying_block(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	for block in _bordering_blocks(segment):
-		if not map.block_plans.has(block):
+		if not map.has_plan_for(block):
 			continue   # off the lattice — the boundary street outside the map's edge block
 		if _DISTRICTS.has(map.starting_purpose(block)):
 			return true
@@ -344,7 +315,7 @@ static func _fronts_a_qualifying_block(map: CityMap, segment: StreetNetwork.Segm
 ## The home's own front door tile, kept clear the same one-tile margin as a crossing or a
 ## checkpoint — the single literal "door" in the game, `door.svg`, standing at the home's notch.
 static func _door_tile(map: CityMap) -> Vector2i:
-	return Vector2i(map.home_rect.position.x, map.home_rect.end.y)
+	return Vector2i(map.home_tile_rect().position.x, map.home_tile_rect().end.y)
 
 ## One kerb of one run, planted end to end. The `along` coordinate walks each block's own street
 ## tiles inside the mouth margin and simply skips the junctions between them, so the spacing is

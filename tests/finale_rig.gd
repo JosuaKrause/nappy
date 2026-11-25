@@ -18,6 +18,8 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const Main := preload("res://src/main.gd")
+const Hud := preload("res://src/ui/hud.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
@@ -57,15 +59,14 @@ const CASES: Array[String] = [
 	"_test_the_escape_stands_its_rows_on_the_days_own_ground",
 	"_test_an_alley_mouth_wall_fits_the_mouth",
 	"_test_nothing_the_escape_stands_reaches_over_a_building",
-	"_test_a_restart_plans_the_same_escape_on_the_kept_ground",
-	"_test_the_manager_plans_a_restart_on_the_ground_it_kept",
+	"_test_a_restart_plans_the_same_escape",
 	"_test_the_escape_bag_keeps_the_players_order",
-	"_test_every_slot_of_every_street_draws_one_marble",
+	"_test_a_street_stands_one_event_and_a_refused_marble_stays",
 	"_test_the_game_draws_the_escape_from_tunings_bag",
 	"_test_the_service_exit_is_beside_the_home_block",
 	"_test_nothing_the_finale_places_stands_where_she_comes_out",
 	"_test_no_lethal_field_covers_the_ground_she_comes_out_on",
-	"_test_the_finale_city_has_nobody_in_it",
+	"_test_the_finale_city_grows_no_corridor",
 	"_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart",
 	"_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture",
 	"_test_the_clock_reads_hundredths_only_in_the_finale",
@@ -75,7 +76,7 @@ const CASES: Array[String] = [
 	"_test_only_a_won_last_day_with_every_task_done_hands_over",
 	"_test_every_part_word_reaches_its_own_walkable_position",
 	"_test_the_escape_owes_no_return_leg",
-	"_test_a_day_owes_its_return_only_as_its_spec_says",
+	"_test_a_days_spec_owes_its_return_leg",
 	"_test_nothing_the_escape_places_stands_in_a_street_tree",
 	"_test_the_escape_pauses_the_same_way_a_day_does",
 	"_test_pause_does_not_open_over_a_section_brief_or_the_epilogue",
@@ -85,10 +86,13 @@ const CASES: Array[String] = [
 	"_test_a_route_rig_presses_only_the_first_brief_of_a_section",
 	"_test_a_handover_does_not_open_on_the_title",
 	"_test_the_held_restart_from_the_escape_clears_the_section",
+	"_test_a_posted_guard_follows_her_round_the_corner",
+	"_test_the_game_walks_her_in_and_the_ending_waits_for_it",
+	"_test_the_escape_leaves_its_trucks_to_the_director",
 ]
 
 ## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
-func run_cases(t, indices: Array[int]) -> void:
+func run_cases(t: TestRunner, indices: Array[int]) -> void:
 	for index in indices:
 		await call(CASES[index], t)
 
@@ -98,7 +102,7 @@ func run_cases(t, indices: Array[int]) -> void:
 ## the escape is planned on.
 static func _paint_day_one(map: CityMap) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 1)
+	state.begin_day(map.plans_by_block(), 1)
 	map.repaint(state)
 
 static func _plan_for(seed_value: int) -> Dictionary:
@@ -108,12 +112,13 @@ static func _plan_for(seed_value: int) -> Dictionary:
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
 	return {"map": map, "plan": walk,
-			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
+			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec(),
+				GamePlanBuilder.over(map))}
 
 ## *"No overlapping routes"*: the choice is made once, at the door, and is the game's verb. The
 ## cell she leaves from is the one exception, since both walks have to start somewhere.
-func _test_the_two_chains_part_at_the_door_and_never_meet_again(t) -> void:
-	for seed_value in SEEDS:
+func _test_the_two_chains_part_at_the_door_and_never_meet_again(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var plan: FinalePlanner.Plan = built["plan"]
 		t.check(plan.chains.size() == 2, "seed %d plans two chains" % seed_value)
@@ -135,8 +140,8 @@ func _test_the_two_chains_part_at_the_door_and_never_meet_again(t) -> void:
 ## *"A single path through the city that crosses three parks (the player can use them to calm down
 ## or get the baby back to sleep if it wakes up)."* Distinct is the load-bearing word: three stops
 ## on one park is one place to rest, not three.
-func _test_each_chain_passes_three_distinct_calm_areas(t) -> void:
-	for seed_value in SEEDS:
+func _test_each_chain_passes_three_distinct_calm_areas(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
@@ -162,58 +167,71 @@ func _test_each_chain_passes_three_distinct_calm_areas(t) -> void:
 ## The tunnel is at the north end of the spine and the bridge at its south end — the two exits
 ## `CityEdge` draws and already lets her walk into. A chain that ended anywhere else would be a
 ## walk with no way out at the end of it.
-func _test_each_chain_reaches_its_own_edge(t) -> void:
-	for seed_value in SEEDS:
+func _test_each_chain_reaches_its_own_edge(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
 		for chain: FinalePlanner.Chain in plan.chains:
 			t.check(chain.complete, "seed %d: a chain is walkable end to end" % seed_value)
 			var exit := FinalePlanner.exit_tile(map, chain.exit_kind)
-			var name := "tunnel" if chain.exit_kind == CityEdge.Kind.TUNNEL else "bridge"
+			var name := "tunnel" if chain.exit_kind == CityExit.Kind.TUNNEL else "bridge"
 			t.check(chain.cells.has(exit / ReachabilityGrid.CELL),
 					"seed %d: the %s chain reaches its own edge" % [seed_value, name])
 			t.check(Tile.is_road(map.tile_at(exit)),
 					"seed %d: the %s ends on the spine's own carriageway" % [seed_value, name])
 			# And it is the *last* of it: she is out under the portal, not a street short of it.
-			var from_the_edge: int = exit.y if chain.exit_kind == CityEdge.Kind.TUNNEL \
-					else map.size.y - 1 - exit.y
+			var from_the_edge: int = exit.y if chain.exit_kind == CityExit.Kind.TUNNEL \
+					else map.size_in_tiles().y - 1 - exit.y
 			t.check(from_the_edge <= CityEdge.TUNNEL_DEPTH_TILES,
 					"seed %d: and within the portal's own depth of the map edge (%d rows)"
 					% [seed_value, from_the_edge])
-			# Standing on that tile is out of the city, and the street before it is not — the two
-			# halves of what `DayController.FINALE_EXIT_REACH` has to be worth.
-			var at := map.tile_to_world(exit)
-			t.check(DayController.FINALE_EXIT_REACH > Tuning.PLAYER_BODY_RADIUS,
-					"the exit's reach covers her whole body on the tile")
-			t.check(at.distance_to(map.tile_to_world(exit + Vector2i(0, 2))) \
-					> DayController.FINALE_EXIT_REACH,
-					"and stops short of the tile two back from it")
 		t.check(plan.chains[0].exit_kind != plan.chains[1].exit_kind,
 				"seed %d: the two chains leave by different ways" % seed_value)
+	_check_the_threshold_covers_the_last_row_and_not_the_tile_before(t)
+
+## The threshold (`DayController.FINALE_EXIT_DEPTH` either side of the last row's centre) holds her
+## centre pressed against the map's edge (her body's radius short of it) on both ways out, and
+## stops short of the row before it, the border junction's crossing she is still on. Read off the
+## map's own exit rows, once: the figure does not depend on the seed.
+func _check_the_threshold_covers_the_last_row_and_not_the_tile_before(t: TestRunner) -> void:
+	var map := MapCache.of(SEEDS[0])
+	var edge_south := map.world_size().y
+	for exit_kind: int in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
+		var tunnel := exit_kind == CityExit.Kind.TUNNEL
+		var row := map.tile_to_world(FinalePlanner.exit_tile(map, exit_kind)).y
+		var pressed := Tuning.PLAYER_BODY_RADIUS if tunnel else edge_south - Tuning.PLAYER_BODY_RADIUS
+		var name := "tunnel" if tunnel else "bridge"
+		t.check(absf(pressed - row) <= DayController.FINALE_EXIT_DEPTH,
+				"her centre pressed to the edge is inside the %s's threshold" % name)
+		var before := row + (float(Tuning.TILE_SIZE) if tunnel else -float(Tuning.TILE_SIZE))
+		t.check(absf(before - row) > DayController.FINALE_EXIT_DEPTH,
+				"the row before it, a whole tile back, is outside the %s's threshold" % name)
+	t.check(DayController.FINALE_EXIT_DEPTH <= Tuning.TILE_SIZE * 0.5,
+			"the threshold never reaches into the tile before the last row")
 
 # ----------------------------------------------------------------- the walls ---
 
 ## *"Off the one open route everything is sealed."* Stated over the streets the chains actually
 ## walk rather than the ones they touch, which is the same question `SealPlanner.runs_through()`
 ## decides for both the sealing and the events.
-func _test_every_street_off_the_chains_is_sealed(t) -> void:
-	for seed_value in SEEDS:
+func _test_every_street_off_the_chains_is_sealed(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var sealed_at := {}
-		for placement: EventScheduler.Planned in placements:
-			if placement.def.obstructs_radius > 0.0:
-				sealed_at[map.world_to_tile(placement.position)] = true
+		for placement: EventPlan in placements:
+			if placement.row().obstructs_within() > 0.0:
+				sealed_at[map.world_to_tile(placement.placed_at())] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
-		var hers := map.network.segment_containing(
+		var hers := map.street_network().segment_containing(
 				map.world_to_tile(FinalePlanner.service_exit_world_position(map)))
 		var open_and_unsealed := 0
 		var closed := 0
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			if not map.has_street(segment.key()):
 				continue
 			if SealPlanner.runs_through(segment, plan.open_cells):
@@ -239,8 +257,8 @@ func _test_every_street_off_the_chains_is_sealed(t) -> void:
 ## at all: from the service exit, through nothing but the chains' own cells, both ways out can be
 ## reached. A flood over the plan rather than over the tiles, because the plan is what the sealing
 ## was stated against.
-func _test_both_exits_are_reachable_through_the_open_cells_alone(t) -> void:
-	for seed_value in SEEDS:
+func _test_both_exits_are_reachable_through_the_open_cells_alone(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
@@ -259,11 +277,11 @@ func _test_both_exits_are_reachable_through_the_open_cells_alone(t) -> void:
 					continue
 				reached[next] = true
 				queue.append(next)
-		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := grid.node_at(FinalePlanner.exit_tile(map, kind))
 			t.check(exit >= 0 and reached.has(exit),
 					"seed %d: the %s is reached from the door through open cells only"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 
 ## *"Roadblocks currently are impossible to get past. One sidewalk must be open if they're
 ## en-route. The escape's street should not have fully blocking events like in the normal game"*
@@ -283,18 +301,18 @@ func _test_both_exits_are_reachable_through_the_open_cells_alone(t) -> void:
 const BODY_FLOOD_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 23]
 const BODY_FLOOD_STEP := 8.0
 
-func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t) -> void:
+func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t: TestRunner) -> void:
 	var bodies := 0
-	for seed_value in BODY_FLOOD_SEEDS:
+	for seed_value: int in BODY_FLOOD_SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var blocked := {}
 		bodies += _block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -303,27 +321,29 @@ func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t) -> void
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
 			t.check(found, "seed %d: the %s is reached from the door past every body standing"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(bodies > 0, "there were escape bodies to stand in the way (%d)" % bodies)
 
 ## **And past every lethal reach that stands**: from the door both exits are reached with her
-## centre kept outside the reach of every row that stands, is lethal and does not pursue — the van's
-## 54px round where it is parked — as well as off every body. A sidewalk kept open past a van's body
-## but not past its reach is a walk that ends the section, so the walk rule keeps the reach as
-## ground (`WalkGround.held_by()`); a pursuer's reach moves with him and warns first.
-func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
+## centre kept outside the reach of every row that stands and ends the day — the van's 54px round
+## where it is parked — as well as off every body. A sidewalk kept open past a van's body
+## but not past its reach is a walk that ends the section, so the walk rule keeps the ground a
+## catch shuts where its row holds its place as ground (`WalkGround.held_by()`,
+## `EventDef.catch_shuts_within()`); a pursuer's post counts as well, and the roadblock guard's
+## catch lies inside the band.
+func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunner) -> void:
 	var reaches := 0
-	for seed_value in BODY_FLOOD_SEEDS:
+	for seed_value: int in BODY_FLOOD_SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var blocked := {}
 		_block_every_body(t, map, placements, blocked)
 		reaches += _block_every_standing_reach(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -332,10 +352,10 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
 			t.check(found, "seed %d: the %s is reached from the door past every standing lethal reach"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(reaches > 0, "there were standing lethal reaches to keep out of (%d)" % reaches)
 	# The rule's own reading of one van and one roadblock, on open sidewalk: the van holds her off
-	# its 54px reach as well as its body, the roadblock — whose guard pursues — its band alone.
+	# its 54px reach as well as its body, the roadblock its guard's catch as well as its band.
 	var map: CityMap = _plan_for(SEEDS[0])["map"]
 	var ground := WalkGround.new(map)
 	var tile := Vector2i.ZERO
@@ -343,7 +363,7 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
 		if not map.is_on_home_block(candidate):
 			tile = candidate
 			break
-	var van := EventScheduler.Planned.new(EventCatalogue.by_id("abduction"), map.tile_to_world(tile))
+	var van := EventPlan.new(EventCatalogue.by_id("abduction"), map.tile_to_world(tile))
 	var held := ground.held_by(van)
 	t.check(held.size() == ground.solids_of(van).size() + 1,
 			"a van holds one piece more than its body: its reach")
@@ -352,36 +372,51 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
 	t.check(reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal - 2.0))
 			and not reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal + 2.0)),
 			"and that piece takes her centre exactly within %.0fpx" % lethal)
-	var band := EventScheduler.Planned.new(EventCatalogue.escape_roadblock(), map.tile_to_world(tile))
-	t.check(ground.held_by(band).size() == ground.solids_of(band).size(),
-			"a roadblock, whose guard pursues, holds its band alone")
+	var band := EventPlan.new(EventCatalogue.escape_roadblock(), map.tile_to_world(tile))
+	var band_held := ground.held_by(band)
+	var pieces := ground.solids_of(band)
+	t.check(band_held.size() == pieces.size() + 1,
+			"a roadblock holds one piece more than its band: its guard's catch")
+	var catch_disc: WalkGround.Solid = band_held[band_held.size() - 1]
+	var disc_edge := catch_disc.shape.reach() + Tuning.PLAYER_BODY_RADIUS
+	var inside_the_band := 0
+	for step in 24:
+		var around := Vector2.RIGHT.rotated(TAU * float(step) / 24.0)
+		var on_the_ring := catch_disc.centre + around * (disc_edge - 1.0)
+		var held_by_a_piece := false
+		for piece in pieces:
+			held_by_a_piece = held_by_a_piece or piece.stops_her_at(on_the_ring)
+		inside_the_band += 1 if held_by_a_piece else 0
+	t.check(inside_the_band == 24,
+			"and every point of a ring just inside that catch is stopped by the band's own pieces "
+			+ "(%d of 24)" % inside_the_band)
 
-## **Where the reach is what decides it, the walk still gets through.** A bag of vans alone at two
-## slots a street (`_escape_rows_from()` with a bag of `{"abduction": 1}`) packs the walk with
-## parked vans; on these seeds a placement that keeps a sidewalk open past each van's 22px body but
-## not past its 54px reach would cut the walk to one exit — the walk rule counting bodies alone
-## leaves the tunnel unreachable on seeds 8 and 39 and the bridge on seed 1. So with the rule
+## **Where the reach is what decides it, the walk still gets through.** A bag of vans alone, a van on
+## every street that takes one (`_escape_rows_from()` with a bag of `{"abduction": 1}`, one marble a
+## street), packs the walk with parked vans; a placement that kept a sidewalk open past each van's
+## 22px body but not past its 54px reach could cut the walk to one exit. So with the rule
 ## (`WalkGround.held_by()`), both exits are reached from the door past every body and every reach,
-## and this is what fails if the judge stops asking the reach.
+## and this is what fails if the walk is not kept open (`WalkOpenRule` answering yes leaves seed
+## 39's tunnel unreached).
 const VAN_STREET_SEEDS := [1, 8, 39]
 
-func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
+func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> void:
 	var vans := 0
-	for seed_value in VAN_STREET_SEEDS:
+	for seed_value: int in VAN_STREET_SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
-		var placed := _escape_rows_from(map, bare, {"abduction": 1}, 2)
+		var placed := _escape_rows_from(map, bare, {"abduction": 1})
 		vans += placed.size()
-		var whole: Array[EventScheduler.Planned] = []
-		whole.assign((bare["seals"] as Array[EventScheduler.Planned]).duplicate())
+		var whole: Array[EventPlan] = []
+		whole.assign((bare["seals"] as Array[EventPlan]).duplicate())
 		whole.append_array(placed)
 		var blocked := {}
 		_block_every_body(t, map, whole, blocked)
 		_block_every_standing_reach(t, map, whole, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -389,20 +424,20 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
 				for dx in range(-2, 3):
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
-			t.check(found, "seed %d, vans two a street: the %s is reached past every van's reach"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
-	t.check(vans > 100, "there were streets full of vans to walk past (%d)" % vans)
+			t.check(found, "seed %d, a van a street: the %s is reached past every van's reach"
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
+	t.check(vans > 80, "there were streets full of vans to walk past (%d)" % vans)
 
-## Marks every grid point within the lethal reach of a row the plan stands that is not mobile, is
-## `hard_fail` and does not pursue, measured from where its `EventInstance` stands, and answers how
-## many reaches it marked.
-static func _block_every_standing_reach(t, map: CityMap,
-		placements: Array[EventScheduler.Planned], blocked: Dictionary) -> int:
+## Marks every grid point within the catch of a row the plan stands that is not mobile and ends the
+## day, a pursuer waiting at its post included, measured from where its `EventInstance` stands, and
+## answers how many reaches it marked.
+static func _block_every_standing_reach(t: TestRunner, map: CityMap,
+		placements: Array[EventPlan], blocked: Dictionary) -> int:
 	var stage := RoadblockRig.Stage.new(t, map)
 	var count := 0
-	for placement: EventScheduler.Planned in placements:
-		var def := placement.def
-		if def.mobile or not def.hard_fail or def.pursuit != null:
+	for placement: EventPlan in placements:
+		var def := placement.row()
+		if placement.catch_shuts_within() <= 0.0:
 			continue
 		var instance := stage.stand(placement)
 		count += 1
@@ -420,23 +455,21 @@ static func _block_every_standing_reach(t, map: CityMap,
 ## Marks every grid point a solid piece of the plan's bodies keeps her centre off, and answers how
 ## many bodies it built. Mobile rows have no body (a truck is traffic), and a row that leaves a
 ## solid successor is built as that successor where it stands (`EventSpawner.successor_of()`).
-static func _block_every_body(t, map: CityMap, placements: Array[EventScheduler.Planned],
+static func _block_every_body(t: TestRunner, map: CityMap, placements: Array[EventPlan],
 		blocked: Dictionary) -> int:
 	var stage := RoadblockRig.Stage.new(t, map)
 	var count := 0
-	for placement: EventScheduler.Planned in placements:
+	for placement: EventPlan in placements:
 		var standing := stage.stand(placement)
 		for instance: EventInstance in [standing, stage.successor_of(standing)]:
-			if instance == null or instance.def.mobile or instance.def.obstructs_radius <= 0.0:
+			if instance == null or instance.row().moves() or instance.row().obstructs_within() <= 0.0:
 				continue
 			count += 1
-			var centres := instance.solid_part_centres()
-			var shapes := instance.solid_part_shapes()
-			var axis := instance.solid_axis()
-			for i in centres.size():
-				var shape: GroundShape = shapes[i]
-				var centre: Vector2 = centres[i]
-				var rounding := shape.radius if shape.kind != GroundShape.Kind.RECT else 0.0
+			for piece in instance.standing_pieces():
+				var shape := piece.ground_shape()
+				var centre := piece.center()
+				var axis := piece.axis()
+				var rounding := shape.rounding_radius() if not shape.is_rect() else 0.0
 				var reach := shape.reach() + Tuning.PLAYER_BODY_RADIUS
 				for gy in range(floori((centre.y - reach) / BODY_FLOOD_STEP),
 						ceili((centre.y + reach) / BODY_FLOOD_STEP) + 1):
@@ -490,22 +523,23 @@ static func _she_fits(map: CityMap, point: Vector2i, cache: Dictionary) -> bool:
 ## close. Luring away one guard (the challenge) is not enough to make the obstacle survivable")*
 ## Two bands on a street stand a couple of tiles apart on the same sidewalk, and the second one's
 ## guard is still posted when she walks past after luring the first one's off. Asked of the game's
-## plans, and of plans whose every street draws two roadblock marbles, since the notice spacing is
-## what holds it at any slot count.
-func _test_no_street_of_the_walk_stands_two_roadblocks(t) -> void:
+## plans, and of plans whose every street draws a roadblock marble: one draw a street holds it by
+## construction, and the notice spacing holds it across streets.
+func _test_no_street_of_the_walk_stands_two_roadblocks(t: TestRunner) -> void:
 	var streets := 0
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
-		for placed: Array[EventScheduler.Planned] in [placements,
-				_roadblocks_everywhere(map, seed_value, 2)]:
+		var placements: Array[EventPlan] = built["placements"]
+		for placed: Array[EventPlan] in [placements,
+				_roadblocks_everywhere(map, seed_value)]:
 			for street: Array in RoadblockRig.roadblock_streets(map, plan, placed):
 				streets += 1
 				var segment: StreetNetwork.Segment = street[0]
-				t.check(street[1].size() == 1, "seed %d: street %s stands one roadblock, not %d"
-						% [seed_value, segment.key(), street[1].size()])
+				var stood: Array = street[1]
+				t.check(stood.size() == 1, "seed %d: street %s stands one roadblock, not %d"
+						% [seed_value, segment.key(), stood.size()])
 	t.check(streets > 0, "there were streets with a roadblock to ask about (%d)" % streets)
 
 ## **A roadblock's band costs nothing, ever, on a day and in the escape alike; the guard is the
@@ -515,14 +549,14 @@ func _test_no_street_of_the_walk_stands_two_roadblocks(t) -> void:
 ## guards are posted, while the guard on her side warns, while he charges, while he walks away,
 ## once he is gone, and when it is streamed back in as only the barrier; it stays solid throughout,
 ## and he still catches her if she walks on into his charge (`_test_luring_its_guard_off_is_the_way_past_a_roadblock`).
-func _test_a_roadblock_band_costs_nothing(t) -> void:
+func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
-	t.check(escape.pursuit != null and escape.pursuit.leaves_its_body and escape.hard_fail,
+	t.check(escape.pursues() and escape.leaves_its_body() and escape.ends_the_day(),
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
-	t.check(EventCatalogue.by_id("roadblock").intensity == 0.0 and day.intensity == 0.0
-			and escape.intensity == 0.0, "the roadblock row, cold and hunting, has no field strength")
+	t.check(EventCatalogue.by_id("roadblock").peak() == 0.0 and day.peak() == 0.0
+			and escape.peak() == 0.0, "the roadblock row, cold and hunting, has no field strength")
 	var step := 1.0 / 60.0
 	for def: EventDef in [escape, day]:
 		var name := "the escape's" if def == escape else "a day's"
@@ -530,55 +564,53 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		var beside := post + Vector2(0.0, 70.0)
 		# The band a plan stands on open ground, streamed in as a day's is.
 		var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground())
-		var plan := EventScheduler.Planned.new(def, post)
+		var plan := EventPlan.new(def, post)
 		var guard := stage.stand(plan)
-		var strongest := guard.excitement.contribution_at(beside)
+		var told := stage.manager.world.where_she_is()
+		var strongest := guard.source().contribution_at(beside)
 		# In inside his radius: he warns.
-		guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
+		told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 		guard.step(step)
 		var warned := guard.is_standing_for_its_notice()
-		strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
-				guard.excitement.contribution_at(guard.player_at)))
+		strongest = maxf(strongest, maxf(guard.source().contribution_at(beside),
+				guard.source().contribution_at(told.at())))
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
-		while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
+		while guard.is_telegraphing() and waited < int((guard.row().pursuit().warns_for() + 1.0) / step):
 			guard.step(step)
 			waited += 1
 		var charged := false
 		var frames := 0
-		while not guard.gave_up and frames < int(10.0 / step):
-			guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-			guard.player_running = true
+		while not guard.has_given_up() and frames < int(10.0 / step):
+			told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 			guard.step(step)
 			charged = charged or guard.is_chasing()
 			if guard.is_chasing():
-				strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
-						guard.excitement.contribution_at(guard.global_position + Vector2(0.0, 40.0))))
+				strongest = maxf(strongest, maxf(guard.source().contribution_at(beside),
+						guard.source().contribution_at(guard.global_position + Vector2(0.0, 40.0))))
 			frames += 1
-		var her := guard.player_at
-		guard.player_running = false
-		var leaving := guard.is_leaving and guard.barrier_post.is_spent()
-		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
+		var her := told.at()
+		told.tell(her)
+		var leaving := guard.is_on_its_way_out() and guard.has_lost_its_guard()
+		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		frames = 0
-		while guard.is_leaving and frames < int(30.0 / step):
-			guard.player_at = her
+		while guard.is_on_its_way_out() and frames < int(30.0 / step):
+			told.tell(her)
 			guard.step(step)
-			strongest = maxf(strongest, guard.excitement.contribution_at(beside))
+			strongest = maxf(strongest, guard.source().contribution_at(beside))
 			frames += 1
-		var gone := guard.barrier_post.is_spent() and not guard.is_leaving and guard.is_solid()
-		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
+		var gone := guard.has_lost_its_guard() and not guard.is_on_its_way_out() and guard.is_solid()
+		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		t.check(warned and charged and leaving and gone,
 				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
 		t.check(strongest == 0.0,
 				"%s band costs nothing posted, warning, charging, left or gone (%.1f/s at most)"
 				% [name, strongest])
 		# Streamed out and back in, the plan carries the spent guard and it comes back as only the barrier.
-		stage.manager.streaming.stream_out(plan)
-		stage.manager.streaming.stream_in(plan)
-		var streamed := plan.live
-		t.check(streamed.barrier_post.is_spent() and streamed.is_solid()
-				and streamed.excitement.contribution_at(beside) == 0.0,
+		var streamed := stage.stream_out_and_in(plan)
+		t.check(streamed.has_lost_its_guard() and streamed.is_solid()
+				and streamed.source().contribution_at(beside) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		stage.close()
 
@@ -588,10 +620,11 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 ## side starts to walk away, the one at the far post sets off from it the same way: away from her,
 ## at his partner's pace, gone once he is past `Tuning.OUT_OF_SIGHT` from her, his own node freed
 ## with him (the way he walks is over walkable ground, which
-## `_test_neither_guard_walks_off_over_a_building` walks on a real map); the band draws no posted
-## guard from that frame on, and one streamed back in after its guard was spent comes back with
-## neither. Walked on the hunting roadblock, which is a day's and the escape's alike.
-func _test_the_far_guard_leaves_with_his_partner(t) -> void:
+## `_test_neither_guard_walks_off_over_a_building` walks on a real map); who stands posted, where he
+## sets off from and how he paces are `tests/test_event_barrier_post.gd`'s, and one streamed back in
+## after its guard was spent comes back with no far guard walking. Walked on the hunting roadblock,
+## which is a day's and the escape's alike.
+func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	var step := 1.0 / 60.0
 	var post := Vector2(400.0, 0.0)
@@ -599,71 +632,46 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	# The band a plan stands on open ground, streamed in as a day's is, drawn on real frames.
 	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
-	var plan := EventScheduler.Planned.new(def, post)
+	var plan := EventPlan.new(def, post)
 	var guard := stage.stand(plan)
+	var told := stage.manager.world.where_she_is()
 	guard.set_process(true)
 	await RoadblockRig.settle(t)
-	var posted_first := not guard.barrier_post.far.has_left()
-	guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
+	told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 	guard.step(step)
 	var waited := 0
-	while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
+	while guard.is_telegraphing() and waited < int((guard.row().pursuit().warns_for() + 1.0) / step):
 		guard.step(step)
 		waited += 1
-	var posted_through_the_chase := true
 	var frames := 0
-	while not guard.is_leaving and frames < int(10.0 / step):
-		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-		guard.player_running = true
+	while not guard.is_on_its_way_out() and frames < int(10.0 / step):
+		told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(step)
-		if not guard.is_leaving:
-			posted_through_the_chase = posted_through_the_chase \
-					and not guard.barrier_post.far.has_left()
 		frames += 1
-	var her := guard.player_at
-	guard.player_running = false
-	t.check(posted_first and posted_through_the_chase,
-			"the far guard stands at his post until his partner leaves")
-	t.check(guard.is_leaving, "the guard on her side was shaken off and walks away")
-	var set_off := guard.barrier_post.far.at
-	t.check(set_off != Vector2.INF and guard.barrier_post.far.has_left(),
-			"the far guard sets off from his post the frame his partner starts to leave")
-	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
-			"and he sets off from the far post, beyond the band from her")
+	var her := told.at()
+	told.tell(her)
+	t.check(guard.is_on_its_way_out(), "the guard on her side was shaken off and walks away")
 	# His node is the look's, made on the drawn frame after the step that sent him.
 	await RoadblockRig.settle(t)
 	var far_node := guard.get_parent().get_node_or_null("FarGuard")
 	t.check(far_node != null and far_node.is_inside_tree(),
-			"and walks on his own node beside the band's")
+			"and the far guard walks on his own node beside the band's")
 	# She has come back to stand beside the band, so he has a walk to make before he is out of
-	# her sight.
+	# her sight; where he stands and how he paces is `tests/test_event_barrier_post.gd`'s.
 	her = guard.body_position() + Vector2(0.0, 120.0)
-	var paced := true
-	var last := set_off
 	var walked := 0
-	while guard.barrier_post.far.at != Vector2.INF and walked < int(30.0 / step):
-		guard.player_at = her
+	while guard.get_parent().get_node_or_null("FarGuard") != null and walked < int(30.0 / step):
+		told.tell(her)
 		guard.step(step)
 		await t.get_tree().process_frame
 		walked += 1
-		var now := guard.barrier_post.far.at
-		if now == Vector2.INF:
-			break
-		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
-				and is_equal_approx(guard.barrier_post.far.walked, def.chase_speed() * step * walked)
-		last = now
-	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
-			"he walks away from her at his partner's pace (%d frames)" % walked)
-	t.check(guard.barrier_post.far.at == Vector2.INF and guard.barrier_post.far.has_left(),
-			"and he is gone, and nobody stands at the band")
-	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.chase_speed() * step,
-			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
+	t.check(guard.get_parent().get_node_or_null("FarGuard") == null,
+			"his node goes with him (%d frames)" % walked)
+	var streamed := stage.stream_out_and_in(plan)
 	await RoadblockRig.settle(t)
-	t.check(guard.get_parent().get_node_or_null("FarGuard") == null, "his node goes with him")
-	stage.manager.streaming.stream_out(plan)
-	stage.manager.streaming.stream_in(plan)
-	t.check(plan.live.barrier_post.far.has_left(),
-			"a band streamed back in after its guard was spent stands unmanned")
+	t.check(streamed.is_only_its_barrier()
+			and streamed.get_parent().get_node_or_null("FarGuard") == null,
+			"a band streamed back in after its guard was spent is only the barrier, nobody walking")
 	stage.close()
 	atlas.release(EventPictures.ATLAS_GROUP)
 
@@ -677,23 +685,25 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 ## with her standing at (70,50), west of it on the open sidewalk, is the case PR #781's review found
 ## the far guard on the roof at (76,48) in: it is stood there even where the plan no longer puts a
 ## band on that tile, lured from the south down its street, and walked off with her at (70,50).
-func _test_neither_guard_walks_off_over_a_building(t) -> void:
+func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 	var step := RoadblockRig.STEP
 	var built := RoadblockRig.plan_for(4242)
 	var map: CityMap = built["map"]
-	var placements: Array[EventScheduler.Planned] = built["placements"]
+	var placements: Array[EventPlan] = built["placements"]
 	var walks := 0
 	var far_walks := 0
 	var bands := _escape_roadblocks(placements)
 	for band_plan in bands:
-		var group: Array[EventScheduler.Planned] = [band_plan]
+		var group: Array[EventPlan] = [band_plan]
 		for bearing in 16:
 			var made := RoadblockRig.build(t, map, group)
+			var stage: RoadblockRig.Stage = made[0]
+			var told := stage.manager.world.where_she_is()
 			var guard: EventInstance = made[1][0]
 			var band := guard.body_position()
 			var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
-			var her := band + toward * (guard.def.notice_within() + 80.0)
-			var where := "band %s from %d°" % [map.world_to_tile(band_plan.position),
+			var her := band + toward * (guard.row().notice_within() + 80.0)
+			var where := "band %s from %d°" % [map.world_to_tile(band_plan.placed_at()),
 					bearing * 360 / 16]
 			var caught := false
 			# In until his hand goes up, then standing until he charges.
@@ -705,21 +715,21 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				frames_in += 1
 				var tile := map.world_to_tile(her)
 				if map.in_bounds(tile) and map.is_walkable(tile):
-					caught = RoadblockRig.tick(made[1], her, false)
+					caught = RoadblockRig.tick(told, made[1], her, false)
 				if caught:
 					break
 			var frames := 0
 			while not caught and guard.is_chasing() and frames < int(10.0 / step):
 				her += toward * Tuning.RUN_SPEED * step
-				caught = RoadblockRig.tick(made[1], her, true)
+				caught = RoadblockRig.tick(told, made[1], her, true)
 				frames += 1
-			if caught or not guard.is_leaving:
-				made[0].close()
+			if caught or not guard.is_on_its_way_out():
+				stage.close()
 				continue
 			walks += 1
-			if _watch_them_walk_off(t, map, made[1], her, where):
+			if _watch_them_walk_off(t, map, told, made[1], her, where):
 				far_walks += 1
-			made[0].close()
+			stage.close()
 	t.check(walks > 0 and far_walks > 0,
 			"there were guards walking off to watch (%d, %d with the far guard)" % [walks, far_walks])
 	# The reviewed case: she stands at (70,50), west of the band on the open sidewalk, when the guard
@@ -727,107 +737,128 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 	# this seed may stand no band on that tile (the case is one it once did), so the band is the
 	# escape's row handed to the streaming at the tile when the plan has none there.
 	var reviewed := Vector2i(73, 50)
-	var reviewed_plan: EventScheduler.Planned = null
+	var reviewed_plan: EventPlan = null
 	for band_plan in bands:
-		if map.world_to_tile(band_plan.position) == reviewed:
+		if map.world_to_tile(band_plan.placed_at()) == reviewed:
 			reviewed_plan = band_plan
 	if reviewed_plan == null:
-		reviewed_plan = EventScheduler.Planned.new(EventCatalogue.escape_roadblock(),
+		reviewed_plan = EventPlan.new(EventCatalogue.escape_roadblock(),
 				map.tile_to_world(reviewed))
-	var group: Array[EventScheduler.Planned] = [reviewed_plan]
+	var group: Array[EventPlan] = [reviewed_plan]
 	var made := RoadblockRig.build(t, map, group)
+	var stage: RoadblockRig.Stage = made[0]
+	var told := stage.manager.world.where_she_is()
 	var guard: EventInstance = made[1][0]
 	var her := map.tile_to_world(Vector2i(70, 50))
 	var frames := 0
 	while guard.is_waiting() and frames < int(20.0 / step):
-		RoadblockRig.tick(made[1], her, false)
+		RoadblockRig.tick(told, made[1], her, false)
 		frames += 1
 	t.check(not guard.is_waiting(), "the band at (73,50) notices her standing at (70,50)")
 	guard.give_up_the_chase()
-	t.check(guard.is_leaving, "and its guard gives up and walks away")
-	t.check(_watch_them_walk_off(t, map, made[1], her, "the band at (73,50), with her at (70,50)"),
+	t.check(guard.is_on_its_way_out(), "and its guard gives up and walks away")
+	t.check(_watch_them_walk_off(t, map, told, made[1], her,
+			"the band at (73,50), with her at (70,50)"),
 			"and the band at (73,50), with her at (70,50), sent its far guard off")
-	made[0].close()
+	stage.close()
 
 ## Steps `instances` (one band, its guard on her side already walking away) with her standing at
-## `her` until both guards are gone, and checks every frame either guard walks that he stands on a
-## walkable tile of `map`; answers whether the far guard walked.
-func _watch_them_walk_off(t, map: CityMap, instances: Array[EventInstance], her: Vector2,
+## `her` until he is gone, and checks every frame he walks that he stands on a walkable tile of
+## `map`; then does the same for the guard at the far post, whose walk is the barrier post's own
+## (`RoadblockParts`, built on the band as the event builds it and sent off from `her`'s side the
+## way his partner's leaving sends him). Answers whether the far guard walked.
+func _watch_them_walk_off(t: TestRunner, map: CityMap, told: WhereSheIs,
+		instances: Array[EventInstance], her: Vector2,
 		where: String) -> bool:
 	var guard := instances[0]
-	var far_walked := false
 	var frames := 0
-	while (guard.is_leaving or guard.barrier_post.far.at != Vector2.INF) \
-			and frames < int(30.0 / RoadblockRig.STEP):
-		RoadblockRig.tick(instances, her, false)
+	while guard.is_on_its_way_out() and frames < int(30.0 / RoadblockRig.STEP):
+		RoadblockRig.tick(told, instances, her, false)
 		frames += 1
-		var at: Array[Vector2] = []
-		if guard.is_leaving:
-			at.append(guard.global_position)
-		if guard.barrier_post.far.at != Vector2.INF:
-			at.append(guard.barrier_post.far.at)
-			far_walked = true
-		for point in at:
-			var tile := map.world_to_tile(point)
-			if not map.is_walkable(tile):
-				t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
-						% [where, tile])
-				return far_walked
+		var tile := map.world_to_tile(guard.global_position)
+		if guard.is_on_its_way_out() and not map.is_walkable(tile):
+			t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
+					% [where, tile])
+			return false
+	var far_where := WhereSheIs.nowhere()
+	far_where.tell(her)
+	var parts := RoadblockParts.on(t, guard.row(), guard.body_position(), map, far_where)
+	parts.lose_the_guard()
+	var far_walked := parts.post.where_the_far_guard_walks() != Vector2.INF
+	frames = 0
+	while parts.post.where_the_far_guard_walks() != Vector2.INF \
+			and frames < int(30.0 / RoadblockRig.STEP):
+		parts.tick(RoadblockRig.STEP)
+		frames += 1
+		var tile := map.world_to_tile(parts.post.where_the_far_guard_walks())
+		if parts.post.where_the_far_guard_walks() != Vector2.INF and not map.is_walkable(tile):
+			t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
+					% [where, tile])
+			parts.release()
+			return far_walked
+	parts.release()
 	return far_walked
 
 ## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so
 ## inside its outer radius it raises the `SOON` mark (`WarningBoard.warn_about_the_ground_she_is_on()`),
-## as every `hard_fail` row waiting for her does. A band whose guard has left for good waits for
+## as every lethal row waiting for her does. A band whose guard has left for good waits for
 ## nobody: he never notices her or charges again, so it raises nothing, or the walk past a band
 ## that costs nothing would be made under a warning of a catch that cannot come.
-func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
-	# A manager handed open ground drawn in a node of its own and a run (`EventManager.setup_world()`,
-	# as the building is handed its world), with the band a plan the escape would have planned
-	# (`EventStreaming.add()`), streamed in by the streaming the day runs.
+func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
+	# A manager handed open ground drawn in a node of its own and a run (`EventSurroundings.on()`,
+	# then `EventManager.setup()`, as the building is set up), with the band a plan the escape
+	# would have planned (`EventStreaming.add()`), streamed in by the streaming the day runs.
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var open_ground := WorldMap.open_ground()
-	open_ground.world = holder
 	var run := RunState.new()
-	var manager := EventManager.new()
-	manager.setup_world(open_ground, run)
+	var manager := EventManager.new(EventSurroundings.new().on(open_ground).drawn_in(holder))
+	manager.setup(run)
 	t.add_child(manager)
-	var band_plan := EventScheduler.Planned.new(EventCatalogue.escape_roadblock(),
+	var band_plan := EventPlan.new(EventCatalogue.escape_roadblock(),
 			Vector2(1000.0, 1000.0))
-	manager.streaming.add(band_plan)
-	manager.streaming.stream_around(band_plan.position)
-	var band := band_plan.live
-	var at: Vector2 = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
+	manager.start_recipe([band_plan] as Array[EventPlan], DaySpec.for_day(1), 1,
+			band_plan.placed_at())
+	# The walk's own tick is off, so the only board at work is the rig's own, asked synchronously
+	# (a tick would step the band's guard first).
+	manager.set_physics_process(false)
+	var board := WarningBoard.new(manager.world)
+	var band := manager.event_of(band_plan)
+	var at: Vector2 = band.global_position + Vector2(0.0, band.heard_within() - 20.0)
 	var first := _stand_her_at(t, manager, at)
-	manager.warnings.warn_about_the_ground_she_is_on()
+	board.warn_about_the_ground_she_is_on()
 	t.check(first.alert_level() == Stroller.Alert.SOON,
 			"a posted band's guard waiting for her raises the mark inside its outer radius")
 	# Its guard noticing her, charging and shaken off, then the plan streamed out and in: the band
 	# comes back as only the barrier (`EventBarrierPost`), no guard to notice her again.
 	var step := RoadblockRig.STEP
-	band.player_at = band.global_position + Vector2(0.0, band.def.notice_within() - 10.0)
+	var told := manager.world.where_she_is()
+	told.tell(band.global_position + Vector2(0.0, band.row().notice_within() - 10.0))
 	band.step(step)
 	var waited := 0
-	while band.is_telegraphing() and waited < int((band.def.pursuit.warns_for + 1.0) / step):
+	while band.is_telegraphing() and waited < int((band.row().pursuit().warns_for() + 1.0) / step):
 		band.step(step)
 		waited += 1
 	var frames := 0
-	while not band.gave_up and frames < int(60.0 / step):
-		band.player_at = band.global_position + Vector2(0.0, 300.0)
-		band.player_running = true
+	while not band.has_given_up() and frames < int(60.0 / step):
+		told.tell(band.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		band.step(step)
 		frames += 1
-	t.check(band.gave_up, "the band's guard charges and is shaken off")
-	manager.streaming.stream_out(band_plan)
-	manager.streaming.stream_in(band_plan)
-	band = band_plan.live
+	t.check(band.has_given_up(), "the band's guard charges and is shaken off")
+	# Through the manager's own streaming: out beyond the radius and the hysteresis, and out of sight
+	# of the band, then back in as she comes near.
+	var beyond := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS + Tuning.OUT_OF_SIGHT
+	manager.stream_around(band_plan.placed_at() + Vector2(beyond + 100.0, 0.0))
+	t.check(manager.event_of(band_plan) == null, "the band is streamed out as she walks away")
+	manager.stream_around(band_plan.placed_at())
+	band = manager.event_of(band_plan)
 	# A stroller of her own for the spent band, so no mark of the posted one's is still up on her
 	# (a raised mark stays its hold, `WarningBoard.WARNING_HOLD`, a fresh one has none).
 	var second := _stand_her_at(t, manager, at)
-	manager.warnings.warn_about_the_ground_she_is_on()
+	board.warn_about_the_ground_she_is_on()
 	t.check(second.alert_level() == Stroller.Alert.NONE,
 			"a band whose guard has left for good raises nothing over her head")
-	for her in [first, second]:
+	for her: Stroller in [first, second]:
 		her.remove_from_group("player")
 		her.free()
 	manager.use_player(null)
@@ -835,7 +866,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 	holder.free()
 
 ## A stroller at `at` that `manager` watches (`EventManager.use_player()`), its own physics off.
-func _stand_her_at(t, manager: EventManager, at: Vector2) -> Stroller:
+func _stand_her_at(t: TestRunner, manager: EventManager, at: Vector2) -> Stroller:
 	var her := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -855,23 +886,23 @@ func _stand_her_at(t, manager: EventManager, at: Vector2) -> Stroller:
 ## and costs the meter nothing, even awake, with the baby an earlier bang has just woken. The rig is
 ## `tests/escape_roadblock_rig.gd`; `tests/probes/escape_roadblock_cost.gd` prints the same walks
 ## over more seeds.
-func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
+func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> void:
 	var crossings := 0
 	for seed_value: int in [4242, 77]:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		for street: Array in RoadblockRig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
-			var group: Array[EventScheduler.Planned] = []
+			var group: Array[EventPlan] = []
 			group.assign(street[1])
 			var line := RoadblockRig.her_line(t, map, segment, group)
 			t.check(not line.is_empty(), "seed %d: street %s keeps a sidewalk open past its band"
 					% [seed_value, segment.key()])
 			if line.is_empty():
 				continue
-			for forward in [true, false]:
+			for forward: bool in [true, false]:
 				crossings += 1
 				var from: Vector2 = line[0] if forward else line[1]
 				var to: Vector2 = line[1] if forward else line[0]
@@ -879,8 +910,7 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
 						"forward" if forward else "back"]
 				var posted := RoadblockRig.walk(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
-				t.check(posted["caught"], "%s: walking straight past its posted guard is caught"
-						% where)
+				_check_a_posted_walk_is_caught(t, where, posted)
 				var lured := RoadblockRig.lure(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
 				var after: Dictionary = lured["after"]
@@ -895,31 +925,107 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
 						% [where, after["strongest"], after["cost"]])
 	t.check(crossings > 0, "there were roadblock crossings to walk (%d)" % crossings)
 
+## **Every walk straight past a posted guard is caught**, on every crossing: the walk is the control
+## that shows the lure walk beside it is not walking past nothing, and the player's rule is that
+## luring the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock
+## while she walks on, so the charge starts with her about level with the band, and it closes the
+## gap at 38px/s more than her walk: on every street the rig walks her along the sidewalk to where
+## the ground ends, and a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has
+## caught her, **round the corner where her street ends sooner**, since he follows her round
+## buildings (`ChaseWay`) and turning the next corner is no way past him (inbox #1534 in
+## velvet-alpaca).
+static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted: Dictionary) -> void:
+	t.check(posted["caught"] and posted["charged"] > 0,
+			"%s: walking straight past a posted guard is caught (%d charged)" % [where, posted["charged"]])
+
+## **He follows her round the corner.** *(Inbox #1534 in velvet-alpaca, asked whether a walker who
+## goes straight past a posted guard and turns the next corner before he reaches her may get away:
+## "sure, your pick", the pick being that he follows her round it.)* Walking straight past his post
+## where his street ends sooner than his charge reaches her, and turning the corner round the
+## building she walked beside, is caught as a straight walk is. One interaction on a hand-drawn map
+## (`_a_street_that_ends_at_a_corner()`): she walks up the sidewalk beside the building, past the
+## band, and once he charges turns the first corner into the cross street, hugging the building's
+## face, and on round it (`RoadblockRig.walk()`). A chase straight at her slides along the face she
+## is round, keeping only the sliver of its step that runs along it, and loses her; his way round
+## (`PursuitSpec.walks_round_buildings()`, `ChaseWay`) brings him round the corner after her. With the
+## band 48, 80 and 112px short of the cross street. A straight walker on a planned street is caught
+## some 20 to 60px past the band (`tests/probes/escape_roadblock_cost.gd` prints it), but on this
+## hand-drawn street her lane runs along its far edge and his way to it runs round his own band's
+## end, so he reaches her later, after she has turned the corner; the walk below checks both on
+## each band (she turned it, and he caught her).
+func _test_a_posted_guard_follows_her_round_the_corner(t: TestRunner) -> void:
+	var map := _a_street_that_ends_at_a_corner()
+	var def := EventCatalogue.escape_roadblock()
+	var lane := map.tile_to_world(Vector2i(_CORNER_STREET.end.x - 1, 0)).x
+	var corner := float(_CORNER_STREET.position.y * Tuning.TILE_SIZE)
+	for post_row: int in [_CORNER_STREET.position.y + 1, _CORNER_STREET.position.y + 2,
+			_CORNER_STREET.position.y + 3]:
+		var post := map.tile_to_world(Vector2i(_CORNER_STREET.position.x + 1, post_row))
+		var group: Array[EventPlan] = [EventPlan.new(def, post)]
+		# She starts out of his notice, twice its radius short of the band.
+		var from := Vector2(lane, post.y + 2.0 * def.notice_within())
+		var to := Vector2(lane, corner - _CROSS_STREET_TILES * Tuning.TILE_SIZE)
+		var walked := RoadblockRig.walk(t, map, group, from, to, RoadblockRig.Meter.new(0.0, true))
+		t.check(walked["charged"] == 1 and int(walked["turned"]) > 0,
+				"the band %.0fpx short of the cross street: he charges and she turns the corner (%d turns)"
+				% [post.y - corner, walked["turned"]])
+		t.check(walked["caught"], "the band %.0fpx short of the cross street: he follows her round the corner and catches her (at %s)"
+				% [post.y - corner, map.world_to_tile(walked["at"])])
+
+## Her street in `_a_street_that_ends_at_a_corner()`, in tiles: six wide, running north to the cross
+## street.
+const _CORNER_STREET := Rect2i(10, 8, 6, 40)
+## How wide the building between her street and the next is, in tiles, and the cross street across
+## the top of both.
+const _CORNER_BUILDING_TILES := 2
+const _CROSS_STREET_TILES := 6
+
+## **A street that ends at a corner**: `_CORNER_STREET`, open sidewalk between buildings, meets a
+## cross street `_CROSS_STREET_TILES` deep across its north end, which runs east past a building
+## `_CORNER_BUILDING_TILES` wide and turns back south down the next street, as wide as hers. Every
+## other tile is building, so the only way on from the end of her street is round the corner. The
+## generator makes no street exactly like this (parallel streets stand a block apart, and a street has
+## a carriageway); the shape a player meets is a building two tiles wide between her street and an
+## alley, the narrowest the generator leaves beside one, where a straight chase is held behind it.
+static func _a_street_that_ends_at_a_corner() -> CityMap:
+	var size := Vector2i(_CORNER_STREET.end.x + _CORNER_BUILDING_TILES + _CORNER_STREET.size.x + 4,
+			_CORNER_STREET.end.y)
+	var map := CityMap.new(size)
+	map.fill_rect(Rect2i(Vector2i.ZERO, size), GameEnums.TileType.BUILDING)
+	map.fill_rect(_CORNER_STREET, GameEnums.TileType.SIDEWALK)
+	var next := Rect2i(_CORNER_STREET.end.x + _CORNER_BUILDING_TILES, _CORNER_STREET.position.y,
+			_CORNER_STREET.size.x, _CORNER_STREET.size.y)
+	map.fill_rect(next, GameEnums.TileType.SIDEWALK)
+	map.fill_rect(Rect2i(_CORNER_STREET.position.x, _CORNER_STREET.position.y - _CROSS_STREET_TILES,
+			next.end.x - _CORNER_STREET.position.x, _CROSS_STREET_TILES), GameEnums.TileType.SIDEWALK)
+	return map
+
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each
-## `EventDef.notice` round its band, never overlap (`EventScheduler._keeps_its_notice_to_itself()`).
-## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
-## invisible (hidden) until it already charges".)* One a street keeps two off one street; this keeps
-## two apart across a junction or a corner as well.
-func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
+## `EventDef.notice_within()` round its band, never overlap
+## (`OneNoticeRule._keeps_its_notice_to_itself()`). *(Inbox #771 in minty-lemur, 2026-10-18:
+## "two roadblocks are right next to each other and the second guard is invisible (hidden) until
+## it already charges".)* One a street keeps two off one street; this keeps two apart across a
+## junction or a corner as well.
+func _test_no_two_roadblocks_notice_her_from_the_same_ground(t: TestRunner) -> void:
 	var pairs := 0
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		# The game's plan, and the most bands the escape can stand: a roadblock drawn for every slot.
-		for bands: Array[EventScheduler.Planned] in [_escape_roadblocks(placements),
-				_roadblocks_everywhere(map, seed_value, 1)]:
+		for bands: Array[EventPlan] in [_escape_roadblocks(placements),
+				_roadblocks_everywhere(map, seed_value)]:
 			var stands := _stand_points(t, map, bands)
 			for i in bands.size():
 				for j in range(i + 1, bands.size()):
 					pairs += 1
 					var gap := stands[i].distance_to(stands[j])
-					var apart := bands[i].def.notice_within() + bands[j].def.notice_within()
+					var apart := bands[i].row().notice_within() + bands[j].row().notice_within()
 					t.check(gap >= apart, "seed %d: the roadblocks at %s and %s stand %.0fpx apart, at least the %.0fpx their two notices take"
-							% [seed_value, map.world_to_tile(bands[i].position),
-							map.world_to_tile(bands[j].position), gap, apart])
+							% [seed_value, map.world_to_tile(bands[i].placed_at()),
+							map.world_to_tile(bands[j].placed_at()), gap, apart])
 	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
 
 ## Whether `item` draws on `layer`: the absolute depth a node asked onto the layer
@@ -934,7 +1040,7 @@ func _is_drawn_on(item: CanvasItem, layer: int) -> bool:
 ## Where each of `bands` stands once it is built: its body's place (`EventInstance.body_position()`),
 ## which is where its guard waits and notices her from. Built the way the game builds them
 ## (streamed in on the map) and read off the instance, then freed.
-func _stand_points(t, map: CityMap, bands: Array[EventScheduler.Planned]) -> Array[Vector2]:
+func _stand_points(t: TestRunner, map: CityMap, bands: Array[EventPlan]) -> Array[Vector2]:
 	var stage := RoadblockRig.Stage.new(t, map)
 	var points: Array[Vector2] = []
 	for band in bands:
@@ -952,7 +1058,7 @@ func _stand_points(t, map: CityMap, bands: Array[EventScheduler.Planned]) -> Arr
 ## charge, his hand went up first; once he charges, he sorts
 ## with the street again. The approaches on which the radius alone would have warned her with him
 ## off the view are counted, so the view's part in the notice is shown to be doing something.
-func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
+func _test_an_escape_guard_warns_on_the_screen_and_on_top(t: TestRunner) -> void:
 	var step := RoadblockRig.STEP
 	var warned := 0
 	var outside := 0
@@ -964,29 +1070,31 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		# The game's own bands, and every band the escape can stand, a roadblock drawn for every
 		# street's slot: the bag draws few, and only the second set is sure to hold a band on a
 		# street running either way, and the approaches the radius alone would have warned from off
 		# the view, which only a north-south street has.
 		var bands := _escape_roadblocks(placements)
-		bands.append_array(_roadblocks_everywhere(map, seed_value, 1))
+		bands.append_array(_roadblocks_everywhere(map, seed_value))
 		for band_plan in bands:
-			var group: Array[EventScheduler.Planned] = [band_plan]
+			var group: Array[EventPlan] = [band_plan]
 			for bearing in 16:
 				var made := RoadblockRig.build(t, map, group, atlas)
+				var stage: RoadblockRig.Stage = made[0]
+				var told := stage.manager.world.where_she_is()
 				var guard: EventInstance = made[1][0]
 				# Drawn on the real frames this loop waits for, which take the draw layer.
 				guard.set_process(true)
 				var band := guard.body_position()
 				var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
-				var her := band + toward * (guard.def.notice_within() + 80.0)
+				var her := band + toward * (guard.row().notice_within() + 80.0)
 				var radius_alone_seen := false
 				var charged := false
 				var warned_here := false
 				var open_walk := true
 				var where := "seed %d band %s from %d°" % [seed_value,
-						map.world_to_tile(band_plan.position), bearing * 360 / 16]
+						map.world_to_tile(band_plan.placed_at()), bearing * 360 / 16]
 				var frames_in := 0
 				while her.distance_to(band) > 40.0 and not charged and frames_in < int(20.0 / step):
 					frames_in += 1
@@ -994,7 +1102,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 					if guard.is_waiting():
 						her -= toward * Tuning.WALK_SPEED * step
 					var tile := map.world_to_tile(her)
-					var inside := her.distance_to(band) <= guard.def.notice_within()
+					var inside := her.distance_to(band) <= guard.row().notice_within()
 					if not map.in_bounds(tile) or not map.is_walkable(tile):
 						open_walk = open_walk and not inside
 						continue
@@ -1007,7 +1115,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 						if not view.encloses(EventFootprints.warning_guard_rect(
 								guard.runs_vertically(), band, her)):
 							off_by_the_radius += 1
-					RoadblockRig.tick(made[1], her, false, -toward)
+					RoadblockRig.tick(told, made[1], her, false, -toward)
 					# The layer is taken on the drawn frame, from what the tick left: a real frame
 					# where the draw layer is read, which is when his hand goes up and when he charges.
 					if (was_waiting and guard.is_standing_for_its_notice()) or guard.is_chasing():
@@ -1029,7 +1137,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 								"%s: his hand went up before he charged" % where)
 						t.check(_is_drawn_on(guard, DrawLayer.Layer.ENTITIES),
 								"%s: once he charges he sorts with the street again" % where)
-				made[0].close()
+				stage.close()
 	t.check(warned > 0 and outside > 0,
 			"there were warnings to watch (%d, %d on open ground)" % [warned, outside])
 	t.check(charges > 0, "and charges to ask about (%d)" % charges)
@@ -1038,18 +1146,17 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 			% off_by_the_radius)
 	atlas.release(EventPictures.ATLAS_GROUP)
 
-## The escape's roadblocks a plan of `seed_value` on `map` stands when every one of its `slots` a
-## street draws a roadblock marble: every band the placement rules let the escape stand there.
-static func _roadblocks_everywhere(map: CityMap, seed_value: int,
-		slots: int) -> Array[EventScheduler.Planned]:
-	return _escape_rows_from(map, _bare_plan(map, seed_value), {"roadblock": 1}, slots)
+## The escape's roadblocks a plan of `seed_value` on `map` stands when every street draws a
+## roadblock marble: every band the placement rules let the escape stand there.
+static func _roadblocks_everywhere(map: CityMap, seed_value: int) -> Array[EventPlan]:
+	return _escape_rows_from(map, _bare_plan(map, seed_value), {"roadblock": 1})
 
 ## The plan's own roadblocks, the escape's copy of the row.
 static func _escape_roadblocks(
-		placements: Array[EventScheduler.Planned]) -> Array[EventScheduler.Planned]:
-	var found: Array[EventScheduler.Planned] = []
+		placements: Array[EventPlan]) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
 	for placement in placements:
-		if placement.def == EventCatalogue.escape_roadblock():
+		if placement.row() == EventCatalogue.escape_roadblock():
 			found.append(placement)
 	return found
 
@@ -1063,31 +1170,32 @@ static func _escape_roadblocks(
 ## for the walk; and on every roadblock street, both ways, from the asleep baby every attempt at
 ## the city starts with, walking straight past a posted guard is caught while luring him off and
 ## walking on is not, and costs nothing.
-func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
+func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(PLAYERS_SEED)
-	run.header.day = 1
-	run.facts.escape_section = DaySpec.Section.BUILDING
+	run.header().set_day(1)
+	run.facts().set_escape_section(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
-			func(main: Node) -> void: main.use_sitting_home(home))
+			func(node: Node) -> void: (node as Main).use_sitting_home(home))
 	var main := booted.main
 	await Boot.press_continue(t, main)
 	Boot.interior(main).exit_requested.emit()
 	await Boot.press_continue(t, main)
 	var city := Boot.city(main)
-	t.check(city != null and Boot.day(main).spec.section == DaySpec.Section.CITY,
+	t.check(city != null and Boot.day(main).spec().section_kind() == DaySpec.Section.CITY,
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if city != null:
-		var map: CityMap = city.map
+		var map: CityMap = city.map()
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
-				run.calendar.day_rng(run.header.day, "finale"), _city_spec())
+				run.calendar().day_rng(run.header().day(), "finale"), _city_spec(),
+				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
-		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
+		var hers := map.street_network().segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
 		for band_plan in bands:
-			var street := map.network.segment_containing(map.world_to_tile(band_plan.position))
+			var street := map.street_network().segment_containing(map.world_to_tile(band_plan.placed_at()))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
 		t.check(hers != null and on_her_street <= 1,
@@ -1097,15 +1205,15 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 		for i in bands.size():
 			for j in range(i + 1, bands.size()):
 				t.check(stands[i].distance_to(stands[j])
-						>= bands[i].def.notice_within() + bands[j].def.notice_within(),
+						>= bands[i].row().notice_within() + bands[j].row().notice_within(),
 						"seed %d: the bands at %s and %s notice her from no common ground"
-						% [PLAYERS_SEED, map.world_to_tile(bands[i].position),
-						map.world_to_tile(bands[j].position)])
+						% [PLAYERS_SEED, map.world_to_tile(bands[i].placed_at()),
+						map.world_to_tile(bands[j].placed_at())])
 		var blocked := {}
 		_block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -1113,18 +1221,18 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 				for dx in range(-2, 3):
 					found = found or reached.has(at + Vector2i(dx, dy))
 			t.check(found, "seed %d: the %s is reached from the door past every body standing"
-					% [PLAYERS_SEED, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [PLAYERS_SEED, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 		var crossings := 0
 		for street: Array in RoadblockRig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
-			var group: Array[EventScheduler.Planned] = []
+			var group: Array[EventPlan] = []
 			group.assign(street[1])
 			var line := RoadblockRig.her_line(t, map, segment, group)
 			t.check(not line.is_empty(), "seed %d: street %s keeps a sidewalk open past its band"
 					% [PLAYERS_SEED, segment.key()])
 			if line.is_empty():
 				continue
-			for forward in [true, false]:
+			for forward: bool in [true, false]:
 				crossings += 1
 				var from: Vector2 = line[0] if forward else line[1]
 				var to: Vector2 = line[1] if forward else line[0]
@@ -1132,8 +1240,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 						"forward" if forward else "back"]
 				var posted := RoadblockRig.walk(t, map, group, from, to,
 						RoadblockRig.Meter.new(0.0, true))
-				t.check(posted["caught"], "%s: walking straight past its posted guard is caught"
-						% where)
+				_check_a_posted_walk_is_caught(t, where, posted)
 				var lured := RoadblockRig.lure(t, map, group, from, to,
 						RoadblockRig.Meter.new(0.0, true))
 				var after: Dictionary = lured["after"]
@@ -1150,35 +1257,57 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 # ------------------------------------------------------- the day's own rules ---
 
 ## **The escape's own rows stand on the day's own ground for them** (`EventScheduler.street_ground()`
-## asks `open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
+## asks `RowGround.tiles_for()`): every truck, van, roadblock and burst on a tile a day would offer that
 ## row — none on the home block, none in a street tree, none on the wrong side of a sidewalk, no
 ## spread on a corner — all but the front door's street, a door the escape never sets off from.
 ## *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same placement rules as the regular game? it
 ## doesn't seem like it does. it should, though.")*
-func _test_the_escape_stands_its_rows_on_the_days_own_ground(t) -> void:
+func _test_the_escape_stands_its_rows_on_the_days_own_ground(t: TestRunner) -> void:
 	var asked := 0
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var offered := {}
 		for placement in placements:
-			if not ESCAPE_ROWS.has(placement.def.id):
+			# An army truck is the director's to send ahead of her, left with no place of its own;
+			# any other row left unplaced fails the check below.
+			if not ESCAPE_ROWS.has(placement.row_id()) \
+					or (placement.row_id() == "military_convoy" and not placement.is_placed()):
 				continue
 			asked += 1
-			var key := placement.def.get_instance_id()
+			var key := placement.row().get_instance_id()
 			if not offered.has(key):
 				var tiles := {}
-				for tile in EventScheduler.open_ground_for(placement.def, map, {}, -1, false):
+				for tile in EventScheduler.row_ground(map, null, false).tiles_for(placement.row()):
 					tiles[tile] = true
 				offered[key] = tiles
-			var at := map.world_to_tile(placement.position)
-			t.check(offered[key].has(at), "seed %d: the %s at %s stands on ground a day offers it"
-					% [seed_value, placement.def.id, at])
+			var at := map.world_to_tile(placement.placed_at())
+			var tiles_offered: Dictionary = offered[key]
+			t.check(tiles_offered.has(at), "seed %d: the %s at %s stands on ground a day offers it"
+					% [seed_value, placement.row_id(), at])
 	t.check(asked > 0, "there were escape rows to ask about (%d)" % asked)
 
-## The escape's own rows, the four the city section's bag draws (`DaySpec.bag_rows`).
+## **The escape's trucks are the director's, not the dawn's**: each marble of the bag that draws the
+## army truck is a plan left with no place (the director sends it ahead of her as she walks), so no
+## truck stands on a street at dawn, and there are as many left for the director as the bag drew.
+## The barrier trucks that seal the streets off her walk are another row and stay placed.
+func _test_the_escape_leaves_its_trucks_to_the_director(t: TestRunner) -> void:
+	var owed := 0
+	for seed_value: int in SEEDS:
+		var placements: Array[EventPlan] = _plan_for(seed_value)["placements"]
+		for placement in placements:
+			if placement.row_id() == "military_convoy":
+				owed += 1
+				t.check(not placement.is_placed(),
+						"seed %d: an army truck of the bag is not placed at dawn" % seed_value)
+	t.check(owed > 0, "the bag drew trucks for the director to send (%d)" % owed)
+
+## The escape stands no mast: the game hands its dawn no mast site (`DayPlanner.plan_the_escape_city()`).
+const _NO_MASTS: Array[MastSites.Site] = []
+
+## The escape's own rows, the four the city section's bag draws (`DaySpec.walk_bag_rows()`).
 const ESCAPE_ROWS := ["military_convoy", "abduction", "roadblock", "finale_explosion"]
 
 ## **An alley's mouth wall fits the mouth**, on a day and in the escape: the widest row whose body
@@ -1187,36 +1316,36 @@ const ESCAPE_ROWS := ["military_convoy", "abduction", "roadblock", "finale_explo
 ## stood across a 64px alley and two tiles into the buildings either side, over their roofs.
 ## *(Inbox #785 in minty-lemur, 2026-10-18: "I saw wood on the roof for example")* Asked of every alley-mouth wall
 ## the escape's plans stand, by its body: nothing of it reaches a building tile.
-func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
+func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
 	# Every day's own seal plan, on a city each, asked for the walls it stands on an alley's mouth.
 	var day_walls := 0
 	var map_of_days := MapCache.of(SEEDS[0])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
-		state.begin_day(map_of_days.block_plans, day)
+		state.begin_day(map_of_days.plans_by_block(), day)
 		map_of_days.repaint(state)
 		var tree := RouteTree.for_day(map_of_days, day)
 		for roll in 4:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("mouths:%d:%d" % [day, roll])
 			for seal in SealPlanner.plan_day(map_of_days, DaySpec.for_day(day), tree, rng):
-				if map_of_days.tile_at(map_of_days.world_to_tile(seal.position)) \
+				if map_of_days.tile_at(map_of_days.world_to_tile(seal.placed_at())) \
 						!= GameEnums.TileType.ALLEY:
 					continue
 				day_walls += 1
-				t.check(seal.def.obstructs_radius * 2.0 <= mouth,
-						"day %d's alley-mouth row %s fits the mouth" % [day, seal.def.id])
+				t.check(seal.row().obstructs_within() * 2.0 <= mouth,
+						"day %d's alley-mouth row %s fits the mouth" % [day, seal.row_id()])
 	t.check(day_walls > 0, "there were days' alley-mouth walls to ask about (%d)" % day_walls)
 	var walls := 0
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var ground := WalkGround.new(map)
 		for placement in placements:
-			var tile := map.world_to_tile(placement.position)
+			var tile := map.world_to_tile(placement.placed_at())
 			if map.tile_at(tile) != GameEnums.TileType.ALLEY:
 				continue
 			walls += 1
@@ -1231,150 +1360,151 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 								and map.tile_at(map.world_to_tile(at)) == GameEnums.TileType.BUILDING:
 							over = true
 			t.check(not over, "seed %d: the %s in the alley mouth at %s keeps its body off the buildings"
-					% [seed_value, placement.def.id, tile])
+					% [seed_value, placement.row_id(), tile])
 	t.check(walls > 0, "there were alley-mouth walls to ask about (%d)" % walls)
 
 ## **Nothing the escape stands reaches over a building**, seals and events alike, with its body or
 ## with the ground its picture is drawn over (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785 in minty-lemur,
 ## 2026-10-18: "I saw wood on the roof for example")* The barricade's carts across a street off the
 ## chains are the pieces that reached over the buildings either side.
-func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
+func _test_nothing_the_escape_stands_reaches_over_a_building(t: TestRunner) -> void:
 	var barricades := 0
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var ground := WalkGround.new(map)
 		for placement in placements:
-			if placement.def.id == "barricade":
+			if placement.row_id() == "barricade":
 				barricades += 1
 			var body := Reach.body_overhang(map, ground, placement)
 			var drawn := Reach.drawing_overhang(map, placement)
 			t.check(body <= 0.5 and drawn <= 0.5,
 					"seed %d: the %s at %s keeps off the buildings (body %.1fpx, drawing %.1fpx over)"
-					% [seed_value, placement.def.id, map.world_to_tile(placement.position), body,
+					% [seed_value, placement.row_id(), map.world_to_tile(placement.placed_at()), body,
 					drawn])
 	t.check(barricades > 0, "there were barricade pieces among them (%d)" % barricades)
 
-## **A restart plans the same escape, on the ground the first plan read.** A loss in the city
-## replans it on the same city (`main._plan_the_finale_city()`), and the day's ground for the
-## escape's rows is kept across it (`EventScheduler.KeptGround`, which `DayPlanner` holds): the
-## restart's plan is the first one, placement for placement, and the kept ground is the same answer. A city whose
-## ground did change — a tile closed — is read again rather than answered from the kept copy.
-func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
+## **A restart plans the same escape.** A loss in the city replans it on the same city (the day
+## director's start, `DayDirector.start()`, on the section's own stream), and the restart's plan is
+## the first one, placement for placement.
+func _test_a_restart_plans_the_same_escape(t: TestRunner) -> void:
 	var map := MapCache.of(SEEDS[0])
 	_paint_day_one(map)
-	var walks: Array[FinalePlanner.Plan] = []
 	var plans: Array[Array] = []
-	var kept: Array[Dictionary] = []
-	var ground := EventScheduler.KeptGround.new()
 	for attempt in 2:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[0]
-		walks.append(FinalePlanner.route(map))
-		plans.append(DayPlanner.plan_the_escape_city(map, walks[-1], rng, _city_spec(),
-				true, ground))
-		kept.append(ground.of(map))
-	var first: Array[EventScheduler.Planned] = []
+		plans.append(DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(),
+				GamePlanBuilder.over(map)))
+	var first: Array[EventPlan] = []
 	first.assign(plans[0])
-	var second: Array[EventScheduler.Planned] = []
+	var second: Array[EventPlan] = []
 	second.assign(plans[1])
 	var same := first.size() == second.size()
 	for i in mini(first.size(), second.size()):
 		var a := first[i]
 		var b := second[i]
-		same = same and a.def.id == b.def.id and a.position.is_equal_approx(b.position)
+		same = same and a.row_id() == b.row_id() and a.placed_at().is_equal_approx(b.placed_at())
 	t.check(same and first.size() > 0,
 			"a restart plans the same %d placements as the first plan" % first.size())
-	t.check(is_same(kept[0], kept[1]), "and reads the ground the first plan kept")
-	var tile := map.world_to_tile(map.tile_rect_to_world(
-			walks[0].open_streets[0].tile_rect()).get_center())
-	var shut: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS, walks[0].open_streets[0])]
-	map.close_streets(shut)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = SEEDS[0]
-	DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(), true, ground)
-	t.check(not is_same(ground.of(map), kept[1]),
-			"a city with a tile closed since is read again (%s)" % tile)
 
-# ------------------------------------------------------------ the marble bag ---
-
-## **The escape's bag holds its marbles in the player's order of how many, empty ones included.**
-## *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
-## happening) as well"; "frequency order is trucks > explosions > vans > barriers > empty".)*
-func _test_the_escape_bag_keeps_the_players_order(t) -> void:
+## **The escape's bag holds its four rows in the player's order of how many.** *(Inbox #785 in
+## minty-lemur: "a marble bag is absolutely needed with empty events (nothing happening) as well";
+## "frequency order is trucks > explosions > vans > barriers > empty".)* The empty marbles are counted
+## to keep the share of streets that stand nothing (`DaySpec.FINALE_BAG_EMPTY`), so they stand outside
+## the order.
+func _test_the_escape_bag_keeps_the_players_order(t: TestRunner) -> void:
 	t.check(DaySpec.FINALE_BAG_TRUCKS > DaySpec.FINALE_BAG_EXPLOSIONS
 			and DaySpec.FINALE_BAG_EXPLOSIONS > DaySpec.FINALE_BAG_VANS
-			and DaySpec.FINALE_BAG_VANS > DaySpec.FINALE_BAG_ROADBLOCKS
-			and DaySpec.FINALE_BAG_ROADBLOCKS > DaySpec.FINALE_BAG_EMPTY,
-			"the bag holds more trucks than explosions, than vans, than roadblocks, than empty marbles")
+			and DaySpec.FINALE_BAG_VANS > DaySpec.FINALE_BAG_ROADBLOCKS,
+			"the bag holds more trucks than explosions, than vans, than roadblocks")
 
-## **Every slot of every open street draws one marble, and a marble that finds no ground is spent
-## unmet.** A street stands at most its slots' worth of the escape's rows; the bag is drawn once a
-## slot whatever the draw finds, so a refused danger never moves on to the next street; a bag of
-## empty marbles stands nothing; and a bag of roadblocks alone stands fewer than it drew, since no
-## two bands may stand where both guards can notice her.
-func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
-	var unmet := 0
-	for seed_value in SEEDS:
+## How many more streets a bag that mixes roadblocks into explosions may leave with nothing than a
+## bag of explosions alone: a street whose roadblock marble is refused draws on among the marbles
+## left, so the mixed bag leaves a street empty only where its explosion is refused as well.
+const STREETS_A_MIXED_BAG_MAY_STILL_EMPTY := 3
+
+## **A street stands at most one of the escape's rows, and a marble its rules refuse stays in the bag**
+## (inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if any segment or
+## location in the street has an event"). Placing changes nothing by being noted; no street stands more
+## than one row; a bag of empty marbles stands nothing; and a bag of three roadblock marbles to one
+## explosion, where no two bands may stand where both guards can notice her, leaves no more streets
+## with nothing than a bag of explosions alone (but a few): a roadblock a street refuses stays in
+## the bag and the street draws the explosion.
+func _test_a_street_stands_one_event_and_a_refused_marble_stays(t: TestRunner) -> void:
+	var mixed_empty := 0
+	var explosions_empty := 0
+	var mixed_rows := 0
+	var explosion_rows := 0
+	for seed_value: int in SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
-		for slots in [1, 2]:
-			var lines: Array[String] = []
-			var placed := _escape_rows_traced(map, bare, _city_spec().bag, slots,
-					RunTrace.recording(lines))
-			var untraced := _escape_rows_from(map, bare, _city_spec().bag, slots)
-			t.check(_same_rows(placed, untraced),
-					"seed %d, %d a street: the note changes nothing placed" % [seed_value, slots])
-			var drew := _marbles_drawn_in(lines)
-			t.check(drew == streets.size() * slots,
-					"seed %d, %d a street: every slot drew one marble (%d of %d)"
-					% [seed_value, slots, drew, streets.size() * slots])
-			var most := 0
-			for segment in streets:
-				var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
-				var here := 0
-				for placement in placed:
-					if rect.has_point(placement.position):
-						here += 1
-				most = maxi(most, here)
-			t.check(most <= slots, "seed %d: no street stands more than its %d slots (%d)"
-					% [seed_value, slots, most])
-		t.check(_escape_rows_from(map, bare, {DaySpec.EMPTY_MARBLE: 1}, 1).is_empty(),
+		var lines: Array[String] = []
+		var placed := _escape_rows_traced(map, bare, _city_spec().walk_bag(), RecordingTrace.new(lines))
+		var untraced := _escape_rows_from(map, bare, _city_spec().walk_bag())
+		t.check(_same_rows(placed, untraced), "seed %d: the note changes nothing placed" % seed_value)
+		var most := 0
+		for segment in streets:
+			var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
+			var here := 0
+			for placement in placed:
+				if rect.has_point(placement.placed_at()):
+					here += 1
+			most = maxi(most, here)
+		t.check(most <= 1, "seed %d: no street stands more than one of the escape's rows (%d)"
+				% [seed_value, most])
+		t.check(_escape_rows_from(map, bare, {DaySpec.EMPTY_MARBLE: 1}).is_empty(),
 				"seed %d: a bag of empty marbles stands nothing" % seed_value)
-		var band_lines: Array[String] = []
-		var stood := _escape_rows_traced(map, bare, {"roadblock": 1}, 1,
-				RunTrace.recording(band_lines))
-		var band_draws := _marbles_drawn_in(band_lines)
-		t.check(band_draws == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
-				% [seed_value, band_draws])
-		unmet += streets.size() - stood.size()
-	t.check(unmet > 0, "and some roadblock marbles were spent unmet (%d)" % unmet)
+		var mixed := _escape_rows_from(map, bare, {"roadblock": 3, "finale_explosion": 1})
+		var explosions := _escape_rows_from(map, bare, {"finale_explosion": 1})
+		mixed_empty += _streets_with_nothing(map, streets, mixed)
+		explosions_empty += _streets_with_nothing(map, streets, explosions)
+		mixed_rows += mixed.size()
+		explosion_rows += explosions.size()
+	t.check(mixed_rows > 0 and explosion_rows > 0,
+			"a row stood under each bag (%d and %d)" % [mixed_rows, explosion_rows])
+	t.check(mixed_empty <= explosions_empty + STREETS_A_MIXED_BAG_MAY_STILL_EMPTY,
+			"a roadblock a street refuses stays in the bag and the street draws the explosion: the "
+			+ "mixed bag leaves %d streets with nothing, explosions alone %d" % [mixed_empty, explosions_empty])
 
-## **The game's plan is `Tuning`'s bag, drawn on the street bag's own stream**: the city section's
-## spec holds `Tuning`'s counts and slots, and what the escape's plan stands is what the bag
-## draw (`EventScheduler.build_day()`, handed those counts and slots by a spec of the test's own)
+## How many of `streets` stand none of `placed`.
+static func _streets_with_nothing(map: CityMap, streets: Array[StreetNetwork.Segment],
+		placed: Array[EventPlan]) -> int:
+	var empty := 0
+	for segment in streets:
+		var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
+		var here := false
+		for placement in placed:
+			here = here or rect.has_point(placement.placed_at())
+		if not here:
+			empty += 1
+	return empty
+
+## **The game's plan is `Tuning`'s bag, drawn on the walk bag's own stream**: the city section's
+## spec holds `Tuning`'s counts, and what the escape's plan stands is what the dawn's draw
+## (`EventScheduler.build_day()`, handed those counts by a spec of the test's own)
 ## stands, placement for placement — the plan `tests/probes/escape_winnable.gd`
 ## measures other mixes against.
-func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
-	for seed_value in SEEDS:
+func _test_the_game_draws_the_escape_from_tunings_bag(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		var bare := _bare_plan(map, seed_value)
-		var placed := _escape_rows_from(map, bare, _city_spec().bag, DaySpec.FINALE_SLOTS_PER_STREET)
-		var played: Array[EventScheduler.Planned] = []
+		var placed := _escape_rows_from(map, bare, _city_spec().walk_bag())
+		var played: Array[EventPlan] = []
 		for placement in placements:
-			if ESCAPE_ROWS.has(placement.def.id):
+			if ESCAPE_ROWS.has(placement.row_id()):
 				played.append(placement)
 		var same := played.size() == placed.size()
 		for i in mini(played.size(), placed.size()):
-			same = same and played[i].def.id == placed[i].def.id \
-					and played[i].position.is_equal_approx(placed[i].position)
+			same = same and played[i].row_id() == placed[i].row_id() \
+					and played[i].placed_at().is_equal_approx(placed[i].placed_at())
 		t.check(same and played.size() > 0, "seed %d: the game's plan is Tuning's bag (%d and %d)"
 				% [seed_value, played.size(), placed.size()])
 
@@ -1385,67 +1515,55 @@ static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var plan := FinalePlanner.route(map)
-	var seals := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(), false)
+	var seals := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(),
+			GamePlanBuilder.over(map), false)
 	return {"plan": plan, "streets": plan.open_streets, "seals": seals, "rng": rng,
 			"state": rng.state}
 
-## The escape's rows the bag draw (`EventScheduler.build_day()`, which a spec drawing from a bag of
-## `counts` at `slots` a street sends to the bag draw) stands on the bare plan, the rng put back
-## where `DayPlanner.plan_the_escape_city()` would hand it over each time.
-static func _escape_rows_from(map: CityMap, bare: Dictionary, counts: Dictionary,
-		slots: int) -> Array[EventScheduler.Planned]:
+## The escape's rows the dawn's draw (`EventScheduler.build_day()`, one marble a street from a bag of
+## `counts`) stands on the bare plan, the rng put back where `DayPlanner.plan_the_escape_city()`
+## would hand it over each time.
+static func _escape_rows_from(map: CityMap, bare: Dictionary,
+		counts: Dictionary) -> Array[EventPlan]:
 	var rng: RandomNumberGenerator = bare["rng"]
 	rng.state = bare["state"]
-	var seals: Array[EventScheduler.Planned] = bare["seals"]
+	var seals: Array[EventPlan] = bare["seals"]
 	var spec := _city_spec()
 	spec.bag = counts
-	spec.slots_per_street = slots
-	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals).placements()
+	return GameDawn.of(spec, rng, map).masts(_NO_MASTS).on(bare["plan"]).standing(seals).plan().placements()
 
 ## Whether two plans stand the same rows in the same places.
-static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler.Planned]) -> bool:
+static func _same_rows(a: Array[EventPlan], b: Array[EventPlan]) -> bool:
 	if a.size() != b.size():
 		return false
 	for i in a.size():
-		if a[i].def.id != b[i].def.id or a[i].position != b[i].position:
+		if a[i].row_id() != b[i].row_id() or a[i].placed_at() != b[i].placed_at():
 			return false
 	return true
 
-## The marbles a plan drew, as the plan reports them to the run log: `build_day()` is handed a
-## trace that keeps every line, and the bag path notes `the escape's bag drew N marbles for M rows`.
-## `-1` when no such line was written. The note's wording is the contract between the bag path and
-## this reader: a change to one is a change to the other.
-static func _marbles_drawn_in(lines: Array[String]) -> int:
-	for line in lines:
-		if line.begins_with("plan the escape's bag drew "):
-			return int(line.trim_prefix("plan the escape's bag drew ").split(" ")[0])
-	return -1
-
-## `_escape_rows_from()` with a trace handed to `build_day()`, for the count of marbles drawn.
+## `_escape_rows_from()` with a trace handed to `build_day()`.
 static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictionary,
-		slots: int, trace: RunTrace) -> Array[EventScheduler.Planned]:
+		trace: RunTrace) -> Array[EventPlan]:
 	var rng: RandomNumberGenerator = bare["rng"]
 	rng.state = bare["state"]
-	var seals: Array[EventScheduler.Planned] = bare["seals"]
+	var seals: Array[EventPlan] = bare["seals"]
 	var spec := _city_spec()
 	spec.bag = counts
-	spec.slots_per_street = slots
-	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals, trace).placements()
+	return GameDawn.of(spec, rng, map).masts(_NO_MASTS).on(bare["plan"]).standing(seals).traced(trace) \
+			.plan().placements()
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.
-func _test_the_service_exit_is_beside_the_home_block(t) -> void:
-	for seed_value in SEEDS:
+func _test_the_service_exit_is_beside_the_home_block(t: TestRunner) -> void:
+	for seed_value: int in SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var tile := map.world_to_tile(FinalePlanner.service_exit_world_position(map))
 		t.check(map.is_walkable(tile), "seed %d: the service exit is walkable" % seed_value)
-		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block))
+		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block_coordinate()))
 		var beside := tile.x == lot.position.x - 1 or tile.x == lot.end.x
 		t.check(beside, "seed %d: it is on one of the home lot's two side streets" % seed_value)
-		var spine := map.main_road * CityMap.period()
+		var spine := map.main_road_corridor() * CityMap.period()
 		var on_the_spine := tile.x >= spine and tile.x < spine + Tuning.STREET_WIDTH
 		t.check(not on_the_spine, "seed %d: and not on the main road's own frontage" % seed_value)
 
@@ -1470,37 +1588,37 @@ const SPAWN_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 6, 27]
 ## trees are plain `Node2D`s with no collision at all, a `Building` stands on block ground and
 ## `service_exit_world_position()` answers with walkable ground, the boundary walls are outside the map, and
 ## the crowd is cleared before the plan is made. An event's obstruction body and a seal's are what
-## is left — both arrive as `EventScheduler.Planned`, and a burst's crater arrives as one of those
+## is left — both arrive as `EventPlan`, and a burst's crater arrives as one of those
 ## spawning its successor where it stood, which is asked about too.
 ##
 ## Asked of the plan rather than of the physics server, by choice: the plan is what the finale
 ## decides, and the question is where it put things.
-func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
+func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -> void:
 	var checked := 0
 	var on_her := 0
-	for seed_value in SPAWN_SEEDS:
+	for seed_value: int in SPAWN_SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec())
+				_city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		t.check(map.is_walkable(map.world_to_tile(spawn)),
 				"seed %d: she is put down on walkable ground" % seed_value)
-		for placement: EventScheduler.Planned in placements:
+		for placement: EventPlan in placements:
 			checked += 1
-			for def in [placement.def, EventCatalogue.by_id(placement.def.aftermath.on_finish)]:
-				if def == null or def.obstructs_radius <= 0.0:
+			for def: EventDef in [placement.row(), EventCatalogue.by_id(placement.row().leaves_behind())]:
+				if def == null or def.obstructs_within() <= 0.0:
 					continue
-				if placement.position.distance_to(spawn) \
-						<= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
+				if placement.placed_at().distance_to(spawn) \
+						<= def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS:
 					on_her += 1
 					t.check(false,
 							"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the "
-							% [seed_value, def.id, placement.position.distance_to(spawn)]
+							% [seed_value, def.id(), placement.placed_at().distance_to(spawn)]
 							+ "%.0fpx its body and her own take up"
-							% (def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS))
+							% (def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
 	t.check(on_her == 0, "and none of them is standing on her (%d of %d)" % [on_her, checked])
 
@@ -1509,92 +1627,61 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 ##
 ## **The mark means one thing and one condition raises it.**
 ## `WarningBoard.warn_about_the_ground_she_is_on()` puts `Stroller.Alert.SOON` over her head for
-## any `hard_fail` row that is still telegraphing, or still waiting to notice her, whose **outer**
+## any lethal row that is still telegraphing, or still waiting to notice her, whose **outer**
 ## radius covers her — because that radius is exactly what the telegraph fairness contract promises
 ## her time to walk out of. On the first frame of section two every placement the finale made is in
 ## one of those two states, so that one inequality is the whole of the mark, and it is asked here
-## as `distance > outer_radius` for every lethal row on the plan. `NOW` needs a live instance and
-## cannot fire on the frame the section begins; `distance > inner_radius` falls out of the same
+## as `distance > outer radius` for every lethal row on the plan. `NOW` needs a live instance and
+## cannot fire on the frame the section begins; `distance > inner radius` falls out of the same
 ## check, since a row's outer radius is never under its inner one.
 ##
 ## **This is the confirmation, not the mechanism**, exactly as for the bodies above:
-## `EventScheduler._clearance_around_her()` is never offered ground within a lethal row's own outer
+## `EventScheduler.clearance_around_her()` is never offered ground within a lethal row's own outer
 ## radius of her, so nothing is placed there to be cleared up afterwards.
 ##
 ## Seeds rather than one city, and the guard counts the lethal rows it actually found: an escape
 ## plan that happened to place none at all would otherwise pass this without checking anything.
-func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
+func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t: TestRunner) -> void:
 	var lethal := 0
 	var over_her := 0
-	for seed_value in SPAWN_SEEDS:
+	for seed_value: int in SPAWN_SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec())
+				_city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
-		for placement: EventScheduler.Planned in placements:
-			if not placement.def.hard_fail:
+		for placement: EventPlan in placements:
+			if not placement.row().ends_the_day():
 				continue
 			lethal += 1
-			var gap := placement.position.distance_to(spawn)
-			if gap <= placement.def.outer_radius:
+			var gap := placement.placed_at().distance_to(spawn)
+			if gap <= placement.row().heard_within():
 				over_her += 1
 				t.check(false,
 						"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the %.0fpx "
-						% [seed_value, placement.def.id, gap, placement.def.outer_radius]
+						% [seed_value, placement.row_id(), gap, placement.row().heard_within()]
 						+ "field that raises the mark over her head")
 	t.check(lethal > 0, "the escape places lethal rows to ask about (%d)" % lethal)
 	t.check(over_her == 0,
 			"and none of their fields reaches the ground she comes out on (%d of %d)"
 			% [over_her, lethal])
 
-## **The manager hands its planner's kept ground to the escape's plan.** Starting the city section
-## twice on one city, as a restart after a loss does, the first plan leaves the rows' answers in the
-## ground the planner holds, and the second reads that same ground rather than scanning the city
-## again.
-func _test_the_manager_plans_a_restart_on_the_ground_it_kept(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
-	var run := city.run
-	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
-	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
-	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(run.attempt_spend.city_state, 1,
-			run.calendar.day_rng(1, "closures"), spec)
-	var none: Array[String] = []
-	var kept := city.events.planner.kept_ground
-	var grounds: Array[Dictionary] = []
-	for attempt in 2:
-		city.events.start_day(spec, run.calendar.day_rng(1, "finale"), none)
-		grounds.append(kept.of(city.map))
-	t.check(grounds[0].size() > 1,
-			"the first plan leaves the rows' answers in the planner's ground (%d)" % grounds[0].size())
-	t.check(is_same(grounds[0], grounds[1]), "the restart reads the same ground")
-	city.free()
-
 # ------------------------------------------------------------------ the city ---
 
-## *"No regular cars or regular people on the street."* Non-vacuous on purpose: the crowd is
-## populated first, so what is asserted is that dressing the city for the escape and starting its
-## crowd as the section's spec says (`DaySpec.crowd_density`, through `DayDirector.start_the_crowd()`)
-## leaves it empty rather than that it started that way.
-func _test_the_finale_city_has_nobody_in_it(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
-	var run := city.run
+## Dressing the city for the escape (`City.start_day()` under the city section's spec) grows no
+## corridor and closes no street: its walk is handed in once it is planned. Nobody on its streets is
+## the day director's start's (`DaySpec.crowd_density`), held where the real city section is booted
+## (`_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart`).
+func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
-	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
-	city.crowd.start_day(1, run.calendar.day_rng(1, "crowd"), city.map.doorstep_world_position())
-	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), 1)
 	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"), spec)
-	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
-	director.city = city
-	director.spec = spec
-	director.start_the_crowd(Vector2.INF)
-	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
+	city.start_day(run.attempt_spend().block_arcs(), 1, run.calendar().day_rng(1, "closures"), spec)
 	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),
 			"the escape grows no corridor and closes no street")
 	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
@@ -1607,19 +1694,23 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 ## asked through `City.scenery_ground_source()`, the one answer every ground chunk is painted from.
 ##
 ## **Driven through the booted `main`, because the wiring is what the player saw missing.** The
-## escape boots on its city section (`_boot_the_escape()`), whose first plan `main` makes as it builds
-## the city, and the tint is read off the booted city as it stands. A day's route tinted before the
-## escape starts must not show, so the city is handed a day's own tree as its tint (`City.tint_the_route()`,
-## which `main` does for a day) after the first plan, then wiped, so a restart is checked painting it
-## rather than inheriting it. The restart is the one a lost section's outcome screen continues into:
+## escape boots on its city section (`_boot_the_escape()`), whose first plan the day director's start
+## makes once `main` has built the city, and the tint is read off the booted city as it stands; the
+## booted city is also where nobody being on the escape's streets is held. A day's route tinted before
+## the escape starts must not show, so the city is handed a day's own tree as its tint
+## (`City.tint_the_route()`, which a day's own closures do) after the first plan, then wiped, so a
+## restart is checked painting it rather than inheriting it. The restart is the one a lost section's outcome screen continues into:
 ## the loss through the signal a real capture fires, the continue pressed through the viewport.
-func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
+func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: TestRunner) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
 	var main := escape.main
 	var city := Boot.city(main)
-	var day := escape.run.header.day
-	var corridor := Corridor.of(RouteTree.for_day(city.map, day))
-	var plan := FinalePlanner.route(city.map)
+	# *"No regular cars or regular people on the street"*: a crowd the start had started would be a
+	# day's, hundreds strong.
+	t.check(RunCity.crowd(city).agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
+	var day := escape.run.header().day()
+	var corridor := Corridor.of(RouteTree.for_day(city.map(), day))
+	var plan := FinalePlanner.route(city.map())
 	var on_the_walk := {}
 	for segment in plan.open_streets:
 		on_the_walk[segment.key()] = true
@@ -1632,11 +1723,11 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 			"the first plan tints every kerb of the escape's streets and no other (%d wrong)"
 			% first.z)
 
-	city.tint_the_route(RouteTree.for_day(city.map, day))
+	city.tint_the_route(RouteTree.for_day(city.map(), day))
 	var on_the_day := 0
 	for tile in _kerb_tiles(city, day):
 		if corridor.depth(tile) == 0 and city.scenery_ground_source(tile) \
-				== GroundTiles.route_twin_of(GroundTiles.source_for(city.map, tile, day)):
+				== GroundTiles.route_twin_of(GroundTiles.source_for(city.map(), tile, day)):
 			on_the_day += 1
 	t.check(on_the_day > 0, "a day's route tints its own kerbs (%d)" % on_the_day)
 
@@ -1654,10 +1745,10 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 ## Every tile of `city` whose plain ground source is a kerb a route can tint.
 static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if GroundTiles.source_for(city.map, tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
+			if GroundTiles.source_for(city.map(), tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
 				found.append(tile)
 	return found
 
@@ -1668,8 +1759,8 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 		corridor: Corridor) -> Vector4i:
 	var counted := Vector4i.ZERO
 	for tile in _kerb_tiles(city, day):
-		var source := GroundTiles.source_for(city.map, tile, day)
-		var segment := city.map.network.segment_containing(tile)
+		var source := GroundTiles.source_for(city.map(), tile, day)
+		var segment := city.map().street_network().segment_containing(tile)
 		var wanted := segment != null and on_the_walk.has(segment.key())
 		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
 				else source):
@@ -1685,60 +1776,72 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 ## *"Explosions happen off screen (but loud enough to cause excitement) leaving craters on the
 ## street."* Both halves: the row names its successor, and what the successor obstructs is exactly
 ## half of the picture it draws — *anything that stands still is solid at the width it is drawn*.
-func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
+func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> void:
 	var burst := EventCatalogue.by_id("finale_explosion")
 	var crater := EventCatalogue.by_id("impact_crater")
 	t.check(burst != null and crater != null, "both finale rows are in the catalogue")
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasTable.baked().native_size()` answers the
 	# source picture's own size with nothing acquired.
-	var picture := EventPictures.icon_for(crater.look)
+	var picture := EventPictures.icon_for(crater.picture())
 	var drawn_width := EventPictures.native_size(picture).x
-	t.check(is_equal_approx(crater.obstructs_radius, drawn_width * 0.5),
+	t.check(is_equal_approx(crater.obstructs_within(), drawn_width * 0.5),
 			"the crater obstructs %.0fpx against a %.0fpx picture"
-			% [crater.obstructs_radius, drawn_width])
+			% [crater.obstructs_within(), drawn_width])
 
-	# And the wiring: a burst that has run its course is replaced by a crater standing where it
-	# was, through the same `aftermath.on_finish` mechanism a convoy leaves a barricade through.
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	# And the wiring: a burst's plan is not in the world with nobody near, since a place sets it off
+	# (`SetOffWatch`); one that arrives where its warning pointed, as a set-off one does, leaves its
+	# crater standing where it went off on the manager's next physics frame, while it still bangs, and
+	# no second one when it is over (`aftermath.leaves_behind()`).
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
-	city.events.setup(city, city.map)
-	city.events.stream_radius = INF
-	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
-	var plans: Array[EventScheduler.Planned] = [
-		EventScheduler.Planned.new(burst, city.map.tile_to_world(road))]
-	GivenPlanner.hand_in(city.events, plans)
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
+	RunCity.events(city).stream_within(INF)
+	var road := city.map().tiles_of_type(GameEnums.TileType.ROAD)[0]
+	var at := city.map().tile_to_world(road)
+	var plans: Array[EventPlan] = [EventPlan.new(burst, at)]
+	GivenPlanner.hand_in(RunCity.events(city), plans)
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
+	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
-	t.check(city.events.instances().size() == 1, "the burst is in the world")
-	var live := city.events.instances()[0]
-	var steps := 0
-	while not live.is_finished and steps < 400:
-		live.step(0.05)
-		steps += 1
-	t.check(live.is_finished, "the burst is over after %.1fs" % (steps * 0.05))
+	t.check(RunCity.events(city).instances().is_empty(),
+			"the burst's plan is not streamed in: a place sets it off")
+	var live := RunCity.events(city).spawn_warned(burst, PackedVector2Array([at]))
 	# `EventStreaming.retire_finished()` runs inside the manager's own physics frame, which the city
 	# in the tree is let have.
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	var craters := 0
-	for instance in city.events.instances():
-		if instance.def.id == crater.id:
-			craters += 1
-			t.check(instance.is_solid(), "and the crater it left is solid")
-	t.check(craters == 1, "exactly one crater is left where the burst was")
+	t.check(not live.is_gone(), "the burst is still going off")
+	t.check(_craters_of(city, crater) == 1, "and its crater already stands where it went off")
+	var steps := 0
+	while not live.is_gone() and steps < 400:
+		live.step(0.05)
+		steps += 1
+	t.check(live.is_gone(), "the burst is over after %.1fs" % (steps * 0.05))
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
+	t.check(_craters_of(city, crater) == 1, "exactly one crater is left where the burst was")
 	city.free()
+
+## How many of `crater`'s row stand in `city`, each checked solid.
+func _craters_of(city: City, crater: EventDef) -> int:
+	var craters := 0
+	for instance in RunCity.events(city).instances():
+		if is_instance_valid(instance) and instance.row_id() == crater.id():
+			craters += 1
+			if not instance.is_solid():
+				return -1
+	return craters
 
 # ------------------------------------------------------------------ the clock ---
 
 ## *"The timer also shows milliseconds. This makes the timer appear faster than just the seconds
 ## alone which adds additional tension."* Tried as hundredths (inbox #746 in woolly-penguin). The only thing that
 ## changes, so both shapes are checked off the same signal and the same time.
-func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
+func _test_the_clock_reads_hundredths_only_in_the_finale(t: TestRunner) -> void:
 	var run := RunState.new()
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	var hud: Hud = HUD_SCENE.instantiate()
 	hud.use_run(run)
 	t.add_child(hud)
 	hud.set_process(false)
@@ -1771,17 +1874,17 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 ## real capture fires, so what is checked is the path the game takes: the day's own clock and
 ## finish path, not a call this test invented. A screen is told apart by what it says: the brief by
 ## the section's own words as its title, the outcome screen by the reason as its title.
-func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
+func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var escape := await _boot_the_escape(t, section)
 		var main := escape.main
 		var summary := Boot.summary(main)
-		var words := _section(section).title
-		var nerves := escape.run.header.nerves
-		var length: float = Boot.day(main).spec.length
+		var words := _section(section).title()
+		var nerves := escape.run.header().nerves()
+		var length: float = Boot.day(main).spec().seconds_on_the_clock()
 		var title: Label = summary.get_node("Root/Center/Lines/Title")
 		var body: Label = summary.get_node("Root/Center/Lines/Body")
-		t.check(Boot.day(main).spec.section == section and summary.is_showing(),
+		t.check(Boot.day(main).spec().section_kind() == section and summary.is_showing(),
 				"section %d: it opens on its brief" % section)
 		t.check(title.text == words,
 				"section %d: titled with the section's own words ('%s')" % [section, title.text])
@@ -1792,7 +1895,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 			t.check(title.text == "Escape the city", "and the city's brief reads 'Escape the city'")
 		t.check(body.text.contains("Nerves left: %s" % Texts.nerve_stars(nerves)),
 				"section %d: and carrying the nerve line, as stars ('%s')" % [section, body.text])
-		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).time_remaining, length),
+		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).seconds_left(), length),
 				"section %d: with a full clock standing still behind it" % section)
 
 		await Boot.press_continue(t, main)
@@ -1803,10 +1906,10 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		# game" — read here as the hint showing every time the section's clock starts, a fast click
 		# through the brief included, not only on a first entry.)*
 		var teach: HelpText = Boot.hud(main).get_node("Root/Teach")
-		t.check(teach.line == words,
+		t.check(teach.get_parsed_text() == words,
 				"section %d: and the section's own words said once she is walking it" % section)
 
-		Boot.day(main).time_remaining -= 30.0
+		Boot.day(main).tick(30.0)
 		EventBus.hard_fail_triggered.emit("abduction")
 		t.check(summary.is_showing() and title.text != words,
 				"section %d: being taken comes up on the day's outcome screen" % section)
@@ -1816,24 +1919,24 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		t.check(body.text.contains(words) and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: under the section's own words, the nerves unchanged ('%s')"
 				% [section, body.text])
-		t.check(escape.run.header.nerves == nerves,
+		t.check(escape.run.header().nerves() == nerves,
 				"section %d: since a normal run's lost section spends none" % section)
 
 		teach.text = ""
 		await Boot.press_continue(t, main)
-		t.check(Boot.day(main).spec.section == section and summary.is_showing()
+		t.check(Boot.day(main).spec().section_kind() == section and summary.is_showing()
 				and title.text == words,
 				"section %d: its continue is the same section again, behind its brief" % section)
 		t.check(title.text == words and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: titled with its words and the nerves unchanged ('%s', '%s')"
 				% [section, title.text, body.text])
-		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).time_remaining, length),
+		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).seconds_left(), length),
 				"section %d: with a full clock standing still behind it" % section)
 		await Boot.press_continue(t, main)
 		t.check(not summary.is_showing() and not t.get_tree().paused
 				and Boot.day(main).is_running(),
 				"section %d: the brief's continue is the walk" % section)
-		t.check(teach.line == words,
+		t.check(teach.get_parsed_text() == words,
 				"section %d: and its words said again on the retry, not only the first entry"
 				% section)
 
@@ -1841,35 +1944,35 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 			# **Each section is a day, so each gets a day's clock** — what the building spent is
 			# not the city's to make up. Twenty seconds are taken off the building's clock first,
 			# so a city that carried it across would be visibly short here.
-			Boot.day(main).time_remaining -= 20.0
+			Boot.day(main).tick(20.0)
 			Boot.interior(main).exit_requested.emit()
-			t.check(Boot.day(main).spec.section == DaySpec.Section.CITY and summary.is_showing(),
+			t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and summary.is_showing(),
 					"the service exit begins the second section, on its own brief")
-			t.check(is_equal_approx(Boot.day(main).time_remaining, length),
+			t.check(is_equal_approx(Boot.day(main).seconds_left(), length),
 					"on a full clock of its own, whatever the walk down the stairs cost")
 		_free_the_escape(t, escape)
 
 ## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
-## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks`, which the
+## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks()`, which the
 ## ending screen shows) runs while a section is walked, and a charge still running when she gets
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
 ## counted — through the day's own finish path, as a day's are. The played time is read across one
 ## real physics frame; the charge is a masked pursuer put on the city's street as a streamed-in row
-## comes back (`EventInstance.resume()`, which the streaming calls: a row brought back after it had
+## comes back (`EventInstance.restore()`, which the streaming calls: a row brought back after it had
 ## noticed her is still chasing), and she is put at the tunnel, where the day's own clock finds her
 ## on its next tick (`DayController.tick()`, which `main`'s physics tick calls). The charge is
 ## spawned by the city's manager (`EventManager.spawn_extra()`), which gives it the atlas the city's
 ## events draw from, so a real frame can draw it.
-func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
+func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
 	var main := escape.main
 	await Boot.press_continue(t, main)
 	await t.get_tree().physics_frame
-	var played := escape.run.header.play_ticks
+	var played := escape.run.header().play_ticks()
 	await t.get_tree().physics_frame
-	t.check(escape.run.header.play_ticks == played + 1,
+	t.check(escape.run.header().play_ticks() == played + 1,
 			"walking the city section counts toward the run's played time (%d, then %d ticks)"
-			% [played, escape.run.header.play_ticks])
+			% [played, escape.run.header().play_ticks()])
 
 	var heard: Array[String] = []
 	var on_cut_short := func(id: String) -> void:
@@ -1880,11 +1983,11 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	EventBus.day_ended.connect(on_ended)
 	var her := Boot.player(main)
 	var city := Boot.city(main)
-	var guard := city.events.spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position,
+	var guard := RunCity.events(city).spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position,
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
 	guard.set_process(false)
-	guard.resume(0.01, 0.0, 0.0)
-	her.global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
+	guard.restore(EventSave.new(0.01, 0.0, 0.0))
+	her.global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
@@ -1913,25 +2016,25 @@ class Escape:
 ## of the test's own, set on the last day with `section` its escape section. `before` is handed the
 ## unbooted `main` for anything else the test hands it (`use_quit()`, `use_reload()`). Returned
 ## with its first screen up.
-func _boot_the_escape(t, section: int, flags: PackedStringArray = PackedStringArray(),
+func _boot_the_escape(t: TestRunner, section: int, flags: PackedStringArray = PackedStringArray(),
 		before := Callable()) -> Escape:
 	var escape := Escape.new()
 	escape.run = RunState.new()
 	escape.run.start_run(SEEDS[0])
-	escape.run.header.day = Tuning.RUN_LENGTH_DAYS
-	escape.run.facts.escape_section = section
+	escape.run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	escape.run.facts().set_escape_section(section)
 	escape.home = Boot.home_playing(t, escape.run)
 	var home := escape.home
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(Array(flags)),
-			func(main: Node) -> void:
-				main.use_sitting_home(home)
+			func(node: Node) -> void:
+				(node as Main).use_sitting_home(home)
 				if before.is_valid():
-					before.call(main))
+					before.call(node))
 	escape.booted = booted
 	escape.main = booted.main
 	return escape
 
-func _free_the_escape(t, escape: Escape) -> void:
+func _free_the_escape(t: TestRunner, escape: Escape) -> void:
 	t.get_tree().paused = false
 	(escape.booted as Boot.Booted).free_all()
 	# A `--route` boot is a rig, whose `RigLock` erases every action's `InputMap` bindings; freeing
@@ -1942,11 +2045,11 @@ func _free_the_escape(t, escape: Escape) -> void:
 
 ## `main` hands each section its `DaySpec`, read off the day's clock of a booted escape, and each
 ## section is counted as a day of its own after the last.
-func _test_the_two_sections_are_the_two_days_after_the_last(t) -> void:
+func _test_the_two_sections_are_the_two_days_after_the_last(t: TestRunner) -> void:
 	var numbers: Array[int] = []
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var escape := await _boot_the_escape(t, section)
-		numbers.append(Boot.day(escape.main).spec.number)
+		numbers.append(Boot.day(escape.main).spec().day_number())
 		_free_the_escape(t, escape)
 	t.check(numbers[0] == Tuning.RUN_LENGTH_DAYS + 1 and numbers[1] == numbers[0] + 1,
 			"and they are the two days after the last (%d and %d)" % [numbers[0], numbers[1]])
@@ -1956,51 +2059,55 @@ func _test_the_two_sections_are_the_two_days_after_the_last(t) -> void:
 ## negative rows are for: a won last day with the legwork but not the sabotage is the neutral
 ## ending and must not reach the escape, and neither must a won earlier day that happens to have
 ## finished every task early.
-func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
-	# A run of its own, so nothing of the autoload's (the state, the riders, the checkpoint, the mode)
-	# is touched, and nothing needs putting back.
-	var run := RunState.new()
-	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
-	run.start_run(9182)
-
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
-	t.check(director.hands_over_to_the_escape(GameEnums.DayResult.WON),
+func _test_only_a_won_last_day_with_every_task_done_hands_over(t: TestRunner) -> void:
+	var last := Tuning.RUN_LENGTH_DAYS
+	t.check(_hands_over(t, GameEnums.DayResult.WON, last, Tuning.RESISTANCE_GOAL, true),
 			"a won day 14 with every task complete hands over to the escape")
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
+	t.check(not _hands_over(t, GameEnums.DayResult.LOST_CRYING, last, Tuning.RESISTANCE_GOAL, true),
 			"a lost day 14 does not, however much was done")
-
-	run.resistance.sabotage_done = false
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
+	t.check(not _hands_over(t, GameEnums.DayResult.WON, last, Tuning.RESISTANCE_GOAL, false),
 			"nor a won day 14 with the errands run and the last night skipped")
-	run.resistance.sabotage_done = true
-	run.resistance.progress = Tuning.RESISTANCE_GOAL - 1
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
+	t.check(not _hands_over(t, GameEnums.DayResult.WON, last, Tuning.RESISTANCE_GOAL - 1, true),
 			"nor one short of the goal")
-
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.header.day = Tuning.RUN_LENGTH_DAYS - 1
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
+	t.check(not _hands_over(t, GameEnums.DayResult.WON, last - 1, Tuning.RESISTANCE_GOAL, true),
 			"and nor does a won day before the last one")
+
+## Whether ending a day of `day` with the given result, goal progress and sabotage hands over to the
+## escape: the `DayEnd` a director of a run of its own, over a bare clock, returns (a run of its own,
+## so nothing of the autoload's is touched; the clock is freed).
+func _hands_over(t: TestRunner, result: GameEnums.DayResult, day: int, progress: int, sabotaged: bool) -> bool:
+	var run := RunState.new()
+	var director := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend())
+	run.start_run(9182)
+	run.header().set_day(day)
+	run.resistance().set_progress(progress)
+	GivenRun.sabotage(run, sabotaged)
+	var clock := DayController.new()
+	clock.set_process(false)
+	t.add_child(clock)
+	clock.start(300.0)
+	director.use_the_world(null, null, clock)
+	var handed := director.finish_day(result).continues_into_the_escape()
+	clock.free()
+	return handed
 
 ## Every part word `--start-escape` recognises has to actually move her, onto ground she can
 ## stand on: the real `main` booted on each word, her position read off the building it builds.
-func _test_every_part_word_reaches_its_own_walkable_position(t) -> void:
-	for word in ["stairwell:left", "stairwell:right", "lobby", "basement", "floor:2", "floor:1"]:
+func _test_every_part_word_reaches_its_own_walkable_position(t: TestRunner) -> void:
+	for word: String in ["stairwell:left", "stairwell:right", "lobby", "basement", "floor:2", "floor:1"]:
 		var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING,
 				PackedStringArray(["--start-escape", word]))
 		var scene := Boot.interior(escape.main)
 		var her := Boot.player(escape.main)
 		var at := her.global_position
 		t.check(at != scene.start_world_position(), "'%s' teleports away from her own door" % word)
-		t.check(scene.map.is_walkable(scene.map.world_to_tile(at)),
+		t.check(scene.map().is_walkable(scene.map().world_to_tile(at)),
 				"'%s' lands on a walkable tile" % word)
 		# **And one she stays on.** A part word puts her down with nothing armed, and
 		# `process_player()` fires a transition on the frame she is standing on a door or the
 		# service exit — so a waypoint that is a threshold shows her the part on the other side of
 		# it rather than the part she asked for, silently, with the flag looking like it worked.
-		t.check(scene.map.transition_at(scene.map.world_to_tile(at)).is_empty(),
+		t.check(scene.map().transition_at(scene.map().world_to_tile(at)).is_empty(),
 				"'%s' lands somewhere that is not a door" % word)
 		_free_the_escape(t, escape)
 
@@ -2015,7 +2122,7 @@ func _test_every_part_word_reaches_its_own_walkable_position(t) -> void:
 ## The first half is the guard against a vacuous second: a bare director on the same day and the
 ## same heat does owe rows, so "the escape owes none" is about the escape rather than about the
 ## day being one that owes nothing.
-func _test_the_escape_owes_no_return_leg(t) -> void:
+func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 	var map := MapCache.of(SEEDS[0])
 	var an_act_iv_day := 13
 	t.check(Tuning.act_for_day(an_act_iv_day) >= 3
@@ -2025,48 +2132,44 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	bare.owe_the_return(an_act_iv_day, 0)
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
-	city.events.setup(city, city.map)
-	city.run.header.day = an_act_iv_day
-	GivenPlanner.hand_in(city.events, [] as Array[EventScheduler.Planned])
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
+	run.header().set_day(an_act_iv_day)
+	GivenPlanner.hand_in(RunCity.events(city), [] as Array[EventPlan])
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
+	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
 	EventBus.return_phase_started.emit()
-	t.check(city.events.owed_ahead() == 0,
+	t.check(RunCity.events(city).owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"
-					% city.events.owed_ahead())
+					% RunCity.events(city).owed_ahead())
 	city.free()
 
-## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
-## and the same city, a day's spec owes the return its rows and a spec that says it owes none
-## (`DaySpec.owes_a_return` false) is owed none, by the same `start_day()`. So what decides it is the
-## spec the run flow hands over (`EventManager.start_day()`), never a branch in the manager.
-func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
+## **A day's spec owes its return leg**: on an act IV day, the spec the game builds for a day
+## (`DaySpec.for_day()`) hands `EventManager.start_day()` a walk that owes the return its rows when
+## `return_phase_started` fires. That a spec that owes none is owed none is
+## `_test_the_escape_owes_no_return_leg`'s, on the escape's own spec.
+func _test_a_days_spec_owes_its_return_leg(t: TestRunner) -> void:
 	var an_act_iv_day := 13
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := RunCity.started_run(SEEDS[0])
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
-	city.events.setup(city, city.map)
-	city.run.header.day = an_act_iv_day
-	var owed := {}
-	for owes: bool in [true, false]:
-		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
-		spec.owes_a_return = owes
-		var consumed: Array[String] = []
-		city.events.start_day(spec, city.run.calendar.day_rng(an_act_iv_day), consumed)
-		var before := city.events.owed_ahead()
-		EventBus.return_phase_started.emit()
-		owed[owes] = city.events.owed_ahead() - before
-	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
-	t.check(int(owed[false]) == 0,
-			"and a spec that owes none is owed none on the same day (%d)" % owed[false])
+	RunCity.build(city, run, MapCache.of(SEEDS[0]))
+	run.header().set_day(an_act_iv_day)
+	var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
+	var consumed: Array[String] = []
+	RigStreets.begin(city.streets(), city.map(), spec)
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(an_act_iv_day), consumed)
+	var before := RunCity.events(city).owed_ahead()
+	EventBus.return_phase_started.emit()
+	var owed := RunCity.events(city).owed_ahead() - before
+	t.check(owed > 0, "a day's spec owes its return rows (%d)" % owed)
 	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
-## own plan is a second placement path that does not go through `EventScheduler.open_ground_for`
+## own plan is a second placement path that does not go through `RowGround.tiles_for()`
 ## or `SealPlanner.plan_day` — so the rule is asserted on this side too, over the whole plan: the
 ## trucks, vans, masked men and bursts on the open streets, and every seal body off them.
 ##
@@ -2074,10 +2177,10 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 ## chain.** `SealPlanner.plan_day` refuses that move, because a picture overlapping a picture is
 ## better than a city with no way out of it; the count is reported so an exception that stopped
 ## being rare would be visible rather than silent.
-func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
+func _test_nothing_the_escape_places_stands_in_a_street_tree(t: TestRunner) -> void:
 	var checked := 0
 	var in_a_tree := 0
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
@@ -2088,16 +2191,15 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for placement in EventScheduler.build_day(_city_spec(), rng, map, CalmAreas.of(map), [],
-				[], plan).placements():
-			var tile := map.world_to_tile(placement.position)
+		for placement in GameDawn.of(_city_spec(), rng, map).masts(_NO_MASTS).on(plan).plan().placements():
+			var tile := map.world_to_tile(placement.placed_at())
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"
-							% [seed_value, placement.def.id, tile])
+							% [seed_value, placement.row_id(), tile])
 			checked += 1
 		rng.seed = seed_value
 		for seal in SealPlanner.plan_day(map, _city_spec(), plan, rng):
-			if trees.has(map.world_to_tile(seal.position)):
+			if trees.has(map.world_to_tile(seal.placed_at())):
 				in_a_tree += 1
 			checked += 1
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
@@ -2133,9 +2235,10 @@ func _action(name: StringName) -> InputEventAction:
 ## `main` and closes it (`PauseScreen._unhandled_input()`), so what is checked is that it closes
 ## and no second pause opens over it; `main`'s own refusal to open over an open pause is not
 ## reachable by a real key while the screen answers first.
-func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
+func _test_the_escape_pauses_the_same_way_a_day_does(t: TestRunner) -> void:
 	var calls := {"quits": 0, "reloads": 0}
-	var hand := func(main: Node) -> void:
+	var hand := func(node: Node) -> void:
+		var main := node as Main
 		main.use_quit(func() -> void: calls["quits"] += 1)
 		main.use_reload(func() -> void: calls["reloads"] += 1)
 	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING, PackedStringArray(), hand)
@@ -2152,7 +2255,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	t.check(pause.is_open(), "Esc opens the pause")
 	t.get_viewport().push_input(_key(KEY_Q))
 	t.check(calls["quits"] == 1, "Q on the open pause reaches the same quit a day's pause reaches")
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 
 	# Her heading, held by the on-screen controls: let go while the pause is up, and given back by
@@ -2187,7 +2290,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	t.get_viewport().push_input(_action("pause"))
 	t.get_viewport().push_input(_key(KEY_R))
 	t.check(calls["reloads"] == 1, "and R on the open pause reaches the same restart a day's does")
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	_free_the_escape(t, escape)
 
@@ -2208,14 +2311,14 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 ## as on a day. **Booted for real** on the city section and walked through each screen the way the
 ## game reaches it — the brief, the outcome screen of a loss, the retry's brief, the epilogue —
 ## with every `Esc` pushed through the viewport and every continue pressed there.
-func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
+func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunner) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
 	var main := escape.main
 	var summary := Boot.summary(main)
 	var pause := Boot.pause(main)
 	var window := main.get_node("ReturnWindow") as ReturnWindow
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
-	var words := _section(DaySpec.Section.CITY).title
+	var words := _section(DaySpec.Section.CITY).title()
 
 	t.check(summary.is_showing() and title.text == words, "the section's brief is up")
 	t.get_viewport().push_input(_action("pause"))
@@ -2230,7 +2333,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.check(not pause.is_open(), "losing focus does not open the pause over it")
 	t.get_viewport().push_input(_action("pause"))
 	t.check(pause.is_open(), "Esc does, as over a lost day's outcome screen")
-	pause.close()
+	UI.dismiss(pause)
 	t.check(t.get_tree().paused and summary.is_showing(),
 			"and closing it leaves the outcome screen up and the tree paused")
 
@@ -2240,9 +2343,13 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.check(not pause.is_open(), "Esc does not open the pause over it")
 
 	await Boot.press_continue(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	for _frame in 3:
 		await t.get_tree().physics_frame
+	t.get_viewport().push_input(_action("pause"))
+	t.check(not pause.is_open() and not summary.is_showing(),
+			"Esc opens nothing while she is walked into the tunnel")
+	await _until_the_epilogue(t, main)
 	t.check(summary.is_showing() and title.text == Texts.FINALE_TITLE,
 			"out of the city, the epilogue is up")
 	t.get_viewport().push_input(_action("pause"))
@@ -2250,6 +2357,73 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not pause.is_open(), "and neither does losing focus")
 	_free_the_escape(t, escape)
+
+## Physics frames until the epilogue is up, at most a bridge's walk and then some.
+func _until_the_epilogue(t: TestRunner, main: Node) -> void:
+	for _frame in 1500:
+		if Boot.summary(main).is_showing():
+			return
+		await t.get_tree().physics_frame
+
+## **The threshold is the game's own, and the ending waits for the walk-in.** Booted for real on the
+## city section, for each way out: the point `Main` builds is the spine's own centre line (the
+## tunnel's and the bridge's own column) on the centre of `FinalePlanner.exit_tile()`'s row; a tile
+## short of it she is still in the city; on it the section is won and her control ends (she is led,
+## the world is frozen, no summary yet); the epilogue comes only once she is inside the tunnel's
+## opening, or across the whole deck `CityEdge` draws; and nothing of her own input steers her on
+## the way.
+func _test_the_game_walks_her_in_and_the_ending_waits_for_it(t: TestRunner) -> void:
+	for exit_kind: int in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
+		var tunnel := exit_kind == CityExit.Kind.TUNNEL
+		var name := "tunnel" if tunnel else "bridge"
+		var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
+		var main := escape.main
+		await Boot.press_continue(t, main)
+		var city := Boot.city(main)
+		var her := Boot.player(main)
+		var summary := Boot.summary(main)
+		var baby := Boot.baby(main)
+		baby.seed_meters(100.0, 10.0)
+		var spine_x := city.tunnel_world_position().x if tunnel else city.bridge_world_position().x
+		var row_y := city.map().tile_to_world(FinalePlanner.exit_tile(city.map(), exit_kind)).y
+		var threshold := Vector2(spine_x, row_y)
+		var point: Vector2 = Boot.day(main).spec().exit_points()[exit_kind]
+		t.check(point.is_equal_approx(threshold),
+				"the %s's threshold is the spine's centre line on its last row (%s, %s)"
+				% [name, point, threshold])
+
+		her.global_position = threshold + Vector2(0.0, float(Tuning.TILE_SIZE)) \
+				* (1.0 if tunnel else -1.0)
+		for _frame in 3:
+			await t.get_tree().physics_frame
+		t.check(Boot.day(main).is_running() and her.steering_direction() == Vector2.ZERO,
+				"a tile short of the %s's last row she is still in the city" % name)
+
+		her.global_position = threshold
+		for _frame in 3:
+			await t.get_tree().physics_frame
+		t.check(not Boot.day(main).is_running() and her.steering_direction() != Vector2.ZERO
+				and not summary.is_showing()
+				and t.get_tree().paused,
+				"on the %s's last row the section is won, her control ends and no summary is up yet"
+				% name)
+		var excitement := baby.excitement_level()
+		var sleepiness := baby.sleepiness_level()
+		var state := baby.condition()
+		await _until_the_epilogue(t, main)
+		var inside := her.global_position.y <= -CityEdge.TUNNEL_DEPTH_TILES * float(Tuning.TILE_SIZE) \
+				if tunnel else her.global_position.y >= city.map().world_size().y \
+						+ CityEdge.BRIDGE_DECK_PX
+		t.check(summary.is_showing() and inside,
+				"the epilogue comes once she is %s (%s)"
+				% ["inside the tunnel's opening" if tunnel else "across the whole deck",
+				her.global_position])
+		t.check(baby.excitement_level() == excitement and baby.sleepiness_level() == sleepiness
+				and baby.condition() == state,
+				("the baby's meters and state stand still for the walk, as they were at the %s's "
+				+ "last row (excitement %.1f then, %.1f at the epilogue)")
+				% [name, excitement, baby.excitement_level()])
+		_free_the_escape(t, escape)
 
 # ------------------------------------------------------ a resumed escape, and a handover ---
 
@@ -2261,14 +2435,14 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 ## windowed release run), handed a fresh run of the test's own that the save is read into, so what
 ## is checked is the boot's own decision — whether the section came from the file — not a screen
 ## this test opened by hand; the title's start is a press on its Tap button through the viewport.
-func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
+func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t: TestRunner) -> void:
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false)
 	var save := GameSave.new(_SCRATCH_SAVE)
 	save.configure(config)
 	var closed := RunState.new()
 	closed.start_run(SEEDS[0])
-	closed.header.day = Tuning.RUN_LENGTH_DAYS
-	closed.facts.escape_section = DaySpec.Section.BUILDING
+	closed.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	closed.facts().set_escape_section(DaySpec.Section.BUILDING)
 	t.check(save.write(closed, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
 	save.free()
@@ -2276,21 +2450,21 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,
-			func(main: Node) -> void: main.use_sitting_home(home))
+			func(node: Node) -> void: (node as Main).use_sitting_home(home))
 	var main := booted.main
 	var day := Boot.day(main)
-	var length: float = day.spec.length
+	var length: float = day.spec().seconds_on_the_clock()
 
-	t.check(day.spec.section == DaySpec.Section.BUILDING,
+	t.check(day.spec().section_kind() == DaySpec.Section.BUILDING,
 			"the boot read the section off the save")
 	t.check(Boot.title(main).is_open() and not Boot.summary(main).is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
 	t.check(Boot.mode_name_drawn(Boot.title(main)) != "", "and names the mode, which the save already fixed")
 	t.check(Boot.title(main).is_open() and t.get_tree().paused, "and the boot is behind its title")
 	t.check(t.get_tree().paused and not day.can_process()
-			and is_equal_approx(day.time_remaining, length),
+			and is_equal_approx(day.seconds_left(), length),
 			"with the section's whole clock standing still behind the title (%.2f of %.2f)"
-			% [day.time_remaining, length])
+			% [day.seconds_left(), length])
 
 	await Boot.press_title(t, main, "Tap")
 	t.check(not Boot.title(main).is_open(), "pressing start closes the title")
@@ -2298,10 +2472,10 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(Boot.summary(main).is_showing() and title_label.text == "Escape the building",
 			"and raises the section's own brief, in front of the section already built")
 	t.check(not Boot.title(main).is_open(), "the title is behind her")
-	t.check(t.get_tree().paused and is_equal_approx(day.time_remaining, length),
+	t.check(t.get_tree().paused and is_equal_approx(day.seconds_left(), length),
 			"the clock still standing still behind the brief")
 
-	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas.close_loading_window()
+	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas().close_loading_window()
 	t.get_tree().paused = false
 	booted.free_all()
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
@@ -2316,27 +2490,27 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 ## `main` gives it. The building's brief is left to the walker rather than continued here: a second
 ## continue for it, still in flight when the city's brief comes up, would press the city's brief in
 ## the rig's place.
-func _test_a_route_rig_carries_the_building_on_into_the_city(t) -> void:
+func _test_a_route_rig_carries_the_building_on_into_the_city(t: TestRunner) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING,
 			PackedStringArray(["--route", "tunnel"]))
 	var main := escape.main
 	var summary := Boot.summary(main)
 	await _let_frames_pass(t, 4)
 	t.check(main.get_node_or_null("RouteRig") == null and not summary.is_showing()
-			and Boot.day(main).spec.section == DaySpec.Section.BUILDING,
+			and Boot.day(main).spec().section_kind() == DaySpec.Section.BUILDING,
 			"a route booted into the building has no city to walk yet, and its walker pressed the"
 			+ " building's brief")
 	Boot.interior(main).exit_requested.emit()
 	t.check(main.get_node_or_null("RouteRig") != null, "winning the building builds the rig with the city")
 	await _let_frames_pass(t, 4)
-	t.check(Boot.day(main).spec.section == DaySpec.Section.CITY and Boot.day(main).is_running()
+	t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and Boot.day(main).is_running()
 			and not summary.is_showing(),
 			"the rig pressed the city brief's continue: the city is walked")
 	t.check(not t.get_tree().paused, "and the tree runs")
 	_free_the_escape(t, escape)
 
 ## held before the branch in `main` was removed, and guards that the removal changed nothing.
-func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
+func _test_a_route_rig_boots_the_city_section_and_walks(t: TestRunner) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY,
 			PackedStringArray(["--route", "tunnel"]))
 	var main := escape.main
@@ -2348,7 +2522,7 @@ func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
 
 ## The rig presses a section's first brief only: a retry brief, raised after a loss, stays up, so a
 ## lost city section stops there instead of retrying forever. Fails without the `_pressed` guard.
-func _test_a_route_rig_presses_only_the_first_brief_of_a_section(t) -> void:
+func _test_a_route_rig_presses_only_the_first_brief_of_a_section(t: TestRunner) -> void:
 	var rig := RouteRig.new()
 	t.add_child(rig)
 	var presses := [0]
@@ -2367,7 +2541,7 @@ func _test_a_route_rig_presses_only_the_first_brief_of_a_section(t) -> void:
 	t.check(presses[0] == 2, "a day's brief is left alone")
 	rig.free()
 
-func _let_frames_pass(t, frames: int) -> void:
+func _let_frames_pass(t: TestRunner, frames: int) -> void:
 	for i in frames:
 		await t.get_tree().process_frame
 
@@ -2376,7 +2550,7 @@ func _let_frames_pass(t, frames: int) -> void:
 ## it as read off a save, and it opens straight on the building's own brief, with no title in front
 ## of it and the section's clock standing still behind the brief. Booted for real, on a run of the
 ## test's own that holds the section as the handover leaves it.
-func _test_a_handover_does_not_open_on_the_title(t) -> void:
+func _test_a_handover_does_not_open_on_the_title(t: TestRunner) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING)
 	var main := escape.main
 	var title: Label = Boot.summary(main).get_node("Root/Center/Lines/Title")
@@ -2384,7 +2558,8 @@ func _test_a_handover_does_not_open_on_the_title(t) -> void:
 	t.check(Boot.summary(main).is_showing() and title.text == "Escape the building",
 			"it opens straight on the section's own brief")
 	t.check(t.get_tree().paused and not Boot.day(main).can_process()
-			and is_equal_approx(Boot.day(main).time_remaining, Boot.day(main).spec.length),
+			and is_equal_approx(Boot.day(main).seconds_left(),
+					Boot.day(main).spec().seconds_on_the_clock()),
 			"with the section's whole clock standing still behind it")
 	_free_the_escape(t, escape)
 
@@ -2395,24 +2570,25 @@ func _test_a_handover_does_not_open_on_the_title(t) -> void:
 ## restart button's (`DaySummary.restart_requested`); and each hands the sitting a fresh run, with
 ## no escape section, so the next boot starts it rather than opening the escape again. Its
 ## `_save.clear()` is exercised, at a scratch path, by `tests/test_save_wiring.gd`.
-func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
+func _test_the_held_restart_from_the_escape_clears_the_section(t: TestRunner) -> void:
 	var reloads := [0]
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY, PackedStringArray(),
-			func(main: Node) -> void: main.use_reload(func() -> void: reloads[0] += 1))
+			func(node: Node) -> void: (node as Main).use_reload(func() -> void: reloads[0] += 1))
 	var main := escape.main
 	await Boot.press_continue(t, main)
 	t.get_viewport().push_input(_action("pause"))
 	t.get_viewport().push_input(_key(KEY_R))
-	Boot.pause(main).close()
+	UI.dismiss(Boot.pause(main))
 	t.get_tree().paused = false
 	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
 	var sitting := escape.home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
-	var after_the_pause := sitting.run
+	var after_the_pause := sitting.take_the_run()
 	Boot.summary(main).restart_requested.emit()
 	t.check(reloads[0] == 2,
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
-	t.check(sitting.run != escape.run and sitting.run != after_the_pause
-			and sitting.run.facts.escape_section == DaySpec.Section.NONE,
+	var after_the_restart := sitting.take_the_run()
+	t.check(after_the_restart != escape.run and after_the_restart != after_the_pause
+			and after_the_restart.facts().escape_section() == DaySpec.Section.NONE,
 			"each restart hands the sitting a fresh run, with no escape section — the run the "
 			+ "next boot starts")
 	_free_the_escape(t, escape)

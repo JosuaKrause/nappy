@@ -1,7 +1,7 @@
 extends RefCounted
 ## Measurement probe for olive-badger: how many charging dogs she meets on day 3, now that the
 ## lesson is a rigged bag of one in front of the route's bag and the ordinary bag holds
-## `EventDirector.ROUTE_BAG_MARBLES_OF` dogs (inbox #566 in feathery-stork). Not a suite: it prints rather than asserting, so
+## `EventDirector.ROUTE_BAG_SHARE_OF` share of dogs (inbox #566 in feathery-stork). Not a suite: it prints rather than asserting, so
 ## it lives under `tests/probes/`, where the runner never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/olive_badger_day3_dogs.gd
@@ -17,9 +17,9 @@ const BASE_SEED := 772041
 const STEP := 0.2
 const DOG := "charging_dog"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var cap := EventCatalogue.by_id(DOG).max_per_day
+	var cap := EventCatalogue.by_id(DOG).most_in_a_day()
 	var dogs_sum := 0
 	var lessons := 0
 	var at_cap := 0
@@ -28,23 +28,22 @@ func run(t) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
-		var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-				DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), [], [],
-						RouteTree.for_day(map, day), 0).placements()
+		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
+		var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+				.on(RouteTree.for_day(map, day)).plan().placements()
 		var bought_a_dog := false
 		for plan in planned:
-			if plan.def.id == DOG:
+			if plan.row_id() == DOG:
 				bought_a_dog = true
 		if not bought_a_dog:
 			no_dog_bought += 1
 		var director := EventDirector.new(map)
 		var director_rng := RandomNumberGenerator.new()
-		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
-		director.start_day(day, planned, director_rng)
+		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
+		director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var met := _walk_a_day(map, director, day)
 		var dogs := met.count(DOG)
 		dogs_sum += dogs
@@ -75,7 +74,7 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 		var step := minf(STEP, day_len - t)
 		var due: Array = director.due(step, pos, vel)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 		pos += vel * step
 		if pos.y < 0.0 or pos.y > y_max:
 			vel.y = -vel.y

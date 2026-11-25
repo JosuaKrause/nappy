@@ -49,13 +49,24 @@ class Tiles extends RefCounted:
 	var triangles: Array[Vector2i] = []
 
 var _tiles := Tiles.new()
-var streamed := false
+## Whether the chunks are prepared near the view as it moves rather than all at once
+## (`stream_in_chunks()`).
+var _streamed := false
 var _by_chunk: Dictionary = {}
 var _resident: Dictionary = {}
 var _rects: Array[Rect2i] = []
 ## Which tiles a shadow may fall on, or empty for every tile. A task scene's stretch casts no shadow
-## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground.
-var falls_on := Callable()
+## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground. Handed in
+## by `use_falls_on()`.
+var _falls_on := Callable()
+
+## Has the shadows prepare the chunks near the view as it moves, never the whole city at once.
+func stream_in_chunks() -> void:
+	_streamed = true
+
+## Hands in which tiles a shadow may fall on: a callable taking a tile and answering whether it may.
+func use_falls_on(filter: Callable) -> void:
+	_falls_on = filter
 
 ## What every chunk's shaded tiles are drawn through (`ShadowDrawer`), handed in by the city before
 ## it builds.
@@ -63,18 +74,26 @@ var drawer: ShadowDrawer
 
 ## `--skip shadows`, handed in by the city before it builds. It controls drawing only: shadow
 ## geometry is still prepared per nearby chunk and reconstructed when a chunk returns.
-var skip_draw := false
+var _skip_draw := false
+
+## Lays the shaded tiles through `through` (see `drawer`).
+func draw_through(through: ShadowDrawer) -> void:
+	drawer = through
+
+## Draws no shadows when `skipped` (see `_skip_draw`).
+func skip_drawing(skipped: bool) -> void:
+	_skip_draw = skipped
 
 ## Stores `rects` — a city's building footprints, in tile coordinates
-## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
+## (`CityMap.building_lots()`) — as the source for shadow geometry. Non-streamed use also computes
 ## and builds all drawing chunks here; streamed use prepares nearby chunks on demand.
 func set_buildings(rects: Array[Rect2i]) -> void:
 	_rects = rects
-	if streamed:
+	if _streamed:
 		return
-	_tiles = _on_the_ground(compute(rects))
+	_tiles = _on_the_ground(_compute(rects))
 	_by_chunk = split(_tiles)
-	if not streamed:
+	if not _streamed:
 		_rebuild_chunks()
 
 func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> void:
@@ -109,16 +128,16 @@ func _tiles_for_chunk(key: Vector2i) -> Tiles:
 	for rect in _rects:
 		if rect.intersects(area.grow(1)):
 			nearby.append(rect.intersection(area.grow(1)))
-	var tiles := _on_the_ground(compute(nearby))
-	tiles.full = tiles.full.filter(func(tile: Vector2i): return area.has_point(tile))
-	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i): return area.has_point(tile))
+	var tiles := _on_the_ground(_compute(nearby))
+	tiles.full = tiles.full.filter(func(tile: Vector2i) -> bool: return area.has_point(tile))
+	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i) -> bool: return area.has_point(tile))
 	return tiles
 
-## `tiles` less those `falls_on` refuses.
+## `tiles` less those `_falls_on` refuses.
 func _on_the_ground(tiles: Tiles) -> Tiles:
-	if falls_on.is_valid():
-		tiles.full = tiles.full.filter(falls_on)
-		tiles.triangles = tiles.triangles.filter(falls_on)
+	if _falls_on.is_valid():
+		tiles.full = tiles.full.filter(_falls_on)
+		tiles.triangles = tiles.triangles.filter(_falls_on)
 	return tiles
 
 func _chunk_bounds(key: Vector2i) -> Rect2:
@@ -137,7 +156,7 @@ func _rebuild_chunks() -> void:
 		remove_child(child)
 		child.free()
 	var by_chunk := split(_tiles)
-	for key in by_chunk:
+	for key: Vector2i in by_chunk:
 		var tiles: Tiles = by_chunk[key]
 		var chunk := Node2D.new()
 		chunk.name = "Chunk%d_%d" % [key.x, key.y]
@@ -146,9 +165,8 @@ func _rebuild_chunks() -> void:
 		add_child(chunk)
 
 ## `tiles` dealt out into one `Tiles` per occupied chunk, keyed by the chunk's own coordinates —
-## pulled out of `_rebuild_chunks()` for the same reason `compute()` is pulled out of
-## `set_buildings()`: `tests/test_building_shadows.gd` can then hold the one property the split has
-## to have, that it is a **partition** of what `compute()` produced and not a filter of it. A tile
+## pulled out of `_rebuild_chunks()` so the one property the split has to have can be held, that it
+## is a **partition** of what `_compute()` produced and not a filter of it. A tile
 ## dropped here is a shadow that silently stops being drawn, and nothing else in the frame would
 ## say so.
 ##
@@ -170,15 +188,14 @@ static func _chunk_for(by_chunk: Dictionary, tile: Vector2i) -> Tiles:
 	var chunk: Tiles = by_chunk[key]
 	return chunk
 
-## The geometry, pulled out of `set_buildings()` so `tests/test_building_shadows.gd` can assert the
-## tile sets directly without building a scene. Tile `y` increases downward, the same convention
+## The geometry, pulled out of `set_buildings()` and `_tiles_for_chunk()`, which both ask it. Tile `y` increases downward, the same convention
 ## `CityMap` uses everywhere else, so "north" is `-y` and a light from the north-east casts toward
 ## the south-west: a `(1, -1)` step off a shaded tile lands back on the building that casts it.
 ##
 ## Runs off the occupied tiles rather than scanning the map: every tile satisfying either rule has
 ## an occupied neighbour by definition, so offsetting from each occupied tile finds every shaded
 ## tile without a pass over ground that holds none.
-static func compute(rects: Array[Rect2i]) -> Tiles:
+static func _compute(rects: Array[Rect2i]) -> Tiles:
 	var occupied := {}
 	for rect in rects:
 		for y in range(rect.position.y, rect.end.y):
@@ -187,7 +204,7 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 	var tiles := Tiles.new()
 	var seen_full := {}
 	var seen_triangle := {}
-	for tile in occupied:
+	for tile: Vector2i in occupied:
 		# `tile` is the north-east neighbour of the candidate full-shade tile at `tile + (-1, 1)`.
 		var full_candidate: Vector2i = tile + Vector2i(-1, 1)
 		if not occupied.has(full_candidate) and not seen_full.has(full_candidate):
@@ -208,6 +225,6 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
 	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
-	if skip_draw:
+	if _skip_draw:
 		return
 	drawer.draw(canvas, tiles)

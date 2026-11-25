@@ -26,43 +26,59 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
+## `_moves_from_everywhere()`'s cities: `SEEDS` and fourteen more.
+const MOVE_SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555, 77, 11, 2024,
+		31337, 8675309, 1917501, 123456, 99, 7, 42, 1001, 65537, 424242, 3761459859]
 const TOUCH_SHORT := 34.0
 ## The seed each run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_reachability(t)
-	_on_screen(t)
-	_task_guards(t)
+	# Measured at the notice radii as written and as shipped (`EventCatalogue.CHARGER_REACH`), at
+	# the shipped warning, so what a wider notice does to the guards is read side by side. The
+	# shipped reach first: a timing that plays as the one in use leaves the one held, so handing
+	# `was` back after another puts the very object back.
+	var was := EventCatalogue.charger_timing()
+	for reach: float in [EventCatalogue.CHARGER_REACH, 1.0]:
+		EventCatalogue.use_charger_timing(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
+		var notice := EventCatalogue.mark_guard().notice_within()
+		print("== robber notice %.0fpx (reach %.2f) ==" % [notice, reach])
+		_on_screen(t)
+		_moves_from_everywhere(t)
+		_task_guards(t)
+	EventCatalogue.use_charger_timing(was)
 
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
-func _task_guards(t) -> void:
+func _task_guards(t: TestRunner) -> void:
 	var placed := 0
 	var unguarded := 0
 	var seen := 0
 	for seed_value in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
-		for day in [13]:
-			city.run.facts.completed_resistance_alley_tiles = []
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
+		for day: int in [13]:
+			GivenRun.alley_tiles(run, [])
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			city.run.resistance.completed_steps = done
-			var state := CityState.new()
-			city.run.attempt_spend.city_state = state
-			state.begin_day(city.map.block_plans, day)
+			GivenRun.completed_steps(run, done)
+			var state := run.attempt_spend().block_arcs()
+			state.reset()
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+					city.map().doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map(), run, RunCity.events(city), city.streets(),
+					city.fronts(), city, null,
+					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var mark := director.current_step()
 			if mark == null or not mark.is_pickup:
@@ -74,12 +90,12 @@ func _task_guards(t) -> void:
 			camera.name = "Camera2D"
 			player.add_child(camera)
 			t.add_child(player)
-			city.events.use_player(player)
+			RunCity.events(city).use_player(player)
 			player.set_physics_process(false)
 			player.global_position = her
-			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+			RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			director.set_sight(city.events.sees)
+			director.set_sight(RunCity.events(city).sees)
 			director._on_contact_completed(mark.index)
 			placed += 1
 			var guard: EventInstance = director._task_guard
@@ -101,17 +117,17 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
 
-func _reachability(t) -> void:
+func _reachability(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
-	var names := ["far end"]
+	var names: Array[String] = ["far end"]
 	var asleep := {"through": [0], "passage": [0]}
 	var counted := {"through": 0, "passage": 0}
 	var unguarded := {"through": [0], "passage": [0]}
-	var too_close := [0]
+	var too_close: Array[int] = [0]
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
@@ -142,7 +158,7 @@ func _reachability(t) -> void:
 			if _stays_asleep(robbery, guard_at, [outside, touch, outside]):
 				asleep[kind][0] += 1
 		director.free()
-	for kind in ["through", "passage"]:
+	for kind: String in ["through", "passage"]:
 		for i in names.size():
 			print("[m213] %-8s %-16s asleep %4d of %4d (%.0f%%), unguarded %d" % [kind, names[i],
 					asleep[kind][i], counted[kind],
@@ -154,7 +170,7 @@ func _reachability(t) -> void:
 				% [names[i], total, all, 100.0 * total / maxf(1.0, all), too_close[i]])
 	t.check(true, "probe ran")
 
-func _on_screen(t) -> void:
+func _on_screen(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	# Her view is a `VisibleView` of its own, and the siting handed to each director sees it: this
@@ -169,7 +185,7 @@ func _on_screen(t) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(map, own_run, null, null, null, null, null,
-				SpawnSiting.new(map, map.navigator(), func() -> VisibleView: return view))
+				SpawnSiting.new(map, Navigator.new(map), func() -> VisibleView: return view))
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)
@@ -201,27 +217,74 @@ func _on_screen(t) -> void:
 			% [relocations, marks_seen, guards_centre_seen, guards_seen, unguarded])
 	t.check(true, "probe ran")
 
+## **A moved mark from wherever she stands**: `MOVE_SEEDS`' cities, her on every walkable tile of
+## every other row and column, her screen round her as in `_on_screen()`. Counted: where the mark
+## moves at all (`_nearest_alley_within()`), how far from her it lands, and how often the guard
+## `_maybe_set_a_trap()` would stand for it finds no spot, his notice of her and her view both
+## refused (brisk-wombat).
+func _moves_from_everywhere(t: TestRunner) -> void:
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
+	var view := VisibleView.new()
+	var asked := 0
+	var moved := 0
+	var unguarded := 0
+	var landed := 0.0
+	for seed_value in MOVE_SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		var director := ResistanceDirector.new()
+		director.setup(map, own_run, null, null, null, null, null,
+				SpawnSiting.new(map, Navigator.new(map), func() -> VisibleView: return view))
+		director._day = 6
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("m213-everywhere:%d" % seed_value)
+		director._rng = rng
+		var size := map.size_in_tiles()
+		for y in range(0, size.y, 2):
+			for x in range(0, size.x, 2):
+				var tile := Vector2i(x, y)
+				if not map.is_walkable(tile):
+					continue
+				var her := map.tile_to_world(tile)
+				view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
+				director.set_sight(view.sees)
+				asked += 1
+				var mark := director._nearest_alley_within(her)
+				if mark == Vector2.INF:
+					continue
+				moved += 1
+				landed += mark.distance_to(her)
+				if director._guard_position(rng, mark, true, her, true) == Vector2.INF:
+					unguarded += 1
+		director.free()
+	print("[m213] from everywhere, %d cities: asked %d, moved %d, unguarded %d (%.1f%%), mean %.0fpx away"
+			% [MOVE_SEEDS.size(), asked, moved, unguarded, 100.0 * unguarded / maxf(moved, 1.0),
+			landed / maxf(moved, 1.0)])
+	t.check(true, "probe ran")
+
 ## Whether a box `half_w` by `half_h` around `at` overlaps the unrotated screen around `her`.
 func _shows(at: Vector2, her: Vector2, half_w: float, half_h: float) -> bool:
 	return absf(at.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x + half_w \
 			and absf(at.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y + half_h
 
 func _in_a_through_alley(map: CityMap, tile: Vector2i) -> bool:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			return true
 	return false
 
 func _stays_asleep(robbery: EventDef, guard_at: Vector2, legs: Array[Vector2]) -> bool:
+	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(robbery, guard_at)
+	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(robber_where))
 	var woke := false
 	for leg in legs.size() - 1:
 		var from: Vector2 = legs[leg]
 		var to: Vector2 = legs[leg + 1]
 		var steps := ceili(from.distance_to(to) / 8.0)
 		for s in steps + 1:
-			robber.player_at = from.lerp(to, float(s) / float(maxi(steps, 1)))
+			robber_where.tell(from.lerp(to, float(s) / float(maxi(steps, 1))))
 			robber.step(STEP)
 			if not robber.is_waiting():
 				woke = true

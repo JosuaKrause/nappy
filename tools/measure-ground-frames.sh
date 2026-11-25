@@ -8,10 +8,13 @@ usage: tools/measure-ground-frames.sh --godot PATH [--output NEW_DIR] [--help|-h
 
 Compare the three ground preparation modes (--ground-mode 1, 2 and 3: every needed region
 whole in its frame, at most one whole region a frame, one region stepped across frames) of
-this checkout's committed HEAD, in one clean detached checkout, with one collector.
+this checkout's committed HEAD, in one clean detached checkout it removes itself, with one collector.
+It checks the hashes of the runtime and the collector around every launch, rejects a capture whose
+city ran another mode or whose covered window forced a draw, and records the load average before
+each capture.
 Runs one warmup per mode, then three rotated interleaved trials each, serially. A capture
 waits for every other engine process (one named Godot or named as --godot's binary) to end
-first, and one another engine ran beside is kept under a rejected name and taken again in the
+first (up to five minutes), and one another engine ran beside is kept under a rejected name and taken again in the
 same slot, up to five attempts.
 Requires git, jq, shasum and a native display; retain results.json and the source manifest.
 Full logs and per-frame CSV files remain in the fresh scratch directory.

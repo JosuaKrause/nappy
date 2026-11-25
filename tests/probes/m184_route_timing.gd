@@ -36,14 +36,14 @@ extends RefCounted
 ## (`Tuning.RESISTANCE_GOAL` earlier tasks done), which a bare `--day 14` subprocess with nothing
 ## played first never carries. `calm` and `home` still time normally on that day.
 
-const DAYS := [6, 7, 8, 9, 10, 11, 12, 13, 14]
+const DAYS: Array[int] = [6, 7, 8, 9, 10, 11, 12, 13, 14]
 ## The same spread `tests/test_full_run_a.gd`, `_b.gd` and `_c.gd` already use, for the same reason: a single city can
 ## be lucky, and a fact about one seed is not yet a fact about the day.
-const SEEDS := [4242, 90210, 1234567]
+const SEEDS: Array[int] = [4242, 90210, 1234567]
 const _TIMEOUT_SECONDS := 220.0
 const _POLL_MSEC := 250
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M184 — does day N fit its clock, mark -> task -> calm -> home ==")
 	print("%d days x %d seeds, day length %.0fs" % [DAYS.size(), SEEDS.size(), Tuning.day_length(6)])
 	var rows: Array[String] = []
@@ -162,7 +162,7 @@ func _parse_log(path: String) -> Dictionary:
 			# `WON` can fire before `_arrive()`'s tighter `_ARRIVE_RADIUS` does, so a day this
 			# table calls "home" may never print `RouteRig`'s own "reached 'home'" line at all —
 			# this is the only record of when she actually got there. `target` is always `home`,
-			# the one word `_current_word` can be while `DayController.phase` is `RETURNING`.
+			# the one word `_current_word` can be while `DayController.phase()` is `RETURNING`.
 			reached[target] = elapsed
 			outcome = "won (before the rig's own arrival check)"
 		elif text.contains("day ended"):

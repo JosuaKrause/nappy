@@ -16,7 +16,11 @@ var _building: Building
 ## its own, and stands each unit for real.
 var _roof := RecordingRoofDrawer.new()
 var _water: SceneryWater
+## The south water's tile the fixture's water draws from, on a clock that pauses with the fixtures.
+var _tile: SouthWaterTile
 var _events: Array[EventInstance] = []
+## What each event's drawer saw built, by event.
+var _seen: Dictionary[EventInstance, SeeingDrawer] = {}
 var _output := OS.get_environment("SCENERY_CAPTURE_OUTPUT")
 ## The library the fixture's events draw from, holding their page as a manager would.
 var _atlas := AtlasLibrary.new()
@@ -33,18 +37,19 @@ func _ready() -> void:
 	add_child(_fixtures)
 	_roof.real = RoofDrawer.new(_atlas)
 	_building = Building.new()
-	_building.atlas = _atlas
-	_building.roof_drawer = _roof
-	_building.footprint = Vector2(192, 192)
-	_building.height = 64
-	_building.district = GameEnums.BlockPurpose.INDUSTRIAL
+	_building.equip(_atlas, _roof, FrontDrawer.new(_atlas))
+	_building.stand_on(Rect2i(), Vector2(192, 192), _building.look_variant(),
+			GameEnums.BlockPurpose.INDUSTRIAL, 64)
 	_building.position = Vector2(205, 438)
 	_building.scale = Vector2.ONE * 1.7
 	_fixtures.add_child(_building)
+	# Equipped as the city equips it, the building waits for the residency, which stands a building
+	# in view up.
+	_building.residence().set_resident(true)
 	for variant in 200:
 		if not _rotors().is_empty():
 			break
-		_building.variant = variant + 1
+		_building.draw_as(_building.district(), variant + 1, _building.height())
 	assert(not _rotors().is_empty())
 	_watch(_building, "building_static")
 	for entry in _roof.standing():
@@ -55,6 +60,7 @@ func _ready() -> void:
 	_event("car_accident", false, Vector2(670, 410), 2.0)
 	_event("burst_water_main", true, Vector2(1000, 380), 1.6)
 	_event("car_accident", true, Vector2(1160, 380), 1.6)
+	_watch_the_events()
 	_water = SceneryWater.new()
 	_water.position = Vector2(40, 495)
 	_water.scale = Vector2.ONE * 1.3
@@ -63,6 +69,14 @@ func _ready() -> void:
 	for y in 4:
 		for x in 8:
 			cells.append(Vector2i(x, y))
+	_tile = SouthWaterTile.new()
+	_fixtures.add_child(_tile)
+	_tile.keep_drawing(true)
+	var clock := WaterClock.new()
+	clock.name = "WaterClock"
+	clock.tile = _tile
+	_fixtures.add_child(clock)
+	_water.use_tile(_tile)
 	_water.configure(cells)
 	_watch(_water, "water_surface")
 	if DisplayServer.get_name() == "headless":
@@ -76,6 +90,16 @@ func _exit_tree() -> void:
 	if _fixtures != null:
 		_atlas.release(&"events")
 
+## The water's clock as the ground keeps it: advanced on its own process frames, which pause with
+## the fixtures, and handed to the tile.
+class WaterClock extends Node:
+	var tile: SouthWaterTile
+	var elapsed := 0.0
+
+	func _process(delta: float) -> void:
+		elapsed += delta
+		tile.set_clock(elapsed)
+
 ## The turning rotor of every vent the building was told to stand.
 func _rotors() -> Array[SceneryLayer]:
 	var rotors: Array[SceneryLayer] = []
@@ -85,50 +109,78 @@ func _rotors() -> Array[SceneryLayer]:
 			rotors.append(object.rotor)
 	return rotors
 
+## The event's own drawer, which paints as the real one does and keeps the scenery it was asked to
+## build, so the probe finds the layers an event's slices stand without asking the event.
+class SeeingDrawer extends EventDrawer:
+	var sceneries: Array[EventScenery] = []
+
+	## Overrides EventDrawer.scenery.
+	func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
+			band: Rect2) -> EventScenery:
+		var built := super(picture, extent, anchor, shadow, band)
+		sceneries.append(built)
+		return built
+
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
-	event.atlas = _atlas
+	var drawer := SeeingDrawer.new(_atlas)
 	event.setup(EventCatalogue.by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
-			EastWestStreet.new() if vertical else WorldMap.open_ground())
+			EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+				.drawn_from(_atlas) \
+				.drawing_through(drawer))
 	event.scale = Vector2.ONE * factor
 	_fixtures.add_child(event)
 	_events.append(event)
+	_seen[event] = drawer
 	_watch(event, id + "_owner")
-	# The scene is drawn in slices beside the event, each with its part's scenery.
-	for slice in (event.look as SpreadLook).slices():
-		for scenery in slice.get_children():
-			if not scenery is EventScenery:
-				continue
-			var split := _split_by_animation(scenery as EventScenery)
+
+## Watches every scenery layer of the events, by kind: the scene is drawn in slices beside each
+## event, each with its part's scenery, and the slices go into the world on the idle frame after the
+## event is made, so this waits a frame and a drawn frame for them before it looks.
+func _watch_the_events() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for event in _events:
+		var id := event.row_id()
+		for scenery in _seen[event].sceneries:
+			var split: Array = await _split_by_animation(event, scenery)
 			for layer: SceneryLayer in split[1]:
 				_watch(layer, id + "_static")
 			for layer: SceneryLayer in split[0]:
 				_watch(layer, id + "_motion")
 
-## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its `set_frame()`
-## turns to their alternate frame, the still ones the rest. The frame it had is put back.
-func _split_by_animation(scenery: EventScenery) -> Array:
+## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its
+## `set_frame()` draws again when it turns them, counted off each layer's `draw` signal; the still
+## ones the rest. `event`'s own process frame, which shows its clock's frame, is held meanwhile, and
+## its next one puts its frame back.
+func _split_by_animation(event: EventInstance, scenery: EventScenery) -> Array:
 	var layers: Array[SceneryLayer] = []
 	for child in scenery.get_children():
 		if child is SceneryLayer:
 			layers.append(child)
-	var had := {}
-	for layer in layers:
-		had[layer] = layer.frame_b
+	event.set_process(false)
 	scenery.set_frame(true)
-	var turned_on: Array[SceneryLayer] = []
-	turned_on.assign(layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b))
+	await get_tree().process_frame
+	var drawn := {}
+	var counters := {}
+	for layer in layers:
+		drawn[layer] = 0
+		counters[layer] = func() -> void: drawn[layer] += 1
+		layer.draw.connect(counters[layer])
 	scenery.set_frame(false)
+	await get_tree().process_frame
+	for layer in layers:
+		layer.draw.disconnect(counters[layer])
+	event.set_process(true)
 	var moving: Array[SceneryLayer] = []
-	moving.assign(turned_on.filter(func(l: SceneryLayer) -> bool: return not l.frame_b))
+	moving.assign(layers.filter(func(l: SceneryLayer) -> bool: return drawn[l] > 0))
 	var still: Array[SceneryLayer] = []
 	still.assign(layers.filter(func(l: SceneryLayer) -> bool: return not moving.has(l)))
-	scenery.set_frame(not moving.is_empty() and had[moving[0]])
 	return [moving, still]
 
 func _watch(item: CanvasItem, key: String) -> void:
 	_counts[key] = 0
-	item.draw.connect(func():
+	item.draw.connect(func() -> void:
 		if _recording:
 			_counts[key] += 1)
 
@@ -160,13 +212,13 @@ func _capture() -> void:
 
 func _finish(duration: float) -> void:
 	_recording = false
-	var before := [_building._vent_timer, _water.elapsed, _events[0].clock()]
+	var before := [_building._vent_timer, _ripple_clock(), _events[0].clock()]
 	get_tree().paused = true
 	await get_tree().create_timer(0.25, true).timeout
-	var paused := [_building._vent_timer, _water.elapsed, _events[0].clock()]
+	var paused := [_building._vent_timer, _ripple_clock(), _events[0].clock()]
 	get_tree().paused = false
 	await get_tree().create_timer(0.15, true).timeout
-	var resumed := [_building._vent_timer, _water.elapsed, _events[0].clock()]
+	var resumed := [_building._vent_timer, _ripple_clock(), _events[0].clock()]
 	var static_held := true
 	for key: String in _counts:
 		if key.ends_with("static") or key.ends_with("owner") or key == "water_surface":
@@ -185,6 +237,11 @@ func _finish(duration: float) -> void:
 	print("SCENERY_RUNTIME " + JSON.stringify(metadata.duplicate().merged({"frames": _frames.size()}, true)))
 	get_tree().quit(0 if static_held and animated and before == paused and resumed != paused else 1)
 
+## Where the water is in its animation: the clock its tile's shader is drawing with.
+func _ripple_clock() -> float:
+	var lines := (_tile.get_child(0) as CanvasItem).material as ShaderMaterial
+	return float(lines.get_shader_parameter("elapsed"))
+
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1280, 720), Color("292f35"))
 	var font := ThemeDB.fallback_font
@@ -193,7 +250,7 @@ func _draw() -> void:
 	for label: Array in [[Vector2(40, 80), "Roof vent · 1.7x"],
 			[Vector2(475, 110), "Broken pipe · 2x"], [Vector2(475, 305), "Crash smoke · 2x"],
 			[Vector2(935, 150), "Both vertical views · 1.6x"],
-			[Vector2(40, 478), "Approved shoreline ripple · 1.3x"],
+			[Vector2(40, 478), "South water, one live tile · 1.3x"],
 			[Vector2(475, 610), "Only small details change their drawing."],
 			[Vector2(475, 642), "Source artwork, timing and body geometry retained."]]:
 		draw_string(font, label[0], label[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 19)

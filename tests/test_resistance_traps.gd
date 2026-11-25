@@ -1,20 +1,41 @@
 extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
+##
+## **A real event is built here, and its look is made round a copy of what it answers.** The
+## subject is the arrival as the game makes it (the trap the resistance director sets), so no
+## hand-set fake could state what it answers.
+## What a look would draw of it is asked of a look round `FakeEvent.answering_as()`, a snapshot of
+## those answers. The copy leaves out a spread's points, the barrier post, the stance
+## `stand_as()` hands a look and the view sector a look carries from frame to frame, none of
+## which the drawn rectangle or the caret reads. A question the looks start asking must be copied
+## by `answering_as()` or the arrival is under-measured; `tests/test_fake_event.gd` fails until
+## it is.
+##
+## **A real city, for a stated reason**: the guarded targets are the director's picks over a
+## day's real streets and events; what is checked about the live events they set on her is the
+## arrival's as the game makes it. The two cases of the contact following her between look-alikes
+## (`_test_the_contact_rides_onto_the_first_look_alike_she_reaches` and
+## `_test_the_step_completes_on_the_look_alike_she_hands_it_to`) are not covered by it: what they
+## check is which man shouting the director's contact rides, so they stand on the least
+## (`_build_the_least_in_a_new_run()`: a cached map, `FakeEventManager` and no city), the men
+## real ones made by the fake's `spawn_extra()`, on open ground with no body on it.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
 ## into, with what the day it asks about needs set on it.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_perform_contact_is_never_relocated(t)
 	await _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	await _test_the_step_completes_on_the_look_alike_she_hands_it_to(t)
+	_free_the_least()
 	_test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t)
 	_test_the_van_task_stands_unguarded_until_it_is_handed_over(t)
 	_test_the_roadblock_keeps_a_waiting_guard(t)
-	_test_every_guarded_target_sends_a_robber_from_off_screen(t)
+	await _test_every_guarded_target_sends_a_robber_from_off_screen(t)
 	await _test_the_handover_sets_a_robber_on_her_from_off_screen(t)
 	await _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t)
-	_test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
+	await _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t)
+	await _test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
 	await _test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
 	await _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t)
 	_test_the_robber_after_her_is_never_the_schedulers(t)
@@ -23,26 +44,25 @@ func run(t) -> void:
 
 ## Day 7's mark, started and touched — the van's own perform step, active. Mirrors
 ## `_director_on_the_yeller_perform()` for the one-place task the van's chasing guard rides on.
-func _director_on_the_van_perform(t) -> ResistanceDirector:
+func _director_on_the_van_perform(t: TestRunner) -> ResistanceDirector:
 	var director := _director(t)
 	director.start_day(7, _rng(7, "resistance"), 300.0)
 	_read_the_mark(director)
 	return director
 
 ## Ground a look-alike of `step`'s rider stands on, drawn by `rng`: a tile of the kinds the step's
-## own task is sited on (`ResistanceSteps.Step.placement`) that a contact may stand on
-## (`SpawnSiting.CONTACT_GROUND`, the test city's siting), more than `apart` from every one of
+## own task is sited on (`ResistanceSteps.Step.placement`) that is legal ground with no body on it
+## (`SpawnSiting.is_legal_ground()`, on the least's map), more than `apart` from every one of
 ## `others` — the ground the day's scheduler could equally have placed one on. `Vector2.INF` when
 ## the city has none.
 func _look_alike_ground(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 		others: Array[Vector2], apart: float) -> Vector2:
-	var siting := _city.spawn_siting
-	var ground := siting.ask_of_ground()
+	var walled: Array[Rect2i] = []
 	var pool: Array[Vector2] = []
 	for type in step.placement:
-		for tile in _city.map.tiles_of_type(type as GameEnums.TileType):
-			var at := _city.map.tile_to_world(tile)
-			if not siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, at):
+		for tile in _least_map.tiles_of_type(type as GameEnums.TileType):
+			var at := _least_map.tile_to_world(tile)
+			if not SpawnSiting.is_legal_ground(_least_map, tile, walled) or _least_map.is_obstructed(tile):
 				continue
 			var clear := true
 			for other in others:
@@ -52,7 +72,7 @@ func _look_alike_ground(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 				pool.append(at)
 	return pool[rng.randi_range(0, pool.size() - 1)] if not pool.is_empty() else Vector2.INF
 
-func _test_a_perform_contact_is_never_relocated(t) -> void:
+func _test_a_perform_contact_is_never_relocated(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	t.check(director.current_step() != null and not director.current_step().is_pickup,
@@ -75,9 +95,9 @@ func _test_a_perform_contact_is_never_relocated(t) -> void:
 ## have placed, spawned directly here rather than through it — stands well clear of the seeded
 ## rider. She is put within reach of the *decoy* rather than the rider `_begin_step()` rolled, and
 ## the contact rides onto it instead of waiting for her to find the one it was seeded on.
-func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t: TestRunner) -> void:
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	var perform := director.current_step()
 	t.check(perform != null and perform.index == 2, "the yeller perform is active")
 	var seeded_at := director.contact_position()
@@ -88,7 +108,7 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 	var decoy_at := _look_alike_ground(perform, _rng(6, "decoy"), seeded, apart)
 	t.check(decoy_at.distance_to(seeded_at) > apart,
 			"the decoy lands well clear of the seeded rider, or this test checks nothing")
-	var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), decoy_at)
+	var decoy := _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), decoy_at)
 
 	var player := _rig_player(t, decoy_at)
 	director.use_player(player)
@@ -114,9 +134,9 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 ## behind: the step completes on whichever one she then hands the note to. Two look-alikes besides
 ## the seeded rider, so the first one she comes near is a retarget rather than the rider the step
 ## already had — a walk that only ever touched the seeded one could pass with the rule deleted.
-func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
-	_build_city_in_a_new_run(t)
-	var director := _director_on_the_yeller_perform(t)
+func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t: TestRunner) -> void:
+	_build_the_least_in_a_new_run(t)
+	var director := _director_on_the_least_on_the_yeller_perform(t)
 	var perform := director.current_step()
 	t.check(perform != null and perform.index == 2, "the yeller perform is active")
 	var seeded := director.rider()
@@ -130,8 +150,8 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 			and second_at.distance_to(seeded.global_position) > apart
 			and first_at.distance_to(second_at) > apart,
 			"the three look-alikes stand well clear of each other, or this walk checks nothing")
-	var first := _city.events.spawn_extra(yeller, first_at)
-	var second := _city.events.spawn_extra(yeller, second_at)
+	var first := _least_events.spawn_extra(yeller, first_at)
+	var second := _least_events.spawn_extra(yeller, second_at)
 	var completed: Array[int] = []
 	director.contact().completed.connect(func(index: int) -> void: completed.append(index))
 
@@ -161,10 +181,10 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 	t.check(director.rider() == second, "whose contact it is")
 	# He does not leave the instant she hands it over (M205): he keeps shouting, and charging
 	# her, for `NOTE_HANDOVER_LINGER_SECONDS` first.
-	t.check(not second.is_leaving and not first.is_leaving and not seeded.is_leaving,
+	t.check(not second.is_on_its_way_out() and not first.is_on_its_way_out() and not seeded.is_on_its_way_out(),
 			"nobody leaves the instant she hands it over — he keeps shouting first")
 	director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
-	t.check(second.is_leaving and not first.is_leaving and not seeded.is_leaving,
+	t.check(second.is_on_its_way_out() and not first.is_on_its_way_out() and not seeded.is_on_its_way_out(),
 			"and once he has lingered that long, he is the one who leaves; the one she walked " +
 			"past keeps shouting")
 
@@ -174,13 +194,13 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 ## The man shouting's task is not guarded where it waits: activating the yeller perform stands
 ## no robber anywhere — the chalk mark's own guard is the only one on the street — and no robber is
 ## sent after her until she hands it over.
-func _test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t) -> void:
+func _test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t: TestRunner) -> void:
 	_check_a_task_stands_unguarded_until_it_is_handed_over(t, 6, "the yeller perform", "robber",
 			"the chalk mark is still guarded", "the task")
 
 ## The van's task is not guarded where it waits either — the same contract as the man shouting's,
 ## on a one-place task rather than an any-instance one.
-func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
+func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t: TestRunner) -> void:
 	_check_a_task_stands_unguarded_until_it_is_handed_over(t, 7, "the van perform", "guard",
 			"day 7's mark is still guarded", "the van")
 
@@ -188,37 +208,46 @@ func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
 ## on offer and sets its trap on her, no robber is added to the street, the one guard is still the
 ## mark's own and no task guard stands anywhere, and nobody is sent after her — no trap of the
 ## step's row is warned of or in the street.
-func _check_a_task_stands_unguarded_until_it_is_handed_over(t, day: int, perform: String,
+func _check_a_task_stands_unguarded_until_it_is_handed_over(t: TestRunner, day: int, perform: String,
 		who: String, mark_guarded: String, at: String) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
-	var mark_guards := _live(EventCatalogue.mark_guard().id)
+	var mark_guards := _live(EventCatalogue.mark_guard().id())
 	director.start_day(day, _rng(day, "resistance"), 300.0)
-	var mark_guard := _new_one(EventCatalogue.mark_guard().id, mark_guards)
+	var mark_guard := _new_one(EventCatalogue.mark_guard().id(), mark_guards)
 	t.check(mark_guard != null, mark_guarded)
 	var robbers_before := _robbers_on_the_street()
-	var task_guards := _live(EventCatalogue.task_guard().id)
+	var task_guards := _live(EventCatalogue.task_guard().id())
 	_read_the_mark(director)
 	var task := director.current_step()
 	t.check(task != null and task.index == 2 * (day - 6) + 2, "%s is active" % perform)
 	t.check(_robbers_on_the_street() == robbers_before,
 			"activating it stands no %s at %s (%d before, %d after)"
 			% [who, at, robbers_before, _robbers_on_the_street()])
-	t.check(mark_guard != null and not mark_guard.is_finished
-			and _new_one(EventCatalogue.task_guard().id, task_guards) == null,
+	t.check(mark_guard != null and not mark_guard.is_gone()
+			and _new_one(EventCatalogue.task_guard().id(), task_guards) == null,
 			"the only guard is still the mark's own")
 	var trap_row := task.trap_row if task else "robber_giving_chase"
-	t.check(_live(trap_row).is_empty() and _warning_for(_city.events, trap_row) == null,
+	t.check(_live(trap_row).is_empty() and _warning_for(RunCity.events(_city), trap_row) == null,
 			"and nobody is sent after her before the handover")
 	director.free()
 
 ## *(grassy-goose, inbox #556, asked which tasks switch to a robber arriving off screen: "Every
 ## guarded target (Recommended)", the option that keeps the roadblock's own guard.)* The roadblock
 ## is guarded exactly where it waits, like a chalk mark, and touching it sends nobody after her.
-func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
-	_build_city_in_a_new_run(t)
-	var mark_row := EventCatalogue.mark_guard().id
-	var task_row := EventCatalogue.task_guard().id
+## Day 13 is planned through the real day order (`City.start_day()`, then the events), since the
+## task's roadblock is one the day placed, or one of the day's events swapped for one.
+func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
+	var run := _build_city_in_a_new_run(t)
+	run.header().set_day(13)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(_city.map().plans_by_block(), 13)
+	_city.start_day(state, 13, _rng(13, "closures"))
+	RunCity.events(_city).start_day(DaySpec.for_day(13), _rng(13, "events"), [],
+			_city.map().doorstep_world_position())
+	var mark_row := EventCatalogue.mark_guard().id()
+	var task_row := EventCatalogue.task_guard().id()
 	var director := _director(t)
 	var mark_guards := _live(mark_row)
 	director.start_day(13, _rng(13, "resistance"), 300.0)
@@ -234,22 +263,22 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var rider := director.rider()
 	if rider and task_guard:
-		var touched_within := rider.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
+		var touched_within := rider.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
 				+ ContactPoint.REACH
 		var from_body := task_guard.global_position.distance_to(rider.body_position())
-		t.check(from_body >= robbery.inner_radius + touched_within - 0.5,
+		t.check(from_body >= robbery.core_within() + touched_within - 0.5,
 				("the roadblock's guard stands %.0fpx from its band's centre, outside his catch " +
 				"of everywhere it is touched from (%.0fpx)")
-				% [from_body, robbery.inner_radius + touched_within])
+				% [from_body, robbery.core_within() + touched_within])
 	t.check(task_guard != null and is_instance_valid(task_guard),
 			"it is guarded where it waits, like a mark, with its own fresh guard")
 	if mark_guard:
-		t.check(mark_guard in _live(mark_row) and not mark_guard.is_finished,
+		t.check(mark_guard in _live(mark_row) and not mark_guard.is_gone(),
 				"and the mark's own guard stays untouched, not retired for it")
 		t.check(task_guard != mark_guard,
 				"the perform's own guard is a distinct instance from the mark's")
 	director.contact().complete_now()
-	t.check(_live(step.trap_row).is_empty() and _warning_for(_city.events, step.trap_row) == null,
+	t.check(_live(step.trap_row).is_empty() and _warning_for(RunCity.events(_city), step.trap_row) == null,
 			"and touching it sends nobody after her")
 	director.free()
 
@@ -267,7 +296,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 ## (`CheckpointController._release_finished_holds()`), since that is where she stands when it
 ## sends him. Planned through the real day order (`City.start_day()`, then the events), since the
 ## door, the mast and the station's door are today's own plans.
-func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
+func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) -> void:
 	for day: int in [8, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
 		var started := _start_a_guarded_target_day(t, day)
 		var director: ResistanceDirector = started[0]
@@ -280,7 +309,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 			director.free()
 			continue
 		var marks_guard := 1 if mark_guard else 0
-		t.check(_live(EventCatalogue.task_guard().id).is_empty()
+		t.check(_live(EventCatalogue.task_guard().id()).is_empty()
 				and _robbers_on_the_street() == before + marks_guard,
 				"day %d: no robber waits at the task (%d before dawn, %d now, the mark's %d)"
 				% [day, before, _robbers_on_the_street(), marks_guard])
@@ -289,22 +318,22 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 		var front_door := task.target_kind == ResistanceSteps.TargetKind.STATION_DOOR \
 				or task.at_a_front_door
 		if day == 9:
-			_check_day_nines_trap_from_where_she_is_let_out(t, director)
+			await _check_day_nines_trap_from_where_she_is_let_out(t, director)
 			continue
 		# A door on a facade (the burnt building's, the station's) stands on the building's own
 		# ground-floor tile, which nobody can stand on: she touches it from the sidewalk tile
 		# straight below, inside its `DOOR_REACH`.
 		var her := director.contact_position()
-		if not _city.map.is_walkable(_city.map.world_to_tile(her)):
+		if not _city.map().is_walkable(_city.map().world_to_tile(her)):
 			her += Vector2(0.0, Tuning.TILE_SIZE)
-		t.check(_city.map.is_walkable(_city.map.world_to_tile(her))
-				and her.distance_to(director.contact_position()) <= director.contact().reach,
+		t.check(_city.map().is_walkable(_city.map().world_to_tile(her))
+				and her.distance_to(director.contact_position()) <= director.contact().touch_reach(),
 				"day %d: she stands on open ground within the touch's reach" % day)
 		_watch_the_screen_round(director, her)
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		director.contact().complete_now()
-		_check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
+		await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
 				"day %d" % day, front_door)
 		player.free()
 		director.free()
@@ -314,64 +343,65 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 ## the last night, with the goal met), the director started, and a mark, when the day offers one,
 ## read with nobody in the world. `[director, the robbers in the street before it started, the
 ## guard the mark set or null]`.
-func _start_a_guarded_target_day(t, day: int) -> Array:
+func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	var run := _build_city_in_a_new_run(t)
-	run.header.day = day
+	run.header().set_day(day)
 	var finale := day == Tuning.RUN_LENGTH_DAYS
-	run.resistance.completed_steps = _all_but_the_finale() if finale \
-			else _completed_through(2 * (day - 6))
-	run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
-	state.begin_day(_city.map.block_plans, day)
+	GivenRun.completed_steps(run, _all_but_the_finale() if finale \
+			else _completed_through(2 * (day - 6)))
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(_city.map().plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var before := _robbers_on_the_street()
 	var director := _director(t)
-	var mark_guards := _live(EventCatalogue.mark_guard().id)
+	var mark_guards := _live(EventCatalogue.mark_guard().id())
 	director.start_day(day, _rng(day, "resistance"), 300.0)
-	var mark_guard := _new_one(EventCatalogue.mark_guard().id, mark_guards)
+	var mark_guard := _new_one(EventCatalogue.mark_guard().id(), mark_guards)
 	var offered := director.current_step()
 	if offered and offered.is_pickup:
 		_read_the_mark(director)
 	return [director, before, mark_guard]
 
 ## Day 9 let through the named door: she stands where the inspection sets her down — the gatehouse
-## the arrow names, `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) along
+## the arrow names, `obstructs_within() + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) along
 ## the street past the door's line — on one side on `director`'s day, and on the other on a second
 ## attempt at the same day, since a task is done once — and the door announces that inspected
 ## crossing (`EventManager.door_crossed`, as `CheckpointController` announces a release: the
 ## gatehouse's own position and facing) for the director to answer. From each, the trap owes
 ## everything `_check_the_trap_comes_from_off_screen()` asks, his run at her through the door's line
 ## included. Frees `director`.
-func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirector) -> void:
+func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: ResistanceDirector) -> void:
 	for side: float in [1.0, -1.0]:
 		var director: ResistanceDirector = first if side > 0.0 \
 				else _start_a_guarded_target_day(t, 9)[0]
-		var hut: EventScheduler.Planned = null
-		for body in _city.streets().region_plan().door_bodies:
-			if body.def.redetains and body.position.distance_to(director.red_arrow_target()) < 0.5:
+		var hut: EventPlan = null
+		for body in _city.streets().region_plan().door_plans():
+			if body.detains_again() and body.placed_at().distance_to(director.red_arrow_target()) < 0.5:
 				hut = body
 		if side > 0.0:
 			t.check(hut != null, "day 9: the arrow names a gatehouse of the named door")
 		if hut == null:
 			director.free()
 			return
-		var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+		var out := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 				+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
-		var her := hut.position + hut.facing * side * out
-		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
-				"day 9: the ground she is let out onto is open (%s)" % _city.map.world_to_tile(her))
+		var her := hut.placed_at() + hut.faces() * side * out
+		t.check(_city.map().is_walkable(_city.map().world_to_tile(her)),
+				"day 9: the ground she is let out onto is open (%s)" % _city.map().world_to_tile(her))
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		_watch_the_screen_round(director, her)
-		_city.events.door_crossed.emit(hut.position, hut.facing, true)
-		t.check(director.contact().is_done, "day 9: an inspected crossing completes the task")
+		RunCity.events(_city).door_crossed.emit(hut.placed_at(), hut.faces(), true)
+		t.check(director.contact().is_finished(),
+				"day 9: an inspected crossing completes the task")
 		var label := "day 9, let out %.0fpx along the street from the gatehouse" % (side * out)
-		if _warning_for(_city.events, "robber_giving_chase") == null:
+		if _warning_for(RunCity.events(_city), "robber_giving_chase") == null:
 			_check_no_start_was_passed_over(t, her, label)
 		else:
-			_check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", label)
+			await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", label)
 		player.free()
 		director.free()
 
@@ -379,9 +409,9 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirecto
 ## — just out of sight straight above, straight below, and either side along her street
 ## (`_fixed_starts()`) — was legal ground whose run at her keeps out of the region's wall and doors,
 ## so the director passed over none it could have taken.
-func _check_no_start_was_passed_over(t, her: Vector2, label: String) -> void:
+func _check_no_start_was_passed_over(t: TestRunner, her: Vector2, label: String) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
-	var siting := _city.spawn_siting
+	var siting := RunCity.spawn_siting(_city)
 	var asked := siting.ask(EventFootprints.footprint_of(def), Mover.on_foot(EventInstance.FIGURE_RADIUS), her)
 	for candidate in _fixed_starts(def, her):
 		t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
@@ -398,48 +428,57 @@ static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
 				way))
 	return starts
 
+## What `trap` draws on this frame, in its own space: asked of a look made round a fake that answers
+## what the trap answers.
+func _drawing_of(trap: EventInstance) -> Rect2:
+	var fake := FakeEvent.answering_as(trap)
+	var rect := fake.look_for(trap.row()).drawn_rect_now()
+	fake.free()
+	return rect
+
 ## Camera smoothing can move the view while she stands still through a badge. The actual
 ## warning callback must place the entire drawing outside that new view in either input scheme.
-func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
+func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) -> void:
 	for joystick: bool in [false, true]:
 		_build_city_in_a_new_run(t)
 		var director := _director_on_the_yeller_perform(t)
 		var her := director.contact_position()
-		var player := Node2D.new()
-		t.add_child(player)
-		player.position = her
-		player.add_to_group("player")
-		_city.events.use_player(player)
-		var view := _city.events.visible_view()
+		var player := _her_for_the_events(t, her)
+		RunCity.events(_city).use_player(player)
+		RunCity.events(_city).use_controls(TouchCover.joystick() if joystick else null)
+		# Her camera is the one the tick looks through, so it is the camera that moves, not her.
+		var camera: Camera2D = player.get_node("Camera2D")
+		camera.global_position = her
+		var view := RunCity.events(_city).visible_view()
 		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
-		director.set_sight(_city.events.sees)
+		director.set_sight(RunCity.events(_city).sees)
 		# The note handed over where the contact stands: its trap is sent at her from there.
 		director.contact().complete_now()
-		var warning := _warning_for(_city.events, "robber_giving_chase")
+		var warning := _warning_for(RunCity.events(_city), "robber_giving_chase")
 		t.check(warning != null and _live("robber_giving_chase").is_empty(),
 				"camera-only movement starts with a real warning and no trap")
 		if warning != null:
-			var initial := warning.place
+			var initial := warning.points_at()
 			var bearing := (initial - her).normalized()
-			view.look(Rect2(her + bearing * 30.0 - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
-			_city.events.warnings.run(warning.left * 0.5, her)
-			t.check(warning.place == initial and _live("robber_giving_chase").is_empty(),
+			camera.global_position = her + bearing * 30.0
+			await _let_the_events_tick(warning.seconds_left() * 0.5)
+			t.check(warning.points_at() == initial and _live("robber_giving_chase").is_empty(),
 					"camera movement neither moves the badge nor creates its trap early")
-			_city.events.warnings.run(warning.left + STEP, her)
+			await _let_the_events_tick(warning.seconds_left() + STEP)
 			var sent := _live("robber_giving_chase")
 			var trap: EventInstance = sent[0] if sent.size() == 1 else null
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
 			if trap != null:
-				trap.player_at = her
-				var drawing := trap.look.drawn_rect_now()
-				t.check(view.view.intersects(Rect2(initial + drawing.position, drawing.size)),
+				RunCity.events(_city).world.where_she_is().tell(her)
+				var drawing := _drawing_of(trap)
+				t.check(view.camera_view().intersects(
+						Rect2(initial + drawing.position, drawing.size)),
 						"the camera moved far enough to expose a trap at the initial badge position")
-				t.check(not view.view.intersects(Rect2(trap.position + drawing.position, drawing.size)),
+				t.check(not view.camera_view().intersects(Rect2(trap.position + drawing.position, drawing.size)),
 						"warning expiry keeps the actual drawing outside the moved WHOLE camera")
 				t.check((trap.position - her).normalized().is_equal_approx(bearing),
 						"the trap keeps the badge's bearing when the camera moves")
-		player.free()
+		_let_her_go(player)
 		director.free()
 
 ## What every trap owes from the moment it is sent, on the real city. **Warned first**: the moment she
@@ -459,26 +498,27 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 ## where she stands, and without one none of the fixed starts (`_fixed_starts()`) had one on
 ## legal ground either, so the director passed over no clear start it could have taken. Measured
 ## per target by `tests/probes/grassy_goose_target_traps.gd`. Returns where he started, or `INF`.
-func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, label: String,
+func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: String, label: String,
 		front_door := false) -> Vector2:
-	var warning := _warning_for(_city.events, row_id)
+	var warning := _warning_for(RunCity.events(_city), row_id)
 	t.check(warning != null and _live(row_id).is_empty(),
 			"%s: the moment she does it, %s's warning is up with nothing in the world" % [label, row_id])
 	if warning == null:
 		return Vector2.INF
-	t.check(warning.left <= Tuning.WARNING_ALONE_MAX + 0.001,
-			"%s: for %.2fs alone, at most a second" % [label, warning.left])
-	var shown := _run_the_traps_warning(row_id, her)
+	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX + 0.001,
+			"%s: for %.2fs alone, at most a second" % [label, warning.seconds_left()])
+	var shown := await _run_the_traps_warning(row_id, her)
 	var sent := _live(row_id)
 	var chaser: EventInstance = sent[0] if sent.size() == 1 else null
-	t.check(chaser != null and chaser.def.id == row_id,
+	t.check(chaser != null and chaser.row_id() == row_id,
 			"%s: %s is sent after her once it is over (%.2fs)" % [label, row_id, shown])
 	if chaser == null:
 		return Vector2.INF
-	var start := chaser.global_position
+	# Where he was made: the tick that makes him steps him once as well, like every event.
+	var start := chaser.walks()[0] if chaser.walks().size() > 0 else chaser.global_position
 	var view := VisibleView.around(her, null)
-	var siting := _city.spawn_siting
-	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), Mover.on_foot(EventInstance.FIGURE_RADIUS),
+	var siting := RunCity.spawn_siting(_city)
+	var asked := siting.ask(EventFootprints.footprint_of(chaser.row()), Mover.on_foot(EventInstance.FIGURE_RADIUS),
 			her)
 	var beside := asked.beside
 	var dist := start.distance_to(her)
@@ -490,41 +530,42 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 			"%s: above or below her within the cone, beside her, or across the street (%.1fpx, at %v)"
 			% [label, dist, start - her])
 	t.check(not chaser.is_telegraphing(), "%s: already chasing, with no closing-in first" % label)
-	t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(chaser.def), her, start),
+	t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(chaser.row()), her, start),
 			"%s: wholly out of sight the frame he exists" % label)
 	var through_a_door := false
 	var plan := _city.streets().region_plan()
-	for body: EventScheduler.Planned in plan.door_bodies if plan else []:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+	for body: EventPlan in plan.door_plans() if plan else []:
+		if DoorLine.crossed_by(body.placed_at(), body.faces(), body.obstructs_within(),
 				start, her):
 			through_a_door = true
 	t.check(not through_a_door,
 			"%s: his run at her from %s never crosses a district door's line"
-			% [label, _city.map.world_to_tile(start)])
+			% [label, _city.map().world_to_tile(start)])
 	t.check(siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, start),
 			"%s: on walkable ground nothing refuses" % label)
 	var clear := siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, start)
 	if not clear and not across:
-		for candidate in _fixed_starts(chaser.def, her):
+		for candidate in _fixed_starts(chaser.row(), her):
 			t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
 					and siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, candidate)
 					and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
 					"%s: with no clear run from %s, none from %v off her either"
-					% [label, _city.map.world_to_tile(start), candidate - her])
+					% [label, _city.map().world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
-	chaser.player_at = her
-	chaser.step(STEP)
+	# The tick that made him stepped him once: that step is his first frame.
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
-	t.check(closed > chaser.def.chase_speed() * STEP * 0.9 or (across and closed > 0.0),
+	t.check(closed > chaser.row().chase_speed() * STEP * 0.9 or (across and closed > 0.0),
 			"%s: and coming at her%s from his first frame" % [label,
 			"" if across else " at his own speed"])
+	RunCity.events(_city).world.where_she_is().tell(her)
+	chaser.step(STEP)
 	if not clear and not across:
 		return start
 	var caught := false
 	var elapsed := 0.0
-	while elapsed < chaser.def.telegraph_time + chaser.def.duration \
-			and not chaser.is_finished and not caught:
-		chaser.player_at = her
+	while elapsed < chaser.telegraphs_for() + chaser.row().lasts_for() \
+			and not chaser.is_gone() and not caught:
+		RunCity.events(_city).world.where_she_is().tell(her)
 		chaser.step(STEP)
 		elapsed += STEP
 		caught = chaser.is_lethal_at(her)
@@ -538,25 +579,10 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 func _robbers_on_the_street() -> int:
 	var count := 0
 	var ids := ["alley_robbery", "robber_giving_chase", "van_guard_giving_chase"]
-	for instance in _city.events.instances():
-		if instance.def.id in ids and not instance.is_finished:
+	for instance in RunCity.events(_city).instances():
+		if instance.row_id() in ids and not instance.is_gone():
 			count += 1
 	return count
-
-## Whether `at` would actually be in sight with the camera on `her` and led toward `at` the way
-## `Stroller` leads it when she faces what she is walking toward — the worst-case lead, since a
-## start behind her would only pull the camera the other way. Asked of the tap scheme's
-## `VisibleView`, whose whole view is what `EventManager.on_screen()` answers in either scheme — the
-## test the director places against (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over the same view): the
-## joystick's covered corners only ever take ground out of sight, so a point out of the whole view
-## is out of both.
-func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
-	var bearing := at - her
-	var lead := Vector2.ZERO
-	if bearing.length() > 0.001:
-		var dir := bearing.normalized()
-		lead = Vector2(dir.x, dir.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	return VisibleView.around(her + lead, null).sees(at)
 
 ## *(PLAYTEST-71: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
 ## yeller so it runs towards her from offscreen"; "we need a version of the robber that is not
@@ -567,7 +593,7 @@ func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
 ##
 ## **Swept over `RULE_SEEDS` cities rather than trusted on one.** Every seed's handover replays to
 ## the same place, and the man she handed it to keeps shouting rather than leaving at once (M205).
-func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
+func _test_the_handover_sets_a_robber_on_her_from_off_screen(t: TestRunner) -> void:
 	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
 		# Each attempt is the same day of a fresh run: the mark's own alley is recorded as used when
@@ -583,8 +609,9 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 			var player := _rig_player(t, her)
 			director.use_player(player)
 			await _step_a_frame(t)
-			t.check(director.contact().is_done, "seed %d: she hands the note over" % seed_value)
-			var start := _check_the_trap_comes_from_off_screen(t, her,
+			t.check(director.contact().is_finished(),
+					"seed %d: she hands the note over" % seed_value)
+			var start := await _check_the_trap_comes_from_off_screen(t, her,
 					"robber_giving_chase", "seed %d" % seed_value)
 			if start != Vector2.INF:
 				if not starts.is_empty():
@@ -595,7 +622,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 			# He does not leave the instant she hands it over (M205): he keeps shouting, and
 			# charging her, for `NOTE_HANDOVER_LINGER_SECONDS` first — unaffected by the
 			# robber's own clock, which is all this loop has advanced.
-			t.check(not rider.is_leaving,
+			t.check(not rider.is_on_its_way_out(),
 					"seed %d: the man she handed it to keeps shouting, not leaving instantly"
 					% seed_value)
 			player.free()
@@ -605,7 +632,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 ## package over puts up one `van_guard_giving_chase`'s warning and then sets him on her, on the same
 ## terms as the robber. The van itself is a one-place task's own rider and never leaves when the
 ## package is picked up — the director only sends the man shouting's own rider away by name.
-func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
+func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t: TestRunner) -> void:
 	var starts: Array[Vector2] = []
 	for attempt in 2:
 		_build_city_in_a_new_run(t)
@@ -615,8 +642,8 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		await _step_a_frame(t)
-		t.check(director.contact().is_done, "she hands the package over")
-		var start := _check_the_trap_comes_from_off_screen(t, her,
+		t.check(director.contact().is_finished(), "she hands the package over")
+		var start := await _check_the_trap_comes_from_off_screen(t, her,
 				"van_guard_giving_chase", "the van")
 		if start != Vector2.INF:
 			if not starts.is_empty():
@@ -625,6 +652,57 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 			starts.append(start)
 		player.free()
 		director.free()
+
+## A director handed no siting and no navigator builds its own siting on the map's navigator
+## (`ResistanceDirector.setup()`), over the events' view and the streets' region, and the one start
+## it sites that way is a trap sent at her. Handing the note over still puts the robber's warning
+## up and once it is over he stands just out of her sight; and he stands exactly where the city's own
+## siting, built on that same navigator, puts him for the same note: a start has a fallback of its
+## own, so only the place itself says which navigator decided it. The city-sited start has a clear
+## run at her, which a navigator that refuses every line would not have given, so the two agreeing
+## is not the fallback's doing.
+func _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t: TestRunner) -> void:
+	var fallback := await _the_robber_start_of_a_handover(t, false)
+	var cities := await _the_robber_start_of_a_handover(t, true)
+	t.check(fallback != Vector2.INF and cities != Vector2.INF,
+			"both handovers send the robber, or this test checks nothing")
+	t.close_to(fallback.distance_to(cities), 0.0,
+			"a director handed no siting sites him where the city's own siting does", 0.01)
+
+## Where the yeller's handover on day 6 starts the robber sent after her (`INF` when none), in a
+## fresh city: by a director handed the city's own siting, or one handed none and no navigator.
+func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector2:
+	_build_city_in_a_new_run(t)
+	var director: ResistanceDirector
+	if city_siting:
+		director = _director(t)
+	else:
+		director = ResistanceDirector.new()
+		director.use_bus(EventBus)
+		t.add_child(director)
+		director.set_process(false)
+		director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(),
+				_city.fronts(), _city)
+	var label := "the city's siting" if city_siting else "no siting handed"
+	director.start_day(6, _rng(6, "resistance"), 300.0)
+	_read_the_mark(director)
+	var her := director.contact_position()
+	_watch_the_screen_round(director, her)
+	var player := _rig_player(t, her)
+	director.use_player(player)
+	await _step_a_frame(t)
+	t.check(director.contact().is_finished(), "%s: she hands the note over" % label)
+	var start := await _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase",
+			label)
+	if city_siting and start != Vector2.INF:
+		var siting := RunCity.spawn_siting(_city)
+		var asked := siting.ask(EventFootprints.footprint_of(EventCatalogue.by_id("robber_giving_chase")),
+				Mover.on_foot(EventInstance.FIGURE_RADIUS), her)
+		t.check(siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, start),
+				"the city-sited start has a clear run at her, or the two starts cannot tell the navigators apart")
+	player.free()
+	director.free()
+	return start
 
 ## **He is warned of before he exists, the warning is short, and he arrives chasing.** *(Amendment 7
 ## of M226, the player: "why would the robber walk towards her when it spawns as pursuing robber? the
@@ -643,18 +721,18 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 ## The tall-osprey floor (standing still, a robber lunges no sooner than `Tuning.PURSUIT_MIN_NOTICE`
 ## after he appears) is a standing robber's, a mark's guard waiting in his alley, whom this build does
 ## not touch; a sent one has no closing-in for it to bound.
-func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t) -> void:
+func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t: TestRunner) -> void:
 	await _assert_a_trap_row_is_announced_before_it_can_catch_her(t, "robber_giving_chase")
 
 ## The same contract for the van's own guard: walks the guard's own row and asserts the same
 ## relationships rather than assuming the robber's numbers carry over unchecked.
-func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> void:
+func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t: TestRunner) -> void:
 	await _assert_a_trap_row_is_announced_before_it_can_catch_her(t, "van_guard_giving_chase")
 
 ## Shared between the man shouting's row and the van's: each of this suite's two callers passes
 ## its own catalogue id, since the contract this checks is the same row-independent relationship
 ## for both.
-func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
+func _assert_a_trap_row_is_announced_before_it_can_catch_her(t: TestRunner, id: String) -> void:
 	# No city of an earlier test stands in the tree while the walks tick the engine faster.
 	_free_city()
 	var def := EventCatalogue.by_id(id)
@@ -716,14 +794,16 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 ## next `physics_frame` comes once the baby has stepped on it, and the robber then takes the same
 ## tick's step, however many ticks a frame runs. The ticks are `STEP` of game time each
 ## (`_walk_ticks()`).
-func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
+func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 		turn_to_run_after := INF) -> Dictionary:
 	var bearing := start.normalized()
+	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(def, start)
-	robber.came_under_a_warning = true
+	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(robber_where))
+	robber.arrive_from_its_warning()
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
-		robber.resume(EventSpawner.age_when_warned(def), 0.0)
+		robber.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 	var stroller := _rig_player(t, Vector2.ZERO)
 	var baby := Baby.new()
 	baby.name = "Baby"
@@ -738,7 +818,7 @@ func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
 	var velocity := speed if absf(speed) <= Tuning.WALK_SPEED else 0.0
 	var elapsed := 0.0
 	var was_telegraphing := true
-	while elapsed < def.telegraph_time + def.duration + 1.0:
+	while elapsed < def.telegraphs_for() + def.lasts_for() + 1.0:
 		var wanted := speed
 		if elapsed >= turn_to_run_after:
 			wanted = -Tuning.RUN_SPEED
@@ -747,8 +827,7 @@ func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
 		stroller.position = her
 		stroller.velocity = bearing * velocity
 		await tree.physics_frame
-		robber.player_at = her
-		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
+		robber_where.tell(her, Vector2.INF, Rect2(), absf(velocity) > Tuning.WALK_SPEED)
 		var box := robber.drawn_box()
 		var in_sight := VisibleView.around(her, null).sees_any(
 				Rect2(robber.global_position + box.position, box.size))
@@ -764,14 +843,14 @@ func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
 		if robber.is_lethal_at(her):
 			result["caught_at"] = elapsed
 			break
-		if baby.state == GameEnums.BabyState.CRYING:
+		if baby.condition() == GameEnums.BabyState.CRYING:
 			result["cried"] = true
 			break
-		if robber.gave_up or robber.is_finished or robber.is_leaving:
-			result["gave_up"] = robber.gave_up
+		if robber.has_given_up() or robber.is_gone() or robber.is_on_its_way_out():
+			result["gave_up"] = robber.has_given_up()
 			result["ended"] = true
 			break
-	result["excitement"] = baby.excitement
+	result["excitement"] = baby.excitement_level()
 	_give_the_ticks_back(held)
 	stroller.free()
 	robber.free()
@@ -799,28 +878,28 @@ func _give_the_ticks_back(held: Array) -> void:
 ## Spawned only by the director: no day of the run, at any heat, offers the row to the scheduler's
 ## roll, its stream or its budget — `EventCatalogue.available_on()` is the pool all three draw from —
 ## and a day the scheduler actually plans, on the first day a task can be handed over, carries none.
-func _test_the_robber_after_her_is_never_the_schedulers(t) -> void:
+func _test_the_robber_after_her_is_never_the_schedulers(t: TestRunner) -> void:
 	_assert_a_trap_row_is_never_the_schedulers(t, "robber_giving_chase")
 
 ## The same guarantee for the van's own guard: a second `SCRIPTED`/`scripted_day 0` row director-
 ## spawned at the handover, so it needs the same "the roll, the stream and the budget never reach
 ## it" check the robber's own row gets, rather than assuming a second row of the same shape is
 ## automatically exempt.
-func _test_the_van_guard_after_her_is_never_the_schedulers(t) -> void:
+func _test_the_van_guard_after_her_is_never_the_schedulers(t: TestRunner) -> void:
 	_assert_a_trap_row_is_never_the_schedulers(t, "van_guard_giving_chase")
 
-func _assert_a_trap_row_is_never_the_schedulers(t, id: String) -> void:
+func _assert_a_trap_row_is_never_the_schedulers(t: TestRunner, id: String) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for heat in EventCatalogue.heat_levels():
 			for def in EventCatalogue.available_on(day, heat):
-				t.check(def.id != id,
+				t.check(def.id() != id,
 						"day %d at heat %d does not offer '%s'" % [day, heat, id])
 	var map := CityGenerator.generate(SEED)
 	var consumed: Array[String] = []
-	var plans := EventScheduler.build_day(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
-			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, CalmAreas.of(map),
-			consumed).placements()
+	var plans := GameDawn.of(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
+			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map).spent(consumed) \
+			.plan().placements()
 	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
 	for plan in plans:
-		t.check(plan.def.id != id,
+		t.check(plan.row_id() != id,
 				"day %d's own plan places no '%s'" % [ResistanceDirector.TRAP_FIRST_DAY, id])

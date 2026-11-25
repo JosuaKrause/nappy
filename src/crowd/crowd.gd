@@ -110,7 +110,7 @@ const BUMP_RADIUS := 14.0
 
 const BUMP_DURATION := 1.2
 
-## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into, and
+## A contact is not a write to the baby's excitement meter — it agitates the *person* she walked into, and
 ## the crowd sums them like any other body. Excitement stays a pure query; a bump startles the
 ## agent, never the meter — the invariant the **events** skill and `docs/MECHANICS.md` hold.
 ##
@@ -148,8 +148,13 @@ var _atlas_held := false
 
 var _agents: Array[CrowdAgent] = []
 ## **The crowd as one set of things that charge the baby** (`CrowdSources`), handed to the world
-## this crowd walks (`WorldContext.excitement_sources`) and to the halo through it.
-var sources := CrowdSources.new(self)
+## this crowd walks (`WorldContext.use_excitement_sources()`) and to the halo through it.
+var _sources := CrowdSources.new(self)
+
+## The crowd as one set of things that charge the baby (`CrowdSources`): the live set, which
+## every agent this crowd makes is heard in, so a caller holding it sees today's crowd.
+func sources() -> CrowdSources:
+	return _sources
 ## `_agents`' cars and its walkers, each in `_agents`' own order, sorted by `_sort_by_kind()` at
 ## the top of `_resolve_the_queues()` — the first thing every frame's traffic pass does — and read by
 ## everything after it in the same frame that is about one kind only: the queue, the turns, the
@@ -172,78 +177,83 @@ var _navigator: Navigator
 ## stationary body, and not by a precinct's posts, which the crowd walks between as it always does
 ## (it has no body, `CityMap.post_tiles()`).
 var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
-## Whom the crowd makes way for, bumps and strikes: handed in by whoever puts her into the city's world
-## (`use_player()`, `main._put_her_in()`), none until then and in a rig that has none.
+## Whom the crowd makes way for, bumps and strikes: handed in once the world is live and she walks it
+## (`use_player()`, `WorldSimulation.meet_her()`), none until then and in a rig that has none.
 var _player: Stroller
-## The patch of city being simulated. Held here, moved onto the player every physics frame, and
-## read by every agent when it recycles.
+## Where the patch of simulated streets stands, asked once a tick (`_follow_the_focus()`); none
+## leaves the patch where `start_day()` put it.
+var _focus: CrowdFocus
+## The signals the crowd reports on (`EventBus`'s script), preloaded so the bus it is handed has a
+## type to be held as.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## Where the crowd reports what happens to her: a bump (`crowd_bumped`), a car's strike
+## (`hard_fail_triggered`) and a horn sounded at her (`car_near_miss`). Handed in by `use_bus()`;
+## with none, a rig's, the crowd tells nobody.
+var _bus: _BUS
+## The patch of city being simulated. Held here, moved onto its focus source (`_focus`) every
+## tick, and read by every agent when it recycles.
 var _field: CrowdField
 ## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
 var _traffic := TrafficIndex.new()
+
+## What the crowd and every agent it makes are equipped with, before the first day: what the
+## screen shows (null for none: every agent drawn), the frame record's sink the crowd charges
+## its time to, and the baked atlas pages its group is held on (`SimulationBuilder` hands the
+## crowd what it is itself equipped with).
+func equip(screen: CrowdView, frame_timing: CrowdTiming, library: AtlasLibrary) -> void:
+	_view = screen
+	_timing = frame_timing
+	_atlas = library
+
+## `--skip crowd` and `--skip motion` (`DevFlags.skip_words()`), named as
+## `SimulationBuilder.leave_out()` is: whether every agent the crowd makes skips its own
+## drawing, and whether the crowd's tick steps nobody.
+func leave_out(drawing: bool, motion: bool) -> void:
+	_skip_agent_drawing = drawing
+	_skip_motion = motion
+
+## Hands the crowd the index of where its cars are, which it fills every tick
+## (`space_out_the_traffic()`), before a day starts: the agents a day makes are handed this one.
+func use_traffic(index: TrafficIndex) -> void:
+	_traffic = index
 ## What the screen shows, handed to every agent so none of them reaches for the viewport. See
 ## `CrowdView`. None is a crowd with no screen: every agent drawn, and the day's own radius for
-## "out of sight". Handed in by `City` before the day's agents are made.
-var view: CrowdView = null
+## "out of sight". Handed in by `equip()` before the day's agents are made.
+var _view: CrowdView = null
 ## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`; the null
-## sink until the city hands another.
-var timing := CrowdTiming.new()
+## sink until `equip()` hands another.
+var _timing := CrowdTiming.new()
 ## The baked atlas pages the crowd holds `ATLAS_GROUP` on and every agent draws from
-## (`AtlasLibrary`), handed in by `City` before the first day and on to every agent it makes; a
-## crowd nobody handed one (a suite's) makes its own on its first day.
-var atlas: AtlasLibrary = null
+## (`AtlasLibrary`), handed in by `equip()` before the first day and on to every agent it makes;
+## a crowd nobody equipped (a suite's) makes its own on its first day.
+var _atlas: AtlasLibrary = null
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
 ## different city — see `step()`.
 var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
-## `--skip motion`, handed in by whoever builds the city. `_physics_process` returns before the
+## `--skip motion`, handed in by `leave_out()`. `_physics_process` returns before the
 ## agents step while it is set, so nothing the crowd ticks (every agent's motion, the signals, the
 ## pockets, the traffic spacing, the index, the junctions, the gates, the doors, the player's own
 ## make-way and bump scan, the strike and the horn) runs, and the day's population stands where it
 ## was placed. `step()`, the rig's own tick, is left alone: a rig asked to walk the crowd walks it.
-var skip_motion := false
+var _skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
-var skip_agent_drawing := false
-## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `main._start_day()` from
-## `DayStreets.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no
+var _skip_agent_drawing := false
+## Today's checkpoint gates — `GateState`, set once a day by `DayDirector.start()` from
+## `DayStreets.region_plan().gate_states()`. Empty on any day before the wall stands, or in a rig with no
 ## city behind it. See `_stop_for_gates()`.
-var _gates: Array[RegionPlanner.GateState] = []
-
-## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
-## carve-out `cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
-## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from
-## `_streets.region_plan()`, which is already valid by the time this runs the same way it
-## already is by the time `main.gd` calls `set_gates()` — `City.start_day()` builds it before
-## `Crowd.start_day()` is ever called. Empty before the wall stands, or for a rig with no streets,
-## which then holds nothing a door either.
-var _door_segments := {}
-
-## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
-## the second carve-out `cannot_go_on` needs, since `EventManager.start_day` holds those segments
-## too (`map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE))`, the identical set),
-## but only so no catalogue row lands on the home block's own street, never because a body stands
-## across it. Rebuilt every `start_day` beside `_door_segments`: the home block never moves, but
-## computing it fresh here is one loop over four segments and needs no assumption about what
-## `main.gd` has or has not called yet.
-var _home_segments := {}
+var _gates: Array[GateState] = []
 
 ## Where today's seals have left carriageway a car can drive into and not out of — a junction with
-## all four arms held, and whatever stub of lane is shut in with it. Built here because both
-## carve-outs above are part of the question (a street the traffic may still cross is not a wall of
-## a pocket) and kept as one object for the day, handed to every agent the way the two carve-outs
-## are. Walkers have no pocket: sealed-in ground is ground a person walks the whole of. See
-## `CrowdPockets`.
+## all four arms held, and whatever stub of lane is shut in with it. Kept as one object for the day
+## and handed to every agent. Walkers have no pocket: sealed-in ground is ground a person walks the
+## whole of. See `CrowdPockets`.
 var _pockets := CrowdPockets.new()
-## The two carve-outs above as one set, built once a day beside them and handed to `_pockets` on
-## every frame. A field rather than a function call, because the refresh runs in the physics frame
-## and a dictionary built to be thrown away is the kind of per-frame cost this class measures
-## elsewhere — the answer only changes when `start_day()` rebuilds the two lists it is made of.
-var _crossable_segments := {}
-
 ## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
-## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_bodies`. Empty before
+## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_plans()`. Empty before
 ## the wall stands or for a rig with no streets, which then holds nobody at anything. See
 ## `_hold_walkers_at_doors()`, and `WalkerDoorHold` for what a hut's own state actually is.
 var _door_holds: Array[WalkerDoorHold] = []
@@ -251,7 +261,7 @@ var _door_holds: Array[WalkerDoorHold] = []
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
 ## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to the
 ## gates' state other than the region plan it already has through `setup()`.
-func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
+func set_gates(gates: Array[GateState]) -> void:
 	_gates = gates
 
 ## How near a boom's own ground point her centre may come and still have some of her rig under it:
@@ -266,29 +276,47 @@ static func _under_the_boom_within() -> float:
 
 ## Whether she is standing under this gate's arm, so it must not come down on her. `false` before
 ## the first frame has found her, or in a rig with no player — nobody to lower it onto.
-func _is_she_under(gate: RegionPlanner.GateState) -> bool:
+func _is_she_under(gate: GateState) -> bool:
 	return _player != null \
-			and _player.global_position.distance_to(gate.position) <= _under_the_boom_within()
+			and _player.global_position.distance_to(gate.ground_point()) <= _under_the_boom_within()
 
 ## Hands the crowd the world it is drawn in, the map it walks and drives, the lights its traffic
 ## obeys (`TrafficSignals`), today's streets (`DayStreets`, or null for none) and the navigator a
-## push moves a walker by — the city's own (`City.navigator`), or the map's own
-## (`WorldMap.navigator()`) for a rig that hands none. The city builds its crowd and hands it its
-## own; a test hands a bare `WorldContext` and a map of its own.
+## push moves a walker by — the city's own (`City.navigator()`), or one over the map
+## (`Navigator.new(map)`) for a rig that hands none. The simulation's builder stands a city's
+## crowd and hands it the city's own (`SimulationBuilder`); a test hands a bare `WorldContext` and a
+## map of its own.
 func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: DayStreets,
 		navigator: Navigator = null) -> void:
 	_world = world
 	_map = map
-	_navigator = navigator if navigator else map.navigator()
+	_navigator = navigator if navigator else Navigator.new(map)
 	_signals = signals
 	_streets = streets
 	_field = CrowdField.new(map, map.tile_rect_to_world(
-			Rect2i(Vector2i.ZERO, map.size)).get_center())
+			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
-## Hands the crowd the player it makes way for. Called whenever she is put into the city's world
-## (`main._put_her_in()`); null takes her away.
+## Hands the crowd the player it makes way for. Called once the world is live and she walks it
+## (`WorldSimulation.meet_her()`); null takes her away, and not the focus source `meet_her()` hands
+## beside her (`use_focus()`): a teardown that frees her calls `meet_her(null)`, which drops both.
 func use_player(player: Stroller) -> void:
 	_player = player
+
+## Hands the crowd the source that says where its patch of simulated streets stands (`CrowdFocus`):
+## the patch is on it from here and follows it on every tick, `step()` and the live tick alike. The
+## game hands one answering with her position, when she is handed in (`WorldSimulation.meet_her()`);
+## a rig hands one answering a point it sets. None leaves the patch where `start_day()` put it; a
+## source held when a day starts moves the patch off `start_day()`'s focus on the next tick, so a rig
+## that starts a day somewhere other than where its last source stood hands none first.
+func use_focus(focus: CrowdFocus) -> void:
+	_focus = focus
+	_follow_the_focus()
+
+## Hands the crowd the bus it reports her bumps, a car's strike and a horn on. The game hands it
+## the `EventBus` autoload as it stands the crowd (`SimulationBuilder`), before `setup()`; all three
+## reports are about her, so nothing is said before she is handed in.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
 
 ## Clears yesterday's crowd and populates today's. The population is fixed for the day and
 ## comes from the act, not the day: the streets thin out as the occupation settles in, and
@@ -310,9 +338,9 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
 	if not _atlas_held:
-		if atlas == null:
-			atlas = AtlasLibrary.new()
-		atlas.acquire(ATLAS_GROUP)
+		if _atlas == null:
+			_atlas = AtlasLibrary.new()
+		_atlas.acquire(ATLAS_GROUP)
 		_atlas_held = true
 	_struck = false
 	# The lights go back to the top of their cycle with the traffic. They are a property of the
@@ -321,42 +349,31 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# same seed would then find the same cars at different lights and diverge on the first frame.
 	# A day is reproducible or it is not, and this is not the place to spend that.
 	if _signals:
-		_signals.elapsed = 0.0
-	_field.city_view = city_view
-	_field.uniform_walkers = uniform_walkers
-	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
-			Rect2i(Vector2i.ZERO, _map.size)).get_center()
-	# Before either `_populate` call: a walker's own `setup()` re-rolls off `_stands_on_a_street()`,
-	# which refuses both carve-outs the same as any other held ground unless they are already in
-	# place.
-	_door_segments = {}
+		_signals.restart_cycle()
+	_field.use_city_view(city_view)
+	_field.use_uniform_walkers(uniform_walkers)
+	_field.centre_on(focus if focus != Vector2.INF else _map.tile_rect_to_world(
+			Rect2i(Vector2i.ZERO, _map.size_in_tiles())).get_center())
 	_door_holds = []
 	if _streets:
 		var plan := _streets.region_plan()
 		if plan:
-			for segment in plan.doors:
-				_door_segments[segment.key()] = true
 			# Every door body that **detains** — the hut on each sidewalk and the alley door's
-			# guard. The boom over the road detains nobody (`EventDef.SolidWhen.WHILE_LOWERED`), and it
+			# guard. The boom over the road detains nobody (`BodySpec.SolidWhen.WHILE_LOWERED`), and it
 			# is the cars' in any case: `_stop_for_gates()` is its answer. Which hut a given walker
 			# can be held at is a question about that walker's own line of travel rather than about
 			# the row, and `_hold_walkers_at_doors()` answers it.
-			for body in plan.door_bodies:
-				if body.def.detain_seconds <= 0.0:
+			for body in plan.door_plans():
+				if not body.detains_her():
 					continue
 				var hold := WalkerDoorHold.new()
-				hold.position = body.position
+				hold.stand_at(body.placed_at())
 				_door_holds.append(hold)
-	_home_segments = {}
-	for segment in _map.network.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
-		_home_segments[segment.key()] = true
-	# Before either `_populate` call for the same reason the carve-outs above are: `setup()` refuses
-	# a spot in a pocket the way it refuses one behind a barrier, and a record built afterwards would
-	# refuse nothing on the morning it is most needed. Today's seals are already planned by here —
-	# `EventManager.start_day` runs before this in `main._start_day()` — and `refresh()` is what
-	# catches one that arrives later anyway.
-	_rebuild_the_crossable_segments()
-	_pockets.refresh(_map, _crossable_segments)
+	# Before either `_populate` call: `setup()` refuses a spot in a pocket the way it refuses one
+	# behind a barrier, and a record built afterwards would refuse nothing on the morning it is most
+	# needed. Today's seals are already planned by here — `EventManager.start_day` runs before this
+	# in `DayDirector.start()` — and `refresh()` is what catches one that arrives later anyway.
+	_pockets.refresh(_map)
 	var act := Tuning.act_for_day(day)
 	if populate:
 		# The recipe overview covers more ground at the existing field's density. Ordinary
@@ -402,47 +419,40 @@ func _resolve_and_settle() -> void:
 	for agent in _agents:
 		agent.reset_physics_interpolation()
 
-## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself, in the
-## player half of its live tick. No game class calls this; it stays for the tests (curly-rabbit
-## #1095), which tick the crowd with `step()`, the half with no player in it: a stroller handed
-## through `use_player()` moves no field there, real frames would add shoves, warnings and strikes
-## to every check, and recycling would drop the cars and walkers under test. What makes it so is
-## that where the patch stands is fused with who she is; a focus source handed to the crowd would
-## let this go.
-func set_focus(at: Vector2) -> void:
-	_field.centre = at
+## Moves the patch of simulated streets onto where its focus source says, if it has one.
+func _follow_the_focus() -> void:
+	if _focus and _field:
+		_field.centre_on(_focus.where())
 
 ## A new agent with everything the crowd hands every one it makes: the flags it runs under, the
 ## day's traffic, doors, home segments and pockets, what the screen shows and what it charges its
-## time to.
-func _make_an_agent() -> CrowdAgent:
-	var agent := CrowdAgent.new()
-	agent.skip_draw = skip_agent_drawing
-	agent.traffic = _traffic
-	agent.door_segments = _door_segments
-	agent.home_segments = _home_segments
-	agent.pockets = _pockets
-	agent.view = view
-	agent.frame_timing = timing
-	agent.atlas = atlas
-	agent.excitement.heard_in = sources
+## time to. It is made of the `kind` it will be placed as.
+func _make_an_agent(kind: CrowdAgent.Kind) -> CrowdAgent:
+	var agent := CrowdAgent.new(kind)
+	agent.skip_drawing(_skip_agent_drawing)
+	agent.use_crowd_parts(_traffic, _pockets, _view, _timing)
+	agent.use_atlas(_atlas)
+	agent.mood().hear_in(_sources)
 	return agent
 
 ## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
 ## placement is never replaced by a random one.
 func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vector2,
 		speed: float, seed_value: int) -> Dictionary:
-	var agent := _make_an_agent()
+	var agent := _make_an_agent(kind as CrowdAgent.Kind)
 	var problem := agent.setup_at(kind, _map, _field, seed_value, at, heading, speed)
 	if not problem.is_empty():
 		agent.free()
 		return {"error": problem}
+	var placed := agent.lane()
 	for other in _agents:
-		if agent.kind == CrowdAgent.Kind.WALKER and other.kind == CrowdAgent.Kind.WALKER \
-				and at.distance_to(other.position) < agent.shape.radius + other.shape.radius:
+		var there := other.lane()
+		if placed.kind() == CrowdAgent.Kind.WALKER and there.kind() == CrowdAgent.Kind.WALKER \
+				and at.distance_to(other.position) \
+				< placed.shape().rounding_radius() + there.shape().rounding_radius():
 			agent.free()
 			return {"error": "walker placement overlaps an existing walker"}
-		if agent.kind == CrowdAgent.Kind.CAR and other.kind == CrowdAgent.Kind.CAR \
+		if placed.kind() == CrowdAgent.Kind.CAR and there.kind() == CrowdAgent.Kind.CAR \
 				and agent.lane_key() == other.lane_key() \
 				and absf(agent.queue_position() - other.queue_position()) < Tuning.CAR_GAP_MIN:
 			agent.free()
@@ -452,9 +462,6 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 	_agents.append(agent)
 	_resolve_and_settle()
 	return {"actor": agent, "error": ""}
-
-func field() -> CrowdField:
-	return _field
 
 ## Makes today's crowd a task scene's: the field is the whole stretch and the crowd enters and
 ## leaves it at its ends (`CrowdField.use_stretch()`). Called by the scene once its starting
@@ -467,40 +474,28 @@ func use_stretch() -> void:
 func recipe_coverage() -> Dictionary:
 	var counts := {"total": 0, "walkers": 0, "cars": 0, "moving": 0, "moving_cars": 0}
 	var result: Dictionary = counts.duplicate()
-	result["scope"] = "city" if _field.city_view else "local"
+	result["scope"] = "city" if _field.is_city_view() else "local"
 	result["quadrants"] = {}
-	for quadrant in ["nw", "ne", "sw", "se"]:
+	for quadrant: String in ["nw", "ne", "sw", "se"]:
 		result.quadrants[quadrant] = counts.duplicate()
 	var middle := _map.world_size() * 0.5
 	for agent in _agents:
 		var at := agent.global_position
 		var quadrant := ("n" if at.y < middle.y else "s") + ("w" if at.x < middle.x else "e")
 		var local: Dictionary = result.quadrants[quadrant]
-		var kind := "cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"
+		var is_a_car := agent.lane().kind() == CrowdAgent.Kind.CAR
+		var kind := "cars" if is_a_car else "walkers"
 		result.total += 1
 		result[kind] += 1
 		local.total += 1
 		local[kind] += 1
-		if not skip_motion and not agent.velocity().is_zero_approx():
+		if not _skip_motion and not agent.velocity().is_zero_approx():
 			result.moving += 1
 			local.moving += 1
-			if agent.kind == CrowdAgent.Kind.CAR:
+			if is_a_car:
 				result.moving_cars += 1
 				local.moving_cars += 1
 	return result
-
-## Where the traffic cannot get out of today. Public so a suite can ask whether the pocket it has
-## just sealed is actually a pocket before asserting anything about who is standing in it.
-func pockets() -> CrowdPockets:
-	return _pockets
-
-## Rebuilds `_crossable_segments`: the held segments the crowd crosses anyway, which are the
-## region's doors and the streets around the home block. Both are held so that no catalogue row
-## lands on them, and neither has a body across it, so neither is a wall of a pocket. See
-## `_door_segments` and `_home_segments`.
-func _rebuild_the_crossable_segments() -> void:
-	_crossable_segments = _home_segments.duplicate()
-	_crossable_segments.merge(_door_segments)
 
 func clear() -> void:
 	for agent in _agents:
@@ -531,14 +526,14 @@ func clear() -> void:
 ## day.
 func _exit_tree() -> void:
 	if _atlas_held:
-		atlas.release(ATLAS_GROUP)
+		_atlas.release(ATLAS_GROUP)
 		_atlas_held = false
 
 ## Agents alternate axes rather than rolling for one, so a crowd is never accidentally all
 ## north-south on a day when the coin came up that way.
 func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) -> void:
 	for i in count:
-		var agent := _make_an_agent()
+		var agent := _make_an_agent(kind)
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_world.add_entity(agent)
 		_agents.append(agent)
@@ -564,7 +559,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 					var distance := (tile + 0.5) * Tuning.TILE_SIZE
 					var at := Vector2(cross, distance) if vertical else Vector2(distance, cross)
 					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if rng.randf() < 0.5 else -1)
-					var agent := _make_an_agent()
+					var agent := _make_an_agent(CrowdAgent.Kind.WALKER)
 					var problem := agent.setup_at(CrowdAgent.Kind.WALKER, _map, _field, rng.randi(), at, heading, -1)
 					if problem.is_empty():
 						candidates.append(agent)
@@ -586,8 +581,9 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 # density is not an occasional glitch, it is what the road looks like.
 #
 # The decision is one pass over the crowd here rather than a probe per car, for the same reason
-# `pedestrian_ahead` is written here: the agents are already being walked once a frame, and a
-# per-car search would be the same work done fifty times over.
+# the crowd finds who stands ahead of a car here (`LaneMover.Lane.see_a_pedestrian_at()`): the
+# agents are already being walked once a frame, and a per-car search would be the same work done
+# fifty times over.
 
 ## One tick of the crowd for a rig: the traffic is spaced out and the doors held, and then everybody
 ## moves — the live tick (`_tick_the_crowd()`) without the player half, since a rig has no player. A
@@ -604,6 +600,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 ## resolve before anything reads it; see `crowd_rig.gd`, "cars do not drive through each other".
 func step(delta: float) -> void:
 	_advance_the_world(delta)
+	_follow_the_focus()
 	_step_the_agents(delta)
 
 ## Every agent's own step (`LaneMover.step()`), in the crowd's order: the last thing a tick does,
@@ -628,13 +625,13 @@ func _advance_the_world(delta: float) -> void:
 	# stepped already this tick, since `City` adds the event manager before the crowd. The box rule
 	# below and every agent's own step read the one gathering.
 	if _map:
-		_map.separation.gather()
+		_map.course_keepers().gather()
 	if _signals:
 		_signals.advance(delta)
 	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
 	# the signal clock rather than inside `space_out_the_traffic()`, since it is a fact about the
 	# day's map that both kinds read and not part of resolving a queue.
-	_pockets.refresh(_map, _crossable_segments)
+	_pockets.refresh(_map)
 	# Traffic has to queue whether or not anybody is watching: a car driving through another one
 	# at the far end of the street is still a car driving through another one, and a test rig has
 	# no player in it.
@@ -689,12 +686,15 @@ func _resolve_the_queues() -> Dictionary:
 	_sort_by_kind()
 	var lanes := {}
 	for agent in _cars:
-		agent.gap_ahead = INF
-		agent.leader_speed = 0.0
+		agent.lane().clear_what_is_ahead()
 		var key := agent.lane_key()
-		if not lanes.has(key):
-			lanes[key] = [] as Array[CrowdAgent]
-		lanes[key].append(agent)
+		var lane_queue: Array[CrowdAgent]
+		if lanes.has(key):
+			lane_queue = lanes[key]
+		else:
+			lane_queue = []
+			lanes[key] = lane_queue
+		lane_queue.append(agent)
 
 	for key: int in lanes:
 		var queue: Array[CrowdAgent] = lanes[key]
@@ -709,8 +709,7 @@ func _resolve_the_queues() -> Dictionary:
 			if gap < Tuning.CAR_GAP_MIN:
 				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
 				gap = Tuning.CAR_GAP_MIN
-			queue[i].gap_ahead = gap
-			queue[i].leader_speed = queue[i + 1].speed()
+			queue[i].lane().follow_at_a_gap(gap, queue[i + 1].speed())
 	return lanes
 
 ## Fills `_cars` and `_walkers` from `_agents` — see `_cars` for why once a frame rather than once a
@@ -720,7 +719,7 @@ func _sort_by_kind() -> void:
 	_cars.clear()
 	_walkers.clear()
 	for agent in _agents:
-		if agent.kind == CrowdAgent.Kind.CAR:
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
 			_cars.append(agent)
 		else:
 			_walkers.append(agent)
@@ -757,7 +756,7 @@ func _index_the_queues(lanes: Dictionary) -> void:
 ## "a car doing a u-turn into a lane with traffic reset the other lane".
 ##
 ## The fix is the lane's **own following rule** rather than a second correction. The booking is
-## treated as a stopped leader — `gap_ahead` to it, `leader_speed` zero, since a spot on the road is
+## treated as a stopped leader — `gap_ahead()` to it, `leader_speed` zero, since a spot on the road is
 ## not driving away — so the nearest follower eases off exactly the way it would for any car in
 ## front of it, and by the time the turn lands the gap is there. Only the car immediately behind the
 ## landing is told, because that is what a queue is: the ones behind *it* get their headway from it
@@ -783,9 +782,8 @@ func _keep_room_for_the_turning(lanes: Dictionary) -> void:
 				continue
 			closest = behind
 			follower = other
-		if follower and closest < follower.gap_ahead:
-			follower.gap_ahead = closest
-			follower.leader_speed = 0.0
+		if follower and closest < follower.lane().gap_ahead():
+			follower.lane().follow_at_a_gap(closest, 0.0)
 
 ## Decides, once per frame and per junction, whose turn it is to be in the box.
 ##
@@ -821,7 +819,7 @@ func _give_way_at_junctions() -> void:
 	# moves a car, so a second reading is the same number paid for twice.
 	var distances := {}
 	for agent in _cars:
-		agent.junction_hold = INF
+		agent.lane().find_no_junction_to_hold_at()
 		# **A car in a turn holds the whole box rather than one arm of it.** Its path crosses both
 		# axes, its tail is still in the way after its nose has left, and it is in there for the
 		# length of a manoeuvre rather than for the length of a drive-through — so nothing else may
@@ -830,17 +828,25 @@ func _give_way_at_junctions() -> void:
 		var turning := agent.turning_in()
 		if turning.x >= 0:
 			occupied[turning] = int(occupied.get(turning, 0)) | 3
-			if not inside_the_box.has(turning):
-				inside_the_box[turning] = [] as Array[CrowdAgent]
-			inside_the_box[turning].append(agent)
+			var in_this_box: Array[CrowdAgent]
+			if inside_the_box.has(turning):
+				in_this_box = inside_the_box[turning]
+			else:
+				in_this_box = []
+				inside_the_box[turning] = in_this_box
+			in_this_box.append(agent)
 			continue
 		var axis := 1 if agent.travelling_vertically() else 2
 		var inside := agent.junction_occupied()
 		if inside.x >= 0:
 			occupied[inside] = int(occupied.get(inside, 0)) | axis
-			if not inside_the_box.has(inside):
-				inside_the_box[inside] = [] as Array[CrowdAgent]
-			inside_the_box[inside].append(agent)
+			var in_this_box: Array[CrowdAgent]
+			if inside_the_box.has(inside):
+				in_this_box = inside_the_box[inside]
+			else:
+				in_this_box = []
+				inside_the_box[inside] = in_this_box
+			in_this_box.append(agent)
 			continue
 		var distance := agent.distance_to_junction()
 		if distance > Tuning.CAR_JUNCTION_SIGHT:
@@ -849,11 +855,18 @@ func _give_way_at_junctions() -> void:
 		if distance < CarStrategy.braking_distance(agent.speed()):
 			occupied[junction] = int(occupied.get(junction, 0)) | axis
 			continue
-		if not approaching.has(junction):
-			approaching[junction] = [] as Array[CrowdAgent]
-			distances[junction] = [] as Array[float]
-		approaching[junction].append(agent)
-		distances[junction].append(distance)
+		var arriving: Array[CrowdAgent]
+		var arriving_from: Array[float]
+		if approaching.has(junction):
+			arriving = approaching[junction]
+			arriving_from = distances[junction]
+		else:
+			arriving = []
+			arriving_from = []
+			approaching[junction] = arriving
+			distances[junction] = arriving_from
+		arriving.append(agent)
+		arriving_from.append(distance)
 
 	for junction: Vector2i in inside_the_box:
 		if int(occupied.get(junction, 0)) == 3:
@@ -879,13 +892,14 @@ func _give_way_at_junctions() -> void:
 			var red := GiveWay.is_red(_signals, junction, vertical)
 			if crossing_is_in_the_box or outranked or red \
 					or not _can_clear_the_box(agent, distance_of[i]):
-				agent.junction_hold = maxf(0.0, GiveWay.stop_line(distance_of[i]))
+				agent.lane().find_a_junction_to_hold_at(
+						maxf(0.0, GiveWay.stop_line(distance_of[i])))
 
-## Cars stop at a checkpoint gate exactly the way they stop at a red light: a hold computed here
-## and consumed by `CarStrategy._give_way()` alongside `junction_hold` and the zebra's own stop
-## line, composing by the lowest speed the same way those two already do. *(2026-09-02, the
-## player: "cars need to slow down to a full stop before the gate opens and they can go ahead
-## again.")*
+## Cars stop at a checkpoint gate exactly the way they stop at a red light: a hold found here, told
+## to the car (`LaneMover.Lane.find_a_gate_to_hold_at()`) and consumed by `CarStrategy._give_way()`
+## alongside the junction's hold and the zebra's own stop line, composing by the lowest speed the
+## same way those two already do. *(2026-09-02, the player: "cars need to slow down to a full stop
+## before the gate opens and they can go ahead again.")*
 ##
 ## **Not a junction box.** A gate stands at a segment's mouth, not at a lattice junction, so
 ## `_give_way_at_junctions()`'s own arbitration has nothing to arbitrate here — there is one axis
@@ -896,7 +910,7 @@ func _give_way_at_junctions() -> void:
 ## between cars — then lowers and the timer resets for whoever queues next.
 ##
 ## **And it never lowers onto her.** A raised boom is ground she may walk under
-## (`EventDef.SolidWhen.WHILE_LOWERED`), and its body goes back down with the arm, so an arm that came
+## (`BodySpec.SolidWhen.WHILE_LOWERED`), and its body goes back down with the arm, so an arm that came
 ## down with her beneath it would put a solid body around her — a wall she is inside rather than in
 ## front of, which no warning can be an answer to. So a raised gate stays up for as long as she is
 ## under it as well as for as long as a car is near; cars keep passing under it meanwhile, which is
@@ -908,10 +922,10 @@ func _give_way_at_junctions() -> void:
 ## already public and are all the geometry a gate needs — the along/across split below is the same
 ## projection `RegionPlanner`'s own door bodies stand on, done from the car's side instead.
 func _stop_for_gates(delta: float) -> void:
-	# Cars only: a walker's `gate_hold` is never anything but `INF`, since only a car is ever made
-	# to hold for a gate below.
+	# Cars only: a walker is never told of a gate to hold at, since only a car is ever made to hold
+	# for one below.
 	for agent in _cars:
-		agent.gate_hold = INF
+		agent.lane().find_no_gate_to_hold_at()
 	var count := _gates.size()
 	if count == 0:
 		return
@@ -920,7 +934,8 @@ func _stop_for_gates(delta: float) -> void:
 	# line it is driving along (`_gates_near_a_line()`), instead of every gate looking at every
 	# car. The accumulators below are per gate and every gate sees the cars in the crowd's own
 	# order, so what each gate ends up knowing is what the gate-by-gate scan found, tie for tie.
-	var lines := _bucket_by_line(_gates.map(func(gate): return gate.position))
+	var lines := _bucket_by_line(_gates.map(
+			func(gate: GateState) -> Vector2: return gate.ground_point()))
 	var nearest: Array[CrowdAgent] = []
 	nearest.resize(count)
 	var nearest_along := PackedFloat64Array()
@@ -932,7 +947,7 @@ func _stop_for_gates(delta: float) -> void:
 		var forward := agent.heading()
 		var here := agent.global_position
 		for index in _near_a_line(lines, count, forward, here, GATE_LANE_TOLERANCE):
-			var offset: Vector2 = _gates[index].position - here
+			var offset: Vector2 = _gates[index].ground_point() - here
 			var along := offset.dot(forward)
 			var across := (offset - forward * along).length()
 			if across > GATE_LANE_TOLERANCE:
@@ -947,22 +962,23 @@ func _stop_for_gates(delta: float) -> void:
 	for index in count:
 		var gate := _gates[index]
 		var closest := nearest[index]
-		if gate.raised:
+		if gate.is_boom_up():
 			# Stays up for a platoon rather than slamming shut between cars, and over her while she
 			# is under it; lowers the moment the road either side of it is actually clear.
-			gate.raised = anybody_within_a_length[index] == 1 or _is_she_under(gate)
-			if not gate.raised:
-				gate.stopped_for = 0.0
+			gate.set_boom_up(anybody_within_a_length[index] == 1 or _is_she_under(gate))
+			if not gate.is_boom_up():
+				gate.release_hold()
 			continue
 		if not closest or nearest_along[index] >= CarStrategy.braking_distance(closest.speed()) \
 				+ Tuning.CAR_STOP_LINE_SETBACK:
-			gate.stopped_for = 0.0
+			gate.release_hold()
 			continue
-		closest.gate_hold = maxf(0.0, nearest_along[index] - Tuning.CAR_STOP_LINE_SETBACK)
+		closest.lane().find_a_gate_to_hold_at(
+				maxf(0.0, nearest_along[index] - Tuning.CAR_STOP_LINE_SETBACK))
 		if closest.speed() < Tuning.CAR_STOPPED_SPEED:
-			gate.stopped_for += delta
-			if gate.stopped_for >= GATE_STOP_SECONDS:
-				gate.raised = true
+			gate.hold_for(delta)
+			if gate.held_for() >= GATE_STOP_SECONDS:
+				gate.set_boom_up(true)
 
 ## How wide a bucket of `_bucket_by_line()` is. Wider than a lane tolerance's whole span (64px for a
 ## hut, 80px for a gate), so a body's reach covers two buckets at most.
@@ -979,12 +995,20 @@ func _bucket_by_line(points: Array) -> Array[Dictionary]:
 		var at: Vector2 = points[index]
 		var column := floori(at.x / _LINE_BUCKET)
 		var row := floori(at.y / _LINE_BUCKET)
-		if not columns.has(column):
-			columns[column] = [] as Array[int]
-		if not rows.has(row):
-			rows[row] = [] as Array[int]
-		columns[column].append(index)
-		rows[row].append(index)
+		var in_column: Array[int]
+		if columns.has(column):
+			in_column = columns[column]
+		else:
+			in_column = []
+			columns[column] = in_column
+		in_column.append(index)
+		var in_row: Array[int]
+		if rows.has(row):
+			in_row = rows[row]
+		else:
+			in_row = []
+			rows[row] = in_row
+		in_row.append(index)
 	return [columns, rows]
 
 ## The indices of the points `_bucket_by_line()` holds that a body at `here` heading `forward` could
@@ -1042,12 +1066,12 @@ func _hold_walkers_at_doors(delta: float) -> void:
 		return
 	# Bucketed by the line each hut stands on, so a walker looks at the huts on its own line and not
 	# at all of them.
-	var lines := _bucket_by_line(_door_holds.map(func(hold): return hold.position))
+	var lines := _bucket_by_line(_door_holds.map(
+			func(hold: WalkerDoorHold) -> Vector2: return hold.stands_at()))
 	for agent in _walkers:
-		agent.door_ahead = null
-		agent.door_ahead_along = INF
+		agent.lane().clear_the_door_ahead()
 		_find_the_hut_in_front_of(agent, lines)
-		agent.strategy.advance_the_door_hold(delta)
+		agent.lane().strategy().advance_the_door_hold(delta)
 
 func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> void:
 	var forward := agent.heading()
@@ -1073,19 +1097,18 @@ func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> v
 ## first, which across two of them is not that order).
 func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, index: int) -> void:
 	var hold := _door_holds[index]
-	var offset: Vector2 = hold.position - agent.global_position
+	var offset: Vector2 = hold.stands_at() - agent.global_position
 	var along := offset.dot(forward)
-	if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along > agent.door_ahead_along:
+	if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along > agent.lane().door_ahead_along():
 		return
-	if along == agent.door_ahead_along and _door_holds.find(agent.door_ahead) < index:
+	if along == agent.lane().door_ahead_along() and _door_holds.find(agent.lane().door_ahead()) < index:
 		return
 	if (offset - forward * along).length() > WALKER_DOOR_LANE_TOLERANCE:
 		return
-	var across_coordinate: float = hold.position.x if vertical else hold.position.y
+	var across_coordinate: float = hold.stands_at().x if vertical else hold.stands_at().y
 	if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
 		return
-	agent.door_ahead = hold
-	agent.door_ahead_along = along
+	agent.lane().see_a_door_ahead(hold, along)
 
 ## Whether there is somewhere on the far side for this car to be.
 ##
@@ -1095,7 +1118,7 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 ## side of it with it. Measured before this rule: five of forty-six cars parked in a box at any
 ## instant and over half the traffic stationary.
 ##
-## `gap_ahead` is to the car in front in this car's own lane, so the room it needs is the distance
+## `gap_ahead()` is to the car in front in this car's own lane, so the room it needs is the distance
 ## to the box, plus the box, plus a car's length of road beyond it. `distance` is the car's own
 ## `distance_to_junction()`, which its caller has already read.
 func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
@@ -1107,13 +1130,13 @@ func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	# leader's speed is credited. Looked for as far as the box's far side and a gap past it, which is
 	# further than a car's brake looks.
 	var needed := far_side + Tuning.CAR_GAP_MIN
-	if agent.strategy.road_before_a_figure(needed + agent.strategy.nose) < needed:
+	if agent.lane().strategy().road_before_a_figure(needed + agent.nose()) < needed:
 		return false
-	if agent.gap_ahead == INF:
+	if agent.lane().gap_ahead() == INF:
 		return true
-	var room := agent.gap_ahead
+	var room := agent.lane().gap_ahead()
 	if room >= far_side:
-		room += agent.leader_speed * Tuning.CAR_HEADWAY_TIME
+		room += agent.lane().leader_speed() * Tuning.CAR_HEADWAY_TIME
 	return room >= far_side + Tuning.CAR_GAP_MIN
 
 ## Two cars from crossing arms that have ended up in the same box anyway.
@@ -1181,10 +1204,10 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 # shape and cost as the crowd's half of what the baby asks every physics frame (`CrowdSources`).
 
 func _physics_process(delta: float) -> void:
-	if timing.running():
-		var outer := timing.enter()
+	if _timing.running():
+		var outer := _timing.enter()
 		_tick_the_crowd(delta)
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_tick_the_crowd(delta)
 
@@ -1196,9 +1219,10 @@ func _tick_the_crowd(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before the agents step, so nothing below runs this tick, and `start_day` still placed the whole
 	# population, so the street stands full of standing people and parked cars.
-	if skip_motion:
+	if _skip_motion:
 		return
 	_advance_the_world(delta)
+	_follow_the_focus()
 	_meet_the_player()
 	_step_the_agents(delta)
 
@@ -1209,7 +1233,6 @@ func _meet_the_player() -> void:
 	if not _player:
 		return
 	var here := _player.global_position
-	_field.centre = here
 	var on_the_road := Tile.is_road(_map.tile_type_at_world(here))
 	var shove := Vector2.ZERO
 	var closing := false
@@ -1221,15 +1244,16 @@ func _meet_the_player() -> void:
 		going = Vector2.ZERO
 
 	for agent in _agents:
-		if agent.kind == CrowdAgent.Kind.WALKER:
+		var its_lane := agent.lane()
+		if its_lane.kind() == CrowdAgent.Kind.WALKER:
 			# Out of reach of both, which is most of the crowd: `make_way_for()` would return at its
 			# own distance test and `_bump()` would release the contact and return nothing, so this
 			# is the one thing either of them does for a walker this far off. See
 			# `_BEYOND_CONTACT_SQUARED` for why the test cannot disagree with theirs.
 			if (agent.global_position - here).length_squared() > _BEYOND_CONTACT_SQUARED:
-				agent.touching = false
+				agent.be_touched(false)
 				continue
-			agent.strategy.make_way_for(here, going)
+			its_lane.strategy().make_way_for(here, going)
 			shove += _bump(agent, here)
 			continue
 		# One query, two watches. `CAR_ZEBRA_SIGHT` is the strike's own reach and the give-way
@@ -1239,7 +1263,10 @@ func _meet_the_player() -> void:
 		# `tests/test_tuning_fairness.gd`'s traffic check and the crowd-traffic skill's "The traffic fairness
 		# contract" (`DECISIONS.md`, M191, the horn watches as far as the contract needs).
 		var distance := agent.global_position.distance_to(here)
-		agent.pedestrian_ahead = here if distance <= Tuning.CAR_ZEBRA_SIGHT else Vector2.INF
+		if distance <= Tuning.CAR_ZEBRA_SIGHT:
+			its_lane.see_a_pedestrian_at(here)
+		else:
+			its_lane.see_no_pedestrian()
 		if not on_the_road:
 			continue
 		if distance <= Tuning.CAR_ZEBRA_SIGHT and _strike(agent, here):
@@ -1301,9 +1328,9 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	# Released at the wider radius, so a pair that has just been pushed apart is unambiguously
 	# apart rather than sitting on the boundary.
 	if distance >= Tuning.BUMP_CLEAR_RADIUS:
-		agent.touching = false
+		agent.be_touched(false)
 		return Vector2.ZERO
-	if distance >= BUMP_RADIUS and not agent.touching:
+	if distance >= BUMP_RADIUS and not agent.is_touched():
 		# Inside the release band but never actually touched: this is somebody she is walking
 		# alongside, not somebody she walked into.
 		return Vector2.ZERO
@@ -1323,11 +1350,12 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	var push := direction * overlap * (1.0 - BUMP_PLAYER_SHARE)
 	agent.global_position += _navigator.step(agent.global_position, push, _pushed)
 	agent.place_its_move()
-	if not agent.touching:
-		agent.touching = true
-		agent.excitement.startle(BUMP_INTENSITY, BUMP_DURATION,
+	if not agent.is_touched():
+		agent.be_touched(true)
+		agent.mood().startle(BUMP_INTENSITY, BUMP_DURATION,
 				BUMP_INNER_RADIUS, BUMP_OUTER_RADIUS)
-		EventBus.crowd_bumped.emit(here)
+		if _bus:
+			_bus.crowd_bumped.emit(here)
 	# Whichever way they were pushed, keep going that way: the walker's own steering is what
 	# would otherwise undo the separation the instant it is made.
 	agent.step_aside(direction, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
@@ -1344,7 +1372,8 @@ func _strike(agent: CrowdAgent, here: Vector2) -> bool:
 	if _struck or not CarStrike.hits(agent.global_position, agent.heading(), agent.speed(), here):
 		return false
 	_struck = true
-	EventBus.hard_fail_triggered.emit("car_strike")
+	if _bus:
+		_bus.hard_fail_triggered.emit("car_strike")
 	return true
 
 ## The horn, sounded at somebody standing in the lane this car is about to occupy. Returns
@@ -1360,11 +1389,45 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 		return false
 	if absf(offset.dot(Vector2(-forward.y, forward.x))) > Tuning.CAR_STRIKE_HALF_WIDTH * 2.0:
 		return false
-	if not agent.excitement.is_startled():
-		EventBus.car_near_miss.emit(here)
-	agent.excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+	if _bus and not agent.mood().is_startled():
+		_bus.car_near_miss.emit(here)
+	agent.mood().startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
+
+## **Recycles every car a body has landed on, where nobody can see it go**: a car whose body
+## covers a tile of `tiles` (`GroundShape.tiles_under()`, which always holds the tile its centre,
+## so the tile of its lane it stands on, is in), told to leave where it is, out of her view
+## (`LaneMover.leave_if_unseen()`). `tiles` is the ground the body stands on
+## (`EventSpawner.footprint_of()`), which `EventStreaming` names to its listener once the
+## body is recorded (`EventStreaming.use_body_listener()`): a unit drawn as she comes near it, day
+## 13's swapped roadblock, a mast put up, a place put on her route and a siting moved.
+##
+## **Where the car comes from.** A unit draws only while no part of it is within the 900px stream
+## radius of her, so a draw's bodies land about 870px or more from her, twice `OUT_OF_SIGHT`. The
+## crowd's field reaches that far: its box's corners are 1,131px from her and a lane's entry band
+## runs 420px (`LaneMover.ENTRY_SPREAD`) beyond the box's edge, up to 1,220px along a street. On a
+## played day every car a draw reaches is out of her view and is recycled. A body put down near her
+## (day 13's swapped roadblock stands across the nearest section beside her routes, out of her sight
+## but often within `OUT_OF_SIGHT` of her) can have a car under it that this check counts as in her
+## view; **that car is left alone**, it is in no pocket (`CarStrategy.begin_frame()` holds only a
+## car in a sealed junction, `CrowdPockets`), and it drives out of the body as a walker walks out.
+## The view check is the crowd's own contract for whoever calls it. **Only a car is recycled**: a
+## walker standing in the new body walks out of it (`LaneMover._keep_out_of_a_body()`).
+func recycle_cars_on(tiles: Array[Vector2i]) -> void:
+	if tiles.is_empty():
+		return
+	var covered := {}
+	for tile in tiles:
+		covered[tile] = true
+	for agent in _agents:
+		var lane := agent.lane()
+		if lane.kind() != CrowdAgent.Kind.CAR:
+			continue
+		for under in lane.shape().tiles_under(agent.position, agent.heading()):
+			if covered.has(under):
+				agent.leave_if_unseen()
+				break
 
 func agent_count() -> int:
 	return _agents.size()

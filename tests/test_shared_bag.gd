@@ -7,7 +7,7 @@ extends RefCounted
 ## which the nested bag is not; that its marble is spent like a plain one; and that its draws are
 ## reproducible from its seed.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t)
 	_test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t)
 	_test_a_shared_bag_is_filled_again_when_empty(t)
@@ -17,7 +17,7 @@ func run(t) -> void:
 
 ## Three of its marbles in one regular bag, and the regular bag drawn through twice: the six draws
 ## are six draws of the shared bag, which hands out exactly its own marbles, once each.
-func _test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t) -> void:
+func _test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b", "c", "d", "e", "f"], 3)
 	var regular := MarbleBag.new([], [shared, shared, shared], 11)
 	var drawn: Array = []
@@ -33,7 +33,7 @@ func _test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t) -> v
 			"and six draws are the shared bag's six marbles, none twice: %s" % [drawn])
 
 ## Two regular bags, each holding the shared bag, take from the same marbles.
-func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t) -> void:
+func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b", "c", "d"], 5)
 	var first := MarbleBag.new([], [shared, "x"], 1)
 	var second := MarbleBag.new([], [shared, shared], 2)
@@ -48,13 +48,13 @@ func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t) -> void:
 			"a draw of either regular bag draws the one shared bag (%d taken, %d left)"
 			% [got.size(), shared.left()])
 	var seen := {}
-	for marble in got:
+	for marble: Variant in got:
 		seen[marble] = true
 	t.check(seen.size() == got.size(),
 			"so no marble comes out of it twice before it is empty: %s" % [got])
 
 ## Empty, it is filled again from its own marbles — where a nested bag of n is spent after n draws.
-func _test_a_shared_bag_is_filled_again_when_empty(t) -> void:
+func _test_a_shared_bag_is_filled_again_when_empty(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b"], 9)
 	var regular := MarbleBag.new([], [shared], 4)
 	var counts := {"a": 0, "b": 0}
@@ -73,27 +73,27 @@ func _test_a_shared_bag_is_filled_again_when_empty(t) -> void:
 
 ## A regular bag holding k shared marbles draws the shared bag exactly k times per fill, not for
 ## ever: the next draw is a plain marble of the next fill.
-func _test_a_shared_marble_is_spent_like_a_plain_one(t) -> void:
+func _test_a_shared_marble_is_spent_like_a_plain_one(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b", "c", "d", "e"], 2)
 	var regular := MarbleBag.new([], [shared, shared, "x"], 6)
 	for _i in 3:
 		regular.draw()
-	t.check(shared.drawn == 2,
+	t.check(shared.draws_made() == 2,
 			"a fill of a bag holding two shared marbles and a plain one draws the shared bag twice "
-			+ "(%d)" % shared.drawn)
+			+ "(%d)" % shared.draws_made())
 	t.check(regular.left() == 0, "and the fill is spent")
 	for _i in 3:
 		regular.draw()
-	t.check(shared.drawn == 4, "the next fill draws it twice more (%d)" % shared.drawn)
+	t.check(shared.draws_made() == 4, "the next fill draws it twice more (%d)" % shared.draws_made())
 	var peeked := MarbleBag.shared(["a", "b", "c"], 8)
 	var through := MarbleBag.new([], [peeked, peeked], 1)
 	var looked: Variant = through.peek()
-	t.check(through.draw() == looked and peeked.drawn == 1,
+	t.check(through.draw() == looked and peeked.draws_made() == 1,
 			"a peek at it is the marble the draw takes, and the draw is one of the shared bag's")
 
 ## A rig takes from the bag being drawn from: a shared marble in it gives a draw of the shared bag
 ## and is spent there like a plain marble, so no bag marble is left standing in the regular bag.
-func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_it(t) -> void:
+func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_it(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["s1", "s2", "s3", "s4"], 3)
 	var regular := MarbleBag.new([], [shared, shared, "x", "x"], 8)
 	regular.rig(["ensured"], 4)
@@ -101,18 +101,21 @@ func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_i
 			"a rig of 4 holds its ensured marble")
 	var front := regular.bag_in_front()
 	var from_shared := 0
-	for marble in front:
+	for marble: Variant in front:
 		if str(marble).begins_with("s"):
 			from_shared += 1
-	t.check(shared.drawn == from_shared and not front.any(func(m: Variant) -> bool: return m is MarbleBag),
+	t.check(shared.draws_made() == from_shared and not front.any(func(m: Variant) -> bool: return m is MarbleBag),
 			"the shared marbles it took were draws of the shared bag, none left as a bag marble "
-			+ "(%d drawn, %d in the rig)" % [shared.drawn, from_shared])
-	t.check(regular.sizes() == [4, 1],
+			+ "(%d drawn, %d in the rig)" % [shared.draws_made(), from_shared])
+	var in_front := regular.left()
+	for _i in in_front:
+		regular.draw()
+	t.check(in_front == 4 and regular.left() == 1,
 			"and the regular bag keeps one slot of its four: three were taken, the shared ones "
-			+ "spent like plain ones (%s)" % [regular.sizes()])
+			+ "spent like plain ones (%d in front, %d behind)" % [in_front, regular.left()])
 
 ## Rebuilding both bags from their seeds and skipping to a count draws what the first run drew next.
-func _test_a_shared_bag_draws_the_same_from_the_same_seed(t) -> void:
+func _test_a_shared_bag_draws_the_same_from_the_same_seed(t: TestRunner) -> void:
 	var marbles := []
 	for i in 20:
 		marbles.append(i)

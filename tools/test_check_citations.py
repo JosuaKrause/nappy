@@ -120,6 +120,92 @@ class CheckCitationsTests(unittest.TestCase):
         self.flagged("A rule (woolly-penguin #999, the rule).\n", "has no `## #999` heading")
         self.flagged("A rule (PLAYTEST-16, finding 7).\n", "cite one with the statement's number")
 
+    def test_a_wrong_second_citation_is_flagged_after_each_separator(self) -> None:
+        # Numbered names are held by `NUMBERED`; the bare-name separators have their own test below.
+        self.flagged("A rule (woolly-penguin #759, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (PLAYTEST-16 7, PLAYTEST-16 8).\n", "has no statement 8")
+        self.flagged("A rule (PLAYTEST-16 7, and brisk-heron 5).\n", "(brisk-heron 5)")
+        self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun #759).\n", "(woolly-pengiun) names no file")
+        self.flagged("A rule (PLAYTEST-16 7; woolly-penguin #759, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (PLAYTEST-16 7, see woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (PLAYTEST-16 7; and woolly-penguin #999).\n", "(woolly-penguin #999)")
+
+    def test_a_citation_after_words_is_read(self) -> None:
+        # Numbered names after words, held by `NUMBERED`.
+        self.flagged("A rule (the filer's proposal, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (**playtest-feedback**, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (dependency injection, woolly-penguin #999; the rest).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (a thing, also woolly-penguin #999).\n", "(woolly-penguin #999)")
+
+    def test_a_numbered_name_is_read_wherever_it_stands(self) -> None:
+        # Mutation: `NUMBERED` reading only names that are pieces skips these.
+        self.flagged("A rule (the rule is woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (woolly-penguin #759, PLAYTEST-16 8 too).\n", "has no statement 8")
+        self.flagged("A rule (as PLAYTEST-16 8 says; or not).\n", "has no statement 8")
+
+    def test_what_an_and_joins_decides_a_bare_name(self) -> None:
+        # Mutations: a bare name beside any "and" skipped; `all` turned into `any`; the neighbour taken from
+        # the list rather than from what the "and" joins; the lookahead's inner tail dropped or lacking " and ".
+        self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun).\n", "(woolly-pengiun) names no file")
+        self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun and polite-marten).\n", "(woolly-pengiun)")
+        self.flagged("A rule (polite-marten, the rule and woolly-pengiun).\n", "(woolly-pengiun)")
+        self.flagged("A rule (PLAYTEST-16 8 and PLAYTEST-16 7 and brisk-heron 1).\n", "has no statement 8")
+
+    def test_a_bare_name_is_read_after_each_separator(self) -> None:
+        # Mutations: `PIECE` without `, `, `, see `, `, also `, or the leading `and ` after a `;`; only the first
+        # two pieces of a part read; pieces read only in a part that opens with one; no split at `;`.
+        for text in (
+            "(PLAYTEST-16 7, woolly-pengiun)",
+            "(PLAYTEST-16 7, see woolly-pengiun)",
+            "(a thing, also woolly-pengiun)",
+            "(PLAYTEST-16 7; and woolly-pengiun)",
+            "(PLAYTEST-16 7, brisk-heron 1, woolly-pengiun)",
+            "(the filer's proposal, woolly-pengiun)",
+            "(the filer's proposal; woolly-pengiun)",
+            "(polite-marten, long-standing)",
+        ):
+            with self.subTest(text):
+                self.flagged(f"A rule {text}.\n", "names no file")
+
+    def test_a_numbered_name_at_a_piece_start_is_cited_once(self) -> None:
+        # Mutation: `NUMBERED` also citing a name that is a piece prints the hit twice.
+        self.skill("A rule (PLAYTEST-16 8).\n")
+        self.assertEqual(self.run_check()[1].count("\n"), 1)
+
+    def test_a_date_a_decimal_or_a_trailing_count_is_no_statement_number(self) -> None:
+        # Mutation: the tail of `NUMBERED` refusing only a word character or `#`.
+        self.skill(
+            "(polite-marten 2026-09-26) (CC BY-NC-ND 4.0) (main-and-state 3/4) (see PLAYTEST-16 7, 3 times).\n"
+            "(as PLAYTEST-16 1-7 says).\n"
+        )
+        self.assertEqual(self.run_check(), (0, "", ""))
+        self.flagged("(see PLAYTEST-16 7, 3 times) (as PLAYTEST-16 1-8 says)\n", "has no statement 8")
+
+    def test_a_third_citation_is_read(self) -> None:
+        # Numbered names in a part; the bare third piece is held by the bare-name test.
+        self.flagged("A rule (PLAYTEST-16 7, brisk-heron 1, PLAYTEST-16 8).\n", "has no statement 8")
+        self.flagged("A rule (PLAYTEST-16 7, brisk-heron 1 and woolly-penguin #999).\n", "(woolly-penguin #999)")
+
+    def test_second_citations_that_resolve_pass(self) -> None:
+        self.skill(
+            "A rule (woolly-penguin #759, woolly-penguin #758; PLAYTEST-16 7, and brisk-heron 1, 13).\n"
+            "Also (the filer's proposal, woolly-penguin #759) and (PLAYTEST-16 7, see brisk-heron 1).\n"
+        )
+        self.assertEqual(self.run_check()[0], 0)
+
+    def test_prose_with_hyphenated_words_is_not_a_citation(self) -> None:
+        # Mutations: a piece read with no trailing separator; any word read, not only a hyphenated one; "and"
+        # joining two bare names, or a bare name and anything, read as a citation.
+        self.skill(
+            "Free text (polite-marten, a well-known rule and a long-standing one).\n"
+            "(polite-marten, well-known rules apply) (polite-marten, proposal) (well-known and good).\n"
+            "(well-known and long-standing) (polite-marten, short-lived and never pushed).\n"
+            "(well-known and long-standing and good) (polite-marten, well-known and long-standing rules).\n"
+            "(a rule, short-lived and woolly-penguin #759 too).\n"
+            "(the rows, 3-5) (lines 3-5, 7-9) (woolly-penguin #759, 2026-09-26).\n"
+        )
+        self.assertEqual(self.run_check(), (0, "", ""))
+
     def test_an_inbox_citation_names_a_playtest_holding_the_note(self) -> None:
         self.flagged("Filed as inbox #760 in woolly-penguin.\n", "(inbox #760 in woolly-penguin)")
         self.flagged("Filed as inbox #759 in woolly-pengiun.\n", "(woolly-pengiun) names no file")

@@ -18,17 +18,19 @@ extends Node
 ##
 ## `RunSession` owns it: it is only added to the tree when a run is being traced, so when telemetry
 ## is off this costs nothing at all rather than costing a disabled check per frame, and the session
-## calls it on the domain events that start and end a day or a section.
+## calls it on the domain events that start and end a walk.
 ##
-## **The escape is watched by the same observer.** *("The escape shouldn't behave any different
-## than the rest of the game.")* Each of its two sections is a day with the day's own clock, so
-## `setup_escape()` hands this the run's `DayController`, the session says which world she is in as
-## each section starts — `watch_building()` or `watch_city()` — before `start_section()`, the
-## escape's `start_day()`, and a section ends on `day_finished()` as a day does. What a day's
-## watchers read that a section does not have is what switches them off, rather than a mode flag in
-## each: no route tree, so no `path`; no `ResistanceDirector`, so no `contact`; no `CityMap` in the
-## building, so no `cross`, `road`, `calm` or `left` there, no trail and no dusk map, and a tile in
-## any line is the building's own grid. The events are an
+## **Every walk is watched the same way, the escape's included.** *("The escape shouldn't behave
+## any different than the rest of the game.")* `setup()` hands it once what no world holds — the
+## run, the day's clock, the resistance where there is one, the badges — and as each walk's world
+## stands the session hands it that world's parts (`watch()`): the map she walks, its events, her
+## and the baby, and in a city the city's map, today's streets and the crowd's sources; once the
+## walk is placed, `start()` writes her `start` line, and a walk ends on `day_finished()`. What a
+## walk's world does not have is what switches a watcher off, rather than a mode flag in each: no
+## route tree (the escape's city grows none), so no `path`; no `ResistanceDirector` (the escape has
+## none), so no `contact`; no `CityMap` in the building, so no `cross`, `road`, `calm` or `left`
+## there, no trail and no dusk map, and a tile in any line is the building's own grid. The events
+## are an
 ## event source either way — an `EventManager`, the city's or the building's, answering `instances()`,
 ## with its excitement read off the world's sets (`WorldContext`) — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
 ## `frame` and the losing line read a section exactly as they read a day.
@@ -112,8 +114,8 @@ const BLOCKED_REPORT_INTERVAL := 3.0
 ## The run log every line here goes into and whose clock stamps them (`Telemetry`), handed in at
 ## its making by `RunSession`, which owns both: the boot's own log, or a suite's.
 var _log: Telemetry
-## The run being watched (`RunState`), handed in by `setup()` or `setup_escape()`: what a calm
-## arrival's block is now (`attempt_spend.city_state`).
+## The run being watched (`RunState`), handed in by `setup()`: what a calm arrival's block is now
+## (`attempt_spend().block_arcs()`).
 var _run: RunState
 ## The city's map — the day's, or the escape's once she is out of the building — or null in the
 ## escape's building, which is what every street, calm-ground, closure, met-event and corridor
@@ -126,26 +128,27 @@ var _streets: DayStreets
 ## for the meters' breakdown. Null where there is no crowd, as in the escape's building.
 var _crowd: ExcitementSources
 ## The map of the world being walked (`WorldMap`) — the city's, or the building's while section one
-## runs — handed in with it (`setup()`, `watch_building()`, `watch_city()`): what every line that
-## names a tile asks.
+## runs — handed in with it (`watch()`): what every line that names a tile asks.
 var _world_map := WorldMap.open_ground()
 ## Whether the walk being watched keeps a trail for a dusk map: every day's and the escape's city's,
 ## not the building's, which has no city map to draw one on.
 var _keeps_a_trail := true
 ## The event source being watched — the day's `EventManager`, the escape's building's in the
-## building and the escape's city's outside it — handed in with the map (`setup()`,
-## `watch_building()`, `watch_city()`).
-var _events: Node
-## `"the building"` or `"the city"` while the escape is being watched, `""` on a day. Written into
-## the escape's own `start`, `lost`, `home` and `woke` lines.
+## building and the escape's city's outside it — handed in with the map (`watch()`).
+var _events: EventManager
+## `"the building"` or `"the city"` while a section of the escape is being watched, `""` on a day:
+## the section the walk's spec is (`watch()`), named in its `start`, `lost`, `home` and `woke`
+## lines.
 var _escape_section := ""
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
-## The screen-edge badges. Optional: everything else here is reachable from the world, and this
-## one lives in a `CanvasLayer` that `main` owns.
-var _edge: DangerEdge
+## The screen-edge badges up each frame, handed in by `setup()`: what the edge announces
+## (`DangerEdge.badges()`, which `main` hands on), since this may not name the view the badges are
+## drawn in. Optional: everything else here is reachable from the world; handed none, it is the base,
+## which has no badges up, so no `edge badge` line is written.
+var _edge_badges := EdgeBadges.new()
 
 # Tile and ground state, so a transition can be spotted.
 var _was_calm := false
@@ -158,7 +161,7 @@ var _road_from := Vector2i.ZERO
 var _carriageway := 0.0
 
 ## The day's corridor, the very tree the day was planned on (`DayStreets.route_tree()`, read off
-## the city at `start_day()`), so that a trace says whether she was on a path or off it on the
+## the city at `start()`), so that a trace says whether she was on a path or off it on the
 ## streets she actually played, and the dawn and dusk maps `RunSession` writes are drawn on the
 ## same tree. Null in the escape, whose chains are not a route tree, which keeps `path` silent.
 var _tree: RouteTree
@@ -182,17 +185,17 @@ var _path_branches: Array[int] = []
 ## is `(x, y, run_excess_ratio)` — a third component on the one trail rather than a second trail to
 ## keep in step with it, since running is a property of a stretch of the walk and not a separate
 ## picture. Sampled by distance (`TRAIL_SAMPLE_DISTANCE`), not by frame; see `_watch_the_trail`.
-## Cleared in `start_day()`, same as everything else below it: a rewound day was not walked.
+## Cleared in `start()`, same as everything else below it: a rewound day was not walked.
 var _trail: Array[Vector3] = []
 ## The last point actually recorded, so the next one can be measured against it. `_trail` is not
 ## read back for this because `is_empty()` already has to be checked to write the first point at
 ## all, and a stray sentinel value would be one more thing to keep in sync with it.
 var _trail_last := Vector2.ZERO
 
-## Which planned events she actually met today — came within `def.outer_radius` of, the field she
-## can feel — keyed by the `EventScheduler.Planned` itself so the dusk map can ask "was this one of
-## them" with no second identifier to keep in sync with the plan list it is already drawing. See
-## `_watch_met_events`.
+## Which planned events she actually met today — came within the field she can feel
+## (`EventPlan.field_reaches()`) — keyed by the `EventPlan` itself so the dusk map can
+## ask "was this one of them" with no second identifier to keep in sync with the plan list it is
+## already drawing. See `_watch_met_events`.
 var _met_events := {}
 
 # When a bump was last written down, and how many have gone unwritten since.
@@ -238,9 +241,8 @@ var _contact_seen := false
 ## line, written into the run log (`FrameWatch`), built over the log this observer is handed.
 var _frames: FrameWatch
 
-## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
-## cannot leave it out — the frame watch must cost nothing but this one check while the flag is
-## off.
+## Whether `--spikes` was given, handed in through `setup()` so a builder cannot leave it out —
+## the frame watch must cost nothing but this one check while the flag is off.
 var _spikes_on := false
 
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
@@ -256,41 +258,18 @@ func _init(run_log: Telemetry) -> void:
 	_log = run_log
 	_frames = FrameWatch.new(run_log.note)
 
-## A day's `setup()`: the run, the city's map, the day's events, today's streets and what charges her
-## from the crowd, then her, the baby, the day's clock, the resistance and the badges.
-func setup(run: RunState, map: CityMap, events: EventManager, streets: DayStreets,
-		crowd: ExcitementSources, player: Stroller, baby: Baby, day: DayController,
-		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
-	_spikes_on = spikes
-	_run = run
-	_map = map
-	_world_map = map
-	_events = events
-	_streets = streets
-	_crowd = crowd
-	_player = player
-	_baby = baby
-	_day = day
-	_resistance = resistance
-	_edge = edge
-	_listen()
-
-## The escape's own `setup()`: the run, her, the baby, the badges, and the day's clock, which times
+## What every walk of the boot is watched with, handed once: the run, the day's clock, which times
 ## and gates a section exactly as it does a day, so `_process()` and every duration below read a
-## section the way they read a day. No city yet,
-## no map and no `ResistanceDirector`: the world is told per section, by `watch_building()` or
-## `watch_city()`, and the escape has no subquest to watch.
-func setup_escape(run: RunState, player: Stroller, baby: Baby, clock: DayController, spikes: bool,
-		edge: DangerEdge = null) -> void:
+## section the way they read a day; the resistance, null where the run has none (the escape); whether
+## `--spikes` was given; and the badges.
+func setup(run: RunState, clock: DayController, resistance: ResistanceDirector, spikes: bool,
+		badges: EdgeBadges = null) -> void:
 	_spikes_on = spikes
 	_run = run
-	_player = player
-	_baby = baby
 	_day = clock
-	_edge = edge
-	_listen()
-
-func _listen() -> void:
+	_resistance = resistance
+	if badges:
+		_edge_badges = badges
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
@@ -299,57 +278,46 @@ func _listen() -> void:
 	EventBus.pelican_sighted.connect(_on_pelican_sighted)
 	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
 
-## Section one: the building's map, and the events walked among in it. No `CityMap`, so the street,
-## calm-ground and closure watchers have nothing to ask and say nothing.
-func watch_building(map: WorldMap, events: Node) -> void:
+## The world a walk is walked in, as it stands: `map`, the map of the ground she walks; `events`, the
+## events walked among; her and the baby; and where the world is a city, `city_map`, today's
+## `streets` and the crowd's sources (`crowd`), each null in a world with none, which switches off
+## the street, calm-ground, closure and trail watchers and the dusk map. `section` names the section
+## of the escape the walk is in its lines, "" on a day.
+func watch(map: WorldMap, events: EventManager, player: Stroller, baby: Baby, city_map: CityMap,
+		streets: DayStreets, crowd: ExcitementSources, section: String) -> void:
 	_world_map = map
 	_events = events
-	_map = null
-	_streets = null
-	_crowd = null
-	_keeps_a_trail = false
-	_escape_section = "the building"
-
-## Section two: the city with nobody in it, and the finale's own plan on it — its map, its events,
-## its streets and its crowd's sources, as a day's `setup()` takes them. The map is the one
-## she walked for fourteen days, so crossings, stretches on the road and arrivals at calm ground —
-## the chains' stops — are written exactly as a day writes them.
-func watch_city(map: CityMap, events: EventManager, streets: DayStreets,
-		crowd: ExcitementSources) -> void:
-	_map = map
-	_world_map = map
-	_keeps_a_trail = true
-	_events = events
+	_player = player
+	_baby = baby
+	_map = city_map
 	_streets = streets
 	_crowd = crowd
-	_escape_section = "the city"
+	_keeps_a_trail = city_map != null
+	_escape_section = section
 
-## A section is about to be walked, the first time or again after a loss — the escape's
-## `start_day()`. Clears what the last attempt left, puts the log's clock back to zero **and its
-## automatic-snapshot schedule with it** (`Telemetry.restart_section_clock()`) so a retry's lines
-## and its shots are both timed from its own start the way a day's are from dawn, and writes the
-## `start` line. **A retry says so on it**, under the retry's own header: the `lost` line of the
-## attempt before says why, and this one says it began again.
+## The walk is placed and her clock is about to run, the first time or again after a loss
+## (`restarted`). Clears what the last attempt left, puts the log's clock back to zero **and its
+## automatic-snapshot schedule with it** (`Telemetry.restart_section_clock()`) so a retry's lines and
+## its shots are both timed from its own start, takes the corridor the walk was planned on, and
+## writes the `start` line: her doorstep on a day, and on a section of the escape which section she
+## entered — **a retry says so**, under the retry's own header: the `lost` line of the attempt
+## before says why, and this one says it began again. Called after the walk's plan has been written,
+## so the `start` line is the first thing under the header that the player is responsible for.
 ##
-## `_tree` stays null, which is what keeps `path` silent: the escape's chains are grown by
-## `FinalePlanner`, not a `RouteTree`, and there is no corridor to be on or off.
-func start_section(restarted: bool) -> void:
+## The corridor is the day's route tree (`DayStreets.route_tree()`); the escape's city grows none
+## and the building has no streets, so `_tree` stays null there, which is what keeps `path` silent.
+func start(restarted: bool) -> void:
 	_forget_the_walk()
 	_log.restart_section_clock()
-	_log.note("start", "%s %s at %s, facing %s" % [
-		"restarted" if restarted else "entered", _escape_section,
-		RunTrace.tile(_tile_of(_player.global_position)),
-		RunTrace.compass(_player.facing)])
-
-## Clears yesterday. Called after the day's plan has been written, so the `start` line is the
-## first thing under the header that the player is responsible for.
-func start_day() -> void:
-	_forget_the_walk()
-	_tree = _streets.route_tree()
-	_corridor = Corridor.of(_tree)
-	_log.note("start", "doorstep %s, facing %s" % [
-		RunTrace.tile(_map.world_to_tile(_player.global_position)),
-		RunTrace.compass(_player.facing)])
+	_tree = _streets.route_tree() if _streets else null
+	_corridor = Corridor.of(_tree) if _tree else null
+	var at := RunTrace.tile(_tile_of(_player.global_position))
+	var facing := RunTrace.compass(_player.facing_direction())
+	if _escape_section == "":
+		_log.note("start", "doorstep %s, facing %s" % [at, facing])
+	else:
+		_log.note("start", "%s %s at %s, facing %s" % [
+			"restarted" if restarted else "entered", _escape_section, at, facing])
 
 ## Everything one walk leaves behind, cleared for the next — a day's, or a section's. The ground
 ## state is only read where there is a map to read it from.
@@ -399,11 +367,10 @@ func _tile_of(world_position: Vector2) -> Vector2i:
 	return _world_map.world_to_tile(world_position)
 
 ## The event source being watched: a day's `EventManager`, or the escape's section's.
-func _source() -> Node:
+func _source() -> EventManager:
 	return _events
 
-## The live instances, typed, from whichever source is being watched — see `DangerEdge._live()`
-## for why a duck-typed source is read through one function.
+## The live instances of the source being watched, none while there is no source.
 func _live() -> Array[EventInstance]:
 	var source := _source()
 	if not source:
@@ -428,31 +395,30 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 	# A section of the escape is named on its line: the building or the city.
 	var where := " in %s" % _escape_section if _escape_section != "" else ""
 	_log.note("lost", "%s%s after %.1fs%s — %s | %s | near: %s" % [
-		name.to_lower(), where, _day.time_total - _day.time_remaining,
+		name.to_lower(), where, _day.seconds_total() - _day.seconds_left(),
 		" to %s" % cause if cause != "" else "",
-		_day.failure_reason, _meters(), _nearest()])
+		_day.loss_reason(), _meters(), _nearest()])
 	# The single most useful frame in a run, and the only one that is always worth the file: what
 	# the street looked like at the moment the day ended.
 	_log.snapshot("lost-%s" % name.to_lower())
 
 ## A won day's `home` line: the margin, and in the escape where she got out — through the
 ## building's service exit, or by the tunnel or the bridge out of the city
-## (`DayController.exit_reached`, a `CityEdge.Kind`).
+## (`DayController.exit_taken()`, a `CityExit.Kind`).
 func _won_line() -> String:
 	if _escape_section == "":
-		return "WON, %.1fs to spare" % _day.time_remaining
-	if _day.exit_reached < 0:
-		return "out of %s, %.1fs to spare | %s" % [_escape_section, _day.time_remaining, _meters()]
+		return "WON, %.1fs to spare" % _day.seconds_left()
+	if _day.exit_taken() < 0:
+		return "out of %s, %.1fs to spare | %s" % [_escape_section, _day.seconds_left(), _meters()]
 	return "escaped by the %s, %.1fs to spare | %s" % [
-		"tunnel" if _day.exit_reached == CityEdge.Kind.TUNNEL else "bridge", _day.time_remaining,
-		_meters()]
+		CityExit.name_of(_day.exit_taken()), _day.seconds_left(), _meters()]
 
 # ------------------------------------------------------------------- watching ---
 
 func _process(delta: float) -> void:
 	if not _day or not _day.is_running():
 		return
-	_log.set_clock(_day.time_total - _day.time_remaining)
+	_log.set_clock(_day.seconds_total() - _day.seconds_left())
 	var here := _player.global_position
 	_watch_the_corridor(here)
 	_watch_the_ground(here, delta)
@@ -610,10 +576,10 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	if calm != _was_calm:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(
-				_run.attempt_spend.city_state.purpose_of(_map.block_plans, block))
+				_run.attempt_spend().block_arcs().purpose_of(_map.plans_by_block(), block))
 		_log.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
 			"entered" if calm else "left", what, RunTrace.tile(block),
-			_baby.sleepiness])
+			_baby.sleepiness_level()])
 	_was_calm = calm
 
 ## Writes down a stretch on the road, if it lasted longer than crossing one takes.
@@ -676,7 +642,7 @@ func _watch_the_cues(delta: float) -> void:
 			# is up on the pavement after a car has gone past is a cue outliving what it warns
 			# about, with a number on it.
 			_log.note("cue", "the mark over her head: %s for %.1fs (%.1fs of it on the "
-					% [Stroller.Alert.keys()[_mark].to_lower(),
+					% [String(Stroller.Alert.keys()[_mark]).to_lower(),
 					_log.clock() - _mark_since, _mark_on_road]
 					+ "road)%s" % _mark_why)
 		if level != Stroller.Alert.NONE:
@@ -691,17 +657,15 @@ func _watch_the_cues(delta: float) -> void:
 				_log.snapshot("mark-now")
 		_mark = level
 
-	if not _edge:
-		return
 	var up := {}
-	for badge in _edge.announcing():
-		var id: String = badge["id"]
+	for badge in _edge_badges.announcing():
+		var id := badge.logged_name()
 		up[id] = true
 		if _badges.has(id):
 			continue
 		_badges[id] = _log.clock()
 		_log.note("cue", "edge badge: %s at %.0fpx, closing %.0fpx/s"
-				% [id, badge["distance"], badge["approach"]])
+				% [id, badge.distance(), badge.approach()])
 	for id: String in _badges.keys():
 		if up.has(id):
 			continue
@@ -717,33 +681,33 @@ func _watch_the_cues(delta: float) -> void:
 func _where_is(id: String) -> String:
 	var best := INF
 	for instance in _live():
-		if instance.logged_name() == id and not instance.is_finished:
+		if instance.logged_name() == id and not instance.is_gone():
 			best = minf(best, instance.global_position.distance_to(_player.global_position))
 	return "now %.0fpx away" % best if best < INF else "no longer in the world"
 
 ## What put the mark over her head, rather than what merely happened to be nearest.
 ##
-## Exactly three things can: a `hard_fail` event whose radius covers her, a car that drives — the
-## patrol car or the fire engine — closing on her in its lane (`EventDef.vehicle`,
-## `EventCarDriving.closes_on()`), and a crowd car closing on the
+## Exactly three things can: a lethal event whose radius covers her, a car that drives — the
+## patrol car or the fire engine — closing on her in its lane (`EventInstance.drives()`,
+## `EventInstance.closes_on()`), and a crowd car closing on the
 ## lane she is standing in. **`_nearest()` answers a different question and answers it misleadingly
 ## here** — it will blame an ice cream van five hundred pixels away for a car's horn, which is the
 ## *"unattributable"* mark this entry exists to explain, reproduced in the log meant to settle it.
 func _what_raised_the_mark() -> String:
 	var here := _player.global_position
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
-		if instance.def.vehicle != null:
-			if instance.car and instance.car.closes_on(here):
+		if instance.drives():
+			if instance.closes_on(here):
 				return "%s %.0fpx" % [instance.logged_name(),
 						instance.global_position.distance_to(here)]
 			continue
-		if not instance.def.hard_fail:
+		if not instance.ends_the_day():
 			continue
-		var distance := instance.global_position.distance_to(here)
-		if distance <= instance.def.outer_radius:
-			return "%s %.0fpx" % [instance.logged_name(), distance]
+		if instance.field_reaches(here):
+			return "%s %.0fpx" % [instance.logged_name(),
+					instance.global_position.distance_to(here)]
 	if _map and Tile.is_road(_map.tile_type_at_world(here)):
 		return "a car, and she is in the road"
 	return "nothing in reach"
@@ -752,8 +716,8 @@ func _what_raised_the_mark() -> String:
 ## A result code alone never distinguishes a day lost to noise from a day lost to the clock,
 ## which is the entire reason this entry exists.
 func _watch_the_meters() -> void:
-	var frozen := _baby.state != GameEnums.BabyState.ASLEEP \
-			and _baby.excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD
+	var frozen := not _baby.is_asleep() \
+			and _baby.excitement_level() >= Tuning.EXCITEMENT_CALM_THRESHOLD
 	if frozen == _was_frozen:
 		return
 	_was_frozen = frozen
@@ -781,15 +745,15 @@ func _watch_idling(_delta: float) -> void:
 	_idling = idle
 	if idle:
 		_idle_since = _log.clock()
-		_idle_excitement = _baby.excitement
-		_idle_sleepiness = _baby.sleepiness
+		_idle_excitement = _baby.excitement_level()
+		_idle_sleepiness = _baby.sleepiness_level()
 		return
 	var duration := _log.clock() - _idle_since
 	if duration < IDLE_MIN_TIME:
 		return
 	_log.note("idle", "stood still %.1fs on %s, exc %.0f -> %.0f, sleep %.0f -> %.0f" % [
 		duration, _ground_at(_player.global_position),
-		_idle_excitement, _baby.excitement, _idle_sleepiness, _baby.sleepiness])
+		_idle_excitement, _baby.excitement_level(), _idle_sleepiness, _baby.sleepiness_level()])
 
 ## The ground she is standing on, for the `idle` line: the tile type where there is a map, and the
 ## building where there is not — every floor in it is one kind of ground as far as the meters go.
@@ -859,14 +823,14 @@ func _watch_running() -> void:
 	_running = running
 	if running:
 		_run_started = _log.clock()
-		_run_excitement = _baby.excitement
+		_run_excitement = _baby.excitement_level()
 		_run_nearest = _nearest()
 		return
 	var duration := _log.clock() - _run_started
 	if duration < RUN_MIN_TIME:
 		return
 	_log.note("run", "ran %.1fs, exc %.0f -> %.0f, nearest when it started: %s" % [
-		duration, _run_excitement, _baby.excitement, _run_nearest])
+		duration, _run_excitement, _baby.excitement_level(), _run_nearest])
 
 ## Doubling back. Not every turn — a lap of a block is four corners and no decision, whereas
 ## walking back the way you came means something in front of you changed the plan.
@@ -904,18 +868,16 @@ func _because_of_a_closure() -> String:
 	return ", %.1fs after seeing the %s" % [
 		_log.clock() - _last_closure_at, _last_closure]
 
-## What came within reach, and whether it kept coming. The threshold is the event's own outer
-## radius — the distance at which it starts to reach the meter — so nothing here invents a
-## number about what "near" means.
+## What came within reach, and whether it kept coming. The threshold is the event's own field
+## (`EventInstance.field_reaches()`) — the distance at which it starts to reach the meter — so
+## nothing here invents a number about what "near" means.
 func _watch_what_is_near(here: Vector2) -> void:
 	var live := {}
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone() or not instance.field_reaches(here):
 			continue
 		var id := instance.get_instance_id()
 		var distance := instance.global_position.distance_to(here)
-		if distance > instance.def.outer_radius:
-			continue
 		live[id] = true
 		var last: float = _near.get(id, INF)
 		if distance > last * NEAR_CLOSER_FRACTION and last != INF:
@@ -947,7 +909,7 @@ func _watch_what_is_near(here: Vector2) -> void:
 ## the duration and the outcome are the finding, and neither exists until it is over.
 ##
 ## **A warning is not a chase.** A pursuer that waited for her warns inside its one radius for its
-## `PursuitSpec.warns_for` and charges only if she is still inside once that has run
+## `PursuitSpec.warns_for()` and charges only if she is still inside once that has run
 ## (`EventInstance.warns_by_radius()`; inbox #788 in minty-lemur: leave the radius and nothing happens). So its warning is its own span (`_watch_the_warning()`): one line when
 ## it starts and one when it ends, saying whether she walked out of it or it charged, and the chase
 ## span starts at the charge.
@@ -958,20 +920,20 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# A pursuer that has not noticed her is not a chase, it is scenery with teeth. The span
 		# starts the moment it comes for her, which for a robbery is the whole finding; for one that
 		# warns by radius, that is its charge rather than its warning.
-		if instance.def.pursuit == null or instance.is_finished or instance.is_waiting() \
+		if not instance.pursues() or instance.is_gone() or instance.is_waiting() \
 				or _is_warning(instance):
 			continue
 		var id := instance.get_instance_id()
 		seen[id] = true
 		if not _chases.has(id):
 			_chases[id] = {"since": _log.clock(), "closest": INF, "ran": 0.0,
-					"id": instance.def.id, "gave_up": false, "stopped_her": false, "over": false}
-			_log.note("chase", "%s came for her at %s | %s" % [instance.def.id,
+					"id": instance.row_id(), "gave_up": false, "stopped_her": false, "over": false}
+			_log.note("chase", "%s came for her at %s | %s" % [instance.row_id(),
 					RunTrace.tile(_tile_of(instance.global_position)), _meters()])
 			# The one encounter in the game with a right answer, and the open question about it is
 			# whether a dog that stops short and barks *reads* as "go now". A picture of the frame
 			# it starts on is the only thing that can say.
-			_log.snapshot("chase-%s" % instance.def.id)
+			_log.snapshot("chase-%s" % instance.row_id())
 		var chase: Dictionary = _chases[id]
 		if chase["over"]:
 			continue
@@ -980,12 +942,12 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# Its own account of how it ended, read on the frame it breaks off. The entry is kept, and
 		# kept closed, until the instance goes: a dog that has lost interest is still in the world
 		# for as long as it takes to trot out of shot, and none of that is the chase.
-		chase["gave_up"] = bool(chase["gave_up"]) or instance.gave_up
+		chase["gave_up"] = bool(chase["gave_up"]) or instance.has_given_up()
 		# The man a patrol car let out, whose catch is a stop: he reached her, and the day goes on.
 		chase["stopped_her"] = bool(chase["stopped_her"]) or instance.has_stopped_her()
 		if _player.run_excess_ratio() > 0.0:
 			chase["ran"] = float(chase["ran"]) + delta
-		if instance.is_leaving:
+		if instance.is_on_its_way_out():
 			chase["over"] = true
 			_write_the_chase(chase)
 	for id: int in _chases.keys():
@@ -1012,7 +974,7 @@ var _warnings := {}
 
 ## Whether `instance` is warning her by radius right now, rather than chasing or waiting.
 static func _is_warning(instance: EventInstance) -> bool:
-	return instance.def.pursuit != null and not instance.is_finished and not instance.is_waiting() \
+	return instance.pursues() and not instance.is_gone() and not instance.is_waiting() \
 			and instance.warns_by_radius() and instance.is_telegraphing()
 
 ## The warning span of a pursuer that warns by radius: a line when it starts warning her, and a line
@@ -1027,13 +989,13 @@ func _watch_the_warning(here: Vector2) -> void:
 		if not _is_warning(instance):
 			if _warnings.has(id) and instance.is_waiting():
 				waits_again[id] = true
-			elif _warnings.has(id) and instance.def.pursuit != null and not instance.is_finished:
+			elif _warnings.has(id) and instance.pursues() and not instance.is_gone():
 				charged[id] = true
 			continue
 		seen[id] = true
 		if not _warnings.has(id):
-			_warnings[id] = {"since": _log.clock(), "closest": INF, "id": instance.def.id}
-			_log.note("chase", "%s warned her at %s | %s" % [instance.def.id,
+			_warnings[id] = {"since": _log.clock(), "closest": INF, "id": instance.row_id()}
+			_log.note("chase", "%s warned her at %s | %s" % [instance.row_id(),
 					RunTrace.tile(_tile_of(instance.global_position)), _meters()])
 		var warning: Dictionary = _warnings[id]
 		warning["closest"] = minf(float(warning["closest"]),
@@ -1056,19 +1018,17 @@ func _watch_closures(here: Vector2) -> void:
 	if not _map:
 		return
 	for closure in _streets.closures():
-		var key := closure.segment.key()
+		var key := closure.street_key()
 		if _seen_closures.has(key):
 			continue
 		for mouth in closure.mouth_centres(_map):
 			if mouth.distance_to(here) > CLOSURE_SIGHT:
 				continue
 			_seen_closures[key] = true
-			_last_closure = RoadClosure.display_name(closure.kind).to_lower()
+			_last_closure = RoadClosure.display_name(closure.kind()).to_lower()
 			_last_closure_at = _log.clock()
-			_log.note("closure", "saw the %s on %s%s from %s" % [
-				_last_closure, "h" if closure.segment.horizontal else "v",
-				RunTrace.tile(closure.segment.a),
-				RunTrace.tile(_map.world_to_tile(here))])
+			_log.note("closure", "saw the %s on %s from %s" % [
+				_last_closure, closure.street_words(), RunTrace.tile(_map.world_to_tile(here))])
 			break
 
 ## Whether the player ever went near a chalk mark. "Nobody ever finds it" is the thing that
@@ -1105,26 +1065,27 @@ func _watch_the_trail(here: Vector2) -> void:
 	_trail.append(Vector3(here.x, here.y, _player.run_excess_ratio()))
 	_trail_last = here
 
-## Which planned events she actually met — came within `def.outer_radius`, the field she can
-## actually feel, rather than merely close enough for `EventManager.stream_around` to have loaded
-## them into the world at `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a
-## typical row). `plan.was_live` answers the looser, streaming question; the dusk map wants the one
-## that says whether a placement did anything to her, which is what decides whether it was a wall
-## or decoration. See `docs/TODO.md`, M66, "Which events she actually met".
+## Which planned events she actually met — came within the field she can actually feel
+## (`EventPlan.field_reaches()`), rather than merely close enough for
+## `EventManager.stream_around` to have loaded them into the world at
+## `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a typical row).
+## `plan.has_been_in_the_world()` answers the looser, streaming question; the dusk map wants the one that says
+## whether a placement did anything to her, which is what decides whether it was a wall or
+## decoration. See `docs/TODO.md`, M66, "Which events she actually met".
 ##
 ## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
-## in `start_day()`, so streaming an event back out and in again does not un-meet it.
+## in `start()`, so streaming an event back out and in again does not un-meet it.
 func _watch_met_events(here: Vector2) -> void:
 	if not _map:
 		return
-	for plan in _events.plans():
-		if _met_events.has(plan) or not plan.is_placed() or not plan.live:
+	for plan: EventPlan in _events.plans():
+		if _met_events.has(plan) or not plan.is_placed() or not plan.is_in_the_world():
 			continue
-		if plan.live.global_position.distance_to(here) <= plan.def.outer_radius:
+		if plan.field_reaches(here):
 			_met_events[plan] = true
 
 ## The trail and the met events, for `RunSession` to hand to `Telemetry.write_map` at dusk beside
-## the route tree. Empty before a day has been walked — before `start_day()` and
+## the route tree. Empty before a day has been walked — before `start()` and
 ## on the dawn map, which is the correct answer rather than a gap: there is no walk yet, and a
 ## picture that invented one would be worse than a picture with none.
 func trail() -> Array[Vector3]:
@@ -1149,7 +1110,7 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if state == GameEnums.BabyState.AWAKE:
 		_log.note("woke", "woken %s, sleep back to %.0f | near: %s" % [
 			"on the way home" if _escape_section == "" else "in %s" % _escape_section,
-			_baby.sleepiness, _nearest()])
+			_baby.sleepiness_level(), _nearest()])
 
 func _on_city_went_quiet() -> void:
 	_log.note("quiet", "the blackout came; every city-wide source is off")
@@ -1159,7 +1120,7 @@ func _on_city_went_quiet() -> void:
 ## distance-driven `near` lines below say nothing about, since a pelican seen across the street
 ## never comes within its 90px. *(Inbox #527 in azure-tapir: "when the pelican spawns, when it's on screen, and
 ## when it's hitting the player".)*
-func _on_pelican_sighted(instance: Variant) -> void:
+func _on_pelican_sighted(instance: Node2D) -> void:
 	var pelican := instance as EventInstance
 	if not pelican or not _player:
 		return
@@ -1170,7 +1131,7 @@ func _on_pelican_sighted(instance: Variant) -> void:
 ## The pelican's lethal reach covering her (`EventBus.pelican_struck_her`), written above the
 ## `lost` line it ends the day with — and the only line that says so under `--invincible`, where
 ## the day goes on.
-func _on_pelican_struck_her(instance: Variant) -> void:
+func _on_pelican_struck_her(instance: Node2D) -> void:
 	var pelican := instance as EventInstance
 	if not pelican or not _player:
 		return
@@ -1220,10 +1181,11 @@ func _on_near_miss(at: Vector2) -> void:
 func _meters() -> String:
 	var here := _player.global_position
 	var source := _source()
-	var from_events: float = source.sources.total_at(here) if source else 0.0
+	var events_charge: EventSources = source.excitement_sources() if source else null
+	var from_events := events_charge.total_at(here) if events_charge else 0.0
 	var from_crowd := _crowd.total_at(here) if _crowd else 0.0
 	return "exc %.0f, in %.1f/s (crowd %.1f, events %.1f), sleep %.0f" % [
-		_baby.excitement, _baby.last_incoming, from_crowd, from_events, _baby.sleepiness]
+		_baby.excitement_level(), _baby.last_frame_incoming(), from_crowd, from_events, _baby.sleepiness_level()]
 
 ## The closest live event and how far off it is, for the lines where "what was around when
 ## this happened" is the answer being looked for. Says how far, never "in reach" — the nearest
@@ -1232,7 +1194,7 @@ func _nearest() -> String:
 	var closest: EventInstance = null
 	var best := INF
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
 		var distance := instance.global_position.distance_to(_player.global_position)
 		if distance < best:
@@ -1241,4 +1203,4 @@ func _nearest() -> String:
 	if not closest:
 		return "nothing live"
 	return "%s %.0fpx%s" % [closest.logged_name(), best,
-			"" if best <= closest.def.outer_radius else " (out of range)"]
+			"" if closest.field_reaches(_player.global_position) else " (out of range)"]

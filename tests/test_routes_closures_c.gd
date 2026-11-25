@@ -4,8 +4,8 @@ extends RefCounted
 
 const Rig := preload("res://tests/routes_closures_rig.gd")
 
-func run(t) -> void:
-	var rig = Rig.new()
+func run(t: TestRunner) -> void:
+	var rig: Rig = Rig.new()
 	rig.prepare(0, 6)
 	rig.case_closures_land_where_a_wall_belongs(t)
 	rig.case_a_closure_never_lands_on_a_calm_areas_own_access(t)

@@ -22,11 +22,11 @@ comment or a sentence is not a dependency -- and finds:
 
 Every use is a finding. Each is matched against `EXCEPTIONS` by its file, its rule and what it
 names, and the file's listed count of that (one unless the exception says more). More uses than
-listed fail, so a second use of a listed name in a listed file is seen; fewer fail too, so the list
-only shrinks and is pruned in the pull request that fixes a break. A file in no layer fails, so a
-new folder is placed the day it appears. A `res://src/...gd` or `uid://` path (resolved through the
-`.uid` files) counts as the class it loads. `--rev` reads the tree of any commit instead of the
-checkout, and `--list` prints every finding with its file's layer, listed or not, without failing.
+listed fail, so a second use of a listed name in a listed file is seen; fewer fail too, so the pull
+request that fixes a break prunes its line. A file in no layer fails, so a new folder is placed the
+day it appears. A `res://src/...gd` or `uid://` path (resolved through the `.uid` files) counts as
+the class it loads. `--rev` reads the tree of any commit instead of the checkout, and `--list`
+prints every finding with its file's layer, listed or not, without failing.
 """
 
 from __future__ import annotations
@@ -467,7 +467,9 @@ def parse(argv: list[str]) -> argparse.Namespace:
             "Fails when a file under src/ names a class or autoload of a higher or a sibling layer, or a file in the"
             " world or simulation layers fetches through a group, an autoload or a static holding state, unless"
             " tools/layer_map.py lists it as an exception; fails too when a listed exception is gone, or a file is"
-            " in no layer."
+            " in no layer. Also fails a node fetched by an absolute path or from the root, and a use of a listed"
+            " exception beyond its listed count. `Tuning` read as constants is exempt, a `res://` or `uid://` path"
+            " counts as the file it loads, and comments and strings are blanked before the code is read."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

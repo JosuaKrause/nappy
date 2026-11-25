@@ -46,11 +46,10 @@ func _start_frame() -> void:
 	_city.scenery_ground._process(float(_request.delta))
 	# Roof animation shares the modeled clock too; actual uncapped FPS must not change
 	# frame selection or redraw cadence between strategies. Keep its work inside the span.
-	for item in _city.scenery._items:
-		if item is Building:
-			item.set_process(false)
-			if item.scenery_resident and item._has_vent:
-				item._process(float(_request.delta))
+	for building: Building in _city.buildings():
+		building.set_process(false)
+		if building.residence().is_resident() and building._has_vent:
+			building._process(float(_request.delta))
 
 func _process(_delta: float) -> void:
 	if Time.get_ticks_msec() - _started > 120000:
@@ -62,8 +61,8 @@ func _process(_delta: float) -> void:
 	_camera.position = view.get_center()
 	_camera.force_update_scroll()
 	var tick := Time.get_ticks_usec()
-	if _request.queue and (_city.scenery._pending or view.size != _city.scenery.view.size \
-			or view.get_center().distance_to(_city.scenery.view.get_center()) >= 16):
+	if _request.queue and (_city.scenery._pending or view.size != _city.scenery.view().size \
+			or view.get_center().distance_to(_city.scenery.view().get_center()) >= 16):
 		_city.scenery.update(view)
 	_queue_usec = Time.get_ticks_usec() - tick
 	_executed = true
@@ -84,21 +83,25 @@ func _finish_frame() -> void:
 	if not CameraWorldView.of(_city.get_viewport()).is_equal_approx(_request.view):
 		_failures.append("camera geometry differs from coverage geometry")
 	for key in ground.keys_in(_request.view):
-		gaps += int(not ground.chunks.has(key))
+		gaps += int(not ground.chunks().has(key))
 	var after := _snapshot()
+	var after_pending: Dictionary = after.pending
+	var after_chunks: Dictionary = after.chunks
+	var before_pending: Dictionary = _before.pending
+	var before_chunks: Dictionary = _before.chunks
 	var sections := 0
 	var canceled := 0
-	for key: Vector2i in after.pending:
-		sections += int(after.pending[key]) - int(_before.pending.get(key, 0))
-	var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
+	for key: Vector2i in after_pending:
+		sections += int(after_pending[key]) - int(before_pending.get(key, 0))
+	var guard := _city.scenery.view().grow(SceneryResidency.GUARD_MARGIN)
 	var ordinary := 0
 	var guarded := 0
 	var evictions := 0
-	for key: Vector2i in _before.chunks:
-		evictions += int(after.chunks.get(key, 0) != _before.chunks[key])
-	for key: Vector2i in after.chunks:
-		if after.chunks[key] != _before.chunks.get(key, 0):
-			sections += (4 if _stepped else 1) - int(_before.pending.get(key, 0))
+	for key: Vector2i in before_chunks:
+		evictions += int(after_chunks.get(key, 0) != before_chunks[key])
+	for key: Vector2i in after_chunks:
+		if after_chunks[key] != before_chunks.get(key, 0):
+			sections += (4 if _stepped else 1) - int(before_pending.get(key, 0))
 			if guard.intersects(SceneryGround.bounds(key)):
 				guarded += 1
 			else:
@@ -107,14 +110,14 @@ func _finish_frame() -> void:
 	# the guard. The traversal moves under the relocation distance, so no frame relocates.
 	if _city_mode == SceneryGround.Mode.ONE and (ordinary > 1 or (ordinary > 0 and guarded > 0)):
 		_failures.append("mode 2 prepared a second region in one frame outside the guard")
-	for key: Vector2i in _before.pending:
-		canceled += int(not after.pending.has(key) and not after.chunks.has(key))
+	for key: Vector2i in before_pending:
+		canceled += int(not after_pending.has(key) and not after_chunks.has(key))
 	var row := {"span_usec": ended - _begin, "queue_usec": _queue_usec,
 		"regions": ordinary + guarded,
 		"guards": _city.scenery.ordinary_guard_preparations - int(_before.guards),
 		"evictions": evictions, "gaps": gaps,
 		"observed_sections": sections, "canceled_pending": canceled,
-		"pending": after.pending.size(), "resident": after.chunks.size(),
+		"pending": after_pending.size(), "resident": after_chunks.size(),
 		"draw_calls": RenderingServer.get_rendering_info(
 			RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)}
 	_before = after
@@ -131,12 +134,14 @@ func _sample(view: Rect2, delta: float, queue := true) -> Dictionary:
 func _snapshot() -> Dictionary:
 	var pending := {}
 	if _stepped:
-		var jobs: Dictionary = _city.scenery_ground.get("pending")
+		var jobs: Dictionary = _city.scenery_ground.pending()
 		for key: Vector2i in jobs:
-			pending[key] = jobs[key].step
+			var job: Dictionary = jobs[key]
+			pending[key] = job.step
 	var chunks := {}
-	for key: Vector2i in _city.scenery_ground.chunks:
-		chunks[key] = _city.scenery_ground.chunks[key].get_instance_id()
+	for key: Vector2i in _city.scenery_ground.chunks():
+		var layer: TileMapLayer = _city.scenery_ground.chunks()[key]
+		chunks[key] = layer.get_instance_id()
 	return {"pending": pending, "chunks": chunks,
 		"guards": _city.scenery.ordinary_guard_preparations}
 
@@ -144,24 +149,24 @@ func _run() -> void:
 	var cases: Array[Dictionary] = []
 	for spec: Array in [["south60", 60, Vector2.DOWN], ["south15", 15, Vector2.DOWN],
 			["diagonal15", 15, Vector2.ONE.normalized()]]:
-		_city = RunCity.with_own_run(CITY, 4242)
+		var run := RunCity.started_run(4242)
+		_city = RunCity.new_city(CITY)
 		# The launch's own `--ground-mode`, handed to the city as `Main` hands it (the city no
 		# longer reads the command line), so the mode a capture reports is the mode it ran.
-		_city.ground_mode = DevFlags.new(OS.get_cmdline_user_args(), "", true).ground_mode() \
-				as SceneryGround.Mode
+		_city.schedule_scenery(DevFlags.new(OS.get_cmdline_user_args(), "", true).ground_mode() \
+				as SceneryGround.Mode, false)
 		add_child(_city)
-		_city.build(CityGenerator.generate(4242))
+		RunCity.build(_city, run, CityGenerator.generate(4242))
 		_city.scenery.set_process(false)
 		_city.scenery_ground.set_process(false)
-		_city.scenery_ground.elapsed = 0
-		_city_mode = _city.scenery_ground.mode
-		_stepped = _city.scenery_ground.mode == SceneryGround.Mode.STEPPED
+		_city_mode = _city.scenery_ground.mode()
+		_stepped = _city.scenery_ground.mode() == SceneryGround.Mode.STEPPED
 		_camera = Camera2D.new()
 		_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		_camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 		_camera.zoom = get_viewport().get_visible_rect().size / EXTENT
 		add_child(_camera)
-		var at := _city.map.doorstep_world_position()
+		var at := _city.map().doorstep_world_position()
 		var initial := at
 		_camera.position = at
 		_camera.force_update_scroll()
@@ -179,13 +184,12 @@ func _run() -> void:
 		result.name = spec[0]
 		result.modeled_hz = rate
 		result.start = str(initial)
-		result.world_size = str(_city.map.world_size())
+		result.world_size = str(_city.map().world_size())
 		result.end_distance = at.distance_to(initial)
 		_write_rows(str(spec[0]), rows)
 		# All strategies settle the same shoreline view for water/quad overhead comparison.
-		at = Vector2(_city.map.world_size().x / 2, _city.map.world_size().y)
+		at = Vector2(_city.map().world_size().x / 2, _city.map().world_size().y)
 		_city.scenery_ground.clear()
-		_city.scenery_ground.elapsed = 0
 		_camera.position = at
 		_camera.force_update_scroll()
 		var steady_view := Rect2(at - EXTENT / 2, EXTENT)
@@ -221,7 +225,7 @@ func _run() -> void:
 		"ground_mode": _city_mode, "seed": 4242, "warmup_frames": 120, "traversal_seconds": 30,
 		"steady_frames": 240, "vsync_disabled": true, "elapsed_ms": Time.get_ticks_msec() - _started,
 		"collector_sha256": FileAccess.get_sha256("res://tests/probes/ground_frames_matched.gd")}
-	for key in ["STRATEGY", "TRIAL", "RUN_ORDER", "SOURCE_REVISION", "COLLECTOR_REVISION", "RUNTIME_DIGEST"]:
+	for key: String in ["STRATEGY", "TRIAL", "RUN_ORDER", "SOURCE_REVISION", "COLLECTOR_REVISION", "RUNTIME_DIGEST"]:
 		result[key.to_lower()] = OS.get_environment("GROUND_MATCH_" + key)
 	var output := FileAccess.open(OS.get_environment("GROUND_MATCH_OUTPUT"), FileAccess.WRITE)
 	output.store_string(JSON.stringify(result, "  ") + "\n")
@@ -233,23 +237,23 @@ func _workload() -> Dictionary:
 	var records: Array[String] = []
 	var water_surfaces := 0
 	var water_cells := 0
-	for layer: TileMapLayer in _city.scenery_ground.chunks.values():
+	for layer: TileMapLayer in _city.scenery_ground.chunks().values():
 		for cell in layer.get_used_cells():
 			records.append("%s:%s:%s" % [cell, layer.get_cell_source_id(cell), layer.get_cell_atlas_coords(cell)])
 		for child in layer.get_children():
 			if child is SceneryWater:
 				water_surfaces += 1
-				for cell: Vector2i in child.cells:
+				for cell: Vector2i in (child as SceneryWater).cells:
 					water_cells += 1
 					records.append("water:%s" % cell)
 	records.sort()
-	return {"regions": _city.scenery_ground.chunks.size(), "cells": records.size(),
+	return {"regions": _city.scenery_ground.chunks().size(), "cells": records.size(),
 		"water_cells": water_cells, "water_surfaces": water_surfaces,
 		"cell_sha256": "\n".join(records).sha256_text()}
 
 func _summarize(rows: Array[Dictionary]) -> Dictionary:
 	var result := {}
-	for key in rows[0]:
+	for key: String in rows[0]:
 		var values: Array[int] = []
 		for row in rows:
 			values.append(int(row[key]))
@@ -280,7 +284,7 @@ func _write_rows(label: String, rows: Array[Dictionary]) -> void:
 	output.store_csv_line(PackedStringArray(keys))
 	for row in rows:
 		var values := PackedStringArray()
-		for key in keys:
+		for key: String in keys:
 			values.append(str(row[key]))
 		output.store_csv_line(values)
 	output.close()

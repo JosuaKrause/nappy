@@ -38,7 +38,7 @@ class FakeOwner:
 	extends RefCounted
 	var part := RunHeader.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))
 
 	_test_the_scenario_writes_what_main_wrote(t, fixture)
@@ -75,13 +75,23 @@ func _written_for(run: RunState, day_under_way: bool) -> Dictionary:
 		written[0] = JSON.parse_string(FileAccess.get_file_as_string(_SCRATCH_PATH)))
 	return written[0]
 
-## Everything the file holds but the build that wrote it.
+## Everything the file holds but the build that wrote it and `last_day_seconds`, a key the
+## fixture's older format lacks (the header loads a save without it as none, which
+## `test_save.gd` holds), so the comparison is narrowed to the keys the fixture holds.
 func _without_build(file: Dictionary) -> Dictionary:
 	var kept := file.duplicate(true)
 	kept.erase("build")
+	_erase_key(kept, "last_day_seconds")
 	return kept
 
-func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
+## `key` erased from `data` and every dictionary inside it.
+func _erase_key(data: Dictionary, key: String) -> void:
+	data.erase(key)
+	for value: Variant in data.values():
+		if value is Dictionary:
+			_erase_key(value as Dictionary, key)
+
+func _test_the_scenario_writes_what_main_wrote(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
 	var written: Dictionary = _written_for(run, true)
@@ -91,7 +101,7 @@ func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
 	t.check(int(written["format_version"]) == GameSave.FORMAT_VERSION,
 			"and the format version is the one the fixture was written in")
 
-func _test_a_loss_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
+func _test_a_loss_gives_back_what_main_gave_back(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
 	SCENARIO.lose_a_day(run)
@@ -100,7 +110,7 @@ func _test_a_loss_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void
 			"a lost day on the scenario leaves the file main's give-back left (%s)"
 			% _first_difference(_without_build(after), _without_build(fixture["after_a_loss"])))
 
-func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> void:
+func _test_a_save_written_by_main_loads_and_resumes(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(5)
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
@@ -111,7 +121,7 @@ func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> v
 			"and the run it gives back writes the same file again (%s)" % _first_difference(
 			_without_build(_written_for(run, true)), _without_build(fixture["written"])))
 
-func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
+func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(5)
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
@@ -135,27 +145,49 @@ func _first_difference(a: Dictionary, b: Dictionary) -> String:
 			return "missing " + key
 	return "same"
 
-## The names of `owner`'s script variables that hold a `RunSubState` which is not on `registry`,
-## read off the registry's public `parts()`: the check that a part declared and left off the list is
-## caught.
+## The run sub-states `owner` declares: its script variables that hold a `RunSubState`.
+static func _declared_parts(owner: Object) -> Array[RunSubState]:
+	var declared: Array[RunSubState] = []
+	for property in owner.get_property_list():
+		if not property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			continue
+		var value: Variant = owner.get(property["name"])
+		if value is RunSubState:
+			declared.append(value)
+	return declared
+
+## Whether `part`'s data is in what `registry` writes (`run_data()`), where its slot puts it: the
+## flat `"state"`, the riders beside it, or under its own key.
+static func _is_written_by(part: RunSubState, registry: RunStateRegistry) -> bool:
+	var written := registry.run_data()
+	var data := part.to_data()
+	if part.slot() == RunSubState.Slot.NESTED:
+		return written.has(part.save_key())
+	var where: Dictionary = written["state"] if part.slot() == RunSubState.Slot.STATE else written
+	for key: String in data:
+		if not where.has(key):
+			return false
+	return not data.is_empty()
+
+## The names of `owner`'s script variables that hold a `RunSubState` which `registry` does not
+## write, read off what it writes: the check that a part declared and left off the list is caught.
 static func _unregistered_in(owner: Object, registry: RunStateRegistry) -> Array[String]:
-	var registered := registry.parts()
 	var missing: Array[String] = []
 	for property in owner.get_property_list():
 		if not property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			continue
 		var value: Variant = owner.get(property["name"])
-		if value is RunSubState and value not in registered:
+		if value is RunSubState and not _is_written_by(value, registry):
 			missing.append(property["name"])
 	return missing
 
 ## Every part a `RunState` declares is on its registry.
-func _test_the_registry_lists_every_part_the_state_declares(t) -> void:
+func _test_the_registry_lists_every_part_the_state_declares(t: TestRunner) -> void:
 	var run := _fresh(1)
-	var missing := _unregistered_in(run, run.run_parts)
+	var missing := _unregistered_in(run, run.run_parts())
 	t.check(missing.is_empty(), "every run sub-state a RunState declares is registered (%s)" % [missing])
 
-func _test_a_part_left_off_the_list_is_caught(t) -> void:
+func _test_a_part_left_off_the_list_is_caught(t: TestRunner) -> void:
 	var owner := FakeOwner.new()
 	var registry := RunStateRegistry.new()
 	t.check(_unregistered_in(owner, registry) == ["part"],
@@ -166,48 +198,50 @@ func _test_a_part_left_off_the_list_is_caught(t) -> void:
 
 ## Photographs a run, spends more of every kind of thing an attempt can spend, gives back: the run
 ## is what it was at the photograph, every part of it.
-func _test_every_part_gives_back_what_it_photographed(t) -> void:
+func _test_every_part_gives_back_what_it_photographed(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	run.run_parts.photograph()
-	var photographed := run.run_parts.run_data()
+	run.run_parts().photograph()
+	var photographed := run.run_parts().run_data()
 	run.complete_resistance_step(9)
 	run.fail_resistance_step(8)
-	run.resistance.sabotage_done = not run.resistance.sabotage_done
-	run.resistance.carrying_package = not run.resistance.carrying_package
-	run.attempt_spend.consumed_one_shots.append("spent_after_the_photograph")
+	GivenRun.sabotage(run, not run.resistance().sabotage_went_through())
+	GivenRun.carrying_package(run, not run.resistance().is_carrying_package())
+	run.attempt_spend().consumed_one_shots().append("spent_after_the_photograph")
 	run.add_scar("scarred_after_the_photograph", Vector2(1.0, 2.0))
-	run.posters.paste(Vector2i(40, 41), 2, false, 1)
-	run.posters.tears += 2
-	run.pelican.draws += 4
-	t.check(run.run_parts.run_data() != photographed, "the attempt spent something of every part")
-	run.run_parts.give_back()
-	t.check(run.run_parts.run_data() == photographed,
+	run.posters().paste(Vector2i(40, 41), 2, false, 1)
+	GivenRun.tears(run, run.posters().tears_made() + 2)
+	GivenRun.pelican_draws(run, run.pelican().draws() + 4)
+	t.check(run.run_parts().run_data() != photographed, "the attempt spent something of every part")
+	run.run_parts().give_back()
+	t.check(run.run_parts().run_data() == photographed,
 			"and giving back puts every part back (%s)"
-			% _first_difference(run.run_parts.run_data(), photographed))
+			% _first_difference(run.run_parts().run_data(), photographed))
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.
-func _test_every_part_declares_each_field_once_in_its_data(t) -> void:
+func _test_every_part_declares_each_field_once_in_its_data(t: TestRunner) -> void:
 	var run := _fresh(1)
-	for part in run.run_parts.parts():
+	for part: RunSubState in _declared_parts(run):
 		var variables := 0
 		for property in part.get_property_list():
 			if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 				variables += 1
-		var name: String = part.get_script().get_global_name()
+		var script: Script = part.get_script()
+		var name: String = script.get_global_name()
 		t.check(variables == part.to_data().size(),
 				"%s writes one key per field (%d fields, %d keys)"
 				% [name, variables, part.to_data().size()])
 
 ## Each part, written through JSON and read back into a reset part, writes the same data.
-func _test_every_part_round_trips_through_json(t) -> void:
+func _test_every_part_round_trips_through_json(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	for part in run.run_parts.parts():
+	for part: RunSubState in _declared_parts(run):
 		var data := part.to_data()
 		var through: Dictionary = JSON.parse_string(JSON.stringify(data))
-		var name: String = part.get_script().get_global_name()
+		var script: Script = part.get_script()
+		var name: String = script.get_global_name()
 		part.reset()
 		part.restore(through)
 		var again: Variant = JSON.parse_string(JSON.stringify(part.to_data()))

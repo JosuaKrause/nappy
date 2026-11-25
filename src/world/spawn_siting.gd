@@ -1,10 +1,11 @@
 class_name SpawnSiting
 extends RefCounted
 ## **Where something sent at her may start**: the rules a start is held to, each by its name
-## (`Rule`), and the searches that answer a start by them. One instance per city, built with the
-## city's map, its navigator, the day's view and the day's region (`City.spawn_siting`), and handed
-## to whatever sends something at her — the events' director half (`EventsAhead`) and the
-## resistance (`ResistanceDirector`) — rather than fetched; a rig builds its own over its own map.
+## (`Rule`), and the searches that answer a start by them. One instance per city, built by the
+## city's events with the city's map, its navigator, the day's view and the day's region
+## (`EventManager.spawn_siting()`), and handed to whatever sends something at her — the events'
+## director half (`EventsAhead`) and the resistance (`ResistanceDirector`) — rather than fetched; a
+## rig builds its own over its own map.
 ##
 ## **The rules** (`allows()`):
 ##
@@ -70,11 +71,11 @@ const HELD_CONTACT_GROUND: Array[Rule] = [Rule.GROUND_EVEN_IF_HELD, Rule.OPEN_TO
 ## them wherever it crosses.
 class Region:
 	extends RefCounted
-	## The walled-off crossing alleys (`RegionPlanner.RegionPlan.alley_walls`).
+	## The walled-off crossing alleys (`RegionPlan.walled_alleys()`).
 	var walled_alleys: Array[Rect2i] = []
 	## Where each body of the wall and the doors stands, in world px.
 	var centres := PackedVector2Array()
-	## How far each body's disc reaches from its centre (`EventDef.obstructs_radius`), paired with
+	## How far each body's disc reaches from its centre (`EventDef.obstructs_within()`), paired with
 	## `centres` index for index.
 	var radii := PackedFloat64Array()
 
@@ -151,7 +152,7 @@ func map() -> CityMap:
 	return _map
 
 ## Today's region as the city hands it, or null.
-func region() -> Region:
+func _region_today() -> Region:
 	return _region.call() if _region.is_valid() else null
 
 ## What a placement of something drawing `box` and walking as `mover` asks with her standing at
@@ -159,7 +160,7 @@ func region() -> Region:
 func ask(box: Rect2, mover: Mover, her: Vector2) -> Ask:
 	var asked := ask_in_sight(box, mover, her)
 	asked.beside = beside_distance(asked.view, box, her)
-	var today := region()
+	var today := _region_today()
 	if today != null:
 		for i in today.centres.size():
 			if today.centres[i].distance_to(her) <= asked.beside + today.radii[i]:
@@ -182,7 +183,7 @@ func ask_in_sight(box: Rect2, mover: Mover, her: Vector2) -> Ask:
 func ask_of_ground(box := Rect2(), mover: Mover = null) -> Ask:
 	var asked := ask_of_drawing(box)
 	asked.mover = mover if mover else Mover.on_foot()
-	var today := region()
+	var today := _region_today()
 	if today != null:
 		asked.walled_alleys = today.walled_alleys
 	return asked
@@ -239,7 +240,7 @@ func allows_every(rules: Array[Rule], asked: Ask, at: Vector2) -> bool:
 ## not been looked through.
 func on_the_view(at: Vector2) -> bool:
 	var view: VisibleView = _view.call() if _view.is_valid() else null
-	return view != null and view.view.has_point(at)
+	return view != null and view.camera_view().has_point(at)
 
 ## Whether any part of a drawing of `box` about its feet, standing at `at`, is in the camera's whole
 ## view right now, the covered corners included: the box's centre and its four corners
@@ -277,7 +278,7 @@ func draws_on_the_view(box: Rect2, at: Vector2) -> bool:
 ## draw, so a pool with nothing obstructed in it draws exactly what it would.
 ##
 ## **On the map.** A tile off the map reads as an alley in a scene recipe's exterior
-## (`CityMap.recipe_exterior`) and is refused here like any other ground off the map.
+## (`CityMap.has_recipe_exterior()`) and is refused here like any other ground off the map.
 static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
 		allow_held := false) -> bool:
 	return map.in_bounds(tile) \
@@ -394,9 +395,9 @@ static func lead_up_a_lane(box: Rect2) -> float:
 ## whether there is ground at all, such as `EventDirector`'s siting, or a rig with no camera — the
 ## view about her.
 static func seen_from(view: VisibleView, her: Vector2) -> VisibleView:
-	if view and view.view.has_area():
+	if view and view.camera_view().has_area():
 		var whole := VisibleView.new()
-		whole.look(view.view, null)
+		whole.look(view.camera_view(), null)
 		return whole
 	return VisibleView.around(her, null)
 

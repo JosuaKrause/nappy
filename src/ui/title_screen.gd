@@ -24,7 +24,7 @@ extends CanvasLayer
 ## those is what this screen exists for. **The one option is the Hard Mode checkbox**, shown only
 ## when the title begins a new game. *(gentle-osprey, the player: "a "Hard Mode" checkbox on the
 ## title screen (if new game) that decides whether checkpoints are available".)* Checked, the run
-## has no checkpoints and its last nerve is the bad ending (`RunState.calendar.hard_mode`). It
+## has no checkpoints and its last nerve is the bad ending (`RunState.calendar().in_hard_mode()`). It
 ## is quiet on purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint —
 ## because it is a setting, not a way in: **pressing it never starts the run**, which still
 ## begins only from the three buttons or a key, so the box can be set and changed freely first.
@@ -134,7 +134,7 @@ func use_platform(touch: bool, can_quit: bool) -> void:
 	_can_quit = can_quit
 
 ## The run whose mode the checkbox opens on and the mode's name reads
-## (`RunState.calendar.hard_mode`), handed in by `use_run()` before the screen is first opened.
+## (`RunState.calendar().in_hard_mode()`), handed in by `use_run()` before the screen is first opened.
 var _run: RunState
 
 ## Hands the screen the run it opens over. Called by `main` before the screen enters the tree, and
@@ -146,14 +146,14 @@ func use_run(run: RunState) -> void:
 ## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
 ## screen built anywhere else leaves them to make their own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Choice/LeftColumn/Left") as ModeButton).atlas = atlas
-	(get_node(^"Root/Choice/TapColumn/Tap") as ModeButton).atlas = atlas
-	(get_node(^"Root/Choice/RightColumn/Right") as ModeButton).atlas = atlas
+	(get_node(^"Root/Choice/LeftColumn/Left") as ModeButton).use_atlas(atlas)
+	(get_node(^"Root/Choice/TapColumn/Tap") as ModeButton).use_atlas(atlas)
+	(get_node(^"Root/Choice/RightColumn/Right") as ModeButton).use_atlas(atlas)
 
 ## The sitting whose last restart the guard measures a press against
-## (`Sitting.restarted_at_msec`, which `main._restart_run()` stamps before its reload): a fresh
-## screen is built by that reload, so the stamp lives on the owner that outlives it, never on this
-## node. Handed in by `use_sitting()`; a screen handed none has seen no restart.
+## (`Sitting.restart_requested_at_msec()`, which `main._restart_run()` stamps before its reload): a
+## fresh screen is built by that reload, so the stamp lives on the owner that outlives it, never on
+## this node. Handed in by `use_sitting()`; a screen handed none has seen no restart.
 var _sitting: Sitting
 
 ## Hands the screen the sitting it measures a restart against. Called by `main` before the screen
@@ -167,8 +167,8 @@ func _ready() -> void:
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
 	_name.text = Texts.TITLE_NAME
-	_left_button.letter = Texts.TITLE_LETTER_LEFT
-	_right_button.letter = Texts.TITLE_LETTER_RIGHT
+	_left_button.use_letter(Texts.TITLE_LETTER_LEFT)
+	_right_button.use_letter(Texts.TITLE_LETTER_RIGHT)
 	_premise.text = Texts.TITLE_PREMISE
 	_left_caption.text = Texts.TITLE_CAPTION_JOYSTICK
 	_tap_caption.text = Texts.TITLE_CAPTION_TAP
@@ -202,7 +202,7 @@ const _COLUMN_WIDTH := 220.0
 ## Puts `column`'s disc centre on `centre`, in the design box `_root` is pinned to. The column is a
 ## disc with its caption under it, so the disc's centre is half the column's width across and one
 ## `ModeButton.RADIUS` down from its top-left corner.
-static func _place_column(column: Control, centre: Vector2) -> void:
+static func _place_column(column: VBoxContainer, centre: Vector2) -> void:
 	column.position = centre - Vector2(_COLUMN_WIDTH * 0.5, ModeButton.RADIUS)
 	column.size = Vector2(_COLUMN_WIDTH, column.size.y)
 
@@ -217,7 +217,7 @@ func _refresh_body() -> void:
 ## `TouchControls` is the only file `main._apply_orientation()` reaches with a `rotated` property,
 ## and `ScreenOrientation.wants_rotation()` is a pure function of the same two facts `main` itself
 ## asks it with. Needed now that `_handle_mode_button_press()` reads a raw press position rather
-## than only an action or a bare `TouchInput.is_press()`.
+## than only an action.
 func _wants_rotation() -> bool:
 	return ScreenOrientation.wants_rotation(get_window().size, _touch)
 
@@ -227,12 +227,12 @@ func is_open() -> bool:
 ## Shows the screen. `again` is whether a run has just ended, which is the only difference between
 ## the two times it is shown — besides `new_game`, which is whether pressing a button begins a new
 ## run rather than one a save brought back, and is the only time the Hard Mode checkbox shows. It
-## opens on the mode the run already holds, `RunState.calendar.hard_mode`: `false` for every
+## opens on the mode the run already holds, `RunState.calendar().in_hard_mode()`: `false` for every
 ## fresh run, and `true` only under `--hard`.
 ##
 ## `mode_decided` is whether the mode is already fixed for this run, which is when a save brought
 ## it back (the title before a resumed day or a resumed escape): the checkbox has nothing to ask
-## then, so the mode's name, "Normal" or "Hard Mode" (`RunState.calendar.hard_mode`), stands in
+## then, so the mode's name, "Normal" or "Hard Mode" (`RunState.calendar().in_hard_mode()`), stands in
 ## its place. A new game shows the checkbox and no name; a title with neither (the escape
 ## flag's, which has no run) shows neither.
 ##
@@ -253,10 +253,10 @@ func open(again := false, new_game := false, mode_decided := false) -> void:
 	visible = true
 	if _hard_mode:
 		_hard_mode.visible = new_game
-		_hard_mode.button_pressed = new_game and _run.calendar.hard_mode
+		_hard_mode.button_pressed = new_game and _run.calendar().in_hard_mode()
 		_place_the_hard_mode_frame()
 	_mode_name.visible = mode_decided and not new_game
-	_mode_name.text = Texts.TITLE_MODE_HARD if _run.calendar.hard_mode else Texts.TITLE_MODE_NORMAL
+	_mode_name.text = Texts.TITLE_MODE_HARD if _run.calendar().in_hard_mode() else Texts.TITLE_MODE_NORMAL
 	_hint.text = Texts.TITLE_HINT_AGAIN if again else Texts.TITLE_HINT_BEGIN
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
@@ -408,8 +408,8 @@ func _hard_mode_target() -> Rect2:
 ## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
 ## the ending. A stray press can still land squarely on a button — they are drawn in the same
 ## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
-## every press on the screen. See `Sitting.restarted_at_msec` for what survives the reload and
-## `_RESTART_GUARD_SECONDS`'s for the window's own size.
+## every press on the screen. See `Sitting.restart_requested_at_msec()` for what survives the
+## reload and `_RESTART_GUARD_SECONDS`'s for the window's own size.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
@@ -417,7 +417,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_begin(ControlsMode.Mode.TAP, ControlsMode.Side.LEFT, true)
 		return
-	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo \
+	if event is InputEventKey and (event as InputEventKey).pressed \
+			and not (event as InputEventKey).echo \
 			and (event as InputEventKey).keycode == _HARD_MODE_KEY and _hard_mode_shown():
 		get_viewport().set_input_as_handled()
 		_toggle_hard_mode()
@@ -429,7 +430,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _touch and event is InputEventMouseMotion:
 		_update_hover((event as InputEventMouseMotion).position)
 		return
-	if _can_quit and event is InputEventKey and event.pressed \
+	if _can_quit and event is InputEventKey and (event as InputEventKey).pressed \
 			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()
@@ -526,7 +527,7 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	var restarted_at_msec: float = _sitting.restarted_at_msec if _sitting else -INF
+	var restarted_at_msec: float = _sitting.restart_requested_at_msec() if _sitting else -INF
 	if (_now_msec() - restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)

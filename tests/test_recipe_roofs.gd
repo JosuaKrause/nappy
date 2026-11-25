@@ -2,7 +2,7 @@ extends RefCounted
 ## Authored units remain real production roof furniture through residency changes.
 ##
 ## The authored layout is read off what the roof draws, through a drawer handed in as the city hands
-## one (`Building.roof_drawer`): a recording one (`tests/recording_roof_drawer.gd`) where the check
+## one (`Building.equip()`): a recording one (`tests/recording_roof_drawer.gd`) where the check
 ## is what was drawn, the real one a building makes for itself where the check is the picture's
 ## own width or joint and the roof is read off where its objects stand (`tests/roof_reads.gd`).
 
@@ -13,7 +13,7 @@ const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_authored_fixtures_replace_the_roll(t)
 	_displayed_reservations(t)
 	_joined_authored_ducts(t)
@@ -21,15 +21,19 @@ func run(t) -> void:
 
 ## A standalone production roof of `district`, drawn through `drawer` when one is handed, else
 ## through the real drawer it makes for itself.
-func _roof(t, footprint: Vector2, height: float, district: int,
+func _roof(t: TestRunner, footprint: Vector2, height: float, district: int,
 		drawer: RoofDrawer = null) -> Building:
 	var building := Building.new()
-	building.footprint = footprint
-	building.height = height
-	building.district = district
+	building.stand_on(Rect2i(), footprint, building.look_variant(), district as GameEnums.BlockPurpose,
+			height)
 	if drawer != null:
-		building.roof_drawer = drawer
+		var atlas := AtlasLibrary.new()
+		building.equip(atlas, drawer, FrontDrawer.new(atlas))
 	t.add_child(building)
+	if drawer != null:
+		# Equipped as the city equips it, the building waits for the residency, which stands a
+		# building in view up.
+		building.residence().set_resident(true)
 	return building
 
 ## The roof units standing on a standalone `building`, which parents them to itself.
@@ -40,7 +44,7 @@ func _roof_objects_on(building: Building) -> Array[Building.RoofObject]:
 			objects.append(child)
 	return objects
 
-func _test_authored_fixtures_replace_the_roll(t) -> void:
+func _test_authored_fixtures_replace_the_roll(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var building := _roof(t, Vector2(256, 256), 64, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var fixtures := [{"cell": [1, 2], "kind": "duct_straight"},
@@ -57,12 +61,12 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 	t.check(_errors.errors_of(t, {"setup": {"roof_fixtures": [
 		{"lot": [1, 2, 8, 8], "fixtures": fixtures}]}}).is_empty(),
 			"saved public duct names pass the runtime schema before production placement")
-	building.set_scenery_resident(false)
+	building.residence().set_resident(false)
 	t.check(drawer.standing().is_empty(), "an evicted roof leaves nothing drawn")
-	building.set_scenery_resident(true)
+	building.residence().set_resident(true)
 	t.check(drawer.layout() == authored and drawer.drawn() == drawn,
 			"streaming restores the authored fixtures exactly")
-	for invalid in [
+	for invalid: Array in [
 		[{"cell": [0, 1], "kind": "vent"}],
 		[{"cell": [6, 2], "kind": "duct_straight"}],
 		[{"cell": [2, 2], "kind": "vent"}, {"cell": [2, 2], "kind": "hvac_a"}],
@@ -73,8 +77,9 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 				"rejected fixtures do not mutate the valid roof")
 	building.free()
 
-func _displayed_reservations(t) -> void:
-	for fixture in [
+func _displayed_reservations(t: TestRunner) -> void:
+	var none: Array[int] = []
+	for fixture: Array in [
 		[GameEnums.BlockPurpose.CIVIC, "service_bulkhead"],
 		[GameEnums.BlockPurpose.CIVIC, "skylight_a"],
 		[GameEnums.BlockPurpose.RESIDENTIAL, "water_tank"],
@@ -86,31 +91,32 @@ func _displayed_reservations(t) -> void:
 				"current production fixtures pass the public recipe schema")
 		t.check(building.author_roof_furniture(valid).is_empty(),
 				"wide fixture fits the last two interior columns")
-		var authored := RoofReads.units_of(building)
-		t.check(authored.size() == 1 and authored[0].span == 2 and authored[0].cells.has(Vector2i(6, 1)),
+		var authored := RoofReads.units_of(building, none, building)
+		var cells: Array[Vector2i] = authored[0].cells if authored.size() == 1 else ([] as Array[Vector2i])
+		t.check(authored.size() == 1 and authored[0].span == 2 and cells.has(Vector2i(6, 1)),
 				"displayed fixture reserves its full base including the east cell")
 		var object: Building.RoofObject = _roof_objects_on(building)[0]
 		var width := AtlasTable.baked().native_size(object.texture_key).x * object.scale.x
 		# Node2D stores the 4/3 room transform in Vector2 float precision.
 		t.check(width <= 64.0 or is_equal_approx(width, 64.0),
 				"rendered width fits the accepted two-cell reservation")
-		for invalid in [[{"cell": [6, 1], "kind": fixture[1]}],
+		for invalid: Array in [[{"cell": [6, 1], "kind": fixture[1]}],
 			[valid[0], {"cell": [6, 1], "kind": fixture[1]}]]:
 			t.check(not building.author_roof_furniture(invalid).is_empty(),
 					"wide fixtures reject edge overflow and east-cell overlap")
-			t.check(RoofReads.units_of(building) == authored,
+			t.check(RoofReads.units_of(building, none, building) == authored,
 					"failed width validation leaves the complete authored roof unchanged")
-		building.set_scenery_resident(false)
-		building.set_scenery_resident(true)
+		building.residence().set_resident(false)
+		building.residence().set_resident(true)
 		var standing := _roof_objects_on(building)
-		t.check(RoofReads.units_of(building) == authored and standing.size() == 1
+		t.check(RoofReads.units_of(building, none, building) == authored and standing.size() == 1
 				and standing[0].texture_key == authored[0].texture,
 				"streaming preserves the enlarged or wide fixture reservation")
 		t.check(building.author_roof_furniture([]).is_empty()
 				and _roof_objects_on(building).is_empty(), "explicit empty recipe clears all roof objects")
 		building.free()
 
-func _joined_authored_ducts(t) -> void:
+func _joined_authored_ducts(t: TestRunner) -> void:
 	var building := _roof(t, Vector2(256, 128), 32, GameEnums.BlockPurpose.INDUSTRIAL)
 	var fixtures := [{"cell": [1, 1], "kind": "duct_straight"},
 		{"cell": [3, 1], "kind": "duct_corner"}]
@@ -124,13 +130,13 @@ func _joined_authored_ducts(t) -> void:
 			"authored straight reaches the elbow boundary without an endpoint gap")
 	building.free()
 
-func _test_malformed_recipes_fail_before_construction(t) -> void:
-	for roof in [true, [{"lot": [1, 2], "fixtures": []}],
+func _test_malformed_recipes_fail_before_construction(t: TestRunner) -> void:
+	for roof: Variant in [true, [{"lot": [1, 2], "fixtures": []}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1.5, 2], "kind": "vent"}]}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": "unknown"}]}]]:
 		t.check(not _errors.errors_of(t, {"setup": {"roof_fixtures": roof}}).is_empty(),
 				"malformed roof recipes fail before runtime construction")
-	for kind in ["duct_run", "_unused_duct_corner"]:
+	for kind: String in ["duct_run", "_unused_duct_corner"]:
 		t.check(not _errors.errors_of(t, {"setup": {"roof_fixtures": [
 			{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": kind}]}]}}).is_empty(),
 				"internal duct enum values are not leaked into the public recipe schema")

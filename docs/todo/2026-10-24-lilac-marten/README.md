@@ -14,16 +14,18 @@ screens *not* day/scene completion screens (those keep their segment's time)"; t
 roadblock guard notices her within 180px and warns for 2.0s, "yes 180px is way too small and 2s is
 too long -- *in general*" (curly-moose #803).
 
-**Items, after minty-quail (one engine):** `fuller-escape.md`, `charger-timing.md`,
-`total-time.md`.
+**Items, after minty-quail (one engine):** `fuller-escape.md`.
 
 **A minor release follows.** The player: "After the refactor and the fixes from the last playtest
 let's cut a minor release" (curly-moose #803). Asked on the board which fixes the release waits for
 (the newest playtest then was minty-lemur, whose open fix is snowy-goose, explosions in the escape
 city; this entry's three items came the same day from a note), the player: "the refactor, the escape
-fix, the day one fixes" (minty-dolphin #834). **Read as:** v0.30.0 waits for minty-quail (the
-refactor), the escape fix and grassy-beaver (a day one that teaches), and "the escape fix", singular
-in the player's words, is snowy-goose's explosions together with this entry's fuller escape.
-**Open:** whether "the escape fix" means both of those or only one, and whether the release also
-waits for this entry's charger timing and total time, which the answer does not name. The release itself is cut only on the
-player's go-ahead in the session that cuts it (**committing**).
+fix, the day one fixes" (minty-dolphin #834). Read back that reading, the release waiting for
+minty-quail (the refactor), the escape fix and grassy-beaver (a day one that teaches), the player:
+"Yes that is the correct interpretation"; of whether "the escape fix" means snowy-goose's explosions
+and this entry's fuller escape or only one, "Both escape fixes are the fixes"; and of whether the
+release also waits for this entry's charger timing and total time, "yes, of course"
+(gentle-owl #1231). **Read as:** v0.30.0 waits for all of minty-quail (the refactor), snowy-goose (explosions in
+the escape city), every item of this entry (the fuller escape, the shorter charger warnings with a
+larger radius, the total time) and grassy-beaver. The release itself is cut only on the player's
+go-ahead in the session that cuts it (**committing**).

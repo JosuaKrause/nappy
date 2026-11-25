@@ -1,0 +1,25 @@
+dawn before 1 done rc=0
+dawn today 1 done rc=0
+dawn before 2 done rc=0
+dawn today 2 done rc=0
+dawn before 3 done rc=0
+dawn today 3 done rc=0
+crowdtick before 1 done rc=0
+crowdtick today 1 done rc=0
+crowdtick before 2 done rc=0
+crowdtick today 2 done rc=0
+crowdtick before 3 done rc=0
+crowdtick today 3 done rc=0
+frame-profiled before 1 done rc=0
+frame-profiled today 1 done rc=0
+frame-profiled before 2 done rc=0
+frame-profiled today 2 done rc=0
+frame-profiled before 3 done rc=0
+frame-profiled today 3 done rc=0
+frame-disabled before 1 done rc=0
+frame-disabled today 1 done rc=0
+frame-disabled before 2 done rc=0
+frame-disabled today 2 done rc=0
+frame-disabled before 3 done rc=0
+frame-disabled today 3 done rc=0
+done

@@ -65,5 +65,8 @@ if ! command -v uv >/dev/null 2>&1; then
 	exit 127
 fi
 
+# No edit hook sees a photo or a video being written, so the tool that writes one names its rules.
+echo "The rules for a reference file: .claude/skills/reference-photos/SKILL.md" >&2
+
 cd "$PROJECT_DIR"
 exec uv run --quiet python tools/reference.py "$@"

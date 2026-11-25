@@ -15,7 +15,7 @@ const BASE_SEED := 5150
 var _maps: Array[CityMap] = []
 var _plan_cache := {}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 13))
 	_test_a_fallen_tree_only_falls_where_a_tree_stood(t)
@@ -24,14 +24,14 @@ func run(t) -> void:
 
 func _plan(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
-	var key := "%d:%d" % [map.seed_used, day]
+	var key := "%d:%d" % [map.city_seed(), day]
 	if not _plan_cache.has(key):
 		_plan_cache[key] = _plan_uncached(map, day)
 	return _plan_cache[key]
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 ## The real thing, with no memory of having been asked before — what `_test_closures_are_
@@ -40,8 +40,8 @@ func _repaint_for(map: CityMap, day: int) -> void:
 func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-	return ClosurePlanner.plan_day(map, day, rng)
+	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
+	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng)
 
 ## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one
 ## spot should be empty (the fallen tree's spot)".)* Two claims, and the gate is the weaker of
@@ -57,22 +57,22 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 ## the guard at the bottom — some day across the sweep has to have felled a tree — many times over,
 ## and what the loop is actually checking is a **gate** inside `_pick_kind`, asked once per
 ## closure: a weight rather than a gate would have shown up on the first map that felled one.
-func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
+func _test_a_fallen_tree_only_falls_where_a_tree_stood(t: TestRunner) -> void:
 	var felled := 0
 	for map: CityMap in _maps.slice(0, 4):
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for closure in _plan_uncached(map, day):
-				if closure.kind != RoadClosure.Kind.FALLEN_TREE:
+				if closure.kind() != RoadClosure.Kind.FALLEN_TREE:
 					continue
 				felled += 1
-				var key := closure.segment.key()
+				var key := closure.street_key()
 				t.check(lined.has(key),
 						"seed %d day %d: a tree fell across %s, which never had one on it"
-						% [map.seed_used, day, key])
+						% [map.city_seed(), day, key])
 				# Exactly one pit of that street is empty, and it is the one nearest the middle of
 				# the street — the tree that fell is the one that is missing, and only that one.
-				var centre := map.tile_rect_to_world(closure.segment.tile_rect()).get_center()
+				var centre := closure.cause_centre(map)
 				var wanted := StreetTrees.pit_nearest(map, key, centre)
 				var empty := 0
 				for pit in StreetTrees.planted(map):
@@ -80,10 +80,10 @@ func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
 						empty += 1
 						t.check(wanted != null and pit.tile == wanted.tile,
 								"seed %d day %d: %s's empty pit is %s, not the one nearest the wreck"
-								% [map.seed_used, day, key, pit.tile])
+								% [map.city_seed(), day, key, pit.tile])
 				t.check(empty == 1,
 						"seed %d day %d: %s has %d empty pits, want exactly one"
-						% [map.seed_used, day, key, empty])
+						% [map.city_seed(), day, key, empty])
 	t.check(felled > 0, "some day across the sweep felled a tree (%d)" % felled)
 
 ## The fork the gate could have opened: a day whose closable streets are all bare has no
@@ -94,7 +94,7 @@ func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
 ## `ClosurePlanner.plan_day()` rolls the kind with the fallen tree gated out, as well as of the days
 ## whose closures are all bare, because a day that happens never to reach a bare street would pass
 ## the second half vacuously.
-func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
+func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t: TestRunner) -> void:
 	var bare_closures := 0
 	var bare_days := 0
 	for map in _maps:
@@ -103,22 +103,23 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 			var closures := _plan(map, day)
 			var any_lined := false
 			for closure in closures:
-				if lined.has(closure.segment.key()):
+				if lined.has(closure.street_key()):
 					any_lined = true
 					continue
 				bare_closures += 1
-				t.check(closure.kind != RoadClosure.Kind.FALLEN_TREE,
+				t.check(closure.kind() != RoadClosure.Kind.FALLEN_TREE,
 						"seed %d day %d: a bare street is never closed by a fallen tree"
-						% [map.seed_used, day])
-				t.check(RoadClosure.KINDS.has(closure.kind),
+						% [map.city_seed(), day])
+				t.check(RoadClosure.KINDS.has(closure.kind()),
 						"seed %d day %d: a bare street still has something to have happened to it"
-						% [map.seed_used, day])
+						% [map.city_seed(), day])
 			if any_lined:
 				continue
 			bare_days += 1
-			t.check(closures.size() == ClosurePlanner.closures_wanted(day),
+			var wanted := ClosurePlanner.closures_wanted(DaySpec.for_day(day))
+			t.check(closures.size() == wanted,
 					"seed %d day %d closed %d of its %d streets with no tree-lined one among them"
-					% [map.seed_used, day, closures.size(), ClosurePlanner.closures_wanted(day)])
+					% [map.city_seed(), day, closures.size(), wanted])
 	t.check(bare_closures > 0,
 			"the sweep closed bare streets for the kind roll to be asked of (%d)" % bare_closures)
 	t.check(bare_days > 0,

@@ -92,7 +92,7 @@ func snapshot(_kind: String) -> void:
 
 ## Overrides Telemetry.write_map.
 func write_map(_map: CityMap, _day: int, _closures: Array[RoadClosure] = [],
-		_tree: RouteTree = null, _plans: Array[EventScheduler.Planned] = [],
+		_tree: RouteTree = null, _plans: Array[EventPlan] = [],
 		_at_dusk := false, _trail: Array[Vector3] = [], _met: Dictionary = {},
 		_corridor := true) -> void:
 	pass

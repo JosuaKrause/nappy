@@ -1,6 +1,7 @@
 extends RefCounted
 ## M202, a rig's own presses reach the game: a rig's lock-out (`RigLock._input()`) marks every
-## event handled while `locked_out`, which is exactly the state every `--press` run is in —
+## event handled while it shuts out real input (`shuts_out_real_input()`), which is exactly the
+## state every `--press` run is in —
 ## `--press` is one of `DevFlags._RIG_FLAGS`, so the lockout and the flag are never apart — and a
 ## gate that swallowed every event would swallow the rig's own injected presses along with a real
 ## key or pointer, so `--press pause 3` would pause nothing and `snapshot_burst` would never arrive.
@@ -8,9 +9,9 @@ extends RefCounted
 ## `RigLock._input()` does not mark every event handled outright: it lets through an event whose
 ## `device` carries `InputEvent.DEVICE_ID_EMULATION`, the constant `AutoScreenshot` tags its own
 ## `--press` events with before handing them to `Input.parse_input_event()`. The gate tests drive a
-## real `RigLock` with `locked_out` set by hand, never `setup()`, which also erases this process's
-## `InputMap` bindings until the lock leaves the tree; the one test that calls `setup()` is the one
-## about those bindings coming back.
+## real `RigLock` set up the way `main` sets it up, from a rig's config (`setup()`), which also erases
+## this process's `InputMap` bindings until the lock leaves the tree, so each test frees its lock
+## before it ends; the last test is the one about those bindings coming back.
 
 const UI := preload("res://tests/ui_screens.gd")
 
@@ -22,7 +23,7 @@ class Catcher extends Node:
 	func _unhandled_input(event: InputEvent) -> void:
 		seen.append(event)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t)
 	await _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t)
 	_test_the_gate_does_nothing_once_the_rig_unlocks(t)
@@ -30,16 +31,21 @@ func run(t) -> void:
 
 # ---------------------------------------------------------------------- gate ---
 
+## A rig's run: `--route` is one of the rig flags, so a lock set up from it is locked out.
+func _rig_config() -> RunConfig:
+	return RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--route", "tunnel"]),
+			"", true)
+
 ## A real-looking key and a real-looking pointer press, neither tagged, while the gate is locked
 ## out — both must be marked handled before `Catcher` ever sees them. `Input.flush_buffered_events()`
 ## is what makes `Input.parse_input_event()` dispatch synchronously rather than queue for a frame
 ## this suite never runs.
-func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> void:
+func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t: TestRunner) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
 	t.add_child(catcher)
-	gate.locked_out = true
+	gate.setup(_rig_config())
 
 	var real_key := InputEventKey.new()
 	real_key.keycode = KEY_R
@@ -62,18 +68,18 @@ func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> voi
 ## the rig the game builds for `--press pause 0 --press key:r 1` (`AutoScreenshot.from_config()`),
 ## standing in the tree on a clock the suite moves, so a regression in the tagging itself, not only
 ## in this suite's idea of it, would fail here.
-func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t) -> void:
+func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t: TestRunner) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
 	t.add_child(catcher)
-	gate.locked_out = true
+	gate.setup(_rig_config())
 
 	var clock := UI.FakeClock.new()
 	var words := PackedStringArray(["--screenshot", "scratch_unused.png", "--after", "600",
 			"--press", "pause", "0", "--press", "key:r", "1"])
 	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
-	rig.simulation_clock = clock.read
+	rig.use_simulation_clock(clock.read)
 	t.add_child(rig)
 	await UI.frames(t)
 	Input.flush_buffered_events()
@@ -81,7 +87,8 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 			"the action form presses and releases, both reaching the unhandled phase (got %d)"
 			% catcher.seen.size())
 	for event in catcher.seen:
-		t.check(event is InputEventAction and event.action == &"pause",
+		var action := event as InputEventAction
+		t.check(action != null and action.action == &"pause",
 				"and each one is the pause action the rig actually pressed (got %s)" % event)
 	catcher.seen.clear()
 
@@ -92,7 +99,8 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 			"the key: form presses and releases too, both reaching the unhandled phase (got %d)"
 			% catcher.seen.size())
 	for event in catcher.seen:
-		t.check(event is InputEventKey and event.keycode == KEY_R,
+		var key := event as InputEventKey
+		t.check(key != null and key.keycode == KEY_R,
 				"and each one is the R key the rig actually tapped (got %s)" % event)
 
 	rig.free()
@@ -102,12 +110,11 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 ## The gate off (a plain, unlocked run) has nothing to prove about tagging: every event, real or
 ## the rig's own, already reaches the unhandled phase, so this is what says the two tests above are
 ## about the lockout and not about `Catcher` catching everything regardless.
-func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
+func _test_the_gate_does_nothing_once_the_rig_unlocks(t: TestRunner) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
 	t.add_child(catcher)
-	gate.locked_out = false
 
 	var real_key := InputEventKey.new()
 	real_key.keycode = KEY_R
@@ -129,16 +136,15 @@ func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
 ## `RigLock._exit_tree()` putting the bindings back. `setup()` is called twice, since a second call
 ## finds the bindings already empty and must not record that over the real ones; that half fails
 ## without `_erase_real_input()` recording an action only the first time.
-func _test_the_lock_gives_the_bindings_back_when_freed(t) -> void:
+func _test_the_lock_gives_the_bindings_back_when_freed(t: TestRunner) -> void:
 	var before := _bindings()
 	t.check(not (before.get(&"move_right", []) as Array).is_empty(),
 			"the keys are bound when this starts, so the comparison below is not of two empty maps")
 	var gate := RigLock.new()
 	t.add_child(gate)
-	var rig := RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--route", "tunnel"]),
-			"", true)
+	var rig := _rig_config()
 	gate.setup(rig)
-	t.check(gate.locked_out and InputMap.action_get_events(&"move_right").is_empty(),
+	t.check(gate.shuts_out_real_input() and InputMap.action_get_events(&"move_right").is_empty(),
 			"a rig's lock erases the real bindings while it stands")
 	gate.setup(rig)
 	gate.free()

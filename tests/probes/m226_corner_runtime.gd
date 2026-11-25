@@ -11,7 +11,8 @@ var emerged := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	main = load("res://scenes/main.tscn").instantiate()
+	var scene: PackedScene = load("res://scenes/main.tscn")
+	main = scene.instantiate()
 	add_child(main)
 
 func _exit_tree() -> void:
@@ -27,27 +28,29 @@ func _process(delta: float) -> void:
 	var edge: DangerEdge = main.get("_edge")
 	if player == null or city == null or edge == null:
 		return
-	var view := city.events.visible_view()
-	for instance in city.events.instances():
-		if instance.def.id != "charging_dog":
+	var view := RunCity.events(city).visible_view()
+	# The scheme the view was last looked through in: the controls it is handed, while in force.
+	var joystick := view.screen_cover() != null and view.screen_cover().is_in_force()
+	for instance in RunCity.events(city).instances():
+		if instance.row_id() != "charging_dog":
 			continue
 		var on_camera := false
 		var in_visible_area := false
 		for part in DRAWING.drawing_parts(instance):
 			var world := Rect2(instance.global_position + part.position, part.size)
-			on_camera = on_camera or view.view.intersects(world)
+			on_camera = on_camera or view.camera_view().intersects(world)
 			in_visible_area = in_visible_area or view.sees_any(world)
 		var badge := false
-		for announcement in edge.announcing():
-			badge = badge or announcement.id == "charging_dog"
+		for announcement in edge.badges().announcing():
+			badge = badge or announcement.logged_name() == "charging_dog"
 		var state := "%s/%s/%s" % [on_camera, in_visible_area, badge]
 		var id := instance.get_instance_id()
 		if states.get(id, "") != state:
 			print("CORNER %.3f camera=%s visible=%s badge=%s joystick=%s relative=%s age=%.3f" % [
-					elapsed, on_camera, in_visible_area, badge, view.joystick,
-					instance.global_position - view.view.get_center(), instance.age])
+					elapsed, on_camera, in_visible_area, badge, joystick,
+					instance.global_position - view.camera_view().get_center(), instance.age()])
 			states[id] = state
-		if on_camera and not in_visible_area and badge and view.joystick:
+		if on_camera and not in_visible_area and badge and joystick:
 			covered = true
 		if covered and in_visible_area and not badge:
 			emerged = true

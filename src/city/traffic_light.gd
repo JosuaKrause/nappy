@@ -47,29 +47,38 @@ var _faces_away := false
 var signals: TrafficSignals
 ## The baked atlas pages this head draws from (`AtlasLibrary`), handed by the city before it is
 ## added; a head nobody handed one (a suite's) makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
 ## What the head and its lit lamp are drawn through (`TrafficLightDrawer`), handed by the city
 ## before the head is added, the same one to every head it stands; a head nobody handed one makes
-## its own over its `atlas` when it first enters the tree.
+## its own over its `_atlas` when it first enters the tree.
 var drawer: TrafficLightDrawer = null
 
+## Mounts the head at `at_junction`, drawing from `library` through `heads` and showing what `lights`
+## says, before the city adds it. See `_atlas`, `drawer`, `junction` and `signals`.
+func mount(library: AtlasLibrary, heads: TrafficLightDrawer, at_junction: Vector2i,
+		lights: TrafficSignals) -> void:
+	_atlas = library
+	drawer = heads
+	junction = at_junction
+	signals = lights
+
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
 	if drawer == null:
-		drawer = TrafficLightDrawer.new(atlas)
-	atlas.acquire(&"street_kit")
+		drawer = TrafficLightDrawer.new(_atlas)
+	_atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	atlas.release(&"street_kit")
+	_atlas.release(&"street_kit")
 
-## Overrides ScenerySprite.set_scenery_resident.
-func set_scenery_resident(resident: bool) -> void:
-	super.set_scenery_resident(resident)
+## Overrides ScenerySprite._apply_residence.
+func _apply_residence(resident: bool) -> void:
+	super._apply_residence(resident)
 	set_process(resident and not _faces_away)
 
-## Overrides ScenerySprite.scenery_bounds.
-func scenery_bounds() -> Rect2:
+## Overrides ScenerySprite._scenery_bounds.
+func _scenery_bounds() -> Rect2:
 	return Rect2(global_position - Vector2(16, 48), Vector2(32, 64))
 
 ## `_lamp()`'s answer while the power is out: no lamp at all, which is what a dead light looks like
@@ -104,7 +113,7 @@ func _process(_delta: float) -> void:
 func _lamp() -> int:
 	if not signals:
 		return 0
-	if not signals.powered:
+	if not signals.is_powered():
 		return DARK
 	if signals.green_for(junction, arm_is_vertical):
 		return 2
@@ -113,7 +122,7 @@ func _lamp() -> int:
 	return 0
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
 	if arm_is_vertical and _faces_away:
 		drawer.draw_head(self, HEAD_BACK, false)

@@ -3,10 +3,11 @@
 
 GitHub Issues are the player's inbox and nothing else (leafy-finch; bouncy-heron, statements 5, 6
 and 22): a note is an open issue carrying the label `inbox`, the player edits it until it is
-filed, and when the player asks, an agent copies a batch of notes word for word into a playtest
-file and files the queue from it in one pull request whose description names each note on a line
-of its own, `Filed from #N`. The inbox skill (`.claude/skills/inbox/SKILL.md`) is the workflow;
-this is its tool, and the one sanctioned way an agent writes an issue (statement 14: "if it goes
+filed, and the orchestrating session on its own, periodically, or when the player asks,
+copies a batch of notes word for word into a playtest file and files the queue from it in one pull
+request whose description names each note on a line of its own, `Filed from #N`. The inbox skill
+(`.claude/skills/inbox/SKILL.md`) is the workflow; this is its tool, and the one sanctioned way
+an agent writes an issue (statement 14: "if it goes
 through a script it's safe ... an agent shouldn't use gh issue directly"), so
 `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped or not, and an
 issue write through `gh api` (all but a comment, which pull requests share) the same way.
@@ -19,7 +20,9 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              --note-file are the agent's. Each is repeatable and kept in order, and a
                              lone quote is marked like the rest
     append N                 adds the player's further words on a captured note's topic to note N as a
-                             comment marked so the tool tells it from a question; the same blocks
+                             comment marked so the tool tells it from a question; the same blocks,
+                             or the agent's only (a reading, a note, a context: no words of the
+                             player's)
     correct N --line-file F  posts on note N a comment marking the line in F as not the player's
                              (refused unless it is one whole line of N's body or appended words),
                              with --context-file, --reading-file or --note-file blocks
@@ -45,7 +48,13 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
     cite [N ...] [--pr P]    in the working tree, puts the playtest a filed note is in beside every
                              existing citation of it outside docs/playtests/ -- `inbox #N` becomes
                              `inbox #N in name`, the playtest's bare name, in every file (never a
-                             link) -- and lists every other form for a hand fix; local only
+                             link) -- and lists every other form for a hand fix; local only. Without --write
+                             (or with --dry-run) it prints the diff and the hand-fix list and edits
+                             nothing. A run wrapped across a line is one run. It matches a `#N` only
+                             where no digit or letter follows, so a hex color never matches
+
+`ask`, `capture`, `append` and `correct` refuse text holding one of the tool's own mark lines, a
+look-alike included (another heading level, a curly apostrophe), and write nothing.
 
 **Only a quote block is the player's words.** On a captured note, a body or an appended comment whose
 first line is a mark is a run of blocks (`MARKS`); on any other note, and in a comment the player
@@ -57,11 +66,12 @@ or one the capture script opened as one of `CAPTURE_BOTS` with its tag, the labe
 repository is public and the label alone admits anybody, so every other issue is skipped here and
 fails `tools/ci_transcription.py`, the CI check that reads a filing pull request's `Filed from #N`
 lines; these constants and that check's must agree, and `tools/test_inbox.py` compares them
-whenever the check is present. A comment counts as the player's words only when the player wrote
-it, or when it is words `append` added to a captured note: a comment by a capture identity whose
-first line is `APPEND_MARKER`, which only `append` writes and which counts on a note opened by a
-capture identity alone (a note the player wrote gets the player's own comments). The marker is an
-HTML comment, so it does not show on the issue; it is not part of the words.
+whenever the check is present. A comment holds the player's words only when the player wrote
+it, or in the quote blocks of an `append` comment on a captured note: a comment by a capture identity
+whose first line is `APPEND_MARKER`, which only `append` writes and which counts on a note opened by
+a capture identity alone (a note the player wrote gets the player's own comments). The rest of an
+`append` comment is the agent's. The marker is an HTML comment, so it does not show on the issue; it
+is not part of the words.
 
 **A band is a label** (dotted-quail, statement 2): `queue_now`, `queue_next`, `queue_later` or
 `queue_parked` (and `queue_bug`, above `now`), read by that exact pattern, so a label outside it is
@@ -101,8 +111,8 @@ PLAYER = "JosuaKrause"
 # body, so the body stays the player's words alone. `tools/ci_transcription.py` holds the same.
 CAPTURE_BOTS = ("nappy-claude-orchestrator[bot]", "nappy-codex-coder[bot]")
 CAPTURE_LABEL = "captured"
-# The first line of a comment `append` writes: the player's further words on a captured note, told
-# from an `ask` question. `tools/ci_transcription.py` holds the same.
+# The first line of a comment `append` writes on a captured note (the player's further words, the
+# agent's blocks, or both), told from an `ask` question. `tools/ci_transcription.py` holds the same.
 APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/inbox.py append -->"
 # Separates what the words answered (above it) from the words (below it) in one append comment, so a
 # failed post can never leave the context alone on the issue or duplicate it on a retry.
@@ -149,6 +159,7 @@ examples:
   uv run python tools/inbox.py close --pr 430 --dry-run
   uv run python tools/inbox.py cite --pr 430 --dry-run
   uv run python tools/inbox.py cite 497 498
+  uv run python tools/inbox.py cite 497 498 --write
 """
 
 
@@ -263,12 +274,6 @@ def appended_parts(note: Note, comment: Comment) -> tuple[str, str] | None:
     if not is_captured(note) or comment.author not in CAPTURE_BOTS:
         return None
     return split_append(comment.body)
-
-
-def appended_words(note: Note, comment: Comment) -> str | None:
-    """The player's words `append` added in `comment` on `note`, markers removed, or None when it is not one."""
-    parts = appended_parts(note, comment)
-    return parts[1] if parts is not None else None
 
 
 Block = tuple[str, str]  # (kind, text); kind is a key of MARKS
@@ -621,13 +626,11 @@ def default_title(text: str) -> str:
     return first[: cut if cut > 0 else TITLE_LENGTH] + "…"
 
 
-ISSUE_URL = re.compile(r"/issues/(\d+)\s*$")
-
-
-def check_blocks(blocks: Sequence[Block], what: str) -> None:
+def check_blocks(blocks: Sequence[Block], what: str, *, quote_needed: bool = True) -> None:
+    """Refuses a mark in any block, and, when `quote_needed`, blocks holding no quote of the player's words."""
     for _, text in blocks:
         refuse_markers(text, what)
-    if not any(kind == "quote" for kind, _ in blocks):
+    if quote_needed and not any(kind == "quote" for kind, _ in blocks):
         raise InboxError(
             f"{what} has no block of the player's words (--quote-file or --body-file); nothing was written"
         )
@@ -657,10 +660,11 @@ def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
 
 
 def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) -> int:
-    """Adds `blocks`, the player's further words among them, to captured note `number`, marked as `append`'s.
+    """Adds `blocks` to captured note `number`, marked as `append`'s.
 
-    The comment is a run of marked blocks under the marker line. A note the player wrote gets the
-    player's own comments, and a closed note is filed.
+    The blocks are the player's further words, or the agent's only (a reading, a note, a context), which
+    hold no words of the player's to copy anywhere. The comment is a run of marked blocks under the marker
+    line. A note the player wrote gets the player's own comments, and a closed note is filed.
     """
     note = open_note(github, number)
     if not is_captured(note):
@@ -668,7 +672,7 @@ def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) 
             f"#{number} was not opened by the capture script, so it takes the player's own comments;"
             " words are appended only to a captured note"
         )
-    check_blocks(blocks, "the appended comment")
+    check_blocks(blocks, "the appended comment", quote_needed=False)
     comment = ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"]
     print(github.write(role, comment, f"{APPEND_MARKER}\n\n{format_blocks(blocks)}").strip())
     return 0
@@ -993,8 +997,25 @@ def names_playtest(line: str, playtest: Playtest) -> bool:
     return re.search(rf"(?<![\w-]){re.escape(playtest.name)}(?![\w-])", line) is not None
 
 
-def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, bool]:
-    """`line` with the regular citations of `targets` edited, and whether any other form of one is left."""
+# A run wrapped across a line: the first line ends inside the run (`inbox #N and`), the next one opens
+# with the rest of it (`#1156 in name`); or a line ends on the citation's own ` in`, the name opening the next.
+RUN_CONTINUES = re.compile(r"(?:,|,? and)\s*$")
+HEAD_OF_RUN = re.compile(CITATION.pattern + RUN_CONTINUES.pattern, re.IGNORECASE)
+# A continued line may sit inside a Markdown quote, so its leading `>` markers are skipped.
+RUN_TAIL = re.compile(r"\s*(?:>\s*)*(#\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*)")
+IN_ENDS_LINE = re.compile(r" in\s*$")
+NAME_OPENS_LINE = re.compile(r"\s*(?:>\s*)*(?:\[([^\]]*)\]\([^)]*\)|([A-Za-z][\w-]*))")
+
+
+def cite_line(
+    line: str, path: str, targets: dict[int, Playtest], before: str = "", after: str = "", before2: str = ""
+) -> tuple[str, bool]:
+    """`line` with the regular citations of `targets` edited, and whether any other form of one is left.
+
+    `before` and `after` are the neighbouring lines (`before2` the one above `before`): a run that wraps
+    across the line break, over two or three lines, is one run read from the line that ends it, and a
+    citation whose ` in` ends a line is named by the next. A run over more lines is listed for a hand fix.
+    """
 
     def named(number: int) -> bool:
         return names_playtest(line, targets[number])
@@ -1002,28 +1023,61 @@ def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, 
     covered: list[tuple[int, int]] = []
     edits: list[tuple[int, str]] = []
     irregular = False
-    for match in CITATION.finditer(line):
-        numbers = [int(n) for n in re.findall(r"#(\d+)", match.group(0))]
+
+    def cite_run(numbers: list[int], end: int, span: tuple[int, int], following: str, next_line: str) -> None:
+        """One run, `numbers` of it, ending at `end`: `following` is what comes after on this line."""
+        nonlocal irregular
         mine = [n for n in numbers if n in targets]
         if not mine:
-            continue
-        covered.append(match.span())
+            return
+        covered.append(span)
         if all(named(n) for n in mine):
-            continue
+            return
         playtest = targets[mine[0]]
-        already = ALREADY_IN.match(line, match.end())
+        already = ALREADY_IN.match(line, end)
+        if already is None and IN_ENDS_LINE.match(following):
+            already = NAME_OPENS_LINE.match(next_line)
         if already is not None:
             # An ` in <name or link>` right after the citation is a citation already made; a different
             # playtest there is for a hand fix, and never gets a second "in".
             if (already.group(1) or already.group(2)) != playtest.name:
                 irregular = True
-            continue
+            return
         regular = len(mine) == len(numbers) and all(targets[n] == playtest for n in mine)
-        if regular and line[match.end() : match.end() + 1] != "]":
+        if regular and line[end : end + 1] != "]":
             # The bare name in every file, Markdown included: CLAUDE.md says once how a name is found.
-            edits.append((match.end(), f" in {playtest.name}"))
+            edits.append((end, f" in {playtest.name}"))
         else:
             irregular = True
+
+    def head_numbers() -> list[int] | None:
+        """The numbers of the run that `before` (or `before2` and `before`) opens and leaves open, if any."""
+        head = HEAD_OF_RUN.search(before)
+        if head is not None:
+            return [int(n) for n in re.findall(r"#(\d+)", head.group(0))]
+        middle = RUN_TAIL.match(before)
+        top = HEAD_OF_RUN.search(before2)
+        if middle is None or top is None or RUN_CONTINUES.match(before, middle.end()) is None:
+            return None
+        return [int(n) for n in re.findall(r"#(\d+)", top.group(0) + middle.group(1))]
+
+    tail = RUN_TAIL.match(line) if before else None
+    opened = head_numbers() if tail is not None else None
+    if tail is not None and opened is not None:
+        tail_numbers = [int(n) for n in re.findall(r"#(\d+)", tail.group(1))]
+        if RUN_CONTINUES.match(line, tail.end()) and RUN_TAIL.match(after):
+            # The middle line of a run over three: the line that ends it edits it.
+            covered.append((tail.start(1), tail.end()))
+        else:
+            cite_run(opened + tail_numbers, tail.end(), (tail.start(1), tail.end()), line[tail.end() :], after)
+    for match in CITATION.finditer(line):
+        rest = line[match.end() :]
+        if RUN_CONTINUES.match(rest) and RUN_TAIL.match(after):
+            # The first line of a wrapped run: the line that ends it edits it.
+            covered.append(match.span())
+            continue
+        numbers = [int(n) for n in re.findall(r"#(\d+)", match.group(0))]
+        cite_run(numbers, match.end(), match.span(), rest, after)
 
     def uncovered(start: int) -> bool:
         return not any(low <= start < high for low, high in covered)
@@ -1046,8 +1100,12 @@ def cite_text(path: str, text: str, targets: dict[int, Playtest]) -> tuple[str, 
     """`text` of file `path` with its regular citations edited, and the 1-based lines left for a hand fix."""
     lines = text.split("\n")
     hand: list[int] = []
-    for index, line in enumerate(lines):
-        lines[index], irregular = cite_line(line, path, targets)
+    original = list(lines)
+    for index, line in enumerate(original):
+        before = original[index - 1] if index > 0 else ""
+        after = original[index + 1] if index + 1 < len(original) else ""
+        before2 = original[index - 2] if index > 1 else ""
+        lines[index], irregular = cite_line(line, path, targets, before, after, before2)
         if irregular:
             hand.append(index + 1)
     return "\n".join(lines), hand
@@ -1251,14 +1309,25 @@ def build_parser() -> argparse.ArgumentParser:
             " docs/playtests/, edits the plain `inbox #N` form (or `inbox #N, #M and #K`) to carry the playtest:"
             " ` in name`, the playtest's bare name, in every file and never a link. A bare `(#N)`, a range,"
             " an issue URL or a link text is listed as file:line for a hand fix, never edited; a line already"
-            " naming the playtest is left alone, so a second run changes nothing. Edits this checkout only."
+            " naming the playtest is left alone, so a second run changes nothing. A run wrapped across a line is one"
+            " run. Without --write it prints the diff and the hand-fix list and writes nothing; --write edits"
+            " this checkout only."
         ),
     )
     cite.add_argument("numbers", nargs="*", type=int, metavar="N", help="a filed note's number")
     cite.add_argument(
         "--pr", type=int, default=None, help="the filing pull request, whose `Filed from #N` lines name notes"
     )
-    cite.add_argument("--dry-run", action="store_true", help="print the diff and the hand-fix list; write nothing")
+    cite.add_argument(
+        "--write",
+        action="store_true",
+        help="edit the files; without it, the diff and the hand-fix list are printed and nothing is written",
+    )
+    cite.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the diff and the hand-fix list; write nothing (what no flag does as well)",
+    )
     cite.add_argument("--root", default=None, help="the checkout to edit (default: the one this tool is in)")
     return parser
 
@@ -1268,11 +1337,13 @@ def main(argv: Sequence[str], runner: Runner = run_command) -> int:
     args = parser.parse_args(list(argv))
     if args.command == "cite" and not args.numbers and args.pr is None:
         parser.error("cite needs a note number or --pr")
+    if args.command == "cite" and args.write and args.dry_run:
+        parser.error("cite takes --write or --dry-run, not both")
     try:
         if args.command == "cite":
             github = GitHub(args.repo or default_repo(runner), runner) if args.pr is not None else None
             return cmd_cite(
-                github, Path(args.root).resolve() if args.root else ROOT, args.numbers, args.pr, args.dry_run
+                github, Path(args.root).resolve() if args.root else ROOT, args.numbers, args.pr, not args.write
             )
         github = GitHub(args.repo or default_repo(runner), runner)
         if args.command == "capture":

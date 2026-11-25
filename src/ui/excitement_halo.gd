@@ -19,19 +19,20 @@ extends Node2D
 ## **It draws nothing itself** *(2026-09-07, the player: "it should use the outline of the
 ## sprite")*: a shape drawn here could only ever be a picture of a *number*, and the licence this
 ## cue has is that it draws the *thing*. Each source's body draws its own rim (`SourceRim`, handed
-## to the source as `ExcitementSource.rim`), told a *target* alpha and colour that it eases toward
+## to the source as `ExcitementSource.rim()`), told a *target* alpha and colour that it eases toward
 ## on its own clock (`EntityHalo.FADE_IN_SECONDS`/`FADE_OUT_SECONDS`).
 ##
 ## **It accumulates nothing itself.** What has landed on her is traced from the meter's own sum:
 ## `Baby._update_excitement()` hands each source its exact share (`accumulate_landed()`), and
 ## `Baby.decay_in_window()` is the same meter's decay over the same window. This node only selects
-## sources and combines the two into each rim's net, and tells every source where she is and what
-## the frame's projected total is for its caret (`ExcitementSource.set_player_at()`,
-## `set_expected_total_gross()`).
+## sources and combines the two into each rim's net, and tells every source her motion and what the
+## frame's projected total is for its caret (`ExcitementSource.set_her_motion()`,
+## `set_expected_total_gross()`). **It tells a crowd body where she is and no event**: an event
+## hears it from its manager's word, the one channel for where she is (`WhereSheIs`).
 ##
 ## **Its candidates are every source of the sets it is handed** (`ExcitementSources`, the world's
-## own `WorldContext.excitement_sources`): the events and the whole crowd in the city, the events
-## alone in the building.
+## own, `WorldContext.use_excitement_sources()`): the events and the whole crowd in the city, the
+## events alone in the building.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
@@ -59,17 +60,17 @@ const MAX_SOURCES := 8
 ## never "every source that exists" — it is `contribution_at(at)` above the floor, capped at the
 ## eight strongest, which keeps a busy pavement legible.
 ##
-## **A source outranked by another is excluded on the same line** (`ExcitementSource.outranked`).
-## The region boundary's own pieces — a door's hut, boom and post, and the `roadblock` a wall stands
-## as — charge as one source, the strongest at her position, so the others land nothing and a rim on
-## one of them would be a cue marking a thing that is costing her nothing while its neighbour reads
-## red.
+## **A source outranked by another is excluded on the same line**
+## (`ExcitementSource.is_outranked()`). The region boundary's own pieces — a door's hut, boom and
+## post, and the `roadblock` a wall stands as — charge as one source, the strongest at her position,
+## so the others land nothing and a rim on one of them would be a cue marking a thing that is costing
+## her nothing while its neighbour reads red.
 ##
 ## A static function of the candidates and her position, so the selection reads without a scene.
 static func _select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
-	for source in candidates:
-		if source.outranked:
+	for source: ExcitementSource in candidates:
+		if source.is_outranked():
 			continue
 		var contribution: float = source.contribution_at(at)
 		if contribution > CONTRIBUTION_FLOOR:
@@ -84,10 +85,6 @@ static func _select_sources(candidates: Array, at: Vector2) -> Array:
 
 # ------------------------------------------------------------------ brightness ---
 
-## The most opaque any halo may ever draw, once a source's `landed()` clears `LOW_EMPHASIS_POINTS`
-## — see docs/EVENTS.md, "Soft, and under everything."
-const MAX_ALPHA := 0.75
-
 ## Below this, `_magnitude_for()` is a floor rather than a read of `landed()`. *(2026-09-08, the
 ## player: "transparency can be used to emphasize low values ... all changes should transition
 ## (hue and transparency) instead of immediately showing the actual value".)* A source just picked
@@ -96,7 +93,7 @@ const MAX_ALPHA := 0.75
 ## nothing. The floor is what a source fades *in* to before it has anything to say about magnitude.
 const MIN_MAGNITUDE := 0.2
 
-## Where `_magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
+## Where `_magnitude_for()`'s curve is already at `EntityHalo.MAX_ALPHA`. *(2026-09-08, the player: "one point
 ## is faint but present, five is clearly there, fifteen and above is solid, and the colour then
 ## carries the difference between fifteen and forty".)* Deliberately far below
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40): transparency's job is the *low* end, so it has finished
@@ -111,7 +108,7 @@ const LOW_EMPHASIS_POINTS := 15.0
 ## rises steeply near zero and flattens as it approaches one, unlike the straight line `_colour_for`
 ## wants for its own axis.
 static func _magnitude_for(net: float) -> float:
-	return MAX_ALPHA * clampf(sqrt(net / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
+	return EntityHalo.MAX_ALPHA * clampf(sqrt(net / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
 
 # -------------------------------------------------------------------- colour ---
 
@@ -128,7 +125,7 @@ static func _magnitude_for(net: float) -> float:
 ##
 ## **Through `Palette.HALO_MID`, not a straight lerp past it.** *(Playtest 38, finding 4: "there is
 ## also no real fade from yellow to red (eg when standing next to the other baby lady".)* A chat
-## with `chatting_mother` lands `Tuning.CHAT_EXCITEMENT` (25) over `detain_seconds`, past this
+## with `chatting_mother` lands `Tuning.CHAT_EXCITEMENT` (25) over `detains_for()`, past this
 ## ramp's midpoint — and a single `HALO_WEAK.lerp(HALO_STRONG, t)` passes through a desaturated
 ## salmon there, because averaging two saturated colours pulls the saturation down with the hue.
 ## Two lerps either side of the midpoint keeps every point on the ramp as saturated as its own
@@ -141,8 +138,9 @@ static func _colour_for(net: float) -> Color:
 
 ## The sets of sources this halo picks among (`ExcitementSources`): the world's, handed in.
 var _sets: Array[ExcitementSources] = []
-## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
-var timing := FrameTiming.new()
+## Where this charges its time to the frame record, handed in by `main` (`use_frame_timing()`); the
+## null sink until then.
+var _timing := FrameTiming.new()
 var _player: Node2D
 var _baby: Baby
 
@@ -167,6 +165,11 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 	_player = player
 	_baby = baby
 
+## Hands the halo where it charges its time to the frame record: `main` hands the sitting's kept
+## frame timing.
+func use_frame_timing(timing: FrameTiming) -> void:
+	_timing = timing
+
 ## Every frame: tell every candidate where she is standing, pick the sources, tell each one's rim
 ## how bright it reads and what colour it is, and tell everything else zero.
 ##
@@ -175,7 +178,7 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 ## people")*: `CONTRIBUTION_FLOOR` and `MAX_SOURCES` keep a busy sidewalk legible.
 ##
 ## **`total_landed` and `decay` are read once, over every candidate, before anybody's net is
-## computed**, and `expected_gross_at()` is asked of every candidate right after `set_player_at()`,
+## computed**, and `expected_gross_at()` is asked of every candidate right after `set_her_motion()`,
 ## its sum handed back through `set_expected_total_gross()` before anything asks a caret: every
 ## source's share scales by one factor (`ExcitementSource.net_landed()`), so the floor catches all of
 ## them together, never one at a time depending on loop order. `_player` is a `Node2D`, so her
@@ -197,10 +200,10 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 ## the candidates still counts while its rim exists, and one whose body is queued for deletion gives
 ## its rim back on the spot here and is never lit again.
 func _process(_delta: float) -> void:
-	if timing.on:
-		var outer := timing.enter(FrameTiming.CUES)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.CUES)
 		_pick_and_predict()
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_pick_and_predict()
 
@@ -221,32 +224,36 @@ func _pick_and_predict() -> void:
 	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than a linear
 	# scan of `picked` for every one of up to ~275 candidates.
 	var picked_set := {}
-	for source in picked:
+	for source: ExcitementSource in picked:
 		picked_set[source] = true
 	var total_landed := 0.0
-	for source in _candidates:
+	for source: ExcitementSource in _candidates:
 		total_landed += source.landed()
 	var decay := _baby.decay_in_window()
 	var total_expected_gross := 0.0
-	for source in _candidates:
+	for source: ExcitementSource in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
-		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
+		source.set_her_motion(player_velocity, player_decay_rate, player_sensitivity)
+		# A crowd body has no manager's word to hear where she is, so the halo tells it; an event
+		# hears her from its manager, the one channel for where she is.
+		if source is CrowdExcitement:
+			(source as CrowdExcitement).set_her_at(here)
 		total_expected_gross += source.expected_gross_at(here)
 	# Every block that can come back this frame comes back before any unserved pick is served —
 	# see this function's doc. First the rims of last frame's holders whose bodies are going anyway.
-	for source in _holders:
-		if is_instance_valid(source.body) and source.body.is_queued_for_deletion():
-			var going = source.rim
+	for source: ExcitementSource in _holders:
+		if is_instance_valid(source.body()) and source.body().is_queued_for_deletion():
+			var going := source.rim()
 			if going:
 				going.release()
 	var holders := {}
-	for source in _candidates:
+	for source: ExcitementSource in _candidates:
 		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
 			continue
 		# A rim not held has nothing to fade, so only a held one is told zero.
-		var rim = source.rim
+		var rim := source.rim()
 		if rim == null or not rim.is_held():
 			continue
 		rim.set_strength(0.0, Palette.HALO_WEAK)
@@ -254,10 +261,10 @@ func _pick_and_predict() -> void:
 			holders[source] = true
 	# A holder that is no longer a candidate at all still holds its block; told zero like any other
 	# unpicked source, so it fades and gives it back rather than counting against the budget forever.
-	for source in _holders:
-		if not is_instance_valid(source.body) or picked_set.has(source) or holders.has(source):
+	for source: ExcitementSource in _holders:
+		if not is_instance_valid(source.body()) or picked_set.has(source) or holders.has(source):
 			continue
-		var rim = source.rim
+		var rim := source.rim()
 		if rim == null:
 			continue
 		rim.set_strength(0.0, Palette.HALO_WEAK)
@@ -266,15 +273,15 @@ func _pick_and_predict() -> void:
 	# Picks that already hold a rim are lit at once, in place: relighting needs no new block. Picks
 	# with no rim are served strongest first (`picked` is in that order) while blocks remain; the
 	# rest are told zero and show nothing yet.
-	for source in picked:
-		var rim = source.rim
-		if rim == null or source.body.is_queued_for_deletion():
+	for source: ExcitementSource in picked:
+		var rim := source.rim()
+		if rim == null or source.body().is_queued_for_deletion():
 			continue
 		if rim.is_held():
 			holders[source] = true
-	for source in picked:
-		var rim = source.rim
-		if rim == null or source.body.is_queued_for_deletion():
+	for source: ExcitementSource in picked:
+		var rim := source.rim()
+		if rim == null or source.body().is_queued_for_deletion():
 			continue
 		if not rim.is_held():
 			if holders.size() >= EntityHalo.RIM_BUDGET:

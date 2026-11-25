@@ -268,4 +268,6 @@ if ! staleness_reason >/dev/null; then
     exit 1
 fi
 
+# No edit hook sees a picture being written, so the tool that writes one names its rules.
+echo "The rules for an atlas page: .claude/skills/illustrated-png/SKILL.md" >&2
 exit 0

@@ -17,8 +17,8 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
-const SEEDS := [4242, 90210, 1337]
-const BUSKER_DAY := 2  # `busker.first_day`.
+const SEEDS: Array[int] = [4242, 90210, 1337]
+const BUSKER_DAY := 2  # The busker's first day.
 
 const OLD_BUSKER_INTENSITY := 13.0
 const OLD_BUSKER_INNER := 45.0
@@ -27,7 +27,7 @@ const OLD_BUSKER_OUTER := 190.0
 const _SIDEWALK_SEARCH_STEP := 8.0
 const _SIDEWALK_SEARCH_MAX := 400.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_busker_never_fills_the_day(t)
 	_busker_denial_and_inner_floor(t)
 	_busker_street_side(t)
@@ -36,8 +36,8 @@ func run(t) -> void:
 
 # --------------------------------------------------------------- sleep over a whole day ---
 
-## `DAY_LENGTH_SECONDS` (210s, `busker.first_day` is day 2, an ordinary day) plus a 20s margin so
-## a chosen intensity does not sit exactly on the line — see the sweep below.
+## `DAY_LENGTH_SECONDS` (210s, the busker's first day is day 2, an ordinary day) plus a 20s
+## margin so a chosen intensity does not sit exactly on the line — see the sweep below.
 const _SLEEP_CAP_SECONDS := 230.0
 const _SWEEP_STEP := 0.1
 const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; never exceeded.
@@ -54,27 +54,28 @@ const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; ne
 ##
 ## **One busker, alone, at the centre of a real one-block `PARK` block.** No crowd
 ## (`Crowd.start_day()` is never called, so `_agents` stays empty) and no other event
-## (`city.events` never plans a day; the one instance under test is the only body appended to
+## (the city's `EventManager` never plans a day; the one instance under test is the only body appended to
 ## `_instances`) — so the only two things she is standing between are this one field and the
-## ground's own 12.0/s. The rig stands exactly `inner_radius` from the busker's own centre,
+## ground's own 12.0/s. The rig stands exactly inner radius from the busker's own centre,
 ## starting at `EXCITEMENT_CALM_THRESHOLD` with an empty sleep meter, matching the question
-## exactly as asked. The instance is stepped past its own `telegraph_time` before she "arrives",
+## exactly as asked. The instance is stepped past its own `telegraphs_for()` before she "arrives",
 ## since a busker that has been playing all morning has no telegraph left by the time anyone
 ## walks up to him.
-func _busker_never_fills_the_day(t) -> void:
+func _busker_never_fills_the_day(t: TestRunner) -> void:
 	var found := _find_one_block_park()
 	if found.is_empty():
 		print("\n== no one-block PARK found across seeds %s; skipped ==" % [SEEDS])
 		return
 	var map: CityMap = found["map"]
 	var block: Vector2i = found["block"]
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, run, map)
 
 	var busker_at: Vector2 = map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 	var real := EventCatalogue.by_id("busker")
-	var standing_at := busker_at + Vector2(real.inner_radius, 0.0)
+	var standing_at := busker_at + Vector2(real.core_within(), 0.0)
 
 	print("\n== time to a full sleep meter, standing at inner_radius from the busker's own core ==")
 	print(("one-block PARK, starting excitement %.0f, sleepiness 0, capped at %.0fs "
@@ -105,6 +106,9 @@ func _busker_never_fills_the_day(t) -> void:
 				("the chosen intensity (%.1f) does not fill a sleep meter standing at his core for "
 				+ "a whole day (%.0fs, capped at %.0fs)")
 				% [chosen, Tuning.DAY_LENGTH_SECONDS, _SLEEP_CAP_SECONDS])
+	# Freeing the city frees its event manager, and the engine drops a freed object's signal
+	# connections, so `EventBus.return_phase_started` is left as it was found.
+	city.free()
 
 ## The first `PARK`-purpose block, exactly one block to its lot, found across `SEEDS` — or an
 ## empty dictionary if none of them rolled one. `{}` rather than `null` because GDScript cannot
@@ -112,7 +116,7 @@ func _busker_never_fills_the_day(t) -> void:
 func _find_one_block_park() -> Dictionary:
 	for city_seed in SEEDS:
 		var map := CityGenerator.generate(city_seed)
-		for block in map.calm_blocks:
+		for block in map.calm_blocks_now():
 			if map.starting_purpose(map.anchor_of(block)) == GameEnums.BlockPurpose.PARK \
 					and map.calm_lot_blocks(block) == 1:
 				return {"map": map, "block": block}
@@ -120,27 +124,25 @@ func _find_one_block_park() -> Dictionary:
 
 ## One busker, alone, standing trial at `intensity` for up to `_SLEEP_CAP_SECONDS`. Returns the
 ## second the sleep meter filled, or `-1.0` if it never did.
-func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2,
+func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing_at: Vector2,
 		real: EventDef, intensity: float) -> float:
 	# A fresh `EventDef`, not the catalogue's own, so the sweep never has to mutate and restore the
 	# live row — only `intensity` varies; everything else is read off the real def so the two can
 	# never quietly drift apart.
-	var def := EventDef.new()
-	def.id = "busker"
-	def.intensity = intensity
-	def.inner_radius = real.inner_radius
-	def.outer_radius = real.outer_radius
-	def.pulse_period = real.pulse_period
-	def.telegraph_time = real.telegraph_time
+	var draft := EventDraft.new("busker")
+	draft.field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
+			.pulsing_every(real.pulses_every()))
+	draft.warning(WarningSpec.lasting(real.telegraphs_for()))
+	var def := draft.build()
 
 	var instance := EventInstance.new()
 	instance.setup(def, busker_at)
 	t.add_child(instance)
 	instance.set_process(false)
-	city.events.world.instances.append(instance)
+	RunCity.events(city).world.take_in(instance)
 
 	var step := 1.0 / 60.0
-	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
+	var warm_up := int(ceil((def.telegraphs_for() + 0.1) / step))
 	for i in warm_up:
 		instance.step(step)
 
@@ -149,16 +151,16 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	camera.name = "Camera2D"
 	stroller.add_child(camera)
 	t.add_child(stroller)
-	city.events.use_player(stroller)
+	RunCity.events(city).use_player(stroller)
 	stroller.set_physics_process(false)
 	stroller.global_position = standing_at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	stroller.add_child(baby)
 	baby.set_physics_process(false)
-	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
-	baby.sleepiness = 0.0
+	baby.seed_meters(0.0, Tuning.EXCITEMENT_CALM_THRESHOLD)
 
 	var result := -1.0
 	var elapsed := 0.0
@@ -166,11 +168,11 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 		instance.step(step)
 		baby._physics_process(step)
 		elapsed += step
-		if baby.sleepiness >= Tuning.METER_MAX:
+		if baby.sleepiness_level() >= Tuning.METER_MAX:
 			result = elapsed
 			break
 
-	city.events.world.instances.erase(instance)
+	RunCity.events(city).world.let_go(instance)
 	stroller.free()
 	instance.free()
 	return result
@@ -200,21 +202,21 @@ func _pulse_mean_multiplier() -> float:
 		total += _pulse_multiplier(phase)
 	return total / float(steps)
 
-## `EventScheduler._denial_radius` reads live off `EventCatalogue`, so "after" is asked of the
+## `DawnSpoilers._denial_radius()` reads live off `EventCatalogue`, so "after" is asked of the
 ## real def; "before" is the same formula asked of the M117 numbers, kept as constants above.
-func _busker_denial_and_inner_floor(t) -> void:
+func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("busker")
 	var before_denial := _denial_radius(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER)
-	var after_denial := EventScheduler._denial_radius(def)
+	var after_denial := DawnSpoilers._denial_radius(def)
 
-	print("\n== busker denial radius (EventScheduler.CALM_ZONE_DENIAL_RATE = %.1f/s) =="
-			% EventScheduler.CALM_ZONE_DENIAL_RATE)
+	print("\n== busker denial radius (DawnSpoilers.CALM_ZONE_DENIAL_RATE = %.1f/s) =="
+			% DawnSpoilers.CALM_ZONE_DENIAL_RATE)
 	print("before: intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
 			% [OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER, before_denial])
 	print("after:  intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
-			% [def.intensity, def.inner_radius, def.outer_radius, after_denial])
+			% [def.peak(), def.core_within(), def.heard_within(), after_denial])
 
-	# The floor stated over a whole beat, not just its peak: standing at (or inside) inner_radius,
+	# The floor stated over a whole beat, not just its peak: standing at (or inside) inner radius,
 	# the meter must not trend down over a full pulse cycle. `mean_multiplier` (0.625 for this
 	# pulse shape) is what a peak-only floor missed — a row cleared only at the top of its beat
 	# still nets negative on average, because the beat spends more of its seven seconds below the
@@ -224,9 +226,9 @@ func _busker_denial_and_inner_floor(t) -> void:
 	print("\n== net rate at inner_radius on grass, over a whole beat (must not trend down) ==")
 	print("calm ground gives back %.2f/s; the beat's own mean multiplier is %.4f"
 			% [calm_decay, mean_multiplier])
-	for row in [
+	for row: Dictionary in [
 		{"label": "before", "intensity": OLD_BUSKER_INTENSITY},
-		{"label": "after", "intensity": def.intensity},
+		{"label": "after", "intensity": def.peak()},
 	]:
 		var intensity: float = row["intensity"]
 		var top: float = intensity * 1.0 - calm_decay
@@ -237,7 +239,7 @@ func _busker_denial_and_inner_floor(t) -> void:
 	t.check(true, "beat-mean and denial radius measured (see above and _busker_never_fills_the_day)")
 
 func _denial_radius(intensity: float, inner: float, outer: float) -> float:
-	var decay := EventScheduler.CALM_ZONE_DENIAL_RATE
+	var decay := DawnSpoilers.CALM_ZONE_DENIAL_RATE
 	if intensity <= decay:
 		return inner
 	var frac := sqrt(1.0 - decay / intensity)
@@ -250,16 +252,15 @@ func _denial_radius(intensity: float, inner: float, outer: float) -> float:
 ## distance its field has to clear to be felt from the street, rather than a distance assumed
 ## from the lot's nominal size. `emission_at()` is the peak, undamped reading (the top of the
 ## beat), which is the worst case a passer-by meets.
-func _busker_street_side(t) -> void:
+func _busker_street_side(t: TestRunner) -> void:
 	print("\n== busker contribution on the pavement beside its lot, top of the beat ==")
 	print("  %-8s %10s %10s %10s %10s" % ["seed", "to street", "before", "after", "ratio"])
 	# A plain `EventDef`, not the catalogue's own — `emission_at()` only reads `intensity`,
-	# `inner_radius`, `outer_radius` and `flock_size` (0 by default), so this is the M117 busker
+	# inner radius, outer radius and flock (none by default), so this is the M117 busker
 	# in every field the comparison cares about.
-	var before_def := EventDef.new()
-	before_def.intensity = OLD_BUSKER_INTENSITY
-	before_def.inner_radius = OLD_BUSKER_INNER
-	before_def.outer_radius = OLD_BUSKER_OUTER
+	var before_draft := EventDraft.new("")
+	before_draft.field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))
+	var before_def := before_draft.build()
 	var after_def := EventCatalogue.by_id("busker")
 	var samples := 0
 	var before_total := 0.0
@@ -269,12 +270,11 @@ func _busker_street_side(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m128:%d" % city_seed)
 		var no_one_shots: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(BUSKER_DAY), rng, map,
-				CalmAreas.of(map), no_one_shots).placements()
+		var planned := GameDawn.of(DaySpec.for_day(BUSKER_DAY), rng, map).spent(no_one_shots).plan().placements()
 		for plan in planned:
-			if plan.def.id != "busker":
+			if plan.row_id() != "busker":
 				continue
-			var to_street := _distance_to_sidewalk(map, plan.position)
+			var to_street := _distance_to_sidewalk(map, plan.placed_at())
 			if to_street == INF:
 				continue
 			var before := before_def.emission_at(Vector2(to_street, 0.0))
@@ -310,45 +310,49 @@ func _distance_to_sidewalk(map: CityMap, from: Vector2) -> float:
 
 # -------------------------------------------------------------------------- the playground ---
 
-## Every playground this city has, standing exactly at its own centre — where `_place_ambient`
+## Every playground this city has, standing exactly at its own centre — where `DawnAmbient`
 ## puts the ambient source, and so the worst point in the park for it. `_walk_until_asleep` is
 ## `tests/test_balance.gd`'s own rig, duplicated here rather than shared because a probe under
 ## `tests/probes/` is not discovered by anything that could import it as a dependency.
-func _playground_settles(t) -> void:
+func _playground_settles(t: TestRunner) -> void:
 	print("\n== a one-block park with a playground in it: can she settle at its own centre? ==")
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []
-		city.events.start_day(DaySpec.for_day(1), _rng(city_seed), consumed)
-		for rect in city.map.playgrounds:
-			var at: Vector2 = city.map.tile_rect_to_world(rect).get_center()
-			city.events.stream_around(at)
-			city.crowd.start_day(1, _rng(city_seed), at)
+		var spec := DaySpec.for_day(1)
+		RigStreets.begin(city.streets(), city.map(), spec)
+		RunCity.events(city).start_day(spec, _rng(city_seed), consumed)
+		for rect in city.map().playground_rects():
+			var at: Vector2 = city.map().tile_rect_to_world(rect).get_center()
+			RunCity.events(city).stream_around(at)
+			RunCity.crowd(city).start_day(1, _rng(city_seed), at)
 			var stroller := Stroller.new()
 			var camera := Camera2D.new()
 			camera.name = "Camera2D"
 			stroller.add_child(camera)
 			t.add_child(stroller)
-			city.events.use_player(stroller)
+			RunCity.events(city).use_player(stroller)
 			stroller.set_physics_process(false)
 			stroller.global_position = at
 			stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 			var baby := Baby.new()
+			baby.use_bus(EventBus)
 			stroller.add_child(baby)
 			baby.set_physics_process(false)
 
 			var settled := -1.0
 			var duration := Tuning.day_length(1)
 			for i in int(round(duration / step)):
-				city.crowd.step(step)
-				for instance in city.events.instances():
-					if not instance.is_finished:
+				RunCity.crowd(city).step(step)
+				for instance in RunCity.events(city).instances():
+					if not instance.is_gone():
 						instance.step(step)
 				baby._physics_process(step)
-				if baby.state == GameEnums.BabyState.ASLEEP:
+				if baby.condition() == GameEnums.BabyState.ASLEEP:
 					settled = i * step
 					break
 			print("  seed %-8d settled: %s" % [city_seed,

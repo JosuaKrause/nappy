@@ -12,18 +12,22 @@ extends RefCounted
 ## far along each one the run has got, which is why a day can be reconstructed from a seed
 ## and a day number plus the causes that have fired.
 
-## Block -> index into that block's `BlockPlan.steps`.
+## Block -> index into that block's arc (`BlockPlan.step_at()`).
 var _stage := {}
 ## Block -> the day it last moved. Day 1 for a block that has never changed, which is what
 ## the route map wants to shade "this is new".
 var _changed_on := {}
 ## The park that is open today whatever its arc has reached — day 12's, the one its task sends her
-## to (`BlockPlan.forced_open_on`) — as `block -> true`, until she takes it. Derived by
+## to (`BlockPlan.forced_open_day()`) — as `block -> true`, until she takes it. Derived by
 ## `begin_day()` from the plans and the day, never saved: a retried day derives it again.
 var _open_today := {}
 ## Where a block's step along its arc is written down for the run log — the run's trace, handed
 ## on by `RunState.use_trace()`; silent for the scratch states a generator or a recipe builds.
-var trace := RunTrace.new()
+var _trace := RunTrace.new()
+
+## Writes the blocks' steps to `sink` from here on (see `_trace`).
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
 
 ## Back to day 1 with every block at the start of its arc.
 func reset() -> void:
@@ -76,7 +80,7 @@ func purpose_of(plans: Dictionary, block: Vector2i) -> GameEnums.BlockPurpose:
 		return GameEnums.BlockPurpose.RESIDENTIAL
 	if _open_today.has(block):
 		return GameEnums.BlockPurpose.PARK
-	return plan.steps[mini(_index(block), plan.steps.size() - 1)].purpose
+	return plan.step_at(mini(_index(block), plan.step_count() - 1)).purpose
 
 ## Advances every block as far as its scheduled steps allow. Called once at the start of a
 ## day, before anything is placed, so events are placed into the city the day actually has.
@@ -92,7 +96,7 @@ func begin_day(plans: Dictionary, day: int) -> void:
 		var plan: BlockPlan = plans[block]
 		while _can_advance(plan, block, day, GameEnums.BlockCause.SCHEDULED):
 			_advance(plans, block, day, GameEnums.BlockCause.SCHEDULED)
-		if plan.forced_open_on == day:
+		if plan.is_forced_open_on(day):
 			_open_today[block] = true
 
 ## Whether `block` is the park forced open today, and not yet taken.
@@ -125,7 +129,7 @@ func advance_now(plans: Dictionary, block: Vector2i, day: int,
 	if not plan:
 		return false
 	var next := _index(block) + 1
-	if next >= plan.steps.size() or plan.steps[next].purpose != purpose:
+	if next >= plan.step_count() or plan.step_at(next).purpose != purpose:
 		return false
 	_advance(plans, block, day, cause)
 	return true
@@ -136,7 +140,7 @@ func next_purpose(plans: Dictionary, block: Vector2i) -> int:
 	if not plan:
 		return -1
 	var next := _index(block) + 1
-	return plan.steps[next].purpose if next < plan.steps.size() else -1
+	return plan.step_at(next).purpose if next < plan.step_count() else -1
 
 ## A cause fired at a block. Advances its arc if the next step was waiting for exactly that
 ## cause and the day has come; otherwise nothing happens, which is the point — a fire in a
@@ -167,9 +171,9 @@ func _index(block: Vector2i) -> int:
 func _can_advance(plan: BlockPlan, block: Vector2i, day: int,
 		cause: GameEnums.BlockCause) -> bool:
 	var next := _index(block) + 1
-	if next >= plan.steps.size():
+	if next >= plan.step_count():
 		return false
-	var step: BlockPlan.Step = plan.steps[next]
+	var step: BlockPlan.Step = plan.step_at(next)
 	return step.cause == cause and day >= step.from_day
 
 ## Takes the step, and writes down that it was taken.
@@ -183,7 +187,8 @@ func _advance(plans: Dictionary, block: Vector2i, day: int,
 	var was := purpose_of(plans, block)
 	_stage[block] = _index(block) + 1
 	_changed_on[block] = day
-	trace.note("arc", "block %s %s -> %s (%s)" % [
+	var cause_name: String = GameEnums.BlockCause.keys()[cause]
+	_trace.note("arc", "block %s %s -> %s (%s)" % [
 		RunTrace.tile(block), RunTrace.purpose(was),
 		RunTrace.purpose(purpose_of(plans, block)),
-		GameEnums.BlockCause.keys()[cause].to_lower()])
+		cause_name.to_lower()])

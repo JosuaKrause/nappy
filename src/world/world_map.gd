@@ -4,10 +4,11 @@ extends RefCounted
 ## the city's map (`CityMap`) and the building's (`InteriorMapPlan`). An event manager, each event, the
 ## crowd, the stroller and the run log are given the map of the world they are in by whoever builds
 ## them, and ask it every question about the ground: which tile a point is on, whether a mover may
-## stand there, whether a line is clear, whether a wall keeps a field from her, how to get somewhere
-## (through its `navigator()`), how to add something to the world on a draw layer, and what the ground
-## under her does to her walk (`slope_dir_at()`, `process_player()`). None of them asks which world it
-## is in, so an event indoors walks round the building's walls and sees along its flights by the same
+## stand there, whether a line is clear, whether a wall keeps a field from her, and what the ground
+## under her does to her walk (`slope_dir_at()`). The map names nothing of the world: getting
+## somewhere is the navigator's (`Navigator`, over a map) and drawing something is the world's
+## (`WorldContext`), and whoever builds a world hands both on. None of them asks which world it is
+## in, so an event indoors walks round the building's walls and sees along its flights by the same
 ## code that walks it round a café outdoors.
 ##
 ## **The questions are answered here, over two answers each map gives about its own ground**: whether
@@ -29,30 +30,51 @@ extends RefCounted
 const UNREACHED := -1
 const BLOCKED := -2
 
-## The map's size in tiles; zero for open ground, which has no edge.
-var size := Vector2i.ZERO
+## The map's size in tiles; zero for open ground, which has no edge (`size_in_tiles()`).
+var _size := Vector2i.ZERO
 ## What stands on the ground today — a precinct's posts, the closures, the soft seals and every
 ## stationary solid body — as the one record every mover asks through `passable()`
 ## (`BlockedLayer`). The ground's own type is the map's (`_ground_lets()`).
-var blocked := BlockedLayer.new()
-## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked, then
-## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over.
-var moves := ProposedMoves.new()
-## The pass a body that gives way asks at its own step about the movers on `moves` that keep their
-## course (`SeparationPass`): the crowd gives way to event figures (inbox #884 in plaid-raven).
-var separation := SeparationPass.new(moves)
-## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
-## closures): a version a reader only compares with the one its own answer was built from.
-var day_record_version := 0
-## The world this map is drawn in, which `add_entity()` and `process_player()` go through: handed
-## over by the world node when it takes the map (`City.build()`, `InteriorScene.build()`). Null for a
-## map no world draws — a data rig's; `has_world()` asks.
-var world: WorldContext = null
+var _blocked := BlockedLayer.new()
+## Every tile the blocked record holds in `layers` (`Mover`'s layer bits), as one set: the
+## ground a flood over another grid is handed as shut (`BlockedLayer.tiles_of()`).
+func tiles_shut_to(layers: int) -> Dictionary:
+	return _blocked.tiles_of(layers)
 
-## The map's one navigator while anything holds it (`navigator()`), kept by a weak reference: a map
-## holding its navigator strongly while the navigator holds the map would be a reference cycle that
-## is never freed.
-var _navigator: WeakRef = null
+## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked,
+## then committed (`MoveProposal`): the one list a pass over every mover's proposal goes over. A
+## mover joins and leaves it through `list_move()` and `unlist_move()`.
+var _moves := ProposedMoves.new()
+## The pass a body that gives way asks at its own step about the movers on `_moves` that keep
+## their course (`SeparationPass`, handed out by `course_keepers()`): the crowd gives way to
+## event figures (inbox #884 in plaid-raven).
+var _separation := SeparationPass.new(_moves)
+## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
+## closures); `day_record_version()` answers it.
+var _day_record_version := 0
+
+## Puts `move` on the list of moves in this world, standing at `at`.
+func list_move(move: MoveProposal, at: Vector2) -> void:
+	_moves.join(move, at)
+
+## Takes `move` off the list of moves in this world; a move that is not on it is a no-op.
+func unlist_move(move: MoveProposal) -> void:
+	_moves.leave(move)
+
+## The pass over the moves on the list that keep their course, which a body that gives way asks
+## about each step.
+func course_keepers() -> SeparationPass:
+	return _separation
+
+## Every move on the list: what a test reads to confirm what a figure put there, since nothing
+## outward carries the list.
+func listed_moves() -> ProposedMoves:
+	return _moves
+
+## A number a reader only compares with the one its own answer was built from: it changes whenever
+## a per-day record that is not a body (a hold, a soft seal, a closure) is written.
+func day_record_version() -> int:
+	return _day_record_version
 
 ## Open ground: a map with no ground of its own (see the class doc).
 static func open_ground() -> WorldMap:
@@ -86,8 +108,12 @@ func tile_rect_to_world(rect: Rect2i) -> Rect2:
 	return Rect2(Vector2(rect.position) * Tuning.TILE_SIZE,
 			Vector2(rect.size) * Tuning.TILE_SIZE)
 
+## The map's size in tiles; zero for open ground, which has no edge.
+func size_in_tiles() -> Vector2i:
+	return _size
+
 func in_bounds(tile: Vector2i) -> bool:
-	return tile.x >= 0 and tile.y >= 0 and tile.x < size.x and tile.y < size.y
+	return tile.x >= 0 and tile.y >= 0 and tile.x < _size.x and tile.y < _size.y
 
 # ------------------------------------------------------------ the ground itself ---
 
@@ -127,42 +153,41 @@ func walkable_lut() -> PackedByteArray:
 ## **Whether `mover` may stand on `tile`**: the one question every step, line, flood and placement
 ## asks of the ground, for the layers the mover names (`Mover`). The ground's own type, a post and
 ## street ground are the map as built (`_ground_lets()`); today's closures, soft seals and bodies are
-## the day's record (`blocked`).
+## the day's blocked record.
 func passable(tile: Vector2i, mover: Mover) -> bool:
-	var layers := mover.blocked_by
-	return _ground_lets(tile, layers) and not blocked.blocks(tile, layers & Mover.TODAY)
+	var layers := mover.layers_blocked()
+	return _ground_lets(tile, layers) and not _blocked.blocks(tile, layers & Mover.TODAY)
 
 ## Tiles a stationary solid body stands on today, as tile -> how many bodies stand there
-## (`BlockedLayer.bodies`).
-var obstructed_tiles: Dictionary:
-	get:
-		return blocked.bodies
-	set(value):
-		blocked.bodies = value
-## Bumped whenever a tile enters or leaves `obstructed_tiles`: a version a reader compares with the
-## one its own answer was built from (`BlockedLayer.body_version`).
-var obstruction_version: int:
-	get:
-		return blocked.body_version
-	set(value):
-		blocked.body_version = value
+## (`BlockedLayer.todays_body_tiles()`).
+func obstructed_tiles() -> Dictionary:
+	return _blocked.todays_body_tiles()
+
+## Whether any stationary solid body stands on a tile today.
+func has_solid_bodies() -> bool:
+	return not _blocked.todays_body_tiles().is_empty()
+
+## Changes whenever a tile enters or leaves `obstructed_tiles()`: a version a reader compares
+## with the one its own answer was built from (`BlockedLayer.body_ground_changes()`).
+func obstruction_version() -> int:
+	return _blocked.body_ground_changes()
 
 ## Clears today's solid bodies, once a day.
 func clear_day_obstructions() -> void:
-	blocked.clear_bodies()
+	_blocked.clear_bodies()
 
 ## Records one body's footprint under `owner`, an `Object.get_instance_id()` handed back later to
 ## `release_obstruction()`.
 func obstruct_tiles(owner: int, tiles_covered: Array[Vector2i]) -> void:
-	blocked.obstruct(owner, tiles_covered)
+	_blocked.obstruct(owner, tiles_covered)
 
 ## Gives one body's footprint back; an unknown owner is a no-op.
 func release_obstruction(owner: int) -> void:
-	blocked.release(owner)
+	_blocked.release(owner)
 
 ## Whether a stationary solid body is standing on a tile today.
 func is_obstructed(tile: Vector2i) -> bool:
-	return obstructed_tiles.has(tile)
+	return _blocked.todays_body_tiles().has(tile)
 
 # ---------------------------------------------------------------------- lines ---
 
@@ -171,7 +196,7 @@ func is_obstructed(tile: Vector2i) -> bool:
 ## found by stepping from one tile boundary to the next along it rather than by sampling, so a line
 ## that clips a wall's corner by a pixel is blocked however short it is, and a line through a corner
 ## point exactly asks both tiles beside it. **The line a pursuer notices her along, lunges along and
-## catches her along** (`EventInstance.clear_line_to()`), and the line day 13's waiting guard is
+## catches her along** (`EventInstance.Figure.clear_line_to()`), and the line day 13's waiting guard is
 ## placed to have from the roadblock he guards (`ResistanceDirector._roadblock_guard_spot()`) — one
 ## walk, so a spot chosen for its line is one his notice sees from (leafy-puffin, inbox #648).
 ## Stricter than `wall_between()`, which asks how deep into a wall a line runs.
@@ -182,7 +207,7 @@ func is_obstructed(tile: Vector2i) -> bool:
 ## beside her. Everything between is asked: a pursuer neither notices nor reaches her through a café,
 ## a barrier or a seal.
 ##
-## **`own_tiles` are tiles the line's owner stands on** (a guard's own band, `EventInstance.clear_line_to()`):
+## **`own_tiles` are tiles the line's owner stands on** (a guard's own band, `EventInstance.Figure.clear_line_to()`):
 ## the day's solids are not asked there, so he sees out of the band he belongs to however far he has
 ## stepped from its middle, and only that band; another body, a building or a café still stops it.
 func clear_line(from: Vector2, to: Vector2, mover: Mover = null, own_tiles := {}) -> bool:
@@ -199,13 +224,13 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 		own_tiles := {}) -> bool:
 	if not has_ground():
 		return true
-	var layers := mover.blocked_by
+	var layers := mover.layers_blocked()
 	var today := layers & Mover.TODAY
 	var tile := world_to_tile(from)
 	if not _ground_lets(tile, layers) and _ground_stops(tile, layers, from, to):
 		return false
 	# Inside a solid of the day's it starts in: those layers are not asked until it is out.
-	var leaving := today != 0 and blocked.blocks(tile, today) and not own_tiles.has(tile)
+	var leaving := today != 0 and _blocked.blocks(tile, today) and not own_tiles.has(tile)
 	var last := world_to_tile(to)
 	var delta := to - from
 	var tile_size := float(Tuning.TILE_SIZE)
@@ -227,7 +252,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 			for side: Vector2i in [tile + Vector2i(step.x, 0), tile + Vector2i(0, step.y)]:
 				if not _ground_lets(side, layers) and _ground_stops(side, layers, from, to):
 					return false
-				if today != 0 and not leaving and blocked.blocks(side, today) \
+				if today != 0 and not leaving and _blocked.blocks(side, today) \
 						and not own_tiles.has(side) and not (to_somebody and side == last):
 					return false
 			tile += step
@@ -243,7 +268,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 			return false
 		if today == 0:
 			continue
-		if not blocked.blocks(tile, today) or own_tiles.has(tile):
+		if not _blocked.blocks(tile, today) or own_tiles.has(tile):
 			leaving = false
 		elif not leaving and not (to_somebody and tile == last):
 			return false
@@ -256,9 +281,9 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 ## the record (`day_record_version`, `obstruction_version`). Empty for open ground.
 func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := PackedInt32Array()
-	ground.resize(size.x * size.y)
+	ground.resize(_size.x * _size.y)
 	ground.fill(UNREACHED)
-	blocked.lay_out(ground, size.x, size.y, mover.blocked_by, BLOCKED)
+	_blocked.lay_out(ground, _size.x, _size.y, mover.layers_blocked(), BLOCKED)
 	return ground
 
 # ---------------------------------------------------------------------- walls ---
@@ -416,28 +441,6 @@ static func _inside_disc(from: Vector2, delta: Vector2, centre: Vector2, radius:
 	var root := sqrt(discriminant)
 	return Vector2((-b - root) / (2.0 * a), (-b + root) / (2.0 * a))
 
-# ---------------------------------------------------------------------- moving ---
-
-## How anything that walks or drives over this map moves (`Navigator`): **one per map**, the same
-## one to every caller for as long as anything holds it — the city (`City.navigator`), the event
-## manager, the director, the crowd, the resistance, every figure on the map — and a fresh one only
-## once nothing does. The one other navigator over a map is one a caller builds itself
-## (`Navigator.new(map)`), which only a test does, to step a figure by hand.
-func navigator() -> Navigator:
-	var held: Navigator = _navigator.get_ref() if _navigator else null
-	if held == null:
-		held = Navigator.new(self)
-		_navigator = weakref(held)
-	return held
-
-## A way from `from` to `to` round whatever stands between, for `mover` (`Navigator.path()`).
-func path(from: Vector2, to: Vector2, mover: Mover) -> PackedVector2Array:
-	return navigator().path(from, to, mover)
-
-## The part of the step `delta` from `from` that `mover` takes (`Navigator.step()`).
-func step(from: Vector2, delta: Vector2, mover: Mover) -> Vector2:
-	return navigator().step(from, delta, mover)
-
 # ----------------------------------------------------------- the street questions ---
 # Each answers "no street here" on a map with no streets (see the class doc); `CityMap` answers them
 # from its lattice.
@@ -488,24 +491,7 @@ func alley_at(_tile: Vector2i) -> Rect2i:
 func lot_at(_tile: Vector2i) -> Rect2i:
 	return Rect2i()
 
-# ------------------------------------------------------------ the world it is in ---
-
-## Adds `node` to the world this map is drawn in, on `layer` (`DrawLayer.Layer`, an `int` for the
-## reason `DrawLayer._z_of()` gives), the y-sorted `ENTITIES` unless the caller asks for another
-## (`WorldContext.add_entity()`). Only on a map a world draws (`has_world()`).
-func add_entity(node: Node, layer: int = DrawLayer.Layer.ENTITIES) -> void:
-	world.add_entity(node, layer)
-
-## Whether a world draws this map, so `add_entity()` has somewhere to add to.
-func has_world() -> bool:
-	return world != null and is_instance_valid(world)
-
-## What the ground under her does each frame she walks it — the building's doors take her through,
-## its light follows her part — asked by the run flow every walking frame (`WorldContext.
-## process_player()`). Nothing on a map no world draws.
-func process_player(player: Node2D, delta: float) -> void:
-	if has_world():
-		world.process_player(player, delta)
+# ------------------------------------------------------------------- the ground ---
 
 ## `+1` where `world_position` is on a flight of stairs descending east, `-1` descending west, `0`
 ## off a flight: what the stroller turns a sideways press along (`Stroller._physics_process()`).

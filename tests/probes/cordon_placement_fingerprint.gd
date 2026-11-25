@@ -22,35 +22,36 @@ const SAMPLE_EVERY := 15
 ## The seed each sample's run starts from: fixed, so the probe measures the same runs on every machine. Each sample plays a run of its own.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seeds: Array[int] = []
 	for seed_value in range(SEEDS_FROM, SEEDS_TO + 1):
 		seeds.append(seed_value)
 	seeds.append(LARGE_PARK_SEED)
 	var printed := 0
 	for seed_value in seeds:
-		for walks in [false, true]:
+		for walks: bool in [false, true]:
 			printed += _a_seed(t, seed_value, walks)
 	print("CP_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were officers to print (%d)" % printed)
 
-func _a_seed(t, seed_value: int, walks: bool) -> int:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var day := ResistanceSteps.swing_day()
-	city.run.header.day = day
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, day)
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+			city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director._on_contact_completed(mark.index if mark else -1)
@@ -109,5 +110,5 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 
 ## The city's own view looked through about `at`, as the game's camera does.
 func _look(city: City, at: Vector2) -> void:
-	city.events.visible_view().look(
+	RunCity.events(city).visible_view().look(
 			Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)

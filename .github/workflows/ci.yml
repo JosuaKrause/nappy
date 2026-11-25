@@ -7,7 +7,7 @@
 #   gates       the repository's consistency, on every run, needing no Godot: lint.sh,
 #               test_cli_help.sh, test_lib_agent_role.sh, test_agent_setup.sh, pycheck.sh, the
 #               layer check, the telemetry table's check, and on a pull request the checks that
-#               read its files and its description.
+#               read its files, its description and its labels.
 #   hooks       test_rules_hooks.sh, the rule-loading hooks' check, on every run, beside `gates`
 #               rather than inside it: it is a long step of the repository's consistency,
 #               and a job of its own keeps it from setting the run's length.
@@ -49,12 +49,21 @@
 # since each boots the engine.
 name: ci
 
+# A pull request's run starts when it opens, reopens or gets a new head, which are the default, and
+# when a label is added or removed: `gates` holds a pull request that builds an item of a
+# `fable-only` queue entry to the label of that name (tools/ci_fable_only.py), and without the two
+# label events a label taken off a green pull request would leave its `test` green. `test` is the
+# one check main's ruleset requires, so the whole run starts again, and the concurrency group
+# below cancels the one in progress: a label put on after the pull request opens starts a second
+# run, which cancels the first.
 on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# Read-only: a check reads the pull request's description and the issues it names through the API,
+# Read-only: a check reads the pull request's description, its labels and the issues it names
+# through the API,
 # and writes nothing anywhere.
 permissions:
   contents: read
@@ -242,9 +251,13 @@ jobs:
 
       # No class reads or writes another class's var under src/ (designing-classes' "Fields are not API"),
       # except the reader file and field pairs tools/field_reads.txt lists, a list that only shrinks: --base is
-      # the commit the list is compared with, so a line added to it fails, and a line whose read is gone
-      # fails as a REMOVE line. The base is chosen as for the test-only member check above. Read as text,
-      # so it needs no engine and runs on every run, docs-only included.
+      # the commit the list is compared with, so a line added to it fails unless its read only moved (its
+      # reader file renamed, code moved into a new file with no more uses of that class's field, an inner
+      # class lifted into a file of its own), and a line whose read is gone fails as a REMOVE line. A receiver
+      # under src/ whose class cannot be told fails, and so does a .gd file with an @warning_ignore of the
+      # typing warnings project.godot makes errors. The
+      # base is chosen as for the test-only member check above. Read as text, so it needs no engine and
+      # runs on every run, docs-only included.
       - name: No class reads another class's field
         if: ${{ !cancelled() }}
         env:
@@ -305,6 +318,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
 
+      # A queue entry whose README.md says `fable-only: true` is one the player named as Fable's to design:
+      # Fable writes only its design, another model writes the code and Opus reviews it (docs/TODO.md),
+      # and the label of that name is how a session knows it of a pull request: one
+      # that adds a record of such an entry, which every pull request building an item does,
+      # fails without the label; a record it only changes (an inbox filing's citations) does not
+      # count. Any kind of pull request may add a record, so it runs on every one. The labels are read
+      # through the API when it runs, and a label added or removed starts a run (`on:` above).
+      - name: A pull request that builds an item of a fable-only entry carries the fable-only label
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_fable_only.py --base "origin/${GITHUB_BASE_REF}"
+
       # pr-review's architecture questions, made a check of presence: a pull request touching src/,
       # tests/ or tools/ answers each question under `## Architecture questions`, or says
       # `No new piece or dependency: <what>` there. Its scope is wider than touches_code (tools/ is
@@ -320,7 +347,7 @@ jobs:
   # The rule-loading hooks' check (.claude/hooks/*.sh fed synthetic hook JSON), a long step of
   # the repository's consistency. It stubs everything it calls, so it needs nothing but bash,
   # jq, perl and a real throwaway repository, all on the runner image: no uv, no Godot, no ffmpeg.
-  # It reads the hooks, the skills they inject and the docs the lint hook reads, so it takes the
+  # It reads the hooks, the skills they name and the docs the lint hook reads, so it takes the
   # same sparse checkout as `gates`, without the history `gates` fetches for the pull request's
   # own checks. Runs on every run, docs-only included, beside `gates`.
   hooks:

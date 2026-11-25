@@ -12,7 +12,7 @@ const HER_TILE := Vector2i(40, 20)
 ## What the thing sent at her draws about its feet: a figure's box, taller than it is wide.
 const BOX := Rect2(-10.0, -40.0, 20.0, 44.0)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_legal_ground(t)
 	_test_out_of_sight_and_off_the_view(t)
 	_test_clear_of_the_boundary_and_a_clear_run(t)
@@ -43,7 +43,7 @@ static func _view_about(at: Vector2) -> VisibleView:
 	return VisibleView.around(at, null)
 
 ## Legal ground is walkable ground off the home block and outside a walled-off alley.
-func _test_legal_ground(t) -> void:
+func _test_legal_ground(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var region := SpawnSiting.Region.new()
@@ -62,8 +62,8 @@ func _test_legal_ground(t) -> void:
 	t.check(SpawnSiting.is_legal_ground(map, walled.position, []),
 			"which is legal again on a day that walls nothing")
 	var home := Vector2i(-1, -1)
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			if home == Vector2i(-1, -1) and map.is_on_home_block(Vector2i(x, y)):
 				home = Vector2i(x, y)
 	t.check(home != Vector2i(-1, -1)
@@ -72,7 +72,7 @@ func _test_legal_ground(t) -> void:
 
 ## Out of sight is the whole drawing outside the view and at least the least distance from her; off
 ## the view is the point itself nowhere on it, and nothing is on a view never looked through.
-func _test_out_of_sight_and_off_the_view(t) -> void:
+func _test_out_of_sight_and_off_the_view(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var view := _view_about(her)
@@ -81,7 +81,7 @@ func _test_out_of_sight_and_off_the_view(t) -> void:
 	var above := SpawnSiting.just_out_of_sight(asked.view, BOX, her, Vector2.UP)
 	t.check(siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, above),
 			"just out of sight above her is out of sight (%.1fpx up)" % (her.y - above.y))
-	t.check(above.y + BOX.end.y < view.view.position.y + 0.001,
+	t.check(above.y + BOX.end.y < view.camera_view().position.y + 0.001,
 			"and his whole drawing, feet and shadow, is above the view's top edge")
 	t.check(not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, above + Vector2(0.0, 6.0)),
 			"a step down, his shadow shows")
@@ -93,7 +93,7 @@ func _test_out_of_sight_and_off_the_view(t) -> void:
 			Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 	t.check(not siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, asked, her + Vector2(330.0, 0.0)),
 			"the view is asked as it is now: the camera led right puts that point back on it")
-	var corner := view.view.end - Vector2(4.0, 4.0)
+	var corner := view.camera_view().end - Vector2(4.0, 4.0)
 	t.check(not view.sees(corner)
 			and not siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, asked, corner),
 			"a point under a covered corner is unseen, but on the view, since it is drawn there")
@@ -106,7 +106,7 @@ func _test_out_of_sight_and_off_the_view(t) -> void:
 			"nothing is out of sight nearer her than the least distance")
 
 ## A run at her is refused through a region body's disc, and is clear only over ground he may walk.
-func _test_clear_of_the_boundary_and_a_clear_run(t) -> void:
+func _test_clear_of_the_boundary_and_a_clear_run(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var region := SpawnSiting.Region.new()
@@ -130,7 +130,7 @@ func _test_clear_of_the_boundary_and_a_clear_run(t) -> void:
 
 ## A chase straight at her that slides along walls reaches her round a wall it meets at a slant,
 ## not through one it meets square-on, not through a region body, and not past its limit.
-func _test_a_chase_reaches_her_or_does_not(t) -> void:
+func _test_a_chase_reaches_her_or_does_not(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var navigator := Navigator.new(map)
@@ -157,7 +157,7 @@ func _test_a_chase_reaches_her_or_does_not(t) -> void:
 ## its drawn cone, a torn poster's pursuer up or down by a hash and then a stepped cone, and both
 ## are answered by the same rules — the first start with a clear run, the first legal one standing
 ## in.
-func _test_one_search_answers_both_callers(t) -> void:
+func _test_one_search_answers_both_callers(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var siting := _siting(map, _view_about(her))
@@ -184,14 +184,14 @@ func _test_one_search_answers_both_callers(t) -> void:
 	t.check(not stood_in.clear and stood_in.at.is_equal_approx(
 			SpawnSiting.just_out_of_sight(asked.view, BOX, her, Vector2.UP)),
 			"with no clear run on any bearing asked, the first legal start stands in")
-	map.fill_rect(Rect2i(Vector2i.ZERO, map.size), GameEnums.TileType.BUILDING)
+	map.fill_rect(Rect2i(Vector2i.ZERO, map.size_in_tiles()), GameEnums.TileType.BUILDING)
 	map.set_tile(HER_TILE, GameEnums.TileType.SIDEWALK)
 	t.check(siting.start_out_of_sight(asked, hashed).at == Vector2.INF,
 			"with no legal start at all, nothing is sent")
 
 ## A start whose run at her goes through the boundary is refused outright, so it never stands in
 ## either: a torn poster's pursuer takes the trap's rule here.
-func _test_the_boundary_refuses_a_start_even_as_the_fallback(t) -> void:
+func _test_the_boundary_refuses_a_start_even_as_the_fallback(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var region := SpawnSiting.Region.new()
@@ -208,7 +208,7 @@ func _test_the_boundary_refuses_a_start_even_as_the_fallback(t) -> void:
 
 ## Across the street at a front door: the nearest start below her, out of sight, whose own chase
 ## reaches her; nothing where the ground below is all building.
-func _test_across_the_street(t) -> void:
+func _test_across_the_street(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var siting := _siting(map, _view_about(her))
@@ -219,7 +219,8 @@ func _test_across_the_street(t) -> void:
 			and siting.allows(SpawnSiting.Rule.REACHES_HER, asked, across),
 			"on open ground the nearest tile below her and out of sight is his start (%s)" % across)
 	t.check(is_equal_approx(across.x, her.x), "straight below her, the tie broken toward her")
-	var below := Rect2i(0, HER_TILE.y + 1, map.size.x, map.size.y - HER_TILE.y - 1)
+	var size := map.size_in_tiles()
+	var below := Rect2i(0, HER_TILE.y + 1, size.x, size.y - HER_TILE.y - 1)
 	map.fill_rect(below, GameEnums.TileType.BUILDING)
 	t.check(siting.across_the_street(asked) == Vector2.INF,
 			"with nothing but building below her, there is no start across the street")
@@ -228,7 +229,7 @@ func _test_across_the_street(t) -> void:
 ## seal or a stationary body leaves ground legal and closes it to her (`OPEN_TO_IT`); held ground is
 ## legal only to the rule that allows it; and a tile off the map is neither, even where the map reads
 ## it as an alley (a scene recipe's exterior).
-func _test_the_ground_a_contact_stands_on(t) -> void:
+func _test_the_ground_a_contact_stands_on(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var region := SpawnSiting.Region.new()
@@ -255,8 +256,7 @@ func _test_the_ground_a_contact_stands_on(t) -> void:
 			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(body)),
 			"so is a tile with a body on it")
 	var off := Vector2i(-3, 5)
-	map.recipe_exterior = true
-	map.recipe_bounds = Rect2i(Vector2i.ZERO, map.size)
+	map.show_recipe_window(Rect2i(Vector2i.ZERO, map.size_in_tiles()))
 	t.check(Tile.is_walkable(map.tile_at(off)),
 			"a recipe's exterior reads a tile off the map as an alley")
 	t.check(not siting.allows(SpawnSiting.Rule.LEGAL_GROUND, ground, _centre(off))
@@ -267,14 +267,14 @@ func _test_the_ground_a_contact_stands_on(t) -> void:
 ## A drawing is off the view when no part of its box, standing there, is on it: a point a step past
 ## the view's edge is off the view, and a drawing standing there that reaches back over the edge is
 ## not (`DRAWING_OFF_THE_VIEW`); a thing that draws nothing of its own is its feet.
-func _test_a_drawing_is_off_the_view_as_a_whole(t) -> void:
+func _test_a_drawing_is_off_the_view_as_a_whole(t: TestRunner) -> void:
 	var map := _yard()
 	var her := _centre(HER_TILE)
 	var view := _view_about(her)
 	var siting := _siting(map, view)
 	var tall := siting.ask_of_drawing(Rect2(-14.0, -48.0, 28.0, 52.0))
 	var point := siting.ask_of_drawing(Rect2())
-	var edge := view.view.end.y
+	var edge := view.camera_view().end.y
 	var feet := Vector2(her.x, edge + 8.0)
 	t.check(siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, tall, feet),
 			"feet 8px below the view's bottom edge are off the view")
@@ -294,7 +294,7 @@ func _test_a_drawing_is_off_the_view_as_a_whole(t) -> void:
 ## The siting a placement builds when none is handed to it (`SpawnSiting.over()`): the sight rules
 ## against the one view it is given, and the column's lead up a lane from the view's half height and
 ## the drawing's own.
-func _test_a_siting_over_a_fixed_view(t) -> void:
+func _test_a_siting_over_a_fixed_view(t: TestRunner) -> void:
 	var her := _centre(HER_TILE)
 	var view := _view_about(her)
 	var siting := SpawnSiting.over(null, view)

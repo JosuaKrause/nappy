@@ -1,0 +1,1 @@
+Find what the 165 µs a tick that `EventStreaming.stream_around()` costs more than v0.29.0 is spent on (the plan questions and the state table of row 3a, the per-plan work, the larger table), and cut what a profile of the call shows is avoidable. The probe's own known split-against-whole failure (lilac-pelican's item) is not part of this item.

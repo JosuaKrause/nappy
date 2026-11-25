@@ -1,0 +1,527 @@
+extends RefCounted
+## `DayLocations`, every street's locations for one day laid out at dawn (inbox #1185 in gentle-owl), with the
+## `StreetLocations` and `Location` it is made of, the state it holds: a street split into three
+## sections along its length, each with two sidewalk locations; each street's sections filed under
+## the view it is told; a street a fixed part holds left with no section open; a section an event
+## that spans the street is assigned taken for the day, its two sidewalk locations with it; a
+## section one of whose sidewalks is assigned an event closed to a draw, so nothing takes it over
+## that; a tile naming the location holding it, of the ground under it; a fixed part (a mast)
+## holding its location, so it leaves the locations still open to a phase or a draw; every
+## location answered once by `all()`; each location told the whole it is part of
+## (`Location.part_of()`), and a street's location the run a route of it may lie on
+## (`Location.run()`); a location open only while available, untaken and undrawn; and a location a
+## beat her walk lays is taken for the day and given back where nothing else stands there. Laid out
+## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
+## whose views the check sets (`_Views`); which view a street really is in is `Corridor.view_of()`'s,
+## checked in `tests/test_corridor.gd`.
+
+func run(t: TestRunner) -> void:
+	_test_a_street_is_three_sections_along_its_length(t)
+	_test_each_street_is_filed_under_the_view_it_is_told(t)
+	_test_a_held_or_absent_street_has_no_section_open(t)
+	_test_an_assigned_section_is_taken_for_the_day(t)
+	_test_a_section_taken_takes_its_two_sidewalk_locations(t)
+	_test_the_nearest_section_along_her_paths(t)
+	_test_the_ground_beyond_the_streets_has_its_own_locations(t)
+	_test_a_carriageway_event_drawn_takes_its_section(t)
+	_test_a_sidewalk_holding_an_event_closes_its_section(t)
+	_test_each_kind_of_location_takes_its_own_ground(t)
+	_test_a_tile_names_the_location_holding_it(t)
+	_test_a_fixed_part_holds_its_location(t)
+	_test_every_location_is_answered_once(t)
+	_test_each_location_is_part_of_its_whole(t)
+	_test_a_location_is_open_while_nothing_holds_it(t)
+	_test_a_beat_takes_a_location_and_gives_it_back(t)
+	_test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t)
+
+const ON := Vector3i(2, 2, 0)
+const BESIDE := Vector3i(3, 2, 1)
+const OFF := Vector3i(6, 6, 0)
+
+## The corridor's view of each street, as the check sets it: off the route unless named.
+class _Views extends Corridor:
+	var views := {}
+
+	## Overrides Corridor.view_of.
+	func view_of(segment: StreetNetwork.Segment) -> int:
+		return views.get(segment.key(), PlacementView.View.OFF_THE_ROUTE)
+
+	## Overrides Corridor.view_of_ground.
+	func view_of_ground(_tiles: Rect2i) -> int:
+		return PlacementView.View.ROUTE_ADJACENT
+
+static func _views() -> _Views:
+	var views := _Views.new()
+	views.views = {ON: PlacementView.View.ON_THE_ROUTE, BESIDE: PlacementView.View.ROUTE_ADJACENT}
+	return views
+
+static func _segment(key: Vector3i) -> StreetNetwork.Segment:
+	return StreetNetwork.Segment.new(Vector2i(key.x, key.y), key.z == 0)
+
+## The open, untaken sections of the street `key` in `view`, in order along it.
+func _sections_of(locations: DayLocations, view: int, key: Vector3i) -> Array[Location]:
+	var found: Array[Location] = []
+	for section in locations.sections_in(view):
+		if section.segment().key() == key:
+			found.append(section)
+	return found
+
+## Whether the section at `index` shares its section with none of the others.
+func _alone_in_its_section(sections: Array[Location], index: int) -> bool:
+	for other in sections.size():
+		if other != index and sections[index].shares_a_section_with(sections[other]):
+			return false
+	return true
+
+func _test_a_street_is_three_sections_along_its_length(t: TestRunner) -> void:
+	var sections := _sections_of(DayLocations.lay_out(CityMap.new(), _views()),
+			PlacementView.View.OFF_THE_ROUTE, OFF)
+	t.check(sections.size() == 3, "a street is split into three sections (%d)" % sections.size())
+	if sections.size() != 3:
+		return
+	var rect := _segment(OFF).tile_rect()
+	var lengths: Array[int] = []
+	var x := rect.position.x
+	for index in sections.size():
+		var tiles := sections[index].tiles()
+		t.check(tiles.position.x == x and tiles.position.y == rect.position.y
+				and tiles.size.y == rect.size.y and _alone_in_its_section(sections, index),
+				"section %d follows the one before along the street, the street's whole width (%s)"
+				% [index, tiles])
+		lengths.append(tiles.size.x)
+		x = tiles.end.x
+	t.check(x == rect.end.x, "and the three reach the street's far end")
+	t.check(lengths == ([3, 2, 3] as Array[int]),
+			"a block of 8 tiles is split 3, 2 and 3, so the street has a middle (%s)" % [lengths])
+
+func _test_each_street_is_filed_under_the_view_it_is_told(t: TestRunner) -> void:
+	var locations := DayLocations.lay_out(CityMap.new(), _views())
+	t.check(_sections_of(locations, PlacementView.View.ON_THE_ROUTE, ON).size() == 3,
+			"a street told it is on the route has all three sections there")
+	t.check(_sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE).size() == 3,
+			"one told it is route-adjacent has them route-adjacent")
+	t.check(_sections_of(locations, PlacementView.View.OFF_THE_ROUTE, OFF).size() == 3,
+			"one told it is off the route has them off the route")
+	t.check(_sections_of(locations, PlacementView.View.OFF_THE_ROUTE, ON).is_empty()
+			and _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, ON).is_empty(),
+			"and a street's sections are in the one view it was told")
+
+func _test_a_held_or_absent_street_has_no_section_open(t: TestRunner) -> void:
+	var map := CityMap.new()
+	map.hold_segment(BESIDE, HeldStreets.Why.SEAL)
+	map.mark_street_absent(OFF)
+	var locations := DayLocations.lay_out(map, _views())
+	t.check(_sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE).is_empty(),
+			"a street held today has no section open to an event")
+	t.check(_sections_of(locations, PlacementView.View.OFF_THE_ROUTE, OFF).is_empty(),
+			"and a street a calm zone absorbed has no locations at all")
+	t.check(_sections_of(locations, PlacementView.View.OFF_THE_ROUTE,
+			Vector3i(3, 1, 1)).size() == 3, "while a street beside it keeps all three")
+
+func _test_an_assigned_section_is_taken_for_the_day(t: TestRunner) -> void:
+	var locations := DayLocations.lay_out(CityMap.new(), _views())
+	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
+	var middle := sections[1]
+	var roadblock := EventPlan.new(EventCatalogue.by_id("roadblock"), middle.centre())
+	locations.assign(middle, roadblock)
+	var left := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
+	t.check(middle.is_taken() and not left.has(middle),
+			"a section a roadblock is assigned to is taken, so nothing is drawn there today")
+	t.check(left == ([sections[0], sections[2]] as Array[Location]),
+			"and the street's other two sections stay open")
+
+func _test_a_section_taken_takes_its_two_sidewalk_locations(t: TestRunner) -> void:
+	var segment := _segment(BESIDE)
+	var street := StreetLocations.of(CityMap.new(), segment, PlacementView.View.ROUTE_ADJACENT)
+	var sidewalks := street.sidewalks()
+	t.check(sidewalks.size() == 6, "a street has six sidewalk locations (%d)" % sidewalks.size())
+	var bands := Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)
+	var middle := street.sections()[1]
+	for sidewalk in sidewalks:
+		var on_a_band := false
+		for band in bands:
+			on_a_band = on_a_band or band.encloses(sidewalk.tiles())
+		t.check(on_a_band and middle.tiles().intersects(sidewalk.tiles()) == sidewalk.shares_a_section_with(middle),
+				"each sidewalk location lies on one sidewalk inside its own section (%s)"
+				% sidewalk.tiles())
+	street.take_section(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
+			middle.centre()))
+	var taken: Array[bool] = []
+	for sidewalk in sidewalks:
+		if sidewalk.is_taken():
+			taken.append(sidewalk.shares_a_section_with(middle))
+	t.check(taken == ([true, true] as Array[bool]),
+			"a section taken takes its two sidewalk locations and no other (%s)" % [taken])
+
+## Her paths as `tile -> distance`, the middle tile of each section given its distance.
+static func _paths_to(sections: Array[Location], distances: Array[float]) -> Dictionary:
+	var paths := {}
+	for index in sections.size():
+		var tiles := sections[index].tiles()
+		paths[tiles.position + tiles.size / 2] = distances[index]
+	return paths
+
+## **The open section of a view nearest along her paths** (`nearest_section_in()`, day 13's swap):
+## the route-adjacent street's three sections, with her paths reaching them at 300, 100 and 200px.
+## The nearest is taken; one its caller refuses (`may_take`) or one already taken is passed over for
+## the next; a tile she may not touch from does not count; and with no path to any, none is.
+func _test_the_nearest_section_along_her_paths(t: TestRunner) -> void:
+	var always := func(_x: Variant) -> bool: return true
+	var locations := DayLocations.lay_out(CityMap.new(), _views())
+	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
+	var paths := _paths_to(sections, [300.0, 100.0, 200.0] as Array[float])
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
+			== sections[1], "the section her paths reach first is the one taken")
+	var not_the_middle := func(section: Location) -> bool: return section != sections[1]
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always,
+			not_the_middle) == sections[2], "one its caller refuses is passed over for the next nearest")
+	var middle_tile := sections[1].tiles().position + sections[1].tiles().size / 2
+	var not_from_there := func(tile: Vector2i) -> bool: return tile != middle_tile
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, not_from_there,
+			always) == sections[2], "and so is one reached only from ground she may not touch it from")
+	t.check(locations.nearest_section_in(PlacementView.View.OFF_THE_ROUTE, paths, always, always)
+			== null, "a view her paths reach no section of offers none")
+	locations.assign(sections[1], EventPlan.new(EventCatalogue.by_id("roadblock"),
+			sections[1].centre()))
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
+			== sections[2], "a section already taken is passed over")
+
+## The locations of `kind` the day laid out, in the order `all()` answers them.
+static func _grounds_of(locations: DayLocations, kind: int) -> Array[Location]:
+	var found: Array[Location] = []
+	for location in locations.all():
+		if location.kind() == kind:
+			found.append(location)
+	return found
+
+## **The ground beyond the streets** (the player's "yes" to a group of locations per kind of ground,
+## inbox #1185 in gentle-owl): on a bare lattice painted with an alley six tiles long, a square eight tiles across
+## and one crossing in a junction box, the alley is three locations along its length, the square a
+## grid of four cells, and the junction box one location, each told the view the corridor gives it.
+func _test_the_ground_beyond_the_streets_has_its_own_locations(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var alley := Rect2i(Vector2i(20, 6), Vector2i(2, 6))
+	map.fill_rect(alley, GameEnums.TileType.ALLEY)
+	var square := Rect2i(Vector2i(48, 48), Vector2i(8, 8))
+	map.fill_rect(square, GameEnums.TileType.SQUARE)
+	var box := Vector2i(3, 3) * CityMap.period()
+	map.set_tile(box + Vector2i(2, 2), GameEnums.TileType.CROSSING)
+	var locations := DayLocations.lay_out(map, _views())
+	var alleys := _grounds_of(locations, Location.Kind.ALLEY)
+	var lengths: Array[int] = []
+	for location in alleys:
+		lengths.append(location.tiles().size.y)
+	t.check(alleys.size() == 3 and lengths == ([2, 2, 2] as Array[int])
+			and alleys[0].tiles().position == alley.position,
+			"an alley is three locations along its length (%s)" % [lengths])
+	var cells := _grounds_of(locations, Location.Kind.OPEN)
+	var covered := {}
+	for cell in cells:
+		for y in range(cell.tiles().position.y, cell.tiles().end.y):
+			for x in range(cell.tiles().position.x, cell.tiles().end.x):
+				covered[Vector2i(x, y)] = true
+	t.check(cells.size() == 4 and covered.size() == 64,
+			"a square of 8 by 8 tiles is a grid of four cells covering it (%d cells)" % cells.size())
+	var junctions := _grounds_of(locations, Location.Kind.JUNCTION)
+	var lattice := StreetNetwork.junction_count()
+	var the_box: Location = null
+	for junction in junctions:
+		if junction.tiles() == Rect2i(box, Vector2i.ONE * Tuning.STREET_WIDTH):
+			the_box = junction
+	t.check(junctions.size() == lattice.x * lattice.y and the_box != null,
+			"and every junction box a street meets is one location, the whole box (%d of %d)"
+			% [junctions.size(), lattice.x * lattice.y])
+	for key: Vector3i in [Vector3i(3, 3, 0), Vector3i(2, 3, 0), Vector3i(3, 3, 1), Vector3i(3, 2, 1)]:
+		map.mark_street_absent(key)
+	var absorbed := false
+	for junction in _grounds_of(DayLocations.lay_out(map, _views()), Location.Kind.JUNCTION):
+		absorbed = absorbed or junction.tiles().position == box
+	t.check(not absorbed, "while a box no street meets, its streets absorbed, is none")
+	var views_right := true
+	for location in alleys + cells + junctions:
+		views_right = views_right and location.view() == PlacementView.View.ROUTE_ADJACENT
+	t.check(views_right, "each told the view the corridor gives its ground")
+
+## An event drawn into a section, one that spans the carriageway, takes the section's two sidewalk
+## locations with it (`DayLocations.record()`); an event drawn on a sidewalk takes only its own.
+func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
+	var locations := DayLocations.lay_out(CityMap.new(), _views())
+	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
+	var middle := sections[1]
+	locations.record(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
+			middle.centre()))
+	var sidewalks: Array[Location] = []
+	for location in locations.all():
+		if location.kind() == Location.Kind.SIDEWALK and location.segment().key() == BESIDE:
+			sidewalks.append(location)
+	var taken := 0
+	for sidewalk in sidewalks:
+		if sidewalk.is_taken():
+			taken += 1
+			t.check(sidewalk.shares_a_section_with(middle), "only the section's own sidewalks are taken")
+	t.check(middle.is_drawn() and middle.is_taken() and taken == 2,
+			"a roadblock drawn into a section takes it and its two sidewalk locations (%d)" % taken)
+	var first := sidewalks[0]
+	if first.shares_a_section_with(middle):
+		first = sidewalks[sidewalks.size() - 1]
+	locations.record(first, EventPlan.new(EventCatalogue.by_id("cafe_tables"),
+			first.centre()))
+	var others_taken := 0
+	for sidewalk in sidewalks:
+		if sidewalk != first and not sidewalk.shares_a_section_with(middle) and sidewalk.is_taken():
+			others_taken += 1
+	t.check(first.is_taken() and others_taken == 0,
+			"while a cafe drawn on a sidewalk takes that location alone")
+
+## **A sidewalk that holds an event closes its section to a draw**: a cafe a dawn phase assigns to a
+## sidewalk of the first section (`assign_to()`, as a scripted row or a fixed part's hold is) leaves
+## that section drawn as the empty event, not taken, so no carriageway row is drawn there over the
+## cafe; the section's other sidewalk stays open, and so do the two sections whose sidewalks hold
+## nothing. A draw never needs it: a street's draw lays a section row and the sidewalks it takes
+## out together, before it records any of them (`MarbleDraw`).
+func _test_a_sidewalk_holding_an_event_closes_its_section(t: TestRunner) -> void:
+	var locations := DayLocations.lay_out(CityMap.new(), _views())
+	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
+	var held: Location = null
+	var other: Location = null
+	for location in locations.all():
+		if location.kind() != Location.Kind.SIDEWALK or location.segment().key() != BESIDE \
+				or not location.shares_a_section_with(sections[0]):
+			continue
+		if held == null:
+			held = location
+		else:
+			other = location
+	var cafe := EventCatalogue.by_id("cafe_tables")
+	locations.assign_to(held, EventPlan.new(cafe, held.centre()))
+	t.check(sections[0].is_drawn() and not sections[0].is_taken(),
+			"a section whose sidewalk is assigned a cafe is closed to a draw and holds nothing")
+	t.check(not sections[1].is_drawn() and not sections[2].is_drawn(),
+			"and the sections whose sidewalks hold nothing stay open")
+	t.check(other != null and not other.is_drawn() and not other.is_taken(),
+			"while the section's other sidewalk stays open to a draw")
+
+## Which ground each kind of location offers a row (`Location.takes()`).
+func _test_each_kind_of_location_takes_its_own_ground(t: TestRunner) -> void:
+	var at := func(kind: int) -> Location:
+		return Location.new(null, 0, Rect2i(), Vector2.ZERO, PlacementView.View.OFF_THE_ROUTE, true,
+				kind)
+	var sidewalk: Location = at.call(Location.Kind.SIDEWALK)
+	var section: Location = at.call(Location.Kind.SECTION)
+	t.check(sidewalk.takes(GameEnums.TileType.SIDEWALK) and not sidewalk.takes(GameEnums.TileType.ROAD),
+			"a sidewalk location takes the sidewalk and not the carriageway")
+	t.check(section.takes(GameEnums.TileType.ROAD) and not section.takes(GameEnums.TileType.SIDEWALK),
+			"a section takes its carriageway and not the sidewalks its sidewalk locations hold")
+	t.check((at.call(Location.Kind.ALLEY) as Location).takes(GameEnums.TileType.ALLEY)
+			and (at.call(Location.Kind.OPEN) as Location).takes(GameEnums.TileType.PARK)
+			and (at.call(Location.Kind.OPEN) as Location).takes(GameEnums.TileType.SQUARE)
+			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.CROSSING)
+			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.SIDEWALK)
+			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.ROAD)
+			and not (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.PARK),
+			"an alley its alley, an open lot its park or square, a junction box its corners, carriageway and crossings")
+
+## A sidewalk tile names its sidewalk location, a carriageway tile its section, a square tile the
+## open cell holding it; a tile no location holds names none.
+func _test_a_tile_names_the_location_holding_it(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var square := Rect2i(Vector2i(48, 48), Vector2i(8, 8))
+	map.fill_rect(square, GameEnums.TileType.SQUARE)
+	var locations := DayLocations.lay_out(map, _views())
+	var segment := _segment(BESIDE)
+	var bands := Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)
+	var sidewalk_tile: Vector2i = (bands[0] as Rect2i).get_center()
+	var road_tile := segment.tile_rect().get_center()
+	var on_sidewalk := locations.holding(sidewalk_tile, GameEnums.TileType.SIDEWALK)
+	var on_road := locations.holding(road_tile, GameEnums.TileType.ROAD)
+	t.check(on_sidewalk != null and on_sidewalk.kind() == Location.Kind.SIDEWALK
+			and on_sidewalk.tiles().has_point(sidewalk_tile),
+			"a sidewalk tile names the sidewalk location holding it")
+	t.check(on_road != null and on_road.kind() == Location.Kind.SECTION
+			and on_road.tiles().has_point(road_tile), "a carriageway tile names its section")
+	var cell := locations.holding(square.position + Vector2i.ONE, GameEnums.TileType.SQUARE)
+	t.check(cell != null and cell.kind() == Location.Kind.OPEN, "a square tile names its open cell")
+	t.check(locations.holding(Vector2i(8, 8), map.tile_at(Vector2i(8, 8))) == null,
+			"a tile inside a block names no location")
+
+## A fixed part recorded on its tile takes the location holding it, and that location is no longer
+## open to a phase; every other location stays open.
+func _test_a_fixed_part_holds_its_location(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var square := Rect2i(Vector2i(48, 48), Vector2i(8, 8))
+	map.fill_rect(square, GameEnums.TileType.SQUARE)
+	var locations := DayLocations.lay_out(map, _views())
+	var open_before := locations.open_locations().size()
+	var tile := square.position + Vector2i.ONE
+	var cell := locations.holding(tile, GameEnums.TileType.SQUARE)
+	var mast := EventPlan.new(EventCatalogue.mast(), map.tile_to_world(tile))
+	locations.hold_fixed_part(mast, tile, GameEnums.TileType.SQUARE)
+	t.check(cell.is_taken(), "the location holding a fixed part is taken for the day")
+	t.check(not cell in locations.open_locations()
+			and locations.open_locations().size() == open_before - 1,
+			"and only it leaves the locations open to a phase (%d of %d open)"
+			% [locations.open_locations().size(), open_before])
+
+## `all()` answers every location once, open or not: on a bare lattice with an alley and a square
+## painted, as many as the streets' sections and sidewalks and the ground beyond them, none twice,
+## a street's sections before its sidewalks, and a location a fixed part holds among them.
+func _test_every_location_is_answered_once(t: TestRunner) -> void:
+	var map := CityMap.new()
+	map.fill_rect(Rect2i(Vector2i(20, 6), Vector2i(2, 6)), GameEnums.TileType.ALLEY)
+	map.fill_rect(Rect2i(Vector2i(48, 48), Vector2i(8, 8)), GameEnums.TileType.SQUARE)
+	var locations := DayLocations.lay_out(map, _views())
+	var segment := _segment(BESIDE)
+	var held := locations.holding(segment.tile_rect().get_center(), GameEnums.TileType.ROAD)
+	locations.hold_fixed_part(EventPlan.new(EventCatalogue.by_id("cafe_tables"), held.centre()),
+			segment.tile_rect().get_center(), GameEnums.TileType.ROAD)
+	var all := locations.all()
+	var once := {}
+	for location in all:
+		once[location] = true
+	var streets := map.street_segments().size()
+	var expected := streets * 9 + 3 + 4 + _grounds_of(locations, Location.Kind.JUNCTION).size()
+	t.check(all.size() == expected and once.size() == all.size(),
+			"every location once: nine a street, three of the alley, four of the square, a box each "
+			+ "(%d of %d)" % [all.size(), expected])
+	t.check(all.has(held) and held.is_taken(), "a location a fixed part holds among them")
+	var first_sidewalk := -1
+	var last_section := -1
+	for i in all.size():
+		if all[i].segment() != null and all[i].segment().key() == BESIDE:
+			if all[i].kind() == Location.Kind.SECTION:
+				last_section = i
+			elif first_sidewalk < 0:
+				first_sidewalk = i
+	t.check(last_section >= 0 and last_section < first_sidewalk,
+			"and a street's sections come before its sidewalks")
+
+## **Each location is told the whole it is part of** (`Location.part_of()`), the unit it draws with:
+## a street's sidewalk and section their street's rect, an alley's third the alley, a square's cell
+## the square, even a cell that reaches past it, and a junction box itself. **And a route of a
+## street's location may lie on its street and the boxes at its two ends** (`Location.run()`),
+## while a location of no street's run is its whole.
+func _test_each_location_is_part_of_its_whole(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var alley := Rect2i(Vector2i(20, 6), Vector2i(2, 6))
+	map.fill_rect(alley, GameEnums.TileType.ALLEY)
+	var square := Rect2i(Vector2i(50, 50), Vector2i(6, 6))
+	map.fill_rect(square, GameEnums.TileType.SQUARE)
+	var locations := DayLocations.lay_out(map, _views())
+	var street := _segment(BESIDE).tile_rect()
+	var of_street := true
+	for location in locations.all():
+		if location.segment() != null and location.segment().key() == BESIDE:
+			of_street = of_street and location.part_of() == street
+	t.check(of_street, "a street's sidewalks and sections are part of its street")
+	var thirds := _grounds_of(locations, Location.Kind.ALLEY)
+	t.check(thirds.size() == 3 and thirds[0].part_of() == alley and thirds[2].part_of() == alley,
+			"an alley's thirds are part of the alley")
+	var cells := _grounds_of(locations, Location.Kind.OPEN)
+	var of_square := true
+	for cell in cells:
+		of_square = of_square and cell.part_of() == square
+	t.check(cells.size() == 4 and of_square,
+			"a square's cells, which reach past it, are each part of the square (%d cells)"
+			% cells.size())
+	var box := Rect2i(Vector2i(3, 3) * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+	var the_box: Location = null
+	for junction in _grounds_of(locations, Location.Kind.JUNCTION):
+		if junction.tiles() == box:
+			the_box = junction
+	t.check(the_box != null and the_box.part_of() == box, "and a junction box is part of itself")
+	var section := locations.holding(street.get_center(), GameEnums.TileType.ROAD)
+	var vertical := not _segment(BESIDE).horizontal
+	var along := Vector2i(0, Tuning.STREET_WIDTH) if vertical else Vector2i(Tuning.STREET_WIDTH, 0)
+	t.check(section != null and section.run() == Rect2i(street.position - along,
+			street.size + 2 * along), "a street's location's run is its street and the boxes at its "
+			+ "ends (%s)" % [section.run() if section else Rect2i()])
+	t.check(thirds[0].run() == alley and the_box.run() == box,
+			"and a location of no street's run is the whole it is part of")
+
+## The sidewalk locations of the street `key` in `locations`, in the order laid out.
+static func _sidewalks_of(locations: DayLocations, key: Vector3i) -> Array[Location]:
+	var found: Array[Location] = []
+	for location in locations.all():
+		if location.kind() == Location.Kind.SIDEWALK and location.segment().key() == key:
+			found.append(location)
+	return found
+
+## **A location is open while a draw may still fill it** (`Location.is_open()`): available, nothing
+## put on it and not drawn; a fixed part's hold, a draw's empty event and a street held today each
+## close one.
+func _test_a_location_is_open_while_nothing_holds_it(t: TestRunner) -> void:
+	var map := CityMap.new()
+	map.hold_segment(OFF, HeldStreets.Why.SEAL)
+	var locations := DayLocations.lay_out(map, _views())
+	var sidewalks := _sidewalks_of(locations, BESIDE)
+	t.check(sidewalks[0].is_open() and sidewalks[1].is_open(), "an untouched sidewalk location is open")
+	locations.assign_to(sidewalks[0], EventPlan.new(EventCatalogue.by_id("cafe_tables"),
+			sidewalks[0].centre()))
+	locations.record(sidewalks[1], null)
+	t.check(not sidewalks[0].is_open(), "one a dawn phase filled is not")
+	t.check(not sidewalks[1].is_open(), "nor one a draw left empty")
+	t.check(not _sidewalks_of(locations, OFF)[0].is_open(), "nor one on a street held today")
+
+## **A beat her walk lays takes a location and gives it back** (`DayLocations.take_for_her_walk()`,
+## `give_back()`): taken, so not open to a draw and its section left as it was; given back it is open
+## again where no draw filled it, drawn with nothing on it where its unit had drawn, and left alone
+## where another plan stands there.
+func _test_a_beat_takes_a_location_and_gives_it_back(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var locations := DayLocations.lay_out(map, _views())
+	var sidewalks := _sidewalks_of(locations, BESIDE)
+	var section_open_before := _sections_of(locations, PlacementView.View.OFF_THE_ROUTE, BESIDE).size()
+	var beat := EventPlan.new(EventCatalogue.mast(), sidewalks[0].centre())
+	locations.take_for_her_walk(sidewalks[0], beat)
+	t.check(sidewalks[0].is_taken() and not sidewalks[0].is_open(),
+			"a location a beat took is taken for the day, so no draw fills it")
+	t.check(_sections_of(locations, PlacementView.View.OFF_THE_ROUTE, BESIDE).size()
+			== section_open_before, "its section is left as it was")
+	t.check(sidewalks[1].is_open(), "and the street's other sidewalk is not touched")
+	locations.give_back(sidewalks[0], beat)
+	t.check(sidewalks[0].is_open() and not sidewalks[0].is_taken(),
+			"a location given back before its unit drew is open again")
+	var drawn := sidewalks[1]
+	locations.record(drawn, null)
+	locations.take_for_her_walk(drawn, beat)
+	locations.give_back(drawn, beat)
+	t.check(drawn.is_drawn() and not drawn.is_taken() and not drawn.is_open(),
+			"one whose unit had drawn reads drawn with nothing on it")
+	var other := EventPlan.new(EventCatalogue.by_id("cafe_tables"), sidewalks[0].centre())
+	locations.assign_to(sidewalks[0], other)
+	locations.give_back(sidewalks[0], beat)
+	t.check(sidewalks[0].is_taken(), "a beat that does not stand there gives back nothing of another plan's")
+
+## **A walk with no corridor is laid out along its streets** (`DayLocations.along()`): two streets of
+## the lattice handed in the reverse of its order answer their locations, the first handed's first,
+## and no other, each street as many as `lay_out()` gives it, every one on the route, none an alley,
+## a lot or a junction box.
+func _test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var lattice := map.street_segments()
+	var streets: Array[StreetNetwork.Segment] = [lattice[lattice.size() - 1], lattice[0]]
+	var laid := DayLocations.along(map, streets)
+	var whole := DayLocations.lay_out(map, _views())
+	var expected_counts := {}
+	for location in whole.all():
+		if location.segment():
+			var key := location.segment().key()
+			expected_counts[key] = int(expected_counts.get(key, 0)) + 1
+	var found := laid.all()
+	var expected := int(expected_counts[streets[0].key()]) + int(expected_counts[streets[1].key()])
+	t.check(found.size() == expected and found.size() > 0,
+			"the two streets' locations are laid out and nothing beyond them (%d, expected %d)"
+			% [found.size(), expected])
+	var order: Array[Vector3i] = []
+	var on_the_route := true
+	var streets_only := true
+	for location in found:
+		streets_only = streets_only and location.segment() != null \
+				and location.kind() in [Location.Kind.SECTION, Location.Kind.SIDEWALK]
+		on_the_route = on_the_route and location.view() == PlacementView.View.ON_THE_ROUTE
+		if location.segment() and (order.is_empty() or order.back() != location.segment().key()):
+			order.append(location.segment().key())
+	t.check(order == ([streets[0].key(), streets[1].key()] as Array[Vector3i]),
+			"the first street handed comes first, then the second (%s)" % [order])
+	t.check(on_the_route, "every location is on the route")
+	t.check(streets_only, "and none is an alley, a lot or a junction box")

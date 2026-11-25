@@ -46,62 +46,82 @@ static func net_landed(landed: float, total_landed: float, decay: float) -> floa
 		return 0.0
 	return maxf(0.0, landed - decay * (landed / total_landed))
 
-## The thing in the world this source charges her from: where its field stands
-## (`global_position`), and whether it is still there (`is_queued_for_deletion()`).
-var body: Node2D
+## The thing in the world this source charges her from (`body()`).
+var _body: Node2D
 
-## How this source's rim is drawn, handed in by the body's view (`SourceRim`), or null for a source
-## nobody draws. Typed only as what it is to this layer, since the world names no view class.
-var rim: RefCounted = null
+## How this source's rim is drawn (`rim()`).
+var _rim: SourceRim = null
+
+## Whether another source is charging her in this one's place this frame (`is_outranked()`).
+var _outranked := false
+
+## The thing in the world this source charges her from: where its field stands
+## (`global_position`), and whether it is still there (`is_queued_for_deletion()`). Handed back as
+## it is held, so a body freed since answers `is_instance_valid()` false rather than failing here.
+func body() -> Node2D:
+	return _body
+
+## How this source's rim is drawn, handed in by the body that owns the picture (`SourceRim`), or null
+## for a source nobody draws.
+func rim() -> SourceRim:
+	return _rim
+
+## Gives the source the rim `ExcitementHalo` lights on its body.
+func use_rim(the_rim: SourceRim) -> void:
+	_rim = the_rim
 
 ## Whether another source of the same kind is the one charging her in this one's place this frame,
 ## so this one is not projected (`expected_gross_at()` answers zero) and is not picked for a rim
-## (`ExcitementHalo._select_sources()`). Told from outside, once a frame: a region boundary's
-## structures charge as their strongest (`EventSources`). False until somebody says otherwise.
-var outranked := false
+## (`ExcitementHalo._select_sources()`). Told from outside, once a frame (`set_outranked()`): a region
+## boundary's structures charge as their strongest (`EventSources`). False until somebody says
+## otherwise.
+func is_outranked() -> bool:
+	return _outranked
+
+## Tells the source whether another is charging her in its place this frame (`is_outranked()`),
+## once a frame, from `EventManager`.
+func set_outranked(outranked: bool) -> void:
+	_outranked = outranked
 
 func _init(the_body: Node2D) -> void:
-	body = the_body
+	_body = the_body
 
 # --------------------------------------------------------------- what she does ---
 
-## Where she is, in world space, or `Vector2.INF` before anybody has said, told once a frame by
-## `ExcitementHalo` through `set_player_at()`.
-var player_at := Vector2.INF
-
-## Where the caret measures her from (`caret_strength()`): `player_at`, unless the body keeps its
-## own account of where she is that more than the halo writes.
+## Where the caret measures her from (`caret_strength()`): where this source hears she is, or
+## `Vector2.INF` for nowhere. A source with no account of its own measures from nowhere; a crowd
+## body is told the point once a frame (`CrowdExcitement.set_her_at()`) and an event hears it from
+## its manager's word (`WhereSheIs`).
 func _her_at() -> Vector2:
-	return player_at
+	return Vector2.INF
 
 ## Her current velocity, her decay rate (`Baby.decay_rate()`) and the baby's sensitivity
 ## (`Baby.current_sensitivity()`): everything `expected_impact_at()` needs to answer "if she keeps
 ## doing what she is doing". The defaults answer held still, nothing given back and nothing damped,
 ## for any caller — a data-level test among them — that has not said otherwise.
-var player_velocity := Vector2.ZERO
+var _player_velocity := Vector2.ZERO
 var player_decay_rate := 0.0
-var player_sensitivity := 1.0
+var _player_sensitivity := 1.0
 
 ## The sum of `expected_gross_at()` over every source `ExcitementHalo` runs this frame, told once a
 ## frame through `set_expected_total_gross()`. `-1.0`, the default, means nobody has, and
 ## `expected_impact_at()` nets the whole projected decay against this source alone.
-var player_expected_total_gross := -1.0
+var _player_expected_total_gross := -1.0
 
-## This frame's player position, velocity, decay rate and sensitivity, told once a frame to every
-## candidate by `ExcitementHalo`, picked or not, since a source below the halo's floor can still be
-## worth a caret.
-func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+## This frame's player velocity, decay rate and sensitivity, told once a frame to every candidate by
+## `ExcitementHalo`, picked or not, since a source below the halo's floor can still be worth a
+## caret. Her motion only: where she is reaches a source another way (`_her_at()`).
+func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 		sensitivity: float = 1.0) -> void:
-	player_at = at
-	player_velocity = velocity
+	_player_velocity = velocity
 	player_decay_rate = decay_rate
-	player_sensitivity = sensitivity
+	_player_sensitivity = sensitivity
 
 ## Told once a frame by `ExcitementHalo`, after every candidate's `expected_gross_at()` has been
 ## asked at the same position: the total has to be gathered before any one source's share of the
 ## decay can be known.
 func set_expected_total_gross(total: float) -> void:
-	player_expected_total_gross = total
+	_player_expected_total_gross = total
 
 # ------------------------------------------------------------- what has landed ---
 
@@ -109,15 +129,23 @@ func set_expected_total_gross(total: float) -> void:
 ## still inside `WINDOW`. Lazily grown: a source that has never landed anything keeps it empty.
 var _landed_history: Array = []
 
+## The running total behind `landed_ever()`.
+var _landed_ever := 0.0
+
 ## Every point this source has ever landed on her meter, never pruned — the running total
 ## `EncounterWatch` measures an encounter's share against, since `landed()` keeps only `WINDOW`
 ## and an encounter can be longer. Telemetry only: nothing that decides anything reads it.
-var landed_ever := 0.0
+func landed_ever() -> float:
+	return _landed_ever
 
 ## Called once, on the first point this source lands on her, or not at all while unset: how a
 ## creator hears that a source reached her without this source knowing who asked
 ## (`EventSpawner`'s pelican).
-var on_first_landing := Callable()
+var _on_first_landing := Callable()
+
+## Hands it what it calls, once, when the first point lands on her (`accumulate_landed()`).
+func when_it_first_lands(tell: Callable) -> void:
+	_on_first_landing = tell
 
 var _first_landing_told := false
 
@@ -130,10 +158,10 @@ func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
 		_landed_history.append([clock(), points])
-		landed_ever += points
-		if on_first_landing.is_valid() and not _first_landing_told:
+		_landed_ever += points
+		if _on_first_landing.is_valid() and not _first_landing_told:
 			_first_landing_told = true
-			on_first_landing.call()
+			_on_first_landing.call()
 
 ## The sum of every entry still inside `WINDOW`. Pruned here too, not only on write, so a source
 ## nobody has visited in a while reports honestly the moment it is asked.
@@ -142,8 +170,8 @@ func landed() -> float:
 		return 0.0
 	_prune_landed_history()
 	var total := 0.0
-	for entry in _landed_history:
-		total += entry[1]
+	for entry: Array in _landed_history:
+		total += entry[1] as float
 	return total
 
 func _prune_landed_history() -> void:
@@ -176,7 +204,7 @@ var _contribution_was := 0.0
 func contribution_at(at: Vector2) -> float:
 	if not _caches_contribution:
 		var field := _field(at)
-		if field > 0.0 and _walled_off_now(body.global_position, at):
+		if field > 0.0 and _walled_off_now(_body.global_position, at):
 			return 0.0
 		return field
 	var stamp := _contribution_stamp()
@@ -195,7 +223,7 @@ func invalidate_contribution() -> void:
 
 func _contribution_uncached(at: Vector2) -> float:
 	var field := _field(at)
-	if field > 0.0 and _walled_off_now(body.global_position, at):
+	if field > 0.0 and _walled_off_now(_body.global_position, at):
 		return 0.0
 	return field
 
@@ -215,12 +243,6 @@ func _contribution_stamp() -> float:
 func wall_grid() -> WorldMap:
 	return null
 
-## Whether a wall stands between a source at `source_at` and her at `her_at`, deep enough to keep
-## its excitement from her.
-func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	var grid := wall_grid()
-	return grid != null and grid.wall_between(source_at, her_at)
-
 ## The last line `contribution_at()` asked about and its answer, kept by value. The answer depends
 ## on nothing but the two points and the map, so a body moved from outside is a new key and nothing
 ## here can answer stale the way a clock-keyed cache of the field would.
@@ -229,8 +251,10 @@ var _wall_to := Vector2.INF
 var _wall_grid: WorldMap = null
 var _wall_answer := false
 
-## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the projection asks a
-## different pair at every step and would only push the frame's own pair out.
+## Whether a wall stands between a source at `source_at` and her at `her_at`, deep enough to keep
+## its excitement from her, through that one-line cache, for `contribution_at()` alone: the
+## projection asks the map itself (`_sample_expected_landed()`), a different pair at every step, which
+## would only push the frame's own pair out.
 func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
 	var grid := wall_grid()
 	if source_at != _wall_from or her_at != _wall_to or grid != _wall_grid:
@@ -250,11 +274,11 @@ var _expected_landed_cache := 0.0
 ## she and it both carry on exactly as they are**, before her own decay is netted against it;
 ## `ExcitementHalo` sums it once a frame to learn what the horizon's decay is shared between
 ## *(2026-09-20: "caret communicates anticipated net gain. basically if I keep doing what I'm doing
-## I very likely get that amount in net gain")*. Her `player_velocity` moves her through the
+## I very likely get that amount in net gain")*. Her `_player_velocity` moves her through the
 ## projection as the source's own `_projection_velocity()` moves it.
 ##
 ## **Skipped without sampling once neither body is moving, or the pair's closing speed cannot cross
-## the reach inside the horizon.** Floored at zero and scaled by `player_sensitivity` here, so the
+## the reach inside the horizon.** Floored at zero and scaled by `_player_sensitivity` here, so the
 ## total the halo sums is already in the units the shared decay is taken out of. The present rate
 ## subtracted is the real `contribution_at()` — what she is charged right now — so the answer is the
 ## approach minus the honest present.
@@ -264,14 +288,14 @@ var _expected_landed_cache := 0.0
 ## are out of reach, so the type's question is asked only of the few near enough to matter. The halo
 ## asks this of every source every drawn frame.
 func expected_gross_at(player_position: Vector2) -> float:
-	if outranked:
+	if _outranked:
 		return 0.0
 	var velocity := _projection_velocity()
-	var closing := player_velocity - velocity
+	var closing := _player_velocity - velocity
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + _projection_reach()
-	if body.global_position.distance_to(player_position) > reach:
+	if _body.global_position.distance_to(player_position) > reach:
 		return 0.0
-	if (velocity.is_zero_approx() and player_velocity.is_zero_approx()) or not _projects():
+	if (velocity.is_zero_approx() and _player_velocity.is_zero_approx()) or not _projects():
 		return 0.0
 	var current_rate := contribution_at(player_position)
 	_begin_the_projection(velocity)
@@ -285,7 +309,7 @@ func expected_gross_at(player_position: Vector2) -> float:
 			_expected_landed_key = key
 		future_integral = _expected_landed_cache
 	var gross := future_integral - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * player_sensitivity, 0.0)
+	return maxf(gross * _player_sensitivity, 0.0)
 
 ## Only the future integral is reusable. Projecting the source forward by `velocity * t` and asking
 ## its field at her own projected place is the same number as holding the source still and asking
@@ -297,14 +321,14 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2) -> flo
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var integral := 0.0
 	# Where it stands and the walls it asks, read once: neither moves while it samples.
-	var from := body.global_position
+	var from := _body.global_position
 	var grid := wall_grid()
 	for i in steps:
 		var t := float(i + 1) * dt
-		var sample := player_position + player_velocity * t - velocity * t
+		var sample := player_position + _player_velocity * t - velocity * t
 		var rate := _projected_field(sample, velocity)
 		if rate > 0.0 and grid != null and grid.wall_between(from + velocity * t,
-				player_position + player_velocity * t):
+				player_position + _player_velocity * t):
 			rate = 0.0
 		integral += rate * dt
 	return integral
@@ -323,8 +347,8 @@ func expected_impact_at(player_position: Vector2) -> float:
 	if gross <= 0.0:
 		return 0.0
 	var decay := player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	if player_expected_total_gross >= 0.0:
-		return net_landed(gross, player_expected_total_gross, decay)
+	if _player_expected_total_gross >= 0.0:
+		return net_landed(gross, _player_expected_total_gross, decay)
 	return maxf(gross - decay, 0.0)
 
 ## Whether this source projects anything at all right now.

@@ -24,14 +24,14 @@ are true. This file is the one place the questions are worded; every other text 
 The layers are **designing-classes**'s "Code is designed by layer"; which folder and file sits in which
 is `tools/layer_map.py`. `tools/check_layers.py` answers the second and third questions
 mechanically: CI fails a new upward name, and a group lookup, an autoload or a stateful static read
-in the world or simulation layers, that its list of standing breaks does not name. An answer to
-either names every listed break in a file the pull request touches and every line it adds to or
-removes from that list, and says why; a pull request that puts a file in another layer says why the
+in the world or simulation layers, that the map does not list as a break that has to stand. An
+answer to either names every listed break in a file the pull request touches and every line it adds
+to or removes from `EXCEPTIONS` in `tools/layer_map.py`, and says why, a break added being declared in
+**designing-classes** with the same reason; a pull request that puts a file in another layer says why the
 map was wrong.
 
-*Proposed, open to overturn:* the sixth carries the player's own question first, ahead of the
-question it overlaps, rather than standing as an eighth (plush-egret #892; the player offered the
-choice, plaid-raven #894), so the two are answered once, together.
+The sixth carries the player's own question first, ahead of the question it overlaps, rather than
+standing as an eighth, so the two are answered once, together (plush-egret #892).
 
 ## Where they are answered
 
@@ -64,3 +64,11 @@ time the pull request was opened.
 - **The reviewer** checks each answer against the diff and against `tools/check_layers.py --list`
   on the pull request's head; an answer the diff or the check contradicts is a finding
   (**pr-review**, "Then the code").
+
+## Proposed, not asked for
+
+This rule above is the filer's proposal, not the player's words, and holds until the player
+corrects it. The citation is the player's word it extends:
+
+- **The player's own question is folded into the sixth, not added as an eighth** ("The
+  questions"): the player leaves the choice between the two open (plaid-raven #894).

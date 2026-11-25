@@ -22,15 +22,15 @@ extends RefCounted
 const POINTS_STEP := 83.0
 const SHARE_BOXES: Array[Vector2] = [Vector2(24.0, 24.0), Vector2(110.0, 70.0), Vector2(300.0, 200.0)]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_visible_view(t)
-	_crowd_view(t)
+	await _crowd_view(t)
 
 ## A view looked through `rig`, with `controls` the controls it is to read the scheme from.
 static func _view_through(rig: Node2D, controls: TouchControls) -> VisibleView:
 	var made := VisibleView.new()
-	made.controls = controls.covering
-	made.look_through(rig)
+	made.use_cover(controls.covering())
+	made.look_from(Stroller.view_centre_of(rig))
 	return made
 
 ## A view of the world about `centre` that a rig chose, in the scheme `joystick` says.
@@ -39,18 +39,18 @@ static func _view_about(centre: Vector2, joystick: bool, controls: TouchControls
 
 ## The crowd's view of the screen, anchored in `anchor`'s viewport.
 static func _crowd_view_of(anchor: Node) -> CrowdView:
-	return ScreenCrowdView.new(anchor)
+	return ScreenCrowdView.new(anchor, DrawnView.on(anchor))
 
 static func _hex(values: Array) -> String:
 	var parts: Array[String] = []
-	for value in values:
+	for value: float in values:
 		parts.append(PackedFloat64Array([float(value)]).to_byte_array().hex_encode())
 	return " ".join(parts)
 
 static func _rect_hex(box: Rect2) -> String:
 	return _hex([box.position.x, box.position.y, box.size.x, box.size.y])
 
-func _visible_view(t) -> void:
+func _visible_view(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	rig.set_physics_process(false)
 	rig.set_process(false)
@@ -60,7 +60,8 @@ func _visible_view(t) -> void:
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	rig.add_child(camera)
 	t.add_child(rig)
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	var schemes := [
 		["tap", ControlsMode.Mode.TAP, ControlsMode.Side.LEFT],
@@ -72,28 +73,29 @@ func _visible_view(t) -> void:
 			rig.global_position = centre
 			ScreenOrientation.apply_to_camera(camera, rotated)
 			camera.force_update_scroll()
-			for scheme in schemes:
-				controls.rotated = rotated
+			for scheme: Array in schemes:
+				controls.use_rotated(rotated)
 				controls.set_mode(scheme[1], scheme[2])
 				var label := "%s rotated=%s at=%s" % [scheme[0], rotated, centre]
-				_print_view("through " + label, _view_through(rig, controls))
-				_print_view("about " + label, _view_about(centre + Vector2(13.0, 7.0),
-						scheme[1] == ControlsMode.Mode.JOYSTICK, controls))
+				var joystick: bool = scheme[1] == ControlsMode.Mode.JOYSTICK
+				_print_view("through " + label, _view_through(rig, controls), joystick)
+				_print_view("about " + label, _view_about(centre + Vector2(13.0, 7.0), joystick,
+						controls), joystick)
 	controls.free()
 	rig.free()
 
-func _print_view(label: String, view: VisibleView) -> void:
-	print("SR_VV %s | view %s | joystick %s" % [label, _rect_hex(view.view), view.joystick])
-	var origin := view.view.position
+## Prints what `view` sees, `joystick` being whether it was looked through in the joystick scheme.
+func _print_view(label: String, view: VisibleView, joystick: bool) -> void:
+	print("SR_VV %s | view %s | joystick %s" % [label, _rect_hex(view.camera_view()), joystick])
+	var origin := view.camera_view().position
 	var seen: Array[String] = []
 	var y := -POINTS_STEP
-	while y < view.view.size.y + POINTS_STEP:
+	while y < view.camera_view().size.y + POINTS_STEP:
 		var row := ""
 		var x := -POINTS_STEP
-		while x < view.view.size.x + POINTS_STEP:
+		while x < view.camera_view().size.x + POINTS_STEP:
 			var at := origin + Vector2(x, y)
-			row += ("1" if view.sees(at) else "0") + ("1" if view.sees(at, 9.0) else "0") \
-					+ ("1" if view.sees(at, -9.0) else "0")
+			row += "1" if view.sees(at) else "0"
 			x += POINTS_STEP * 0.5
 		seen.append(row)
 		y += POINTS_STEP * 0.5
@@ -101,27 +103,27 @@ func _print_view(label: String, view: VisibleView) -> void:
 	var shares: Array[float] = []
 	for size in SHARE_BOXES:
 		var sy := -size.y
-		while sy < view.view.size.y + size.y:
+		while sy < view.camera_view().size.y + size.y:
 			var sx := -size.x
-			while sx < view.view.size.x + size.x:
+			while sx < view.camera_view().size.x + size.x:
 				shares.append(view.share_of(Rect2(origin + Vector2(sx, sy), size)))
 				sx += size.x * 1.5
 			sy += size.y * 1.5
 	print("SR_VV %s | shares %s" % [label, _hex(shares)])
 	var clears: Array[float] = []
-	for start in [Vector2.ZERO, Vector2(120.0, 90.0), Vector2(-200.0, 150.0), Vector2(250.0, 140.0)]:
+	for start: Vector2 in [Vector2.ZERO, Vector2(120.0, 90.0), Vector2(-200.0, 150.0), Vector2(250.0, 140.0)]:
 		for step in 16:
 			var way := Vector2.RIGHT.rotated(TAU * step / 16.0)
-			for box in [Rect2(), Rect2(-12.0, -30.0, 24.0, 30.0), Rect2(-60.0, -20.0, 120.0, 40.0)]:
-				for least in [0.0, 30.0]:
-					clears.append(view.clear_of_sight(view.view.get_center() + start, way, box, least))
+			for box: Rect2 in [Rect2(), Rect2(-12.0, -30.0, 24.0, 30.0), Rect2(-60.0, -20.0, 120.0, 40.0)]:
+				for least: float in [0.0, 30.0]:
+					clears.append(view.clear_of_sight(view.camera_view().get_center() + start, way, box, least))
 	print("SR_VV %s | clear %s" % [label, _hex(clears)])
 
-func _crowd_view(t) -> void:
+func _crowd_view(t: TestRunner) -> void:
 	var anchor := Node.new()
 	t.add_child(anchor)
 	var view := _crowd_view_of(anchor)
-	print("SR_CV none | box %s | beyond %s" % [_rect_hex(_drawn_box(view, anchor)), _beyond(view, Vector2(100.0, 100.0))])
+	print("SR_CV none | box %s | beyond %s" % [_rect_hex(await _drawn_box(t, view)), _beyond(view, Vector2(100.0, 100.0))])
 	var rig := Node2D.new()
 	t.add_child(rig)
 	var camera := Camera2D.new()
@@ -137,17 +139,21 @@ func _crowd_view(t) -> void:
 				ScreenOrientation.apply_to_camera(camera, rotated)
 				camera.force_update_scroll()
 				print("SR_CV at=%s zoom=%s rotated=%s | box %s | beyond %s" % [centre, zoom, rotated,
-						_rect_hex(_drawn_box(view, anchor)), _beyond(view, centre)])
+						_rect_hex(await _drawn_box(t, view)), _beyond(view, centre)])
 	rig.free()
 	anchor.free()
 
-func _drawn_box(view: CrowdView, anchor: Node) -> Rect2:
-	DrawnView.forget(anchor.get_viewport())
+## The drawn box once the next process frame has begun: the box is worked out once a process frame
+## (`DrawnView.box()`), so a camera moved inside one frame is read on the next.
+func _drawn_box(t: TestRunner, view: CrowdView) -> Rect2:
+	var asked_in := Engine.get_process_frames()
+	while Engine.get_process_frames() == asked_in:
+		await t.get_tree().process_frame
 	return view.drawn_box()
 
 func _beyond(view: CrowdView, centre: Vector2) -> String:
 	var bits := ""
-	for room in [0.0, 2.0 * Tuning.TILE_SIZE]:
+	for room: float in [0.0, 2.0 * Tuning.TILE_SIZE]:
 		for dy in range(-12, 13):
 			for dx in range(-12, 13):
 				var at := centre + Vector2(dx, dy) * 53.7

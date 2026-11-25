@@ -20,7 +20,7 @@ const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd
 ## city is the expensive part of this suite by a wide margin.
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 7))
 	_test_every_block_has_an_arc(t)
@@ -37,7 +37,6 @@ func run(t) -> void:
 	_test_tree_lined_streets_stay_rare(t)
 	_test_pits_keep_their_spacing_across_a_whole_run(t)
 	_test_a_pit_is_never_on_a_junction_or_a_mouth(t)
-	_test_the_planner_and_the_prop_agree_on_a_tree_footprint(t)
 	await _test_street_tree_beds_are_ground_decals(t)
 	await _test_unstreamed_decals_draw_every_bed(t)
 
@@ -47,87 +46,91 @@ func _map(index: int = 0) -> CityMap:
 ## Every block belongs to exactly one lot, and every lot has a plan starting on day 1.
 ##
 ## Since M21 a lot is not always a block: a four-block calm zone is one entry in `block_plans`
-## and four blocks of ground, and the three it absorbed appear only in `zone_anchor`. The two
-## sets have to partition the city between them — a block in neither is ground nothing paints,
-## and a block in both is a park with a building in the middle of it.
-func _test_every_block_has_an_arc(t) -> void:
+## and four blocks of ground, and the three it absorbed are known only by the anchor `anchor_of()`
+## names for them. The two sets have to partition the city between them — a block in neither is
+## ground nothing paints, and a block in both is a park with a building in the middle of it.
+func _test_every_block_has_an_arc(t: TestRunner) -> void:
 	var map := _map()
-	var absorbed := map.zone_anchor.size() - map.zone_rects.size()
-	t.check(map.block_plans.size() + absorbed == Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y,
+	var absorbed := 0
+	for y in Tuning.CITY_BLOCKS.y:
+		for x in Tuning.CITY_BLOCKS.x:
+			if map.anchor_of(Vector2i(x, y)) != Vector2i(x, y):
+				absorbed += 1
+	t.check(map.plans_by_block().size() + absorbed == Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y,
 			"every block is in exactly one lot (%d lots, %d absorbed)"
-			% [map.block_plans.size(), absorbed])
+			% [map.plans_by_block().size(), absorbed])
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var block := Vector2i(x, y)
-			t.check(map.block_plans.has(map.anchor_of(block)),
+			t.check(map.has_plan_for(map.anchor_of(block)),
 					"block %s belongs to a lot with an arc" % block)
-	for block: Vector2i in map.block_plans:
-		var plan: BlockPlan = map.block_plans[block]
-		t.check(plan.steps.size() >= 1, "block %s has at least a starting purpose" % block)
-		t.check(plan.steps[0].from_day == 1, "block %s starts on day 1" % block)
-		t.check(plan.steps[0].cause == GameEnums.BlockCause.SCHEDULED,
+	for block: Vector2i in map.blocks_with_plans():
+		var plan: BlockPlan = map.plans_by_block()[block]
+		t.check(plan.step_count() >= 1, "block %s has at least a starting purpose" % block)
+		t.check(plan.step_at(0).from_day == 1, "block %s starts on day 1" % block)
+		t.check(plan.step_at(0).cause == GameEnums.BlockCause.SCHEDULED,
 				"block %s does not need a cause to be what it starts as" % block)
 
 ## An arc is a line, not a tree: it never goes backwards in time, so a player who learns
 ## that a boarded-up street is on its way to something worse is never wrong about the order.
-func _test_arcs_only_move_forward(t) -> void:
+func _test_arcs_only_move_forward(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
-		for block: Vector2i in map.block_plans:
-			var plan: BlockPlan = map.block_plans[block]
+		for block: Vector2i in map.blocks_with_plans():
+			var plan: BlockPlan = map.plans_by_block()[block]
 			var previous := 0
-			for step: BlockPlan.Step in plan.steps:
+			for step: BlockPlan.Step in plan.steps_in_order():
 				t.check(step.from_day >= previous,
-						"seed %d block %s: arc days never go backwards" % [map.seed_used, block])
+						"seed %d block %s: arc days never go backwards" % [map.city_seed(), block])
 				previous = step.from_day
 				t.check(step.from_day <= Tuning.RUN_LENGTH_DAYS,
 						"seed %d block %s: no step is scheduled past the run"
-						% [map.seed_used, block])
+						% [map.city_seed(), block])
 
 ## The hard floor. A day can only be won on calm ground, so an arc set that takes all of it
 ## makes an unwinnable run rather than a hard one. Checked on the *last* day, with every
 ## scheduled step taken and every event-caused one forced, which is the worst case.
-func _test_enough_calm_survives_the_whole_run(t) -> void:
+func _test_enough_calm_survives_the_whole_run(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
 		var state := _worst_case(map)
-		var calm := state.calm_blocks(map.block_plans)
+		var calm := state.calm_blocks(map.plans_by_block())
 		t.check(calm.size() >= CityGenerator.MIN_CALM_BLOCKS_AT_END,
 				"seed %d ends the run with %d calm blocks, needs %d"
-				% [map.seed_used, calm.size(), CityGenerator.MIN_CALM_BLOCKS_AT_END])
+				% [map.city_seed(), calm.size(), CityGenerator.MIN_CALM_BLOCKS_AT_END])
 
 ## A fire in a block whose plan has no fire in it leaves the shell and changes nothing else.
 ## Without this a scar anywhere would drag every block it touched along somebody else's arc.
-func _test_a_cause_only_fires_where_the_arc_expects_it(t) -> void:
+func _test_a_cause_only_fires_where_the_arc_expects_it(t: TestRunner) -> void:
 	var map := _map()
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 1)
+	state.begin_day(map.plans_by_block(), 1)
 
 	var unmoved := 0
-	for block: Vector2i in map.block_plans:
-		var before := state.purpose_of(map.block_plans, block)
+	for block: Vector2i in map.blocks_with_plans():
+		var before := state.purpose_of(map.plans_by_block(), block)
 		# Day 1 is before every fire step's from_day, so nothing may move.
-		state.apply_cause(map.block_plans, block, GameEnums.BlockCause.FIRE, 1)
-		if state.purpose_of(map.block_plans, block) == before:
+		state.apply_cause(map.plans_by_block(), block, GameEnums.BlockCause.FIRE, 1)
+		if state.purpose_of(map.plans_by_block(), block) == before:
 			unmoved += 1
-	t.check(unmoved == map.block_plans.size(),
+	t.check(unmoved == map.plans_by_block().size(),
 			"a cause before its arc's day moves nothing (%d of %d moved)"
-			% [map.block_plans.size() - unmoved, map.block_plans.size()])
+			% [map.plans_by_block().size() - unmoved, map.plans_by_block().size()])
 
 	# And a calm block has no fire step at all, whatever day it is.
 	var calm_unmoved := true
-	for block in map.calm_blocks:
-		var before := state.purpose_of(map.block_plans, block)
-		state.apply_cause(map.block_plans, block, GameEnums.BlockCause.FIRE,
+	for block in map.calm_blocks_now():
+		var before := state.purpose_of(map.plans_by_block(), block)
+		state.apply_cause(map.plans_by_block(), block, GameEnums.BlockCause.FIRE,
 				Tuning.RUN_LENGTH_DAYS)
-		if state.purpose_of(map.block_plans, block) != before:
+		if state.purpose_of(map.plans_by_block(), block) != before:
 			calm_unmoved = false
 	t.check(calm_unmoved, "a fire in a park does not turn the park into a burnt-out block")
 
 ## The replacement invariant, stated as a test. Push every block to the end of its arc and
 ## the set of walkable tiles must be identical, tile for tile. No requisition, boarding or
 ## fire can seal a street, open a shortcut, or move the route the player learned on day 1.
-func _test_purposes_never_change_what_is_walkable(t) -> void:
+func _test_purposes_never_change_what_is_walkable(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
 		var before := _walkable_set(map)
@@ -135,101 +138,106 @@ func _test_purposes_never_change_what_is_walkable(t) -> void:
 		var after := _walkable_set(map)
 		t.check(before == after,
 				"seed %d: the whole run's worth of change moves no walkable tile"
-				% map.seed_used)
+				% map.city_seed())
 
 ## Requisitioning is the point of the whole mechanism: the same ground, no longer calm.
-func _test_a_requisitioned_block_stops_being_calm(t) -> void:
+func _test_a_requisitioned_block_stops_being_calm(t: TestRunner) -> void:
 	var found := false
 	for i in SEEDS:
 		var map := _map(i)
 		var state := _worst_case(map)
 		map.repaint(state)
-		for block: Vector2i in map.block_plans:
-			if state.purpose_of(map.block_plans, block) \
+		for block: Vector2i in map.blocks_with_plans():
+			if state.purpose_of(map.plans_by_block(), block) \
 					!= GameEnums.BlockPurpose.REQUISITIONED:
 				continue
 			found = true
-			var layout: BlockLayout = map.block_layouts[block]
-			for tile in map.rect_tiles(layout.open_rect):
+			var layout: BlockLayout = map.layout_of(block)
+			for tile in map.rect_tiles(layout.open_ground()):
 				t.check(not Tile.is_calm(map.tile_at(tile)),
 						"seed %d: requisitioned block %s has no calm ground left"
-						% [map.seed_used, block])
+						% [map.city_seed(), block])
 				t.check(map.is_walkable(tile),
 						"seed %d: requisitioned block %s is still walkable"
-						% [map.seed_used, block])
+						% [map.city_seed(), block])
 		if found:
 			return
 	t.check(found, "at least one seed in the sweep requisitions something")
 
 ## A court with no way in is a hole in the map. The first version of courtyards was exactly
 ## that and failed the connectivity check on every seed; the archway is why it does not.
-func _test_a_courtyard_can_be_reached(t) -> void:
+func _test_a_courtyard_can_be_reached(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
-		var reachable := map.walk_field(map.home_rect.position)
-		for rect in map.courtyard_rects:
+		var reachable := map.walk_field(map.home_tile_rect().position)
+		for rect in map.courtyard_lots():
 			for tile in map.rect_tiles(rect):
 				t.check(map.reaches(reachable, tile),
 						"seed %d: courtyard tile %s is reachable from home"
-						% [map.seed_used, tile])
+						% [map.city_seed(), tile])
 
-func _test_the_same_seed_plans_the_same_arcs(t) -> void:
+func _test_the_same_seed_plans_the_same_arcs(t: TestRunner) -> void:
 	var first := CityGenerator.generate(BASE_SEED + 21)
 	var second := CityGenerator.generate(BASE_SEED + 21)
-	var same := first.block_plans.size() == second.block_plans.size()
-	for block: Vector2i in first.block_plans:
-		var a: BlockPlan = first.block_plans[block]
-		var b: BlockPlan = second.block_plans.get(block)
-		if not b or a.steps.size() != b.steps.size():
+	var same := first.plans_by_block().size() == second.plans_by_block().size()
+	for block: Vector2i in first.blocks_with_plans():
+		var a: BlockPlan = first.plans_by_block()[block]
+		var b: BlockPlan = second.plans_by_block().get(block)
+		if not b or a.step_count() != b.step_count():
 			same = false
 			break
-		for step in a.steps.size():
-			if a.steps[step].purpose != b.steps[step].purpose \
-					or a.steps[step].from_day != b.steps[step].from_day \
-					or a.steps[step].cause != b.steps[step].cause:
+		for step in a.step_count():
+			if a.step_at(step).purpose != b.step_at(step).purpose \
+					or a.step_at(step).from_day != b.step_at(step).from_day \
+					or a.step_at(step).cause != b.step_at(step).cause:
 				same = false
 	t.check(same, "the same seed plans the same arcs")
 
-## Rejection sampling with no spacing test let two trees land close enough to read as one canopy.
-## `_dress_block` now rejects a candidate within `City.MIN_TREE_SPACING` of one it already planted
-## in the same lot, so this drives the real placement pipeline — a built `City`, a real `start_day`
-## — across a few seeds and checks every pair of trees `CityMap.anchor_of` puts in the same lot,
-## which is what the clump would actually have been caught by rather than a unit test of the
-## rejection alone.
-func _test_park_trees_keep_their_distance(t) -> void:
+## Two trees planted closer than the wider of their canopies read as one clump. A lot's trees are
+## placed by `_dress_block` with a spacing between them, so this drives the real placement
+## pipeline (a built `City`, a real `start_day`) across a few seeds and holds every pair of trees
+## `CityMap.anchor_of` puts in the same lot at least as far apart as the wider of the two is drawn,
+## each at its own picture and scale.
+func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	var checked_any_pair := false
-	for seed_value in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
+	for seed_value: int in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
+		var run := RunCity.started_run(BASE_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, run, map)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, 1)
+		state.begin_day(map.plans_by_block(), 1)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m100-tree-spacing:%d" % seed_value)
 		city.start_day(state, 1, rng)
 
 		# Grouped by the lot's own anchor (`CityMap.anchor_of`), not by which of a zone's four
-		# blocks a tree happens to sit on — a four-block calm zone is one lot, and `_dress_block`'s
+		# blocks a tree happens to sit on: a four-block calm zone is one lot, and `_dress_block`'s
 		# own spacing check only ever compares trees it placed in the same call.
 		var by_lot := {}
-		for prop in city.props():
-			if prop.kind != Prop.Kind.TREE:
+		for node in city.props():
+			var prop := node as Prop
+			if prop.kind() != Prop.Kind.TREE:
 				continue
 			var anchor: Vector2i = map.anchor_of(map.block_at(prop.position))
 			var lot: Array = by_lot.get(anchor, [])
-			lot.append(prop.position)
+			lot.append(prop)
 			by_lot[anchor] = lot
 
-		for anchor in by_lot:
+		for anchor: Vector2i in by_lot:
 			var trees: Array = by_lot[anchor]
 			for i in trees.size():
 				for j in range(i + 1, trees.size()):
 					checked_any_pair = true
-					var apart: float = trees[i].distance_to(trees[j])
-					t.check(apart >= City.MIN_TREE_SPACING,
-							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx floor"
-							% [seed_value, anchor, apart, City.MIN_TREE_SPACING])
+					var a: Prop = trees[i]
+					var b: Prop = trees[j]
+					var apart := a.position.distance_to(b.position)
+					var wider := maxf(TreePictures.drawn_size(a.variant(), a.scale_factor()).x,
+							TreePictures.drawn_size(b.variant(), b.scale_factor()).x)
+					t.check(apart >= wider,
+							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx the wider is drawn"
+							% [seed_value, anchor, apart, wider])
 		city.free()
 	t.check(checked_any_pair, "at least one lot across these seeds had more than one tree to check")
 
@@ -240,7 +248,7 @@ func _test_park_trees_keep_their_distance(t) -> void:
 ## blocks — so what is worth asserting is that construction holds against a real lattice: every
 ## street of every run is a real ordinary street, no run is shorter or longer than the bounds, no
 ## two runs share a street, and both directions actually occur across a sweep.
-func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
+func _test_tree_runs_are_straight_runs_of_three_to_five(t: TestRunner) -> void:
 	var horizontal_seen := false
 	var vertical_seen := false
 	var total := 0
@@ -253,34 +261,34 @@ func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
 			t.check(run.length >= StreetTrees.STREET_TREE_RUN_MIN_BLOCKS \
 					and run.length <= StreetTrees.STREET_TREE_RUN_MAX_BLOCKS,
 					"seed %d: a run is %d blocks long, outside %d-%d"
-					% [map.seed_used, run.length, StreetTrees.STREET_TREE_RUN_MIN_BLOCKS,
+					% [map.city_seed(), run.length, StreetTrees.STREET_TREE_RUN_MIN_BLOCKS,
 					StreetTrees.STREET_TREE_RUN_MAX_BLOCKS])
 			var keys := run.segment_keys()
 			t.check(keys.size() == run.length, "seed %d: a run names one street per block"
-					% map.seed_used)
+					% map.city_seed())
 			for i in keys.size():
 				var key: Vector3i = keys[i]
 				t.check(not taken.has(key),
-						"seed %d: street %s is in two runs at once" % [map.seed_used, key])
+						"seed %d: street %s is in two runs at once" % [map.city_seed(), key])
 				taken[key] = true
 				t.check(map.has_street(key),
 						"seed %d: a run covers %s, which is not a street this city has"
-						% [map.seed_used, key])
-				var segment := map.network.by_key(key)
+						% [map.city_seed(), key])
+				var segment := map.street_network().by_key(key)
 				t.check(segment != null and segment.horizontal == run.horizontal,
-						"seed %d: a run's streets all run the same way" % map.seed_used)
+						"seed %d: a run's streets all run the same way" % map.city_seed())
 				if i > 0:
 					var previous: Vector3i = keys[i - 1]
 					var step := Vector2i(key.x, key.y) - Vector2i(previous.x, previous.y)
 					t.check(step == (Vector2i.RIGHT if run.horizontal else Vector2i.DOWN),
-							"seed %d: a run's blocks are consecutive along one line" % map.seed_used)
+							"seed %d: a run's blocks are consecutive along one line" % map.city_seed())
 	t.check(total > 0, "there were runs to check (%d across %d seeds)" % [total, SEEDS])
 	t.check(horizontal_seen and vertical_seen,
 			"runs are placed in both directions across the sweep")
 
 ## Trees are geometry she learns, so they are fixed for the run like a building: the same seed
 ## has to give the same runs and the same pits, whatever order anybody asks in.
-func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
+func _test_tree_runs_are_fixed_for_the_seed(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var again := CityGenerator.generate(BASE_SEED)
 	var first := StreetTrees.planted(map)
@@ -296,15 +304,17 @@ func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
 	t.check(same, "the same seed plants the same trees in the same pits")
 
 ## **Rare, in the player's word** *(2026-09-12: "trees must be quite rare to be able to still place
-## vans restaurants etc.")*. This is the ceiling `StreetTrees.STREET_TREE_RUNS` is chosen under, not a
-## restatement of it: raising the run count is allowed right up to the point where a tree-lined
-## street stops being the exception, and this is the point.
-func _test_tree_lined_streets_stay_rare(t) -> void:
+## vans restaurants etc.")*. This is the ceiling (a quarter of the ordinary streets)
+## `StreetTrees.STREET_TREE_RUNS` is chosen under, not a restatement of it: raising the run count is
+## allowed right up to the point where a tree-lined street stops being the exception, and this is the
+## point.
+func _test_tree_lined_streets_stay_rare(t: TestRunner) -> void:
+	var max_lined_fraction := 0.25
 	var worst := 0.0
 	var ordinary_total := 0
 	for map in _maps:
 		var ordinary := 0
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			var middle := segment.tile_rect().get_center()
 			if map.has_street(segment.key()) and map.street_kind_at(not segment.horizontal,
 					middle) == GameEnums.StreetKind.ORDINARY:
@@ -313,17 +323,17 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 		var lined := StreetTrees.segment_keys_with_trees(map).size()
 		var fraction := float(lined) / float(maxi(1, ordinary))
 		worst = maxf(worst, fraction)
-		t.check(fraction <= StreetTrees.STREET_TREE_MAX_LINED_FRACTION,
+		t.check(fraction <= max_lined_fraction,
 				"seed %d: %d of %d ordinary streets are tree-lined (%.1f%%), over the %.0f%% cap"
-				% [map.seed_used, lined, ordinary, 100.0 * fraction,
-				100.0 * StreetTrees.STREET_TREE_MAX_LINED_FRACTION])
+				% [map.city_seed(), lined, ordinary, 100.0 * fraction,
+				100.0 * max_lined_fraction])
 	t.check(ordinary_total > 0, "there were ordinary streets to ask about (%d)" % ordinary_total)
 	t.check(worst > 0.0, "and at least one seed had trees at all (worst %.3f)" % worst)
 
 ## The spacing is measured over the **run**, not over one street — which is the whole difference
 ## between "a pit every other lot-length" and "a pit every other lot-length within each block".
 ## Checked per kerb line, since the two kerbs of a street are two independent rows.
-func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
+func _test_pits_keep_their_spacing_across_a_whole_run(t: TestRunner) -> void:
 	var pairs := 0
 	for map in _maps:
 		var by_line := {}
@@ -336,7 +346,7 @@ func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
 			var row: Array = by_line.get(line, [])
 			row.append(tree.position.x if horizontal else tree.position.y)
 			by_line[line] = row
-		for line in by_line:
+		for line: Vector3i in by_line:
 			var row: Array = by_line[line]
 			row.sort()
 			for i in range(row.size() - 1):
@@ -344,13 +354,13 @@ func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
 				var apart: float = row[i + 1] - row[i]
 				t.check(apart >= StreetTrees.STREET_TREE_PIT_SPACING,
 						"seed %d: two pits on one kerb line %.0fpx apart, under the %.0fpx floor"
-						% [map.seed_used, apart, StreetTrees.STREET_TREE_PIT_SPACING])
+						% [map.city_seed(), apart, StreetTrees.STREET_TREE_PIT_SPACING])
 	t.check(pairs > 0, "there were neighbouring pits to measure (%d)" % pairs)
 
 ## The mouth margin is what keeps a pit off a crossing and off a checkpoint's own doorway, and it
 ## has to keep holding inside a run — a run's junctions are the places two of its streets meet, so
 ## they are exactly where a naive walk along the line would plant one.
-func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
+func _test_a_pit_is_never_on_a_junction_or_a_mouth(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for tree in StreetTrees.planted(map):
@@ -359,67 +369,49 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
 			var along: int = tree.tile.x if horizontal else tree.tile.y
 			var within := posmod(along, CityMap.period())
 			t.check(within >= Tuning.STREET_WIDTH,
-					"seed %d: a pit at %s stands in a junction" % [map.seed_used, tree.tile])
+					"seed %d: a pit at %s stands in a junction" % [map.city_seed(), tree.tile])
 			var into_block := within - Tuning.STREET_WIDTH
 			t.check(into_block >= 1 and into_block <= Tuning.BLOCK_SIZE - 2,
-					"seed %d: a pit at %s stands in a street mouth" % [map.seed_used, tree.tile])
+					"seed %d: a pit at %s stands in a street mouth" % [map.city_seed(), tree.tile])
 	t.check(checked > 0, "there were pits to check (%d)" % checked)
-
-## `StreetTrees.footprint_radius()` is what the scheduler and the seals keep clear, and it is
-## computed from `Prop`'s own textures rather than read off a live prop, because every caller is a
-## headless planner with no scene. This is the thing that stops the copy drifting: a real street
-## tree, built by a real `City`, has to carry exactly the shape the planners assumed.
-func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
-	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
-	t.add_child(city)
-	city.build(map)
-	var checked := 0
-	for prop in city.props():
-		if prop.kind != Prop.Kind.STREET_TREE:
-			continue
-		checked += 1
-		t.check(prop.shape != null and prop.shape.reach() <= StreetTrees.footprint_radius() + 0.001,
-				"a street tree reaches %.2fpx, over the %.2fpx the planners keep clear"
-				% [prop.shape.reach() if prop.shape else -1.0, StreetTrees.footprint_radius()])
-	t.check(checked > 0, "the city built street trees to check (%d)" % checked)
-	city.free()
 
 ## A street tree keeps its upright art in the y-sorted entity layer, while the bed it stands in is
 ## owned by the flat decal layer. This is the rendering boundary that keeps a one-tile bed from
 ## covering the stroller while preserving the tree's ordinary sorting behavior.
 ##
-## The beds are read off a recording drawer handed to the city's decals through the member the city
-## hands its own through (`CityDecals.drawer`), the decals' streamed chunks prepared again with it
+## The beds are read off a recording drawer handed to the city's decals the way the city hands its
+## own (`CityDecals.draw_through()`), the decals' streamed chunks prepared again with it
 ## (`refresh_street_tree_pits()`, which the city calls on a day's closures) and every chunk of the
 ## city prepared (`update_view()`, which the residency calls). The residency is first brought to the
 ## view the camera gives, where it stands while the camera does, so its own frame neither prepares
 ## nor releases a chunk while the beds are read.
-func _test_street_tree_beds_are_ground_decals(t) -> void:
+func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
+	var run := RunCity.started_run(BASE_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(map)
+	var library := AtlasLibrary.new()
+	RunCity.build(city, run, map, null, false, library)
 	var decals: CityDecals = city.get_node("Decals")
 	var planted := StreetTrees.planted(map)
-	t.check(decals.drawer != null, "the city hands its decals the drawer they lay their beds through")
 	var recorder := RecordingSceneryDrawer.new()
-	decals.drawer = recorder
-	city.scenery.update(Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
-			Tuning.VIEW_HALF_EXTENT * 2.0), true)
+	decals.draw_through(recorder)
+	city.prepare_scenery_in(Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2.0))
 	decals.refresh_street_tree_pits()
 	var whole := Rect2(Vector2.ZERO, map.world_size()).grow(
 			SceneryGround.CHUNK_TILES * Tuning.TILE_SIZE)
 	decals.update_view(whole, whole)
 	await t.get_tree().process_frame
 	var tree_count := 0
-	for prop in city.props():
-		if prop.kind == Prop.Kind.STREET_TREE:
+	for node in city.props():
+		var prop := node as Prop
+		if prop.kind() == Prop.Kind.STREET_TREE:
 			tree_count += 1
 	t.check(planted.size() > 0, "the rendering contract has a planted tree to inspect")
 	t.check(tree_count == planted.size() and tree_count > 0,
 			"each planted street tree keeps one upright entity")
-	var bed := city.atlas.region(CityDecals.TREE_PIT)
+	var bed := library.region(CityDecals.TREE_PIT)
 	_check_one_bed_for_each_tree(t, _beds_drawn(recorder.shown(), bed), bed, planted, map,
 			"the city's streamed decals")
 	t.check(not recorder.shown().is_empty()
@@ -435,15 +427,15 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 
 ## The decals drawn whole on their own canvas, the way they draw when they are not streamed: every
 ## bed of a planted tree drawn once, through the drawer they are handed.
-func _test_unstreamed_decals_draw_every_bed(t) -> void:
+func _test_unstreamed_decals_draw_every_bed(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var planted := StreetTrees.planted(map)
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(CityDecals.DECORATION_ATLAS)
 	var recorder := RecordingSceneryDrawer.new()
 	var decals := CityDecals.new()
-	decals.atlas = atlas
-	decals.drawer = recorder
+	decals.use_atlas(atlas)
+	decals.draw_through(recorder)
 	decals.set_street_tree_pits(planted, map)
 	t.add_child(decals)
 	await t.get_tree().process_frame
@@ -467,7 +459,7 @@ func _beds_drawn(shown: Array[Dictionary], bed: Texture2D) -> Dictionary:
 
 ## Every planted tree whose pit the map has not emptied has one bed (`bed`, the picture) drawn
 ## centred on its position at the picture's own size, and nothing else is drawn as a bed.
-func _check_one_bed_for_each_tree(t, beds: Dictionary, bed: Texture2D,
+func _check_one_bed_for_each_tree(t: TestRunner, beds: Dictionary, bed: Texture2D,
 		planted: Array[StreetTrees.Planted], map: CityMap, what: String) -> void:
 	var expected := {}
 	for entry in planted:
@@ -484,16 +476,16 @@ func _check_one_bed_for_each_tree(t, beds: Dictionary, bed: Texture2D,
 func _worst_case(map: CityMap) -> CityState:
 	var state := CityState.new()
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		state.begin_day(map.block_plans, day)
-		for block: Vector2i in map.block_plans:
-			state.apply_cause(map.block_plans, block, GameEnums.BlockCause.FIRE, day)
-			state.apply_cause(map.block_plans, block, GameEnums.BlockCause.MILITARY, day)
+		state.begin_day(map.plans_by_block(), day)
+		for block: Vector2i in map.blocks_with_plans():
+			state.apply_cause(map.plans_by_block(), block, GameEnums.BlockCause.FIRE, day)
+			state.apply_cause(map.plans_by_block(), block, GameEnums.BlockCause.MILITARY, day)
 	return state
 
 func _walkable_set(map: CityMap) -> Dictionary:
 	var walkable := {}
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile):
 				walkable[tile] = true

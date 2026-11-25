@@ -18,28 +18,30 @@ const INPUTS := {
 	"down-left": [-1.0, 1.0], "analog right-up": [0.9, -0.3],
 }
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
 	var f := InteriorMap.build()
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
-	player.carrying = true
-	player.set_map(scene.map)
+	player.use_carrying_rig()
+	player.set_map(scene.map())
 	scene.add_entity(player)
 	player.set_physics_process(false)
-	for side in ["left", "right"]:
-		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
-			var kind: InteriorTile.Kind = f.tiles[tile]
+	for side: String in ["left", "right"]:
+		for tile: Vector2i in scene.map().stairwell_tiles("stairwell_%s" % side):
+			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
 			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
 				continue
 			for name: String in INPUTS:
 				var v: Array = INPUTS[name]
 				var heading := _walk(scene, player, tile, Vector2(v[0], v[1]))
+				var steer: Vector2 = heading[0]
+				var moved: Vector2 = heading[1]
 				print("STAIRS %s %s %s %s steer %s moved %s" % [
 						side, InteriorTile.Kind.keys()[kind], tile, name,
-						_deg(heading[0]), _deg(heading[1])])
+						_deg(steer), _deg(moved)])
 	_walk_flights(scene, player)
 	player.free()
 	scene.free()
@@ -60,51 +62,54 @@ const FLIGHTS := [
 
 func _walk_flights(scene: InteriorScene, player: Stroller) -> void:
 	var f := InteriorMap.build()
-	for side in ["left", "right"]:
-		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	for side: String in ["left", "right"]:
+		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for flight: Array in FLIGHTS:
+			var named: String = flight[0]
+			var top: Vector2i = flight[1]
+			var bottom: Vector2i = flight[2]
 			var down: String = flight[3]
 			var up := "move_left" if down == "move_right" else "move_right"
-			_walk_one(scene, player, side, flight[0], "down", origin + flight[1], origin + flight[2], down)
-			_walk_one(scene, player, side, flight[0], "up", origin + flight[2], origin + flight[1], up)
+			_walk_one(scene, player, side, named, "down", origin + top, origin + bottom, down)
+			_walk_one(scene, player, side, named, "up", origin + bottom, origin + top, up)
 			# And from each landing's second row, a tile below the flight's first or last tread.
-			_walk_one(scene, player, side, flight[0], "down-2nd", origin + flight[1] + Vector2i.DOWN,
-					origin + flight[2], down)
-			_walk_one(scene, player, side, flight[0], "up-2nd", origin + flight[2] + Vector2i.DOWN,
-					origin + flight[1], up)
+			_walk_one(scene, player, side, named, "down-2nd", origin + top + Vector2i.DOWN,
+					origin + bottom, down)
+			_walk_one(scene, player, side, named, "up-2nd", origin + bottom + Vector2i.DOWN,
+					origin + top, up)
 
 func _walk_one(scene: InteriorScene, player: Stroller, side: String, flight: String, way: String,
 		from: Vector2i, to: Vector2i, action: String) -> void:
-	for a in ["move_left", "move_right", "move_up", "move_down"]:
+	for a: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(a)
 	Input.action_press(action)
-	player.global_position = scene.map.tile_to_world(from)
+	player.global_position = scene.map().tile_to_world(from)
 	player.velocity = Vector2.ZERO
 	var headings: Array[String] = []
 	var worst := 0.0
 	var last := player.global_position
 	var steps := 0
 	# Arrived once she stands on the next landing's column, whichever of its rows.
-	while steps < 900 and not (scene.map.world_to_tile(player.global_position).x == to.x
-			and scene.map.slope_dir_at(player.global_position) == 0):
+	while steps < 900 and not (scene.map().world_to_tile(player.global_position).x == to.x
+			and scene.map().slope_dir_at(player.global_position) == 0):
 		player._physics_process(STEP)
 		_move(player, player.velocity * STEP)
 		steps += 1
 		# Her centre every frame on one walk, for a picture of the path rather than its headings.
 		if side == "left" and flight == "first" and way == "down":
-			var at := player.global_position - scene.map.tile_to_world(from)
+			var at := player.global_position - scene.map().tile_to_world(from)
 			print("TRACE %d %.2f %.2f" % [steps, at.x, at.y])
 		if steps % 6 == 0:
 			var moved := player.global_position - last
 			headings.append(_deg(moved))
-			var on_flight := scene.map.slope_dir_at(last) != 0 and scene.map.slope_dir_at(player.global_position) != 0
+			var on_flight := scene.map().slope_dir_at(last) != 0 and scene.map().slope_dir_at(player.global_position) != 0
 			if on_flight and moved.length() > 0.5:
 				var off := absf(rad_to_deg(absf(moved.angle())) - 90.0)
 				worst = maxf(worst, absf(off - 45.0))
 			last = player.global_position
 	Input.action_release(action)
 	print("WALK %s %s %s %s -> %s (ended %s) steps %d worst %.1f headings %s" % [side, flight, way,
-			from, to, scene.map.world_to_tile(player.global_position), steps, worst, " ".join(headings)])
+			from, to, scene.map().world_to_tile(player.global_position), steps, worst, " ".join(headings)])
 
 func _deg(v: Vector2) -> String:
 	if v.length() < 0.001:
@@ -113,7 +118,7 @@ func _deg(v: Vector2) -> String:
 
 ## Steering and displacement after a tenth of a second from rest at `tile`'s centre.
 func _walk(scene: InteriorScene, player: Stroller, tile: Vector2i, press: Vector2) -> Array:
-	for action in ["move_left", "move_right", "move_up", "move_down"]:
+	for action: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(action)
 	if press.x < 0.0:
 		Input.action_press("move_left", absf(press.x))
@@ -123,17 +128,17 @@ func _walk(scene: InteriorScene, player: Stroller, tile: Vector2i, press: Vector
 		Input.action_press("move_up", absf(press.y))
 	elif press.y > 0.0:
 		Input.action_press("move_down", absf(press.y))
-	player.global_position = scene.map.tile_to_world(tile)
+	player.global_position = scene.map().tile_to_world(tile)
 	player.velocity = Vector2.ZERO
 	var steer := Vector2.ZERO
 	for i in STEPS:
 		player._physics_process(STEP)
 		if i == 0:
-			steer = player.steering
+			steer = player.steering_direction()
 		_move(player, player.velocity * STEP)
-	for action in ["move_left", "move_right", "move_up", "move_down"]:
+	for action: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(action)
-	return [steer, player.global_position - scene.map.tile_to_world(tile)]
+	return [steer, player.global_position - scene.map().tile_to_world(tile)]
 
 func _move(player: CharacterBody2D, motion: Vector2) -> void:
 	var collision := player.move_and_collide(motion)

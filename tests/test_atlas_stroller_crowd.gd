@@ -19,23 +19,22 @@ extends RefCounted
 ## a suite makes the gate red whether or not a test expected it. Every check below reads the run
 ## log, without ever calling `region()` on a group it already knows is not acquired.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const BakedRegions := preload("res://tests/baked_regions.gd")
+const StreetMap := preload("res://tests/fixtures/street_map.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
-const SEED := 4242
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t)
 	_test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t)
 	_test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t)
 	_test_a_crowd_freed_without_clear_still_releases_its_page(t)
+	_test_every_agent_the_crowd_makes_draws_from_the_crowds_library(t)
 
 # ------------------------------------------------------------------ stroller ---
 
-func _rig(t, atlas: AtlasLibrary) -> Stroller:
+func _rig(t: TestRunner, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
-	rig.atlas = atlas
+	rig.use_atlas(atlas)
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -49,13 +48,14 @@ func _rig(t, atlas: AtlasLibrary) -> Stroller:
 ## that ever releases them. In a booted game each of these is a count on a page the boot already
 ## holds; with no boot behind this rig they are the references that load and drop the pages,
 ## which is what makes the pairing visible at all.
-func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t) -> void:
+func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var groups: Array[StringName] = [Stroller.parent_atlas(false), Stroller.STROLLER_ATLAS,
 			Stroller.INDICATOR_ATLAS]
 	var rig := _rig(t, atlas)
-	t.check(not rig.is_male, "the rig this file builds draws the mother's page")
+	t.check(rig.pose(1.0).mother_sources[0].begins_with("rig/mother_"),
+			"the rig this file builds draws the mother's page")
 	for group in groups:
 		t.check(pages.held(group),
 				"'%s' is acquired the moment she is ready" % group)
@@ -74,12 +74,21 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	rng.seed = hash("test_atlas_stroller_crowd:%s" % tag)
 	return rng
 
-func _city(t, atlas: AtlasLibrary) -> City:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.atlas = atlas
-	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-	return city
+## The real crowd over a bare world and a street-only map, with the library handed in where the
+## game hands its own: no city, lights, streets or player are built around it. A day is started
+## with nobody to place (`populate` off), since the page is taken on the first day whether or not
+## anyone walks it.
+func _crowd(t: TestRunner, atlas: AtlasLibrary) -> Crowd:
+	var crowd := Crowd.new()
+	crowd.equip(null, CrowdTiming.new(), atlas)
+	var world := WorldContext.new()
+	t.add_child(world)
+	crowd.setup(world, StreetMap.full(), null, null)
+	world.add_child(crowd)
+	return crowd
+
+func _start(crowd: Crowd, day: int, tag: String) -> void:
+	crowd.start_day(day, _rng(tag), Vector2.INF, false)
 
 ## The crowd's own lifetime, per `assets/atlases/membership.json`'s `crowd` entry: "the crowd
 ## node's own life: taken by the first day's crowd and held until the node itself is freed, since a
@@ -90,55 +99,72 @@ func _city(t, atlas: AtlasLibrary) -> City:
 ## `_test_a_crowd_freed_without_clear_still_releases_its_page()` below covers.
 ##
 ## A second reference the second day's `start_day()` took on top of the first would leave the page
-## held once the city is freed, so the one release line at the end is what says it took none.
-func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) -> void:
+## held once the crowd is freed, so the one release line at the end is what says it took none.
+func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
+	var crowd := _crowd(t, atlas)
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 0,
 			"nothing has asked for the crowd's page before the first day")
-	city.crowd.start_day(1, _rng("day1"))
+	_start(crowd, 1, "day1")
 	t.check(pages.held(Crowd.ATLAS_GROUP), "a day's crowd holds its own page")
-	city.crowd.clear()
+	crowd.clear()
 	t.check(pages.releases(Crowd.ATLAS_GROUP) == 0,
 			"clearing the crowd keeps the page held, not released and reloaded between two days")
-	city.crowd.start_day(2, _rng("day2"))
+	_start(crowd, 2, "day2")
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 1 and pages.releases(Crowd.ATLAS_GROUP) == 0,
 			"a second day's start_day() draws on the page it already holds")
-	city.crowd.clear()
-	city.free()
+	crowd.clear()
+	crowd.get_parent().free()
 	t.check(pages.releases(Crowd.ATLAS_GROUP) == 1,
 			"freeing the crowd node is what finally gives the page back, with nothing left over")
 	pages.stop()
 
-## `main._build_the_finale_city()`'s own shape — "never `Crowd.start_day()`: a cleared crowd is the
+## The escape city's own shape (`DayDirector.start()` under a spec with nobody on its streets) — "never `Crowd.start_day()`: a cleared crowd is the
 ## whole of 'nobody in it', and clearing is the one call this file makes into `src/crowd/`" — calls
 ## `clear()` with no day ever started. `clear()` never touches `ATLAS_GROUP` at all, so this holds
 ## independently of whether a day ever ran; pinned anyway as the shape the finale actually
 ## exercises.
-func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
+func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
-	city.crowd.clear()
+	var crowd := _crowd(t, atlas)
+	crowd.clear()
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 0,
 			"a direct clear with no day started holds nothing")
-	city.free()
+	crowd.get_parent().free()
 	pages.stop()
 
 ## The leak `clear()` cannot catch, since it never releases at all: a `Crowd` freed mid-day
 ## — the city torn down on quitting to the title screen while a day is still running, or exactly
-## this test freeing its city without ever calling `clear()` first. The library's counts outlive
+## this test freeing its crowd without ever calling `clear()` first. The library's counts outlive
 ## the freed node (in a booted game the library is the sitting's), so `Crowd._exit_tree()` is the
 ## only thing standing between this and a reference held for the rest of the process.
-func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
+func _test_a_crowd_freed_without_clear_still_releases_its_page(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
-	city.crowd.start_day(1, _rng("freed-without-clear"))
+	var crowd := _crowd(t, atlas)
+	_start(crowd, 1, "freed-without-clear")
 	t.check(pages.held(Crowd.ATLAS_GROUP),
-			"the day's crowd holds its page before the city is torn down")
-	city.free()
+			"the day's crowd holds its page before the crowd is torn down")
+	crowd.get_parent().free()
 	t.check(not pages.held(Crowd.ATLAS_GROUP),
-			"freeing the city mid-day releases the crowd's page too, with no clear() in between")
+			"freeing the crowd mid-day releases the crowd's page too, with no clear() in between")
 	pages.stop()
+
+## The crowd hands each agent it makes the library it holds the crowd's page on, so an agent's look
+## draws its regions from the page the crowd holds. An agent handed none has no library to draw from.
+func _test_every_agent_the_crowd_makes_draws_from_the_crowds_library(t: TestRunner) -> void:
+	var atlas := AtlasLibrary.new()
+	var crowd := _crowd(t, atlas)
+	crowd.start_day(1, _rng("agents-draw"), Vector2.INF, true)
+	var region: StringName = BakedRegions.on(Crowd.ATLAS_GROUP)[0]
+	var found := 0
+	var drawing := 0
+	for agent in crowd.agents():
+		found += 1
+		if agent.picture_region(region) != null:
+			drawing += 1
+	t.check(found > 0, "a populated day makes agents (%d)" % found)
+	t.check(drawing == found, "every agent draws a region from the crowd's library (%d of %d)" % [drawing, found])
+	crowd.get_parent().queue_free()

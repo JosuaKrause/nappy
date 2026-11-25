@@ -1,6 +1,6 @@
 extends RoofDrawer
 ## A roof drawer that records what a building tells it to draw instead of drawing it, handed to a
-## building through `Building.roof_drawer` the way the city hands the real one. The roof suites
+## building through `Building.equip()` the way the city hands the real one. The roof suites
 ## test a roof's layout (where the random draws put each unit) and the roof that holds it apart:
 ## this is the holder's half, and `layout()` reads the layout back from what the building drew.
 ##

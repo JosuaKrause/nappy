@@ -8,12 +8,10 @@ extends Control
 ## their warning already spent. The fairness contract is met by the geometry and missed by the
 ## player.
 ##
-## `MARGIN`, `CHEVRON` and `ICON` (and `BadgeModel.SCREEN_MARGIN`, which decides where a badge is raised) are all screen px, and that is only fair because
+## `MARGIN`, `CHEVRON` and `ICON` are all screen px, and that is only fair because
 ## the window is letterboxed: `window/stretch/aspect="keep"` in `project.godot` holds the viewport
-## at a fixed 1280×720 for every monitor, camera included, so a badge measured in screen px warns
-## the same distance out on a 21:9 monitor as on a 4:3 one. Under `"expand"` the same margin would
-## buy a wide screen more world before the badge fires — more warning for a bigger monitor, on
-## nothing the player did.
+## at a fixed 1280×720 for every monitor, camera included, so a badge sits the same way on a 21:9
+## monitor as on a 4:3 one, and what is out of sight is the same world for both.
 ##
 ## Two rules it is built to, both from the danger vocabulary:
 ##
@@ -27,22 +25,23 @@ extends Control
 ## Not in the HUD, deliberately: the HUD listens to `EventBus` and holds no reference to the
 ## world, and this needs to ask the world where things are every frame. `main` owns it.
 ##
-## **What it reads is an event source, not a day.** The one thing asked of `_events` is
-## `instances() -> Array[EventInstance]`, which `EventManager` answers in the city and in the
-## building alike — so the masked man coming up a stairwell is
-## announced exactly the way a fire engine coming down a street is. See `setup()`.
+## **What it reads is the day's events, not a day.** It asks the `EventManager` it is handed for
+## `instances()`, which the manager answers in the city and in the building alike — so the masked
+## man coming up a stairwell is announced exactly the way a fire engine coming down a street is.
+## See `setup()`.
 ##
-## **And a warning can be up before its thing exists.** A source that also answers
-## `pending_warnings() -> Array[PendingWarning]` — `EventManager` does — has things on their way
-## that are not in the world yet: a cyclist, the day-3 dog, the fire engine, day 13's
-## column, the resistance's own robber and guard. Each gets its badge from the moment its warning goes
-## up, pointing at the place it will come from, which moves only with her, for the at most one second
-## the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
+## **Every badge is a warning put up before its thing exists.** The manager's `pending_warnings()`
+## are things on their way that are not in the world yet: a cyclist, the day-3 dog, the fire engine,
+## a convoy, the resistance's own robber and guard, the masked man on the escape's stairs. Each gets
+## its badge from the moment its warning goes up, pointing at the place it will come from, which
+## moves only with her, for the at most one second the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
 ## reasonable position and when the time is right the object is spawned in at that location just
 ## offscreen"; calm-kestrel, inbox #559: "place the object immediately off screen so it will
 ## immediately start coming on the screen turning off the warning".)* Nothing about it is measured:
 ## the warning is the claim that it is coming. Then the thing exists just out of sight and keeps the
-## badge (`EventInstance.came_under_a_warning`) until she can see it, which is as soon as it moves.
+## badge (`EventInstance.was_warned_of()`) until she can see it (`BadgeModel`). A charger already in
+## the world whose charge begins out of her sight takes the same path: its start is its warning, and
+## it carries the badge from then until she can see it.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -52,91 +51,80 @@ extends Control
 const MARGIN := Vector4(104.0, 116.0, 104.0, 148.0)
 const CHEVRON := 19.0
 const ICON := 34.0
-## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
-## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
-## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
-## come back through `ScreenOrientation.to_design_space()` before it is drawn here. What is in
-## sight needs no such turn: `VisibleView` asks it of the world box the camera shows, the same
-## whichever way the window presents it.
-var rotated := false
-## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
-var timing := FrameTiming.new()
+## Whether `main` has decided a portrait touch window is presenting rotated, handed in by
+## `use_rotated()` — see `TouchControls._rotated`'s own doc. This control is pinned to
+## `ScreenOrientation.DESIGN_SIZE` regardless of rotation (see `main._add_danger_edge()`), so a raw
+## canvas-space position has to come back through `ScreenOrientation.to_design_space()` before it is
+## drawn here. What is in sight needs no such turn: `VisibleView` asks it of the world box the
+## camera shows, the same whichever way the window presents it.
+var _rotated := false
+## Where this charges its time to the frame record, handed in by `main` (`use_frame_timing()`); the
+## null sink until then.
+var _timing := FrameTiming.new()
 ## The baked atlas pages a badge's picture comes from (`AtlasLibrary`): the one `main` holds every
-## page a day draws on, handed before the edge is added. A badge only reads a region, so it holds
-## no group of its own.
-var atlas: AtlasLibrary
+## page a day draws on, handed by `use_atlas()` before the edge is added. A badge only reads a
+## region, so it holds no group of its own.
+var _atlas: AtlasLibrary
 
-## The event source — see `setup()`.
-var _events: Node
+## The day's events — see `setup()`.
+var _events: EventManager
 var _player: Node2D
-## What she can see, when the event source does not keep the day's own (`EventManager.
-## visible_view()`): a stand-in source a test hands over. Looked through once a frame from her
-## camera, in the tap scheme's whole view unless the test hands it the controls' `ScreenCover`
-## (`VisibleView.controls`).
-var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.
-var model := BadgeModel.new()
+var _model := BadgeModel.new()
+
+## Hands the edge the baked atlas pages its badges draw from: `main` hands the sitting's library,
+## before the edge is added.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
+
+## Hands the edge where it charges its time to the frame record: `main` hands the sitting's kept
+## frame timing.
+func use_frame_timing(timing: FrameTiming) -> void:
+	_timing = timing
+
+## Hands the edge whether the window presents rotated: `main` hands its answer at boot and again
+## whenever the window turns.
+func use_rotated(rotate: bool) -> void:
+	_rotated = rotate
 
 ## Counted by the frame record under `FrameTiming.Draw.BADGES`, which the recorder reads off this meta
 ## since it may not name the view.
 func _init() -> void:
 	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.BADGES)
 
-## `events` is anything that answers `instances() -> Array[EventInstance]`: an `EventManager`, the
-## city's on a day and in the escape's city, the building's in the escape's building. **Called
+## `events` is the `EventManager` whose instances and warnings the badges are for: the city's on a
+## day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
-## drops out of `model.watch` on the next `_measure()`.
-func setup(events: Node, player: Node2D) -> void:
+## drops out of the model on the next `_measure()`.
+func setup(events: EventManager, player: Node2D) -> void:
 	_events = events
 	_player = player
 
-## The live instances, typed — the event source is duck-typed (see `setup()`), so its answer is
-## read through here rather than at every loop, which is what keeps each loop variable an
-## `EventInstance` to the analyser.
-func _live() -> Array[EventInstance]:
-	return _events.instances()
+## What she can see this frame: the day's own view (`EventManager.visible_view()`), so the badge
+## and everything else that asks agree on it frame for frame.
+func _view() -> VisibleView:
+	return _events.visible_view()
 
-## What she can see this frame: the day's own view where the event source keeps one
-## (`EventManager.visible_view()`), so the badge and everything else that asks agree on it frame for
-## frame, and otherwise this edge's own, looked through from her camera.
-func view() -> VisibleView:
-	if _events and _events.has_method("visible_view"):
-		return _events.visible_view()
-	return _own_view
-
-## Whether something at `world_position` is in sight (`VisibleView.sees()`), counting `margin`
-## screen px past the edge as in sight as well — the one test the badge asks.
-func sees(world_position: Vector2, margin := 0.0) -> bool:
-	return view().sees(world_position, margin * world_per_screen_px())
+## Whether something at `world_position` is in sight (`VisibleView.sees()`).
+func _sees(world_position: Vector2) -> bool:
+	return _view().sees(world_position)
 
 ## Whether she can see any of `instance`: the point it stands at, or any of what it draws
 ## (`EventInstance.drawn_box()`). Coming into sight is the badge's job done by the thing itself, so the
 ## badge goes off the moment the first of it shows, not only once its feet do.
 func _shows(instance: EventInstance) -> bool:
-	if sees(instance.global_position):
+	if _sees(instance.global_position):
 		return true
 	var box := instance.drawn_box()
-	return box.has_area() and view().sees_any(Rect2(instance.global_position + box.position, box.size))
-
-## World px per design-space screen px at the camera's zoom: the world the view shows across the
-## design box's width.
-static func world_per_screen_px() -> float:
-	return Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
-
-## The warnings that are up for something not in the world yet, or none for a source that has no
-## such thing (a test's stand-in).
-func _warnings() -> Array[PendingWarning]:
-	if not _events.has_method("pending_warnings"):
-		return []
-	return _events.pending_warnings()
+	return box.has_area() and _view().sees_any(Rect2(instance.global_position + box.position, box.size))
 
 func _process(delta: float) -> void:
-	if timing.on:
-		var outer := timing.enter(FrameTiming.CUES)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.CUES)
 		_watch_the_edge(delta)
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_watch_the_edge(delta)
 
@@ -149,7 +137,7 @@ func _process(delta: float) -> void:
 ## not redraw at all.
 func _watch_the_edge(delta: float) -> bool:
 	_measure(delta)
-	var badges := not model.coming.is_empty()
+	var badges := _model.has_badges()
 	var asked := badges or _drew_badges
 	_drew_badges = badges
 	if asked:
@@ -166,78 +154,74 @@ var _drew_badges := false
 ## be called for reasons that have nothing to do with a frame elapsing. Everything below the line is
 ## drawing.
 func _measure(delta: float) -> void:
-	model.coming.clear()
+	_model.clear_badges()
 	if not _events or not _player or delta <= 0.0:
 		return
-	if not (_events.has_method("visible_view")):
-		_own_view.look_through(_player)
 	var subjects: Array = []
-	for instance in _live():
-		if not instance.is_finished:
+	for instance in _events.instances():
+		if not instance.is_gone():
 			subjects.append(_subject_of(instance))
-	for warning in _warnings():
-		if warning.place != Vector2.INF:
+	for warning in _events.pending_warnings():
+		if warning.points_at() != Vector2.INF:
 			subjects.append(_subject_of_warning(warning))
-	model.step(delta, _player.global_position, subjects, sees, Tuning.WALK_SPEED)
+	_model.step(_player.global_position, subjects)
 
 ## The facts the model reads about a live instance.
 func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
-	var subject := subject_for_def(instance.def)
+	var subject := subject_for_def(instance.row())
 	subject.key = instance.get_instance_id()
 	subject.position = instance.global_position
-	subject.finished = instance.is_finished
-	subject.warned = instance.came_under_a_warning
-	subject.charging = instance.has_charged()
+	subject.finished = instance.is_gone()
+	subject.warned = instance.was_warned_of()
 	subject.shown = _shows(instance)
 	subject.logged_name = instance.logged_name()
 	return subject
 
 ## The facts the model reads about a warning with nothing in the world yet.
 func _subject_of_warning(warning: PendingWarning) -> BadgeModel.Subject:
-	var subject := subject_for_def(warning.def)
+	var subject := subject_for_def(warning.row())
 	subject.pending = true
-	subject.position = warning.place
-	subject.left = warning.left
+	subject.position = warning.points_at()
+	subject.left = warning.seconds_left()
 	subject.logged_name = warning.logged_name()
 	return subject
 
+## The facts the model reads about a row, live or warned of: whether its coming is worth an arrow
+## (`EventDef.announces_its_coming()` at her walk), how fast it comes at her and where its field's
+## edge is.
 static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	var subject := BadgeModel.Subject.new()
 	subject.payload = def
-	subject.speed = def.speed
-	subject.outer_radius = def.outer_radius
-	subject.chase_speed = def.chase_speed() if def.pursuit != null else def.speed
-	subject.telegraphs = def.telegraphs
-	subject.has_icon = not EventPictures.icon_for(def.look).is_empty()
-	subject.ahead_of_player = def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
-	subject.pursues = def.pursuit != null
-	subject.hard_fail = def.hard_fail
-	subject.mobile = def.mobile
+	subject.announces = def.announces_its_coming(Tuning.WALK_SPEED)
+	subject.approach_speed = def.approach_speed()
+	subject.heard_within = def.heard_within()
 	return subject
 
-## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
-## arrival first. For the telemetry observer, which has to be able to say what she was warned
-## about and whether she then did anything about it, which nothing else in the log can say. `id`
-## is the name the log calls the thing by (`EventInstance.logged_name()`): the row's id, or
+## The badges this edge has up (`EdgeBadges.announcing()`: what each is called, how far it is and
+## how fast it closes, nearest arrival first): its `BadgeModel`, held as the read-only
+## `EdgeBadges`, the one object for the edge's life, which the escape's re-pointing (`setup()`)
+## keeps. For the run log, which has to be able to say what she was warned about and whether she
+## then did anything about it, which nothing else in the log can say: `main` hands it to the run
+## log's session (`RunSession.watch()`), which may not name this view. A badge answers the name the
+## log calls the thing by (`logged_name()`, from `EventInstance.logged_name()`): the row's id, or
 ## `pelican` for the pelican, from its warning on.
-func announcing() -> Array[Dictionary]:
-	return model.announcing()
+func badges() -> EdgeBadges:
+	return _model
 
 func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	# Exactly the badges `announcing()` lists, farthest arrival first so the soonest lies on top where
-	# two overlap.
-	var badges := announcing()
+	# Exactly the badges the model announces (the same objects the run log reads through
+	# `badges()`), farthest arrival first so the soonest lies on top where two overlap.
+	var badges := _model.drawn()
 	for i in range(badges.size() - 1, -1, -1):
-		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
-				float(badges[i]["distance"]), transform)
+		_draw_arrow(badges[i].row(), badges[i].points_at(), badges[i].distance(), transform)
 
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:
 	var centre := size * 0.5
-	var at_design := ScreenOrientation.to_design_space(transform * world_position, rotated)
+	var at_design := ScreenOrientation.to_design_space(transform * world_position, _rotated)
 	var offset: Vector2 = at_design - centre
 	if offset.length() < 1.0:
 		return
@@ -248,7 +232,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 
 	# The same two colours the caret over the entity uses, meaning the same two things.
 	# A badge and a caret that disagreed about what red meant would be two vocabularies.
-	var colour := Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
+	var colour := Palette.MARK_LETHAL if def.ends_the_day() else Palette.MARK_COSTLY
 	# A disc under the whole thing, so the icon and the number read over a pale pavement and a
 	# dark carriageway alike. The one place in the game a filled circle is still allowed —
 	# it is a badge on the screen, not a field drawn in the world.
@@ -259,24 +243,25 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
-	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := EventPictures.icon_for(def.look)
-	if not picture.is_empty():
-		# The size comes from the region table rather than from the texture, so the badge's own
-		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
-		# that does, and the `events` page is held for the whole process from either boot's own
-		# loading window (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
-		var name := StringName(picture)
-		var art := Vector2(AtlasTable.baked().native_size(name))
-		var fit := ICON / maxf(art.x, art.y)
-		var drawn := art * fit
-		var rect := Rect2(at - drawn * 0.5, drawn)
-		draw_texture_rect(atlas.region(name), rect, false)
-		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
-		# rectangle and go over the body the way the street draws them.
-		var wheels := EventPictures.icon_wheels_for(def.look)
-		if not wheels.is_empty():
-			draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
+	# fire engine into something unrecognisable, which defeats the whole cue. Every row the badge
+	# draws has a picture, and every picture has a silhouette: the catalogue suite fails the build
+	# on one that does not. (A warned creation is raised by `BadgeModel` without asking
+	# `announces_its_coming()`; every warned row announces, so the two paths draw the same rows.)
+	# The size comes from the region table rather than from the texture, so the badge's own fit is
+	# arithmetic that needs nothing loaded; the region itself is the one thing here that does, and
+	# the `events` page is held for the whole process from either boot's own loading window
+	# (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
+	var name := StringName(EventPictures.icon_for(def.picture()))
+	var art := Vector2(AtlasTable.baked().native_size(name))
+	var fit := ICON / maxf(art.x, art.y)
+	var drawn := art * fit
+	var rect := Rect2(at - drawn * 0.5, drawn)
+	draw_texture_rect(_atlas.region(name), rect, false)
+	# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
+	# rectangle and go over the body the way the street draws them.
+	var wheels := EventPictures.icon_wheels_for(def.picture())
+	if not wheels.is_empty():
+		draw_texture_rect(_atlas.region(StringName(wheels)), rect, false)
 
 	var label := Texts.DISTANCE_METRES % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font

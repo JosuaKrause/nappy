@@ -6,7 +6,7 @@ extends RefCounted
 ## whole second actually displayed has changed, which this suite holds from the emitting side —
 ## `hud.gd` itself belongs to a different milestone and is read only.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var standing: Array[Node] = t.get_children()
 	_test_the_clock_emits_once_per_second_crossed(t)
 	_test_a_day_starting_is_its_own_emit(t)
@@ -24,7 +24,7 @@ func run(t) -> void:
 ## The stand-in for her the last `_rig()` handed its clock, which a test moves to a goal.
 var _her: Node2D
 
-func _rig(t) -> DayController:
+func _rig(t: TestRunner) -> DayController:
 	var player := Node2D.new()
 	t.add_child(player)
 	_her = player
@@ -35,7 +35,8 @@ func _rig(t) -> DayController:
 	# phase, so a real `CityMap` would only cost time nothing here asks about.
 	# A run of its own for each rig.
 	var run := RunState.new()
-	day.setup(null, player, run)
+	day.setup(run)
+	day.use_the_walk(null, player)
 	return day
 
 ## A map that answers only what `DayController` asks of the ground under her: sidewalk left of
@@ -53,10 +54,10 @@ class StripMap extends CityMap:
 
 ## A step onto the road and a step onto calm ground are each one `EventBus` signal, standing on
 ## either is none, and where she stands at dawn is no arrival.
-func _test_a_step_onto_the_road_or_calm_ground_is_told_once(t) -> void:
+func _test_a_step_onto_the_road_or_calm_ground_is_told_once(t: TestRunner) -> void:
 	var day := _rig(t)
 	var map := StripMap.new()
-	day.setup(map, _her, RunState.new())
+	day.use_the_walk(map, _her)
 	var told: Array[String] = []
 	var on_road := func() -> void: told.append("road")
 	var on_calm := func() -> void: told.append("calm")
@@ -79,9 +80,8 @@ func _test_a_step_onto_the_road_or_calm_ground_is_told_once(t) -> void:
 	EventBus.road_entered.disconnect(on_road)
 	EventBus.calm_ground_entered.disconnect(on_calm)
 	day.free()
-	map.free()
 
-func _test_the_clock_emits_once_per_second_crossed(t) -> void:
+func _test_the_clock_emits_once_per_second_crossed(t: TestRunner) -> void:
 	var day := _rig(t)
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
@@ -113,7 +113,7 @@ func _test_the_clock_emits_once_per_second_crossed(t) -> void:
 	EventBus.day_time_changed.disconnect(on_emit)
 	day.free()
 
-func _test_a_day_starting_is_its_own_emit(t) -> void:
+func _test_a_day_starting_is_its_own_emit(t: TestRunner) -> void:
 	var day := _rig(t)
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
@@ -128,13 +128,13 @@ func _test_a_day_starting_is_its_own_emit(t) -> void:
 	EventBus.day_time_changed.disconnect(on_emit)
 	day.free()
 
-## `--invincible` (`DayController.invincible`) freezes `time_remaining` outright (see
+## `--invincible` (`DayController.set_invincible()`) freezes `seconds_left()` outright (see
 ## `tick()`), so once the first second of a frozen day has been told, the value driving the
 ## gate never changes again -- the gate must not re-emit an unchanging number just because
 ## `tick()` keeps being called.
-func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
+func _test_invincible_stops_emitting_once_the_first_second_is_told(t: TestRunner) -> void:
 	var day := _rig(t)
-	day.invincible = true
+	day.set_invincible(true)
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
 		emits[0] += 1
@@ -153,10 +153,10 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 
 ## The escape's clock reads to the hundredth and tells the HUD on every frame; a day's still emits
 ## once a second; the ending screens' formatter keeps three digits. *(inbox #746 in woolly-penguin.)*
-func _test_the_escape_clock_moves_every_frame(t) -> void:
+func _test_the_escape_clock_moves_every_frame(t: TestRunner) -> void:
 	var escape := _rig(t)
-	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
-	var labels := []
+	escape.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
+	var labels: Array[String] = []
 	var on_emit := func(remaining: float, _total: float) -> void:
 		labels.append(RunState.format_clock_hundredths(remaining))
 	EventBus.day_time_changed.connect(on_emit)
@@ -167,7 +167,7 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 	t.check(labels.size() == 10,
 			"the escape's clock emits on each of ten frames inside one second (%d)" % labels.size())
 	var distinct := {}
-	for l in labels:
+	for l: String in labels:
 		distinct[l] = true
 	t.check(distinct.size() == 10,
 			"and the label differs on every one of them (%d distinct)" % distinct.size())
@@ -192,30 +192,30 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 ## fraction, never past where the next tick puts it, and the countdown itself untouched. A day's
 ## whole-second clock and a frozen escape clock are told nothing by a drawn frame. Each clock is let
 ## process for exactly one real frame (`_one_drawn_frame()`).
-func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
+func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t: TestRunner) -> void:
 	var tick := 1.0 / Engine.physics_ticks_per_second
 	var shown := []
 	var on_emit := func(remaining: float, _total: float) -> void:
 		shown.append(remaining)
 	EventBus.day_time_changed.connect(on_emit)
 	var escape := _rig(t)
-	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	escape.start(180.0)
 	escape.tick(tick)
-	var after_the_tick := escape.time_remaining
+	var after_the_tick := escape.seconds_left()
 	await _one_drawn_frame(t, escape, shown)
 	t.check(shown.size() == 1 and shown[0] <= after_the_tick
 			and shown[0] > after_the_tick - tick - 0.0001,
 			"a drawn frame shows the countdown between this tick and the next (%s, %.4f)"
 			% [shown, after_the_tick])
-	t.check(is_equal_approx(escape.time_remaining, after_the_tick),
+	t.check(is_equal_approx(escape.seconds_left(), after_the_tick),
 			"and a drawn frame moves the countdown itself not at all")
 	escape.free()
-	for frozen in [false, true]:
+	for frozen: bool in [false, true]:
 		var day := _rig(t)
-		day.invincible = frozen
+		day.set_invincible(frozen)
 		if frozen:
-			day.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+			day.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
 		day.start(180.0)
 		await _one_drawn_frame(t, day, shown)
 		t.check(shown.is_empty(), "a %s is told nothing by a drawn frame (%s)"
@@ -226,14 +226,14 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
 ## Lets `clock` process for exactly one real frame, with `shown` emptied just before it: processing
 ## is turned on after a frame has begun and off once the next one begins, since `process_frame`
 ## fires ahead of the nodes' own `_process` of the frame it names.
-func _one_drawn_frame(t, clock: DayController, shown: Array) -> void:
+func _one_drawn_frame(t: TestRunner, clock: DayController, shown: Array) -> void:
 	await t.get_tree().process_frame
 	clock.set_process(true)
 	shown.clear()
 	await t.get_tree().process_frame
 	clock.set_process(false)
 
-func _test_the_formatters(t) -> void:
+func _test_the_formatters(t: TestRunner) -> void:
 	t.check(RunState.format_clock_hundredths(179.43) == "2:59.43",
 			"hundredths: 2:59.43 (%s)" % RunState.format_clock_hundredths(179.43))
 	t.check(RunState.format_clock_hundredths(0.0) == "0:00.00", "hundredths at zero")
@@ -241,10 +241,10 @@ func _test_the_formatters(t) -> void:
 			"the ending's run length keeps three digits (%s)" % RunState.format_clock(179.432))
 
 ## A frozen `--invincible` escape clock has nothing new to tell the HUD, flag or not.
-func _test_a_frozen_escape_clock_stays_silent(t) -> void:
+func _test_a_frozen_escape_clock_stays_silent(t: TestRunner) -> void:
 	var escape := _rig(t)
-	escape.invincible = true
-	escape.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+	escape.set_invincible(true)
+	escape.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
 	var emits := [0]
 	var count := func(_r: float, _tt: float) -> void:
 		emits[0] += 1
@@ -262,13 +262,13 @@ func _test_a_frozen_escape_clock_stays_silent(t) -> void:
 ## building says she is through its service exit (`reach_the_exit()`), the city when she reaches
 ## one of its two ways out, however the baby is — and which way is kept. A day is never won by
 ## either: its goal is her front door.
-func _test_each_section_is_won_at_its_own_goal(t) -> void:
+func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 	var results: Array[int] = []
 	var on_finished := func(result: GameEnums.DayResult) -> void:
 		results.append(result)
 
 	var building := _rig(t)
-	building.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	building.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	building.day_finished.connect(on_finished)
 	building.start(180.0)
 	building.tick(0.016)
@@ -280,20 +280,27 @@ func _test_each_section_is_won_at_its_own_goal(t) -> void:
 
 	results.clear()
 	var city := _rig(t)
-	city.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
-	city.spec.exits = {CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
-			CityEdge.Kind.BRIDGE: Vector2(-1000.0, 0.0)}
+	city.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
+	city.spec().use_exits({CityExit.Kind.TUNNEL: Vector2(1000.0, 0.0),
+			CityExit.Kind.BRIDGE: Vector2(-1000.0, 0.0)})
 	city.day_finished.connect(on_finished)
 	city.start(180.0)
 	city.reach_the_exit()
 	city.tick(0.016)
 	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
 			+ "from its two ways out (%s)" % [results])
-	_her.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
+	# The street before the bridge, one tile short of its last row, is where the walk is still on.
+	_her.global_position = Vector2(-1000.0, -float(Tuning.TILE_SIZE))
 	city.tick(0.016)
-	t.check(results == [GameEnums.DayResult.WON] and city.exit_reached == CityEdge.Kind.BRIDGE,
-			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
-			% [results, city.exit_reached])
+	t.check(results.is_empty(),
+			"a tile short of the bridge's last row she is still in the city (%s)" % [results])
+	# On the last row, at the carriageway's far side, she is on the bridge.
+	_her.global_position = Vector2(-1000.0 + Tuning.carriageway_width() * 0.5 - 1.0,
+			float(Tuning.TILE_SIZE) * 0.5 - 1.0)
+	city.tick(0.016)
+	t.check(results == [GameEnums.DayResult.WON] and city.exit_taken() == CityExit.Kind.BRIDGE,
+			"on the bridge's last row, awake, the city section is won by the bridge (%s, %d)"
+			% [results, city.exit_taken()])
 	city.free()
 
 	results.clear()

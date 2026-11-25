@@ -41,13 +41,17 @@ const SIDEWALK_KERB_MAIN_E := 28
 const SIDEWALK_KERB_MAIN_W := 29
 const PRECINCT := 30
 
-## The land the city stops at. These five are the **only** sources no
-## `GameEnums.TileType` maps to, and that is deliberate: they are painted outside `map.size` by
+## The land the city stops at. These five are the **only** sources no `GameEnums.TileType` maps
+## to, and that is deliberate: they are painted outside `map.size_in_tiles()` by
 ## `City._paint_outside_the_map` and nothing in the game can stand on them, so giving them tile
-## types would put five entries nobody can reach into every `match` that walks the enum — and into
-## `Tile.is_walkable`, which is the one place a mistake would be silent and expensive.
+## types would put five entries nobody can reach into every `match` that walks the enum — and
+## into `Tile.is_walkable`, which is the one place a mistake would be silent and expensive.
 ##
 ## See `City._paint_outside_the_map` for which side gets which.
+##
+## `WATER` is the one id here that no tile set source carries: the ground draws a water cell on
+## the south water's surfaces (`SceneryWater`), never on its TileMap, and draws the water beneath
+## a source that `stands_in_water()` as well.
 const WATER := 31
 const BULKHEAD := 32
 const FENCE := 33
@@ -119,6 +123,13 @@ const ROUTE_KERB_TWIN := {
 static func route_twin_of(source: int) -> int:
 	return ROUTE_KERB_TWIN.get(source, -1)
 
+## Whether a source's picture stands in the south water, leaving the part of its cell below it
+## transparent for the water to show through: the bulkhead's sea wall, whose foot is the water's
+## own drawing, so the shore meets the water with no strip of a second water picture. The ground
+## lays such a cell on its TileMap and draws the water beneath it too.
+static func stands_in_water(source: int) -> bool:
+	return source == BULKHEAD
+
 ## How far into `Tuning.degradation_for(day)` each base type starts cracking. **Pavement before
 ## road** — she walks the pavement and looks at it, the carriageway is behind her — so the
 ## sidewalk (and the alley behind it, already the back of the block) read the curve at face value
@@ -174,7 +185,7 @@ static func source_for(map: CityMap, tile: Vector2i, day: int) -> int:
 ## gradient in time the milestone asked for; the pattern (`a`/`b`) is a second, independent roll,
 ## so which half of a level's variety a tile gets does not correlate with how bad the crack is.
 ##
-## **A stretch draws the recipe's cracks instead** (`CityMap.stretch_cracks`): a task scene is
+## **A stretch draws the recipe's cracks instead** (`CityMap.stretch_crack_at()`): a task scene is
 ## authored, so which tiles are cracked and how badly is what the recipe lists, not a roll on the
 ## seed. `crack_at()` is the roll, for the tool that drafts the list.
 static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain: int,
@@ -182,7 +193,7 @@ static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain:
 	if source != plain:
 		return source
 	if map.has_stretch():
-		var listed: Variant = map.stretch_cracks.get(tile)
+		var listed: Variant = map.stretch_crack_at(tile)
 		if listed == null:
 			return source
 		var crack: Vector2i = listed
@@ -191,7 +202,7 @@ static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain:
 	if scaled <= 0.0:
 		return source
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("crack:%d:%d:%d" % [map.seed_used, tile.x, tile.y])
+	rng.seed = hash("crack:%d:%d:%d" % [map.city_seed(), tile.x, tile.y])
 	var severity := rng.randf()
 	if severity > scaled:
 		return source
@@ -205,7 +216,7 @@ static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain:
 
 ## The crack the seeded roll gives `tile` today, as `Vector2i(level, pattern)` into the damage
 ## levels `_cracked()` picks from, or `Vector2i(-1, -1)` for a tile it leaves whole — what a
-## stretch recipe lists for the tile (`CityMap.stretch_cracks`). Asked of the witness, never of
+## stretch recipe lists for the tile (`CityMap.stretch_crack_at()`). Asked of the witness, never of
 ## the recipe's own list.
 static func crack_at(map: CityMap, tile: Vector2i, day: int) -> Vector2i:
 	var source := source_for(map, tile, day)

@@ -22,12 +22,12 @@ extends Node
 const OUTPUT_PATH := "res://docs/COSTS.md"
 
 ## `current_intensity()`'s pulse envelope (`0.25 + 0.75·(0.5 − 0.5·cos(phase))`) averages to
-## exactly this over one full period, regardless of `pulse_period` — see
+## exactly this over one full period, regardless of pulse period — see
 ## `tests/probes/m174_walk_beside.gd`'s own derivation, reused here rather than re-argued.
 const PULSE_MEAN := 0.625
 
 ## Fixed distances in px, identical for every row — dense inside the first hundred where the
-## inner radii sit, and the last one past the widest `outer_radius` in the catalogue so it reads
+## inner radii sit, and the last one past the widest outer radius in the catalogue so it reads
 ## the bare decay for every row. `_assert_distances_clear_every_outer_radius()` checks that
 ## assumption rather than trusting the comment.
 const DISTANCES: Array[float] = [0.0, 25.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0, 400.0, 550.0]
@@ -44,10 +44,10 @@ const PASS_COLS: Array[String] = ["p0", "p20", "p40", "p80", "p120"]
 const PASS_HEADERS: Array[String] = ["0px", "20px", "40px", "80px", "120px"]
 
 const GEOMETRY_COLS: Array[String] = ["role", "intensity", "core_intensity", "core_radius",
-		"inner_radius", "outer_radius", "falloff_power", "pulse_period", "pulse_trough", "speed",
+		"inner_radius", "outer_radius", "pulse_period", "pulse_trough", "speed",
 		"walk_through_cost"]
 const GEOMETRY_HEADERS: Array[String] = ["role", "intensity", "core_intensity", "core_radius",
-		"inner_radius", "outer_radius", "falloff_power", "pulse_period", "pulse_trough", "speed",
+		"inner_radius", "outer_radius", "pulse_period", "pulse_trough", "speed",
 		"walk_through_cost"]
 
 const TITLE_GEOMETRY := "Geometry and role"
@@ -55,8 +55,6 @@ const TITLE_DISTANCE_AWAKE := "Walking at a fixed distance — awake"
 const TITLE_DISTANCE_ASLEEP := "Walking at a fixed distance — asleep"
 const TITLE_PASS_AWAKE := "The pass — awake"
 const TITLE_PASS_ASLEEP := "The pass — asleep"
-const TABLE_TITLES := [TITLE_GEOMETRY, TITLE_DISTANCE_AWAKE, TITLE_DISTANCE_ASLEEP,
-		TITLE_PASS_AWAKE, TITLE_PASS_ASLEEP]
 
 const ID_WIDTH := 20
 
@@ -76,6 +74,9 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	if not _assert_pass_offsets_match():
+		get_tree().quit(1)
+		return
+	if not _assert_every_row_is_on_a_day(rows):
 		get_tree().quit(1)
 		return
 
@@ -109,17 +110,34 @@ func _included_rows() -> Array[EventDef]:
 ## exactly like a measured one. Dashed instead, the way `docs/EVENTS.md`'s own run-through column
 ## is already empty for every pursuer: "they follow, so there is no crossing to price."
 func _pass_excluded(def: EventDef) -> bool:
-	return def.pursuit != null or def.notice != null
+	return def.pursues() or def.waits_for_her()
 
 # ------------------------------------------------------------------------ asserts ---
+
+## The guard behind `tests/catalogue_rows.gd`: the suites sweep the rows `available_on()`
+## returns on days 0 to the run's length, so a row of `all()` available on none of them would drop out of
+## every sweep unseen. It fails here, naming the row.
+func _assert_every_row_is_on_a_day(rows: Array[EventDef]) -> bool:
+	var ok := true
+	for def in rows:
+		var on_a_day := false
+		for day: int in range(0, Tuning.RUN_LENGTH_DAYS + 1):
+			if def.available_on(day):
+				on_a_day = true
+				break
+		if not on_a_day:
+			push_error(("tools/cost_table.gd: %s is available on no day from 0 to %d, so the "
+					% [def.id(), Tuning.RUN_LENGTH_DAYS]) + "suites' CatalogueRows.every() never walks it")
+			ok = false
+	return ok
 
 func _assert_distances_clear_every_outer_radius(rows: Array[EventDef]) -> bool:
 	var last: float = DISTANCES[DISTANCES.size() - 1]
 	var ok := true
 	for def in rows:
-		if def.outer_radius >= last:
+		if def.heard_within() >= last:
 			push_error(("tools/cost_table.gd: %s has outer_radius %.1fpx, at or past the table's "
-					% [def.id, def.outer_radius])
+					% [def.id(), def.heard_within()])
 					+ "own last distance %.1fpx — widen DISTANCES so the last column still reads "
 					% last + "the bare decay for it")
 			ok = false
@@ -136,7 +154,7 @@ func _assert_pass_offsets_match() -> bool:
 # --------------------------------------------------------------------- row data ---
 
 func _role_str(def: EventDef) -> String:
-	match EventScheduler._role_for(def):
+	match EventScheduler.role_for(def):
 		GameEnums.BlockerRole.WALL:
 			return "wall"
 		GameEnums.BlockerRole.FRICTION:
@@ -149,29 +167,28 @@ func _role_str(def: EventDef) -> String:
 func _geometry_row(def: EventDef) -> Dictionary:
 	var row := {}
 	row["role"] = _role_str(def)
-	row["intensity"] = "%.1f" % def.intensity
-	if def.core_intensity > 0.0:
-		row["core_intensity"] = "%.1f" % def.core_intensity
-		row["core_radius"] = "%.1f" % def.core_radius
+	row["intensity"] = "%.1f" % def.peak()
+	if def.core_rate() > 0.0:
+		row["core_intensity"] = "%.1f" % def.core_rate()
+		row["core_radius"] = "%.1f" % def.core_reach()
 	else:
 		row["core_intensity"] = "—"
 		row["core_radius"] = "—"
-	row["inner_radius"] = "%.1f" % def.inner_radius
-	row["outer_radius"] = "%.1f" % def.outer_radius
-	row["falloff_power"] = "%.1f" % def.falloff_power
-	if def.pulse_period > 0.0:
-		row["pulse_period"] = "%.1f" % def.pulse_period
-		row["pulse_trough"] = "%.1f" % (def.intensity * 0.25)
+	row["inner_radius"] = "%.1f" % def.core_within()
+	row["outer_radius"] = "%.1f" % def.heard_within()
+	if def.pulses_every() > 0.0:
+		row["pulse_period"] = "%.1f" % def.pulses_every()
+		row["pulse_trough"] = "%.1f" % (def.peak() * 0.25)
 	else:
 		row["pulse_period"] = "—"
 		row["pulse_trough"] = "—"
-	# A pursuer's relevant speed is how fast it closes once it notices, not its cold `speed`
+	# A pursuer's relevant speed is how fast it closes once it notices, not its cold route speed
 	# (almost always 0 for one, since most pursuers wait rather than patrol); everything else
-	# that moves reads its own `speed`.
-	if def.pursuit != null:
+	# that moves reads its own route speed (`RouteSpec.speed()`).
+	if def.pursues():
 		row["speed"] = "%.1f" % def.chase_speed()
-	elif def.mobile and def.speed > 0.0:
-		row["speed"] = "%.1f" % def.speed
+	elif def.moves() and def.speed() > 0.0:
+		row["speed"] = "%.1f" % def.speed()
 	else:
 		row["speed"] = "—"
 	row["walk_through_cost"] = "%.1f" % def.walk_through_cost()
@@ -186,7 +203,7 @@ func _distance_row(def: EventDef, sensitivity: float) -> Dictionary:
 	for i in DISTANCES.size():
 		var d: float = DISTANCES[i]
 		var base := def.emission_at(Vector2(d, 0.0))
-		if def.pulse_period > 0.0:
+		if def.pulses_every() > 0.0:
 			base *= PULSE_MEAN
 		var net := base * sensitivity - Tuning.EXCITEMENT_DECAY_WALKING
 		row[DISTANCE_COLS[i]] = "%.1f" % net
@@ -195,7 +212,7 @@ func _distance_row(def: EventDef, sensitivity: float) -> Dictionary:
 ## Net points from one real pass, `M174Pass.pass_net_averaged()` — the same simulation
 ## `tests/test_events.gd` runs, moving a real instance the way the game moves it and averaging
 ## over its own pulse phase. Offset 0 is dashed for a row with a solid, still body
-## (`obstructs_radius > 0.0`; anything mobile is exempt from that rule and so never sets one):
+## (`obstructs_within() > 0.0`; anything mobile is exempt from that rule and so never sets one):
 ## her own body cannot occupy the same line as a thing she cannot walk through.
 func _pass_row(def: EventDef, sensitivity: float) -> Dictionary:
 	var row := {}
@@ -207,7 +224,7 @@ func _pass_row(def: EventDef, sensitivity: float) -> Dictionary:
 	for i in offsets.size():
 		var offset: float = offsets[i]
 		var key: String = PASS_COLS[i]
-		if is_zero_approx(offset) and def.obstructs_radius > 0.0:
+		if is_zero_approx(offset) and def.obstructs_within() > 0.0:
 			row[key] = "—"
 			continue
 		var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, sensitivity)
@@ -252,16 +269,16 @@ func _build_tables(rows: Array[EventDef]) -> Array[TableModel]:
 	pass_asleep.headers = PASS_HEADERS
 
 	for def in rows:
-		geometry.order.append(def.id)
-		geometry.rows[def.id] = _geometry_row(def)
-		distance_awake.order.append(def.id)
-		distance_awake.rows[def.id] = _distance_row(def, 1.0)
-		distance_asleep.order.append(def.id)
-		distance_asleep.rows[def.id] = _distance_row(def, Baby.SLEEPING_SENSITIVITY)
-		pass_awake.order.append(def.id)
-		pass_awake.rows[def.id] = _pass_row(def, 1.0)
-		pass_asleep.order.append(def.id)
-		pass_asleep.rows[def.id] = _pass_row(def, Baby.SLEEPING_SENSITIVITY)
+		geometry.order.append(def.id())
+		geometry.rows[def.id()] = _geometry_row(def)
+		distance_awake.order.append(def.id())
+		distance_awake.rows[def.id()] = _distance_row(def, 1.0)
+		distance_asleep.order.append(def.id())
+		distance_asleep.rows[def.id()] = _distance_row(def, Baby.SLEEPING_SENSITIVITY)
+		pass_awake.order.append(def.id())
+		pass_awake.rows[def.id()] = _pass_row(def, 1.0)
+		pass_asleep.order.append(def.id())
+		pass_asleep.rows[def.id()] = _pass_row(def, Baby.SLEEPING_SENSITIVITY)
 
 	return [geometry, distance_awake, distance_asleep, pass_awake, pass_asleep]
 
@@ -326,12 +343,12 @@ func _header_text() -> String:
 	lines.append("- `EventScheduler.WALL_WORTH_OF_COST` = %.1f points" % EventScheduler.WALL_WORTH_OF_COST)
 	lines.append("")
 	lines.append("**`" + TITLE_GEOMETRY + "`** is what a row's own data says, unconditionally: " +
-			"`role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any " +
+			"`role` is `EventScheduler.role_for()` at day 0 (a row's cold shape, before any " +
 			"resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; " +
 			"`pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope " +
 			"`current_intensity()` uses, and a dash where a row does not pulse; `speed` is a " +
-			"pursuer's `PursuitSpec.speed` (almost always faster than its own cold `speed`, which is " +
-			"usually 0), a mobile row's own `speed`, and a dash for anything that does not move; " +
+			"pursuer's `PursuitSpec.speed()` (almost always faster than its own cold route speed, which is " +
+			"usually 0), a moving row's own route speed (`RouteSpec.speed()`), and a dash for anything that does not move; " +
 			"`walk_through_cost()` is the field integrated along a straight line through the " +
 			"centre, less the walking decay over the same crossing.")
 	lines.append("")
@@ -353,16 +370,15 @@ func _header_text() -> String:
 			"paragraphs below say otherwise. `M174Pass." +
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
-			"code. Dashed for a row that pursues or waits (`EventDef.pursuit` or " +
-			"`EventDef.notice` set: alley_mouse, " +
+			"code. Dashed for a row that pursues or waits (`EventDef.pursues()` or " +
+			"`EventDef.waits_for_her()`: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
-			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, " +
-			"masked_pursuer) — its notice " +
+			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase) — its notice " +
 			"and chase " +
 			"state is driven by where the player is, which the rig never tells it, so there is no " +
 			"pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty " +
 			"for such a row. The 0px column is dashed for a row with a solid, still body " +
-			"(`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
+			"(`obstructs_within() > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
 			"through.")
 	lines.append("")
 	lines.append("**A row that comes at her is met the moment it is created, its telegraph " +
@@ -380,7 +396,10 @@ func _header_text() -> String:
 	lines.append("")
 	lines.append("**Every other row is walked up to, and its telegraph is long over by then** — a " +
 			"`MAP` placement was made at dawn — so those passes start after the telegraph and " +
-			"nothing above changes what they say.")
+			"nothing above changes what they say. The dog walker the director sends ahead of her " +
+			"down her line is priced the same: it is created past its telegraph at a point of its " +
+			"beat drawn on the director's stream (`EventDirector.age_it_is_sent_at()`), so the point " +
+			"that reaches her is as free as for one she walks up to, wherever it is created.")
 	lines.append("")
 	lines.append("Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, " +
 			"a heading-free siting, no clock and no seed anywhere in the arithmetic — two runs on " +
@@ -476,7 +495,7 @@ func _check(tables: Array[TableModel], fresh_content: String) -> int:
 			continue
 		var old_ids: Array = old_rows.keys()
 		var new_ids: Array = t.order
-		for id in new_ids:
+		for id: String in new_ids:
 			if id not in old_rows:
 				moved.append("'%s': new row '%s'" % [t.title, id])
 				continue
@@ -489,7 +508,7 @@ func _check(tables: Array[TableModel], fresh_content: String) -> int:
 				if old_value != new_value:
 					moved.append("'%s': %s · %s: %s → %s"
 							% [t.title, id, t.headers[i], old_value, new_value])
-		for id in old_ids:
+		for id: String in old_ids:
 			if id not in t.rows:
 				moved.append("'%s': row '%s' is gone" % [t.title, id])
 

@@ -19,49 +19,50 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const SCREEN := Vector2(640.0, 360.0)
 
-func run(t) -> void:
-	for city_seed in [4242, 5551212]:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func run(t: TestRunner) -> void:
+	for city_seed: int in [4242, 5551212]:
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		var day := 1
 		var state := CityState.new()
-		state.begin_day(city.map.block_plans, day)
+		state.begin_day(city.map().plans_by_block(), day)
 		var closures_rng := RandomNumberGenerator.new()
 		closures_rng.seed = 1
 		city.start_day(state, day, closures_rng)
 		if "--all-events" in OS.get_cmdline_user_args():
-			city.events.stream_radius = INF
+			RunCity.events(city).stream_within(INF)
 		var consumed: Array[String] = []
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = 2
-		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
-		var home := city.map.doorstep_world_position()
+		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
+		var home := city.map().doorstep_world_position()
 		var crowd_rng := RandomNumberGenerator.new()
 		crowd_rng.seed = 3
-		city.crowd.start_day(day, crowd_rng, home)
+		RunCity.crowd(city).start_day(day, crowd_rng, home)
 		for i in 120:
-			city.crowd.step(1.0 / 60.0)
+			RunCity.crowd(city).step(1.0 / 60.0)
 		var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 		var stroller: Stroller = scene.instantiate()
 		t.add_child(stroller)
-		city.events.use_player(stroller)
+		RunCity.events(city).use_player(stroller)
 		stroller.set_physics_process(false)
 		var layers := DebugLayers.new()
-		layers.setup(city.events, city.crowd, city, stroller)
+		layers.setup(RunCity.events(city), RunCity.crowd(city), city, city.props, stroller)
 		print("FIELDS seed %d: %d events live, %d crowd" % [city_seed,
-				city.events.instances().size(), city.crowd.agents().size()])
+				RunCity.events(city).instances().size(), RunCity.crowd(city).agents().size()])
 
 		var started := Time.get_ticks_usec()
 		var built := 0
-		for instance in city.events.instances():
-			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
+		for instance in RunCity.events(city).instances():
+			for level: float in [instance.core_within(), instance.heard_within()]:
 				var points := GroundShape.field_outline_at(instance.global_position,
 						instance.travel_velocity(), level)
 				var closed := points.duplicate()
 				closed.append(points[0])
 				built += 1
-		for agent in city.crowd.agents():
+		for agent in RunCity.crowd(city).agents():
 			for level: float in [Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS]:
 				var points := GroundShape.field_outline_at(agent.global_position, agent.velocity(),
 						level)
@@ -82,14 +83,14 @@ func run(t) -> void:
 
 		var total := 0
 		var worst := 0
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			layers._cuts = {}
 			started = Time.get_ticks_usec()
 			layers.field_runs(Rect2(instance.global_position - SCREEN * 0.5, SCREEN))
 			var spent := Time.get_ticks_usec() - started
 			total += spent
 			worst = maxi(worst, spent)
-		var views := maxi(city.events.instances().size(), 1)
+		var views := maxi(RunCity.events(city).instances().size(), 1)
 		print("FIELDS   one screen round each of %d events, cold: mean %.1f ms, worst %.1f ms"
 				% [views, float(total) / views / 1000.0, float(worst) / 1000.0])
 		layers.free()

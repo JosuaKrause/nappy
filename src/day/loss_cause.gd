@@ -24,7 +24,7 @@ static func of(result: GameEnums.DayResult, hard_fail_reason := "", struck_by :=
 
 ## What ended a hard-fail day: `car` for the one hard fail that is not a catalogue row
 ## (`EventBus.hard_fail_triggered("car_strike")`, `Crowd._strike()`), otherwise the id off whatever
-## row actually struck her (`EventBus.hard_fail_triggered(instance.def.id)`,
+## row actually struck her (`EventBus.hard_fail_triggered(instance.row_id())`,
 ## `EventManager.check_hard_fails()`) — hyphenated the same way every other cause name is, so a new
 ## hard-fail row is covered without a second list naming it here.
 ##
@@ -38,7 +38,7 @@ static func _hard_fail_suffix(reason: String, struck_by := "") -> String:
 	return (struck_by if struck_by != "" else reason).replace("_", "-")
 
 ## What ended a crying day: whichever group in `landed_by_group` (read off the live world by
-## `DayDirector.landed_by_group()`) landed the most on her over the crying window — a catalogue id (hyphenated),
+## `DayDirector._landed_by_group()`) landed the most on her over the crying window — a catalogue id (hyphenated),
 ## `crowd` for walkers, `traffic` for cars, or `self` for her own running and standing in an alley.
 ##
 ## **Ties, and the window reading entirely empty, pick the alphabetically first key that is

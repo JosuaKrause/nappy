@@ -12,6 +12,11 @@ extends RefCounted
 ## of her view he is re-placed in it, out of her reach, and each guard he was is gone; and he follows
 ## her again to the next one she approaches.
 ##
+## **He stands on the far side of the roadblock from the way she comes** (inbox #1185 in gentle-owl), and the way
+## she comes is decided once, the first frame the roadblock she approaches is on screen: walked round
+## to its other side after that, he stays where he stood; before it, the side follows where she
+## stands. Nothing floods for a way past him.
+##
 ## Whichever roadblock she touches, the guard comes after her the moment she has done it *(the
 ## player: "as long as he starts pursuing when you hit the task it's fine")*: parked at another
 ## roadblock, kept there by her view, he is chasing her the moment she touches the one she
@@ -19,11 +24,15 @@ extends RefCounted
 ## between them; set on her with a building across his straight line, where a chase straight at her
 ## stalls, he walks round it to her while she stands; and a guard who already noticed her is left on her exactly as he was.
 ##
-## And day 13's own roadblock is placed under the day's rules, close by *(inbox #650 in mossy-beaver:
-## "let's place one properly and guide to that -- just make sure it's closeby")*: on several cities,
-## reading the mark appends it to the day's plan, between the edge of the circle round her and the
-## widest ring it may be offered (`ResistanceDirector.ROADBLOCK_WIDER_REACH`), wholly out of her view,
-## and with it standing she can still walk home and to a calm area from where she read the mark.
+## And day 13's own roadblock is one the day placed, close by *(inbox #650 in mossy-beaver: "let's
+## place one properly and guide to that -- just make sure it's closeby"; inbox #1185 in gentle-owl)*: on several
+## cities, reading the mark takes a roadblock the day placed, or swaps one in for one of the day's
+## events wholly out of her view, within the widest ring it is looked for in
+## (`ResistanceDirector.ROADBLOCK_WIDER_REACH`), and with it standing she can still walk home and to
+## a calm area from where she read the mark.
+##
+## **A real city on purpose**: the guarantee is the guard following her through the resistance
+## director and the event manager together, so both are real here and neither is handed a stand-in.
 ##
 ## **Each test builds its city in a run of its own** (`_build_city()`) and plays day 13 on it through
 ## the real day order, so none leans on the steps, alleys or scars another left. What the director
@@ -60,18 +69,22 @@ var _view := Rect2():
 var _seen_through: VisibleView
 ## The city the test in progress built (`_build_city()`), in a run of its own.
 var _city: City
+## The run `_city` stands in.
+var _run: RunState
 ## What each day's streams are named after: this suite's own, or, empty, the day-13 probes' own
 ## (`tests/probes/calm_pelican_day13_guard_walk.gd`), so a day the probes measured is built again.
 var _streams := "day13-guard:"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
-	_test_the_move_reads_the_soft_seals_and_bodies_round_her(t)
-	# The probes' days on which a guard drawn with no way asked stood on her only way.
+	_test_the_guards_side_is_decided_once_from_her_approach(t, true)
+	_test_the_guards_side_is_decided_once_from_her_approach(t, false)
+	_test_a_roadblock_streamed_out_and_in_keeps_its_side(t)
+	# The probes' days on which a guard once stood on her only way.
 	_streams = ""
-	for seed_value in [1234567, 314159]:
-		_test_the_guard_never_stands_on_her_only_way(t, seed_value)
+	for seed_value: int in [1234567, 314159]:
+		_test_the_guard_stands_on_the_far_side_from_her(t, seed_value)
 	_streams = "day13-guard:"
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
@@ -80,8 +93,11 @@ func run(t) -> void:
 	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
+	_test_with_none_close_by_a_section_is_taken(t)
+	_test_a_section_across_the_city_is_confirmed(t)
+	_test_a_swap_replaces_what_the_section_holds(t)
 
-func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
+func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -106,9 +122,18 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	_view = Rect2(where - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	_settle_the_arrow(director)
 
-	var other := _her_way_to_another_roadblock(director, player, director.rider())
-	t.check(other != null, "there is another live roadblock she can walk up to (%d live)"
-			% ResistanceReads.answering(city.events, step).size())
+	# The case needs a roadblock whose ground all round, out to where its guard may stand, lies
+	# clear of the guard where he stands now (the square the view below is set to): one that close
+	# to the task's own would put him in that view before he moved.
+	var everywhere := Vector2.ONE * (ResistanceDirector.task_guard_farthest(
+			ContactPoint.body_reach(director.rider())) + 64.0)
+	var clear_of_him := func(roadblock: EventInstance) -> bool:
+		var square := Rect2(roadblock.body_position() - everywhere, everywhere * 2.0)
+		return not square.intersects(Rect2(where + Vector2(-14.0, -48.0), Vector2(28.0, 52.0)))
+	var other := _her_way_to_another_roadblock(director, player, director.rider(), clear_of_him)
+	t.check(other != null, ("there is another live roadblock she can walk up to whose ground round " +
+			"it is clear of where the guard stands (%d live)")
+			% ResistanceReads.answering(RunCity.events(city), step).size())
 	if other == null:
 		_tear_down(player, director, city)
 		return
@@ -116,14 +141,14 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	# He is in her view: he stays, choice after choice.
 	_choose_again(director)
 	t.check(_task_guard() == first and first.global_position == where
-			and not first.is_finished,
+			and not first.is_gone(),
 			"the guard does not move while he is in her view")
 
 	# Everywhere he may stand round the roadblock she approaches is in her view: he stays.
 	var around := other.body_position()
-	var everywhere := Vector2.ONE * (ResistanceDirector.TASK_GUARD_FARTHEST + 64.0)
+	# He stands out of that view himself: the premise the other roadblock was chosen by
+	# (`clear_of_him` above, the same square and his same rect) holds it.
 	_view = Rect2(around - everywhere, everywhere * 2.0)
-	t.check(not _guard_in_view(where), "he stands out of that view himself")
 	_choose_again(director)
 	t.check(_task_guard() == first and first.global_position == where,
 			"the guard does not move while all the ground round the roadblock she approaches is in view")
@@ -151,10 +176,11 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 			% [ResistanceDirector.TASK_GUARD_RETRY_SECONDS, waited])
 	var ringed: EventInstance = _task_guard()
 	var ring_at := ringed.global_position if ringed else Vector2.INF
-	t.check(ringed != null and ringed == first and not first.is_finished
+	t.check(ringed != null and ringed == first and not first.is_gone()
 			and ring_at.distance_to(around) > band_edge
-			and ring_at.distance_to(around) <= ResistanceDirector.TASK_GUARD_FARTHEST
-			and not _guard_in_view(ring_at) and _a_clear_line(city.map, ring_at, around),
+			and ring_at.distance_to(around)
+					<= ResistanceDirector.task_guard_farthest(ContactPoint.body_reach(other))
+			and not _guard_in_view(ring_at) and _a_clear_line(city.map(), ring_at, around),
 			("while its band is in her view he goes past it, %.0fpx from its body, out of her view, " +
 			"with a clear line to it") % ring_at.distance_to(around))
 	# The band out of her view: on the arrow's next choice he is in it, which he is only if the
@@ -176,34 +202,39 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 ## trigger range of her, and left there on the arrow's next choice, since he guards the roadblock it
 ## points at. With `before` given, he is `before` himself, moved with everything he was in the middle
 ## of (`EventManager.move_extra()`).
-func _check_he_guards(t, director: ResistanceDirector, roadblock: EventInstance, player: Stroller,
+func _check_he_guards(t: TestRunner, director: ResistanceDirector, roadblock: EventInstance, player: Stroller,
 		before: EventInstance, what: String) -> void:
 	var guard: EventInstance = _task_guard()
 	if before != null:
-		t.check(guard != null and guard == before and not before.is_finished,
+		t.check(guard != null and guard == before and not before.is_gone(),
 				"the guard is moved to %s, the same man rather than a new one" % what)
 	if guard == null:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var reach := ContactPoint.body_reach(roadblock)
 	var from_body := guard.global_position.distance_to(roadblock.body_position())
-	t.check(from_body >= robbery.inner_radius + reach - 0.5
+	t.check(from_body >= robbery.core_within() + reach - 0.5
 			and from_body <= robbery.notice_within() + reach + 0.5,
 			"at %s he stands in its band, %.0fpx from its body (%.0f-%.0fpx)"
-			% [what, from_body, robbery.inner_radius + reach, robbery.notice_within() + reach])
-	t.check(_a_clear_line(_city.map, guard.global_position, roadblock.body_position()),
+			% [what, from_body, robbery.core_within() + reach, robbery.notice_within() + reach])
+	t.check(_a_clear_line(_city.map(), guard.global_position, roadblock.body_position()),
 			"at %s he has a clear line to its body, so he can notice her there" % what)
 	t.check(guard.global_position.distance_to(player.global_position) > robbery.notice_within(),
 			"and out of his own trigger range of her (%.0fpx)"
 			% guard.global_position.distance_to(player.global_position))
 	var stood := guard.global_position
 	_choose_again(director)
-	t.check(ResistanceReads.pointed_at(director, ResistanceReads.answering(_city.events, director.current_step())) == roadblock
+	t.check(ResistanceReads.pointed_at(director, ResistanceReads.answering(RunCity.events(_city), director.current_step())) == roadblock
 			and _task_guard() == guard and guard.global_position == stood,
 			"at %s the arrow still points at it and the next choice leaves him there" % what)
-	t.check(_a_way_past(_city.map, guard.global_position, roadblock.body_position(),
-			ContactPoint.body_reach(roadblock), player.global_position),
-			"at %s she can still walk to it without coming within his notice" % what)
+	t.check(_on_the_far_side(guard.global_position, roadblock.body_position(),
+			player.global_position),
+			"at %s he stands on the far side of it from her" % what)
+
+## Whether `guard` stands on the far side of the roadblock at `body` from `her`: not toward her
+## across the body.
+static func _on_the_far_side(guard: Vector2, body: Vector2, her: Vector2) -> bool:
+	return (guard - body).dot(her - body) <= 0.0
 
 ## Whether every point of the straight line from `from` to `to`, a pixel apart, is on walkable
 ## ground: the line a waiting guard notices her along, asked here by sampling rather than through
@@ -216,54 +247,22 @@ static func _a_clear_line(map: CityMap, from: Vector2, to: Vector2) -> bool:
 			return false
 	return true
 
-## Whether some walk from `from` reaches ground within `reach` of `body` without her centre coming
-## within a guard at `guard`'s `EventDef.notice` along a clear line: a flood fill of the test's
-## own over open, unobstructed walkable tiles, tile centres, never onto a tile his notice reaches.
-static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: float,
-		from: Vector2) -> bool:
-	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
-	var start := map.world_to_tile(from)
-	var seen := {start: true}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	while head < queue.size():
-		var tile: Vector2i = queue[head]
-		head += 1
-		if map.tile_to_world(tile).distance_to(body) <= reach:
-			return true
-		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var next := tile + side
-			if seen.has(next):
-				continue
-			seen[next] = true
-			if not map.in_bounds(next) or not map.is_walkable(next) or map.is_closed(next) \
-					or map.is_obstructed(next):
-				continue
-			var at := map.tile_to_world(next)
-			if at.distance_to(guard) <= notice and _a_clear_line(map, guard, at):
-				continue
-			queue.append(next)
-	return false
-
-func robbery_edge_of(roadblock: EventInstance) -> float:
-	return EventCatalogue.by_id("alley_robbery").notice_within() + ContactPoint.body_reach(roadblock)
-
 ## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
 ## spare) is in the test's view.
 func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
 
-## **The guard is never put on her only way to the roadblock**: wherever she approaches a live
-## roadblock of the day from, open ground 8 to 14 tiles out from it in each of four directions, the
-## spot the task's guard is moved to when the arrow turns to it (`tick()`, as
-## `_move_the_task_guard_to_her_target()` moves him, read off the street) leaves her a walk to touch
-## range without coming within his notice — asked by the test's own flood fill — and he stands on the
-## far side of the roadblock from her far more often than on hers. So does the spot he is placed on
-## with the task, from where she read the mark. The places are taken roadblock by roadblock in turn,
-## so each is approached while he stands over another and the arrow's turn moves him; a place whose
-## arrow turns to a roadblock he already guards moves nobody and asks nothing.
-func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
+## **The guard stands on the far side of the roadblock from her** (inbox #1185 in gentle-owl): wherever she
+## approaches a live roadblock of the day from, open ground 8 to 14 tiles out from it in each of four
+## directions, the spot the task's guard is moved to when the arrow turns to it (`tick()`, as
+## `_move_the_task_guard_to_her_target()` moves him, read off the street) is on the far side of it
+## from her, and so is the spot he is placed on with the task, from where she read the mark. Her view
+## is empty, so no roadblock comes on screen and the side follows where she stands. The places are
+## taken roadblock by roadblock in turn, so each is approached while he stands over another and the
+## arrow's turn moves him; a place whose arrow turns to a roadblock he already guards moves nobody.
+## No reachability is asked, by the director or here: the side is the rule.
+func _test_the_guard_stands_on_the_far_side_from_her(t: TestRunner, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -271,20 +270,21 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 	var mark := director.current_step()
 	if mark:
 		director.contact().complete_now()
-	var map := city.map
-	var asked := 0
-	var blocked: Array[String] = []
-	var near_side := 0
+	var map := city.map()
+	var moved := 0
+	var near_side: Array[String] = []
 	var first := _task_guard()
-	var roadblocks := ResistanceReads.answering(city.events, director.current_step())
+	var roadblocks := ResistanceReads.answering(RunCity.events(city), director.current_step())
 	if first != null and director.rider() != null:
 		var rider := director.rider()
-		if not _a_way_past(map, first.global_position, rider.body_position(),
-				ContactPoint.body_reach(rider), player.global_position):
-			blocked.append("%s from where she read the mark" % map.world_to_tile(rider.body_position()))
-	# Her view on him while the arrow settles, so its choices on the way leave him where he stands.
+		if not _on_the_far_side(first.global_position, rider.body_position(), player.global_position):
+			near_side.append("%s from where she read the mark" % map.world_to_tile(rider.body_position()))
+	# Her view on him while the arrow settles, so its choices on the way leave him where he stands:
+	# on his own figure and no wider, so the roadblock he guards, its rider's box reaching
+	# `ResistanceDirector.TASK_BOX` about its body, does not come on screen and decide its side
+	# from where she read the mark.
 	if first != null:
-		_view = Rect2(first.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
+		_view = Rect2(first.global_position + Vector2(-16.0, -50.0), Vector2(32.0, 56.0))
 	_settle_the_arrow(director)
 	_view = Rect2()
 	for out: int in [8, 11, 14]:
@@ -303,20 +303,194 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 				var to := ResistanceReads.pointed_at(director, roadblocks)
 				if to == null:
 					continue
-				asked += 1
-				var her := player.global_position
-				var body := to.body_position()
-				if not _a_way_past(map, guard.global_position, body, ContactPoint.body_reach(to), her):
-					blocked.append("%s from %s" % [map.world_to_tile(body), tile])
-				if (guard.global_position - body).dot(her - body) > 0.0:
-					near_side += 1
-	t.check(asked > 20 and blocked.is_empty(),
-			"seed %d: wherever he is put, she keeps a way to the roadblock past his notice (%d asked, blocked %s)"
-			% [seed_value, asked, blocked.slice(0, 4)])
-	t.check(near_side * 3 < asked,
-			"seed %d: and he stands on the far side of it from her far more often than on hers (%d of %d on her side)"
-			% [seed_value, near_side, asked])
+				moved += 1
+				if not _on_the_far_side(guard.global_position, to.body_position(),
+						player.global_position):
+					near_side.append("%s from %s" % [map.world_to_tile(to.body_position()), tile])
+	t.check(moved > 20 and near_side.is_empty(),
+			"seed %d: wherever he is put, he stands on the far side of the roadblock from her (%d moves, on her side %s)"
+			% [seed_value, moved, near_side.slice(0, 4)])
 	_tear_down(player, director, city)
+
+## **The guard's side is decided once, the first frame the roadblock is on screen, from her
+## approach** (inbox #1185 in gentle-owl): with the day's other roadblocks finished, so the arrow keeps to the
+## task's own, she stands on one side of it, out along a street, and the guard is moved to its far
+## side. With `seen`, the roadblock then comes into her view as she stands there, which decides its
+## side, and she walks round to the opposite side, the roadblock out of view again: through the
+## arrow's choices he stays where he stood, on the side away from where she first came. Without it
+## the roadblock never came on screen, so the side was never decided: the same walk round moves him
+## to the far side from where she stands now, which is the move the decided side holds back. Seen,
+## the roadblock then comes into her view again from the second side, and he still stays: the side
+## is decided once, not each time she sees it.
+func _test_the_guards_side_is_decided_once_from_her_approach(t: TestRunner, seen: bool) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	_view = Rect2()
+	if director.contact():
+		director.contact().complete_now()
+	var roadblock := director.rider()
+	var guard := _task_guard()
+	var what := "seen" if seen else "never seen"
+	t.check(roadblock != null and guard != null, "(%s) the task rides a roadblock, guarded" % what)
+	if roadblock == null or guard == null:
+		_tear_down(player, director, city)
+		return
+	for live in ResistanceReads.answering(RunCity.events(city), director.current_step()):
+		if live != roadblock:
+			RunCity.events(city).retire(live)
+	var body := roadblock.body_position()
+	var sides := _either_side_of(city.map(), body)
+	t.check(not sides.is_empty(), "(%s) there is open ground on either side of it" % what)
+	if sides.is_empty():
+		_tear_down(player, director, city)
+		return
+	var first: Vector2 = sides[0]
+	var second: Vector2 = sides[1]
+	player.global_position = first
+	for i in 4:
+		_choose_again(director)
+	t.check(_on_the_far_side(guard.global_position, body, first),
+			"(%s) she out on one side of it, he stands on its far side" % what)
+	if seen:
+		_view = Rect2(first - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+		_choose_again(director)
+		_view = Rect2()
+	var stood := guard.global_position
+	player.global_position = second
+	for i in 8:
+		_choose_again(director)
+	if seen:
+		t.check(_task_guard() == guard and guard.global_position == stood
+				and _on_the_far_side(guard.global_position, body, first),
+				"seen from one side, its side is kept: she walks round to the other and he stays")
+		# Seen again from the other side: the side stays the one decided first.
+		_view = Rect2(second - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+		_choose_again(director)
+		_view = Rect2()
+		for i in 8:
+			_choose_again(director)
+		t.check(_task_guard() == guard and guard.global_position == stood,
+				"seen again from the other side, the side is not decided again: he stays")
+	else:
+		t.check(_task_guard() == guard and _on_the_far_side(guard.global_position, body, second),
+				"never seen, the side follows her: walked round, he is moved to the far side from her")
+	_tear_down(player, director, city)
+
+## **A roadblock that streams out and back in keeps its side**: its side is the plan's, not the
+## instance's. She walks up to another live roadblock of the day than the task's own (which the task
+## keeps in the world), and the guard follows her there; the day's others are finished, so the arrow
+## chooses between those two. She stands on one side of it, it comes into her view, which decides
+## its side, and the view goes. She walks back to the task's own, and the other is streamed out of
+## the world and back in
+## (`EventManager.stream_around()`), a new instance of the same plan, and she stands on its other
+## side: through the arrow's choices the guard stays on the side away from where she first came (he
+## may still be moved within it, from the ring past the band into the band).
+func _test_a_roadblock_streamed_out_and_in_keeps_its_side(t: TestRunner) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	_view = Rect2()
+	if director.contact():
+		director.contact().complete_now()
+	var rider := director.rider()
+	var guard := _task_guard()
+	# One other roadblock is kept, the first with open ground on either side of it away from the
+	# task's own, off the task's own street line (from out along one line, one stands behind the
+	# other) and with somewhere she may walk up to it from (`_spots_to_walk_up_from()`); the day's
+	# others are finished first, so the contact, which follows her between look-alikes, never rides
+	# one taken away under it.
+	var kept: EventInstance = null
+	for live in ResistanceReads.answering(RunCity.events(city), director.current_step()):
+		if rider and live != rider and kept == null \
+				and not _either_side_of(city.map(), live.body_position(), rider.body_position()).is_empty() \
+				and not _on_one_street_line(city.map(), live.body_position(), rider.body_position()) \
+				and not _spots_to_walk_up_from(city.map(), live).is_empty():
+			kept = live
+	for live in ResistanceReads.answering(RunCity.events(city), director.current_step()):
+		if live != rider and live != kept:
+			RunCity.events(city).retire(live)
+	var other := _her_way_to_another_roadblock(director, player, rider) if rider else null
+	t.check(other != null and guard != null, "(streamed) she walks up to another live roadblock")
+	if other == null or guard == null:
+		_tear_down(player, director, city)
+		return
+	var body := other.body_position()
+	var sides := _either_side_of(city.map(), body, rider.body_position())
+	t.check(not sides.is_empty(), "(streamed) there is open ground on either side of it")
+	if sides.is_empty():
+		_tear_down(player, director, city)
+		return
+	var first: Vector2 = sides[0]
+	var second: Vector2 = sides[1]
+	player.global_position = first
+	for i in 4:
+		_choose_again(director)
+	_view = Rect2(first - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	_choose_again(director)
+	_view = Rect2()
+	var stood := guard.global_position
+	t.check(_on_the_far_side(stood, body, first),
+			"(streamed) seen from one side, he stands on its far side")
+	# She walks back to the task's own roadblock, so the contact, which follows her between
+	# look-alikes, rides it again rather than the one about to stream out under it.
+	var by_the_rider := _either_side_of(city.map(), rider.body_position(), body)
+	if not by_the_rider.is_empty():
+		player.global_position = by_the_rider[0]
+		_settle_the_arrow(director)
+	t.check(not by_the_rider.is_empty()
+			and ResistanceReads.pointed_at(director, [rider] as Array[EventInstance]) != null,
+			"(streamed) she walks back to the task's own roadblock")
+	var away := body + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
+	RunCity.events(city).stream_around(away)
+	RunCity.events(city).stream_around(second)
+	var again: EventInstance = null
+	for live in ResistanceReads.answering(RunCity.events(city), director.current_step()):
+		if live != rider and live.body_position().distance_to(body) < 1.0:
+			again = live
+	t.check(again != null and again != other,
+			"it streams out and back in as a new instance of the same roadblock")
+	player.global_position = second
+	# The new instance's walk is swept a slice a tick before the arrow can turn back to it, so the
+	# arrow's choices run until it does, and a few after.
+	for i in ARROW_TURN_CHOICES:
+		_choose_again(director)
+	t.check(again != null
+			and ResistanceReads.pointed_at(director, [again] as Array[EventInstance]) != null,
+			"(streamed) the arrow turns back to it")
+	t.check(_task_guard() == guard and (guard.global_position - body).dot(first - body) < 0.0,
+			"walked round to its other side, the side decided before it streamed out is kept: he stays on the side away from where she first came")
+	_tear_down(player, director, city)
+
+## Two open places on opposite sides of the roadblock at `body`, out along one axis 9 to 12 tiles
+## from it — near enough that, standing at the first, the roadblock is in a view round her
+## (`Tuning.VIEW_HALF_EXTENT`) — or empty when no axis has both. With `away_from`, neither is within
+## `AWAY_FROM_THE_OTHER` of it: another roadblock of the day, so standing there touches neither
+## that roadblock nor its band, which would complete the task.
+static func _either_side_of(map: CityMap, body: Vector2,
+		away_from := Vector2.INF) -> Array[Vector2]:
+	var centre := map.world_to_tile(body)
+	for axis: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
+		var reach := 9 if axis == Vector2i.RIGHT else 5
+		for out in range(reach, reach + 4):
+			var a := centre + axis * out
+			var b := centre - axis * out
+			if away_from != Vector2.INF and (map.tile_to_world(a).distance_to(away_from)
+					< AWAY_FROM_THE_OTHER or map.tile_to_world(b).distance_to(away_from)
+					< AWAY_FROM_THE_OTHER):
+				continue
+			if _open(map, a) and _open(map, b):
+				return [map.tile_to_world(a), map.tile_to_world(b)] as Array[Vector2]
+	return [] as Array[Vector2]
+
+## How far from another roadblock the places `_either_side_of()` picks stand: past any touch of it and
+## past its guard's band (`notice_within()` + 110px touch reach), with a tile to spare.
+const AWAY_FROM_THE_OTHER := 448.0
+
+## Whether `tile` is ground she can stand on: in the city, walkable, open and unobstructed.
+static func _open(map: CityMap, tile: Vector2i) -> bool:
+	return map.in_bounds(tile) and map.is_walkable(tile) and not map.is_obstructed(tile) \
+			and not map.is_closed(tile)
 
 ## **Set on her already inside his stand-off, he holds it** (`EventInstance.notice_her_at()`; the
 ## events skill: "the chase starts at the stand-off however she came"). A waiting robber with her
@@ -324,10 +498,12 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 ## stands there he neither lunges nor can end her day, however long; when she walks away he lunges
 ## only once she is back at the full stand-off. Without the hold he would lunge from 60px on his
 ## first tick.
-func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
+func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
+	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(robbery, Vector2.ZERO, PackedVector2Array())
+	guard.setup(robbery, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(guard_where))
 	t.add_child(guard)
 	guard.set_process(false)
 	var standoff := PursuitSpec.standoff(robbery.chase_speed(), robbery.standoff_reach())
@@ -339,132 +515,24 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	var lunged_standing := false
 	var lethal_standing := false
 	for i in 60:
-		guard.player_at = her
+		guard_where.tell(her)
 		guard.step(0.1)
-		lunged_standing = lunged_standing or guard.phase == EventInstance.Phase.ACTIVE
+		lunged_standing = lunged_standing or guard.is_past_its_warning()
 		lethal_standing = lethal_standing or guard.is_lethal_at(her)
 	t.check(not lunged_standing and not lethal_standing,
 			"while she stands 60px off for 6s he holds: no lunge, and he cannot end her day")
 	var lunged_at := -1.0
 	for i in 60:
 		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
-		guard.player_at = her
+		guard_where.tell(her)
 		guard.step(0.1)
-		if guard.phase == EventInstance.Phase.ACTIVE:
+		if guard.is_past_its_warning():
 			lunged_at = guard.global_position.distance_to(her)
 			break
 	t.check(lunged_at >= standoff - Tuning.WALK_SPEED * 0.1,
 			"walking away, he lunges only once she is back at his stand-off (%.0fpx, stand-off %.0fpx)"
 			% [lunged_at, standoff])
 	guard.free()
-
-## **The ground she walks on shuts what `SpawnSiting.is_open_to()` shuts**: a move of the guard to the
-## roadblock the arrow turns to (`_move_the_task_guard_to_her_target()`, read off the street) is
-## refused when the soft-sealed tiles or the bodies round her leave her no way to it but through
-## them, as they leave the fill none. She stands far past the detour the director's own fill follows
-## round a roadblock (`GUARD_WAY_DETOUR`), so only her side of the roadblock (`HerSide`, the ground
-## she reaches without coming near it) can give a spot a way past him. With the guard sent to another
-## roadblock first, and the day's others finished (`EventManager.retire()`) so the arrow chooses
-## between those two, she stands beyond the task's own on the side away from the other, where the
-## arrow turns to it: open, he moves to it;
-## with her ringed in by seals or by bodies, the arrow still on it, he stays where he is through the
-## arrow's choices; with the ring taken away he moves to it again.
-func _test_the_move_reads_the_soft_seals_and_bodies_round_her(t) -> void:
-	var city := _build_city(t, SEED)
-	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director, director.contact_position())
-	_view = Rect2()
-	if director.contact():
-		director.contact().complete_now()
-	var roadblock := director.rider()
-	var first := _task_guard()
-	t.check(roadblock != null and first != null, "the task rides a roadblock, guarded, to move a guard round")
-	if roadblock == null or first == null:
-		_tear_down(player, director, city)
-		return
-	_view = Rect2(first.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
-	_settle_the_arrow(director)
-	_view = Rect2()
-	var other := _her_way_to_another_roadblock(director, player, roadblock)
-	var near_other := player.global_position
-	t.check(other != null and not _guards_one(first, roadblock),
-			"the guard is sent to another live roadblock first")
-	if other == null:
-		_tear_down(player, director, city)
-		return
-	var map := city.map
-	var body := roadblock.body_position()
-	# The day's other roadblocks finish, so the arrow chooses between these two alone.
-	for live in ResistanceReads.answering(city.events, director.current_step()):
-		if live != roadblock and live != other:
-			city.events.retire(live)
-	# Past the farthest ground any guard round the roadblock notices her from and the detour the
-	# director's fill follows (its `_guard_notice_reach()` and `GUARD_WAY_DETOUR`), and with room
-	# for a ring of tiles about her.
-	var far := ResistanceDirector.TASK_GUARD_FARTHEST + EventCatalogue.task_guard().notice_within() \
-			+ Tuning.TILE_SIZE + ResistanceDirector.GUARD_WAY_DETOUR + 4.0 * Tuning.TILE_SIZE
-	# Looked for beyond the task's roadblock on the side away from the other, where the arrow turns
-	# to the task's own.
-	var outward := (body - other.body_position()).normalized()
-	var across := outward.orthogonal()
-	var her := Vector2.INF
-	var her_tile := Vector2i.ZERO
-	for k in 24:
-		for side: int in [0, 2, -2, 4, -4]:
-			var cand := map.world_to_tile(body + outward * (far + k * Tuning.TILE_SIZE)
-					+ across * side * Tuning.TILE_SIZE)
-			if not _open_about(map, cand, 2) or map.tile_to_world(cand).distance_to(body) < far:
-				continue
-			player.global_position = map.tile_to_world(cand)
-			_follows_the_arrow(director, first)
-			if _guards_one(first, roadblock) \
-					and ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) != null:
-				her_tile = cand
-				her = map.tile_to_world(cand)
-				break
-		if her != Vector2.INF:
-			break
-	t.check(her != Vector2.INF,
-			"there is open ground far past the roadblock to stand on, from which he is moved to it")
-	if her == Vector2.INF:
-		_tear_down(player, director, city)
-		return
-	var send_him_away := func() -> bool:
-		player.global_position = near_other
-		_settle_the_arrow(director)
-		return not _guards_one(first, roadblock)
-	var ring_body := 1
-	var ring: Array[Vector2i] = []
-	for dy in range(-2, 3):
-		for dx in range(-2, 3):
-			if maxi(absi(dx), absi(dy)) == 2:
-				ring.append(her_tile + Vector2i(dx, dy))
-	var day_seals := map.soft_sealed_tiles.duplicate()
-	t.check(send_him_away.call(), "sent back to the other roadblock")
-	for tile in ring:
-		map.seal_soft_tile(tile)
-	player.global_position = her
-	var was := first.global_position
-	_settle_the_arrow(director)
-	t.check(ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) != null
-			and first.global_position == was,
-			"soft-sealed all round her, the arrow on the roadblock, no spot leaves her a way past him: he stays")
-	# Taking the ring's seals off is the map's own clear, then the day's seals back.
-	map.clear_day_soft_seals()
-	for tile: Vector2i in day_seals:
-		map.seal_soft_tile(tile)
-	t.check(send_him_away.call(), "sent back to the other roadblock again")
-	map.obstruct_tiles(ring_body, ring)
-	player.global_position = her
-	was = first.global_position
-	_settle_the_arrow(director)
-	t.check(ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) != null
-			and first.global_position == was,
-			"bodies standing all round her, the arrow on the roadblock, he stays")
-	map.release_obstruction(ring_body)
-	_follows_the_arrow(director, first)
-	t.check(_guards_one(first, roadblock), "with the ring taken away he is moved to it again")
-	_tear_down(player, director, city)
 
 ## The arrow's choices, as `main`'s ticks make them (`_choose_again()`), until `guard` is moved or
 ## `ARROW_TURN_CHOICES` have been made: whether he was. The arrow turns to another roadblock only
@@ -482,28 +550,11 @@ static func _follows_the_arrow(director: ResistanceDirector, guard: EventInstanc
 ## slices the walk to a roadblock is swept in on a test city.
 const ARROW_TURN_CHOICES := 24
 
-## Whether `guard` stands in `roadblock`'s band (`inner_radius + reach` to `notice_within() +
-## reach` from its body).
-static func _guards_one(guard: EventInstance, roadblock: EventInstance) -> bool:
-	var robbery := EventCatalogue.by_id("alley_robbery")
-	var reach := ContactPoint.body_reach(roadblock)
-	var away := guard.global_position.distance_to(roadblock.body_position())
-	return away >= robbery.inner_radius + reach - 0.5 and away <= robbery.notice_within() + reach + 0.5
-
-## Whether every tile within `radius` of `tile` is open ground on foot (`SpawnSiting.is_open_to()`).
-static func _open_about(map: CityMap, tile: Vector2i, radius: int) -> bool:
-	for dy in range(-radius, radius + 1):
-		for dx in range(-radius, radius + 1):
-			var at := tile + Vector2i(dx, dy)
-			if not map.in_bounds(at) or not SpawnSiting.is_open_to(map, at, Mover.on_foot()):
-				return false
-	return true
-
 ## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has
 ## already noticed her at the task's own before she touches it, and is warning her by sight in her
 ## view: the task's own second of warning replaces his.
-func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: bool) -> void:
+func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner, parked: bool) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -519,7 +570,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	if step == null or guard == null:
 		_tear_down(player, director, city)
 		return
-	var map := city.map
+	var map := city.map()
 	var touched: EventInstance = director.rider()
 	if parked:
 		# Her view on him from here on, so he cannot be moved to the one she approaches.
@@ -545,40 +596,43 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	if not parked:
 		# He notices her the ordinary way: she comes within his reach along a clear line, here a
 		# step from him on his own tile.
-		guard.player_at = guard.global_position + Vector2(4.0, 0.0)
+		RunCity.events(city).world.where_she_is().tell(guard.global_position + Vector2(4.0, 0.0))
 		guard.step(0.1)
 		t.check(not guard.is_waiting(), "(%s) he noticed her the ordinary way" % what)
 		_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	director.contact().complete_now()
-	t.check(not guard.is_finished and not guard.is_waiting(),
+	t.check(not guard.is_gone() and not guard.is_waiting(),
 			"(%s) the moment she has done the task, he is after her" % what)
 	if parked:
 		# In her view his warning is a second, standing with it up *(inbox #764 in minty-lemur, the player: "yes,
 		# we can do a 1s on screen and 1s off-screen warning if they were not visible")*.
-		t.check(guard.is_standing_for_its_notice()
-				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
-				"(%s) in her view he stands with his warning up for %.1fs" % [what, guard.notice_time()])
+		t.check(guard.is_standing_for_its_notice(), "(%s) in her view he stands with his warning up" % what)
 		var held_at := guard.global_position
-		guard.player_at = at
+		RunCity.events(city).world.where_she_is().tell(at)
 		guard.step(Tuning.WARNING_ALONE_MAX - 0.1)
 		t.check(guard.is_telegraphing() and guard.global_position == held_at,
 				"(%s) still standing just short of that second" % what)
 		guard.step(0.2)
 		t.check(not guard.is_telegraphing(), "(%s) and then he charges" % what)
 	if not parked:
-		t.check(guard.is_standing_for_its_notice()
-				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
-				"(%s) a guard already warning her by sight is set on her with the task's second (standing %s, %.1fs)"
-				% [what, guard.is_standing_for_its_notice(), guard.notice_time()])
+		t.check(guard.is_standing_for_its_notice(),
+				"(%s) a guard already warning her by sight is set on her, standing for his notice" % what)
+		var held_at := guard.global_position
+		RunCity.events(city).world.where_she_is().tell(at)
+		guard.step(Tuning.WARNING_ALONE_MAX - 0.1)
+		t.check(guard.is_telegraphing() and guard.global_position == held_at,
+				"(%s) he stands just short of the task's second" % what)
+		guard.step(0.2)
+		t.check(not guard.is_telegraphing(), "(%s) and charges once it has run" % what)
 		_tear_down(player, director, city)
 		return
 	var start := guard.global_position.distance_to(at)
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var nearest := start
 	var walked := 0.0
 	var lethal := false
-	while walked < 30.0 and not lethal and not guard.is_finished:
-		guard.player_at = at
+	while walked < 30.0 and not lethal and not guard.is_gone():
+		RunCity.events(city).world.where_she_is().tell(at)
 		guard.step(0.1)
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
@@ -595,7 +649,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 ## is taken out of the world unseen and sent as a task's robber is
 ## (`ResistanceDirector._send_at_her()`): the screen-edge badge alone for `Tuning.WARNING_ALONE_MAX`,
 ## then he arrives charging (`EventCatalogue.task_guard_sent()`).
-func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
+func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -611,19 +665,19 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 		_tear_down(player, director, city)
 		return
 	var touched: EventInstance = director.rider()
-	var at := _beside(city.map, touched.body_position(), ContactPoint.body_reach(touched))
+	var at := _beside(city.map(), touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
 	director.contact().complete_now()
-	t.check(_task_guard() == null and guard.is_finished,
+	t.check(_task_guard() == null and guard.is_gone(),
 			"out of her view the waiting guard is taken out of the world")
 	var warning: PendingWarning = null
-	for pending in city.events.pending_warnings():
-		if pending.def == EventCatalogue.task_guard_sent():
+	for pending in RunCity.events(city).pending_warnings():
+		if pending.row() == EventCatalogue.task_guard_sent():
 			warning = pending
-	t.check(warning != null and is_equal_approx(warning.def.warned_for(), Tuning.WARNING_ALONE_MAX)
-			and warning.def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
+	t.check(warning != null and is_equal_approx(warning.row().warned_for(), Tuning.WARNING_ALONE_MAX)
+			and warning.row().starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 			"and sent at her under a %.1fs badge, to arrive charging"
-			% (warning.def.warned_for() if warning else -1.0))
+			% (warning.row().warned_for() if warning else -1.0))
 	_tear_down(player, director, city)
 
 ## **A guard already warning her when she finishes the task is set on her too** — left to his own
@@ -631,7 +685,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 ## player: "as long as he starts pursuing when you hit the task it's fine")*. She comes inside his
 ## radius and outside his stand-off along a clear line, so he warns; the task is done; she walks
 ## straight away from him, and he still charges.
-func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
+func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -644,24 +698,31 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 	if step == null or guard == null:
 		_tear_down(player, director, city)
 		return
-	var map := city.map
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var map := city.map()
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var away := Vector2.ZERO
 	var her := Vector2.INF
+	var where := RunCity.events(city).world.where_she_is()
+	var told_before := where.at()
 	for i in 16:
 		var dir := Vector2.RIGHT.rotated(TAU * i / 16.0)
 		var at := guard.global_position + dir * 150.0
 		var far := guard.global_position + dir * 1200.0
-		if map.is_walkable(map.world_to_tile(at)) and map.clear_line(guard.global_position, at):
+		# Clear as he sees it (his notice asks `EventInstance._clear_line_to()`, and
+		# `sight_line_to_her()` answers along the same line), the band and the bodies round it in the
+		# way included, which the map's own line does not know of.
+		where.tell(at)
+		if map.is_walkable(map.world_to_tile(at)) and guard.sight_line_to_her() != Vector2.ZERO:
 			her = at
 			away = dir
 			break
+	where.tell(told_before)
 	t.check(her != Vector2.INF, "there is open ground 150px from him to warn her on")
 	if her == Vector2.INF:
 		_tear_down(player, director, city)
 		return
 	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
-	guard.player_at = her
+	RunCity.events(city).world.where_she_is().tell(her)
 	guard.step(0.1)
 	t.check(guard.is_telegraphing() and guard.warns_by_radius(),
 			"150px from him, outside his %.0fpx stand-off, he warns her" % standoff)
@@ -669,9 +730,9 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 	director.contact().complete_now()
 	var charged := false
 	var walked := 0.0
-	while walked < 10.0 and not charged and not guard.is_finished:
+	while walked < 10.0 and not charged and not guard.is_gone():
 		her += away * Tuning.WALK_SPEED * 0.05
-		guard.player_at = her
+		RunCity.events(city).world.where_she_is().tell(her)
 		guard.step(0.05)
 		walked += 0.05
 		charged = not guard.is_waiting() and not guard.is_telegraphing()
@@ -684,7 +745,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 ## man on foot), never comes within his stand-off of her, and which she
 ## could walk to from him — and he reaches her stand-off within the time his walk to her takes
 ## at his speed, his notice and a margin on top.
-func _test_the_guard_walks_round_a_building_to_her(t) -> void:
+func _test_the_guard_walks_round_a_building_to_her(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -697,15 +758,15 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	if guard == null:
 		_tear_down(player, director, city)
 		return
-	var map := city.map
+	var map := city.map()
 	# Her view is on him while the arrow settles, so its choices leave him where he stands.
 	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	_settle_the_arrow(director)
 	_view = Rect2()
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var from := guard.global_position
 	# His walk to her goes round what stops a figure on foot today, as his sweep does.
-	var walk := map.walk_field(map.world_to_tile(from), map.blocked.tiles_of(Mover.TODAY))
+	var walk := map.walk_field(map.world_to_tile(from), map.tiles_shut_to(Mover.TODAY))
 	var at := Vector2.INF
 	var tiles_to_her := -1
 	for radius in range(5, 16):
@@ -715,12 +776,12 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 					continue
 				var tile := map.world_to_tile(from) + Vector2i(dx, dy)
 				if not map.is_walkable(tile) or map.is_closed(tile) or map.is_obstructed(tile) \
-						or map.soft_sealed_tiles.has(tile) or not map.reaches(walk, tile):
+						or map.soft_sealed_tiles().has(tile) or not map.reaches(walk, tile):
 					continue
 				var spot := map.tile_to_world(tile)
 				if map.clear_line(from, spot) \
 						or _a_straight_chase_reaches(map, from, spot, standoff,
-								guard.def.chase_speed()):
+								guard.row().chase_speed()):
 					continue
 				at = spot
 				tiles_to_her = map.distance_at(walk, tile)
@@ -731,14 +792,14 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 		return
 	player.global_position = at
 	guard.notice_her_at(at)
-	var allowed := guard.def.telegraph_time + tiles_to_her * Tuning.TILE_SIZE \
-			/ guard.def.chase_speed() * 1.5 + 2.0
+	var allowed := guard.telegraphs_for() + tiles_to_her * Tuning.TILE_SIZE \
+			/ guard.row().chase_speed() * 1.5 + 2.0
 	var start := from.distance_to(at)
 	var nearest := start
 	var walked := 0.0
 	var lethal := false
-	while walked < allowed and not lethal and not guard.is_finished:
-		guard.player_at = at
+	while walked < allowed and not lethal and not guard.is_gone():
+		RunCity.events(city).world.where_she_is().tell(at)
 		guard.step(0.1)
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
@@ -783,37 +844,57 @@ static func _beside(map: CityMap, body: Vector2, reach: float) -> Vector2:
 			best_distance = distance
 	return best
 
-## **Day 13's own roadblock is placed under the day's rules, close by.** She reads the mark where it
-## stands, with the 640x360 view round her answering what is on screen.
-func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) -> void:
+## **Day 13's own roadblock is one the day placed, close by** (inbox #1185 in gentle-owl), or one of the day's
+## events swapped for one out of her sight. She reads the mark where it stands, with the 640x360
+## view round her answering what is on screen.
+func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
 	var her := player.global_position
 	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
-	var map := city.map
+	var map := city.map()
 	var mark := director.current_step()
-	var plans_before := city.events.plans().size()
+	var plans_before := RunCity.events(city).plans().size()
 	if mark:
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
-	t.check(roadblock != null and roadblock.def.id == "roadblock",
+	t.check(roadblock != null and roadblock.row_id() == "roadblock",
 			"seed %d: reading the mark offers a roadblock" % seed_value)
 	if roadblock == null:
 		_tear_down(player, director, city)
 		return
-	var plans := city.events.plans()
-	t.check(plans.size() == plans_before + 1 and plans.back().live == roadblock,
-			"seed %d: it is placed the way the day places one, joining the day's plan" % seed_value)
+	var plans := RunCity.events(city).plans()
+	# Found: one of the day's own roadblocks, placed and unspent and not the wall's or a door's, is
+	# what the task rides. Swapped: a plan the walk gained as she read the mark is the roadblock,
+	# across a section whose content, if it held any, is spent; the units drawn round where she
+	# read it and round the section add their own plans beside it. Neither holds for a roadblock
+	# added outside the day's plan, which is no plan at all.
+	var found := false
+	for index in plans_before:
+		var plan := plans[index]
+		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
+				and not plan.is_door() and RunCity.events(city).event_of(plan) == roadblock)
+	var swapped := false
+	for index in range(plans_before, plans.size()):
+		swapped = swapped or RunCity.events(city).event_of(plans[index]) == roadblock
+	t.check(found or swapped,
+			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
+			% seed_value)
 	var away := roadblock.global_position.distance_to(her)
+	# A found one she touches from ground her paths reach within the widest ring, a tile and a half
+	# from its body at most; a section the swap takes is the nearest along her paths, however far.
 	var widest: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back()
-	t.check(away >= ResistanceDirector.NEAR_THE_MARK - Tuning.TILE_SIZE
-			and away <= widest + Tuning.TILE_SIZE,
-			"seed %d: close by, %.0fpx from where she read the mark (%.0f-%.0fpx)"
-			% [seed_value, away, ResistanceDirector.NEAR_THE_MARK, widest])
-	var box := EventFootprints.footprint_of(roadblock.def)
-	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
-			"seed %d: no part of it is in her view when it is put there" % seed_value)
+	var touch := EventPlan.new(roadblock.row(), Vector2.ZERO).blocking_radius() \
+			+ Tuning.TILE_SIZE * 2.0
+	t.check(swapped or away <= widest + touch,
+			"seed %d: a found one is close by, %.0fpx from where she read the mark (within %.0fpx)"
+			% [seed_value, away, widest + touch])
+	if swapped:
+		var box := EventFootprints.footprint_of(roadblock.row())
+		t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
+				"seed %d: no part of a swapped one is in her view when it is put there"
+				% seed_value)
 	var guard := _task_guard()
 	t.check(guard != null and not _guard_in_view(guard.global_position),
 			"seed %d: nor any part of the guard set with it" % seed_value)
@@ -831,6 +912,212 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	t.check(calm_reached, "seed %d: and to a calm area" % seed_value)
 	_tear_down(player, director, city)
 
+## **With no roadblock close by, the nearest off-screen route-adjacent section takes one, its whole
+## content replaced** (inbox #1185 in gentle-owl: "if we don't find one closeby we swap one off screen route
+## adjacent event with a roadblock", "it replaces the content of the section with the roadblock"):
+## every roadblock the day placed is spent before she reads the mark, so the task can only swap. The
+## roadblock stands across a route-adjacent section of the day's locations, out of her view, and the
+## section is taken (what it held is `_test_a_swap_replaces_what_the_section_holds`'s). The view is
+## `SWAP_VIEW_HALF_EXTENT` each way, so the nearest sections along her paths are in it.
+const SWAP_VIEW_HALF_EXTENT := Vector2(900.0, 900.0)
+
+func _test_with_none_close_by_a_section_is_taken(t: TestRunner) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	var her := player.global_position
+	# A view wider than the screen, so the sections nearest her are in it and the one taken has to
+	# be found past them.
+	_view = Rect2(her - SWAP_VIEW_HALF_EXTENT, SWAP_VIEW_HALF_EXTENT * 2.0)
+	var map := city.map()
+	for plan in RunCity.events(city).plans():
+		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
+			plan.spend()
+	var locations := RunCity.events(city).walk_events().locations()
+	t.check(locations != null, "(swap) the walk has the day's locations")
+	if locations == null:
+		_tear_down(player, director, city)
+		return
+	var open_before := locations.sections_in(PlacementView.View.ROUTE_ADJACENT)
+	if director.current_step():
+		director.contact().complete_now()
+	var roadblock: EventInstance = director.rider()
+	t.check(roadblock != null and roadblock.row_id() == "roadblock",
+			"(swap) with none close by, reading the mark still offers a roadblock")
+	if roadblock == null:
+		_tear_down(player, director, city)
+		return
+	var taken: Location = null
+	for section in open_before:
+		if section.is_taken() and section.tiles().has_point(map.world_to_tile(roadblock.body_position())):
+			taken = section
+	t.check(taken != null, "(swap) it stands across a route-adjacent section, which is taken for the day")
+	var box := EventFootprints.footprint_of(roadblock.row())
+	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
+			"(swap) no part of it is in her view when it is put there")
+	_tear_down(player, director, city)
+
+## **A section taken across the city is confirmed** (`ResistanceDirector._section_to_swap()`,
+## `WayConfirmation`): every roadblock the day placed is spent and every route-adjacent section but
+## one far from her and from her door is taken already, so the task takes that one, over the whole
+## city. The dawn draws no unit, so the ground between home and that section has not drawn when
+## she reads the mark; by the time the roadblock stands across it, the units along a way from home
+## to ground she touches the section from have drawn (a tile of the section the walk's reach
+## reaches), so no unit drawn later can shut the way.
+func _test_a_section_across_the_city_is_confirmed(t: TestRunner) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	var her := player.global_position
+	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var map := city.map()
+	for plan in RunCity.events(city).plans():
+		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
+			plan.spend()
+	var walk := RunCity.events(city).walk_events()
+	var units := walk.unit_draw().units()
+	var locations := walk.locations()
+	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var home := map.doorstep_world_position()
+	# The route-adjacent section a roadblock stands across that is farthest from her and from her
+	# door, on ground whose unit has not drawn and the walk's reach reaches.
+	var chosen: Location = null
+	var chosen_distance := 0.0
+	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
+		var centre := section.centre()
+		var distance := minf(centre.distance_to(her), centre.distance_to(home))
+		if distance <= chosen_distance or units.undrawn_within(centre, 1.0).is_empty() \
+				or not walk.reach().reaches(map.world_to_tile(centre)) \
+				or EventScheduler.across_the_section(def, GamePlanBuilder.over(map), map, section,
+						RandomNumberGenerator.new()) == null:
+			continue
+		chosen = section
+		chosen_distance = distance
+	t.check(chosen != null and chosen_distance > ResistanceDirector.ROADBLOCK_WIDER_REACH.back(),
+			"(across) a route-adjacent section on undrawn ground stands %.0fpx from her and "
+			% chosen_distance + "from her door, past the widest ring a roadblock is looked for in")
+	if chosen == null:
+		_tear_down(player, director, city)
+		return
+	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
+		if section != chosen:
+			locations.assign(section, EventPlan.new(def, section.centre()))
+	if director.current_step():
+		director.contact().complete_now()
+	var roadblock: EventInstance = director.rider()
+	t.check(roadblock != null and chosen.tiles().has_point(map.world_to_tile(roadblock.body_position())),
+			"(across) the roadblock stands across that section")
+	var confirmed := false
+	var tiles := chosen.tiles()
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			confirmed = confirmed or _the_way_has_drawn(city, Vector2i(x, y))
+	t.check(confirmed,
+			"(across) and the units along a way from home to ground she touches it from have drawn")
+	_tear_down(player, director, city)
+
+## Whether the ground along a way from home to `tile` has drawn, as a place the director confirmed
+## has it (`WayConfirmation`): no undrawn unit of the day lies within `Tuning.EVENT_DRAW_AHEAD` of
+## every `WayConfirmation.STEP`th tile of a shortest way from home over the walk's reach
+## (`DayReach.way_from_home()`), nor of `tile` itself. False where the walk's reach has no way.
+static func _the_way_has_drawn(city: City, tile: Vector2i) -> bool:
+	var walk := RunCity.events(city).walk_events()
+	var units := walk.unit_draw().units()
+	var way := walk.reach().way_from_home(tile)
+	if way.is_empty():
+		return false
+	var asked: Array[Vector2i] = [tile]
+	for k in range(0, way.size(), WayConfirmation.STEP):
+		asked.append(way[k])
+	for at in asked:
+		if not units.undrawn_within(city.map().tile_to_world(at), Tuning.EVENT_DRAW_AHEAD) \
+				.is_empty():
+			return false
+	return true
+
+## **A swap replaces what the section holds, and leaves no mark of it on the map** (inbox #1185 in gentle-owl: "it
+## replaces the content of the section with the roadblock"): every roadblock the day placed is spent,
+## and she reads the mark where it stands, her screen round her. A route-adjacent section out of
+## that view holds one of the day's solid bodies and none of the city's fixed parts, and every other
+## route-adjacent section is taken already, as the roadblock phase takes its own, so it is the
+## section the task takes, however far. Everything it held is spent, and the map's record of what
+## stands is the record from before with the held plans' bodies given back and the roadblock's own
+## body laid: no tile left shut or obstructed by anything that is gone.
+func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	var her := player.global_position
+	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var map := city.map()
+	# Every unit drawn first, as a walk that came near each would have drawn it: the section is
+	# chosen by what it holds, and the swap draws the section's surroundings before it stands its
+	# roadblock (`EventsAhead.swap_in_a_section()`), which this way draws nothing the record from
+	# before would not have.
+	RunCity.events(city).draw_the_ground_round(Vector2.ZERO, INF)
+	for plan in RunCity.events(city).plans():
+		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
+			plan.spend()
+	var walk := RunCity.events(city).walk_events()
+	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var chosen: Location = null
+	var held: Array[EventPlan] = []
+	# Well clear of her screen, the section and anything standing in it.
+	var seen := _view.grow(Tuning.TILE_SIZE * 4.0)
+	for section in walk.locations().sections_in(PlacementView.View.ROUTE_ADJACENT):
+		if seen.intersects(map.tile_rect_to_world(section.tiles())) \
+				or EventScheduler.across_the_section(def, GamePlanBuilder.over(map), map, section,
+						RandomNumberGenerator.new()) == null:
+			continue
+		var holds := walk.placed_within(map.tile_rect_to_world(section.tiles()))
+		var solid := false
+		var fixed := false
+		for plan in holds:
+			solid = solid or plan.obstructs()
+			fixed = fixed or plan.is_a_fixed_part()
+		if not solid or fixed:
+			continue
+		chosen = section
+		held = holds
+		break
+	t.check(chosen != null and not held.is_empty(),
+			"(content) a route-adjacent section holds one of the day's solid bodies (%d held)"
+			% held.size())
+	if chosen == null:
+		_tear_down(player, director, city)
+		return
+	# Every other route-adjacent section is taken already, as dawn's roadblocks take theirs, so the
+	# one chosen is the only section the task can put its roadblock across.
+	var locations := walk.locations()
+	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
+		if section != chosen:
+			locations.assign(section, EventPlan.new(def, section.centre()))
+	# A body is recorded under its plan and, while it is in the world, under its instance too.
+	var expected := map.copy()
+	for plan in held:
+		expected.release_obstruction(plan.get_instance_id())
+		var instance := RunCity.events(city).event_of(plan)
+		if instance:
+			expected.release_obstruction(instance.get_instance_id())
+	if director.current_step():
+		director.contact().complete_now()
+	var roadblock: EventInstance = director.rider()
+	t.check(roadblock != null and chosen.tiles().has_point(map.world_to_tile(roadblock.body_position())),
+			"(content) the roadblock stands across that section")
+	var all_spent := true
+	for plan in held:
+		all_spent = all_spent and plan.is_spent()
+	t.check(all_spent, "(content) everything the section held is spent (%d)" % held.size())
+	var actual := map.copy()
+	for plan in RunCity.events(city).plans():
+		if roadblock != null and RunCity.events(city).event_of(plan) == roadblock:
+			actual.release_obstruction(plan.get_instance_id())
+			actual.release_obstruction(roadblock.get_instance_id())
+	t.check(actual.obstructed_tiles() == expected.obstructed_tiles() \
+			and actual.soft_sealed_tiles() == expected.soft_sealed_tiles(),
+			"(content) the map keeps no body or shut tile of anything the section held")
+	_tear_down(player, director, city)
+
 ## Every tile she can walk to from `from` today, around every closure, sealed way and standing body.
 static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 	var start := map.world_to_tile(from)
@@ -843,7 +1130,7 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next := tile + side
 			if reached.has(next) or not map.in_bounds(next) or not map.is_walkable(next) \
-					or map.is_closed(next) or map.soft_sealed_tiles.has(next) \
+					or map.is_closed(next) or map.soft_sealed_tiles().has(next) \
 					or map.is_obstructed(next):
 				continue
 			reached[next] = true
@@ -852,28 +1139,75 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 
 ## Stands her beside a live roadblock other than `guarded`, the one the guard stands over, where
 ## the red arrow points at it once it has settled from there, and answers it; null when no live
-## roadblock has such a spot. Each try settles the arrow the way `main`'s ticks do
+## roadblock has such a spot. Only where the street runs on past the roadblock on its far side from
+## her (`_a_street_beyond()`), where its guard stands. Each try settles the arrow the way `main`'s ticks do
 ## (`_settle_the_arrow()`), so whatever the arrow's choices do to the guard on the way, they do here.
+## `accept`, when given, is the premise the caller's case needs of the roadblock (it is handed the
+## roadblock and answers whether it will do): a roadblock it refuses is passed over.
 func _her_way_to_another_roadblock(director: ResistanceDirector, player: Stroller,
-		guarded: EventInstance) -> EventInstance:
-	var map := _city.map
-	for roadblock in ResistanceReads.answering(_city.events, director.current_step()):
-		if roadblock == guarded:
+		guarded: EventInstance, accept := Callable()) -> EventInstance:
+	var map := _city.map()
+	for roadblock in ResistanceReads.answering(RunCity.events(_city), director.current_step()):
+		if roadblock == guarded or (accept.is_valid() and not accept.call(roadblock)):
 			continue
-		var centre := map.world_to_tile(roadblock.body_position())
-		# Far enough out that the band round it is mostly out of his trigger range of her, so a spot
-		# for him is found at once when nothing is in view.
-		for radius in [12, 10, 14, 8, 16, 6]:
-			for offset: Vector2i in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius),
-					Vector2i(0, -radius)]:
-				var tile := centre + offset
-				if not map.is_walkable(tile) or map.is_obstructed(tile) or map.is_closed(tile):
-					continue
-				player.global_position = map.tile_to_world(tile)
-				_settle_the_arrow(director)
-				if ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) == roadblock:
-					return roadblock
+		for tile in _spots_to_walk_up_from(map, roadblock):
+			player.global_position = map.tile_to_world(tile)
+			_settle_the_arrow(director)
+			if ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) == roadblock:
+				return roadblock
 	return null
+
+## Where she may stand to walk up to `roadblock`, nearest the try order first: open ground out along
+## the streets from it, far enough out that the band round it is mostly out of his trigger range of
+## her, so a spot for him is found at once when nothing is in view, and only where the street runs on
+## past it on its far side from her (`_a_street_beyond()`), where its guard stands.
+func _spots_to_walk_up_from(map: CityMap, roadblock: EventInstance) -> Array[Vector2i]:
+	var centre := map.world_to_tile(roadblock.body_position())
+	var spots: Array[Vector2i] = []
+	for radius: int in [12, 10, 14, 8, 16, 6]:
+		for offset: Vector2i in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius),
+				Vector2i(0, -radius)]:
+			var tile := centre + offset
+			if not map.is_walkable(tile) or map.is_obstructed(tile) or map.is_closed(tile) \
+					or not _a_street_beyond(map, centre, -offset / radius):
+				continue
+			spots.append(tile)
+	return spots
+
+## Whether two roadblocks stand on one street line: their streets run the same way along the same
+## line of the lattice, so from out along it one stands behind the other.
+static func _on_one_street_line(map: CityMap, a: Vector2, b: Vector2) -> bool:
+	var first := map.street_network().segment_containing(map.world_to_tile(a))
+	var second := map.street_network().segment_containing(map.world_to_tile(b))
+	if first == null or second == null or first.horizontal != second.horizontal:
+		return false
+	return first.a.y == second.a.y if first.horizontal else first.a.x == second.a.x
+
+## Whether the street through a roadblock at `centre` runs on in `direction` to ground a guard may
+## stand on past its band, out to `ResistanceDirector.task_guard_farthest()`, with a clear line back
+## to it: a far side with room for him on the ring a move takes while the band is in her view. Asked
+## of the city's siting (`SpawnSiting.CONTACT_GROUND`), the ground a guard's spot is asked of, and
+## of the line his notice takes (`CityMap.clear_line()`, which anything standing between hides).
+func _a_street_beyond(map: CityMap, centre: Vector2i, direction: Vector2i) -> bool:
+	var siting: SpawnSiting = RunCity.spawn_siting(_city)
+	var ground := siting.ask_of_ground(ResistanceDirector.GUARD_BOX)
+	var body := map.tile_to_world(centre)
+	var across := Vector2i(direction.y, direction.x)
+	# Past the view a move's band test sets (the band's edge and 48px) and the guard's own half-width.
+	var reach := ContactPoint.REACH + 110.0
+	var nearest := ceili((EventCatalogue.by_id("alley_robbery").notice_within()
+			+ reach + 48.0 + 14.0) / Tuning.TILE_SIZE) + 1
+	var reaches := ResistanceDirector.task_guard_farthest(reach)
+	var farthest := floori(reaches / Tuning.TILE_SIZE)
+	for k in range(nearest, farthest + 1):
+		for side in range(-3, 4):
+			var tile := centre + direction * k + across * side
+			var spot := map.tile_to_world(tile)
+			if map.in_bounds(tile) and spot.distance_to(body) <= reaches \
+					and siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot) \
+					and map.clear_line(body, spot, Mover.on_foot()):
+				return true
+	return false
 
 ## Runs the arrow to rest the way the game does: the
 ## physics ticks `main` runs (`ResistanceDirector.tick()`) sweep the walking fields a slice at a time,
@@ -890,46 +1224,48 @@ static func _choose_again(director: ResistanceDirector) -> void:
 ## The task's guard as the street has him: the live `task_guard` among the city's instances
 ## (`EventManager.instances()`), or null once he is gone.
 func _task_guard() -> EventInstance:
-	for instance in _city.events.instances():
-		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
+	for instance in RunCity.events(_city).instances():
+		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
 			return instance
 	return null
 
-## The city of `seed_value` in a run of its own (`RunCity.with_own_run()`, held by the city), so
+## The city of `seed_value` in a run of its own (`RunCity.started_run()`), so
 ## the steps done and the alleys used are this test's and gone with it.
-func _build_city(t, seed_value: int) -> City:
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func _build_city(t: TestRunner, seed_value: int) -> City:
+	_run = RunCity.started_run(RUN_SEED)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(seed_value))
+	RunCity.build(_city, _run, CityGenerator.generate(seed_value))
 	return _city
 
-func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
+func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	var run: RunState = city.run
-	run.resistance.completed_steps = done
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, DAY)
+	var run: RunState = _run
+	GivenRun.completed_steps(run, done)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
-	_seen_through = city.events.visible_view()
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+			city, null,
+			RunCity.spawn_siting(city))
+	_seen_through = RunCity.events(city).visible_view()
 	_seen_through.look(_view, null)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	return director
 
 ## A Stroller at `at`, in the tree, its physics stepped by nobody, handed to `director` and the
 ## test city's events as `main` hands her (`ResistanceDirector.use_player()`,
 ## `EventManager.use_player()`).
-func _rig_player(t, director: ResistanceDirector, at: Vector2) -> Stroller:
+func _rig_player(t: TestRunner, director: ResistanceDirector, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -939,7 +1275,7 @@ func _rig_player(t, director: ResistanceDirector, at: Vector2) -> Stroller:
 	player.set_physics_process(false)
 	player.global_position = at
 	director.use_player(player)
-	_city.events.use_player(player)
+	RunCity.events(_city).use_player(player)
 	return player
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

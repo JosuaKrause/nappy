@@ -14,23 +14,24 @@ const ROWS: Array[String] = ["military_convoy", "abduction", "roadblock", "final
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var totals := {}
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(own_run.attempt_spend.city_state)
+		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var started := Time.get_ticks_msec()
 		var plan := FinalePlanner.route(map)
-		var placements := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec())
+		var placements := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(),
+				GamePlanBuilder.over(map))
 		var took := Time.get_ticks_msec() - started
 		var counts := {}
 		for placement in placements:
-			counts[placement.def.id] = int(counts.get(placement.def.id, 0)) + 1
+			counts[placement.row_id()] = int(counts.get(placement.row_id(), 0)) + 1
 		var parts: Array[String] = []
 		for id in ROWS:
 			parts.append("%s %d" % [id, int(counts.get(id, 0))])

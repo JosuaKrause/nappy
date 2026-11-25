@@ -30,6 +30,8 @@ extends RefCounted
 ## `boot()`'s `before`) and frees that itself.
 
 const UI := preload("res://tests/ui_screens.gd")
+## `main`'s script, the type a booted `main` is held and handed to `before` as.
+const MainScript := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 
@@ -44,7 +46,7 @@ const STILL_SCALE := 0.0000001
 ## A booted `main` and the scratch save it was handed. `free_all()` frees both and removes the
 ## scratch file.
 class Booted:
-	var main: Node2D
+	var main: MainScript
 	var save: GameSave
 	var path := ""
 
@@ -65,12 +67,12 @@ class Booted:
 ## of generated cities (`tests/city_map_cache.gd`'s `source()`); a boot handed none generates its
 ## own. A boot that has not finished within `BOOT_FRAMES` fails `t`'s check and is returned as it
 ## stands.
-static func boot(t, scratch_path: String, config: RunConfig = null,
+static func boot(t: TestRunner, scratch_path: String, config: RunConfig = null,
 		before := Callable(), still := false, maps := Callable()) -> Booted:
 	var booted := Booted.new()
 	booted.path = scratch_path
 	booted.save = GameSave.new(scratch_path)
-	booted.main = MAIN_SCENE.instantiate()
+	booted.main = MAIN_SCENE.instantiate() as MainScript
 	booted.main.use_save(booted.save)
 	if maps.is_valid():
 		booted.main.use_city_maps(maps)
@@ -91,7 +93,7 @@ static func boot(t, scratch_path: String, config: RunConfig = null,
 ## fewer from run to run; at that scale a tick's delta moves nothing a pixel can show (never 0: the
 ## crowd divides a step by its delta), and every boot starts its suite from the same dawn. The
 ## engine's scale is put back before this returns, so no tick passes between the boot and the suite.
-static func until_booted(t, main: Node, still := false) -> void:
+static func until_booted(t: TestRunner, main: Node, still := false) -> void:
 	var clock := Engine.time_scale
 	if still:
 		Engine.time_scale = STILL_SCALE
@@ -111,12 +113,12 @@ static func until_booted(t, main: Node, still := false) -> void:
 ## than one of its own. A reload the boot asks for leaves that sitting where it is, and the boot
 ## standing for the reload takes it again, as a real one takes the sitting parked at the root. The
 ## caller frees the home.
-static func home_playing(t, run: RunState) -> Node:
+static func home_playing(t: TestRunner, run: RunState) -> Node:
 	var home := Node.new()
 	t.add_child(home)
 	var sitting := Sitting.new()
 	sitting.name = Sitting.NODE_NAME
-	sitting.run = run
+	sitting.use_run(run)
 	home.add_child(sitting)
 	return home
 
@@ -124,7 +126,7 @@ static func home_playing(t, run: RunState) -> Node:
 ## it sends the corners and the centre of the 1280x720 design box to where
 ## `ScreenOrientation.to_presented_space()` says they belong once rotated.
 static func carries_the_rotation(layer: CanvasLayer) -> bool:
-	for point in [Vector2.ZERO, ScreenOrientation.DESIGN_SIZE, ScreenOrientation.DESIGN_SIZE * 0.5,
+	for point: Vector2 in [Vector2.ZERO, ScreenOrientation.DESIGN_SIZE, ScreenOrientation.DESIGN_SIZE * 0.5,
 			Vector2(300.0, 40.0)]:
 		if not (layer.transform * point).is_equal_approx(
 				ScreenOrientation.to_presented_space(point, true)):
@@ -156,9 +158,9 @@ static func resistance(main: Node) -> ResistanceDirector:
 	return main.get_node_or_null("Resistance") as ResistanceDirector
 
 ## Her, in whichever world she stands: on its entities layer, the node both worlds name `Entities`
-## (`WorldMap.add_entity()`), read by path since a suite asks every tick.
+## (`WorldContext.add_entity()`), read by path since a suite asks every tick.
 static func player(main: Node) -> Stroller:
-	for world_name in ["City", "Interior"]:
+	for world_name: String in ["City", "Interior"]:
 		var her := main.get_node_or_null(world_name + "/Entities/Stroller") as Stroller
 		if her:
 			return her
@@ -195,7 +197,7 @@ static func touch_controls(main: Node) -> TouchControls:
 
 ## A press on the title's button `button_name` ("Left", "Tap", "Right"), pushed through the
 ## viewport where the layout draws it, with the frames the tap's acknowledgement takes.
-static func press_title(t, main: Node, button_name := "Tap") -> void:
+static func press_title(t: TestRunner, main: Node, button_name := "Tap") -> void:
 	var screen := title(main)
 	await UI.frames(t)
 	UI.push(screen, UI.touch_at(UI.centre(UI.button(screen, button_name)), true))
@@ -203,7 +205,7 @@ static func press_title(t, main: Node, button_name := "Tap") -> void:
 
 ## A press on the summary's continue button (a brief, a day's end, an outcome screen), the way the
 ## title's is pressed.
-static func press_continue(t, main: Node) -> void:
+static func press_continue(t: TestRunner, main: Node) -> void:
 	var screen := summary(main)
 	await UI.frames(t)
 	UI.push(screen, UI.touch_at(UI.centre(UI.button(screen, "Continue")), true))
@@ -217,7 +219,9 @@ static func mode_name_drawn(title: TitleScreen) -> String:
 
 ## The `ui` atlas region the save symbol's `Icon` is drawing, or an empty `Rect2` when it has no
 ## `Icon` or the `Icon` draws no atlas region. A symbol that changed parents has re-acquired its page
-## and holds a new texture object for the same region, so pictures are compared by rectangle.
+## and holds a new texture object for the same region, so pictures are compared by rectangle: the
+## rectangle the bake gave the picture on its page (`AtlasTable.region_rect()`), which is the one every
+## library's `region()` hands out for it.
 static func _save_symbol_region(indicator: SaveIndicator) -> Rect2:
 	var icon := indicator.find_child("Icon", true, false) as TextureRect
 	if icon == null or not icon.texture is AtlasTexture:
@@ -227,11 +231,18 @@ static func _save_symbol_region(indicator: SaveIndicator) -> Rect2:
 ## Whether the save symbol is drawing the struck-through picture (`ui/save_unavailable`).
 static func save_symbol_struck(indicator: SaveIndicator) -> bool:
 	var region := _save_symbol_region(indicator)
-	return region.has_area() and region == indicator.atlas.region(&"ui/save_unavailable").region
+	return region.has_area() and region == Rect2(AtlasTable.baked().region_rect(&"ui/save_unavailable"))
+
+## Whether the save symbol shows at all, fully or fading: its `Icon` draws at an alpha above zero,
+## which the symbol sets from its timeline on every change and every frame it is up. A symbol with
+## no `Icon` shows nothing.
+static func save_symbol_shows(indicator: SaveIndicator) -> bool:
+	var icon := indicator.find_child("Icon", true, false) as TextureRect
+	return icon != null and icon.modulate.a > 0.0
 
 ## Whether the save symbol is drawing the plain picture (`ui/save`). **Missing the `Icon` is not
 ## plain**: a symbol with no icon fails this as it fails `save_symbol_struck()`, so a negative check
 ## on the struck picture is written as this and cannot pass on a symbol that draws nothing.
 static func save_symbol_plain(indicator: SaveIndicator) -> bool:
 	var region := _save_symbol_region(indicator)
-	return region.has_area() and region == indicator.atlas.region(&"ui/save").region
+	return region.has_area() and region == Rect2(AtlasTable.baked().region_rect(&"ui/save"))

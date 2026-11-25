@@ -1,5 +1,5 @@
 extends RefCounted
-## Every mast is outside the zero-cost line (`Planned.counts_against_the_line()`): the six
+## Every mast is outside the zero-cost line (`EventPlan.counts_against_the_line()`): the six
 ## fixed ones by their `mast_id`, and the two day 11 adds — queued near the mark and routed onto her
 ## walk — by being a `loudspeaker` while they are still being sited, before any id is given them.
 ## The player's answer (inbox #684 in coral-lark, "Exempt like fixed masts"), so that the routed mast has a place
@@ -7,27 +7,27 @@ extends RefCounted
 ## day-11 check walks the cities; this is the rule alone. A mast keeps being a plan the other
 ## rows count nothing for, and an ordinary row with the same field still counts.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var mast := EventCatalogue.by_id("loudspeaker")
 	var yeller := EventCatalogue.by_id("homeless_yeller")
 	var here := Vector2(100, 100)
-	var sited := EventScheduler.Planned.new(mast, here)
+	var sited := EventPlan.new(mast, here)
 	t.check(not sited.counts_against_the_line(),
 			"a mast being sited, with no id yet, does not count against the line")
-	var fixed := EventScheduler.Planned.new(mast, here)
-	fixed.mast_id = "site-0"
+	var fixed := EventPlan.new(mast, here)
+	fixed.stand_as_a_mast("site-0")
 	t.check(not fixed.counts_against_the_line(),
 			"a fixed mast does not count against the line")
-	var added := EventScheduler.Planned.new(mast, here)
-	added.mast_id = EventScheduler.added_mast_id(here)
+	var added := EventPlan.new(mast, here)
+	added.stand_as_a_mast(DawnMasts.added_mast_id(here))
 	t.check(not added.counts_against_the_line(),
 			"a queued or routed mast, named by its foot, does not count against the line")
-	var shouting := EventScheduler.Planned.new(yeller, here)
+	var shouting := EventPlan.new(yeller, here)
 	t.check(shouting.counts_against_the_line(),
 			"the man shouting, with the same field, still counts")
-	var announcing := EventScheduler.Planned.new(EventCatalogue.by_id("curfew_announce"), here)
-	t.check(announcing.def.role != EventDef.Role.MAST and announcing.counts_against_the_line(),
+	var announcing := EventPlan.new(EventCatalogue.by_id("curfew_announce"), here)
+	t.check(not announcing.row().is_a_mast() and announcing.counts_against_the_line(),
 			"the curfew announcement, a row of its own, counts when no mast carries it")
-	announcing.mast_id = "site-0"
+	announcing.stand_as_a_mast("site-0")
 	t.check(not announcing.counts_against_the_line(),
 			"and does not once a mast carries it, whatever the row's own role")

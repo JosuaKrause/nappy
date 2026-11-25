@@ -13,6 +13,7 @@ import io
 import json
 import math
 import random
+import sys
 import wave
 from array import array
 from collections.abc import Callable, Sequence
@@ -155,7 +156,10 @@ RECIPE_NOTES: Final = {
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate the deterministic Copper lark A/B sound-effects audition.",
+        description=(
+            "Generate the deterministic Copper lark A/B sound-effects audition: 48 kHz mono PCM16 WAVs, a"
+            " comparison WAV, the listening page and a manifest. It never plays them."
+        ),
         epilog=(
             "example: uv run python tools/synthesize-sfx.py --output "
             "build/sound-lab/scratch --seed 260926 "
@@ -880,6 +884,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     _, recipes = _configuration(args.selection)
     generate(args.output, args.seed, args.selection)
     print(f"Generated {len(recipes) + 1} WAV files in {args.output}")
+    # No edit hook sees a sound file being written, so the tool that writes one names its rules.
+    print("The rules for a generated sound: .claude/skills/sound-effects/SKILL.md", file=sys.stderr)
     return 0
 
 

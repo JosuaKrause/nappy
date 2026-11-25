@@ -5,6 +5,12 @@ description: What every command-line entry point owes — help on --help and -h,
 
 # Command-line entry points
 
+- **`--help` and `-h` print the usage and exit 0**, and nothing else happens on that path.
+- **An unknown flag, a missing value or a stray word is rejected** before any work starts.
+- **The flag list lives in one place per tool.**
+- **A new tool ships with a test of both paths**, in `tools/test_cli_help.sh` or `tools/test_cli_help.py`.
+- **A new tool adds its row to the using-tools catalogue in the same commit.**
+
 **Everything reachable from a shell prints help and refuses what it does not understand**
 (M100-small-real-and-nobodys-every-command-line-entry-point-owes-help). That is every script in
 `tools/`, shell or Python, and the game's own dev-flag surface behind `tools/run.sh`,

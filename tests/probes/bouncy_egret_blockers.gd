@@ -18,7 +18,7 @@ extends RefCounted
 ## - **seal bodies** and **alley mouths**: the bodies the seal pass places, and how many of them stand
 ##   in a through-alley's mouth;
 ## - **closures**: `ClosurePlanner.plan_day`'s street closures, the fenced park's own fence left out;
-## - **walls** and **friction**: placed catalogue rows by `Planned.role`, from
+## - **walls** and **friction**: placed catalogue rows by `EventPlan.role()`, from
 ##   `EventScheduler.build_day` run against the seals and the region wall the way
 ##   `EventManager.start_day` runs it.
 ##
@@ -29,7 +29,7 @@ const SEEDS := 6
 const BASE_SEED := 4242
 const DAYS := [7, 8, 9, 10, 11, 12, 13]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var started := Time.get_ticks_msec()
 	print("\n== hard blockers per day, %d seeds, days %s ==" % [SEEDS, DAYS])
 	print("  day  off-tree  sealed  seal-bodies  alley-mouths  closures  walls  friction")
@@ -52,17 +52,17 @@ func run(t) -> void:
 
 func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("bouncy-egret:%s:%d:%d" % [stream, map.seed_used, day])
+	rng.seed = hash("bouncy-egret:%s:%d:%d" % [stream, map.city_seed(), day])
 	return rng
 
 func _count_day(map: CityMap, day: int) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day)
-	var region_plan := RegionPlanner.plan_day(map, day, tree)
-	var closures := ClosurePlanner.plan_day(map, day, _rng(map, day, "closures"), tree,
-			region_plan)
+	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 	var street_closures := 0
 	for closure in closures:
@@ -72,60 +72,59 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	map.clear_day_holds()
 	for closure in closures:
 		if closure is RoadClosure:
-			map.hold_segment(closure.segment.key())
-	for segment: StreetNetwork.Segment in region_plan.walls:
-		map.hold_segment(segment.key())
-	for segment: StreetNetwork.Segment in region_plan.doors:
-		map.hold_segment(segment.key())
-	for segment: StreetNetwork.Segment in map.network.around_blocks(
-			Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+			map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
+		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
+		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
+	for segment: StreetNetwork.Segment in map.street_network().around_blocks(
+			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
-	for segment: StreetNetwork.Segment in region_plan.walls:
+	for segment: StreetNetwork.Segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment: StreetNetwork.Segment in region_plan.doors:
+	for segment: StreetNetwork.Segment in region_plan.door_segments():
 		boundary[segment.key()] = true
-	for rect: Rect2i in region_plan.alley_walls:
+	for rect: Rect2i in region_plan.walled_alleys():
 		boundary[rect.position] = true
-	for rect: Rect2i in region_plan.alley_doors:
+	for rect: Rect2i in region_plan.door_alleys():
 		boundary[rect.position] = true
 
 	var off_tree := 0
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if map.has_street(segment.key()) and not tree.is_on_the_tree(segment.key()):
 			off_tree += 1
 
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
-			map.held_segments)
+			map.held_streets())
 	var sealed := {}
 	var mouths := 0
 	for plan in seals:
-		var tile := map.world_to_tile(plan.position)
+		var tile := map.world_to_tile(plan.placed_at())
 		if map.tile_at(tile) == GameEnums.TileType.ALLEY:
 			mouths += 1
 			continue
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		if segment:
 			sealed[segment.key()] = true
 
-	var standing: Array[EventScheduler.Planned] = []
+	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
-	standing.append_array(region_plan.wall_bodies)
+	standing.append_array(region_plan.wall_plans())
 	var doors := PackedVector2Array()
-	for body in region_plan.door_bodies:
-		doors.append(body.position)
+	for body in region_plan.door_plans():
+		doors.append(body.placed_at())
 	var consumed: Array[String] = []
 	var walls := 0
 	var friction := 0
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map,
-			CalmAreas.of(map), consumed, [],
-			tree, 0, doors, [] as Array[Vector2i], standing).placements():
+	for plan in GameDawn.of(DaySpec.for_day(day), _rng(map, day, "events"), map).spent(consumed) \
+			.on(tree).doors(doors).standing(standing).plan().placements():
 		if not plan.is_placed():
 			continue
-		if plan.role == GameEnums.BlockerRole.WALL:
+		if plan.role() == GameEnums.BlockerRole.WALL:
 			walls += 1
-		elif plan.role == GameEnums.BlockerRole.FRICTION:
+		elif plan.role() == GameEnums.BlockerRole.FRICTION:
 			friction += 1
 	return {"off": off_tree, "sealed": sealed.size(), "bodies": seals.size(), "mouths": mouths,
 			"closures": street_closures, "walls": walls, "friction": friction}

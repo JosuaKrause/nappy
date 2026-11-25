@@ -1,0 +1,45 @@
+{
+ "version": 1,
+ "name": "silver-egret shadows: day 12's swing frame, the whole city",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1104,
+    3856
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 12,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "east"
+  },
+  "background": {
+   "crowd": true
+  },
+  "events": []
+ },
+ "playback": {
+  "duration": 2,
+  "capture_at": 1,
+  "camera": {
+   "zoom": 2.5,
+   "fixed": true,
+   "fixed_offset": [
+    64,
+    22
+   ]
+  },
+  "observations": []
+ }
+}

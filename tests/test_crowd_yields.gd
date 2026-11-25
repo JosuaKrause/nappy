@@ -6,49 +6,46 @@ extends RefCounted
 ## figure in its lane, moving or standing, never drives through one and never stands in a junction
 ## box for one, and turns round behind one that has parked (inbox #909 in freckled-moose).
 ##
-## The rig is `test_crowd_bodies.gd`'s: a real generated city with no day planned on it, agents
-## placed by hand on a straight stretch of street this seed's city has, and the crowd stepped as it
-## is in the game (`Crowd.step()`, which gathers the map's separation pass first). The figure is a
-## move put on the map's list by hand (`WorldMap.moves`), since what the crowd reads is the move and
-## never the event behind it; the events' own half — a row's `stands_as` and `when_it_stops`
-## reaching its move — is asked of real instances.
+## The rig is `test_crowd_bodies.gd`'s: a crowd on a real generated map (no city around it, no
+## day planned on it), agents placed by hand on a straight stretch of street this seed's map
+## has, and the crowd stepped as it is in the game (`Crowd.step()`, which gathers the map's
+## separation pass first). The figure is a move put on the map's list by hand
+## (`WorldMap.list_move()`), since what the crowd reads is the move and never the event behind
+## it. **The events' own half** — a row's body's `is_walked_round()` and `parks()` reaching its
+## move, an event leaving the list of moves where it goes, and a placement leaving the move
+## where it was put — is `test_event_moves.gd`'s.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-var _rig = RIG.new()
+var _rig: RIG = RIG.new()
 
-func run(t) -> void:
-	_test_a_row_hands_what_it_stands_as_to_its_move(t)
-	_test_a_row_hands_whether_it_has_parked_to_its_move(t)
-	_test_an_event_leaves_the_list_of_moves_where_it_goes(t)
+func run(t: TestRunner) -> void:
 	_test_a_placement_is_not_a_walk(t)
-	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	t.add_child(city)
-	city.build(map)
+	var map := MapCache.of(SEED)
+	var crowd := _rig.a_crowd(t, map)
 
-	_test_a_walker_steps_round_a_standing_object(t, city, map)
-	_test_a_walker_may_pass_through_a_standing_person(t, city, map)
-	_test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, city, map)
-	_test_a_car_turns_round_behind_a_parked_figure(t, city, map)
-	_test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, city, map)
-	_test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t, city, map)
+	_test_a_walker_steps_round_a_standing_object(t, crowd, map)
+	_test_a_walker_may_pass_through_a_standing_person(t, crowd, map)
+	_test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, crowd, map)
+	_test_a_car_turns_round_behind_a_parked_figure(t, crowd, map)
+	_test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, crowd, map)
+	_test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t, crowd, map)
 
-	city.free()
+	_rig.free_crowd(crowd)
 
 # ------------------------------------------------------------------- the rig ---
 
 ## A figure's move, standing at `at`, on `map`'s list: the radius an event figure walks at
 ## (`EventInstance.FIGURE_RADIUS`), keeping its course, a walker going round it while it stands
 ## when `stood_round`.
-func _a_figure(map: CityMap, at: Vector2, stood_round: bool) -> MoveProposal:
+func _a_figure(map: WorldMap, at: Vector2, stood_round: bool) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventInstance.FIGURE_RADIUS
-	move.stood_round = stood_round
-	map.moves.join(move, at)
+	move.use_body_radius(EventInstance.FIGURE_RADIUS)
+	move.be_walked_round(stood_round)
+	map.list_move(move, at)
 	return move
 
 ## Walks one walker down its lane at a figure standing on that lane five tiles ahead, for six
@@ -56,38 +53,39 @@ func _a_figure(map: CityMap, at: Vector2, stood_round: bool) -> MoveProposal:
 ## and whether it got past. With `walked_first`, the figure walks a step into place once the walker
 ## has set off and then stands, so it is one that has moved; without, it was placed there and
 ## never moved.
-func _walk_at_a_standing_figure(city: City, map: CityMap, stood_round: bool,
+func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		walked_first: bool) -> Dictionary:
 	var run: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return {}
-	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
-	city.crowd.clear()
-	var walker: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.WALKER, run.x, 0,
+	crowd.start_day(1, _rng(1), Vector2.ZERO)
+	crowd.clear()
+	var walker: CrowdAgent = _rig.place_on(crowd, map, CrowdAgent.Kind.WALKER, run.x, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 	var at := Vector2(walker.position.x, float(run.y + 5) * Tuning.TILE_SIZE)
 	var figure := _a_figure(map, at - Vector2(0.0, 6.0) if walked_first else at, stood_round)
 	var closest := INF
 	var deepest := walker.position.y
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(6.0 / STEP)):
 		if walked_first and frame == 2:
 			figure.place(at)
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
+		crowd.step(STEP)
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
-	map.moves.leave(figure)
-	return {"closest": closest, "touching": walker.shape.reach() + figure.radius,
+	map.unlist_move(figure)
+	return {"closest": closest,
+			"touching": walker.lane().shape().reach() + figure.body_radius(),
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
 
 ## A vehicle's move, a patrol car's size (the reach of `police_patrol`'s body), standing at `at`
 ## on `map`'s list, keeping its course, parked when `parked`.
 func _a_vehicle(map: CityMap, at: Vector2, parked: bool) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventCatalogue.by_id("police_patrol").shape.reach()
-	move.stood_round = true
-	move.parked = parked
-	map.moves.join(move, at)
+	move.use_body_radius(EventCatalogue.by_id("police_patrol").ground_shape().reach())
+	move.be_walked_round(true)
+	move.be_parked(parked)
+	map.list_move(move, at)
 	return move
 
 ## A vertical corridor of ordinary street holding a whole block's stretch, the junction box after it
@@ -110,12 +108,12 @@ func _a_block_before_a_box(map: CityMap) -> Vector2i:
 ## after that. Reports the frames the car's body overlapped the vehicle's, whether the car ever had
 ## its nose in the box ahead, its speed when the vehicle left, whether it turned round or off the
 ## street, and the furthest south it got.
-func _drive_at_a_vehicle(city: City, map: CityMap, corridor: int, car_along: float,
+func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: float,
 		figure_along: float, parked: bool, stand: float, after: float) -> Dictionary:
-	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
-	city.crowd.clear()
+	crowd.start_day(1, _rng(1), Vector2.ZERO)
+	crowd.clear()
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
-	var car: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane, car_along,
+	var car: CrowdAgent = _rig.place_on(crowd, map, CrowdAgent.Kind.CAR, corridor, lane, car_along,
 			1.0)
 	var at := Vector2(CrowdLanes.lane_centre(corridor, lane), figure_along)
 	var figure := _a_vehicle(map, at + Vector2(6.0, 0.0), parked)
@@ -123,21 +121,21 @@ func _drive_at_a_vehicle(city: City, map: CityMap, corridor: int, car_along: flo
 	var in_the_box := false
 	var speed_when_it_left := -1.0
 	var deepest := car.position.y
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round((stand + after) / STEP)):
 		if frame == 2:
 			figure.place(at)
 		if frame == int(round(stand / STEP)):
 			speed_when_it_left = car.speed()
-			map.moves.leave(figure)
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
-		if figure.on_the_list and _overlaps(car, figure):
+			map.unlist_move(figure)
+		crowd.step(STEP)
+		if figure.is_on_the_list() and _overlaps(car, figure):
 			overlapping += 1
 		in_the_box = in_the_box or car.junction_occupied().x >= 0
 		if _rig.still_driving_down(car, corridor):
 			deepest = maxf(deepest, car.position.y)
-	if figure.on_the_list:
-		map.moves.leave(figure)
+	if figure.is_on_the_list():
+		map.unlist_move(figure)
 	var turned: bool = not _rig.still_driving_down(car, corridor)
 	return {"overlapping": overlapping, "in_the_box": in_the_box, "speed": speed_when_it_left,
 			"turned": turned, "deepest": deepest, "at": at, "car": car}
@@ -145,195 +143,52 @@ func _drive_at_a_vehicle(city: City, map: CityMap, corridor: int, car_along: flo
 ## Whether a crowd car's capsule overlaps a figure's body: its centre nearer the car's spine than
 ## the two radii.
 func _overlaps(car: CrowdAgent, figure: MoveProposal) -> bool:
-	var spine := car.heading() * car.shape.half_length
-	var nearest := Geometry2D.get_closest_point_to_segment(figure.from, car.position - spine,
+	var spine := car.heading() * car.lane().shape().spine_half_length()
+	var nearest := Geometry2D.get_closest_point_to_segment(figure.stands_at(), car.position - spine,
 			car.position + spine)
-	return nearest.distance_to(figure.from) < car.shape.radius + figure.radius - 0.5
+	return nearest.distance_to(figure.stands_at()) < car.lane().shape().rounding_radius() + figure.body_radius() - 0.5
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-yields:%d:%d" % [SEED, day])
 	return rng
 
-# ------------------------------------------------------- what a figure is ---
-
-## An event of the row `id` set up over a map of its own (`EventInstance.setup()`'s map argument, as
-## `EventSpawner.create()` hands it) and put in the tree, where it joins its move to that map's list as
-## it does in the game (`EventInstance._enter_tree()`). The move is what the crowd's separation pass
-## reads off the list (`ProposedMoves.keeping_their_course()`), so it is read there and not off the
-## instance. `move` is null when the list does not hold exactly the one move.
-func _a_row_on_a_map(t, id: String) -> Dictionary:
-	var map := WorldMap.open_ground()
-	var instance := EventInstance.new()
-	instance.skip_draw = true
-	instance.setup(EventCatalogue.by_id(id), Vector2(100.0, 100.0), PackedVector2Array(),
-			Vector2.RIGHT, map)
-	t.add_child(instance)
-	var listed := map.moves.keeping_their_course()
-	return {"instance": instance, "map": map,
-			"move": listed[0] if listed.size() == 1 and map.moves.size() == 1 else null}
-
-## **A row's `stands_as` reaches its move** (`EventInstance.setup()`): the patrol car, a vehicle, is
-## walked round while it stands; the charging dog, an animal, is not, so the dog waiting on the map
-## before its charge may be walked through, as the player allowed. One row of each answer shows the
-## declaration is handed over rather than fixed. That every row declares it is
-## `EventDef.validate()`'s refusal to load without.
-func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
-	var expected := {"police_patrol": true, "charging_dog": false}
-	for id: String in expected:
-		var rig := _a_row_on_a_map(t, id)
-		var move: MoveProposal = rig["move"]
-		t.check(move != null, "%s puts one move on its map's list" % id)
-		if move != null:
-			t.check(move.stood_round == expected[id],
-					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
-		rig["instance"].free()
-
-## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
-## a stall, which never moves, has parked from the start; the fire engine has not while it
-## drives and has once it stops at its fire, and not once it leaves; the patrol car and the charging
-## dog go on, so never. That every row declares it is `EventDef.validate()`'s refusal to load
-## without.
-func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
-	var stall := _a_row_on_a_map(t, "market_stall")
-	var stall_move: MoveProposal = stall["move"]
-	t.check(stall_move != null and stall_move.parked,
-			"a stall, which never moves, has parked from the start")
-	stall["instance"].free()
-	var engine := _a_row_on_a_map(t, "fire_truck")
-	var engine_move: MoveProposal = engine["move"]
-	var engine_instance: EventInstance = engine["instance"]
-	t.check(engine_move != null and not engine_move.parked, "the fire engine has not parked while it drives")
-	engine_instance.transition(EventInstance.Phase.PARKED)
-	t.check(engine_move != null and engine_move.parked, "and has once it stops at its fire")
-	engine_instance.transition(EventInstance.Phase.LEAVING)
-	t.check(engine_move != null and not engine_move.parked, "and nothing leaving has parked")
-	engine_instance.free()
-	for id: String in ["police_patrol", "charging_dog"]:
-		var rig := _a_row_on_a_map(t, id)
-		var instance: EventInstance = rig["instance"]
-		instance.transition(EventInstance.Phase.PARKED)
-		var move: MoveProposal = rig["move"]
-		t.check(move != null and not move.parked, "%s goes on, so it never reads as parked" % id)
-		instance.free()
-
-# -------------------------------------------------- the list of moves keeps up ---
-
-## An event manager over a bare map, with `alley_robbery` planned at `at` and streamed in: the rig
-## `test_event_behaviours.gd` streams a plan with. The manager is handed its world as the escape's
-## building is (`EventManager.setup_world()`: a map and a run of its own, here a fresh `RunState`), the
-## plan joins the day's as one planned after dawn does (`EventStreaming.add()`, which the events
-## ahead of her call) and is streamed in around `at`. `move` is the one move the streamed-in event put
-## on the map's list.
-func _a_manager_with_a_live_event(t, at: Vector2) -> Dictionary:
-	var world := WorldContext.new()
-	t.add_child(world)
-	var run := RunState.new()
-	run.start_run(SEED)
-	var map := CityMap.new()
-	map.world = world
-	var manager := EventManager.new()
-	manager.setup_world(map, run)
-	t.add_child(manager)
-	var plan := EventScheduler.Planned.new(EventCatalogue.by_id("alley_robbery"), at)
-	manager.streaming.add(plan)
-	manager.stream_around(at)
-	var listed := map.moves.all()
-	return {"world": world, "manager": manager, "plan": plan,
-			"move": listed[0] if listed.size() == 1 else null}
-
-func _free_the_manager(rig: Dictionary) -> void:
-	rig.manager.free()
-	rig.world.free()
-
-## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
-## frame when its node leaves the tree: a finished one, one streamed out, and every one `clear()`
-## throws away. Nothing here ends a frame, as the probes' loops do not.
-func _test_an_event_leaves_the_list_of_moves_where_it_goes(t) -> void:
-	var at := Vector2(5000.0, 5000.0)
-	var rig := _a_manager_with_a_live_event(t, at)
-	var manager: EventManager = rig.manager
-	var moves: ProposedMoves = manager.world.map.moves
-	var live: EventInstance = rig.plan.live
-	var move: MoveProposal = rig.move
-	t.check(live != null and move != null and moves.has(move), "a streamed-in event is on the list")
-	if live == null or move == null:
-		_free_the_manager(rig)
-		return
-	live.transition(EventInstance.Phase.DONE)
-	t.check(moves.has(move), "a finished event stays until the manager retires it")
-	manager.streaming.retire_finished()
-	t.check(not moves.has(move) and live.is_queued_for_deletion(),
-			"retired once finished, it is off the list in the same call, with no frame between")
-	_free_the_manager(rig)
-
-	rig = _a_manager_with_a_live_event(t, at)
-	manager = rig.manager
-	moves = manager.world.map.moves
-	live = rig.plan.live
-	move = rig.move
-	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
-	manager.stream_around(far)
-	t.check(move != null and rig.plan.live == null and not moves.has(move),
-			"streamed out, it is off the list in the same call")
-	_free_the_manager(rig)
-
-	rig = _a_manager_with_a_live_event(t, at)
-	manager = rig.manager
-	moves = manager.world.map.moves
-	move = rig.move
-	t.check(move != null and moves.has(move), "a streamed-in event is on the list to be cleared")
-	manager.clear()
-	t.check(move != null and not moves.has(move) and moves.size() == 0,
-			"EventManager.clear() empties the list (%d left)" % moves.size())
-	_free_the_manager(rig)
+const PLACEMENT_WALK := 8.0
 
 ## **A resting figure stood on other ground by hand is placed, not walked there**
-## (`EventManager.move_extra()`, the task guard following her): the pass reads no velocity off a
-## step longer than `SeparationPass.PLACEMENT_STEP`, and the figure does not count as under way.
-func _test_a_placement_is_not_a_walk(t) -> void:
+## (`MoveProposal.place()`): the separation pass reads no velocity off a step longer than
+## `SeparationPass.PLACEMENT_STEP`, and the figure does not count as under way. A step under that
+## limit is still a walk, so the pass does read steps at all. Both figures are moves put on a bare
+## map's list by hand, since the pass reads the move and never the event behind it.
+func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
-	var rig := _a_manager_with_a_live_event(t, at)
-	var manager: EventManager = rig.manager
-	var moves: ProposedMoves = manager.world.map.moves
-	var live: EventInstance = rig.plan.live
-	var pass_over := SeparationPass.new(moves)
-	var live_move: MoveProposal = rig.move
-	t.check(live_move != null, "the streamed-in figure is on the list to be placed")
-	if live_move == null:
-		_free_the_manager(rig)
-		return
-	live_move.radius = EventInstance.FIGURE_RADIUS
+	var map := WorldMap.open_ground()
+	var placed := _a_figure(map, at, false)
+	var pass_over := map.course_keepers()
 	pass_over.gather()
-	manager.move_extra(live, at + Vector2(400.0, 0.0))
+	placed.place(at + Vector2(400.0, 0.0))
 	pass_over.gather()
 	t.check(pass_over.walker_keepers().is_empty() and not pass_over.has_keepers_for_cars(),
 			"a 400px placement is no walk: no walker and no car gives way to the person put there")
-	var walker := _a_figure_move_for_the_walk(moves, at)
+	var walker := _a_figure(map, at, false)
 	pass_over.gather()
 	walker.place(at + Vector2(PLACEMENT_WALK, 0.0))
 	pass_over.gather()
+	var kept: Array[SeparationPass.Keeper] = []
 	for keeper in pass_over.walker_keepers():
 		if keeper.move == walker:
-			t.check(keeper.step == Vector2(PLACEMENT_WALK, 0.0) and keeper.ticks_still == 0,
-					"a step under the placement limit is still a walk")
-	_free_the_manager(rig)
-
-const PLACEMENT_WALK := 8.0
-
-func _a_figure_move_for_the_walk(moves: ProposedMoves, at: Vector2) -> MoveProposal:
-	var move := MoveProposal.new()
-	move.radius = EventInstance.FIGURE_RADIUS
-	moves.join(move, at)
-	return move
+			kept.append(keeper)
+	t.check(kept.size() == 1, "a step under the placement limit puts the figure among the keepers")
+	if kept.size() == 1:
+		t.check(kept[0].step == Vector2(PLACEMENT_WALK, 0.0) and kept[0].ticks_still == 0,
+				"a step under the placement limit is still a walk")
 
 # ------------------------------------------------------ a walker meets one ---
 
 ## **A walker walks round an object or a vehicle standing in its way** (inbox #905 in freckled-moose): placed on its
 ## lane and never moved, like a parked van, its body is never entered, and the walker gets past it.
-func _test_a_walker_steps_round_a_standing_object(t, city: City, map: CityMap) -> void:
-	var got := _walk_at_a_standing_figure(city, map, true, false)
+func _test_a_walker_steps_round_a_standing_object(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
+	var got := _walk_at_a_standing_figure(crowd, map, true, false)
 	t.check(not got.is_empty(), "this city has a straight stretch of street to stand a figure on")
 	if got.is_empty():
 		return
@@ -345,8 +200,8 @@ func _test_a_walker_steps_round_a_standing_object(t, city: City, map: CityMap) -
 ## **A walker may walk through a person or an animal standing still** (inbox #905 in freckled-moose): one that walked
 ## into place and has stood there since, like a dog crouched before its charge, is not stood round,
 ## and the walker keeps to its lane through it.
-func _test_a_walker_may_pass_through_a_standing_person(t, city: City, map: CityMap) -> void:
-	var got := _walk_at_a_standing_figure(city, map, false, true)
+func _test_a_walker_may_pass_through_a_standing_person(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
+	var got := _walk_at_a_standing_figure(crowd, map, false, true)
 	if got.is_empty():
 		return
 	t.check(got["closest"] < got["touching"] - 1.0,
@@ -359,14 +214,14 @@ func _test_a_walker_may_pass_through_a_standing_person(t, city: City, map: CityM
 ## **A car stands behind a vehicle stopped in its lane for as long as it stands, and goes on when it
 ## goes** (inbox #909 in freckled-moose): the patrol car at a red light or while its man is out is waited for, well past
 ## a moment's pause, and the car never turns round for it.
-func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, city: City,
+func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	t.check(block.x >= 0, "this city has a block's stretch before a junction box to drive down")
 	if block.x < 0:
 		return
 	var tile := float(Tuning.TILE_SIZE)
-	var got := _drive_at_a_vehicle(city, map, block.x, (float(block.y) + 1.5) * tile,
+	var got := _drive_at_a_vehicle(crowd, map, block.x, (float(block.y) + 1.5) * tile,
 			(float(block.y + Tuning.BLOCK_SIZE) - 0.5) * tile, false, 4.0, 3.0)
 	t.check(got["speed"] >= 0.0 and got["speed"] < Tuning.CAR_STOPPED_SPEED,
 			"a car stands behind a stopped vehicle for four seconds (%.1fpx/s when it left)"
@@ -379,12 +234,12 @@ func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, city
 
 ## **A car behind a parked vehicle in its lane turns round** (inbox #909 in freckled-moose), as it does at a blocked
 ## street, rather than standing behind it for the rest of the day.
-func _test_a_car_turns_round_behind_a_parked_figure(t, city: City, map: CityMap) -> void:
+func _test_a_car_turns_round_behind_a_parked_figure(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	if block.x < 0:
 		return
 	var tile := float(Tuning.TILE_SIZE)
-	var got := _drive_at_a_vehicle(city, map, block.x, (float(block.y) + 1.5) * tile,
+	var got := _drive_at_a_vehicle(crowd, map, block.x, (float(block.y) + 1.5) * tile,
 			(float(block.y + Tuning.BLOCK_SIZE) - 0.5) * tile, true, 8.0, 0.0)
 	t.check(got["turned"], "a car behind a parked vehicle turns round or off the street")
 	t.check(got["overlapping"] == 0, "without ever driving into it (%d frames it did)"
@@ -396,14 +251,14 @@ func _test_a_car_turns_round_behind_a_parked_figure(t, city: City, map: CityMap)
 ## its braking distance from the moment it appears, so the brake alone leaves the car in it and only
 ## the step hold (`CarStrategy.give_way_on_the_step()`) keeps the overlap at 0: with that hold removed
 ## this check fails.
-func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, city: City,
+func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	if block.x < 0:
 		return
 	var tile := float(Tuning.TILE_SIZE)
 	var car_along := (float(block.y) + 1.5) * tile
-	var got := _drive_at_a_vehicle(city, map, block.x, car_along, car_along + 2.0 * tile, false,
+	var got := _drive_at_a_vehicle(crowd, map, block.x, car_along, car_along + 2.0 * tile, false,
 			5.0, 0.0)
 	t.check(got["overlapping"] == 0,
 			"a car never drives through a vehicle that stops right in front of it (%d frames it did)"
@@ -412,15 +267,15 @@ func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, city
 ## **A car never stands in a junction box for a figure standing past it** (inbox #909 in freckled-moose, the box rule
 ## of the **crowd-traffic** skill): it holds at the stop line, since a car standing in the box would
 ## hold the crossing street too.
-func _test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t, city: City,
+func _test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	if block.x < 0:
 		return
 	var tile := float(Tuning.TILE_SIZE)
 	var far_side := float(block.y + Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH) * tile
-	var reach := EventCatalogue.by_id("police_patrol").shape.reach()
-	var got := _drive_at_a_vehicle(city, map, block.x, (float(block.y) + 1.5) * tile,
+	var reach := EventCatalogue.by_id("police_patrol").ground_shape().reach()
+	var got := _drive_at_a_vehicle(crowd, map, block.x, (float(block.y) + 1.5) * tile,
 			far_side + reach + 8.0, false, 6.0, 0.0)
 	t.check(not got["in_the_box"], "a car holds at the line for a vehicle standing just past the box")
 	t.check(got["overlapping"] == 0, "and never drives into it (%d frames it did)"

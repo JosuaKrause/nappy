@@ -5,11 +5,12 @@ extends RefCounted
 ## docs/EVENTS.md, "Solid things are solid".
 ##
 ## A shape is a **spine** plus a **radius**: the spine is either a point or a segment of
-## `half_length` along local +X, and `radius` is the rounding around it. That gives a disc (point
-## spine) and a capsule (segment spine). **A third kind, a rectangle, exists only because a
-## building's footprint is one** — `half_extents`, an axis-aligned box in the object's own frame —
-## and nothing else in the game uses it: every other obstructing thing reduces to a point or a
-## band, which is why `band()` below still hands out only those two. There is still no polygon.
+## half-length along local +X, and the radius is the rounding around it. That gives a disc
+## (point spine) and a capsule (segment spine). **A third kind, a rectangle, exists only because
+## a building's footprint is one** — its half extents, an axis-aligned box in the object's own
+## frame — and nothing else in the game uses it: every other obstructing thing reduces to a
+## point or a band, which is why `band()` below still hands out only those two. There is still
+## no polygon.
 ##
 ## **The excitement field is the Minkowski sum of this datum and a kernel** — `field_distance()`
 ## and `field_outline()` below, read by an event's field (`EventInstance.field_at()`), a crowd
@@ -22,37 +23,57 @@ extends RefCounted
 ## docs/EVENTS.md, "The emission model".
 
 ## Which of the three kinds this shape is. A point and a segment could still be told apart by
-## `half_length` being positive, the way this file did before the rectangle existed, but a
-## rectangle needs its own tag — nothing about `half_extents` alone says "this is the field in use"
-## the way a positive `half_length` does for a segment.
+## its half-length being positive, the way this file did before the rectangle existed, but a
+## rectangle needs its own tag — nothing about its half extents alone says "this is the one in
+## use" the way a positive half-length does for a segment.
 enum Kind { POINT, SEGMENT, RECT }
 
-var kind := Kind.POINT
+var _kind := Kind.POINT
 ## The spine's half-length along local +X. Zero for a point or a rectangle.
-var half_length := 0.0
+var _half_length := 0.0
 ## The rounding around the spine — the shape's half-thickness perpendicular to it. Zero for a
-## rectangle, whose own half-thickness is the smaller of `half_extents`.
-var radius := 0.0
+## rectangle, whose own half-thickness is the smaller of its half extents.
+var _radius := 0.0
 ## Half-width and half-depth of a rectangle, in the object's own frame, local X by local Y. Zero
 ## for a point or a segment.
-var half_extents := Vector2.ZERO
+var _half_extents := Vector2.ZERO
+
+## Whether this is a rectangle (a building's lot), which lies its own frame rather than a spine.
+func is_rect() -> bool:
+	return _kind == Kind.RECT
+
+## Whether this is a segment: a spine with a rounding around it (a band, a fence, a car).
+func is_segment() -> bool:
+	return _kind == Kind.SEGMENT
+
+## The spine's half-length (zero for a point or a rectangle).
+func spine_half_length() -> float:
+	return _half_length
+
+## The rounding around the spine, the half-thickness across it (zero for a rectangle).
+func rounding_radius() -> float:
+	return _radius
+
+## A rectangle's half-width and half-depth in its own frame (zero for a point or a segment).
+func rect_half_extents() -> Vector2:
+	return _half_extents
 
 func _init(half_length_in: float, radius_in: float) -> void:
-	half_length = half_length_in
-	radius = radius_in
+	_half_length = half_length_in
+	_radius = radius_in
 
 ## A point shape: the disc every stationary point object in the game already draws and collides
 ## as.
 static func point(radius_in: float) -> GroundShape:
 	var shape := GroundShape.new(0.0, radius_in)
-	shape.kind = Kind.POINT
+	shape._kind = Kind.POINT
 	return shape
 
 ## A segment shape: a spine of `half_length_in` along local +X, rounded by `radius_in` — the
 ## capsule a spread-drawn row or a wide vehicle reduces to.
 static func segment(half_length_in: float, radius_in: float) -> GroundShape:
 	var shape := GroundShape.new(half_length_in, radius_in)
-	shape.kind = Kind.SEGMENT
+	shape._kind = Kind.SEGMENT
 	return shape
 
 ## A rectangle shape: `half_extents_in` in the object's own frame — a building's footprint, halved.
@@ -60,8 +81,8 @@ static func segment(half_length_in: float, radius_in: float) -> GroundShape:
 ## already a point or a band.
 static func rect(half_extents_in: Vector2) -> GroundShape:
 	var shape := GroundShape.new(0.0, 0.0)
-	shape.kind = Kind.RECT
-	shape.half_extents = half_extents_in
+	shape._kind = Kind.RECT
+	shape._half_extents = half_extents_in
 	return shape
 
 ## The fixed rounding a spread-drawn or stationary-vehicle row's segment carries, whatever its own
@@ -69,7 +90,7 @@ static func rect(half_extents_in: Vector2) -> GroundShape:
 ## pavement band leaves 8px a side, under her 14px `Tuning.PLAYER_BODY_RADIUS`, so every pavement
 ## a band blocks today stays blocked; and a capsule of a given reach lies entirely inside the disc
 ## of the same reach it replaces (a capsule's every point is within `reach()` of its own centre,
-## same as a circle's), so every reachability guarantee stated over `obstructs_radius` as a disc
+## same as a circle's), so every reachability guarantee stated over `obstructs_within()` as a disc
 ## radius holds for the capsule by inclusion.
 const BAND_RADIUS := 24.0
 
@@ -84,13 +105,13 @@ static func band(reach: float) -> GroundShape:
 	return GroundShape.point(reach)
 
 ## The furthest any point of the shape lies from its own origin — the worst axis a planner has to
-## clear, and the number every disc-shaped guarantee in the game (`obstructs_radius`, a lethal
+## clear, and the number every disc-shaped guarantee in the game (`obstructs_within()`, a lethal
 ## radius, a park's obstruction allowance) is stated over. A rectangle's is its half-diagonal, the
 ## corner rather than an edge.
 func reach() -> float:
-	if kind == Kind.RECT:
-		return half_extents.length()
-	return half_length + radius
+	if _kind == Kind.RECT:
+		return _half_extents.length()
+	return _half_length + _radius
 
 ## Every tile of the lattice this shape's own body stands on when it is placed at `at` in world
 ## space, lying along `axis` — turned into the tiles `CityMap.obstructed_tiles` records so the
@@ -118,58 +139,50 @@ func tiles_under(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> Array[Vector2i]:
 	var tile := float(Tuning.TILE_SIZE)
 	var covered: Array[Vector2i] = []
 	covered.append(Vector2i(floori(at.x / tile), floori(at.y / tile)))
-	var low := Vector2i(floori((at.x - core.x - radius) / tile),
-			floori((at.y - core.y - radius) / tile))
-	var high := Vector2i(floori((at.x + core.x + radius) / tile),
-			floori((at.y + core.y + radius) / tile))
+	var low := Vector2i(floori((at.x - core.x - _radius) / tile),
+			floori((at.y - core.y - _radius) / tile))
+	var high := Vector2i(floori((at.x + core.x + _radius) / tile),
+			floori((at.y + core.y + _radius) / tile))
 	for y in range(low.y, high.y + 1):
 		for x in range(low.x, high.x + 1):
 			var here := Vector2i(x, y)
 			if here == covered[0]:
 				continue
 			var centre := Vector2((float(x) + 0.5) * tile, (float(y) + 0.5) * tile)
-			if distance_to_spine((centre - at).rotated(-along.angle())) <= radius:
+			if distance_to_spine((centre - at).rotated(-along.angle())) <= _radius:
 				covered.append(here)
 	return covered
 
 ## The half-extents, in world axes, of the box the rounding is applied around: the origin for a
 ## point, the spine for a segment, the whole rectangle for a rect (which carries its rounding in
-## the box itself and has `radius` zero).
+## the box itself and has a rounding radius of zero).
 func _spine_half_extents(along: Vector2) -> Vector2:
-	match kind:
+	match _kind:
 		Kind.RECT:
 			var across_axis := Vector2(-along.y, along.x)
 			return Vector2(
-					absf(along.x) * half_extents.x + absf(across_axis.x) * half_extents.y,
-					absf(along.y) * half_extents.x + absf(across_axis.y) * half_extents.y)
+					absf(along.x) * _half_extents.x + absf(across_axis.x) * _half_extents.y,
+					absf(along.y) * _half_extents.x + absf(across_axis.y) * _half_extents.y)
 		Kind.SEGMENT:
-			return Vector2(absf(along.x), absf(along.y)) * half_length
+			return Vector2(absf(along.x), absf(along.y)) * _half_length
 		_:
 			return Vector2.ZERO
-
-## The half-thickness perpendicular to the spine — the shape's narrow axis, and the one a spread
-## body is measured against when it has to fit a pavement band rather than merely reach across it.
-## A rectangle's is its smaller half-extent.
-func across() -> float:
-	if kind == Kind.RECT:
-		return minf(half_extents.x, half_extents.y)
-	return radius
 
 ## Distance from a local point to the spine: zero on the spine itself, the perpendicular distance
 ## beside a segment's middle, and the Euclidean distance to the nearer end once `local` is past
 ## it. Zero for a point shape, whose spine is the origin. Zero anywhere inside a rectangle, and the
 ## ordinary point-to-box distance outside it. What `field_distance()` below prices a stationary
 ## emitter's field over — a point body's field is exactly the circle this always gave, and a
-## segment's is the capsule it always gave, `inner_radius`/`outer_radius` now meaning distance from
+## segment's is the capsule it always gave, the field's core and outer radii meaning distance from
 ## the spine rather than from the centre.
 func distance_to_spine(local: Vector2) -> float:
-	match kind:
+	match _kind:
 		Kind.RECT:
-			var dx := maxf(absf(local.x) - half_extents.x, 0.0)
-			var dy := maxf(absf(local.y) - half_extents.y, 0.0)
+			var dx := maxf(absf(local.x) - _half_extents.x, 0.0)
+			var dy := maxf(absf(local.y) - _half_extents.y, 0.0)
 			return Vector2(dx, dy).length()
 		Kind.SEGMENT:
-			var clamped_x := clampf(local.x, -half_length, half_length)
+			var clamped_x := clampf(local.x, -_half_length, _half_length)
 			return local.distance_to(Vector2(clamped_x, 0.0))
 		_:
 			return local.length()
@@ -227,7 +240,7 @@ func field_outline(at: Vector2, axis: Vector2, velocity: Vector2, level: float,
 		samples: int = _ELLIPSE_SAMPLES) -> PackedVector2Array:
 	if not velocity.is_zero_approx():
 		return _eccentric_field_outline(at, velocity, level, samples)
-	if kind == Kind.SEGMENT:
+	if _kind == Kind.SEGMENT:
 		return _stadium_field_outline(at, axis, level, samples)
 	return _circle_field_outline(at, level, samples)
 
@@ -248,13 +261,13 @@ func _circle_field_outline(centre: Vector2, level: float, samples: int) -> Packe
 
 ## A stadium at radius `level` about this shape's own spine — the same two-cap-and-two-sides
 ## construction `DebugLayers._capsule_outline` draws for a body, at the field's `level` instead of
-## the body's own `radius`.
+## the body's own rounding radius.
 func _stadium_field_outline(at: Vector2, axis: Vector2, level: float, samples: int
 		) -> PackedVector2Array:
 	var along := axis.normalized()
 	var base := along.angle()
-	var lead := at + along * half_length
-	var trail := at - along * half_length
+	var lead := at + along * _half_length
+	var trail := at - along * _half_length
 	var half_samples := maxi(2, samples / 2)
 	var points := PackedVector2Array()
 	for i in half_samples + 1:
@@ -284,8 +297,8 @@ func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samp
 	return points
 
 ## This shape's own collision resource: a `CircleShape2D` for a point, a `CapsuleShape2D`
-## (`radius`, `height = 2 * reach()`) for a segment, a `RectangleShape2D` (`size = 2 *
-## half_extents`) for a rectangle.
+## (the rounding radius, `height = 2 * reach()`) for a segment, a `RectangleShape2D` (`size` twice
+## the half extents) for a rectangle.
 ##
 ## **Godot's capsule stands along local Y.** A caller that wants this shape's segment lying along
 ## its own local X — the axis every other method here treats as "along the spine" — has to rotate
@@ -293,18 +306,18 @@ func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samp
 ## angle minus 90° when that axis is not X itself. A rectangle's own X/Y are already the frame it
 ## was built in, so nothing analogous applies to it — `Building` never rotates its own body.
 func collision_shape() -> Shape2D:
-	match kind:
+	match _kind:
 		Kind.POINT:
 			var circle := CircleShape2D.new()
-			circle.radius = radius
+			circle.radius = _radius
 			return circle
 		Kind.RECT:
 			var rectangle := RectangleShape2D.new()
-			rectangle.size = half_extents * 2.0
+			rectangle.size = _half_extents * 2.0
 			return rectangle
 		_:
 			var capsule := CapsuleShape2D.new()
-			capsule.radius = radius
+			capsule.radius = _radius
 			capsule.height = 2.0 * reach()
 			return capsule
 
@@ -333,7 +346,7 @@ const _ELLIPSE_SAMPLES := 28
 ## the rectangle's own local frame, so a rectangle turned to face `axis` still reads as lying flat
 ## in the same oblique view every other shadow does.
 func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2Array:
-	match kind:
+	match _kind:
 		Kind.POINT:
 			return _squashed_ellipse_points(at)
 		Kind.RECT:
@@ -341,31 +354,111 @@ func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2
 		_:
 			var along := axis.normalized()
 			var points := PackedVector2Array()
-			points.append_array(_ellipse_points(at + along * half_length))
-			points.append_array(_ellipse_points(at - along * half_length))
+			points.append_array(_ellipse_points(at + along * _half_length))
+			points.append_array(_ellipse_points(at - along * _half_length))
 			return Geometry2D.convex_hull(points)
 
 ## Draws this shape's shadow at `at`, in `canvas`'s own coordinates — the filled polygon
 ## `shadow_outline()` traces, so the layer and the shadow cannot disagree about what shape it is.
 ##
-## A shadow narrower than a pixel is not drawn at all. A radius that has shrunk toward zero — a
+## A shadow narrower than a pixel is not drawn at all (`casts_a_shadow()`).
+func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
+	if not casts_a_shadow():
+		return
+	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
+
+## Whether this shape's shadow covers a pixel at all. A radius that has shrunk toward zero — a
 ## bird's contact shadow fading as it climbs to `BIRD_SHADOW_CEILING`, anything else that scales a
 ## shadow away — collapses every sample of the outline onto one point, and the renderer refuses
 ## the polygon with "Invalid polygon data, triangulation failed" once a frame for as long as it
 ## lasts. Nothing is lost by skipping it: it would have covered no pixel.
-func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
-	if radius < MIN_DRAWN_SHADOW_RADIUS:
-		return
-	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
+func casts_a_shadow() -> bool:
+	return _radius >= MIN_DRAWN_SHADOW_RADIUS
 
 ## Half a pixel: below this every sample of the outline rounds onto the same point.
 const MIN_DRAWN_SHADOW_RADIUS := 0.5
+
+# ------------------------------------------------------- the shadow of what it stands on ---
+# A thing standing on wheels or legs casts its shadow where they meet the ground, never across its
+# whole picture (minty-hedgehog 1; azure-koala 10): one oval per pair of wheels or legs, each lying
+# across the thing at its axle or its A-frame, rather than the one oval or capsule
+# `shadow_outline()` gives everything else.
+
+## How far a point-shaped vehicle's two wheel pairs stand from its centre, and how far each reaches
+## to either side, as a share of its radius. A point has no spine to put an axle at either end of,
+## and its radius is its reach every way at once, longer than the vehicle is wide: 0.6 puts the
+## parked delivery van's two pairs (22px radius) 13px either side of its centre, where its side
+## view draws its tyres, and the army truck's (26px) 16px either side, between its front axle and
+## its rear pair.
+const POINT_WHEEL_SHARE := 0.6
+
+## How far each wheel pair's oval reaches along the vehicle, as a share of the smaller of how far
+## the pair stands from the vehicle's centre and how far it reaches to either side: under one, so
+## the two ovals never meet and read as two patches of ground under two pairs of tyres rather than
+## one slab under the body — the crowd car's reach 6.6px either side of its axle, a little more
+## than its tyres' 5px radius.
+const WHEEL_OVAL_SHARE := 0.6
+
+## How far behind the nearer wheel pair the other is drawn, as a share of how far behind it the
+## ground puts it. The vehicle pictures foreshorten what lies behind: a diagonal view draws its far
+## tyre about 0.6 of the ground's distance above its near one (the crowd car's 8px where the ground
+## has 15.6px, the parked van's 10px where it has 18.6px), and a far pair laid at its full distance
+## stands clear of the body beside the roof. End on, the far pair is under the body either way.
+const WHEEL_DEPTH := 0.6
+
+## The ovals a vehicle's shadow fills, one per wheel pair (the looks' `shadow_outlines()` fill
+## them), for a vehicle centred on `at` and lying along `axis`, whose picture stands `ground_line` below `at` — the drop from its centre to the
+## bottom row of its picture: zero for one drawn standing on its own node, the southern reach of its
+## body for a car drawn over its body (`CarLook.ground_line()`, `EventLook.body_anchor()`).
+##
+## A segment's two wheel pairs are its spine's two ends and reach its rounding to either side; a
+## point's stand `POINT_WHEEL_SHARE` of its radius from its centre and reach as far to either side.
+## **The nearer pair is set down on the picture's ground line and the other behind it, its depth
+## foreshortened by `WHEEL_DEPTH`** as the pictures draw it: side on, both pairs stand on the ground
+## line under the two tyres the picture draws; end on, the near pair lies along the bottom of the
+## picture and the far one behind it, under the body; on a diagonal the far pair lies under the far
+## tyre the picture draws.
+##
+## **Each oval lies flat and level on the screen, as every point shadow does**: as wide as the pair
+## looks from where the picture is drawn (its reach to either side times `|across.x|`, plus its own
+## reach along the vehicle times `|along.x|`), so a pair seen side on is a tyre's width and one seen
+## end on the vehicle's width, and as deep as the point shadow of something the vehicle's width
+## (`SHADOW_SQUASH` of its reach to either side) in every view, centred on the pair, so it reaches a
+## little below the tyres the way every standing thing's shadow reaches a little below its feet. A
+## rectangle has no wheels and gives its ordinary outline.
+func paired_shadow_outlines(at: Vector2, axis: Vector2, ground_line: float
+		) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = []
+	if _kind == Kind.RECT:
+		outlines.append(shadow_outline(at, axis))
+		return outlines
+	var along := axis.normalized() if not axis.is_zero_approx() else Vector2.RIGHT
+	var across := Vector2(-along.y, along.x)
+	var from_centre := _half_length if _kind == Kind.SEGMENT else _radius * POINT_WHEEL_SHARE
+	var to_either_side := _radius if _kind == Kind.SEGMENT else _radius * POINT_WHEEL_SHARE
+	var along_the_pair := minf(from_centre, to_either_side) * WHEEL_OVAL_SHARE
+	var half := Vector2(absf(across.x) * to_either_side + absf(along.x) * along_the_pair,
+			to_either_side * SHADOW_SQUASH)
+	var nearer := absf(along.y) * from_centre
+	for end: float in [-1.0, 1.0]:
+		var axle := along * from_centre * end
+		var behind := (axle.y - nearer) * WHEEL_DEPTH
+		outlines.append(_wheel_oval(at + Vector2(axle.x, behind + ground_line), half))
+	return outlines
+
+## One wheel pair's oval round `centre`: a level ellipse `half.x` wide and `half.y` deep to either side.
+func _wheel_oval(centre: Vector2, half: Vector2) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in _ELLIPSE_SAMPLES:
+		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
+		points.append(centre + Vector2(cos(angle) * half.x, sin(angle) * half.y))
+	return points
 
 func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in _ELLIPSE_SAMPLES:
 		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
-		points.append(centre + Vector2(cos(angle), sin(angle)) * radius)
+		points.append(centre + Vector2(cos(angle), sin(angle)) * _radius)
 	return points
 
 ## The same circle, squashed on Y by `SHADOW_SQUASH` around `centre` — the point case's own
@@ -376,7 +469,7 @@ func _squashed_ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in _ELLIPSE_SAMPLES:
 		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
-		points.append(centre + Vector2(cos(angle) * radius, sin(angle) * radius * SHADOW_SQUASH))
+		points.append(centre + Vector2(cos(angle) * _radius, sin(angle) * _radius * SHADOW_SQUASH))
 	return points
 
 ## The rectangle's four corners, rotated by `axis` about `at` and then squashed on Y — see
@@ -387,10 +480,10 @@ func _rect_points(at: Vector2, axis: Vector2) -> PackedVector2Array:
 	var along := axis.normalized()
 	var across_axis := Vector2(-along.y, along.x)
 	var corners: Array[Vector2] = [
-		Vector2(-half_extents.x, -half_extents.y),
-		Vector2(half_extents.x, -half_extents.y),
-		Vector2(half_extents.x, half_extents.y),
-		Vector2(-half_extents.x, half_extents.y),
+		Vector2(-_half_extents.x, -_half_extents.y),
+		Vector2(_half_extents.x, -_half_extents.y),
+		Vector2(_half_extents.x, _half_extents.y),
+		Vector2(-_half_extents.x, _half_extents.y),
 	]
 	var points := PackedVector2Array()
 	for corner in corners:

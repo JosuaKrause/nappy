@@ -16,7 +16,8 @@ func can_draw() -> bool:
 
 ## Returns once a frame has been drawn since the call. A coroutine: callers `await` it.
 func drawn() -> void:
-	await Engine.get_main_loop().process_frame
+	var tree := Engine.get_main_loop() as SceneTree
+	await tree.process_frame
 
 ## The frame just drawn, or null when there is nothing left to read it from.
 func picture() -> Image:

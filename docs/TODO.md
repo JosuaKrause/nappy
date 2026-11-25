@@ -46,12 +46,35 @@ indicate what to work on next?" · "like "immediately after the current items ar
 band next".)* An entry's opening block may carry `upnext: true` beside `priority:`; the entry keeps
 its band, and `tools/queue.sh` prints every marked entry first, under an `up next` heading ahead of
 `bug`, unless its `after:` names an open entry: it then stays behind that entry, in its band, as
-every entry does. Every marked line ends in `[up next]`. When the player asks for an entry to be done immediately, that is this marker, never a band of its own and never `bug` (inbox #1025 in brisk-ferret). The queue move that starts the work drops
-the line, and the end-of-session pass drops it from an entry an open pull request is building. `bug` is the band above `now`, for what
-the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.
+every entry does. Every marked line ends in `[up next]`. When the player asks for an entry to be done immediately, that is this marker, never a band of its own and never `bug` (inbox #1025 in brisk-ferret). The marker orders the queue and fences no other work; an entry the player puts first, with everything else after it, says so in its own `README.md` instead (inbox #1210 in gentle-owl), as **orchestrating** says. The queue move that starts the work drops
+the line, and the end-of-session pass drops it from an entry an open pull request is building.
+
+**`fable-only: true` says that an entry's work is the player's choice of Fable's to design.** An entry's
+opening block may carry the line beside `priority:`; an item file carries none. Every pull request
+that builds an item of that entry carries the GitHub label `fable-only` (inbox #1293 in
+grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit). What Fable does there is
+what it does in all work it takes part in, labelled or not: it writes only the design, never the
+code and never the review, and it cannot decide to write either itself, not even for a part it
+judges too complex to hand off, so the design carries enough context for both the builder and the
+reviewer; another model writes the code, the choice of model being the orchestrator's (the lowest
+model that can do it from the design, as the model table says for any build), and Opus reviews it
+(inbox #1501 in silky-lemur, inbox #1504 in silky-lemur); the model table in **orchestrating** says so for the session that picks
+a model. The line goes only on an entry the player names, and it marks every item of the entry, so
+the work the player puts under the line is an entry of its own, never items of an entry that holds
+other work (inbox #1387 in mossy-bunny).
+It changes no order: `tools/queue.sh` ends the entry's line in
+`[fable-only]`, and CI fails a pull request that adds a record of such an entry under
+[decisions/](decisions/) without the label (`tools/ci_fable_only.py`), a new record being what every
+pull request that builds an item adds. A record the pull request only changes does not count, since
+an inbox filing rewrites citations in existing records and no filing builds. A pull request that
+closes such an entry by adding its record needs the label too, whoever writes it, since closing it
+is a judgement about the work the player put under Fable.
+
+`bug` is the band above `now`, for what
+the player calls a bug; a note from playing is still filed `now` unless the player names `bug`; a bug a refactor step finds is filed `bug` (inbox #1519 in breezy-magpie).
 `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
-file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` line with any value but `true` or a second one, an `after:`
-naming neither an open entry nor a closed one, an `after:` cycle, and a band or `upnext:` line anywhere but the
+file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` or `fable-only:` line with any value but `true` or a second one, an `after:`
+naming neither an open entry nor a closed one, an `after:` cycle, and a band, `upnext:` or `fable-only:` line anywhere but the
 opening lines of the `README.md`.
 
 **A band is chosen on what the entry does to the route decision, and nothing goes lower for being a

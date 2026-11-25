@@ -3,8 +3,9 @@
 These are reusable strategies for revising an existing illustrated family. Choose the operation
 that addresses the visible defect and review its result; none guarantees acceptance. Preserve
 source provenance, frozen raster inputs, prompts, masks, transforms and reproducible
-assembly recipes. The attempts and player verdicts are recorded under M160, the father's opposite
-contact, and M167, the father's natural legs, in `docs/DECISIONS.md`.
+assembly recipes. The attempts and player verdicts are in the decision records of M160, the
+father's opposite contact, and M167, the father's natural legs (`tools/decisions.sh M160`,
+`tools/decisions.sh M167`).
 
 ## Select a donor by anatomy and projection
 

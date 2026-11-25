@@ -15,7 +15,7 @@ extends RefCounted
 ## - on its contact for a mast's foot and the swing;
 ## - for a door on a facade, on the sidewalk tile straight below it, inside its reach;
 ## - for day 9's district door, where an inspection lets her out: the gatehouse the arrow names,
-##   `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) past the door's line
+##   `obstructs_within() + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) past the door's line
 ##   along the street, once on each side (`CheckpointController._release_finished_holds()`), so
 ##   day 9 counts two cases a city.
 ##
@@ -56,7 +56,7 @@ const THROUGH_THE_DOOR := 1
 const STOOD_CAUGHT := 2
 const A_WALK_ESCAPES := 3
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var starts := {}
 	var walks := {}
@@ -64,9 +64,10 @@ func run(t) -> void:
 		starts[day] = [0, 0, 0, 0, 0, 0]
 		walks[day] = [0, 0, 0, 0]
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in DAYS:
 			var tally: Array = starts[day]
 			var walked: Array = walks[day]
@@ -75,22 +76,23 @@ func run(t) -> void:
 			for step in ResistanceSteps.all():
 				if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 					done.append(step.index)
-			city.run.resistance.completed_steps = done
-			city.run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-			city.run.facts.completed_resistance_alley_tiles = []
-			city.run.attempt_spend.scars.clear()
-			city.run.header.day = day
-			var state := CityState.new()
-			city.run.attempt_spend.city_state = state
-			state.begin_day(city.map.block_plans, day)
+			GivenRun.completed_steps(run, done)
+			run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+			GivenRun.alley_tiles(run, [])
+			GivenRun.scars(run, [])
+			run.header().set_day(day)
+			var state := run.attempt_spend().block_arcs()
+			state.reset()
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+					city.map().doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map(), run, RunCity.events(city), city.streets(),
+					city.fronts(), city, null,
+					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var offered := director.current_step()
 			if offered and offered.is_pickup:
@@ -117,7 +119,7 @@ func run(t) -> void:
 				else:
 					tally[NO_CLEAR_RUN] += 1
 					print("[grassy-goose] seed %d day %d: no clear run to her at %s"
-							% [seed_value, day, city.map.world_to_tile(her)])
+							% [seed_value, day, city.map().world_to_tile(her)])
 				walked[CASES] += 1
 				if _runs_through_a_door(city, start, her):
 					walked[THROUGH_THE_DOOR] += 1
@@ -154,18 +156,18 @@ func run(t) -> void:
 func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Array[Vector2]:
 	var her := director.contact_position()
 	if day != 9:
-		if not city.map.is_walkable(city.map.world_to_tile(her)):
+		if not city.map().is_walkable(city.map().world_to_tile(her)):
 			her += Vector2(0.0, Tuning.TILE_SIZE)
 		return [her]
-	var hut: EventScheduler.Planned = null
-	for body in city.streets().region_plan().door_bodies:
-		if body.def.redetains and body.position.distance_to(her) < 0.5:
+	var hut: EventPlan = null
+	for body in city.streets().region_plan().door_plans():
+		if body.detains_again() and body.placed_at().distance_to(her) < 0.5:
 			hut = body
 	if hut == null:
 		return [her]
-	var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var out := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
-	return [hut.position + hut.facing * out, hut.position - hut.facing * out]
+	return [hut.placed_at() + hut.faces() * out, hut.placed_at() - hut.faces() * out]
 
 ## `_draw_arrival_position()` asked with the day's view looked through about `her`, the
 ## unrotated 640x360 screen round her.
@@ -181,8 +183,8 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 	var plan := city.streets().region_plan()
 	if not plan:
 		return false
-	for body in plan.door_bodies:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+	for body in plan.door_plans():
+		if DoorLine.crossed_by(body.placed_at(), body.faces(), body.obstructs_within(),
 				start, her):
 			return true
 	return false
@@ -190,19 +192,21 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 ## A `robber_giving_chase` started at `start` against her at `her`, walking `heading` at
 ## `Tuning.WALK_SPEED` (standing still for `Vector2.ZERO`), for his whole notice and chase. Whether
 ## he catches her.
-func _chase(t, city: City, def: EventDef, start: Vector2, her_at: Vector2, heading: Vector2) -> bool:
+func _chase(t: TestRunner, city: City, def: EventDef, start: Vector2, her_at: Vector2, heading: Vector2) -> bool:
+	var chaser_where := WhereSheIs.nowhere()
 	var chaser := EventInstance.new()
-	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT, city.map)
+	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(city.map()) \
+				.hearing(chaser_where))
 	t.add_child(chaser)
 	chaser.set_process(false)
 	var her := her_at
 	var caught := false
 	var elapsed := 0.0
-	var limit := def.telegraph_time + def.duration + 1.0
-	while elapsed < limit and not chaser.is_finished and not chaser.is_leaving:
-		her += _her_step(city.map, her, heading * Tuning.WALK_SPEED * STEP)
-		chaser.player_at = her
-		chaser.player_running = false
+	var limit := def.telegraphs_for() + def.lasts_for() + 1.0
+	while elapsed < limit and not chaser.is_gone() and not chaser.is_on_its_way_out():
+		her += _her_step(city.map(), her, heading * Tuning.WALK_SPEED * STEP)
+		chaser_where.tell(her)
 		chaser.step(STEP)
 		elapsed += STEP
 		if chaser.is_lethal_at(her):

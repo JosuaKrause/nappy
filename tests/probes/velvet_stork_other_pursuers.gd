@@ -30,7 +30,7 @@ const CLEAR_TRIALS := 60
 const POSITIONS := 150
 const STEP := 0.05
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()
@@ -51,8 +51,8 @@ func _clear_line_starts(seed_value: int) -> void:
 	var tries := 0
 	while trials < CLEAR_TRIALS and tries < 5000:
 		tries += 1
-		var her_tile := Vector2i(rng.randi_range(0, map.size.x - 1),
-				rng.randi_range(0, map.size.y - 1))
+		var her_tile := Vector2i(rng.randi_range(0, map.size_in_tiles().x - 1),
+				rng.randi_range(0, map.size_in_tiles().y - 1))
 		if not map.is_walkable(her_tile):
 			continue
 		var her := map.tile_to_world(her_tile)
@@ -111,22 +111,22 @@ static func _route_from(map: CityMap, from: Vector2i,
 		route.append(map.tile_to_world(tile))
 	return route
 
-func _the_sent_robbers_starts(t, seed_value: int) -> void:
-	var suite = SUITE.new()
+func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
+	var suite: SUITE = SUITE.new()
 	# The suite's own city builder: a city in a run of its own, which the suite's `_rig_player()`
 	# reads back as `_city` to hand her to the city's events.
 	var city: City = suite._build_city(t, seed_value)
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
 	var player: Stroller = suite._rig_player(t, director, director.contact_position())
-	var map := city.map
+	var map := city.map()
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var open: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile) and not map.is_closed(tile) and not map.is_obstructed(tile) \
-					and not map.soft_sealed_tiles.has(tile):
+					and not map.soft_sealed_tiles().has(tile):
 				open.append(tile)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value

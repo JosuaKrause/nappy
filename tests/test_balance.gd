@@ -11,12 +11,12 @@ extends RefCounted
 ## fixed place on the map. Walking on the spot is the right abstraction here: what is being
 ## measured is what the ground and the noise do, not the locomotion.
 ##
-## Each day is started the way the game starts one (`DayDirector.start_day()`, handed the city, its
-## events, the resistance, her, the baby and the day's clock), so the day's closures stand, its city
-## is painted, and a calm area she settled in earlier in the act reads spent.
+## Each day is started the way the game starts one (`DayDirector.start()`, handed the city standing
+## with her and the baby in it, `StandingCity`, the resistance and the day's clock), so the day's
+## closures stand, its city is painted, and a calm area she settled in earlier in the act reads spent.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`), whose calendar draws each
+## The seed of the run the city is handed (`RunCity.started_run()`), whose calendar draws each
 ## day's streams.
 const RUN_SEED := 2
 ## The seed the city itself is generated from.
@@ -31,6 +31,8 @@ const TIME_SCALE := 4.0
 const ARTERIAL_WINDOW := 60.0
 
 var _city: City
+## The run `_city` stands in.
+var _run: RunState
 var _stroller: Stroller
 var _baby: Baby
 var _resistance: ResistanceDirector
@@ -38,11 +40,12 @@ var _clock: DayController
 var _config := RunConfig.parse(PackedStringArray(), "", true)
 var _days: DayDirector
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	_run = RunCity.started_run(RUN_SEED)
+	_city = RunCity.new_city(CITY_SCENE)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	RunCity.build(_city, _run, CityGenerator.generate(SEED))
 	_build_rig(t)
 
 	await _test_a_calm_park_still_settles_her(t)
@@ -58,12 +61,13 @@ func run(t) -> void:
 ## A fresh run on `RUN_SEED`, at day 1: each test plays its days from the start of a run of its own,
 ## so none inherits the calm areas an earlier one used.
 func _new_run() -> void:
-	_city.run.start_run(RUN_SEED)
+	_run.start_run(RUN_SEED)
 
-## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start_day()`).
-func _start_day(t, day: int) -> void:
-	t.check(_city.run.header.day == day, "the run is on day %d (%d)" % [day, _city.run.header.day])
-	_days.start_day(DaySpec.for_day(day, _config.day_length_for(day)))
+## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start()`).
+func _start_day(t: TestRunner, day: int) -> void:
+	t.check(_run.header().day() == day,
+			"the run is on day %d (%d)" % [day, _run.header().day()])
+	_days.start(DaySpec.for_day(day, _config.day_length_for(day)))
 
 ## Puts the world around a point the way it would be for a player standing there.
 ##
@@ -73,19 +77,22 @@ func _start_day(t, day: int) -> void:
 ## these tests ask, which was never "what is the excitement at this coordinate" but "what does
 ## a player standing on this ground have to survive".
 ##
-## The crowd is today's (`DayDirector.start_the_crowd()`, as dense as the day's spec says), rebuilt
-## round `at` rather than round the doorstep the day began at.
+## The crowd is today's whole crowd, as a day's spec has it (`DaySpec.crowd_density` 1, the way
+## `DayDirector.start()` starts it), rebuilt round `at` rather than round the doorstep the day began
+## at.
 func _stand_at(at: Vector2) -> void:
-	_city.events.stream_around(at)
-	_days.start_the_crowd(at)
+	RunCity.events(_city).stream_around(at)
+	var day := _run.header().day()
+	RunCity.crowd(_city).start_day(day, _run.calendar().day_rng(day, "crowd"), at)
 
-## The rig, built once: her, walking on the spot, with the baby riding; the day's clock, set up the
+## The rig, built once: her, walking on the spot, with the baby riding, shown to the city's walls
+## and blackout as a walk shows her; the day's clock, set up the
 ## way `main` sets it up, so the calm she falls asleep on is remembered where the game remembers it
 ## (`DayController._remember_the_calm_she_found()`) and tomorrow reads it spent; the resistance the
 ## day places its mark for; and the day director handed all of them. The City is the world the baby
 ## is handed, so it is asking the real map and the real crowd. Nothing ticks the clock — `main` is
 ## what does — so no day here ends on its own.
-func _build_rig(t) -> void:
+func _build_rig(t: TestRunner) -> void:
 	_stroller = Stroller.new()
 	# The name matters: Stroller's @onready looks the camera up by path. Matches the real
 	# camera's own scene (`process_callback = 0` in `stroller.tscn`) rather than leaving the
@@ -96,19 +103,22 @@ func _build_rig(t) -> void:
 	_stroller.add_child(camera)
 	t.add_child(_stroller)
 	_stroller.set_physics_process(false)
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, _stroller)
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_city)
+	_baby.use_bus(EventBus)
 	_clock = DayController.new()
 	t.add_child(_clock)
-	_clock.setup(_city.map, _stroller, _city.run)
+	_clock.setup(_run)
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
-	_days = DayDirector.new(_city.run.calendar, _city.run.facts, _city.run.attempt_spend, _config)
-	_days.use_the_world(_city, _city.events, _resistance, _stroller, _baby, _clock)
+	_resistance.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null, RunCity.spawn_siting(_city))
+	_days = DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
+	_days.use_the_world(null, _resistance, _clock)
+	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))
 
 ## Puts her at `at`, walking on the spot: the day's start stood her still on the doorstep.
 func _place_rig(at: Vector2) -> void:
@@ -121,7 +131,7 @@ func _place_rig(at: Vector2) -> void:
 ## time, each `TIME_SCALE` times as long as a tick, so a day's seconds take a quarter of the
 ## frames; what is measured is what the ground and the noise do, and a longer step does not change
 ## it. Returns how long it took her to settle in game seconds, or -1.0 if she never did.
-func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
+func _walk_until_asleep(t: TestRunner, at: Vector2, seconds: float) -> float:
 	_stroller.global_position = at
 	var total := PhysicsTicks.ticks_for(seconds, TIME_SCALE)
 	# A lambda copies a local number, so the tick she fell asleep on is kept in an array.
@@ -133,7 +143,7 @@ func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 		var chunk := mini(15, total - ticked)
 		var before := ticked
 		var note := func(ran: int) -> void:
-			if settled[0] < 0.0 and _baby.state == GameEnums.BabyState.ASLEEP:
+			if settled[0] < 0.0 and _baby.condition() == GameEnums.BabyState.ASLEEP:
 				settled[0] = (before + ran) * STEP * TIME_SCALE
 		await PhysicsTicks.pass_ticks_faster(t, chunk, PhysicsTicks.FASTER, note, TIME_SCALE)
 		ticked += chunk
@@ -143,7 +153,7 @@ func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 
 ## The park has to be quiet enough that the meter never freezes in it, or the only place a
 ## day can be won is a place a day cannot be won.
-func _test_a_calm_park_still_settles_her(t) -> void:
+func _test_a_calm_park_still_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
 	var park := _quietest_park()
@@ -163,24 +173,24 @@ func _test_a_calm_park_still_settles_her(t) -> void:
 ## down there, which is what makes the walk to the park the decision the game is about.
 ##
 ## **M125: walked for `ARTERIAL_WINDOW` (60s), not the whole day.** Measured first: printing
-## `_baby.sleepiness` every ten seconds over a full day-1 walk (`Tuning.day_length(1)`, 210s)
+## `_baby.sleepiness_level()` every ten seconds over a full day-1 walk (`Tuning.day_length(1)`, 210s)
 ## showed it climb to ~3.2 by t=10s and then hold there, unmoved, through t=210s — the arterial's
 ## noise floor is stationary for the whole of a day with one act and no scheduled lull, so a
 ## longer walk than the plateau itself takes to reach is not a longer look at anything, only more
 ## frames of the same reading. Sixty seconds is six times that settling time, which is margin
 ## against the plateau being reached slower on a seed or a day this test does not use.
-func _test_the_arterial_never_settles_her(t) -> void:
+func _test_the_arterial_never_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
-	var street := CrowdLanes.arterial_pavement(_city.map)
+	var street := CrowdLanes.arterial_pavement(_city.map())
 	_stand_at(street)
 	_place_rig(street)
 	var settled := await _walk_until_asleep(t, street, ARTERIAL_WINDOW)
 	t.check(settled < 0.0,
 			"%.0fs on the arterial never settles her (settled at %.0fs)"
 			% [ARTERIAL_WINDOW, settled])
-	t.check(_baby.sleepiness < Tuning.METER_MAX,
-			"and the meter is still short of full (%.0f)" % _baby.sleepiness)
+	t.check(_baby.sleepiness_level() < Tuning.METER_MAX,
+			"and the meter is still short of full (%.0f)" % _baby.sleepiness_level())
 
 ## The scheduler promises one usable calm zone every day. Now that a day cannot be won
 ## anywhere else, that promise is the difference between a hard day and an impossible one,
@@ -189,7 +199,7 @@ func _test_the_arterial_never_settles_her(t) -> void:
 ## The days are one run's, each banked as won before the next begins, so where she settled is
 ## remembered and the act's later days read it spent: the park she used is spoiled and off the
 ## day's tree, and the quietest park is found among what is left.
-func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
+func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t: TestRunner) -> void:
 	_new_run()
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start_day(t, day)
@@ -198,19 +208,20 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
 		_place_rig(park)
 		var settled := await _walk_until_asleep(t, park, Tuning.day_length(day))
 		t.check(settled > 0.0, "day %d has a park she can actually settle in" % day)
-		_city.run.calendar.finish_day(GameEnums.DayResult.WON)
+		_run.calendar().finish_day(GameEnums.DayResult.WON)
 
 ## M128: the playground itself costs nothing, or a one-block park with one in it has no ground
-## left to settle her on — `outer_radius` (150) reaches past half of a 256px block. Standing
-## exactly on the ambient source's own centre, where `EventScheduler._place_ambient` puts it, is
+## left to settle her on — outer radius (150) reaches past half of a 256px block. Standing
+## exactly on the ambient source's own centre, where `DawnAmbient` puts it, is
 ## the worst point in any park it is in, so if she settles there she settles everywhere else in
 ## the same park too.
-func _test_the_playground_itself_settles_her(t) -> void:
+func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
-	if _city.map.playgrounds.is_empty():
+	if _city.map().playground_rects().is_empty():
 		return  # This city rolled no PARK-purpose block; nothing here to check.
-	var at: Vector2 = _city.map.tile_rect_to_world(_city.map.playgrounds[0]).get_center()
+	var park_rect: Rect2i = _city.map().playground_rects()[0]
+	var at: Vector2 = _city.map().tile_rect_to_world(park_rect).get_center()
 	_stand_at(at)
 	_place_rig(at)
 	var settled := await _walk_until_asleep(t, at, Tuning.day_length(1))
@@ -229,14 +240,14 @@ func _test_the_playground_itself_settles_her(t) -> void:
 ## purpose: it lives on the street lattice, so what separates one park from another is the
 ## events on it, which is exactly what the rule protects.
 func _quietest_park() -> Vector2:
-	var best := _city.map.home_world_position()
+	var best := _city.map().home_world_position()
 	var quietest := INF
-	for block in _city.map.calm_blocks:
-		var spot := CalmSpot.of(_city.map, block)
+	for block in _city.map().calm_blocks_now():
+		var spot := CalmSpot.of(_city.map(), block)
 		if spot == Vector2.INF:
 			continue
-		_city.events.stream_around(spot)
-		var here := _city.events.sources.total_at(spot)
+		RunCity.events(_city).stream_around(spot)
+		var here := RunCity.events(_city).excitement_sources().total_at(spot)
 		if here < quietest:
 			quietest = here
 			best = spot

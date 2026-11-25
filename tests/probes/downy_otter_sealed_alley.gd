@@ -14,7 +14,7 @@ extends RefCounted
 ##   lethal plan's disc, region doors open;
 ## - **doors shut**: the same, with the region doors' own bodies counted as blocks — a mark only
 ##   reachable through a district door;
-## - **by tiles**: a plain walk over walkable ground minus `closed_tiles`, `soft_sealed_tiles` and
+## - **by tiles**: a plain walk over walkable ground minus `closed_tile_set()`, `soft_sealed_tiles` and
 ##   `obstructed_tiles`, the per-tile record of where a body stands, not the discs.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -22,28 +22,29 @@ const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var totals := {"dawn": [0, 0, 0], "moved": [0, 0, 0]}
 	for seed_value in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in range(6, 14):
-			city.run.facts.completed_resistance_alley_tiles = []
+			GivenRun.alley_tiles(run, [])
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			city.run.resistance.completed_steps = done
-			var state := CityState.new()
-			city.run.attempt_spend.city_state = state
-			state.begin_day(city.map.block_plans, day)
+			GivenRun.completed_steps(run, done)
+			var state := run.attempt_spend().block_arcs()
+			state.reset()
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+					city.map().doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+					city, null, RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var step := director.current_step()
 			if step == null or not step.is_pickup:
@@ -53,22 +54,21 @@ func run(t) -> void:
 			var by_tiles := _by_tiles(city)
 			_count(totals["dawn"], city, director, director.contact_position(), shut, by_tiles,
 					"seed %d day %d dawn" % [seed_value, day])
-			var sidewalks := city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
+			var sidewalks := city.map().tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for i in range(0, sidewalks.size(), 10):
-				var target := director._nearest_alley_within(city.map.tile_to_world(sidewalks[i]))
+				var target := director._nearest_alley_within(city.map().tile_to_world(sidewalks[i]))
 				if target == Vector2.INF:
 					continue
 				_count(totals["moved"], city, director, target, shut, by_tiles, "")
 			director.free()
 		city.free()
-	for kind in ["dawn", "moved"]:
+	for kind: String in ["dawn", "moved"]:
 		print("[downy] %-5s marks %d: only through a district door %d, unreachable by tiles %d"
 				% [kind, totals[kind][0], totals[kind][1], totals[kind][2]])
-	t.check(true, "probe ran")
 
 func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2, shut: Array,
 		by_tiles: PackedInt32Array, label: String) -> void:
-	var tile := city.map.world_to_tile(at)
+	var tile := city.map().world_to_tile(at)
 	total[0] += 1
 	var grid: ReachabilityGrid = shut[0]
 	if not grid.reaches(tile, shut[1], shut[2]):
@@ -76,30 +76,30 @@ func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2,
 		if label != "":
 			print("[downy] %s: the mark at %s is reachable only through a district door"
 					% [label, tile])
-	if city.map.distance_at(by_tiles, tile) < 0:
+	if city.map().distance_at(by_tiles, tile) < 0:
 		total[2] += 1
 		if label != "":
 			print("[downy] %s: the mark at %s is unreachable by tiles" % [label, tile])
 	var _unused := director
 
 func _doors_shut(city: City) -> Array:
-	var blockers: Array[EventScheduler.Planned] = []
-	for plan in city.events.plans():
-		if plan.is_placed() and (plan.def.obstructs_radius > 0.0 or plan.def.hard_fail):
+	var blockers: Array[EventPlan] = []
+	for plan in RunCity.events(city).plans():
+		if plan.is_placed() and (plan.obstructs_within() > 0.0 or plan.ends_the_day()):
 			blockers.append(plan)
-	var grid := ReachabilityGrid.build(city.map)
-	var blocked := EventScheduler.blocked_by(city.map, blockers)
-	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+	var grid := ReachabilityGrid.build(city.map())
+	var blocked := EventScheduler.blocked_by(city.map(), blockers)
+	return [grid, blocked, grid.flood([city.map().home_tile_rect().position], blocked)]
 
 func _by_tiles(city: City) -> PackedInt32Array:
 	var blocked := {}
-	for tile in city.map.closed_tiles:
+	for tile: Vector2i in city.map().closed_tile_set():
 		blocked[tile] = true
-	for tile in city.map.soft_sealed_tiles:
+	for tile: Vector2i in city.map().soft_sealed_tiles():
 		blocked[tile] = true
-	for tile in city.map.obstructed_tiles:
+	for tile: Vector2i in city.map().obstructed_tiles():
 		blocked[tile] = true
-	return city.map.walk_field(city.map.world_to_tile(city.map.doorstep_world_position()), blocked)
+	return city.map().walk_field(city.map().world_to_tile(city.map().doorstep_world_position()), blocked)
 
 func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

@@ -3,9 +3,10 @@ extends RefCounted
 ## What a retained batch of scenery pictures (`SceneryLayer`) and the street's flat decals
 ## (`CityDecals`) lay their pictures through: one `draw()` call per picture, told which canvas,
 ## which texture, the rectangle it fills and the part of the texture drawn into it. The city builds
-## one and hands it to its decals (`CityDecals.drawer`), and through its roof drawer
-## (`RoofDrawer`) to every vent's turning rotor; an event's drawer (`EventDrawer`) holds one of its
-## own and hands it to the scenery of every crash and burst main it builds (`EventScenery.drawer`).
+## one and hands it to its decals (`CityDecals.drawer`), to every closure piece
+## (`ClosureMarker.draw_through()`), and through its roof drawer (`RoofDrawer`) to every vent's
+## turning rotor; an event's drawer (`EventDrawer`) holds one of its
+## own and hands it to the scenery of every crash and burst main it builds (`EventScenery.draw_through()`).
 ## Each owner hands it on to the layers it makes (`SceneryLayer.drawer`).
 ##
 ## The layer decides which texture stands where and when (the alternate frame of a rotor or a

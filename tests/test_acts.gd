@@ -1,315 +1,66 @@
 extends RefCounted
-## The escalation: act gating, the mechanics the later acts introduced, and the invariants
-## that stop a late day from being quietly unwinnable.
+## The escalation, asked of the catalogue's rows: act gating, and the protest's swell over its life.
+## A row is built as it is and nothing else is: no city, no live event, no day planned. What a
+## planned day keeps true across the acts (a scar outliving its day, a park staying reachable) is
+## `tests/test_events_scheduler.gd`'s, and the burnt building a fire leaves is
+## `tests/test_city_buildings.gd`'s.
 
-const SEED := 4242
 const STEP := 1.0 / 60.0
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const DrawnEvent := preload("res://tests/drawn_event.gd")
-const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
-var _map: CityMap
-
-func run(t) -> void:
-	_map = CityGenerator.generate(SEED)
+func run(t: TestRunner) -> void:
 	_test_acts_are_gated_by_day(t)
 	_test_a_protest_grows(t)
-	_test_scars_outlive_the_day_that_made_them(t)
-	await _test_the_scarred_building_shows_burnt(t)
-	_test_a_park_stays_reachable_every_day(t)
-
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, day])
-	return rng
 
 # -------------------------------------------------------------------- gating ---
 
-func _test_acts_are_gated_by_day(t) -> void:
+func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 	# The boundaries themselves are `Tuning.ACT_START_DAYS` and are not restated here — a check
 	# that reads that array back would only ever fail because somebody moved an act on purpose.
 	# What is worth pinning is the relationship between two tables that do not know about each
 	# other: the run is exactly as long as its last act, so no day falls off the end of the acts.
 	t.check(Tuning.act_for_day(Tuning.RUN_LENGTH_DAYS) == 4, "the last day is act IV")
 
-	# Nothing from a later act may leak into an earlier day.
+	# Nothing from a later act may leak into an earlier day. Only a `SCRIPTED` row has an act:
+	# its own first day is the first day of its act (`EventDef.own_first_day()`), the one place
+	# the game reads an act, and it must not come after the day the row fires on. Every other
+	# row's own first day is the day it first appears, which `available_on()` already holds
+	# back, and it says no act, so there is nothing to hold for it.
+	var swept := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var act := Tuning.act_for_day(day)
-		for def in EventCatalogue.available_on(day):
-			t.check(def.act_tag <= act,
+		for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
+			swept += 1
+			var from_act := Tuning.act_for_day(def.own_first_day())
+			t.check(from_act <= act,
 					"day %d (act %d) does not offer '%s' from act %d"
-					% [day, act, def.id, def.act_tag])
+					% [day, act, def.id(), from_act])
+	t.check(swept > 0, "the sweep checked at least one scripted row (%d)" % swept)
 
 # ------------------------------------------------------------------ mechanics ---
 
-func _instance(t, def: EventDef, at := Vector2.ZERO) -> EventInstance:
-	var instance := EventInstance.new()
-	instance.setup(def, at)
-	t.add_child(instance)
-	instance.set_process(false)
-	return instance
-
-func _advance(instance: EventInstance, seconds: float) -> void:
-	for i in int(round(seconds / STEP)):
-		instance.step(STEP)
-
-func _test_a_protest_grows(t) -> void:
+## A protest swells over its life rather than holding: the peak its row carries a pulse's length
+## after its telegraph, against the same pulse three quarters of the way through its life, asked of
+## the row (`EventDef.peak_through()`), which is what a live event carries once its telegraph is over.
+func _test_a_protest_grows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
-	t.check(def.intensity_ramp > 1.0, "a protest swells rather than holding")
-	var instance := _instance(t, def)
-	_advance(instance, def.telegraph_time + 0.05)
+	var ceiling := def.peak_through(0.0, def.lasts_for(), 1.0)
+	t.check(ceiling > def.peak(), "a protest swells rather than holding")
+	t.check(def.pulses_every() > 0.0, "and beats, so the ramp is read over whole pulse periods")
 
 	# Sample across whole pulse periods so the ramp, not the pulse, is what is compared.
-	var early := _peak_over(instance, def.pulse_period)
-	_advance(instance, def.duration * 0.75)
-	var late := _peak_over(instance, def.pulse_period)
+	var from := def.telegraphs_for() + 0.05
+	var early := _peak_over(def, from, def.pulses_every())
+	var late := _peak_over(def, from + def.pulses_every() + def.lasts_for() * 0.75,
+			def.pulses_every())
 	t.check(late > early * 1.3, "a protest is markedly worse later than when you saw it")
-	t.check(late <= def.intensity * def.intensity_ramp + 0.01,
-			"and never exceeds its stated ceiling")
-	instance.free()
+	t.check(late <= ceiling + 0.01, "and never exceeds its stated ceiling")
 
-func _peak_over(instance: EventInstance, seconds: float) -> float:
+## The highest peak `def` carries over the `seconds` after it is `age` seconds old, its burst
+## running from the end of its telegraph.
+func _peak_over(def: EventDef, age: float, seconds: float) -> float:
 	var peak := 0.0
 	for i in int(round(seconds / STEP)):
-		instance.step(STEP)
-		peak = maxf(peak, instance.current_intensity())
+		var at := age + float(i + 1) * STEP
+		peak = maxf(peak, def.peak_through(at, at - def.telegraphs_for()))
 	return peak
 
-## The burnt-out shell is on the same corner on day 12 as it was the morning after the fire.
-func _test_scars_outlive_the_day_that_made_them(t) -> void:
-	var run := RunState.new()
-	run.start_run(SEED)
-	run.header.day = 3
-	var where := _map.tile_to_world(Vector2i(40, 40))
-	run.add_scar("burnt_shell", where)
-	run.add_scar("burnt_shell", where)
-	t.check(run.attempt_spend.scars.size() == 1, "the same scar is not recorded twice")
-
-	var consumed: Array[String] = []
-	var same_day := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map,
-			CalmAreas.of(_map), consumed, run.attempt_spend.scars).placements()
-	t.check(not _contains(same_day, "burnt_shell"),
-			"a scar does not double up on the day it was made")
-
-	for day in [4, 9, 14]:
-		var later: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), later, run.attempt_spend.scars).placements()
-		t.check(_contains(planned, "burnt_shell"),
-				"the burnt-out shell is still there on day %d" % day)
-		for plan in planned:
-			if plan.def.id == "burnt_shell":
-				t.close_to(plan.position.distance_to(where), 0.0,
-						"and it is on the same corner", 1.0)
-
-## **The fire only catches where there is a building to burn, and burns on that building alone.**
-## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
-## `Building`s directly north of it — never the edge of the world, which `CityMap.tile_at()` reads
-## as `BUILDING` — and the flames a fire sited there draws, read off the pictures its look tells
-## its drawer to stand (`tests/recording_event_drawer.gd`) on real frames, burn along the
-## whole of that building's own facade and stay inside it, including at a site on the first or last
-## column of its lot: every column the city draws a facade on carries a flame, and no column another
-## building's roof covers does. *"the fire should be on the whole building not only the door"*
-## (sandy-egret).
-##
-## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
-## not an object next to the building"* — through `City.start_day()`, the way a real morning
-## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
-func _test_the_scarred_building_shows_burnt(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.run.header.day = 4
-	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-
-	var sites := {}
-	for tile in EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
-			city.map, {}):
-		sites[tile] = true
-	t.check(sites.size() > 100,
-			"seed %d: there are fronts for the fire to catch on (%d)" % [SEED, sites.size()])
-	# Every site holds a street fire of its own on the city's map, found and drawn as the game does,
-	# all drawn by the same three frames.
-	var def := EventCatalogue.by_id("burning_building")
-	var fires := {}
-	for tile: Vector2i in sites:
-		if _building_at(city, tile + Vector2i.UP):
-			fires[tile] = DrawnEvent.build(t, def, false, null, city.map, city.map.tile_to_world(tile))
-	await DrawnEvent.frames(t)
-	var nothing_behind: Array[Vector2i] = []
-	var spilled: Array[Vector2i] = []
-	var bare: Array[Vector2i] = []
-	var on_a_roof: Array[Vector2i] = []
-	var at_a_lot_end := 0
-	var wider_than_five := 0
-	var size := float(Tuning.TILE_SIZE)
-	for tile: Vector2i in sites:
-		var behind := _building_at(city, tile + Vector2i.UP)
-		if not behind:
-			nothing_behind.append(tile)
-			continue
-		if tile.x == behind.lot.position.x or tile.x == behind.lot.end.x - 1:
-			at_a_lot_end += 1
-		var fire: EventInstance = fires[tile]
-		var facade := city.map.tile_rect_to_world(behind.lot)
-		if facade.size.x > 80.0:
-			wider_than_five += 1
-		# Each flame as the span of x it covers in the world.
-		var flames: Array[Vector2] = []
-		for entry in DrawnEvent.shown(fire):
-			if entry.picture == EventPictures.FLAME:
-				var rect := RecordingEventDrawer.rect_about(entry, fire)
-				flames.append(Vector2(fire.global_position.x + rect.position.x,
-						fire.global_position.x + rect.end.x))
-		for flame in flames:
-			if flame.x < facade.position.x - 0.01 or flame.y > facade.end.x + 0.01:
-				spilled.append(tile)
-				break
-		# Each column, at its middle and a pixel in from both its edges, against every flame's own
-		# span: a column the building draws is burning end to end (so a flame dropped at the end of a
-		# stretch leaves a bare edge), one another building's roof covers (`Building.covered_ground_cols`)
-		# is not.
-		for col in behind.lot.size.x:
-			var left_edge := facade.position.x + col * size
-			var drawn := not (col < behind.covered_ground_cols.size() and behind.covered_ground_cols[col])
-			var burning_all := true
-			var burning_any := false
-			for point in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
-				var burning := false
-				for flame in flames:
-					if flame.x <= point and point <= flame.y:
-						burning = true
-				burning_all = burning_all and burning
-				burning_any = burning_any or burning
-			if drawn and not burning_all:
-				bare.append(tile)
-				break
-			if burning_any and not drawn:
-				on_a_roof.append(tile)
-				break
-	for fire: EventInstance in fires.values():
-		fire.free()
-	t.check(nothing_behind.is_empty(),
-			"every front the fire can catch on has a building behind it (%d do not, first %s)"
-			% [nothing_behind.size(), nothing_behind.slice(0, 3)])
-	t.check(at_a_lot_end > 0,
-			"and some of them stand at a lot's end, where flames could spill over (%d)" % at_a_lot_end)
-	t.check(spilled.is_empty(),
-			"the flames stay on the burning building's own facade (%d spill over, first %s)"
-			% [spilled.size(), spilled.slice(0, 3)])
-	t.check(wider_than_five > 0,
-			"and some fronts are wider than five flames could cover (%d)" % wider_than_five)
-	t.check(bare.is_empty(),
-			"the whole facade burns, every column it draws (%d leave one bare, first %s)"
-			% [bare.size(), bare.slice(0, 3)])
-	t.check(on_a_roof.is_empty(),
-			"and never a column another building's roof covers (%d do, first %s)"
-			% [on_a_roof.size(), on_a_roof.slice(0, 3)])
-
-	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
-	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
-	# the station's own fronts, which the same lane offers any row that does not burn.
-	var station := CityMap.blocks_tile_rect(city.map.power_station)
-	t.check(city.map.has_power_station(), "seed %d has a power station" % SEED)
-	var station_fronts := 0
-	var lane_of_fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("cafe_tables"),
-			city.map, {}, EventDef.Pavement.AT_THE_FRONT)
-	for tile in lane_of_fronts:
-		if station.has_point(tile + Vector2i.UP):
-			station_fronts += 1
-	t.check(station_fronts > 0,
-			"seed %d: the power station has fronts on the lane (%d)" % [SEED, station_fronts])
-	var on_the_station: Array[Vector2i] = []
-	for tile: Vector2i in sites:
-		if station.has_point(tile + Vector2i.UP):
-			on_the_station.append(tile)
-	t.check(on_the_station.is_empty(),
-			"the fire never catches on the power station (%d fronts do, first %s)"
-			% [on_the_station.size(), on_the_station.slice(0, 3)])
-
-	var site: Vector2i = sites.keys()[sites.size() / 2]
-	var scarred := _building_at(city, site + Vector2i.UP)
-	t.check(scarred != null, "the fire's site has a building behind it")
-	if not scarred:
-		city.free()
-		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = SEED
-	city.start_day(CityState.new(), 4, rng)
-	t.check(_burnt_count(city) == 0, "no building is burnt before any fire has left a scar")
-
-	city.run.add_scar("burnt_shell", city.map.tile_to_world(site))
-	city.start_day(CityState.new(), 4, rng)
-	t.check(scarred.condition == Building.Condition.BURNT,
-			"the dawn after the fire, the building behind its scar is drawn burnt")
-	t.check(_burnt_count(city) == 1, "and no other building is (%d are)" % _burnt_count(city))
-	city.start_day(CityState.new(), 5, rng)
-	t.check(scarred.condition == Building.Condition.BURNT and _burnt_count(city) == 1,
-			"and every dawn after that, the same one")
-	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
-	# building is never boarded up with it.
-	city.fronts().present_block(
-			city.map.block_at(city.map.tile_rect_to_world(scarred.lot).get_center()),
-			CityState.new())
-	t.check(scarred.condition == Building.Condition.BURNT,
-			"its block shown anew during the day leaves the burnt building burnt")
-
-	city.free()
-
-## The one `Building` whose lot holds `tile`, or null.
-func _building_at(city: City, tile: Vector2i) -> Building:
-	for building in city.buildings():
-		if building.lot.has_point(tile):
-			return building
-	return null
-
-func _burnt_count(city: City) -> int:
-	var burnt := 0
-	for building in city.buildings():
-		if building.condition == Building.Condition.BURNT:
-			burnt += 1
-	return burnt
-
-func _contains(planned: Array, id: String) -> bool:
-	for plan in planned:
-		if plan.def.id == id:
-			return true
-	return false
-
-# ----------------------------------------------------------------- invariants ---
-
-## From act II onwards several events physically close streets, and from act IV a run can
-## accumulate permanent barricades. Any combination that seals the home off from every park
-## makes the day unwinnable in a way the player cannot see coming.
-func _test_a_park_stays_reachable_every_day(t) -> void:
-	# Stack the deck: pretend several convoys have already left barricades around, in rings of
-	# 3, 5 and 7 tiles round the home's door (a ring is what can seal the home in; four far-off
-	# ones cannot), and plan every day.
-	var run := RunState.new()
-	run.start_run(SEED)
-	var home := _map.home_rect.position
-	for radius in [3, 5, 7]:
-		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
-				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
-			# The run's own writer, on day 1, which is the day a scar stands from the day after.
-			run.add_scar("barricade", _map.tile_to_world(home + step * radius))
-
-	var grid := ReachabilityGrid.build(_map)
-	# Day 1 runs with no scar in effect (a scar applies from the day after its `since_day`), and
-	# is the plain plan whose route to a park nothing else checks.
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var consumed: Array[String] = []
-		var blockers := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), consumed, run.attempt_spend.scars).obstructions()
-		t.check(_a_park_is_reachable(grid, blockers),
-				"day %d leaves a walkable route from home to a park" % day)
-
-## Whether the grid still finds a way from the home to some calm tile with today's closures and
-## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`, the set
-## `WalkSiting` builds the same way): what the scheduler keeps true of the day it plans.
-func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventScheduler.Planned]) -> bool:
-	var blocked := EventScheduler.blocked_by(_map, blockers)
-	var reached := grid.flood([_map.home_rect.position], blocked)
-	for tile in _map.calm_tiles():
-		if grid.reaches(tile, blocked, reached):
-			return true
-	return false

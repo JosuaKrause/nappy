@@ -1,0 +1,15 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=4216201080
+[Telemetry] /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/telemetry/2026-11-09/rig-165607-seed4216201080-v0.29.0-dirty/run.log
+[Main] 10 atlas pages held from escape in 44 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 927 ms (seed 4216201080): tunnel via 3 calm, 119 cells | bridge via 3 calm, 177 cells | 33 open streets, 630 placements
+[Main] finale planned in 1202 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 121 cells | 32 open streets, 650 placements
+[Main] finale planned in 983 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 121 cells | 32 open streets, 650 placements
+[GameState] run started, seed=9182
+-- test_finale.gd              217688 ms
+
+6026 checks, 0 failures
+PARTIAL RUN — only suites matching test_finale. Not a green build.

@@ -31,8 +31,9 @@ extends RefCounted
 const UI := preload("res://tests/ui_screens.gd")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
+const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_pause_restart_survives_its_own_emulated_mouse_click(t)
 	await _test_the_pause_restart_ignores_a_second_touch_mid_hold(t)
 	await _test_the_summary_restart_ignores_a_second_touch_mid_hold(t)
@@ -41,7 +42,7 @@ func run(t) -> void:
 	await _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t)
 
 ## An open pause screen on a platform, its restart button on `clock`, laid out.
-func _open_pause(t, touch: bool, clock: UI.FakeClock) -> PauseScreen:
+func _open_pause(t: TestRunner, touch: bool, clock: UI.FakeClock) -> PauseScreen:
 	var pause: PauseScreen = PAUSE.instantiate()
 	# A run of its own.
 	var run := RunState.new()
@@ -55,8 +56,8 @@ func _open_pause(t, touch: bool, clock: UI.FakeClock) -> PauseScreen:
 	return pause
 
 ## A summary showing a lost day on a platform, its restart button on `clock`, laid out.
-func _open_summary(t, touch: bool, clock: UI.FakeClock) -> CanvasLayer:
-	var summary: CanvasLayer = SUMMARY.instantiate()
+func _open_summary(t: TestRunner, touch: bool, clock: UI.FakeClock) -> DaySummaryScript:
+	var summary: DaySummaryScript = SUMMARY.instantiate()
 	summary.use_touch(touch)
 	t.add_child(summary)
 	UI.button(summary, "Restart").use_clock(clock.read)
@@ -82,8 +83,8 @@ func _send(event: InputEvent) -> void:
 ## .push_input()`, which every touch test in `tests/test_pause.gd` uses, bypasses that pass
 ## entirely. Instrumenting every event `_input()` saw, ahead of this fix, showed the emulated
 ## `InputEventMouseButton` press dispatching *before* the real `InputEventScreenTouch` press for the
-## same finger — so the pause screen's own catch-all (`TouchInput.is_press()`, which does not ask
-## whether this device even has touch hardware to emulate a click from) read the emulated click as
+## same finger — so the pause screen's own catch-all (whose mouse branch did not ask whether this
+## device even has touch hardware to emulate a click from) read the emulated click as
 ## *carry on* a moment ahead of the real touch reaching the restart handler, and the two-frame
 ## acknowledge delay closed the screen and cancelled the hold before it could ever complete — the
 ## real touch's own matching release then landed on a screen already invisible and did nothing at
@@ -96,16 +97,14 @@ func _send(event: InputEvent) -> void:
 ## .push_input(event, true)` deliberately skips (see `tests/test_pause.gd`'s own doc for that flag)
 ## but the automatic dispatch `Input.parse_input_event()` drives does not, and this suite's own
 ## window defaults to a headless placeholder far smaller than `ScreenOrientation.DESIGN_SIZE`.
-func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t) -> void:
+func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t: TestRunner) -> void:
 	var original_window_size: Vector2i = t.get_window().size
 	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
 	var clock := UI.FakeClock.new()
 	var pause := await _open_pause(t, true, clock)
 	var restart := UI.button(pause, "Restart")
 	var restarts := [0]
-	var resumed := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
-	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	var at := UI.centre(restart)
 
 	_send(UI.touch_at(at, true, 0))
@@ -134,10 +133,10 @@ func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t) -> void:
 	t.check(restarts[0] == 1,
 			"and the matching release does not restart the pause a second time (got %d)"
 					% restarts[0])
-	t.check(resumed[0] == 0,
+	t.check(pause.is_open(),
 			"and the click the engine emulates ahead of the real press never resumes the day instead")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -146,14 +145,12 @@ func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t) -> void:
 ## times".)* `ModeButton.begin_hold()` refusing a second index used to fall straight through to the
 ## catch-all below, which read any other touch as *carry on* and resumed the day — exactly what a
 ## palm graze or the other hand steadying the phone can send while a thumb holds restart down.
-func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
+func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var pause := await _open_pause(t, true, clock)
 	var restart := UI.button(pause, "Restart")
 	var restarts := [0]
-	var resumed := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
-	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	var at := UI.centre(restart)
 
 	UI.push(pause, UI.touch_at(at, true, 0))
@@ -166,8 +163,8 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	# finger's hold by closing the screen, before this asks.
 	UI.push(pause, UI.touch_at(Vector2(20.0, 20.0), true, 1))
 	await UI.frames(t)
-	t.check(resumed[0] == 0, "the stray second finger does not read as carrying on")
-	t.check(pause.is_open(), "and the screen stays open")
+	t.check(pause.is_open(),
+			"the stray second finger does not read as carrying on: the screen stays open")
 	t.check(restart.is_held_by(0), "the original hold is undisturbed")
 
 	clock.now += ModeButton.RESTART_HOLD_SECONDS
@@ -175,15 +172,15 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	t.check(restarts[0] == 1, "and the first finger's own hold still fires once it fills")
 	UI.push(pause, UI.touch_at(at, false, 0))
 	t.check(restarts[0] == 1, "and the eventual release does not restart it a second time")
-	t.check(resumed[0] == 0, "never having resumed along the way")
+	t.check(pause.is_open(), "never having resumed along the way")
 
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
 ## The day summary's own half of the same fix — it carries the identical guard, since a stray
 ## second finger reaches its own catch-all (the acknowledge that continues) exactly the same way.
-func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
+func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var summary := await _open_summary(t, true, clock)
 	var restart := UI.button(summary, "Restart")
@@ -216,7 +213,7 @@ func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
 ## value a screenshot would otherwise be needed to see, partway through a hold that nothing
 ## interrupts, on both screens the button appears on. The clock stands exactly half a hold on, so
 ## the disc is exactly half full.
-func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
+func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var pause := await _open_pause(t, true, clock)
 	var pause_restart := UI.button(pause, "Restart")
@@ -232,7 +229,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 			"and exactly half full on a clock that stands half a hold on", 0.001)
 
 	UI.push(pause, UI.touch_at(pause_at, false, 0))
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -270,7 +267,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 ## `_test_the_pause_restart_survives_its_own_emulated_mouse_click()` above does, so an emulated
 ## mouse motion synced to the touch position — if one ever reached the hover — could not quietly
 ## mask the bug by marking the button hovered on its own.
-func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t) -> void:
+func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t: TestRunner) -> void:
 	var original_window_size: Vector2i = t.get_window().size
 	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
 
@@ -290,7 +287,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 			"halfway through a mouse hold, the pause screen's disc reads the brighter hover fill")
 
 	_send(UI.mouse_at(pause_at, false))
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -308,7 +305,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 			+ "(got %s, wanted the mouse hold's %s)" % [touch_bg, mouse_bg])
 
 	_send(UI.touch_at(pause_at, false, 0))
-	pause.close()
+	UI.dismiss(pause)
 	t.get_tree().paused = false
 	pause.free()
 
@@ -340,8 +337,8 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 ## (`Input.parse_input_event()` + `Input.flush_buffered_events()`) on both screens and both pointer
 ## kinds, asserting `restarts[0] == 1` **before** the release event is ever sent — the release is
 ## then sent anyway and checked not to raise it a second time, and not to read as *carry on*
-## (`resumed`/`continued` stay `0`) either.
-func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> void:
+## (the pause stays open, the summary's `continued` stays `0`) either.
+func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRunner) -> void:
 	var original_window_size: Vector2i = t.get_window().size
 	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
 
@@ -353,18 +350,18 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 		var is_pause: bool = case[0] == "pause"
 		var touch: bool = case[1]
 		var clock := UI.FakeClock.new()
-		var screen: Node
-		if is_pause:
-			screen = await _open_pause(t, touch, clock)
-		else:
-			screen = await _open_summary(t, touch, clock)
+		var screen: CanvasLayer
 		var restarts := [0]
 		var carried_on := [0]
-		screen.restart_requested.connect(func() -> void: restarts[0] += 1)
 		if is_pause:
-			screen.resumed.connect(func() -> void: carried_on[0] += 1)
+			var pause := await _open_pause(t, touch, clock)
+			pause.restart_requested.connect(func() -> void: restarts[0] += 1)
+			screen = pause
 		else:
-			screen.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
+			var summary := await _open_summary(t, touch, clock)
+			summary.restart_requested.connect(func() -> void: restarts[0] += 1)
+			summary.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
+			screen = summary
 		var at := UI.centre(UI.button(screen, "Restart"))
 
 		_send(UI.touch_at(at, true, 0) if touch else UI.mouse_at(at, true))
@@ -375,14 +372,17 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 				% [case[2], case[3]] + "release sent yet (got %d)" % restarts[0])
 
 		_send(UI.touch_at(at, false, 0) if touch else UI.mouse_at(at, false))
-		var release_name: String = case[2].replace("real touch hold", "release").replace(
+		var hold_name: String = case[2]
+		var release_name := hold_name.replace("real touch hold", "release").replace(
 				"real mouse hold", "mouse release")
 		t.check(restarts[0] == 1,
 				"the %s does not restart it a second time" % release_name)
-		t.check(carried_on[0] == 0, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
+		# The pause carries on by closing; the summary by `continued`.
+		var stayed: bool = (screen as PauseScreen).is_open() if is_pause else carried_on[0] == 0
+		t.check(stayed, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
 
-		if is_pause:
-			screen.close()
+		if screen is PauseScreen:
+			UI.dismiss(screen as PauseScreen)
 		t.get_tree().paused = false
 		screen.free()
 

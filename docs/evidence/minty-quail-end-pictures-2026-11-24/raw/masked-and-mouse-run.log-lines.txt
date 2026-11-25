@@ -1,0 +1,42 @@
+masked run: rig-224134-seed3094160638-v0.29.2-716-g47e465438
+day 15 Escape the building  run seed 3094160638  length 180.0s  invincible
+   0.0  route    building: walking out in 8 legs
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-10415887-001
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-14416098-002
+   0.0  cue      edge badge: masked_pursuer at 422px, closing 113px/s
+   0.0  cue      edge badge gone: masked_pursuer after 0.0s, now 248px away
+   0.0  near     masked_pursuer at (132,20), 160px, exc 0, in 0.0/s (crowd 0.0, events 0.4), sleep 100
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-18415690-003
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-22416870-004
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-26416118-005
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-30415923-006
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-34415875-007
+   0.0  home     out of the building, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  shot     burst cancelled: 17 frames | day ended
+day 16 Escape the city  run seed 3094160638  length 180.0s  invincible
+   0.0  route    building: section ended (WON)
+mouse run: rig-224651-seed3533720356-v0.29.2-716-g47e465438
+day 15 Escape the building  run seed 3533720356  length 180.0s  invincible
+   0.0  route    building: walking out in 8 legs
+   0.0  cue      edge badge: masked_pursuer at 422px, closing 1949px/s
+   0.0  cue      edge badge gone: masked_pursuer after 0.0s, now 248px away
+   0.0  near     masked_pursuer at (132,20), 160px, exc 0, in 0.0/s (crowd 0.0, events 0.4), sleep 100
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-26505900-001
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-30004627-002
+   0.0  near     alley_mouse (telegraph) at (388,9), 57px, exc 0, in 0.0/s (crowd 0.0, events 14.8), sleep 100
+   0.0  near     alley_mouse at (388,9), 31px, exc 0, in 0.0/s (crowd 0.0, events 17.2), sleep 100
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-33505071-003
+   0.0  home     out of the building, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  shot     burst cancelled: 29 frames | day ended
+day 16 Escape the city  run seed 3533720356  length 180.0s  invincible
+   0.0  route    building: section ended (WON)
+   0.0  shot     burst started: asked for an animation burst at (75,78) | exc 0, sleep 100 | playing | asked/burst-37940231-004
+   0.0  shot     burst complete: 36 frames | frame_cap

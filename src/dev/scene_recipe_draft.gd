@@ -52,7 +52,7 @@ static func base_of(recipe: Dictionary) -> Dictionary:
 	base.erase("context")
 	base["extent"] = {"scope": "full"}
 	var setup: Dictionary = base.get("setup", {})
-	for drafted in ["actors", "posters", "route_bag"]:
+	for drafted: String in ["actors", "posters", "route_bag"]:
 		setup.erase(drafted)
 	return base
 
@@ -61,23 +61,24 @@ var _at_the_start := {}
 
 ## One tick of the walk: her tile, and the tile of a neighbor walking home (`neighbor`, or null).
 ## The first tick also takes the dawn's tiles and what stands in the world.
-func record(player: Node2D, city: City, neighbor: Node2D) -> void:
+func record(player: Node2D, world: DayWorld, neighbor: Node2D) -> void:
+	var map := world.city_map()
 	if _dawn_tiles.is_empty():
-		_dawn_tiles = city.map.tiles.duplicate()
-		_context = RecipeCityContext.capture(city.map)
-		for instance in city.events.instances():
-			_at_the_start[city.map.world_to_tile(instance.global_position)] = true
-	_walked[city.map.world_to_tile(player.global_position)] = true
+		_dawn_tiles = map.tiles_snapshot()
+		_context = RecipeCityContext.capture(map)
+		for instance in world.events().instances():
+			_at_the_start[map.world_to_tile(instance.global_position)] = true
+	_walked[map.world_to_tile(player.global_position)] = true
 	if neighbor:
-		_walked[city.map.world_to_tile(neighbor.global_position)] = true
+		_walked[map.world_to_tile(neighbor.global_position)] = true
 
 ## The drafted recipe, built from `recipe` (the file as written, not `base_of()`'s copy) and the
 ## world `run` has left behind, `pinned` the places `setup.task` names. Fills `problems` with
 ## anything the draft could not place.
-func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
+func compose(recipe: Dictionary, run: RunState, world: DayWorld, start: Vector2,
 		pinned: Array[Vector2], problems: Array[String]) -> Dictionary:
-	var map := city.map
-	var day := run.header.day
+	var map := world.city_map()
+	var day := run.header().day()
 	var ground := {}
 	for tile: Vector2i in _walked:
 		_add_the_ground_of(map, tile, ground)
@@ -85,18 +86,19 @@ func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
 		_add_the_ground_of(map, map.world_to_tile(at), ground, false)
 	for tile: Vector2i in _at_the_start:
 		_add_the_ground_of(map, tile, ground)
-	for tile: Array in recipe.get("draft", {}).get("include", []):
+	var draft: Dictionary = recipe.get("draft", {})
+	for tile: Array in draft.get("include", []):
 		_add_the_ground_of(map, Vector2i(int(tile[0]), int(tile[1])), ground, false)
 	var stretch := {"tiles": _tile_runs(map, ground, _dawn_tiles)}
 	var buildings: Array = []
-	for building in city.buildings():
-		if _fronts(map, building.lot, ground):
-			buildings.append({"lot": [building.lot.position.x, building.lot.position.y,
-					building.lot.size.x, building.lot.size.y],
-					"district": str(GameEnums.BlockPurpose.keys()[building.district]).to_lower(),
-					"variant": building.variant,
-					"height": roundi(building.height / Tuning.TILE_SIZE),
-					"condition": str(Building.Condition.keys()[building.condition]).to_lower()})
+	for building in world.dressing().buildings():
+		var lot := building.lot_rect()
+		if _fronts(map, lot, ground):
+			buildings.append({"lot": [lot.position.x, lot.position.y, lot.size.x, lot.size.y],
+					"district": str(GameEnums.BlockPurpose.keys()[building.district()]).to_lower(),
+					"variant": building.look_variant(),
+					"height": roundi(building.height() / Tuning.TILE_SIZE),
+					"condition": str(Building.Condition.keys()[building.condition()]).to_lower()})
 	buildings.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			return Vector2i(a.lot[1], a.lot[0]) < Vector2i(b.lot[1], b.lot[0]))
 	stretch["buildings"] = buildings
@@ -107,14 +109,14 @@ func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
 	trees.sort()
 	stretch["trees"] = trees
 	var props: Array = []
-	for node in city.props():
+	for node in world.dressing().props():
 		var prop := node as Prop
-		if not prop or prop.kind == Prop.Kind.STREET_TREE \
+		if not prop or prop.kind() == Prop.Kind.STREET_TREE \
 				or not ground.has(map.world_to_tile(prop.position)):
 			continue
-		props.append({"kind": str(Prop.Kind.keys()[prop.kind]).to_lower(),
+		props.append({"kind": str(Prop.Kind.keys()[prop.kind()]).to_lower(),
 				"at": [snappedf(prop.position.x, 0.01), snappedf(prop.position.y, 0.01)],
-				"variant": prop.variant, "scale": snappedf(prop.scale_factor, 0.0001)})
+				"variant": prop.variant(), "scale": snappedf(prop.scale_factor(), 0.0001)})
 	stretch["props"] = props
 	var litter: Array = []
 	for placed in Litter.placed(map, day):
@@ -134,11 +136,11 @@ func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
 	drafted["context"] = _context
 	var setup: Dictionary = drafted.get("setup", {})
 	setup["posters"] = _posters(run, map, ground)
-	setup["actors"] = _starting_crowd(run, city, ground, start, problems)
+	setup["actors"] = _starting_crowd(run, world, ground, start, problems)
 	# A route bag the author has already rigged is theirs: it is about what she meets, not about
 	# where the stretch runs, so drafting the stretch again keeps it.
 	if not setup.has("route_bag"):
-		var marbles := EventDirector.ordinary_route_marbles(day, run.resistance.progress)
+		var marbles := EventDirector.ordinary_route_marbles(day, run.resistance().progress())
 		setup["route_bag"] = {"marbles": marbles, "owed": marbles.size()}
 	var background: Dictionary = setup.get("background", {})
 	background.erase("crowd")
@@ -157,14 +159,14 @@ static func _add_the_ground_of(map: CityMap, tile: Vector2i, ground: Dictionary,
 	if on_x and on_y:
 		_add_walkable(map, _junction_box(CityMap.junction_at(tile)), ground)
 		return
-	var segment := map.network.segment_containing(tile)
+	var segment := map.street_network().segment_containing(tile)
 	if segment and map.has_street(segment.key()):
 		_add_walkable(map, segment.tile_rect(), ground)
 		_add_walkable(map, _junction_box(segment.a), ground)
 		_add_walkable(map, _junction_box(segment.b), ground)
 		return
 	_add_walkable(map, Rect2i(tile - Vector2i.ONE, Vector2i(3, 3)), ground)
-	for alley in map.alley_rects:
+	for alley in map.alley_lots():
 		if walked and alley.has_point(tile):
 			_add_walkable(map, alley, ground)
 
@@ -179,8 +181,10 @@ static func _add_walkable(map: CityMap, rect: Rect2i, ground: Dictionary) -> voi
 ## `ground` as the recipe lists it: tile type name -> `[y, x_from, x_to]` runs, row by row.
 static func _tile_runs(map: CityMap, ground: Dictionary, dawn: PackedByteArray) -> Dictionary:
 	var runs := {}
+	var width := map.size_in_tiles().x
 	for tile: Vector2i in _sorted(ground):
-		var type := str(GameEnums.TileType.keys()[dawn[tile.y * map.size.x + tile.x]]).to_lower()
+		var index := tile.y * width + tile.x
+		var type := str(GameEnums.TileType.keys()[dawn[index]]).to_lower()
 		if not runs.has(type):
 			runs[type] = []
 		var list: Array = runs[type]
@@ -210,7 +214,7 @@ static func _fronts(map: CityMap, lot: Rect2i, ground: Dictionary) -> bool:
 ## stretch holds, as `setup.posters` names it.
 static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 	var posters: Array = []
-	var cells: Dictionary = run.posters.cells
+	var cells: Dictionary = run.posters().cells()
 	for tile: Vector2i in _sorted(ground):
 		if not cells.has(tile):
 			continue
@@ -226,21 +230,22 @@ static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 ## (`Tuning.VIEW_HALF_EXTENT` round `start`): a scene's first frame is not a car already bearing
 ## down on a pram that has not taken a step — the start of a played day is her doorstep, on a street
 ## no car is in yet.
-static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start: Vector2,
-		problems: Array[String]) -> Array:
-	var map := city.map
-	var day := run.header.day
+static func _starting_crowd(run: RunState, world: DayWorld, ground: Dictionary,
+		start: Vector2, problems: Array[String]) -> Array:
+	var map := world.city_map()
+	var crowd := world.crowd()
+	var day := run.header().day()
 	var box := Rect2i()
 	for tile: Vector2i in ground:
 		box = Rect2i(tile, Vector2i.ONE) if not box.has_area() else box.expand(tile).expand(tile + Vector2i.ONE)
 	var centre := map.tile_rect_to_world(box).get_center()
-	city.crowd.start_day(day, run.calendar.day_rng(day, "crowd"), centre, true)
+	crowd.start_day(day, run.calendar().day_rng(day, "crowd"), centre, true)
 	var found: Array[Dictionary] = []
-	for agent in city.crowd.agents():
+	for agent in crowd.agents():
 		if not ground.has(map.world_to_tile(agent.position)):
 			continue
-		var vertical: bool = agent.get("_vertical")
-		var direction: float = agent.get("_direction")
+		var vertical: bool = agent.lane().is_vertical()
+		var direction: float = agent.lane().direction()
 		# The along coordinate rounded to a hundredth of a pixel, for a recipe a person reads; the
 		# cross coordinate is the lane's centre and stays exact, since a placement must stand on it.
 		var at := agent.position
@@ -250,19 +255,17 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 			at.x = snappedf(at.x, 0.01)
 		var heading := "south" if vertical and direction > 0.0 else ("north" if vertical
 				else ("east" if direction > 0.0 else "west"))
-		found.append({"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker",
-				"at": at, "direction": heading, "speed": snappedf(float(agent.get("_speed")), 0.0001)})
-	city.crowd.clear()
+		found.append({"kind": "car" if agent.is_car() else "walker",
+				"at": at, "direction": heading, "speed": snappedf(agent.speed(), 0.0001)})
+	crowd.clear()
 	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			return a.kind < b.kind or (a.kind == b.kind and (a.at.y < b.at.y
 			or (a.at.y == b.at.y and a.at.x < b.at.x))))
 	# Placed again on the stretch, the way the scene will place them.
-	var mask := PackedByteArray()
-	mask.resize(map.size.x * map.size.y)
+	map.begin_stretch()
 	for tile: Vector2i in ground:
-		mask[tile.y * map.size.x + tile.x] = 1
-	map.stretch = mask
-	map.stretch_active = true
+		map.add_stretch_tile(tile, map.tile_at(tile))
+	map.show_stretch()
 	var counts := {"walker": 0, "car": 0}
 	var actors: Array = []
 	var view := Rect2(start - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
@@ -272,7 +275,7 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 		if entry.kind == "car" and view.has_point(at):
 			problems.append("left out a car at %s: it would start in her view" % at)
 			continue
-		var placed := city.crowd.add_recipe_actor(label,
+		var placed := crowd.add_recipe_actor(label,
 				CrowdAgent.Kind.CAR if entry.kind == "car" else CrowdAgent.Kind.WALKER, at,
 				SceneRecipeRuntime.DIRECTIONS[entry.direction], float(entry.speed),
 				hash("actor:%s" % label))
@@ -283,8 +286,7 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 		actors.append({"name": label, "kind": entry.kind,
 				"at": [snappedf(at.x, 0.01), snappedf(at.y, 0.01)],
 				"direction": entry.direction, "speed": snappedf(float(entry.speed), 0.0001)})
-	map.stretch_active = false
-	map.stretch = PackedByteArray()
+	map.drop_the_stretch()
 	return actors
 
 # ------------------------------------------------------------------ writing ---
@@ -332,14 +334,14 @@ static func _whole(value: Variant) -> Variant:
 ## Whether a value reads best on one line: a list of scalars however long, or a short list or
 ## small object of scalars and pairs.
 static func _is_small(value: Variant) -> bool:
-	var items: Array = value.values() if value is Dictionary else value
+	var items: Array = (value as Dictionary).values() if value is Dictionary else value as Array
 	if value is Array and items.all(func(item: Variant) -> bool:
 			return not (item is Array or item is Dictionary)):
 		return true
 	for item: Variant in items:
 		if item is Dictionary:
 			return false
-		if item is Array and (item.size() > 4 or not (item as Array).all(
+		if item is Array and ((item as Array).size() > 4 or not (item as Array).all(
 				func(inner: Variant) -> bool: return not (inner is Array or inner is Dictionary))):
 			return false
 	return JSON.stringify(value, "", false).length() <= 120

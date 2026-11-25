@@ -2,11 +2,23 @@ extends RefCounted
 ## The masts: fixed sites from `Tuning.MAST_FIRST_DAY`, a field like any other row's, a broadcast
 ## clock every mast reads rather than a clock of its own, and an id that survives silencing. See
 ## `docs/TODO.md`, M180, "Posters she notices, and loudspeakers that are somewhere".
+##
+## The sites and the field are asked of `MastSites` and the row alone, and the points a day's
+## street doors stand on of `MastSites` against `RegionPlanner`'s own plan, run real because the
+## guarantee is between the two. The broadcast clock, streaming, mast_foot() and silencing are
+## the event manager's, so a real manager is built, over the cached generated map of its seed
+## with no city round it, and handed mast plans made by hand as the dawn makes them
+## (`DawnMasts`). What the dawn plans (the same sites every day from the first mast day, the
+## scar a silenced mast leaves) is `test_events_scheduler.gd`'s. The scheduler's acceptance of a
+## mast queued for day 11 (`EventManager.queue_a_mast()`) is asked of a manager of its own,
+## handed the cached map as the city's (`EventSurroundings.in_the_city()`), which is what siting
+## a mast asks of it; no day is planned, since planning one would also ask for the city's route
+## tree.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
+const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
+## The seed of the city every task scene is built on.
+const CONTEXT_SEED := 1917501
 const FAST_SCALE := 5.0
 ## A handful of seeds, for the one guarantee that has to hold on more than the seed the rest of
 ## this suite happens to use — `docs/EVENTS.md`'s "checked before it is accepted" — the same reason
@@ -14,76 +26,61 @@ const FAST_SCALE := 5.0
 const SITE_SEEDS := [4242, 1, 90210, 778812345]
 
 var _map: CityMap
-var _city: City
+var _world: WorldContext
+var _manager: EventManager
 
-func run(t) -> void:
-	_map = CityGenerator.generate(SEED)
+func run(t: TestRunner) -> void:
+	_map = MapCache.of(SEED)
 	_test_no_row_is_city_wide(t)
-	_test_masts_appear_from_day_5_at_the_same_sites_every_day(t)
+	_test_the_sites_are_the_same_geometry_every_time(t)
 	_test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t)
+	_test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t)
 	_test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t)
-	_build_city(t)
+	_build_manager(t)
 	await _test_they_all_speak_together(t)
 	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
-	_test_a_silenced_fixed_mast_stays_silenced_the_next_day(t)
+	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_teardown()
 
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, day])
-	return rng
-
-func _mast_plans(day: int) -> Array[EventScheduler.Planned]:
-	var consumed: Array[String] = []
-	var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-			CalmAreas.of(_map), consumed).placements()
-	var found: Array[EventScheduler.Planned] = []
-	for plan in planned:
-		if plan.mast_id != "":
-			found.append(plan)
-	return found
+## Stands the masts of a day on the manager as the dawn plans them (`DawnMasts`), in place of
+## whatever day the manager held (it is cleared first): one loudspeaker plan at each site's foot,
+## known by the site's id, and on the curfew announcement's day a `curfew_announce` plan beside
+## each, the two a site carries. The manager's streaming takes them as it takes a day's, and the
+## dawn's own choice of them is `test_events_scheduler.gd`'s.
+func _start(with_the_announcement := false) -> void:
+	var plans: Array[EventPlan] = []
+	var loudspeaker := EventCatalogue.mast()
+	for site in _sites():
+		var mast := EventPlan.new(loudspeaker, site.foot())
+		mast.stand_as_a_mast(site.id())
+		plans.append(mast)
+		if with_the_announcement:
+			var announcement := EventPlan.new(EventCatalogue.by_id("curfew_announce"), site.foot())
+			announcement.stand_as_a_mast(site.id())
+			plans.append(announcement)
+	# The focus is far off the map, so nothing streams in until a test walks to a mast.
+	_manager.start_recipe(plans, DaySpec.for_day(1), 1, Vector2(-1.0e6, -1.0e6))
 
 # ---------------------------------------------------------------- no floor ---
 
 ## The property itself is gone, checked the one way that cannot fail to compile against a field
 ## that no longer exists: `Object.get()` is the dynamic accessor, and it answers `null` for a
 ## property nobody declared rather than raising the parse error a static `def.city_wide` would.
-func _test_no_row_is_city_wide(t) -> void:
-	t.check(EventDef.new().get("city_wide") == null,
+func _test_no_row_is_city_wide(t: TestRunner) -> void:
+	t.check(EventDraft.new("").build().get("city_wide") == null,
 			"EventDef carries no city_wide field any more")
 	var loudspeaker := EventCatalogue.by_id("loudspeaker")
 	var curfew := EventCatalogue.by_id("curfew_announce")
-	t.check(loudspeaker.outer_radius > loudspeaker.inner_radius,
+	t.check(loudspeaker.heard_within() > loudspeaker.core_within(),
 			"the loudspeaker has an edge a route can go round")
-	t.check(curfew.outer_radius > curfew.inner_radius,
-			"so does the curfew announcement it carries on EventScheduler.CURFEW_ANNOUNCE_DAY")
+	t.check(curfew.heard_within() > curfew.core_within(),
+			"so does the curfew announcement it carries on DawnMasts.CURFEW_ANNOUNCE_DAY")
 
 # ------------------------------------------------------------------- sites ---
 
-func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t) -> void:
-	t.check(_mast_plans(Tuning.MAST_FIRST_DAY - 1).is_empty(),
-			"no mast stands the day before Tuning.MAST_FIRST_DAY")
-
-	var by_day := {}
-	for day in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
-		var by_id := {}
-		for plan in _mast_plans(day):
-			if plan.def.id != "loudspeaker":
-				continue
-			by_id[plan.mast_id] = plan.position
-		t.check(by_id.size() == Tuning.MAST_COUNT,
-				"day %d carries all %d masts (%d)" % [day, Tuning.MAST_COUNT, by_id.size()])
-		by_day[day] = by_id
-	var first: Dictionary = by_day[Tuning.MAST_FIRST_DAY]
-	for day in by_day:
-		var here: Dictionary = by_day[day]
-		for id in first:
-			t.check(here.has(id) and here[id].distance_to(first[id]) < 0.01,
-					"mast '%s' stands at the same place on day %d as on day %d"
-					% [id, day, Tuning.MAST_FIRST_DAY])
-
+func _test_the_sites_are_the_same_geometry_every_time(t: TestRunner) -> void:
 	# Pure geometry, called twice: MastSites.compute() takes no day and no RNG, so "the same
 	# places every day" is true of the function itself and not only of what build_day did with it.
 	var once := MastSites.compute(_map)
@@ -92,32 +89,32 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t) -> void:
 			"MastSites.compute() always answers Tuning.MAST_COUNT sites (%d, %d)"
 			% [once.size(), again.size()])
 	for i in once.size():
-		t.check(once[i].id == again[i].id and once[i].foot.distance_to(again[i].foot) < 0.01,
+		t.check(once[i].id() == again[i].id() and once[i].foot().distance_to(again[i].foot()) < 0.01,
 				"site %d is the same site both times" % i)
 
 ## Checked over several seeds — the one guarantee here that a single lucky map cannot stand for.
-func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
+func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -> void:
 	var checked := 0
-	for seed_value in SITE_SEEDS:
-		var map := CityGenerator.generate(seed_value)
-		var reach := EventCatalogue.by_id("loudspeaker").outer_radius
+	for seed_value: int in SITE_SEEDS:
+		var map := MapCache.of(seed_value)
+		var reach := EventCatalogue.by_id("loudspeaker").heard_within()
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
 		var home_margin := MastSites.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
 		for site in MastSites.compute(map):
 			checked += 1
-			var tile_type := map.tile_at(map.world_to_tile(site.foot))
+			var tile_type := map.tile_at(map.world_to_tile(site.foot()))
 			t.check(tile_type == GameEnums.TileType.SIDEWALK or tile_type == GameEnums.TileType.SQUARE,
 					("seed %d: '%s' stands on her own sidewalk or a square's paving, not tile "
-					% [seed_value, site.id]) + "type %d (a mast is never in the middle of the road)"
+					% [seed_value, site.id()]) + "type %d (a mast is never in the middle of the road)"
 					% tile_type)
-			t.check(site.foot.distance_to(doorstep) >= reach,
+			t.check(site.foot().distance_to(doorstep) >= reach,
 					"seed %d: '%s' does not reach the doorstep (%.0fpx away, reach %.0fpx)"
-					% [seed_value, site.id, site.foot.distance_to(doorstep), reach])
-			t.check(site.foot.distance_to(home) >= home_margin,
-					"seed %d: '%s' is not on the home street" % [seed_value, site.id])
+					% [seed_value, site.id(), site.foot().distance_to(doorstep), reach])
+			t.check(site.foot().distance_to(home) >= home_margin,
+					"seed %d: '%s' is not on the home street" % [seed_value, site.id()])
 			var seen := {}
-			for block in map.calm_blocks:
+			for block in map.calm_blocks_now():
 				var anchor := map.anchor_of(block)
 				if seen.has(anchor):
 					continue
@@ -126,23 +123,50 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 						-MastSites.MAST_CALM_INTERIOR_MARGIN)
 				if not interior.has_area():
 					continue
-				var closest := Vector2(clampf(site.foot.x, interior.position.x, interior.end.x),
-						clampf(site.foot.y, interior.position.y, interior.end.y))
-				t.check(site.foot.distance_to(closest) >= reach,
+				var closest := Vector2(clampf(site.foot().x, interior.position.x, interior.end.x),
+						clampf(site.foot().y, interior.position.y, interior.end.y))
+				t.check(site.foot().distance_to(closest) >= reach,
 						"seed %d: '%s' does not reach the interior of the calm block at %s"
-						% [seed_value, site.id, block])
+						% [seed_value, site.id(), block])
 	t.check(checked == Tuning.MAST_COUNT * SITE_SEEDS.size(),
 			"and every mast on every seed was actually checked (%d)" % checked)
 
+## The street door a recipe's `setup.gates` stands is the one the day's own plan stands
+## (`RegionPlanner.stand_door()`), at the points `MastSites` keeps a mast's field clear of: so a
+## mast `SceneRecipeRuntime` places is already clear of every door it stands, by
+## `MastSites.is_eligible()` alone. Asked of every street door a day plans
+## (`RegionPlanner.plan_day()`) on the context city (the city every task scene is built on),
+## from the first day with checkpoints and on the last.
+func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner) -> void:
+	var map := MapCache.of(CONTEXT_SEED)
+	var points := MastSites.possible_door_points(map)
+	var bodies := 0
+	var off_a_point := 0
+	for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1]:
+		var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map,
+				day))
+		var stood := RegionPlan.new()
+		for door in plan.door_segments():
+			RegionPlanner.stand_door(map, door, stood)
+		for body in stood.door_plans():
+			bodies += 1
+			var nearest := INF
+			for point in points:
+				nearest = minf(nearest, point.distance_to(body.placed_at()))
+			off_a_point += int(nearest > 0.01)
+	t.check(bodies > 0 and off_a_point == 0,
+			"every one of the %d bodies of a day's street doors stands on a point a mast keeps "
+			% bodies + "clear of (%d do not)" % off_a_point)
+
 # ------------------------------------------------------------------- field ---
 
-func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> void:
+func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loudspeaker")
-	t.check(is_zero_approx(def.emission_at_distance(def.outer_radius + 1.0)),
+	t.check(is_zero_approx(def.emission_at_distance(def.heard_within() + 1.0)),
 			"the field is zero just past its own outer radius")
-	var at_inner := def.emission_at_distance(def.inner_radius)
-	var at_middle := def.emission_at_distance((def.inner_radius + def.outer_radius) * 0.5)
-	var at_outer := def.emission_at_distance(def.outer_radius - 1.0)
+	var at_inner := def.emission_at_distance(def.core_within())
+	var at_middle := def.emission_at_distance((def.core_within() + def.heard_within()) * 0.5)
+	var at_outer := def.emission_at_distance(def.heard_within() - 1.0)
 	t.check(at_inner > at_middle and at_middle > at_outer and at_outer > 0.0,
 			"the field falls away between the inner and outer radius (%.2f > %.2f > %.2f > 0)"
 			% [at_inner, at_middle, at_outer])
@@ -151,15 +175,19 @@ func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> voi
 
 # -------------------------------------------------------------- the broadcast ---
 
-func _build_city(t) -> void:
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(_city)
-	_city.build(_map)
+func _build_manager(t: TestRunner) -> void:
+	_world = WorldContext.new()
+	t.add_child(_world)
+	var run := RunState.new()
+	run.start_run(SEED)
+	_manager = EventManager.new(EventSurroundings.new().on(_map).drawn_in(_world))
+	_manager.setup(run)
+	t.add_child(_manager)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`
 	# skips streaming while no player is handed in (`EventWorld.has_player()`), the same reason
 	# `test_event_manager.gd` gives.
 	# Streaming below is driven by hand, at whatever real moment each check wants a mast live.
-	_city.events.stream_radius = 10.0
+	_manager.stream_within(10.0)
 
 func _sites() -> Array[MastSites.Site]:
 	return MastSites.compute(_map)
@@ -168,27 +196,27 @@ func _sites() -> Array[MastSites.Site]:
 ## stretch (each frame then carries `1 / Engine.physics_ticks_per_second * Engine.time_scale`
 ## seconds) and put back after it. The frame in progress when the scale changes keeps the delta it
 ## started with, so one frame passes at the normal scale after; the checks that follow read a range.
-func _advance(seconds: float) -> void:
+func _advance(t: TestRunner, seconds: float) -> void:
 	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var clock := Engine.time_scale
 	Engine.time_scale = FAST_SCALE
 	for i in maxi(1, int(round(seconds / frame))):
-		await _city.get_tree().physics_frame
+		await t.get_tree().physics_frame
 	Engine.time_scale = clock
-	await _city.get_tree().physics_frame
+	await t.get_tree().physics_frame
 
-func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventScheduler.Planned:
-	for plan in _city.events.plans():
-		if plan.mast_id == mast_id and plan.def.id == row_id:
+func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
+	for plan in _manager.plans():
+		if plan.mast_id() == mast_id and plan.row_id() == row_id:
 			return plan
 	return null
 
 ## Two masts, met minutes apart, still read the same broadcast clock — the mechanism behind "all
-## masts speak at once". `age` is set from `EventStreaming.broadcast_clock` at the moment each one
-## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
-## mast that is "younger" — it is telling the same time as every other one.
-func _test_they_all_speak_together(t) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
+## masts speak at once". `age` is set from the city's broadcast clock (`EventStreaming`) at the moment each
+## one streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is
+## not a mast that is "younger" — it is telling the same time as every other one.
+func _test_they_all_speak_together(t: TestRunner) -> void:
+	_start()
 	var sites := _sites()
 	t.check(sites.size() >= 2, "there are at least two masts to compare")
 	if sites.size() < 2:
@@ -196,139 +224,161 @@ func _test_they_all_speak_together(t) -> void:
 	var a := sites[0]
 	var b := sites[1]
 
-	await _advance(9.0)
-	var clock_a: float = _city.events.streaming.broadcast_clock
-	_city.events.stream_around(a.foot)
-	var plan_a := _plan_for(a.id)
-	t.check(plan_a != null and plan_a.live != null, "the first mast is live")
-	if plan_a and plan_a.live:
-		t.close_to(plan_a.live.age, clock_a,
-				"a mast's age is the broadcast clock at the moment it streams in", 0.05)
+	await _advance(t, 9.0)
+	_manager.stream_around(a.foot())
+	var plan_a := _plan_for(a.id())
+	t.check(plan_a != null and plan_a.is_in_the_world(), "the first mast is live")
+	if plan_a == null or not plan_a.is_in_the_world():
+		return
+	var age_a := _live(plan_a).age()
 
-	await _advance(6.0)
-	var clock_b: float = _city.events.streaming.broadcast_clock
-	_city.events.stream_around(b.foot)
-	var plan_b := _plan_for(b.id)
-	t.check(plan_b != null and plan_b.live != null, "the second mast is live")
-	if plan_b and plan_b.live:
-		t.close_to(plan_b.live.age, clock_b,
-				"so is the second mast, met minutes later — the same clock", 0.05)
+	await _advance(t, 6.0)
+	# Walking to the second mast takes the first out of the world.
+	_manager.stream_around(b.foot())
+	var plan_b := _plan_for(b.id())
+	t.check(plan_b != null and plan_b.is_in_the_world(), "the second mast is live")
+	if plan_b == null or not plan_b.is_in_the_world():
+		return
+	var age_b := _live(plan_b).age()
+	t.check(age_b > age_a + 5.0,
+			"time genuinely passed between the two (%.1fs)" % (age_b - age_a))
 
-	t.check(clock_b > clock_a + 5.0,
-			"and time genuinely passed between the two (%.1fs)" % (clock_b - clock_a))
-	if plan_a and plan_a.live and plan_b and plan_b.live:
-		t.check(not is_equal_approx(plan_a.live.age, plan_b.live.age),
-				"they were not both stamped the instant they happened to stream in")
+	# The first mast streams back in on the very frame the second one is in the world: both read
+	# the one clock, so their ages match although the first was first met minutes before.
+	_manager.stream_around(a.foot())
+	t.check(plan_a.is_in_the_world(), "the first mast is back in the world")
+	if _live(plan_a):
+		t.close_to(_live(plan_a).age(), age_b,
+				"a mast streamed back in tells the same time as the one met minutes later", 0.05)
 
-func _test_mast_foot_answers_a_stable_id(t) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
+func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
+	_start()
 	var site := _sites()[0]
-	t.check(_city.events.mast_foot(site.id).distance_to(site.foot) < 0.01,
+	t.check(_manager.mast_foot(site.id()).distance_to(site.foot()) < 0.01,
 			"mast_foot() answers the same point MastSites named for this id")
-	t.check(_city.events.mast_foot("not_a_real_mast") == Vector2.INF,
+	t.check(_manager.mast_foot("not_a_real_mast") == Vector2.INF,
 			"and INF for an id today does not carry")
 
 # -------------------------------------------------------------- silencing ---
 
-func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
+func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
+	_start()
 	var target := _sites()[0]
-	_city.events.stream_around(target.foot)
-	var plan := _plan_for(target.id)
-	t.check(plan != null and plan.live != null, "the mast is live before it is silenced")
-	if not (plan and plan.live):
+	_manager.stream_around(target.foot())
+	var plan := _plan_for(target.id())
+	t.check(plan != null and plan.is_in_the_world(), "the mast is live before it is silenced")
+	if not (plan and _live(plan)):
 		return
-	t.check(plan.live.current_intensity() > 0.0, "and it is actually speaking")
-	var nearby := target.foot + Vector2(50.0, 0.0)
+	t.check(_live(plan).current_intensity() > 0.0, "and it is actually speaking")
+	var nearby := target.foot() + Vector2(50.0, 0.0)
 	# Asked once before silencing, on purpose: `contribution_at()` caches per `(age, position)`,
 	# and silencing does not move `age` — without its own cache invalidation this would go on
-	# answering the pre-silence figure for the rest of the tick, exactly the defect
-	# `ExcitementSource.invalidate_contribution()`'s own doc warns `_finish()` about.
-	var _primed := plan.live.excitement.contribution_at(nearby)
+	# answering the pre-silence figure for the rest of the tick; `EventInstance.silence()` drops that
+	# cache (`ExcitementSource.invalidate_contribution()`) as it silences.
+	var _primed := _live(plan).source().contribution_at(nearby)
 
-	t.check(_city.events.silence_mast(target.id), "silencing a mast by id finds it")
-	t.check(is_zero_approx(plan.live.current_intensity()), "a silenced mast's field is gone")
-	t.check(is_zero_approx(plan.live.excitement.contribution_at(nearby)),
+	t.check(_manager.silence_mast(target.id()), "silencing a mast by id finds it")
+	t.check(is_zero_approx(_live(plan).current_intensity()), "a silenced mast's field is gone")
+	t.check(is_zero_approx(_live(plan).source().contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
-	t.check(not plan.live.is_finished, "but the mast still stands — it has not left")
+	t.check(not _live(plan).is_gone(), "but the mast still stands — it has not left")
 
 	# Streamed out and back in, the silence holds.
-	_city.events.stream_around(Vector2(-99999.0, -99999.0))
-	t.check(plan.live == null, "walking away streams it back out")
-	_city.events.stream_around(target.foot)
-	t.check(plan.live != null, "and walking back streams it in again")
-	if plan.live:
-		t.check(plan.live.silenced, "still silenced — for the rest of the day")
-		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
+	_manager.stream_around(Vector2(-99999.0, -99999.0))
+	t.check(not plan.is_in_the_world(), "walking away streams it back out")
+	_manager.stream_around(target.foot())
+	t.check(plan.is_in_the_world(), "and walking back streams it in again")
+	if _live(plan):
+		t.check(_live(plan).is_silenced(), "still silenced — for the rest of the day")
+		t.check(is_zero_approx(_live(plan).current_intensity()), "still no field")
 
-func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(DaySpec.for_day(EventScheduler.CURFEW_ANNOUNCE_DAY), _rng(EventScheduler.CURFEW_ANNOUNCE_DAY), [])
+func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
+	_start(true)
 	for site in _sites():
-		_city.events.stream_around(site.foot)
-	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a
-	# site whose tile is today's own closure, region wall or checkpoint ground rather than
-	# planting on top of it (`tests/test_events.gd`,
-	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.
+		_manager.stream_around(site.foot())
+	# Today's own count of *standing* masts, read off the plans: the hand-built day stands one at
+	# every site.
 	var standing_ids := {}
-	for plan in _city.events.plans():
-		if plan.mast_id != "":
-			standing_ids[plan.mast_id] = true
+	for plan in _manager.plans():
+		if plan.mast_id() != "":
+			standing_ids[plan.mast_id()] = true
 	t.check(standing_ids.size() > 0 and standing_ids.size() <= Tuning.MAST_COUNT,
 			"today carries between one and Tuning.MAST_COUNT masts (%d)" % standing_ids.size())
 
-	var silenced := _city.events.silence_all_masts()
+	var silenced := _manager.silence_all_masts()
 	t.check(silenced == standing_ids.size(),
 			("silencing every mast silences exactly the masts standing today (%d wanted, %d got) "
 			% [standing_ids.size(), silenced])
 			+ "— one per site, not one per row sharing that site on the curfew day")
 	var mast_plans_checked := 0
-	for plan in _city.events.plans():
-		if plan.mast_id == "":
+	for plan in _manager.plans():
+		if plan.mast_id() == "":
 			continue
 		mast_plans_checked += 1
-		t.check(plan.silenced, "'%s' at '%s' is silenced" % [plan.def.id, plan.mast_id])
-		if plan.live:
-			t.check(is_zero_approx(plan.live.current_intensity()),
-					"'%s' at '%s' has no field" % [plan.def.id, plan.mast_id])
+		t.check(plan.is_silenced(), "'%s' at '%s' is silenced" % [plan.row_id(), plan.mast_id()])
+		if _live(plan):
+			t.check(is_zero_approx(_live(plan).current_intensity()),
+					"'%s' at '%s' has no field" % [plan.row_id(), plan.mast_id()])
 	t.check(mast_plans_checked == standing_ids.size() * 2,
 			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
 			% mast_plans_checked) + "the curfew announcement, one pair per standing site")
 
-## **The scar a fixed-site mast leaves silences that site the next day**, and only that site: the
-## day she touches a mast the director records a scar at its foot (`RunState.add_scar()`), and the
-## next day's plan stands the same pole with its lamp out while every other site speaks. Played on
-## one city, two days running through the manager, the way the run plans them.
-func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t) -> void:
-	var first := Tuning.MAST_FIRST_DAY
-	var run := _city.run
-	run.header.day = first
-	_city.events.start_day(DaySpec.for_day(first), _rng(first), [])
-	var target: MastSites.Site = null
-	for site in _sites():
-		if _plan_for(site.id) != null:
-			target = site
+## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
+## event to be generated"* (quiet-yak, inbox #503). With a stationary
+## `reversing_lorry` (lethal, 175px field) planned on a sidewalk, the mast is queued with only
+## the sidewalk inside that field to stand on: the scheduler's acceptance refuses every tile, so no
+## mast is generated, as `StreetInvalidation.room_around()` refuses any row inside a lethal field
+## ("Nothing else happens inside a lethal event's field"). Offered sidewalk well clear of it, the mast
+## is generated, joins the day's plan under an added id, and has room by the same rule. A mast put down
+## where the director pointed, as before, fails the first half.
+func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner) -> void:
+	# A manager of its own, handed the city's map as the city's own (`in_the_city()`), which is what
+	# planning a day, and so siting a mast in it, is asked over.
+	var run := RunState.new()
+	run.start_run(SEED)
+	var manager := EventManager.new(EventSurroundings.new().in_the_city(_map).drawn_in(_world))
+	manager.setup(run)
+	t.add_child(manager)
+	var map := _map
+	var lorry_def := EventCatalogue.by_id("reversing_lorry")
+	var walled: Array[Rect2i] = []
+	var lorry_tile := Vector2i(-1, -1)
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
+				and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
+			lorry_tile = tile
 			break
-	t.check(target != null, "day %d stands a mast to silence" % first)
-	if target == null:
-		return
-	t.check(not _plan_for(target.id).silenced, "the mast speaks the day she reaches it")
-	var foot := _city.events.mast_foot(target.id)
-	_city.events.silence_mast(target.id)
-	run.add_scar(EventScheduler.SILENCED_MAST, foot)
-
-	run.header.day = first + 1
-	_city.events.start_day(DaySpec.for_day(first + 1), _rng(first + 1), [])
-	var tomorrow := _plan_for(target.id)
-	t.check(tomorrow != null and tomorrow.silenced,
-			"the next day the same site stands silenced, lamp out and no field")
-	var others_speak := 0
-	for site in _sites():
-		var plan := _plan_for(site.id)
-		if site.id != target.id and plan != null and not plan.silenced:
-			others_speak += 1
-	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
-	run.attempt_spend.scars.clear()
+	var lorry := EventPlan.new(lorry_def, map.tile_to_world(lorry_tile))
+	lorry.give_role(GameEnums.BlockerRole.FRICTION)
+	# Planned with the walk, as a scene's recipe plans it: it streams in like any planned row
+	# and its body is recorded where it stands.
+	var planned: Array[EventPlan] = [lorry]
+	manager.start_recipe(planned, DaySpec.for_day(11), 11, lorry.placed_at())
+	var inside: Array[Vector2i] = []
+	var clear: Array[Vector2i] = []
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
+			continue
+		var gap := map.tile_to_world(tile).distance_to(lorry.placed_at())
+		if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
+			inside.append(tile)
+		elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
+			clear.append(tile)
+	t.check(not inside.is_empty() and not clear.is_empty(),
+			"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
+			% [inside.size(), clear.size()])
+	var refused := manager.queue_a_mast(inside)
+	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
+	var placed := manager.queue_a_mast(clear)
+	t.check(placed != null and placed.mast_id().begins_with("added-")
+			and placed in manager.plans(),
+			"offered ground clear of it, a mast is generated into the day's plan")
+	manager.free()
 
 func _teardown() -> void:
-	if _city:
-		_city.free()
+	_manager.free()
+	_world.free()
+
+## The live event of `plan`, asked of the event manager.
+func _live(plan: EventPlan) -> EventInstance:
+	return _manager.event_of(plan)

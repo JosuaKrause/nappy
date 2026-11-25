@@ -19,8 +19,8 @@ class FrameClock extends Node:
 
 ## **The rim a body hands its source, wrapped** so a test reads what `ExcitementHalo` told it: the
 ## body's own rim (`inner`) does everything, and this keeps the last strength and colour it was
-## told. Handed to the source the way a body hands its own (`ExcitementSource.rim`), so the halo
-## asks this one and nothing else changes.
+## told. Handed to the source the way a body hands its own (`ExcitementSource.use_rim()`), so the
+## halo asks this one and nothing else changes.
 class ToldRim extends SourceRim:
 	var inner: SourceRim
 	var strength := 0.0
@@ -60,8 +60,8 @@ class ToldRim extends SourceRim:
 
 ## Wraps the rim `instance` hands its source in a `ToldRim`, and answers it.
 static func told(instance: EventInstance) -> ToldRim:
-	var rim := ToldRim.new(instance.excitement.rim as SourceRim)
-	instance.excitement.rim = rim
+	var rim := ToldRim.new(instance.source().rim())
+	instance.source().use_rim(rim)
 	return rim
 
 ## A meter whose decay over the window is a number the test sets (none by default, so a source's
@@ -76,9 +76,9 @@ class DecayedBaby extends Baby:
 		return decay
 
 ## The one set a halo is handed, over a list of sources a test edits: the stand-in for a world's
-## own set (`EventManager.sources`, `Crowd.sources`), handed in where the game hands those.
+## own set (`EventManager.excitement_sources()`, `Crowd.sources()`), handed in where the game hands those.
 class ListSet extends ExcitementSources:
-	var sources: Array = []
+	var sources: Array[ExcitementSource] = []
 
 	## Overrides ExcitementSources.every_source.
 	func every_source(into: Array) -> void:
@@ -91,15 +91,15 @@ class ListSet extends ExcitementSources:
 ## source's rim is swapped for a `ToldRim` that draws nothing (a plain `EntityHalo` on its body), so
 ## the selection is read the way the halo suites read what a rim was told. Answers the lit sources;
 ## the caller frees the bodies.
-static func lit_among(t, sources: Array, at: Vector2) -> Array:
+static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	var set := ListSet.new()
-	for source in sources:
-		var body: Node = source.body
-		source.rim = ToldRim.new(SourceRim.new(func() -> EntityHalo:
+	for source: ExcitementSource in sources:
+		var body: Node2D = source.body()
+		source.use_rim(ToldRim.new(SourceRim.new(func() -> EntityHalo:
 				var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: pass,
 						func() -> float: return 0.0)
 				body.add_child(halo)
-				return halo))
+				return halo)))
 		set.sources.append(source)
 	var player := Node2D.new()
 	t.add_child(player)
@@ -111,9 +111,9 @@ static func lit_among(t, sources: Array, at: Vector2) -> Array:
 	t.add_child(halo)
 	for _frame in 3:
 		await t.get_tree().process_frame
-	var lit: Array = []
-	for source in sources:
-		if (source.rim as ToldRim).strength > 0.0:
+	var lit: Array[ExcitementSource] = []
+	for source: ExcitementSource in sources:
+		if (source.rim() as ToldRim).strength > 0.0:
 			lit.append(source)
 	halo.free()
 	player.free()

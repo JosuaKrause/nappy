@@ -149,19 +149,23 @@ var _fired := false
 ## The baked atlas pages the button draws from (`AtlasLibrary`), handed by its screen before it
 ## enters the tree (`use_atlas()` on the title, the pause and the summary); a button nobody handed
 ## one (a suite's) makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Hands this the atlas library its pictures are read from, once, before it enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 ## Acquires the `ui` group before `_ready()` sets `icon` from it — see `Building._enter_tree()`'s
 ## own doc for why this is paired with `_exit_tree()` rather than folded into `_ready()`.
 ## `AtlasLibrary` reference-counts, so every button on a screen acquiring the same group is one
 ## page load.
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"ui")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	atlas.release(&"ui")
+	_atlas.release(&"ui")
 
 ## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
 ## since it may not name the view.
@@ -173,11 +177,11 @@ func _ready() -> void:
 	# reserve below the disc is gone along with the bar itself; the fill now lives inside the disc.
 	custom_minimum_size = Vector2(_DIAMETER, _DIAMETER)
 	_apply_disc_style()
-	icon = atlas.region(_ICON_BY_SYMBOL.get(symbol))
+	icon = _atlas.region(_ICON_BY_SYMBOL.get(symbol))
 	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	expand_icon = true
-	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
+	for state: String in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
 			"icon_hover_pressed_color", "icon_focused_color", "icon_disabled_color"]:
 		add_theme_color_override(state, Palette.BUTTON_SYMBOL)
 	# **The bug, and the fix.** *(Playtest 29 finding 2: "the buttons do *not* work at all... the
@@ -191,15 +195,19 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_add_letter()
 
-## The mark is a child `Label` pinned to the disc's lower-right; it ignores the mouse like its
-## parent, so the screen's raw-touch reading is unchanged.
+## Marks the disc with `mark`, the one-letter mark in its lower-right corner (`letter`).
+func use_letter(mark: String) -> void:
+	letter = mark
+
 func _refresh_letter() -> void:
-	var old := get_node_or_null("Letter")
+	var old := get_node_or_null("Letter") as Label
 	if old:
 		remove_child(old)
 		old.queue_free()
 	_add_letter()
 
+## The mark is a child `Label` pinned to the disc's lower-right; it ignores the mouse like its
+## parent, so the screen's raw-touch reading is unchanged.
 func _add_letter() -> void:
 	if letter.is_empty():
 		return

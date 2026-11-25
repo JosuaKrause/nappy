@@ -5,7 +5,28 @@ description: Where gameplay stills, bursts and run folders are kept as evidence,
 
 # Session captures
 
-Everything under `docs/evidence/archive/session-captures/` is dated runtime evidence. It records a
+**The rules not to miss:**
+
+- **New evidence goes in a folder of its own directly under `docs/evidence/`**, named
+  `<words>-<slug>-<date>` (polite-sparrow). This skill owns that name, and every other skill
+  follows it.
+- **`docs/evidence/archive/session-captures/` holds earlier captures only** (polite-sparrow).
+- **A capture is dated runtime evidence, never an approved visual reference**: it records one
+  build, seed, route and presentation state.
+- **Retain what the run was meant to show**, with contradictory results and failed trials, and
+  leave the rest in scratch space.
+- **A new evidence folder carries a README or manifest**: the claim, its limits, the source
+  revision, the command and settings.
+- **A capture that aborts, or a headless display, is reported**, never replaced by a made-up frame.
+- **A short clip is committed only when a pull request needs it to show motion; a recording of a
+  whole run never is** (PLAYTEST-139 11; woolly-finch 30).
+- **An agent's sparse worktree leaves `docs/evidence/` out**: a new file there is committed with
+  `git add --sparse <path>`.
+
+## Where new evidence goes, and what its folder is called
+
+Everything a run or a rig leaves as evidence, the folders under
+`docs/evidence/archive/session-captures/` included, is dated runtime evidence. It records a
 particular build, seed, route and presentation state; it is not an approved visual reference.
 
 For a new capture, use a display-capable session and a bounded command such as:
@@ -14,14 +35,17 @@ For a new capture, use a display-capable session and a bounded command such as:
 tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 2s3e
 ```
 
-New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, where `<words>` are the two words of
-the queue entry (PLAYTEST-144 8) or playtest it belongs to (`busy-otter-roof-cases-2026-09-27/`),
-and an entry or playtest from before names gives its number instead (`m203-roof-cases-2026-09-26/`,
-`playtest-144-phone-v0.18.0-2026-09-26/`). The slug says what it shows, so two folders for one entry
-differ by their slugs. When selected artifacts come from a telemetry run, keep them under that run
-folder's original name. `archive/session-captures/<date>/` holds earlier captures. Update every
-in-repo link when moving one. If capture aborts or the display is headless, report it instead of
-fabricating a frame.
+New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, a folder named for the queue entry or
+the playtest it belongs to (polite-sparrow). `<words>` are the two words of the queue entry
+(`busy-otter-roof-cases-2026-09-27/`), and an entry from before names gives its number instead
+(`m203-roof-cases-2026-09-26/`): the evidence folder takes its entry's name, in the naming table
+the player accepted (PLAYTEST-144 8). Evidence that belongs to a playtest takes the playtest's name
+the same way (`playtest-144-phone-v0.18.0-2026-09-26/`). The slug says what it shows, so two
+folders for one entry differ by their slugs. When selected artifacts come from a telemetry run,
+keep them under that run folder's original name (polite-sparrow).
+`docs/evidence/archive/session-captures/<date>/` holds earlier captures only, so nothing new goes
+there (polite-sparrow). Update every in-repo link when moving one. If capture aborts or the display
+is headless, report it instead of fabricating a frame.
 
 **Retain what the run or rig was meant to show, not everything it happened to write.** Keep the
 stills, burst frames, timing sidecars, maps or log excerpts that support the intended claim and its
@@ -50,3 +74,8 @@ and encode overhead is not an animation defect.
 run never is** (PLAYTEST-139 11; woolly-finch 30). A burst's MP4 belongs in an evidence folder when
 a still cannot show what the PR changed — a turn, a gait, a pursuer arriving. A review video of a
 rig run and the trailer are made and watched locally and stay out of the repository.
+
+## Proposed, not asked for
+
+- **The date in a folder's name is the day the evidence is made** is the filer's reading: the
+  player's wording gives the name a date and does not say which day (polite-sparrow).

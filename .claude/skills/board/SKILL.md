@@ -1,9 +1,21 @@
 ---
 name: board
-description: The Nappy board, the shared Claude Doc where the player and the orchestrator keep the open questions, the running work and the recent merges — its layout, how a question is written, answered and settled, how the player's words on it are captured, and the reads and writes that keep it cheap. Load this BEFORE the orchestrating session asks the player a question, which goes on the board rather than in a dialog (one about an inbox note may go on its issue instead), BEFORE reading or writing the board, and whenever the player says "doc" or "check the doc".
+description: The Nappy board, the shared Claude Doc where the player and the orchestrator keep the open questions, the running work and the recent merges — its layout, how a question is written, answered and settled, how the player's words on it are captured, and the reads and writes that keep it cheap. Load this BEFORE the orchestrating session asks the player a question, which goes on the board rather than in a dialog (a question about an inbox note included), BEFORE reading or writing the board, and whenever the player says "doc" or "check the doc".
 ---
 
 # The Nappy board
+
+- **A question to the player goes on the board, never in a modal dialog in the chat**, a question about an inbox note or about an issue the player opened on GitHub included (inbox #1639 in gentle-penguin). Things move board, then inbox, then repository: the player talks and is asked on the board, a note goes to the inbox, its work to the repository. The player may still open an issue directly, and it is a note like any other; a follow-up question about it goes on the board, naming the note.
+- **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
+- **It is read at session start, at every run of the orchestrating session's recurring check (about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
+- **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
+- **A quick note to the inbox can be written in the board's `## Quick notes` section**, which each recurring check captures into the inbox word for word and then clears (inbox #1626 in dappled-bison).
+- **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). A question, about a note or an issue the player opened included, goes on the board (inbox #1639 in gentle-penguin).
+- **A question the player's recorded words already answer is not asked**: the reading is built and stated.
+- **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
+- **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.
+- **The player's words on the board are never rewritten**, and are captured into the inbox before they are acted on.
+- **A conclusion is written on its inbox note in the turn it is reached**, and into its queue item at the next queue update.
 
 **Questions and steering live on one standing page, not in the chat** (inbox #830 in minty-dolphin). In the chat a
 question is drowned by the reports that follow it, gets repeated at the end of every message, and a
@@ -22,16 +34,28 @@ separate session that has none of this context.
 
 ## When it is read
 
-**On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc".**
-Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
-rather than have the board polled (inbox #830 in minty-dolphin). A report from an agent, a merge or
+**The board is read at session start, at every run of the orchestrating session's recurring check
+(about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write to it in a
+turn** (the check is in **orchestrating**, "What the orchestrator keeps"). The reads at session start, on "doc"
+and before a write are the player's words (inbox #830 in minty-dolphin, inbox #1267 in olive-ferret); the
+player's later words replace their earlier no-polling ones for the cadence, and set the hour's
+length (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin). The check covers the inbox as well as the board: new
+tasks are posted in the inbox, questions and answers are on the board (inbox #1623 in dappled-bison). Nothing notifies the terminal session of an edit, so the
+recurring read is what finds an answer the player left; the player is in code mode and looks at the
+board rather than the chat, so the board is where the orchestrating session communicates with them
+(inbox #1619 in teal-dolphin). The read before a turn's first write is what keeps a write from
+landing on a page the player has changed since, and every board read by the orchestrating session rewrites the board's time in the
+restart prompt's `## Last checked` (**session-cleanup**, step 8).
+Between the session's own consecutive writes there is no read: each write's acknowledgement is the
+next one's anchor ("Keeping it cheap"). A report from an agent, a merge or
 a review verdict is not written to the Running table at once: the board is the player's information
 and the channel they answer on, so it is updated in batches, and the orchestrator's own temporary
 working state is kept in the local restart prompt (**session-cleanup**, step 8), which a fresh session
 can recover from. The player usually asks for the current state before looking at the board
-(inbox #986 in brisk-pelican). *Proposed, not asked for, open to the player's correction:* a batch is
-whenever the orchestrator next writes the board for the player: a question, an answer, or the player
-asking for the state. **Both tabs are read**, since the
+(inbox #986 in brisk-pelican). A batch is
+whenever the orchestrator next writes the board for the player: a question, an answer, the player
+asking for the state, or a recurring read, which brings the tables current with what merged and
+finished since the last batch. **Both tabs are read**, since the
 player answers review items on the Review tab and design questions on the Main tab.
 
 ## The layout
@@ -42,17 +66,26 @@ Top to bottom, every part present even when empty:
 2. `## Waiting on you`: the open questions, each as below, or the one line "Nothing is waiting on
    you right now." **A heads-up the player may want to act on goes here too, not only into a chat
    report** (inbox #850 in minty-dolphin), since a line in a report is read once and scrolled away: a review thread
-   resolved by mistake, a finding that slipped past a merge. *Proposed, not asked for, open to the
-   player's correction:* it is written as a question, its My pick saying what happens if they leave
-   it, and it stays until they answer it; a choice an agent made where the design was silent stays
-   in its report and the pull request's description rather than coming here.
-3. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
+   resolved by mistake, a finding that slipped past a merge. It is written as a question, its My
+   pick saying what happens if they leave it, and it stays until they answer it; a choice an agent
+   made where the design was silent stays in its report and the pull request's description rather
+   than coming here.
+3. `## Quick notes`: the place where the player writes a quick inbox note, like a task or a
+   remark, without opening an issue (inbox #1626 in dappled-bison). Each recurring check reads it, and
+   **captures each note into the inbox, word for word, before anything else** (**inbox**), then
+   removes it from the board; the player's words are never reworded. Empty, it holds the section's
+   one line saying what it is for and, after it, a **You:** line to type on, written as a bold
+   label and a plain space like any You stub (inbox #1733 in spry-ferret).
+4. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
    they are, or until the chat has fully discussed them (see "Settling"), each as below.
-4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
+5. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
-   it, one line on what comes after the running work.
-5. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
-6. `## How this board works`: a bullet list of the rules below, in the player's terms.
+   it, one line on what comes after the running work. **When the orchestrating session is out of
+   tasks, that line says so and says it keeps checking** (what it looks at is in **orchestrating**,
+   "What the orchestrator keeps"), so the player reads an idle session as waiting and not as gone
+   (inbox #1619 in teal-dolphin).
+6. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
+7. `## How this board works`: a bullet list of the rules below, in the player's terms.
 
 That is the Main tab. **The review items have a tab of their own, Review, in the same overall style,
 and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A review item under
@@ -60,7 +93,7 @@ and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A re
 time, while the Main tab's questions are design decisions about work in flight and are answered in
 a batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
 shows it. The answer goes to a playtest file as before, which closes the item's file
-(**playtest-feedback**). *Proposed, not asked for, open to the player's correction:* the tab holds
+(**playtest-feedback**). The tab holds
 a title and one line saying what it is for, `## Waiting on you` with the items ready to answer (or
 the one line "Nothing is ready for you right now."), and below it a section for items held until
 something happens, such as `## Waiting for a release`, where the item's file says what it waits
@@ -86,8 +119,8 @@ nested exactly like this, the layout the player set on the board:
   items, each one fact or one option, and a picture or a diagram may carry what words carry badly.
   Options or steps never sit as "(1) … (2) …" inside a sentence (inbox #1163 in gray-dolphin): each goes in its own
   list item, in an ordered list where the order matters.
-  *Proposed, not asked for, open to the player's correction:* a bold lead word on an item where that
-  helps the reader scan, and a map, an order of steps, or a before and after as the pictures meant.
+  An item takes a bold lead word where that helps the reader scan, and the pictures meant are a
+  map, an order of steps, or a before and after.
 - **A bold label ends in a plain space** (inbox #830 in minty-dolphin): `**You:** ` with the space outside the bold,
   so the player's typing after it is not bold. A Me stub is the same.
 - **Context carries everything an answer needs**, as `CLAUDE.md`'s question rule says: what was
@@ -106,11 +139,11 @@ nested exactly like this, the layout the player set on the board:
 
 **No question is put to the player as a modal dialog in the chat** (inbox #830 in minty-dolphin): a dialog stops
 the session and the player cannot scroll back while it is open, so they lose the context they need
-to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). **A blocking question still blocks** (inbox #830 in minty-dolphin):
+to answer. The board is where a question goes, one about an inbox note included, which names the note on its Question line or in its Context (**inbox**; inbox #1639 in gentle-penguin). **A blocking question still blocks** (inbox #830 in minty-dolphin):
 the work it names stops until it is answered, and other work goes on.
 
-**A question blocks only when changing course after the answer would be very costly** (inbox
-#1194): a pick whose undoing means rebuilding a system, migrating a save or rewriting work several
+**A question blocks only when changing course after the answer would be very costly**
+(inbox #1194 in gentle-owl): a pick whose undoing means rebuilding a system, migrating a save or rewriting work several
 pull requests stand on. Everything else is built on My pick at once, and the work changes to the
 player's answer when it comes, before the pull request merges or in a later one, if the answer
 differs. A pick on a placement, a number, a merge order, or a choice between two cheap
@@ -118,11 +151,46 @@ implementations never blocks. The exception is a pick that would drop, narrow or
 something the player asked for: **playtest-feedback**'s "Never silently overturn a decision the
 player took" holds, and that part is not built until they answer, however cheap it would be to undo.
 
-**A question the player's recorded words already answer is not asked** (inbox #1185, inbox
-#1194): putting one up costs them a round trip to repeat themselves. Before a question goes on the
+**A question the player's recorded words already answer is not asked**
+(inbox #1185 and #1194 in gentle-owl): putting one up costs them a round trip to repeat themselves. Before a question goes on the
 board, the note it comes from, its appended words and the settled questions on the same work are
 read for an answer; where they give one, it is built, and the reading is stated in the brief and in
 the pull request's description, open to the player's correction there.
+
+**The same holds for an open point anywhere, not only a board question** (inbox #1232 in gentle-owl): an `Open:`
+line in a queue item or a record, or a "whether…" a filer left. When its task's investigation
+reaches it (below), it is read against the player's recorded words, the
+whole entry it sits in included (items filed from one note belong together). The words answer it
+where their plain meaning does, even if they never name the point (inbox #1234 in gentle-owl): a hint about a
+thing she sees fires when she first sees it. Where the words answer it, the answer is stated as the
+reading, and the line is rewritten when the item is next touched; it is never handed back for the
+player to restate.
+
+**An open point is investigated only with its task's full context** (inbox #1244 in gentle-owl): when the task is
+created and discussed with the player, or, for a point postponed then, when the task is picked up
+and its full investigation runs. Never in passing: not in an audit of other tasks' open points, not
+in a status answer, which relays no open point, not from a report about other work. A question raised without the task's
+context misreads the task or lacks what would make it unnecessary.
+
+**A conclusion is written down in the turn it is reached** (inbox #1244 in gentle-owl): a reading of the player's
+words, a settled answer, or a decision about how work goes on. Where it goes, and when:
+
+- **on the inbox note it rests on, in that turn**, as a reading (a `--reading-file` block of
+  `tools/inbox.py`, which marks it as the agent's; **inbox**);
+- **in the queue item of the work it decides, at the next queue update**, since a queue file
+  changes only through a pull request and its review; a pull request already building the work
+  writes it into that work's record instead;
+- **in the restart prompt's `## Plan`, until the queue item holds it** (**session-cleanup**,
+  step 8).
+
+**A conclusion that rests on a note with nothing to append to goes into the restart prompt's
+`## Plan` in that turn**, and into the queue item at the next queue update as above. That is a note
+already filed, which is closed, and a note the player wrote themself, which takes only the player's
+own comments: `tools/inbox.py append`, the command that adds a block to an open captured note,
+refuses both.
+
+The next session reads the note, the queue and the records and not this conversation; the local
+restart prompt alone is not enough.
 
 ## Answering
 
@@ -156,10 +224,9 @@ hold it from then on, and the board holds open things only.
 
 **A question the player and the orchestrator have fully discussed in the chat leaves the board**
 (inbox #1163 in gray-dolphin), whether or not it is settled, and that overrides keeping a settled question until it
-is filed. A blocking question removed this way no longer blocks: its outcome stands. *Proposed, not
-asked for, open to the player's correction:* before it goes, the outcome is recorded on its inbox
-note, as the standing pick or the settled answer; where the question has no inbox note, the outcome
-goes into the restart prompt and the work it decides.
+is filed. A blocking question removed this way no longer blocks: its outcome stands. Before it
+goes, the outcome is recorded on its inbox note, as the standing pick or the settled answer; where
+the question has no inbox note, the outcome goes into the restart prompt and the work it decides.
 
 ## Keeping it cheap
 
@@ -196,3 +263,36 @@ The editor's traps that have each cost a failed call:
   the same delete. Deleting a list the player typed in leaves their typed runs behind as loose
   paragraphs; check for them with an outline read afterwards, and delete them once their words are
   captured.
+
+## Proposed, not asked for
+
+These rules above are the filer's proposals and readings, not the player's words, and hold until
+the player corrects them. The citation is the player's word each one extends:
+
+- **What a batch is** ("When it is read"): the orchestrator's next write for the player
+  (inbox #986 in brisk-pelican), the recurring read included, so the Running and Recently done
+  tables are current within about an hour (inbox #1619 in teal-dolphin).
+- **How a heads-up is written** ("The layout", part 2): as a question that stays until answered,
+  an agent's own choice staying in its report (inbox #850 in minty-dolphin).
+- **What the Review tab holds** ("The layout"): its sections, each item as a question, the
+  same-turn update (inbox #948 in bouncy-marten).
+- **A bold lead word on a Context item, and which pictures are meant** ("The layout";
+  inbox #1163 in gray-dolphin).
+- **Where a question's outcome is recorded before it leaves the board** ("Settling";
+  inbox #1163 in gray-dolphin).
+- **Where the Quick notes section stands, and that a captured note is removed** ("The layout", part 3):
+  the player asked for a place on the board for quick inbox notes (inbox #1626 in dappled-bison);
+  that it sits between Waiting on you and Settled, and that a note is removed once captured, are
+  the filer's.
+- **That the inbox is listed at every run of the recurring check**, as the board is read (inbox #1623 in dappled-bison
+  puts the inbox in the check and sets no beat).
+- **Where the out-of-tasks note stands, and the beat of the read** ("The layout", part 5; "When it is
+  read"): the note is the line under Running, and the board read is every run of the
+  30-minute recurring check, so no gap passes about 55 minutes, which the player's words set
+  (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
+- **One read covers a turn's run of writes** ("When it is read"): the pick the player took is a
+  read before each write (inbox #1267 in olive-ferret), read as before the first of a turn, since each later write
+  is anchored on the acknowledgement of the one before it.
+- **Where a conclusion goes when its note takes no appended block** ("Blocking, and no dialogs"):
+  the restart prompt's plan in that turn, and the queue item at the next queue update
+  (inbox #1244 in gentle-owl).

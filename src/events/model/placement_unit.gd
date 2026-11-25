@@ -1,0 +1,129 @@
+class_name PlacementUnit
+extends RefCounted
+## **One unit of the day's locations, the thing a draw fills in one go**: a street (its three
+## sections and six sidewalk locations), a junction box, an alley (its up to three locations) or one
+## park or square (its cells). *(The player: "agree on all design review points. let's do it", to
+## the proposal of drawing a whole street at once, seeded by the day and the street, so a street
+## holds the same events whatever her path; inbox #1268 in olive-ferret. `docs/EVENTS.md`, "The
+## three views and the placement order".)*
+##
+## **Its name is its kind and its tiles**, so a unit has the same name on every start of the same
+## city and day: nothing about an object's identity or an array's order enters a seed. Its rank and
+## its stream are hashes of the day's seed and the name. **The rank orders two touching units'
+## draws** (`DayUnits`, `UnitDraw`): of two that touch, the lower rank always draws first, which is
+## what makes a unit's draw the same whatever her path.
+##
+## **A beat her walk lays in it goes first** (`beats()`, which its locations answer,
+## `Location.beat()`): it holds its location, so the unit's room starts without it, and the unit's
+## draw and the draws of the units touching it are judged among it (`UnitDraw`). *(The player:
+## "beats are marbles, yes", inbox #1521 in breezy-magpie.)*
+##
+## Pure state: no node, and **no reference to another unit**, since two `RefCounted` objects holding
+## each other leak at exit; `DayUnits` holds which touch which, by name. What it drew is written
+## once, by `UnitDraw`; the beats stand on its locations. Model.
+
+## In `PlacementGround.Kind`'s order; a unit's name enters its rank and stream seeds, so a
+## member added to or reordered in that enum moves every draw.
+const _KIND_NAMES: Array[String] = ["street", "junction", "alley", "open"]
+
+var _kind := PlacementGround.Kind.STREET
+var _tiles := Rect2i()
+var _bounds := Rect2()
+var _locations: Array[Location] = []
+var _day_seed := 0
+var _name := ""
+var _rank := 0
+var _drawn := false
+var _placed: Array[EventPlan] = []
+var _view: int = PlacementView.View.OFF_THE_ROUTE
+
+## `tiles` is the ground the unit is: its street's rect, its box, its alley's rect, its lot's
+## bounds (`Location.part_of()`); `bounds` the same in world space; `locations` its locations, a
+## street's sections first, then its sidewalks, as laid out.
+func _init(kind: PlacementGround.Kind, tiles: Rect2i, bounds: Rect2,
+		locations: Array[Location], day_seed: int) -> void:
+	_kind = kind
+	_tiles = tiles
+	_bounds = bounds
+	_locations = locations
+	_day_seed = day_seed
+	_name = "%s:(%d, %d, %d, %d)" % [_KIND_NAMES[kind], tiles.position.x, tiles.position.y,
+			tiles.size.x, tiles.size.y]
+	_rank = hash("%d:unit-rank:%s" % [day_seed, _name])
+	for location in locations:
+		_view = mini(_view, location.view())
+
+## What kind of ground the unit is (`PlacementGround.Kind`).
+func kind() -> PlacementGround.Kind:
+	return _kind
+
+## The unit's name for the day: its kind and its tiles, the same on every start of the day.
+func name() -> String:
+	return _name
+
+## The tiles the unit is.
+func tiles() -> Rect2i:
+	return _tiles
+
+## The unit's tiles in world space.
+func bounds() -> Rect2:
+	return _bounds
+
+## Its locations: a street's sections first, then its sidewalks, as laid out.
+func locations() -> Array[Location]:
+	return _locations
+
+## **The view whose bag the unit draws from** (`PlacementView.View`): the most permissive of its
+## locations' views, on the route before route-adjacent before off the route, so a park a route
+## cuts through draws from the route's bag; off the route for a unit with no location. *(The
+## player, of a unit whose locations have different views: "the more permissive (in terms of
+## traversability) view gets priority", "whichever is easier to implement"; inbox #1466 in silky-lemur.)* A
+## marble is drawn before it has a location, so there is no location's view to pick a bag by.
+## Worked out once, as the unit is made.
+func view() -> int:
+	return _view
+
+## Its fixed rank for the day, a hash of the day's seed and its name.
+func _ranking() -> int:
+	return _rank
+
+## **Whether this unit draws before `other`** where the two touch: the lower rank first, a tie
+## broken by the name, so every two units are ordered.
+func draws_before(other: PlacementUnit) -> bool:
+	if _rank != other._ranking():
+		return _rank < other._ranking()
+	return _name < other.name()
+
+## **The unit's own stream**: a new generator each call, seeded by the day's seed and the name, so
+## the unit keeps no generator and no draw is handed one part-way through.
+func stream() -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:unit:%s" % [_day_seed, _name])
+	return rng
+
+## Whether the unit has drawn.
+func is_drawn() -> bool:
+	return _drawn
+
+## What its draw placed, in the order drawn, a row handed to her walk among them unplaced; empty
+## until it has drawn.
+func drawn() -> Array[EventPlan]:
+	return _placed.duplicate()
+
+## **The beats her walk stands on the unit's locations** (`Location.beat()`), in the locations'
+## order: what the unit's draw, and the draws of the units touching it, are judged among besides
+## the dawn's plans and each other's rows (`UnitDraw`). A row a draw or a dawn phase put there is
+## no beat, nor is one her walk gave back or a plan put over it.
+func beats() -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
+	for location in _locations:
+		var beat := location.beat()
+		if beat != null:
+			found.append(beat)
+	return found
+
+## Records what the unit's draw placed (`UnitDraw`), once.
+func record_draw(plans: Array[EventPlan]) -> void:
+	assert(not _drawn, "PlacementUnit.record_draw(): %s has drawn already" % _name)
+	_drawn = true
+	_placed = plans.duplicate()

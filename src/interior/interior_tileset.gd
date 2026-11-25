@@ -34,16 +34,10 @@ extends RefCounted
 ## such lifecycle of its own (a test calling `build()` directly) has to acquire the group on the
 ## library it hands in for as long as it keeps the returned `TileSet`.
 const _SOURCES := {
-	InteriorTile.Kind.HALLWAY_FLOOR: &"interior/hallway_floor",
 	InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N: &"interior/hallway_floor_edge_n",
-	InteriorTile.Kind.HALLWAY_FLOOR_EDGE_E: &"interior/hallway_floor_edge_e",
 	InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S: &"interior/hallway_floor_edge_s",
-	InteriorTile.Kind.HALLWAY_FLOOR_EDGE_W: &"interior/hallway_floor_edge_w",
 	InteriorTile.Kind.STAIRWELL_FLOOR: &"interior/stairwell_floor",
-	InteriorTile.Kind.STAIR_FLIGHT_E: &"interior/stair_flight_e",
-	InteriorTile.Kind.STAIR_FLIGHT_W: &"interior/stair_flight_w",
 	InteriorTile.Kind.STAIR_DOWN: &"interior/stair_down",
-	InteriorTile.Kind.LANDING: &"interior/stair_landing",
 	InteriorTile.Kind.STAIR_TOP_E: &"interior/m158_stair_side_upper_e",
 	InteriorTile.Kind.STAIR_MIDDLE_E: &"interior/m158_stair_side_lower_e",
 	InteriorTile.Kind.STAIR_TOP_W: &"interior/m158_stair_side_upper_w",
@@ -53,9 +47,7 @@ const _SOURCES := {
 	InteriorTile.Kind.STAIR_BLOCK: &"interior/m158_stair_side_block",
 	InteriorTile.Kind.BASEMENT_FLOOR: &"interior/basement_floor",
 	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_N: &"interior/basement_floor_edge_n",
-	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_E: &"interior/basement_floor_edge_e",
 	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_S: &"interior/basement_floor_edge_s",
-	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_W: &"interior/basement_floor_edge_w",
 	InteriorTile.Kind.DOOR: &"interior/stairwell_floor",
 	InteriorTile.Kind.EMERGENCY_EXIT: &"interior/basement_floor_edge_n",
 }
@@ -74,7 +66,7 @@ static func source_id_for(kind: InteriorTile.Kind) -> int:
 static func build(atlas: AtlasLibrary) -> TileSet:
 	var set := TileSet.new()
 	set.tile_size = Vector2i(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
-	for kind in _SOURCES:
+	for kind: InteriorTile.Kind in _SOURCES:
 		var name: StringName = _SOURCES[kind]
 		var region: AtlasTexture = atlas.region(name)
 		if region == null:

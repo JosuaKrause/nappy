@@ -27,15 +27,15 @@ const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 ## Overrides test_day13_guard.run.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in GUARD_SEEDS:
-		for walks in [false, true]:
+		for walks: bool in [false, true]:
 			_the_guard(t, seed_value, walks)
 	for day in ARROW_DAYS:
 		for seed_value in ARROW_SEEDS:
 			_the_arrow(t, day, seed_value)
 
-func _the_guard(t, seed_value: int, walks: bool) -> void:
+func _the_guard(t: TestRunner, seed_value: int, walks: bool) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -56,22 +56,22 @@ func _the_guard(t, seed_value: int, walks: bool) -> void:
 		_finish(player, director, city)
 		return
 	_choose_again(director)
-	var map := city.map
+	var map := city.map()
 	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
 	director.contact().complete_now()
 	var route := PROBE.walk_away_from(map, at) if walks else PackedVector2Array()
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var her := at
 	var next := 0
 	var clock := 0.0
 	var tick := 0
-	while clock < CHASE_SECONDS and not guard.is_finished:
+	while clock < CHASE_SECONDS and not guard.is_gone():
 		if next < route.size():
 			her = her.move_toward(route[next], Tuning.WALK_SPEED * FRAME)
 			if her.distance_to(route[next]) < 0.01:
 				next += 1
-		guard.player_at = her
+		RunCity.events(city).world.where_she_is().tell(her)
 		guard.step(FRAME)
 		clock += FRAME
 		print("%s tick %d: at (%.3f, %.3f) heading (%.5f, %.5f) arrow tile %s" % [label, tick,
@@ -92,9 +92,9 @@ static func _arrow_tile(director: ResistanceDirector, map: CityMap) -> Vector2i:
 	var at := director.red_arrow_target()
 	return Vector2i(-1, -1) if at == Vector2.INF else map.world_to_tile(at)
 
-func _the_arrow(t, day: int, seed_value: int) -> void:
+func _the_arrow(t: TestRunner, day: int, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
-	var director := _read_the_mark(t, city, day, seed_value)
+	var director := _read_the_mark(t, city, _run, day, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
 	var label := "D2_PARITY arrow day %d seed %d" % [day, seed_value]
 	var step := director.current_step()
@@ -108,9 +108,9 @@ func _the_arrow(t, day: int, seed_value: int) -> void:
 			player.global_position = at
 			_settle_the_arrow(director)
 			print("%s position %d (%.1f, %.1f): arrow tile %s, lead %d, nearest tile %s" % [label,
-					index, at.x, at.y, _arrow_tile(director, city.map),
-					_arrow_lead_at(director, city.map.world_to_tile(at)),
-					_nearest_tile(director, city.map, found, at)])
+					index, at.x, at.y, _arrow_tile(director, city.map()),
+					_arrow_lead_at(director, city.map().world_to_tile(at)),
+					_nearest_tile(director, city.map(), found, at)])
 			index += 1
 	_tear_down(player, director, city)
 
@@ -119,15 +119,15 @@ static func _nearest_tile(director: ResistanceDirector, map: CityMap, found: Arr
 		at: Vector2) -> Vector2i:
 	var key: Variant = _arrow_nearest_at(director, map.world_to_tile(at))
 	for target in found:
-		if key != null and _same_key(target["key"], key):
+		if key != null and ResistanceDirector._same_key(target["key"], key):
 			return map.world_to_tile(target["at"])
 	return Vector2i(-1, -1)
 
 func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
-	var map := city.map
+	var map := city.map()
 	var sidewalk: Array[Vector2i] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not map.is_obstructed(tile) \
 					and director._reachable_from_home(tile):
@@ -140,24 +140,24 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		spots.append(map.tile_to_world(sidewalk[i]))
 	return spots
 
-func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirector:
+func _read_the_mark(t: TestRunner, city: City, run: RunState, day: int,
+		seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	var run: RunState = city.run
-	run.resistance.completed_steps = done
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, day)
+	GivenRun.completed_steps(run, done)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _day_rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _day_rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(day), _day_rng(seed_value, day, "events"), [],
+			city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(day, _day_rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:

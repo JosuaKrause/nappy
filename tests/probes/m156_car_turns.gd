@@ -15,7 +15,7 @@ extends RefCounted
 ## placements.
 ##
 ## **A body's footprint is measured with the day's holds lifted**, because
-## `EventSpawner.obstructed_footprint()` returns nothing for a body on a held segment — the record
+## `EventSpawner.footprint_of()` returns nothing for a body on a held segment — the record
 ## leaves those out while the hold speaks for them. Lifting the holds for the measurement and
 ## putting them straight back is what lets the table answer *does this body cover the roadway* for
 ## a hard seal as well as for a café.
@@ -44,12 +44,13 @@ var _causes := {}
 ## row id -> { "frames", "spill", "road", "held", "far": float, "first": String }
 var _rows := {}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for city_seed: int in SEEDS:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, run, map)
 		for day: int in DAYS:
 			_one_day(city, map, city_seed, day)
 		city.free()
@@ -58,16 +59,16 @@ func run(t) -> void:
 
 func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("m156-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m156-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
 
-	var bodies := _bodies(map, city.events.plans())
+	var bodies := _bodies(map, RunCity.events(city).plans())
 	var owner_of := {}
 	for index in bodies.size():
 		var body: Dictionary = bodies[index]
@@ -76,21 +77,21 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var segment_owner := {}
 	for index in bodies.size():
 		var body: Dictionary = bodies[index]
-		var segment := map.network.segment_containing(body["at"])
-		if segment != null and map.is_held(segment):
+		var segment := map.street_network().segment_containing(body["at"])
+		if segment != null and map.held_streets().has(segment.key()):
 			segment_owner[segment.key()] = index
 
 	var at := map.doorstep_world_position()
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m156-crowd:%d:%d" % [city_seed, day])
-	city.crowd.start_day(day, crowd_rng, at)
-	city.crowd.set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).start_day(day, crowd_rng, at)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 
+	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(SECONDS / STEP)):
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
-		for agent: CrowdAgent in city.crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+		RunCity.crowd(city).step(STEP)
+		for agent: CrowdAgent in RunCity.crowd(city).agents():
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
 			if agent._blocked_in > CrowdAgent.LOOKAHEAD_TILES:
 				continue
@@ -115,7 +116,7 @@ func _classify(map: CityMap, agent: CrowdAgent, city_seed: int, day: int,
 		cause = "closed tile"
 	elif agent._segment_is_shut(tile):
 		cause = "held segment"
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		index = int(segment_owner.get(segment.key(), -1)) if segment else -1
 		how = "held"
 	elif map.is_obstructed(tile):
@@ -175,23 +176,24 @@ static func _distance_to(tiles: Array, tile: Vector2i) -> float:
 ## Every placed plan's own solid footprint, one entry per body, measured with today's holds lifted
 ## so that a hard seal and a region wall report the ground they actually stand on rather than the
 ## empty list `CityMap.obstructed_tiles` keeps for them. The holds go straight back.
-func _bodies(map: CityMap, plans: Array[EventScheduler.Planned]) -> Array:
-	var keys: Array = map.held_segments.keys()
+func _bodies(map: CityMap, plans: Array[EventPlan]) -> Array:
+	var keys: Array = map.held_streets().keys()
 	map.clear_day_holds()
 	var found: Array = []
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var covered := EventSpawner.obstructed_footprint(map, plan.def, plan.position, plan.facing)
+		var covered := EventSpawner.footprint_of(
+				BodyStance.of(map, plan.row(), plan.placed_at(), plan.faces()))
 		if covered.is_empty():
 			continue
 		found.append({
-			"id": plan.def.id,
-			"at": map.world_to_tile(plan.position),
+			"id": plan.row_id(),
+			"at": map.world_to_tile(plan.placed_at()),
 			"tiles": covered,
 		})
 	for key: Vector3i in keys:
-		map.hold_segment(key)
+		map.hold_segment(key, HeldStreets.Why.SEAL)
 	return found
 
 func _report() -> void:

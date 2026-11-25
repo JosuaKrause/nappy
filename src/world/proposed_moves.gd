@@ -1,14 +1,14 @@
 class_name ProposedMoves
 extends RefCounted
-## **One map's list of every mover's move** (`WorldMap.moves`): each mover that walks or drives
-## the world joins its `MoveProposal` while it stands there and leaves when it goes, so a pass over
-## every mover — changing a crowd body's proposal before its check, against everyone else's
-## committed pose (`MoveProposal`'s doc says which moves can be changed) — has one list to pass
-## over, in the order the movers joined. The world names no mover: what joins is the move, never
-## the event, the walker or the officer making it.
+## **One map's list of every mover's move** (`WorldMap.list_move()`): each mover that walks or
+## drives the world joins its `MoveProposal` while it stands there and leaves when it goes, so a
+## pass over every mover — changing a crowd body's proposal before its check, against everyone
+## else's committed pose (`MoveProposal`'s doc says which moves can be changed) — has one list
+## to pass over, in the order the movers joined. The world names no mover: what joins is the
+## move, never the event, the walker or the officer making it.
 
 var _moves: Array[MoveProposal] = []
-## The same list's moves that do not give way (`MoveProposal.yields` false), in the order they
+## The same list's moves that do not give way (`MoveProposal.gives_way()` false), in the order they
 ## joined, so a pass that cares only for the figures does not walk the whole crowd.
 var _keepers: Array[MoveProposal] = []
 
@@ -17,18 +17,18 @@ var _keepers: Array[MoveProposal] = []
 ## same.
 func join(move: MoveProposal, at: Vector2) -> void:
 	move.place(at)
-	if not move.on_the_list:
-		move.on_the_list = true
+	if not move.is_on_the_list():
+		move.stand_on_the_list(true)
 		_moves.append(move)
-		if not move.yields:
+		if not move.gives_way():
 			_keepers.append(move)
 
 ## Takes a mover's move off the list: it no longer stands in this world.
 func leave(move: MoveProposal) -> void:
-	if move.on_the_list:
-		move.on_the_list = false
+	if move.is_on_the_list():
+		move.stand_on_the_list(false)
 		_moves.erase(move)
-		if not move.yields:
+		if not move.gives_way():
 			_keepers.erase(move)
 
 ## How many moves stand on the list.
@@ -37,11 +37,11 @@ func size() -> int:
 
 ## Whether `move` stands on this list.
 func has(move: MoveProposal) -> bool:
-	return move.on_the_list and _moves.has(move)
+	return move.is_on_the_list() and _moves.has(move)
 
 ## **Every mover's move standing in this world, in the order they joined, as a copy of the list**,
 ## so a pass over it is safe against the list changing under its own loop: a mover freed or streamed
-## out mid-pass leaves the list and not the copy, whose move then says `on_the_list` false, and a
+## out mid-pass leaves the list and not the copy, whose move then says it is not on the list (`is_on_the_list()`), and a
 ## mover that joins mid-pass waits for the next pass. The copy shares the list's storage until the
 ## list is next written (Godot copies an array on write), so a pass in which nobody joins or leaves
 ## pays almost nothing for it, and one in which somebody does pays one copy of the references, less
@@ -49,7 +49,7 @@ func has(move: MoveProposal) -> bool:
 func all() -> Array[MoveProposal]:
 	return _moves.duplicate()
 
-## **The moves on the list that keep their course** (`MoveProposal.yields` false), in the order they
+## **The moves on the list that keep their course** (`MoveProposal.gives_way()` false), in the order they
 ## joined, as a copy under the same rule as `all()`: the event figures and the cordon's officers,
 ## a handful against the crowd's hundreds.
 func keeping_their_course() -> Array[MoveProposal]:

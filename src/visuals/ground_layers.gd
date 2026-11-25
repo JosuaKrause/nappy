@@ -66,7 +66,7 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 # ------------------------------------------------------------------ the build ---
 
 ## Duplicates `authored` and gives every static source its picture from the baked page.
-## Water stays atlas-only, drawn by SceneryWater outside this composed static sheet.
+## Water is not in this composed static sheet: SceneryWater draws it from the south water's tile.
 ##
 ## **In a default bake a composed source's picture is its composition or nothing.** The page of a
 ## default bake carries the layers and only those whole tiles the recipe composes nothing for
@@ -96,10 +96,6 @@ static func build_tile_set(authored: TileSet, recipe: GroundRecipe, atlas: Atlas
 				% GroundRecipe.PATH + "no whole tile to draw instead, so the ground cannot be composed")
 		return null
 	var result := authored.duplicate(true) as TileSet
-	# Water belongs to its animated surface. Keep its baked region available to that owner,
-	# but do not copy its pixels or source into the static ground's composed sheet.
-	if result.has_source(GroundTiles.WATER):
-		result.remove_source(GroundTiles.WATER)
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	# Built once and shared by both grass sources, exactly as the authored TileSet shares one
 	# picture between two source ids — `_upload_one_sheet` places a shared image once. An `--svg`
@@ -255,7 +251,7 @@ static func atlas_coords_for(source_id: int, city_seed: int, tile: Vector2i,
 ## Alpha-composites opaque `base` and transparent layers without changing base pixels where an
 ## overlay is empty.
 static func _compose_image(base: Image, overlays: Array[Image]) -> Image:
-	var result := base.duplicate()
+	var result := base.duplicate() as Image
 	for overlay in overlays:
 		if overlay == null or overlay.get_size() != result.get_size():
 			return null
@@ -264,16 +260,16 @@ static func _compose_image(base: Image, overlays: Array[Image]) -> Image:
 
 ## Rotates a component clockwise in the manifest's declared coordinate system.
 static func _rotate_clockwise(image: Image, degrees: int) -> Image:
-	var result := image.duplicate()
+	var result := image.duplicate() as Image
 	match posmod(degrees, 360):
 		0:
 			return result
 		90:
-			result.rotate_90(false)
+			result.rotate_90(CLOCKWISE)
 		180:
 			result.rotate_180()
 		270:
-			result.rotate_90(true)
+			result.rotate_90(COUNTERCLOCKWISE)
 		_:
 			return null
 	return result
@@ -302,7 +298,7 @@ static func _layered_image(source_id: int, manifest: Dictionary, page: Image,
 	var source_layers: Dictionary = manifest.get("source_layers", {})
 	var records: Array = source_layers.get(str(source_id), [])
 	var overlays: Array[Image] = []
-	for record_value in records:
+	for record_value: Variant in records:
 		if not record_value is Dictionary:
 			missing.append("a readable layer record for source %d" % source_id)
 			return null
@@ -338,7 +334,7 @@ static func _layered_image(source_id: int, manifest: Dictionary, page: Image,
 static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, page: Image,
 		pictures: Dictionary) -> void:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
-	for source_id in GroundTiles.ROUTE_KERB_SOURCES:
+	for source_id: int in GroundTiles.ROUTE_KERB_SOURCES:
 		var twin_id := GroundTiles.route_twin_of(source_id)
 		if twin_id < 0 or tile_set.has_source(twin_id):
 			continue
@@ -417,7 +413,7 @@ static func _grass_atlas(manifest: Dictionary, page: Image, missing: Array[Strin
 		missing.append("the recipe's list of grass features")
 		return null
 	var features: Array[Image] = []
-	for feature_name_value in feature_names:
+	for feature_name_value: Variant in feature_names:
 		var feature := _component_image(str(feature_name_value).trim_suffix(".png"), manifest, page)
 		if feature == null:
 			missing.append("the grass feature '%s'" % feature_name_value)
@@ -430,7 +426,7 @@ static func _grass_atlas(manifest: Dictionary, page: Image, missing: Array[Strin
 	return atlas
 
 static func _grass_variant(base: Image, features: Array[Image], variant: int) -> Image:
-	var result := base.duplicate()
+	var result := base.duplicate() as Image
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("grass-variant:%d" % variant)
 	var count := variant % 3
@@ -495,7 +491,7 @@ static func _layer_image(filename: String, page: Image) -> Image:
 ## `ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used for the curbstone
 ## component, whose opaque pixels are the whole of the drawing.
 static func _tint_opaque(image: Image) -> Image:
-	var result := image.duplicate()
+	var result := image.duplicate() as Image
 	for y in image.get_height():
 		for x in image.get_width():
 			var pixel := image.get_pixel(x, y)
@@ -509,7 +505,7 @@ static func _tint_opaque(image: Image) -> Image:
 ## Used for an SVG bake's kerb tile, where the stone is identified by its own authored fill colour
 ## rather than by a separate component picture.
 static func _tint_matching(image: Image, target: Color) -> Image:
-	var result := image.duplicate()
+	var result := image.duplicate() as Image
 	for y in image.get_height():
 		for x in image.get_width():
 			var pixel := image.get_pixel(x, y)

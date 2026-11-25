@@ -6,7 +6,7 @@ extends RefCounted
 
 const TILE := float(Tuning.TILE_SIZE)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	_test_the_box_ahead(t, map)
 	_test_the_stop_line_is_a_setback_short(t)
@@ -15,7 +15,7 @@ func run(t) -> void:
 	_test_the_zebra_she_waits_at(t, map)
 	_test_a_zebra_past_the_box(t, map)
 
-func _test_the_box_ahead(t, map: CityMap) -> void:
+func _test_the_box_ahead(t: TestRunner, map: CityMap) -> void:
 	var period := CityMap.period()
 	var low := float(2 * period) * TILE
 	# In the block band before box 2, going up the axis: that box. Going down: the one behind.
@@ -31,23 +31,23 @@ func _test_the_box_ahead(t, map: CityMap) -> void:
 	t.check(GiveWay.junction_at(2, 5, true) == Vector2i(5, 2) and GiveWay.junction_at(2, 5, false)
 			== Vector2i(2, 5), "a junction is keyed (column, row) whichever way it is driven")
 
-func _test_the_stop_line_is_a_setback_short(t) -> void:
+func _test_the_stop_line_is_a_setback_short(t: TestRunner) -> void:
 	t.check(GiveWay.stop_line(1.0) < 0.0, "one inside the setback is a negative room")
 
-func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t, map: CityMap) -> void:
+func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t: TestRunner, map: CityMap) -> void:
 	t.check(not GiveWay.is_red(null, Vector2i.ZERO, true), "no signals, no red")
 	var signals := TrafficSignals.new(map)
-	var junction := Vector2i(map.main_road, 1)
-	signals.elapsed = 0.0
+	var junction := Vector2i(map.main_road_corridor(), 1)
+	signals.restart_cycle()
 	while not signals.green_for(junction, true):
-		signals.elapsed += 0.25
+		signals.advance(0.25)
 	t.check(signals.is_signalled(junction), "the main road's junctions are signalled")
 	var vertical_green := signals.green_for(junction, true)
 	t.check(GiveWay.is_red(signals, junction, not vertical_green) \
 			and not GiveWay.is_red(signals, junction, vertical_green),
 			"red is the arm that is not green")
 
-func _test_the_main_road_does_not_give_way(t, map: CityMap) -> void:
+func _test_the_main_road_does_not_give_way(t: TestRunner, map: CityMap) -> void:
 	var ordinary := _a_zebra(map)
 	t.check(ordinary != Vector2.INF, "found a zebra off the main road")
 	if ordinary == Vector2.INF:
@@ -60,12 +60,12 @@ func _test_the_main_road_does_not_give_way(t, map: CityMap) -> void:
 			ordinary + Vector2(0.0, float(Tuning.STREET_WIDTH) * TILE)),
 			"and not to somebody in the next street over")
 	# The spine runs north-south: a car driving along it is on the main road.
-	var at := map.tile_to_world(Vector2i(map.main_road * CityMap.period() + 3, 20))
+	var at := map.tile_to_world(Vector2i(map.main_road_corridor() * CityMap.period() + 3, 20))
 	t.check(map.street_kind_at(true, map.world_to_tile(at)) == GameEnums.StreetKind.MAIN,
 			"a column of the main road is the main road")
 	t.check(not GiveWay.owes_her_way(map, true, at, at), "the main road does not give way")
 
-func _test_the_zebra_she_waits_at(t, map: CityMap) -> void:
+func _test_the_zebra_she_waits_at(t: TestRunner, map: CityMap) -> void:
 	var zebra := _a_zebra(map)
 	if zebra == Vector2.INF:
 		return
@@ -83,7 +83,7 @@ func _test_the_zebra_she_waits_at(t, map: CityMap) -> void:
 	t.check(GiveWay.zebra_edge_ahead(map, zebra + Vector2(160.0, 0.0), false, -1.0, zebra) > edge,
 			"going west the near edge is the run's far side, further along than going east's")
 
-func _test_a_zebra_past_the_box(t, map: CityMap) -> void:
+func _test_a_zebra_past_the_box(t: TestRunner, map: CityMap) -> void:
 	t.check(GiveWay.lies_past_the_box(300.0, 100.0, 1.0) and not GiveWay.lies_past_the_box(100.4, 100.0, 1.0),
 			"further than half a pixel past the box's near edge")
 	t.check(GiveWay.lies_past_the_box(100.0, 300.0, -1.0), "and the same going down the axis")
@@ -93,7 +93,7 @@ func _test_a_zebra_past_the_box(t, map: CityMap) -> void:
 	var period := CityMap.period()
 	var cross := (float(lane_y) + 0.5) * TILE
 	var c := -1
-	for candidate in range(1, map.main_road + 1):
+	for candidate in range(1, map.main_road_corridor() + 1):
 		if map.is_crossing(Vector2i(candidate * period + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, lane_y)):
 			c = candidate
 			break
@@ -108,9 +108,9 @@ func _test_a_zebra_past_the_box(t, map: CityMap) -> void:
 			"and not from the near side of the box")
 
 func _lane_to_the_main_road(map: CityMap) -> int:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
-				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+				and map.tile_at(Vector2i(map.main_road_corridor() * CityMap.period() - 4, y)) \
 						== GameEnums.TileType.ROAD:
 			return y
 	return -1
@@ -118,10 +118,10 @@ func _lane_to_the_main_road(map: CityMap) -> int:
 ## The centre of the first `CROSSING` tile on an east-west carriageway lane at a junction off the
 ## main road, or `INF`.
 func _a_zebra(map: CityMap) -> Vector2:
-	for y in range(1, map.size.y - 1):
+	for y in range(1, map.size_in_tiles().y - 1):
 		if CityMap.corridor_offset(y) < 0 or not CityMap.is_road_offset(CityMap.corridor_offset(y)):
 			continue
-		for x in range(12, map.size.x - 16):
+		for x in range(12, map.size_in_tiles().x - 16):
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.CROSSING:
 				continue

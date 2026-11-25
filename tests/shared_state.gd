@@ -7,8 +7,8 @@ extends RefCounted
 ## Shared state is everything one suite can change and another can see, which is not the
 ## suite's own objects:
 ##   - the tree's `paused`, `Engine.time_scale`, `Engine.max_physics_steps_per_frame`,
-##     `Engine.physics_ticks_per_second`, `Input.mouse_mode`, and the nodes under the root and
-##     under the runner;
+##     `Engine.physics_ticks_per_second`, `OS.low_processor_usage_mode_sleep_usec`,
+##     `Input.mouse_mode`, and the nodes under the root and under the runner;
 ##   - `InputMap`: each action's deadzone and events, and whether `Input` holds it pressed;
 ##   - every autoload's script variables, the script variables of each `RefCounted` it holds in
 ##     one, and every connection on its signals;
@@ -96,6 +96,7 @@ static func _engine(out: Dictionary[String, String], runner: Node) -> void:
 	out["engine.time_scale"] = str(Engine.time_scale)
 	out["engine.max_physics_steps_per_frame"] = str(Engine.max_physics_steps_per_frame)
 	out["engine.physics_ticks_per_second"] = str(Engine.physics_ticks_per_second)
+	out["os.low_processor_usage_mode_sleep_usec"] = str(OS.low_processor_usage_mode_sleep_usec)
 	out["engine.mouse_mode"] = str(Input.mouse_mode)
 	var under_root: Array[String] = []
 	for child in tree.root.get_children():
@@ -117,7 +118,8 @@ static func _input(out: Dictionary[String, String]) -> void:
 		out["Input.pressed.%s" % action] = str(Input.is_action_pressed(action))
 
 static func _autoload(out: Dictionary[String, String], autoload: String) -> void:
-	var node: Node = Engine.get_main_loop().root.get_node_or_null(autoload)
+	var tree := Engine.get_main_loop() as SceneTree
+	var node: Node = tree.root.get_node_or_null(autoload)
 	if node == null:
 		return
 	for property in node.get_property_list():
@@ -196,22 +198,26 @@ static func _describe(value: Variant, depth: int) -> String:
 		var object: Object = value
 		var script: Script = object.get_script()
 		return "<%s#%d>" % [script.resource_path.get_file().get_basename() if script != null else object.get_class(), object.get_instance_id()]
-	if value is Array or value is Dictionary:
+	if value is Array:
+		var items: Array = value
 		if depth <= 0:
-			return "<%s of %d>" % [type_string(typeof(value)), value.size()]
+			return "<Array of %d>" % items.size()
 		var parts: Array[String] = []
-		if value is Array:
-			for item in value:
-				parts.append(_describe(item, depth - 1))
-				if parts.size() >= MAX_ITEMS:
-					parts.append("...")
-					break
-			return "[%d: %s]" % [value.size(), ", ".join(parts)]
-		var keys: Array = value.keys()
-		for key in keys:
-			parts.append("%s=%s" % [_describe(key, 0), _describe(value[key], depth - 1)])
+		for item: Variant in items:
+			parts.append(_describe(item, depth - 1))
 			if parts.size() >= MAX_ITEMS:
 				parts.append("...")
 				break
-		return "{%d: %s}" % [value.size(), ", ".join(parts)]
+		return "[%d: %s]" % [items.size(), ", ".join(parts)]
+	if value is Dictionary:
+		var entries: Dictionary = value
+		if depth <= 0:
+			return "<Dictionary of %d>" % entries.size()
+		var parts: Array[String] = []
+		for key: Variant in entries.keys():
+			parts.append("%s=%s" % [_describe(key, 0), _describe(entries[key], depth - 1)])
+			if parts.size() >= MAX_ITEMS:
+				parts.append("...")
+				break
+		return "{%d: %s}" % [entries.size(), ", ".join(parts)]
 	return var_to_str(value)

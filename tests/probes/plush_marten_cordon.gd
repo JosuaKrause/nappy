@@ -15,7 +15,7 @@ extends RefCounted
 
 const SWEEP := preload("res://tests/park_cordon_sweep.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var sweep: RefCounted = SWEEP.new()
 	var seeds: Array[int] = []
 	for seed_value in range(SWEEP.SEEDS_FROM, SWEEP.SEEDS_TO + 1):
@@ -25,7 +25,7 @@ func run(t) -> void:
 	var closes := PackedFloat32Array()
 	var walks := PackedFloat32Array()
 	for seed_value in seeds:
-		var m: Dictionary = sweep.call("measure", t, seed_value)
+		var m: Dictionary = await sweep.call("measure", t, seed_value)
 		if m.is_empty():
 			print("seed %5d: no swing park" % seed_value)
 			continue

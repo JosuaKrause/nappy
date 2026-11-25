@@ -8,7 +8,7 @@ const MODULE := "res://src/world/draw_layer.gd"
 const EastWestStreet = preload("res://tests/east_west_street.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_no_z_index_is_written_outside_the_module(t)
 	_test_the_scan_finds_a_write(t)
 	_test_the_layers_keep_their_reasons(t)
@@ -20,7 +20,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------ the module ---
 
-func _test_no_z_index_is_written_outside_the_module(t) -> void:
+func _test_no_z_index_is_written_outside_the_module(t: TestRunner) -> void:
 	var files := _files_under("res://src", ".gd")
 	files.append_array(_files_under("res://scenes", ".tscn"))
 	t.check(files.size() > 100, "there were scripts and scenes to read (%d)" % files.size())
@@ -35,7 +35,7 @@ func _test_no_z_index_is_written_outside_the_module(t) -> void:
 	t.check(_z_writes(FileAccess.get_file_as_string(MODULE), false).size() > 0,
 			"and DrawLayer itself writes one, so the scan reads the form a write takes")
 
-func _test_the_scan_finds_a_write(t) -> void:
+func _test_the_scan_finds_a_write(t: TestRunner) -> void:
 	t.check(_z_writes("func f() -> void:\n\tnode.z_index = 3\n", false).size() == 1,
 			"the scan finds a script that writes a z_index")
 	t.check(_z_writes("\tz_as_relative = false\n", false).size() == 1,
@@ -84,7 +84,7 @@ static func _files_under(directory: String, suffix: String) -> PackedStringArray
 # ------------------------------------------------------------------ the order ---
 
 ## Each ordering is a reason the list states, not its numbers.
-func _test_the_layers_keep_their_reasons(t) -> void:
+func _test_the_layers_keep_their_reasons(t: TestRunner) -> void:
 	var z := func(layer: int) -> int: return _z_asked_onto(layer)
 	t.check(z.call(DrawLayer.Layer.GROUND) == 0,
 			"the ground draws at the engine's default z, where a world's own ground nodes draw")
@@ -114,7 +114,7 @@ func _z_asked_onto(layer: int) -> int:
 	node.free()
 	return z
 
-func _test_a_world_adds_a_node_on_its_layer(t) -> void:
+func _test_a_world_adds_a_node_on_its_layer(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var standing := Node2D.new()
@@ -139,7 +139,7 @@ func _test_a_world_adds_a_node_on_its_layer(t) -> void:
 
 # ------------------------------------------------------------------- slices ---
 
-func _test_slices_stand_at_their_own_feet(t) -> void:
+func _test_slices_stand_at_their_own_feet(t: TestRunner) -> void:
 	var across := DrawLayer.slice_feet(Vector2(-30.0, 5.0), Vector2(30.0, 5.0), 3)
 	t.check(across.size() == 3 and across[0] == Vector2(-20.0, 5.0)
 			and across[1] == Vector2(0.0, 5.0) and across[2] == Vector2(20.0, 5.0),
@@ -161,7 +161,7 @@ func _test_slices_stand_at_their_own_feet(t) -> void:
 ## A spread-drawn row stood in a world draws its picture in slices: each a node of its own in the
 ## world's entity layer at its own feet, covering the body's run, ahead of the instance in the tree
 ## so the instance's caret is drawn over them at a tie; the rim stands behind the first.
-func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
+func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var def := EventCatalogue.by_id("construction")
@@ -170,12 +170,17 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 		var world := WorldContext.new()
 		t.add_child(world)
 		var instance := EventInstance.new()
-		instance.atlas = atlas
+		var drawer := RecordingEventDrawer.new(atlas)
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
-				_ground_in(world, vertical))
+				EventSurroundings.new().on(_ground_in(vertical)) \
+					.drawn_in(world) \
+					.drawn_from(atlas) \
+					.drawing_through(drawer))
 		world.add_entity(instance)
-		await t.get_tree().process_frame
-		var slices := _slices_of(instance)
+		# The slices are put in at the end of the first frame and drawn on the next.
+		for i in 3:
+			await t.get_tree().process_frame
+		var slices := _slices_of(instance, drawer)
 		t.check(slices.size() > 1, "%s: the spread is drawn in slices (%d)" % [what, slices.size()])
 		var ahead := true
 		var on_its_layer := true
@@ -187,7 +192,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 		t.check(ahead and on_its_layer,
 				"%s: every slice stands in the entity layer ahead of its instance" % what)
 		var last := slices[slices.size() - 1].global_position
-		var reach := def.obstructs_radius
+		var reach := def.obstructs_within()
 		var end := instance.global_position + (Vector2(0.0, reach) if vertical
 				else Vector2(reach - reach / slices.size(), 0.0))
 		t.check(last.is_equal_approx(end),
@@ -198,8 +203,8 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 			for i in range(1, slices.size()):
 				rising = rising and slices[i].global_position.y > slices[i - 1].global_position.y
 			t.check(rising, "end-on, each slice stands nearer the camera than the one before")
-		var rim_of := instance.excitement.rim as SourceRim
-		rim_of.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		var rim_of := instance.source().rim()
+		rim_of.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		var rim := instance.rim()
 		t.check(rim != null and rim.get_parent() == slices[0]
 				and (rim.global_position - instance.global_position).is_zero_approx(),
@@ -211,15 +216,17 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 ## **An event's slices go with it** while the world it stood in stays: freed with the instance on
 ## its own, a frame later no slice of it is left in the world's entity layer. Freeing the world
 ## would take every slice with it whatever the instance does, so the world is kept.
-func _test_the_slices_go_with_their_event(t) -> void:
+func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var world := WorldContext.new()
 	t.add_child(world)
 	var instance := EventInstance.new()
-	instance.atlas = atlas
 	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
-			PackedVector2Array(), Vector2.RIGHT, _open_ground_in(world))
+			PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(WorldMap.open_ground()) \
+				.drawn_in(world) \
+				.drawn_from(atlas))
 	world.add_entity(instance)
 	await t.get_tree().process_frame
 	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
@@ -231,31 +238,22 @@ func _test_the_slices_go_with_their_event(t) -> void:
 	world.free()
 	atlas.release(&"events")
 
-## Open ground drawn in `world`: the map an instance stood in that world is handed, so what it adds
-## beside itself goes into the world (`WorldMap.add_entity()`).
-static func _open_ground_in(world: WorldContext) -> WorldMap:
-	var ground := WorldMap.open_ground()
-	ground.world = world
-	return ground
-
-## The ground an instance stands on in `world`: an east-west street where it is to run down the
+## The ground an instance stands on: an east-west street where it is to run down the
 ## screen (`vertical`), which it reads its axis off as it does in a city, and open ground otherwise.
-static func _ground_in(world: WorldContext, vertical: bool) -> WorldMap:
+static func _ground_in(vertical: bool) -> WorldMap:
 	if not vertical:
-		return _open_ground_in(world)
-	var ground: WorldMap = EastWestStreet.new()
-	ground.world = world
-	return ground
+		return WorldMap.open_ground()
+	return EastWestStreet.new()
 
-## The slices `instance`'s picture is drawn in, found where the look stood them, beside it in the
-## world's entity layer, in their own order (`SpreadLook.Slice.index`, far end first).
-static func _slices_of(instance: EventInstance) -> Array[SpreadLook.Slice]:
+## The slices `instance`'s picture was drawn in, as `drawer` saw them drawn, beside it in the
+## world's entity layer, in their own order (far end first).
+static func _slices_of(instance: EventInstance,
+		drawer: RecordingEventDrawer) -> Array[SpreadLook.Slice]:
 	var found: Array[SpreadLook.Slice] = []
-	for child in instance.get_parent().get_children():
-		if child is SpreadLook.Slice and child.instance == instance:
-			found.append(child)
-	found.sort_custom(func(a: SpreadLook.Slice, b: SpreadLook.Slice) -> bool:
-		return a.index < b.index)
+	var beside := instance.get_parent().get_children()
+	for slice in drawer.slices():
+		if beside.has(slice):
+			found.append(slice)
 	return found
 
 static func _slices_in(layer: Node) -> int:
@@ -275,7 +273,7 @@ static func _slices_in(layer: Node) -> int:
 ## atlas, so a crash's and a burst main's scenery is still built behind each slice: the part of
 ## the picture each slice of a fallen tree was drawn with, and the band each slice's scenery was
 ## cut to.
-func _test_every_long_picture_is_drawn_in_slices(t) -> void:
+func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	for id: String in ["cafe_tables", "protest", "firefight", "fallen_tree", "car_accident",
@@ -285,14 +283,19 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			var world := WorldContext.new()
 			t.add_child(world)
 			var instance := EventInstance.new()
-			instance.atlas = atlas
 			var drawer := RecordingEventDrawer.new(atlas)
-			instance.drawer = drawer
-			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
-					Vector2.RIGHT, _ground_in(world, vertical))
+			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0),
+					PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().on(_ground_in(vertical)) \
+						.drawn_in(world) \
+						.drawn_from(atlas) \
+						.drawing_through(drawer))
 			world.add_entity(instance)
-			await t.get_tree().process_frame
-			var slices := _slices_of(instance)
+			# The slices are put in at the end of the first frame and drawn on the next; two more,
+			# so every slice has been drawn.
+			for i in 3:
+				await t.get_tree().process_frame
+			var slices := _slices_of(instance, drawer)
 			var ahead := slices.size() > 1
 			for slice in slices:
 				ahead = ahead and slice.get_parent() == instance.get_parent() \
@@ -302,9 +305,6 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 				t.check(slices[0].global_position.y < slices[slices.size() - 1].global_position.y,
 						"%s: the back rank stands up the screen of the front rank" % what)
 			if id in ["fallen_tree", "car_accident", "burst_water_main"]:
-				# Two frames, so every slice has been drawn.
-				await t.get_tree().process_frame
-				await t.get_tree().process_frame
 				var covered := 0.0
 				var bands := 0
 				for slice in slices:
@@ -317,9 +317,9 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 						covered += entry.band.size.y if vertical else entry.band.size.x
 						bands += 1
 				t.check(bands == slices.size()
-						and is_equal_approx(covered, instance.def.obstructs_radius * 2.0),
+						and is_equal_approx(covered, instance.row().obstructs_within() * 2.0),
 						"%s: its %d bands, one a slice, cover its run, %.1f of %.1f"
-						% [what, bands, covered, instance.def.obstructs_radius * 2.0])
+						% [what, bands, covered, instance.row().obstructs_within() * 2.0])
 				if vertical:
 					var rising := true
 					for i in range(1, slices.size()):

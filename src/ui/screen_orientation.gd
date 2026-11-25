@@ -100,7 +100,8 @@ static func apply_to_layer(layer: CanvasLayer, rotate: bool) -> void:
 	layer.transform = _rotation_transform() if rotate else Transform2D.IDENTITY
 
 ## The world's half of the same rotation, for whichever `Camera2D` is current: hers
-## (`Stroller.set_screen_rotation()`) or the boot camera that stands in for hers until she exists
+## (`Stroller.camera()`, which `main._apply_orientation()` turns) or the boot camera that stands in
+## for hers until she exists
 ## (`main._new_boot_camera()`). The world is drawn on the root viewport's own canvas rather than
 ## through a `CanvasLayer`, and a camera's `rotation` is the only handle on that canvas's
 ## transform, so this is the one definition every camera the game draws through takes.

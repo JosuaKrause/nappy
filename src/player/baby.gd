@@ -89,7 +89,7 @@ const EXCITEMENT_OVERFLOW_TO_CRY := 9.5
 ## `EXCITEMENT_OVERFLOW_TO_CRY` carries the tightening instead.
 ##
 ## **The bar itself is untouched by any of this.** The moment incoming drops under decay, the net
-## rate goes negative and `excitement` falls back from 100 at its ordinary ground-and-motion rate,
+## rate goes negative and `_excitement` falls back from 100 at its ordinary ground-and-motion rate,
 ## exactly as it always has — nothing here freezes the bar at the cap or holds it up. The mass is
 ## a second, independent quantity read alongside it, and it drains the same way `decay_in_window()`
 ## already does: no reset, just entries aging out of the window as `Baby._clock` advances, whether
@@ -142,18 +142,28 @@ enum Cue {
 	STIRRING,
 }
 
-var sleepiness := 0.0
-## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
-var timing := FrameTiming.new()
-var excitement := 0.0
-var state := GameEnums.BabyState.AWAKE
-## Nothing adds to `excitement` while this holds; decay still runs. Handed in by whoever places
-## her, from `--invincible` — see `_update_excitement()`.
-var excitement_frozen := false
+## The event bus script, so a signal this file emits is checked when the file is parsed.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
+var _sleepiness := 0.0
+## Where this charges its time to the frame record, handed in by `main` (`use_frame_timing()`);
+## the null sink until then.
+var _timing := FrameTiming.new()
+var _excitement := 0.0
+var _state := GameEnums.BabyState.AWAKE
+## Nothing adds to `_excitement` while this holds; decay still runs. Told by whoever places her,
+## from `--invincible` (`freeze_excitement()`) — see `_update_excitement()`.
+var _excitement_frozen := false
+
+## The bus her meters and her state are said on, handed in by whoever places her (`use_bus()`):
+## `main` hands the `EventBus` autoload, which the day's clock, the HUD, the run log's observer and
+## the event manager listen on. Null until then, and a baby with no bus tells nobody, as a baby
+## with no world answers neutrally (`set_world()`).
+var _bus: _BUS
 
 ## Last frame's breakdown, for the debug overlay.
-var last_incoming := 0.0
-var last_decay := 0.0
+var _last_incoming := 0.0
+var _last_decay := 0.0
 
 ## This baby's own simulated clock, advanced by `delta` in `_physics_process` — the same shape
 ## every source's `ExcitementSource.landed()` uses, so `decay_in_window()` below prunes against a
@@ -162,21 +172,21 @@ var _clock := 0.0
 ## `[when, points]` entries of decay actually taken from the meter, pruned to
 ## `ExcitementSource.WINDOW` the same way a source's own ledger is — see
 ## `decay_in_window()`, what `ExcitementHalo` shares this against.
-var _decay_history: Array = []
+var _decay_history: Array[Array] = []
 
 ## `[when, points]` entries of her own running and alley share of `incoming`, in the same sliding
 ## window every other source's `landed()` keeps (`ExcitementSource`). **Read by nothing in
 ## gameplay.** `EXCITEMENT_FROM_RUNNING` and
 ## `EXCITEMENT_FROM_ALLEY` are folded into `incoming` with no source object of their own
 ## (`_update_excitement()` below), so this is where "what she did to herself" is kept for whatever
-## names the cause of a crying day — see `DayDirector.landed_by_group()`.
-var _self_landed_history: Array = []
+## names the cause of a crying day — see `DayDirector._landed_by_group()`.
+var _self_landed_history: Array[Array] = []
 
 ## `[when, points]` entries of the bar's own would-be overflow while sitting at
 ## `Tuning.METER_MAX` — see `EXCITEMENT_OVERFLOW_TO_CRY` for what this counts and why, and
 ## `_record_overflow()` for where it is fed. Pruned the same shape `_decay_history` is, to
 ## `EXCITEMENT_OVERFLOW_WINDOW`.
-var _overflow_history: Array = []
+var _overflow_history: Array[Array] = []
 
 var _stroller: Stroller
 var _world: WorldContext
@@ -185,10 +195,10 @@ func _ready() -> void:
 	add_to_group("baby")
 	_stroller = get_parent() as Stroller
 	assert(_stroller != null, "Baby must be a child of the Stroller rig")
-	sleepiness = starting_sleepiness
+	_sleepiness = starting_sleepiness
 
 ## The world she is in, told rather than discovered: whoever places her (`main`, as it puts her
-## into each world, `WorldMap.world`; a test, for a stand-in) hands her the `WorldContext` she asks
+## into each world; a test, for a stand-in) hands her the `WorldContext` she asks
 ## about excitement, calm ground, alleys and decay, and hands her the next one when the world
 ## changes. The rig is reparented from the building to the city without `_ready()` running again,
 ## and the building is still in the tree, so nothing she found for herself could tell her which
@@ -196,43 +206,54 @@ func _ready() -> void:
 func set_world(world: WorldContext) -> void:
 	_world = world
 
-## The world she was last handed, or null.
-func world() -> WorldContext:
-	return _world
+## The bus she says her meters and her state on from now on (`_bus`), handed in by whoever places
+## her: `main` as it makes her, a test for the bus it listens on.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
+
+## Where she charges her time to the frame record from now on (`_timing`), handed in by `main` as
+## it makes her.
+func use_frame_timing(frame_timing: FrameTiming) -> void:
+	_timing = frame_timing
+
+## Nothing adds to her excitement from now on, while decay still runs (`_excitement_frozen`, see
+## `_update_excitement()`): told by `main` as it makes her for an invincible run.
+func freeze_excitement() -> void:
+	_excitement_frozen = true
 
 ## Back to the start of a day. The baby does not carry yesterday's mood.
 func reset() -> void:
-	sleepiness = starting_sleepiness
-	excitement = 0.0
-	last_incoming = 0.0
-	last_decay = 0.0
+	_sleepiness = starting_sleepiness
+	_excitement = 0.0
+	_last_incoming = 0.0
+	_last_decay = 0.0
 	_decay_history.clear()
 	_self_landed_history.clear()
 	_overflow_history.clear()
 	_set_state(GameEnums.BabyState.AWAKE)
-	EventBus.sleepiness_changed.emit(sleepiness)
-	EventBus.excitement_changed.emit(excitement)
+	_tell_sleepiness()
+	_tell_excitement()
 
 ## Dev affordance: straight to sleep, so the return phase and the way home can be
 ## inspected without walking the whole meter up first.
 func force_sleep() -> void:
-	sleepiness = Tuning.METER_MAX
-	EventBus.sleepiness_changed.emit(sleepiness)
+	_sleepiness = Tuning.METER_MAX
+	_tell_sleepiness()
 	_set_state(GameEnums.BabyState.ASLEEP)
-	EventBus.return_phase_started.emit()
+	_tell_the_return_began()
 
 ## One physics tick of her meters, which the engine runs on every one while she is in the tree.
 func _physics_process(delta: float) -> void:
-	if timing.on:
-		var outer := timing.enter(FrameTiming.INFLUENCE)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.INFLUENCE)
 		_feel_the_frame(delta)
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_feel_the_frame(delta)
 
 ## The influence sweep and the meters, timed under `FrameTiming.INFLUENCE`.
 func _feel_the_frame(delta: float) -> void:
-	if state == GameEnums.BabyState.CRYING:
+	if _state == GameEnums.BabyState.CRYING:
 		return
 
 	var here := _stroller.global_position
@@ -253,21 +274,22 @@ func _feel_the_frame(delta: float) -> void:
 ## included, so `ExcitementHalo`'s colour can never disagree with what the bar actually did.
 ## Running and the alley trickle have no source and are never attributed to anybody.
 ##
-## **`excitement_frozen` (`--invincible`) freezes this meter too, never only the clock**
+## **`_excitement_frozen` (`--invincible`) freezes this meter too, never only the clock**
 ## (2026-09-11, the player: "when invincible the timer should never go down and excitement should
-## never go up"). Nothing may add to `excitement` while it holds — decay still runs, since that is
+## never go up"). Nothing may add to `_excitement` while it holds — decay still runs, since that is
 ## what keeps the meter honest as a rate rather than turning it off. `sources` is emptied rather
 ## than merely left unsummed, so `accumulate_landed()` below is never called either: a source that
 ## charges the halo but never reaches the meter is the exact drift this guards against.
 func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	_clock += delta
-	var frozen := excitement_frozen
-	var sources := [] if frozen else (_world.excitement_sources_at(here) if _world else [])
+	var frozen := _excitement_frozen
+	var sources: Array = [] if frozen else (_world.excitement_sources_at(here) if _world else [])
 	var incoming := 0.0
 	var self_incoming := 0.0
 	if not frozen:
-		for pair in sources:
-			incoming += pair[1]
+		for pair: Array in sources:
+			var points: float = pair[1]
+			incoming += points
 		# Added to `incoming` one term at a time, exactly as before `self_incoming` existed:
 		# summing the two first and adding the total would round differently, and a record kept
 		# only for the counter must not move the meter by even its last bit.
@@ -282,36 +304,37 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	# source's own accumulate_landed(), or the halo would read a cost the meter never took.
 	var sensitivity := current_sensitivity()
 	incoming *= sensitivity
-	for pair in sources:
+	for pair: Array in sources:
 		var source: ExcitementSource = pair[0]
 		var contribution: float = pair[1]
 		source.accumulate_landed(contribution * sensitivity * delta)
 	_record_self_landed(self_incoming * sensitivity * delta)
 
 	var decay := decay_rate()
-	last_incoming = incoming
-	last_decay = decay
+	_last_incoming = incoming
+	_last_decay = decay
 	_record_decay(decay * delta)
 
 	# Net rate, so that decay always counts: standing still fights a loud event, and
 	# sprinting past one (decay ~0) makes it far worse than walking past it.
-	var before := excitement
+	var before := _excitement
 	var net := incoming - decay
-	excitement = clampf(before + net * delta, 0.0, Tuning.METER_MAX)
+	_excitement = clampf(before + net * delta, 0.0, Tuning.METER_MAX)
 	# Only while she is already sitting at the cap does a positive net mean anything beyond what
 	# the bar shows: below the cap that net is simply the bar rising, already reflected above.
 	# See `EXCITEMENT_OVERFLOW_TO_CRY` for what this sum decides and why it is netted
 	# rather than raw.
 	if before >= Tuning.METER_MAX and net > 0.0:
 		_record_overflow(net * delta)
-	if not is_equal_approx(before, excitement):
-		EventBus.excitement_changed.emit(excitement)
+	if not is_equal_approx(before, _excitement):
+		_tell_excitement()
 
 ## Folds this frame's decay into the sliding window `ExcitementHalo` shares out to every source's
-## own net — see `decay_in_window()`. The nominal rate times `delta`, the same figure `last_decay`
+## own net — see `decay_in_window()`. The nominal rate times `delta`, the same figure `_last_decay`
 ## reports, not the excitement actually removed after clamping at the meter's own floor or
 ## ceiling: the clamp is an edge of the bar, not a fact about what walking gave back, and reading
-## the rate rather than the clamp is what `last_decay` already does for the debug overlay.
+## the rate rather than the clamp is what `_last_decay` already does for the debug overlay
+## (`last_frame_decay()`).
 func _record_decay(points: float) -> void:
 	_prune_decay_history()
 	if points > 0.0:
@@ -338,12 +361,13 @@ func _prune_self_landed_history() -> void:
 
 ## The sum of every entry still inside `ExcitementSource.WINDOW` — her own running and alley share of
 ## what has landed on her, the same sliding sum `landed()` gives every other source. Read only by
-## `DayDirector.landed_by_group()`, naming what ended a crying day for `VisitCounter`.
+## `DayDirector._landed_by_group()`, naming what ended a crying day for `VisitCounter`.
 func self_landed() -> float:
 	_prune_self_landed_history()
 	var total := 0.0
-	for entry in _self_landed_history:
-		total += entry[1]
+	for entry: Array in _self_landed_history:
+		var points: float = entry[1]
+		total += points
 	return total
 
 ## The decay taken from the meter over the last `ExcitementSource.WINDOW` seconds — what
@@ -353,8 +377,9 @@ func self_landed() -> float:
 func decay_in_window() -> float:
 	_prune_decay_history()
 	var total := 0.0
-	for entry in _decay_history:
-		total += entry[1]
+	for entry: Array in _decay_history:
+		var points: float = entry[1]
+		total += points
 	return total
 
 ## Folds this frame's would-be overflow into the sliding window `EXCITEMENT_OVERFLOW_TO_CRY`
@@ -384,9 +409,11 @@ func overflow_mass(window: float = EXCITEMENT_OVERFLOW_WINDOW) -> float:
 	_prune_overflow_history()
 	var cutoff := _clock - window
 	var total := 0.0
-	for entry in _overflow_history:
-		if entry[0] >= cutoff:
-			total += entry[1]
+	for entry: Array in _overflow_history:
+		var when: float = entry[0]
+		if when >= cutoff:
+			var points: float = entry[1]
+			total += points
 	return total
 
 ## How fast the meter falls: what she is doing, times what she is standing on.
@@ -415,24 +442,63 @@ func decay_rate() -> float:
 		rate = EXCITEMENT_DECAY_RUNNING
 	return rate * _world.decay_multiplier(_stroller.global_position)
 
+## How full her excitement bar is now.
+func excitement_level() -> float:
+	return _excitement
+
+## How sleepy she is now, the meter that puts her to sleep and wakes her.
+func sleepiness_level() -> float:
+	return _sleepiness
+
+## What the last frame added to her excitement before decay and sensitivity (for the debug overlay and the run log).
+func last_frame_incoming() -> float:
+	return _last_incoming
+
+## The decay rate the last frame took from her excitement, the nominal rate before the bar's clamp
+## (for the debug overlay).
+func last_frame_decay() -> float:
+	return _last_decay
+
+## Starts her bars at `sleepiness` and `excitement`, as the developer's rigs do (`--meters`, a scene
+## recipe's opening) so a state can be looked at without playing to it. It sets the two numbers
+## and nothing else: her state is left as it is (a rig that fills her sleep calls `force_sleep()`)
+## and nothing is said on her bus until a tick moves a bar. Nothing in play calls it: what feeds
+## her excitement is her own tick, summing what the world answers.
+func seed_meters(sleepiness: float, excitement: float) -> void:
+	_sleepiness = sleepiness
+	_excitement = excitement
+
+## Which of her states she is in, awake, asleep or crying: the value `baby_state_changed` carries,
+## asked by the HUD for the state its status line names.
+func condition() -> GameEnums.BabyState:
+	return _state
+
+## Whether she is awake, neither crying, asleep nor stirring.
+func is_awake() -> bool:
+	return _state == GameEnums.BabyState.AWAKE
+
+## Whether she is fast asleep (stirring is not asleep).
+func is_asleep() -> bool:
+	return _state == GameEnums.BabyState.ASLEEP
+
 ## `SLEEPING_SENSITIVITY` while asleep, `1.0` otherwise — the same fraction
 ## `_update_excitement()` scales `incoming` by, pulled out so the caret's own projection can read
 ## "the baby's current state" without duplicating the branch.
 func current_sensitivity() -> float:
-	return SLEEPING_SENSITIVITY if state == GameEnums.BabyState.ASLEEP else 1.0
+	return SLEEPING_SENSITIVITY if _state == GameEnums.BabyState.ASLEEP else 1.0
 
 # --------------------------------------------------------------- sleepiness ---
 
 func _update_sleepiness(delta: float, calm_gain: float) -> void:
-	if state == GameEnums.BabyState.ASLEEP:
+	if _state == GameEnums.BabyState.ASLEEP:
 		return
 
-	var before := sleepiness
-	if excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
+	var before := _sleepiness
+	if _excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
 		# Too interested in the world to settle — frozen, but it does not slip back either.
 		pass
 	elif _stroller.is_idle():
-		sleepiness -= SLEEPINESS_DRAIN_IDLE * delta
+		_sleepiness -= SLEEPINESS_DRAIN_IDLE * delta
 	elif _stroller.run_excess_ratio() > 0.0:
 		# Never fills while running, at any excitement level.
 		pass
@@ -440,11 +506,11 @@ func _update_sleepiness(delta: float, calm_gain: float) -> void:
 		# One multiplier rather than a branch: the ground answers with a **rate** —
 		# 1.0 anywhere ordinary, more on calm, more again on a calm area that is one block — so
 		# there is nothing here to ask about what kind of place she is standing in.
-		sleepiness += Tuning.SLEEPINESS_GAIN_WALKING * calm_gain * delta
+		_sleepiness += Tuning.SLEEPINESS_GAIN_WALKING * calm_gain * delta
 
-	sleepiness = clampf(sleepiness, 0.0, Tuning.METER_MAX)
-	if not is_equal_approx(before, sleepiness):
-		EventBus.sleepiness_changed.emit(sleepiness)
+	_sleepiness = clampf(_sleepiness, 0.0, Tuning.METER_MAX)
+	if not is_equal_approx(before, _sleepiness):
+		_tell_sleepiness()
 
 # -------------------------------------------------------------------- state ---
 
@@ -455,26 +521,45 @@ func _update_sleepiness(delta: float, calm_gain: float) -> void:
 ## this ever sees it. A baby who reaches the cap asleep without that push falls through to the
 ## `ASLEEP` branch below and wakes at the ordinary penalty instead of crying.
 func _update_state() -> void:
-	if excitement >= Tuning.METER_MAX and overflow_mass() >= EXCITEMENT_OVERFLOW_TO_CRY:
+	if _excitement >= Tuning.METER_MAX and overflow_mass() >= EXCITEMENT_OVERFLOW_TO_CRY:
 		_set_state(GameEnums.BabyState.CRYING)
 		return
 
-	match state:
+	match _state:
 		GameEnums.BabyState.AWAKE:
-			if sleepiness >= Tuning.METER_MAX:
+			if _sleepiness >= Tuning.METER_MAX:
 				_set_state(GameEnums.BabyState.ASLEEP)
-				EventBus.return_phase_started.emit()
+				_tell_the_return_began()
 		GameEnums.BabyState.ASLEEP:
-			if excitement >= Tuning.EXCITEMENT_WAKE_THRESHOLD:
-				sleepiness = WAKE_SLEEPINESS_PENALTY
-				EventBus.sleepiness_changed.emit(sleepiness)
+			if _excitement >= Tuning.EXCITEMENT_WAKE_THRESHOLD:
+				_sleepiness = WAKE_SLEEPINESS_PENALTY
+				_tell_sleepiness()
 				_set_state(GameEnums.BabyState.AWAKE)
 
 func _set_state(next: GameEnums.BabyState) -> void:
-	if state == next:
+	if _state == next:
 		return
-	state = next
-	EventBus.baby_state_changed.emit(state)
+	_state = next
+	if _bus:
+		_bus.baby_state_changed.emit(_state)
+
+# -------------------------------------------------------------------- telling ---
+# What she says on her bus, one place a signal: with no bus handed (`use_bus()`) she tells nobody.
+
+## Her sleepiness as it now stands.
+func _tell_sleepiness() -> void:
+	if _bus:
+		_bus.sleepiness_changed.emit(_sleepiness)
+
+## Her excitement as it now stands.
+func _tell_excitement() -> void:
+	if _bus:
+		_bus.excitement_changed.emit(_excitement)
+
+## That she has fallen asleep and the walk home has begun.
+func _tell_the_return_began() -> void:
+	if _bus:
+		_bus.return_phase_started.emit()
 
 # ------------------------------------------------------------------ queries ---
 
@@ -484,24 +569,24 @@ func _set_state(next: GameEnums.BabyState) -> void:
 ## because the rig draws itself, and the decision lives here because this is where the meters
 ## are. Nothing about it is a threshold `_update_state()` does not already turn the day on.
 func cue() -> Cue:
-	match state:
+	match _state:
 		GameEnums.BabyState.CRYING:
 			return Cue.NEARLY_CRYING
 		GameEnums.BabyState.ASLEEP:
-			if excitement >= Tuning.EXCITEMENT_WAKE_THRESHOLD - EXCITEMENT_STIR_MARGIN:
+			if _excitement >= Tuning.EXCITEMENT_WAKE_THRESHOLD - EXCITEMENT_STIR_MARGIN:
 				return Cue.STIRRING
 			return Cue.ASLEEP
-	if excitement >= EXCITEMENT_NEARLY_CRYING:
+	if _excitement >= EXCITEMENT_NEARLY_CRYING:
 		return Cue.NEARLY_CRYING
-	if excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
+	if _excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
 		return Cue.UNSETTLED
 	return Cue.NONE
 
 ## Why sleepiness is not currently rising, or "" if it is. Drives the HUD hint.
 func stall_reason() -> String:
-	if state == GameEnums.BabyState.ASLEEP:
+	if _state == GameEnums.BabyState.ASLEEP:
 		return ""
-	if excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
+	if _excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
 		return "too excited"
 	if _stroller.is_idle():
 		return "standing still"

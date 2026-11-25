@@ -9,32 +9,33 @@ const ORACLE := preload("res://tests/test_crowd_contributions.gd")
 const STEP := 1.0 / 30.0
 const BATCH := 32
 
-func run(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func run(t: TestRunner) -> void:
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	RunCity.build(city, run, CityGenerator.generate(4242))
 	var reports: Array = []
 	for repetition in 3:
-		for day in [1, 9]:
+		for day: int in [1, 9]:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("contribution-cost:4242:%d" % day)
-			var here := city.map.home_world_position()
-			city.crowd.start_day(day, rng, here)
+			var here := city.map().home_world_position()
+			RunCity.crowd(city).start_day(day, rng, here)
 			var rows: Array = []
 			var mismatch := 0
 			for frame in 330:
 				var direction := Vector2.DOWN if frame < 90 else \
 					(Vector2.RIGHT if (frame - 90) / 60 % 2 == 0 else Vector2.LEFT)
 				here += direction * Tuning.WALK_SPEED * STEP
-				city.crowd.set_focus(here)
-				city.crowd.step(STEP)
+				RunCity.crowd(city).use_focus(FakeCrowdFocus.new(here))
+				RunCity.crowd(city).step(STEP)
 				if frame < 150:
 					continue
 				var expected := 0.0
 				var silent := 0
-				for agent: CrowdAgent in city.crowd.agents():
-					var contribution := ORACLE.full_contribution(agent, here)
-					if contribution != agent.excitement.contribution_at(here):
+				for agent: CrowdAgent in RunCity.crowd(city).agents():
+					var contribution := ORACLE.full_contribution(city.map(), agent, here, 0.0)
+					if contribution != agent.mood().contribution_at(here):
 						mismatch += 1
 					expected += contribution
 					if contribution == 0.0:
@@ -42,11 +43,11 @@ func run(t) -> void:
 				var checksum := 0.0
 				var started := Time.get_ticks_usec()
 				for repeat in BATCH:
-					for pair in city.crowd.sources.sources_at(here):
+					for pair: Array in RunCity.crowd(city).sources().sources_at(here):
 						checksum += pair[1]
 				var elapsed := Time.get_ticks_usec() - started
 				rows.append([frame, float(elapsed) / BATCH, expected, silent,
-					city.crowd.agent_count(), here.x, here.y])
+					RunCity.crowd(city).agent_count(), here.x, here.y])
 				if not is_equal_approx(checksum / BATCH, expected):
 					mismatch += 1
 			t.check(mismatch == 0, "day %d workload preserves each source and the total" % day)

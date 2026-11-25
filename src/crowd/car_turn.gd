@@ -38,7 +38,7 @@ var entry_along := 0.0
 var cross_sign := 1.0
 
 var centre := Vector2.ZERO
-var radius := 0.0
+var _radius := 0.0
 ## Radians of arc: a quarter turn into an arm, a half turn for an about-face.
 var sweep := 0.0
 ## Which way round the centre the car goes: +1 when the centre is on its right, in the same screen
@@ -58,7 +58,7 @@ var exit_direction := 1.0
 var junction := Vector2i(-1, -1)
 
 ## How far along the arc the car has come, in px. The one piece of state here that moves.
-var travelled := 0.0
+var _travelled := 0.0
 
 ## The quarter turn out of one corridor into an arm of the junction ahead.
 ##
@@ -80,12 +80,12 @@ static func into_an_arm(vertical: bool, direction: float, corridor: int, cross: 
 	# it. The other arm swings its tail into the far lane, which is road, and starts at the edge.
 	if turning == -kerb_side(CrowdLanes.road_lane(vertical, direction)):
 		entry += direction * Tuning.CAR_STRIKE_HALF_LENGTH
-	turn.radius = absf(lane_along - entry)
+	turn._radius = absf(lane_along - entry)
 	turn.sweep = PI * 0.5
 	turn.entry_vertical = vertical
 	turn.entry_direction = direction
 	turn.entry_corridor = corridor
-	turn.entry_along = lane_along - direction * turn.radius
+	turn.entry_along = lane_along - direction * turn._radius
 	turn.cross_sign = turning
 	turn.exit_vertical = not vertical
 	turn.exit_corridor = band
@@ -108,7 +108,7 @@ static func about_face(vertical: bool, direction: float, corridor: int, from_lan
 	# Between the two lane *centres* rather than from wherever the car is sitting: the radius is
 	# what decides where the arc ends, and it has to end on the lane rather than one drift off it.
 	var across := CrowdLanes.lane_centre(corridor, lane) - CrowdLanes.lane_centre(corridor, from_lane)
-	turn.radius = absf(across) * 0.5
+	turn._radius = absf(across) * 0.5
 	turn.sweep = PI
 	turn.entry_vertical = vertical
 	turn.entry_direction = direction
@@ -128,7 +128,7 @@ static func about_face(vertical: bool, direction: float, corridor: int, from_lan
 ## exit lane is a coordinate on the along axis, so it is landed on exactly however far off its own
 ## lane centre the car began.
 func begin_at(cross: float) -> void:
-	centre = world(entry_vertical, entry_along, cross + cross_sign * radius)
+	centre = world(entry_vertical, entry_along, cross + cross_sign * _radius)
 	var start := world(entry_vertical, entry_along, cross)
 	_start_angle = (start - centre).angle()
 	var forward := world(entry_vertical, entry_direction, 0.0)
@@ -136,20 +136,56 @@ func begin_at(cross: float) -> void:
 	_spin = 1.0 if (centre - start).dot(right) > 0.0 else -1.0
 
 func length() -> float:
-	return radius * sweep
+	return _radius * sweep
+
+## Where along its entry lane the arc begins.
+func entry_point_along() -> float:
+	return entry_along
+
+## The corridor the car turned from.
+func entry_corridor_index() -> int:
+	return entry_corridor
+
+## Whether the car leaves the arc heading along a vertical street.
+func exits_vertically() -> bool:
+	return exit_vertical
+
+## The corridor the car turns into.
+func exit_corridor_index() -> int:
+	return exit_corridor
+
+## The lane of that corridor the car turns into.
+func exit_lane_index() -> int:
+	return exit_lane
+
+## The way along its exit lane the car leaves heading, `1.0` or `-1.0`.
+func exit_heading() -> float:
+	return exit_direction
+
+## The junction box the arc crosses, `Vector2i(-1, -1)` for none.
+func junction_box() -> Vector2i:
+	return junction
+
+## How far along the arc the car has gone.
+func distance_travelled() -> float:
+	return _travelled
+
+## Takes the car on `by` further along the arc.
+func travel_on(by: float) -> void:
+	_travelled += by
 
 func is_about_face() -> bool:
 	return exit_vertical == entry_vertical
 
 ## Where the car is `distance` px along the arc.
 func point_at(distance: float) -> Vector2:
-	var angle := _start_angle + _spin * distance / radius
-	return centre + Vector2(cos(angle), sin(angle)) * radius
+	var angle := _start_angle + _spin * distance / _radius
+	return centre + Vector2(cos(angle), sin(angle)) * _radius
 
 ## Which way it is pointing there: the tangent, which is what makes the heading continuous through
 ## the whole manoeuvre and is the datum everything downstream of a heading reads.
 func heading_at(distance: float) -> Vector2:
-	var angle := _start_angle + _spin * distance / radius
+	var angle := _start_angle + _spin * distance / _radius
 	return Vector2(-sin(angle), cos(angle)) * _spin
 
 ## Where the car ends up along the corridor it is joining, as that lane's own queue position — what
@@ -173,7 +209,7 @@ func tighten_to(along: float, cross: float) -> bool:
 	var tighter := absf(lane_along - along)
 	if tighter < CAR_TURN_RADIUS_MIN:
 		return false
-	radius = tighter
+	_radius = tighter
 	entry_along = along
 	begin_at(cross)
 	return true

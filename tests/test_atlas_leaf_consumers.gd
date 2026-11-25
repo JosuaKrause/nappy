@@ -17,7 +17,7 @@ const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_every_building_region_is_baked_on_its_group(t)
 	_test_building_acquires_and_releases_buildings(t)
 	_test_every_street_kit_region_is_baked_on_its_group(t)
@@ -37,10 +37,10 @@ func run(t) -> void:
 ## `group` — read off the bake's own table for every name a consumer can ask for, not only the ones
 ## a drawn frame happens to reach, and a region on the wrong group would still draw in any frame
 ## where that other group happened to be acquired.
-func _check_regions(t, names: Array, group: StringName, label: String) -> void:
+func _check_regions(t: TestRunner, names: Array, group: StringName, label: String) -> void:
 	var missing: Array[String] = []
 	var misfiled: Array[String] = []
-	for entry in names:
+	for entry: Variant in names:
 		var name := entry as StringName
 		if not AtlasTable.baked().has_region(name):
 			missing.append(String(name))
@@ -54,7 +54,7 @@ func _check_regions(t, names: Array, group: StringName, label: String) -> void:
 
 # ------------------------------------------------------------------ buildings ---
 
-func _test_every_building_region_is_baked_on_its_group(t) -> void:
+func _test_every_building_region_is_baked_on_its_group(t: TestRunner) -> void:
 	var names: Array = [
 		Building.WALL, Building.WALL_BASE, Building.WALL_EDGE_W, Building.WALL_EDGE_E,
 		Building.ROOF, Building.ROOF_EDGE_N, Building.ROOF_EDGE_S, Building.ROOF_EDGE_W,
@@ -82,15 +82,15 @@ func _test_every_building_region_is_baked_on_its_group(t) -> void:
 
 ## Acquired the moment a building enters the tree, shared by reference count rather than a page
 ## per building, and released only once the last one is gone.
-func _test_building_acquires_and_releases_buildings(t) -> void:
+func _test_building_acquires_and_releases_buildings(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var a := Building.new()
-	a.atlas = atlas
+	a.equip(atlas, RoofDrawer.new(atlas), FrontDrawer.new(atlas))
 	t.add_child(a)
 	t.check(pages.held(&"buildings"), "the first building takes the page")
 	var b := Building.new()
-	b.atlas = atlas
+	b.equip(atlas, RoofDrawer.new(atlas), FrontDrawer.new(atlas))
 	t.add_child(b)
 	t.check(pages.loads(&"buildings") == 1,
 			"a second building shares the page rather than reading a second one")
@@ -104,13 +104,13 @@ func _test_building_acquires_and_releases_buildings(t) -> void:
 
 # ---------------------------------------------------------------- street kit ---
 
-func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
+func _test_every_street_kit_region_is_baked_on_its_group(t: TestRunner) -> void:
 	var names: Array = [
 		ClosureMarker.FENCE_ACROSS, ClosureMarker.FENCE_ALONG, ClosureMarker.SIGN,
 		ClosureMarker.POST,
 		ParkFenceMarker.RAIL_ALONG, ParkFenceMarker.JOINT, ParkFenceMarker.MOUNTED_SIGN,
 		TrafficLight.HEAD, TrafficLight.HEAD_BACK, TrafficLight.HEAD_SIDE,
-		CityEdge.TUNNEL, CityEdge.BRIDGE, CityEdge.ROAD_ON,
+		CityEdge.TUNNEL, CityEdge.BRIDGE,
 	]
 	names.append_array(ClosureMarker.CAUSES.values())
 	names.append_array(ClosureMarker.CAUSES_VERTICAL.values())
@@ -126,24 +126,24 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 ## `_test_each_street_kit_consumer_holds_its_own_reference`, since a release line comes only when
 ## the count reaches zero and a consumer that took none would go unseen here unless it were freed
 ## last.
-func _test_street_kit_consumers_share_one_reference_count(t) -> void:
+func _test_street_kit_consumers_share_one_reference_count(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var marker := ClosureMarker.new()
-	marker.atlas = atlas
+	marker.use_atlas(atlas)
 	t.add_child(marker)
 	t.check(pages.held(&"street_kit"), "the closure marker takes the page")
 	var light := TrafficLight.new()
-	light.atlas = atlas
+	light.mount(atlas, null, Vector2i.ZERO, null)
 	t.add_child(light)
 	var edge := CityEdge.new()
-	edge.atlas = atlas
+	edge.dress(atlas, CityEdge.Piece.TUNNEL)
 	t.add_child(edge)
 	var park := ParkFenceMarker.new()
-	park.atlas = atlas
+	park.use_atlas(atlas)
 	t.add_child(park)
 	var tape := CordonTape.new()
-	tape.atlas = atlas
+	tape.use_atlas(atlas)
 	t.add_child(tape)
 	t.check(pages.loads(&"street_kit") == 1,
 			"the traffic light, the city edge, the park fence and the cordon tape share the same "
@@ -162,35 +162,35 @@ func _test_street_kit_consumers_share_one_reference_count(t) -> void:
 ## Each street-kit consumer, alone on a library of its own, takes the page when it enters the tree
 ## and gives it back when it leaves: one load, held, then exactly one release. A consumer that took
 ## no reference, and drew on a page somebody else held, is held by nothing here and fails.
-func _test_each_street_kit_consumer_holds_its_own_reference(t) -> void:
+func _test_each_street_kit_consumer_holds_its_own_reference(t: TestRunner) -> void:
 	var makers := {
 		"the closure marker": func(atlas: AtlasLibrary) -> Node:
 			var node := ClosureMarker.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the traffic light": func(atlas: AtlasLibrary) -> Node:
 			var node := TrafficLight.new()
-			node.atlas = atlas
+			node.mount(atlas, null, Vector2i.ZERO, null)
 			return node,
 		"the city edge": func(atlas: AtlasLibrary) -> Node:
 			var node := CityEdge.new()
-			node.atlas = atlas
+			node.dress(atlas, CityEdge.Piece.TUNNEL)
 			return node,
 		"the park fence": func(atlas: AtlasLibrary) -> Node:
 			var node := ParkFenceMarker.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the cordon tape": func(atlas: AtlasLibrary) -> Node:
 			var node := CordonTape.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 	}
-	for label in makers:
+	for label: String in makers:
 		_check_holds_its_own(t, makers[label], &"street_kit", label)
 
 ## One consumer alone on a fresh library and run log: it is seen to hold `group` on entering the
 ## tree, and the group's one release line comes when it leaves.
-func _check_holds_its_own(t, make: Callable, group: StringName, label: String) -> void:
+func _check_holds_its_own(t: TestRunner, make: Callable, group: StringName, label: String) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var node: Node = make.call(atlas)
@@ -203,11 +203,11 @@ func _check_holds_its_own(t, make: Callable, group: StringName, label: String) -
 
 ## The city edge is the one consumer with two groups — see `city_edge.gd`'s own doc for why it
 ## acquires `ground` itself rather than relying on anything else to have done so.
-func _test_city_edge_also_holds_ground(t) -> void:
+func _test_city_edge_also_holds_ground(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var edge := CityEdge.new()
-	edge.atlas = atlas
+	edge.dress(atlas, CityEdge.Piece.TUNNEL)
 	t.add_child(edge)
 	t.check(pages.held(&"street_kit"), "the city edge holds street_kit on its own")
 	t.check(pages.held(&"ground"), "and holds ground alongside it, for the mountain tile")
@@ -222,16 +222,16 @@ func _test_city_edge_also_holds_ground(t) -> void:
 ## private constant: a picture a node draws is baked under `ui/` on the `ui` page or it is a bug, and
 ## a new one is covered without a line here. The mode button, whose symbol picks its picture, is also
 ## asked for each symbol, since `icon` is what it hands to the engine.
-func _test_every_ui_region_is_baked_on_its_group(t) -> void:
+func _test_every_ui_region_is_baked_on_its_group(t: TestRunner) -> void:
 	var names: Array = []
 	for name in BakedRegions.names():
 		if String(name).begins_with("ui/"):
 			names.append(name)
 	_check_regions(t, names, &"ui", "the UI")
 	var atlas := AtlasLibrary.new()
-	for symbol in ModeButton.Symbol.values():
+	for symbol: ModeButton.Symbol in ModeButton.Symbol.values():
 		var button := ModeButton.new()
-		button.atlas = atlas
+		button.use_atlas(atlas)
 		button.symbol = symbol
 		t.add_child(button)
 		t.check(button.icon != null, "the mode button's symbol %d has a picture from the page" % symbol)
@@ -242,21 +242,21 @@ func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 ##
 ## This test is that they share one page and release it after the last; that each takes a reference
 ## of its own is `_test_each_ui_consumer_holds_its_own_reference`.
-func _test_ui_consumers_share_one_reference_count(t) -> void:
+func _test_ui_consumers_share_one_reference_count(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var button := ModeButton.new()
-	button.atlas = atlas
+	button.use_atlas(atlas)
 	t.add_child(button)
 	t.check(pages.held(&"ui"), "the mode button takes the page")
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
-	controls.atlas = atlas
+	controls.use_atlas(atlas)
 	t.add_child(controls)
 	var indicator := SaveIndicator.new()
-	indicator.atlas = atlas
+	indicator.use_atlas(atlas)
 	t.add_child(indicator)
 	var help := HelpText.new()
-	help.atlas = atlas
+	help.use_atlas(atlas)
 	t.add_child(help)
 	t.check(pages.loads(&"ui") == 1,
 			"touch controls, the save indicator and the help text share the same page rather than "
@@ -273,31 +273,31 @@ func _test_ui_consumers_share_one_reference_count(t) -> void:
 
 ## Each UI consumer, alone on a library of its own, takes `ui` on entering the tree and gives it
 ## back on leaving.
-func _test_each_ui_consumer_holds_its_own_reference(t) -> void:
+func _test_each_ui_consumer_holds_its_own_reference(t: TestRunner) -> void:
 	var makers := {
 		"the mode button": func(atlas: AtlasLibrary) -> Node:
 			var node := ModeButton.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"touch controls": func(atlas: AtlasLibrary) -> Node:
 			var node: TouchControls = TOUCH_CONTROLS.instantiate()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the save indicator": func(atlas: AtlasLibrary) -> Node:
 			var node := SaveIndicator.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the help text": func(atlas: AtlasLibrary) -> Node:
 			var node := HelpText.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 	}
-	for label in makers:
+	for label: String in makers:
 		_check_holds_its_own(t, makers[label], &"ui", label)
 
 # ------------------------------------------------------------------ interior ---
 
-func _test_every_interior_region_is_baked_on_its_group(t) -> void:
+func _test_every_interior_region_is_baked_on_its_group(t: TestRunner) -> void:
 	var names: Array = [
 		InteriorScene.HALLWAY_WALL, InteriorScene.HALLWAY_WINDOW,
 		InteriorScene.HALLWAY_WINDOW_FLASH, InteriorScene.WALL_LAMP_TEXTURE,
@@ -315,7 +315,7 @@ func _test_every_interior_region_is_baked_on_its_group(t) -> void:
 ## page: a source over the page that addresses exactly one of its regions. A region name the bake
 ## never wrote would leave its kind with no source at all, since `InteriorTileSet.build()` skips a
 ## region `AtlasLibrary.region()` cannot answer.
-func _test_interior_tileset_regions_are_baked_on_the_interior_group(t) -> void:
+func _test_interior_tileset_regions_are_baked_on_the_interior_group(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"interior")
 	var tile_set := InteriorTileSet.build(atlas)
@@ -347,11 +347,11 @@ func _test_interior_tileset_regions_are_baked_on_the_interior_group(t) -> void:
 ##
 ## A second reference `build()` took and never gave back would leave the page held once the scene is
 ## freed, so the one release line at the end is what says building again took none.
-func _test_interior_scene_acquires_and_releases_interior(t) -> void:
+func _test_interior_scene_acquires_and_releases_interior(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var scene := InteriorScene.new()
-	scene.atlas = atlas
+	scene.use_atlas(atlas)
 	t.add_child(scene)
 	t.check(pages.held(&"interior"),
 			"the interior scene acquires its group as it enters the tree")

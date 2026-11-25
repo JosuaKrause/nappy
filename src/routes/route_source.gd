@@ -11,7 +11,7 @@ extends RefCounted
 ## city's `FinalePlanner.Plan` — two chains from the service exit through three calm areas each to
 ## the tunnel and the bridge, so a street is on the walk when a chain walks its middle
 ## (`SealPlanner.runs_through()`). Which one a walk is the run flow decides, as a `DaySpec` setting
-## (`DaySpec.closes_streets`: a day grows its tree and closes streets off it; the escape is handed
+## (`DaySpec.closes_the_streets()`: a day grows its tree and closes streets off it; the escape is handed
 ## its chains).
 ##
 ## **A `RouteSource` of this class itself is no walk at all**: no street on it, nothing carried,
@@ -59,7 +59,7 @@ func start() -> Vector2:
 	return Vector2.INF
 
 ## Where the walk has to get to, in world space: the escape's two ways out. Empty for a walk
-## whose ends are the calm areas a day's guarantees reach through its own corridor
-## (`DayRepairs.ensure_the_city_is_still_walkable()`), rather than points.
+## whose ends are the calm areas a day's guarantees reach through its own corridor (the route rules
+## keep it open), rather than points.
 func ends() -> Array[Vector2]:
 	return []

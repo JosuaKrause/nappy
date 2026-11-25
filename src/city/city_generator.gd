@@ -35,7 +35,7 @@ const _OPEN_CALM: Array[GameEnums.BlockPurpose] = [
 ]
 
 ## Every purpose that makes a block a **calm area**, which is what the spread guarantee is stated
-## over and what `map.calm_blocks` contains.
+## over and what `map.calm_blocks_now()` contains.
 ##
 ## **It is not `_OPEN_CALM`, and reading one for the other is a bug this project has shipped.**
 ## `_OPEN_CALM` is the list of purposes laid as *open ground*, which is a fact about what a
@@ -97,7 +97,7 @@ const REQUISITION_FIRST_DAY := 8
 const SQUARE_SIZE_TILES := 4
 
 ## Calm **areas**, not calm blocks: an area may be a single block or a multi-block zone, and what
-## these count is places to go rather than lots. The name is what `calm_blocks` returns — one entry
+## these count is places to go rather than lots. The name is what `calm_blocks_now()` returns — one entry
 ## per area — and renaming it would touch every guarantee stated over it without changing what any
 ## of them mean.
 ##
@@ -105,7 +105,7 @@ const SQUARE_SIZE_TILES := 4
 ## act, so an act of four days burns four, and the plus one is what stops the last day of an act
 ## being unwinnable rather than merely hard. It is derived from the act lengths below rather than
 ## authored beside them, because the two would otherwise drift the first time either moved:
-## `calm_areas_needed()`.
+## `Tuning.calm_areas_needed()`, which `tests/test_tuning_fairness.gd` holds this floor to.
 const MIN_CALM_BLOCKS := 5
 
 ## The **apartment complex**: a courtyard lot four blocks across, with the streets between them
@@ -140,7 +140,7 @@ const MIN_BIG_BUILDINGS := 1
 
 ## The hard floor: this many blocks must still be calm on the last day. A day can only be
 ## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
-## than a hard one. `CityGenerator.validate()` enforces it.
+## than a hard one. `CityGenerator._validate()` enforces it.
 const MIN_CALM_BLOCKS_AT_END := 2
 
 ## How many of a city's calm areas are multi-block. At least one, because a city of nothing but
@@ -180,17 +180,17 @@ static func generate(seed_value: int) -> CityMap:
 	for attempt in MAX_ATTEMPTS:
 		var map := _attempt(seed_value + attempt)
 		last = map
-		if validate(map) == "":
+		if _validate(map) == "":
 			return map
 	push_warning("CityGenerator: no seed near %d satisfied every guarantee (%s)"
-			% [seed_value, validate(last)])
+			% [seed_value, _validate(last)])
 	return last
 
 static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var map := CityMap.new()
-	map.seed_used = seed_value
+	map.generated_from(seed_value)
 
 	_assign_street_kinds(map, choices)
 	StreetLayout.lay(map)
@@ -209,12 +209,13 @@ static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 	# block's carved rects, which is why the buildings are collected afterwards rather than before.
 	_place_hard_blockers(map, purposes, block_rects, rng, choices)
 	# **After the hard blockers, and for the same reason they run after the repaint.** A region may
-	# never grow across a street a dead end or a big building just built over, and `absent_segments`
-	# only carries that once the blockers are placed — growing regions any earlier would let a
-	# region's own growth cross ground the run is about to take away.
+	# never grow across a street a dead end or a big building just built over, and the absent
+	# streets (`CityMap.has_street()`) only carry that once the blockers are placed — growing
+	# regions any earlier would let a region's own growth cross ground the run is about to take
+	# away.
 	_assign_regions(map)
-	for rects in block_rects.values():
-		map.building_rects.append_array(rects)
+	for rects: Array[Rect2i] in block_rects.values():
+		map.add_building_lots(rects)
 	return map
 
 ## Partitions the lattice's junctions into `Tuning.REGION_COUNT` regions — see `RegionPlanner`'s
@@ -224,7 +225,7 @@ static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 ## already decided.
 static func _assign_regions(map: CityMap) -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("regions:%d" % map.seed_used)
+	rng.seed = hash("regions:%d" % map.city_seed())
 	RegionPlanner.assign(map, rng)
 
 # ------------------------------------------------------------------ streets ---
@@ -254,22 +255,22 @@ static func _assign_regions(map: CityMap) -> void:
 ## tolerance of 180, where a central spine gives well under it. A sliver has the spine's whole
 ## traffic funnelling through junctions that have nowhere to spread to.
 ##
-## `map.main_road` is the answer everywhere. `CrowdLanes.arterial_index` is only the *default* the
+## `map.main_road_corridor()` is the answer everywhere. `CrowdLanes.arterial_index` is only the *default* the
 ## map is built from, and **asking it which corridor is the main road is a fact about a city
 ## answered from a constant** — it answers for both axes, which is how a phantom east-west arterial
 ## gets into a busyness curve.
 static func _assign_street_kinds(map: CityMap, choices: Dictionary = {}) -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("street:%d" % map.seed_used)
+	rng.seed = hash("street:%d" % map.city_seed())
 	var corridors := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x)
-	map.main_road = rng.randi_range(3, corridors - 4)
+	map.lay_main_road(rng.randi_range(3, corridors - 4))
 	if choices.has("main_road"):
-		map.main_road = int(choices.main_road)
+		map.lay_main_road(int(choices.main_road))
 	_place_precincts(map, rng)
 	if choices.has("precincts"):
-		map.precinct_spans.clear()
+		map.clear_precincts()
 		for span: Array in choices.precincts:
-			map.precinct_spans.append(Vector4i(int(span[0]), int(span[1]), int(span[2]), int(span[3])))
+			map.add_precinct(Vector4i(int(span[0]), int(span[1]), int(span[2]), int(span[3])))
 	map.index_posts()
 
 ## The two precincts, three blocks each: one at the shore, like a seaside promenade, and one inland.
@@ -283,12 +284,12 @@ static func _assign_street_kinds(map: CityMap, choices: Dictionary = {}) -> void
 ## whole corridor of it is a kind of street, and a kind of street you meet every third block is
 ## simply what a street is — which is the version this replaced.
 static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
-	map.precinct_spans.clear()
+	map.clear_precincts()
 	var length := Tuning.PRECINCT_BLOCKS
 
 	var shore := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 1
 	var along := rng.randi_range(0, Tuning.CITY_BLOCKS.x - length)
-	map.precinct_spans.append(Vector4i(0, shore, along, along + length - 1))
+	map.add_precinct(Vector4i(0, shore, along, along + length - 1))
 
 	# Inland: never the spine, never beside it — a car diverted off the main road needs the
 	# street next to it to be a street — and never the boundary, which is either the shore itself
@@ -298,14 +299,14 @@ static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
 		var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
 		var across: int = Tuning.CITY_BLOCKS.y if vertical else Tuning.CITY_BLOCKS.x
 		var corridor := rng.randi_range(1, CrowdLanes.corridor_count(blocks) - 2)
-		if vertical and absi(corridor - map.main_road) <= 1:
+		if vertical and absi(corridor - map.main_road_corridor()) <= 1:
 			continue
 		var start := rng.randi_range(0, across - length)
-		map.precinct_spans.append(
+		map.add_precinct(
 				Vector4i(1 if vertical else 0, corridor, start, start + length - 1))
 		return
 	push_error("no inland precinct span found in 24 attempts for seed %d; city has one precinct" \
-			% map.seed_used)
+			% map.city_seed())
 
 # ----------------------------------------------------------------- purposes ---
 
@@ -316,7 +317,7 @@ static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
 ## not already next to open calm.
 ##
 ## The dictionary that comes back is keyed by **lot anchors**, not by blocks: the three blocks a
-## zone absorbed are removed at the end and live in `map.zone_anchor` instead. They carry the
+## zone absorbed are removed at the end and reach their anchor through `map.anchor_of()` instead. They carry the
 ## zone's purpose while this function runs, though, because that is what makes the "never side
 ## by side" rule see a zone as calm ground without a special case for it.
 static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: Dictionary = {}) -> Dictionary:
@@ -346,13 +347,13 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 		var multi := footprint.size != Vector2i.ONE
 		var eligible := true
 		if BlockPlan.is_calm(purpose):
-			eligible = _zone_fits(purposes, footprint, map.main_road, map.precinct_spans) if multi \
-					else _calm_may_sit_here(footprint, map.main_road) and not _has_calm_neighbour(purposes, footprint)
+			eligible = _zone_fits(purposes, footprint, map.main_road_corridor(), map.precinct_stretches()) if multi \
+					else _calm_may_sit_here(footprint, map.main_road_corridor()) and not _has_calm_neighbour(purposes, footprint)
 		for block in _blocks_in(footprint):
 			if purposes.has(block) and not (block == home_block() and purpose == GameEnums.BlockPurpose.RESIDENTIAL):
 				eligible = false
 		if not eligible:
-			map.recipe_diagnostics.append("lot.ineligible:%s" % [footprint])
+			map.note_diagnostic("lot.ineligible:%s" % [footprint])
 			continue
 		for block in _blocks_in(footprint):
 			purposes[block] = purpose
@@ -369,23 +370,23 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 			else:
 				pinned_courts += 1
 
-	var areas := _place_calm_zones(purposes, zones, shuffled, rng, map.main_road,
-			map.precinct_spans, pinned_zones, pinned_square) + pinned_calm
-	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road, map.precinct_spans, pinned_complexes)
+	var areas := _place_calm_zones(purposes, zones, shuffled, rng, map.main_road_corridor(),
+			map.precinct_stretches(), pinned_zones, pinned_square) + pinned_calm
+	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road_corridor(), map.precinct_stretches(), pinned_complexes)
 
 	var calm_target := rng.randi_range(MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
-	for block in shuffled:
+	for block: Vector2i in shuffled:
 		if areas >= calm_target:
 			break
 		if purposes.has(block) or _has_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
 			continue
-		if not _calm_may_sit_here(Rect2i(block, Vector2i.ONE), map.main_road):
+		if not _calm_may_sit_here(Rect2i(block, Vector2i.ONE), map.main_road_corridor()):
 			continue
 		purposes[block] = _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
 		areas += 1
 
 	var remaining: Array[Vector2i] = []
-	for block in shuffled:
+	for block: Vector2i in shuffled:
 		if not purposes.has(block):
 			remaining.append(block)
 
@@ -404,7 +405,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 		purposes[remaining[index]] = GameEnums.BlockPurpose.RESIDENTIAL
 		index += 1
 
-	_cut_courtyards(purposes, remaining, rng, map.main_road, pinned_courts)
+	_cut_courtyards(purposes, remaining, rng, map.main_road_corridor(), pinned_courts)
 	_record_zones(map, purposes, zones)
 	return purposes
 
@@ -490,9 +491,9 @@ static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: A
 ##   it here rather than in `_cut_courtyards` is only because it needs a whole unclaimed footprint,
 ##   which is a thing to ask for before the single blocks are handed out.
 ## - **Its absorbed streets are hard blockers.** They are solid ground for the whole run, which is
-##   exactly what `built_over` means, and saying so is what makes the crowd, the telemetry map and
-##   the big-building placement all treat them correctly without any of them learning about
-##   apartment complexes. See `_record_zones`.
+##   exactly what a street built over (`CityMap.record_built_over()`) means, and saying so is what
+##   makes the crowd, the telemetry map and the big-building placement all treat them correctly
+##   without any of them learning about apartment complexes. See `_record_zones`.
 static func _place_apartment_complexes(purposes: Dictionary, zones: Dictionary,
 		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int,
 		precinct_spans: Array[Vector4i], existing: int = 0) -> void:
@@ -526,8 +527,9 @@ static func home_block() -> Vector2i:
 ## the smallest `d` that clears the guarantee.
 ##
 ## It is a floor rather than the guarantee itself: walking distance is not straight-line, and the
-## home sits in the *south* edge of its block, so real distances come out longer. `validate()` still
-## checks the tile guarantee, which is what catches the case this approximation is wrong about.
+## home sits in the *south* edge of its block, so real distances come out longer. `_validate()`
+## still checks the tile guarantee, which is what catches the case this approximation is wrong
+## about.
 static func _too_near_the_home(footprint: Rect2i) -> bool:
 	var home := home_block()
 	var clearance := ceili(float(MIN_HOME_TO_PARK_TILES + Tuning.BLOCK_SIZE)
@@ -580,7 +582,7 @@ static func _touches_a_precinct(precinct_spans: Array[Vector4i], footprint: Rect
 ##   clause**, by the player's decision: if the eligible field ever gets too tight, this comes out
 ##   before `MIN_CALM_BLOCKS` or the non-adjacency rule are touched.
 ##
-## The spine clause is stated over **`map.main_road`**, which is the only thing that knows where the
+## The spine clause is stated over **`map.main_road_corridor()`**, which is the only thing that knows where the
 ## spine is. `CrowdLanes.arterial_index` is a *default* a map is built from, and reaching for it to
 ## answer a question about a city answers for both axes — which is how a phantom east-west arterial
 ## gets into a busyness curve, and how a zone that would absorb the middle east-west corridor gets
@@ -631,13 +633,14 @@ static func _blocks_in(footprint: Rect2i) -> Array[Vector2i]:
 ## **Whether the streets it took are ground or wall is read off the purpose**, which is the one
 ## place that decides it: open calm walks over them and an apartment complex is built on them. Two
 ## multi-block lots, one absorb, and no caller anywhere else has to know which kind it is looking
-## at — a solid one says so in `built_over` and every rule about hard blockers picks it up for free.
+## at — a solid one says so through `record_built_over()` and every rule about hard blockers picks
+## it up for free.
 static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary) -> void:
 	for anchor: Vector2i in zones:
 		var footprint: Rect2i = zones[anchor]
-		map.zone_rects[anchor] = footprint
+		map.record_zone(anchor, footprint)
 		for block in _blocks_in(footprint):
-			map.zone_anchor[block] = anchor
+			map.record_zone_member(block, anchor)
 			if block != anchor:
 				purposes.erase(block)
 		_absorb_streets(map, footprint,
@@ -650,7 +653,7 @@ static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary)
 ## courtyard is hidden calm, but it is still one of the outlines on the map and still somewhere she
 ## can settle, so a court in the outer ring is a calm area at the edge of the map. The home
 ## clearance comes with it for a plainer reason: a courtyard is calm ground, so
-## `validate()`'s `MIN_HOME_TO_PARK_TILES` check can fail a whole city for one cut beside the front
+## `_validate()`'s `MIN_HOME_TO_PARK_TILES` check can fail a whole city for one cut beside the front
 ## door — refusing the block is cheaper than rolling the map again.
 static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 		rng: RandomNumberGenerator, main_road: int, existing: int = 0) -> void:
@@ -700,17 +703,18 @@ static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool
 ## rows and the two vertical ones between its columns.
 ##
 ## That is the whole of it, and the graph half of `StreetNetwork` needs no other change —
-## `map.absent_segments` is added to the closed set of every route search, the four junctions
-## around the removed cross become T-junctions for free, and the one in the middle of the zone
-## is left with nothing reaching it at all.
+## `map.blocked_segments()` adds the absent streets to the closed set of every route search, the
+## four junctions around the removed cross become T-junctions for free, and the one in the middle
+## of the zone is left with nothing reaching it at all.
 ##
 ## Then the **stub**, which every hard blocker shares and states once: see
 ## `_seal_stub_crossings`.
 ##
 ## `solid` is the apartment complex: the same streets leave the lattice, and the ground where they
-## were is building rather than park. Saying so in `built_over` is what tells every rule about hard
-## blockers — the crowd's walls, the telemetry legend, where a big building may go — that this is
-## not a park to walk across, without any of them learning what an apartment complex is.
+## were is building rather than park. Saying so through `record_built_over()` is what tells every
+## rule about hard blockers — the crowd's walls, the telemetry legend, where a big building may go —
+## that this is not a park to walk across, without any of them learning what an apartment complex
+## is.
 static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> void:
 	for y in range(footprint.position.y + 1, footprint.end.y):
 		for x in range(footprint.position.x, footprint.end.x):
@@ -722,9 +726,9 @@ static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> 
 	_seal_stub_crossings(map, CityMap.blocks_tile_rect(footprint))
 
 static func _absorb_one(map: CityMap, key: Vector3i, solid: bool) -> void:
-	map.absent_segments[key] = true
+	map.mark_street_absent(key)
 	if solid:
-		map.built_over[key] = map.network.by_key(key).tile_rect()
+		map.record_built_over(key, map.street_network().by_key(key).tile_rect())
 
 ## Seals the **stub** an arm leaves behind wherever it stops being a street: a zone's absorbed
 ## corridor, a dead end's plug and a big building's mass all call this over `gone` — the ground
@@ -780,11 +784,11 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 				taken += 1
 		else:
 			_plan_built_arc(plan, purpose, rng)
-		map.block_plans[block] = plan
+		map.plan_block(block, plan)
 
 ## **The park day 12's task sends her to**, chosen once for the run: *"we can just force open the
 ## park she needs to go to that day … *then* the park starts to close"* (PLAYTEST-119). Its plan
-## carries `BlockPlan.forced_open_on`, so on that day it is a park whatever its arc has reached
+## carries its day (`BlockPlan.force_open_on()`), so on that day it is a park whatever its arc has reached
 ## (`CityState.purpose_of()`), and its arc ends requisitioned, so that once she has reached the
 ## swing it stays taken for the rest of the run (`CityState.take()`).
 ##
@@ -792,11 +796,11 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 ## had planned anyway and the calm left at the end of the run is what `_plan_arcs()` decided. Only
 ## a city whose arcs take no park gives one a step of its own, `REQUISITIONED` from the task's day
 ## on `BlockCause.TAKEN`, which waits for her to reach the swing and happens on no other cause;
-## `validate()` then counts that park out of the calm that lasts, as it counts every requisition.
+## `_validate()` then counts that park out of the calm that lasts, as it counts every requisition.
 ##
 ## **Drawn from the seed without touching the generator's stream**, so every draw after this one
 ## lands where it always did: the candidates in the lattice's own order, one picked by the seed's
-## hash. A city with no park at all has no swing to send her to and `validate()` refuses it.
+## hash. A city with no park at all has no swing to send her to and `_validate()` refuses it.
 static func _plan_the_swing_park(map: CityMap) -> void:
 	var day := ResistanceSteps.swing_day()
 	if day <= 0:
@@ -806,30 +810,30 @@ static func _plan_the_swing_park(map: CityMap) -> void:
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var block := Vector2i(x, y)
-			var plan: BlockPlan = map.block_plans.get(block)
+			var plan: BlockPlan = map.plans_by_block().get(block)
 			if not plan or plan.starting_purpose() != GameEnums.BlockPurpose.PARK:
 				continue
-			var layout: BlockLayout = map.block_layouts.get(block)
-			if not layout or not BlockLayout.has(layout.playground):
+			var layout: BlockLayout = map.layout_of(block)
+			if not layout or not layout.has_playground():
 				continue
 			parks.append(block)
-			for step in plan.steps:
+			for step in plan.steps_in_order():
 				if step.purpose == GameEnums.BlockPurpose.REQUISITIONED:
 					taken.append(block)
 					break
 	var pool := taken if not taken.is_empty() else parks
 	if pool.is_empty():
 		return
-	var chosen: Vector2i = pool[posmod(hash("swing park:%d" % map.seed_used), pool.size())]
-	var plan: BlockPlan = map.block_plans[chosen]
-	plan.forced_open_on = day
+	var chosen: Vector2i = pool[posmod(hash("swing park:%d" % map.city_seed()), pool.size())]
+	var plan: BlockPlan = map.plan_of(chosen)
+	plan.force_open_on(day)
 	if taken.is_empty():
 		plan.then(GameEnums.BlockPurpose.REQUISITIONED, day, GameEnums.BlockCause.TAKEN)
 
 ## The park `_plan_the_swing_park()` chose, or `(-1, -1)` on a city with none.
 static func swing_park(map: CityMap) -> Vector2i:
-	for block: Vector2i in map.block_plans:
-		if (map.block_plans[block] as BlockPlan).forced_open_on > 0:
+	for block: Vector2i in map.blocks_with_plans():
+		if map.plan_of(block).is_swing_park():
 			return block
 	return Vector2i(-1, -1)
 
@@ -885,16 +889,16 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	# the block, so a zone is a big park and not a special case.
 	var lot := map.lot_rect(block)
 	var layout := BlockLayout.new()
-	map.block_layouts[block] = layout
+	map.carve_block(block, layout)
 
 	if _OPEN_CALM.has(purpose):
-		layout.open_rect = lot
+		layout.carve_open_ground(lot)
 		map.fill_rect(lot, CityMap.open_tile_for(purpose))
 		# Only a park has a playground: a forest with a swing frame in it is a park, and a
 		# quiet square with one is not quiet.
 		if purpose == GameEnums.BlockPurpose.PARK:
-			layout.playground = _inset_rect(lot, 3, rng)
-			map.fill_rect(layout.playground, GameEnums.TileType.PLAYGROUND)
+			layout.carve_playground(_inset_rect(lot, 3, rng))
+			map.fill_rect(layout.playground_rect(), GameEnums.TileType.PLAYGROUND)
 		return []
 
 	map.fill_rect(lot, GameEnums.TileType.BUILDING)
@@ -906,19 +910,19 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 		# rather than somewhere to stand. See `APARTMENT_COURT_TILES`.
 		var court := COURTYARD_SIZE_TILES if lot.size.x <= Tuning.BLOCK_SIZE \
 				else APARTMENT_COURT_TILES
-		layout.open_rect = _inset_rect(lot, court, rng)
-		layout.passage = _passage_rect(lot, layout.open_rect, rng)
-		map.fill_rect(layout.open_rect, GameEnums.TileType.COURTYARD)
-		map.fill_rect(layout.passage, GameEnums.TileType.ALLEY)
-		map.courtyard_rects.append(layout.open_rect)
-		rects = _subtract_all(rects, layout.open_rect)
-		rects = _subtract_all(rects, layout.passage)
+		layout.carve_open_ground(_inset_rect(lot, court, rng))
+		layout.carve_passage(_passage_rect(lot, layout.open_ground(), rng))
+		map.fill_rect(layout.open_ground(), GameEnums.TileType.COURTYARD)
+		map.fill_rect(layout.passage_rect(), GameEnums.TileType.ALLEY)
+		map.add_courtyard(layout.open_ground())
+		rects = _subtract_all(rects, layout.open_ground())
+		rects = _subtract_all(rects, layout.passage_rect())
 
 	if purpose == GameEnums.BlockPurpose.COMMERCIAL:
-		layout.square = _corner_rect(lot, SQUARE_SIZE_TILES, rng)
-		map.fill_rect(layout.square, GameEnums.TileType.SQUARE)
-		map.square_rects.append(layout.square)
-		rects = _subtract_all(rects, layout.square)
+		layout.carve_square(_corner_rect(lot, SQUARE_SIZE_TILES, rng))
+		map.fill_rect(layout.square_rect(), GameEnums.TileType.SQUARE)
+		map.add_square(layout.square_rect())
+		rects = _subtract_all(rects, layout.square_rect())
 
 	# The home block is exempt from the through-alley roll, the same way a commercial block's own
 	# `ALLEY_CHANCE` entry is 0 — except the home shares `RESIDENTIAL`'s purpose and its 0.25 with
@@ -936,10 +940,10 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	# home block and leaves everyone else's layout exactly what it already was for this seed.
 	var wants_an_alley := rng.randf() < float(ALLEY_CHANCE[purpose])
 	if block != home_block() and wants_an_alley:
-		layout.alley = _alley_rect(lot, rng)
-		map.fill_rect(layout.alley, GameEnums.TileType.ALLEY)
-		map.alley_rects.append(layout.alley)
-		rects = _subtract_all(rects, layout.alley)
+		layout.carve_alley(_alley_rect(lot, rng))
+		map.fill_rect(layout.alley_rect(), GameEnums.TileType.ALLEY)
+		map.add_alley(layout.alley_rect())
+		rects = _subtract_all(rects, layout.alley_rect())
 
 	return _keep_nonempty(rects)
 
@@ -1062,7 +1066,7 @@ static func _subtract(outer: Rect2i, hole: Rect2i) -> Array[Rect2i]:
 ##
 ## The `MIN_HOME_TO_PARK_TILES` distance guarantee is settled in `_assign_purposes` instead, by
 ## keeping calm ground away from the middle (`_too_near_the_home`) — so the guarantee holds because
-## of where calm ground is allowed to go, not because of where the home goes. `validate()` still
+## of where calm ground is allowed to go, not because of where the home goes. `_validate()` still
 ## checks it, because a clearance stated in blocks is an approximation of a guarantee stated in
 ## tiles.
 static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
@@ -1083,8 +1087,8 @@ static func _home_rect(block: Vector2i) -> Rect2i:
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:
 	map.fill_rect(home, GameEnums.TileType.HOME)
-	map.home_rect = home
-	map.home_block = block
+	map.lay_home(home)
+	map.record_home_block(block)
 	block_rects[block] = _keep_nonempty(_subtract_all(block_rects[block], home))
 
 # ----------------------------------------------------------- hard blockers ---
@@ -1123,7 +1127,7 @@ static func _place_hard_blockers(map: CityMap, purposes: Dictionary, block_rects
 ## below are about is *ground you could step onto*, not which block anchors a lot.
 static func _calm_blocks_set(map: CityMap) -> Dictionary:
 	var calm := {}
-	for anchor in map.calm_blocks:
+	for anchor in map.calm_blocks_now():
 		for block in _blocks_in(map.lot_blocks(anchor)):
 			calm[block] = true
 	return calm
@@ -1146,7 +1150,7 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 					pinned.append(candidate)
 					found = true
 			if not found:
-				map.recipe_diagnostics.append("dead_end.ineligible:%s" % [key])
+				map.note_diagnostic("dead_end.ineligible:%s" % [key])
 			ends[key] = 1 if pin.end == "a" else 0
 		for candidate in candidates:
 			if not pinned.has(candidate):
@@ -1156,15 +1160,14 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 	for segment in candidates:
 		if made >= wanted:
 			break
-		map.absent_segments[segment.key()] = true
+		map.mark_street_absent(segment.key())
 		if _the_calm_survives(map, home, areas):
-			map.built_over[segment.key()] = _wall_off_one_end(map, segment, rng, ends.get(segment.key(), -1))
-			map.dead_ends[segment.key()] = true
+			map.record_built_over(segment.key(), _wall_off_one_end(map, segment, rng, ends.get(segment.key(), -1)))
 			made += 1
 		else:
-			map.absent_segments.erase(segment.key())
+			map.restore_street(segment.key())
 			if ends.has(segment.key()):
-				map.recipe_diagnostics.append("dead_end.calm_unreachable:%s" % [segment.key()])
+				map.note_diagnostic("dead_end.calm_unreachable:%s" % [segment.key()])
 
 ## Every street a dead end could be made of, in the order this city will try them.
 ##
@@ -1188,7 +1191,7 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 static func _dead_end_candidates(map: CityMap, home: StreetNetwork.Segment, reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var pool: Array[StreetNetwork.Segment] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()) or segment.key() == home.key():
 			continue
 		if reference.is_on_the_tree(segment.key()) or _runs_beside_calm(segment, calm):
@@ -1249,7 +1252,8 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 	var made := 0
 	var station_pair := Rect2i()
 	if choices.has("power_station"):
-		var p: Array = choices.power_station.blocks
+		var station: Dictionary = choices["power_station"]
+		var p: Array = station["blocks"]
 		station_pair = Rect2i(int(p[0]), int(p[1]), int(p[2]), int(p[3]))
 	for pair in pool:
 		if made >= wanted - 1:
@@ -1263,28 +1267,29 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 		if not _the_pair_is_free(map, purposes, pair, home, reference, calm):
 			continue
 		var between := _street_between(map, pair)
-		map.absent_segments[between.key()] = true
+		map.mark_street_absent(between.key())
 		if _the_calm_survives(map, home, areas):
 			_make_the_pair_solid(map, purposes, block_rects, pair, between)
 			made += 1
 		else:
-			map.absent_segments.erase(between.key())
+			map.restore_street(between.key())
 	if station_pair.has_area():
 		# An authored pair is the candidate, not a tie-breaker in industrial ranking.
 		pool.clear()
 		pool.append(station_pair)
 	_place_power_station(map, purposes, block_rects, home, areas, reference, calm, pool, choices)
-	if station_pair.has_area() and map.power_station != station_pair:
-		map.recipe_diagnostics.append("power_station.ineligible")
+	if station_pair.has_area() and map.power_station_blocks() != station_pair:
+		map.note_diagnostic("power_station.ineligible")
 	elif station_pair.has_area():
-		var door: Array = choices.power_station.door_block
-		if map.power_station_door != _door_rect(Vector2i(int(door[0]), int(door[1]))):
-			map.recipe_diagnostics.append("power_station.door_ineligible")
+		var station: Dictionary = choices["power_station"]
+		var door: Array = station["door_block"]
+		if map.power_station_door_tiles() != _door_rect(Vector2i(int(door[0]), int(door[1]))):
+			map.note_diagnostic("power_station.door_ineligible")
 
 # ------------------------------------------------------------- power station ---
 
 ## The one big building that is the power station, guaranteed on every city that passes
-## `validate()`. The last day's task is its front door, so what is guaranteed is not only that it
+## `_validate()`. The last day's task is its front door, so what is guaranteed is not only that it
 ## stands but where, and every clause is **checked when the footprint is accepted, never repaired
 ## afterwards**:
 ##
@@ -1312,7 +1317,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ## `INDUSTRIAL`, then one, then the pair nearest industrial ground — and the pool's own shuffle
 ## breaks ties, so a seed with an eligible industrial pair gets one.
 ##
-## A city where no candidate passes has no station, which `validate()` refuses, so `generate` rolls
+## A city where no candidate passes has no station, which `_validate()` refuses, so `generate` rolls
 ## the next seed — the failure direction every other guarantee here already has.
 static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
@@ -1323,7 +1328,8 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 			continue
 		var door_blocks := _door_blocks(map, pair)
 		if choices.has("power_station"):
-			var door: Array = choices.power_station.door_block
+			var station: Dictionary = choices["power_station"]
+			var door: Array = station["door_block"]
 			var requested := Vector2i(int(door[0]), int(door[1]))
 			# Keep the ordinary street/distance filter and the region gate below. A pin
 			# selects among eligible doors; it never permits a fallback to another one.
@@ -1334,23 +1340,19 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 		if door_blocks.is_empty():
 			continue
 		var between := _street_between(map, pair)
-		map.absent_segments[between.key()] = true
+		map.mark_street_absent(between.key())
 		if not _the_calm_survives(map, home, areas):
-			map.absent_segments.erase(between.key())
+			map.restore_street(between.key())
 			continue
 		var before := _Undo.new(map, purposes, block_rects, pair)
-		var industrial_count := _industrial_count(pair, industrial)
 		_make_the_pair_solid(map, purposes, block_rects, pair, between)
 		_assign_regions(map)
 		var home_region := RegionPlanner.home_region(map)
 		for block in door_blocks:
-			var street := map.network.beside_block(block, StreetNetwork.Side.SOUTH)
+			var street := map.street_network().beside_block(block, StreetNetwork.Side.SOUTH)
 			if RegionPlanner.ground_region_of(map, street) == home_region:
 				continue
-			map.power_station = pair
-			map.power_station_door_key = street.key()
-			map.power_station_door = _door_rect(block)
-			map.power_station_industrial_blocks = industrial_count
+			map.record_power_station(pair, street.key(), _door_rect(block))
 			return
 		before.restore(map, purposes, block_rects, between)
 
@@ -1410,7 +1412,7 @@ static func _industrial_blocks(purposes: Dictionary) -> Dictionary:
 static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	for block in _blocks_in(pair):
-		var street := map.network.beside_block(block, StreetNetwork.Side.SOUTH)
+		var street := map.street_network().beside_block(block, StreetNetwork.Side.SOUTH)
 		if not street or not map.has_street(street.key()):
 			continue
 		if _blocks_from_home(block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
@@ -1446,24 +1448,24 @@ class _Undo extends RefCounted:
 	var rects := {}
 
 	func _init(map: CityMap, purpose_of: Dictionary, block_rects: Dictionary, pair: Rect2i) -> void:
-		tiles = map.tiles.duplicate()
+		tiles = map.tiles_snapshot()
 		for block in CityGenerator._blocks_in(pair):
 			purposes[block] = purpose_of[block]
-			plans[block] = map.block_plans[block]
-			layouts[block] = map.block_layouts[block]
+			plans[block] = map.plan_of(block)
+			layouts[block] = map.layout_of(block)
 			rects[block] = block_rects[block]
 
 	func restore(map: CityMap, purpose_of: Dictionary, block_rects: Dictionary,
 			between: StreetNetwork.Segment) -> void:
-		map.tiles = tiles
+		map.restore_tiles(tiles)
 		for block: Vector2i in purposes:
 			purpose_of[block] = purposes[block]
-			map.block_plans[block] = plans[block]
-			map.block_layouts[block] = layouts[block]
+			map.plan_block(block, plans[block])
+			map.carve_block(block, layouts[block])
 			block_rects[block] = rects[block]
-		map.big_buildings.pop_back()
-		map.built_over.erase(between.key())
-		map.absent_segments.erase(between.key())
+		map.drop_last_big_building()
+		map.forget_built_over(between.key())
+		map.restore_street(between.key())
 
 ## Every pair of neighbouring blocks that could be one, in the order this city will try them.
 ##
@@ -1512,7 +1514,7 @@ static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 		return false
 	if _too_near_the_home(pair):
 		return false
-	if _touches_a_precinct(map.precinct_spans, CityMap.blocks_tile_rect(pair)):
+	if _touches_a_precinct(map.precinct_stretches(), CityMap.blocks_tile_rect(pair)):
 		return false
 	for block in _blocks_in(pair):
 		if map.lot_blocks(block) != Rect2i(block, Vector2i.ONE):
@@ -1537,7 +1539,7 @@ static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 ## runs along the north or west edge of, so it is the far block's own western or northern street.
 static func _street_between(map: CityMap, pair: Rect2i) -> StreetNetwork.Segment:
 	var far := pair.position + pair.size - Vector2i.ONE
-	return map.network.beside_block(far,
+	return map.street_network().beside_block(far,
 			StreetNetwork.Side.WEST if pair.size.x == 2 else StreetNetwork.Side.NORTH)
 
 ## Turns two carved blocks and the street between them into one solid mass.
@@ -1550,19 +1552,19 @@ static func _make_the_pair_solid(map: CityMap, purposes: Dictionary, block_rects
 		pair: Rect2i, between: StreetNetwork.Segment) -> void:
 	for block in _blocks_in(pair):
 		purposes[block] = GameEnums.BlockPurpose.BIG_BUILDING
-		map.block_plans[block] = BlockPlan.of(GameEnums.BlockPurpose.BIG_BUILDING)
+		map.plan_block(block, BlockPlan.of(GameEnums.BlockPurpose.BIG_BUILDING))
 		# Nothing carved, so nothing to repaint: the daily clearing pass leaves the lot as building
 		# and `_repaint_block` returns having found no rects to fill.
-		map.block_layouts[block] = BlockLayout.new()
+		map.carve_block(block, BlockLayout.new())
 		var nothing: Array[Rect2i] = []
 		block_rects[block] = nothing
-	map.big_buildings.append(pair)
+	map.add_big_building(pair)
 
 	var mass := CityMap.blocks_tile_rect(pair)
 	map.fill_rect(mass, GameEnums.TileType.BUILDING)
 	var solid: Array[Rect2i] = [mass]
 	block_rects[pair.position] = solid
-	map.built_over[between.key()] = between.tile_rect()
+	map.record_built_over(between.key(), between.tile_rect())
 	# Every junction round the mass keeps three of its arms — see `_seal_stub_crossings`.
 	_seal_stub_crossings(map, mass)
 
@@ -1581,7 +1583,7 @@ static func _the_calm_survives(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea]) -> bool:
 	var blocked := map.blocked_segments()
 	for area in areas:
-		if map.network.route_count(home, area.access, blocked, 1) < 1:
+		if map.street_network().route_count(home, area.access, blocked, 1) < 1:
 			return false
 	return true
 
@@ -1611,7 +1613,7 @@ static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
 		wall.position -= along * into
 	wall.size += along * into
 	map.fill_rect(wall, GameEnums.TileType.BUILDING)
-	map.building_rects.append(wall)
+	map.add_building_lot(wall)
 	# The wall sits right at the junction's mouth, so the junction beside it loses an arm the
 	# same way a zone's edge does — see `_seal_stub_crossings`.
 	_seal_stub_crossings(map, wall)
@@ -1620,7 +1622,7 @@ static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
 # --------------------------------------------------------------- validation ---
 
 ## Returns "" when the map satisfies every guarantee in docs/CITY.md, else why it does not.
-static func validate(map: CityMap) -> String:
+static func _validate(map: CityMap) -> String:
 	var problems := validation_problems(map, false)
 	return problems[0] if not problems.is_empty() else ""
 
@@ -1628,13 +1630,13 @@ static func validate(map: CityMap) -> String:
 ## diagnostic while silently hiding another. Ordinary generation keeps its fast first failure.
 static func validation_problems(map: CityMap, all_problems: bool = true) -> Array[String]:
 	var problems: Array[String] = []
-	if map.home_rect.size == Vector2i.ZERO:
+	if map.home_tile_rect().size == Vector2i.ZERO:
 		problems.append("no home was placed")
 		return problems # Remaining route checks require an actual home.
 
-	if map.calm_blocks.size() < MIN_CALM_BLOCKS:
+	if map.calm_blocks_now().size() < MIN_CALM_BLOCKS:
 		problems.append("only %d calm blocks, need %d" % [
-			map.calm_blocks.size(), MIN_CALM_BLOCKS])
+			map.calm_blocks_now().size(), MIN_CALM_BLOCKS])
 		if not all_problems:
 			return problems
 
@@ -1647,11 +1649,11 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 	# diagonal. **A guarantee narrower than its rule agrees with the rule for exactly as long as the
 	# rule is right, and says nothing on the day it is not.**
 	var owner := {}
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		for member in _blocks_in(map.lot_blocks(block)):
 			owner[member] = block
 	for member: Vector2i in owner:
-		for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]:
+		for step: Vector2i in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]:
 			var neighbour: Vector2i = member + step
 			if owner.has(neighbour) and owner[neighbour] != owner[member]:
 				problems.append("calm areas %s and %s are in each other's ring" % [
@@ -1659,7 +1661,7 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 				if not all_problems:
 					return problems
 
-	# **The open ones only, and one of them is the square.** `zone_rects` is every multi-block lot,
+	# **The open ones only, and one of them is the square.** `CityMap.zone_anchors()` is every multi-block lot,
 	# which is not the same thing as every multi-block *park* — an apartment complex is four blocks
 	# of building — so counting the dictionary lets a city satisfy the guarantee with a thing you
 	# cannot walk across. And the guarantee is not "multi-block calm" in general: it is that every
@@ -1670,11 +1672,11 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 	var square := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
 	var open_zones := 0
 	var squares := 0
-	for anchor: Vector2i in map.zone_rects:
+	for anchor: Vector2i in map.zone_anchors():
 		if not _OPEN_CALM.has(map.starting_purpose(anchor)):
 			continue
 		open_zones += 1
-		if (map.zone_rects[anchor] as Rect2i).size == square:
+		if map.zone_footprint(anchor).size == square:
 			squares += 1
 	if open_zones < MIN_CALM_ZONES:
 		problems.append("only %d open multi-block calm zones, need %d" % [
@@ -1689,8 +1691,8 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 	# The arcs are planned for the whole run, so the end of it can be checked here rather
 	# than hoped for. A run that requisitions its way to nothing is unwinnable, not hard.
 	var lasting := 0
-	for block: Vector2i in map.block_plans:
-		if (map.block_plans[block] as BlockPlan).stays_calm():
+	for block: Vector2i in map.blocks_with_plans():
+		if map.plan_of(block).stays_calm():
 			lasting += 1
 	if lasting < MIN_CALM_BLOCKS_AT_END:
 		problems.append("only %d blocks stay calm for the whole run, need %d" % [
@@ -1709,7 +1711,7 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 	# `generate` calls it on every attempt and about a third of them fail, so a rejection that
 	# can be seen by counting calm blocks must not first walk eleven thousand tiles twice.
 	# Which reason comes back when several are true changes; whether a map is accepted does not.
-	var reached := map.reach_count(map.walk_field(map.home_rect.position))
+	var reached := map.reach_count(map.walk_field(map.home_tile_rect().position))
 	if reached != map.count_standable():
 		problems.append("%d of %d walkable tiles are cut off from the home" % [
 			map.count_standable() - reached, map.count_standable()])
@@ -1735,7 +1737,7 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 		problems.append("the front door does not open onto a street")
 		return problems
 	for area in ClosurePlanner.calm_areas(map):
-		if map.network.route_count(home, area.access, map.blocked_segments(), 1) < 1:
+		if map.street_network().route_count(home, area.access, map.blocked_segments(), 1) < 1:
 			problems.append("calm area %s cannot be reached from the home street" % area.block)
 			if not all_problems:
 				return problems
@@ -1755,8 +1757,8 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 static func _power_station_problem(map: CityMap) -> String:
 	if not map.has_power_station():
 		return "no power station was placed"
-	if not map.big_buildings.has(map.power_station) or map.power_station.size != Vector2i(2, 1):
-		return "the power station %s is not a two-block-wide landmark" % map.power_station
+	if not map.big_building_pairs().has(map.power_station_blocks()) or map.power_station_blocks().size != Vector2i(2, 1):
+		return "the power station %s is not a two-block-wide landmark" % map.power_station_blocks()
 	var street := map.power_station_door_street()
 	if not street or not map.has_street(street.key()):
 		return "the power station's door does not open onto a street"

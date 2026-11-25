@@ -21,16 +21,26 @@ const GUARD_MARGIN := 96.0
 const BUDGET_USEC := 2000
 ## BUDGET_USEC, lowered by a test to make the per-frame spill-over countable.
 var budget_usec := BUDGET_USEC
-## Where an update charges its time to the frame record, handed in by the city that builds this; the
-## null sink until then.
-var timing := FrameTiming.new()
-var city: City
+## Where an update charges its time to the frame record, handed in by `use_frame_timing()`; the null
+## sink until then.
+var _timing := FrameTiming.new()
+## What the residency keeps resident, handed in by `setup()`: the node whose view and visibility it
+## follows (the city), the map that places the doorstep it looks at before any camera exists, and the
+## three owners of what is prepared and released around the view.
+var _world: CanvasItem
+var _map: CityMap
+var _ground: SceneryGround
+var _shadows: BuildingShadows
+var _decals: CityDecals
 ## A scripted recipe's frame-locked playback: every update prepares its whole load view in that
 ## frame, with no budget and no deferral, so a recorded frame never shows unprepared ground. Handed
 ## in by the city that builds this. Free play keeps ordinary streaming.
-var frame_locked := false
-var view := Rect2()
-var _items: Array[Node2D] = []
+var _frame_locked := false
+## The view the last update prepared for (`view()`); empty until the first.
+var _view := Rect2()
+## The standings of everything registered: a building, the home door and every `ScenerySprite`,
+## which share no class below `Node2D` and are each composed of a `SceneryResidence`.
+var _items: Array[SceneryResidence] = []
 var worst_update_usec := 0
 var ordinary_guard_preparations := 0
 var _pending := false
@@ -47,22 +57,49 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	process_priority = 1000
 
-func register(item: Node2D) -> void:
-	_items.append(item)
-	item.set_scenery_resident(false)
+func setup(world: CanvasItem, map: CityMap, ground: SceneryGround, shadows: BuildingShadows,
+		decals: CityDecals) -> void:
+	_world = world
+	_map = map
+	_ground = ground
+	_shadows = shadows
+	_decals = decals
+
+## Hands in where an update charges its time to the frame record, before the first update.
+func use_frame_timing(record: FrameTiming) -> void:
+	_timing = record
+
+## Hands in whether a scripted recipe's playback is locked to frames: every update then prepares
+## its whole load view in that frame, with no budget and no deferral.
+func lock_to_frames(locked: bool) -> void:
+	_frame_locked = locked
+
+## The view the last update prepared for, or an empty rectangle before the first.
+func view() -> Rect2:
+	return _view
+
+## Hands in the view the residency follows from here on, as an update would have left it: the city
+## sets the home's before its scenery is laid.
+func use_view(followed: Rect2) -> void:
+	_view = followed
+
+## Takes a placement's standing over, its pictures freed until the view comes near.
+func register(residence: SceneryResidence) -> void:
+	_items.append(residence)
+	residence.set_resident(false)
 
 func _process(_delta: float) -> void:
-	if city and city.map and city.is_visible_in_tree():
+	if _world and _world.is_visible_in_tree():
 		var next := _camera_view()
 		# The guard remains at least 80px ahead between these 16px maintenance steps.
-		if _pending or next.size != view.size \
-				or next.get_center().distance_to(view.get_center()) >= 16.0:
+		if _pending or next.size != _view.size \
+				or next.get_center().distance_to(_view.get_center()) >= 16.0:
 			update(next)
 
 func _camera_view() -> Rect2:
-	var viewport := city.get_viewport()
+	var viewport := _world.get_viewport()
 	if viewport.get_camera_2d() == null:
-		return Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+		return Rect2(_map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2.0)
 	var inverse := viewport.get_canvas_transform().affine_inverse()
 	var size := viewport.get_visible_rect().size
@@ -76,62 +113,64 @@ func update(next_view: Rect2, immediate := false) -> void:
 	# with the jobs it ran counted by kind and what it spent past `budget_usec` kept apart. The
 	# deferred window's two ends go into the engine's deferred queue either side of everything this
 	# update queues there, so the tile map work and first draws it leaves behind are scenery's too.
-	var recording := timing.on
+	var recording := _timing.is_on()
 	var outer := 0
 	if recording:
-		outer = timing.enter(FrameTiming.SCENERY)
+		outer = _timing.enter(FrameTiming.SCENERY)
 		_record_deferred_scenery.call_deferred(true)
-	immediate = immediate or frame_locked
+	immediate = immediate or _frame_locked
 	var started := Time.get_ticks_usec()
-	var relocated := not view.has_area() or view.size != next_view.size \
-			or view.get_center().distance_to(next_view.get_center()) > GUARD_MARGIN
-	view = next_view
-	var load_view := view.grow(LOAD_MARGIN)
-	var retained := view.grow(RETAIN_MARGIN)
-	var guard := load_view if immediate or relocated else view.grow(GUARD_MARGIN)
-	var ground := city.scenery_ground
-	for key: Vector2i in ground.chunks.keys():
+	var relocated := not _view.has_area() or _view.size != next_view.size \
+			or _view.get_center().distance_to(next_view.get_center()) > GUARD_MARGIN
+	_view = next_view
+	var load_view := _view.grow(LOAD_MARGIN)
+	var retained := _view.grow(RETAIN_MARGIN)
+	var guard := load_view if immediate or relocated else _view.grow(GUARD_MARGIN)
+	var ground := _ground
+	for key: Vector2i in ground.chunks().keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.release(key)
 	# Keep unfinished allocations through the wider retention ring too. They pause outside
 	# the load boundary, so reversing there resumes the same work without allocation churn.
-	for key: Vector2i in ground.pending.keys():
+	for key: Vector2i in ground.pending().keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.cancel(key)
 	var pending: Array[Dictionary] = []
-	for key in ground.keys_in(load_view):
-		if ground.chunks.has(key):
+	for key: Vector2i in ground.keys_in(load_view):
+		if ground.chunks().has(key):
 			continue
 		var bounds := SceneryGround.bounds(key)
 		if guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
-				timing.scenery_job(FrameTiming.Job.GUARD)
+				_timing.scenery_job(FrameTiming.Job.GUARD)
 			ground.prepare(key)
 			_whole_region_frame = Engine.get_process_frames()
 		else:
-			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
+			pending.append({"distance": bounds.get_center().distance_squared_to(_view.get_center()),
 					"ground_key": key})
-	for item in _items.duplicate():
-		if not is_instance_valid(item) or item.is_queued_for_deletion():
-			_items.erase(item)
+	# A standing outlives its placement while it is held here, so a freed placement is let go by
+	# asking the standing, never by touching the placement.
+	for residence: SceneryResidence in _items.duplicate():
+		if residence.is_gone():
+			_items.erase(residence)
 			continue
-		var bounds: Rect2 = item.scenery_bounds()
-		if item.scenery_resident:
+		var bounds := residence.bounds()
+		if residence.is_resident():
 			if not retained.intersects(bounds):
-				item.set_scenery_resident(false)
+				residence.set_resident(false)
 		elif guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
-				timing.scenery_job(FrameTiming.Job.GUARD)
-			item.set_scenery_resident(true)
+				_timing.scenery_job(FrameTiming.Job.GUARD)
+			residence.set_resident(true)
 		elif load_view.intersects(bounds):
-			var job := {"distance": bounds.get_center().distance_squared_to(view.get_center()),
-					"prepare": item.set_scenery_resident.bind(true)}
+			var job := {"distance": bounds.get_center().distance_squared_to(_view.get_center()),
+					"prepare": residence.set_resident.bind(true)}
 			if recording:
-				job.kind = FrameTiming.Job.BUILDING if item is Building else FrameTiming.Job.PROP
+				job["kind"] = residence.counted_as()
 			pending.append(job)
 	# Which kind the shadows' and decals' jobs are counted as, held in an array the callable shares
 	# rather than bound into it, so a run without the record does no extra work for it.
@@ -141,78 +180,81 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
-				timing.scenery_job(FrameTiming.Job.GUARD)
+				_timing.scenery_job(FrameTiming.Job.GUARD)
 			prepare.call()
 		else:
-			var job := {"distance": bounds.get_center().distance_squared_to(view.get_center()),
+			var job := {"distance": bounds.get_center().distance_squared_to(_view.get_center()),
 					"prepare": prepare}
 			if recording:
-				job.kind = enqueued_kind[0]
+				job["kind"] = enqueued_kind[0]
 			pending.append(job)
-	city._building_shadows.update_view(load_view, retained, enqueue)
+	_shadows.update_view(load_view, retained, enqueue)
 	enqueued_kind[0] = FrameTiming.Job.DECAL
-	city._decals.update_view(load_view, retained, enqueue)
-	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
+	_decals.update_view(load_view, retained, enqueue)
+	pending.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return a["distance"] < b["distance"])
 	_pending = false
 	# At least one job runs before the budget can stop the queue, in every mode and for every kind
 	# of job, so the queue always advances. `started` is taken before the synchronous guard
 	# preparations, so the frames where this adds a job beyond the budget are the ones the guard
 	# (or this update's own bookkeeping) has already spent it in: the heaviest frames.
 	var ran := 0
-	for job in pending:
-		if not frame_locked and ran > 0 \
+	for job: Dictionary in pending:
+		if not _frame_locked and ran > 0 \
 				and Time.get_ticks_usec() - started >= budget_usec:
 			_pending = true
 			break
 		if job.has("ground_key"):
-			if frame_locked or ground.mode == SceneryGround.Mode.ALL:
-				ground.prepare(job.ground_key)
+			var key: Vector2i = job["ground_key"]
+			if _frame_locked or ground.mode() == SceneryGround.Mode.ALL:
+				ground.prepare(key)
 				ran += 1
 				if recording:
-					timing.scenery_job(FrameTiming.Job.GROUND)
+					_timing.scenery_job(FrameTiming.Job.GROUND)
 				continue
 			var frame := Engine.get_process_frames()
-			if ground.mode == SceneryGround.Mode.ONE:
+			if ground.mode() == SceneryGround.Mode.ONE:
 				# The fence is per process frame, so repeating an explicit update cannot add a
 				# second region; a guard preparation earlier in this frame has spent it too.
 				if _whole_region_frame == frame:
 					_pending = true
 					continue
 				_whole_region_frame = frame
-				ground.prepare(job.ground_key)
+				ground.prepare(key)
 				ran += 1
 				if recording:
-					timing.scenery_job(FrameTiming.Job.GROUND)
+					_timing.scenery_job(FrameTiming.Job.GROUND)
 				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
 			if _ground_step_frame != frame:
 				_ground_step_frame = frame
 				_ground_stepped.clear()
-			if _ground_stepped.has(job.ground_key):
+			if _ground_stepped.has(key):
 				_pending = true
 				continue
-			_ground_stepped[job.ground_key] = true
+			_ground_stepped[key] = true
 			ran += 1
 			if recording:
-				timing.scenery_job(FrameTiming.Job.GROUND)
-			if not ground.prepare_step(job.ground_key):
+				_timing.scenery_job(FrameTiming.Job.GROUND)
+			if not ground.prepare_step(key):
 				_pending = true
 		else:
-			(job.prepare as Callable).call()
+			(job["prepare"] as Callable).call()
 			ran += 1
 			if recording:
-				timing.scenery_job(job.kind)
+				var kind: FrameTiming.Job = job["kind"]
+				_timing.scenery_job(kind)
 	var elapsed := Time.get_ticks_usec() - started
 	worst_update_usec = maxi(worst_update_usec, elapsed)
 	if recording:
-		timing.scenery_update(elapsed, budget_usec)
+		_timing.scenery_update(elapsed, budget_usec)
 		_record_deferred_scenery.call_deferred(false)
-		timing.leave(outer)
+		_timing.leave(outer)
 
 ## One end of the frame record's deferred scenery window, run from the engine's deferred flush.
 func _record_deferred_scenery(begins: bool) -> void:
 	if begins:
-		timing.scenery_deferred_begins()
+		_timing.scenery_deferred_begins()
 	else:
-		timing.scenery_deferred_ends()
+		_timing.scenery_deferred_ends()

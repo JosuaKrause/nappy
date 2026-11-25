@@ -1,0 +1,4 @@
+21:45  up 3 days,  3:10, 6 users, load averages: 5.00 4.89 4.30
+85752 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/mq-r2 res://tests/tests.tscn -- probes/escape_winnable.gd
+91502 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/mq-r2/ -- --start-escape city --seed 808 --route bridge --no-save --no-title
+91503 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/mq-r2/ -- --start-escape city --seed 4216201080 --route bridge --no-save --no-title

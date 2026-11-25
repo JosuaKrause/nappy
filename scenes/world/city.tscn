@@ -11,7 +11,7 @@ script = ExtResource("1_city")
 
 [node name="Ground" type="Node2D" parent="."]
 script = ExtResource("5_scenery_ground")
-tile_set = ExtResource("2_ground")
+_tile_set = ExtResource("2_ground")
 
 [node name="Decals" type="Node2D" parent="."]
 script = ExtResource("3_decals")

@@ -1,9 +1,11 @@
 extends RefCounted
-## **A crowd handed no navigator moves by its map's own** (`Crowd.setup()`, `WorldMap.navigator()`):
-## the game's city hands its crowd the city's navigator, and a rig that hands none gets the map's,
-## over which a walker she bumps into is pushed aside. No city: the crowd is handed a bare world, a
-## map with nothing but its streets (`StreetMap.full()`), the lights over that map and today's
-## streets with no day begun (`DayStreets.new()`), so no wall and no door holds anybody.
+## **A crowd handed no navigator moves by one over its map** (`Crowd.setup()`, `Navigator.new(map)`):
+## the game's crowd is handed the city's by its builder (`SimulationBuilder`), and a rig that hands
+## none gets one of its own, a navigator holding nothing but its map, over which a walker she
+## bumps into is pushed aside. No city:
+## the crowd is handed a bare world, a map with nothing but its streets (`StreetMap.full()`), the
+## lights over that map and today's streets with no day begun (`DayStreets.new()`), so no wall and
+## no door holds anybody.
 
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 const SEED := 4242
@@ -12,10 +14,10 @@ const DAY := 1
 ## let a push that went nowhere show as a walker still on his lane.
 const FRAMES := 6
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t)
 
-func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t) -> void:
+func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var map := StreetMap.full()
@@ -83,8 +85,9 @@ func _walker_on_a_lane_at(crowd: Crowd, here: Vector2) -> Dictionary:
 ## A sidewalk tile clear of the map's edge with open sidewalk all round it, so a push has somewhere
 ## to go.
 func _open_sidewalk(map: CityMap) -> Vector2i:
+	var size := map.size_in_tiles()
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if tile.x < 4 or tile.y < 4 or tile.x >= map.size.x - 4 or tile.y >= map.size.y - 4:
+		if tile.x < 4 or tile.y < 4 or tile.x >= size.x - 4 or tile.y >= size.y - 4:
 			continue
 		var open := true
 		for step: Vector2i in [Vector2i.ZERO, Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:

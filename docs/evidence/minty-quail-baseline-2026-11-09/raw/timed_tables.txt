@@ -1,0 +1,21 @@
+== 4. dawn planning: seconds inside build_day(), 14 cities x 14 days, per run n=1..3
+before build_day [202.553, 177.92, 284.563] median 202.6 (min 177.9, max 284.6) | whole probe [333.633, 293.008, 479.616] median 333.6 (min 293.0, max 479.6)
+today build_day [256.185, 403.001, 340.105] median 340.1 (min 256.2, max 403.0) | whole probe [390.513, 598.831, 516.773] median 516.8 (min 390.5, max 598.8)
+placement closed build_day [52.917, 51.618, 45.807] median 51.6 (min 45.8, max 52.9) | draw_every_unit [370.179, 345.616, 285.488] median 345.6 (min 285.5, max 370.2) | the two added [423.096, 397.234, 331.295] median 397.2 (min 331.3, max 423.1) | whole probe [604.191, 568.582, 474.322] median 568.6 (min 474.3, max 604.2)
+after 4b build_day [44.143, 44.338, 43.721] median 44.1 (min 43.7, max 44.3) | draw_every_unit [332.253, 342.338, 334.332] median 334.3 (min 332.3, max 342.3) | the two added [376.396, 386.676, 378.053] median 378.1 (min 376.4, max 386.7) | whole probe [502.531, 516.41, 505.215] median 505.2 (min 502.5, max 516.4)
+== 5a. crowd tick, mean over the 36 cases of the case's median per-tick microseconds, per run
+before cases/run 36 | tick column [371, 347, 629] median 370.5 (min 346.8, max 629.3) | agents' own frames column [1675, 1448, 2797] median 1675.4 (min 1448.2, max 2797.1) | agents + tick median 2046.0 (min 1795.0, max 3426.4)
+today cases/run 36 | tick column [2086, 3945, 4860] median 3944.7 (min 2085.6, max 4859.8) | agents' own frames column [0, 0, 0] (inside tick) | agents + tick median 3944.7 (min 2085.6, max 4859.8)
+placement_closed cases/run 36 | tick column [2467, 2506, 2212] median 2466.6 (min 2211.8, max 2505.7) | agents' own frames column [0, 0, 0] (inside tick) | agents + tick median 2466.6 (min 2211.8, max 2505.7)
+after_4b cases/run 36 | tick column [2481, 2341, 2351] median 2350.6 (min 2341.2, max 2481.0) | agents' own frames column [0, 0, 0] (inside tick) | agents + tick median 2350.6 (min 2341.2, max 2481.0)
+== 5b. per-system frame profile (entity_frame_profile.gd, seed 4242 day 1, ms), per run
+profiled before callback interval median ms [19.209, 15.546, 12.076] median 15.5 (min 12.1, max 19.2) | main-loop wall median ms median 14.9 (min 11.6, max 18.4) | script self sum median ms median 8.9 (min 6.8, max 10.9) | analyzer accepted [True, True, True]
+profiled today callback interval median ms [29.13, 28.753, 5.325] median 28.8 (min 5.3, max 29.1) | main-loop wall median ms median 27.6 (min 4.5, max 28.0) | script self sum median ms median 15.9 (min 2.8, max 16.2) | analyzer accepted [True, True, True]
+profiled placement closed (--invincible) callback interval median ms [4.647, 5.699, 4.888] median 4.9 (min 4.6, max 5.7) | main-loop wall median ms median 2.3 (min 2.3, max 2.3) | script self sum median ms median 1.3 (min 1.3, max 1.3) | analyzer accepted [True, True, True]
+profiled after 4b (launcher unmodified) callback interval median ms [8.308, 8.28, 8.316] median 8.3 (min 8.3, max 8.3) | main-loop wall median ms median 0.5 (min 0.5, max 0.5) | script self sum median ms median 0.3 (min 0.3, max 0.3) | analyzer accepted [False, False, False]
+profiled after 4b (--invincible) callback interval median ms [4.333, 3.91, 3.958] median 4.0 (min 3.9, max 4.3) | main-loop wall median ms median 2.5 (min 2.5, max 2.6) | script self sum median ms median 1.4 (min 1.3, max 1.4) | analyzer accepted [True, True, True]
+disabled before callback interval median ms [10.668, 8.154, 11.763] median 10.7 (min 8.2, max 11.8)  | analyzer accepted [True, True, True]
+disabled today callback interval median ms [6.309, 4.22, 4.683] median 4.7 (min 4.2, max 6.3)  | analyzer accepted [True, True, True]
+disabled placement closed (--invincible) callback interval median ms [6.998, 7.53, 7.468] median 7.5 (min 7.0, max 7.5)  | analyzer accepted [True, True, True]
+disabled after 4b (launcher unmodified) callback interval median ms [8.333, 8.332, 8.329] median 8.3 (min 8.3, max 8.3)  | analyzer accepted [False, False, False]
+disabled after 4b (--invincible) callback interval median ms [6.074, 6.703, 6.306] median 6.3 (min 6.1, max 6.7)  | analyzer accepted [True, True, True]

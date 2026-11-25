@@ -1,0 +1,15 @@
+== rig-084738-seed90210-v0.29.2-507-g9a89991ec
+   0.0  start    doorstep (57,80), facing 180°
+   0.0  ahead    dog_walker comes at her from 210px in front of her at (57,68), unannounced
+   0.0  ahead    dog_walker comes at her from 210px in front of her at (57,57), unannounced
+== rig-005956-seed31337-v0.29.2-487-g383011822
+   0.0  start    doorstep (85,80), facing 180°
+   0.0  ahead    police_patrol comes at her from 227px in front of her at (85,68)
+== rig-010450-seed31337-v0.29.2-487-g383011822-dirty
+   0.0  start    doorstep (85,80), facing 180°
+   0.0  cue      edge badge: military_convoy at 256px, closing 120px/s
+   0.0  ahead    military_convoy comes down the road at her from behind her, 258px up it, at (85,66), its warning over
+   0.0  cue      edge badge gone: military_convoy after 0.0s, now 214px away
+   0.0  cue      edge badge: military_convoy at 232px, closing 120px/s
+   0.0  ahead    military_convoy comes down the road at her from ahead of her, 234px up it, at (85,51), its warning over
+   0.0  cue      edge badge gone: military_convoy after 0.0s, now 124px away

@@ -1,0 +1,1335 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FLAGS fire_truck 0 0 0 0
+FLAGS burnt_shell 0 0 0 0
+FLAGS loudspeaker 0 0 0 0
+FLAGS curfew_announce 0 0 0 0
+FLAGS checkpoint_hut 0 0 0 0
+FLAGS checkpoint_gate 0 0 0 0
+FLAGS checkpoint_post 0 0 0 0
+FLAGS door_guard 1 1 0 0
+FLAGS barricade 0 0 0 0
+FLAGS fallen_tree 0 0 0 0
+FLAGS car_accident 0 0 0 0
+FLAGS skip 0 0 0 0
+FLAGS scaffolding 0 0 0 0
+FLAGS burst_water_main 0 0 0 0
+FLAGS moving_van 0 0 0 0
+FLAGS burnt_out_car 0 0 0 0
+FLAGS collapsed_frontage 0 0 0 0
+FLAGS neighbor 0 0 0 0
+FLAGS robber_giving_chase 1 1 0 0
+FLAGS van_guard_giving_chase 1 1 0 0
+FLAGS policeman_giving_chase 1 1 0 0
+FLAGS guardsman_giving_chase 1 1 0 0
+FLAGS finale_explosion 0 0 0 0
+FLAGS impact_crater 0 0 0 0
+FLAGS masked_pursuer 1 0 1 0
+FLAGS basement_steam 0 0 0 0
+FLAGS playground 0 0 0 0
+FLAGS cat_dash 0 0 0 0
+FLAGS alley_mouse 0 0 1 0
+FLAGS dog_walker 0 0 0 0
+FLAGS cafe_tables 0 0 0 0
+FLAGS delivery_van 0 0 0 0
+FLAGS homeless_yeller 0 0 0 0
+FLAGS loose_dog 0 0 0 0
+FLAGS market_stall 0 0 0 0
+FLAGS leaf_blower 0 0 0 0
+FLAGS pigeon_flock 0 0 1 0
+FLAGS chatting_mother 0 0 0 0
+FLAGS busker 0 0 0 0
+FLAGS construction 0 0 0 0
+FLAGS cyclist 1 0 0 0
+FLAGS ice_cream_van 0 0 0 0
+FLAGS burning_building 0 0 0 0
+FLAGS reversing_lorry 1 0 0 0
+FLAGS charging_dog 1 1 0 0
+FLAGS police_patrol 0 0 0 0
+FLAGS poster_crew 0 0 0 0
+FLAGS poster_crew_square 0 0 0 0
+FLAGS roadblock 0 0 0 1
+FLAGS abduction 1 0 0 1
+FLAGS alley_robbery 1 1 1 0
+FLAGS night_raid 0 0 0 1
+FLAGS protest 0 0 0 0
+FLAGS military_convoy 0 0 0 0
+FLAGS firefight 1 0 0 0
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 1 18 1620 468
+RV 1 playground 2 22
+RV 1 market_stall 1 121
+RV 1 cafe_tables 1 287
+RV 1 cafe_tables 0 167
+RV 1 homeless_yeller 2 110
+RV 1 homeless_yeller 0 65
+RV 1 alley_mouse 2 67
+RV 1 cafe_tables 2 69
+RV 1 leaf_blower 2 101
+RV 1 delivery_van 0 50
+RV 1 leaf_blower 1 162
+RV 1 chatting_mother 2 19
+RV 1 market_stall 0 43
+RV 1 pigeon_flock 2 108
+RV 1 chatting_mother 0 30
+RV 1 homeless_yeller 1 21
+RV 1 pigeon_flock 0 31
+RV 1 market_stall 2 37
+RV 1 delivery_van 2 38
+RV 1 delivery_van 1 19
+RV 1 pigeon_flock 1 22
+RV 1 playground 1 14
+RV 1 chatting_mother 1 7
+RV 1 playground 0 7
+RV 1 alley_mouse 1 3
+RK 1 playground other 43
+RK 1 market_stall sidewalk 183
+RK 1 cafe_tables sidewalk 523
+RK 1 homeless_yeller sidewalk 117
+RK 1 alley_mouse alley 70
+RK 1 homeless_yeller junction 51
+RK 1 leaf_blower sidewalk 221
+RK 1 delivery_van sidewalk 107
+RK 1 chatting_mother sidewalk 35
+RK 1 pigeon_flock junction 59
+RK 1 homeless_yeller open 28
+RK 1 market_stall open 18
+RK 1 pigeon_flock open 35
+RK 1 pigeon_flock sidewalk 67
+RK 1 leaf_blower open 18
+RK 1 chatting_mother junction 21
+RK 1 leaf_blower junction 24
+RM 1 dog_walker 230
+RM 1 cat_dash 103
+RM 1 loose_dog 135
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 2 18 1622 468
+RV 2 playground 2 18
+RV 2 market_stall 1 89
+RV 2 market_stall 2 21
+RV 2 cafe_tables 1 219
+RV 2 pigeon_flock 2 70
+RV 2 homeless_yeller 0 65
+RV 2 construction 1 63
+RV 2 market_stall 0 53
+RV 2 cafe_tables 0 133
+RV 2 construction 2 20
+RV 2 ice_cream_van 1 59
+RV 2 leaf_blower 1 121
+RV 2 pigeon_flock 1 11
+RV 2 delivery_van 0 47
+RV 2 homeless_yeller 1 14
+RV 2 alley_mouse 2 51
+RV 2 busker 2 74
+RV 2 leaf_blower 2 97
+RV 2 chatting_mother 2 18
+RV 2 pigeon_flock 0 39
+RV 2 chatting_mother 0 38
+RV 2 delivery_van 2 33
+RV 2 ice_cream_van 2 22
+RV 2 homeless_yeller 2 87
+RV 2 cafe_tables 2 75
+RV 2 playground 1 14
+RV 2 delivery_van 1 16
+RV 2 playground 0 11
+RV 2 alley_mouse 1 7
+RV 2 construction 0 31
+RV 2 chatting_mother 1 6
+RK 2 playground other 43
+RK 2 market_stall sidewalk 163
+RK 2 cafe_tables sidewalk 427
+RK 2 pigeon_flock junction 71
+RK 2 homeless_yeller sidewalk 112
+RK 2 construction sidewalk 114
+RK 2 ice_cream_van sidewalk 81
+RK 2 leaf_blower sidewalk 188
+RK 2 pigeon_flock sidewalk 49
+RK 2 delivery_van sidewalk 96
+RK 2 homeless_yeller junction 54
+RK 2 alley_mouse alley 58
+RK 2 busker open 74
+RK 2 chatting_mother sidewalk 46
+RK 2 chatting_mother junction 16
+RK 2 leaf_blower junction 30
+RM 2 cat_dash 94
+RM 2 dog_walker 180
+RM 2 loose_dog 124
+RM 2 cyclist 70
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 3 18 1542 469
+RV 3 playground 2 19
+RV 3 cafe_tables 1 232
+RV 3 market_stall 0 52
+RV 3 cafe_tables 0 123
+RV 3 cafe_tables 2 63
+RV 3 homeless_yeller 2 79
+RV 3 reversing_lorry 1 7
+RV 3 construction 2 21
+RV 3 pigeon_flock 1 20
+RV 3 leaf_blower 2 65
+RV 3 chatting_mother 0 33
+RV 3 ice_cream_van 1 69
+RV 3 leaf_blower 1 124
+RV 3 busker 2 74
+RV 3 construction 0 24
+RV 3 pigeon_flock 0 28
+RV 3 market_stall 1 86
+RV 3 pigeon_flock 2 65
+RV 3 delivery_van 0 47
+RV 3 delivery_van 1 15
+RV 3 alley_mouse 2 52
+RV 3 market_stall 2 17
+RV 3 construction 1 68
+RV 3 homeless_yeller 1 17
+RV 3 playground 0 14
+RV 3 reversing_lorry 2 25
+RV 3 homeless_yeller 0 36
+RV 3 ice_cream_van 2 14
+RV 3 delivery_van 2 17
+RV 3 chatting_mother 2 17
+RV 3 playground 1 10
+RV 3 chatting_mother 1 7
+RV 3 alley_mouse 1 2
+RK 3 playground other 43
+RK 3 cafe_tables sidewalk 418
+RK 3 market_stall sidewalk 155
+RK 3 homeless_yeller sidewalk 68
+RK 3 reversing_lorry sidewalk 32
+RK 3 homeless_yeller junction 63
+RK 3 construction sidewalk 113
+RK 3 pigeon_flock sidewalk 46
+RK 3 leaf_blower sidewalk 163
+RK 3 chatting_mother sidewalk 37
+RK 3 ice_cream_van sidewalk 83
+RK 3 busker open 74
+RK 3 pigeon_flock junction 67
+RK 3 delivery_van sidewalk 79
+RK 3 alley_mouse alley 54
+RK 3 leaf_blower junction 26
+RK 3 chatting_mother junction 20
+RK 3 homeless_yeller open 1
+RM 3 dog_walker 178
+RM 3 loose_dog 105
+RM 3 cyclist 57
+RM 3 cat_dash 92
+RM 3 charging_dog 37
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 4 18 1828 486
+RV 4 playground 2 15
+RV 4 playground 1 16
+RV 4 construction 2 20
+RV 4 cafe_tables 2 73
+RV 4 delivery_van 0 68
+RV 4 market_stall 1 85
+RV 4 leaf_blower 1 121
+RV 4 homeless_yeller 2 92
+RV 4 market_stall 0 63
+RV 4 cafe_tables 0 190
+RV 4 homeless_yeller 0 72
+RV 4 homeless_yeller 1 18
+RV 4 chatting_mother 0 49
+RV 4 busker 2 89
+RV 4 cafe_tables 1 199
+RV 4 delivery_van 2 26
+RV 4 chatting_mother 2 22
+RV 4 leaf_blower 2 86
+RV 4 delivery_van 1 7
+RV 4 construction 1 68
+RV 4 pigeon_flock 2 89
+RV 4 reversing_lorry 2 29
+RV 4 charging_dog 2 70
+RV 4 pigeon_flock 1 20
+RV 4 ice_cream_van 2 17
+RV 4 ice_cream_van 1 49
+RV 4 pigeon_flock 0 42
+RV 4 chatting_mother 1 6
+RV 4 reversing_lorry 1 5
+RV 4 alley_mouse 2 47
+RV 4 market_stall 2 16
+RV 4 construction 0 37
+RV 4 playground 0 12
+RV 4 charging_dog 1 6
+RV 4 alley_mouse 1 2
+RV 4 poster_crew_square 2 1
+RV 4 charging_dog 0 1
+RK 4 playground other 43
+RK 4 construction sidewalk 125
+RK 4 cafe_tables sidewalk 462
+RK 4 delivery_van sidewalk 101
+RK 4 market_stall sidewalk 164
+RK 4 leaf_blower sidewalk 176
+RK 4 homeless_yeller sidewalk 100
+RK 4 chatting_mother junction 39
+RK 4 busker open 89
+RK 4 homeless_yeller junction 81
+RK 4 pigeon_flock junction 93
+RK 4 reversing_lorry sidewalk 34
+RK 4 pigeon_flock sidewalk 57
+RK 4 charging_dog junction 61
+RK 4 chatting_mother sidewalk 38
+RK 4 leaf_blower junction 31
+RK 4 ice_cream_van sidewalk 66
+RK 4 alley_mouse alley 49
+RK 4 charging_dog sidewalk 16
+RK 4 poster_crew_square open 1
+RK 4 homeless_yeller open 1
+RK 4 pigeon_flock open 1
+RM 4 dog_walker 139
+RM 4 cyclist 60
+RM 4 police_patrol 106
+RM 4 cat_dash 79
+RM 4 loose_dog 102
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 5 18 1924 486
+RV 5 playground 2 21
+RV 5 loudspeaker 2 74
+RV 5 loudspeaker 1 14
+RV 5 construction 1 58
+RV 5 cafe_tables 1 225
+RV 5 market_stall 0 63
+RV 5 delivery_van 0 65
+RV 5 market_stall 2 22
+RV 5 market_stall 1 81
+RV 5 cafe_tables 0 162
+RV 5 reversing_lorry 2 38
+RV 5 homeless_yeller 2 93
+RV 5 ice_cream_van 1 77
+RV 5 delivery_van 2 21
+RV 5 homeless_yeller 0 76
+RV 5 pigeon_flock 0 51
+RV 5 pigeon_flock 2 85
+RV 5 busker 2 83
+RV 5 construction 0 54
+RV 5 alley_mouse 1 4
+RV 5 pigeon_flock 1 15
+RV 5 homeless_yeller 1 9
+RV 5 leaf_blower 1 133
+RV 5 delivery_van 1 13
+RV 5 charging_dog 0 3
+RV 5 chatting_mother 2 25
+RV 5 charging_dog 1 6
+RV 5 charging_dog 2 55
+RV 5 cafe_tables 2 48
+RV 5 construction 2 15
+RV 5 chatting_mother 0 60
+RV 5 leaf_blower 2 66
+RV 5 ice_cream_van 2 18
+RV 5 alley_mouse 2 51
+RV 5 playground 0 10
+RV 5 reversing_lorry 1 5
+RV 5 playground 1 12
+RV 5 loudspeaker 0 9
+RV 5 chatting_mother 1 3
+RV 5 poster_crew_square 2 1
+RK 5 playground other 43
+RK 5 loudspeaker junction 72
+RK 5 loudspeaker sidewalk 22
+RK 5 construction sidewalk 127
+RK 5 cafe_tables sidewalk 435
+RK 5 market_stall sidewalk 166
+RK 5 delivery_van sidewalk 99
+RK 5 reversing_lorry sidewalk 43
+RK 5 homeless_yeller sidewalk 103
+RK 5 ice_cream_van sidewalk 95
+RK 5 homeless_yeller junction 75
+RK 5 pigeon_flock junction 105
+RK 5 busker open 83
+RK 5 pigeon_flock sidewalk 46
+RK 5 alley_mouse alley 55
+RK 5 leaf_blower sidewalk 168
+RK 5 charging_dog sidewalk 19
+RK 5 chatting_mother junction 43
+RK 5 charging_dog junction 45
+RK 5 chatting_mother sidewalk 45
+RK 5 leaf_blower junction 31
+RK 5 loudspeaker open 3
+RK 5 poster_crew_square open 1
+RM 5 loose_dog 91
+RM 5 cyclist 47
+RM 5 police_patrol 113
+RM 5 dog_walker 143
+RM 5 cat_dash 92
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 6 18 2007 486
+RV 6 playground 0 12
+RV 6 playground 1 11
+RV 6 loudspeaker 2 84
+RV 6 curfew_announce 2 84
+RV 6 loudspeaker 0 10
+RV 6 curfew_announce 0 10
+RV 6 delivery_van 0 66
+RV 6 market_stall 1 86
+RV 6 construction 0 49
+RV 6 pigeon_flock 2 82
+RV 6 market_stall 0 71
+RV 6 construction 1 70
+RV 6 pigeon_flock 0 50
+RV 6 homeless_yeller 0 79
+RV 6 busker 2 88
+RV 6 construction 2 27
+RV 6 cafe_tables 0 155
+RV 6 alley_mouse 1 6
+RV 6 cafe_tables 1 179
+RV 6 leaf_blower 1 117
+RV 6 homeless_yeller 2 86
+RV 6 cafe_tables 2 49
+RV 6 ice_cream_van 1 51
+RV 6 chatting_mother 1 11
+RV 6 alley_mouse 2 48
+RV 6 chatting_mother 2 20
+RV 6 delivery_van 1 14
+RV 6 charging_dog 2 64
+RV 6 charging_dog 0 3
+RV 6 leaf_blower 2 88
+RV 6 chatting_mother 0 41
+RV 6 pigeon_flock 1 20
+RV 6 reversing_lorry 1 7
+RV 6 ice_cream_van 2 30
+RV 6 reversing_lorry 2 27
+RV 6 market_stall 2 29
+RV 6 delivery_van 2 27
+RV 6 homeless_yeller 1 21
+RV 6 playground 2 20
+RV 6 loudspeaker 1 5
+RV 6 curfew_announce 1 5
+RV 6 poster_crew_square 1 1
+RV 6 charging_dog 1 3
+RV 6 poster_crew_square 2 1
+RK 6 playground other 43
+RK 6 loudspeaker junction 72
+RK 6 curfew_announce junction 72
+RK 6 loudspeaker sidewalk 24
+RK 6 curfew_announce sidewalk 24
+RK 6 delivery_van sidewalk 107
+RK 6 market_stall sidewalk 185
+RK 6 construction sidewalk 146
+RK 6 pigeon_flock junction 89
+RK 6 homeless_yeller sidewalk 106
+RK 6 busker open 88
+RK 6 cafe_tables sidewalk 383
+RK 6 alley_mouse alley 54
+RK 6 leaf_blower sidewalk 161
+RK 6 homeless_yeller junction 80
+RK 6 ice_cream_van sidewalk 81
+RK 6 chatting_mother sidewalk 38
+RK 6 chatting_mother junction 34
+RK 6 pigeon_flock sidewalk 62
+RK 6 charging_dog sidewalk 26
+RK 6 leaf_blower junction 43
+RK 6 reversing_lorry sidewalk 34
+RK 6 charging_dog junction 44
+RK 6 loudspeaker open 3
+RK 6 curfew_announce open 3
+RK 6 market_stall open 1
+RK 6 poster_crew_square open 2
+RK 6 pigeon_flock open 1
+RK 6 leaf_blower open 1
+RM 6 dog_walker 165
+RM 6 loose_dog 93
+RM 6 cat_dash 68
+RM 6 police_patrol 104
+RM 6 cyclist 56
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 7 18 1824 486
+RV 7 playground 0 5
+RV 7 playground 2 21
+RV 7 loudspeaker 2 84
+RV 7 loudspeaker 1 6
+RV 7 loudspeaker 0 9
+RV 7 cafe_tables 0 151
+RV 7 market_stall 0 63
+RV 7 construction 1 57
+RV 7 market_stall 1 70
+RV 7 ice_cream_van 1 67
+RV 7 cafe_tables 1 162
+RV 7 alley_mouse 2 65
+RV 7 roadblock 1 12
+RV 7 delivery_van 0 46
+RV 7 pigeon_flock 1 17
+RV 7 busker 2 77
+RV 7 roadblock 0 52
+RV 7 cafe_tables 2 44
+RV 7 leaf_blower 1 97
+RV 7 chatting_mother 0 41
+RV 7 delivery_van 2 22
+RV 7 leaf_blower 2 77
+RV 7 construction 2 11
+RV 7 pigeon_flock 2 79
+RV 7 homeless_yeller 0 61
+RV 7 pigeon_flock 0 56
+RV 7 homeless_yeller 2 103
+RV 7 chatting_mother 2 24
+RV 7 construction 0 37
+RV 7 homeless_yeller 1 11
+RV 7 charging_dog 2 62
+RV 7 ice_cream_van 2 20
+RV 7 market_stall 2 20
+RV 7 poster_crew_square 2 1
+RV 7 reversing_lorry 2 26
+RV 7 roadblock 2 21
+RV 7 playground 1 17
+RV 7 delivery_van 1 9
+RV 7 alley_mouse 1 3
+RV 7 chatting_mother 1 9
+RV 7 reversing_lorry 1 4
+RV 7 charging_dog 0 1
+RV 7 poster_crew_square 1 1
+RV 7 charging_dog 1 3
+RK 7 playground other 43
+RK 7 loudspeaker junction 72
+RK 7 loudspeaker sidewalk 24
+RK 7 cafe_tables sidewalk 357
+RK 7 market_stall sidewalk 153
+RK 7 construction sidewalk 105
+RK 7 ice_cream_van sidewalk 87
+RK 7 alley_mouse alley 68
+RK 7 roadblock carriageway 85
+RK 7 delivery_van sidewalk 77
+RK 7 pigeon_flock sidewalk 51
+RK 7 busker open 77
+RK 7 leaf_blower sidewalk 131
+RK 7 chatting_mother sidewalk 37
+RK 7 pigeon_flock junction 101
+RK 7 homeless_yeller sidewalk 92
+RK 7 leaf_blower junction 43
+RK 7 chatting_mother junction 37
+RK 7 homeless_yeller junction 82
+RK 7 charging_dog junction 53
+RK 7 poster_crew_square open 2
+RK 7 reversing_lorry sidewalk 30
+RK 7 charging_dog sidewalk 13
+RK 7 loudspeaker open 3
+RK 7 homeless_yeller open 1
+RM 7 cat_dash 79
+RM 7 loose_dog 99
+RM 7 dog_walker 143
+RM 7 cyclist 62
+RM 7 police_patrol 103
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 8 18 2269 522
+RV 8 playground 1 12
+RV 8 playground 2 18
+RV 8 loudspeaker 2 80
+RV 8 loudspeaker 0 13
+RV 8 delivery_van 0 63
+RV 8 leaf_blower 1 105
+RV 8 leaf_blower 2 60
+RV 8 cafe_tables 1 178
+RV 8 pigeon_flock 2 70
+RV 8 abduction 2 240
+RV 8 cafe_tables 2 53
+RV 8 ice_cream_van 1 57
+RV 8 homeless_yeller 2 107
+RV 8 market_stall 1 73
+RV 8 reversing_lorry 2 34
+RV 8 busker 2 91
+RV 8 market_stall 2 26
+RV 8 construction 0 58
+RV 8 cafe_tables 0 171
+RV 8 delivery_van 2 27
+RV 8 construction 1 61
+RV 8 market_stall 0 60
+RV 8 pigeon_flock 0 46
+RV 8 pigeon_flock 1 18
+RV 8 charging_dog 2 54
+RV 8 homeless_yeller 0 68
+RV 8 homeless_yeller 1 13
+RV 8 chatting_mother 0 44
+RV 8 alley_robbery 2 86
+RV 8 alley_mouse 2 49
+RV 8 abduction 1 15
+RV 8 poster_crew_square 2 3
+RV 8 roadblock 0 52
+RV 8 ice_cream_van 2 20
+RV 8 delivery_van 1 20
+RV 8 roadblock 2 31
+RV 8 playground 0 9
+RV 8 loudspeaker 1 7
+RV 8 roadblock 1 14
+RV 8 construction 2 18
+RV 8 chatting_mother 2 20
+RV 8 charging_dog 1 4
+RV 8 alley_mouse 1 3
+RV 8 chatting_mother 1 8
+RV 8 charging_dog 0 2
+RV 8 reversing_lorry 1 5
+RV 8 alley_robbery 1 3
+RK 8 playground other 39
+RK 8 loudspeaker junction 72
+RK 8 loudspeaker sidewalk 25
+RK 8 delivery_van sidewalk 110
+RK 8 leaf_blower sidewalk 138
+RK 8 leaf_blower junction 27
+RK 8 cafe_tables sidewalk 402
+RK 8 pigeon_flock junction 77
+RK 8 abduction junction 128
+RK 8 ice_cream_van sidewalk 77
+RK 8 homeless_yeller junction 77
+RK 8 market_stall sidewalk 159
+RK 8 abduction sidewalk 127
+RK 8 reversing_lorry sidewalk 39
+RK 8 busker open 91
+RK 8 homeless_yeller sidewalk 110
+RK 8 construction sidewalk 137
+RK 8 pigeon_flock sidewalk 56
+RK 8 charging_dog junction 36
+RK 8 chatting_mother sidewalk 44
+RK 8 alley_robbery alley 89
+RK 8 alley_mouse alley 52
+RK 8 poster_crew_square open 3
+RK 8 roadblock carriageway 97
+RK 8 charging_dog sidewalk 24
+RK 8 chatting_mother junction 28
+RK 8 loudspeaker open 3
+RK 8 homeless_yeller open 1
+RK 8 pigeon_flock open 1
+RM 8 dog_walker 193
+RM 8 police_patrol 102
+RM 8 cyclist 47
+RM 8 cat_dash 81
+RM 8 loose_dog 99
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 9 18 1501 522
+RV 9 playground 2 12
+RV 9 playground 1 13
+RV 9 loudspeaker 2 85
+RV 9 roadblock 1 11
+RV 9 roadblock 2 50
+RV 9 cafe_tables 2 59
+RV 9 alley_robbery 2 41
+RV 9 cafe_tables 0 66
+RV 9 abduction 2 122
+RV 9 chatting_mother 0 39
+RV 9 homeless_yeller 1 10
+RV 9 market_stall 1 50
+RV 9 homeless_yeller 2 86
+RV 9 pigeon_flock 0 35
+RV 9 leaf_blower 1 53
+RV 9 busker 2 79
+RV 9 cafe_tables 1 116
+RV 9 roadblock 0 43
+RV 9 leaf_blower 2 40
+RV 9 pigeon_flock 2 87
+RV 9 delivery_van 1 5
+RV 9 construction 0 12
+RV 9 delivery_van 0 30
+RV 9 ice_cream_van 1 17
+RV 9 homeless_yeller 0 42
+RV 9 construction 1 30
+RV 9 pigeon_flock 1 14
+RV 9 reversing_lorry 2 26
+RV 9 market_stall 0 28
+RV 9 chatting_mother 1 5
+RV 9 construction 2 21
+RV 9 delivery_van 2 17
+RV 9 market_stall 2 13
+RV 9 alley_mouse 2 38
+RV 9 ice_cream_van 2 10
+RV 9 playground 0 10
+RV 9 charging_dog 2 30
+RV 9 chatting_mother 2 28
+RV 9 loudspeaker 1 12
+RV 9 loudspeaker 0 8
+RV 9 alley_mouse 1 2
+RV 9 charging_dog 0 2
+RV 9 abduction 1 2
+RV 9 poster_crew_square 1 1
+RV 9 charging_dog 1 1
+RK 9 playground other 35
+RK 9 loudspeaker junction 72
+RK 9 loudspeaker sidewalk 30
+RK 9 roadblock carriageway 104
+RK 9 cafe_tables sidewalk 241
+RK 9 alley_robbery alley 41
+RK 9 abduction junction 58
+RK 9 chatting_mother sidewalk 50
+RK 9 homeless_yeller sidewalk 90
+RK 9 market_stall sidewalk 91
+RK 9 homeless_yeller junction 47
+RK 9 pigeon_flock sidewalk 61
+RK 9 leaf_blower sidewalk 72
+RK 9 busker open 79
+RK 9 pigeon_flock junction 73
+RK 9 delivery_van sidewalk 52
+RK 9 construction sidewalk 63
+RK 9 ice_cream_van sidewalk 27
+RK 9 reversing_lorry sidewalk 26
+RK 9 abduction sidewalk 66
+RK 9 chatting_mother junction 22
+RK 9 alley_mouse alley 40
+RK 9 loudspeaker open 3
+RK 9 charging_dog sidewalk 18
+RK 9 charging_dog junction 15
+RK 9 leaf_blower junction 20
+RK 9 pigeon_flock open 2
+RK 9 leaf_blower open 1
+RK 9 homeless_yeller open 1
+RK 9 poster_crew_square open 1
+RM 9 cat_dash 81
+RM 9 police_patrol 106
+RM 9 loose_dog 111
+RM 9 dog_walker 172
+RM 9 cyclist 52
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 10 18 1483 522
+RV 10 playground 2 16
+RV 10 loudspeaker 2 87
+RV 10 loudspeaker 1 6
+RV 10 night_raid 1 8
+RV 10 abduction 2 157
+RV 10 leaf_blower 1 50
+RV 10 pigeon_flock 2 80
+RV 10 cafe_tables 1 97
+RV 10 leaf_blower 2 40
+RV 10 pigeon_flock 0 35
+RV 10 busker 2 85
+RV 10 chatting_mother 0 27
+RV 10 cafe_tables 2 43
+RV 10 homeless_yeller 2 101
+RV 10 roadblock 0 26
+RV 10 homeless_yeller 0 39
+RV 10 chatting_mother 2 24
+RV 10 abduction 1 4
+RV 10 charging_dog 2 18
+RV 10 construction 1 27
+RV 10 reversing_lorry 2 28
+RV 10 ice_cream_van 2 13
+RV 10 alley_mouse 2 57
+RV 10 delivery_van 0 23
+RV 10 roadblock 2 36
+RV 10 market_stall 2 13
+RV 10 ice_cream_van 1 24
+RV 10 alley_robbery 2 45
+RV 10 playground 1 9
+RV 10 night_raid 2 10
+RV 10 alley_mouse 1 4
+RV 10 pigeon_flock 1 12
+RV 10 charging_dog 0 1
+RV 10 cafe_tables 0 65
+RV 10 chatting_mother 1 8
+RV 10 delivery_van 1 8
+RV 10 market_stall 0 23
+RV 10 roadblock 1 7
+RV 10 market_stall 1 48
+RV 10 delivery_van 2 11
+RV 10 charging_dog 1 1
+RV 10 homeless_yeller 1 12
+RV 10 construction 2 20
+RV 10 construction 0 15
+RV 10 playground 0 7
+RV 10 loudspeaker 0 11
+RV 10 reversing_lorry 1 2
+RK 10 playground other 32
+RK 10 loudspeaker junction 72
+RK 10 loudspeaker sidewalk 29
+RK 10 night_raid sidewalk 13
+RK 10 abduction junction 71
+RK 10 leaf_blower sidewalk 77
+RK 10 pigeon_flock junction 68
+RK 10 cafe_tables sidewalk 205
+RK 10 busker open 85
+RK 10 pigeon_flock sidewalk 58
+RK 10 chatting_mother sidewalk 36
+RK 10 abduction sidewalk 90
+RK 10 homeless_yeller sidewalk 98
+RK 10 roadblock carriageway 69
+RK 10 homeless_yeller junction 54
+RK 10 leaf_blower junction 13
+RK 10 charging_dog junction 16
+RK 10 construction sidewalk 62
+RK 10 reversing_lorry sidewalk 30
+RK 10 ice_cream_van sidewalk 37
+RK 10 alley_mouse alley 61
+RK 10 delivery_van sidewalk 42
+RK 10 market_stall sidewalk 84
+RK 10 alley_robbery alley 45
+RK 10 night_raid junction 5
+RK 10 charging_dog sidewalk 4
+RK 10 chatting_mother junction 23
+RK 10 loudspeaker open 3
+RK 10 pigeon_flock open 1
+RM 10 loose_dog 126
+RM 10 cyclist 46
+RM 10 dog_walker 157
+RM 10 police_patrol 105
+RM 10 cat_dash 88
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 11 18 1466 522
+RV 11 playground 1 12
+RV 11 loudspeaker 2 87
+RV 11 loudspeaker 1 7
+RV 11 abduction 2 179
+RV 11 construction 2 18
+RV 11 pigeon_flock 0 31
+RV 11 roadblock 0 47
+RV 11 busker 2 84
+RV 11 pigeon_flock 2 76
+RV 11 charging_dog 2 39
+RV 11 alley_mouse 2 55
+RV 11 construction 0 19
+RV 11 leaf_blower 2 45
+RV 11 cafe_tables 0 60
+RV 11 homeless_yeller 2 82
+RV 11 abduction 1 6
+RV 11 cafe_tables 2 45
+RV 11 market_stall 0 24
+RV 11 chatting_mother 0 24
+RV 11 reversing_lorry 2 21
+RV 11 chatting_mother 2 19
+RV 11 cafe_tables 1 104
+RV 11 market_stall 1 41
+RV 11 roadblock 1 12
+RV 11 alley_robbery 2 31
+RV 11 roadblock 2 28
+RV 11 leaf_blower 1 53
+RV 11 homeless_yeller 0 55
+RV 11 playground 2 15
+RV 11 loudspeaker 0 8
+RV 11 delivery_van 2 11
+RV 11 construction 1 25
+RV 11 delivery_van 0 19
+RV 11 alley_mouse 1 3
+RV 11 homeless_yeller 1 15
+RV 11 ice_cream_van 1 23
+RV 11 market_stall 2 11
+RV 11 ice_cream_van 2 7
+RV 11 charging_dog 1 1
+RV 11 chatting_mother 1 7
+RV 11 playground 0 2
+RV 11 pigeon_flock 1 7
+RV 11 reversing_lorry 1 2
+RV 11 delivery_van 1 4
+RV 11 poster_crew_square 2 2
+RK 11 playground other 29
+RK 11 loudspeaker junction 72
+RK 11 loudspeaker sidewalk 27
+RK 11 abduction sidewalk 106
+RK 11 construction sidewalk 62
+RK 11 pigeon_flock junction 66
+RK 11 roadblock carriageway 87
+RK 11 busker open 84
+RK 11 pigeon_flock sidewalk 47
+RK 11 charging_dog sidewalk 14
+RK 11 alley_mouse alley 57
+RK 11 leaf_blower sidewalk 85
+RK 11 cafe_tables sidewalk 209
+RK 11 homeless_yeller junction 44
+RK 11 leaf_blower junction 13
+RK 11 market_stall sidewalk 74
+RK 11 chatting_mother junction 11
+RK 11 reversing_lorry sidewalk 23
+RK 11 chatting_mother sidewalk 39
+RK 11 charging_dog junction 25
+RK 11 abduction junction 79
+RK 11 alley_robbery alley 31
+RK 11 homeless_yeller sidewalk 108
+RK 11 delivery_van sidewalk 34
+RK 11 ice_cream_van sidewalk 30
+RK 11 loudspeaker open 3
+RK 11 pigeon_flock open 1
+RK 11 charging_dog open 1
+RK 11 poster_crew_square open 2
+RK 11 alley_mouse junction 1
+RK 11 market_stall open 2
+RM 11 loose_dog 109
+RM 11 cyclist 48
+RM 11 police_patrol 123
+RM 11 dog_walker 156
+RM 11 cat_dash 86
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 12 18 1782 576
+RV 12 playground 1 10
+RV 12 playground 2 20
+RV 12 loudspeaker 2 83
+RV 12 market_stall 0 27
+RV 12 cafe_tables 0 78
+RV 12 homeless_yeller 2 110
+RV 12 abduction 2 178
+RV 12 cafe_tables 1 108
+RV 12 market_stall 1 44
+RV 12 leaf_blower 1 65
+RV 12 homeless_yeller 1 11
+RV 12 cafe_tables 2 58
+RV 12 construction 0 22
+RV 12 leaf_blower 2 58
+RV 12 busker 2 81
+RV 12 pigeon_flock 0 25
+RV 12 protest 2 160
+RV 12 alley_mouse 2 63
+RV 12 ice_cream_van 1 29
+RV 12 roadblock 0 46
+RV 12 roadblock 2 49
+RV 12 pigeon_flock 2 89
+RV 12 market_stall 2 20
+RV 12 delivery_van 0 22
+RV 12 ice_cream_van 2 13
+RV 12 chatting_mother 2 20
+RV 12 chatting_mother 0 24
+RV 12 construction 1 26
+RV 12 homeless_yeller 0 36
+RV 12 reversing_lorry 2 28
+RV 12 loudspeaker 0 10
+RV 12 delivery_van 2 25
+RV 12 alley_robbery 2 28
+RV 12 charging_dog 2 37
+RV 12 charging_dog 1 3
+RV 12 delivery_van 1 6
+RV 12 construction 2 21
+RV 12 abduction 1 11
+RV 12 pigeon_flock 1 10
+RV 12 charging_dog 0 3
+RV 12 chatting_mother 1 4
+RV 12 loudspeaker 1 6
+RV 12 playground 0 5
+RV 12 alley_mouse 1 1
+RV 12 roadblock 1 3
+RV 12 reversing_lorry 1 4
+RV 12 alley_robbery 1 2
+RK 12 playground other 35
+RK 12 loudspeaker junction 72
+RK 12 loudspeaker sidewalk 24
+RK 12 market_stall sidewalk 91
+RK 12 cafe_tables sidewalk 244
+RK 12 homeless_yeller junction 56
+RK 12 abduction sidewalk 105
+RK 12 leaf_blower sidewalk 110
+RK 12 homeless_yeller sidewalk 101
+RK 12 construction sidewalk 69
+RK 12 leaf_blower junction 13
+RK 12 busker open 81
+RK 12 pigeon_flock junction 55
+RK 12 protest junction 146
+RK 12 alley_mouse alley 64
+RK 12 ice_cream_van sidewalk 42
+RK 12 roadblock carriageway 98
+RK 12 protest open 14
+RK 12 pigeon_flock sidewalk 68
+RK 12 delivery_van sidewalk 53
+RK 12 abduction junction 84
+RK 12 chatting_mother sidewalk 35
+RK 12 reversing_lorry sidewalk 32
+RK 12 alley_robbery alley 30
+RK 12 chatting_mother junction 13
+RK 12 charging_dog sidewalk 21
+RK 12 charging_dog junction 21
+RK 12 loudspeaker open 3
+RK 12 charging_dog open 1
+RK 12 pigeon_flock open 1
+RM 12 police_patrol 119
+RM 12 loose_dog 117
+RM 12 dog_walker 193
+RM 12 cat_dash 90
+RM 12 cyclist 57
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 13 18 2105 576
+RV 13 playground 0 7
+RV 13 loudspeaker 2 92
+RV 13 loudspeaker 1 6
+RV 13 roadblock 1 360
+RV 13 firefight 2 18
+RV 13 chatting_mother 0 25
+RV 13 cafe_tables 0 68
+RV 13 market_stall 2 21
+RV 13 delivery_van 2 19
+RV 13 leaf_blower 2 71
+RV 13 abduction 2 210
+RV 13 protest 2 182
+RV 13 cafe_tables 2 46
+RV 13 alley_robbery 2 28
+RV 13 delivery_van 0 20
+RV 13 leaf_blower 1 54
+RV 13 chatting_mother 1 4
+RV 13 chatting_mother 2 29
+RV 13 busker 2 84
+RV 13 construction 2 26
+RV 13 homeless_yeller 2 113
+RV 13 homeless_yeller 0 42
+RV 13 alley_robbery 1 1
+RV 13 charging_dog 2 52
+RV 13 cafe_tables 1 81
+RV 13 homeless_yeller 1 13
+RV 13 pigeon_flock 2 105
+RV 13 ice_cream_van 2 19
+RV 13 ice_cream_van 1 19
+RV 13 reversing_lorry 2 31
+RV 13 abduction 1 7
+RV 13 alley_mouse 2 79
+RV 13 market_stall 0 36
+RV 13 pigeon_flock 0 14
+RV 13 delivery_van 1 6
+RV 13 market_stall 1 35
+RV 13 pigeon_flock 1 11
+RV 13 construction 0 19
+RV 13 construction 1 25
+RV 13 playground 2 9
+RV 13 loudspeaker 0 5
+RV 13 playground 1 5
+RV 13 alley_mouse 1 2
+RV 13 charging_dog 0 2
+RV 13 reversing_lorry 1 3
+RV 13 charging_dog 1 1
+RK 13 playground other 21
+RK 13 loudspeaker junction 72
+RK 13 loudspeaker sidewalk 28
+RK 13 roadblock carriageway 360
+RK 13 firefight junction 17
+RK 13 chatting_mother sidewalk 50
+RK 13 cafe_tables sidewalk 195
+RK 13 market_stall sidewalk 92
+RK 13 delivery_van sidewalk 45
+RK 13 leaf_blower junction 15
+RK 13 abduction junction 100
+RK 13 protest junction 165
+RK 13 leaf_blower sidewalk 110
+RK 13 alley_robbery alley 29
+RK 13 chatting_mother junction 8
+RK 13 busker open 84
+RK 13 construction sidewalk 70
+RK 13 homeless_yeller sidewalk 124
+RK 13 homeless_yeller junction 43
+RK 13 abduction sidewalk 117
+RK 13 charging_dog junction 26
+RK 13 pigeon_flock junction 63
+RK 13 ice_cream_van sidewalk 38
+RK 13 charging_dog sidewalk 29
+RK 13 reversing_lorry sidewalk 34
+RK 13 alley_mouse alley 80
+RK 13 pigeon_flock sidewalk 66
+RK 13 loudspeaker open 3
+RK 13 protest open 17
+RK 13 firefight open 1
+RK 13 homeless_yeller open 1
+RK 13 pigeon_flock open 1
+RK 13 alley_mouse junction 1
+RM 13 cyclist 73
+RM 13 cat_dash 87
+RM 13 loose_dog 113
+RM 13 dog_walker 175
+RM 13 police_patrol 110
+RM 13 military_convoy 18
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+RD 14 18 1835 576
+RV 14 playground 0 5
+RV 14 loudspeaker 2 91
+RV 14 loudspeaker 1 5
+RV 14 roadblock 2 51
+RV 14 construction 2 18
+RV 14 roadblock 0 28
+RV 14 leaf_blower 2 62
+RV 14 leaf_blower 1 58
+RV 14 homeless_yeller 1 9
+RV 14 cafe_tables 1 109
+RV 14 homeless_yeller 2 105
+RV 14 busker 2 88
+RV 14 market_stall 0 25
+RV 14 protest 2 170
+RV 14 delivery_van 1 5
+RV 14 ice_cream_van 1 25
+RV 14 construction 1 26
+RV 14 reversing_lorry 2 43
+RV 14 alley_mouse 2 82
+RV 14 market_stall 1 41
+RV 14 cafe_tables 0 53
+RV 14 chatting_mother 0 24
+RV 14 abduction 2 223
+RV 14 market_stall 2 22
+RV 14 homeless_yeller 0 37
+RV 14 delivery_van 0 19
+RV 14 charging_dog 2 52
+RV 14 pigeon_flock 2 92
+RV 14 roadblock 1 11
+RV 14 reversing_lorry 1 1
+RV 14 cafe_tables 2 59
+RV 14 alley_robbery 2 33
+RV 14 chatting_mother 2 23
+RV 14 delivery_van 2 35
+RV 14 ice_cream_van 2 20
+RV 14 alley_mouse 1 7
+RV 14 chatting_mother 1 10
+RV 14 pigeon_flock 0 20
+RV 14 construction 0 14
+RV 14 pigeon_flock 1 5
+RV 14 playground 2 11
+RV 14 charging_dog 1 1
+RV 14 playground 1 5
+RV 14 loudspeaker 0 7
+RV 14 abduction 1 4
+RV 14 alley_robbery 1 1
+RK 14 playground other 21
+RK 14 loudspeaker junction 72
+RK 14 loudspeaker sidewalk 28
+RK 14 roadblock carriageway 90
+RK 14 construction sidewalk 58
+RK 14 leaf_blower sidewalk 107
+RK 14 homeless_yeller sidewalk 93
+RK 14 cafe_tables sidewalk 221
+RK 14 homeless_yeller junction 57
+RK 14 busker open 88
+RK 14 market_stall sidewalk 88
+RK 14 protest junction 158
+RK 14 delivery_van sidewalk 59
+RK 14 ice_cream_van sidewalk 45
+RK 14 reversing_lorry sidewalk 44
+RK 14 alley_mouse alley 89
+RK 14 protest open 12
+RK 14 chatting_mother sidewalk 41
+RK 14 abduction junction 113
+RK 14 charging_dog junction 38
+RK 14 pigeon_flock junction 51
+RK 14 alley_robbery alley 34
+RK 14 chatting_mother junction 16
+RK 14 pigeon_flock sidewalk 66
+RK 14 charging_dog sidewalk 15
+RK 14 abduction sidewalk 114
+RK 14 loudspeaker open 3
+RK 14 leaf_blower junction 13
+RK 14 homeless_yeller open 1
+RM 14 police_patrol 111
+RM 14 cat_dash 96
+RM 14 loose_dog 126
+RM 14 dog_walker 170
+RM 14 military_convoy 18
+RM 14 cyclist 55
+-- later_days_rows.gd                    823023 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/later_days_rows.gd. Not a green build.

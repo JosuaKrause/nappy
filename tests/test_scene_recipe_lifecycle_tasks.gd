@@ -5,5 +5,5 @@ extends RefCounted
 
 const LIFECYCLE := preload("res://tests/scene_recipe_lifecycle.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await LIFECYCLE.new().lifecycle(t, LIFECYCLE.PREFIX_TASK)

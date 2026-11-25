@@ -60,7 +60,7 @@ func use_run(run: RunState) -> void:
 ## Called by `main` before the HUD enters the tree, so the line acquires on it; a HUD built
 ## anywhere else leaves the line to make its own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Teach") as HelpText).atlas = atlas
+	(get_node(^"Root/Teach") as HelpText).use_atlas(atlas)
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,
@@ -87,25 +87,20 @@ const _STATE_TEXT := {
 
 func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(_root)
-	_sleepiness.label = Texts.METER_SLEEPINESS
-	_sleepiness.fill_colour = Color("4a5f9e")
-	_sleepiness.full_colour = Color("8fb4d9")
+	_sleepiness.use_look(Texts.METER_SLEEPINESS, Color("4a5f9e"), Color("8fb4d9"))
 
-	_excitement.label = Texts.METER_EXCITEMENT
-	_excitement.fill_colour = Color("d9a648")
-	_excitement.full_colour = Color("cf4436")
-	_excitement.markers = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
+	_excitement.use_look(Texts.METER_EXCITEMENT, Color("d9a648"), Color("cf4436"))
+	var thresholds: Array[float] = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
+	_excitement.use_markers(thresholds)
 	_reposition_meters_for_touch()
 	# Colored here rather than in the scene so `Palette` stays the one place a runtime color is
 	# decided — the same call `_heading.add_theme_color_override()` makes in `DaySummary._ready()`.
-	_task_arrow.colour = Palette.TASK_ARROW
-	_task_arrow.label_when_near = Texts.ARROW_TASK
+	_task_arrow.use_look(Palette.TASK_ARROW, Texts.ARROW_TASK)
 
 	EventBus.sleepiness_changed.connect(_on_sleepiness_changed)
 	EventBus.excitement_changed.connect(_on_excitement_changed)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.nerves_changed.connect(func(_n: int) -> void: _refresh_header())
-	EventBus.day_started.connect(func(_d: int) -> void: _refresh_header())
 	EventBus.day_time_changed.connect(_on_day_time_changed)
 	EventBus.resistance_progress_changed.connect(func(_v: int) -> void: _refresh_resistance())
 	# A pickup grants no progress, so `resistance_progress_changed` never fires for the first
@@ -116,16 +111,12 @@ func _ready() -> void:
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.event_telegraphed.connect(_on_event_telegraphed)
-	EventBus.day_started.connect(_teach_the_day)
 	EventBus.controls_chosen.connect(_on_controls_chosen)
-	EventBus.day_started.connect(func(_d: int) -> void:
-		_contact_step = 0
-		_refresh_resistance())
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if _baby:
-		_sleepiness.value = _baby.sleepiness
-		_excitement.value = _baby.excitement
+		_sleepiness.show_value(_baby.sleepiness_level())
+		_excitement.show_value(_baby.excitement_level())
 	_refresh_header()
 	_refresh_state()
 	_refresh_resistance()
@@ -264,7 +255,7 @@ func _teach_the_pause(delta: float) -> void:
 	# the line shows that icon where it says what to press rather than describing it. In every
 	# scheme, since the button is always drawn. `Esc` still pauses on a keyboard, but nothing on
 	# screen names it.
-	_say(Texts.PAUSE_LESSON % HelpText.PAUSE_TOKEN, TEACH_SECONDS)
+	_say(Texts.PAUSE_LESSON % Texts.PAUSE_TOKEN, TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
@@ -281,11 +272,11 @@ func _teach_the_pause(delta: float) -> void:
 ## run button (`_run_phrase()`): `Shift` still holds `run` on a keyboard, but nothing on screen
 ## names it — see `Texts.WALKING_LESSON_PAUSE`'s own doc.
 func _on_event_telegraphed(instance: EventInstance) -> void:
-	if _taught_run or instance.def.pursuit == null or _run.header.day != Tuning.RUN_TAUGHT_DAY:
+	if _taught_run or not instance.pursues() or _run.header().day() != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
 	var phrase := _run_phrase(HelpText.joystick_in_force(get_tree()))
-	_say(phrase[0].to_upper() + phrase.substr(1), instance.def.telegraph_time + TEACH_RUN_SECONDS)
+	_say(phrase[0].to_upper() + phrase.substr(1), instance.telegraphs_for() + TEACH_RUN_SECONDS)
 
 func _say_the_walking_lesson(joystick: bool) -> void:
 	if _lessons_learned:
@@ -298,7 +289,7 @@ func _say_the_walking_lesson(joystick: bool) -> void:
 ## `joystick`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the
 ## tree still answers with the old one at this moment.
 func _on_controls_chosen(joystick: bool, _by_key: bool) -> void:
-	if _run.header.day == 1:
+	if _run.header().day() == 1:
 		_say_the_walking_lesson(joystick)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
@@ -315,7 +306,7 @@ func _say(line: String, seconds: float) -> void:
 	_teach_left = seconds
 
 ## The escape's two hint lines — *"Escape the building"* and *"Escape the city"*, each section's own
-## words (`DaySpec.title`) — said by `main` every time a section is engaged, a first entry, a retry
+## words (`DaySpec.title()`) — said by `main` every time a section is engaged, a first entry, a retry
 ## and a resumed one alike. Public because neither hangs off a telegraph; it is the same one-line
 ## lesson `_teach_the_day()` gives on day 1, for the same length of time.
 func say_once(line: String) -> void:
@@ -329,9 +320,15 @@ func say_once(line: String) -> void:
 ## than a second clock or a second label, read off the spec of each day or section as it begins.
 var _hundredths := false
 
-## The day or section about to be walked (`RunFlow.day_started`, which `main` connects).
+## The day or section about to be walked (`RunFlow.day_started`, which `main` connects), before
+## anything is placed in it: the clock's format read off its spec, the header, the lessons its day
+## number gives, and yesterday's contact cleared.
 func use_the_day(spec: DaySpec) -> void:
-	_hundredths = spec.clock_hundredths
+	_hundredths = spec.counts_in_hundredths()
+	_refresh_header()
+	_teach_the_day(spec.day_number())
+	_contact_step = 0
+	_refresh_resistance()
 
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)
@@ -347,10 +344,10 @@ func _process(delta: float) -> void:
 		_announcement_for = maxf(0.0, _announcement_for - delta)
 
 func _on_sleepiness_changed(value: float) -> void:
-	_sleepiness.value = value
+	_sleepiness.show_value(value)
 
 func _on_excitement_changed(value: float) -> void:
-	_excitement.value = value
+	_excitement.show_value(value)
 
 func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 	_refresh_state()
@@ -364,8 +361,8 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 ## before the `Baby` it goes looking for even exists — so `_ready()`'s own
 ## `get_first_node_in_group("baby")` comes back empty, and a label that stopped asking would show
 ## `hud.tscn`'s own placeholder text, "awake", for the section's whole life while the pram's own
-## picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever she actually
-## was.
+## picture (`Stroller._draw_baby_cue()`, reading `Baby.cue()`, which follows the same state) drew
+## whatever she actually was.
 func _refresh_state() -> void:
 	if not _baby:
 		_baby = get_tree().get_first_node_in_group("baby") as Baby
@@ -377,7 +374,7 @@ func _refresh_state() -> void:
 	if not _debug:
 		_state_label.text = ""
 		return
-	var text: String = _STATE_TEXT.get(_baby.state, "?")
+	var text: String = _STATE_TEXT.get(_baby.condition(), "?")
 	var reason := _baby.stall_reason()
 	if reason != "":
 		text += "   (not settling: %s)" % reason
@@ -435,7 +432,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ##
 ## **The goal itself is silent until the first mark has been touched** (`CLAUDE.md`, "no quest
 ## log or marker for the resistance": *the first encounter comes with no hint at all*). A pickup
-## grants no progress, so the run's `resistance.completed_steps` rather than
+## grants no progress, so the run's `resistance().completed_steps()` rather than
 ## `has_joined_resistance()` is the test — it is non-empty the instant step 1 is touched, which
 ## is the pick-up itself rather than the perform half a day later.
 ##
@@ -448,7 +445,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ## nothing to leak yet, since a pickup's whole content is the finding of it.
 func _refresh_resistance() -> void:
 	var step: ResistanceSteps.Step = null
-	if _contact_step > 0 and not _run.resistance.completed_steps.is_empty():
+	if _contact_step > 0 and not _run.resistance().completed_steps().is_empty():
 		step = ResistanceSteps.by_index(_contact_step)
 	var named := ""
 	if step:
@@ -462,8 +459,8 @@ func _refresh_resistance() -> void:
 		_resistance_label.text = ""
 		return
 
-	var marks := "*".repeat(_run.resistance.progress) \
-			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - _run.resistance.progress))
+	var marks := "*".repeat(_run.resistance().progress()) \
+			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - _run.resistance().progress()))
 	var line := "resistance %s" % marks
 	if step:
 		line += "   " + _task_text(named)
@@ -479,8 +476,8 @@ func _task_text(named: String) -> String:
 ## pinned anchors, so it needs to know when to correct for the rotation the same way `DangerEdge`
 ## does — see `ScreenOrientation`'s class doc. Both instances need it, home and task alike.
 func set_rotated(rotate: bool) -> void:
-	_home_arrow.rotated = rotate
-	_task_arrow.rotated = rotate
+	_home_arrow.use_rotated(rotate)
+	_task_arrow.use_rotated(rotate)
 
 ## The one moment the game says something out loud.
 ## Shown only while she is carrying a sleeping baby home.
@@ -516,10 +513,10 @@ func _refresh_header() -> void:
 		_header.text = ""
 		return
 	var text := "day %d / %d      act %d      nerves %s" % [
-		_run.header.day, Tuning.RUN_LENGTH_DAYS, _run.calendar.current_act(),
+		_run.header().day(), Tuning.RUN_LENGTH_DAYS, _run.calendar().current_act(),
 		# `Texts.nerve_stars()` — every screen that shows a nerve count reads through it rather
 		# than repeating this line.
-		Texts.nerve_stars(_run.header.nerves),
+		Texts.nerve_stars(_run.header().nerves()),
 	]
 	# So no capture from an --invincible run reads as a real one — appended to the same debug
 	# label rather than a mark of its own, since the cues vocabulary is for the world she is

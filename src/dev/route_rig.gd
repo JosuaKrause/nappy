@@ -23,9 +23,9 @@ extends Node
 ## - `calm` — the nearest calm area she can settle the baby in, by walking distance rather than a
 ##   straight line. She stops and presses nothing once she is there, and stays until the baby is
 ##   asleep, however long that takes — the day's own clock is what answers whether that fits.
-## - `home` — the doorstep's own block, the centre of `CityMap.home_rect`.
-## - `tunnel` and `bridge` — the escape city's two ways out (`DaySpec.exits`, the last walkable tile
-##   of the spine at each end), where reaching one wins the section. Unavailable on a day.
+## - `home` — the doorstep's own block, the centre of `CityMap.home_tile_rect()`.
+## - `tunnel` and `bridge` — the escape city's two ways out (`DaySpec.exit_points()`, the middle of the carriageway
+##   on the spine's last row at each end), where reaching one wins the section. Unavailable on a day.
 ## - `spawn:<name>` — whatever `DevRig.for_spawn_target()` already knows how to find.
 ##
 ## **The escape's city is walked the same way** (`--start-escape city --route tunnel`): `main` builds
@@ -122,7 +122,8 @@ const _STUCK_DISTANCE := 8.0
 ## `Tuning.WALK_SPEED` (92px/s) over a sixtieth of a second, about a pixel and a half.
 const _TELEPORT_DISTANCE := Tuning.TILE_SIZE * 1.0
 
-var _city: City
+var _map: CityMap
+var _events: EventManager
 var _player: Stroller
 var _baby: Baby
 var _resistance: ResistanceDirector
@@ -141,8 +142,8 @@ var _leg_start_elapsed := 0.0
 var _leg_start_position := Vector2.ZERO
 
 ## This rig's own running total of every `_physics_process(delta)` it has been given since
-## `start_day()`, which is what `_elapsed()` reports rather than `_day.time_total -
-## _day.time_remaining` — see that function's own doc for why.
+## `start_day()`, which is what `_elapsed()` reports rather than `_day.seconds_total() -
+## _day.seconds_left()` — see that function's own doc for why.
 var _elapsed_seconds := 0.0
 
 var _resolving := false
@@ -178,8 +179,8 @@ var _door_holds := {}
 ## was touching her (a crowd she was pressing into, or a hold), which leaves `_begin_unstick()` its
 ## plain compass order.
 var _caught_away := Vector2.ZERO
-## What caught her last, for the "stuck fast" line: an event row's id, the tile type of a wall, or
-## a sentence for a stall with nothing solid touching her.
+## What caught her last, for the "stuck fast" line: the id of an event's row (`row_id()`), the
+## tile type of a wall, or a sentence for a stall with nothing solid touching her.
 var _caught_by := ""
 ## Where she stood when it did, for the same line.
 var _caught_tile := Vector2i.ZERO
@@ -197,7 +198,7 @@ var _held := false
 var _last_position := Vector2.INF
 var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()` off the spec it is handed
-## (`DaySpec.number`: 1 to 14, or the escape's city, 16). The run's `header.day` has already moved to the
+## (`DaySpec.day_number()`: 1 to 14, or the escape's city, 16). The run's `header().day()` has already moved to the
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0
@@ -205,22 +206,28 @@ var _day_number := 0
 ## Where each target is and the walk there (`RouteRigPlanner`), built in `setup()` over the city
 ## and her.
 var _planner: RouteRigPlanner
-## Where its `route` lines go: the boot's run trace, which `main` hands it before `setup()`; one
-## nobody handed writes nowhere.
-var trace := RunTrace.new()
+## Where its `route` lines go: the boot's run trace, which `main` hands it before `setup()`
+## (`use_trace()`); one nobody handed writes nowhere.
+var _trace := RunTrace.new()
+
+## Hands the rig the trace its `route` lines are written to.
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
 
 var _done := false
 
-func setup(city: City, player: Stroller, baby: Baby, resistance: ResistanceDirector,
-		day: DayController, targets: Array[String], run: RunState) -> void:
+func setup(map: CityMap, events: EventManager, spawn_start: Callable, player: Stroller, baby: Baby,
+		resistance: ResistanceDirector, day: DayController, targets: Array[String],
+		run: RunState) -> void:
 	_run = run
-	_city = city
+	_map = map
+	_events = events
 	_player = player
 	_baby = baby
 	_resistance = resistance
 	_day = day
 	_targets = targets
-	_planner = RouteRigPlanner.new(city, player, resistance, day, run)
+	_planner = RouteRigPlanner.new(map, events, spawn_start, player, resistance, day)
 	_day.day_finished.connect(_on_day_finished)
 
 ## The day `spec` has been planned (`RunFlow.day_planned`, which `main` connects) — resets the
@@ -228,7 +235,7 @@ func setup(city: City, player: Stroller, baby: Baby, resistance: ResistanceDirec
 ## a probe that simply keeps going) starts the new day's targets fresh rather than chasing
 ## yesterday's mark.
 func start_day(spec: DaySpec) -> void:
-	_day_number = spec.number
+	_day_number = spec.day_number()
 	_target_index = 0
 	_elapsed_seconds = 0.0
 	_waypoints.clear()
@@ -275,7 +282,7 @@ func _physics_process(delta: float) -> void:
 	if _done or not _day or not _day.is_running():
 		return
 	_elapsed_seconds += delta
-	if _day.invincible and _elapsed_seconds > _day.time_total:
+	if _day.is_invincible() and _elapsed_seconds > _day.seconds_total():
 		_out_of_day()
 		return
 	var here := _player.global_position
@@ -312,7 +319,7 @@ func _try_resolve(delta: float) -> void:
 		return
 	_resolve_elapsed += delta
 	if _resolve_elapsed >= _RESOLVE_TIMEOUT:
-		trace.note("route", "day %d: '%s' unavailable, skipping" % [_day_number, _current_word])
+		_trace.note("route", "day %d: '%s' unavailable, skipping" % [_day_number, _current_word])
 		_advance_target()
 
 func _begin_leg(target_world: Vector2) -> void:
@@ -323,10 +330,10 @@ func _begin_leg(target_world: Vector2) -> void:
 	if (_current_word == "mark" or _current_word == "task") and _resistance:
 		_leg_step = _resistance.current_step()
 	var here_tile := _planner.standing_tile()
-	var target_tile := _city.map.world_to_tile(target_world)
+	var target_tile := _map.world_to_tile(target_world)
 	var path := _planner.plan(here_tile, target_tile)
 	if path.is_empty():
-		trace.note("route", "day %d: no path to '%s', skipping" % [_day_number, _current_word])
+		_trace.note("route", "day %d: no path to '%s', skipping" % [_day_number, _current_word])
 		_advance_target()
 		return
 	_current_target_tile = target_tile
@@ -346,8 +353,8 @@ func _begin_leg(target_world: Vector2) -> void:
 	_leg_stall_episodes = 0
 
 ## Elapsed day time, in simulated seconds — this rig's own `_elapsed_seconds`, not
-## `_day.time_total - _day.time_remaining`. The two agree while the day is played straight, since
-## both are the same sum of physics deltas since the day began; they part company under
+## `_day.seconds_total() - _day.seconds_left()`. The two agree while the day is played straight,
+## since both are the same sum of physics deltas since the day began; they part company under
 ## `--invincible`, which `DayController.tick()` (`src/day/day_controller.gd`) stands still on
 ## purpose — *"the clock never moves"*, so the capture it exists for never runs out of day — which
 ## is exactly wrong for the number this class exists to report. A `--route` run *under*
@@ -423,25 +430,25 @@ func _held_at_a_door() -> bool:
 const _DOOR_HOLDS_PER_LEG := 2
 
 ## Counts a new hold against the door holding her — the nearest live door body that inspects her,
-## a hut or a post (`detain_seconds`) — and gives the leg up once one door has held her more than `_DOOR_HOLDS_PER_LEG` times.
-## Answers whether it gave up.
+## a hut or a post (`EventInstance.detains_her()`) — and gives the leg up once one door has held
+## her more than `_DOOR_HOLDS_PER_LEG` times. Answers whether it gave up.
 func _count_the_door() -> bool:
 	var here := _player.global_position
 	var door := Vector2i(-1, -1)
 	var nearest := INF
-	for instance: EventInstance in _city.events.instances():
-		if instance.is_finished or instance.def.detain_seconds <= 0.0:
+	for instance: EventInstance in _events.instances():
+		if instance.is_gone() or not instance.detains_her():
 			continue
 		var distance := here.distance_to(instance.global_position)
 		if distance < nearest:
 			nearest = distance
-			door = _city.map.world_to_tile(instance.global_position)
+			door = _map.world_to_tile(instance.global_position)
 	var holds: int = _door_holds.get(door, 0) + 1
 	_door_holds[door] = holds
 	if holds <= _DOOR_HOLDS_PER_LEG:
 		return false
 	_held = false
-	_caught_tile = _city.map.world_to_tile(here)
+	_caught_tile = _map.world_to_tile(here)
 	_caught_by = "the door at %s, holding her %d times" % [RunTrace.tile(door), holds]
 	_give_up_stuck()
 	return true
@@ -498,8 +505,8 @@ func _maybe_replan(delta: float) -> void:
 		clear.erase(tile)
 	for i in _waypoints.size():
 		var point: Vector2 = _waypoints[i]
-		var tile := _city.map.world_to_tile(point)
-		if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+		var tile := _map.world_to_tile(point)
+		if not _map.is_open(tile) or _map.is_obstructed(tile):
 			_replan()
 			return
 		# The first remaining waypoint is wherever she already legally is (about to be popped this
@@ -518,7 +525,7 @@ func _maybe_replan(delta: float) -> void:
 ## answer to whether she reached it (`ContactPoint.REACH`, 36px, or an any-instance task's wider
 ## reach), which is what the leg is timing.
 func _step_completed() -> bool:
-	return _leg_step != null and _run.resistance.completed_steps.has(_leg_step.index)
+	return _leg_step != null and _run.resistance().completed_steps().has(_leg_step.index)
 
 ## A `mark` or `task` target further than this from where the leg is aimed has moved: a tile, so a
 ## pacing any-instance task drifting inside its own tile does not re-plan every check.
@@ -533,8 +540,8 @@ func _retarget_if_moved() -> bool:
 	if now == Vector2.INF or now.distance_to(_current_target_world) <= _RETARGET_DISTANCE:
 		return false
 	_current_target_world = now
-	_current_target_tile = _city.map.world_to_tile(now)
-	trace.note("route", "day %d: '%s' moved to %s, re-planning"
+	_current_target_tile = _map.world_to_tile(now)
+	_trace.note("route", "day %d: '%s' moved to %s, re-planning"
 			% [_day_number, _current_word, RunTrace.tile(_current_target_tile)])
 	_replan()
 	return true
@@ -546,7 +553,7 @@ func _retarget_if_moved() -> bool:
 ## she touched it at is kept off instead (`ground_round_point()`). Nothing solid touching her is the crowd she is pressing
 ## into, or a hold (`Stroller.is_detained()`), neither of which a detour or a direction answers.
 func _note_what_caught_her() -> void:
-	_caught_tile = _city.map.world_to_tile(_player.global_position)
+	_caught_tile = _map.world_to_tile(_player.global_position)
 	_caught_by = ""
 	var away := Vector2.ZERO
 	for i in _player.get_slide_collision_count():
@@ -555,20 +562,20 @@ func _note_what_caught_her() -> void:
 		var body := _event_owning(hit.get_collider())
 		if body:
 			_leg_avoid.merge(_planner.ground_round_body(body))
-			_caught_by = body.def.id
+			_caught_by = body.row_id()
 		else:
 			_leg_avoid.merge(_planner.ground_round_point(hit.get_position()))
 			if _caught_by == "":
 				# A pixel inside whatever she touched, since the contact point is on its surface.
-				var inside := _city.map.world_to_tile(hit.get_position() - hit.get_normal())
-				_caught_by = "a closure" if _city.map.is_closed(inside) \
-						else RunTrace.tile_type(_city.map.tile_at(inside))
+				var inside := _map.world_to_tile(hit.get_position() - hit.get_normal())
+				_caught_by = "a closure" if _map.is_closed(inside) \
+						else RunTrace.tile_type(_map.tile_at(inside))
 	_caught_away = away.normalized()
 	if _caught_by == "":
 		_caught_by = "a hold" if _player.is_detained() else "nothing solid (the crowd)"
 
-## The `EventInstance` whose solid body `collider` is, or `null` — `EventInstance._build_obstruction()`
-## adds its `StaticBody2D` as a direct child.
+## The `EventInstance` whose solid body `collider` is, or `null` — its body (`EventBody.go_down()`)
+## adds its `StaticBody2D` as a direct child of the event.
 func _event_owning(collider: Object) -> EventInstance:
 	if collider is Node:
 		var parent := (collider as Node).get_parent()
@@ -578,7 +585,7 @@ func _event_owning(collider: Object) -> EventInstance:
 
 ## A leg given up on after too many stalls, logged with where she was and what held her there.
 func _give_up_stuck() -> void:
-	trace.note("route", "day %d: '%s' stuck fast at %s against %s, skipping"
+	_trace.note("route", "day %d: '%s' stuck fast at %s against %s, skipping"
 			% [_day_number, _current_word, RunTrace.tile(_caught_tile), _caught_by])
 	_release()
 	_advance_target()
@@ -591,14 +598,14 @@ func _replan() -> void:
 	var here_tile := _planner.standing_tile()
 	var path := _planner.plan(here_tile, _current_target_tile, _leg_avoid)
 	if path.is_empty():
-		trace.note("route", "day %d: '%s' no longer reachable from %s, skipping"
+		_trace.note("route", "day %d: '%s' no longer reachable from %s, skipping"
 				% [_day_number, _current_word, RunTrace.tile(here_tile)])
 		_release()
 		_advance_target()
 		return
 	_waypoints = _planner.to_world(path)
 	_waypoints[_waypoints.size() - 1] = _current_target_world
-	trace.note("route", "day %d: re-planned to '%s' (%.1fs, %d waypoints)"
+	_trace.note("route", "day %d: re-planned to '%s' (%.1fs, %d waypoints)"
 			% [_day_number, _current_word, _elapsed(), _waypoints.size()])
 
 # --------------------------------------------------------------------- waiting ---
@@ -721,7 +728,7 @@ func _end_unstick(cleared: bool) -> void:
 func _arrive() -> void:
 	_release()
 	var distance := _leg_start_position.distance_to(_player.global_position)
-	trace.note("route", "day %d: reached '%s' at %.1fs (day time), %.0fpx walked"
+	_trace.note("route", "day %d: reached '%s' at %.1fs (day time), %.0fpx walked"
 			% [_day_number, _current_word, _elapsed(), distance])
 	if _current_word.begins_with("calm"):
 		_settling = true
@@ -730,7 +737,7 @@ func _arrive() -> void:
 		return
 	_advance_target()
 
-## `calm` keeps her pacing rather than standing, until `Baby.state` reaches `ASLEEP` — **standing
+## `calm` keeps her pacing rather than standing, until she is asleep (`Baby.is_asleep()`) — **standing
 ## still is the wrong way to settle her.** `Baby._update_sleepiness()` (`src/player/baby.gd`) only
 ## fills the sleepiness meter while she is walking, scaled by the ground's own
 ## `sleepiness_multiplier()` (`Tuning.SLEEPINESS_GAIN_WALKING`, 0.42/s); standing idle *drains* it
@@ -743,19 +750,19 @@ func _arrive() -> void:
 ## already ticking every frame it is not walking a leg, and a poll costs nothing a signal
 ## connection would not have, without a second lifetime to manage.
 func _check_settled() -> void:
-	if _baby.state == GameEnums.BabyState.ASLEEP:
+	if _baby.is_asleep():
 		_settling = false
 		_settle_anchor = Vector2.INF
 		_release()
-		trace.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
+		_trace.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
 				% [_day_number, _elapsed()])
 		_advance_target()
 		return
-	if not Tile.is_calm(_city.map.tile_type_at_world(_settle_anchor)):
+	if not Tile.is_calm(_map.tile_type_at_world(_settle_anchor)):
 		# The ground she is pacing on has gone — see `RouteRigPlanner.resolve()`'s `calm`, which offers only ground still calm — so she looks again.
 		_settling = false
 		_settle_anchor = Vector2.INF
-		trace.note("route", "day %d: the calm ground at %s is gone, looking again, %.1fs"
+		_trace.note("route", "day %d: the calm ground at %s is gone, looking again, %.1fs"
 				% [_day_number, RunTrace.tile(_current_target_tile), _elapsed()]
 				+ " (day time)")
 		_begin_resolving(_current_word)
@@ -793,7 +800,7 @@ func _quit() -> void:
 func _finish() -> void:
 	_done = true
 	_release()
-	trace.note("route", "day %d: route done, %.1fs (day time)" % [_day_number, _elapsed()])
+	_trace.note("route", "day %d: route done, %.1fs (day time)" % [_day_number, _elapsed()])
 	_quit()
 
 ## The day's own length gone by on this rig's clock under `--invincible`, which stands the day's
@@ -805,15 +812,15 @@ func _finish() -> void:
 func _out_of_day() -> void:
 	_done = true
 	_release()
-	trace.note("route", "day %d: the day's %.0fs ran out before reaching '%s', %.1fs (day time)"
-			% [_day_number, _day.time_total, _current_word, _elapsed()])
+	_trace.note("route", "day %d: the day's %.0fs ran out before reaching '%s', %.1fs (day time)"
+			% [_day_number, _day.seconds_total(), _current_word, _elapsed()])
 	_quit()
 
 ## Any day ending — a loss, or a win — is logged and quit rather than left to sit at a day summary
 ## nobody headless is going to dismiss.
 ##
 ## **`WON` is not a no-op here, and finding out why it has to be one is worth keeping.** A won day
-## can only follow *this* node walking her onto a `HOME` tile while `DayController.phase` is
+## can only follow *this* node walking her onto a `HOME` tile while `DayController.phase()` is
 ## `RETURNING`, which reads as `_arrive()`'s own `home` case — so the first build of this class
 ## left `WON` unhandled, on the reasoning that `_arrive()` already reports and quits before this
 ## signal could add anything to it. That reasoning assumes the two checks agree on the instant
@@ -832,10 +839,10 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	_done = true
 	_release()
 	if result == GameEnums.DayResult.WON:
-		trace.note("route", "day %d: day won at %.1fs (day time), still walking to '%s'"
+		_trace.note("route", "day %d: day won at %.1fs (day time), still walking to '%s'"
 				% [_day_number, _elapsed(), _current_word])
 	else:
-		trace.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
+		_trace.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
 				% [_day_number, GameEnums.DayResult.keys()[result], _current_word, _elapsed()])
 	_quit()
 

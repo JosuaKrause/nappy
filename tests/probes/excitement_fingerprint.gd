@@ -36,7 +36,7 @@ const DAYS: Array[int] = [1, Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAY
 const ESCAPE_SEEDS: Array[int] = [4242]
 const BUILDING_SEEDS: Array[int] = [4242, 77]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var lines := 0
 	for seed_value in DAY_SEEDS:
 		for day in DAYS:
@@ -48,69 +48,83 @@ func run(t) -> void:
 	print("XF_TOTAL %d lines" % lines)
 	t.check(lines > 0, "there were sources to print (%d)" % lines)
 
-## A day, as `DayDirector.start_day()` starts it: the city's own morning, the events and the crowd.
-func _a_day(t, seed_value: int, day: int) -> int:
+## A day, as `DayDirector.start()` starts it: the city's own morning, the events and the crowd.
+func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = day
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(day)
 	t.add_child(city)
-	city.crowd_view = ScreenCrowdView.new(t)
-	city.build(CityGenerator.generate(seed_value))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
-			spec)
-	var start := city.map.doorstep_world_position()
+	RunCity.build(city, run, CityGenerator.generate(seed_value), _builder(t))
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), spec)
+	var start := city.map().doorstep_world_position()
 	var consumed: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(day), consumed, start)
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(day), consumed, start)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
-	city.crowd.start_day(day, rng, start)
-	city.crowd.set_gates(city.streets().region_plan().gates)
-	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city, city.events,
-			city.crowd, start)
-	city.events.clear()
+	RunCity.crowd(city).start_day(day, rng, start)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
+	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city,
+			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
+			start)
+	RunCity.events(city).stand_down()
 	city.free()
 	return printed
 
-## The escape's city, built and planned as `main._plan_the_finale_city()` does, with nobody on it.
-func _the_escape_city(t, seed_value: int) -> int:
+## The escape's city, built and planned as `DayDirector.start()` does, with nobody on it.
+func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = day
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(day)
 	t.add_child(city)
-	city.crowd_view = ScreenCrowdView.new(t)
-	city.build(CityGenerator.generate(seed_value))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
-			spec)
-	var start := FinalePlanner.service_exit_world_position(city.map)
+	RunCity.build(city, run, CityGenerator.generate(seed_value), _builder(t))
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), spec)
+	var start := FinalePlanner.service_exit_world_position(city.map())
 	var none: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
-	var printed := _walk(t, "escape seed %d" % seed_value, city, city.events, city.crowd, start)
-	city.events.clear()
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(day, "finale"), none, start)
+	var printed := _walk(t, "escape seed %d" % seed_value, city,
+			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
+			start)
+	RunCity.events(city).stand_down()
 	city.free()
 	return printed
 
 ## The building, with its events started as every entry into the section starts them.
-func _the_building(t, seed_value: int) -> int:
+func _the_building(t: TestRunner, seed_value: int) -> int:
 	var own_run := RunState.new()
 	own_run.start_run(seed_value)
-	own_run.header.day = Tuning.RUN_LENGTH_DAYS
+	own_run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var rng := own_run.calendar.day_rng(own_run.header.day, "finale-interior")
+	var rng := own_run.calendar().day_rng(own_run.header().day(), "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng, own_run)
-	var printed := _walk(t, "building seed %d" % seed_value, scene, events, null,
-			scene.map.start_world_position(), BUILDING_TICKS)
-	events.clear()
+	var sets: Array[ExcitementSources] = [events.excitement_sources()]
+	var printed := _walk(t, "building seed %d" % seed_value, scene, sets, events, null,
+			scene.map().start_world_position(), BUILDING_TICKS)
+	events.stand_down()
 	events.free()
 	scene.free()
 	return printed
 
-## One walk of `ticks` ticks in `world`, printing every source's line after every tick.
-func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Crowd,
-		start: Vector2, ticks := TICKS) -> int:
+## The builder a day's city is stood with: the one drawn view handed to the builder and to the
+## crowd's screen view, as `main` hands it (`main._simulation_builder()`).
+func _builder(t: TestRunner) -> SimulationBuilder:
+	var builder := RunCity.new_builder()
+	var drawn := DrawnView.on(t)
+	builder.use_the_drawn_view(drawn)
+	builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
+	return builder
+
+## One walk of `ticks` ticks in `world`, whose charges are the sets `sources` (the ones the world
+## answers the baby from, and the halo is handed), printing every source's line after every tick.
+func _walk(t: TestRunner, walk: String, world: WorldContext, sources: Array[ExcitementSources],
+		events: EventManager, crowd: Crowd, start: Vector2, ticks := TICKS) -> int:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -125,14 +139,17 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	rig.add_child(baby)
 	baby.set_physics_process(false)
 	baby.set_world(world)
+	baby.use_bus(EventBus)
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
 	halo.set_process(false)
-	halo.setup(world.excitement_sources, rig, baby)
+	halo.setup(sources, rig, baby)
 	events.use_player(rig)
 	events.stream_around(start)
 	if crowd:
 		crowd._player = rig
+		crowd.use_focus(StrollerFocus.new(rig))
+		crowd.use_bus(EventBus)
 	var here := start
 	var reached := {}
 	var printed := 0
@@ -155,7 +172,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 		cues_usec += Time.get_ticks_usec() - began
 		here = rig.global_position
 		printed += _print_the_sources(walk, tick, events, crowd, here)
-		print("XF_BABY %s | %d | %s" % [walk, tick, _hex([baby.excitement, baby.last_incoming,
+		print("XF_BABY %s | %d | %s" % [walk, tick, _hex([baby.excitement_level(), baby.last_frame_incoming(),
 				baby.decay_in_window()])])
 		if tick % 60 == 0:
 			print("XF_WHERE %s | %d | at %s | %d live" % [walk, tick, here, events.active_count()])
@@ -163,6 +180,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	events.use_player(null)
 	if crowd:
 		crowd._player = null
+		crowd.use_focus(null)
 	halo.free()
 	rig.free()
 	return printed
@@ -175,22 +193,22 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 	var instances := events.instances()
 	for i in instances.size():
 		var instance := instances[i]
-		var source := instance.excitement
-		var caret := source.caret_strength() if instance.look else -1
+		var source := instance.source()
+		var caret := source.caret_strength()
 		printed += _print_one(walk, tick, "E%d:%s" % [i, instance.logged_name()], [
 				source.contribution_at(her), source.expected_gross_at(her),
 				source.expected_impact_at(her), source.landed()],
-				source.will_be_lethal(her), caret, (source.rim as SourceRim).is_held())
+				source.will_be_lethal(her), caret, source.rim().is_held())
 	if crowd:
 		var agents := crowd.agents()
 		for i in agents.size():
 			var agent := agents[i]
-			var source := agent.excitement
-			printed += _print_one(walk, tick, "A%d:%d" % [i, agent.kind], [
+			var source := agent.mood()
+			printed += _print_one(walk, tick, "A%d:%d" % [i, agent.lane().kind()], [
 					source.contribution_at(her), source.expected_gross_at(her),
 					source.expected_impact_at(her), source.landed()],
 					source.will_be_lethal(her), source.caret_strength(),
-					(source.rim as SourceRim).is_held())
+					source.rim().is_held())
 	return printed
 
 func _print_one(walk: String, tick: int, label: String, values: Array, lethal: bool, caret: int,
@@ -218,7 +236,7 @@ func _heading_at_the_next_event(events: EventManager, here: Vector2, reached: Di
 	var best := INF
 	var target: EventInstance = null
 	for instance in events.instances():
-		if instance.is_finished or reached.has(instance):
+		if instance.is_gone() or reached.has(instance):
 			continue
 		var distance := instance.global_position.distance_squared_to(here)
 		if distance < best:

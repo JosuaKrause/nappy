@@ -36,7 +36,7 @@ extends RefCounted
 ## a button moves what it covers and this class names no UI class or group.
 ##
 ## **The view is the world the camera shows**, `Tuning.VIEW_HALF_EXTENT` either side of where the
-## camera is drawing from (`Stroller.camera_screen_center()`, which carries her look-ahead and the
+## camera is drawing from (`Stroller.view_centre_of()`, which carries her look-ahead and the
 ## camera's smoothing), and its corners are the design box's own whether or not a portrait touch
 ## window presents the game rotated: `main._apply_orientation()` turns the world through the camera
 ## and every layer of screen furniture through the same quarter turn, so the controls stay over the
@@ -45,26 +45,40 @@ extends RefCounted
 ## (`ScreenOrientation.to_design_space()`); a world box needs no undoing.
 ##
 ## Two ways to ask. `visible_share()` is the one-off question. A caller asking about many things in
-## one frame keeps an instance, sets it once a frame — `look_through()` from the camera (given the
-## controls' `ScreenCover` in `controls`), or `look()` from a view a rig chose — which lays the two
-## corners onto the view there and then, and asks
+## one frame keeps an instance, sets it once a frame — `look_from()` the camera's centre (given the
+## controls' `ScreenCover` handed in by `use_cover()`), or `look()` from a view a rig chose — which
+## lays the two corners onto the view there and then, and asks
 ## `sees()`, `share_of()` or `clear_of_sight()` for each thing, so the corners are worked out once a
 ## frame rather than once a thing. `EventManager` keeps the day's one instance, set at the top of its
 ## physics frame (`EventManager.visible_view()`).
 
 ## The world the camera shows, as `look()` was last told. Empty until it has been told, and then
 ## nothing is in sight.
-var view := Rect2()
+var _view := Rect2()
 ## Whether the joystick scheme's controls cover the view's bottom corners, as `look()` was last told.
-var joystick := false
-## The two covered corners laid onto `view`, while `joystick` holds.
+var _joystick := false
+## The two covered corners laid onto the view, while `_joystick` holds.
 var _left := Rect2()
 var _right := Rect2()
 ## What the on-screen controls cover and whether their scheme is in force, **handed in** by whoever
-## owns the controls (`EventManager.use_controls()`, from `main`) for `look_through()` to read the
-## scheme from each frame. `null` where nothing built them (a rig, a test), which is the tap scheme's
+## owns the controls (`use_cover()`, by `EventManager.use_controls()` from `main`) for
+## `look_from()` to read the scheme from each frame. `null` where nothing built them (a rig, a test), which is the tap scheme's
 ## whole view.
-var controls: ScreenCover = null
+var _controls: ScreenCover = null
+
+## **Hands in what the on-screen controls cover**, for `look_from()` to read the scheme from each
+## frame; null for none, the tap scheme's whole view.
+func use_cover(covering: ScreenCover) -> void:
+	_controls = covering
+
+## The world the camera shows, as `look()` was last told: empty until it has been told.
+func camera_view() -> Rect2:
+	return _view
+
+## What the on-screen controls cover and whether their scheme is in force, as handed in
+## (`use_cover()`); `null` where nothing built them.
+func screen_cover() -> ScreenCover:
+	return _controls
 
 ## A view of `Tuning.VIEW_HALF_EXTENT` either side of `centre`, covered by `covering` — what a rig
 ## with no camera stands in for the camera's view with. A `covering` that is null or not in force is
@@ -75,39 +89,33 @@ static func around(centre: Vector2, covering: ScreenCover) -> VisibleView:
 	return made
 
 ## Sets the view and the corners for this frame, and lays the covered corners onto it: `covering` is
-## what the controls cover, which counts only while their scheme is in force (`ScreenCover.in_force`);
+## what the controls cover, which counts only while their scheme is in force (`ScreenCover.is_in_force()`);
 ## `null` or a cover not in force is the whole view (tap).
 func look(at_view: Rect2, covering: ScreenCover) -> void:
-	view = at_view
-	joystick = covering != null and covering.in_force
-	if joystick:
-		var scale := view.size / covering.design_size
-		_left = _onto(covering.left, view, scale)
-		_right = _onto(covering.right, view, scale)
+	_view = at_view
+	_joystick = covering != null and covering.is_in_force()
+	if _joystick:
+		var scale := _view.size / covering.design_box()
+		_left = _onto(covering.left_corner(), _view, scale)
+		_right = _onto(covering.right_corner(), _view, scale)
 
-## Sets this frame's view from the camera on `player`: `Tuning.VIEW_HALF_EXTENT` about where it is
-## drawing from — `Stroller.camera_screen_center()`, or the player's own position for a body with no
-## camera (a rig) — and the corners from the controls handed in `controls`, while their scheme is in
-## force.
-func look_through(player: Node2D) -> void:
-	var stroller := player as Stroller
-	var centre := stroller.camera_screen_center() if stroller else player.global_position
-	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), controls)
+## Sets this frame's view from the point the camera is drawing from, `centre` (what
+## `Stroller.view_centre_of()` answers): `Tuning.VIEW_HALF_EXTENT` about it, and the corners from the
+## controls handed in `use_cover()`, while their scheme is in force.
+func look_from(centre: Vector2) -> void:
+	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), _controls)
 
 ## `visible_share()` for `rect` against what `look()` was last told.
 func share_of(rect: Rect2) -> float:
-	return _share(rect, view, joystick, _left, _right)
+	return _share(rect, _view, _joystick, _left, _right)
 
-## Whether a world point is in sight: inside the view, and not under a covered corner. `margin`
-## world px count as in sight as well, past the view's edge and into a corner — the badge's
-## hysteresis (`BadgeModel.SCREEN_MARGIN`), so a thing on the boundary does not trade places with its
-## own badge every frame.
-func sees(point: Vector2, margin := 0.0) -> bool:
-	if not view.grow(margin).has_point(point):
+## Whether a world point is in sight: inside the view, and not under a covered corner.
+func sees(point: Vector2) -> bool:
+	if not _view.has_point(point):
 		return false
-	if not joystick:
+	if not _joystick:
 		return true
-	return not (_left.grow(-margin).has_point(point) or _right.grow(-margin).has_point(point))
+	return not (_left.has_point(point) or _right.has_point(point))
 
 ## Whether any of `rect` (world space) is in sight.
 func sees_any(rect: Rect2) -> bool:
@@ -125,7 +133,7 @@ func sees_any(rect: Rect2) -> bool:
 ## box is a point.
 func clear_of_sight(from: Vector2, direction: Vector2, box: Rect2, at_least := 0.0) -> float:
 	var out := _leaves_the_view(from, direction, box, at_least)
-	if not joystick or out <= at_least:
+	if not _joystick or out <= at_least:
 		return out
 	var d := at_least
 	while d < out:
@@ -138,20 +146,20 @@ func clear_of_sight(from: Vector2, direction: Vector2, box: Rect2, at_least := 0
 const SIGHT_STEP := 2.0
 
 ## The least distance at least `at_least` along `direction` at which `box`, carried from `from`,
-## is wholly outside `view` — the nearest of the sides the way leaves through.
+## is wholly outside the view — the nearest of the sides the way leaves through.
 func _leaves_the_view(from: Vector2, direction: Vector2, box: Rect2, at_least: float) -> float:
 	var shape := box if box.has_area() else Rect2(Vector2.ZERO, Vector2.ZERO)
 	var best := INF
 	# Past the right side once its left edge is, past the left once its right edge is; the same down
 	# and up.
 	if direction.x > 0.0:
-		best = minf(best, (view.end.x - shape.position.x - from.x) / direction.x)
+		best = minf(best, (_view.end.x - shape.position.x - from.x) / direction.x)
 	elif direction.x < 0.0:
-		best = minf(best, (view.position.x - shape.end.x - from.x) / direction.x)
+		best = minf(best, (_view.position.x - shape.end.x - from.x) / direction.x)
 	if direction.y > 0.0:
-		best = minf(best, (view.end.y - shape.position.y - from.y) / direction.y)
+		best = minf(best, (_view.end.y - shape.position.y - from.y) / direction.y)
 	elif direction.y < 0.0:
-		best = minf(best, (view.position.y - shape.end.y - from.y) / direction.y)
+		best = minf(best, (_view.position.y - shape.end.y - from.y) / direction.y)
 	return maxf(best + CLEAR_MARGIN, at_least)
 
 ## How far past the edge "wholly out of sight" is, in world px: one, so a box whose edge would sit
@@ -163,16 +171,17 @@ static func _box_at(feet: Vector2, box: Rect2) -> Rect2:
 		return Rect2(feet - Vector2.ONE * 0.5, Vector2.ONE)
 	return Rect2(feet + box.position, box.size)
 
-## The share, 0 to 1, of `rect` (world space) the player can see in `view` (the world the camera
-## shows), leaving out the corners `covering` says are covered (`null` for the whole view, the tap
-## scheme, as is a cover not in force). 0 for a rectangle with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
-## sum. Allocates nothing, so a caller may ask it for every live thing every frame.
+## The share, 0 to 1, of `rect` (world space) the player can see in the view (the world the
+## camera shows), leaving out the corners `covering` says are covered (`null` for the whole
+## view, the tap scheme, as is a cover not in force). 0 for a rectangle with no area. The two
+## corners never overlap each other, so what they cover of `rect` is a plain sum. Allocates
+## nothing, so a caller may ask it for every live thing every frame.
 static func visible_share(rect: Rect2, in_view: Rect2, covering: ScreenCover) -> float:
-	if covering == null or not covering.in_force:
+	if covering == null or not covering.is_in_force():
 		return _share(rect, in_view, false, Rect2(), Rect2())
-	var scale := in_view.size / covering.design_size
-	return _share(rect, in_view, true, _onto(covering.left, in_view, scale),
-			_onto(covering.right, in_view, scale))
+	var scale := in_view.size / covering.design_box()
+	return _share(rect, in_view, true, _onto(covering.left_corner(), in_view, scale),
+			_onto(covering.right_corner(), in_view, scale))
 
 static func _share(rect: Rect2, in_view: Rect2, covered: bool, left: Rect2, right: Rect2) -> float:
 	var area := rect.get_area()
@@ -184,6 +193,7 @@ static func _share(rect: Rect2, in_view: Rect2, covered: bool, left: Rect2, righ
 		inside -= rect.intersection(right).get_area()
 	return maxf(0.0, inside) / area
 
-## A design-box rectangle laid onto `view`, `scale` being the view's size over the design box's.
+## A design-box rectangle laid onto the view, `scale` being the view's size over the design
+## box's.
 static func _onto(design: Rect2, onto: Rect2, scale: Vector2) -> Rect2:
 	return Rect2(onto.position + design.position * scale, design.size * scale)

@@ -33,7 +33,7 @@ const MARK := &"props/chalk_mark"
 const MARK_TOUCHED := &"props/chalk_mark_touched"
 
 var step: ResistanceSteps.Step
-var is_done := false
+var _is_done := false
 ## How close she must be for this contact's touch to complete: `REACH` for a bare point with no
 ## size of its own (a chalk mark), `ResistanceDirector.DOOR_REACH` for a door on a facade (day 8's,
 ## the last night's), the mast's body reach on day 11 — and, for a chalk mark, how far out its
@@ -42,7 +42,7 @@ var is_done := false
 var reach := REACH
 ## Non-zero for a touch that is an area on the ground rather than a circle: the semi-axes of an
 ## ellipse centred on this contact, which her body has to overlap — day 12's swing, whose base it
-## is (`ResistanceDirector._swing_base()`).
+## is (`Prop.swing_frame_base()`).
 var touch_ellipse := Vector2.ZERO
 ## True for a task completed by doing something rather than by being near a place — day 9's
 ## crossing, which `ResistanceDirector` completes (`complete_now()`) the moment she is through the
@@ -58,15 +58,19 @@ var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
 ## The baked atlas pages this contact draws from (`AtlasLibrary`), handed by its director before
 ## it is added; a contact nobody handed one makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Hands this the atlas library its pictures are read from, once, before it enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(ATLAS_GROUP)
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	atlas.release(ATLAS_GROUP)
+	_atlas.release(ATLAS_GROUP)
 
 ## A pickup: a bare chalk mark at a fixed point.
 func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
@@ -81,16 +85,40 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 	_rider_offset = offset
 	position = instance.global_position + offset
 
+## Whether the task this point marks is done.
+func is_finished() -> bool:
+	return _is_done
+
+## The task this point marks.
+func task_step() -> ResistanceSteps.Step:
+	return step
+
+## How near to the point she has to come to complete it.
+func touch_reach() -> float:
+	return reach
+
+## Has this point completed by crossing its line rather than touching it.
+func complete_by_crossing() -> void:
+	by_crossing = true
+
+## Has this point completed within `within` of it.
+func complete_within(within: float) -> void:
+	reach = within
+
+## Has this point completed by her body overlapping the ground ellipse of semi-axes `semi`.
+func complete_on_ellipse(semi: Vector2) -> void:
+	touch_ellipse = semi
+
 ## Whether the thing this rides on is still there to be touched.
 func rider_alive() -> bool:
-	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
+	return not _rider or (is_instance_valid(_rider) and not _rider.is_gone())
 
 ## Hands the contact the player whose touch completes it.
 func use_player(player: Stroller) -> void:
 	_player = player
 
 func _physics_process(delta: float) -> void:
-	if is_done:
+	if _is_done:
 		return
 	_pulse += delta
 	if _rider:
@@ -102,7 +130,7 @@ func _physics_process(delta: float) -> void:
 	# touched.
 	if not _player or not is_instance_valid(_player) or not _player.is_in_group("player"):
 		return
-	if _would_complete_at(_player.global_position):
+	if would_complete_at(_player.global_position):
 		_complete()
 	queue_redraw()
 
@@ -110,19 +138,19 @@ func _physics_process(delta: float) -> void:
 ## asks, pure:
 ##
 ## - **a crossing** (`by_crossing`, day 9) never completes on where she stands;
-## - **day 6's note** (`ResistanceSteps.Step.completes_at_inner_radius`) completes within the man's
-##   own `inner_radius` (45px) — M205: "the moment the player touches the inner circle it counts as
-##   delivered";
+## - **day 6's note** (`ResistanceSteps.Step.completes_at_inner_radius`) completes inside the man's
+##   own core (`EventInstance.core_reaches()`, 45px) — M205: "the moment the player touches the
+##   inner circle it counts as delivered";
 ## - **a rider with a body** (the van, a roadblock) completes from any side of it
 ##   (`touches_the_body()`);
 ## - **an area on the ground** (`touch_ellipse`, the swing's base) completes the moment her body
 ##   overlaps it (`overlaps_the_ellipse()`);
 ## - anything else within `reach` of this contact.
-func _would_complete_at(her: Vector2) -> bool:
+func would_complete_at(her: Vector2) -> bool:
 	if by_crossing:
 		return false
 	if _rider and step and step.completes_at_inner_radius:
-		return global_position.distance_to(her) <= _rider.def.inner_radius
+		return _rider.core_reaches(her)
 	if _rider and has_a_body(_rider):
 		return touches_the_body(_rider, her, REACH)
 	if touch_ellipse != Vector2.ZERO:
@@ -132,7 +160,7 @@ func _would_complete_at(her: Vector2) -> bool:
 ## Completes a task that is done by an action rather than a place (`by_crossing`) — the director's
 ## call the moment she has crossed. Nothing once it is done.
 func complete_now() -> void:
-	if not is_done:
+	if not _is_done:
 		_complete()
 
 ## Whether her body — a disc of `Tuning.PLAYER_BODY_RADIUS` round `her` — overlaps the ground ellipse
@@ -158,16 +186,16 @@ const ELLIPSE_SAMPLES := 96
 ## Whether `instance` has a solid body she is stopped by — the van, a roadblock — rather than being
 ## a figure she walks up to (the man shouting, the neighbor) or a bodiless scar.
 static func has_a_body(instance: EventInstance) -> bool:
-	return instance != null and instance.def.solid_reach() > 0.0
+	return instance != null and instance.solid_reach() > 0.0
 
 ## How far from `instance`'s own centre a touch of its body counts: its furthest reach
-## (`EventDef.solid_reach()`) plus her own body (`Tuning.PLAYER_BODY_RADIUS`) plus `within` — 72px
-## for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle round the
-## body's centre rather than a band round its outline, so it reaches past the body by at least
-## `within` on every side, its ends included, and is the same circle an any-instance task already
-## retargeted onto a look-alike from (`ResistanceDirector._touch_reach()`).
+## (`EventInstance.solid_reach()`) plus her own body (`Tuning.PLAYER_BODY_RADIUS`) plus `within`
+## — 72px for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle
+## round the body's centre rather than a band round its outline, so it reaches past the body by at
+## least `within` on every side, its ends included, and is the same circle an any-instance task
+## already retargeted onto a look-alike from (`ResistanceDirector._touch_reach()`).
 static func body_reach(instance: EventInstance, within := REACH) -> float:
-	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
+	return instance.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
 
 ## **Touching a task's body from any side completes it** (feathery-marmot: *"the arrow correctly
 ## points to the van but touching the van doesn't solve the task"*): her centre within
@@ -180,7 +208,7 @@ static func touches_the_body(instance: EventInstance, at: Vector2, within := REA
 	return at.distance_to(instance.body_position()) <= body_reach(instance, within)
 
 func _complete() -> void:
-	is_done = true
+	_is_done = true
 	completed.emit(step.index)
 	queue_redraw()
 
@@ -199,15 +227,14 @@ func _draw() -> void:
 func draws_a_mark() -> bool:
 	return step != null and step.is_pickup
 
-## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once `is_done`,
-## drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this node's
-## own position the way the code-drawn circle and cross used to be centred on `Vector2.ZERO`.
-## "A picture is an asset, never code": the mark no longer strokes an arc and two lines by
-## hand, and the two prepared pictures already carry the same 11px-radius circle and cross at
-## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
+## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once the task is
+## done, drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this
+## node's own position. "A picture is an asset, never code": the mark is a prepared picture, and
+## the two pictures carry the 11px-radius circle and cross at the 32×32 scale, so its size and
+## its reading on the pavement come from the art.
 func _draw_chalk() -> void:
-	var picture := MARK_TOUCHED if is_done else MARK
-	var texture := atlas.region(picture)
+	var picture := MARK_TOUCHED if _is_done else MARK
+	var texture := _atlas.region(picture)
 	if not texture:
 		return
 	var flicker := 0.75 + 0.25 * sin(_pulse * 2.0)

@@ -38,14 +38,27 @@ enum Phase { MAIN_GREEN, MAIN_AMBER, SIDE_GREEN, SIDE_AMBER }
 ## tick's fixed length, so a frame drawn late runs the lights only by the ticks the engine stepped
 ## and the green wave keeps its timing in ticks on every machine; the lights stop with everything
 ## else behind the pause screen.
-var elapsed := 0.0
+var _elapsed := 0.0
 
 ## Whether the lights have power. The blackout (`Blackout`) turns it off, and with it every light on
 ## the spine goes dark at once: `is_signalled()` answers false everywhere, so the crowd's own
 ## junction rule negotiates a spine junction exactly as it negotiates a side street's, and every
 ## `TrafficLight` draws its head with no lamp lit. Nothing about *where* the lights stand changes —
 ## `has_lights()` is that question, and the answer is the same with the power off.
-var powered := true
+var _powered := true
+
+## Whether the lights have power (see `_powered`).
+func is_powered() -> bool:
+	return _powered
+
+## Switches the lights' power: the blackout puts it out and restores it, and a scripted scene puts
+## it out before it draws. A light stands where it stood either way (`has_lights()`).
+func use_power(on: bool) -> void:
+	_powered = on
+
+## Takes the lights back to the top of their cycle, as `Crowd.start_day()` does with the traffic.
+func restart_cycle() -> void:
+	_elapsed = 0.0
 
 var _map: CityMap
 
@@ -53,7 +66,7 @@ func _init(map: CityMap) -> void:
 	_map = map
 
 func advance(delta: float) -> void:
-	elapsed += delta
+	_elapsed += delta
 
 ## Whether a junction has lights standing on it at all: one of the two corridors crossing there is
 ## a main road. Every junction on the spine has them and no other one does, which is what makes the
@@ -71,7 +84,7 @@ func has_lights(junction: Vector2i) -> bool:
 ## it fair in the dark is the side street's contract, the painted carriageway and the horn; see
 ## `tests/test_tuning_fairness.gd`'s signals check.
 func is_signalled(junction: Vector2i) -> bool:
-	return powered and has_lights(junction)
+	return _powered and has_lights(junction)
 
 ## Which axis is the *main* arm of a junction — the one that gets the long green. Always the
 ## north-south one, because there is one main road and it runs north to south. Kept as a function
@@ -84,7 +97,7 @@ func _phase_of(junction: Vector2i) -> Phase:
 	var main_green := Tuning.signal_main_green_seconds()
 	var side_green := Tuning.SIGNAL_SIDE_GREEN_SECONDS
 	var amber := Tuning.SIGNAL_AMBER_SECONDS
-	var at := fposmod(elapsed + _offset(junction), Tuning.signal_cycle_seconds())
+	var at := fposmod(_elapsed + _offset(junction), Tuning.signal_cycle_seconds())
 	if at < main_green:
 		return Phase.MAIN_GREEN
 	if at < main_green + amber:

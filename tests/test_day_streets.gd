@@ -11,24 +11,24 @@ extends RefCounted
 
 const TILE := float(Tuning.TILE_SIZE)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_before_any_day_there_are_no_streets(t)
 	_test_each_write_replaces_what_it_says(t)
 	_test_the_siting_region_is_built_once_for_a_plan(t)
 
 ## A row whose body reaches `radius` from its centre, the one thing of its row the region reads.
 func _row(radius: float) -> EventDef:
-	var def := EventDef.new()
-	def.obstructs_radius = radius
-	return def
+	var draft := EventDraft.new("")
+	draft.body(BodySpec.solid(GroundShape.point(radius)))
+	return draft.build()
 
 ## A day's wall and doors as data: one wall body, two door bodies and one walled alley.
-func _a_walled_plan() -> RegionPlanner.RegionPlan:
-	var plan := RegionPlanner.RegionPlan.new()
-	plan.wall_bodies.append(EventScheduler.Planned.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
-	plan.door_bodies.append(EventScheduler.Planned.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
-	plan.door_bodies.append(EventScheduler.Planned.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
-	plan.alley_walls.append(Rect2i(30, 12, 1, 4))
+func _a_walled_plan() -> RegionPlan:
+	var plan := RegionPlan.new()
+	plan.add_wall_plan(EventPlan.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
+	plan.add_door_plan(EventPlan.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
+	plan.add_door_plan(EventPlan.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
+	plan.add_walled_alley(Rect2i(30, 12, 1, 4))
 	return plan
 
 func _closures_on(junction: Vector2i) -> Array[RoadClosure]:
@@ -38,23 +38,24 @@ func _closures_on(junction: Vector2i) -> Array[RoadClosure]:
 
 ## The escape's city never begins a day, and a city's first dawn has not yet run: no tree, no plan,
 ## no closures and no region for a siting to read.
-func _test_before_any_day_there_are_no_streets(t) -> void:
+func _test_before_any_day_there_are_no_streets(t: TestRunner) -> void:
 	var streets := DayStreets.new()
 	t.check(streets.route_tree() == null and streets.region_plan() == null,
 			"before any day, there is no tree and no region plan")
 	t.check(streets.closures().is_empty(), "and no street is closed")
+	t.check(streets.closure_summary() == "none", "so its summary says none")
 	t.check(streets.siting_region() == null, "and a siting reads no region")
 
 ## A dawn replaces all three of the day's answers; a rig's or a scene recipe's authored plan
 ## replaces the plan alone, and the next dawn replaces that plan as well.
-func _test_each_write_replaces_what_it_says(t) -> void:
+func _test_each_write_replaces_what_it_says(t: TestRunner) -> void:
 	var streets := DayStreets.new()
 	var first_tree := RouteTree.new()
 	var first_plan := _a_walled_plan()
 	var first_closures := _closures_on(Vector2i(2, 3))
 	streets.begin_day(first_tree, first_plan, first_closures)
 
-	var authored := RegionPlanner.RegionPlan.new()
+	var authored := RegionPlan.new()
 	streets.replace_region_plan(authored)
 	t.check(streets.region_plan() == authored, "an authored plan replaces the day's plan")
 	t.check(streets.route_tree() == first_tree and streets.closures() == first_closures,
@@ -72,7 +73,7 @@ func _test_each_write_replaces_what_it_says(t) -> void:
 ## it for every candidate tile, so building the wall's and the doors' discs afresh on each ask was
 ## most of that cost. The same plan gives the same region; another plan gives another region, built
 ## from that plan.
-func _test_the_siting_region_is_built_once_for_a_plan(t) -> void:
+func _test_the_siting_region_is_built_once_for_a_plan(t: TestRunner) -> void:
 	var streets := DayStreets.new()
 	var walled := _a_walled_plan()
 	var no_closures: Array[RoadClosure] = []
@@ -90,8 +91,8 @@ func _test_the_siting_region_is_built_once_for_a_plan(t) -> void:
 	var walled_alley: Array[Rect2i] = [Rect2i(30, 12, 1, 4)]
 	t.check(first.walled_alleys == walled_alley, "and it shuts the plan's walled alley")
 
-	var other := RegionPlanner.RegionPlan.new()
-	other.alley_walls.append(Rect2i(8, 2, 1, 3))
+	var other := RegionPlan.new()
+	other.add_walled_alley(Rect2i(8, 2, 1, 3))
 	streets.replace_region_plan(other)
 	var changed := streets.siting_region()
 	var other_alley: Array[Rect2i] = [Rect2i(8, 2, 1, 3)]

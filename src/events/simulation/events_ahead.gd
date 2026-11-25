@@ -1,0 +1,800 @@
+class_name EventsAhead
+extends RefCounted
+## **What is put in front of her while she walks**, the director's half of a day: the places the day
+## left for her walk, sited ahead of her as she goes (`site_what_is_on_her_way()`); the rows owed
+## ahead of her, down her line or her heading, warned first where they come from off screen
+## (`place_what_is_owed_ahead()`); the men a stopped vehicle lets out (`let_the_officers_out()`);
+## the pursuer on foot a torn poster sends (`send_a_pursuer()`); the mast and the task row a
+## resistance task places after dawn (`queue_a_mast()`, `swap_in_a_section()`); and the set piece she
+## never met, lit at dusk (`light_what_she_never_met()`); and **the day's units, each drawn as she
+## comes near it** (`draw_what_comes_near()`, `draw_the_ground_round()`). Nothing here is planned at
+## dawn: the day's plan is `EventStreaming`'s, and what this places or draws joins it.
+##
+## Handed the world the events stand in (`EventWorld`), the walk's events every placement here is
+## stated against (`WalkEvents`), the streaming a placed plan joins (`EventStreaming`), the spawner a row is made by (`EventSpawner`) and the warning board a row
+## from off screen is warned on (`WarningBoard`); and, with the director, where something sent at
+## her may start (`SpawnSiting`).
+
+## The world the events stand in, the run, the player and the live instances.
+var world: EventWorld
+var _streaming: EventStreaming
+## The walk's events: its plans, its doors and its calm areas.
+var _walk: WalkEvents
+var _spawner: EventSpawner
+var _warnings: WarningBoard
+## Whether a torn poster sends a pursuer on this walk
+## (`DaySpec.sends_a_pursuer_for_a_torn_poster()`), as `use_the_walk_of()` takes it from the spec.
+var _sends_poster_pursuits := true
+## Whether the home's streets are the walk's (`DaySpec.keeps_the_home_streets_clear()`), as
+## `use_the_walk_of()` takes it from the spec: the rule the ground of a walk no dawn planned is
+## made under (`_ground_of_the_walk()`), so what is sited while she walks keeps the rule the walk
+## was started under. A day's ground, made at dawn, carries the day's own.
+var _holds_the_home_streets := true
+## The walk's spec, as the manager is handed it: whether the region wall stands in it says which man
+## is the pursuer on foot (`EventCatalogue.on_foot_on()`). Until one is handed in, one with no wall.
+var _spec := DaySpec.new()
+
+## **Takes the walk's spec**, as the manager is handed it: for the pursuer on foot, and for the two
+## settings of the walk this keeps, whether a torn poster sends a pursuer and whether the home's
+## streets are the walk's. Nothing else in the game writes the two, so in play they are always the spec's.
+func use_the_walk_of(spec: DaySpec) -> void:
+	_spec = spec
+	_sends_poster_pursuits = spec.sends_a_pursuer_for_a_torn_poster()
+	_holds_the_home_streets = spec.keeps_the_home_streets_clear()
+
+func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawner,
+		warnings: WarningBoard, walk: WalkEvents) -> void:
+	world = the_world
+	_streaming = streaming
+	_walk = walk
+	_spawner = spawner
+	_warnings = warnings
+
+## Takes the maker every siting here is made by (`EventManager._init()` hands the game's).
+func use_sitings(maker: SitingMaker) -> void:
+	_sitings = maker
+
+## Takes the director that sites rows ahead of her (`EventManager.setup()` makes it over the city's
+## map, its figures moving by the world's navigator), handed the forced row a director made before it
+## had, and keeps `spawn_siting`, where the pursuer a torn poster sends may start.
+func use_director(director: EventDirector, spawn_siting: SpawnSiting) -> void:
+	_director = director
+	_director.force(_forced_row, _forced_interval)
+	_spawn_siting = spawn_siting
+
+## Whether a director sites anything ahead of her in this world.
+func has_director() -> bool:
+	return _director != null
+
+## The day's director (`EventDirector`), or null in a world with none.
+func director() -> EventDirector:
+	return _director
+
+## Starts the director's day over the walk's plan, as the manager planned it against `tree`, and
+## keeps the placement context a row left for her walk is sited against.
+func start_day(day: int, tree: RouteTree) -> void:
+	# The day's placement context, kept past dawn for the one kind of plan the day plans and
+	# leaves for her walk to site — see `WalkSiting` and `EventDef.is_sited_from_her_walk()`.
+	# Stated against exactly what `build_day` was: the same tree, the walk's own doors and calm
+	# areas, which are the day's, and the day's ground for a row (`_ground_of_the_walk()`). Only
+	# on a day that has such a plan: the context grows a corridor, and a day with nothing left for
+	# her walk would pay for it and read none of it.
+	_siting = null
+	_day_tree = tree
+	for plan in _walk.plans():
+		if plan.is_sited_from_her_walk() and not plan.is_placed():
+			_siting_for(day, plan)
+	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"),
+			_spec.director_sends(), _siting, world.run().resistance().progress(),
+			_spec.handout_wait_share())
+
+## **The day's placement context for a row left for her walk to site** (`plan`), made the first
+## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
+## for `plan`'s row done now rather than mid-walk (`WalkSiting.prepare()`): for a row the dawn
+## left, at the walk's start, and for one a unit draws as she walks, as it is drawn. Answers it.
+func _siting_for(day: int, plan: EventPlan) -> WalkSiting:
+	if not _siting:
+		_siting = _a_siting(day, _day_tree)
+	_siting.prepare(plan.row())
+	return _siting
+
+## **A placement context for the rows her walk sites ahead of her**, over `tree`: what the maker
+## it was handed makes (`use_sitings()`) on the walk's ground (`_ground_of_the_walk()`). Nothing is
+## drawn round a site it picks: a beat laid in a unit that has not drawn goes before the unit's
+## draw, which is judged among it (`WalkSiting`, `UnitDraw`).
+func _a_siting(day: int, tree: RouteTree) -> WalkSiting:
+	return _sitings.make(day, tree, _ground_of_the_walk())
+
+## **The ground a siting made here stands its rows on** (`RowGround`): the walk's, as dawn made it
+## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
+## worked out, and it stands on the ground the day was planned on. A scene recipe's walk
+## carries the ground its rows were placed on (`EventManager.start_recipe()`). A walk no ground
+## was handed to (a rig's) has none, and its siting is handed one made here under the walk's own
+## home-street rule (`_holds_the_home_streets`).
+func _ground_of_the_walk() -> RowGround:
+	var dawns := _walk.ground()
+	if dawns:
+		return dawns
+	return EventScheduler.row_ground(world.city_map(), null, _holds_the_home_streets)
+
+## Starts the director over a walk whose plan was handed in whole, kept with `tree`, the route
+## tree it was placed against where it has one (a scene recipe's), so a mast queued later is
+## sited over it rather than over a tree grown again; a walk handed none (a rig's) grows one
+## then. **What the director may send her is the walk's own setting** (`DaySpec.director_sends()`,
+## handed in by `use_the_walk_of()`), never the day's number: the escape's city sends none of an
+## ordinary day's rows, whichever day the run is on, and a scene recipe's walk of an ordinary day
+## sends that day's. It is started either way so that `owed_ahead()` and its own per-day state
+## answer for this walk rather than for whatever ran before it.
+func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
+	_siting = null
+	_day_tree = tree
+	if _director:
+		_director.start_day(day, _walk.plans(),
+				world.run().calendar().day_rng(day, "finale-ahead"),
+				_spec.director_sends(), null, 0, _spec.handout_wait_share())
+
+## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
+## `RETURNING`, for the day `day` at the run's heat.
+func owe_the_return(day: int) -> void:
+	if _director:
+		_director.owe_the_return(day, world.run().resistance().progress())
+
+## Forgets the day's owed pursuer, the poster tear's pursuer and where the units were last asked
+## for.
+func clear() -> void:
+	_asked_at = Vector2i(-1, -1)
+	_still_wanted = false
+	_pursuer_owed = null
+	_pursuer_retry_in = 0.0
+	_pursuer_failure_logged = false
+	_sent_after_her = null
+	_sent_warning = null
+
+## What sites rows ahead of her on a day, over the city (`EventDirector`); none in a world with no
+## city (`EventSurroundings.city_map()` is null), where nothing is sited while she walks.
+var _director: EventDirector
+## Where something sent at her may start (`SpawnSiting`): the city's, handed in with the director;
+## none in a world with no city, where no torn poster sends anybody.
+var _spawn_siting: SpawnSiting
+## The day's placement context for a row the day left for her walk to site, or `null` on a day that
+## left none — the whole of `EventDef.is_sited_from_her_walk()`, which today is day 3's fire
+## and nothing else. Built in `start_day()` and read twice: the director sites against it
+## while she walks, and `light_what_she_never_met()` places off it at dusk on a day she never
+## met what it was for.
+var _siting: WalkSiting = null
+## What makes a siting (`SitingMaker`), handed in by the manager (`use_sitings()`): this class makes
+## none itself, so a suite hands in a maker that answers a stand-in, or keeps what it made.
+var _sitings: SitingMaker
+## The walk's route tree, as `start_day()` handed it to `build_day`, or the one a scene recipe
+## placed against (`start_a_given_walk()`), kept for a placement made later that has no
+## `_siting` to read it from (`queue_a_mast()`); null for a walk handed none.
+var _day_tree: RouteTree = null
+
+## `--force <id> [seconds]`, kept here so a director made again by `setup()` is handed it too.
+var _forced_row := ""
+var _forced_interval := 0.0
+
+## `--force <id> [seconds]`: the one row the director hands out from the next day on, every
+## `interval` seconds, or "" for the ordinary day. See `EventDirector.force()`.
+func force(row: String, interval: float) -> void:
+	_forced_row = row
+	_forced_interval = interval
+	if _director:
+		_director.force(row, interval)
+
+# --------------------------------------------------------- the pursuer on foot ---
+# *(Inbox #591 in olive-hedgehog, the player: "the poster pursuit should not be placed! it should
+# happen instantly with the pursuer spawning off-screen! and it should be a proper pursuer not a
+# police car -- maybe a policeman on foot?" · "the poster tear marble bag is a completely separate
+# marble bag than the event marbles. nothing influences across them. the pursuer is not a scheduled
+# event. it is instant! policemen get switched to guardman on day 9.")*
+
+## The pursuer on foot a torn poster sent, once he is in the world, or null. Kept only so a second
+## pursuit marble while he is still after her sends nobody more (`_a_pursuer_is_after_her()`).
+var _sent_after_her: EventInstance = null
+## His warning while it is up, before he exists, or null.
+var _sent_warning: PendingWarning = null
+
+## **A torn poster drew the pursuit marble** (`PosterWalls`): the pursuer on foot is sent at her at
+## once — a policeman through day 8, a guardsman from day 9 (`EventCatalogue.on_foot_on()`). He is
+## warned and placed as a task's robber is (`WarningBoard.send_from_out_of_sight()`, as
+## `ResistanceDirector._send_at_her()` sends him): the screen-edge badge goes up alone at once for
+## his half second (`EventDef.warned_for()`), pointing where he will start
+## (`_where_the_sent_pursuer_starts()`), and then he is created just out of sight that way from
+## where she is by then, already chasing (`_spawner.spawn_warned()`,
+## `PursuitSpec.Start.ARRIVES_CHASING`). No wait for a heading or a street: the tear is the moment.
+##
+## **Outside the day's own plan, queue and streams.** He is not the scheduler's or the director's:
+## nothing here draws from a day stream, takes a turn in the director's queue or moves its clock,
+## so a tear and its pursuer change nothing the day's event bags draw — the tears' bag is its own
+## ("nothing influences across them"). Which of above and below he is tried from first is a hash of
+## the run and the tear count, not a roll.
+##
+## **One at a time, and nothing on a walk with no poster pursuits** (`DaySpec.sends_a_pursuer_for_a_torn_poster()`,
+## false for the escape's sections). A pursuit marble drawn while his warning is up or while he is
+## still after her (`_a_pursuer_is_after_her()`) sends nobody more; once he has caught her, given up
+## or run out his chase, the next marble sends the next one. *(Proposed, not asked for: the README
+## of sandy-ferret.)* `EventBus.poster_pursuit_sent` fires only when this sends one, the moment his
+## warning goes up, so the counter's `poster-pursuit` is one per pursuer sent.
+func send_a_pursuer() -> void:
+	if not _sends_poster_pursuits or not world.has_player() or _a_pursuer_is_after_her() \
+			or not _spawn_siting:
+		return
+	var def := EventCatalogue.on_foot_on(_spec)
+	if not def:
+		return
+	var her := world.player().global_position
+	var first_up := posmod(hash("%d:%d:tear-pursuer" % [world.run().header().run_seed(),
+			world.run().posters().tears_made()]), 2) == 0
+	var search := func(standing: Vector2, prefer: Vector2) -> SpawnSiting.Start:
+		return _where_the_sent_pursuer_starts(def, standing, prefer, first_up)
+	var arrive := func(place: Vector2, standing: Vector2, start: SpawnSiting.Start) -> void:
+		_sent_after_her = _spawner.spawn_warned(def, PackedVector2Array([place]))
+		var who := "a %s" % def.noun_for(1)
+		world.trace().note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
+				% [who, RunTrace.tile(world.map().world_to_tile(place)),
+				standing.distance_to(place), "a clear run at her" if start.clear
+						else "no clear run at her"])
+	_sent_warning = _warnings.send_from_out_of_sight(def, her, search, arrive)
+	if not _sent_warning:
+		world.trace().note("roll", "poster tear sends nobody: no walkable ground out of sight of her "
+				+ "at %s" % RunTrace.tile(world.map().world_to_tile(her)))
+		return
+	# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
+	world.reports().tell_poster_pursuit_sent()
+
+## **The men an investigating vehicle lets out.** *(merry-stork, the player: "an investigating
+## police car should not leave the street. it should stop if close to her and a policeman should
+## emerge and pursue her"; inbox #669 in coral-lark: "Van stops, men get out (Recommended)" · "Same
+## as the police".)* Every vehicle that has just stopped for her (`EventInstance.officers_owed()`) —
+## a patrol car's one, a hunting van's two — gets the day's pursuer on foot as he gets out of a
+## vehicle (`EventCatalogue.out_of_the_car()`: a policeman through day 8, a guardsman from day 9;
+## out of the patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the
+## day) put down at its door on her side (`EventInstance.door_for_its_officer()`), spread along its
+## flank `OFFICER_SPACING` apart when there are two, or on the other side where hers is not ground
+## he may stand on (`SpawnSiting.Rule.OPEN_TO_IT`), or at the vehicle itself where neither is. They
+## appear in her view, so there is no badge: their notice is the sight of them, standing with a hand
+## raised (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`, `PursuitSpec.stands_for_its_notice()`). Outside the day's plan,
+## like everything put down after dawn by a director.
+func let_the_officers_out() -> void:
+	var siting := _spawn_siting if _spawn_siting else SpawnSiting.over(world.city_map())
+	for vehicle: EventInstance in world.instances().duplicate():
+		var owed := vehicle.officers_owed()
+		if owed <= 0:
+			continue
+		var def := EventCatalogue.out_of_the_car(_spec,
+				not vehicle.hunts_for_her())
+		var stands := siting.ask_of_ground(Rect2(), EventInstance.mover_for(def))
+		for i in owed:
+			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
+			var at := vehicle.door_for_its_officer(def, 1.0, along)
+			if not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, stands, at):
+				at = vehicle.door_for_its_officer(def, -1.0, along)
+			if not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, stands, at):
+				at = vehicle.global_position
+			var officer := _spawner.spawn(def, at)
+			vehicle.let_out(officer)
+		# Under `ahead`: men put down from her walk, where she stood — no seed says where a vehicle
+		# noticed her. See docs/TELEMETRY.md, "The entry kinds".
+		var who := "a %s gets out" % def.noun_for(1) if owed == 1 \
+				else "%d %s get out" % [owed, def.noun_for(owed)]
+		world.trace().note("ahead", "%s at %s, %.0fpx from her, and %s"
+				% ["an investigating patrol stops" if vehicle.drives()
+						else "%s, standing," % vehicle.row_id(),
+				RunTrace.tile(world.map().world_to_tile(vehicle.global_position)),
+				vehicle.global_position.distance_to(world.player().global_position), who])
+
+## How far apart along a vehicle's flank its men get out when it lets out more than one, in px:
+## a body and a half of a man apart, so neither stands in the other.
+const OFFICER_SPACING := 28.0
+
+## Whether a torn poster's pursuer is on his way or after her: his warning is up, or he is in the
+## world and neither finished nor leaving.
+func _a_pursuer_is_after_her() -> bool:
+	if _sent_warning != null and _warnings.pending_warnings().has(_sent_warning):
+		return true
+	return is_instance_valid(_sent_after_her) and not _sent_after_her.is_gone() \
+			and not _sent_after_her.is_on_its_way_out()
+
+## How far either side of straight up or straight down a start is tried, in radians — the robber's
+## own cone (`ResistanceDirector.ARRIVAL_CONE`), stepped rather than rolled.
+const SENT_CONE := PI / 6.0
+
+## **Where the pursuer a torn poster sends starts: just out of sight of her, under the task
+## robber's rules** (`SpawnSiting.start_out_of_sight()`): on legal ground, nowhere on the camera's
+## whole view, never with a run at her through the day's region wall or a district door, and a clear
+## run at her deciding it, the first start that passes the rest standing in where none has one.
+## Nothing is drawn from a stream: `prefer`, the bearing his badge already points along, first when
+## it is asked again; then straight above or below her (`first_up` says which first), since the view
+## is shorter that way; then at `SENT_CONE` either side of each; then straight along her street
+## either way. Its `at` is `Vector2.INF` when no start qualifies.
+func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2,
+		first_up: bool) -> SpawnSiting.Start:
+	var asked := _spawn_siting.ask(EventFootprints.footprint_of(def), EventInstance.mover_for(def),
+			her)
+	var bearings: Array[Vector2] = []
+	if prefer != Vector2.ZERO:
+		bearings.append(prefer)
+	var up := Vector2.UP if first_up else Vector2.DOWN
+	bearings.append_array([up, -up, up.rotated(SENT_CONE), up.rotated(-SENT_CONE),
+			-up.rotated(SENT_CONE), -up.rotated(-SENT_CONE), Vector2.RIGHT, Vector2.LEFT])
+	return _spawn_siting.start_out_of_sight(asked, bearings)
+
+## **One more mast, for day 11's task, generated as the next event** when no live mast stands near
+## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, quiet-yak, inbox #486,
+## the player: "The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
+## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
+## close by" · inbox #503 in quiet-yak: "no events are dynamically created as you walk around -- if
+## there is a mast queued up that will be the next event to be generated".)* So it is not put down
+## where the director points: it is generated the way every row the day plans is, a `loudspeaker`
+## heated like the day's own (`world.run().resistance().progress()`) laid by the day's siting
+## (`WalkSiting.lay_among()`) in the first free location that takes one of `offered` — the tiles the
+## director found near her and out of her view — against the whole of the day's plan:
+## `StreetInvalidation.room_around()`'s spacing, so it never stands inside anything else or inside
+## a lethal row's field, the region doors' clear ground and the calm she has not used; a mast is
+## exempt from the three rules that keep a line along her routes (the route junctions, the route
+## sidewalks and a pacing beat's opening), as the fixed ones are (inbox #684 in coral-lark).
+## Appended to the day's plan under `DawnMasts.added_mast_id()` with its body recorded, it
+## streams in like any planned row, broadcasts on the one clock, is silenced by
+## `EventStreaming.silence_mast()`, counts for `EventStreaming.silence_all_masts()`, and once
+## silenced stands silenced on later days from its scar (`DawnMasts`). Null when no offered tile passes, which leaves day 11 to the
+## nearest live mast she can be sent to (`ResistanceDirector._nearest_confirmed_mast()`), or, where
+## there is none, with nowhere to go.
+func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
+	if offered.is_empty():
+		return null
+	var def := EventCatalogue.heated(EventCatalogue.mast(),
+			world.run().resistance().progress())
+	var siting := _siting
+	if not siting:
+		siting = _sitings.make(world.day(), _day_tree, _ground_of_the_walk())
+	var plan := EventPlan.new(def, Vector2.INF)
+	if not siting.lay_among(plan, offered):
+		return null
+	plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
+	_streaming.add(plan)
+	return plan
+
+# ---------------------------------------------------------- the units she comes near ---
+
+## The tile she stood on at the last ask of `draw_what_comes_near()`, or none since the walk began.
+var _asked_at := Vector2i(-1, -1)
+## Whether a unit was still wanted at the last ask.
+var _still_wanted := false
+
+## **Draws what her place asks for** (the day's units, `WalkEvents.unit_draw()`): every undrawn
+## unit any part of which lies within the stream radius (`EventStreaming.stream_radius()`, handed in by the manager) of `at`
+## at once, each with every unit it waits for, so no row of it is missing when the streaming looks
+## there; else one unit of the nearest wanted one's pull (`UnitDraw.draw_one_towards()`), a unit
+## being wanted once any part of it lies within `Tuning.EVENT_DRAW_AHEAD` beyond the stream radius.
+## Asked again only on a tick she stands on another tile than at the last ask, or a unit was still
+## wanted then. A walk with no unit draw (the escape's, the building, a scene recipe's) draws
+## nothing.
+##
+## Neither number changes what a day holds: every unit's draw is the same whatever order the units
+## are drawn in (`UnitDraw`); they set only when the work is paid. Most units draw in under a
+## millisecond and a few take tens of milliseconds or more (`tests/probes/walk_rows.gd` prints
+## the spread), so beyond the stream radius it is one a tick: a pull of dozens of units is spread
+## over as many ticks, and still drains far faster than she walks into it.
+##
+## **The band beyond the stream radius is where a beat her walk lays usually stands**: a beat takes
+## a location of the nearest unit on her way that has not drawn (`WalkSiting`), which is past the
+## band, and the unit draws round it when it comes near.
+func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
+	var draw := _walk.unit_draw()
+	if not draw:
+		return
+	var tile := Vector2i((at / Tuning.TILE_SIZE).floor())
+	if tile == _asked_at and not _still_wanted:
+		return
+	_asked_at = tile
+	var units := draw.units()
+	var inside := units.undrawn_within(at, stream_radius)
+	if not inside.is_empty():
+		for unit in inside:
+			_take_what_was_drawn(draw.draw(unit))
+	else:
+		var wanted := units.undrawn_within(at, stream_radius + Tuning.EVENT_DRAW_AHEAD)
+		if not wanted.is_empty():
+			_take_what_was_drawn(draw.draw_one_towards(wanted[0]))
+	_still_wanted = not units.undrawn_within(at,
+			stream_radius + Tuning.EVENT_DRAW_AHEAD).is_empty()
+
+## **Draws now every undrawn unit any part of which lies within `reach` of `at`**, each after every
+## unit it waits for. Whatever needs the ground drawn before it acts on it calls it: the streaming
+## about to look at the ground (`EventManager.stream_around()`), a place the resistance sends her to
+## (`ResistanceDirector`), and day 13's section swap (`swap_in_a_section()`). Answers whether it drew
+## any unit.
+func draw_the_ground_round(at: Vector2, reach: float) -> bool:
+	var draw := _walk.unit_draw()
+	if not draw:
+		return false
+	var near := draw.units().undrawn_within(at, reach)
+	for unit in near:
+		_take_what_was_drawn(draw.draw(unit))
+	return not near.is_empty()
+
+## **What a draw placed joins the walk**: a placed row through the streaming, its body recorded
+## where it stands, as a row placed after dawn is (`EventStreaming.add()`); a row handed to her
+## walk (`EventDef.is_handed_to_her_walk()`, drawn with no position) added to the walk unplaced
+## and owed to the director, to site on her way, as one the dawn left is (`start_day()`); and the
+## walk's reach told what now stands in the way (`DayReach.shut_more()`).
+func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
+	if placed.is_empty():
+		return
+	for plan in placed:
+		if plan.is_placed():
+			_streaming.add(plan)
+			continue
+		_walk.add(plan)
+		if _director and plan.is_handed_to_her_walk():
+			_director.owe_on_her_way(plan, _siting_for(world.day(), plan))
+	var reach := _walk.reach()
+	if reach:
+		reach.shut_more(placed)
+
+## **Day 13's task roadblock `plan` across `section`**, a route-adjacent section of the day's
+## locations, when no roadblock the day placed is close by where she read the mark
+## (`ResistanceDirector._place_the_roadblock_near()`, inbox #1185 in gentle-owl: "the roadblock replaces the content
+## of that event's whole section"): `plan` is the roadblock the director stood across it and checked
+## out of her view (`EventScheduler.across_the_section()`). The section is assigned to it for the day
+## (`DayLocations.assign()`), and whatever the section held (`WalkEvents.placed_within()`) spent and
+## taken out of the world with its body given back, the roadblock put in the world at once and kept
+## there for the rest of the day (`EventStreaming.swap_section()`), since the task's contact rides
+## it. **The section's unit and the units touching it draw first** (`draw_the_ground_round()`), so
+## what the section holds, the rows just drawn among them, is what the roadblock replaces, and no
+## draw stands anything there afterwards. Answers its live instance, or null where the walk has no
+## locations.
+func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
+	var locations := _walk.locations()
+	if not section or not plan or not locations:
+		return null
+	draw_the_ground_round(section.centre(), Tuning.EVENT_DRAW_AHEAD)
+	var olds := _walk.placed_within(world.city_map().tile_rect_to_world(section.tiles()))
+	locations.assign(section, plan)
+	return _streaming.swap_section(olds, plan)
+
+## Events the day owes the director to put in front of the player and has not
+## spent yet.
+func owed_ahead() -> int:
+	return _director.owed() if _director else 0
+
+## The director's half of the day: something that happens *to* her, in front of her, while she
+## is walking. See `EventDirector` for why a cat is authored as a moment rather than a place.
+func place_what_is_owed_ahead(delta: float) -> void:
+	var body := world.player() as CharacterBody2D
+	if not body:
+		return
+	if _pursuer_owed and body.velocity.length() >= Tuning.AHEAD_MIN_SPEED:
+		_pursuer_retry_in -= delta
+		if _pursuer_retry_in <= 0.0:
+			var owed := _pursuer_owed
+			_pursuer_owed = null
+			_warn_down_her_heading(owed, body.global_position,
+					body.global_position + body.velocity.normalized())
+	# A dog waiting for legal ground never stops the director's other clocks or due events.
+	var due := _director.due(delta, body.global_position, body.velocity, world.visible_view())
+	if due.is_empty():
+		return
+	var def := due[0] as EventDef
+	var path := due[1] as PackedVector2Array
+	if def.is_warned_in_its_lane():
+		_warn_in_its_lane(def, body.global_position, path)
+		return
+	if def.warns_before_it_exists():
+		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
+		return
+	if def.comes_down_her_line():
+		_send_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
+		return
+	if def.pursues():
+		_warn_down_her_heading(def, body.global_position, path[0])
+		return
+	var crossing := _spawner.spawn(def, path[0], path)
+	# A patrol sent ahead of her goes on while she can see it (`EventInstance.go_on_by()`).
+	if def.is_sent_ahead():
+		crossing.go_on_by(_director.way_on())
+	# A run cut short by a solid crouches longer by the run it lost, as the director worked it out
+	# with the run (`EventDef.crouch_for_a_run()`).
+	if due.size() > 2:
+		crossing.hold_still_longer(float(due[2]))
+	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
+	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
+	# `ahead` line for the one row a chase is about say the wrong number.
+	# A crossing is measured where the director sited it to cross her line (`due[3]`), not at its
+	# midpoint, which a run from the open side is not centred on. A row that comes down her own
+	# street has no crossing, so it is measured to where it is created, `path[0]`.
+	var crosses := due.size() > 3 and due[3] is Vector2
+	var lead := (due[3] as Vector2 if crosses else path[0]).distance_to(body.global_position)
+	var verb := "crosses" if crosses else "comes at her from"
+	world.trace().note("ahead", "%s %s %.0fpx in front of her at %s" % [
+		def.id(), verb, lead,
+		RunTrace.tile(world.map().world_to_tile(body.global_position))])
+
+## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it, the man
+## shouting or the van a day-6 or day-7 mark rigged — sited
+## for the first time by the director ahead of her on the branch she is walking
+## (`EventDirector._place_on_her_route()`, then `EventDirector.site_what_is_on_her_way()`). It joins
+## the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the way
+## `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
+func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
+	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
+	# silenced by `EventStreaming.silence_mast()` and counts for
+	# `EventStreaming.silence_all_masts()`.
+	if plan.is_a_mast():
+		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
+	_streaming.add(plan)
+	# Where, because nothing else records it: the siting depends on the walk she took.
+	world.trace().note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
+			% [plan.row_id(), plan.placed_at().distance_to(body.global_position),
+			RunTrace.tile(world.map().world_to_tile(plan.placed_at())),
+			CheckpointController.heading_name((body as CharacterBody2D).velocity.normalized()),
+			RunTrace.tile(world.map().world_to_tile(body.global_position))])
+
+## **Rigs her route so the marbles of `ids` are among the next `size` events handed out on it** —
+## see `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them (day 11's second
+## mast) is handed to her walk when its marble comes up and laid ahead of her once her walk finds it
+## a location, by the day's placement context, which is built here if the day had none, and its
+## first scans are done now rather than on the frame it is laid. A place laid `just_ahead` is laid on her
+## path just ahead of her and out of her view (`WalkSiting.lay_just_ahead()`) instead of past the
+## streaming band. Answers the rigged bag's marbles.
+func rig_her_route(ids: Array[String], size: int, just_ahead := false) -> Array:
+	# A rig that never started a day has no route to rig, and building it a placement context for
+	# nothing would grow a route tree to no end.
+	if not _director.route_bag():
+		return []
+	if not _siting:
+		_siting = _a_siting(world.day(), _day_tree)
+	var rigged := _director.rig_her_route(ids, size, world.run().resistance().progress(), _siting,
+			just_ahead)
+	for id in ids:
+		var row := _director.route_row(id)
+		if row and row.spawn_mode_on(world.day()) == EventDef.SpawnMode.MAP \
+				and not row.is_sent_ahead():
+			_siting.prepare(row)
+	return rigged
+
+## A row the director sited down her own line, warned first: the badge goes up at once, pointing
+## just out of sight in `direction` on a sidewalk or a square (`PendingWarning.down_her_line()`),
+## and once its second is up the thing is created where that now is, down her line.
+##
+## **The route is asked of the region doors again when it is created**, the same refusal
+## `EventDirector.due()` makes when it sites one — she has walked on since, and a cyclist coming
+## through a door's gap is exactly what that refuses. A refusal withdraws the warning.
+func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
+	# Rolled as the warning goes up rather than when the rider is created, so the badge's own lines
+	# in the run log already name the pelican — see `_spawner.rolls_a_pelican()`.
+	var pelican := _spawner.rolls_a_pelican(def)
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(world.city_map(), def, at, direction, world.visible_view())
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := _route_down_her_line(def, place, at, direction)
+		if path.size() < 2 or not _director.clear_to_send(path, def):
+			return false
+		var instance := _spawner.spawn_warned(def, path, pelican)
+		world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
+				% [instance.logged_name(), place.distance_to(at),
+				RunTrace.tile(world.map().world_to_tile(at))])
+		return true
+	var warning := _warnings.warn_first(def, her, where, arrive)
+	if warning:
+		if pelican:
+			warning.be_logged_as_the_pelican()
+
+## A row the director sends ahead of her warned of first in the lane of the road beside her (the
+## convoy, `EventDef.is_warned_in_its_lane()`), sited on `sited` (`EventDirector.due()`: its first
+## leg), coming toward her: the badge goes up at once, pointing level with her along the
+## road and just out of sight up it (`PendingWarning.in_its_lane()`), and once its second is up the
+## thing is created there, its telegraph spent (`EventSpawner.spawn_warned()`), on its first leg
+## from where she is then (`EventDirector.leg_in_the_lane()`). Day 13's column arrives the same way
+## (`ResistanceHappenings`). **The leg it is created on is asked again what every sent route is
+## asked** (`EventDirector.clear_to_send()`: the region doors, and the room a placed plan keeps),
+## since she has walked on since it was sited; a refusal, or no leg from where she is then (none a
+## car may drive and go on from, `EventDirector.leg_in_the_lane()`), withdraws the warning. Once
+## created its route is worked out as it goes (`EventInstance.go_on_by()`).
+func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -> void:
+	var lane := sited[0]
+	var going := (sited[sited.size() - 1] - lane).normalized()
+	if going == Vector2.ZERO:
+		return
+	var ends := PendingWarning.lane_ends(world.city_map(), going)
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.in_its_lane(def, at, lane, going, ends.x, ends.y, world.visible_view())
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := _director.leg_in_the_lane(def, place, at, going)
+		if path.is_empty() or not _director.clear_to_send(path, def):
+			return false
+		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())
+		world.trace().note("ahead",
+				"%s comes down the road at her from ahead of her, %.0fpx up it, at %s, its warning over"
+				% [def.id(), path[0].distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
+		return true
+	_warnings.warn_first(def, her, where, arrive)
+
+## The route a row coming down her line is created on (`PendingWarning.route_down_her_line()`), cut
+## to the ground the row can run on (`Navigator.trim()`), so a bike or a dog never comes through a
+## building, a barrier or a body; fewer than two points where it cannot set off at all.
+func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
+		direction: Vector2) -> PackedVector2Array:
+	return world.navigator().trim(PendingWarning.route_down_her_line(world.city_map(), place, her,
+			direction),
+			EventInstance.mover_for(def))
+
+## A row the director sends down her own line that does not telegraph its coming (`loose_dog`, the
+## dog walker it sends ahead of her; `EventDef.telegraphs_its_coming()`): no badge and no warning, so it is created
+## at once just out of sight down her line on its own ground (`PendingWarning.down_her_line()`,
+## against what she can see), its telegraph spent. **Where its beat is as it is created differs.**
+## The dog walker is the row she would come upon, put just ahead of her, so its bark is at a point
+## drawn on the director's stream (`EventDirector.age_it_is_sent_at()`) and a pass costs the row's
+## price in `docs/COSTS.md` whichever way the street runs. The loose dog is aged as a warned row would
+## be (`EventSpawner.age_when_warned()`), so it meets her at the loud of its beat, the figure its line
+## in that table prices. Nothing is created where there is no such ground, or its route would come
+## through a region door or a placed plan's room (`EventDirector.clear_to_send()`); the director has
+## already spent the moment either way. The dog walker's route is then worked out as it goes
+## (`EventInstance.go_on_by()`): it walks on down the street while she can see it.
+func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
+	var place := PendingWarning.down_her_line(world.city_map(), def, her, direction, world.visible_view())
+	if place == Vector2.INF:
+		return
+	var path := _route_down_her_line(def, place, her, direction)
+	if path.size() < 2 or not _director.clear_to_send(path, def):
+		return
+	var instance := _spawner.spawn(def, path[0], path)
+	if def.is_sent_ahead():
+		instance.restore(EventSave.aged(_director.age_it_is_sent_at(def)))
+		instance.go_on_by(_director.way_on())
+	else:
+		instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
+	world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
+			% [def.id(), place.distance_to(her), RunTrace.tile(world.map().world_to_tile(her))])
+
+## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
+## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new
+## system should be made to work to retain that timing for the pursuing dog")*: its badge is up
+## alone for its own `warned_for()` (the dog's half second), pointing down the way `sited` lies
+## from her, and it is then created just off screen that way on walkable ground (`PendingWarning.
+## along_her_heading()`), its telegraph — the approach she watches — still to run. With nowhere to
+## stand then, or now, it is owed again (`_pursuer_owed`) and the run log says so.
+func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void:
+	var direction := (sited - her).normalized()
+	if direction == Vector2.ZERO:
+		return
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.along_her_heading(world.city_map(), def, at, direction, world.visible_view())
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		_spawner.spawn_warned(def, PackedVector2Array([place]))
+		world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
+				% [def.id(), place.distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
+		return true
+	var warning := _warnings.warn_first(def, her, where, arrive)
+	if warning:
+		_pursuer_failure_logged = false
+		warning.when_withdrawn(func() -> void: _owe_pursuer_again(def))
+		return
+	# Nowhere off screen to stand down her heading: the lesson is not lost, it is owed again on
+	# the next placement retry (`place_what_is_owed_ahead()`).
+	_owe_pursuer_again(def)
+	if not _pursuer_failure_logged:
+		_pursuer_failure_logged = true
+		world.trace().note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
+				% [def.id(), RunTrace.tile(world.map().world_to_tile(her))])
+
+## A pursuer the director sent that found nowhere off screen to stand, or whose warning was
+## withdrawn: tried again down her current heading after a second of walking, the director's own
+## cadence for a failed placement. Null when none is owed; keeps the day-3 lesson from being lost.
+var _pursuer_owed: EventDef = null
+var _pursuer_retry_in := 0.0
+var _pursuer_failure_logged := false
+
+func _owe_pursuer_again(def: EventDef) -> void:
+	_pursuer_owed = def
+	_pursuer_retry_in = 1.0
+
+## The other half of the director's day: a place left unsited, put ahead of her on the branch she
+## is walking once her heading for the day is clear — day 3's fire and the day's poster crews
+## (`EventDef.is_sited_from_her_walk()`), and a place a marble from her route's bag
+## names, which joins the day's plan here (`_put_down_on_her_route()`). See
+## `EventDirector.site_what_is_on_her_way`.
+##
+## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything
+## else.** A body is recorded per tile from the *plan* so the crowd steers round it whether or not
+## the player has come near enough for it to exist (see "the bodies in the street" above), and a
+## plan that has just been moved was recorded at a position it is no longer standing at — so the old
+## footprint is given back and the new one taken, under the same owner id, in the one place that
+## knows the move happened.
+func site_what_is_on_her_way(delta: float) -> void:
+	var body := world.player() as CharacterBody2D
+	if not body:
+		return
+	var moved := _director.site_what_is_on_her_way(delta, body.global_position, body.velocity)
+	for plan in moved:
+		# A place from her route's bag is not in the day's plan until its first siting.
+		if _director.is_from_her_route(plan) and not _walk.plans().has(plan):
+			_put_down_on_her_route(plan, body)
+			continue
+		_streaming.move_the_body(plan)
+		# A mast's id is its foot (`DawnMasts.added_mast_id()`), so a mast moved before it was
+		# ever in the world is named by where it now stands.
+		if plan.mast_id() != "":
+			plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
+		# Where and why, because nothing else records it: the siting depends on the walk she took
+		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
+		# write, for the same reason.
+		world.trace().note("ahead", "%s is sited %.0fpx ahead of her at %s, %s of where she is at %s" % [
+			plan.row_id(), plan.placed_at().distance_to(body.global_position),
+			RunTrace.tile(world.map().world_to_tile(plan.placed_at())),
+			CheckpointController.heading_name(body.velocity.normalized()),
+			RunTrace.tile(world.map().world_to_tile(body.global_position))])
+
+## **A day 3 she wins with the fire never met still burns.** *"I agree with the fire fix"*
+## (PLAYTEST-121). Lights whatever the day owed her walk and never got to put in the world — day 3's
+## fire and nothing else — off her path, on a site the dawn rules accept, and records everything a
+## fire records: the scar the run keeps, the arc the block it stood in moves along, and the one-shot
+## spent. Answers whether it lit anything.
+##
+## **Why it has to exist.** `burning_building` runs on day 3 and no other day, and it is spent where
+## it enters the world rather than where it is planned — so a day 3 she wins while every siting was
+## refused ends the run with no fire, no scar and no shell, and the shell is what the city
+## remembering day 3 is made of and what day 8's errand goes to. Meeting it stays the strong
+## guarantee; this is what the weak one owes.
+##
+## **Lit and then taken out of the world again**, which is not a repair: the day is over, so nothing
+## is left standing for her to walk into and nothing is drawn. What the run keeps is the scar, the
+## arc and the spend, and all three are the bookkeeping `EventStreaming.stream_in()` does on a first
+## instantiation — reused here rather than copied, because a second copy of that list is a second answer to "what
+## does a fire do to a run".
+##
+## Called by `DayDirector.finish_day()` on a won day only. A lost day gives everything back
+## (`world.run().calendar().finish_day()`), so lighting a fire on one would be handing the retry a
+## shell it never earned.
+func light_what_she_never_met(at: Vector2) -> bool:
+	if not _siting:
+		return false
+	for plan in _walk.plans():
+		# The fire is the set piece a run owes; a crew she never met simply was not met.
+		if not plan.is_a_set_piece_on_her_way() or plan.has_been_in_the_world() or plan.is_spent():
+			continue
+		# Its own stream, so a dusk placement cannot move anything the day already rolled.
+		var rng := world.run().calendar().day_rng(world.day(), "dusk-fire")
+		if not _siting.lay_off_her_path(plan, at, rng):
+			continue
+		_streaming.stream_in(plan)
+		_streaming.stream_out(plan)
+		# It is over the moment it is recorded: the day has ended, and a plan left unspent would be
+		# streamed back in by the next `stream_around` a rig made on the same day.
+		plan.spend()
+		world.map().release_obstruction(plan.get_instance_id())
+		# `VisitCounter`'s own "fire-unmet" — a won day on which this row was lit off her path
+		# rather than met. See docs/TELEMETRY.md, "The page counts visits".
+		world.reports().tell_event_lit_unmet(plan.row_id())
+		# Where and why, because nothing else records it: which site a dusk fire took depends on
+		# where she finished the day, and no seed reproduces that from outside.
+		world.trace().note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
+				% [plan.row_id(), RunTrace.tile(world.map().world_to_tile(plan.placed_at())),
+				plan.placed_at().distance_to(at)] + "finished the day, " + _what_her_walk_waited_on())
+		return true
+	return false
+
+## What her walk's siting waited on today, as `reason xN; reason xN`, or "nothing": the run log's
+## account of why the set piece a run owes never came (`WalkSiting.waits()`).
+func _what_her_walk_waited_on() -> String:
+	var waits := _siting.waits()
+	if waits.is_empty():
+		return "her walk waited on nothing"
+	var parts: Array[String] = []
+	for reason: String in waits:
+		parts.append("%s x%d" % [reason, int(waits[reason])])
+	return "her walk waited on " + "; ".join(parts)
+
+## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`). A
+## recipe's day starts with nothing owed and with everything the director does while she walks
+## switched off (`EventManager.start_recipe()`). This hands the director the recipe's bag to draw
+## her route's events from by its own rules (`EventDirector.start_recipe_route()`) and switches all
+## of it back on, as a played day has it: the events owed ahead of her
+## (`place_what_is_owed_ahead()`), the places a marble or the day leaves for her walk to site
+## (`site_what_is_on_her_way()`), and, once the baby sleeps and the walk home begins, the act III
+## and IV return patrols (`owe_the_return()`). Answers how many events her route is now owed.
+func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
+	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
+			world.run().resistance().progress())
+	return _director.owed() if _director else 0

@@ -24,7 +24,7 @@ const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
 const _SCRATCH_SAVE := "user://test_orientation_scratch.json"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_wants_rotation_only_for_a_portrait_touch_window(t)
 	_test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t)
 	_test_the_transform_sends_the_design_centre_to_the_rotated_centre(t)
@@ -40,7 +40,7 @@ func run(t) -> void:
 
 ## A `TouchControls` in the tree, two frames let pass so it shows, and a probe that hears the
 ## `pause` action the way `main` hears it.
-func _controls(t) -> TouchControls:
+func _controls(t: TestRunner) -> TouchControls:
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	t.add_child(controls)
 	await UI.frames(t)
@@ -66,7 +66,7 @@ func _finger(controls: TouchControls, index: int, at: Vector2, pressed: bool) ->
 ## `(hover: none) and (pointer: coarse)` alongside `(orientation: portrait)` for exactly the
 ## reason repeated here: nobody resizing a desktop window narrower than it is tall asked for a
 ## sideways game.
-func _test_wants_rotation_only_for_a_portrait_touch_window(t: Node) -> void:
+func _test_wants_rotation_only_for_a_portrait_touch_window(t: TestRunner) -> void:
 	t.check(not ScreenOrientation.wants_rotation(Vector2(1280.0, 720.0), true),
 			"a landscape window does not rotate even on a touch device")
 	t.check(not ScreenOrientation.wants_rotation(Vector2(400.0, 900.0), false),
@@ -74,7 +74,7 @@ func _test_wants_rotation_only_for_a_portrait_touch_window(t: Node) -> void:
 	t.check(ScreenOrientation.wants_rotation(Vector2(400.0, 900.0), true),
 			"a portrait window on a touch device rotates")
 
-func _test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t: Node) -> void:
+func _test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t: TestRunner) -> void:
 	t.check(Vector2(ScreenOrientation.content_scale_size(false)) == ScreenOrientation.DESIGN_SIZE,
 			"unrotated presents at the project's own 1280x720")
 	t.check(Vector2(ScreenOrientation.content_scale_size(true)) == ScreenOrientation.ROTATED_SIZE,
@@ -83,7 +83,7 @@ func _test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t: Nod
 ## Rotating about the centre of one box onto the centre of the other is the simplest thing that
 ## can be wrong in either direction (swapped axes, a stray translation) and still look plausible,
 ## so it is worth its own check before the round trip below is trusted.
-func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: Node) -> void:
+func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: TestRunner) -> void:
 	var mapped := ScreenOrientation.to_presented_space(ScreenOrientation.DESIGN_SIZE * 0.5, true)
 	t.check(mapped.is_equal_approx(ScreenOrientation.ROTATED_SIZE * 0.5),
 			"the centre of the 1280x720 box lands on the centre of the 720x1280 one")
@@ -91,21 +91,21 @@ func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: Node) 
 ## **A relationship, not a value**: whatever the rotation actually is, going out and
 ## back must be the identity, for several points including ones outside the design box (where a
 ## touch on the letterboxed edge of a non-16:9 window would land).
-func _test_the_transform_round_trips(t: Node) -> void:
-	for point in [TouchControls.PAUSE_CENTRE, Vector2.ZERO, Vector2(-40.0, 800.0)]:
+func _test_the_transform_round_trips(t: TestRunner) -> void:
+	for point: Vector2 in [TouchControls.PAUSE_CENTRE, Vector2.ZERO, Vector2(-40.0, 800.0)]:
 		var there := ScreenOrientation.to_presented_space(point, true)
 		var back := ScreenOrientation.to_design_space(there, true)
 		t.check(back.is_equal_approx(point),
 				"round-tripping %s through the rotation lands back on itself" % point)
 
-func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
+func _test_a_rotated_touch_still_fires_the_pause_button(t: TestRunner) -> void:
 	var rig := Node2D.new()
 	rig.add_to_group("player")
 	t.add_child(rig)
 	var controls := await _controls(t)
 	var probe := PauseProbe.new()
 	t.add_child(probe)
-	controls.rotated = true
+	controls.use_rotated(true)
 
 	var screen_pause := ScreenOrientation.to_presented_space(TouchControls.PAUSE_CENTRE, true)
 	_finger(controls, 0, screen_pause, true)
@@ -120,7 +120,7 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 	# The geometry the release itself asks is answered in design space -- the remap above is what
 	# has to hand it the right point, which is exactly what this whole suite is checking. Unrotated,
 	# the same press and lift at the unrotated position fires too.
-	controls.rotated = false
+	controls.use_rotated(false)
 	_finger(controls, 0, TouchControls.PAUSE_CENTRE, true)
 	_finger(controls, 0, TouchControls.PAUSE_CENTRE, false)
 	Input.flush_buffered_events()
@@ -135,12 +135,12 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 ## class doc for why — but the pause corner it must *not* be read as still does, so a touch well
 ## away from the button, at its own rotated screen position, must still set a direction rather
 ## than being swallowed by a stale, unrotated comparison to `PAUSE_CENTRE`.
-func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) -> void:
+func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: TestRunner) -> void:
 	var rig := Node2D.new()
 	rig.add_to_group("player")
 	t.add_child(rig)
 	var controls := await _controls(t)
-	controls.rotated = true
+	controls.use_rotated(true)
 
 	var screen_point := ScreenOrientation.to_presented_space(Vector2(400.0, 400.0), true)
 	_finger(controls, 0, screen_point, true)
@@ -158,7 +158,7 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 ## design-space direction survives the round trip unchanged. Proven here by giving a bare rig the
 ## same compensating camera rotation `main.gd` would, rather than assuming `canvas_transform` is
 ## identity the way this suite's other rotation tests can — neither of those ever touches a focus.
-func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: Node) -> void:
+func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: TestRunner) -> void:
 	var rig := Node2D.new()
 	rig.add_to_group("player")
 	t.add_child(rig)
@@ -181,7 +181,7 @@ func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: Node)
 	camera.force_update_scroll()
 
 	var controls := await _controls(t)
-	controls.rotated = true
+	controls.use_rotated(true)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 
 	# West of the left focus, in design space -- the same offset `test_touch.gd`'s own (unrotated)
@@ -203,7 +203,7 @@ func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: Node)
 ## decide its rect independently of any parent's size. Checked by pinning one under a parent whose
 ## own size is nothing like 1280x720, which a fractional anchor would have picked up and a fixed
 ## one must not.
-func _test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t: Node) -> void:
+func _test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t: TestRunner) -> void:
 	var parent := Control.new()
 	parent.size = Vector2(50.0, 4000.0)
 	t.add_child(parent)
@@ -223,7 +223,7 @@ func _test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t: Node
 ## The not-rotated case is exactly identity — no rotation and no recentring — and the rotated case
 ## is exactly the rotation every layer shares, so `main._apply_orientation()` reads as the one call
 ## `apply_to_layer()` is for rather than an `if rotate: ... else: IDENTITY` at every layer.
-func _test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t: Node) -> void:
+func _test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t: TestRunner) -> void:
 	var layer := CanvasLayer.new()
 
 	ScreenOrientation.apply_to_layer(layer, false)
@@ -241,14 +241,14 @@ func _test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t:
 ## design-space point at exactly the screen position `ScreenOrientation.to_presented_space()` says
 ## that point belongs at — the same relationship `TouchControls`' own tests hold its input remap
 ## to, checked here for the drawing side every other layer of screen furniture relies on instead.
-func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t: Node) -> void:
+func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t: TestRunner) -> void:
 	var layer := CanvasLayer.new()
 	var control := Control.new()
 	layer.add_child(control)
 	ScreenOrientation.pin_to_design_box(control)
 	ScreenOrientation.apply_to_layer(layer, true)
 
-	for point in [Vector2(130.0, 500.0), Vector2(1150.0, 500.0), Vector2(640.0, 360.0)]:
+	for point: Vector2 in [Vector2(130.0, 500.0), Vector2(1150.0, 500.0), Vector2(640.0, 360.0)]:
 		# The control's own transform is identity (fixed anchors, no rotation or scale of its
 		# own), so a point local to it is a point in the layer's local space too -- what is left
 		# to check is that the layer's transform alone carries it the rest of the way.
@@ -266,7 +266,7 @@ func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(
 ##
 ## `main.gd` is never instantiated as a scene in this suite — see `tests/test_main.gd`'s own doc
 ## for why — so this is the same script-only instance, its handful of dependencies wired by hand.
-func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
+func _test_every_screen_furniture_layer_is_named_by_main(t: TestRunner) -> void:
 	var window: Window = t.get_window()
 	var original_size: Vector2i = window.size
 	var original_scale: Vector2i = window.content_scale_size
@@ -293,7 +293,7 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 		t.check(Boot.carries_the_rotation(layer),
 				"once the window turns portrait, '%s' carries the one rotation every layer of "
 				% layer.name + "screen furniture shares")
-	for expected in [Boot.hud(main), Boot.summary(main), Boot.pause(main), Boot.title(main)]:
+	for expected: CanvasLayer in [Boot.hud(main), Boot.summary(main), Boot.pause(main), Boot.title(main)]:
 		t.check(expected in layers, "'%s' is among them" % expected.name)
 
 	window.size = original_size

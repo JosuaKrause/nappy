@@ -5,7 +5,7 @@ extends LaneMover
 ## An agent is not an event. An event is authored, telegraphed and held to the fairness
 ## contract; an agent is traffic, and the player is expected to walk around it rather than
 ## be warned about it. What the two share is the *source*: each composes an `ExcitementSource`
-## (`excitement`, a `CrowdExcitement` here), so nothing pushes a value at the baby and the crowd
+## (`mood()`, a `CrowdExcitement` here), so nothing pushes a value at the baby and the crowd
 ## composes with the events by plain addition.
 ##
 ## The lane movement is `LaneMover`'s; this is the crowd member on top of it: its excitement, the
@@ -17,11 +17,34 @@ extends LaneMover
 const MARK_HEIGHT := 30.0
 const MARK_WIDTH := 15.0
 
-var colour := Color.WHITE
+## The coat or paint colour, rolled from its look's palette as it is placed.
+var _colour := Color.WHITE
+
+## What this agent is dressed in, the colour its picture is drawn in.
+func clothing_colour() -> Color:
+	return _colour
 
 ## `--skip crowd`, handed in by the `Crowd` that makes this agent: `_draw()` returns before
 ## drawing anything.
-var skip_draw := false
+var _skip_draw := false
+
+## Whether the player is touching this agent now (`touching`).
+func is_touched() -> bool:
+	return touching
+
+## Notes that the player is touching this agent, or no longer is.
+func be_touched(now: bool) -> void:
+	touching = now
+
+## Has this agent draw nothing (`--skip crowd`), or draw again.
+func skip_drawing(now: bool) -> void:
+	_skip_draw = now
+
+## This body as the thing that charges the baby (`CrowdExcitement`): its jolt, its field, its caret.
+## The live object rather than a copy, since the crowd's own loops (`CrowdSources`, `Crowd._horn()`)
+## ask it of every agent every tick.
+func mood() -> CrowdExcitement:
+	return _excitement
 
 ## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
 ## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
@@ -33,7 +56,7 @@ var touching := false
 ## a horn leaves and its share of the field, its clock, its ledger of what it has landed, its
 ## projection and its caret's strength. `ExcitementHalo` tells it once a frame where she is, which
 ## is the one channel that reaches every body in the crowd whether or not it is near a road.
-var excitement := CrowdExcitement.new(self)
+var _excitement := CrowdExcitement.new(self)
 
 ## The sector, flip and third term currently drawn, so a redraw only happens when one of them
 ## changes. The third is the gait frame for a walker and the body's bob for a car, quantised by
@@ -103,7 +126,7 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 func end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
 	# contact or a horn left, run here because every tick that is not skipped ends here.
-	excitement.advance(delta)
+	_excitement.advance(delta)
 	var picture := _look.picture(velocity())
 	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
@@ -114,22 +137,23 @@ func end_the_frame(delta: float) -> bool:
 	# (`CrowdView.drawn_box()`) redraws it from what it is now, caret included, which is before the
 	# margin has let any of it onto the screen. An agent with no view, or out of the tree, is always
 	# drawn: a hand-built rig has no screen to be off.
-	if view != null and is_inside_tree() \
-			and not view.drawn_box().intersects(Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size)):
+	if _view != null and is_inside_tree() \
+			and not _view.drawn_box().intersects(
+					Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size)):
 		_picture_is_stale = true
 		return false
 	if changed or _picture_is_stale:
 		_picture_is_stale = false
 		# What this redraw puts up is the mark as it stands now — the same answer `_draw()` asks
 		# for, cached against the clock — so a mark that drops on the next frame is taken off.
-		_was_marked = _carets and excitement.caret_strength() > 0
+		_was_marked = _carets and _excitement.caret_strength() > 0
 		queue_redraw()
 		return true
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach
 	# can change its strength frame to frame with nothing else about the picture moving. The
 	# one frame after the mark comes down is what takes the caret off again.
-	if _carets and (excitement.caret_strength() > 0 or _was_marked):
-		_was_marked = excitement.caret_strength() > 0
+	if _carets and (_excitement.caret_strength() > 0 or _was_marked):
+		_was_marked = _excitement.caret_strength() > 0
 		queue_redraw()
 		return true
 	return false
@@ -145,7 +169,7 @@ func _ready() -> void:
 	set_process(false)
 
 func _process(_delta: float) -> void:
-	if not excitement.is_startled():
+	if not _excitement.is_startled():
 		set_process(false)
 		return
 	queue_redraw()
@@ -164,37 +188,49 @@ func _build_rim() -> EntityHalo:
 ## being startled is enough to skip it, which is the same hysteresis a contact uses: a pair sitting
 ## inside each other for half a second must cost one crash, not thirty.
 func crashed_into() -> void:
-	if excitement.is_startled():
+	if _excitement.is_startled():
 		return
 	_speed = 0.0
-	excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
+	_excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 
 # ---------------------------------------------------------------- drawing ---
 
-## How this agent is drawn, installed with `kind`: a `WalkerLook` or a `CarLook`. Everything the
-## drawing differs on between the two kinds asks it.
+## How this agent is drawn, installed with its kind (`_take_kind()`): a `WalkerLook` or a
+## `CarLook`. Everything the drawing differs on between the two kinds asks it.
 var _look: AgentLook
 ## The baked atlas pages the crowd holds its group on (`AtlasLibrary`), handed by the crowd that
 ## makes this agent; the look draws its regions from it.
-var atlas: AtlasLibrary
+var _atlas: AtlasLibrary
+
+## Hands this agent the atlas library its look draws from, once, as the crowd makes it.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
+
+## The picture region `name` of the atlas this agent's look draws from.
+func picture_region(name: StringName) -> AtlasTexture:
+	return _atlas.region(name)
 
 ## Whether this agent's look is marked by a caret, kept here by `_kind_installed()` as a plain
 ## member because the redraw gate reads it every frame of every agent.
 var _carets := false
 
-func _init() -> void:
+## A walker unless it is made `agent_kind`: the crowd makes each agent of the kind it will
+## place, and a hand-built agent of a suite is made one the same way. `setup()` and `setup_at()`
+## take the kind again, which changes nothing for the kind already taken.
+func _init(agent_kind := Kind.WALKER) -> void:
 	super()
 	_look = WalkerLook.new(self)
-	excitement.rim = _rim
+	_excitement.use_rim(_rim)
+	_take_kind(agent_kind)
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
 ##
 ## Overrides LaneMover._kind_installed.
 func _kind_installed() -> void:
-	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
+	_look = CarLook.new(self) if is_car() else WalkerLook.new(self)
 	_carets = _look.carets()
-	excitement.take_kind(kind)
+	_excitement.take_kind(_kind)
 
 ## Overrides LaneMover.restart_the_picture.
 func restart_the_picture() -> void:
@@ -210,19 +246,27 @@ func advance_the_picture(delta: float) -> void:
 ## Overrides LaneMover._dress.
 func _dress() -> void:
 	var palette := _look.palette()
-	colour = palette[_rng.randi_range(0, palette.size() - 1)]
+	_colour = palette[_rng.randi_range(0, palette.size() - 1)]
 
 ## Overrides LaneMover._entry_picture_clearance.
 func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
-## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
-## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
-## and a cue for what is charging her right now has nothing to say about it.
-func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
-	if canvas == _rim.entity_halo():
+## The drop shadow under this agent with it at `at` in `canvas`'s own coordinates — its look's
+## `AgentLook.shadow_outlines()`, an oval under a walker's feet and one per wheel pair under a car —
+## skipped for its own halo ring, the same rule `EventLook._draw_body_shadow` has: the shadow is the
+## ground under the thing, not the thing, and a cue for what is charging her right now has nothing
+## to say about it.
+func draw_shadow(canvas: CanvasItem, at: Vector2) -> void:
+	if canvas == _rim.entity_halo() or not shape().casts_a_shadow():
 		return
-	shape.draw_shadow(canvas, at, axis)
+	for outline in _look.shadow_outlines(at):
+		canvas.draw_colored_polygon(outline, Palette.SHADOW)
+
+## The ground this agent's shadow covers with it standing at `at`, what `draw_shadow()` fills:
+## read by the debug view's shadow layer (`DebugLayers`) at the agent's own position.
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	return _look.shadow_outlines(at)
 
 func _draw() -> void:
 	if frame_timing != null and frame_timing.running():
@@ -232,7 +276,7 @@ func _draw() -> void:
 	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `AgentLook.draw_body()` is
 	# left alone rather than gated itself, since `EntityHalo` calls it too for a picked agent's own
 	# ring, which is a different drawing than the ordinary frame this flag measures.
-	if skip_draw:
+	if _skip_draw:
 		return
 	# Told to `Sprites` as well as to the canvas, for the reason `EventLook.draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the
@@ -261,14 +305,14 @@ func _draw() -> void:
 ## proximity gate is marked all the same: a car whose lane she is standing in is projected into
 ## her, on its current course, whether or not it has honked yet.
 ##
-## Doubled and in `MARK_LETHAL` exactly when `excitement.will_be_lethal()` says the strike box
-## reaches her, because a car is exactly as lethal as a `hard_fail` event and being told apart by
+## Doubled and in `MARK_LETHAL` exactly when `mood().will_be_lethal()` says the strike box
+## reaches her, because a car is exactly as lethal as a lethal event and being told apart by
 ## hue is what the doubling exists to avoid. **Breathes with the horn's own decay while one is running** —
 ## the one thing a ring does that a discrete symbol does not get for free — and holds full size
 ## the rest of the time, since a projected approach with no jolt running has no envelope of its
 ## own to breathe with.
 func _draw_mark() -> void:
-	var strength := excitement.caret_strength()
+	var strength := _excitement.caret_strength()
 	if strength <= 0:
 		return
 	# **Breathes on every drawn frame, not only on the tick.** The jolt runs down by a tick at a time,
@@ -277,8 +321,8 @@ func _draw_mark() -> void:
 	# draw-only: nothing in the simulation reads it. `_process()` below redraws a marked car with a
 	# jolt running, which is a handful of cars, and stops when the jolt does.
 	var ahead := Engine.get_physics_interpolation_fraction() / float(Engine.physics_ticks_per_second)
-	var swell := excitement.jolt_swell_after(ahead)
-	set_process(excitement.is_startled())
+	var swell := _excitement.jolt_swell_after(ahead)
+	set_process(_excitement.is_startled())
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
 	var colour := Palette.MARK_LETHAL if strength == 2 else Palette.MARK_COSTLY

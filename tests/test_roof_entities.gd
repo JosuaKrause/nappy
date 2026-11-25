@@ -4,17 +4,27 @@ extends RefCounted
 ## Three things are tested apart. Where a roof's units stand is decided by its random draws, so the
 ## roof drawn is checked on its own as a function of the seed and the lot. The roof that holds the
 ## units is checked with a drawer that records what it is told to draw
-## (`tests/recording_roof_drawer.gd`), handed in through `Building.roof_drawer` as the city hands the
+## (`tests/recording_roof_drawer.gd`), handed in through `Building.equip()` as the city hands the
 ## real one: every unit is drawn once, at its foot, in the layer the city gave it, at the rotor
 ## phase of the clock the city gave it. And the real drawer (`RoofDrawer`) is checked on
 ## its own, handed chosen units and a bare layer, with no building and no roll.
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 
-func run(t) -> void:
+## The city's clock stood still at `at` seconds: all a building asks of it (`Building.use_scenery_clock()`)
+## is the time its rotors turn by.
+class FixedClock extends SceneryGround:
+	var at := 0.0
+
+	## Overrides SceneryGround.elapsed.
+	func elapsed() -> float:
+		return at
+
+func run(t: TestRunner) -> void:
 	_test_every_placed_unit_is_drawn_at_its_foot_in_entities(t)
-	_test_the_real_drawer_draws_each_unit_as_told(t)
+	await _test_the_real_drawer_draws_each_unit_as_told(t)
 	_test_the_layout_is_a_function_of_the_seed_and_the_lot(t)
 	_test_reserved_cells_hold_native_base_widths(t)
 	_test_narrow_and_fragmented_roofs_keep_their_unit_count(t)
@@ -27,7 +37,7 @@ func run(t) -> void:
 ## when null) on `clock` when one is given, both handed in before it enters the tree as
 ## `City._spawn_buildings()` hands them. A recording drawer stands each unit through the real one
 ## too when `stand` is set, so the objects are in the layer.
-func _new_fixture(t, district: int, drawer: RoofDrawer = null,
+func _new_fixture(t: TestRunner, district: GameEnums.BlockPurpose, drawer: RoofDrawer = null,
 		clock: SceneryGround = null, stand := false) -> Dictionary:
 	var root := Node2D.new()
 	var entities := Node2D.new()
@@ -37,17 +47,18 @@ func _new_fixture(t, district: int, drawer: RoofDrawer = null,
 	t.add_child(root)
 	var building := Building.new()
 	building.name = "Building"
-	building.atlas = AtlasLibrary.new()
-	building.roof_drawer = drawer if drawer != null else RoofDrawer.new(building.atlas)
+	var atlas := AtlasLibrary.new()
+	building.equip(atlas, drawer if drawer != null else RoofDrawer.new(atlas), FrontDrawer.new(atlas))
 	if stand:
-		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(building.atlas)
+		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(atlas)
 	building.position = Vector2(320.0, 320.0)
-	building.footprint = Vector2(256.0, 256.0)
-	building.height = 64.0
-	building.district = district
-	building.roof_object_parent = entities
-	building.scenery_clock = clock
+	building.stand_on(Rect2i(), Vector2(256.0, 256.0), 0, district, 64.0)
+	building.put_roof_objects_in(entities)
+	building.use_scenery_clock(clock)
 	root.add_child(building)
+	# Equipped as the city equips it, the building waits for the residency, which stands a building
+	# in view up.
+	building.residence().set_resident(true)
 	return {"root": root, "entities": entities, "building": building}
 
 func _free(fixture: Dictionary) -> void:
@@ -79,10 +90,10 @@ func _interior_cells(building: Building) -> int:
 ## half way through the second interval a rotor shows its second frame and half way through the
 ## third its first again: the phase the building hands the drawer, so a rebuilt roof's rotors turn
 ## in step with the ones that were never rebuilt.
-func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t) -> void:
+func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
-	var clock := SceneryGround.new()
-	clock.elapsed = Building.VENT_FRAME_INTERVAL * 1.5
+	var clock := FixedClock.new()
+	clock.at = Building.VENT_FRAME_INTERVAL * 1.5
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL, drawer, clock)
 	var entities: Node2D = fixture["entities"]
 	var building: Building = fixture["building"]
@@ -105,8 +116,8 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t) -> void:
 	for drawn in standing:
 		t.check(drawn.rotor_frame_b, "a roof drawn in the clock's second interval turns its rotors"
 				+ " on their second frame")
-	clock.elapsed = Building.VENT_FRAME_INTERVAL * 2.5
-	building.variant += 1
+	clock.at = Building.VENT_FRAME_INTERVAL * 2.5
+	building.draw_as(building.district(), building.look_variant() + 1, building.height())
 	var rebuilt := drawer.standing()
 	t.check(not rebuilt.is_empty(), "the rebuilt roof has units to draw")
 	for drawn in rebuilt:
@@ -119,10 +130,15 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t) -> void:
 
 ## The real drawer on its own: chosen units into a bare layer, one of each kind of thing a roof
 ## unit can be (a vent housing on either rotor frame, a joined duct section, an ordinary picture).
-func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
+## The frame a rotor shows is the picture it stands, read off a recording scenery drawer handed to
+## the drawer as the city hands it its own (`tests/recording_scenery_drawer.gd`), once a frame has
+## drawn it.
+func _test_the_real_drawer_draws_each_unit_as_told(t: TestRunner) -> void:
 	var layer := Node2D.new()
 	t.add_child(layer)
-	var drawer := RoofDrawer.new(AtlasLibrary.new())
+	var atlas := AtlasLibrary.new()
+	var scenery := RecordingSceneryDrawer.new()
+	var drawer := RoofDrawer.new(atlas, scenery)
 	var units := [
 		{"cell": Vector2i(2, 3), "texture": Building.VENT_HOUSING, "at": Vector2(48, -96),
 			"links": -1, "frame_b": true},
@@ -137,6 +153,7 @@ func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
 		objects.append(drawer.draw(layer, unit.cell, unit.texture, unit.at, unit.links, unit.frame_b))
 	t.check(layer.get_children() == objects, "each unit stands in the layer it was handed, in the"
 			+ " order it was drawn")
+	await t.get_tree().process_frame
 	for i in units.size():
 		var unit: Dictionary = units[i]
 		var object := objects[i]
@@ -150,8 +167,12 @@ func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
 					"roof art has no collision child")
 		t.check(not object.is_processing(), "stationary roof housing has no per-frame callback")
 		if unit.texture == Building.VENT_HOUSING:
+			var shown: Array[Dictionary] = []
+			if object.rotor != null:
+				shown = scenery.shown_on(object.rotor)
+			var picture := Building.VENT_ROTOR_B if unit.frame_b else Building.VENT_ROTOR
 			t.check(object.rotor != null and object.rotor.get_parent() == object
-					and object.rotor.frame_b == unit.frame_b,
+					and shown.size() == 1 and shown[0].texture == atlas.region(picture),
 					"a vent housing stands with its turning rotor on the frame it was handed")
 		else:
 			t.check(object.rotor == null and object.get_child_count() == 0,
@@ -160,7 +181,7 @@ func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
 
 # ------------------------------------------------------------------ the layout ---
 
-func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t) -> void:
+func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var twin_drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
@@ -169,36 +190,37 @@ func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t) -> void:
 	var other: Building = twin["building"]
 	var differs := false
 	for variant in 8:
-		building.variant = variant
-		other.variant = variant
+		building.draw_as(building.district(), variant, building.height())
+		other.draw_as(other.district(), variant, other.height())
 		var roof := drawer.drawn()
 		t.check(not roof.is_empty(), "an industrial roof of seed %d has units" % variant)
 		t.check(twin_drawer.drawn() == roof,
 				"the same seed on the same lot lays the same roof on another building")
-		building.variant = variant + 100
+		building.draw_as(building.district(), variant + 100, building.height())
 		differs = differs or drawer.drawn() != roof
-		building.variant = variant
+		building.draw_as(building.district(), variant, building.height())
 		t.check(drawer.drawn() == roof, "laying a seed again gives the same roof")
 	t.check(differs, "another seed lays another roof on the same lot")
 	_free(fixture)
 	_free(twin)
 
-func _test_industrial_networks_fit_and_connect(t) -> void:
+func _test_industrial_networks_fit_and_connect(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
 	var signatures := {}
 	var branched := false
+	var extension: Array[int] = [0, 0, 1, 3, 3, 1, 0, 0]
 	for variant in 40:
-		building.variant = variant
-		building.roof_extension_rows = [0, 0, 1, 3, 3, 1, 0, 0]
+		building.draw_as(building.district(), variant, building.height())
+		building.extend_roof_over(extension)
 		var layout := drawer.layout()
 		var network := {}
 		var used := {}
 		var signature := ""
 		for entry: Dictionary in layout:
 			for cell: Vector2i in entry["cells"]:
-				t.check(RoofReads.on_the_interior(building, cell) and not used.has(cell),
+				t.check(RoofReads.on_the_interior(building, extension, cell) and not used.has(cell),
 						"every duct and equipment foot fits free interior roof, extensions included")
 				used[cell] = true
 			if entry.has("links"):
@@ -230,7 +252,7 @@ func _test_industrial_networks_fit_and_connect(t) -> void:
 	t.check(signatures.size() > 2 and branched, "roof layouts vary in topology and include junctions")
 	_free(fixture)
 
-func _test_reserved_cells_hold_native_base_widths(t) -> void:
+func _test_reserved_cells_hold_native_base_widths(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
@@ -254,22 +276,24 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 				% [width, horizontal_cells * Building.TILE])
 	_free(fixture)
 
-func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
+func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
 	var vertical := false
+	var unextended: Array[int] = []
 	for size: Vector2 in [Vector2(96, 448), Vector2(128, 128), Vector2(160, 192),
 			Vector2(288, 160), Vector2(192, 320)]:
-		building.footprint = size
+		building.stand_on(building.lot_rect(), size, building.look_variant(), building.district(),
+				building.height())
 		for variant in 12:
-			building.variant = variant
+			building.draw_as(building.district(), variant, building.height())
 			var layout := drawer.layout()
 			var occupied := {}
 			var network := {}
 			for entry: Dictionary in layout:
 				for cell: Vector2i in entry["cells"]:
-					t.check(RoofReads.on_the_interior(building, cell) and not occupied.has(cell),
+					t.check(RoofReads.on_the_interior(building, unextended, cell) and not occupied.has(cell),
 							"narrow and shallow roofs never reserve a lip, absent cell or occupied base")
 					occupied[cell] = true
 				if entry.has("links"):
@@ -278,7 +302,7 @@ func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
 				vertical = true
 				for links: int in network.values():
 					t.check((links & 3) == 0, "a one-column network uses only north/south links")
-			if building.columns() >= 3 and RoofReads.tallest_of(building) >= 3:
+			if building.columns() >= 3 and RoofReads.tallest_of(building, unextended) >= 3:
 				t.check(layout.size() > network.size(),
 						"narrow and shallow roof layouts retain ordinary compact equipment")
 	t.check(vertical, "the narrow fixture exercises a generated purely vertical network")
@@ -288,9 +312,11 @@ func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
 ## so a roof keeps the count its cells rolled however few broad units fit on it. Checked by what
 ## that means from outside: a three-column roof, where no broad unit fits, lays out as many units
 ## as a wide roof with as many interior cells, in every district and on every seed.
-func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
-	for district in [GameEnums.BlockPurpose.INDUSTRIAL, GameEnums.BlockPurpose.CIVIC,
-			GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.COMMERCIAL]:
+func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t: TestRunner) -> void:
+	var districts: Array[GameEnums.BlockPurpose] = [GameEnums.BlockPurpose.INDUSTRIAL,
+			GameEnums.BlockPurpose.CIVIC, GameEnums.BlockPurpose.RESIDENTIAL,
+			GameEnums.BlockPurpose.COMMERCIAL]
+	for district in districts:
 		# Three columns by seven and by thirteen tiles, with a two-tile wall, leave one interior
 		# column three and nine cells deep; five columns by five and by seven leave three columns
 		# one and three rows deep.
@@ -301,14 +327,16 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
 			var wide_fixture := _new_fixture(t, district, wide_drawer)
 			var narrow: Building = narrow_fixture["building"]
 			var wide: Building = wide_fixture["building"]
-			narrow.footprint = pair[0] * Building.TILE
-			wide.footprint = pair[1] * Building.TILE
+			narrow.stand_on(narrow.lot_rect(), pair[0] * Building.TILE, narrow.look_variant(),
+					narrow.district(), narrow.height())
+			wide.stand_on(wide.lot_rect(), pair[1] * Building.TILE, wide.look_variant(),
+					wide.district(), wide.height())
 			var cells := _interior_cells(narrow)
 			t.check(cells > 0 and cells == _interior_cells(wide),
 					"the two roofs offer as many interior cells (%d)" % cells)
 			for variant in 24:
-				narrow.variant = variant
-				wide.variant = variant
+				narrow.draw_as(narrow.district(), variant, narrow.height())
+				wide.draw_as(wide.district(), variant, wide.height())
 				var layout := narrow_drawer.layout()
 				var wide_layout := wide_drawer.layout()
 				t.check(layout.size() == wide_layout.size(),
@@ -323,7 +351,7 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
 
 # ------------------------------------------------------- the holder, drawn for real ---
 
-func _test_rebuild_releases_external_roof_objects(t) -> void:
+func _test_rebuild_releases_external_roof_objects(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL, drawer, null, true)
 	var entities: Node2D = fixture["entities"]
@@ -332,7 +360,7 @@ func _test_rebuild_releases_external_roof_objects(t) -> void:
 	for object in _roof_objects_in(entities):
 		old_objects.append(weakref(object))
 	t.check(not old_objects.is_empty(), "the roof had objects to release")
-	building.variant += 1
+	building.draw_as(building.district(), building.look_variant() + 1, building.height())
 	for object: WeakRef in old_objects:
 		t.check(object.get_ref() == null, "rebuild frees superseded entity roof art")
 	var replacements := _roof_objects_in(entities)

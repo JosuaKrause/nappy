@@ -9,76 +9,76 @@ Every figure is on quiet sidewalk (ground multiplier 1.0) with nothing built bet
 - `Tuning.WALK_SPEED` = 92.0 px/s
 - `EventScheduler.WALL_WORTH_OF_COST` = 48.0 points
 
-**`Geometry and role`** is what a row's own data says, unconditionally: `role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; `pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope `current_intensity()` uses, and a dash where a row does not pulse; `speed` is a pursuer's `PursuitSpec.speed` (almost always faster than its own cold `speed`, which is usually 0), a mobile row's own `speed`, and a dash for anything that does not move; `walk_through_cost()` is the field integrated along a straight line through the centre, less the walking decay over the same crossing.
+**`Geometry and role`** is what a row's own data says, unconditionally: `role` is `EventScheduler.role_for()` at day 0 (a row's cold shape, before any resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; `pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope `current_intensity()` uses, and a dash where a row does not pulse; `speed` is a pursuer's `PursuitSpec.speed()` (almost always faster than its own cold route speed, which is usually 0), a moving row's own route speed (`RouteSpec.speed()`), and a dash for anything that does not move; `walk_through_cost()` is the field integrated along a straight line through the centre, less the walking decay over the same crossing.
 
 **`Walking at a fixed distance — awake`/`Walking at a fixed distance — asleep`** are the net points a second while she walks and stays a fixed distance from a row's centre: the field (`EventDef.emission_at()`, which is what `contribution_at()` charges) averaged over the row's own pulse, times the sleeping sensitivity where the baby is asleep, less the walking decay. A pure query on the row's own data — no instance, no notice or chase state — so every included row gets a real number here, pursuers and the three detainers (`chatting_mother`, `checkpoint_hut`, `checkpoint_post`) included, the same way `walk_through_cost()` already prices them: a detainer's real cost is `Tuning.CHAT_EXCITEMENT` over the hold rather than this field, so its figures here are notional, exactly as `docs/EVENTS.md` already says of its own column.
 
-**`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase except where the two paragraphs below say otherwise. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a row that pursues or waits (`EventDef.pursuit` or `EventDef.notice` set: alley_mouse, pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for such a row. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
+**`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase except where the two paragraphs below say otherwise. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a row that pursues or waits (`EventDef.pursues()` or `EventDef.waits_for_her()`: alley_mouse, pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for such a row. The 0px column is dashed for a row with a solid, still body (`obstructs_within() > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
 
 **A row that comes at her is met the moment it is created, its telegraph already spent.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: it is created just off screen down her own line, after its screen-edge warning when it telegraphs (the cyclist, `EventManager.spawn_warned()`) and at once when it does not (the loose dog, `EventsAhead._send_down_her_line()`), coming at her at its own intensity. So its pass is simulated from that creation, at the closest it can be made on any heading (`SpawnSiting.least_distance()`, the view's half height, so the figure does not depend on which way a walk was going), moving as it moves. Such a row is measured once rather than averaged over 8 pulse phases: it is created at the age that has it reach her, walking into it from where it is created closest, at the loud of its beat (`EventSpawner.age_when_warned()`), so how far through the beat it is when it reaches her is fixed, not a phase she happens to arrive on.
 
-**Every other row is walked up to, and its telegraph is long over by then** — a `MAP` placement was made at dawn — so those passes start after the telegraph and nothing above changes what they say.
+**Every other row is walked up to, and its telegraph is long over by then** — a `MAP` placement was made at dawn — so those passes start after the telegraph and nothing above changes what they say. The dog walker the director sends ahead of her down her line is priced the same: it is created past its telegraph at a point of its beat drawn on the director's stream (`EventDirector.age_it_is_sent_at()`), so the point that reaches her is as free as for one she walks up to, wherever it is created.
 
 Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a heading-free siting, no clock and no seed anywhere in the arithmetic — two runs on the same tree write the same bytes.
 ## Geometry and role
 
-| id                   |      role | intensity | core_intensity | core_radius | inner_radius | outer_radius | falloff_power | pulse_period | pulse_trough |     speed | walk_through_cost |
-| -------------------- | --------- | --------- | -------------- | ----------- | ------------ | ------------ | ------------- | ------------ | ------------ | --------- | ----------------- |
-| playground           |      none |       0.0 |              — |           — |         40.0 |        150.0 |           2.0 |          9.0 |          0.0 |         — |             -19.6 |
-| cat_dash             |      none |      17.0 |              — |           — |         30.0 |        120.0 |           2.0 |            — |            — |     240.0 |              17.6 |
-| alley_mouse          |  friction |      21.0 |              — |           — |         15.0 |         60.0 |           2.0 |            — |            — |     200.0 |              12.7 |
-| dog_walker           |  friction |      33.0 |              — |           — |         26.0 |        105.0 |           2.0 |          3.5 |          8.2 |      32.0 |              42.7 |
-| cafe_tables          |      wall |      12.0 |              — |           — |         38.0 |         64.0 |           2.0 |          6.0 |          3.0 |         — |               6.1 |
-| delivery_van         |      wall |       0.0 |              — |           — |         40.0 |        150.0 |           2.0 |            — |            — |         — |             -19.6 |
-| homeless_yeller      |  friction |      20.0 |              — |           — |         45.0 |        210.0 |           2.0 |          5.0 |          5.0 |      30.0 |              40.0 |
-| busker               |  friction |      19.3 |              — |           — |         45.0 |        190.0 |           2.0 |          7.0 |          4.8 |         — |              34.7 |
-| construction         |      wall |       0.0 |              — |           — |         46.0 |        200.0 |           2.0 |            — |            — |         — |             -26.1 |
-| fire_truck           |      wall |      26.0 |              — |           — |         70.0 |        340.0 |           2.0 |            — |            — |     190.0 |              97.0 |
-| burning_building     | set_piece |       0.0 |              — |           — |         60.0 |        260.0 |           2.0 |            — |            — |         — |             -33.9 |
-| burnt_shell          |  friction |       2.5 |              — |           — |         24.0 |         78.0 |           2.0 |            — |            — |         — |              -6.9 |
-| loose_dog            |      none |      39.0 |              — |           — |         30.0 |        140.0 |           2.0 |          2.2 |          9.8 |     132.0 |              69.3 |
-| market_stall         |      wall |      14.0 |              — |           — |         38.0 |         64.0 |           2.0 |          8.0 |          3.5 |         — |               8.5 |
-| leaf_blower          |      wall |      19.3 |           35.0 |        64.0 |         45.0 |        190.0 |           2.0 |          4.0 |          4.8 |         — |              52.9 |
-| pigeon_flock         |      none |      42.0 |              — |           — |         26.0 |        168.0 |           2.0 |            — |            — |         — |              44.9 |
-| cyclist              |      none |      18.0 |              — |           — |         33.0 |         90.0 |           2.0 |            — |            — |     165.0 |              16.0 |
-| ice_cream_van        |      wall |      13.0 |              — |           — |         48.0 |        240.0 |           2.0 |         11.0 |          3.2 |         — |              18.4 |
-| reversing_lorry      |      wall |      16.0 |              — |           — |         46.0 |        175.0 |           2.0 |          1.6 |          4.0 |         — |              23.1 |
-| charging_dog         |      none |      12.0 |              — |           — |         26.0 |        150.0 |           2.0 |            — |            — |     130.0 |               8.8 |
-| chatting_mother      |  friction |       4.5 |              — |           — |         56.0 |         70.0 |           2.0 |            — |            — |      26.0 |              -2.7 |
-| police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |           2.0 |            — |            — |      74.0 |               5.9 |
-| poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
-| poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
-| loudspeaker          |  friction |      20.0 |              — |           — |         45.0 |        210.0 |           2.0 |         22.0 |          5.0 |         — |              40.0 |
-| curfew_announce      |      wall |      30.0 |              — |           — |         45.0 |        210.0 |           2.0 |            — |            — |         — |              73.7 |
-| roadblock            |  friction |       0.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |             -23.3 |
-| checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
-| checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
-| door_guard           |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |           2.0 |            — |            — |         — |              47.7 |
-| alley_robbery        |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |           2.0 |          6.0 |          6.0 |         — |              83.9 |
-| military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |           2.0 |            — |            — |     120.0 |              68.6 |
-| barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| protest              |  friction |      19.5 |              — |           — |         39.0 |        269.0 |           2.0 |          8.0 |          4.9 |         — |              46.4 |
-| firefight            |      wall |      30.0 |              — |           — |         84.0 |        374.0 |           2.0 |          2.5 |          7.5 |         — |             132.1 |
-| fallen_tree          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| car_accident         |      wall |      50.0 |              — |           — |         24.0 |         96.0 |           2.0 |            — |            — |         — |              65.7 |
-| skip                 |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| scaffolding          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| burst_water_main     |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| moving_van           |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| burnt_out_car        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |           2.0 |            — |            — |      46.0 |              -5.2 |
-| robber_giving_chase  |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| van_guard_giving_chase |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| policeman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| guardsman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.3 |
-| finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |           2.0 |            — |            — |         — |             165.2 |
-| impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| basement_steam       |  friction |      25.0 |              — |           — |         24.0 |         90.0 |           2.0 |          4.0 |          6.2 |         — |              25.2 |
+| id                   |      role | intensity | core_intensity | core_radius | inner_radius | outer_radius | pulse_period | pulse_trough |     speed | walk_through_cost |
+| -------------------- | --------- | --------- | -------------- | ----------- | ------------ | ------------ | ------------ | ------------ | --------- | ----------------- |
+| playground           |      none |       0.0 |              — |           — |         40.0 |        150.0 |          9.0 |          0.0 |         — |             -19.6 |
+| cat_dash             |      none |      17.0 |              — |           — |         30.0 |        120.0 |            — |            — |     240.0 |              17.6 |
+| alley_mouse          |  friction |      21.0 |              — |           — |         15.0 |         60.0 |            — |            — |     200.0 |              12.7 |
+| dog_walker           |  friction |      33.0 |              — |           — |         26.0 |        105.0 |          3.5 |          8.2 |      32.0 |              42.7 |
+| cafe_tables          |      wall |      12.0 |              — |           — |         38.0 |         64.0 |          6.0 |          3.0 |         — |               6.1 |
+| delivery_van         |      wall |       0.0 |              — |           — |         40.0 |        150.0 |            — |            — |         — |             -19.6 |
+| homeless_yeller      |  friction |      20.0 |              — |           — |         45.0 |        210.0 |          5.0 |          5.0 |      30.0 |              40.0 |
+| busker               |  friction |      19.3 |              — |           — |         45.0 |        190.0 |          7.0 |          4.8 |         — |              34.7 |
+| construction         |      wall |       0.0 |              — |           — |         46.0 |        200.0 |            — |            — |         — |             -26.1 |
+| fire_truck           |      wall |      26.0 |              — |           — |         70.0 |        340.0 |            — |            — |     190.0 |              97.0 |
+| burning_building     | set_piece |       0.0 |              — |           — |         60.0 |        260.0 |            — |            — |         — |             -33.9 |
+| burnt_shell          |  friction |       2.5 |              — |           — |         24.0 |         78.0 |            — |            — |         — |              -6.9 |
+| loose_dog            |      none |      39.0 |              — |           — |         30.0 |        140.0 |          2.2 |          9.8 |     132.0 |              69.3 |
+| market_stall         |      wall |      14.0 |              — |           — |         38.0 |         64.0 |          8.0 |          3.5 |         — |               8.5 |
+| leaf_blower          |      wall |      19.3 |           35.0 |        64.0 |         45.0 |        190.0 |          4.0 |          4.8 |         — |              52.9 |
+| pigeon_flock         |      none |      42.0 |              — |           — |         26.0 |        168.0 |            — |            — |         — |              44.9 |
+| cyclist              |      none |      18.0 |              — |           — |         33.0 |         90.0 |            — |            — |     165.0 |              16.0 |
+| ice_cream_van        |      wall |      13.0 |              — |           — |         48.0 |        240.0 |         11.0 |          3.2 |         — |              18.4 |
+| reversing_lorry      |      wall |      16.0 |              — |           — |         46.0 |        175.0 |          1.6 |          4.0 |         — |              23.1 |
+| charging_dog         |      none |      12.0 |              — |           — |         26.0 |        182.5 |            — |            — |     130.0 |              10.2 |
+| chatting_mother      |  friction |       4.5 |              — |           — |         56.0 |         70.0 |            — |            — |      26.0 |              -2.7 |
+| police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |            — |            — |      74.0 |               5.9 |
+| poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |            — |            — |         — |              -5.3 |
+| poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |            — |            — |         — |              -5.3 |
+| loudspeaker          |  friction |      20.0 |              — |           — |         45.0 |        210.0 |         22.0 |          5.0 |         — |              40.0 |
+| curfew_announce      |      wall |      30.0 |              — |           — |         45.0 |        210.0 |            — |            — |         — |              73.7 |
+| roadblock            |  friction |       0.0 |              — |           — |         86.0 |        179.0 |            — |            — |         — |             -23.3 |
+| checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |            — |            — |         — |              -4.7 |
+| checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |            — |            — |         — |             -15.7 |
+| checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |            — |            — |         — |              -4.7 |
+| door_guard           |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
+| abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |            — |            — |         — |              47.7 |
+| alley_robbery        |      wall |      16.0 |              — |           — |         26.0 |        245.0 |            — |            — |     130.0 |              27.9 |
+| night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |          6.0 |          6.0 |         — |              83.9 |
+| military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |            — |            — |     120.0 |              68.6 |
+| barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| protest              |  friction |      19.5 |              — |           — |         39.0 |        269.0 |          8.0 |          4.9 |         — |              46.4 |
+| firefight            |      wall |      30.0 |              — |           — |         84.0 |        374.0 |          2.5 |          7.5 |         — |             132.1 |
+| fallen_tree          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| car_accident         |      wall |      50.0 |              — |           — |         24.0 |         96.0 |            — |            — |         — |              65.7 |
+| skip                 |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| scaffolding          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| burst_water_main     |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| moving_van           |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| burnt_out_car        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |            — |            — |      46.0 |              -5.2 |
+| robber_giving_chase  |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| van_guard_giving_chase |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
+| policeman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| guardsman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |            — |            — |         — |             165.2 |
+| impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
+| masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
+| basement_steam       |  friction |      25.0 |              — |           — |         24.0 |         90.0 |          4.0 |          6.2 |         — |              25.2 |
 
 ## Walking at a fixed distance — awake
 
@@ -103,7 +103,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | cyclist              |      12.0 |      12.0 |      10.4 |       2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | ice_cream_van        |       2.1 |       2.1 |       2.1 |       2.0 |       1.5 |      -0.2 |      -3.0 |      -6.0 |      -6.0 |      -6.0 |
 | reversing_lorry      |       4.0 |       4.0 |       4.0 |       3.5 |       2.2 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| charging_dog         |       6.0 |       6.0 |       5.6 |       4.1 |       1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| charging_dog         |       6.0 |       6.0 |       5.7 |       4.8 |       3.3 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | chatting_mother      |      -1.5 |      -1.5 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | police_patrol        |       4.0 |       4.0 |       4.0 |       3.5 |       2.4 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -116,7 +116,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | checkpoint_post      |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | door_guard           |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |      14.0 |      14.0 |      14.0 |      13.8 |      12.9 |       9.2 |       2.9 |      -6.0 |      -6.0 |      -6.0 |
-| alley_robbery        |      10.0 |      10.0 |       9.7 |       8.7 |       7.1 |       1.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| alley_robbery        |      10.0 |      10.0 |       9.8 |       9.2 |       8.2 |       4.9 |      -0.1 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       9.0 |       9.0 |       9.0 |       9.0 |       8.8 |       7.6 |       5.2 |      -2.7 |      -6.0 |      -6.0 |
 | military_convoy      |      16.0 |      16.0 |      16.0 |      16.0 |      15.7 |      13.6 |       9.3 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -163,7 +163,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | cyclist              |       3.9 |       3.9 |       3.0 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | ice_cream_van        |      -1.5 |      -1.5 |      -1.5 |      -1.6 |      -1.9 |      -2.8 |      -4.3 |      -6.0 |      -6.0 |      -6.0 |
 | reversing_lorry      |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.5 |      -4.1 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| charging_dog         |       0.6 |       0.6 |       0.4 |      -0.4 |      -1.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| charging_dog         |       0.6 |       0.6 |       0.4 |      -0.0 |      -0.9 |      -3.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | chatting_mother      |      -3.5 |      -3.5 |      -3.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | police_patrol        |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.4 |      -3.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -176,7 +176,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | checkpoint_post      |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | door_guard           |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |       5.0 |       5.0 |       5.0 |       4.9 |       4.4 |       2.4 |      -1.1 |      -6.0 |      -6.0 |      -6.0 |
-| alley_robbery        |       2.8 |       2.8 |       2.6 |       2.1 |       1.2 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| alley_robbery        |       2.8 |       2.8 |       2.7 |       2.4 |       1.8 |      -0.0 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       2.2 |       2.2 |       2.2 |       2.2 |       2.1 |       1.5 |       0.2 |      -4.2 |      -6.0 |      -6.0 |
 | military_convoy      |       6.1 |       6.1 |       6.1 |       6.1 |       6.0 |       4.8 |       2.4 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -257,7 +257,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | guardsman_giving_chase |         — |         — |         — |         — |         — |
 | finale_explosion     |     -58.9 |     -58.8 |     -59.0 |     -59.3 |     -59.8 |
 | impact_crater        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| masked_pursuer       |         — |         — |         — |         — |         — |
+| masked_pursuer       |       8.0 |       7.7 |       6.7 |       2.1 |       0.0 |
 | basement_steam       |         — |     -11.5 |     -10.5 |      -5.3 |       0.0 |
 
 ## The pass — asleep
@@ -317,5 +317,5 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | guardsman_giving_chase |         — |         — |         — |         — |         — |
 | finale_explosion     |     -62.3 |     -62.2 |     -62.3 |     -62.3 |     -62.4 |
 | impact_crater        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| masked_pursuer       |         — |         — |         — |         — |         — |
+| masked_pursuer       |       1.5 |       1.3 |       0.9 |      -1.1 |       0.0 |
 | basement_steam       |         — |     -11.5 |     -10.5 |      -5.3 |       0.0 |

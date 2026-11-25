@@ -2,7 +2,7 @@ class_name CrowdExcitement
 extends ExcitementSource
 
 ## **A body in the crowd as a thing that charges the baby** (`ExcitementSource`), composed into its
-## `CrowdAgent` as `excitement`: what is a crowd body's own and nothing else — its field (the same
+## `CrowdAgent` as its private `_excitement` (handed out by `CrowdAgent.mood()`): what is a crowd body's own and nothing else — its field (the same
 ## falloff as an event's, so the crowd and the events are the same kind of quantity to the baby, plus
 ## the jolt a contact or a horn leaves, which it keeps), its own clock, how far it can reach, the
 ## walls of the map it walks, whether a car's strike box lies ahead of her, and its caret keyed on
@@ -72,6 +72,10 @@ var _agent: CrowdAgent
 ## made.
 var heard_in: CrowdSources = null
 
+## Tells the body which crowd set it is heard in.
+func hear_in(sources: CrowdSources) -> void:
+	heard_in = sources
+
 ## The body's own simulation clock, in seconds, advanced once a frame by its own step
 ## (`advance()`). `landed()` is measured against it rather than the wall clock, so a paused game
 ## does not empty the halo and a rig measures the window on simulated time.
@@ -79,7 +83,7 @@ var _clock := 0.0
 
 ## Seconds of agitation left, and how loud the agitation started. A person she walked into is
 ## startled and says so; a car that had to sound its horn keeps sounding for a moment. This is how a
-## contact reaches the meter *without* anything writing to `Baby.excitement`: the source is the body
+## contact reaches the meter *without* anything outside `Baby` writing to it: the source is the body
 ## she touched, summed exactly like every other body.
 var _jolt := 0.0
 var _jolt_for := 1.0
@@ -108,10 +112,22 @@ var _outer := Tuning.PEDESTRIAN_OUTER_RADIUS
 var _silent_squared := 0.0
 var _reach_scale := 1.0
 
+## Where she is, in world space, or `Vector2.INF` before anybody has said.
+var _her_at_now := Vector2.INF
+
+## Where `ExcitementHalo` last said she is, once a drawn frame: a crowd body hears no manager's
+## word, so this is the one point its caret measures from.
+func set_her_at(at: Vector2) -> void:
+	_her_at_now = at
+
+## Overrides ExcitementSource._her_at.
+func _her_at() -> Vector2:
+	return _her_at_now
+
 func _init(agent: CrowdAgent) -> void:
 	super(agent)
 	_agent = agent
-	take_kind(agent.kind)
+	take_kind(agent.lane().kind())
 
 ## Takes up the field of a body of `kind`, told by the body whenever its kind is installed.
 func take_kind(kind: CrowdAgent.Kind) -> void:
@@ -204,7 +220,7 @@ func _falloff_at(distance: float) -> float:
 ##
 ## Overrides ExcitementSource.wall_grid.
 func wall_grid() -> WorldMap:
-	return _agent._map
+	return _agent.lane().map()
 
 ## The body's velocity, which already carries its turns, yields, door holds and pockets.
 ##
@@ -231,7 +247,7 @@ func _projection_reach() -> float:
 ##
 ## Overrides ExcitementSource._projection_key.
 func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
-	return [_agent.global_position, player_position, player_velocity, velocity, _car,
+	return [_agent.global_position, player_position, _player_velocity, velocity, _car,
 		_jolt, _jolt_for, _jolt_intensity, _jolt_inner, _jolt_outer]
 
 ## Where the body stands and how far its field reaches, read once before the projection samples,
@@ -262,7 +278,7 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 ## Overrides ExcitementSource.will_be_lethal.
 func will_be_lethal(player_position: Vector2) -> bool:
 	var agent := _agent
-	if not _car or agent._speed < Tuning.CAR_STRIKE_MIN_SPEED:
+	if not _car or agent.speed() < Tuning.CAR_STRIKE_MIN_SPEED:
 		return false
 	var vel := agent.velocity()
 	var forward := agent.heading()

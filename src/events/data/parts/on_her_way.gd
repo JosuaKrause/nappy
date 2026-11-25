@@ -1,0 +1,42 @@
+class_name OnHerWay
+extends RefCounted
+## **The day plans the row but leaves where it stands to the walk she takes**
+## (`EventDef.is_sited_from_her_walk()`).
+##
+## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
+## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
+## is the moment: a one-shot is planned with no position (`DawnOneShots`), a
+## recurring row is drawn by a unit as any other and handed to her walk with no position
+## (`MarbleDraw.draw()`), and
+## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a
+## building face for the fire and the crews) once her direction for the day is clear, off screen and
+## far enough that she meets it rather than watches it appear. Until it has been in the world it may
+## be moved again, so a day she turns round is still a day it is on her way.
+##
+## **This is not `AHEAD_OF_PLAYER`**, which is why it is not a fourth `SpawnMode`: a director-sited
+## row has no tile at all, may not obstruct, and is never asked the corridor's questions; this one
+## is asked all of them, just later than dawn.
+##
+## Two rows carry it: day 3's fire, a one-shot, and `poster_crew`, recurring. **Only a one-shot is
+## spent where it becomes real and lit at dusk if she never met it** — both are about the set piece
+## a run owes, and a crew is not one.
+
+## Whether her walk sites the row on the sidewalk in front of a blank ground-floor cell of a
+## building's front, facing the wall, rather than on the side `EventDef.sidewalk_lane()` names —
+## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). A location's draw offers the
+## row by `pavement_side`, as it offers any row, and only the walk's siting reads this.
+var _at_a_front := false
+
+## Her walk sites the row on a tile of its own ground.
+static func on_its_ground() -> OnHerWay:
+	return OnHerWay.new()
+
+## Her walk sites the row at a building's front, which it pastes (`pastes_a_front()`).
+static func at_a_front() -> OnHerWay:
+	var way := OnHerWay.new()
+	way._at_a_front = true
+	return way
+
+## Whether her walk stands the row at a building's front it pastes.
+func pastes_a_front() -> bool:
+	return _at_a_front

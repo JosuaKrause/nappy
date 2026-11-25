@@ -19,8 +19,8 @@ extends Node
 ## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
 ##
 ## **It only listens**, the same discipline `TelemetryObserver` keeps for the run log: everything
-## here answers an `EventBus` signal, reads nothing gameplay decides by, and writes nothing back
-## into anything gameplay reads. The telemetry skill's own invariant — the game plays identically
+## here answers an `EventBus` signal or the run flow's `day_started`, reads nothing gameplay decides
+## by, and writes nothing back into anything gameplay reads. The telemetry skill's own invariant — the game plays identically
 ## with this off — holds for this counter exactly as it holds for the run log, and it is why every
 ## signal it listens to already exists for another reason (or was added purely to be listened to,
 ## with no behaviour of its own — see `EventBus`'s own doc on each one).
@@ -77,7 +77,8 @@ extends Node
 ##   escape's two sections is counted as a day of its own under its own number, after the last day
 ##   (`DaySpec.BUILDING_DAY` for the building, `DaySpec.CITY_DAY` for the city): its `began`, its
 ##   `won` or `lost-*` with what did it, and everything counted while it is walked.
-## - `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` / `nappy-day-1-asleep` — day one's
+## - `nappy-day-1-first-obstacle` / `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` /
+##   `nappy-day-1-asleep` — day one's
 ##   milestones, each at most once per attempt at day 1 and sent on no other day; `nappy-day-1-won`
 ##   is the last of them, home.
 ## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
@@ -86,23 +87,36 @@ extends Node
 
 ## **One per sitting, made by `main` and handed what it listens to and sends through.** `main`
 ## makes it under the sitting on the sitting's first boot (`Sitting`), hands it the game's
-## `EventBus` (`listen()`) and the page's outbox (`send_through()`), and finds it there after, so
+## `EventBus` (`listen()`), the page's outbox and the engine's platform answers
+## (`send_through()`), and finds it there after, so
 ## its count of the run (the day, the open tasks, whether the run's beginning was reported) outlives
 ## the scene reloads a run makes, the held restart included, exactly as long as the page's
-## process does. A suite that boots `main` gets the counter of the sitting it hands, freed with it.
+## process does. Every boot hands it that boot's run flow as well (`listen_to_the_flow()`), whose
+## walks begin there. A suite that boots `main` gets the counter of the sitting it hands, freed with
+## it.
+
+## The game's event bus, named by its script so its signals are typed here.
+const _BUS := preload("res://src/autoload/event_bus.gd")
 
 ## Connects every handler below to `bus`'s signals. `main` hands it the game's `EventBus`; a
 ## test hands in a bus of its own, so what it emits reaches this counter alone, and frees the
 ## counter to let go of it.
-func listen(bus: Node) -> void:
-	for pair in _handlers(bus):
-		pair[0].connect(pair[1])
+func listen(bus: _BUS) -> void:
+	for pair: Array in _handlers(bus):
+		var emitted: Signal = pair[0]
+		var handler: Callable = pair[1]
+		emitted.connect(handler)
+
+## Connects the counter to `flow`, the run flow of the boot that is playing (`RunFlow`): each walk it
+## begins is counted as its day's `began`, and names what is counted while it is walked. `main` hands
+## it every boot's own; a test hands one of its own.
+func listen_to_the_flow(flow: RunFlow) -> void:
+	flow.day_started.connect(_on_day_started)
 
 ## Each signal of `bus` the counter answers, with the handler that answers it.
-func _handlers(bus: Node) -> Array:
+func _handlers(bus: _BUS) -> Array:
 	return [
 		[bus.run_begun, _on_run_begun],
-		[bus.day_started, _on_day_started],
 		[bus.day_ended, _on_day_ended],
 		[bus.run_restarted, _on_run_restarted],
 		[bus.run_ended, _on_run_ended],
@@ -133,6 +147,7 @@ func _handlers(bus: Node) -> Array:
 		[bus.escape_lost, _on_escape_lost],
 		[bus.escape_out, _on_escape_out],
 		[bus.controls_chosen, _on_controls_chosen],
+		[bus.encounter_passed, _on_encounter_passed],
 		[bus.road_entered, _on_road_entered],
 		[bus.calm_ground_entered, _on_calm_ground_entered],
 		[bus.return_phase_started, _on_baby_asleep],
@@ -148,7 +163,7 @@ func _handlers(bus: Node) -> Array:
 var _config: RunConfig
 
 ## The run this page is counting, handed in by `main` at boot (`configure()`): its mode, read as a
-## day begins, and its day, which names what is counted before any `day_started` has been heard.
+## day begins, and its day, which names what is counted before any walk has begun on this page.
 var _run: RunState
 
 ## Hands the counter the run's configuration and the run; a `null` configuration puts it back to
@@ -157,38 +172,32 @@ func configure(config: RunConfig, run: RunState) -> void:
 	_config = config
 	_run = run
 
-## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
-## without ever asking `JavaScriptBridge`, the same guard `DevFlags.page_query()` makes before its
-## own `JavaScriptBridge.eval()`. **`bool(...)`, never `present is bool`**: a JS boolean crosses
-## `JavaScriptBridge.eval()` as a GDScript `int` (`1`/`0`), not a `bool` — confirmed against a real
-## export, where `present is bool` silently refused every event, gate closed, no error anywhere to
-## say why. `bool()` reads true off that `int` the same as it would a native bool.
-static func _goatcounter_present() -> bool:
-	if OS.get_name() != "Web":
-		return false
-	var present: Variant = JavaScriptBridge.eval(
-			"(typeof window.goatcounter !== 'undefined' " +
-			"&& typeof window.goatcounter.count === 'function')")
-	return bool(present)
-
 ## Where the events go: the queue for the ones asked for before `count.js` has loaded, and the
 ## call that counts one. `null` until `send_through()` hands one in, and nothing is sent before.
 var _outbox: GoatCounterOutbox
 
+## What the gate asks about the machine: the web, a debug build, and the page's `count.js`. `null`
+## until `send_through()` hands one in, and nothing is sent before.
+var _platform: GoatCounterPlatform
+
 ## The name `main` gives it under the sitting, and what the next boot looks for there.
 const NODE_NAME := "VisitCounter"
 
-## Hands the counter the outbox its events go to. `main` hands it one that evaluates its script
-## through the page's own `JavaScriptBridge`; a test hands one with a recorder, so what reaches the
-## outbox, queued or counted, is what the recorder sees once the outbox flushes.
-func send_through(outbox: GoatCounterOutbox) -> void:
+## Hands the counter the outbox its events go to and the platform that answers its gate. `main`
+## hands it an outbox that evaluates its script through the page's own `JavaScriptBridge` and the
+## engine's own answers (`GoatCounterPlatform.of_the_engine()`); a test hands an outbox with a
+## recorder and the answers of the page it stands for, so what reaches the outbox, queued or
+## counted, is what the recorder sees once the outbox flushes.
+func send_through(outbox: GoatCounterOutbox, platform: GoatCounterPlatform) -> void:
 	_outbox = outbox
+	_platform = platform
 
 func _send_event(name: String) -> void:
-	if _config == null or _outbox == null or not GoatCounterOutbox.may_ever_send(
-			OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
+	if _config == null or _outbox == null or _platform == null \
+			or not GoatCounterOutbox.may_ever_send(_platform.is_on_the_web(),
+			_platform.is_a_debug_build(), _config.asks_for_the_readout()):
 		return
-	_outbox.send(name, _goatcounter_present())
+	_outbox.send(name, _platform.has_the_counter())
 
 # --------------------------------------------------------------- event names ---
 # Pure functions, each testable without a web page, a save or a run behind it.
@@ -247,7 +256,7 @@ static func _controls_event_name(joystick: bool, by_key: bool) -> String:
 		return "nappy-controls-keys"
 	return "nappy-controls-joystick" if joystick else "nappy-controls-tap"
 
-## `EventBus.player_detained`'s own `id` (`nearest.def.id` in
+## `EventBus.player_detained`'s own `id` (`nearest.row_id()` in
 ## `CheckpointController.check_detentions()`), named the way the day brief already tells the two
 ## kinds of stop apart: `chatting_mother` is a `chat`, and every other id that can reach here
 ## (`checkpoint_hut`, `checkpoint_post` — `checkpoint_gate`'s own boom never detains, see
@@ -300,22 +309,23 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 	_reported_run_begun = true
 	_send_event(_run_begun_name(day, actually_resumed))
 
-## The day the last `day_started` announced — one of the fourteen, or one of the escape's two
-## sections under their own numbers (`DaySpec.number`) — which everything counted while it is walked
-## is named by: a charge, an encounter, a poster, a hold. `0` until one is heard on this page.
+## The day of the walk last begun (`RunFlow.day_started`, off its spec) — one of the fourteen, or one
+## of the escape's two sections under their own numbers (`DaySpec.day_number()`) — which everything counted
+## while it is walked is named by: a charge, an encounter, a poster, a hold. `0` until one is heard on
+## this page.
 var _day := 0
 
-## The day what happens now is counted under: the one `day_started` announced, or, before any has
-## been heard on this page — a suite driving the counter by hand — the run's own day. `0` when
+## The day what happens now is counted under: the walk last begun's, or, before any has begun on this
+## page — a suite driving the counter by hand — the run's own day. `0` when
 ## there is no run: `main` always configures one, and a counter configured with none (the test
 ## runner's, between boots) sends nothing.
 func _counted_day() -> int:
-	return _day if _day > 0 or _run == null else _run.header.day
+	return _day if _day > 0 or _run == null else _run.header().day()
 
-func _on_day_started(day: int) -> void:
-	_day = day
+func _on_day_started(spec: DaySpec) -> void:
+	_day = spec.day_number()
 	_milestones_reached.clear()
-	for name in _day_began_names(day, _run != null and _run.calendar.hard_mode):
+	for name in _day_began_names(_day, _run != null and _run.calendar().in_hard_mode()):
 		_send_event(name)
 
 ## The day-one milestones this attempt has already sent, by name: an attempt is one `day_started`
@@ -332,6 +342,9 @@ func _reach_a_milestone(suffix: String) -> void:
 	_milestones_reached[suffix] = true
 	_send_event(_day_event_name(1, suffix))
 
+func _on_encounter_passed(_day_of_it: int, _name_of_it: String) -> void:
+	_reach_a_milestone("first-obstacle")
+
 func _on_road_entered() -> void:
 	_reach_a_milestone("first-crossing")
 
@@ -342,7 +355,7 @@ func _on_baby_asleep() -> void:
 	_reach_a_milestone("asleep")
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first
-## morning is built and its `day_started` sent before the title is dismissed, while the run still
+## morning is built and its walk begun before the title is dismissed, while the run still
 ## reads as normal — so a hard run sends that day's hard copy here, once its mode is known.
 func _on_run_mode_chosen(hard: bool, day: int) -> void:
 	_send_event(_mode_event_name(hard))
@@ -418,7 +431,8 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 ## (`EventInstance._charger_name()`'s `charging_dog_tutorial`), which sends its own set and not the
 ## dog's *(PLAYTEST-141: "we need to record like dog tutorial")*; every other row its id hyphenated,
 ## as the encounter events are (`alley_robbery` -> `alley-robbery`), and `task-guard` for day 13's
-## task guard, his row `task_guard`, whose sent copy counts as him (`EventDef.counts_charges_as`).
+## task guard, his row `task_guard`, whose sent copy is counted under it
+## by `EventDef.charges_counted_as()`.
 static func _charger_counter_name(id: String) -> String:
 	match id:
 		"charging_dog":
@@ -448,16 +462,16 @@ func _on_run_bout_began(day: int) -> void:
 ## screen, and when it's hitting the player. it must appear as its own entry")*. Each signal fires
 ## once per pelican where it is emitted (`EventBus`'s own doc on each), so each sends once; the
 ## instance it carries is not read.
-func _on_pelican_spawned(_instance: Variant) -> void:
+func _on_pelican_spawned(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-spawned"))
 
-func _on_pelican_sighted(_instance: Variant) -> void:
+func _on_pelican_sighted(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-seen"))
 
-func _on_pelican_excited_her(_instance: Variant) -> void:
+func _on_pelican_excited_her(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-excited"))
 
-func _on_pelican_struck_her(_instance: Variant) -> void:
+func _on_pelican_struck_her(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-hit"))
 
 ## Every tear, not the first of an attempt: every event opts out of the site's sessions so that

@@ -9,7 +9,7 @@ const MaskedManMeeting := preload("res://tests/masked_man_meeting.gd")
 var _rig := InteriorRig.new()
 var _meeting := MaskedManMeeting.new(_rig)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
 
@@ -18,12 +18,12 @@ func run(t) -> void:
 ## list is the same every run) and a process frame, which fixes the interpolation fraction the
 ## camera's view is shifted by: the fraction the game's frames take every value of, and the one a
 ## slower machine took when the stairwell checks failed once on identical code. The badge must not
-## depend on it. **A probabilistic extra, not the regression check** (that is `test_badge_model`'s
-## deterministic case of this shape; the interior guard's own sensitivity is probabilistic: with the
-## charger reset taken out, at an earlier head with the old 0.8 s timer, it failed in 2 of 3 review runs):
-## it exercises the game's own interpolated camera. Walk pace is the case that failed (the masked man sets off while she is still
-## walking, from inside the out-of-sight margin band).
-func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: Node) -> void:
+## depend on it: up on the first frame he runs out of her sight, and kept until any of him is in the
+## view the interpolated camera shows. **A probabilistic extra, not the regression check** (that is
+## `test_badge_model`'s deterministic keeping of a warned thing's badge until it is in sight): it
+## exercises the game's own interpolated camera. Walk pace is the case that sets him off while she is
+## still walking.
+func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: TestRunner) -> void:
 	var pauses_ms := [0, 19, 43, 71, 83]
 	var worst := 0
 	var failures := 0

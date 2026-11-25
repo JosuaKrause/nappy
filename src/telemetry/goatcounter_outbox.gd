@@ -14,7 +14,7 @@ var _evaluate: Callable
 ## for — flushed the cheap way, from `send()` itself the next time anything is asked for, rather
 ## than a timer or a per-frame poll: nothing here may cost anything while the game is otherwise
 ## between events. A cold, first-ever visit is the case this exists for — `count.js` is a real
-## network fetch, and the earliest events of a run (`run_begun`, day 1's `day_started`) can race
+## network fetch, and the earliest events of a run (`run_begun`, day 1's `began`) can race
 ## ahead of it; a later visit, with the script already cached, never queues anything at all.
 var _pending: Array[String] = []
 
@@ -22,15 +22,16 @@ func _init(evaluate: Callable) -> void:
 	_evaluate = evaluate
 
 ## The three of the gate's four inputs (on the web, not a debug build, not `?debug=1` —
-## `RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the page, see
-## `export_presets.cfg`'s `html/head_include`) that can never change their answer for the rest of this
-## page's life once asked — the build is not going to stop being a debug build, and `?debug=1`
-## does not disappear from a page nobody reloads. `goatcounter_present` is the one input that
-## legitimately answers differently a moment later, because `count.js` loads asynchronously
-## (`export_presets.cfg`'s own `counter.async = true`) — so the counter asks this once, up front,
-## to decide *whether an event is ever worth queuing at all* before it asks the time-varying half.
-## **A reason that cannot change never populates the queue**: a debug build or a page carrying
-## `?debug=1` holds nothing here and costs nothing beyond the one boolean check.
+## `RunConfig.asks_for_the_readout()`, the same flag that keeps `count.js` itself off the page,
+## see `export_presets.cfg`'s `html/head_include`) that can never change their answer for the
+## rest of this page's life once asked — the build is not going to stop being a debug build, and
+## `?debug=1` does not disappear from a page nobody reloads. `present` is the one
+## input that legitimately answers differently a moment later, because `count.js` loads
+## asynchronously (`export_presets.cfg`'s own `counter.async = true`) — so the counter asks this
+## once, up front, to decide *whether an event is ever worth queuing at all* before it asks the
+## time-varying half. **A reason that cannot change never populates the queue**: a debug build
+## or a page carrying `?debug=1` holds nothing here and costs nothing beyond the one boolean
+## check.
 static func may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: bool) -> bool:
 	return on_web and not is_debug_build and not debug_requested
 

@@ -13,8 +13,8 @@ extends RefCounted
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
 ## (`--start-escape city`: `RunState.start_run(seed)`, the city built from the run seed, the plan
-## drawn from `city.run.calendar.day_rng(day, "finale")` under the city section's spec, as
-## `main._plan_the_finale_city()` draws it): how many of the escape's four rows stand on its open
+## drawn from `run.calendar().day_rng(day, "finale")` under the city section's spec, as
+## `DayDirector.start()` draws it): how many of the escape's four rows stand on its open
 ## streets and how many streets stand none, for every mix. **And for the game's own bag, the game
 ## walking it**: one headless run of the real game per exit, booted `--start-escape city --seed
 ## <seed> --route tunnel|bridge --no-save --no-title`, in which `RouteRig` (`src/dev/route_rig.gd`)
@@ -40,19 +40,17 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808, 4216201080, 11, 13, 17,
 		19, 29, 31, 37, 41, 43, 47, 53, 59, 61]
 const ROWS: Array[String] = ["military_convoy", "finale_explosion", "abduction", "roadblock"]
-## The mixes planned: `slots` a street and the bag's marbles, trucks, explosions, vans, roadblocks
-## and empty, in the player's order. `as built` is the city section's own spec, through
+## The mixes planned: the bag's marbles, trucks, explosions, vans, roadblocks and empty, in the
+## player's order, one drawn a street. `as built` is the city section's own spec, through
 ## `DayPlanner.plan_the_escape_city()` exactly as the game plans it, and the one walked; the others are the
 ## candidates it was chosen against, and the last stands nothing at all. `ESCAPE_WINNABLE_MIX`
-## replaces the list, as `as built` or `<slots>:<trucks>,<explosions>,<vans>,<roadblocks>,<empty>`
-## mixes separated by `;`.
+## replaces the list, as `as built` or `<trucks>,<explosions>,<vans>,<roadblocks>,<empty>` mixes
+## separated by `;`.
 const MIXES: Array[Dictionary] = [
 	{"name": "as built"},
-	{"name": "1:5,4,3,2,1", "slots": 1, "counts": [5, 4, 3, 2, 1]},
-	{"name": "1:6,5,4,3,2", "slots": 1, "counts": [6, 5, 4, 3, 2]},
-	{"name": "2:10,8,3,2,1", "slots": 2, "counts": [10, 8, 3, 2, 1]},
-	{"name": "2:12,10,3,2,1", "slots": 2, "counts": [12, 10, 3, 2, 1]},
-	{"name": "1:0,0,0,0,1", "slots": 1, "counts": [0, 0, 0, 0, 1]},
+	{"name": "5,4,3,2,1", "counts": [5, 4, 3, 2, 1]},
+	{"name": "6,5,4,3,2", "counts": [6, 5, 4, 3, 2]},
+	{"name": "0,0,0,0,1", "counts": [0, 0, 0, 0, 1]},
 ]
 const EXITS: Array[String] = ["tunnel", "bridge"]
 ## How many walks run side by side by default: each is one Godot process at the game's own clock,
@@ -64,7 +62,7 @@ const PARALLEL := 2
 const TIMEOUT_SECONDS := 260.0
 const POLL_MSEC := 250
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var mixes := _mixes()
 	var seeds := _seeds()
 	var plans: Array[Dictionary] = []
@@ -101,27 +99,28 @@ func _mixes() -> Array[Dictionary]:
 		if text == "as built":
 			found.append({"name": text})
 			continue
-		var halves := text.split(":")
 		var counts: Array[int] = []
-		for word in halves[1].split(","):
+		for word in text.split(","):
 			counts.append(int(word))
-		found.append({"name": text, "slots": int(halves[0]), "counts": counts})
+		found.append({"name": text, "counts": counts})
 	return found
 
 # ------------------------------------------------------------------- the plans ---
 
 ## Every mix's plan for one seed, on the city a straight city boot builds.
-func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	var day := city.run.header.day
+func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	var day := run.header().day()
 	t.add_child(city)
-	city.build(CityGenerator.generate(city.run.header.run_seed))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"), _city_spec())
+	RunCity.build(city, run, CityGenerator.generate(run.header().run_seed()))
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
-		var walk := FinalePlanner.route(city.map)
-		var row := _street_counts(city.map, walk, _plan(city.map, city.run, walk, day, mix))
+		var walk := FinalePlanner.route(city.map())
+		var row := _street_counts(city.map(), walk, _plan(city.map(), run, walk, day, mix))
 		row["mix"] = mix["name"]
 		row["seed"] = seed_value
 		print("ESCAPE_WINNABLE [%s] seed %d | %d streets, %d with none, %d dangers | %s" % [
@@ -132,23 +131,22 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 	return found
 
 ## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
-## the same plan under a spec whose bag and slots are that mix's, drawn on the stream the game's own
-## bag is drawn on (`EventScheduler.street_bag_seed()`).
+## the same plan under a spec whose bag is that mix's, drawn on the plan's own stream, the one the
+## game's own bag is drawn on.
 func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
-		mix: Dictionary) -> Array[EventScheduler.Planned]:
-	var rng := own_run.calendar.day_rng(day, "finale")
+		mix: Dictionary) -> Array[EventPlan]:
+	var rng := own_run.calendar().day_rng(day, "finale")
 	var spec := _city_spec()
-	if mix.has("slots"):
+	if mix.has("counts"):
 		var counts: Array = mix["counts"]
 		spec.bag = {"military_convoy": counts[0], "finale_explosion": counts[1],
 				"abduction": counts[2], "roadblock": counts[3], DaySpec.EMPTY_MARBLE: counts[4]}
-		spec.slots_per_street = int(mix["slots"])
-	return DayPlanner.plan_the_escape_city(map, walk, rng, spec)
+	return DayPlanner.plan_the_escape_city(map, walk, rng, spec, GamePlanBuilder.over(map))
 
 ## `{streets, empty, dangers, rows}`: the open streets, those standing none of the four rows, how
 ## many of the four rows stand on them in all, and how many of each.
 func _street_counts(map: CityMap, plan: FinalePlanner.Plan,
-		placements: Array[EventScheduler.Planned]) -> Dictionary:
+		placements: Array[EventPlan]) -> Dictionary:
 	var empty := 0
 	var dangers := 0
 	var rows := {}
@@ -158,9 +156,9 @@ func _street_counts(map: CityMap, plan: FinalePlanner.Plan,
 		var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
 		var here := 0
 		for placement in placements:
-			if ROWS.has(placement.def.id) and rect.has_point(placement.position):
+			if ROWS.has(placement.row_id()) and rect.has_point(placement.placed_at()):
 				here += 1
-				rows[placement.def.id] = int(rows[placement.def.id]) + 1
+				rows[placement.row_id()] = int(rows[placement.row_id()]) + 1
 		dangers += here
 		if here == 0:
 			empty += 1

@@ -6,6 +6,7 @@
 #   tools/agent-setup.sh --agent <branch> <id>
 #   tools/agent-setup.sh --release <branch>
 #   tools/agent-setup.sh --detach <ref> <name> [--include <path>...]
+#   tools/agent-setup.sh --remove <name>
 #
 # Bash 3.2-safe, like the rest of tools/. Run it from any checkout of the repository; the
 # worktree and the brief always go to the main checkout (the first entry of `git worktree list`),
@@ -15,6 +16,9 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=tools/lib_disk_headroom.sh
 source "$script_dir/lib_disk_headroom.sh"
+# REGENERABLE_IGNORED and classify_ignored, for --remove.
+# shellcheck source=tools/lib_regenerable_ignored.sh
+source "$script_dir/lib_regenerable_ignored.sh"
 
 usage() {
     cat <<'EOF_USAGE'
@@ -22,6 +26,7 @@ usage: tools/agent-setup.sh <name> <branch> [--include <path>...]
        tools/agent-setup.sh --agent <branch> <id>
        tools/agent-setup.sh --release <branch>
        tools/agent-setup.sh --detach <ref> <name> [--include <path>...]
+       tools/agent-setup.sh --remove <name>
        tools/agent-setup.sh --help|-h
 
 Sets up an implementation agent. With a name and a branch it:
@@ -46,14 +51,26 @@ origin/main (one list, so the checks that read docs/evidence/ keep what they rea
                           .claude/worktrees/<name>, detached at <ref> (origin/<branch> or a
                           branch name, fetched from origin first; or a commit), with no
                           branch and no brief, so agent-status.sh never counts it as an agent.
-                          Remove it with `git worktree remove`.
+                          Remove it with --remove <name>.
+  --remove <name>         removes a --detach checkout, .claude/worktrees/<name>, with a plain
+                          `git worktree remove`, never forced. Refuses one that has a branch
+                          (tools/prune-merged.sh retires those), is locked, is the caller's own,
+                          has a changed or untracked file, holds an ignored file other than
+                          the regenerable caches tools/prune-merged.sh --help lists, or holds
+                          a commit nothing else does: one its HEAD is at or has been at that no
+                          ref reaches, as a commit made in the checkout is. The commit the
+                          checkout was made at is exempt, so a stale review checkout whose
+                          branch is gone is still removed. That refusal names each commit; a
+                          branch at one (git branch <name> <commit>) keeps it. Takes a name,
+                          never a path, so nothing outside .claude/worktrees/ is reached.
   --help, -h              print this and do nothing else.
 
-  tools/agent-setup.sh jolly-bunny feature/jolly-bunny-agent-setup
-  tools/agent-setup.sh quiet-yak feature/quiet-yak --include docs/reference/
-  tools/agent-setup.sh --agent feature/quiet-yak a1b2c3d4e5f60789
-  tools/agent-setup.sh --release feature/quiet-yak
-  tools/agent-setup.sh --detach origin/feature/quiet-yak review-quiet-yak
+  tools/agent-setup.sh jolly-bunny feature-jolly-bunny-agent-setup
+  tools/agent-setup.sh quiet-yak feature-quiet-yak --include docs/reference/
+  tools/agent-setup.sh --agent feature-quiet-yak a1b2c3d4e5f60789
+  tools/agent-setup.sh --release feature-quiet-yak
+  tools/agent-setup.sh --detach origin/feature-quiet-yak review-quiet-yak
+  tools/agent-setup.sh --remove review-quiet-yak
 EOF_USAGE
 }
 
@@ -72,8 +89,8 @@ for arg in "$@"; do
     fi
     case "$arg" in
         -h|--help) usage; exit 0 ;;
-        --agent|--release|--detach)
-            [[ $mode == setup ]] || bad "only one of --agent, --release, --detach"
+        --agent|--release|--detach|--remove)
+            [[ $mode == setup ]] || bad "only one of --agent, --release, --detach, --remove"
             mode="${arg#--}" ;;
         --include) expect_include=1 ;;
         -*)        bad "unknown flag: $arg" ;;
@@ -88,21 +105,25 @@ case "$mode" in
     agent)   [[ ${#positional[@]} -eq 2 ]] || bad "--agent expects <branch> <id>" ;;
     release) [[ ${#positional[@]} -eq 1 ]] || bad "--release expects <branch>" ;;
     detach)  [[ ${#positional[@]} -eq 2 ]] || bad "--detach expects <ref> <name>" ;;
+    remove)  [[ ${#positional[@]} -eq 1 ]] || bad "--remove expects <name>" ;;
 esac
 
-if [[ $mode == setup || $mode == detach ]]; then
+if [[ $mode == setup || $mode == detach || $mode == remove ]]; then
     if [[ $mode == setup ]]; then
         name="${positional[0]}" branch="${positional[1]}"
-    else
+    elif [[ $mode == detach ]]; then
         ref="${positional[0]}" name="${positional[1]}"
         [[ "$ref" != -* ]] || bad "invalid ref: $ref"
+    else
+        name="${positional[0]}"
     fi
+    # A name has no "/" in it, so it is one folder under .claude/worktrees/ and never a path.
     [[ "$name" =~ ^[a-z0-9][a-z0-9._-]*$ ]] \
         || bad "invalid name (lowercase words and dashes): $name"
 else
     branch="${positional[0]}"
 fi
-if [[ $mode != detach ]]; then
+if [[ $mode != detach && $mode != remove ]]; then
     git check-ref-format "refs/heads/$branch" >/dev/null 2>&1 || bad "invalid branch: $branch"
 fi
 if [[ $mode == agent ]]; then
@@ -166,9 +187,96 @@ if [[ $mode == agent || $mode == release ]]; then
     exit 0
 fi
 
-# --- setup and --detach -----------------------------------------------------------------------
 worktree="$main/.claude/worktrees/$name"
 err() { echo "tools/agent-setup.sh: $*" >&2; }
+
+# --- --remove ---------------------------------------------------------------------------------
+# A review checkout has no branch and no pull request, so tools/prune-merged.sh never takes it.
+# This removes one, and only one that nothing can be lost with, a file or a commit: every refusal
+# below leaves the worktree as it stands, and the removal itself is git's own unforced one, which
+# refuses a changed or untracked file a second time.
+if [[ $mode == remove ]]; then
+    [[ -d "$worktree" ]] || { err "no worktree at $worktree"; exit 1; }
+    real="$(cd "$worktree" && pwd -P)"
+    [[ "$real" == "$main/.claude/worktrees/$name" ]] \
+        || { err "$worktree resolves outside .claude/worktrees/, to $real"; exit 1; }
+    entry="$(git -C "$main" worktree list --porcelain | awk -v p="$real" '
+        /^worktree / { mine = (substr($0, 10) == p) }
+        mine { print }')"
+    [[ -n "$entry" ]] || { err "$worktree is not a worktree of this repository"; exit 1; }
+    held="$(sed -n 's#^branch refs/heads/##p' <<<"$entry")"
+    [[ -z "$held" ]] || {
+        err "$worktree has the branch $held; tools/prune-merged.sh retires a branch's worktree"
+        exit 1
+    }
+    grep -qx 'detached' <<<"$entry" \
+        || { err "$worktree is not a detached checkout"; exit 1; }
+    ! grep -q '^locked' <<<"$entry" || { err "$worktree is locked"; exit 1; }
+    case "$(pwd -P)/" in
+        "$real"/*) err "the caller is inside $worktree"; exit 1 ;;
+    esac
+    status="$(git --no-optional-locks -C "$real" status --porcelain --untracked-files=all)" \
+        || { err "cannot read the status of $worktree"; exit 1; }
+    [[ -z "$status" ]] || {
+        err "$worktree has changed or untracked files:"
+        printf '%s\n' "$status" | head -5 >&2
+        exit 1
+    }
+    ignored="$(classify_ignored "$real" "")" \
+        || { err "cannot list the ignored files of $worktree"; exit 1; }
+    kept="$(printf '%s\n' "$ignored" | awk -F'\t' '$1 == "keep" {print $2}')"
+    [[ -z "$kept" ]] || {
+        err "$worktree holds ignored files that are not regenerable caches:"
+        printf '%s\n' "$kept" | head -5 >&2
+        exit 1
+    }
+    # A commit made in the checkout is on no branch, and `git status` calls a checkout with one
+    # clean. The worktree's own HEAD reflog is all that names such a commit, and it goes with the
+    # worktree, so every commit that log names, HEAD's first, must be reachable from a ref
+    # (refs/ only: a worktree's HEAD is not one). The one exception is the commit the checkout
+    # was made at, the entry that follows no other: it was there before the checkout was, and a
+    # review checkout of a pull request whose branch is since deleted has to stay removable.
+    head_commit="$(git -C "$real" rev-parse --verify --quiet 'HEAD^{commit}')" \
+        || { err "cannot read the HEAD of $worktree"; exit 1; }
+    head_log="$(git -C "$real" rev-parse --git-path logs/HEAD)" \
+        || { err "cannot find the HEAD reflog of $worktree"; exit 1; }
+    [[ "$head_log" == /* ]] || head_log="$real/$head_log"
+    made_at=""
+    visited="$head_commit"
+    if [[ -f "$head_log" ]]; then
+        made_at="$(awk 'NR == 1 && $1 ~ /^0+$/ { print $2 }' "$head_log")" \
+            || { err "cannot read the HEAD reflog of $worktree"; exit 1; }
+        visited="$visited
+$(awk '$2 !~ /^0+$/ { print $2 }' "$head_log")" \
+            || { err "cannot read the HEAD reflog of $worktree"; exit 1; }
+    fi
+    candidates=()
+    while IFS= read -r commit; do
+        [[ -n "$commit" && "$commit" != "$made_at" ]] && candidates+=("$commit")
+    done < <(printf '%s\n' "$visited" | awk '!seen[$0]++')
+    if [[ ${#candidates[@]} -gt 0 ]]; then
+        unheld="$(git -C "$main" rev-list "${candidates[@]}" --not --glob='refs/*')" \
+            || { err "cannot tell whether a ref holds the commits of $worktree"; exit 1; }
+        only_here=()
+        for commit in "${candidates[@]}"; do
+            ! grep -qxF -- "$commit" <<<"$unheld" || only_here+=("$commit")
+        done
+        if [[ ${#only_here[@]} -gt 0 ]]; then
+            err "$worktree holds commits that are on no branch and under no other ref, so" \
+                "removing it would lose them:"
+            git -C "$main" log --no-walk=unsorted --format='  %H %s' "${only_here[@]}" \
+                | head -5 >&2
+            err "keep one with a branch at it (git -C $main branch <name> <commit>);" \
+                "--remove passes once each is on a branch"
+            exit 1
+        fi
+    fi
+    git -C "$main" worktree remove "$real" || { err "git refused to remove $worktree"; exit 1; }
+    echo "removed: $worktree"
+    exit 0
+fi
+
+# --- setup and --detach -----------------------------------------------------------------------
 git -C "$main" fetch --quiet origin main || { err "cannot fetch origin main"; exit 1; }
 git -C "$main" rev-parse --verify --quiet origin/main >/dev/null \
     || { err "no origin/main"; exit 1; }
@@ -264,7 +372,7 @@ git -C "$worktree" checkout --quiet -f HEAD 2>/dev/null || fail_cleanup "checkou
 if [[ $mode == detach ]]; then
     echo "worktree: $worktree (detached at $commit; no branch, no brief)"
     echo "sparse:   $(printf '%s\n' "$patterns" | tr '\n' ' ')"
-    echo "remove:   git worktree remove $worktree"
+    echo "remove:   tools/agent-setup.sh --remove $name"
     exit 0
 fi
 

@@ -29,6 +29,16 @@ const _MARGIN := Vector2(14.0, 14.0)
 ## repeats it.
 const _TEXT := "DEBUG MODE ON"
 
+## **How this run plays every charger** (`RunConfig.charger_timing()`), named after the stamp as
+## its warning in seconds and its factor on every notice radius, so a `?chargers=` the page refused
+## (`DevFlags`) shows as the numbers played rather than the ones asked: the flag exists for the
+## player to judge numbers by playing them (minty-dolphin #834). Null names nothing.
+var _chargers: ChargerTiming = null
+
+## Hands the note the run's charger timing, before it is added to the tree.
+func use_charger_timing(timing: ChargerTiming) -> void:
+	_chargers = timing
+
 func _init() -> void:
 	# Above `_status`'s own `CanvasLayer` (the scene's default `layer = 1`), so nothing the readout
 	# or a future overlay draws can sit on top of the one label that must stay legible.
@@ -38,6 +48,8 @@ func _ready() -> void:
 	var label := Label.new()
 	label.name = "Note"
 	label.text = "%s   %s" % [_TEXT, BuildInfo.build_text()]
+	if _chargers:
+		label.text += "   chargers %.2fs x%.2f" % [_chargers.warning(), _chargers.notice(1.0)]
 	label.position = _MARGIN
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.85))
 	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))

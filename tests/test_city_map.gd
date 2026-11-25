@@ -1,7 +1,8 @@
 extends RefCounted
 ## A city map's copy (`CityMap.copy()`): that it is a city the generator's guarantees hold on, that
 ## it answers every question the map it was copied from answers, and that nothing either map is
-## then handed reaches the other.
+## then handed reaches the other. And its capture (`CityMap.capture()`, `restored()`): that a map
+## restored from what a map captured captures the same facts again, for a generated map and its copy.
 ##
 ## **Real generated maps, because a copy is only as lossless as the fields generation fills**: a
 ## hand-drawn map leaves the block plans, the zones, the regions and the landmarks empty, and an
@@ -27,7 +28,7 @@ const SEEDS: Array[int] = [4242, 1, 77]
 const SCENE := "res://scene-recipes/task-07-package.json"
 
 ## What the member comparison leaves out, with `copy()`'s doc saying why for each.
-const _NOT_COMPARED: Array[String] = ["world", "_navigator", "moves", "separation", "network",
+const _NOT_COMPARED: Array[String] = ["world", "_navigator", "moves", "separation", "_network",
 		"_tiles_by_type"]
 
 ## How far apart the tiles are that `_answers()` asks one tile at a time, each way.
@@ -36,7 +37,7 @@ const _STRIDE := 3
 ## Every layer a mover can be stopped by, so `ground_for()` lays out the whole of today's record.
 const _ALL_LAYERS := Mover.GROUND | Mover.POSTS | Mover.TODAY
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var original := CityGenerator.generate(seed_value)
 		_test_a_copy_keeps_the_generators_guarantees(t, original, seed_value)
@@ -44,26 +45,64 @@ func run(t) -> void:
 		_test_a_copy_taken_during_a_day_carries_the_days_record(t, original, seed_value)
 		_test_what_one_map_is_handed_leaves_the_other_alone(t, original, seed_value)
 		_test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original, seed_value)
+		_test_a_restored_map_captures_what_it_was_restored_from(t, original, seed_value)
 	_test_a_copy_of_an_authored_scene_map_carries_its_recipe(t)
+	_test_what_an_authored_scene_writes_is_what_the_map_answers(t)
+	_test_a_map_with_no_calm_ground_says_none(t)
 
-## The copy of a generated city is one `CityGenerator.validate()` passes, every guarantee of it: the
-## calm blocks, the home, the routes to the parks.
-func _test_a_copy_keeps_the_generators_guarantees(t, original: CityMap, seed_value: int) -> void:
+## A generated map, and its copy, capture the same facts, and the map restored from them captures
+## them again: a fact `capture()` names and `restored()` drops, or reads under another name, fails
+## here rather than in the draft tool that saves a scene.
+func _test_a_restored_map_captures_what_it_was_restored_from(t: TestRunner, original: CityMap,
+		seed_value: int) -> void:
+	var facts := _comparable(original.capture())
+	t.check(not (facts["block_plans"] as Dictionary).is_empty(),
+			"seed %d: the capture holds the block arcs" % seed_value)
+	t.check(_comparable(original.copy().capture()) == facts,
+			"seed %d: the copy captures what the map captures" % seed_value)
+	var restored := CityMap.restored(original.capture())
+	t.check(_comparable(restored.capture()) == facts,
+			"seed %d: the restored map captures what it was restored from" % seed_value)
+
+## A capture with each block's arc written out as its steps, so two captures compare by value
+## rather than by which `BlockPlan` each holds.
+func _comparable(facts: Dictionary) -> Dictionary:
+	var arcs := {}
+	var plans: Dictionary = facts["block_plans"]
+	for block: Vector2i in plans:
+		var plan: BlockPlan = plans[block]
+		var steps: Array = [plan.forced_open_day()]
+		for step in plan.steps_in_order():
+			steps.append([step.purpose, step.from_day, step.cause])
+		arcs[block] = steps
+	var comparable := facts.duplicate()
+	comparable["block_plans"] = arcs
+	return comparable
+
+## A map no day has marked calm ground on has nothing to count, so its summary says none.
+func _test_a_map_with_no_calm_ground_says_none(t: TestRunner) -> void:
+	var map := CityMap.new(Vector2i(8, 8))
+	t.check(map.calm_blocks_now().is_empty() and map.calm_summary(CityState.new()) == "none",
+			"a map with no calm blocks summarizes its calm ground as none")
+
+## The copy of a generated city is one `CityGenerator.validation_problems()` passes, every guarantee
+## of it: the calm blocks, the home, the routes to the parks.
+func _test_a_copy_keeps_the_generators_guarantees(t: TestRunner, original: CityMap, seed_value: int) -> void:
 	var problems := CityGenerator.validation_problems(original.copy())
 	t.check(problems.is_empty(), "seed %d: the copy passes every guarantee (%s)" % [seed_value, problems])
 
-func _test_a_copy_answers_what_the_map_answers(t, original: CityMap, seed_value: int) -> void:
+func _test_a_copy_answers_what_the_map_answers(t: TestRunner, original: CityMap, seed_value: int) -> void:
 	var twin := original.copy()
 	t.check(twin != original, "seed %d: the copy is another map" % seed_value)
 	_check_the_same(t, original, twin, "seed %d, as generated" % seed_value)
 	# And the same after a day's repaint, on each map: what the plans and layouts paint is the same.
-	for day in [8, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [8, Tuning.RUN_LENGTH_DAYS]:
 		var map := original.copy()
 		var copied := map.copy()
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		var other := CityState.new()
-		other.begin_day(copied.block_plans, day)
+		other.begin_day(copied.plans_by_block(), day)
 		map.repaint(state)
 		copied.repaint(other)
 		_check_the_same(t, map, copied, "seed %d, repainted for day %d" % [seed_value, day])
@@ -71,12 +110,12 @@ func _test_a_copy_answers_what_the_map_answers(t, original: CityMap, seed_value:
 ## A map in the middle of a day, the day's records on it, copies with every record carried: the
 ## closures, the soft seals, a body, the holds, the emptied tree pits, and a handover still waiting
 ## for the next repaint.
-func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMap,
+func _test_a_copy_taken_during_a_day_carries_the_days_record(t: TestRunner, original: CityMap,
 		seed_value: int) -> void:
 	var map := original.copy()
 	var street := _a_street_tile(map)
-	var segment := map.network.segment_containing(street)
-	map.hold_segment(segment.key())
+	var segment := map.street_network().segment_containing(street)
+	map.hold_segment(segment.key(), HeldStreets.Why.SEAL)
 	map.seal_soft_tile(street)
 	var body: Array[Vector2i] = [street + Vector2i.RIGHT]
 	map.obstruct_tiles(7, body)
@@ -84,15 +123,15 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMa
 	map.set_closure_tree_pits(pits)
 	var fallen: Array[Vector2i] = [street + Vector2i.LEFT]
 	map.set_seal_tree_pits(fallen)
-	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	var spent: Array[Vector2i] = [map.calm_blocks_now()[0]]
 	map.set_spent_calm(spent)
 	var twin := map.copy()
 	_check_the_same(t, map, twin, "seed %d, during a day" % seed_value)
 	# The handover is carried too: both maps' next repaint shuts the same calm.
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 2)
+	state.begin_day(map.plans_by_block(), 2)
 	var other := CityState.new()
-	other.begin_day(twin.block_plans, 2)
+	other.begin_day(twin.plans_by_block(), 2)
 	map.repaint(state)
 	twin.repaint(other)
 	_check_the_same(t, map, twin, "seed %d, the next repaint" % seed_value)
@@ -105,45 +144,46 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMa
 ## spent calm area, `fenced_park` set), and the fence handed over again for the next repaint, copies
 ## with the closures, the fence and its handover carried. The fence is checked by name besides the
 ## member comparison, so a copy that drops it fails on a check that says what.
-func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original: CityMap,
+func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestRunner, original: CityMap,
 		seed_value: int) -> void:
 	var day := 9
 	var map := original.copy()
-	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	var spent: Array[Vector2i] = [map.calm_blocks_now()[0]]
 	map.set_spent_calm(spent)
 	map.set_fenced_park_state(Vector2i(-1, -1), 0, Tuning.act_for_day(day))
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var street := _a_street_tile(map)
 	var closures: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS,
-			map.network.segment_containing(street))]
+			map.street_network().segment_containing(street))]
 	map.close_streets(closures)
-	map.set_fenced_park_state(map.fenced_park, map.fenced_park_act, Tuning.act_for_day(day))
-	t.check(map.fenced_park.x >= 0 and map.is_closed(street),
+	map.set_fenced_park_state(map.fenced_park_block(), map.fenced_park_act(), Tuning.act_for_day(day))
+	t.check(map.fenced_park_block().x >= 0 and map.is_closed(street),
 			"seed %d: the act III map has a fenced park and a closed street" % seed_value)
 	var twin := map.copy()
-	t.check(twin.fenced_park == map.fenced_park and twin.fenced_park_act == map.fenced_park_act,
+	t.check(twin.fenced_park_block() == map.fenced_park_block()
+			and twin.fenced_park_act() == map.fenced_park_act(),
 			"seed %d: the copy has the same fenced park" % seed_value)
 	_check_the_same(t, map, twin, "seed %d, in act III" % seed_value)
 	# The handover is carried: both maps' next repaint keeps the same fence standing.
 	var next := CityState.new()
-	next.begin_day(map.block_plans, day + 1)
+	next.begin_day(map.plans_by_block(), day + 1)
 	var other := CityState.new()
-	other.begin_day(twin.block_plans, day + 1)
+	other.begin_day(twin.plans_by_block(), day + 1)
 	map.repaint(next)
 	twin.repaint(other)
 	_check_the_same(t, map, twin, "seed %d, the next repaint in act III" % seed_value)
 
 ## An authored scene's city (`RecipeCityBuilder.build()`) copies with what only a recipe fills: its
 ## saved dawn ground, its stretch and the stretch being active, its tree moves and context.
-func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t) -> void:
+func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var map: CityMap = RecipeCityBuilder.build(data).map
-	t.check(map.stretch_active and not map.recipe_dawn_tiles.is_empty(),
+	t.check(map.is_void(Vector2i.ZERO) and map.has_recipe_dawn_ground(),
 			"the authored map has an active stretch and saved dawn ground")
 	var twin := map.copy()
-	t.check(twin.stretch_active and twin.recipe_dawn_tiles == map.recipe_dawn_tiles,
+	t.check(twin.is_void(Vector2i.ZERO) and twin.has_recipe_dawn_ground(),
 			"the copy of an authored map keeps its stretch active and its dawn ground")
 	_check_the_same(t, map, twin, "the authored scene map")
 
@@ -151,7 +191,7 @@ func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t) -> void:
 ## was, and the other way round. Each map is compared with what it answered and held before (a
 ## snapshot of plain data, `_snapshot()`), not with another copy, which would share whatever the
 ## two maps wrongly shared.
-func _test_what_one_map_is_handed_leaves_the_other_alone(t, original: CityMap,
+func _test_what_one_map_is_handed_leaves_the_other_alone(t: TestRunner, original: CityMap,
 		seed_value: int) -> void:
 	var map := original.copy()
 	var before := _snapshot(map)
@@ -172,27 +212,28 @@ func _test_what_one_map_is_handed_leaves_the_other_alone(t, original: CityMap,
 func _hand_a_day_to(map: CityMap) -> void:
 	var street := _a_street_tile(map)
 	map.set_tile(street + Vector2i.DOWN, GameEnums.TileType.BUILDING)
-	map.hold_segment(map.network.segment_containing(street).key())
+	map.hold_segment(map.street_network().segment_containing(street).key(), HeldStreets.Why.SEAL)
 	map.seal_soft_tile(street)
 	var body: Array[Vector2i] = [street + Vector2i.RIGHT]
 	map.obstruct_tiles(11, body)
 	var closures: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS,
-			map.network.segment_containing(street))]
+			map.street_network().segment_containing(street))]
 	map.close_streets(closures)
 	var pits: Array[Vector2i] = [street]
 	map.set_seal_tree_pits(pits)
-	(map.block_plans[map.calm_blocks[0]] as BlockPlan).then(GameEnums.BlockPurpose.REQUISITIONED, 3,
-			GameEnums.BlockCause.SCHEDULED)
-	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	var first_calm := map.calm_blocks_now()[0]
+	var plan := map.plans_by_block()[first_calm] as BlockPlan
+	plan.then(GameEnums.BlockPurpose.REQUISITIONED, 3, GameEnums.BlockCause.SCHEDULED)
+	var spent: Array[Vector2i] = [first_calm]
 	map.set_spent_calm(spent)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, Tuning.RUN_LENGTH_DAYS)
+	state.begin_day(map.plans_by_block(), Tuning.RUN_LENGTH_DAYS)
 	map.repaint(state)
 
 ## The middle of the first segment's carriageway that is still a street on `map`, so a day's
 ## writes have a real street to land on.
 func _a_street_tile(map: CityMap) -> Vector2i:
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		var tile := segment.tile_rect().get_center()
@@ -201,7 +242,7 @@ func _a_street_tile(map: CityMap) -> Vector2i:
 	return Vector2i.ZERO
 
 ## Both comparisons of this suite's header, each a check of its own.
-func _check_the_same(t, expected: CityMap, actual: CityMap, situation: String) -> void:
+func _check_the_same(t: TestRunner, expected: CityMap, actual: CityMap, situation: String) -> void:
 	_check_alike(t, _snapshot(expected), _snapshot(actual), situation)
 
 ## What `map` answers and what it holds, `_answers()` and `_members()`, as plain data of the
@@ -210,7 +251,7 @@ func _snapshot(map: CityMap) -> Array:
 	return [_plain(_answers(map)), _members(map)]
 
 ## The two checks of `_check_the_same()`, on two snapshots.
-func _check_alike(t, expected: Array, actual: Array, situation: String) -> void:
+func _check_alike(t: TestRunner, expected: Array, actual: Array, situation: String) -> void:
 	var asked: Dictionary = expected[0]
 	var answered: Dictionary = actual[0]
 	var differing: Array[String] = []
@@ -240,8 +281,8 @@ func _answers(map: CityMap) -> Dictionary:
 	var shut := PackedByteArray()
 	var held := PackedByteArray()
 	var pits := PackedByteArray()
-	for y in range(0, map.size.y, _STRIDE):
-		for x in range(0, map.size.x, _STRIDE):
+	for y in range(0, map.size_in_tiles().y, _STRIDE):
+		for x in range(0, map.size_in_tiles().x, _STRIDE):
 			var tile := Vector2i(x, y)
 			streets.append(int(map.is_street(tile)) + 2 * int(map.is_carriageway(tile)) \
 					+ 4 * int(map.is_crossing(tile)))
@@ -254,10 +295,10 @@ func _answers(map: CityMap) -> Dictionary:
 	found["emptied tree pits"] = pits
 	found["blocked segments"] = map.blocked_segments()
 	var segments := []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		var key := segment.key()
-		segments.append([key, map.has_street(key), map.is_hard_blocker(key), map.is_held(segment),
-				RegionPlanner.ground_region_of(map, segment)])
+		segments.append([key, map.has_street(key), map.is_hard_blocker(key),
+				map.held_streets().has(key), RegionPlanner.ground_region_of(map, segment)])
 	found["segments"] = segments
 	var corridors := []
 	for corridor in Tuning.CITY_BLOCKS.x + 1:
@@ -273,10 +314,10 @@ func _answers(map: CityMap) -> Dictionary:
 	var arcs := []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		var purposes := []
-		for block: Vector2i in map.block_plans:
-			purposes.append([block, state.purpose_of(map.block_plans, block),
+		for block: Vector2i in map.blocks_with_plans():
+			purposes.append([block, state.purpose_of(map.plans_by_block(), block),
 					state.is_forced_open(block)])
 		purposes.sort()
 		arcs.append(purposes)
@@ -295,7 +336,7 @@ func _answers(map: CityMap) -> Dictionary:
 func _members(map: CityMap) -> Dictionary:
 	var found := _plain_members(map, _NOT_COMPARED)
 	var keys := []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		keys.append(segment.key())
 	found["network"] = keys
 	return found
@@ -313,11 +354,31 @@ func _plain_members(object: Object, skipped: Array[String] = []) -> Dictionary:
 	return found
 
 ## `value` with every object in it replaced by its members (`_plain_members()`), so two values
-## compare equal exactly when they hold the same data, whichever objects hold it, and every array and
-## dictionary in it new, so no later write to what it was read from reaches it.
+## compare equal exactly when they hold the same data, whichever objects hold it, and every array,
+## dictionary and packed array in it new, so no later write to what it was read from reaches it.
+## Godot shares a packed array by reference, so each packed type is copied through its own typed
+## name.
 func _plain(value: Variant) -> Variant:
-	if typeof(value) >= TYPE_PACKED_BYTE_ARRAY and typeof(value) <= TYPE_PACKED_VECTOR4_ARRAY:
-		return value.duplicate()
+	if value is PackedByteArray:
+		return (value as PackedByteArray).duplicate()
+	if value is PackedInt32Array:
+		return (value as PackedInt32Array).duplicate()
+	if value is PackedInt64Array:
+		return (value as PackedInt64Array).duplicate()
+	if value is PackedFloat32Array:
+		return (value as PackedFloat32Array).duplicate()
+	if value is PackedFloat64Array:
+		return (value as PackedFloat64Array).duplicate()
+	if value is PackedStringArray:
+		return (value as PackedStringArray).duplicate()
+	if value is PackedVector2Array:
+		return (value as PackedVector2Array).duplicate()
+	if value is PackedVector3Array:
+		return (value as PackedVector3Array).duplicate()
+	if value is PackedVector4Array:
+		return (value as PackedVector4Array).duplicate()
+	if value is PackedColorArray:
+		return (value as PackedColorArray).duplicate()
 	if value is Object:
 		return _plain_members(value as Object)
 	if value is Array:
@@ -331,3 +392,56 @@ func _plain(value: Variant) -> Variant:
 			entries[key] = _plain(value[key])
 		return entries
 	return value
+
+## Each fact the scene recipes' builder writes through a method is what the matching question
+## answers, on a hand-drawn map: the window, the closures, the tree moves and trees, the stretch's
+## tiles, buildings, props, litter and cracks, the dawn ground and the lots of buildings. A
+## method that writes the wrong field, or none, fails its question.
+func _test_what_an_authored_scene_writes_is_what_the_map_answers(t: TestRunner) -> void:
+	var map := CityMap.new(Vector2i(50, 20))
+	var window := Rect2i(2, 3, 20, 10)
+	t.check(not map.has_recipe_exterior(), "a map shows no recipe window until it is handed one")
+	map.show_recipe_window(window)
+	t.check(map.has_recipe_exterior() and map.recipe_window() == window,
+			"the recipe window is the one it was handed")
+	var street := map.street_network().segments()[0]
+	var closure := RoadClosure.new(RoadClosure.Kind.ROADWORKS, street)
+	map.add_recipe_closure(closure)
+	var closures: Array[RoadClosure] = [closure]
+	t.check(map.recipe_road_closures() == closures,
+			"a recipe's closure is listed among the closures it hands the city")
+	var from := Vector2i(5, 6)
+	map.set_recipe_tree_moves({from: Vector2i(5, 9)})
+	var sources: Array[Vector2i] = [from]
+	t.check(map.tree_move_sources() == sources and map.has_tree_move_from(from)
+			and map.tree_move_from(from) == Vector2i(5, 9), "a tree move is asked from its source tile")
+	var trees: Array[Vector2i] = [Vector2i(7, 7)]
+	map.set_recipe_trees(trees)
+	t.check(map.recipe_tree_tiles() == trees, "a recipe's trees are the tiles it was handed")
+	var lots: Array[Rect2i] = [Rect2i(10, 10, 4, 4)]
+	map.set_building_lots(lots)
+	t.check(map.building_lots() == lots, "the lots of buildings are the ones it was handed")
+	t.check(not map.has_stretch() and not map.is_void(Vector2i.ZERO), "a map has no stretch until one begins")
+	map.begin_stretch()
+	var own := Vector2i(10, 5)
+	map.add_stretch_tile(own, GameEnums.TileType.SIDEWALK)
+	t.check(map.has_stretch() and map.in_stretch(own) and not map.in_stretch(Vector2i(11, 5))
+			and map.tile_at(own) == GameEnums.TileType.SIDEWALK, "a stretch holds the tiles added to it")
+	t.check(not map.is_void(Vector2i(11, 5)), "its void waits until it is shown")
+	map.show_stretch()
+	t.check(map.is_void(Vector2i(11, 5)) and not map.is_void(own),
+			"a shown stretch makes every other tile void")
+	var lot := Rect2i(33, 5, 3, 3)
+	map.add_stretch_building(lot, {"height": 2})
+	t.check(map.has_stretch_building_on(lot) and map.stretch_building_lots() == [lot],
+			"a stretch's building stands on the lot it was added for")
+	map.add_stretch_prop({"at": Vector2.ONE})
+	map.add_stretch_litter({"at": Vector2.ONE})
+	t.check(map.stretch_prop_list().size() == 1 and map.stretch_litter_list().size() == 1,
+			"a stretch's props and litter are the ones added to it")
+	map.add_stretch_crack(own, Vector2i(1, 2))
+	t.check(map.stretch_crack_at(own) == Vector2i(1, 2) and map.stretch_crack_at(from) == null,
+			"a stretch's crack is on the tile it was added for")
+	t.check(not map.has_recipe_dawn_ground(), "no dawn ground is kept until it is asked for")
+	map.keep_dawn_ground()
+	t.check(map.has_recipe_dawn_ground(), "the dawn ground is kept once it is asked for")

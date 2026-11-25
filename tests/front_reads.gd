@@ -1,7 +1,7 @@
 extends RefCounted
 ## What a `Building`'s front shows, read off the pictures it was drawn with.
 ##
-## A building paints its front through a `FrontDrawer` (`Building.front_drawer`), and
+## A building paints its front through the `FrontDrawer` it is handed (`Building.equip()`), and
 ## `RecordingFrontDrawer` records every picture it is told to paint instead of painting it. This reads
 ## the record by where each picture was put, in the building's own space: a wall cell's top-left
 ## corner is `(-columns() * TILE / 2 + col * TILE, -(row + 1) * TILE)`, rows counted north from the
@@ -13,6 +13,8 @@ extends RefCounted
 ## then `look()` at it.
 
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
+## This script, to name the type `look()` answers.
+const Reads := preload("res://tests/front_reads.gd")
 
 const TILE := Building.TILE
 
@@ -23,24 +25,41 @@ var drawer: RecordingFrontDrawer
 ## What the front shows now, on its own canvas: the entries of `RecordingFrontDrawer.shown()`.
 var _shown: Array[Dictionary] = []
 
-## A building handed a recording drawer, not yet in the tree.
+## Where the recording drawer a building was handed here is kept on it (`Object.set_meta()`), for
+## `look()` to read.
+const _DRAWER_META := &"front_reads_drawer"
+
+## A building handed a recording drawer, not yet in the tree, equipped as the city equips one
+## (`Building.equip()`). An equipped building waits for the residency to stand its scenery up, so
+## this one has its scenery made resident once it is ready, as the residency makes a building in
+## view resident (a building draws nothing while it is not).
 static func new_building() -> Building:
 	var made := Building.new()
-	made.front_drawer = RecordingFrontDrawer.new()
+	_equip(made, AtlasLibrary.new())
+	made.ready.connect(func() -> void: made.residence().set_resident(true), CONNECT_ONE_SHOT)
 	return made
 
-## Hands a building a recording drawer in place of the real one a city gave it, has its scenery
-## resident (a building draws nothing while it is not), and asks for a redraw.
-static func watch(building: Building) -> void:
-	building.front_drawer = RecordingFrontDrawer.new()
-	building.set_scenery_resident(true)
+## Hands a building a recording drawer in place of the real one a city gave it, the way the city
+## hands one (`Building.equip()`, over `library`, the one the building draws from, with a roof
+## drawer of its own), has its scenery resident, and asks for a redraw. `equip()` gives the building a standing of its
+## own, made resident here, which the city's residency does not hold: a suite that watches a
+## building does not move the view off it.
+static func watch(building: Building, library: AtlasLibrary) -> void:
+	_equip(building, library)
+	building.residence().set_resident(true)
 	building.queue_redraw()
 
+## Equips `building` over `library` with a recording front drawer, kept on it for `look()`.
+static func _equip(building: Building, library: AtlasLibrary) -> void:
+	var drawer := RecordingFrontDrawer.new()
+	building.equip(library, RoofDrawer.new(library), drawer)
+	building.set_meta(_DRAWER_META, drawer)
+
 ## The reads of `building`'s front as it was last drawn.
-static func look(building: Building):
-	var reads = load("res://tests/front_reads.gd").new()
+static func look(building: Building) -> Reads:
+	var reads := Reads.new()
 	reads.building = building
-	reads.drawer = building.front_drawer as RecordingFrontDrawer
+	reads.drawer = building.get_meta(_DRAWER_META) as RecordingFrontDrawer
 	reads.refresh()
 	return reads
 
@@ -109,10 +128,6 @@ func stood() -> Array[Dictionary]:
 					"foot": entry.at})
 	return found
 
-## How many pictures the front shows.
-func picture_count() -> int:
-	return _shown.size()
-
 ## The window picture drawn in wall cell (`col`, `row`), or `&""` where none is.
 func window_at(col: int, row: int) -> StringName:
 	for entry in painted():
@@ -127,15 +142,6 @@ func window_cells() -> Array[Vector2i]:
 		if window_pictures().has(entry.picture):
 			found.append(Vector2i(entry.col, entry.row))
 	return found
-
-## How many wall cells show a lit window.
-func lit_windows() -> int:
-	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
-	var count := 0
-	for entry in painted():
-		if lit.has(entry.picture):
-			count += 1
-	return count
 
 ## The window picture of every wall cell the front draws one in, row by row and column by column
 ## within a row: the style and which cells are lit, in one list.
@@ -236,6 +242,24 @@ func roof_rows_at(col: int) -> int:
 		if entry.picture == Building.ROOF and entry.col == col:
 			rows += 1
 	return rows
+
+## The rows the roof is drawn taller than the building's own at each column, which is the extension
+## the city handed it (`Building.extend_roof_over()`), read off the roof pictures (0 where the
+## front draws no roof, as over a power station's yard).
+func roof_extension() -> Array[int]:
+	var rows: Array[int] = []
+	for col in building.columns():
+		rows.append(maxi(0, roof_rows_at(col) - building.roof_tiles()))
+	return rows
+
+## The colour the front's first cell of `picture` is painted in (the wall and the roof are tinted
+## from the palette entry the front's variant picks), or a transparent colour for a front that
+## paints none.
+func colour_of(picture: StringName) -> Color:
+	for entry in painted():
+		if entry.picture == picture:
+			return entry.colour
+	return Color.TRANSPARENT
 
 ## The lips drawn on roof cell (`col`, `row`), as `Building.ROOF_EDGE_BIT_*` flags, or 0 for a cell
 ## that is no roof or has none. Row 0 is the front lip, directly above the wall.

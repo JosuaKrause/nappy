@@ -1,28 +1,29 @@
-extends "res://tests/events_shared_city.gd"
+extends RefCounted
 ## Events that move on their own rather than waiting for her: a flock of birds (as birds, not one
 ## sprite drawn often), a mobile row that follows its own path, and a crouching row that holds
 ## still until it bolts.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Extends
-## `events_shared_city.gd` for `_test_a_flock_is_a_place_she_can_see`'s `_planned()`, the one test
-## here that asks what the scheduler actually plans across a run rather than driving a bare
-## instance by hand.
+## Split from `tests/test_events.gd` under M125, "the test suite is slow again". The suite stands on
+## bare `EventInstance`s it steps by hand (`_instance()`) and builds no city; what the scheduler plans
+## for a flock is asked in `tests/test_events_scheduler.gd`.
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_flock_is_birds_rather_than_one_bird_drawn_often(t)
 	_test_a_flock_goes_up_when_she_reaches_the_birds(t)
 	_test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t)
-	_test_a_flock_is_a_place_she_can_see(t)
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
+		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	var surroundings := EventSurroundings.new()
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -34,12 +35,13 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## Walks her past a flock at `offset` px to one side at `Tuning.WALK_SPEED`, telling the instance
 ## where she is every tick the way the world does, and answers how far from the middle she was on
 ## the first frame the birds were off the ground — `INF` if they never left it.
-func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
-	var instance := _instance(t, def, Vector2.ZERO)
-	var her := Vector2(-def.outer_radius - 120.0, offset)
+func _flock_flushes_at(t: TestRunner, def: EventDef, offset: float) -> float:
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
+	var her := Vector2(-def.heard_within() - 120.0, offset)
 	var answer := INF
-	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
-		instance.player_at = her
+	for _i in int(ceil(((def.heard_within() + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+		instance_where.tell(her)
 		instance.step(STEP)
 		if not instance.is_waiting() and not instance.is_telegraphing():
 			answer = her.distance_to(instance.position)
@@ -51,15 +53,16 @@ func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
 ## Net points from walking a straight line past a flock at `offset` px to one side, at
 ## `Tuning.WALK_SPEED`, telling the instance where she is every tick the way the world does — the
 ## one thing `M174Pass`'s rig never does, and why `docs/COSTS.md` cannot price this row.
-func _flock_walked_through(t, def: EventDef, offset: float) -> float:
-	var instance := _instance(t, def, Vector2.ZERO)
-	var her := Vector2(-def.outer_radius - 120.0, offset)
+func _flock_walked_through(t: TestRunner, def: EventDef, offset: float) -> float:
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
+	var her := Vector2(-def.heard_within() - 120.0, offset)
 	var net := 0.0
-	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
-		instance.player_at = her
+	for _i in int(ceil(((def.heard_within() + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+		instance_where.tell(her)
 		instance.step(STEP)
-		if her.distance_to(instance.position) <= def.outer_radius:
-			net += (instance.excitement.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		if her.distance_to(instance.position) <= def.heard_within():
+			net += (instance.source().contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 		her.x += Tuning.WALK_SPEED * STEP
 	instance.free()
 	return net
@@ -68,9 +71,9 @@ func _flock_walked_through(t, def: EventDef, offset: float) -> float:
 ## when they move independently and does not when they move as one shape.
 func _widest_gap_between_birds(instance: EventInstance) -> float:
 	var widest := 0.0
-	for a in instance.flock.birds:
-		for b in instance.flock.birds:
-			widest = maxf(widest, a.at.distance_to(b.at))
+	for a in instance.birds():
+		for b in instance.birds():
+			widest = maxf(widest, a.at().distance_to(b.at()))
 	return widest
 
 ## **The birds move, one at a time, and they stay inside their own event.** *(M38: "the birds are
@@ -86,22 +89,24 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ## - **They move apart**, which is the difference between eleven birds and one bird drawn eleven
 ##   times, and it is checked during the burst rather than the departure — a flock that only comes
 ##   alive on its way out is the original bug with a longer fuse.
-## - **They stay inside `flock_spread`.** The telegraph fairness contract is stated over
-##   `outer_radius` *from the instance*, so eleven moving emitters are only legal while their union
+## - **They stay inside the flock's spread.** The telegraph fairness contract is stated over
+##   outer radius *from the instance*, so eleven moving emitters are only legal while their union
 ##   is inside the disc `validate_event` checked. This is the assertion that says so.
 ## - **The middle costs and the rim does not**, which is the whole reason a flock is worth eleven
 ##   sources: the price of one depends on whether you went through it or round it.
-func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
+func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.flock_spread < def.outer_radius,
+	t.check(def.flock().spread() < def.heard_within(),
 			"and the room it takes up comes out of the field it emits over, not on top of it")
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	# Standing in it, so it notices her on the first step and the telegraph is the 1.7s it spends on
 	# the ground about to go. Without a player position a flock waits for ever and every assertion
-	# below would be made about eleven birds pecking — see `_test_a_flock_is_a_place_she_can_see`.
-	instance.player_at = Vector2.ZERO
-	_advance(instance, def.telegraph_time + 0.2)
-	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_leaving,
+	# below would be made about eleven birds pecking — see the scheduler suite's
+	# `_test_a_flock_is_a_place_she_can_see`.
+	instance_where.tell(Vector2.ZERO)
+	_advance(instance, def.telegraphs_for() + 0.2)
+	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_on_its_way_out(),
 			"the flock is up")
 
 	var spread_before := _widest_gap_between_birds(instance)
@@ -117,20 +122,20 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	var furthest := 0.0
 	for i in int(2.0 / STEP):
 		instance.step(STEP)
-		if instance.is_leaving:
+		if instance.is_on_its_way_out():
 			break
-		for bird in instance.flock.birds:
-			furthest = maxf(furthest, bird.at.length())
-	t.check(furthest <= def.flock_spread + 2.0,
+		for bird in instance.birds():
+			furthest = maxf(furthest, bird.at().length())
+	t.check(furthest <= def.flock().spread() + 2.0,
 			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
-			% [def.flock_spread, furthest])
+			% [def.flock().spread(), furthest])
 
-	var middle := instance.excitement.contribution_at(Vector2.ZERO)
-	var rim := instance.excitement.contribution_at(Vector2(def.outer_radius - 6.0, 0.0))
+	var middle := instance.source().contribution_at(Vector2.ZERO)
+	var rim := instance.source().contribution_at(Vector2(def.heard_within() - 6.0, 0.0))
 	t.check(middle > rim * 4.0,
 			"walking through the middle of a flock (%.1f/s) costs far more than skirting it (%.1f/s)"
 			% [middle, rim])
-	t.check(instance.excitement.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
+	t.check(instance.source().contribution_at(Vector2(def.heard_within() + 80.0, 0.0)) == 0.0,
 			"and nothing at all reaches past the radius the contract was checked against")
 	instance.free()
 
@@ -141,17 +146,17 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 ## `is_telegraphing()` — so under the clock alone a walk straight in put them up well past her.
 ##
 ## Two claims, and the second is what stops the fix being a way of deleting the telegraph. **Walked
-## into, it flushes at the birds** — `flock_spread` plus her own body, the distance at which she is
-## among them rather than near them — within a frame of her reaching that distance and not before
+## into, it flushes at the birds** — the flock's spread plus her own body, the distance at which she
+## is among them rather than near them — within a frame of her reaching that distance and not before
 ## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
-## is startled rather than ignored, and `telegraph_time` still means something.
+## is startled rather than ignored, and `telegraphs_for()` still means something.
 ##
-## Stated over the walk rather than over the numbers it was written from: the rig sets `player_at`
-## every tick, which is the one thing the pass rig behind `docs/COSTS.md` never does and the reason
-## that table dashes this row.
-func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
+## Stated over the walk rather than over the numbers it was written from: the rig tells where
+## she is (`WhereSheIs.tell()`) every tick, which is the one thing the pass rig behind
+## `docs/COSTS.md` never does and the reason that table dashes this row.
+func _test_a_flock_goes_up_when_she_reaches_the_birds(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
+	var touch := def.flock().spread() + Tuning.PLAYER_BODY_RADIUS
 	t.check(touch < def.notice_within(),
 			"she is inside the trigger (%.0fpx) well before she is among the birds (%.0fpx)"
 			% [def.notice_within(), touch])
@@ -185,7 +190,7 @@ func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
 ## encounters and the rate is easy to cut too far while chasing something else. There is no upper
 ## bound: *"not following the procedure should be costly"* — the procedure being to wait the birds
 ## out, which is free — so what walking into them costs is the player's to set by feel.
-func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) -> void:
+func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var through := _flock_walked_through(t, def, 0.0)
 	var dog := M174Pass.pass_net_averaged(EventCatalogue.by_id("loose_dog"), 0.0,
@@ -198,109 +203,29 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) ->
 	# fires at all, so what is left out there is a fraction of the rate against a decay she is
 	# earning the whole way — the line can and does come out negative, and the claim is the gap
 	# rather than its sign.
-	var skirted := _flock_walked_through(t, def, def.flock_spread + Tuning.PLAYER_BODY_RADIUS + 30.0)
+	var skirted := _flock_walked_through(
+			t, def, def.flock().spread() + Tuning.PLAYER_BODY_RADIUS + 30.0)
 	t.check(skirted < through * 0.5,
 			"skirting one costs %.1f, far less than the %.1f of walking through it"
 			% [skirted, through])
 
-## **A flock exists before it is seen, and the first frame of one is never inside the view around
-## her.** *(PLAYTEST-69: "pigeons pop in on screen — they should exist before they are visible.")*
-##
-## The pop-in is a siting question rather than a drawing one, so this is stated over both halves of
-## the siting and over the live row:
-##
-## - **Nothing sites it near her, on any day of the run.** A director-sited row is created at
-##   `Tuning.AHEAD_LEAD_DISTANCE` (184px) in front of her, which is inside the 320px half-view on
-##   every sideways heading — right for a cat, whose whole content is the three seconds it is there,
-##   and the pop-in itself for eleven birds that are meant to be a patch of pavement. Checked over
-##   `spawn_mode_on(day)`, the one query every placement asks, rather than over `spawn_mode` alone.
-## - **The day gives it a tile**, so it is streamed in at `Tuning.EVENT_STREAM_RADIUS` — further
-##   from her than the corner of the view even after the frame in which she crosses that boundary
-##   at a run, which is what makes "the first drawn frame is off screen" true rather than likely.
-## - **And it is on the ground, quiet, until she walks up to it.** A flock that streamed in already
-##   bursting would have spent its whole event two screens away; one that emitted its full 42/s
-##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
-##   is inside `EventDef.notice`, which is the telegraph contract paid in geometry.
-func _test_a_flock_is_a_place_she_can_see(t) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		t.check(def.spawn_mode_on(day) == EventDef.SpawnMode.MAP,
-				"day %d sites a flock on a tile rather than in front of her" % day)
-	t.check(def.notice_within() > 0.0 and def.notice_within() < def.outer_radius,
-			"it waits for her inside its own %.0fpx field (trigger %.0fpx)"
-			% [def.outer_radius, def.notice_within()])
-
-	var planned_flocks := 0
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		for plan in _planned(day):
-			if plan.def.id != def.id:
-				continue
-			planned_flocks += 1
-			t.check(plan.is_placed(), "day %d's flock has ground of its own" % day)
-	t.check(planned_flocks > 0, "the run's days plan flocks at all (%d)" % planned_flocks)
-
-	# The far corner of the view, which is the furthest anything on screen can be from her.
-	var corner := Tuning.VIEW_HALF_EXTENT.length()
-	t.check(Tuning.EVENT_STREAM_RADIUS - Tuning.RUN_SPEED * STEP > corner,
-			"a streamed row's first frame is %.0fpx away, outside the %.0fpx corner of the view"
-			% [Tuning.EVENT_STREAM_RADIUS - Tuning.RUN_SPEED * STEP, corner])
-
-	# As far off as `EventManager` ever first builds one, and five seconds of it.
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(Tuning.EVENT_STREAM_RADIUS, 0.0)
-	_advance(instance, 5.0)
-	t.check(instance.is_waiting() and not instance.is_finished,
-			"five seconds out of reach and the flock is still standing there")
-	var still_grounded := true
-	for bird in instance.flock.birds:
-		still_grounded = still_grounded and is_zero_approx(bird.lift)
-	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
-	t.close_to(instance.current_intensity(),
-			def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
-			"and pecking costs a fraction of what going up does", 0.1)
-
-	# She comes inside the trigger: the notice starts here rather than at dawn.
-	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
-	instance.step(STEP)
-	t.check(not instance.is_waiting() and instance.is_telegraphing(),
-			"walking up to it is what starts it")
-	for bird in instance.flock.birds:
-		still_grounded = still_grounded and is_zero_approx(bird.lift)
-	t.check(still_grounded, "and the telegraph is still eleven birds on the ground")
-	# Read at the flock's own middle rather than at her: every bird is inside `flock_spread` of it
-	# whatever the wheel is doing, so the two readings differ by the damping rather than by where
-	# eleven birds happened to be on the frame each was taken.
-	var on_the_ground := instance.excitement.contribution_at(Vector2.ZERO)
-
-	_advance(instance, def.telegraph_time + 0.2)
-	var up := 0
-	for bird in instance.flock.birds:
-		if bird.lift > 0.0:
-			up += 1
-	t.check(up == instance.flock.birds.size(), "then all %d of them are up" % instance.flock.birds.size())
-	t.check(instance.excitement.contribution_at(Vector2.ZERO) > on_the_ground * 3.0,
-			"and the burst is what costs (%.1f/s through the middle against %.1f/s while they peck)"
-			% [instance.excitement.contribution_at(Vector2.ZERO), on_the_ground])
-	instance.free()
-
-func _test_mobile_follows_its_path(t) -> void:
+func _test_mobile_follows_its_path(t: TestRunner) -> void:
 	# `military_convoy` rather than the fire engine: this is about the generic path-following
-	# mechanic, not about fire, and it needs a row whose `_be_done()` finishes immediately rather
-	# than driving on until it is out of sight — `aftermath.on_finish` is what does that, which the
-	# fire engine no longer carries now that `burning_building` calls it in rather than the other
-	# way round (`EventDef.aftermath.on_sight`).
+	# mechanic, not about fire. At its path's end the truck is done with it (`_be_done()`): it
+	# drives on out of sight, leaving, with nothing left to do on the path.
 	var def := EventCatalogue.by_id("military_convoy")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(300.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 	t.check(instance.position == Vector2.ZERO, "a mobile event starts at its first waypoint")
 
 	_advance(instance, 0.5)
-	t.close_to(instance.position.x, def.speed * 0.5, "a mobile event travels at its speed", 5.0)
+	t.close_to(instance.position.x, def.speed() * 0.5, "a mobile event travels at its speed", 5.0)
 	t.close_to(instance.position.y, 0.0, "a mobile event stays on its path")
 
 	# Off the end of the route is over, whatever the nominal duration says.
 	_advance(instance, 3.0)
-	t.check(instance.is_finished, "a mobile event finishes at the end of its path")
+	t.check(instance.is_gone() or instance.is_on_its_way_out(),
+			"a mobile event is done with its path at its end")
 	instance.free()
 
 ## The other kind of mobile event, and the reason the field exists. A telegraph that is an
@@ -310,23 +235,23 @@ func _test_mobile_follows_its_path(t) -> void:
 ## Playtest 04 found the cat doing nothing, and this is half of why. Its route is one street
 ## wide, so at 240px/s it finished the whole crossing inside its own 1.6s telegraph — it never
 ## reached full intensity, and the running sprite never drew once in six milestones.
-func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
+func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(400.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 
-	_advance(instance, def.telegraph_time - 0.1)
+	_advance(instance, def.telegraphs_for() - 0.1)
 	t.check(instance.position == Vector2.ZERO, "it has not moved while telegraphing")
 	t.check(instance.is_telegraphing(), "and it is still telegraphing")
 
 	_advance(instance, 0.5)
 	t.check(not instance.is_telegraphing(), "then the telegraph ends")
-	t.close_to(instance.position.x, def.speed * 0.4,
+	t.close_to(instance.position.x, def.speed() * 0.4,
 			"and it bolts at its full speed from where it was crouched", 20.0)
 
 	# The duration has to outlast the crossing, or it expires in the middle of the road.
 	var crossing := float(EventDirector.CROSSING_REACH_TILES * Tuning.TILE_SIZE) * 2.0
-	t.check(def.duration >= crossing / def.speed,
+	t.check(def.lasts_for() >= crossing / def.speed(),
 			"it lives long enough (%.2fs) to cross the whole street (%.2fs)"
-			% [def.duration, crossing / def.speed])
+			% [def.lasts_for(), crossing / def.speed()])
 	instance.free()

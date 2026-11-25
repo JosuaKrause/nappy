@@ -16,7 +16,8 @@ extends RefCounted
 ## **The rig.** A real `EventInstance` (`EventCatalogue`'s own def, or a historical copy — see
 ## `_historical_def()`), given a long straight two-point path so `EventRouteWalk.advance()` — the
 ## same function the scheduler's placement drives — carries it at its own `speed`, pacing back
-## and forth if `def.paces`. Never added to a tree: `contribution_at()`, `accumulate_landed()` and
+## and forth if the row paces a beat. Never added to a tree: `contribution_at()`,
+## `accumulate_landed()` and
 ## `_process()` all work on a bare `.setup()` instance, the same convention
 ## `tests/test_halo.gd`'s `_instance_at()` uses. Her line is parallel to the instance's own path,
 ## offset in Y by a fixed lateral distance, and her direction is fixed **opposite the instance's
@@ -24,14 +25,14 @@ extends RefCounted
 ## whichever way a paced row happens to be walking when the sample starts.
 ##
 ## **The window.** She starts and ends `LEAD` px either side of the instance in the direction of
-## travel — comfortably past any `outer_radius` in the catalogue plus the ground either body
-## covers during the crossing — and every tick inside `outer_radius` of the instance's *live*
+## travel — comfortably past any outer radius in the catalogue plus the ground either body
+## covers during the crossing — and every tick inside outer radius of the instance's *live*
 ## position (not a fixed line: a paced or reversing row moves under her the whole time) adds its
 ## `contribution_at()` times `delta` times sleep sensitivity to the incoming side, and the given
 ## decay rate times `delta` to the other. Net is incoming minus decay, summed over the whole pass.
 ##
 ## **Averaged over the pulse.** `PHASE_SAMPLES` starting points, evenly spread over one
-## `pulse_period`, each pre-ticks the instance that far (moving it for real, nobody watching) before
+## pulse period, each pre-ticks the instance that far (moving it for real, nobody watching) before
 ## her line is drawn — the same "walked up on him at a different moment of his breath" idea
 ## `m174_walk_beside.gd`'s closed-form 0.625 mean stands in for there; here the pulse interacts
 ## with real movement (how far he has paced, which way he is facing) so it is walked rather than
@@ -61,13 +62,13 @@ const STEP := 1.0 / 60.0
 ## street actually offer — 0/20/40 is one lane's width of give, 80/120 is stepping toward or past
 ## the far lane. None of the three rows obstruct (mobile is exempt from "solid things are solid"),
 ## so 0 is always geometrically walkable for all three.
-const OFFSETS := [0.0, 20.0, 40.0, 80.0, 120.0]
+const OFFSETS: Array[float] = [0.0, 20.0, 40.0, 80.0, 120.0]
 const PHASE_SAMPLES := 8
-## Well past the widest `outer_radius` in the catalogue (`car_accident`'s field aside, which is
+## Well past the widest outer radius in the catalogue (`car_accident`'s field aside, which is
 ## not one of these three) plus a margin for how far either body moves during the crossing.
 const LEAD := 500.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_row("homeless_yeller")
 	_row("loose_dog")
 	_row("dog_walker")
@@ -96,30 +97,27 @@ func _row(id: String) -> void:
 				old_now_awake, old_now_asleep, proposed_awake, proposed_asleep])
 
 ## The three rows' fields as they stood before this milestone touched them — `homeless_yeller`
-## with no core and his old 210px `outer_radius`, all three read at the decay they were tuned
+## with no core and his old 210px outer radius, all three read at the decay they were tuned
 ## against (3.5) as well as today's (6.0), so "restore what the decay took" has a real baseline to
 ## restore to. **Every field this milestone might move is pinned here explicitly** rather than
 ## read off the live catalogue and selectively overridden — a duplicate that only overrides
-## `intensity` silently inherits whatever `outer_radius` the catalogue holds *today*, which drifted
-## the moment `homeless_yeller`'s own `outer_radius` changed and made this probe compare the old
+## `intensity` silently inherits whatever outer radius the catalogue holds *today*, which drifted
+## the moment `homeless_yeller`'s own outer radius changed and made this probe compare the old
 ## intensity against the new reach instead of the old one. `loose_dog` and `dog_walker` never
 ## changed, so their "historical" and "current" columns are the same def; kept as two lookups
 ## rather than one so a future change to either only has to touch the live catalogue. Static and
 ## public (`M174Pass.historical_def()`) so `tests/test_events.gd` shares this rather than keeping
 ## a second copy that could drift from it.
 static func historical_def(id: String) -> EventDef:
-	var d: EventDef = EventCatalogue.by_id(id).duplicate()
+	var current := EventCatalogue.by_id(id)
+	var d := current.redraft()
 	if id == "homeless_yeller":
-		d.intensity = 14.0
-		d.inner_radius = 45.0
-		d.outer_radius = 210.0
-		d.core_intensity = 0.0
-		d.core_radius = 0.0
+		d.field(FieldSpec.of(14.0, 45.0, 210.0).pulsing_every(current.pulses_every()))
 	elif id == "dog_walker":
-		d.intensity = 26.0
+		d.field(current.field().at_peak(26.0))
 	elif id == "loose_dog":
-		d.intensity = 32.0
-	return d
+		d.field(current.field().at_peak(32.0))
+	return d.build()
 
 ## The pass, averaged over `PHASE_SAMPLES` points in the row's own pulse — see the class doc.
 ## Static and public so the relationship test in `tests/test_events.gd` runs the identical
@@ -130,7 +128,7 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 		# when it reaches her is the flight, not the moment she walked up. See the class doc.
 		return _pass_net(def, offset, decay, sensitivity, 0.0)
 	var total := 0.0
-	var phase_span: float = def.pulse_period if def.pulse_period > 0.0 else 1.0
+	var phase_span: float = def.pulses_every() if def.pulses_every() > 0.0 else 1.0
 	for i in PHASE_SAMPLES:
 		var phase_delay := phase_span * float(i) / float(PHASE_SAMPLES)
 		total += _pass_net(def, offset, decay, sensitivity, phase_delay)
@@ -139,14 +137,19 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 ## Whether the pass is met the moment the row is created — a row `EventDirector` sites down her
 ## own line, warned of before it exists, rather than one the day put on a tile at dawn. Stated
 ## over `spawn_mode` rather than over a list of ids, so a new row that comes at her is priced
-## honestly without anybody remembering to add it here.
+## honestly without anybody remembering to add it here. **A row the director sends ahead of her is
+## not included** (`EventDef.is_sent_ahead()`, the dog walker's copy): it is created past its
+## telegraph at a point of its beat drawn on the director's stream
+## (`EventDirector.age_it_is_sent_at()`), so the point that reaches her is as free as it is for a row
+## she walks up to, wherever it is created, and it is priced as that row is, over its beat.
 ##
 ## **`AHEAD_OF_PLAYER` is deliberately not included**, though the director sites it dynamically
 ## too: it is put *across* her line rather than down it, and this rig only knows how to walk two
 ## bodies at each other in a straight line. Measuring one here at a crossing row's lead would price
 ## a geometry the director does not produce, which is the error this whole branch exists to remove.
 static func sited_toward_her(def: EventDef) -> bool:
-	return def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER
+	return def.comes_toward_her() \
+			and not def.is_sent_ahead()
 
 static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: float,
 		phase_delay: float) -> float:
@@ -158,15 +161,15 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching. A row
 	# that comes at her is created with its telegraph already spent and meets her from there.
 	if toward_her:
-		instance.resume(EventSpawner.age_when_warned(def), 0.0)
-	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
+		instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
+	var warm := 0.0 if toward_her else def.telegraphs_for() + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
 
 	# "Different directions" made exact: she starts on the side the instance is currently heading
 	# toward and walks straight at it, offset in Y by the lane she is giving it.
-	var heading_x := signf(instance._heading.x)
+	var heading_x := signf(instance.facing_now().x)
 	if is_zero_approx(heading_x):
 		heading_x = 1.0
 	# Where a row that comes at her is created, closest; otherwise the fixed window that clears
@@ -180,16 +183,16 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# Long enough for her to start outside the field, cross it and leave it again. For a row coming
 	# at her the gap closes at both speeds together and the window is its own siting plus its reach;
 	# for everything else it is the fixed window either side, as it always was. Overrunning costs
-	# nothing either way — the sums below only accrue while she is inside `outer_radius`.
+	# nothing either way — the sums below only accrue while she is inside outer radius.
 	var steps := int(ceil((LEAD * 2.0 / Tuning.WALK_SPEED) / STEP)) + 120
 	if toward_her:
-		var closing := def.speed + Tuning.WALK_SPEED
+		var closing := def.speed() + Tuning.WALK_SPEED
 		steps = int(ceil(((lead + def.field_reach()) / closing) / STEP)) + 120
 	for _i in steps:
 		instance.step(STEP)
 		her_pos += her_velocity * STEP
-		if her_pos.distance_to(instance.position) <= def.outer_radius:
-			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
+		if her_pos.distance_to(instance.position) <= def.heard_within():
+			incoming_sum += instance.source().contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 
 	instance.free()

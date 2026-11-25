@@ -2,10 +2,14 @@ class_name ChaseWay
 extends RefCounted
 ## **The way a walker follows toward somebody who may be a city away**, round the buildings between
 ## them: a `WalkField` sweep out from her over the ground a figure on foot can walk, kept fresh as she
-## moves and read a step at a time (`Navigator.way_to()` makes one for a mover). Only day 13's task
-## guard has one (`EventInstance.notice_her_at()`); every other pursuer starts within sight of her
-## with a straight run at her and keeps the straight line the navigator's step slides along walls.
-## *(curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine".)*
+## moves and read a step at a time (`Navigator.way_to()` makes one for a mover). Two pursuers have
+## one: day 13's task guard, set on her from wherever he stands (`EventInstance.notice_her_at()`;
+## *curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine"*), and
+## the roadblock's posted guard, whose row asks for it (`PursuitSpec.walks_round_buildings()`), so
+## turning the next corner past his post is no way past him *(inbox #1534 in velvet-alpaca, "sure,
+## your pick", the pick being that he follows her round the corner)*. Every other pursuer starts
+## within sight of her with a straight run at her and keeps the straight line the navigator's step
+## slides along walls.
 ##
 ## **Where there is a clear line to her the walker goes straight at her**, exactly as without a way;
 ## only where a building stands between them does it follow the walk instead. The walk is a sweep out
@@ -77,7 +81,7 @@ func sweep_under_way() -> WalkField:
 func keep_fresh(her_at: Vector2, from: Vector2) -> void:
 	if her_at == Vector2.INF or not _map.has_ground():
 		return
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var versions := Vector2i(_map.day_record_version(), _map.obstruction_version())
 	if _next == null:
 		var her := _map.world_to_tile(her_at)
 		var stale := REFRESH_TILES
@@ -86,7 +90,7 @@ func keep_fresh(her_at: Vector2, from: Vector2) -> void:
 			stale = maxi(stale, floori(float(his) / REFRESH_SHARE))
 		var moved := absi(her.x - _field_from.x) >= stale \
 				or absi(her.y - _field_from.y) >= stale
-		if _field != null and not moved and _field.versions == versions:
+		if _field != null and not moved and _field.started_under() == versions:
 			return
 		var target: Array[Dictionary] = [{"key": 0, "at": her_at, "reach": 0.0,
 				"beat": PackedVector2Array()}]
@@ -96,7 +100,7 @@ func keep_fresh(her_at: Vector2, from: Vector2) -> void:
 		# Laying out the ground is a frame's work of its own, like the sweep's own layout.
 		return
 	_next.advance(_map, _next_ground, SWEEP_TILES_PER_FRAME)
-	if _next.done or _next.length_at(_map.world_to_tile(from)) >= 0:
+	if _next.is_done() or _next.length_at(_map.world_to_tile(from)) >= 0:
 		_field = _next
 		_field_ground = _next_ground
 		_field_from = _next_from
@@ -169,4 +173,4 @@ func _down_the_way(from: Vector2i) -> PackedVector2Array:
 func _is_open(tile: Vector2i) -> bool:
 	if not _map.in_bounds(tile) or not _map.is_walkable(tile):
 		return false
-	return _field_ground[tile.y * _map.size.x + tile.x] != WalkField.BLOCKED
+	return _field_ground[tile.y * _map.size_in_tiles().x + tile.x] != WalkField.BLOCKED

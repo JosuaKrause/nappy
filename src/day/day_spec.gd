@@ -5,51 +5,66 @@ extends RefCounted
 ##
 ## **The escape is a day with special settings, run by the day's own code** *(minty-lemur #785)*.
 ## A run is a sequence of these — the fourteen days, then the building, then the city — and one
-## `DayController` is handed whichever is being walked (`DayController.spec`), so the clock, the
-## goal, the loss and its cause, the finish path, the counters and the run log are the same code for
-## all sixteen; the city's dressing (`City.start_day()`), its seals (`SealPlanner.plan_day()`) and
-## its events (`EventScheduler.build_day()`) are the same code for the fourteen days and the city's
+## `DayController` is handed whichever is being walked (`DayController.use_the_spec()`), so the
+## clock, the goal, the loss and its cause, the finish path, the counters and the run log are
+## the same code for all sixteen; the city's dressing (`City.start_day()`), its seals
+## (`SealPlanner.plan_day()`) and its events (`EventScheduler.build_day()`) are the same code
+## for the fourteen days and the city's
 ## section. What differs between a day and a section of the escape is written here, as values, and
-## read where it matters, rather than asked of a global "are we in the escape" anywhere else.
+## read where it matters, rather than asked of a global "are we in the escape" anywhere else: the
+## walk's bag, what it holds standing and its seals, what the event director may send her while she
+## walks (`director_sends()`), who is on its streets, and what losing it costs.
 ##
 ## Data only: no node, no autoload, nothing that runs, and no words of its own — whoever builds one
 ## hands it its title, so this layer names nothing of the UI's. `for_day()` and `for_section()` are
 ## the two shapes the run uses; a test builds one either way, or by hand.
 
-const FINALE_BAG_EMPTY := 1
+const FINALE_BAG_EMPTY := 9
 const FINALE_BAG_EXPLOSIONS := 8
 const FINALE_BAG_ROADBLOCKS := 2
-## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
-## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
-## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
-## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
-## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
-## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
-## what the probe's walks that cried had landed. With these a walk to an exit meets about three
-## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
-## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
-## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
-## the next. About a third of the streets stand nothing all the same, since a danger the placement
-## rules refuse is spent unmet.
+## The escape's marble bag. Its four rows are in the player's order of how many *(inbox #785 in
+## minty-lemur: "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks,
+## off-screen explosions, unmarked vans and roadblocks (the barriers). **The two rows that take her
+## have the fewest marbles of the four**, vans 3 and roadblocks 2, and the trucks and explosions,
+## which only wake the baby, make up the rest: a van's catch and a guard's end the section, and a
+## van's field is most of what the probe's walks that cried had landed.
+##
+## The empty marbles, where the street that draws one stands nothing, are counted apart from that
+## order: a marble a street's rules refuse stays in the bag (`ViewBag`), so the empty marbles are
+## what leaves a street with nothing, and `FINALE_BAG_EMPTY` is the count at which about a third of
+## the streets stand nothing, the share the escape had when a refused marble was spent. Nine puts
+## the empty marble second most numerous, against the player's order with empty last: the
+## orchestrator's reading of the player's approval of the design review (inbox #1268 in
+## olive-ferret), open to the player. One measurement (`tests/probes/escape_winnable.gd`), not a
+## fit; the entry lilac-marten (the fuller escape) sets the count from here. A fill is the sum of
+## the five and a plan has about 31 open streets.
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_VANS := 3
-## How many slots each open street of the escape's walk has, each filled by one draw from the
-## escape's marble bag below (`DaySpec.slots_per_street`, which the city section's spec takes from
-## here; `EventScheduler._fill_the_walk_from_the_bag()` draws them). **One keeps the section the
-## climax and every walk out of it walkable**, measured by walking the shortest walk
-## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
-## (measured by `tests/probes/escape_winnable.gd` at f8172b7ccb7f, whose own stand-in walker and
-## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe walks with the game's own
-## walker, `RouteRig`, and its numbers are not comparable with those):
-## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
-## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
-## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.
-## One slot also stands one roadblock a street at most, so a crossing is one band and one guard on
-## her side of it to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not
-## enough to make the obstacle survivable")*, which the notice spacing
-## (`EventScheduler._keeps_its_notice_to_itself()`) would hold at any slot count, since no street is
-## long enough for two bands' notices.
-const FINALE_SLOTS_PER_STREET := 1
+
+## **The share of the director's usual wait between two handouts that the escape city lets
+## pass** (`handout_wait_share()`). The escape is one walk of about a minute and the ten army
+## trucks its bag draws are all owed to it, so at a day's pace of 11 to 26 seconds between
+## handouts she would meet about half the trucks the escape met while they stood on its streets,
+## and none at all in over half her walks. The filer's proposal, set by measurement
+## (`tests/probes/escape_winnable.gd`, twelve seeds and both exits) so that she meets as many
+## trucks a minute as with the trucks placed; open to the player. It sets how many she meets,
+## not which walks meet one: where a truck can come is the lanes' (`docs/EVENTS.md`, the
+## escape's section).
+const ESCAPE_HANDOUT_WAIT_SHARE := 0.25
+
+## What the event director may send her while she walks (`director_sends()`).
+enum DirectorSends {
+	## The rows the calendar's day sends, by the day's number: the route's bag of cats, cyclists, dog
+	## walkers, patrols and the rest, with the day-one rig and the sprinkled charging dog.
+	THE_DAYS_ROWS,
+	## Nothing: no route bag, nothing owed from the plan, no rig and no sprinkled dog.
+	NOTHING,
+	## **The rows its own plan hands it** (`hands_the_director()`): a route bag of the sent-ahead
+	## rows the walk's plan leaves unplaced for the director, one marble each, and nothing else: no
+	## row of an ordinary day, no rig and no sprinkled dog. The escape city's, whose bag's army
+	## trucks are those rows.
+	SENT_AHEAD_ROWS_OF_ITS_PLAN,
+}
 
 ## Where the walk is: the city, or the building the escape starts in.
 enum World { CITY, BUILDING }
@@ -62,139 +77,190 @@ enum Goal {
 	## covered the screen (`InteriorScene.exit_requested`), and `DayController.reach_the_exit()` is
 	## what that reaches.
 	SERVICE_EXIT,
-	## The tunnel mouth or the bridge deck (`exits`), reached however the baby is.
+	## The threshold of the tunnel or the bridge (`exit_points()`): her centre on the spine's last
+	## row, reached however the baby is. Her own control ends there and the game walks her in.
 	CITY_EDGE,
 }
 
 ## The escape's two sections, and `NONE` for every one of the fourteen days. **The values are the
-## save's**: `run.facts.escape_section` holds one as a plain `int` and `GameSave` writes it, so a
+## save's**: `run.facts().escape_section()` holds one as a plain `int` and `GameSave` writes it, so a
 ## save written before this enum moved here reads the same.
 enum Section { NONE, BUILDING, CITY }
 
-## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
-## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
-## `run.header.day` stays on the last day while the escape is walked, since the run has not moved
-## past it — its plan's random streams and its save are keyed by it.
-var number := 1
+## The day number (`day_number()`): 1 to 14 for the days, and `BUILDING_DAY` and `CITY_DAY` for the
+## escape's two sections.
+var _number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
 ## line the HUD says once she is walking it: "" for a day, "Escape the building" or "Escape the
-## city" for a section.
-var title := ""
-## Which section of the escape this is, `Section.NONE` for a day.
-var section := Section.NONE
-var world := World.CITY
+## city" for a section. Read through `title()`.
+var _title := ""
+## Which section of the escape this is, `Section.NONE` for a day. Read through `section_kind()`.
+var _section := Section.NONE
+## Where the walk is (`World`). Read through `world_kind()`.
+var _world := World.CITY
 var goal := Goal.HOME
-## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityEdge.Kind` -> position, the
-## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
-## Handed in once the city exists; empty for any other goal.
-var exits := {}
+## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityExit.Kind` -> position, the
+## middle of the carriageway on the spine's last row at each end, the threshold, rather than
+## where the portal's picture is anchored.
+## Handed in by the start once the world it stands in is stood (`DayWorld.exits()`, through
+## `use_exits()`); empty for any other goal. Read through `exit_points()`.
+var _exits := {}
 ## Seconds on the clock.
-var length := Tuning.DAY_LENGTH_SECONDS
+var _length := Tuning.DAY_LENGTH_SECONDS
 ## Whether the clock reads to the hundredth and tells the HUD every frame, rather than to the whole
 ## second *(inbox #746 in woolly-penguin)*: the escape's tension is its clock.
 var clock_hundredths := false
 ## Whether the light follows the clock from dawn to dusk, or stays at night all the way through:
-## the escape happens after the last day, and its tension is the clock rather than the light.
-var daylight_runs_down := true
+## the escape happens after the last day, and its tension is the clock rather than the light. Read
+## through `runs_the_daylight_down()`.
+var _daylight_runs_down := true
 ## Whether the city is dark from its first frame, all its power off, rather than going dark only
 ## once the sabotage is done and she is far from the station: the escape is the same night as the
 ## blackout.
 var dark_from_the_start := false
+
+# ------------------------------------------------------------------ how it starts ---
+
+## Where she is put down as the walk starts, each a place in the world the walk stands in
+## (`DayWorldSource.stand()` answers the point).
+enum Start {
+	## Her own front door, on the street: every one of the fourteen days.
+	DOORSTEP,
+	## Her own flat's door, inside the building: the escape's first section.
+	FLAT,
+	## The building's service exit, on the street beside the home block: the escape's city.
+	SERVICE_EXIT,
+}
+var _start := Start.DOORSTEP
+## Whether the run photographs what it holds at the walk's dawn (`RunCalendar.begin_day()`), which is
+## what a lost attempt gives back and where a checkpoint is kept: every day's. A section of the
+## escape gives nothing back (`a_loss_undoes_the_attempt()`) and keeps no checkpoint of its own.
+var _photographs_the_dawn := true
+## Whether the resistance's day runs (`ResistanceDirector.start_day()`): its mark, its contact and
+## its task on every day; the escape has no subquest to advance.
+var _runs_the_resistance := true
+## Whether the baby is asleep in her arms as the walk starts, sleepiness full: the escape's *"the
+## player holding the sleeping baby (sleep bar is full)"*, which is also what makes a retry playable
+## at all, since the meter that just reached a hundred is what lost the section. A day starts with
+## her awake.
+var _starts_asleep := false
+## Whether the walk's plan draws on the run's one-shots and spends them
+## (`AttemptSpendState.consumed_one_shots()`, appended to as the day's plan spends one): every day's.
+## The escape plans from a list of its own, empty, and spends none of the run's.
+var _spends_the_one_shots := true
+## The run's random stream the walk's events are planned on (`RunCalendar.day_rng()`): `"events"` for
+## a day, `"finale"` for the escape's city, so a restarted section is the same city rather than a
+## thinner one. The building is planned on a seed of its own, which its night shares
+## (`DayWorld.plan_rng()`).
+var _events_stream := "events"
+## Whether the act's calm areas she has already used are handed to the dawn's repaint to shut where
+## they can, and the one park fenced this run is fenced again (`CityMap.set_spent_calm()`,
+## `set_fenced_park_state()`): every day's. The escape's repaint comes with no handover and shuts
+## nothing.
+var _shuts_the_spent_calm := true
 
 # --------------------------------------------------------------- what is on it ---
 
 ## Whether falling asleep owes her a walk home, and with it the return leg's own pressure on the
 ## events (`EventManager._owe_the_return()`): every day's does. A section is outbound from its first
 ## frame to its last, and the baby is put to sleep at the top of each attempt, so it owes none.
-var owes_a_return := true
+var _owes_a_return := true
+## What the event director may send her (`director_sends()`).
+var _director_sends := DirectorSends.THE_DAYS_ROWS
+## The share of the director's usual wait between two handouts this walk lets pass
+## (`handout_wait_share()`): all of it on a day.
+var _handout_wait_share := 1.0
 ## Whether a torn poster sends a pursuer on foot at her (`EventManager.send_a_pursuer()`): on every
 ## day, and never in the escape.
-var poster_pursuits := true
+var _poster_pursuits := true
 ## How many of the act's walkers and cars are on its streets, as a share of the act's own
 ## (`Tuning.crowd_pedestrians()`, `crowd_cars()`): all of them on a day, and nobody in either of the
 ## escape's sections — *"no regular cars or regular people on the street"*.
 var crowd_density := 1.0
-## Whether the poster crews paste at dawn and the posters can be torn (`PosterWalls.start_day()`),
+## Whether the poster crews paste at dawn and the posters can be torn (`PosterWalls.dress_for()`),
 ## or the walls only show what the run left on them (`PosterWalls.show_only()`): a day pastes, and
 ## the escape shows.
 var pastes_posters := true
 
 # ------------------------------------------------------- how its events are placed ---
 
-## What stands on the walk and how it is drawn (`EventScheduler.build_day()`).
-enum Draw {
-	## The catalogue's day: the ambient rows, the scars, the masts, the scripted rows, the
-	## one-shots, the spoilers in a park she used, then the recurring rows bought from the day's
-	## budget (`EventScheduler.budget_for()`) — every one of the fourteen days.
-	CATALOGUE,
-	## Every street of the walk draws `slots_per_street` marbles from one bag holding `bag`, and a
-	## marble stands one of its row (`bag_rows`), or nothing where it has no row — the escape's city,
-	## which knows every street she can take before she sets off.
-	BAG_PER_STREET,
-}
-var draw := Draw.CATALOGUE
-## `Draw.BAG_PER_STREET`'s marbles: a marble -> how many of it one fill of the bag holds. One bag for
-## the whole walk, so the mix is exact over each fill of it rather than over each street.
+## **The one bag the whole walk draws from**: a marble -> how many of it one fill holds,
+## `EMPTY_MARBLE` among them, so the mix is exact over each fill of it rather than over each
+## street. Empty where the walk has no such bag and each of its units draws from a fresh bag of its
+## view's fill: every one of the fourteen days. Set by `_place_the_escape_city()`; a suite or a
+## probe sets another mix to plan with. `src/` reads it through `walk_bag()`.
 var bag := {}
-## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none.
-var bag_rows := {}
-## How many marbles each street of the walk draws.
-var slots_per_street := 0
+## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none. Read
+## through `walk_bag_rows()`.
+var _bag_rows := {}
+## Whether a unit of the walk draws one marble and no more (`MarbleDraw`): a row's stands alone in
+## the unit, an empty one leaves it with nothing. *(Inbox #1185 in gentle-owl's board answer: "one
+## per street. fill empty in if any segment or location in the street has an event".)* It also
+## stands one roadblock a street at most, so a crossing is one band and one guard on her side of it
+## to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not enough to make
+## the obstacle survivable")*. A day's unit draws until its room is spoken for. Read through
+## `stands_one_event_a_street()`.
+var _one_event_a_street := false
+## Whether every unit of the walk is drawn at dawn, in the order the walk names its streets, each
+## judged among everything drawn before it (`UnitDraw.draw_in_their_order()`): a walk that knows
+## every street she can take before she sets off. A day's units draw as she comes near them. Read
+## through `draws_before_she_sets_off()`.
+var _drawn_before_she_sets_off := false
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
-## (`CalmAreas.unused_ground()`, `DayRepairs.ensure_one_usable_park()`): every day's rule. The
+## (`CalmAreas.unused_ground()`, `DawnCalmKeptClean`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
-var keeps_unused_calm_clear := true
+var _keeps_unused_calm_clear := true
 ## Whether the home's streets are the day's: nothing on the street her front door opens onto
-## (`EventScheduler.open_ground_for()`) or round the home block (`CityMap.held_segments`). The
+## (`RowGround.tiles_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
-## refused (`EventScheduler._clearance_around_her()`).
-var holds_the_home_streets := true
-## Whether a row stands at most its `EventDef.max_per_day` copies: a day's caps, which the escape
-## does without (minty-lemur #785) — what stands there is the slots and the bag's draws.
-var caps_per_day := true
-## The share of the **wall**-role placements the day's fill made that stay standing, rolled once per
-## placement (`EventScheduler.build_day()`, which thins the fill after planning it). A wall is only
-## ever placed off the tree, so this is the share of the catalogue's own blockers off it that the
-## day keeps. `1.0` keeps every wall: every day before `Tuning.REGION_WALL_FIRST_DAY` and every
-## section of the escape. From the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) on, `for_day()`
-## hands `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day keeps half its walls, not all of them.
+## refused (`EventScheduler.clearance_around_her()`). Read through `keeps_the_home_streets_clear()`.
+var _holds_the_home_streets := true
+## The share of its **wall**-role rows the day draws: every wall-role row's weight in a unit's bag
+## is scaled by it, while its row marbles are measured against every wall weighed in full
+## (`UnitFills`), so a wall's place goes to empty and a unit draws a wall that much less often.
+## The day holds about that share of its walls. `1.0` keeps every wall: every day the region wall does not stand
+## (`region_wall_stands()`) and every section of the escape. On a day it stands, `for_day()` hands
+## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day holds about half its walls, not all of them.
 var wall_row_share := 1.0
-## The share `wall_row_share` is from `Tuning.REGION_WALL_FIRST_DAY` on, set by `for_day()`.
+## The share `wall_row_share` is on a day the region wall stands, set by `for_day()`.
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
-## (`EventScheduler._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
-var one_notice_at_a_time := false
+## (`OneNoticeRule._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
+var _one_notice_at_a_time := false
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined, past every body and every standing lethal reach (`WalkGround`): the escape's, whose
 ## bodies stand on the one walk rather than off it. A day keeps its routes through its corridor's own
-## rules instead (`EventScheduler._judge()`).
-var keeps_the_walk_open := false
+## rules instead (`StreetInvalidation`: a route's junctions, its walked sidewalk, a beat's opening).
+var _keeps_the_walk_open := false
 
 # --------------------------------------------------------- how its streets are sealed ---
 
 ## Which seal pictures close the streets off the walk (`SealPlanner.plan_day()`).
 enum SealPictures {
-	## The day's eight, soft and hard, each from its own act on (`SealPlanner.candidates()`).
+	## The table's pictures, soft and hard, each from its own act on (`SealPlanner.candidates()`).
 	DAY,
 	## The escape's four, all hard (`SealPlanner._escape_candidates()`).
 	ESCAPE,
 }
-var seal_pictures := SealPictures.DAY
+## Read through `seal_pictures()`.
+var _seal_pictures := SealPictures.DAY
 ## Whether the walk's streets are grown as a day's route tree and closed off it
 ## (`City._close_streets()`: the tree, the region wall, the closures), or handed in with the walk
-## (`City.tint_the_route()`): the escape's chains are planned after the city is dressed.
-var closes_streets := true
+## (`City.tint_the_route()`): the escape's chains are planned after the city is dressed. Read
+## through `closes_the_streets()`.
+var _closes_streets := true
 ## Whether the main road is sealed off the walk like any other street. A day's tree never routes
 ## along the spine and sealing it too would wall the one street she is meant to cross freely; the
 ## escape's chains end on it, so leaving the rest of it open would join them at the one street that
-## touches both exits.
-var seals_the_main_road := false
+## touches both exits. Read through `seals_off_the_main_road()`.
+var _seals_the_main_road := false
 ## Whether every street and every through-alley off the walk is sealed, rather than a share of them
 ## from `Tuning.REGION_WALL_FIRST_DAY` on and a `SealPlanner.ALLEY_MOUTH_SEAL_CHANCE` of the alleys: a
 ## day lets a wrong turn be taken and found; in the escape one open alley is a second way through.
-var seals_every_street_off_the_walk := false
+## Read through `seals_off_every_other_street()`.
+var _seals_every_street_off_the_walk := false
 
 # --------------------------------------------------------------- what it costs ---
 
@@ -204,18 +270,21 @@ var seals_every_street_off_the_walk := false
 var a_loss_costs_a_normal_run_a_nerve := true
 ## Whether a lost attempt gives back what it spent of the run — the resistance's work, the
 ## one-shots, the scars, the arcs — so the retry is the same day exactly as it was first met. The
-## escape touches none of it, so a lost section has nothing to give back.
-var a_loss_gives_back_the_attempt := true
+## escape touches none of it, so a lost section has nothing to give back. Read through
+## `a_loss_undoes_the_attempt()`.
+var _a_loss_gives_back_the_attempt := true
 ## Whether a win gives a normal run a Nerve back. Walking out of the building or the city gives
-## none *("the escape doesn't have nerves")*.
-var a_win_gives_a_nerve_back := true
+## none *("the escape doesn't have nerves")*. Read through `a_win_regains_a_nerve()`.
+var _a_win_gives_a_nerve_back := true
 ## The section a win leads into, `Section.NONE` when a win ends the walk: the building's leads
-## into the city, and nothing of the run is settled until she is out of that.
-var a_win_leads_into := Section.NONE
+## into the city, and nothing of the run is settled until she is out of that. Read through
+## `a_win_leads_into()`.
+var _a_win_leads_into := Section.NONE
 ## Whether the save says a day is under way while it is walked, so a game closed mid-day loses that
 ## day when it is opened again. The escape's sections are saved only at their brief, as a
-## checkpoint: closed inside one, it opens on that section's brief again at no cost.
-var saved_as_under_way := true
+## checkpoint: closed inside one, it opens on that section's brief again at no cost. Read through
+## `is_saved_as_under_way()`.
+var _saved_as_under_way := true
 
 ## The first of the escape's two day numbers: the building, the day after the last.
 const BUILDING_DAY := Tuning.RUN_LENGTH_DAYS + 1
@@ -225,57 +294,72 @@ const CITY_DAY := Tuning.RUN_LENGTH_DAYS + 2
 ## The marble a slot that stands nothing draws.
 const EMPTY_MARBLE := ""
 
+## Whether the region wall divides the city today, set by `for_day()` and read through
+## `region_wall_stands()`.
+var _region_wall_stands := false
+
 ## One of the fourteen days, `day_length` seconds long.
 static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpec:
 	var spec := DaySpec.new()
-	spec.number = day
-	spec.length = day_length
-	if day >= Tuning.REGION_WALL_FIRST_DAY:
+	spec._number = day
+	spec._length = day_length
+	spec._region_wall_stands = day >= Tuning.REGION_WALL_FIRST_DAY
+	if spec.region_wall_stands():
 		spec.wall_row_share = GATEHOUSE_DAY_WALL_ROW_SHARE
 	return spec
 
 ## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own
 ## words, handed in by whoever builds it (`main._escape_section_spec()`). `which` is a `Section`
-## passed as an `int`, the way `run.facts.escape_section` holds it.
+## passed as an `int`, the way `run.facts().escape_section()` holds it.
 static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
 	var spec := DaySpec.new()
-	spec.section = which
-	spec.length = section_length
-	spec.title = section_title
+	spec._section = which
+	spec._length = section_length
+	spec._title = section_title
 	spec.clock_hundredths = true
-	spec.daylight_runs_down = false
+	spec._daylight_runs_down = false
 	spec.dark_from_the_start = true
 	spec.a_loss_costs_a_normal_run_a_nerve = false
-	spec.a_loss_gives_back_the_attempt = false
-	spec.a_win_gives_a_nerve_back = false
-	spec.saved_as_under_way = false
-	spec.owes_a_return = false
-	spec.poster_pursuits = false
+	spec._a_loss_gives_back_the_attempt = false
+	spec._a_win_gives_a_nerve_back = false
+	spec._saved_as_under_way = false
+	spec._owes_a_return = false
+	spec._director_sends = DirectorSends.NOTHING
+	spec._poster_pursuits = false
 	spec.crowd_density = 0.0
 	spec.pastes_posters = false
-	spec.closes_streets = false
+	spec._closes_streets = false
+	spec._photographs_the_dawn = false
+	spec._runs_the_resistance = false
+	spec._starts_asleep = true
+	spec._spends_the_one_shots = false
+	spec._shuts_the_spent_calm = false
 	if which == Section.BUILDING:
-		spec.number = BUILDING_DAY
-		spec.world = World.BUILDING
+		spec._number = BUILDING_DAY
+		spec._world = World.BUILDING
 		spec.goal = Goal.SERVICE_EXIT
-		spec.a_win_leads_into = Section.CITY
+		spec._start = Start.FLAT
+		spec._a_win_leads_into = Section.CITY
 	else:
-		spec.number = CITY_DAY
-		spec.world = World.CITY
+		spec._number = CITY_DAY
+		spec._world = World.CITY
 		spec.goal = Goal.CITY_EDGE
+		spec._start = Start.SERVICE_EXIT
+		spec._events_stream = "finale"
+		spec._director_sends = DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN
+		spec._handout_wait_share = ESCAPE_HANDOUT_WAIT_SHARE
 		_place_the_escape_city(spec)
 	return spec
 
 ## **The escape city's placement**: the streets the chains walk are known before she sets off, so
-## each is filled from one marble bag rather than sited round her as a day does *(minty-lemur #785:
+## every street is drawn before she sets off, one marble a street from one bag for the whole walk, by
+## the day's own draw under three settings, rather than sited round her as a day does *(minty-lemur #785:
 ## "so you prefill the events for escape but that doesn't justify not using a marble bag. those
 ## concepts are orthogonal")*, in the player's order of how many — *"frequency order is trucks >
-## explosions > vans > barriers > empty"* — at `Tuning`'s counts. The rows are the escape's own
-## copies: the convoy as traffic, with the barricade it leaves on a day stripped; the masked men in
-## their van; the roadblock at full heat, whose guards leave the post and come for her on foot; and
-## the explosion.
+## explosions > vans > barriers > empty"* — at `Tuning`'s counts. The rows: the convoy, as traffic;
+## the masked men in their van; the escape's own roadblock at full heat, whose guards leave the post
+## and come for her on foot; and the explosion.
 static func _place_the_escape_city(spec: DaySpec) -> void:
-	spec.draw = Draw.BAG_PER_STREET
 	spec.bag = {
 		"military_convoy": FINALE_BAG_TRUCKS,
 		"finale_explosion": FINALE_BAG_EXPLOSIONS,
@@ -283,23 +367,229 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"roadblock": FINALE_BAG_ROADBLOCKS,
 		EMPTY_MARBLE: FINALE_BAG_EMPTY,
 	}
-	spec.bag_rows = {
-		"military_convoy": EventCatalogue.without_its_aftermath(
-				EventCatalogue.by_id("military_convoy")),
+	spec._bag_rows = {
+		"military_convoy": EventCatalogue.by_id("military_convoy"),
 		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
-	spec.slots_per_street = FINALE_SLOTS_PER_STREET
-	spec.keeps_unused_calm_clear = false
-	spec.holds_the_home_streets = false
-	spec.caps_per_day = false
-	spec.one_notice_at_a_time = true
-	spec.keeps_the_walk_open = true
-	spec.seal_pictures = SealPictures.ESCAPE
-	spec.seals_the_main_road = true
-	spec.seals_every_street_off_the_walk = true
+	spec._keeps_unused_calm_clear = false
+	spec._holds_the_home_streets = false
+	spec._one_event_a_street = true
+	spec._drawn_before_she_sets_off = true
+	spec._one_notice_at_a_time = true
+	spec._keeps_the_walk_open = true
+	spec._seal_pictures = SealPictures.ESCAPE
+	spec._seals_the_main_road = true
+	spec._seals_every_street_off_the_walk = true
+
+## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
+## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
+## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
+## past it — its plan's random streams and its save are keyed by it (`_number`).
+func day_number() -> int:
+	return _number
+
+## What ends the day for a win (`Goal`).
+func goal_kind() -> Goal:
+	return goal
+
+## Which section the day is, `Section.NONE` for a day of the calendar (`_section`).
+func section_kind() -> Section:
+	return _section
+
+## Where the walk is, the city or the building (`_world`).
+func world_kind() -> World:
+	return _world
+
+## The day's own words where "Day N of 14" stands, "" for a day of the calendar (`_title`).
+func title() -> String:
+	return _title
+
+## The seconds the walk's clock starts with (`_length`).
+func seconds_on_the_clock() -> float:
+	return _length
+
+## How many of the act's walkers and cars are on the walk's streets, as a share of the act's own
+## (`crowd_density`): nobody at `0.0`.
+func crowd_share() -> float:
+	return crowd_density
+
+## The finale's exits by `CityExit.Kind`, each the point the walk ends at (`_exits`).
+func exit_points() -> Dictionary:
+	return _exits
+
+## Whether the countdown is shown and ticked to the hundredth (the escape's).
+func counts_in_hundredths() -> bool:
+	return clock_hundredths
+
+## Whether the day grows its closures at dawn.
+func closes_the_streets() -> bool:
+	return _closes_streets
+
+## Where she is put down as the walk starts (`Start`).
+func start_point() -> Start:
+	return _start
+
+## Whether the run photographs what it holds at the walk's dawn (`_photographs_the_dawn`).
+func photographs_the_dawn() -> bool:
+	return _photographs_the_dawn
+
+## Whether the resistance's day runs on this walk (`_runs_the_resistance`).
+func runs_the_resistance() -> bool:
+	return _runs_the_resistance
+
+## Whether the baby is asleep in her arms as the walk starts (`_starts_asleep`).
+func starts_with_the_baby_asleep() -> bool:
+	return _starts_asleep
+
+## Whether the walk's plan draws on and spends the run's one-shots (`_spends_the_one_shots`).
+func spends_the_one_shots() -> bool:
+	return _spends_the_one_shots
+
+## The run's random stream the walk's events are planned on (`_events_stream`).
+func events_stream() -> String:
+	return _events_stream
+
+## Whether the act's used calm areas are shut at dawn (`_shuts_the_spent_calm`).
+func shuts_the_spent_calm() -> bool:
+	return _shuts_the_spent_calm
+
+## Whether the light runs from dawn to dusk with the clock (`_daylight_runs_down`).
+func runs_the_daylight_down() -> bool:
+	return _daylight_runs_down
+
+## Whether the city is dark from its first frame (`dark_from_the_start`).
+func is_dark_from_the_start() -> bool:
+	return dark_from_the_start
+
+## The share of its wall-role rows the day draws (`wall_row_share`), which a unit's bag fill scales
+## each wall by (`UnitFills`).
+func share_of_walls_drawn() -> float:
+	return wall_row_share
+
+## **The walk's one bag** (`bag`): empty for a walk with none, and an empty bag is the only way a
+## walk says so, so no yes-or-no beside it can disagree with it.
+func walk_bag() -> Dictionary:
+	return bag
+
+## The rows the walk bag's marbles stand, a marble -> its row; `EMPTY_MARBLE` has none
+## (`_bag_rows`).
+func walk_bag_rows() -> Dictionary:
+	return _bag_rows
+
+## Whether a street of the walk stands one event at most (`_one_event_a_street`): its unit draws
+## one marble (`MarbleDraw`).
+func stands_one_event_a_street() -> bool:
+	return _one_event_a_street
+
+## Whether every unit of the walk is drawn before she sets off (`_drawn_before_she_sets_off`).
+func draws_before_she_sets_off() -> bool:
+	return _drawn_before_she_sets_off
+
+## Hands the walk its ways out, as the world it is walked in answers them (`DayWorld.exits()`): a
+## `Goal.CITY_EDGE` walk's two, and none for any other (`_exits`).
+func use_exits(the_exits: Dictionary) -> void:
+	_exits = the_exits
+
+## Whether nothing stands on the street her front door opens onto or round the home block
+## (`_holds_the_home_streets`): every day's rule, and not the escape's.
+func keeps_the_home_streets_clear() -> bool:
+	return _holds_the_home_streets
+
+## Whether falling asleep owes her a walk home on this walk (`_owes_a_return`): every day's does, a
+## section of the escape does not.
+func owes_her_a_return() -> bool:
+	return _owes_a_return
+
+## What the event director may send her while she walks this walk (`DirectorSends`): an ordinary
+## day's rows on a day, the trucks of its own bag on the escape's city, nothing in its building.
+## The day's number decides none of it.
+func director_sends() -> DirectorSends:
+	return _director_sends
+
+## **Whether a marble of the walk's bag that stands `row` is the director's to send ahead of
+## her** rather than a place on the street that drew it
+## (`DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`): a row the director sends ahead of her on a day
+## (`EventDef.is_sent_ahead()`), the army truck. The street that draws one stands nothing, as
+## for the poster crew's marble, and the director is owed the truck
+## (`EventDirector.start_day()`); the barrier trucks that seal the streets off her walk stay
+## placed (`SealPlanner`).
+func hands_the_director(row: EventDef) -> bool:
+	return _director_sends == DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN and row.is_sent_ahead()
+
+## **The share of the director's usual wait between two handouts this walk lets pass**
+## (`EventDirector.AHEAD_INTERVAL`): all of it on a day, `ESCAPE_HANDOUT_WAIT_SHARE` of it in the
+## escape's city, whose trucks are all owed to one short walk.
+func handout_wait_share() -> float:
+	return _handout_wait_share
+
+## Whether a torn poster sends a pursuer on foot at her on this walk (`_poster_pursuits`): every
+## day's does, the escape's never.
+func sends_a_pursuer_for_a_torn_poster() -> bool:
+	return _poster_pursuits
+
+## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
+## joined (`_keeps_the_walk_open`): the escape's.
+func keeps_her_walk_open() -> bool:
+	return _keeps_the_walk_open
+
+## Whether no two waiting guards may notice her from the same ground (`_one_notice_at_a_time`): the
+## escape's.
+func notices_one_at_a_time() -> bool:
+	return _one_notice_at_a_time
+
+## Whether the calm areas she has not used this act are kept clear of everything the dawn places
+## (`_keeps_unused_calm_clear`).
+func keeps_the_unused_calm_clean() -> bool:
+	return _keeps_unused_calm_clear
+
+## Which seal pictures close the streets off the walk (`_seal_pictures`).
+func seal_pictures() -> SealPictures:
+	return _seal_pictures
+
+## Whether the main road is sealed off the walk like any other street (`_seals_the_main_road`).
+func seals_off_the_main_road() -> bool:
+	return _seals_the_main_road
+
+## Whether every street and through-alley off the walk is sealed, rather than a share of them
+## (`_seals_every_street_off_the_walk`).
+func seals_off_every_other_street() -> bool:
+	return _seals_every_street_off_the_walk
+
+
+## Whether the crews paste posters at dawn.
+func pastes_the_posters() -> bool:
+	return pastes_posters
+
+## **Whether the region wall divides the city today**, with its doors and the gatehouses at them:
+## every day from the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) to the last, and neither section
+## of the escape, since the building has no streets and the escape's city grows no day's tree to
+## stand a wall against (`closes_the_streets()` is off). Worked out once, by `for_day()`, and asked by
+## what the wall makes harder to navigate rather than compared with the day number again: the
+## catalogue's walls kept (`wall_row_share`), the closures (`ClosurePlanner.closures_wanted()`) and
+## the seals (`SealPlanner.plan_day()`), each thinned by a share of its own. *(azure-puffin, point
+## 4: "when the guard houses are set up the city gets much harder to navigate".)*
+func region_wall_stands() -> bool:
+	return _region_wall_stands
 
 ## Whether losing it spends a Nerve, in this run's mode.
 func a_loss_costs_a_nerve(hard_mode: bool) -> bool:
 	return hard_mode or a_loss_costs_a_normal_run_a_nerve
+
+## Whether a lost attempt gives back what it spent of the run, so the retry is the same day
+## (`_a_loss_gives_back_the_attempt`).
+func a_loss_undoes_the_attempt() -> bool:
+	return _a_loss_gives_back_the_attempt
+
+## Whether a win gives a normal run a Nerve back (`_a_win_gives_a_nerve_back`).
+func a_win_regains_a_nerve() -> bool:
+	return _a_win_gives_a_nerve_back
+
+## The section a win leads into, `Section.NONE` when a win ends the walk (`_a_win_leads_into`).
+func a_win_leads_into() -> Section:
+	return _a_win_leads_into
+
+## Whether the save says the walk is under way while it is walked (`_saved_as_under_way`).
+func is_saved_as_under_way() -> bool:
+	return _saved_as_under_way

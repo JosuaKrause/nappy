@@ -1,0 +1,62 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FLAGS fire_truck 0 0 0 0
+FLAGS burnt_shell 0 0 0 0
+FLAGS loudspeaker 0 0 0 0
+FLAGS curfew_announce 0 0 0 0
+FLAGS checkpoint_hut 0 0 0 0
+FLAGS checkpoint_gate 0 0 0 0
+FLAGS checkpoint_post 0 0 0 0
+FLAGS door_guard 1 1 0 0
+FLAGS barricade 0 0 0 0
+FLAGS fallen_tree 0 0 0 0
+FLAGS car_accident 0 0 0 0
+FLAGS skip 0 0 0 0
+FLAGS scaffolding 0 0 0 0
+FLAGS burst_water_main 0 0 0 0
+FLAGS moving_van 0 0 0 0
+FLAGS burnt_out_car 0 0 0 0
+FLAGS collapsed_frontage 0 0 0 0
+FLAGS neighbor 0 0 0 0
+FLAGS robber_giving_chase 1 1 0 0
+FLAGS van_guard_giving_chase 1 1 0 0
+FLAGS policeman_giving_chase 1 1 0 0
+FLAGS guardsman_giving_chase 1 1 0 0
+FLAGS finale_explosion 0 0 0 0
+FLAGS impact_crater 0 0 0 0
+FLAGS masked_pursuer 1 0 1 0
+FLAGS basement_steam 0 0 0 0
+FLAGS playground 0 0 0 0
+FLAGS cat_dash 0 0 0 0
+FLAGS alley_mouse 0 0 1 0
+FLAGS dog_walker 0 0 0 0
+FLAGS cafe_tables 0 0 0 0
+FLAGS delivery_van 0 0 0 0
+FLAGS homeless_yeller 0 0 0 0
+FLAGS loose_dog 0 0 0 0
+FLAGS market_stall 0 0 0 0
+FLAGS leaf_blower 0 0 0 0
+FLAGS pigeon_flock 0 0 1 0
+FLAGS chatting_mother 0 0 0 0
+FLAGS busker 0 0 0 0
+FLAGS construction 0 0 0 0
+FLAGS cyclist 1 0 0 0
+FLAGS ice_cream_van 0 0 0 0
+FLAGS burning_building 0 0 0 0
+FLAGS reversing_lorry 1 0 0 0
+FLAGS charging_dog 1 1 0 0
+FLAGS police_patrol 0 0 0 0
+FLAGS poster_crew 0 0 0 0
+FLAGS poster_crew_square 0 0 0 0
+FLAGS roadblock 0 0 0 1
+FLAGS abduction 1 0 0 1
+FLAGS alley_robbery 1 1 1 0
+FLAGS night_raid 0 0 0 1
+FLAGS protest 0 0 0 0
+FLAGS military_convoy 0 0 0 0
+FLAGS firefight 1 0 0 0
+-- row_flags.gd                            1461 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/row_flags.gd. Not a green build.

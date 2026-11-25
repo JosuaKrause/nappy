@@ -20,7 +20,7 @@ const OUT_DIR := "res://docs/evidence/m108-event-people-2026-09-11"
 const CELL := 68
 const GROUND := Color("c9c3b3")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 
 	_render_sheet("people-native.png", "people-3x.png", [
@@ -81,35 +81,38 @@ func _row(label: String, entries: Array) -> Dictionary:
 ## family reads its own fixed site facing this way, and every mobile one has `_heading` set the
 ## same way by `EventRouteWalk.advance()`/`EventPursuit` during play — `setup()`'s own `face` argument is
 ## the identical assignment (`_heading = face`), so sitting a fresh instance at each of the eight
-## headings and reading `_view_sector` back is the same selection the real draw path runs.
+## headings, a look made round a fake event at each, asked for its view and its mirror, is the same
+## selection the real draw path runs.
 func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 	var row := []
 	for sector in range(8):
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(def_id), Vector2.ZERO, PackedVector2Array(),
-				_sector_heading(sector))
-		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look._view_sector]
-		row.append(_entry(by_view[view], EightDirection.is_mirrored(instance.look._view_sector)))
+		var instance := FakeEvent.new()
+		instance.heading = _sector_heading(sector)
+		var look := instance.look_for(EventCatalogue.by_id(def_id))
+		var view := look.select_view(instance.heading)
+		row.append(_entry(by_view[view], look.is_mirrored()))
 		instance.free()
 	return row
 
-## The waiting robber's own target-facing: `player_at` set at each of the eight bearings, read back
-## through `robber_waiting_heading()` exactly as `_draw_robber()` does while `is_waiting()`.
+## The waiting robber's own target-facing: where she is told at each of the eight bearings,
+## read back through `robber_waiting_heading()` exactly as `_draw_robber()` does while
+## `is_waiting()`.
 func _robber_waiting_row() -> Array:
 	var row := []
 	var def := EventCatalogue.by_id("alley_robbery")
 	for sector in range(8):
-		var instance := EventInstance.new()
-		instance.setup(def, Vector2.ZERO)
-		instance.player_at = _sector_heading(sector) * (def.notice_within() + 40.0)
-		var view := instance.look.select_view(instance.look.robber_waiting_heading())
-		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view],
-				EightDirection.is_mirrored(instance.look._view_sector)))
+		var instance := FakeEvent.new()
+		instance.waiting = true
+		# Where she is told, from the origin with a clear line to her: the way to her.
+		instance.line_to_her = _sector_heading(sector) * (def.notice_within() + 40.0)
+		var look := instance.look_for(def)
+		var view := look.select_view(look.robber_waiting_heading())
+		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view], look.is_mirrored()))
 		instance.free()
 	return row
 
 ## A flock's per-bird selection lives in `FlockLook._draw_birds()` itself
-## (`bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)`), which needs a
+## (`_held_sectors[i] = EightDirection.update(_held_sectors[i], bird.heading())`), which needs a
 ## canvas to reach — so this calls the same two functions directly on a synthetic heading, which is
 ## exactly what that line reduces to for a heading already sitting on a sector's own centre.
 func _bird_row(by_view: Dictionary) -> Array:

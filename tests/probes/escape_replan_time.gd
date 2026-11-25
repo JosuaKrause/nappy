@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for what the escape's plan costs on a restart of the city section, which
-## replans on the same city (`main._plan_the_finale_city()`): per seed, the escape plan's
+## replans on the same city (`DayDirector.start()`): per seed, the escape plan's
 ## wall time on the city's first plan and on three restarts after it, each with the same rng the
 ## game hands it. Not a suite: it prints rather than asserts. Run by name:
 ##
@@ -12,15 +12,15 @@ const RESTARTS := 3
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var firsts: Array[int] = []
 	var restarts: Array[int] = []
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(own_run.attempt_spend.city_state)
+		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
 		var took: Array[int] = []
 		var placed: Array[int] = []
 		for attempt in RESTARTS + 1:
@@ -28,7 +28,7 @@ func run(t) -> void:
 			rng.seed = seed_value
 			var started := Time.get_ticks_msec()
 			var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-					_city_spec())
+					_city_spec(), GamePlanBuilder.over(map))
 			took.append(Time.get_ticks_msec() - started)
 			placed.append(placements.size())
 		firsts.append(took[0])

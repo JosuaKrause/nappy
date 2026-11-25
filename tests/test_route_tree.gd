@@ -10,7 +10,6 @@ extends RefCounted
 ##   merge" and the only reason a second route is worth offering at all;
 ## - different areas **do** share, because the sharing is what makes placement cheap and a tree
 ##   that has quietly become a star still passes everything else here;
-## - the fan-out **meets every route**, not every branch — see `RouteTree.covering_sites`;
 ## - and the same day grows the same tree, twice, on a different afternoon.
 ##
 ## The numbers below are measurements taken over the days this suite plans, kept as floors with
@@ -38,10 +37,10 @@ class Day extends RefCounted:
 
 var _days: Array[Day] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
-		for day in DAYS:
+		for day: int in DAYS:
 			_days.append(_plan(map, day))
 	_test_a_route_is_a_walk_from_the_calm_to_the_door(t)
 	_test_the_tree_only_uses_streets_that_are_there(t)
@@ -52,12 +51,14 @@ func run(t) -> void:
 	_test_different_areas_share_ground(t)
 	_test_every_reachable_calm_area_is_on_the_tree(t)
 	_test_a_second_route_is_offered_where_the_map_allows_one(t)
-	_test_the_fan_out_meets_every_route(t)
-	_test_the_fan_out_is_never_one_place(t)
 	_test_a_gap_joins_two_parallel_strands(t)
 	_test_a_gap_is_a_small_part_of_the_rim(t)
 	_test_the_same_day_grows_the_same_tree(t)
 	_test_a_different_day_is_a_different_way(t)
+	_test_the_cells_ahead_follow_a_route_the_way_she_heads(t)
+	_test_at_a_shared_cell_every_route_through_it_is_ahead(t)
+	_test_off_the_tree_nothing_is_ahead_and_a_place_counts_as_ahead(t)
+	_test_a_corner_does_not_turn_the_way_round(t)
 
 # ----------------------------------------------------------------- the branch ---
 
@@ -67,66 +68,68 @@ func run(t) -> void:
 ## last has to be a grid-step from the doorstep, since the home's own cells are never part of a
 ## route (a door is not a route). A route that merely *contains* the right cells would pass a set
 ## comparison.
-func _test_a_route_is_a_walk_from_the_calm_to_the_door(t) -> void:
+func _test_a_route_is_a_walk_from_the_calm_to_the_door(t: TestRunner) -> void:
 	var routes := 0
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			var area := _area_of(planned, branch.area)
 			t.check(area != null, "seed %d day %d: %s is a calm area on today's map"
-					% [planned.map.seed_used, planned.day, branch.area])
+					% [planned.map.city_seed(), planned.day, branch.area])
 			if not area:
 				continue
 			var access := _access_nodes(planned, area)
 			t.check(not access.is_empty(),
 					"seed %d day %d: %s is a calm area with ways in"
-					% [planned.map.seed_used, planned.day, branch.area])
+					% [planned.map.city_seed(), planned.day, branch.area])
 			for route: Array in branch.routes:
 				routes += 1
 				t.check(not route.is_empty(), "seed %d day %d: %s's route is not empty"
-						% [planned.map.seed_used, planned.day, branch.area])
+						% [planned.map.city_seed(), planned.day, branch.area])
 				if route.is_empty():
 					continue
 				var first := _node_of_cell(planned, route[0])
 				t.check(access.has(first), "seed %d day %d: %s's route starts at a way in"
-						% [planned.map.seed_used, planned.day, branch.area])
+						% [planned.map.city_seed(), planned.day, branch.area])
 				var seen := {}
 				for i in route.size():
 					var cell: Vector2i = route[i]
 					t.check(not seen.has(cell),
 							"seed %d day %d: %s's route never visits a cell twice"
-							% [planned.map.seed_used, planned.day, branch.area])
+							% [planned.map.city_seed(), planned.day, branch.area])
 					seen[cell] = true
 					if i > 0:
 						t.check(_grid_adjacent(planned, route[i - 1], cell),
 								"seed %d day %d: %s's route runs cell to adjacent cell (%s -> %s)"
-								% [planned.map.seed_used, planned.day, branch.area,
+								% [planned.map.city_seed(), planned.day, branch.area,
 								route[i - 1], cell])
 				var last := _node_of_cell(planned, route[route.size() - 1])
 				t.check(_adjacent_to_any(planned, last, home_nodes),
 						"seed %d day %d: %s's route ends a grid-step from the doorstep"
-						% [planned.map.seed_used, planned.day, branch.area])
+						% [planned.map.city_seed(), planned.day, branch.area])
 	t.check(routes > SEEDS * DAYS.size() * 4,
 			"the days planned enough routes to be worth checking (%d)" % routes)
 
 ## A day shuts streets and the tree must stay off every one of them, or a corridor down one is
 ## guidance to walk into a barrier.
 ##
-## **Not off every *absent* street any more.** `streets()` names any segment a cell of the tree
-## resolves to, including one a calm zone painted over — and the tree can legitimately cut across
-## exactly that ground now, since it is walkable park rather than a barrier. `planned.blocked`
+## **Not off every *absent* street any more.** The streets the tree walks (`streets_on_the_walk()`,
+## the day's walk as `RouteSource` asks it) are every segment a cell of the tree resolves to,
+## including one a calm zone painted over — and the tree can legitimately cut across exactly that
+## ground now, since it is walkable park rather than a barrier. `planned.blocked`
 ## conflates absent and closed-today; only the closed half is still a real exclusion.
-func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
+func _test_the_tree_only_uses_streets_that_are_there(t: TestRunner) -> void:
 	for planned in _days:
-		for key in planned.tree.streets():
-			if planned.map.absent_segments.has(key):
+		for segment in planned.tree.streets_on_the_walk():
+			var key := segment.key()
+			if not planned.map.has_street(key):
 				continue
 			t.check(not planned.blocked.has(key),
 					"seed %d day %d: the tree stays off shut streets (%s)"
-					% [planned.map.seed_used, planned.day, key])
+					% [planned.map.city_seed(), planned.day, key])
 			t.check(key != planned.home.key(),
 					"seed %d day %d: and off the doorstep itself, which is not a route"
-					% [planned.map.seed_used, planned.day])
+					% [planned.map.city_seed(), planned.day])
 
 ## *(2026-09-03, playtest 22: "a path should never go alongside the main road — main road by
 ## itself can be considered a blocker — paths can only cross the main road"; 2026-09-14, the
@@ -143,11 +146,11 @@ func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
 ## junction box are asked of `CityMap.street_kind_at` and `CityMap.junction_at` directly, and every
 ## tile of a route's cell is asked rather than its origin alone, so a cell half on the spine could
 ## not slip through.
-func _test_no_route_runs_along_the_main_road(t) -> void:
+func _test_no_route_runs_along_the_main_road(t: TestRunner) -> void:
 	for planned in _days:
-		if planned.map.main_road < 0:
+		if planned.map.main_road_corridor() < 0:
 			continue
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			for route: Array in branch.routes:
 				for cell: Vector2i in route:
 					for offset in _CELL_TILE_OFFSETS:
@@ -157,7 +160,7 @@ func _test_no_route_runs_along_the_main_road(t) -> void:
 						t.check(CityMap.junction_at(tile) != Vector2i(-1, -1),
 								("seed %d day %d: %s's route stands on the main road only where " +
 								"it crosses at a junction (%s)")
-								% [planned.map.seed_used, planned.day, branch.area, tile])
+								% [planned.map.city_seed(), planned.day, branch.area, tile])
 
 ## **A route crosses a carriageway only at a junction.** *(2026-09-13, PLAYTEST-69: "the routing
 ## should only cross the street at intersections. in block crossings are possible in game but
@@ -177,17 +180,17 @@ func _test_no_route_runs_along_the_main_road(t) -> void:
 ##
 ## **It cannot pass vacuously**: a sample whose routes never went near a street would satisfy it
 ## having checked nothing, so the tiles actually examined are counted and asserted.
-func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
+func _test_a_route_crosses_a_carriageway_only_at_a_junction(t: TestRunner) -> void:
 	var street_tiles := 0
 	var on_a_carriageway := 0
 	var first := ""
 	for planned in _days:
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			for route: Array in branch.routes:
 				for cell: Vector2i in route:
 					for offset in _CELL_TILE_OFFSETS:
 						var tile: Vector2i = cell * ReachabilityGrid.CELL + offset
-						var segment := planned.map.network.segment_containing(tile)
+						var segment := planned.map.street_network().segment_containing(tile)
 						if not segment:
 							continue   # a junction box, or ground off the lattice
 						street_tiles += 1
@@ -202,7 +205,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
 						on_a_carriageway += 1
 						if first == "":
 							first = "seed %d day %d, %s, tile %s on street %s" \
-									% [planned.map.seed_used, planned.day, branch.area, tile,
+									% [planned.map.city_seed(), planned.day, branch.area, tile,
 									segment.key()]
 	t.check(street_tiles > 500,
 			"the days sampled run their routes down streets at all (%d tiles)" % street_tiles)
@@ -212,12 +215,11 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
 
 ## **Same colours may not merge.** The two probes from one area can never become one path, so
 ## where a second route exists at all the area is reached two genuinely distinct ways. This is
-## the property the whole colour mechanism exists to maintain, and it is what the fan-out's
-## "at least two places" falls out of.
-func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
+## the property the whole colour mechanism exists to maintain.
+func _test_the_two_routes_of_one_area_share_no_cell(t: TestRunner) -> void:
 	var pairs := 0
 	for planned in _days:
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			if branch.routes.size() < 2:
 				continue
 			pairs += 1
@@ -227,7 +229,7 @@ func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
 			for cell: Vector2i in branch.routes[1]:
 				t.check(not first.has(cell),
 						"seed %d day %d: %s's two routes share no cell (%s)"
-						% [planned.map.seed_used, planned.day, branch.area, cell])
+						% [planned.map.city_seed(), planned.day, branch.area, cell])
 	t.check(pairs > 0, "some area was offered a choice (%d)" % pairs)
 
 ## **`branches_on` is the telemetry's question.** *(Playtest 17.)* The telemetry has to be able
@@ -235,7 +237,7 @@ func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
 ## new path"* — which a tile that only knows whether it is "on" cannot: two tiles each carrying one
 ## branch look identical whether it is the same branch or not. So the answer is a set of real
 ## branch indices, or "she switched" would be reported off a number nobody could check.
-func _test_a_tile_says_which_branches_it_carries(t) -> void:
+func _test_a_tile_says_which_branches_it_carries(t: TestRunner) -> void:
 	var named := 0
 	for planned in _days:
 		for cell in planned.tree.cells():
@@ -243,22 +245,22 @@ func _test_a_tile_says_which_branches_it_carries(t) -> void:
 			var branches := planned.tree.branches_on(tile)
 			t.check(not branches.is_empty(),
 					"seed %d day %d: a cell on the tree names at least one branch (%s)"
-					% [planned.map.seed_used, planned.day, cell])
+					% [planned.map.city_seed(), planned.day, cell])
 			for colour in branches:
-				t.check(colour >= 0 and colour < planned.tree.branches.size(),
+				t.check(colour >= 0 and colour < planned.tree.branches().size(),
 						"seed %d day %d: %s carries a branch that exists (%d of %d)"
-						% [planned.map.seed_used, planned.day, tile, colour,
-						planned.tree.branches.size()])
+						% [planned.map.city_seed(), planned.day, tile, colour,
+						planned.tree.branches().size()])
 			named += 1
 		t.check(planned.tree.branches_on(planned.home.tile_rect().position).is_empty(),
 				"seed %d day %d: the doorstep street carries no branch"
-				% [planned.map.seed_used, planned.day])
+				% [planned.map.city_seed(), planned.day])
 	t.check(named > 0, "there were cells to ask (%d)" % named)
 
 ## **Different colours merge, and that is the point.** A tree whose branches share nothing is a
 ## star: no bundles, no chokepoints, and a fan-out as wide as the number of destinations. Every
 ## other test here passes on a star, which is why this one is stated as a proportion.
-func _test_different_areas_share_ground(t) -> void:
+func _test_different_areas_share_ground(t: TestRunner) -> void:
 	var bundled := 0
 	var cells := 0
 	for planned in _days:
@@ -267,7 +269,7 @@ func _test_different_areas_share_ground(t) -> void:
 		bundled += shared
 		t.check(shared > 0,
 				"seed %d day %d: some stretch is shared by two areas"
-				% [planned.map.seed_used, planned.day])
+				% [planned.map.city_seed(), planned.day])
 	t.check(float(bundled) / maxf(1.0, float(cells)) > 0.2,
 			"%d of %d corridor cells carry more than one area" % [bundled, cells])
 
@@ -275,11 +277,11 @@ func _test_different_areas_share_ground(t) -> void:
 ## offers and the player chooses. An area with no way in today legitimately has no branch —
 ## which is one a closure has sealed, or one whose ways in a calm zone absorbed, or one right
 ## next door to the home.
-func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
+func _test_every_reachable_calm_area_is_on_the_tree(t: TestRunner) -> void:
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
 		for area in planned.areas:
-			if planned.map.network.route_count(planned.home, area.access, planned.blocked, 1) < 1:
+			if planned.map.street_network().route_count(planned.home, area.access, planned.blocked, 1) < 1:
 				continue
 			var branch := _branch_for(planned.tree, area.block)
 			# A calm area next door to the home is arrived at without walking anywhere, so it has
@@ -287,7 +289,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
 			if not branch:
 				var access := _access_nodes(planned, area)
 				var next_to_home := false
-				for node in access:
+				for node: int in access:
 					if home_nodes.has(node):
 						next_to_home = true
 						break
@@ -295,7 +297,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
 					continue
 			t.check(branch != null,
 					"seed %d day %d: calm area %s is reachable, so it is on the tree"
-					% [planned.map.seed_used, planned.day, area.block])
+					% [planned.map.city_seed(), planned.day, area.block])
 
 ## A second route is an **offer**, not a promise: probe one is a random walk, so it can spend the
 ## ground some other way home needed.
@@ -305,13 +307,13 @@ func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
 ## first one's route already stands on — see `_shortest_home`'s own doc — because a cell is part
 ## of a route now where a junction never was. An area with few access cells, most of them spent by
 ## probe one, more often has nowhere left for probe two to start from than the old graph did.
-func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
+func _test_a_second_route_is_offered_where_the_map_allows_one(t: TestRunner) -> void:
 	var offered := 0
 	var possible := 0
 	for planned in _days:
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			var area := _area_of(planned, branch.area)
-			if not area or planned.map.network.route_count(
+			if not area or planned.map.street_network().route_count(
 					planned.home, area.access, planned.blocked, 2) < 2:
 				continue
 			possible += 1
@@ -320,56 +322,6 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
 	t.check(possible > 0, "the map allowed a choice somewhere (%d)" % possible)
 	t.check(float(offered) / maxf(1.0, float(possible)) > 0.6,
 			"%d of %d areas that could have two routes were offered two" % [offered, possible])
-
-# ---------------------------------------------------------------- the fan-out ---
-
-## What a set piece needs: a small set of streets such that whichever way she goes, she meets one.
-## `covering_sites()` stays segment-keyed, so a route (a chain of cells) meets a site when one of
-## its cells resolves to that street.
-func _test_the_fan_out_meets_every_route(t) -> void:
-	for planned in _days:
-		var sites := planned.tree.covering_sites()
-		t.check(not sites.is_empty(), "seed %d day %d: the day has a fan-out at all"
-				% [planned.map.seed_used, planned.day])
-		for branch in planned.tree.branches:
-			for route: Array in branch.routes:
-				t.check(_route_meets(planned.map.network, route, sites), "seed %d day %d: %s's route meets the fan-out"
-						% [planned.map.seed_used, planned.day, branch.area])
-		# Every site earns its place, or the answer is not a smallest one.
-		for dropped in sites:
-			var without: Array[Vector3i] = sites.duplicate()
-			without.erase(dropped)
-			t.check(not _covers_everything(planned.tree, without),
-					"seed %d day %d: no street in the fan-out is spare"
-					% [planned.map.seed_used, planned.day])
-
-## **A bundle is a bundle and never a guarantee.** *"Anything that must be encountered has to
-## exist in at least two places"*, even on a day with one perfect chokepoint — because a
-## chokepoint on route one is not on route two, by construction. Any code that assumes a single
-## site is wrong, and the first version of `covering_sites` assumed exactly that.
-##
-## **A proportion rather than an absolute, since the move to cells.** "Share no cell" is a weaker
-## promise than "share no street": two routes can use different cells of the very same street —
-## opposite ends of it, say — that a segment-keyed covering site cannot tell apart, so a single
-## street can end up covering both after all. That is a real, if rare, consequence of routes being
-## finer-grained than the sites placed against them, not a bug in either — a set piece sited there
-## is still met by both routes, which is a fairness contract nobody breaks.
-func _test_the_fan_out_is_never_one_place(t) -> void:
-	var narrow := 0
-	var with_a_choice := 0
-	for planned in _days:
-		var choices := 0
-		for branch in planned.tree.branches:
-			if branch.routes.size() >= 2:
-				choices += 1
-		if choices == 0:
-			continue
-		with_a_choice += 1
-		if planned.tree.covering_sites().size() < 2:
-			narrow += 1
-	t.check(with_a_choice > 0, "some day had a choice to check (%d)" % with_a_choice)
-	t.check(float(narrow) / maxf(1.0, float(with_a_choice)) < 0.15,
-			"%d of %d days with a choice narrowed the fan-out to one place" % [narrow, with_a_choice])
 
 # ------------------------------------------------------------------- the gaps ---
 
@@ -385,30 +337,30 @@ func _test_the_fan_out_is_never_one_place(t) -> void:
 ## **crosses each of its two ends**, which is the whole of *"only directly adjacent paths (with a
 ## single street connecting both) counts"* — at right angles, because a tree street running
 ## straight on through the junction is one strand carrying on rather than two lying alongside.
-func _test_a_gap_joins_two_parallel_strands(t) -> void:
+func _test_a_gap_joins_two_parallel_strands(t: TestRunner) -> void:
 	var total := 0
 	for planned in _days:
 		for key in planned.tree.gaps():
 			total += 1
-			var segment := planned.map.network.by_key(key)
+			var segment := planned.map.street_network().by_key(key)
 			t.check(segment != null and not planned.tree.is_on_the_tree(key),
 					"seed %d day %d: the gap %s is a street off the tree"
-					% [planned.map.seed_used, planned.day, key])
+					% [planned.map.city_seed(), planned.day, key])
 			t.check(not planned.map.blocked_segments().has(key),
 					"seed %d day %d: and one the city still has (%s)"
-					% [planned.map.seed_used, planned.day, key])
+					% [planned.map.city_seed(), planned.day, key])
 			if not segment:
 				continue
-			for junction in [segment.a, segment.b]:
+			for junction: Vector2i in [segment.a, segment.b]:
 				t.check(_crossed_by_the_tree(planned, junction, key.z),
 						"seed %d day %d: and a strand of corridor runs across %s of it"
-						% [planned.map.seed_used, planned.day, junction])
+						% [planned.map.city_seed(), planned.day, junction])
 	t.check(total > 50, "the days sampled have gaps in them at all (%d)" % total)
 
 ## **A gap is a hole in the middle of the rim, not most of it**, which is the whole reason it is
 ## worth weighting separately: a preference that applied to half the band it sits in would not be a
 ## preference.
-func _test_a_gap_is_a_small_part_of_the_rim(t) -> void:
+func _test_a_gap_is_a_small_part_of_the_rim(t: TestRunner) -> void:
 	for planned in _days:
 		var rim := {}
 		for key in planned.tree.rim():
@@ -416,14 +368,14 @@ func _test_a_gap_is_a_small_part_of_the_rim(t) -> void:
 		var gaps := planned.tree.gaps()
 		for key in gaps:
 			t.check(rim.has(key), "seed %d day %d: the gap %s is on the rim"
-					% [planned.map.seed_used, planned.day, key])
+					% [planned.map.city_seed(), planned.day, key])
 		t.check(gaps.size() * 2 < maxi(1, rim.size()),
 				"seed %d day %d: and the rim is mostly not gaps (%d of %d)"
-				% [planned.map.seed_used, planned.day, gaps.size(), rim.size()])
+				% [planned.map.city_seed(), planned.day, gaps.size(), rim.size()])
 
 ## Whether a street of the tree meets this junction at right angles to a street running `along`.
 func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
-	for segment in planned.map.network.at_junction(junction):
+	for segment in planned.map.street_network().at_junction(junction):
 		var key := segment.key()
 		if key.z != along and planned.tree.is_on_the_tree(key):
 			return true
@@ -434,28 +386,28 @@ func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
 ## A run is learnable or it is nothing, and the tree is now part of what a day *is*: the
 ## scheduler places against it and `TelemetryMap` draws it, so if the two grew different trees
 ## the picture would be of a plan nobody used.
-func _test_the_same_day_grows_the_same_tree(t) -> void:
+func _test_the_same_day_grows_the_same_tree(t: TestRunner) -> void:
 	for planned in _days:
 		var again := planned.again
-		t.check(again.branches.size() == planned.tree.branches.size(),
+		t.check(again.branches().size() == planned.tree.branches().size(),
 				"seed %d day %d: the same day grows the same number of branches"
-				% [planned.map.seed_used, planned.day])
-		for i in mini(again.branches.size(), planned.tree.branches.size()):
-			t.check(again.branches[i].area == planned.tree.branches[i].area
-					and _cells(again.branches[i]) == _cells(planned.tree.branches[i]),
+				% [planned.map.city_seed(), planned.day])
+		for i in mini(again.branches().size(), planned.tree.branches().size()):
+			t.check(again.branches()[i].area == planned.tree.branches()[i].area
+					and _cells(again.branches()[i]) == _cells(planned.tree.branches()[i]),
 					"seed %d day %d: and the same cells for %s"
-					% [planned.map.seed_used, planned.day, planned.tree.branches[i].area])
+					% [planned.map.city_seed(), planned.day, planned.tree.branches()[i].area])
 
 ## *"A route to a calm area is not stable across days, and that is the mechanism rather than a
 ## side effect."* The hard blockers are what she learns; the day is what she reads.
-func _test_a_different_day_is_a_different_way(t) -> void:
+func _test_a_different_day_is_a_different_way(t: TestRunner) -> void:
 	var moved := 0
 	var compared := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		var first := _plan(map, 1)
 		var later := _plan(map, 5)
-		for branch in first.tree.branches:
+		for branch in first.tree.branches():
 			var other := _branch_for(later.tree, branch.area)
 			if not other:
 				continue
@@ -470,7 +422,7 @@ func _test_a_different_day_is_a_different_way(t) -> void:
 
 ## The branch that reaches the calm area anchored at `area`, or null.
 func _branch_for(tree: RouteTree, area: Vector2i) -> RouteTree.Branch:
-	for branch in tree.branches:
+	for branch in tree.branches():
 		if branch.area == area:
 			return branch
 	return null
@@ -492,19 +444,19 @@ func _plan(map: CityMap, day: int) -> Day:
 	planned.map = map
 	planned.day = day
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 	# The tree first and the closures against it, which is the order `City.start_day` uses since M50
 	# step 2 and the reason `planned.blocked` below can still include the closures: a wall is placed
 	# off the corridor, so a corridor grown before the barriers went up is still walkable after.
 	planned.tree = RouteTree.for_day(map, day)
 	planned.again = RouteTree.for_day(map, day)
-	planned.closures = ClosurePlanner.plan_day(map, day, rng, planned.tree)
+	planned.closures = ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng, planned.tree)
 	var closed := {}
 	for closure in planned.closures:
-		closed[closure.segment.key()] = true
+		closed[closure.street_key()] = true
 	planned.blocked = map.blocked_segments(closed)
 	planned.home = ClosurePlanner.home_street(map)
 	planned.areas = ClosurePlanner.calm_areas(map)
@@ -517,7 +469,7 @@ const _NEIGHBOUR_OFFSETS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vect
 func _home_nodes(planned: Day) -> Dictionary:
 	var found := {}
 	for tile in planned.map.rect_tiles(planned.home.tile_rect()):
-		var node := planned.tree.grid.node_at(tile)
+		var node := planned.tree.reachability_grid().node_at(tile)
 		if node >= 0:
 			found[node] = true
 	return found
@@ -525,7 +477,7 @@ func _home_nodes(planned: Day) -> Dictionary:
 ## Every grid node bordering `area`'s own calm ground from outside it — restated independently of
 ## `RouteTree._access_nodes` for the same reason.
 ##
-## **Reads `planned.tree.grid` and nothing off `planned.map` itself.** `_plan()` shares one `map`
+## **Reads `planned.tree.reachability_grid()` and nothing off `planned.map` itself.** `_plan()` shares one `map`
 ## across every day of a seed and repaints it for each in turn, so by the time the tests run it
 ## holds whichever day was planned last — `Tile.is_calm(planned.map.tile_at(tile))` would ask
 ## today's question of a map painted for a different day. `area` already being in `planned.areas`
@@ -538,7 +490,7 @@ func _access_nodes(planned: Day, area: ClosurePlanner.CalmArea) -> Dictionary:
 			var neighbour := tile + offset
 			if area.rect.has_point(neighbour):
 				continue
-			var node := planned.tree.grid.node_at(neighbour)
+			var node := planned.tree.reachability_grid().node_at(neighbour)
 			if node >= 0:
 				found[node] = true
 	return found
@@ -559,22 +511,22 @@ func _walkable_tile_of_cell(planned: Day, cell: Vector2i) -> Vector2i:
 	var origin := cell * ReachabilityGrid.CELL
 	for offset in _CELL_TILE_OFFSETS:
 		var tile := origin + offset
-		if planned.tree.grid.node_at(tile) >= 0:
+		if planned.tree.reachability_grid().node_at(tile) >= 0:
 			return tile
 	return origin
 
 func _node_of_cell(planned: Day, cell: Vector2i) -> int:
-	return planned.tree.grid.node_at(_walkable_tile_of_cell(planned, cell))
+	return planned.tree.reachability_grid().node_at(_walkable_tile_of_cell(planned, cell))
 
 func _grid_adjacent(planned: Day, a: Vector2i, b: Vector2i) -> bool:
 	var target := _node_of_cell(planned, b)
-	for edge: Array in planned.tree.grid.neighbours(_node_of_cell(planned, a)):
+	for edge: Array in planned.tree.reachability_grid().neighbours(_node_of_cell(planned, a)):
 		if (edge[0] as int) == target:
 			return true
 	return false
 
 func _adjacent_to_any(planned: Day, node: int, targets: Dictionary) -> bool:
-	for edge: Array in planned.tree.grid.neighbours(node):
+	for edge: Array in planned.tree.reachability_grid().neighbours(node):
 		if targets.has(edge[0]):
 			return true
 	return false
@@ -585,16 +537,164 @@ func _cells(branch: RouteTree.Branch) -> Array:
 		found.append_array(route)
 	return found
 
-func _route_meets(network: StreetNetwork, route: Array, sites: Array[Vector3i]) -> bool:
-	for cell: Vector2i in route:
-		var segment := network.segment_containing(cell * ReachabilityGrid.CELL)
-		if segment and sites.has(segment.key()):
-			return true
-	return false
+# --------------------------------------------------------------- the way ahead ---
 
-func _covers_everything(tree: RouteTree, sites: Array[Vector3i]) -> bool:
-	for branch in tree.branches:
+## How far down a route the way ahead is asked in the first test, a few blocks.
+const AHEAD_LIMIT := 1500.0
+
+## The longest route of the day's tree, from the calm area to the doorstep, or empty.
+func _longest_route_of(planned: Day) -> Array:
+	var best: Array = []
+	for branch in planned.tree.branches():
 		for route: Array in branch.routes:
-			if not _route_meets(tree.network(), route, sites):
-				return false
-	return true
+			if route.size() > best.size():
+				best = route
+	return best
+
+## The way along `route` from `index` the cells ahead are asked for, as a heading: toward the cell a
+## block away on the side `step` names (-1 toward the calm area, +1 toward the doorstep), which is
+## what the tree itself reads a direction of travel against.
+func _heading_along(planned: Day, route: Array, index: int, step: int) -> Vector2:
+	var here := planned.tree.cell_centre(route[index])
+	var toward := planned.tree.cell_centre(route[index + step * 8]) - here
+	return toward.normalized()
+
+## Every cell of every route that holds `cell`, as a set.
+func _cells_of_routes_through(planned: Day, cell: Vector2i) -> Dictionary:
+	var found := {}
+	for branch in planned.tree.branches():
+		for route: Array in branch.routes:
+			if route.has(cell):
+				for on_it: Vector2i in route:
+					found[on_it] = true
+	return found
+
+## **Standing on a route and heading toward the calm, what is ahead is that route's own cells toward
+## the calm, in the order she walks them**: every cell answered is on a route through the cell she
+## stands on, the distance to each grows along the route and none passes the limit; heading home
+## answers the cells on the doorstep's side instead.
+func _test_the_cells_ahead_follow_a_route_the_way_she_heads(t: TestRunner) -> void:
+	var asked := 0
+	for planned in _days:
+		var route := _longest_route_of(planned)
+		if route.size() < 24:
+			continue
+		var index := route.size() / 2
+		var at := planned.tree.cell_centre(route[index])
+		var through := _cells_of_routes_through(planned, route[index])
+		var toward_the_calm := _heading_along(planned, route, index, -1)
+		var ahead := planned.tree.cells_ahead(at, toward_the_calm, AHEAD_LIMIT)
+		asked += 1
+		var label := "seed %d day %d" % [planned.map.city_seed(), planned.day]
+		t.check(ahead.has(route[index - 1]),
+				"%s: heading toward the calm, the next cell of her route is ahead" % label)
+		var nearest := float(ahead.get(route[index - 1], INF))
+		var no_nearer := true
+		var held := 0
+		for k in range(1, index + 1):
+			var cell: Vector2i = route[index - k]
+			if not ahead.has(cell):
+				break
+			held += 1
+			no_nearer = no_nearer and float(ahead[cell]) >= nearest
+		t.check(no_nearer and held >= 3 and float(ahead[route[index - held]]) > nearest,
+				"%s: the next cell is the nearest and the cells beyond it are further, over at least three (%d)"
+				% [label, held])
+		var on_a_route := true
+		var within := true
+		for cell: Vector2i in ahead:
+			on_a_route = on_a_route and through.has(cell)
+			within = within and float(ahead[cell]) <= AHEAD_LIMIT
+		t.check(on_a_route, "%s: every cell answered is on a route through her cell" % label)
+		t.check(within, "%s: and none is further than the limit" % label)
+		var home := planned.tree.cells_ahead(at, _heading_along(planned, route, index, 1), AHEAD_LIMIT)
+		t.check(home.has(route[index + 1]),
+				"%s: heading home, the next cell on the doorstep's side is ahead" % label)
+		t.check(home.hash() != ahead.hash() or home.keys() != ahead.keys(),
+				"%s: and the two ways answer different cells" % label)
+	t.check(asked > 0, "there were routes long enough to stand on (%d)" % asked)
+
+## **Where several routes cross the cell she stands on, each of them is ahead**: the way that agrees
+## with her heading is taken on every route through the cell, so a branch she could take there is not
+## left out of what she is walking toward.
+func _test_at_a_shared_cell_every_route_through_it_is_ahead(t: TestRunner) -> void:
+	var shared_cells := 0
+	for planned in _days:
+		var seen := {}
+		for branch in planned.tree.branches():
+			for route: Array in branch.routes:
+				for cell: Vector2i in route:
+					seen[cell] = int(seen.get(cell, 0)) + 1
+		var checked := 0
+		for cell: Vector2i in seen:
+			if int(seen[cell]) < 2 or checked >= 6:
+				continue
+			checked += 1
+			shared_cells += 1
+			var at := planned.tree.cell_centre(cell)
+			var ahead := planned.tree.cells_ahead(at, Vector2.RIGHT, INF)
+			for branch in planned.tree.branches():
+				for route: Array in branch.routes:
+					var index := route.find(cell)
+					if index < 0 or route.size() < 2:
+						continue
+					var next_to_it := false
+					for step: int in [-1, 1]:
+						var neighbour := index + step
+						if neighbour >= 0 and neighbour < route.size() \
+								and ahead.has(route[neighbour]):
+							next_to_it = true
+					t.check(next_to_it,
+							"seed %d day %d: a route through the shared cell %s has a cell ahead of her"
+							% [planned.map.city_seed(), planned.day, cell])
+	t.check(shared_cells > 0, "the days planned a cell two routes share (%d)" % shared_cells)
+
+## **Off the tree there is nothing ahead, and a place counts as ahead**, so a placement is left where
+## it is for a corner she cuts across a park or an alley rather than moved for it.
+func _test_off_the_tree_nothing_is_ahead_and_a_place_counts_as_ahead(t: TestRunner) -> void:
+	var asked := 0
+	for planned in _days:
+		var off := Vector2.INF
+		for x in range(0, planned.map.size_in_tiles().x, 5):
+			for y in range(0, planned.map.size_in_tiles().y, 5):
+				if planned.tree.branches_on(Vector2i(x, y)).is_empty() \
+						and planned.tree.reachability_grid().node_at(Vector2i(x, y)) >= 0:
+					off = planned.map.tile_to_world(Vector2i(x, y))
+					break
+			if off != Vector2.INF:
+				break
+		if off == Vector2.INF:
+			continue
+		asked += 1
+		var route := _longest_route_of(planned)
+		var somewhere := planned.tree.cell_centre(route[route.size() / 2])
+		t.check(planned.tree.cells_ahead(off, Vector2.RIGHT, INF).is_empty(),
+				"seed %d day %d: off the tree nothing is ahead" % [planned.map.city_seed(), planned.day])
+		t.check(planned.tree.is_ahead(off, Vector2.RIGHT, somewhere),
+				"seed %d day %d: and a place counts as ahead of her there" % [planned.map.city_seed(), planned.day])
+	t.check(asked > 0, "there was ground off the tree to stand on (%d)" % asked)
+
+## **A corner does not turn the way round**: a route turns every block or two, and her heading leaves
+## the line of the route by a good way at each turning, so the cells ahead are the same set whichever
+## way within 30 degrees of the route's own she is heading, and a place a block down it stays ahead.
+func _test_a_corner_does_not_turn_the_way_round(t: TestRunner) -> void:
+	var asked := 0
+	for planned in _days:
+		var route := _longest_route_of(planned)
+		if route.size() < 40:
+			continue
+		var index := route.size() / 2
+		var at := planned.tree.cell_centre(route[index])
+		var square := _heading_along(planned, route, index, 1)
+		var ahead := planned.tree.cells_ahead(at, square, INF)
+		var place := planned.tree.cell_centre(route[index + 10])
+		asked += 1
+		for turn: float in [-30.0, -15.0, 15.0, 30.0]:
+			var heading := square.rotated(deg_to_rad(turn))
+			var label := "seed %d day %d, %.0f degrees off square" % [planned.map.city_seed(), planned.day, turn]
+			var turned := planned.tree.cells_ahead(at, heading, INF)
+			t.check(turned.size() == ahead.size() and turned.has(route[index + 10]),
+					"%s: the same cells are ahead (%d of %d)" % [label, turned.size(), ahead.size()])
+			t.check(planned.tree.is_ahead(at, heading, place),
+					"%s: and a place a block down the route is still ahead" % label)
+	t.check(asked > 0, "there were routes long enough to turn a corner on (%d)" % asked)

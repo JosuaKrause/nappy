@@ -1,7 +1,7 @@
-"""What CI's pull request checks share: the PR's changed files, its description, and one text normalization.
+"""What CI's pull request checks share: the PR's changed files, its description and labels, and one text normalization.
 
-The checks under `tools/ci_*.py` each answer one question about a pull request, and each needs the
-same three inputs, so they are read here once:
+The checks under `tools/ci_*.py` each answer one question about a pull request, and they need the
+same few inputs, so they are read here once:
 
 - **The changed files**, from `git diff --raw --no-renames <base>...<head>`: three dots, so the
   diff runs from where the branch started rather than from today's tip of the base, and no rename
@@ -12,7 +12,9 @@ same three inputs, so they are read here once:
 - **The description**, read through GitHub's API when the check runs (`gh api
   repos/<repo>/pulls/<n>`), never from the event that started the run: editing a description
   starts no run, so a description corrected after a red check is re-checked by re-running the job,
-  and that re-run has to see the new text.
+  and that re-run has to see the new text. **The labels** (`pr_labels`) are read the same way: the
+  event holds the labels the pull request had when the run started, and a re-run has to see one
+  added since.
 - **A normalization for "verbatim"**, `normalize()`, used wherever a check asks whether words the
   player wrote appear in a playtest file: a playtest wraps a quote across lines and marks it with
   `> `, and the words stay the same words.
@@ -145,6 +147,14 @@ def pr_description(repo: str, number: int) -> str:
     return body if isinstance(body, str) else ""
 
 
+def pr_labels(repo: str, number: int) -> set[str]:
+    """The names of the labels the pull request carries now, not when the run started."""
+    labels = gh_api(f"repos/{repo}/pulls/{number}").get("labels")
+    if not isinstance(labels, list):
+        raise CiError(f"pull request {number} of {repo} came back with no list of labels")
+    return {label["name"] for label in labels if isinstance(label, dict) and isinstance(label.get("name"), str)}
+
+
 FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
 
 
@@ -193,6 +203,16 @@ def normalize(text: str) -> str:
 def read_blob(blob: str, cwd: Path = ROOT) -> str:
     """The text of one git blob, whatever is checked out."""
     return git("cat-file", "blob", blob, cwd=cwd)
+
+
+def file_at(ref: str, path: str, cwd: Path = ROOT) -> str | None:
+    """The text of the file `path` at the commit `ref`, or None when that commit has no such file."""
+    listing = git("ls-tree", "-z", ref, "--", path, cwd=cwd)
+    for record in listing.split("\0"):
+        meta, _, name = record.partition("\t")
+        if name == path and meta.split()[1] == "blob":
+            return read_blob(meta.split()[2], cwd)
+    return None
 
 
 def playtest_texts(head: str = "HEAD", cwd: Path = ROOT) -> dict[str, str]:

@@ -24,7 +24,7 @@ const SEEDS := 8
 const BASE_SEED := 771307
 const STEP := 0.2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure_sprinkle_rate()
 	t.check(true, "zz_m96_dog_sprinkle probe ran")
 
@@ -41,17 +41,16 @@ func _measure_sprinkle_rate() -> void:
 		for day in range(Tuning.RUN_TAUGHT_DAY + 1, Tuning.RUN_LENGTH_DAYS + 1):
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("m96:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), [], [], tree,
-							0).placements()
+			plan_rng.seed = hash("m96:plan:%d:%d" % [map.city_seed(), day])
+			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+					.on(tree).plan().placements()
 
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("m96:ahead:%d:%d" % [map.seed_used, day])
-			director.start_day(day, planned, director_rng)
+			director_rng.seed = hash("m96:ahead:%d:%d" % [map.city_seed(), day])
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			for queued: EventDef in director._owed:
-				if queued.id == "charging_dog":
+				if queued and queued.id() == "charging_dog":
 					offered_this_run += 1
 
 			var y_min := 0.0
@@ -67,7 +66,7 @@ func _measure_sprinkle_rate() -> void:
 				var due: Array = director.due(step, pos, vel)
 				if not due.is_empty():
 					var def: EventDef = due[0]
-					if def.id == "charging_dog":
+					if def.id() == "charging_dog":
 						met_this_run += 1
 				pos += vel * step
 				if pos.y < y_min or pos.y > y_max:
@@ -84,18 +83,18 @@ func _mean(values: Array) -> float:
 	if values.is_empty():
 		return 0.0
 	var total := 0.0
-	for v in values:
+	for v: float in values:
 		total += float(v)
 	return total / float(values.size())
 
 func _min(values: Array) -> int:
 	var found := 999999
-	for v in values:
+	for v: int in values:
 		found = mini(found, int(v))
 	return found
 
 func _max(values: Array) -> int:
 	var found := -999999
-	for v in values:
+	for v: int in values:
 		found = maxi(found, int(v))
 	return found

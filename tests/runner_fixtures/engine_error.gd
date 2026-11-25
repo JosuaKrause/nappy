@@ -13,6 +13,6 @@ extends RefCounted
 
 const SENTINEL := "M164 sentinel: intentional engine_error.gd push_error(), not a real defect"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	push_error(SENTINEL)
 	t.check(true, "the fixture's own assertion still passes despite the sentinel above")

@@ -41,11 +41,12 @@ const REPETITIONS := 3
 const WARMUP := 150
 const WINDOW := 600
 ## The split's columns, in the order the tick runs them: `_advance_the_world()`'s calls and
-## `space_out_the_traffic()`'s inside it, then the player half, then the agents' steps.
+## `space_out_the_traffic()`'s inside it, then the focus and the player half (one column), then the
+## agents' steps.
 const PARTS: Array[String] = ["signals", "pockets", "resolve", "keep_room", "index",
 		"claims", "give_way", "gates", "doors", "player", "agents"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -55,15 +56,19 @@ func run(t) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(city_seed))
+		var builder := RunCity.new_builder()
+		var drawn := DrawnView.on(t)
+		builder.use_the_drawn_view(drawn)
+		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
+		RunCity.build(city, run, CityGenerator.generate(city_seed), builder)
 		for day in DAYS:
 			for walk in WALKS:
 				for repetition in REPETITIONS:
 					var chains := {}
-					for mode in ["whole", "split"]:
+					for mode: String in ["whole", "split"]:
 						var report := _run_once(city, rig, city_seed, day, mode, walk)
 						report["repetition"] = repetition
 						chains[mode] = report.chain
@@ -71,7 +76,8 @@ func run(t) -> void:
 					t.check(chains.whole == chains.split,
 							("seed %d, day %d, %s walk, repetition %d: the split tick moves every "
 							+ "agent exactly as the real one") % [city_seed, day, walk, repetition])
-		city.crowd._player = null
+		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	rig.free()
 
@@ -79,17 +85,19 @@ func run(t) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String,
 		walk: String) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	crowd.start_day(day, rng, start)
-	crowd.set_gates(city.streets().region_plan().gates)
+	crowd.set_gates(city.streets().region_plan().gate_states())
 	crowd._player = rig
+	crowd.use_focus(StrollerFocus.new(rig))
+	crowd.use_bus(EventBus)
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.
 	var chain := PackedByteArray()
 	chain.resize(32)
@@ -113,10 +121,11 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			row = _split_tick(crowd)
 		chain = _chain(chain, crowd)
 		for agent in crowd.agents():
-			if agent.kind == CrowdAgent.Kind.WALKER:
-				if agent.touching:
+			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
+				if agent.is_touched():
 					contact_ticks += 1
-				if agent.strategy._door_state != WalkerStrategy.DoorState.WALKING:
+				var walker: WalkerStrategy = agent.lane().strategy()
+				if walker._door_state != WalkerStrategy.DoorState.WALKING:
 					held_ticks += 1
 		if tick >= WARMUP:
 			rows.append(row)
@@ -131,15 +140,15 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		"processor": OS.get_processor_name()}
 
 ## The tick, call by call, in `Crowd._tick_the_crowd()`'s own order: `_advance_the_world()` (with
-## `space_out_the_traffic()` opened up inside it), `_meet_the_player()` and then
-## `_step_the_agents()`. Returns each call's
+## `space_out_the_traffic()` opened up inside it), `_follow_the_focus()`, `_meet_the_player()` and
+## then `_step_the_agents()`. Returns each call's
 ## microseconds in `PARTS` order.
 func _split_tick(crowd: Crowd) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
 	if crowd._signals:
 		crowd._signals.advance(STEP)
 	stamps.append(Time.get_ticks_usec())
-	crowd._pockets.refresh(crowd._map, crowd._crossable_segments)
+	crowd._pockets.refresh(crowd._map)
 	stamps.append(Time.get_ticks_usec())
 	var lanes := crowd._resolve_the_queues()
 	stamps.append(Time.get_ticks_usec())
@@ -155,6 +164,7 @@ func _split_tick(crowd: Crowd) -> Array[int]:
 	stamps.append(Time.get_ticks_usec())
 	crowd._hold_walkers_at_doors(STEP)
 	stamps.append(Time.get_ticks_usec())
+	crowd._follow_the_focus()
 	crowd._meet_the_player()
 	stamps.append(Time.get_ticks_usec())
 	crowd._step_the_agents(STEP)
@@ -176,7 +186,7 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
 	var best := INF
 	var target := here
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.WALKER:
+		if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 			continue
 		var distance := agent.global_position.distance_squared_to(here)
 		if distance < best:

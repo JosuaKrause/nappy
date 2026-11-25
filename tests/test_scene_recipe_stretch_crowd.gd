@@ -6,15 +6,20 @@ extends RefCounted
 ## the runtime records a walker or car that left or entered within reach of either view
 ## (`SceneRecipeRuntime._watch_the_crowd()`, the manifest's `seen_to_jump`), and every observation the
 ## recipe asks, its `appeared` of the route event and its `crowd` among them, must hold.
+##
+## **Plays each scene in its own headless `main` process: the guarantee is about what she sees of the crowd
+## across the whole game's composition** (the runtime's watch, the crowd, the director's bag), so it is combined
+## by design and has no module to split to.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var played := 0
 	for filename in DirAccess.get_files_at("res://scene-recipes"):
 		if not filename.ends_with(".json"):
 			continue
 		var path := "res://scene-recipes/" + filename
 		var data: Dictionary = SceneRecipe.load_file(path).data
-		if data.get("extent", {}).get("scope") != "stretch":
+		var extent: Dictionary = data.get("extent", {})
+		if extent.get("scope") != "stretch":
 			continue
 		await _force_recycles(t, path, data, filename)
 		var manifest_path := "user://stretch_crowd_%d_%s" % [OS.get_process_id(), filename]
@@ -39,7 +44,8 @@ func run(t) -> void:
 					"\n".join(output) if status != 0 else str(manifest.get("playback_error", ""))])
 		var jumps: Array = manifest.get("seen_to_jump", [])
 		t.check(jumps.is_empty(), "%s: nobody appears or vanishes in her view: %s" % [filename, jumps])
-		t.check(manifest.get("in_the_void", []).is_empty(),
+		var in_the_void: Array = manifest.get("in_the_void", [])
+		t.check(in_the_void.is_empty(),
 				"%s: no waiting body is left outside authored ground" % filename)
 		var asks_an_event := (data.playback.observations as Array).any(
 				func(check: Dictionary) -> bool: return check.condition == "appeared")
@@ -58,31 +64,39 @@ func run(t) -> void:
 ## made under, by the crowd's rule and by the real view (`_out_of_the_real_view()`), nor off the
 ## authored street. The end in view is what dropping the in-view ends keeps out, and the near lanes
 ## are what checking the final placement keeps out.
-func _force_recycles(t, path: String, data: Dictionary, label: String) -> void:
+func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: String) -> void:
 	var loaded := SceneRecipeRuntime.load_recipe(path, PackedStringArray())
-	if not loaded.errors.is_empty():
+	var errors: Array[String] = loaded.errors
+	if not errors.is_empty():
 		t.check(false, "%s loads for forced crowd entries" % label)
 		return
 	var map: CityMap = loaded.map
 	var run := RunState.new()
 	run.start_run(STRETCH_SEED)
-	var city := RunCity.in_run(CITY_SCENE, run)
-	var view := ScreenCrowdView.new(t)
-	city.crowd_view = view
+	var city := RunCity.new_city(CITY_SCENE)
+	var drawn := DrawnView.on(t)
+	var view := ScreenCrowdView.new(t, drawn)
 	t.add_child(city)
-	city.build(map)
+	var builder := RunCity.new_builder()
+	builder.use_the_drawn_view(drawn)
+	builder.use_the_crowds_screen(view, CrowdTiming.new())
+	RunCity.build(city, run, map, builder)
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 1)
-	city.start_recipe_day(state, 1, run.calendar.day_rng())
+	state.begin_day(city.map().plans_by_block(), 1)
+	city.start_recipe_day(state, 1, run.calendar().day_rng())
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	camera.zoom = Vector2.ONE * HER_ZOOM
 	t.add_child(camera)
 	camera.make_current()
-	var crowd := city.crowd
-	crowd.start_day(1, run.calendar.day_rng(1, "crowd"), map.world_size() * 0.5, false)
+	var crowd := RunCity.crowd(city)
+	crowd.start_day(1, run.calendar().day_rng(1, "crowd"), map.world_size() * 0.5, false)
 	crowd.use_stretch()
-	var ends := crowd.field().stretch_ends
+	# The stretch's ends as the crowd enters it, which a field over the same map reads off the map's
+	# stretch the way the crowd's own does (`CrowdField.use_stretch()`).
+	var stretch := CrowdField.new(city.map())
+	stretch.use_stretch()
+	var ends := stretch.ends_of_the_stretch()
 	var watch := {"stays": true, "ends_seen": true, "safe": true, "entries": 0, "placed": 0,
 			"in_view": 0, "unsafe": [] as Array[String]}
 	for end: Dictionary in ends:
@@ -98,10 +112,10 @@ func _force_recycles(t, path: String, data: Dictionary, label: String) -> void:
 			aside += 1.0
 		for looking: Vector2 in [middle, middle + across * aside, middle - across * aside]:
 			_look_at(camera, looking)
-			crowd.set_focus(looking)
+			crowd.use_focus(FakeCrowdFocus.new(looking))
 			watch.ends_seen = watch.ends_seen and aside < 4096.0 and (looking != middle
 					or not view.beyond_every_view(middle, CrowdAgent.ENTRY_PICTURE_ROOM, looking))
-			await _walk_every_end_off(crowd, camera, view, ends, looking, label, watch)
+			await _walk_every_end_off(crowd, city.map(), camera, view, ends, looking, label, watch)
 	t.check(watch.placed > 0, "%s: bodies are set walking off its ends (%d)" % [label, watch.placed])
 	t.check(watch.in_view > 0, "%s: some of them walk off an end in view (%d)" % [label, watch.in_view])
 	t.check(watch.stays, "%s: a body walking off an end in view turns round, it does not jump" % label)
@@ -114,9 +128,9 @@ func _force_recycles(t, path: String, data: Dictionary, label: String) -> void:
 
 ## A walker and a car set walking off each end of the stretch, with the camera where it is, and the
 ## crowd's own physics frames let pass; then the crowd emptied. Every landing of a body (the frame its
-## drawing is reset, `_Landings`) is judged and added to `watch`.
-func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: Array[Dictionary],
-		looking: Vector2, label: String, watch: Dictionary) -> void:
+## drawing is reset, `_Landings`) is judged against the crowd's map and added to `watch`.
+func _walk_every_end_off(crowd: Crowd, map: CityMap, camera: Camera2D, view: CrowdView,
+		ends: Array[Dictionary], looking: Vector2, label: String, watch: Dictionary) -> void:
 	var bodies: Array[Dictionary] = []
 	for end: Dictionary in ends:
 		var outward := -float(end.direction)
@@ -142,8 +156,10 @@ func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: 
 				break
 	# Marked once all are placed: placing a body resets every drawing in the crowd.
 	for body: Dictionary in bodies:
-		body.landings = _Landings.new()
-		body.agent.add_child(body.landings)
+		var landings := _Landings.new()
+		body.landings = landings
+		var agent: CrowdAgent = body.agent
+		agent.add_child(landings)
 	watch.placed += bodies.size()
 	await _let_the_physics_run(crowd, 0.5)
 	for body: Dictionary in bodies:
@@ -155,12 +171,13 @@ func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: 
 		for landed: Vector2 in landings.at:
 			if landed.distance_to(body.from) > Tuning.TILE_SIZE:
 				watch.entries += 1
-			var tile := crowd.field().map.world_to_tile(landed)
-			var safe := crowd.field().map.in_stretch(tile) and crowd.field().map.is_street(tile) \
+			var tile := map.world_to_tile(landed)
+			var safe := map.in_stretch(tile) and map.is_street(tile) \
 					and _out_of_the_real_view(camera, landed)
 			watch.safe = watch.safe and safe
-			if not safe and watch.unsafe.size() < 4:
-				watch.unsafe.append("%s landed at %s, camera on %s" % [body.agent.name, landed, looking])
+			var unsafe: Array[String] = watch.unsafe
+			if not safe and unsafe.size() < 4:
+				unsafe.append("%s landed at %s, camera on %s" % [body.agent.name, landed, looking])
 	crowd.clear()
 	await crowd.get_tree().physics_frame
 

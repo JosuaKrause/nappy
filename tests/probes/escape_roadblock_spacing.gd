@@ -6,16 +6,16 @@ extends RefCounted
 ##     tools/test.sh probes/escape_roadblock_spacing.gd      (prints ESCAPE_SPACING lines)
 ##
 ## The plan is the escape's (`DayPlanner.plan_the_escape_city()`) on seeds 1 to 40, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds
-## it, and each band stands where `EventScheduler._stands_at()` puts it, which is where its guard
+## it, and each band stands where `PlanBuilder.body_stands_at()` puts it, which is where its guard
 ## notices her from. "Under" counts the pairs nearer than the two guards' notices together
-## (`EventDef.notice` each), the ground on which both can come for her at once.
+## (`EventDef.notice_within()` each), the ground on which both can come for her at once.
 
 const SEEDS := 40
 
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var total := 0
@@ -24,29 +24,30 @@ func run(t) -> void:
 	var nearest_of_all := INF
 	for seed_value in range(1, SEEDS + 1):
 		var map := CityGenerator.generate(seed_value)
-		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(own_run.attempt_spend.city_state)
+		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec())
-		var bands: Array[EventScheduler.Planned] = []
+				_city_spec(), GamePlanBuilder.over(map))
+		var bands: Array[EventPlan] = []
 		for placement in placements:
-			if placement.def.id == "roadblock":
+			if placement.row_id() == "roadblock":
 				bands.append(placement)
+		var builder := GamePlanBuilder.over(map)
 		var nearest := INF
 		var nearest_pair := ""
 		for i in bands.size():
 			for j in range(i + 1, bands.size()):
-				var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
-						EventScheduler._stands_at(map, bands[j]))
+				var gap := builder.body_stands_at(bands[i]).distance_to(
+						builder.body_stands_at(bands[j]))
 				pairs += 1
-				if gap < bands[i].def.notice_within() + bands[j].def.notice_within():
+				if gap < bands[i].notice_within() + bands[j].notice_within():
 					under += 1
 				if gap < nearest:
 					nearest = gap
-					nearest_pair = "%s %s" % [map.world_to_tile(bands[i].position),
-							map.world_to_tile(bands[j].position)]
+					nearest_pair = "%s %s" % [map.world_to_tile(bands[i].placed_at()),
+							map.world_to_tile(bands[j].placed_at())]
 		total += bands.size()
 		nearest_of_all = minf(nearest_of_all, nearest)
 		print("ESCAPE_SPACING seed %2d | %2d roadblocks | nearest two %.0fpx apart, %s"

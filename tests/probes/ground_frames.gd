@@ -31,9 +31,10 @@ func _process(_delta: float) -> void:
 		get_tree().quit(1)
 
 func _run() -> void:
-	_city = RunCity.with_own_run(CITY, 4242)
+	var run := RunCity.started_run(4242)
+	_city = RunCity.new_city(CITY)
 	add_child(_city)
-	_city.build(CityGenerator.generate(4242))
+	RunCity.build(_city, run, CityGenerator.generate(4242))
 	_city.scenery.set_process(false)
 	_city.hide()
 	var trials: Array[Dictionary] = []
@@ -58,7 +59,7 @@ func _run() -> void:
 	if facing_only:
 		coverage.append(await _coverage(60, Vector2.RIGHT, true))
 	else:
-		for rate in [15, 30, 60]:
+		for rate: int in [15, 30, 60]:
 			for direction: Vector2 in [Vector2.DOWN, Vector2.RIGHT, Vector2.ONE.normalized()]:
 				coverage.append(await _coverage(rate, direction))
 	var result := {"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
@@ -76,6 +77,10 @@ func _run() -> void:
 func _comparison(mode: String, warmup: bool) -> Dictionary:
 	var owner := Node2D.new()
 	add_child(owner)
+	# The south water's tile, on a fixed clock, as the ground stands it for its water surfaces.
+	var water_tile := SouthWaterTile.new()
+	owner.add_child(water_tile)
+	water_tile.keep_drawing(true)
 	var layers: Array[TileMapLayer] = []
 	var preparation: Array[int] = []
 	var submission: Array[int] = []
@@ -86,7 +91,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	var water_surfaces := 0
 	var before := OS.get_static_memory_usage()
 	# Four ordinary chunks and four shoreline chunks, all selected from current map state.
-	var shore_y := ceili(float(_city.map.size.y) / SceneryGround.CHUNK_TILES)
+	var shore_y := ceili(float(_city.map().size_in_tiles().y) / SceneryGround.CHUNK_TILES)
 	var keys: Array[Vector2i] = []
 	for x in 4:
 		keys.append(Vector2i(x + 1, 2))
@@ -95,7 +100,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	get_viewport().canvas_transform = Transform2D(0, Vector2(10000, 10000))
 	for key in keys:
 		var layer := TileMapLayer.new()
-		layer.tile_set = _city.scenery_ground.tile_set
+		layer.tile_set = _city.scenery_ground.tile_set()
 		layer.rendering_quadrant_size = 4 if mode == "quadrants" else 16
 		owner.add_child(layer)
 		layers.append(layer)
@@ -120,13 +125,13 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 						water.append(tile)
 					elif source >= 0:
 						layer.set_cell(tile, source, GroundLayers.atlas_coords_for(source,
-								_city.map.seed_used, tile, layer.tile_set))
+								_city.map().city_seed(), tile, layer.tile_set))
 					cells += int(source >= 0)
 			if not water.is_empty():
 				var surface := SceneryWater.new()
+				surface.use_tile(water_tile)
 				layer.add_child(surface)
 				surface.configure(water)
-				surface.set_process(false)
 				water_surfaces += 1
 			var submitted := Time.get_ticks_usec()
 			layer.update_internals()
@@ -137,7 +142,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	var allocated := OS.get_static_memory_usage() - before
 	var pixel_hashes: Array[String] = []
 	# Completed ground and water in view: fixed clock, identical viewport, compare final pixels.
-	for key in [keys[0], keys[1]]:
+	for key: Vector2i in [keys[0], keys[1]]:
 		get_viewport().canvas_transform = Transform2D(0, -Vector2(key * 8 * Tuning.TILE_SIZE))
 		await _draw_frame()
 		if _rendered and not warmup:
@@ -163,7 +168,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 
 func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Dictionary:
 	var ground := _city.scenery_ground
-	var at := _city.map.doorstep_world_position()
+	var at := _city.map().doorstep_world_position()
 	var initial := at
 	var extent := Tuning.VIEW_HALF_EXTENT * 2
 	ground.clear()
@@ -198,8 +203,8 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		if reverse_look_ahead and frame >= total_frames / 2:
 			view.position -= direction * 92
 		# Taken outside the timed span, like the classification after the draw below.
-		var resident_before := ground.chunks.duplicate()
-		var relocating := _city.scenery.view.get_center().distance_to(view.get_center()) \
+		var resident_before := ground.chunks().duplicate()
+		var relocating := _city.scenery.view().get_center().distance_to(view.get_center()) \
 				> SceneryResidency.GUARD_MARGIN
 		var tick := Time.get_ticks_usec()
 		camera.position = view.get_center()
@@ -208,20 +213,20 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		if not actual.is_equal_approx(view):
 			_failures.append("rendered viewport and checked camera view differ")
 			break
-		if _city.scenery._pending or view.size != _city.scenery.view.size \
-				or view.get_center().distance_to(_city.scenery.view.get_center()) >= 16:
+		if _city.scenery._pending or view.size != _city.scenery.view().size \
+				or view.get_center().distance_to(_city.scenery.view().get_center()) >= 16:
 			_city.scenery.update(view)
 		updates.append(Time.get_ticks_usec() - tick)
-		for key: Vector2i in ground.pending:
+		for key: Vector2i in ground.pending():
 			if not pending_owners.has(key):
 				pending_owners[key] = frame
 			pending_frames += 1
 		for key: Vector2i in pending_owners.keys():
-			if ground.chunks.has(key):
+			if ground.chunks().has(key):
 				completed_across_frames += int(frame > pending_owners[key])
 				pending_owners.erase(key)
 		for key in ground.keys_in(view):
-			misses += int(not ground.chunks.has(key))
+			misses += int(not ground.chunks().has(key))
 		await _draw_frame()
 		frames.append(Time.get_ticks_usec() - tick)
 		# The guard's own regions are the new ones its rectangle reaches; the guard counter
@@ -229,8 +234,8 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		# prepares its whole destination at once in every mode, so it is not counted.
 		var guarded := 0
 		var ordinary := 0
-		var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
-		for key: Vector2i in ground.chunks:
+		var guard := _city.scenery.view().grow(SceneryResidency.GUARD_MARGIN)
+		for key: Vector2i in ground.chunks():
 			prepared_regions += int(not resident_before.has(key))
 			if not relocating and not resident_before.has(key):
 				if guard.intersects(SceneryGround.bounds(key)):
@@ -241,13 +246,13 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		ordinary_beside_guard += int(guarded > 0 and ordinary > 0)
 	if misses:
 		_failures.append("coverage gaps")
-	if ground.mode == SceneryGround.Mode.STEPPED and completed_across_frames == 0:
+	if ground.mode() == SceneryGround.Mode.STEPPED and completed_across_frames == 0:
 		_failures.append("no real-frame stepped completions")
-	if ground.mode == SceneryGround.Mode.ONE \
+	if ground.mode() == SceneryGround.Mode.ONE \
 			and (most_ordinary_in_a_frame > 1 or ordinary_beside_guard > 0):
 		_failures.append("mode 2 prepared a second region in one frame outside the guard")
 	camera.free()
-	return {"ground_mode": ground.mode, "modeled_hz": rate, "direction": str(direction),
+	return {"ground_mode": ground.mode(), "modeled_hz": rate, "direction": str(direction),
 		"look_ahead_reversal_px": 92 if reverse_look_ahead else 0,
 		"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,
@@ -278,7 +283,8 @@ func _distribution(values: Array[int]) -> Dictionary:
 
 func _hashes() -> Dictionary:
 	var hashes := {}
-	for path in ["src/city/scenery_ground.gd", "src/city/scenery_residency.gd",
-			"src/city/city.gd", "src/city/scenery_water.gd", "tests/probes/ground_frames.gd"]:
+	for path: String in ["src/city/scenery_ground.gd", "src/city/scenery_residency.gd",
+			"src/city/city.gd", "src/city/scenery_water.gd", "src/city/south_water_tile.gd",
+			"tests/probes/ground_frames.gd"]:
 		hashes[path] = FileAccess.get_sha256("res://" + path)
 	return hashes

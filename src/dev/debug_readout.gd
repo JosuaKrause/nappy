@@ -3,7 +3,8 @@ extends Node2D
 ## The developer's furniture over a run, none of it part of the game's UI: the right-hand readout
 ## (seed, day, phase, her ground, what is out, the frame's cost, the meter's flows), the frame-time
 ## graph, the `?debug=1` note, the debug view's world overlays (`DebugLayers`) and the day's planned
-## routes (`RouteLines`), their number keys, and the snapshot keys.
+## routes (`RouteLines`), every live event's own route (`EventRouteLines`), their number keys, and
+## the snapshot keys.
 ##
 ## **Gated, not merely hidden.** The readout runs only on a debug build (`_debug`) or under the
 ## page's own `?debug=1` or `--debug` (`_readout_requested`); the graph, the overlays and the routes
@@ -79,10 +80,14 @@ var _frame_graph: FrameGraph
 ## The fixed note `?debug=1` adds for the whole session, which nothing removes — null unless the
 ## readout was asked for. An ordinary debug build shows the readout without it.
 var _debug_mode_note: DebugModeNote
+## How the run plays every charger, which the note names (`DebugModeNote.use_charger_timing()`).
+var _charger_timing: ChargerTiming = null
 ## The fields, shadows and bounding-box overlays, keys `1`–`3` — null unless the gate holds.
 var _debug_layers: DebugLayers
 ## The day's planned routes, key `5` — null unless the gate holds, and until a city stands.
 var _route_lines: RouteLines
+## Every live event's own route, key `7` — null unless the gate holds, and until a world stands.
+var _event_routes: EventRouteLines
 
 ## What the readout reads.
 var _run: RunHeader
@@ -92,7 +97,8 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _spec := DaySpec.new()
-var _city: City
+## The day's streets, null where the world is no city.
+var _streets: DayStreets
 var _map: WorldMap
 var _events: EventManager
 var _crowd: Crowd
@@ -100,15 +106,16 @@ var _frame_recorder: FrameRecorder
 
 ## Hands the readout the run's configuration, and sets the members read from it.
 func configure(config: RunConfig) -> void:
-	_debug = config.debug_build
-	_readout_requested = config.readout_requested
-	_skip_words = config.skip_words
-	_layers_override = config.layers_override
-	_layer_readout_on = not config.player_view_requested or config.readout_requested
-	_spikes_requested = config.spikes_requested
+	_debug = config.is_debug_build()
+	_readout_requested = config.asks_for_the_readout()
+	_skip_words = config.skip_words()
+	_layers_override = config.layers_override()
+	_layer_readout_on = not config.asks_for_the_player_view() or config.asks_for_the_readout()
+	_spikes_requested = config.asks_for_spikes()
+	_charger_timing = config.charger_timing()
 
 ## Builds what the gate allows on the readout's label and layer, and shows the readout in the shape
-## this build should have. `run` is the run whose seed and calendar day it names (`run.header`),
+## this build should have. `run` is the run whose seed and calendar day it names (`run.header()`),
 ## `session` where the snapshot keys send their pictures, and `screen_name` what screen is up, for
 ## the snapshot's line ("title", "paused" or "playing").
 func setup(config: RunConfig, status: Label, status_layer: CanvasLayer, run: RunHeader,
@@ -130,28 +137,37 @@ func watch(player: Stroller, baby: Baby, day: DayController) -> void:
 	_day = day
 
 ## The world she is walking: its events, its crowd (null in the escape's building), the node whose
-## subtree holds the bodies the bounding boxes trace, its map, and the city when it is one. Called
-## once per world, so walking out of the service door points the overlays at the city with whatever
-## `1`–`3` had switched on still on.
-func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: WorldMap,
-		city: City) -> void:
+## subtree holds the bodies the bounding boxes trace, the source of its props (an invalid Callable
+## in the building), its map, and the day's streets when it is a city. Called once per world, so walking out of the service door points the overlays at the city
+## with whatever `1`–`3` had switched on still on.
+func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, props: Callable,
+		map: WorldMap, streets: DayStreets) -> void:
 	_events = events
 	_crowd = crowd
 	_map = map
-	_city = city
+	_streets = streets
 	if not _gate():
 		return
 	if _debug_layers:
-		_debug_layers.setup(events, crowd, world, _player)
+		_debug_layers.setup(events, crowd, world, props, _player)
+		_event_routes.setup(events)
 		return
 	_debug_layers = DebugLayers.new()
 	_debug_layers.name = "DebugLayers"
 	DrawLayer.draw_on(_debug_layers, DrawLayer.Layer.DEBUG)
-	_debug_layers.setup(events, crowd, world, _player)
+	_debug_layers.setup(events, crowd, world, props, _player)
 	_debug_layers.apply_initial_state(_layers_override)
 	add_child(_debug_layers)
 	_debug_layers.process_mode = Node.PROCESS_MODE_PAUSABLE
-	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes")
+	_event_routes = EventRouteLines.new()
+	_event_routes.name = "EventRouteLines"
+	DrawLayer.draw_on(_event_routes, DrawLayer.Layer.DEBUG)
+	_event_routes.setup(events)
+	_event_routes.apply_initial_state(_layers_override)
+	add_child(_event_routes)
+	_event_routes.process_mode = Node.PROCESS_MODE_PAUSABLE
+	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes"
+			+ "   6 frame graph   7 event routes")
 
 ## The day's planned routes over `map`, drawn as purple polylines. A sibling of the overlays rather
 ## than a fourth case on them: those query the live geometry every frame, and this draws a fixed
@@ -170,8 +186,8 @@ func draw_routes(map: CityMap) -> void:
 ## The day `spec` has been planned: its routes are the tree the city grew for it. A day that closes
 ## no streets — the escape's sections — grows none, and its lines stay as they are.
 func use_the_plan(spec: DaySpec) -> void:
-	if _route_lines and _city and spec.closes_streets:
-		_route_lines.refresh(_city.streets().route_tree())
+	if _route_lines and _streets and spec.closes_the_streets():
+		_route_lines.refresh(_streets.route_tree())
 
 ## The day being walked: its number and its words name the readout's day line.
 func use_the_day(spec: DaySpec) -> void:
@@ -221,6 +237,7 @@ func _add_debug_mode_note() -> void:
 		return
 	_debug_mode_note = DebugModeNote.new()
 	_debug_mode_note.name = "DebugModeNote"
+	_debug_mode_note.use_charger_timing(_charger_timing)
 	add_child(_debug_mode_note)
 
 ## The graph lives beside the readout on the readout's own layer, on its own key, not among the
@@ -230,7 +247,7 @@ func _add_frame_graph() -> void:
 		return
 	_frame_graph = FrameGraph.new()
 	_frame_graph.name = "FrameGraph"
-	_frame_graph.text_colour = _status.get_theme_color("font_color")
+	_frame_graph.use_text_colour(_status.get_theme_color("font_color"))
 	_frame_graph.position = Vector2(_status.offset_left, GRAPH_TOP)
 	_layer_graph_on = _graph_starts_on(_spikes_requested, _layers_override)
 	_frame_graph.visible = _layer_graph_on
@@ -267,15 +284,15 @@ func _process(delta: float) -> void:
 		_build_text = BuildInfo.build_text()
 	var header := [
 		"build %s" % _build_text,
-		"seed  %d   day %d%s" % [_run.run_seed,
-			_run.day if _spec.section == DaySpec.Section.NONE else _spec.number,
-			"" if _spec.title == "" else "   " + _spec.title.to_lower()],
+		"seed  %d   day %d%s" % [_run.run_seed(),
+			_run.day() if _spec.section_kind() == DaySpec.Section.NONE else _spec.day_number(),
+			"" if _spec.title() == "" else "   " + _spec.title().to_lower()],
 	]
 	if not _skip_words.is_empty():
 		header.append("skip  %s" % ", ".join(_skip_words))
+	var phase: String = GameEnums.DayPhase.keys()[_day.phase()]
 	_status.text = "\n".join(header + [
-		"phase %s  %.0fs left" % [
-			GameEnums.DayPhase.keys()[_day.phase].to_lower(), _day.time_remaining],
+		"phase %s  %.0fs left" % [phase.to_lower(), _day.seconds_left()],
 	] + _where_she_is_lines() + [
 		"",
 		"speed       %6.1f" % _player.current_speed(),
@@ -286,9 +303,9 @@ func _process(delta: float) -> void:
 		"",
 	] + FrameCost.readout_lines() + FrameRecorder.view_lines() + _frame_record_lines() + [
 		"",
-		"incoming    %6.2f /s" % _baby.last_incoming,
-		"decay       %6.2f /s" % _baby.last_decay,
-		"net         %6.2f /s" % (_baby.last_incoming - _baby.last_decay),
+		"incoming    %6.2f /s" % _baby.last_frame_incoming(),
+		"decay       %6.2f /s" % _baby.last_frame_decay(),
+		"net         %6.2f /s" % (_baby.last_frame_incoming() - _baby.last_frame_decay()),
 		"",
 		"arrows/WASD walk",
 		"shift       run",
@@ -304,17 +321,22 @@ func _readout_due(delta: float) -> bool:
 	_readout_wait = READOUT_INTERVAL
 	return true
 
+## Whether the world she is walking is a city: its map is the city's, not the escape building's.
+func _in_a_city() -> bool:
+	return _map is CityMap
+
 ## Her ground: the city's tile and whether it is calm or an alley, or the building's tile, which has
 ## neither.
 func _where_she_is_lines() -> Array:
 	var here := _player.global_position
-	if _city:
-		var tile := _city.map.world_to_tile(here)
+	if _in_a_city():
+		var city_map := _map as CityMap
+		var tile := city_map.world_to_tile(here)
 		return [
-			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],
+			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(city_map.tile_at(tile))],
 			"calm  %s    alley  %s" % [
-				"yes" if _city.map.is_calm_zone(here) else "no",
-				"yes" if _city.is_alley(here) else "no"],
+				"yes" if city_map.is_calm_zone(here) else "no",
+				"yes" if city_map.is_alley(here) else "no"],
 		]
 	if _map:
 		var tile := _map.world_to_tile(here)
@@ -324,12 +346,12 @@ func _where_she_is_lines() -> Array:
 ## What is out: the city's events, live against planned, what the director still owes ahead of her
 ## and the crowd — or, in the escape's building, its events alone.
 func _what_is_out_lines() -> Array:
-	if _city:
+	if _in_a_city():
 		return [
 			"events      %6d live of %d" % [
-				_city.events.active_count(), _city.events.planned_count()],
-			"ahead owed  %6d" % _city.events.owed_ahead(),
-			"crowd       %6d" % _city.crowd.agent_count(),
+				_events.active_count(), _events.planned_count()],
+			"ahead owed  %6d" % _events.owed_ahead(),
+			"crowd       %6d" % _crowd.agent_count(),
 		]
 	return ["events      %6d live" % (_events.instances().size() if _events else 0)]
 
@@ -353,13 +375,14 @@ func _nearest_event_text() -> String:
 	if not nearest:
 		return "none"
 	return "%s %s age=%.1f/%.1f %.0fpx i=%.1f" % [
-		nearest.def.id,
+		nearest.row_id(),
 		"telegraph" if nearest.is_telegraphing() else "active",
-		nearest.age, nearest.def.telegraph_time,
+		nearest.age(), nearest.telegraphs_for(),
 		best, nearest.current_intensity()]
 
 func _tile_name(type: GameEnums.TileType) -> String:
-	return GameEnums.TileType.keys()[type].to_lower()
+	var key: String = GameEnums.TileType.keys()[type]
+	return key.to_lower()
 
 # ------------------------------------------------------------------- the keys ---
 
@@ -397,7 +420,8 @@ static func _debug_snapshot_action(event: InputEvent) -> StringName:
 	return &""
 
 ## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the day's routes, `6` the
-## frame-time graph — or `0` for anything else, an echo included.
+## frame-time graph, `7` every live event's own route — or `0` for anything else, an echo
+## included.
 static func _debug_layer_key(event: InputEvent) -> int:
 	if not (event is InputEventKey and (event as InputEventKey).pressed):
 		return 0
@@ -410,9 +434,11 @@ static func _debug_layer_key(event: InputEvent) -> int:
 		KEY_4: return 4
 		KEY_5: return 5
 		KEY_6: return 6
+		KEY_7: return 7
 		_: return 0
 
-## `4` and `6` are this node's own switches, `5` the routes' visibility, and `1`–`3` the overlays'.
+## `4` and `6` are this node's own switches, `5` and `7` the route layers' visibility, and `1`–`3`
+## the overlays'.
 ## Turning the graph off also empties its ring, so `6` twice leaves a blank graph that fills from
 ## that moment (2026-09-15, the player: "toggling the layer twice will lead to a blank frame
 ## array").
@@ -424,6 +450,10 @@ func _toggle_debug_layer(layer: int) -> void:
 	if layer == 5:
 		if _route_lines:
 			_route_lines.visible = not _route_lines.visible
+		return
+	if layer == 7:
+		if _event_routes:
+			_event_routes.visible = not _event_routes.visible
 		return
 	if layer == 6:
 		_layer_graph_on = not _layer_graph_on
@@ -441,11 +471,11 @@ func _toggle_debug_layer(layer: int) -> void:
 ## pressed on is the one where the world is least finished.
 func _capture_context() -> String:
 	var where := Vector2i.ZERO
-	if _city and _player:
-		where = _city.map.world_to_tile(_player.global_position)
+	if _in_a_city() and _player:
+		where = _map.world_to_tile(_player.global_position)
 	var meters := "no baby yet"
 	if _baby:
-		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]
+		meters = "exc %d, sleep %d" % [roundi(_baby.excitement_level()), roundi(_baby.sleepiness_level())]
 	var screen: String = _screen_name.call() if _screen_name.is_valid() else "playing"
 	return "(%d,%d) | %s | %s" % [where.x, where.y, meters, screen]
 

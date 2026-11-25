@@ -21,9 +21,20 @@ extends RefCounted
 ## path. The summary's continue is pressed through the viewport; the title's answers are the signal
 ## the title raises (a rig's boot skips the title, and the city runs on behind an open one).
 ## Everything is found by the names `main` gives it, and each run is a `RunState` of the test's own.
+##
+## **Combined by composition, for this reason:** the page counter's and the run log's own behavior are
+## `tests/test_visit_counter.gd`'s, `tests/test_telemetry.gd`'s and
+## `tests/test_telemetry_observer.gd`'s; what is pinned here is *which
+## notes the observers are handed and when* across a whole scripted run, which is a guarantee about
+## the domain events the day, the run and the escape raise and about `main` subscribing the
+## observers to them, so the real `main` is the subject. The first boot is on a cached generated
+## city (`tests/city_map_cache.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const Main := preload("res://src/main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
+const RecordingPage := preload("res://tests/recording_page.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_observers_scratch.json"
 ## What the script below handed the run log on the build this was recorded on, one line per line in
@@ -32,22 +43,31 @@ const _SCRATCH_SAVE := "user://test_observers_scratch.json"
 const BASELINE := "res://tests/fixtures/observed_run_log.txt"
 const SCENARIO_BREAK := "=== the escape"
 const SEED := 4242
-## `VisitCounter` with `_send_event()` recording the name rather than reaching for a page — the same
-## stand-in `tests/test_visit_counter.gd` uses — so what each event would send can be read back.
+## A `VisitCounter` handed the outbox of a recording page and the platform of a released web
+## page, the same stand-in `tests/test_visit_counter.gd` uses, so the names its events are
+## counted under, through the real gate and send path, can be read back.
 class RecordingCounter extends VisitCounter:
-	var sent: Array[String] = []
+	## The page it sends to.
+	var page := RecordingPage.new()
+	## The names it counted its events under, in order: the page's own list.
+	var sent: Array[String] = page.names()
 
 	## Counts `run` and listens to the game's bus, as `main` hands the real counter the run it plays
-	## and the bus.
+	## and the bus; seated in a boot's sitting (`_seat()`), it is the counter that boot takes, and is
+	## handed the boot's run flow as the real one is.
 	func _init(run: RunState) -> void:
-		configure(null, run)
+		configure(RunConfig.parse(PackedStringArray(), "", false), run)
+		send_through(page.outbox(), RecordingPage.platform())
 		listen(EventBus)
 
-	## Overrides VisitCounter._send_event.
-	func _send_event(name: String) -> void:
-		sent.append(name)
+## Seats `counter` in the sitting `home` parks, under the name the boot looks for it by
+## (`VisitCounter.NODE_NAME`), so the boot takes it as the sitting's page counter and hands it its
+## own run flow, whose walks each count a day's `began`. Freed with the home, or before it.
+static func _seat(counter: VisitCounter, home: Node) -> void:
+	counter.name = VisitCounter.NODE_NAME
+	home.get_node(NodePath(Sitting.NODE_NAME)).add_child(counter)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var day_lines: Array[String] = await _test_a_day_lost_to_each_cause_won_and_the_next_begun(t)
 	var escape_lines: Array[String] = await _test_the_escape_handed_over_lost_and_left(t)
 	_test_the_run_log_is_the_baseline(t, day_lines, escape_lines)
@@ -58,11 +78,10 @@ func run(t) -> void:
 
 ## Day 1 of `SEED`: the controls answered twice (a joystick, then a key), lost to a car, to her
 ## crying, to a catalogue row and to dusk, each retried, then won, and day 2 begun.
-func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
+func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
-	t.add_child(counter)
 	t.get_tree().paused = true
 	# A recording run log, open before the boot and handed to it: `--no-telemetry` keeps the boot
 	# from opening one, and it writes into the one it is handed.
@@ -75,11 +94,13 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	# title, the neighbor walking on, so the distance a loss line reports to her would depend on how
 	# many frames the title was up.
 	var home := Boot.home_playing(t, run)
+	_seat(counter, home)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
 			Boot.config(["--seed", str(SEED), "--no-title"]),
-			func(m: Node) -> void:
+			func(m: Main) -> void:
 				m.use_sitting_home(home)
-				m.use_run_log(run_log))
+				m.use_run_log(run_log),
+			false, MapCache.source())
 	var main := booted.main
 	t.check(Boot.day(main) != null and Boot.day(main).is_running(), "the boot reached day 1")
 	_check_the_observer_runs_after(t, main, [Boot.city(main), Boot.resistance(main), _edge_of(main),
@@ -101,8 +122,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	await _continue_while_paused(t, main)
 	# Dusk: the day's own clock run out, through the one tick that notices it.
 	var day := Boot.day(main)
-	day.time_remaining = 0.0
-	day.tick(0.0)
+	day.tick(day.seconds_left())
 	await _continue_while_paused(t, main)
 	day = Boot.day(main)
 	day.day_finished.emit(GameEnums.DayResult.WON)
@@ -120,18 +140,19 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 			"nappy-day-1-won", "nappy-day-2-began"],
 			"a day lost to each kind of cause, won and the next begun sends exactly these (%s)"
 					% [counter.sent])
+	await _check_the_badges_reach_the_observer(t, main, run_log)
 
 	booted.free_all()
 	run_log.free()
-	home.free()
 	counter.free()
+	home.free()
 	t.get_tree().paused = saved_paused
 	return lines
 
 ## The summary's continue pressed through the viewport, and the tree held still again at once: the
 ## continue that starts a day unpauses the tree in the same frame the test resumes in, before any
 ## physics tick of it has run, so every line the next call writes is stamped at the same clock.
-func _continue_while_paused(t, main: Node) -> void:
+func _continue_while_paused(t: TestRunner, main: Node) -> void:
 	await Boot.press_continue(t, main)
 	t.get_tree().paused = true
 
@@ -142,7 +163,7 @@ static func _edge_of(main: Node) -> Node:
 ## The observer stamps its lines with the clock and reads the resistance and the badges, so it has
 ## to process after them each frame, as it did when `main` added it straight after the day's
 ## clock: tree order is process order, and the session that holds it is `main`'s first child.
-func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -> void:
+func _check_the_observer_runs_after(t: TestRunner, main: Node, world: Array, boot: String) -> void:
 	var found := main.find_children("*", "TelemetryObserver", true, false)
 	var observer: TelemetryObserver = found[0] if not found.is_empty() else null
 	t.check(observer != null, "%s's boot builds the observer with a log open" % boot)
@@ -152,20 +173,67 @@ func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -
 		t.check(node != null and observer.is_greater_than(node),
 				"in %s the observer processes after %s" % [boot, node.name if node else "null"])
 
+## **The badges the edge has up reach the run log** (`DangerEdge.badges()`, which `main` hands
+## `RunSession.watch()`, which hands it to the observer): a hand-off lost anywhere on the way leaves
+## the observer its base `EdgeBadges`, which has none, and would read as a day with no badges. So
+## a real warning for the fire engine is put up on the day's event manager
+## (`EventManager.warn_first()`, announced whether in sight or not), the tree is let run two real
+## frames, in which the edge reads the warning and the observer, processing after it, watches the
+## edge's badges, and is held still again; the run log then holds one `edge badge` line for it. The
+## engine's warning lasts `Tuning.WARNING_ALONE_MAX`, one second, about sixty frames, so it is
+## still up after the two and nothing of it has arrived. Asked once the day's lines are taken for
+## the baseline and the counter's names are read, so the frames it lets pass add to neither.
+func _check_the_badges_reach_the_observer(t: TestRunner, main: Node, run_log: RecordingLog) -> void:
+	var edge := _edge_of(main) as DangerEdge
+	var found := main.find_children("*", "TelemetryObserver", true, false)
+	t.check(edge != null and not found.is_empty(), "the boot built the edge and the observer")
+	if edge == null or found.is_empty():
+		return
+	var model := edge.badges()
+	t.check(model != null, "the edge's badges are its badge model")
+	if model == null:
+		return
+	var before := _edge_badge_lines(run_log)
+	var managers := main.find_children("*", "EventManager", true, false)
+	t.check(not managers.is_empty(), "the boot built the day's event manager")
+	if managers.is_empty():
+		return
+	var events: EventManager = managers[0]
+	var her := Boot.player(main).global_position
+	var warning: PendingWarning = events.warn_first(EventCatalogue.by_id("fire_truck"), her,
+			func(standing: Vector2) -> Vector2: return standing + Vector2(600.0, 0.0),
+			func(_place: Vector2, _standing: Vector2) -> bool: return true)
+	t.check(warning != null, "the engine's warning is put up on the day's event manager")
+	t.get_tree().paused = false
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.get_tree().paused = true
+	var written := _edge_badge_lines(run_log).size() - before.size()
+	t.check(before.is_empty() and written == 1,
+			"a badge the edge has up is written by the run log's observer (%d line(s), %d before)"
+			% [written, before.size()])
+
+## The run log's `edge badge` lines, in the recording log's shape.
+static func _edge_badge_lines(run_log: RecordingLog) -> Array[String]:
+	var found: Array[String] = []
+	for line in run_log.lines:
+		if line.get_slice(" ", 1) == "cue" and line.contains("edge badge"):
+			found.append(line)
+	return found
+
 # --------------------------------------------------------------- the escape ---
 
 ## A won day 14 handing over: the building's brief, the section lost to the masked man — the day's
 ## outcome screen — and begun again, the walk out of the service door into the city, and out by the
 ## tunnel. Each section is counted as a day of its own (`DaySpec.BUILDING_DAY`,
 ## `DaySpec.CITY_DAY`) beside the escape's own names.
-func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
+func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	var run := RunState.new()
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.facts.escape_section = DaySpec.Section.BUILDING
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.facts().set_escape_section(DaySpec.Section.BUILDING)
 	var counter := RecordingCounter.new(run)
-	t.add_child(counter)
 	t.get_tree().paused = true
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED)
@@ -173,20 +241,21 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	# No `--no-telemetry`: the escape's boot keeps a log already open, so the recording log above,
 	# which it is handed, is the one it writes into, its own section header included.
 	var home := Boot.home_playing(t, run)
+	_seat(counter, home)
 	var config := RunConfig.parse(PackedStringArray(["--no-save"]), "", true)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,
-			func(m: Node) -> void:
+			func(m: Main) -> void:
 				m.use_sitting_home(home)
 				m.use_run_log(run_log))
 	var main := booted.main
 	var summary := Boot.summary(main)
-	t.check(Boot.day(main).spec.section == DaySpec.Section.BUILDING and summary.is_showing(),
+	t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.BUILDING and summary.is_showing(),
 			"the escape opened on its brief")
 	var brief := _words_on(summary)
 
 	await _continue_while_paused(t, main)
 	_check_the_observer_runs_after(t, main, [Boot.day(main), _edge_of(main), Boot.interior(main),
-			main.get_node_or_null("BuildingEvents")], "the escape")
+			main.get_node_or_null("Interior/Simulation/Events")], "the escape")
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
 	t.check(summary.is_showing() and _words_on(summary).contains("He caught you on the stairs"),
 			"a lost section comes up on the day's outcome screen, with the reason it was lost")
@@ -195,10 +264,10 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 			"and its continue on the section's brief")
 	await _continue_while_paused(t, main)
 	Boot.interior(main).exit_requested.emit()
-	t.check(Boot.day(main).spec.section == DaySpec.Section.CITY and summary.is_showing(),
+	t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and summary.is_showing(),
 			"through the service door, the city opens on its brief")
 	await _continue_while_paused(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	Boot.day(main).tick(0.0)
 
 	var lines := _lines_kept(run_log.lines)
@@ -213,8 +282,8 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 
 	booted.free_all()
 	run_log.free()
-	home.free()
 	counter.free()
+	home.free()
 	t.get_tree().paused = saved_paused
 	return lines
 
@@ -222,7 +291,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 ## outcome screen of the day it follows.
 static func _words_on(summary: Node) -> String:
 	var words := ""
-	for label_name in ["Heading", "Title", "Note", "Body", "Brief"]:
+	for label_name: String in ["Heading", "Title", "Note", "Body", "Brief"]:
 		var label := summary.find_child(label_name, true, false) as Label
 		if label and label.visible:
 			words += "%s: %s\n" % [label_name, label.text]
@@ -233,7 +302,7 @@ static func _words_on(summary: Node) -> String:
 ## Every line both scenarios handed the run log, against what the same script handed it before the
 ## observers were rebuilt. The first differing line is named, since a count alone says nothing about which entry
 ## moved.
-func _test_the_run_log_is_the_baseline(t, day_lines: Array[String],
+func _test_the_run_log_is_the_baseline(t: TestRunner, day_lines: Array[String],
 		escape_lines: Array[String]) -> void:
 	var got: Array[String] = []
 	got.append_array(day_lines)
@@ -279,31 +348,31 @@ static func _lines_kept(lines: Array[String]) -> Array[String]:
 
 ## A normal run out of nerves goes back to its checkpoint; a hard one ends badly; a final day won
 ## with the resistance done ends well, and without it neutrally.
-func _test_endings_and_checkpoints(t) -> void:
+func _test_endings_and_checkpoints(t: TestRunner) -> void:
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
 	t.add_child(counter)
 
 	run.start_run(SEED)
-	run.header.day = 6
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	run.header().set_day(6)
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
 
 	run.start_run(SEED)
-	run.calendar.choose_mode(true)
-	run.header.day = 3
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	run.calendar().choose_mode(true)
+	run.header().set_day(3)
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
-	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	run.resistance().record_the_sabotage()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
 
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.calendar().finish_day(GameEnums.DayResult.WON)
 
 	t.check(counter.sent == ["nappy-checkpoint-1-from-day-6", "nappy-ending-bad",
 			"nappy-ending-good", "nappy-ending-neutral"],
@@ -312,7 +381,7 @@ func _test_endings_and_checkpoints(t) -> void:
 
 ## A run begun fresh, one picked back up from the save, and the same run coming back on a reload
 ## the page itself made, which sends nothing.
-func _test_a_fresh_run_a_resume_and_a_reload(t) -> void:
+func _test_a_fresh_run_a_resume_and_a_reload(t: TestRunner) -> void:
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
 	t.add_child(counter)

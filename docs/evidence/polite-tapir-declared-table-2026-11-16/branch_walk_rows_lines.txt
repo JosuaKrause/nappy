@@ -1,0 +1,2568 @@
+WP 1 0 174565
+WU 0 1 0 341 82 63 24
+WQ 0 1 0 1222 119322 412338
+WT 1 0 siting 5739 2 4 1438 18256
+WP 1 1 165225
+WU 0 1 1 330 90 66 21
+WQ 0 1 1 1214 106481 229386
+WT 1 1 siting 9221 2 6 1497 33259
+WP 1 2 212111
+WU 0 1 2 346 76 40 17
+WQ 0 1 2 679 118479 241229
+WT 1 2 siting 4733 2 6 1442 16630
+WP 1 3 168841
+WU 0 1 3 365 63 34 21
+WQ 0 1 3 1217 133311 187314
+WT 1 3 siting 6471 2 5 1385 25422
+WP 1 4 158532
+WU 0 1 4 361 63 27 16
+WQ 0 1 4 1211 91225 204546
+WT 1 4 siting 8808 2 5 1099 28730
+WP 1 5 158490
+WU 0 1 5 397 24 32 19
+WQ 0 1 5 1215 89766 312729
+WT 1 5 siting 10093 2 5 1794 34508
+WP 1 6 166004
+WU 0 1 6 342 86 61 22
+WQ 0 1 6 1201 103972 216657
+WT 1 6 siting 5915 2 6 1654 23583
+WP 1 7 165758
+WU 0 1 7 388 37 68 21
+WQ 0 1 7 374 74641 284497
+WT 1 7 siting 6669 2 5 1230 22099
+WP 1 8 171849
+WU 0 1 8 413 23 50 22
+WQ 0 1 8 392 96772 186046
+WT 1 8 siting 12930 2 5 4132 45258
+WP 1 9 168265
+WU 0 1 9 369 60 52 22
+WQ 0 1 9 667 90780 160435
+WT 1 9 siting 7657 2 4 1497 22648
+WP 1 10 163366
+WU 0 1 10 305 121 37 19
+WQ 0 1 10 868 99468 341164
+WT 1 10 siting 6152 2 10 15110 47686
+WP 1 11 160215
+WU 0 1 11 385 50 67 24
+WQ 0 1 11 359 186377 657166
+WT 1 11 siting 5989 2 9 5140 36773
+WP 1 12 222313
+WU 0 1 12 339 89 45 22
+WQ 0 1 12 1110 172823 566787
+WT 1 12 siting 8247 2 9 46187 94332
+WP 1 13 324647
+WU 0 1 13 387 35 36 17
+WQ 0 1 13 1650 94182 538548
+WT 1 13 siting 7075 2 7 3283 33007
+WP 1 14 265371
+WU 0 1 14 292 133 43 23
+WQ 0 1 14 628 166101 427159
+WT 1 14 siting 6003 2 8 2551 27511
+WP 1 15 228883
+WU 0 1 15 414 17 54 22
+WQ 0 1 15 1664 160508 291032
+WT 1 15 siting 8342 2 7 9329 47228
+WP 1 16 205833
+WU 0 1 16 425 1 48 20
+WQ 0 1 16 1640 167040 237829
+WT 1 16 siting 14803 2 7 2526 59742
+WP 1 17 205361
+WU 0 1 17 388 37 44 17
+WQ 0 1 17 1660 185362 345737
+WT 1 17 siting 10751 2 6 1681 41664
+WD 1 18 857
+WC 1 0 0
+WZ 1 0 1577 25979 24402
+WM 1 144 16 58
+WL 1 RouteLineRule 3502
+WL 1 UnusedCalmRule 21419
+WL 1 RouteSidewalkRule 166
+WL 1 RouteGroundRule 2
+WB 1 0 1363 0
+WB 1 1 214 22
+WB 1 2 154 4
+WS 1 0 0 0 inf
+WV 1 cafe_tables 1 179
+WV 1 leaf_blower 1 90
+WV 1 homeless_yeller 2 52
+WV 1 delivery_van 0 31
+WV 1 market_stall 1 80
+WV 1 cafe_tables 2 21
+WV 1 homeless_yeller 0 41
+WV 1 homeless_yeller 1 12
+WV 1 pigeon_flock 2 44
+WV 1 market_stall 0 30
+WV 1 delivery_van 1 14
+WV 1 cafe_tables 0 100
+WV 1 chatting_mother 0 19
+WV 1 pigeon_flock 0 24
+WV 1 leaf_blower 2 37
+WV 1 alley_mouse 2 32
+WV 1 chatting_mother 2 6
+WV 1 delivery_van 2 13
+WV 1 chatting_mother 1 6
+WV 1 market_stall 2 13
+WV 1 alley_mouse 1 3
+WV 1 pigeon_flock 1 10
+WK 1 cafe_tables sidewalk 300
+WK 1 leaf_blower sidewalk 104
+WK 1 homeless_yeller open 20
+WK 1 delivery_van sidewalk 58
+WK 1 market_stall sidewalk 112
+WK 1 homeless_yeller sidewalk 63
+WK 1 homeless_yeller junction 22
+WK 1 pigeon_flock open 13
+WK 1 chatting_mother sidewalk 17
+WK 1 pigeon_flock junction 35
+WK 1 leaf_blower junction 11
+WK 1 pigeon_flock sidewalk 30
+WK 1 alley_mouse alley 35
+WK 1 chatting_mother junction 14
+WK 1 leaf_blower open 12
+WK 1 market_stall open 11
+WH 1 dog_walker 133
+WH 1 cat_dash 55
+WH 1 loose_dog 65
+WP 2 0 208062
+WU 0 2 0 402 21 56 21
+WQ 0 2 0 979 188323 244395
+WT 2 0 siting 7351 2 8 3237 32333
+WP 2 1 187790
+WU 0 2 1 307 113 38 19
+WQ 0 2 1 1827 104158 328033
+WT 2 1 siting 6182 2 7 2093 28582
+WP 2 2 228969
+WU 0 2 2 397 25 48 20
+WQ 0 2 2 1941 106284 342414
+WT 2 2 siting 8033 2 8 3089 38413
+WP 2 3 199258
+WU 0 2 3 384 44 34 18
+WQ 0 2 3 2173 177490 317404
+WT 2 3 siting 6691 2 8 1208 31626
+WP 2 4 258202
+WU 0 2 4 388 36 41 16
+WQ 0 2 4 2178 234756 551188
+WT 2 4 siting 10217 2 10 2136 47099
+WP 2 5 267134
+WU 0 2 5 379 42 44 24
+WQ 0 2 5 734 78889 354662
+WT 2 5 siting 7431 2 6 2392 31688
+WP 2 6 192207
+WU 0 2 6 353 75 49 23
+WQ 0 2 6 1813 157075 277500
+WT 2 6 siting 5873 2 5 1418 19555
+WP 2 7 167802
+WU 0 2 7 328 97 34 18
+WQ 0 2 7 1029 89361 221344
+WT 2 7 siting 4935 2 5 803 14479
+WP 2 8 189971
+WU 0 2 8 407 29 58 20
+WQ 0 2 8 1591 148171 218214
+WT 2 8 siting 12319 2 4 2133 44179
+WP 2 9 213193
+WU 0 2 9 410 19 37 19
+WQ 0 2 9 1571 140151 303099
+WT 2 9 siting 13861 2 4 1358 39679
+WP 2 10 164184
+WU 0 2 10 353 73 33 21
+WQ 0 2 10 1569 53063 246552
+WT 2 10 siting 8186 2 4 2213 24959
+WP 2 11 170356
+WU 0 2 11 338 97 40 24
+WQ 0 2 11 1575 132693 206848
+WT 2 11 siting 6281 2 4 1122 17694
+WP 2 12 150850
+WU 0 2 12 355 73 68 20
+WQ 0 2 12 1427 105316 283342
+WT 2 12 siting 7695 2 4 1116 22604
+WP 2 13 144845
+WU 0 2 13 368 54 36 20
+WQ 0 2 13 1401 78941 290884
+WT 2 13 siting 8799 2 4 1207 24394
+WP 2 14 138533
+WU 0 2 14 345 80 48 19
+WQ 0 2 14 173 89956 157776
+WT 2 14 siting 5917 2 4 1772 21957
+WP 2 15 157230
+WU 0 2 15 367 64 60 20
+WQ 0 2 15 1411 59349 376045
+WT 2 15 siting 6079 2 4 1042 18884
+WP 2 16 150545
+WU 0 2 16 319 107 60 19
+WQ 0 2 16 1406 80641 279589
+WT 2 16 siting 6756 2 4 1007 19845
+WP 2 17 146938
+WU 0 2 17 401 24 41 20
+WQ 0 2 17 1402 87686 213961
+WT 2 17 siting 11123 2 6 5876 43000
+WD 2 18 869
+WC 2 0 0
+WZ 2 0 1579 26423 24844
+WM 2 132 24 53
+WL 2 UnusedCalmRule 46267
+WL 2 RouteLineRule 3909
+WL 2 RouteSidewalkRule 113
+WL 2 RouteGroundRule 2
+WL 2 PacingOpeningRule 2
+WB 2 0 1355 0
+WB 2 1 216 16
+WB 2 2 153 9
+WS 2 0 0 0 inf
+WV 2 delivery_van 0 32
+WV 2 market_stall 0 34
+WV 2 leaf_blower 1 79
+WV 2 pigeon_flock 1 6
+WV 2 cafe_tables 1 134
+WV 2 busker 2 36
+WV 2 alley_mouse 2 31
+WV 2 ice_cream_van 1 38
+WV 2 pigeon_flock 2 34
+WV 2 cafe_tables 0 84
+WV 2 homeless_yeller 0 38
+WV 2 construction 1 36
+WV 2 market_stall 2 9
+WV 2 pigeon_flock 0 24
+WV 2 homeless_yeller 2 38
+WV 2 market_stall 1 54
+WV 2 delivery_van 1 11
+WV 2 cafe_tables 2 30
+WV 2 chatting_mother 0 21
+WV 2 leaf_blower 2 31
+WV 2 construction 0 16
+WV 2 alley_mouse 1 6
+WV 2 homeless_yeller 1 8
+WV 2 ice_cream_van 2 12
+WV 2 delivery_van 2 12
+WV 2 chatting_mother 2 6
+WV 2 construction 2 5
+WV 2 chatting_mother 1 4
+WK 2 delivery_van sidewalk 55
+WK 2 market_stall sidewalk 97
+WK 2 leaf_blower sidewalk 102
+WK 2 pigeon_flock sidewalk 21
+WK 2 cafe_tables sidewalk 248
+WK 2 busker open 36
+WK 2 alley_mouse alley 37
+WK 2 ice_cream_van sidewalk 50
+WK 2 pigeon_flock junction 43
+WK 2 homeless_yeller sidewalk 58
+WK 2 construction sidewalk 57
+WK 2 homeless_yeller junction 26
+WK 2 chatting_mother sidewalk 22
+WK 2 chatting_mother junction 9
+WK 2 leaf_blower junction 8
+WH 2 cat_dash 50
+WH 2 cyclist 32
+WH 2 dog_walker 102
+WH 2 loose_dog 56
+WP 3 0 158560
+WU 0 3 0 420 3 52 27
+WQ 0 3 0 1528 151038 231304
+WT 3 0 siting 12105 2 613 121504 401334
+WP 3 1 156804
+WU 0 3 1 367 53 44 20
+WQ 0 3 1 1538 109410 179328
+WT 3 1 siting 11035 2 341 238535 419583
+WP 3 2 144549
+WU 0 3 2 376 46 72 22
+WQ 0 3 2 266 107483 183208
+WT 3 2 siting 8890 2 308 99990 277816
+WP 3 3 147127
+WU 0 3 3 393 35 83 19
+WQ 0 3 3 1517 79860 362886
+WT 3 3 siting 11829 2 661 74264 343949
+WP 3 4 143651
+WU 0 3 4 388 36 48 19
+WQ 0 3 4 1525 88058 216347
+WT 3 4 siting 12747 2 719 69243 455114
+WP 3 5 160802
+WU 0 3 5 305 116 79 17
+WQ 0 3 5 738 88813 144537
+WT 3 5 siting 5881 2 120 95198 147407
+WP 3 6 154022
+WU 0 3 6 379 49 54 24
+WQ 0 3 6 1515 150614 215865
+WT 3 6 siting 8191 2 376 83980 203537
+WP 3 7 185201
+WU 0 3 7 342 83 33 17
+WQ 0 3 7 1512 76784 336403
+WT 3 7 siting 4050 2 476 71062 130874
+WP 3 8 199155
+WU 0 3 8 394 42 41 20
+WQ 0 3 8 1531 99629 227252
+WT 3 8 siting 8595 2 379 89552 236016
+WP 3 9 134210
+WU 0 3 9 379 50 48 21
+WQ 0 3 9 1526 100045 220100
+WT 3 9 siting 9201 2 411 75638 213486
+WP 3 10 166483
+WU 0 3 10 417 9 43 24
+WQ 0 3 10 678 84596 335321
+WT 3 10 siting 10276 2 600 105674 423623
+WP 3 11 188522
+WU 0 3 11 424 11 50 21
+WQ 0 3 11 1537 121381 211335
+WT 3 11 siting 10015 2 562 88708 362452
+WP 3 12 155344
+WU 0 3 12 359 69 32 21
+WQ 0 3 12 529 107086 533699
+WT 3 12 siting 4041 2 307 94271 132687
+WP 3 13 171776
+WU 0 3 13 296 126 36 18
+WQ 0 3 13 1532 127879 223829
+WT 3 13 siting 6185 2 371 128785 200933
+WP 3 14 158109
+WU 0 3 14 349 76 73 18
+WQ 0 3 14 1531 124813 223599
+WT 3 14 siting 4721 2 390 251115 318184
+WP 3 15 168514
+WU 0 3 15 411 20 58 24
+WQ 0 3 15 1548 94516 208570
+WT 3 15 siting 12310 2 526 195185 547427
+WP 3 16 182714
+WU 0 3 16 359 67 38 21
+WQ 0 3 16 1697 97526 230712
+WT 3 16 siting 5757 2 288 120430 196580
+WP 3 17 172334
+WU 0 3 17 347 78 97 21
+WQ 0 3 17 1707 125104 192859
+WT 3 17 siting 7644 2 344 79672 219676
+WD 3 18 911
+WC 3 0 0
+WZ 3 0 1499 26687 25188
+WM 3 131 18 43
+WL 3 UnusedCalmRule 43618
+WL 3 RouteLineRule 3906
+WL 3 RouteSidewalkRule 171
+WB 3 0 1342 0
+WB 3 1 224 27
+WB 3 2 177 9
+WS 3 132 0 44 72
+WV 3 ice_cream_van 1 49
+WV 3 cafe_tables 1 140
+WV 3 delivery_van 1 10
+WV 3 busker 2 45
+WV 3 cafe_tables 0 80
+WV 3 construction 0 19
+WV 3 leaf_blower 1 86
+WV 3 chatting_mother 0 25
+WV 3 homeless_yeller 2 35
+WV 3 leaf_blower 2 23
+WV 3 market_stall 0 34
+WV 3 pigeon_flock 2 36
+WV 3 market_stall 1 56
+WV 3 pigeon_flock 0 18
+WV 3 burning_building 0 18
+WV 3 reversing_lorry 1 5
+WV 3 pigeon_flock 1 14
+WV 3 cafe_tables 2 25
+WV 3 construction 2 7
+WV 3 delivery_van 0 35
+WV 3 alley_mouse 2 30
+WV 3 construction 1 46
+WV 3 homeless_yeller 1 9
+WV 3 homeless_yeller 0 25
+WV 3 reversing_lorry 2 11
+WV 3 market_stall 2 7
+WV 3 ice_cream_van 2 7
+WV 3 delivery_van 2 8
+WV 3 chatting_mother 1 2
+WV 3 chatting_mother 2 5
+WV 3 alley_mouse 1 1
+WK 3 ice_cream_van sidewalk 56
+WK 3 cafe_tables sidewalk 245
+WK 3 delivery_van sidewalk 53
+WK 3 busker open 45
+WK 3 construction sidewalk 72
+WK 3 leaf_blower sidewalk 97
+WK 3 chatting_mother sidewalk 19
+WK 3 homeless_yeller junction 33
+WK 3 market_stall sidewalk 97
+WK 3 pigeon_flock junction 42
+WK 3 pigeon_flock sidewalk 26
+WK 3 burning_building sidewalk 18
+WK 3 reversing_lorry sidewalk 16
+WK 3 homeless_yeller sidewalk 35
+WK 3 alley_mouse alley 31
+WK 3 leaf_blower junction 12
+WK 3 chatting_mother junction 13
+WK 3 homeless_yeller open 1
+WH 3 charging_dog_tutorial 18
+WH 3 dog_walker 98
+WH 3 charging_dog 25
+WH 3 loose_dog 67
+WH 3 cat_dash 41
+WH 3 cyclist 31
+WP 4 0 172453
+WU 0 4 0 419 4 40 21
+WQ 0 4 0 1427 150723 296853
+WT 4 0 siting 12258 3 1917 83929 731538
+WP 4 1 188025
+WU 0 4 1 390 30 32 20
+WQ 0 4 1 279 92409 339865
+WT 4 1 siting 7920 5 942 85840 346913
+WP 4 2 155855
+WU 0 4 2 276 146 81 18
+WQ 0 4 2 252 121443 236555
+WT 4 2 siting 3273 4 493 68759 124753
+WP 4 3 177622
+WU 0 4 3 427 1 73 20
+WQ 0 4 3 1999 154477 233946
+WT 4 3 siting 21402 5 3275 87316 2149139
+WP 4 4 173646
+WU 0 4 4 416 8 48 17
+WQ 0 4 4 1530 158905 487113
+WT 4 4 siting 17298 4 2554 110049 1403771
+WP 4 5 175600
+WU 0 4 5 420 1 51 20
+WQ 0 4 5 1980 141732 249669
+WT 4 5 siting 17155 4 1964 99641 1126325
+WP 4 6 182088
+WU 0 4 6 408 20 69 21
+WQ 0 4 6 1278 144671 269628
+WT 4 6 siting 15674 4 1718 74111 890683
+WP 4 7 178103
+WU 0 4 7 319 106 35 19
+WQ 0 4 7 307 120322 291881
+WT 4 7 siting 7048 5 745 83906 283408
+WP 4 8 179895
+WU 0 4 8 394 42 49 22
+WQ 0 4 8 258 87064 256698
+WT 4 8 siting 5751 3 820 74888 236184
+WP 4 9 201408
+WU 0 4 9 427 2 47 21
+WQ 0 4 9 1970 150948 179894
+WT 4 9 siting 16199 5 2251 81449 1167559
+WP 4 10 184195
+WU 0 4 10 414 12 46 21
+WQ 0 4 10 433 121913 488989
+WT 4 10 siting 17189 6 2173 83431 1283977
+WP 4 11 168950
+WU 0 4 11 387 48 75 23
+WQ 0 4 11 381 97158 291260
+WT 4 11 siting 8217 3 1053 89520 352944
+WP 4 12 167548
+WU 0 4 12 406 22 48 22
+WQ 0 4 12 1680 129779 216248
+WT 4 12 siting 11381 3 1756 81872 693857
+WP 4 13 168407
+WU 0 4 13 365 57 54 22
+WQ 0 4 13 2013 116282 327640
+WT 4 13 siting 14785 3 1329 91341 723469
+WP 4 14 174710
+WU 0 4 14 268 157 38 20
+WQ 0 4 14 295 106132 269067
+WT 4 14 siting 3763 4 525 84236 159843
+WP 4 15 193116
+WU 0 4 15 424 7 50 23
+WQ 0 4 15 2012 101771 267159
+WT 4 15 siting 15824 4 1281 85263 747970
+WP 4 16 170179
+WU 0 4 16 391 35 66 20
+WQ 0 4 16 455 108312 248425
+WT 4 16 siting 7773 5 1042 85527 352332
+WP 4 17 169235
+WU 0 4 17 399 26 79 20
+WQ 0 4 17 352 119569 255199
+WT 4 17 siting 10352 3 1224 78193 458479
+WD 4 18 1186
+WC 4 0 0
+WZ 4 0 1891 24276 22385
+WM 4 204 33 82
+WL 4 UnusedCalmRule 48709
+WL 4 RouteLineRule 5659
+WL 4 RouteSidewalkRule 199
+WB 4 0 1415 0
+WB 4 1 202 23
+WB 4 2 129 4
+WS 4 0 0 0 inf
+WV 4 pigeon_flock 2 41
+WV 4 chatting_mother 0 38
+WV 4 cafe_tables 0 154
+WV 4 homeless_yeller 0 58
+WV 4 cafe_tables 2 28
+WV 4 cafe_tables 1 149
+WV 4 leaf_blower 1 87
+WV 4 construction 1 51
+WV 4 chatting_mother 2 10
+WV 4 busker 2 52
+WV 4 market_stall 0 50
+WV 4 pigeon_flock 1 16
+WV 4 ice_cream_van 1 41
+WV 4 chatting_mother 1 4
+WV 4 market_stall 1 65
+WV 4 leaf_blower 2 40
+WV 4 ice_cream_van 2 9
+WV 4 pigeon_flock 0 30
+WV 4 homeless_yeller 2 51
+WV 4 charging_dog 2 31
+WV 4 delivery_van 1 6
+WV 4 delivery_van 0 55
+WV 4 construction 2 12
+WV 4 delivery_van 2 16
+WV 4 alley_mouse 2 28
+WV 4 homeless_yeller 1 8
+WV 4 market_stall 2 6
+WV 4 construction 0 31
+WV 4 reversing_lorry 2 10
+WV 4 reversing_lorry 1 2
+WV 4 alley_mouse 1 2
+WV 4 charging_dog 1 4
+WV 4 poster_crew_square 2 1
+WK 4 pigeon_flock junction 53
+WK 4 chatting_mother junction 24
+WK 4 cafe_tables sidewalk 331
+WK 4 chatting_mother sidewalk 28
+WK 4 homeless_yeller junction 54
+WK 4 leaf_blower sidewalk 107
+WK 4 construction sidewalk 94
+WK 4 busker open 52
+WK 4 market_stall sidewalk 121
+WK 4 homeless_yeller sidewalk 63
+WK 4 ice_cream_van sidewalk 50
+WK 4 pigeon_flock sidewalk 34
+WK 4 leaf_blower junction 20
+WK 4 charging_dog junction 31
+WK 4 delivery_van sidewalk 77
+WK 4 alley_mouse alley 30
+WK 4 charging_dog sidewalk 4
+WK 4 reversing_lorry sidewalk 12
+WK 4 poster_crew_square open 1
+WH 4 cyclist 41
+WH 4 loose_dog 63
+WH 4 dog_walker 114
+WH 4 cat_dash 54
+WH 4 police_patrol 70
+WH 4 charging_dog 5
+WP 5 0 227078
+WU 0 5 0 383 40 62 24
+WQ 0 5 0 454 138504 246050
+WT 5 0 siting 10518 6 1213 84711 525760
+WP 5 1 196699
+WU 0 5 1 355 65 38 19
+WQ 0 5 1 698 121892 198057
+WT 5 1 siting 6563 4 705 101636 269627
+WP 5 2 220127
+WU 0 5 2 422 0 54 23
+WQ 0 5 2 417 102454 336539
+WT 5 2 siting 15251 5 1828 86332 942278
+WP 5 3 234467
+WU 0 5 3 428 0 46 21
+WQ 0 5 3 314 140179 227539
+WT 5 3 siting 12378 4 2411 82264 925355
+WP 5 4 264117
+WU 0 5 4 368 56 37 18
+WQ 0 5 4 551 113872 668086
+WT 5 4 siting 6753 3 896 103139 296492
+WP 5 5 220614
+WU 0 5 5 365 56 61 21
+WQ 0 5 5 647 129460 218012
+WT 5 5 siting 8155 4 939 91742 354226
+WP 5 6 241301
+WU 0 5 6 397 31 45 24
+WQ 0 5 6 1002 153458 271707
+WT 5 6 siting 9571 4 1501 92143 502718
+WP 5 7 244364
+WU 0 5 7 321 104 41 21
+WQ 0 5 7 1987 68985 392680
+WT 5 7 siting 8705 5 968 81716 378811
+WP 5 8 237265
+WU 0 5 8 369 67 55 23
+WQ 0 5 8 935 114324 250092
+WT 5 8 siting 8059 3 720 76550 274808
+WP 5 9 211086
+WU 0 5 9 350 79 38 23
+WQ 0 5 9 668 111365 224362
+WT 5 9 siting 9680 4 775 72773 351069
+WP 5 10 233051
+WU 0 5 10 367 59 41 20
+WQ 0 5 10 840 115605 202328
+WT 5 10 siting 7681 3 578 80023 227686
+WP 5 11 215052
+WU 0 5 11 435 0 92 25
+WQ 0 5 11 244 135869 227776
+WT 5 11 siting 15889 3 1538 88246 885407
+WP 5 12 190288
+WU 0 5 12 390 38 49 25
+WQ 0 5 12 570 117772 208064
+WT 5 12 siting 6974 3 840 79581 268232
+WP 5 13 221210
+WU 0 5 13 403 19 41 20
+WQ 0 5 13 1993 123114 200709
+WT 5 13 siting 11376 5 1085 72192 494825
+WP 5 14 205783
+WU 0 5 14 303 122 38 21
+WQ 0 5 14 1814 155971 315126
+WT 5 14 siting 6640 3 691 77409 239447
+WP 5 15 241729
+WU 0 5 15 341 90 58 22
+WQ 0 5 15 1543 114393 220500
+WT 5 15 siting 5618 4 792 85283 248582
+WP 5 16 215455
+WU 0 5 16 312 114 40 22
+WQ 0 5 16 1982 91777 303813
+WT 5 16 siting 6569 4 642 77127 227414
+WP 5 17 200534
+WU 0 5 17 360 65 72 22
+WQ 0 5 17 948 124620 349076
+WT 5 17 siting 8478 4 852 68739 311595
+WD 5 18 1019
+WC 5 0 0
+WZ 5 0 1872 24344 22472
+WM 5 189 35 63
+WL 5 RouteLineRule 5590
+WL 5 UnusedCalmRule 48700
+WL 5 RouteSidewalkRule 263
+WL 5 RouteGroundRule 2
+WL 5 PacingOpeningRule 2
+WB 5 0 1459 0
+WB 5 1 191 18
+WB 5 2 138 7
+WS 5 0 0 0 inf
+WV 5 cafe_tables 1 139
+WV 5 construction 1 37
+WV 5 busker 2 39
+WV 5 charging_dog 1 3
+WV 5 delivery_van 0 41
+WV 5 chatting_mother 2 11
+WV 5 cafe_tables 0 105
+WV 5 homeless_yeller 1 6
+WV 5 leaf_blower 1 96
+WV 5 homeless_yeller 0 52
+WV 5 cafe_tables 2 22
+WV 5 homeless_yeller 2 44
+WV 5 pigeon_flock 2 36
+WV 5 ice_cream_van 1 44
+WV 5 market_stall 1 48
+WV 5 pigeon_flock 0 30
+WV 5 charging_dog 0 3
+WV 5 charging_dog 2 32
+WV 5 market_stall 2 7
+WV 5 delivery_van 2 9
+WV 5 construction 0 39
+WV 5 market_stall 0 42
+WV 5 reversing_lorry 2 13
+WV 5 chatting_mother 0 36
+WV 5 ice_cream_van 2 10
+WV 5 leaf_blower 2 27
+WV 5 alley_mouse 2 26
+WV 5 construction 2 2
+WV 5 reversing_lorry 1 2
+WV 5 alley_mouse 1 3
+WV 5 delivery_van 1 6
+WV 5 pigeon_flock 1 7
+WV 5 chatting_mother 1 2
+WK 5 cafe_tables sidewalk 266
+WK 5 construction sidewalk 78
+WK 5 busker open 39
+WK 5 charging_dog junction 25
+WK 5 delivery_van sidewalk 56
+WK 5 chatting_mother junction 29
+WK 5 homeless_yeller junction 37
+WK 5 leaf_blower sidewalk 109
+WK 5 homeless_yeller sidewalk 65
+WK 5 pigeon_flock junction 57
+WK 5 ice_cream_van sidewalk 54
+WK 5 market_stall sidewalk 97
+WK 5 pigeon_flock sidewalk 16
+WK 5 charging_dog sidewalk 13
+WK 5 reversing_lorry sidewalk 15
+WK 5 chatting_mother sidewalk 20
+WK 5 alley_mouse alley 29
+WK 5 leaf_blower junction 14
+WH 5 charging_dog 3
+WH 5 loose_dog 69
+WH 5 dog_walker 86
+WH 5 cat_dash 44
+WH 5 police_patrol 50
+WH 5 cyclist 26
+WP 6 0 267106
+WU 0 6 0 377 46 45 20
+WQ 0 6 0 823 201572 604834
+WT 6 0 siting 10014 4 1039 83013 443797
+WP 6 1 272953
+WU 0 6 1 365 55 69 21
+WQ 0 6 1 635 143988 301789
+WT 6 1 siting 10251 3 1045 95437 462332
+WP 6 2 258805
+WU 0 6 2 357 65 66 21
+WQ 0 6 2 377 114310 239164
+WT 6 2 siting 9009 4 981 84099 397041
+WP 6 3 311645
+WU 0 6 3 421 7 53 19
+WQ 0 6 3 947 149197 532033
+WT 6 3 siting 10535 4 1726 84772 709015
+WP 6 4 270008
+WU 0 6 4 388 36 49 18
+WQ 0 6 4 2300 175296 565421
+WT 6 4 siting 10807 5 1432 94428 620318
+WP 6 5 238430
+WU 0 6 5 381 40 49 18
+WQ 0 6 5 655 106153 407824
+WT 6 5 siting 9021 4 1632 100695 537773
+WP 6 6 260098
+WU 0 6 6 324 104 56 20
+WQ 0 6 6 1025 180015 288474
+WT 6 6 siting 5167 3 597 101721 208585
+WP 6 7 268393
+WU 0 6 7 291 134 66 17
+WQ 0 6 7 234 118156 318134
+WT 6 7 siting 5730 5 634 100019 253270
+WP 6 8 302206
+WU 0 6 8 357 79 80 23
+WQ 0 6 8 2305 170962 791924
+WT 6 8 siting 9289 4 1209 99000 461910
+WP 6 9 270772
+WU 0 6 9 310 119 38 22
+WQ 0 6 9 1076 172966 358144
+WT 6 9 siting 4899 6 713 98020 215783
+WP 6 10 294238
+WU 0 6 10 327 99 42 19
+WQ 0 6 10 486 106578 303846
+WT 6 10 siting 5055 3 785 98340 222962
+WP 6 11 275648
+WU 0 6 11 415 20 137 23
+WQ 0 6 11 292 161744 252625
+WT 6 11 siting 9607 5 1028 85189 420771
+WP 6 12 322352
+WU 0 6 12 377 51 66 19
+WQ 0 6 12 982 162816 340394
+WT 6 12 siting 8251 4 1166 111179 444022
+WP 6 13 311219
+WU 0 6 13 332 90 56 17
+WQ 0 6 13 1171 134506 270584
+WT 6 13 siting 7547 4 822 93651 290296
+WP 6 14 238597
+WU 0 6 14 367 58 58 17
+WQ 0 6 14 330 114710 375111
+WT 6 14 siting 8619 6 1515 93030 479611
+WP 6 15 228163
+WU 0 6 15 369 62 67 23
+WQ 0 6 15 718 87157 391377
+WT 6 15 siting 7115 3 1254 86136 337851
+WP 6 16 232650
+WU 0 6 16 368 58 40 20
+WQ 0 6 16 2295 112197 274365
+WT 6 16 siting 9216 4 1471 89340 529791
+WP 6 17 231197
+WU 0 6 17 338 87 67 19
+WQ 0 6 17 846 132430 194861
+WT 6 17 siting 6722 3 740 101554 250758
+WD 6 18 953
+WC 6 0 0
+WZ 6 0 1839 24092 22253
+WM 6 162 25 50
+WL 6 RouteLineRule 5173
+WL 6 UnusedCalmRule 50213
+WL 6 RouteSidewalkRule 210
+WB 6 0 1377 0
+WB 6 1 196 12
+WB 6 2 138 16
+WS 6 0 0 0 inf
+WV 6 construction 0 30
+WV 6 busker 2 41
+WV 6 charging_dog 0 1
+WV 6 homeless_yeller 2 43
+WV 6 cafe_tables 1 102
+WV 6 delivery_van 1 9
+WV 6 leaf_blower 1 77
+WV 6 ice_cream_van 1 41
+WV 6 delivery_van 0 42
+WV 6 cafe_tables 0 100
+WV 6 chatting_mother 0 25
+WV 6 homeless_yeller 0 49
+WV 6 construction 1 47
+WV 6 chatting_mother 2 6
+WV 6 pigeon_flock 0 32
+WV 6 chatting_mother 1 7
+WV 6 alley_mouse 1 5
+WV 6 pigeon_flock 1 9
+WV 6 market_stall 1 57
+WV 6 market_stall 0 40
+WV 6 pigeon_flock 2 30
+WV 6 cafe_tables 2 18
+WV 6 alley_mouse 2 22
+WV 6 leaf_blower 2 33
+WV 6 delivery_van 2 4
+WV 6 reversing_lorry 1 6
+WV 6 construction 2 6
+WV 6 charging_dog 2 22
+WV 6 ice_cream_van 2 14
+WV 6 reversing_lorry 2 10
+WV 6 homeless_yeller 1 15
+WV 6 market_stall 2 5
+WV 6 poster_crew_square 1 1
+WV 6 charging_dog 1 3
+WV 6 poster_crew_square 2 1
+WK 6 construction sidewalk 83
+WK 6 busker open 41
+WK 6 charging_dog sidewalk 8
+WK 6 homeless_yeller junction 44
+WK 6 cafe_tables sidewalk 220
+WK 6 delivery_van sidewalk 55
+WK 6 leaf_blower sidewalk 89
+WK 6 ice_cream_van sidewalk 55
+WK 6 chatting_mother sidewalk 18
+WK 6 homeless_yeller sidewalk 63
+WK 6 chatting_mother junction 20
+WK 6 pigeon_flock junction 43
+WK 6 alley_mouse alley 27
+WK 6 pigeon_flock sidewalk 28
+WK 6 market_stall sidewalk 101
+WK 6 leaf_blower junction 20
+WK 6 reversing_lorry sidewalk 16
+WK 6 charging_dog junction 18
+WK 6 market_stall open 1
+WK 6 poster_crew_square open 2
+WK 6 leaf_blower open 1
+WH 6 dog_walker 81
+WH 6 cyclist 26
+WH 6 cat_dash 42
+WH 6 loose_dog 54
+WH 6 police_patrol 45
+WH 6 charging_dog 6
+WP 7 0 192370
+WU 0 7 0 414 9 35 22
+WQ 0 7 0 589 117519 245061
+WT 7 0 siting 10669 6 998 75500 458299
+WP 7 1 236210
+WU 0 7 1 376 44 64 19
+WQ 0 7 1 256 118407 219788
+WT 7 1 siting 9106 3 1261 127278 544743
+WP 7 2 241443
+WU 0 7 2 343 79 34 17
+WQ 0 7 2 578 135813 268977
+WT 7 2 siting 6429 3 537 80611 210866
+WP 7 3 236255
+WU 0 7 3 348 80 67 19
+WQ 0 7 3 826 143447 239760
+WT 7 3 siting 6884 2 759 86547 266785
+WP 7 4 205964
+WU 0 7 4 340 84 51 17
+WQ 0 7 4 657 146076 479894
+WT 7 4 siting 5995 2 985 87821 311934
+WP 7 5 214761
+WU 0 7 5 421 0 78 17
+WQ 0 7 5 2053 141490 205000
+WT 7 5 siting 15115 4 1966 82312 1013859
+WP 7 6 245593
+WU 0 7 6 365 63 53 23
+WQ 0 7 6 2065 162376 413555
+WT 7 6 siting 10092 4 1340 98004 532330
+WP 7 7 219847
+WU 0 7 7 408 17 58 18
+WQ 0 7 7 245 103663 182968
+WT 7 7 siting 12345 3 933 87165 468054
+WP 7 8 237129
+WU 0 7 8 393 43 121 25
+WQ 0 7 8 533 144348 627118
+WT 7 8 siting 7269 2 940 83408 302357
+WP 7 9 231965
+WU 0 7 9 388 41 57 21
+WQ 0 7 9 493 129090 283695
+WT 7 9 siting 12516 4 1359 75045 613759
+WP 7 10 212150
+WU 0 7 10 410 16 37 21
+WQ 0 7 10 884 111496 157964
+WT 7 10 siting 11925 3 1489 72531 617043
+WP 7 11 271392
+WU 0 7 11 380 55 27 20
+WQ 0 7 11 283 116887 202608
+WT 7 11 siting 8697 3 1039 80890 395302
+WP 7 12 221573
+WU 0 7 12 348 80 65 20
+WQ 0 7 12 662 129451 193232
+WT 7 12 siting 5038 3 809 66401 197681
+WP 7 13 203904
+WU 0 7 13 355 67 39 20
+WQ 0 7 13 2008 92986 337777
+WT 7 13 siting 8936 3 994 87180 373408
+WP 7 14 205439
+WU 0 7 14 352 73 80 18
+WQ 0 7 14 750 128133 270637
+WT 7 14 siting 6622 2 623 83685 238655
+WP 7 15 187663
+WU 0 7 15 376 55 41 22
+WQ 0 7 15 249 110798 184997
+WT 7 15 siting 7937 3 673 63031 249871
+WP 7 16 190551
+WU 0 7 16 356 70 69 21
+WQ 0 7 16 2017 105425 508731
+WT 7 16 siting 9018 3 1069 96875 416586
+WP 7 17 193638
+WU 0 7 17 403 22 62 21
+WQ 0 7 17 1994 143104 183716
+WT 7 17 siting 13239 3 1195 80268 588717
+WD 7 18 955
+WC 7 0 0
+WZ 7 81 1677 23897 22139
+WM 7 245 39 86
+WL 7 RouteLineRule 4931
+WL 7 UnusedCalmRule 49301
+WL 7 RouteSidewalkRule 481
+WL 7 RouteGroundRule 5
+WB 7 0 1411 0
+WB 7 1 203 19
+WB 7 2 146 4
+WS 7 0 0 0 inf
+WV 7 cafe_tables 1 106
+WV 7 ice_cream_van 1 44
+WV 7 leaf_blower 1 65
+WV 7 busker 2 41
+WV 7 construction 2 2
+WV 7 alley_mouse 2 35
+WV 7 pigeon_flock 2 38
+WV 7 charging_dog 2 29
+WV 7 cafe_tables 0 98
+WV 7 ice_cream_van 2 7
+WV 7 construction 0 19
+WV 7 cafe_tables 2 17
+WV 7 market_stall 1 47
+WV 7 roadblock 0 36
+WV 7 chatting_mother 2 13
+WV 7 homeless_yeller 2 49
+WV 7 pigeon_flock 0 33
+WV 7 homeless_yeller 0 38
+WV 7 leaf_blower 2 34
+WV 7 delivery_van 0 28
+WV 7 chatting_mother 0 27
+WV 7 pigeon_flock 1 9
+WV 7 market_stall 0 40
+WV 7 construction 1 33
+WV 7 roadblock 1 6
+WV 7 roadblock 2 7
+WV 7 reversing_lorry 2 10
+WV 7 delivery_van 2 8
+WV 7 homeless_yeller 1 7
+WV 7 market_stall 2 8
+WV 7 alley_mouse 1 3
+WV 7 chatting_mother 1 7
+WV 7 reversing_lorry 1 3
+WV 7 delivery_van 1 6
+WV 7 charging_dog 0 1
+WV 7 charging_dog 1 1
+WK 7 cafe_tables sidewalk 221
+WK 7 ice_cream_van sidewalk 51
+WK 7 leaf_blower sidewalk 80
+WK 7 busker open 41
+WK 7 construction sidewalk 54
+WK 7 alley_mouse alley 38
+WK 7 pigeon_flock junction 56
+WK 7 charging_dog junction 27
+WK 7 market_stall sidewalk 95
+WK 7 roadblock carriageway 49
+WK 7 chatting_mother sidewalk 26
+WK 7 homeless_yeller junction 41
+WK 7 homeless_yeller sidewalk 52
+WK 7 leaf_blower junction 19
+WK 7 delivery_van sidewalk 42
+WK 7 pigeon_flock sidewalk 24
+WK 7 reversing_lorry sidewalk 13
+WK 7 chatting_mother junction 21
+WK 7 charging_dog sidewalk 4
+WK 7 homeless_yeller open 1
+WH 7 loose_dog 52
+WH 7 police_patrol 56
+WH 7 dog_walker 82
+WH 7 cat_dash 52
+WH 7 cyclist 35
+WH 7 charging_dog 5
+WP 8 0 221942
+WU 0 8 0 359 64 49 20
+WQ 0 8 0 1629 138990 228744
+WT 8 0 siting 5510 3 578 69443 221654
+WP 8 1 221920
+WU 0 8 1 398 22 37 19
+WQ 0 8 1 738 171621 258495
+WT 8 1 siting 10459 4 1350 89624 538436
+WP 8 2 210220
+WU 0 8 2 394 28 45 17
+WQ 0 8 2 607 138466 311453
+WT 8 2 siting 7967 3 812 76033 278656
+WP 8 3 217577
+WU 0 8 3 395 33 34 22
+WQ 0 8 3 1766 134730 333706
+WT 8 3 siting 9793 4 1030 87806 400490
+WP 8 4 176563
+WU 0 8 4 358 65 35 18
+WQ 0 8 4 817 130103 188305
+WT 8 4 siting 8589 3 842 78970 313734
+WP 8 5 210456
+WU 0 8 5 387 34 39 21
+WQ 0 8 5 318 107506 190736
+WT 8 5 siting 10022 3 1038 68030 380677
+WP 8 6 208711
+WU 0 8 6 347 81 52 20
+WQ 0 8 6 513 134361 277674
+WT 8 6 siting 8698 4 609 72279 280045
+WP 8 7 195036
+WU 0 8 7 407 18 53 21
+WQ 0 8 7 267 121970 177025
+WT 8 7 siting 7637 3 808 86896 281358
+WP 8 8 260441
+WU 0 8 8 351 85 57 18
+WQ 0 8 8 901 178917 536787
+WT 8 8 siting 7927 3 874 77663 300232
+WP 8 9 206388
+WU 0 8 9 342 87 50 22
+WQ 0 8 9 1417 173418 291445
+WT 8 9 siting 9821 5 1165 69506 461836
+WP 8 10 180963
+WU 0 8 10 380 45 45 20
+WQ 0 8 10 272 97659 233704
+WT 8 10 siting 12831 4 1032 63210 505675
+WP 8 11 198773
+WU 0 8 11 378 57 69 23
+WQ 0 8 11 665 122700 261421
+WT 8 11 siting 9125 3 580 65417 240646
+WP 8 12 187938
+WU 0 8 12 365 63 32 18
+WQ 0 8 12 475 94046 380588
+WT 8 12 siting 8853 3 663 66445 264750
+WP 8 13 151384
+WU 0 8 13 301 120 30 19
+WQ 0 8 13 820 115626 212839
+WT 8 13 siting 6574 2 417 66008 158536
+WP 8 14 178378
+WU 0 8 14 368 57 64 20
+WQ 0 8 14 429 92371 297379
+WT 8 14 siting 10913 2 5 1918 34597
+WP 8 15 173026
+WU 0 8 15 412 19 87 22
+WQ 0 8 15 308 113514 172769
+WT 8 15 siting 11737 3 989 66710 439177
+WP 8 16 174509
+WU 0 8 16 387 38 32 19
+WQ 0 8 16 279 110933 210252
+WT 8 16 siting 7357 3 705 69747 236597
+WP 8 17 169563
+WU 0 8 17 412 13 78 23
+WQ 0 8 17 945 125260 180874
+WT 8 17 siting 13533 3 1096 66830 542178
+WD 8 18 1224
+WC 8 0 0
+WZ 8 96 2115 23465 21254
+WM 8 329 54 112
+WL 8 RouteLineRule 6585
+WL 8 UnusedCalmRule 40793
+WL 8 RouteSidewalkRule 499
+WL 8 RouteGroundRule 2
+WL 8 OneSidewalkOpenRule 1
+WB 8 0 1295 0
+WB 8 1 196 20
+WB 8 2 158 17
+WS 8 0 0 0 inf
+WV 8 market_stall 2 9
+WV 8 homeless_yeller 2 59
+WV 8 abduction 2 94
+WV 8 cafe_tables 1 129
+WV 8 alley_mouse 2 21
+WV 8 busker 2 43
+WV 8 poster_crew_square 2 3
+WV 8 delivery_van 2 7
+WV 8 ice_cream_van 1 40
+WV 8 leaf_blower 1 80
+WV 8 pigeon_flock 2 29
+WV 8 reversing_lorry 2 12
+WV 8 construction 1 40
+WV 8 cafe_tables 2 19
+WV 8 market_stall 1 51
+WV 8 cafe_tables 0 121
+WV 8 construction 0 42
+WV 8 market_stall 0 36
+WV 8 leaf_blower 2 26
+WV 8 delivery_van 0 42
+WV 8 pigeon_flock 1 12
+WV 8 pigeon_flock 0 30
+WV 8 charging_dog 2 17
+WV 8 homeless_yeller 0 50
+WV 8 chatting_mother 0 32
+WV 8 abduction 1 10
+WV 8 ice_cream_van 2 10
+WV 8 roadblock 0 42
+WV 8 delivery_van 1 13
+WV 8 roadblock 1 8
+WV 8 alley_robbery 2 46
+WV 8 alley_mouse 1 3
+WV 8 chatting_mother 1 7
+WV 8 charging_dog 0 1
+WV 8 chatting_mother 2 11
+WV 8 roadblock 2 10
+WV 8 homeless_yeller 1 7
+WV 8 construction 2 5
+WV 8 charging_dog 1 2
+WV 8 reversing_lorry 1 2
+WV 8 alley_robbery 1 3
+WK 8 market_stall sidewalk 96
+WK 8 homeless_yeller sidewalk 70
+WK 8 abduction sidewalk 55
+WK 8 cafe_tables sidewalk 269
+WK 8 alley_mouse alley 24
+WK 8 busker open 43
+WK 8 poster_crew_square open 3
+WK 8 delivery_van sidewalk 62
+WK 8 ice_cream_van sidewalk 50
+WK 8 homeless_yeller junction 46
+WK 8 leaf_blower sidewalk 89
+WK 8 pigeon_flock junction 45
+WK 8 reversing_lorry sidewalk 14
+WK 8 construction sidewalk 87
+WK 8 pigeon_flock sidewalk 25
+WK 8 charging_dog junction 13
+WK 8 leaf_blower junction 17
+WK 8 chatting_mother sidewalk 28
+WK 8 abduction junction 49
+WK 8 roadblock carriageway 60
+WK 8 alley_robbery alley 49
+WK 8 chatting_mother junction 22
+WK 8 charging_dog sidewalk 7
+WK 8 pigeon_flock open 1
+WH 8 dog_walker 92
+WH 8 loose_dog 70
+WH 8 cat_dash 48
+WH 8 police_patrol 49
+WH 8 cyclist 29
+WH 8 charging_dog 1
+WP 9 0 196211
+WU 0 9 0 423 0 76 19
+WQ 0 9 0 450 114185 223692
+WT 9 0 siting 17898 3 1683 72511 1020479
+WP 9 1 217929
+WU 0 9 1 390 30 72 19
+WQ 0 9 1 455 100793 215437
+WT 9 1 siting 6153 3 811 71829 228570
+WP 9 2 216186
+WU 0 9 2 316 106 42 19
+WQ 0 9 2 209 173571 261255
+WT 9 2 siting 3718 3 380 68501 118234
+WP 9 3 214731
+WU 0 9 3 372 55 121 20
+WQ 0 9 3 222 117522 288080
+WT 9 3 siting 5236 3 640 77311 191696
+WP 9 4 220013
+WU 0 9 4 370 53 59 19
+WQ 0 9 4 713 122542 277689
+WT 9 4 siting 6761 3 724 72558 236358
+WP 9 5 238808
+WU 0 9 5 368 53 49 23
+WQ 0 9 5 529 96867 173622
+WT 9 5 siting 9730 3 676 70389 310143
+WP 9 6 202925
+WU 0 9 6 335 92 59 23
+WQ 0 9 6 473 104638 436129
+WT 9 6 siting 6253 3 504 66416 183772
+WP 9 7 210670
+WU 0 9 7 374 51 57 20
+WQ 0 9 7 403 117132 226567
+WT 9 7 siting 11927 3 606 69472 330316
+WP 9 8 223613
+WU 0 9 8 383 53 80 22
+WQ 0 9 8 488 111416 245249
+WT 9 8 siting 9453 3 977 99044 403181
+WP 9 9 224121
+WU 0 9 9 339 90 84 23
+WQ 0 9 9 1933 118908 374904
+WT 9 9 siting 6642 4 576 63022 204992
+WP 9 10 202763
+WU 0 9 10 340 85 44 21
+WQ 0 9 10 202 94074 277621
+WT 9 10 siting 7533 2 623 66859 225780
+WP 9 11 216574
+WU 0 9 11 397 37 70 22
+WQ 0 9 11 598 123533 308990
+WT 9 11 siting 9429 3 719 69292 302492
+WP 9 12 207441
+WU 0 9 12 335 92 48 21
+WQ 0 9 12 318 130368 199849
+WT 9 12 siting 7648 4 581 70209 234259
+WP 9 13 211418
+WU 0 9 13 350 71 58 20
+WQ 0 9 13 280 111063 204026
+WT 9 13 siting 9399 2 652 62614 260544
+WP 9 14 230208
+WU 0 9 14 374 51 74 20
+WQ 0 9 14 807 86695 235832
+WT 9 14 siting 12137 4 926 70122 432440
+WP 9 15 215490
+WU 0 9 15 327 104 79 22
+WQ 0 9 15 380 102432 142260
+WT 9 15 siting 4677 3 475 78373 158992
+WP 9 16 237150
+WU 0 9 16 398 27 43 20
+WQ 0 9 16 787 101616 273025
+WT 9 16 siting 15181 3 1202 74776 696642
+WP 9 17 212631
+WU 0 9 17 386 39 132 20
+WQ 0 9 17 519 85080 264881
+WT 9 17 siting 9829 3 847 72293 342213
+WD 9 18 687
+WC 9 0 0
+WZ 9 104 1346 23884 22434
+WM 9 235 26 97
+WL 9 DoorClearanceRule 3083
+WL 9 UnusedCalmRule 47897
+WL 9 RouteLineRule 2363
+WL 9 RouteSidewalkRule 336
+WL 9 RouteGroundRule 3
+WB 9 0 1250 0
+WB 9 1 696 14
+WB 9 2 835 13
+WS 9 0 0 0 inf
+WV 9 market_stall 1 30
+WV 9 cafe_tables 2 20
+WV 9 delivery_van 1 2
+WV 9 leaf_blower 1 36
+WV 9 alley_robbery 2 15
+WV 9 abduction 2 49
+WV 9 roadblock 0 31
+WV 9 cafe_tables 1 73
+WV 9 leaf_blower 2 15
+WV 9 pigeon_flock 2 42
+WV 9 construction 0 9
+WV 9 cafe_tables 0 46
+WV 9 homeless_yeller 2 29
+WV 9 roadblock 1 8
+WV 9 busker 2 43
+WV 9 reversing_lorry 2 12
+WV 9 homeless_yeller 0 27
+WV 9 construction 1 17
+WV 9 delivery_van 0 23
+WV 9 pigeon_flock 1 10
+WV 9 pigeon_flock 0 23
+WV 9 chatting_mother 0 22
+WV 9 homeless_yeller 1 6
+WV 9 roadblock 2 16
+WV 9 ice_cream_van 1 12
+WV 9 market_stall 0 19
+WV 9 chatting_mother 1 2
+WV 9 construction 2 8
+WV 9 ice_cream_van 2 2
+WV 9 alley_mouse 2 14
+WV 9 market_stall 2 6
+WV 9 chatting_mother 2 9
+WV 9 delivery_van 2 2
+WV 9 charging_dog 0 2
+WV 9 alley_mouse 1 1
+WV 9 charging_dog 2 5
+WV 9 abduction 1 1
+WK 9 market_stall sidewalk 55
+WK 9 cafe_tables sidewalk 139
+WK 9 delivery_van sidewalk 27
+WK 9 leaf_blower sidewalk 43
+WK 9 alley_robbery alley 15
+WK 9 abduction junction 21
+WK 9 roadblock carriageway 55
+WK 9 pigeon_flock sidewalk 26
+WK 9 construction sidewalk 34
+WK 9 homeless_yeller junction 20
+WK 9 busker open 43
+WK 9 reversing_lorry sidewalk 12
+WK 9 homeless_yeller sidewalk 42
+WK 9 abduction sidewalk 29
+WK 9 pigeon_flock junction 48
+WK 9 chatting_mother sidewalk 25
+WK 9 ice_cream_van sidewalk 14
+WK 9 alley_mouse alley 15
+WK 9 pigeon_flock open 1
+WK 9 chatting_mother junction 8
+WK 9 leaf_blower junction 7
+WK 9 leaf_blower open 1
+WK 9 charging_dog sidewalk 3
+WK 9 charging_dog junction 4
+WH 9 charging_dog 4
+WH 9 cat_dash 50
+WH 9 dog_walker 88
+WH 9 loose_dog 58
+WH 9 cyclist 22
+WH 9 police_patrol 54
+WP 10 0 420243
+WU 0 10 0 371 51 43 22
+WQ 0 10 0 534 103938 201266
+WT 10 0 siting 8349 2 600 66932 223304
+WP 10 1 462712
+WU 0 10 1 371 49 37 19
+WQ 0 10 1 317 97179 291441
+WT 10 1 siting 9893 3 866 69664 338552
+WP 10 2 436063
+WU 0 10 2 377 45 42 20
+WQ 0 10 2 303 103737 140783
+WT 10 2 siting 8114 3 892 66717 291209
+WP 10 3 422062
+WU 0 10 3 419 8 68 20
+WQ 0 10 3 1050 107808 182069
+WT 10 3 siting 14311 2 797 79337 422933
+WP 10 4 438577
+WU 0 10 4 331 92 39 18
+WQ 0 10 4 549 112801 191403
+WT 10 4 siting 7059 4 599 69708 216484
+WP 10 5 471181
+WU 0 10 5 291 130 92 21
+WQ 0 10 5 303 103052 291833
+WT 10 5 siting 5991 2 430 76184 162262
+WP 10 6 460124
+WU 0 10 6 380 47 54 22
+WQ 0 10 6 658 109748 355769
+WT 10 6 siting 9167 4 837 71783 322951
+WP 10 7 414446
+WU 0 10 7 318 107 29 18
+WQ 0 10 7 276 85541 163803
+WT 10 7 siting 4616 2 358 73996 131165
+WP 10 8 454498
+WU 0 10 8 342 94 57 20
+WQ 0 10 8 231 84742 185042
+WT 10 8 siting 5349 2 675 74269 188330
+WP 10 9 540099
+WU 0 10 9 360 69 81 19
+WQ 0 10 9 339 76889 274683
+WT 10 9 siting 9321 5 1327 78052 461327
+WP 10 10 426944
+WU 0 10 10 353 72 53 19
+WQ 0 10 10 221 87670 173492
+WT 10 10 siting 6625 3 723 67173 210653
+WP 10 11 423747
+WU 0 10 11 333 101 106 23
+WQ 0 10 11 307 107926 147961
+WT 10 11 siting 5900 3 491 72169 173484
+WP 10 12 424011
+WU 0 10 12 346 79 74 22
+WQ 0 10 12 275 102341 159840
+WT 10 12 siting 6447 3 633 74821 205229
+WP 10 13 412867
+WU 0 10 13 382 39 73 21
+WQ 0 10 13 426 92392 283794
+WT 10 13 siting 10637 3 995 75504 410811
+WP 10 14 447753
+WU 0 10 14 338 87 55 18
+WQ 0 10 14 1187 125125 173678
+WT 10 14 siting 7973 5 693 70886 275980
+WP 10 15 441327
+WU 0 10 15 357 74 83 22
+WQ 0 10 15 871 112714 201856
+WT 10 15 siting 4349 2 6 1089 12628
+WP 10 16 444322
+WU 0 10 16 377 48 46 21
+WQ 0 10 16 922 102427 174887
+WT 10 16 siting 8282 2 842 71445 284783
+WP 10 17 465622
+WU 0 10 17 421 4 39 21
+WQ 0 10 17 1115 109203 195637
+WT 10 17 siting 17261 3 1286 77522 748700
+WD 10 18 717
+WC 10 0 0
+WZ 10 69 1337 23710 22304
+WM 10 237 41 87
+WL 10 DoorClearanceRule 3648
+WL 10 RouteSidewalkRule 183
+WL 10 RouteLineRule 2492
+WL 10 UnusedCalmRule 37371
+WL 10 RouteGroundRule 2
+WB 10 0 1167 0
+WB 10 1 652 12
+WB 10 2 836 13
+WS 10 0 0 0 inf
+WV 10 pigeon_flock 0 25
+WV 10 busker 2 45
+WV 10 abduction 1 4
+WV 10 charging_dog 2 10
+WV 10 reversing_lorry 2 10
+WV 10 abduction 2 46
+WV 10 roadblock 0 18
+WV 10 homeless_yeller 0 29
+WV 10 homeless_yeller 2 45
+WV 10 chatting_mother 0 16
+WV 10 cafe_tables 1 65
+WV 10 leaf_blower 1 35
+WV 10 cafe_tables 2 13
+WV 10 night_raid 1 6
+WV 10 leaf_blower 2 19
+WV 10 chatting_mother 2 11
+WV 10 pigeon_flock 2 40
+WV 10 market_stall 2 4
+WV 10 delivery_van 0 17
+WV 10 alley_robbery 2 19
+WV 10 chatting_mother 1 5
+WV 10 alley_mouse 2 32
+WV 10 cafe_tables 0 45
+WV 10 delivery_van 1 6
+WV 10 pigeon_flock 1 9
+WV 10 roadblock 1 6
+WV 10 market_stall 0 16
+WV 10 roadblock 2 13
+WV 10 ice_cream_van 1 17
+WV 10 construction 1 20
+WV 10 market_stall 1 37
+WV 10 delivery_van 2 1
+WV 10 homeless_yeller 1 8
+WV 10 construction 0 9
+WV 10 construction 2 7
+WV 10 ice_cream_van 2 3
+WV 10 alley_mouse 1 2
+WV 10 night_raid 2 2
+WV 10 reversing_lorry 1 2
+WK 10 pigeon_flock junction 45
+WK 10 busker open 45
+WK 10 abduction sidewalk 26
+WK 10 charging_dog junction 9
+WK 10 reversing_lorry sidewalk 12
+WK 10 roadblock carriageway 37
+WK 10 homeless_yeller sidewalk 49
+WK 10 homeless_yeller junction 33
+WK 10 pigeon_flock sidewalk 29
+WK 10 chatting_mother sidewalk 19
+WK 10 cafe_tables sidewalk 123
+WK 10 leaf_blower sidewalk 45
+WK 10 abduction junction 24
+WK 10 night_raid sidewalk 8
+WK 10 leaf_blower junction 9
+WK 10 market_stall sidewalk 57
+WK 10 delivery_van sidewalk 24
+WK 10 alley_robbery alley 19
+WK 10 chatting_mother junction 13
+WK 10 alley_mouse alley 34
+WK 10 ice_cream_van sidewalk 20
+WK 10 construction sidewalk 36
+WK 10 charging_dog sidewalk 1
+WH 10 charging_dog 4
+WH 10 loose_dog 57
+WH 10 cyclist 29
+WH 10 dog_walker 73
+WH 10 police_patrol 46
+WH 10 cat_dash 43
+WP 11 0 254631
+WU 0 11 0 407 15 75 24
+WQ 0 11 0 421 143448 228924
+WT 11 0 siting 12066 4 1002 74436 466569
+WP 11 1 221611
+WU 0 11 1 401 19 51 18
+WQ 0 11 1 799 105741 232067
+WT 11 1 siting 9820 2 5 3884 32192
+WP 11 2 239573
+WU 0 11 2 332 88 40 16
+WQ 0 11 2 220 118325 213408
+WT 11 2 siting 3023 2 252 71027 98964
+WP 11 3 220968
+WU 0 11 3 329 98 49 20
+WQ 0 11 3 355 113470 148566
+WT 11 3 siting 5299 3 621 69165 166704
+WP 11 4 264173
+WU 0 11 4 398 25 55 20
+WQ 0 11 4 778 86010 665778
+WT 11 4 siting 9102 4 1092 74949 390827
+WP 11 5 282936
+WU 0 11 5 339 82 33 19
+WQ 0 11 5 207 130280 165904
+WT 11 5 siting 6396 3 462 79097 178688
+WP 11 6 244637
+WU 0 11 6 375 52 105 23
+WQ 0 11 6 885 133609 174456
+WT 11 6 siting 7291 3 673 75787 237339
+WP 11 7 224899
+WU 0 11 7 390 35 44 19
+WQ 0 11 7 536 110063 245696
+WT 11 7 siting 11840 3 923 76246 405397
+WP 11 8 229926
+WU 0 11 8 386 50 99 21
+WQ 0 11 8 451 84747 219867
+WT 11 8 siting 13160 4 1035 71686 500916
+WP 11 9 213417
+WU 0 11 9 349 80 40 20
+WQ 0 11 9 616 135212 193410
+WT 11 9 siting 6703 3 649 79141 234564
+WP 11 10 320467
+WU 0 11 10 368 57 38 21
+WQ 0 11 10 491 98906 169658
+WT 11 10 siting 9008 4 737 60681 283336
+WP 11 11 224850
+WU 0 11 11 309 125 49 20
+WQ 0 11 11 301 110546 270186
+WT 11 11 siting 5817 3 633 75304 194399
+WP 11 12 236373
+WU 0 11 12 339 86 43 18
+WQ 0 11 12 225 99525 138151
+WT 11 12 siting 5392 2 570 78216 173522
+WP 11 13 185215
+WU 0 11 13 350 71 35 20
+WQ 0 11 13 211 99307 117950
+WT 11 13 siting 8129 3 688 59027 231271
+WP 11 14 206338
+WU 0 11 14 331 94 52 18
+WQ 0 11 14 867 101581 289298
+WT 11 14 siting 5384 3 563 132326 392282
+WP 11 15 226039
+WU 0 11 15 345 85 43 23
+WQ 0 11 15 245 119890 205139
+WT 11 15 siting 5095 2 362 58960 119758
+WP 11 16 194496
+WU 0 11 16 345 80 38 20
+WQ 0 11 16 538 112683 228397
+WT 11 16 siting 7769 4 908 61862 248946
+WP 11 17 189359
+WU 0 11 17 363 62 74 19
+WQ 0 11 17 452 89832 194455
+WT 11 17 siting 7964 3 574 73477 237313
+WD 11 18 641
+WC 11 0 0
+WZ 11 84 1327 23511 22100
+WM 11 210 36 70
+WL 11 RouteLineRule 2861
+WL 11 DoorClearanceRule 3626
+WL 11 UnusedCalmRule 31223
+WL 11 RouteSidewalkRule 174
+WL 11 RouteGroundRule 5
+WB 11 0 1111 0
+WB 11 1 660 9
+WB 11 2 912 12
+WS 11 0 0 0 inf
+WV 11 chatting_mother 0 11
+WV 11 cafe_tables 0 42
+WV 11 abduction 2 51
+WV 11 market_stall 0 14
+WV 11 leaf_blower 2 14
+WV 11 roadblock 0 30
+WV 11 alley_mouse 2 26
+WV 11 pigeon_flock 0 20
+WV 11 reversing_lorry 2 6
+WV 11 homeless_yeller 2 30
+WV 11 roadblock 1 9
+WV 11 busker 2 35
+WV 11 pigeon_flock 2 26
+WV 11 construction 2 6
+WV 11 leaf_blower 1 37
+WV 11 homeless_yeller 0 36
+WV 11 alley_robbery 2 12
+WV 11 roadblock 2 8
+WV 11 construction 0 10
+WV 11 cafe_tables 1 73
+WV 11 market_stall 1 33
+WV 11 charging_dog 2 12
+WV 11 ice_cream_van 1 20
+WV 11 delivery_van 0 14
+WV 11 construction 1 17
+WV 11 alley_mouse 1 3
+WV 11 homeless_yeller 1 6
+WV 11 cafe_tables 2 14
+WV 11 ice_cream_van 2 2
+WV 11 chatting_mother 2 4
+WV 11 delivery_van 2 3
+WV 11 abduction 1 2
+WV 11 chatting_mother 1 5
+WV 11 market_stall 2 2
+WV 11 pigeon_flock 1 3
+WV 11 delivery_van 1 2
+WV 11 reversing_lorry 1 2
+WV 11 poster_crew_square 2 1
+WK 11 chatting_mother junction 6
+WK 11 cafe_tables sidewalk 129
+WK 11 abduction sidewalk 26
+WK 11 market_stall sidewalk 49
+WK 11 leaf_blower junction 5
+WK 11 roadblock carriageway 47
+WK 11 alley_mouse alley 28
+WK 11 pigeon_flock sidewalk 16
+WK 11 pigeon_flock junction 33
+WK 11 leaf_blower sidewalk 46
+WK 11 reversing_lorry sidewalk 8
+WK 11 homeless_yeller junction 20
+WK 11 busker open 35
+WK 11 abduction junction 27
+WK 11 construction sidewalk 33
+WK 11 homeless_yeller sidewalk 52
+WK 11 alley_robbery alley 12
+WK 11 charging_dog junction 6
+WK 11 ice_cream_van sidewalk 22
+WK 11 delivery_van sidewalk 19
+WK 11 charging_dog sidewalk 6
+WK 11 chatting_mother sidewalk 14
+WK 11 alley_mouse junction 1
+WK 11 poster_crew_square open 1
+WH 11 cat_dash 37
+WH 11 cyclist 27
+WH 11 loose_dog 54
+WH 11 dog_walker 66
+WH 11 police_patrol 42
+WH 11 charging_dog 7
+WP 12 0 212226
+WU 0 12 0 313 110 72 28
+WQ 0 12 0 446 112946 273037
+WT 12 0 siting 5767 4 570 58626 177920
+WP 12 1 192647
+WU 0 12 1 344 76 48 21
+WQ 0 12 1 768 113102 141393
+WT 12 1 siting 5213 4 521 72092 201067
+WP 12 2 223990
+WU 0 12 2 313 108 38 19
+WQ 0 12 2 384 121386 255350
+WT 12 2 siting 3480 4 369 88546 136977
+WP 12 3 263877
+WU 0 12 3 377 51 76 25
+WQ 0 12 3 718 117471 278571
+WT 12 3 siting 8599 3 561 85093 264953
+WP 12 4 262215
+WU 0 12 4 330 94 29 18
+WQ 0 12 4 2302 155379 183941
+WT 12 4 siting 6781 2 675 90924 270543
+WP 12 5 317542
+WU 0 12 5 319 102 48 18
+WQ 0 12 5 651 136063 199810
+WT 12 5 siting 4941 3 458 77550 163311
+WP 12 6 304670
+WU 0 12 6 330 98 72 22
+WQ 0 12 6 514 150586 179117
+WT 12 6 siting 7013 3 804 79318 265168
+WP 12 7 216097
+WU 0 12 7 326 99 56 19
+WQ 0 12 7 644 140633 201329
+WT 12 7 siting 7834 3 691 76992 275279
+WP 12 8 233551
+WU 0 12 8 403 33 46 23
+WQ 0 12 8 663 121658 152304
+WT 12 8 siting 8126 3 696 99584 300971
+WP 12 9 245878
+WU 0 12 9 312 117 28 21
+WQ 0 12 9 680 104660 364709
+WT 12 9 siting 3829 4 456 77039 145170
+WP 12 10 239288
+WU 0 12 10 358 67 73 20
+WQ 0 12 10 403 106238 183600
+WT 12 10 siting 8629 3 780 91868 332240
+WP 12 11 254659
+WU 0 12 11 381 53 65 24
+WQ 0 12 11 640 109896 151486
+WT 12 11 siting 8424 4 585 70223 260971
+WP 12 12 302721
+WU 0 12 12 310 116 36 17
+WQ 0 12 12 699 123587 183632
+WT 12 12 siting 4326 3 376 78389 141617
+WP 12 13 251409
+WU 0 12 13 390 32 48 17
+WQ 0 12 13 727 131644 241553
+WT 12 13 siting 8338 5 728 76449 316691
+WP 12 14 263192
+WU 0 12 14 367 58 50 20
+WQ 0 12 14 1020 102384 193743
+WT 12 14 siting 6868 4 986 71814 284272
+WP 12 15 244055
+WU 0 12 15 328 101 44 22
+WQ 0 12 15 395 129224 168522
+WT 12 15 siting 6781 5 705 98111 282452
+WP 12 16 220682
+WU 0 12 16 346 79 58 21
+WQ 0 12 16 759 88086 423527
+WT 12 16 siting 5986 3 769 68917 225815
+WP 12 17 236030
+WU 0 12 17 341 84 36 21
+WQ 0 12 17 1029 116018 189987
+WT 12 17 siting 6719 2 428 70111 157981
+WD 12 18 677
+WC 12 0 0
+WZ 12 98 1640 23292 21554
+WM 12 194 30 77
+WL 12 UnusedCalmRule 37546
+WL 12 RouteLineRule 3746
+WL 12 DoorClearanceRule 4149
+WL 12 RouteSidewalkRule 118
+WL 12 OneSidewalkOpenRule 2
+WB 12 0 1096 0
+WB 12 1 651 14
+WB 12 2 944 14
+WS 12 0 0 0 inf
+WV 12 cafe_tables 0 55
+WV 12 homeless_yeller 2 34
+WV 12 ice_cream_van 2 4
+WV 12 roadblock 2 8
+WV 12 pigeon_flock 2 27
+WV 12 market_stall 2 5
+WV 12 roadblock 0 29
+WV 12 market_stall 0 21
+WV 12 busker 2 29
+WV 12 protest 2 42
+WV 12 cafe_tables 1 67
+WV 12 leaf_blower 1 42
+WV 12 homeless_yeller 0 29
+WV 12 construction 0 14
+WV 12 alley_mouse 2 32
+WV 12 cafe_tables 2 14
+WV 12 pigeon_flock 0 13
+WV 12 market_stall 1 29
+WV 12 ice_cream_van 1 19
+WV 12 delivery_van 0 14
+WV 12 construction 1 15
+WV 12 chatting_mother 0 15
+WV 12 charging_dog 2 8
+WV 12 alley_robbery 2 12
+WV 12 abduction 2 39
+WV 12 homeless_yeller 1 5
+WV 12 delivery_van 1 4
+WV 12 construction 2 5
+WV 12 delivery_van 2 6
+WV 12 abduction 1 4
+WV 12 leaf_blower 2 10
+WV 12 chatting_mother 2 6
+WV 12 charging_dog 0 3
+WV 12 pigeon_flock 1 5
+WV 12 chatting_mother 1 3
+WV 12 reversing_lorry 2 4
+WV 12 charging_dog 1 2
+WV 12 reversing_lorry 1 2
+WV 12 alley_robbery 1 2
+WK 12 cafe_tables sidewalk 136
+WK 12 homeless_yeller junction 24
+WK 12 ice_cream_van sidewalk 23
+WK 12 roadblock carriageway 37
+WK 12 pigeon_flock sidewalk 21
+WK 12 market_stall sidewalk 55
+WK 12 busker open 29
+WK 12 protest open 8
+WK 12 leaf_blower sidewalk 49
+WK 12 homeless_yeller sidewalk 44
+WK 12 construction sidewalk 34
+WK 12 protest junction 34
+WK 12 alley_mouse alley 32
+WK 12 pigeon_flock junction 24
+WK 12 delivery_van sidewalk 24
+WK 12 chatting_mother sidewalk 19
+WK 12 charging_dog junction 6
+WK 12 alley_robbery alley 14
+WK 12 abduction sidewalk 22
+WK 12 leaf_blower junction 3
+WK 12 abduction junction 21
+WK 12 chatting_mother junction 5
+WK 12 charging_dog sidewalk 7
+WK 12 reversing_lorry sidewalk 6
+WH 12 charging_dog 4
+WH 12 dog_walker 59
+WH 12 loose_dog 38
+WH 12 cyclist 23
+WH 12 cat_dash 35
+WH 12 police_patrol 33
+WP 13 0 1312853
+WU 0 13 0 375 47 31 20
+WQ 0 13 0 783 121030 156591
+WT 13 0 siting 7443 5 669 71380 279187
+WP 13 1 1445469
+WU 0 13 1 351 68 34 22
+WQ 0 13 1 460 91393 198760
+WT 13 1 siting 9217 3 773 73446 330976
+WP 13 2 1771690
+WU 0 13 2 329 91 53 20
+WQ 0 13 2 527 124169 230054
+WT 13 2 siting 7143 3 487 94253 235542
+WP 13 3 1662788
+WU 0 13 3 359 68 88 19
+WQ 0 13 3 441 103641 183049
+WT 13 3 siting 5750 3 409 60968 144103
+WP 13 4 1393864
+WU 0 13 4 422 1 42 18
+WQ 0 13 4 732 101611 200567
+WT 13 4 siting 13805 2 1288 97153 663542
+WP 13 5 1731132
+WU 0 13 5 365 56 28 17
+WQ 0 13 5 747 134102 198977
+WT 13 5 siting 8117 3 581 110384 310828
+WP 13 6 1647846
+WU 0 13 6 331 96 75 26
+WQ 0 13 6 838 128738 212969
+WT 13 6 siting 6101 5 603 70570 209699
+WP 13 7 1575730
+WU 0 13 7 315 110 36 20
+WQ 0 13 7 607 161237 270809
+WT 13 7 siting 4881 5 533 70681 177839
+WP 13 8 1770935
+WU 0 13 8 372 64 44 21
+WQ 0 13 8 686 129976 289669
+WT 13 8 siting 7153 3 687 95315 252524
+WP 13 9 1157525
+WU 0 13 9 304 125 57 26
+WQ 0 13 9 483 114691 134336
+WT 13 9 siting 6257 3 494 69188 194193
+WP 13 10 1494821
+WU 0 13 10 411 13 50 19
+WQ 0 13 10 610 95447 291876
+WT 13 10 siting 15945 3 1247 61840 668574
+WP 13 11 1026966
+WU 0 13 11 330 103 46 25
+WQ 0 13 11 464 121205 129126
+WT 13 11 siting 7013 3 473 56781 196556
+WP 13 12 1313714
+WU 0 13 12 354 71 42 22
+WQ 0 13 12 396 100200 252140
+WT 13 12 siting 5283 4 683 72450 194610
+WP 13 13 1049473
+WU 0 13 13 397 24 31 17
+WQ 0 13 13 595 118162 149010
+WT 13 13 siting 10727 4 768 80306 407179
+WP 13 14 1521135
+WU 0 13 14 356 69 55 19
+WQ 0 13 14 406 108269 138376
+WT 13 14 siting 8741 4 692 65250 287458
+WP 13 15 618896
+WU 0 13 15 305 123 47 19
+WQ 0 13 15 323 124365 156029
+WT 13 15 siting 3153 3 394 113282 167422
+WP 13 16 1307144
+WU 0 13 16 328 95 50 19
+WQ 0 13 16 517 117669 220975
+WT 13 16 siting 6977 4 522 76722 222321
+WP 13 17 1442216
+WU 0 13 17 344 80 56 22
+WQ 0 13 17 690 127616 156834
+WT 13 17 siting 8827 3 546 84154 268405
+WD 13 18 1028
+WC 13 0 0
+WZ 13 0 1710 22202 20492
+WM 13 478 84 169
+WL 13 DoorClearanceRule 7812
+WL 13 UnusedCalmRule 32083
+WL 13 RouteLineRule 3799
+WL 13 RouteGroundRule 4
+WL 13 RouteSidewalkRule 36
+WB 13 0 923 0
+WB 13 1 566 33
+WB 13 2 1091 24
+WS 13 0 0 0 inf
+WV 13 roadblock 1 266
+WV 13 leaf_blower 1 45
+WV 13 alley_robbery 1 1
+WV 13 homeless_yeller 0 30
+WV 13 chatting_mother 1 3
+WV 13 delivery_van 0 17
+WV 13 cafe_tables 1 63
+WV 13 cafe_tables 0 50
+WV 13 protest 2 68
+WV 13 busker 2 40
+WV 13 alley_robbery 2 11
+WV 13 leaf_blower 2 21
+WV 13 abduction 2 61
+WV 13 homeless_yeller 1 10
+WV 13 charging_dog 2 20
+WV 13 homeless_yeller 2 40
+WV 13 firefight 2 7
+WV 13 abduction 1 6
+WV 13 alley_mouse 2 41
+WV 13 market_stall 0 31
+WV 13 chatting_mother 0 19
+WV 13 pigeon_flock 0 12
+WV 13 cafe_tables 2 13
+WV 13 delivery_van 2 2
+WV 13 ice_cream_van 1 17
+WV 13 reversing_lorry 2 10
+WV 13 pigeon_flock 2 32
+WV 13 construction 2 2
+WV 13 market_stall 1 20
+WV 13 delivery_van 1 6
+WV 13 construction 1 22
+WV 13 chatting_mother 2 9
+WV 13 construction 0 16
+WV 13 ice_cream_van 2 2
+WV 13 pigeon_flock 1 5
+WV 13 alley_mouse 1 1
+WV 13 market_stall 2 4
+WV 13 charging_dog 0 2
+WV 13 charging_dog 1 1
+WV 13 reversing_lorry 1 2
+WK 13 roadblock carriageway 266
+WK 13 leaf_blower sidewalk 60
+WK 13 alley_robbery alley 12
+WK 13 homeless_yeller sidewalk 59
+WK 13 chatting_mother junction 5
+WK 13 delivery_van sidewalk 25
+WK 13 cafe_tables sidewalk 126
+WK 13 protest junction 60
+WK 13 busker open 40
+WK 13 abduction sidewalk 33
+WK 13 charging_dog junction 12
+WK 13 abduction junction 34
+WK 13 firefight junction 7
+WK 13 leaf_blower junction 6
+WK 13 charging_dog sidewalk 11
+WK 13 alley_mouse alley 41
+WK 13 market_stall sidewalk 55
+WK 13 pigeon_flock junction 23
+WK 13 ice_cream_van sidewalk 19
+WK 13 homeless_yeller junction 20
+WK 13 reversing_lorry sidewalk 12
+WK 13 construction sidewalk 40
+WK 13 pigeon_flock sidewalk 25
+WK 13 chatting_mother sidewalk 26
+WK 13 protest open 8
+WK 13 homeless_yeller open 1
+WK 13 pigeon_flock open 1
+WK 13 alley_mouse junction 1
+WH 13 cat_dash 38
+WH 13 dog_walker 73
+WH 13 cyclist 27
+WH 13 military_convoy 16
+WH 13 police_patrol 45
+WH 13 loose_dog 38
+WH 13 charging_dog 6
+WP 14 0 231546
+WU 0 14 0 401 21 38 21
+WQ 0 14 0 623 82931 290954
+WT 14 0 siting 10314 3 750 67487 326415
+WP 14 1 271892
+WU 0 14 1 391 28 73 20
+WQ 0 14 1 493 103660 183453
+WT 14 1 siting 11204 4 1255 76366 536579
+WP 14 2 287219
+WU 0 14 2 269 151 28 17
+WQ 0 14 2 296 108502 238179
+WT 14 2 siting 2713 3 318 75112 118385
+WP 14 3 252326
+WU 0 14 3 359 68 67 20
+WQ 0 14 3 716 134555 184009
+WT 14 3 siting 9024 3 666 90768 300158
+WP 14 4 220308
+WU 0 14 4 320 103 65 19
+WQ 0 14 4 1203 173111 228492
+WT 14 4 siting 5977 4 661 81438 226057
+WP 14 5 364755
+WU 0 14 5 372 49 36 23
+WQ 0 14 5 666 122544 288187
+WT 14 5 siting 7319 4 813 100613 329057
+WP 14 6 342726
+WU 0 14 6 354 73 45 27
+WQ 0 14 6 1136 189708 262101
+WT 14 6 siting 9212 3 765 79758 321015
+WP 14 7 275742
+WU 0 14 7 321 104 41 21
+WQ 0 14 7 617 103090 157869
+WT 14 7 siting 3964 4 495 77417 165737
+WP 14 8 269623
+WU 0 14 8 315 121 57 18
+WQ 0 14 8 613 131728 234455
+WT 14 8 siting 6487 2 7 1745 24825
+WP 14 9 266751
+WU 0 14 9 346 83 37 21
+WQ 0 14 9 650 182974 282529
+WT 14 9 siting 7077 5 951 73151 318332
+WP 14 10 264376
+WU 0 14 10 354 70 98 21
+WQ 0 14 10 530 133216 358046
+WT 14 10 siting 6653 2 601 62668 183896
+WP 14 11 238525
+WU 0 14 11 337 96 47 20
+WQ 0 14 11 477 113515 252426
+WT 14 11 siting 7472 2 671 82503 258309
+WP 14 12 233062
+WU 0 14 12 356 69 47 18
+WQ 0 14 12 248 85284 254391
+WT 14 12 siting 7077 4 763 58513 223151
+WP 14 13 200563
+WU 0 14 13 400 21 43 18
+WQ 0 14 13 494 109389 151070
+WT 14 13 siting 10321 3 621 73700 287137
+WP 14 14 240440
+WU 0 14 14 332 93 34 21
+WQ 0 14 14 1060 117146 208250
+WT 14 14 siting 6938 4 497 74110 208285
+WP 14 15 256642
+WU 0 14 15 382 46 43 20
+WQ 0 14 15 638 82887 420396
+WT 14 15 siting 7747 4 625 67846 236527
+WP 14 16 211116
+WU 0 14 16 306 117 53 22
+WQ 0 14 16 340 112704 220265
+WT 14 16 siting 2641 2 208 66484 88154
+WP 14 17 226120
+WU 0 14 17 374 50 68 18
+WQ 0 14 17 593 113349 203592
+WT 14 17 siting 7261 3 460 63286 190730
+WD 14 18 725
+WC 14 0 0
+WZ 14 89 1710 22765 20966
+WM 14 225 46 78
+WL 14 RouteLineRule 3887
+WL 14 RouteSidewalkRule 252
+WL 14 UnusedCalmRule 25629
+WL 14 DoorClearanceRule 3990
+WL 14 RouteGroundRule 1
+WL 14 PacingOpeningRule 2
+WB 14 0 928 0
+WB 14 1 534 8
+WB 14 2 1078 9
+WS 14 0 0 0 inf
+WV 14 ice_cream_van 1 17
+WV 14 busker 2 32
+WV 14 protest 2 53
+WV 14 cafe_tables 1 80
+WV 14 leaf_blower 1 42
+WV 14 homeless_yeller 0 28
+WV 14 construction 1 19
+WV 14 homeless_yeller 2 34
+WV 14 reversing_lorry 2 12
+WV 14 delivery_van 1 5
+WV 14 cafe_tables 0 42
+WV 14 market_stall 0 18
+WV 14 homeless_yeller 1 7
+WV 14 roadblock 0 19
+WV 14 leaf_blower 2 22
+WV 14 roadblock 2 14
+WV 14 construction 2 5
+WV 14 market_stall 2 4
+WV 14 roadblock 1 5
+WV 14 pigeon_flock 2 30
+WV 14 reversing_lorry 1 1
+WV 14 charging_dog 2 12
+WV 14 alley_robbery 2 10
+WV 14 cafe_tables 2 11
+WV 14 chatting_mother 2 7
+WV 14 alley_mouse 2 37
+WV 14 abduction 2 51
+WV 14 market_stall 1 22
+WV 14 delivery_van 0 14
+WV 14 chatting_mother 0 15
+WV 14 pigeon_flock 0 17
+WV 14 chatting_mother 1 8
+WV 14 construction 0 8
+WV 14 pigeon_flock 1 4
+WV 14 delivery_van 2 6
+WV 14 ice_cream_van 2 7
+WV 14 abduction 1 2
+WV 14 alley_mouse 1 4
+WV 14 alley_robbery 1 1
+WK 14 ice_cream_van sidewalk 24
+WK 14 busker open 32
+WK 14 protest open 4
+WK 14 cafe_tables sidewalk 133
+WK 14 leaf_blower sidewalk 58
+WK 14 homeless_yeller sidewalk 43
+WK 14 construction sidewalk 32
+WK 14 protest junction 49
+WK 14 homeless_yeller junction 25
+WK 14 reversing_lorry sidewalk 13
+WK 14 delivery_van sidewalk 25
+WK 14 market_stall sidewalk 44
+WK 14 roadblock carriageway 38
+WK 14 pigeon_flock junction 26
+WK 14 charging_dog junction 10
+WK 14 alley_robbery alley 11
+WK 14 chatting_mother junction 10
+WK 14 alley_mouse alley 41
+WK 14 abduction junction 34
+WK 14 abduction sidewalk 19
+WK 14 charging_dog sidewalk 2
+WK 14 pigeon_flock sidewalk 25
+WK 14 chatting_mother sidewalk 20
+WK 14 leaf_blower junction 6
+WK 14 homeless_yeller open 1
+WH 14 charging_dog 8
+WH 14 cat_dash 39
+WH 14 cyclist 23
+WH 14 loose_dog 42
+WH 14 military_convoy 10
+WH 14 dog_walker 69
+WH 14 police_patrol 28
+WU all 0 91818 15529 137 28
+WQ all 0 659 121523 791924
+WC all 0 0
+WZ all 621 23119 338527 314787
+WS all 132 0 44 72
+WB all 0 17492 0
+WB all 1 5401 247
+WB all 2 6889 155
+WU 270 1 0 356 67 170 29
+WQ 270 1 0 1082 96776 338004
+WU 270 1 1 375 45 160 24
+WQ 270 1 1 1070 83941 224253
+WU 270 1 2 370 52 86 22
+WQ 270 1 2 706 84425 207051
+WU 270 1 3 378 50 65 23
+WQ 270 1 3 1088 125088 182610
+WU 270 1 4 376 48 42 21
+WQ 270 1 4 1082 99300 179165
+WU 270 1 5 401 20 70 22
+WQ 270 1 5 1087 81035 325609
+WU 270 1 6 389 39 61 22
+WQ 270 1 6 892 96415 188659
+WU 270 1 7 396 29 111 24
+WQ 270 1 7 333 70405 339496
+WU 270 1 8 418 18 72 26
+WQ 270 1 8 376 47506 248049
+WU 270 1 9 402 27 120 25
+WQ 270 1 9 846 83014 333185
+WU 270 1 10 349 77 51 22
+WQ 270 1 10 712 82310 224434
+WU 270 1 11 399 36 98 24
+WQ 270 1 11 245 144643 355372
+WU 270 1 12 366 62 50 25
+WQ 270 1 12 460 113935 314337
+WU 270 1 13 395 27 42 21
+WQ 270 1 13 1086 66961 402048
+WU 270 1 14 326 99 72 23
+WQ 270 1 14 389 122191 194104
+WU 270 1 15 420 11 73 28
+WQ 270 1 15 1093 131522 216469
+WU 270 1 16 425 1 82 25
+WQ 270 1 16 1080 125197 217450
+WU 270 1 17 406 19 109 21
+WQ 270 1 17 1102 102766 217727
+WU 270 2 0 413 10 86 30
+WQ 270 2 0 474 118267 181879
+WU 270 2 1 366 54 72 23
+WQ 270 2 1 1404 106351 252013
+WU 270 2 2 404 18 64 25
+WQ 270 2 2 1400 117819 181851
+WU 270 2 3 402 26 66 24
+WQ 270 2 3 1415 104730 308052
+WU 270 2 4 393 31 92 17
+WQ 270 2 4 1413 143856 352176
+WU 270 2 5 396 25 83 27
+WQ 270 2 5 883 92478 199869
+WU 270 2 6 369 59 75 30
+WQ 270 2 6 1408 127743 219775
+WU 270 2 7 361 64 41 21
+WQ 270 2 7 1386 76750 193807
+WU 270 2 8 420 16 90 25
+WQ 270 2 8 1410 101517 364255
+WU 270 2 9 419 10 89 25
+WQ 270 2 9 1396 120853 292334
+WU 270 2 10 368 58 68 25
+WQ 270 2 10 1391 88598 188415
+WU 270 2 11 361 74 72 27
+WQ 270 2 11 1400 121560 214684
+WU 270 2 12 372 56 82 21
+WQ 270 2 12 1406 122352 180268
+WU 270 2 13 373 49 71 23
+WQ 270 2 13 1400 49968 342458
+WU 270 2 14 373 52 136 24
+WQ 270 2 14 187 69244 171607
+WU 270 2 15 394 37 62 24
+WQ 270 2 15 1310 57926 327442
+WU 270 2 16 364 62 113 23
+WQ 270 2 16 1408 86884 205501
+WU 270 2 17 416 9 64 23
+WQ 270 2 17 1405 104679 181032
+WU 270 3 0 420 3 111 27
+WQ 270 3 0 1527 105439 195681
+WU 270 3 1 373 47 74 24
+WQ 270 3 1 1531 115265 188969
+WU 270 3 2 401 21 101 24
+WQ 270 3 2 319 132402 208199
+WU 270 3 3 407 21 110 23
+WQ 270 3 3 1519 101863 353387
+WU 270 3 4 392 32 128 24
+WQ 270 3 4 1524 107031 256977
+WU 270 3 5 330 91 151 24
+WQ 270 3 5 1401 149918 244531
+WU 270 3 6 386 42 110 27
+WQ 270 3 6 1525 121203 204692
+WU 270 3 7 376 49 48 22
+WQ 270 3 7 1443 123413 363082
+WU 270 3 8 410 26 58 21
+WQ 270 3 8 1529 84389 290355
+WU 270 3 9 388 41 68 22
+WQ 270 3 9 1522 115361 219160
+WU 270 3 10 417 9 49 28
+WQ 270 3 10 645 82336 322675
+WU 270 3 11 422 13 82 24
+WQ 270 3 11 1526 109709 185969
+WU 270 3 12 377 51 94 22
+WQ 270 3 12 584 96273 258957
+WU 270 3 13 344 78 73 23
+WQ 270 3 13 1535 100612 229388
+WU 270 3 14 363 62 168 22
+WQ 270 3 14 1526 123707 166350
+WU 270 3 15 422 9 121 24
+WQ 270 3 15 1539 129424 199412
+WU 270 3 16 386 40 83 25
+WQ 270 3 16 1535 87927 199362
+WU 270 3 17 367 58 141 26
+WQ 270 3 17 1532 83992 224647
+WU 270 4 0 422 1 96 24
+WQ 270 4 0 1184 121058 304074
+WU 270 4 1 398 22 98 23
+WQ 270 4 1 254 70957 250226
+WU 270 4 2 334 88 134 23
+WQ 270 4 2 257 92575 343945
+WU 270 4 3 427 1 123 25
+WQ 270 4 3 1791 141900 250053
+WU 270 4 4 419 5 92 26
+WQ 270 4 4 985 101326 410252
+WU 270 4 5 420 1 48 23
+WQ 270 4 5 1604 104048 175344
+WU 270 4 6 415 13 96 28
+WQ 270 4 6 1130 107664 401094
+WU 270 4 7 345 80 72 24
+WQ 270 4 7 252 88228 144415
+WU 270 4 8 409 27 112 26
+WQ 270 4 8 221 76884 148382
+WU 270 4 9 427 2 139 25
+WQ 270 4 9 1779 130773 380406
+WU 270 4 10 418 8 59 25
+WQ 270 4 10 491 122943 444387
+WU 270 4 11 401 34 198 26
+WQ 270 4 11 331 83610 232234
+WU 270 4 12 414 14 104 27
+WQ 270 4 12 1766 138112 198475
+WU 270 4 13 387 35 79 27
+WQ 270 4 13 1645 64642 215315
+WU 270 4 14 329 96 47 26
+WQ 270 4 14 254 94433 224177
+WU 270 4 15 427 4 144 25
+WQ 270 4 15 1780 72198 212581
+WU 270 4 16 406 20 134 21
+WQ 270 4 16 346 90792 170776
+WU 270 4 17 405 20 139 23
+WQ 270 4 17 255 94167 157491
+WU 270 5 0 395 28 78 27
+WQ 270 5 0 445 86209 241500
+WU 270 5 1 381 39 61 25
+WQ 270 5 1 680 109577 178019
+WU 270 5 2 422 0 75 25
+WQ 270 5 2 376 78786 186336
+WU 270 5 3 428 0 87 25
+WQ 270 5 3 236 99389 222807
+WU 270 5 4 397 27 78 23
+WQ 270 5 4 332 90812 518947
+WU 270 5 5 378 43 109 25
+WQ 270 5 5 517 120387 265158
+WU 270 5 6 404 24 69 25
+WQ 270 5 6 795 113208 315779
+WU 270 5 7 350 75 85 24
+WQ 270 5 7 1775 62973 301544
+WU 270 5 8 388 48 81 27
+WQ 270 5 8 884 83839 175897
+WU 270 5 9 373 56 57 24
+WQ 270 5 9 899 102036 177358
+WU 270 5 10 375 51 61 24
+WQ 270 5 10 841 126021 143098
+WU 270 5 11 435 0 101 29
+WQ 270 5 11 218 118104 298107
+WU 270 5 12 400 28 61 30
+WQ 270 5 12 514 119725 172028
+WU 270 5 13 410 12 55 24
+WQ 270 5 13 1767 93327 188734
+WU 270 5 14 338 87 42 27
+WQ 270 5 14 1028 142129 272680
+WU 270 5 15 388 43 128 26
+WQ 270 5 15 1175 100378 206937
+WU 270 5 16 381 45 80 26
+WQ 270 5 16 1766 85474 267499
+WU 270 5 17 384 41 105 26
+WQ 270 5 17 1289 93424 369736
+WU 270 6 0 391 32 101 23
+WQ 270 6 0 816 150458 269246
+WU 270 6 1 373 47 104 30
+WQ 270 6 1 498 107927 239000
+WU 270 6 2 372 50 124 24
+WQ 270 6 2 277 87378 176984
+WU 270 6 3 425 3 97 25
+WQ 270 6 3 638 97109 372502
+WU 270 6 4 399 25 73 21
+WQ 270 6 4 1769 113118 465393
+WU 270 6 5 397 24 82 23
+WQ 270 6 5 612 71050 324322
+WU 270 6 6 357 71 117 24
+WQ 270 6 6 738 138261 227927
+WU 270 6 7 329 96 88 24
+WQ 270 6 7 231 82196 242848
+WU 270 6 8 393 43 87 24
+WQ 270 6 8 1445 139783 207932
+WU 270 6 9 348 81 85 24
+WQ 270 6 9 755 140549 271524
+WU 270 6 10 346 80 90 24
+WQ 270 6 10 402 79514 217580
+WU 270 6 11 418 17 196 24
+WQ 270 6 11 244 108106 222283
+WU 270 6 12 393 35 55 22
+WQ 270 6 12 387 94991 236272
+WU 270 6 13 357 65 78 23
+WQ 270 6 13 859 85228 196651
+WU 270 6 14 386 39 117 19
+WQ 270 6 14 356 115396 315693
+WU 270 6 15 384 47 65 26
+WQ 270 6 15 767 85093 327974
+WU 270 6 16 376 50 49 23
+WQ 270 6 16 1795 105380 329407
+WU 270 6 17 380 45 87 23
+WQ 270 6 17 784 134565 193487
+WU 270 7 0 421 2 66 25
+WQ 270 7 0 644 120873 286265
+WU 270 7 1 389 31 82 23
+WQ 270 7 1 212 97111 200746
+WU 270 7 2 357 65 54 22
+WQ 270 7 2 478 105291 204756
+WU 270 7 3 377 51 97 24
+WQ 270 7 3 940 142526 239626
+WU 270 7 4 366 58 153 21
+WQ 270 7 4 521 114929 427522
+WU 270 7 5 421 0 106 22
+WQ 270 7 5 2253 133182 272336
+WU 270 7 6 380 48 83 24
+WQ 270 7 6 2273 126010 410170
+WU 270 7 7 413 12 98 21
+WQ 270 7 7 279 127225 246305
+WU 270 7 8 397 39 145 25
+WQ 270 7 8 318 139135 465594
+WU 270 7 9 398 31 109 24
+WQ 270 7 9 521 131697 271257
+WU 270 7 10 412 14 68 22
+WQ 270 7 10 1112 118502 222300
+WU 270 7 11 389 46 48 23
+WQ 270 7 11 246 130829 218802
+WU 270 7 12 365 63 76 21
+WQ 270 7 12 836 134738 210283
+WU 270 7 13 388 34 91 22
+WQ 270 7 13 1765 119917 307005
+WU 270 7 14 368 57 155 23
+WQ 270 7 14 810 140202 358377
+WU 270 7 15 400 31 145 25
+WQ 270 7 15 260 132035 164422
+WU 270 7 16 374 52 134 23
+WQ 270 7 16 2022 142222 227263
+WU 270 7 17 417 8 91 22
+WQ 270 7 17 1270 139865 163165
+WU 270 8 0 385 38 64 24
+WQ 270 8 0 1403 151237 211172
+WU 270 8 1 404 16 63 22
+WQ 270 8 1 640 114644 246567
+WU 270 8 2 408 14 53 22
+WQ 270 8 2 491 113190 300897
+WU 270 8 3 404 24 70 24
+WQ 270 8 3 1722 140329 385301
+WU 270 8 4 382 41 49 25
+WQ 270 8 4 815 166087 225222
+WU 270 8 5 409 12 57 22
+WQ 270 8 5 467 115008 177303
+WU 270 8 6 391 37 57 29
+WQ 270 8 6 837 127932 286996
+WU 270 8 7 419 6 112 25
+WQ 270 8 7 271 131531 206802
+WU 270 8 8 391 45 114 24
+WQ 270 8 8 971 170720 272279
+WU 270 8 9 366 63 118 25
+WQ 270 8 9 2144 199569 472490
+WU 270 8 10 388 37 73 21
+WQ 270 8 10 305 114544 278166
+WU 270 8 11 396 39 64 25
+WQ 270 8 11 707 166036 348035
+WU 270 8 12 388 40 74 25
+WQ 270 8 12 522 97164 393186
+WU 270 8 13 341 80 69 22
+WQ 270 8 13 900 133410 169031
+WU 270 8 14 387 38 123 24
+WQ 270 8 14 305 92355 278424
+WU 270 8 15 420 11 171 28
+WQ 270 8 15 251 92788 150455
+WU 270 8 16 401 24 59 24
+WQ 270 8 16 254 79673 217185
+WU 270 8 17 414 11 69 25
+WQ 270 8 17 800 104954 153011
+WU 270 9 0 423 0 102 24
+WQ 270 9 0 306 102527 156051
+WU 270 9 1 400 20 85 22
+WQ 270 9 1 274 88989 204255
+WU 270 9 2 363 59 135 22
+WQ 270 9 2 120 106091 175256
+WU 270 9 3 384 43 154 23
+WQ 270 9 3 126 85765 232393
+WU 270 9 4 393 30 96 24
+WQ 270 9 4 700 97351 214168
+WU 270 9 5 388 33 123 28
+WQ 270 9 5 381 75840 138938
+WU 270 9 6 355 72 73 25
+WQ 270 9 6 321 83350 353424
+WU 270 9 7 392 33 130 24
+WQ 270 9 7 274 91275 200317
+WU 270 9 8 393 43 122 26
+WQ 270 9 8 416 90563 187268
+WU 270 9 9 375 54 132 26
+WQ 270 9 9 1161 98983 230565
+WU 270 9 10 367 58 58 23
+WQ 270 9 10 170 88891 119461
+WU 270 9 11 402 32 102 24
+WQ 270 9 11 508 98627 248737
+WU 270 9 12 360 67 106 25
+WQ 270 9 12 271 109774 155607
+WU 270 9 13 379 42 80 25
+WQ 270 9 13 238 77071 172020
+WU 270 9 14 389 36 132 26
+WQ 270 9 14 723 86795 177988
+WU 270 9 15 372 59 143 25
+WQ 270 9 15 266 86202 108220
+WU 270 9 16 404 21 61 24
+WQ 270 9 16 613 105894 216404
+WU 270 9 17 396 29 191 24
+WQ 270 9 17 435 77689 141779
+WU 270 10 0 378 44 66 22
+WQ 270 10 0 349 74767 171761
+WU 270 10 1 385 35 55 24
+WQ 270 10 1 242 64848 171373
+WU 270 10 2 383 39 75 24
+WQ 270 10 2 262 80225 165816
+WU 270 10 3 422 5 98 27
+WQ 270 10 3 695 80470 131575
+WU 270 10 4 343 80 78 23
+WQ 270 10 4 397 90144 142357
+WU 270 10 5 349 72 152 26
+WQ 270 10 5 238 74645 144750
+WU 270 10 6 388 39 65 27
+WQ 270 10 6 541 78188 217601
+WU 270 10 7 350 75 53 25
+WQ 270 10 7 233 61697 115780
+WU 270 10 8 357 79 86 21
+WQ 270 10 8 194 69134 111591
+WU 270 10 9 388 41 115 24
+WQ 270 10 9 271 103704 243068
+WU 270 10 10 375 50 131 23
+WQ 270 10 10 227 69815 115307
+WU 270 10 11 351 83 130 24
+WQ 270 10 11 222 79672 174300
+WU 270 10 12 376 49 178 25
+WQ 270 10 12 228 78166 125607
+WU 270 10 13 403 18 82 24
+WQ 270 10 13 271 85764 97540
+WU 270 10 14 371 54 93 25
+WQ 270 10 14 864 88377 131620
+WU 270 10 15 373 58 183 25
+WQ 270 10 15 582 74698 138446
+WU 270 10 16 386 39 73 24
+WQ 270 10 16 634 74555 91951
+WU 270 10 17 423 2 48 23
+WQ 270 10 17 655 71322 124679
+WU 270 11 0 417 5 101 26
+WQ 270 11 0 341 79240 136391
+WU 270 11 1 410 10 77 22
+WQ 270 11 1 627 86640 110624
+WU 270 11 2 384 36 123 21
+WQ 270 11 2 109 78437 103651
+WU 270 11 3 370 57 82 24
+WQ 270 11 3 311 75756 106270
+WU 270 11 4 408 15 65 26
+WQ 270 11 4 494 72377 215420
+WU 270 11 5 359 62 63 24
+WQ 270 11 5 110 68155 100252
+WU 270 11 6 390 37 168 27
+WQ 270 11 6 590 75808 109144
+WU 270 11 7 399 26 85 25
+WQ 270 11 7 395 71696 213043
+WU 270 11 8 396 40 134 25
+WQ 270 11 8 252 68816 161126
+WU 270 11 9 378 51 79 24
+WQ 270 11 9 571 86703 128914
+WU 270 11 10 380 45 66 23
+WQ 270 11 10 341 76603 119799
+WU 270 11 11 370 64 90 24
+WQ 270 11 11 215 82283 113183
+WU 270 11 12 360 65 54 25
+WQ 270 11 12 114 65139 99506
+WU 270 11 13 371 50 92 24
+WQ 270 11 13 157 74160 90314
+WU 270 11 14 372 53 110 25
+WQ 270 11 14 418 70317 154040
+WU 270 11 15 369 61 60 25
+WQ 270 11 15 197 68160 151282
+WU 270 11 16 364 61 68 24
+WQ 270 11 16 496 66400 131733
+WU 270 11 17 379 46 147 28
+WQ 270 11 17 374 71230 111258
+WU 270 12 0 351 72 75 31
+WQ 270 12 0 323 86049 145129
+WU 270 12 1 350 70 66 23
+WQ 270 12 1 447 67729 90582
+WU 270 12 2 335 86 62 26
+WQ 270 12 2 257 74850 135658
+WU 270 12 3 396 32 100 26
+WQ 270 12 3 467 72234 140389
+WU 270 12 4 368 56 88 22
+WQ 270 12 4 1734 71299 93014
+WU 270 12 5 360 61 79 23
+WQ 270 12 5 428 66373 102722
+WU 270 12 6 358 70 93 24
+WQ 270 12 6 331 76356 189085
+WU 270 12 7 362 63 94 25
+WQ 270 12 7 400 67370 158752
+WU 270 12 8 410 26 77 28
+WQ 270 12 8 407 80177 106520
+WU 270 12 9 350 79 59 25
+WQ 270 12 9 466 54744 174810
+WU 270 12 10 389 36 103 24
+WQ 270 12 10 198 68975 125130
+WU 270 12 11 389 45 58 25
+WQ 270 12 11 439 73876 85882
+WU 270 12 12 335 91 75 23
+WQ 270 12 12 455 75113 106267
+WU 270 12 13 397 25 69 19
+WQ 270 12 13 405 64727 144501
+WU 270 12 14 379 46 60 24
+WQ 270 12 14 444 65566 110981
+WU 270 12 15 345 84 120 22
+WQ 270 12 15 257 67310 99754
+WU 270 12 16 391 34 172 25
+WQ 270 12 16 402 86296 193670
+WU 270 12 17 375 50 63 26
+WQ 270 12 17 477 70370 119171
+WU 270 13 0 383 39 75 25
+WQ 270 13 0 375 69138 88290
+WU 270 13 1 368 51 72 27
+WQ 270 13 1 235 60434 95359
+WU 270 13 2 365 55 86 23
+WQ 270 13 2 359 65668 122177
+WU 270 13 3 376 51 80 24
+WQ 270 13 3 267 72166 109565
+WU 270 13 4 422 1 61 21
+WQ 270 13 4 491 65625 128280
+WU 270 13 5 388 33 45 20
+WQ 270 13 5 481 80109 86938
+WU 270 13 6 358 69 68 27
+WQ 270 13 6 498 81714 128530
+WU 270 13 7 359 66 55 23
+WQ 270 13 7 364 81050 113082
+WU 270 13 8 388 48 49 21
+WQ 270 13 8 433 57938 141068
+WU 270 13 9 338 91 100 30
+WQ 270 13 9 307 69167 90117
+WU 270 13 10 421 3 94 23
+WQ 270 13 10 371 63190 113940
+WU 270 13 11 339 94 59 29
+WQ 270 13 11 293 54965 81166
+WU 270 13 12 368 57 72 23
+WQ 270 13 12 200 67842 155728
+WU 270 13 13 408 13 33 22
+WQ 270 13 13 378 58020 119379
+WU 270 13 14 369 56 129 25
+WQ 270 13 14 314 66387 86851
+WU 270 13 15 337 91 68 25
+WQ 270 13 15 177 44904 128857
+WU 270 13 16 345 78 101 21
+WQ 270 13 16 257 69151 141839
+WU 270 13 17 360 64 83 25
+WQ 270 13 17 463 68592 116105
+WU 270 14 0 405 17 43 23
+WQ 270 14 0 475 55083 193556
+WU 270 14 1 401 18 132 23
+WQ 270 14 1 256 62022 107151
+WU 270 14 2 318 102 40 21
+WQ 270 14 2 181 61493 123588
+WU 270 14 3 372 55 94 25
+WQ 270 14 3 419 77320 101733
+WU 270 14 4 350 73 88 26
+WQ 270 14 4 540 76601 229645
+WU 270 14 5 377 44 64 28
+WQ 270 14 5 400 63943 135248
+WU 270 14 6 381 46 83 30
+WQ 270 14 6 436 106344 128357
+WU 270 14 7 342 83 76 27
+WQ 270 14 7 408 63045 89841
+WU 270 14 8 374 62 225 23
+WQ 270 14 8 298 71760 133009
+WU 270 14 9 367 62 115 23
+WQ 270 14 9 401 85080 151974
+WU 270 14 10 384 40 153 21
+WQ 270 14 10 327 79991 189101
+WU 270 14 11 372 61 59 24
+WQ 270 14 11 248 62451 131505
+WU 270 14 12 380 45 89 21
+WQ 270 14 12 180 59431 150103
+WU 270 14 13 407 14 73 21
+WQ 270 14 13 273 66622 99796
+WU 270 14 14 364 61 72 21
+WQ 270 14 14 534 60314 121982
+WU 270 14 15 398 30 63 22
+WQ 270 14 15 398 46052 239256
+WU 270 14 16 341 82 120 26
+WQ 270 14 16 209 62872 126595
+WU 270 14 17 391 33 132 23
+WQ 270 14 17 406 64417 95171
+WU all 270 96740 10607 225 31
+WQ all 270 492 92870 518947

@@ -527,7 +527,11 @@ class AppendTests(unittest.TestCase):
                 fake, "--role", "claude-orchestrator", "append", "5", "--context-file", str(context),
                 "--reading-file", str(reading), stdin="",
             )  # fmt: skip
-            self.assertEqual(code, 1)  # no quote block: nothing is posted
+            self.assertEqual(code, 0)  # the agent's blocks alone are posted: they hold none of the player's words
+            self.assertEqual(
+                inbox.parse_blocks((fake.writes.pop()[1] or "").partition("\n")[2]),
+                [("context", "Asked: generic how?"), ("reading", "a bag of any kind")],
+            )
             quote = Path(folder) / "q.md"
             quote.write_text(MORE, encoding="utf-8")
             code, out, _ = run(
@@ -583,6 +587,28 @@ class AppendTests(unittest.TestCase):
         self.assertEqual(len(attempts), 2)
         self.assertEqual(attempts[0], attempts[1])
         self.assertEqual(len(fake.writes), 1)
+
+    def test_an_appended_reading_alone_shows_and_drafts_as_the_agents_and_adds_no_quote(self) -> None:
+        body = f"{inbox.APPEND_MARKER}\n\n{inbox.format_blocks([('reading', 'read as a bag')])}"
+        fake = self.captured()
+        fake.reads[f"repos/{REPO}/issues/5/comments"] = [{"user": {"login": BOT}, "created_at": "t1", "body": body}]
+        _, out, _ = run(fake, "show", "5")
+        self.assertIn("t1 (appended)", out)
+        self.assertIn("read as a bag", out)
+        self.assertNotIn("direct quote", out)
+        _, out, _ = run(fake, "draft", "5")
+        self.assertIn("**Read as:**", out)
+        self.assertEqual(out.count("**The player's words.**"), 0)
+
+    def test_append_refuses_a_marker_in_an_agents_only_comment(self) -> None:
+        fake = self.captured()
+        with tempfile.TemporaryDirectory() as folder:
+            reading = Path(folder) / "r.md"
+            reading.write_text(f"{inbox.MARKS['quote']}\nx", encoding="utf-8")
+            code, _, err = run(fake, "--role", "claude-orchestrator", "append", "5", "--reading-file", str(reading))
+        self.assertEqual(code, 1)
+        self.assertIn("only this tool writes", err)
+        self.assertEqual(fake.writes, [])
 
     def test_only_append_writes_a_marker_line(self) -> None:
         fake = self.captured()
@@ -682,6 +708,15 @@ class AppendTests(unittest.TestCase):
         code, out, _ = run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")
         self.assertEqual(code, 0, out)
         self.assertEqual([args[6:9] for args, _ in fake.writes], [["issue", "close", "5"]])
+
+    def test_close_requires_nothing_of_an_agents_only_append_and_still_a_quote_beside_it(self) -> None:
+        note = inbox.note_from_api(issue(5, author=BOT, labels=("inbox", "captured")))
+        text = {"p.md": inbox.normalize("> " + BODY)}
+        agents = inbox.format_blocks([("context", "asked"), ("reading", "read as a bag")])
+        only = inbox.Comment(BOT, "t1", f"{inbox.APPEND_MARKER}\n\n{agents}")
+        self.assertEqual(inbox.unfiled_words(note, [only], text), [])
+        beside = inbox.Comment(BOT, "t2", marked(MORE))
+        self.assertTrue(inbox.unfiled_words(note, [only, beside], text))
 
     def test_the_marker_is_not_part_of_the_words_and_the_question_need_not_be_copied(self) -> None:
         note = inbox.note_from_api(issue(5, author=BOT, labels=("inbox", "captured")))
@@ -963,10 +998,12 @@ class CiteTests(unittest.TestCase):
         subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
         subprocess.run(["git", "add", "-A"], cwd=self.root, check=True)
 
-    def cite(self, *argv: str) -> tuple[int, str, str]:
+    def cite(self, *argv: str, write: bool = True) -> tuple[int, str, str]:
+        """`cite --write`, unless the run is a dry one or `write` is False (no flag at all)."""
+        flags = ["--write"] if write and "--dry-run" not in argv else []
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
-            code = inbox.main(["cite", "--root", str(self.root), *argv], FakeGh({}))
+            code = inbox.main(["cite", "--root", str(self.root), *flags, *argv], FakeGh({}))
         return code, out.getvalue(), err.getvalue()
 
     def read(self, name: str) -> str:
@@ -1045,6 +1082,18 @@ class CiteTests(unittest.TestCase):
         self.assertIn("would edit", out)
         self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
 
+    def test_no_flag_prints_the_diff_and_writes_nothing(self) -> None:
+        _, out, _ = self.cite("9001", write=False)
+        self.assertIn("+Two-thirds (inbox #9001 in quiet-yak) and more.", out)
+        self.assertIn("would edit", out)
+        self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
+
+    def test_write_with_dry_run_is_rejected_before_any_work(self) -> None:
+        with redirect_stderr(io.StringIO()) as err, self.assertRaises(SystemExit):
+            inbox.main(["cite", "--root", str(self.root), "9001", "--write", "--dry-run"], FakeGh({}))
+        self.assertIn("not both", err.getvalue())
+        self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
+
     def test_a_number_in_no_playtest_is_refused_before_any_edit(self) -> None:
         code, _, err = self.cite("9001", "9999")
         self.assertEqual(code, 1)
@@ -1055,7 +1104,7 @@ class CiteTests(unittest.TestCase):
         fake = FakeGh({f"repos/{REPO}/pulls/5": {"body": "Filed from #9001\nFiled from #9003\n"}})
         out = io.StringIO()
         with redirect_stdout(out):
-            code = inbox.main(["--repo", REPO, "cite", "--pr", "5", "--root", str(self.root)], fake)
+            code = inbox.main(["--repo", REPO, "cite", "--pr", "5", "--root", str(self.root), "--write"], fake)
         self.assertEqual(code, 0)
         self.assertIn("for 2 note(s)", out.getvalue())
         self.assertIn("inbox #9001 in quiet-yak", self.read("src/a.gd"))
@@ -1066,15 +1115,103 @@ class CiteTests(unittest.TestCase):
                 inbox.main(["cite", *argv], FakeGh({}))
 
 
+class CiteWrappedRunTests(unittest.TestCase):
+    """A run wrapped across a line is one run, in the two shapes the repository holds."""
+
+    PLAYTEST: ClassVar[Any] = inbox.Playtest("gray-egret", "docs/playtests/2026-10-03-gray-egret.md")
+
+    def cite(self, text: str) -> tuple[str, list[int]]:
+        new, hand = inbox.cite_text("docs/x.md", text, {9101: self.PLAYTEST, 9102: self.PLAYTEST})
+        return str(new), list(hand)
+
+    def test_a_run_broken_after_and_that_names_the_playtest_gets_no_edit(self) -> None:
+        text = "the city built only where a suite tests the city (inbox #9101 and\n#9102 in gray-egret).\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_run_broken_after_a_comma_that_names_the_playtest_gets_no_edit(self) -> None:
+        text = "(inbox #9101,\n#9102 in gray-egret).\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_citation_whose_in_ends_the_line_is_already_cited(self) -> None:
+        text = "| a row (inbox #9101 in\ngray-egret) |\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_wrapped_run_naming_no_playtest_gets_one_in_after_its_last_number(self) -> None:
+        text = "A sentence (inbox #9101 and\n#9102) goes on.\n"
+        new, hand = self.cite(text)
+        self.assertEqual(new, "A sentence (inbox #9101 and\n#9102 in gray-egret) goes on.\n")
+        self.assertEqual(hand, [])
+        self.assertEqual(self.cite(new), (new, []))
+
+    def test_a_wrapped_run_naming_a_different_playtest_is_listed_not_edited(self) -> None:
+        text = "(inbox #9101 and\n#9102 in other-name).\n"
+        new, hand = self.cite(text)
+        self.assertEqual(new, text)
+        self.assertEqual(hand, [2])
+
+    def test_a_run_over_three_lines_naming_the_playtest_gets_no_edit(self) -> None:
+        text = "(inbox #9101 and\n#9102, #9101 and\n#9102 in gray-egret).\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_run_over_three_lines_naming_no_playtest_gets_one_in_at_its_end(self) -> None:
+        text = "(inbox #9101 and\n#9102, #9101 and\n#9102) here.\n"
+        new, hand = self.cite(text)
+        self.assertEqual(new, "(inbox #9101 and\n#9102, #9101 and\n#9102 in gray-egret) here.\n")
+        self.assertEqual(hand, [])
+        self.assertEqual(self.cite(new), (new, []))
+
+    def test_a_line_closing_a_run_then_continuing_with_and_is_not_a_middle_line(self) -> None:
+        text = "x (inbox #9101 and\n#9102 in gray-egret), and\n#9103 is next.\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_run_over_four_lines_is_listed_for_a_hand_fix_and_never_edited(self) -> None:
+        text = "(inbox #9101 and\n#9102 and\n#9101 and\n#9102) here.\n"
+        self.assertEqual(self.cite(text), (text, [4]))
+
+    def test_a_continued_line_inside_a_quote_is_part_of_the_run(self) -> None:
+        named = "> (inbox #9101 and\n> #9102 in gray-egret).\n"
+        self.assertEqual(self.cite(named), (named, []))
+        unnamed = "> (inbox #9101 and\n> #9102) here.\n"
+        self.assertEqual(self.cite(unnamed)[0], "> (inbox #9101 and\n> #9102 in gray-egret) here.\n")
+        wrapped_in = "> (inbox #9101 in\n> gray-egret) here.\n"
+        self.assertEqual(self.cite(wrapped_in), (wrapped_in, []))
+
+    def test_the_wrapped_sentences_of_the_repository_get_no_edit(self) -> None:
+        root = TOOLS.parent
+        held_by = inbox.playtests_by_number(root)
+        targets = {n: held_by[n][0] for n in (1159, 1156, 1432) if n in held_by}
+        if 1159 not in targets or 1432 not in targets:
+            self.skipTest("the playtests that hold the two notes are not in this checkout")
+        for name in (
+            "docs/decisions/2026-10-18-minty-quail-quiet-swan.md",
+            "docs/decisions/2026-10-18-minty-quail-curly-hawk.md",
+            "docs/decisions/2026-10-18-minty-quail-fluffy-newt.md",
+            ".claude/skills/orchestrating/SKILL.md",
+        ):
+            path = root / name
+            with self.subTest(name=name):
+                self.assertTrue(path.exists(), f"{name} is missing")
+                text = path.read_text(encoding="utf-8")
+                new, hand = inbox.cite_text(name, text, targets)
+                self.assertEqual(new, text)
+                self.assertEqual(hand, [])
+
+
 class CiteExamplesTests(unittest.TestCase):
-    """The examples in the tool's own test and in the inbox skill must never be a note a filing cites."""
+    """The examples in the tool's own test and in the inbox skill must never be a note a filing cites.
+
+    The skill's examples are read from every Markdown file under its folder, since they may stand in
+    `SKILL.md` or in a reference file beside it.
+    """
 
     def test_a_cite_run_on_this_repository_proposes_no_edit_to_them(self) -> None:
         root = TOOLS.parent
         targets = {n: held[0] for n, held in inbox.playtests_by_number(root).items()}
         if not targets:
             self.skipTest("no playtest with a `## #N` heading in this checkout")
-        for name in ("tools/test_inbox.py", ".claude/skills/inbox/SKILL.md"):
+        skill = root / ".claude/skills/inbox"
+        skill_files = sorted(path.relative_to(root).as_posix() for path in skill.rglob("*.md"))
+        for name in ("tools/test_inbox.py", *skill_files):
             path = root / name
             if not path.exists():
                 continue

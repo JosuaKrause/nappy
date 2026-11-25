@@ -20,7 +20,7 @@ const RETURN_DAY := 13
 ## physics tick (the director only counts seconds handed in, so this is a simulated walk).
 const STEP := 0.1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_no_double_batch_in_a_day(t)
 	_test_forced_queue_is_untouched(t)
 	_test_pacing_switches_after_the_return_is_owed(t)
@@ -36,7 +36,7 @@ func _map() -> CityMap:
 
 ## The plans a real dawn on `RETURN_DAY` buys on the suite's map, built once by the first walking
 ## check that asks and only read by every director started over them.
-var _plans: Array[EventScheduler.Planned] = []
+var _plans: Array[EventPlan] = []
 
 ## A director over `map` on day 1 with nothing planned, its day stream seeded 17, handed the forced
 ## row `forced` first when one is given (`--force`, which `start_day()` takes up).
@@ -46,8 +46,8 @@ func _director(map: CityMap, forced := "") -> EventDirector:
 	rng.seed = 17
 	if forced != "":
 		director.force(forced, 5.0)
-	var no_plans: Array[EventScheduler.Planned] = []
-	director.start_day(1, no_plans, rng)
+	var no_plans: Array[EventPlan] = []
+	director.start_day(1, no_plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## A director started on `RETURN_DAY` over the plans a real dawn buys on `map`, so its route is the
@@ -55,18 +55,17 @@ func _director(map: CityMap, forced := "") -> EventDirector:
 func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 	if _plans.is_empty():
 		var state := CityState.new()
-		state.begin_day(map.block_plans, RETURN_DAY)
+		state.begin_day(map.plans_by_block(), RETURN_DAY)
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = 23
-		_plans = EventScheduler.build_day(DaySpec.for_day(RETURN_DAY), plan_rng, map,
-				CalmAreas.of(map), [], [],
-				RouteTree.for_day(map, RETURN_DAY), 0).placements()
+		_plans = GameDawn.of(DaySpec.for_day(RETURN_DAY), plan_rng, map) \
+				.on(RouteTree.for_day(map, RETURN_DAY)).plan().placements()
 	var plans := _plans
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	director.start_day(RETURN_DAY, plans, rng)
+	director.start_day(RETURN_DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## Her walking along the arterial's sidewalk, back and forth between the map's ends at
@@ -116,7 +115,7 @@ class Walk:
 
 ## The baby can wake and settle again inside one day — `EventBus.return_phase_started` firing
 ## twice must not owe a second batch on top of the first.
-func _test_no_double_batch_in_a_day(t) -> void:
+func _test_no_double_batch_in_a_day(t: TestRunner) -> void:
 	var map := _map()
 	var director := _director(map)
 	var day := RETURN_DAY # act IV, the largest batch
@@ -132,7 +131,7 @@ func _test_no_double_batch_in_a_day(t) -> void:
 ## director is handed the flag as the manager hands it (`force()`, taken up by `start_day()`): the
 ## queue stays the one forced row, and the forced row keeps coming at the forced interval (5s, a
 ## fixed wait where the return's pacing would roll 9 to 16s) before and after the return.
-func _test_forced_queue_is_untouched(t) -> void:
+func _test_forced_queue_is_untouched(t: TestRunner) -> void:
 	var map := _map()
 	var director := _director(map, "cyclist")
 	t.check(director.owed() == 1, "the forced day owes the one forced row (%d)" % director.owed())
@@ -144,7 +143,7 @@ func _test_forced_queue_is_untouched(t) -> void:
 	var after := walk.hand_outs(40.0)
 	var cyclists_only := true
 	for handed: Array in before + after:
-		cyclists_only = cyclists_only and (handed[1] as EventDef).id == "cyclist"
+		cyclists_only = cyclists_only and (handed[1] as EventDef).id() == "cyclist"
 	t.check(before.size() >= 6 and after.size() >= 6 and cyclists_only,
 			"and only the forced row is handed out, before the return (%d) and after (%d)"
 			% [before.size(), after.size()])
@@ -161,7 +160,7 @@ func _test_forced_queue_is_untouched(t) -> void:
 ## chance to land inside the leg rather than after she is home. Read as the seconds between the
 ## events `due()` hands out while she walks on: no gap under the interval's floor, and by the
 ## return none over the tighter ceiling, where the ordinary pacing leaves gaps the tight one cannot.
-func _test_pacing_switches_after_the_return_is_owed(t) -> void:
+func _test_pacing_switches_after_the_return_is_owed(t: TestRunner) -> void:
 	var map := _map()
 	var ordinary := _a_route_of_cats_and_cyclists(map)
 	var before := _gaps(Walk.new(ordinary, map).hand_outs(300.0))
@@ -212,9 +211,12 @@ func _gaps(handed: Array) -> Array[float]:
 ## *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the route queue --
 ## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
-## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
-## before it, so all of them are met within that many events each.
-func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
+## the director rigs the events after the return as bags of `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT`
+## marbles, one patrol in each, so the nth patrol is among the first n bags' events. A patrol is a
+## marble of the ordinary bag too (`EventDef.is_sent_ahead()`), so a patrol may come early, and two
+## patrols in a row can leave a gap longer than one bag before the next: the check counts each patrol
+## against the bags it is owed by, never against the patrol before it.
+func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
 	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(RETURN_DAY) - 1]
@@ -229,11 +231,19 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 	while walk.clock < 400.0 and met.size() < count * x:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
-	var spaced := met.size() == count * x
-	for i in count:
-		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") == 1
-	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
+			met.append((due[0] as EventDef).id())
+	# The nth patrol among the first n bags of `x` events after the return: a patrol that comes early,
+	# or one of the ordinary bag's, leaves the next free to come late in its own bag.
+	var within := met.size() == count * x
+	var patrols := 0
+	for i in met.size():
+		if patrols == count:
+			break
+		if met[i] == "police_patrol":
+			patrols += 1
+			within = within and i < patrols * x
+	within = within and patrols == count
+	t.check(within, "the nth of the %d patrols is among the first n bags of %d events (%s)"
 			% [count, x, met])
 
 ## A marble spent unmet because its row has had its `max_per_day` was one of a patrol's rigged bag
@@ -243,28 +253,28 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 ## each patrol's other marble is that row's, spent unmet, so the patrols are the only events handed
 ## out, one after another. Counted only when handed out, the first patrol's bag would never be
 ## spent and the others would never be rigged.
-func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
+func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) -> void:
 	var map := _map()
 	var limited: EventDef = null
 	for id: String in EventDirector.ordinary_route_marbles(RETURN_DAY, 0):
 		var def := EventCatalogue.by_id(id)
-		if limited == null or def.max_per_day < limited.max_per_day:
+		if limited == null or def.most_in_a_day() < limited.most_in_a_day():
 			limited = def
 	var marbles := []
 	for i in 80:
-		marbles.append(limited.id)
+		marbles.append(limited.id())
 	var director := _the_return_days_director(map, 31)
 	# The row's whole day is owed first: exactly `max_per_day` of them, handed out as she walks.
-	director.start_recipe_route(marbles, [], limited.max_per_day, 0.0, 0)
+	director.start_recipe_route(marbles, [], limited.most_in_a_day(), 0.0, 0)
 	var walk := Walk.new(director, map)
 	var its_day: Array[String] = []
 	while walk.clock < 600.0 and director.owed() > 0:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
-			its_day.append((due[0] as EventDef).id)
-	t.check(its_day.size() == limited.max_per_day and director.owed() == 0,
+			its_day.append((due[0] as EventDef).id())
+	t.check(its_day.size() == limited.most_in_a_day() and director.owed() == 0,
 			"'%s' has had its %d a day before the return (%d handed out, %d owed)"
-			% [limited.id, limited.max_per_day, its_day.size(), director.owed()])
+			% [limited.id(), limited.most_in_a_day(), its_day.size(), director.owed()])
 	director.owe_the_return(RETURN_DAY, 0)
 	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(RETURN_DAY) - 1]
 	var met: Array[String] = []
@@ -272,7 +282,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
 	while walk.clock - before < 300.0 and met.size() < count:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 	t.check(met.size() == count and met.count("police_patrol") == count,
 			"with the ordinary row capped, all %d patrols still come, one after another (%s)"
 			% [count, met])
@@ -283,7 +293,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
 ## carriageway lane of her own street, driving opposite her own heading so it meets her rather than
 ## following her, on real driveable road tiles of a generated map. Asked as the game asks: the path
 ## `due()` hands out with the patrol.
-func _test_sited_on_driveable_road_toward_her(t) -> void:
+func _test_sited_on_driveable_road_toward_her(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
 	director.owe_the_return(RETURN_DAY, 0)
@@ -294,7 +304,7 @@ func _test_sited_on_driveable_road_toward_her(t) -> void:
 	var handed := []
 	while walk.clock < 120.0 and handed.is_empty():
 		var due := walk.tick(STEP)
-		if not due.is_empty() and (due[0] as EventDef).id == "police_patrol":
+		if not due.is_empty() and (due[0] as EventDef).id() == "police_patrol":
 			handed = due
 	t.check(not handed.is_empty(), "the patrol is handed out on her street")
 	if handed.is_empty():
@@ -304,7 +314,7 @@ func _test_sited_on_driveable_road_toward_her(t) -> void:
 	if path.size() != 2:
 		return
 
-	for point in [path[0], path[1]]:
+	for point: Vector2 in [path[0], path[1]]:
 		t.check(map.is_driveable_at(true, map.world_to_tile(point)),
 				"%s lies on a driveable road tile of her (vertical) street" % point)
 
@@ -318,11 +328,11 @@ func _test_sited_on_driveable_road_toward_her(t) -> void:
 
 ## `pavement_inward()` answers `Vector2i.ZERO` off a plain sidewalk edge, which is exactly what a
 ## park, a square or a precinct pavement is for this purpose — nothing there has a carriageway to
-## drive on, or (for a precinct) a carriageway at all, so the siting must retry later rather than
-## invent a road. The patrol is the next event owed, she walks on the spot in a park and is handed
-## nothing for a long while, and it is still owed, not spent: it is handed out as soon as she
-## stands on a street.
-func _test_empty_in_a_park(t) -> void:
+## drive on, or (for a precinct) a carriageway at all, so the siting must wait rather than invent a
+## road. The patrol is the next event owed, she walks on the spot in a park and is handed no patrol
+## for a long while (the marbles behind it come meanwhile, calm-pelican-6), and it is kept, not
+## lost: it is handed out as soon as she stands on a street.
+func _test_empty_in_a_park(t: TestRunner) -> void:
 	var map := _map()
 	var calm := map.calm_tiles()
 	t.check(not calm.is_empty(), "the generated map has calm ground to test against")
@@ -333,13 +343,15 @@ func _test_empty_in_a_park(t) -> void:
 	director.rig_her_route(["police_patrol"], 1)
 	var in_the_park := Walk.new(director, map, map.tile_to_world(calm[0]))
 	in_the_park.on_the_spot = true
-	var handed := in_the_park.hand_outs(150.0)
-	t.check(handed.is_empty(),
-			"no carriageway to drive on in a park, so the patrol is handed out nowhere (%d events)"
-			% handed.size())
+	var patrols := 0
+	for hand_out: Array in in_the_park.hand_outs(150.0):
+		if (hand_out[1] as EventDef).id() == "police_patrol":
+			patrols += 1
+	t.check(patrols == 0,
+			"no carriageway to drive on in a park, so no patrol is handed out (%d)" % patrols)
 	var on_the_street := Walk.new(director, map)
 	var found := false
 	while on_the_street.clock < 60.0 and not found:
 		var due := on_the_street.tick(STEP)
-		found = not due.is_empty() and (due[0] as EventDef).id == "police_patrol"
+		found = not due.is_empty() and (due[0] as EventDef).id() == "police_patrol"
 	t.check(found, "and it was kept, not spent: it comes down her street as soon as she is on one")

@@ -22,11 +22,11 @@ extends RefCounted
 ## the list shrinks when a file stops needing it.
 const _ALLOWED_FILES := {
 	"res://src/dev/": "developer tooling: rigs, recipes, previews and the dev flags' own messages",
-	"res://src/telemetry/": "the run log's own lines",
+	"res://src/telemetry/": "the run log's own lines and the page-count probe's script",
+	"res://src/events/model/dawn_phases/": "the dawn's phases write run-log lines through the context, as the scheduler does",
 	"res://src/autoload/telemetry.gd": "the run log's own lines",
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
 	"res://src/run/run_calendar.gd": "log notes about nerves and resistance work",
-	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
 	"res://src/city/building.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/city_generator.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/recipe_city_builder.gd": "map validation errors and recipe checks, reported to a developer",
@@ -37,24 +37,25 @@ const _ALLOWED_FILES := {
 	"res://src/crowd/crowd.gd": "placement checks reported to a developer",
 	"res://src/visuals/atlas_library.gd": "atlas and ground-layer errors reported to a developer",
 	"res://src/visuals/ground_layers.gd": "atlas and ground-layer errors reported to a developer",
-	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
-	"res://src/events/events_ahead.gd": "log notes about what is placed while she walks",
-	"res://src/events/warning_board.gd": "log notes about a warning withdrawn",
-	"res://src/events/event_spawner.gd": "log notes about scars and summons",
-	"res://src/events/checkpoint_controller.gd": "log notes about the doors' crossings",
+	"res://src/events/model/event_scheduler.gd": "placement reasons written to the run log",
+	"res://src/events/simulation/events_ahead.gd": "log notes about what is placed while she walks",
+	"res://src/events/simulation/walk_siting.gd": "the reasons her walk's siting waited, written to the run log",
+	"res://src/events/simulation/warning_board.gd": "log notes about a warning withdrawn",
+	"res://src/events/simulation/event_spawner.gd": "log notes about scars and summons",
+	"res://src/events/simulation/checkpoint_controller.gd": "log notes about the doors' crossings",
 	"res://src/resistance/resistance_director.gd": "the director's own log lines and setup errors",
 	"res://src/player/baby.gd": "the debug HUD's reason a baby is not settling",
 }
 
 ## One string in one file: a developer readout in a file whose other strings are held to the rule.
 const _ALLOWED_LITERALS := {
+	"res://src/city/city_dressing.gd": {
+		"roof_fixtures.lot: no complete production building at the authored footprint":
+				"the scene recipe's setup problem, printed by main when the scene fails to set up",
+	},
 	"res://src/finale/finale_planner.gd": {
 		"%s via %d calm, %d cells%s": "the planner's summary line, written to the run log",
 		"%d open streets, %d placements": "the planner's summary line, written to the run log",
-	},
-	"res://src/run_config.gd": {
-		"RunConfig is resolved once at boot and never changes; a write was refused":
-				"the warning for a write to a resolved configuration, read by a developer",
 	},
 	"res://src/ui/hud.gd": {
 		"asleep - go home": "the debug HUD's state line",
@@ -70,7 +71,7 @@ const _NOT_A_SENTENCE := [
 	"res://", "user://", "uid://",
 ]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_sentence_is_found_and_a_name_is_not(t)
 	_test_a_comment_and_a_log_call_are_not_judged(t)
 	_test_a_log_call_over_several_lines_is_skipped_to_its_end(t)
@@ -87,7 +88,7 @@ static func sentences_in(source: String) -> Array:
 	var found := []
 	var log_depth := 0
 	var number := 0
-	for line in source.split("\n"):
+	for line: String in source.split("\n"):
 		number += 1
 		var quote := ""
 		var current := ""
@@ -134,7 +135,7 @@ static func _log_opener_at(line: String, at: int) -> String:
 		if before == "_" or before == "." or before.to_lower() != before.to_upper() \
 				or before.is_valid_int():
 			return ""
-	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
+	for opener: String in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
 			"assert(", "_log.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
 			"event.trace.note(", "_note("]:
 		if line.substr(at, opener.length()) == opener:
@@ -152,7 +153,7 @@ static func is_sentence(text: String) -> bool:
 	for i in words.size() - 1:
 		var run := 0
 		var longest := 0
-		for ch in words[i]:
+		for ch: String in words[i]:
 			if ch.to_lower() != ch.to_upper():
 				run += 1
 				longest = maxi(longest, run)
@@ -169,10 +170,10 @@ static func _scripts_under(directory: String) -> PackedStringArray:
 	var dir := DirAccess.open(directory)
 	if dir == null:
 		return scripts
-	for file in dir.get_files():
+	for file: String in dir.get_files():
 		if file.ends_with(".gd"):
 			scripts.append(directory.path_join(file))
-	for child in dir.get_directories():
+	for child: String in dir.get_directories():
 		scripts.append_array(_scripts_under(directory.path_join(child)))
 	return scripts
 
@@ -183,7 +184,7 @@ static func _allowed_file(path: String) -> String:
 			return prefix
 	return ""
 
-func _test_a_sentence_is_found_and_a_name_is_not(t) -> void:
+func _test_a_sentence_is_found_and_a_name_is_not(t: TestRunner) -> void:
 	t.check(is_sentence("Day %d of %d"), "a format string with words in it is a sentence")
 	t.check(is_sentence("press a button to begin"), "a lowercase line is a sentence")
 	t.check(is_sentence("The end."), "two words and a full stop is a sentence")
@@ -194,7 +195,7 @@ func _test_a_sentence_is_found_and_a_name_is_not(t) -> void:
 	t.check(not is_sentence("Silence."), "a single word is a name to this rule, caught by a person")
 	t.check(not is_sentence(""), "an empty string is not")
 
-func _test_a_comment_and_a_log_call_are_not_judged(t) -> void:
+func _test_a_comment_and_a_log_call_are_not_judged(t: TestRunner) -> void:
 	var source := "var a := \"Plain words here\"\n" \
 			+ "# a comment with \"quoted words in it\"\n" \
 			+ "var b := 1 # \"and another trailing\"\n" \
@@ -206,14 +207,14 @@ func _test_a_comment_and_a_log_call_are_not_judged(t) -> void:
 	t.check(found.size() == 2 and found[0][0] == 1 and found[1][0] == 7,
 			"only the two plain strings are found, on lines 1 and 7 (found %s)" % [found])
 
-func _test_a_log_call_hides_only_its_own_arguments(t) -> void:
+func _test_a_log_call_hides_only_its_own_arguments(t: TestRunner) -> void:
 	var probe := sentences_in("print(\"x\"); _say(\"Walk faster now please\", 1.0)\n")
 	t.check(probe.size() == 1 and probe[0][1] == "Walk faster now please",
 			"a text after a log call's closing paren on the same line is still judged (%s)" % [probe])
 	probe = sentences_in("var shown := \"Two words\" if ok else \"no log here\"; print(\"a log line\")\n")
 	t.check(probe.size() == 2, "texts before a log call on its line are judged too (%s)" % [probe])
 
-func _test_a_log_call_over_several_lines_is_skipped_to_its_end(t) -> void:
+func _test_a_log_call_over_several_lines_is_skipped_to_its_end(t: TestRunner) -> void:
 	var source := "push_error(\"first line of it (not) \"\n" \
 			+ "\t\t+ \"second line of it\"\n" \
 			+ "\t\t+ str(some_call(1)))\n" \
@@ -224,20 +225,20 @@ func _test_a_log_call_over_several_lines_is_skipped_to_its_end(t) -> void:
 	t.check(sentences_in("var reprint := \"a name with words\"\n").size() == 1,
 			"a name that ends in a log call's own is not a log call")
 
-func _test_the_allow_list_names_only_paths_that_exist(t) -> void:
+func _test_the_allow_list_names_only_paths_that_exist(t: TestRunner) -> void:
 	for prefix: String in _ALLOWED_FILES:
 		var exists := DirAccess.dir_exists_absolute(prefix) or FileAccess.file_exists(prefix)
 		t.check(exists, "the allow-list's %s exists, so no entry outlives its file" % prefix)
 	for path: String in _ALLOWED_LITERALS:
 		t.check(FileAccess.file_exists(path), "the allow-list's %s exists" % path)
 
-func _test_no_sentence_is_quoted_outside_the_catalogue(t) -> void:
+func _test_no_sentence_is_quoted_outside_the_catalogue(t: TestRunner) -> void:
 	var scripts := _scripts_under("res://src")
 	t.check(scripts.has("res://src/ui/texts.gd"), "there were scripts to scan (%d), `Texts` among them"
 			% scripts.size())
 	var used_files := {}
 	var used_literals := {}
-	for path in scripts:
+	for path: String in scripts:
 		if path == "res://src/ui/texts.gd":
 			continue
 		var hits := sentences_in(FileAccess.get_file_as_string(path))
@@ -247,7 +248,7 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t) -> void:
 				used_files[covered] = true
 			continue
 		var allowed: Dictionary = _ALLOWED_LITERALS.get(path, {})
-		for hit in hits:
+		for hit: Array in hits:
 			if hit[1] in allowed:
 				used_literals["%s|%s" % [path, hit[1]]] = true
 				continue
@@ -261,8 +262,8 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t) -> void:
 			t.check(used_literals.has("%s|%s" % [path, text]),
 					"the allow-list's \"%s\" in %s is still quoted there -- drop it" % [text, path])
 
-func _test_the_catalogue_holds_what_the_screens_say(t) -> void:
+func _test_the_catalogue_holds_what_the_screens_say(t: TestRunner) -> void:
 	t.check(Texts.DAY_BRIEF.size() == Tuning.RUN_LENGTH_DAYS,
 			"there is a brief for every day of the run")
-	for day in Tuning.RUN_LENGTH_DAYS:
+	for day: int in Tuning.RUN_LENGTH_DAYS:
 		t.check(Texts.DAY_BRIEF.has(day + 1), "day %d has a brief" % (day + 1))

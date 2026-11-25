@@ -5,10 +5,20 @@ extends RefCounted
 ## interrupted exactly as it was, that rigging a bag makes and loses no marble but the ensured one
 ## (inbox #561 in coral-bunny: "you will be left with two initialized bags: 1 with x elements and one with n-x+1
 ## elements"), that an inner bag of n marbles gives n events and is gone, that a stretch of her
-## route the length of a bag has the rows' own mix, that day 3's lesson is still first and paid for
-## by nothing in the bag, and that after day 6's and day 11's marks the task's row is one of the next
-## events placed on her route, ahead of her, where she can reach it, and in the world once she walks
-## on.
+## route the length of a bag has the rows' own mix where nothing waits for room, that day 3's
+## lesson is still first and paid for by nothing in the bag, and that after day 6's and day 11's
+## marks the task's row is one of the next events placed on her route, where she can reach it, and
+## in the world once she walks on: day 11's mast ahead of her on the route band, day 6's man
+## shouting on the street she walks (whose siting `tests/test_day6_yeller_met.gd` holds).
+##
+## **Why `_a_mark_puts_a_place_on_her_route` builds a real `City`, the event manager and the
+## resistance director:** the guarantee is the hand-off between the three, and it exists nowhere
+## else. The director's reading of a mark rigs a bag (its run-log line), the events' walk sites what
+## the bag draws on the route she walks, and the city streams the place in once she walks to it;
+## a stand-in for any one of them would hand the others back the answer the case asks whether they
+## agree on. No other case builds a city. The four that walk the director take a generated map to
+## walk on and the day's moments as recorded off a real day (`tests/fixtures/route_bag_moments.gd`,
+## which says how they were read): the scheduler's dawn is not this suite's subject.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -16,10 +26,8 @@ const SEED := 4242
 ## checks hold on seed 2.
 const RUN_SEED := 2
 const STEP := 0.1
-## How many times a route mast is sited again from where she was, each by a stream of its own.
-const MAST_SITINGS := 40
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t)
 	_test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t)
 	_test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t)
@@ -27,7 +35,10 @@ func run(t) -> void:
 	_test_an_inner_bag_of_n_gives_n_events_and_is_gone(t)
 	_test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t)
 	_test_day_3s_lesson_is_first_and_a_bag_of_its_own(t)
+	_test_day_3s_charging_dogs_keep_their_share(t)
 	_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t)
+	_test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t)
+	_test_day_one_hands_out_two_dog_walkers_among_the_first_three(t)
 	_test_after_the_mark_the_task_row_is_put_on_her_route(t)
 	_test_a_place_that_cannot_be_sited_holds_nothing_up(t)
 
@@ -35,20 +46,20 @@ func run(t) -> void:
 
 ## A special bag put in front is drawn whole first, and the bag it interrupted then hands out exactly
 ## the marbles it had left — together with what it had already handed out, its whole set once.
-func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
+func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t: TestRunner) -> void:
 	var ordinary := ["a", "a", "b", "b", "b"]
 	var bag := MarbleBag.new([], ordinary, 7)
 	var first: Array = [bag.draw(), bag.draw()]
 	bag.rig(["x", "y"], 2)
-	t.check(bag.sizes() == [2, 3], "the special bag is in front of the three marbles left (%s)"
-			% [bag.sizes()])
+	t.check(bag.left() == 2, "the special bag of two is in front (%d)" % bag.left())
 	var special: Array = [bag.draw(), bag.draw()]
 	special.sort()
 	t.check(special == ["x", "y"], "the special bag is drawn whole first (%s)" % [special])
+	t.check(bag.left() == 3, "and behind it are the three marbles left (%d)" % bag.left())
 	var rest: Array = first + [bag.draw(), bag.draw(), bag.draw()]
 	rest.sort()
 	t.check(rest == ordinary, "and the interrupted bag carries on with what it had left (%s)" % [rest])
-	t.check(bag.left() == 0 and bag.sizes().is_empty(), "every bag is empty after its last marble")
+	t.check(bag.left() == 0, "every bag is empty after its last marble")
 	t.check(ordinary.has(bag.draw()), "and an empty queue is filled with the ordinary set again")
 
 ## Rigging takes `x - 1` marbles out of the bag being drawn from and puts them, with the ensured one,
@@ -56,9 +67,9 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
 ## marbles the active bag held plus the ensured one, nothing made and nothing lost. Asked of a bag
 ## part drawn and of one not yet filled, over several seeds, so where the rig's marbles come from
 ## is drawn rather than fixed.
-func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t) -> void:
+func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t: TestRunner) -> void:
 	var ordinary := MarbleBag.in_proportion({"cat": 2.5, "cyclist": 1.5, "dog": 3.0}, 2.0)
-	var x := ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT
+	var x := ResistanceSteps.MAST_WITHIN_THE_NEXT
 	for seed_value: int in [1, 2, 3, 4, 5]:
 		for drawn_first: int in [0, 3]:
 			var bag := MarbleBag.new([], ordinary, seed_value)
@@ -66,12 +77,16 @@ func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t) -> void:
 			var n := ordinary.size() - drawn_first
 			var before := bag.bag_in_front() if drawn_first > 0 else ordinary.duplicate()
 			bag.rig(["yeller"], x)
-			t.check(bag.sizes() == [x, n - x + 1],
-					"seed %d, %d drawn: the rig leaves a bag of %d and one of %d (%s)"
-					% [seed_value, drawn_first, x, n - x + 1, bag.sizes()])
+			var in_front := bag.left()
 			var after: Array = []
-			for _i in n + 1:
+			var behind := -1
+			for i in n + 1:
+				if i == x:
+					behind = bag.left()
 				after.append(bag.draw())
+			t.check(in_front == x and behind == n - x + 1,
+					"seed %d, %d drawn: the rig leaves a bag of %d and one of %d (%d, %d)"
+					% [seed_value, drawn_first, x, n - x + 1, in_front, behind])
 			var expected: Array = before + ["yeller"]
 			expected.sort()
 			var rigged := after.slice(0, x)
@@ -85,30 +100,45 @@ func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t) -> void:
 ## set, and one more ordinary bag is filled at the back when that runs out (`MarbleBag._take()`), the
 ## same one more a queue that was not empty gets. Asked of an ordinary set of two, so a rig of four
 ## needs three marbles taken: two from the first fill and one from the second.
-func _test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t) -> void:
+func _test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t: TestRunner) -> void:
 	var ordinary := ["a", "b"]
 	for seed_value: int in [1, 2, 3]:
 		var empty := MarbleBag.new([], ordinary, seed_value)
 		empty.rig(["x"], 4)
-		t.check(empty.sizes() == [4, 1],
+		var empty_sizes := _bag_sizes(empty)
+		t.check(empty_sizes == [4, 1],
 				"seed %d: a rig of 4 over an empty queue fills it twice and is a bag of 4 (%s)"
-				% [seed_value, empty.sizes()])
+				% [seed_value, empty_sizes])
 		var part_drawn := MarbleBag.new([], ordinary, seed_value)
 		part_drawn.draw()
 		part_drawn.rig(["x"], 4)
-		t.check(part_drawn.sizes() == [4],
+		var part_drawn_sizes := _bag_sizes(part_drawn)
+		t.check(part_drawn_sizes == [4],
 				"seed %d: a rig of 4 over one marble left fills one more bag and is a bag of 4 (%s)"
-				% [seed_value, part_drawn.sizes()])
+				% [seed_value, part_drawn_sizes])
 		var too_big := MarbleBag.new([], ordinary, seed_value)
 		too_big.rig(["x"], 7)
-		t.check(too_big.sizes() == [5],
+		var too_big_sizes := _bag_sizes(too_big)
+		t.check(too_big_sizes == [5],
 				"seed %d: and no more than the two fills an empty queue has are taken (%s)"
-				% [seed_value, too_big.sizes()])
+				% [seed_value, too_big_sizes])
+
+## The size of every bag in `bag`'s queue, the one being drawn from first, read the way a run reads
+## a bag: how many marbles the bag in front holds (`MarbleBag.left()`), then drawn empty to find the
+## next. Draws the whole queue, so it is the last thing asked of a bag.
+func _bag_sizes(bag: MarbleBag) -> Array[int]:
+	var sizes: Array[int] = []
+	while bag.left() > 0:
+		var size := bag.left()
+		sizes.append(size)
+		for _i in size:
+			bag.draw()
+	return sizes
 
 ## Asking which marble comes next does not change it: a bag peeked at before every draw draws what
 ## the same bag drawn straight would, and a bag put in front after a peek leaves the peeked marble in
 ## the bag it was in.
-func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
+func _test_a_marble_peeked_at_is_the_marble_drawn(t: TestRunner) -> void:
 	var ordinary := MarbleBag.in_proportion({"a": 1.0, "b": 2.0, "c": 3.0}, 2.0)
 	var straight := MarbleBag.new([], ordinary, 99)
 	var peeked := MarbleBag.new([], ordinary, 99)
@@ -121,16 +151,16 @@ func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
 	var interrupted := MarbleBag.new([], ordinary, 5)
 	interrupted.peek()
 	interrupted.rig(["z"], 1)
-	t.check(interrupted.sizes() == [1, ordinary.size()],
-			"a bag put in front after a peek leaves the peeked marble where it was (%s)"
-			% [interrupted.sizes()])
+	var sizes := _bag_sizes(interrupted)
+	t.check(sizes == [1, ordinary.size()],
+			"a bag put in front after a peek leaves the peeked marble where it was (%s)" % [sizes])
 
 ## A marble that is itself a bag *(inbox #561 in coral-bunny; asked whether a drawn bag marble goes back at once or
 ## with the next outer fill: "The inner bag becomes empty after n draws")*: drawing it draws from
 ## it and it goes straight back into the outer bag, and an inner bag of n marbles gives exactly n
 ## events and is then never drawn again — not by this outer bag and not by any later fill. A bag
 ## marble left last in its bag drains its inner bag and stops. Peeking names what a draw gives.
-func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t) -> void:
+func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t: TestRunner) -> void:
 	var others := ["cat", "cat", "dog", "dog", "dog"]
 	var inner_marbles := ["robber", "van", "van"]
 	var peeked_right := true
@@ -176,7 +206,7 @@ func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t) -> void:
 ## the guaranteed event"), so a bag marble it reaches gives a draw from its inner bag and stays where
 ## it is. The rigged bag then holds only plain marbles and the ensured one comes within x draws,
 ## every time, and the inner bag still gives exactly its n marbles.
-func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t) -> void:
+func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t: TestRunner) -> void:
 	var x := 2
 	var late := 0
 	var reached_the_bag_marble := 0
@@ -220,22 +250,21 @@ func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t) -> void:
 ## the bag holds it — `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight — whatever
 ## order they come in. A roll at the same weights misses that on most days (the probe
 ## `tests/probes/olive_badger_route_mix.gd` measures how far), so three seeds holding it is the bag.
-func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
-	var day := 5
+## Asked of day 2, a day whose dawn owes her more events than its bag holds marbles, with no rig in
+## front of the bag (day one's dog walkers, day 3's lesson) and no row owed as itself. **Nothing
+## waits for room here**: the director is handed the day's moments and none of its placed plans, so
+## no row sent ahead of her is refused room by a plan (`EventDirector.clear_to_send()`). A row that
+## waits is sent after the marbles behind it, which can carry it past the bag's end; that is
+## `tests/test_event_director.gd`'s.
+func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner) -> void:
+	var day := 2
 	for seed_value: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(seed_value)
-		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("route-bag:%d" % seed_value)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
-				CalmAreas.of(map), [], [], tree, 0).placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
-		director.start_day(day, plans, rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var expected := {}
 		for marble: String in EventDirector.ordinary_route_marbles(day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
@@ -255,7 +284,7 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		while counted < length and walked < 2000.0:
 			var due := director.due(STEP, at, velocity)
 			if not due.is_empty():
-				var id := (due[0] as EventDef).id
+				var id := (due[0] as EventDef).id()
 				# A row owed as itself — a sprinkled dog — is not one of the bag's marbles.
 				if expected.has(id):
 					met[id] = int(met.get(id, 0)) + 1
@@ -268,31 +297,77 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		t.check(met == expected, "seed %d: the first %d she meets are the bag's own mix (%s, bag %s)"
 				% [seed_value, length, met, expected])
 
-## Day 3's lesson through the director: on a real day's plan the dog is the first thing she meets,
+## **The dog walker, the patrol and the convoy are marbles of her route's bag** on every day each is
+## available (inbox #1460 in silky-lemur: "they all should be drawn when the player is close by to guarantee an
+## encounter"), the director sending each ahead of her (`EventDef.is_sent_ahead()`), and on no
+## day one is not.
+func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) -> void:
+	var wrong: Array[String] = []
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		var marbles := EventDirector.ordinary_route_marbles(day, 0)
+		for id: String in ["dog_walker", "police_patrol", "military_convoy"]:
+			var def := EventCatalogue.by_id(id)
+			if def.is_sent_ahead() != true or marbles.has(id) != def.available_on(day):
+				wrong.append("%s on day %d" % [id, day])
+	t.check(wrong.is_empty(), "each of the three is sent ahead of her and a marble of her route on "
+			+ "exactly the days it is available%s" % ("" if wrong.is_empty()
+				else ": not " + ", ".join(wrong)))
+
+## **Day one's dog walkers come by construction** (PLAYTEST-05 6; inbox #561 in coral-bunny, a
+## rigged bag): walking a recorded day one down the arterial's sidewalk, where a dog walker always
+## has a sidewalk ahead of her to come down, two of the first three events the director hands out on
+## her route are dog walkers, on every seed tried.
+func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner) -> void:
+	var day := 1
+	var short: Array[String] = []
+	var seeds: Array[int] = [4242, 90210, 1234567, 77, 1301, 31337]
+	for seed_value in seeds:
+		var map := CityGenerator.generate(seed_value)
+		var director := EventDirector.new(map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("route-bag:day-one:ahead:%d" % seed_value)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
+		var handed: Array[String] = []
+		var at := CrowdLanes.arterial_pavement(map)
+		at.y = map.world_size().y * 0.5
+		var velocity := Vector2(0.0, -Tuning.WALK_SPEED)
+		var y_max: float = map.world_size().y
+		var walked := 0.0
+		while handed.size() < EventDirector.DAY_ONE_DOG_WALKERS_WITHIN and walked < 400.0:
+			var due := director.due(STEP, at, velocity)
+			if not due.is_empty():
+				handed.append((due[0] as EventDef).id())
+			at += velocity * STEP
+			if at.y < 0.0 or at.y > y_max:
+				velocity.y = -velocity.y
+				at.y = clampf(at.y, 0.0, y_max)
+			walked += STEP
+		if handed.size() < EventDirector.DAY_ONE_DOG_WALKERS_WITHIN \
+				or handed.count("dog_walker") < EventDirector.DAY_ONE_DOG_WALKERS:
+			short.append("seed %d: %s" % [seed_value, handed])
+	t.check(short.is_empty(), "on day one, %d of the first %d handed out are dog walkers on all %d "
+			% [EventDirector.DAY_ONE_DOG_WALKERS, EventDirector.DAY_ONE_DOG_WALKERS_WITHIN,
+			seeds.size()] + "seeds%s" % ("" if short.is_empty() else ": " + "; ".join(short)))
+
+## Day 3's lesson through the director: on a recorded day the dog is the first thing she meets,
 ## at `LESSON_DELAY`, out of a rigged bag of one in front of the route's bag, and the ordinary bag
 ## after it still holds every dog marble it was filled with. *(inbox #561 in coral-bunny: "keep it first" · inbox
 ## #566 in feathery-stork: "but the first dog is a rigged bag with only one entry that is separate from anything that
 ## comes after" · "the lesson is not paid for".)*
-func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
+func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for seed_value: int in [4242, 90210]:
 		var map := CityGenerator.generate(seed_value)
-		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("route-bag:lesson:%d" % seed_value)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
-				CalmAreas.of(map), [], [], tree, 0).placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
-		director.start_day(day, plans, rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var bag := director.route_bag()
-		t.check(bag.sizes() == [1] and bag.bag_in_front() == ["charging_dog"],
-				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s, %s)"
-				% [seed_value, bag.sizes(), bag.bag_in_front()])
+		t.check(bag.bag_in_front() == ["charging_dog"],
+				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s)"
+				% [seed_value, bag.bag_in_front()])
 		var first := ""
 		var first_at := 0.0
 		var at := CrowdLanes.arterial_pavement(map)
@@ -304,43 +379,44 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 			at += velocity * STEP
 			walked += STEP
 			if not due.is_empty():
-				first = (due[0] as EventDef).id
+				first = (due[0] as EventDef).id()
 				first_at = walked
 		t.check(first == "charging_dog_tutorial",
 				"seed %d: the first thing she meets is the lesson's dog, its own row (%s)"
 				% [seed_value, first])
 		t.close_to(first_at, EventDirector.LESSON_DELAY,
 				"seed %d: and she meets it at LESSON_DELAY of walking" % seed_value, STEP * 1.5)
+		t.check(bag.left() == 0,
+				"seed %d: once the lesson's dog is drawn, no second bag waits behind it" % seed_value)
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
-		var dogs: int = EventDirector.ROUTE_BAG_MARBLES_OF["charging_dog"]
+		var dogs: int = EventDirector.ordinary_route_marbles(day, 0).count("charging_dog")
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
 
-## Day 6's man shouting and day 11's second mast, through a real city: reading the mark rigs her
-## route with a bag of the task's size holding the row once; walking the day's route, its marble is
-## one of that many events handed out on it, and the place is put ahead of her past the streaming
-## band on ground the route runs along, reachable from where she is, and in the world when she walks
-## to it.
-func _test_after_the_mark_the_task_row_is_put_on_her_route(t) -> void:
-	_a_mark_puts_a_place_on_her_route(t, 6, "homeless_yeller", ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT)
+## **Day 3's charging dogs keep the share of her route's bag the player set**, as near as whole
+## marbles come, whatever else the bag holds: within half a marble of
+## `EventDirector.ROUTE_BAG_SHARE_OF`'s share of the bag the director fills that day
+## (`ordinary_route_marbles()`). *(inbox #566 in feathery-stork: two dogs in day 3's bag of 16.)*
+func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	var marbles := EventDirector.ordinary_route_marbles(day, 0)
+	var dogs := marbles.count("charging_dog")
+	var share: float = EventDirector.ROUTE_BAG_SHARE_OF["charging_dog"]
+	t.check(dogs > 0 and absf(float(dogs) - share * float(marbles.size())) <= 0.5,
+			"day %d's bag holds %d charging dogs in %d marbles, within half a marble of its share %.3f"
+			% [day, dogs, marbles.size(), share])
+
+## Day 11's second mast, through a real city: reading the mark rigs her route with a bag of the
+## task's size holding the mast once; walking the day's route, its marble is one of that many events
+## handed out on it, and the mast is put ahead of her past the streaming band on ground the route
+## runs along, reachable from where she is, and in the world when she walks to it. Day 6's man
+## shouting and day 7's van are rigged the same way and laid just ahead of her instead
+## (`tests/test_day6_yeller_met.gd`, `tests/test_day7_van.gd`).
+func _test_after_the_mark_the_task_row_is_put_on_her_route(t: TestRunner) -> void:
 	_a_mark_puts_a_place_on_her_route(t, 11, "loudspeaker", ResistanceSteps.MAST_WITHIN_THE_NEXT)
-
-## A siting that refuses every place, as `WalkSiting.ahead_of()` does when she is off the day's
-## routes or walking home inside the streaming band of the branch's end; it counts how often it was
-## asked to site a mast.
-class RefusingSiting extends EventScheduler.WalkSiting:
-	var asked := 0
-
-	## Overrides EventScheduler.WalkSiting.ahead_of.
-	func ahead_of(def: EventDef, _rng: RandomNumberGenerator,
-			_already: Array[EventScheduler.Planned], _at: Vector2, _heading: Vector2,
-			_near: float, _far: float) -> EventScheduler.Planned:
-		if def.id == "loudspeaker":
-			asked += 1
-		return null
 
 ## **A place marble that cannot be sited holds nothing up.** Day 11's case: the return's patrols are
 ## rigged, and a mast is the next marble in front of them; the siting refuses it for the whole walk.
@@ -348,24 +424,18 @@ class RefusingSiting extends EventScheduler.WalkSiting:
 ## while the refused siting is asked once a look (`EventDirector.ON_HER_WAY_LOOK`) rather than on
 ## every frame. Holding the head of the queue until it found a site, the mast would stop every event
 ## behind it.
-func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
+func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	var day := 11
 	var map := CityGenerator.generate(SEED)
-	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
-	map.repaint(state)
-	var tree := RouteTree.for_day(map, day)
-	var plan_rng := RandomNumberGenerator.new()
-	plan_rng.seed = hash("route-bag:refused:%d" % SEED)
-	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
-			CalmAreas.of(map), [], [], tree, 0).placements()
-	var no_calm: Array[Vector2i] = []
-	var siting := RefusingSiting.new(day, map, tree, no_calm, PackedVector2Array(),
-			EventScheduler.Verdicts.new())
+	# A siting that refuses every place, as the real one does when she is off the day's routes or
+	# walking home inside the streaming band of the branch's end.
+	var siting := FakeWalkSiting.new()
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
-	director.start_day(day, plans, rng, siting)
+	# The day's own moments play no part: the return's patrols and the mast are owed below.
+	director.start_day(day, [] as Array[EventPlan], rng,
+			DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 	director.owe_the_return(day, 0)
 	var mast: Array[String] = ["loudspeaker"]
 	director.rig_her_route(mast, 1, 0, siting)
@@ -379,52 +449,60 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	var met: Array[String] = []
 	var walked := 0.0
 	while walked < 300.0 and met.count("police_patrol") < count:
-		director.site_what_is_on_her_way(STEP, at, velocity, plans)
+		director.site_what_is_on_her_way(STEP, at, velocity)
 		var due := director.due(STEP, at, velocity)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 		at += velocity * STEP
 		if at.y < 0.0 or at.y > y_max:
 			velocity.y = -velocity.y
 			at.y = clampf(at.y, 0.0, y_max)
 		walked += STEP
-	t.check(director.route_bag().peek() != "loudspeaker" and siting.asked > 0,
+	t.check(director.route_bag().peek() != "loudspeaker" and not siting.asked.is_empty(),
 			"the mast was handed to her walk to site (its marble is drawn and the siting was asked for it)")
 	t.check(met.count("police_patrol") == count,
 			"every return patrol still comes behind the mast that cannot be sited (%s)" % [met])
 	var looks := int(walked / EventDirector.ON_HER_WAY_LOOK) + 1
-	t.check(siting.asked > 0 and siting.asked <= looks,
+	var asked_for_the_mast := 0
+	for asked: EventPlan in siting.asked:
+		if asked.row_id() == "loudspeaker":
+			asked_for_the_mast += 1
+	t.check(asked_for_the_mast > 0 and asked_for_the_mast <= looks,
 			"the refused siting is asked on the look's cadence, %d times in %.0fs of walking"
-			% [siting.asked, walked])
+			% [asked_for_the_mast, walked])
 
-func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, size: int) -> void:
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, run, CityGenerator.generate(SEED))
+	# What the events tell the run log: a place is put on her route when a line says so.
+	var put_down: Array[String] = []
+	RunCity.events(city).world.surroundings().tracing_to(RecordingTrace.new(put_down))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:%d:%d:closures" % [SEED, day])
 	city.start_day(state, day, rng)
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("route-bag:%d:%d:events" % [SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	city.run.resistance.completed_steps = done
-	city.run.resistance.failed_steps = []
-	city.run.resistance.progress = 0
+	GivenRun.completed_steps(run, done)
+	GivenRun.failed_steps(run, [])
+	run.resistance().set_progress(0)
 	var resistance := ResistanceDirector.new()
 	var told: Array[String] = []
-	resistance.trace = RunTrace.recording(told)
+	resistance.use_trace(RecordingTrace.new(told))
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	var resistance_rng := RandomNumberGenerator.new()
 	resistance_rng.seed = hash("route-bag:%d:%d:resistance" % [SEED, day])
 	resistance.start_day(day, resistance_rng, 300.0)
@@ -432,14 +510,6 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	t.check(mark != null and mark.is_pickup and mark.day == day, "day %d opens on its mark" % day)
 	if mark:
 		resistance.contact().complete_now()
-	# Reading the mark is one frame of play, and the rig is part of it: a mast's siting must not be
-	# prepared over the whole city's ground, only over what a siting is offered. The work is counted
-	# in tiles asked, never in time.
-	var walk_siting := city.events.ahead.walk_siting()
-	if walk_siting:
-		t.check(walk_siting.mast_checks == 0,
-				"day %d: the rig asks no tile whether a mast may stand there (%d)"
-				% [day, walk_siting.mast_checks])
 	var rigged := _the_rigged_bag(told)
 	t.check(rigged.size() == size and rigged.count(row) == 1,
 			"day %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
@@ -454,8 +524,8 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	city.events.use_player(player)
-	t.check(path.size() >= 2 and city.events.world.has_player(), "a route to walk and her on it")
+	RunCity.events(city).use_player(player)
+	t.check(path.size() >= 2 and RunCity.events(city).world.has_player(), "a route to walk and her on it")
 	if path.size() < 2:
 		player.free()
 		city.free()
@@ -464,9 +534,8 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var direction := 1
 	player.global_position = path[0]
 	var handed := 0
-	var placed: Array[EventScheduler.Planned] = []
+	var placed: Array[EventPlan] = []
 	var her_at_siting := Vector2.INF
-	var heading_at_siting := Vector2.ZERO
 	var walked := 0.0
 	while (handed < size or placed.is_empty()) and walked < 600.0:
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
@@ -480,79 +549,46 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		var owed_before := city.events.owed_ahead()
-		var plans_before := city.events.plans().size()
-		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-		city.events.ahead.site_what_is_on_her_way(STEP)
-		city.events.ahead.place_what_is_owed_ahead(STEP)
-		if city.events.owed_ahead() < owed_before:
+		var owed_before := RunCity.events(city).owed_ahead()
+		var plans_before := RunCity.events(city).plans().size()
+		# The tick's stretch from her camera's view to what is owed, in the tick's own order.
+		RunCity.events(city).step_what_is_ahead(STEP)
+		if RunCity.events(city).owed_ahead() < owed_before:
 			handed += 1
-		for plan in city.events.plans().slice(plans_before):
-			if (plan as EventScheduler.Planned).def.id == row:
+		# Only the place her route's marble handed to her walk: a unit the siting drew round its
+		# pick may have drawn the same row, a place of its own.
+		for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
+			if plan.row_id() == row and PutOnHerRoute.says(put_down, city.map(), plan):
 				placed.append(plan)
 				her_at_siting = player.global_position
-				heading_at_siting = player.velocity.normalized()
 		player.global_position += player.velocity * STEP
 		walked += STEP
-	t.check(placed.size() == 1, "day %d: and one %s is put on her route (%d)"
+	t.check(placed.size() == 1, "day %d: and one %s is put on her route by her route's marble (%d)"
 			% [day, row, placed.size()])
 	if placed.size() == 1:
 		var plan := placed[0]
-		var map := city.map
-		t.check(city.events.ahead.director().is_from_her_route(plan),
-				"day %d: and it is a place her route's marble handed to her walk" % day)
-		var tile := map.world_to_tile(plan.position)
-		t.check(not city.streets().route_tree().branches_on(tile).is_empty(),
-				"day %d: it stands on ground the day's routes run along" % day)
-		t.check(plan.position.distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
-				"day %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
-				% [day, plan.position.distance_to(her_at_siting)])
+		var map := city.map()
+		var tile := map.world_to_tile(plan.placed_at())
+		# Day 6's man shouting is sited on the street she is walking, inside the streaming band and
+		# in the world at once (`WalkSiting.lay_ahead()`), not on the day's route band:
+		# `tests/test_day6_yeller_met.gd` holds where he stands. The route band's claims are the mast's.
+		if row != "homeless_yeller":
+			t.check(not city.streets().route_tree().branches_on(tile).is_empty(),
+					"day %d: it stands on ground the day's routes run along" % day)
+			t.check(plan.placed_at().distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
+					"day %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
+					% [day, plan.placed_at().distance_to(her_at_siting)])
 		var grid := ReachabilityGrid.build(map)
 		var reached := grid.flood([map.world_to_tile(her_at_siting)])
 		t.check(grid.reaches(tile, {}, reached), "day %d: she can walk to it from where she was" % day)
 		if row == "loudspeaker":
-			t.check(plan.mast_id == EventScheduler.added_mast_id(plan.position),
+			t.check(plan.mast_id() == DawnMasts.added_mast_id(plan.placed_at()),
 					"a mast put on her route is a mast the day can silence, named by its foot")
-			t.check(MastSites.is_eligible(plan.position, map),
+			t.check(MastSites.is_eligible(plan.placed_at(), map),
 					"a mast put on her route stands where a mast site may (off the home street)")
-			# And not by luck of this seed: what a route mast is offered along the branch she was
-			# walking holds no tile a mast site would refuse, out of a sidewalk and square that do
-			# hold some. Sited again and again from where she was, by streams of their own, every
-			# site a mast is offered is a tile a mast site may be.
-			var mast := city.events.ahead.director().route_row(row)
-			var ground := {}
-			for at: Vector2i in EventScheduler.open_ground_for(mast, map, {}, mast.pavement_side,
-					city.events.ahead.holds_the_home_streets):
-				ground[at] = true
-			var siting := city.events.ahead.walk_siting()
-			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
-					"siting it asked %d tiles whether a mast may stand there, of %d tiles of ground"
-					% [siting.mast_checks, ground.size()])
-			print("[test_route_bag] siting the route mast asked %d tiles of %d tiles of ground"
-					% [siting.mast_checks, ground.size()])
-			var door_points := MastSites.possible_door_points(map)
-			var refused_ground := 0
-			for at: Vector2i in ground:
-				if not MastSites.is_eligible(map.tile_to_world(at), map, door_points):
-					refused_ground += 1
-			var sited := 0
-			var refused_sited := 0
-			for i in MAST_SITINGS:
-				var siting_rng := RandomNumberGenerator.new()
-				siting_rng.seed = hash("route-bag:mast-sitings:%d" % i)
-				var again := siting.ahead_of(mast, siting_rng, city.events.plans(), her_at_siting,
-						heading_at_siting, 0.0, INF)
-				if again == null or again.position == Vector2.INF:
-					continue
-				sited += 1
-				if not MastSites.is_eligible(again.position, map, door_points):
-					refused_sited += 1
-			t.check(sited > 0 and refused_sited == 0 and refused_ground > 0,
-					"a route mast is sited %d times ahead of her, none of them on the %d tiles of its ground a mast site refuses (%d)"
-					% [sited, refused_ground, refused_sited])
-		t.check(plan.live == null, "day %d: it is not in the world while she is far from it" % day)
-		city.events.stream_around(plan.position)
-		t.check(plan.live != null and is_instance_valid(plan.live),
+		t.check(not plan.is_in_the_world(), "day %d: it is not in the world while she is far from it" % day)
+		RunCity.events(city).stream_around(plan.placed_at())
+		t.check(plan.is_in_the_world() and is_instance_valid(RunCity.events(city).event_of(plan)),
 				"day %d: and it is in the world once she walks to it" % day)
 	player.free()
 	city.free()
@@ -569,14 +605,13 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
-	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.streets().route_tree(),
-			[], PackedVector2Array(), EventScheduler.Verdicts.new())
+	var tree := city.streets().route_tree()
 	var longest: Array = []
-	for branch in city.streets().route_tree().branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(siting.cell_centre(longest[i]))
+		points.append(tree.cell_centre(longest[i]))
 	return points

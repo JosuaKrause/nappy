@@ -1,7 +1,7 @@
 class_name CityEdge
 extends ScenerySprite
-## Where the main road leaves the map: a tunnel at the north end of the spine, a bridge at its
-## south end, and the east-west spine simply carrying on.
+## Where the main road leaves the map: a tunnel at the north end of the spine, with the dark ramp
+## inside its opening, and a bridge at the south end.
 ##
 ## **She can walk into one, and a car will kill her there.** That is the point: it makes the end of
 ## the map an emergent end rather than an artificial one. A wall says *the game stops here*; a
@@ -33,19 +33,19 @@ extends ScenerySprite
 ##   ground: a car leaving over the bridge is *on* the deck, and a deck that sorted against it
 ##   would sometimes be painted over the car.
 
-enum Kind {
+## Which piece of the edge a node draws. Which way out of the city she takes is not this: that is
+## `CityExit.Kind`, the value the finale, the day and the texts key on, while these are the
+## drawing's own parts, the tunnel being two of them.
+enum Piece {
 	TUNNEL,   ## North: the portal's face, and the mountain over the road beyond it.
 	TUNNEL_DARK,  ## North: the dark inside the portal's opening, over whatever drives into it.
 	BRIDGE,   ## South: the deck runs out between two parapets.
-	ROAD_EAST,
-	ROAD_WEST,
 }
 
 ## Region names on the `street_kit` atlas group — `_enter_tree()`/`_exit_tree()` acquire and
 ## release it alongside `ground`, below.
 const TUNNEL := &"props/tunnel_mouth"
 const BRIDGE := &"props/bridge_deck"
-const ROAD_ON := &"props/road_on"
 ## The same tile the border paints north of the city, so the roof this piece puts over the tunnel
 ## is pixel for pixel the mountainside around it. On the `ground` atlas group rather than
 ## `street_kit`, because the ground compositor already holds every tile picture there — nothing
@@ -70,51 +70,52 @@ const BRIDGE_DECK_PX := 1280.0
 ## steps — it is visibly darker at the front than at the back while it is going in.
 const RAMP_STEP_PX := 8.0
 
-@export var kind := Kind.TUNNEL
+@export var piece := Piece.TUNNEL
 ## The baked atlas pages this exit draws from (`AtlasLibrary`), handed by the city before it is
 ## added; an exit nobody handed one (a suite's) makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Dresses the piece before it is added: drawn from `library` as `as_piece`.
+func dress(library: AtlasLibrary, as_piece: Piece) -> void:
+	_atlas = library
+	piece = as_piece
 
 ## `AtlasLibrary` reference-counts, so acquiring both groups on every piece of every exit is one
 ## page load each, regardless of how many `CityEdge` instances the city spawns.
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"street_kit")
-	atlas.acquire(&"ground")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"street_kit")
+	_atlas.acquire(&"ground")
 
 func _exit_tree() -> void:
-	atlas.release(&"street_kit")
-	atlas.release(&"ground")
+	_atlas.release(&"street_kit")
+	_atlas.release(&"ground")
 
 ## Whether this piece belongs in a layer over the entities.
 func overhangs() -> bool:
-	return kind == Kind.TUNNEL_DARK
+	return piece == Piece.TUNNEL_DARK
 
 ## Whether this piece belongs in the y-sorted entity layer rather than under it.
 func occludes() -> bool:
-	return kind == Kind.TUNNEL
+	return piece == Piece.TUNNEL
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
-	match kind:
-		Kind.TUNNEL:
+	match piece:
+		Piece.TUNNEL:
 			_blit(TUNNEL, Vector2(-0.5, -1.0))
 			_roof_the_tunnel()
-		Kind.TUNNEL_DARK:
+		Piece.TUNNEL_DARK:
 			_swallow_the_road()
-		Kind.BRIDGE:
+		Piece.BRIDGE:
 			_lay_the_deck()
-		Kind.ROAD_EAST:
-			_blit(ROAD_ON, Vector2(0.0, -0.5))
-		_:
-			_blit(ROAD_ON, Vector2(-1.0, -0.5))
 
 ## The deck, laid end to end for `BRIDGE_DECK_PX`: one picture is a block long, and a view past the
 ## border shows the road carrying on over the water, so the deck never stops short of the frame.
 func _lay_the_deck() -> void:
-	var texture := atlas.region(BRIDGE)
+	var texture := _atlas.region(BRIDGE)
 	var extent := texture.get_size()
 	var rows := int(ceil(BRIDGE_DECK_PX / extent.y))
 	for row in rows:
@@ -123,10 +124,10 @@ func _lay_the_deck() -> void:
 ## The deck's own stretch for the residency test, in place of the 512px square every other
 ## structure uses: without it the deck would unload while its far end is still in view.
 ##
-## Overrides ScenerySprite.scenery_bounds.
-func scenery_bounds() -> Rect2:
-	if kind != Kind.BRIDGE:
-		return super.scenery_bounds()
+## Overrides ScenerySprite._scenery_bounds.
+func _scenery_bounds() -> Rect2:
+	if piece != Piece.BRIDGE:
+		return super._scenery_bounds()
 	return Rect2(global_position + Vector2(-128.0, -256.0), Vector2(256.0, BRIDGE_DECK_PX + 256.0))
 
 ## The carriageway darkening a step at a time as it runs into the portal's opening.
@@ -173,7 +174,7 @@ func _roof_the_tunnel() -> void:
 	var columns := Tuning.STREET_WIDTH
 	var portal_rows := AtlasTable.baked().native_size(TUNNEL).y / Tuning.TILE_SIZE
 	var left := -columns * tile * 0.5
-	var mountain := atlas.region(MOUNTAIN)
+	var mountain := _atlas.region(MOUNTAIN)
 	for row in range(portal_rows, CityMap.OUTSIDE_DEPTH_TILES):
 		for column in columns:
 			draw_texture_rect(mountain,
@@ -184,6 +185,6 @@ func _roof_the_tunnel() -> void:
 ## Written out rather than reusing `Sprites.draw_standing`, which only knows the feet-anchored
 ## case: an exit that leaves eastward is anchored on its side, not on its base.
 func _blit(name: StringName, anchor: Vector2) -> void:
-	var texture := atlas.region(name)
+	var texture := _atlas.region(name)
 	var extent := texture.get_size()
 	draw_texture_rect(texture, Rect2(extent * anchor, extent), false)

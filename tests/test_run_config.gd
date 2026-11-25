@@ -4,10 +4,21 @@ extends RefCounted
 ## the day, the baby and the escape's clock the plain values out of it. Every config here is parsed
 ## from the words a test would type (`RunConfig.parse()`), never from this process's own command
 ## line.
+##
+## **Combined by composition, for this reason:** `RunConfig` is a plain value, and its own rules (what it
+## reads on which build, that a resolved one cannot change, what a recipe puts on top) are checked on
+## parsed values with nothing built. What the rest holds is that `main`, the city and the
+## simulation's builder hand each of their parts the value it asks for, a guarantee between the
+## configuration and the parts it reaches, which only the real composition shows: a boot of `main`,
+## and a built `City` with its simulation stood by a builder (`RunCity.build()`) for the values
+## handed through the city's and the builder's setup. Cities come from the cache
+## (`tests/city_map_cache.gd`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
+const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_run_config_scratch.json"
 const SEED := 4242
@@ -20,12 +31,13 @@ const FORCED_INTERVAL := 2.0
 const FORCED_SCALE := 3.0
 const FORCED_WITHIN := 6.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_release_build_reads_no_command_line_flag(t)
 	_test_a_debug_build_reads_them(t)
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)
 	_test_a_resolved_config_cannot_change(t)
 	_test_a_recipe_stands_in_for_the_run_flags(t)
+	_test_the_charger_timing_is_the_flags_or_the_shipped_one(t)
 	_test_the_day_and_the_section_lengths(t)
 	_test_every_rig_flag_makes_a_rig(t)
 	_test_the_title_is_skipped_by_a_rig_or_a_recipe(t)
@@ -35,113 +47,121 @@ func run(t) -> void:
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
 	await _test_touch_and_web_are_the_runs_answers(t)
 
-## The errors raised while it is attached (`OS.add_logger()`).
-class RefusedWrites extends Logger:
-	var count := 0
-
-	func _log_error(_function: String, _file: String, _line: int, _code: String,
-			_rationale: String, _editor_notify: bool, _error_type: int,
-			_script_backtraces: Array) -> void:
-		count += 1
-
 static func _words(words: Array) -> PackedStringArray:
 	return PackedStringArray(words)
 
 ## A release build answers no command-line flag at all, whatever is typed: a public build cannot be
 ## told to jump to a day or stop its clock. `--no-telemetry` is the player's own opt-out and is the
 ## one word read there.
-func _test_a_release_build_reads_no_command_line_flag(t) -> void:
+func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 	var words := _words(["--day", "5", "--seed", "7", "--invincible", "--layers", "1",
 			"--route", "home", "--no-telemetry"])
 	var release := RunConfig.parse(words, "", false)
-	t.check(release.day_override == 1 and release.seed_override == 0 and not release.invincible
-			and release.layers_override.is_empty() and release.route_targets.is_empty()
-			and release.active_args.is_empty() and not release.is_rig,
+	t.check(release.day_override() == 1 and release.seed_override() == 0
+			and not release.is_invincible()
+			and release.layers_override().is_empty() and release.route_targets().is_empty()
+			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig(),
 			"a release build reads none of the developer flags")
-	t.check(release.no_telemetry, "but does read the player's own --no-telemetry")
+	t.check(release.refuses_telemetry(), "but does read the player's own --no-telemetry")
 
-func _test_a_debug_build_reads_them(t) -> void:
+func _test_a_debug_build_reads_them(t: TestRunner) -> void:
 	var debug := RunConfig.parse(_words(["--day", "99", "--seed", "7", "--invincible",
 			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
-	t.check(debug.day_override == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
-	t.check(debug.seed_override == 7 and debug.invincible and debug.layers_override == [1, 3]
-			and debug.ground_mode == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
+	t.check(debug.day_override() == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
+	t.check(debug.seed_override() == 7 and debug.is_invincible()
+			and debug.layers_override() == [1, 3]
+			and debug.ground_mode() == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
 			"and every other flag given is read")
-	t.check(debug.active_args.size() == 11, "the words themselves are kept, all of them")
+	t.check(debug.dev_flag_words().size() == 11, "the words themselves are kept, all of them")
 
 ## The release-safe bundle answers to a release page only once it asked `?debug=1`; using one of its
 ## parameters is what keeps that page off the save.
-func _test_a_release_page_opens_the_bundle_only_with_debug(t) -> void:
+func _test_a_release_page_opens_the_bundle_only_with_debug(t: TestRunner) -> void:
 	var none := PackedStringArray()
 	var unasked := RunConfig.parse(none, "?day=9&invincible=1", false)
-	t.check(unasked.day_override == 1 and not unasked.invincible and not unasked.live_debug
-			and not unasked.web_debug_flag_used,
+	t.check(unasked.day_override() == 1 and not unasked.is_invincible()
+			and not unasked.is_live_debug()
+			and not unasked.used_a_web_debug_flag(),
 			"a release page that did not ask ?debug=1 reads nothing of the bundle")
 	var asked := RunConfig.parse(none, "?debug=1&day=9&invincible=1", false)
-	t.check(asked.day_override == 9 and asked.invincible and asked.live_debug
-			and asked.web_debug_flag_used and asked.readout_requested,
+	t.check(asked.day_override() == 9 and asked.is_invincible() and asked.is_live_debug()
+			and asked.used_a_web_debug_flag() and asked.asks_for_the_readout(),
 			"one that did reads the bundle and counts as having used it")
-	t.check(asked.page_query == "?debug=1&day=9&invincible=1",
+	t.check(asked.page_query_string() == "?debug=1&day=9&invincible=1",
 			"and keeps the query it read for the readers that parse their own parameter")
 	var readout_only := RunConfig.parse(none, "?debug=1", false)
-	t.check(readout_only.live_debug and not readout_only.web_debug_flag_used,
+	t.check(readout_only.is_live_debug() and not readout_only.used_a_web_debug_flag(),
 			"?debug=1 alone opens the bundle without using any of it")
 
-## A write to a resolved config is refused with a warning and leaves the value as it was, whichever
-## field it names, including the ones that hold the gate itself; the arrays are read-only, so no
-## reader's edit of one can reach another reader.
-func _test_a_resolved_config_cannot_change(t) -> void:
+## What a resolved config hands out cannot change it: its arrays are read-only and its words a copy,
+## so no reader's edit of one reaches another reader. Its fields are private and written by
+## `parse()` alone, so nothing else here writes one.
+func _test_a_resolved_config_cannot_change(t: TestRunner) -> void:
 	var config := RunConfig.parse(_words(["--layers", "1", "--route", "home", "--skip", "events",
 			"--debug"]), "", true)
-	t.check(config.layers_override.is_read_only() and config.route_targets.is_read_only()
-			and config.skip_words.is_read_only(),
+	t.check(config.layers_override().is_read_only() and config.route_targets().is_read_only()
+			and config.skip_words().is_read_only(),
 			"every array a resolved config holds is read-only")
-	var refused := RefusedWrites.new()
-	OS.add_logger(refused)
-	config.invincible = true
-	config.debug_build = false
-	OS.remove_logger(refused)
-	t.check(not config.invincible and config.debug_build,
-			"a write after the build changes nothing, the field that holds the gate included")
-	t.check(refused.count == 2, "each refused write is reported, not swallowed: %d" % refused.count)
 	# The words and the movie flag it was parsed from are what `with_recipe()` (which `main` calls)
-	# parses the run from again, so the run it gives is the same run: a refused write to the config
-	# is not in it, and what the words and the movie flag said is.
-	t.check(not config.with_recipe({}).invincible,
-			"the run parsed again from its words does not carry the refused write")
+	# parses the run from again, so the run it gives is the same run.
 	var movie := RunConfig.parse(_words(["--invincible", "--layers", "1"]), "", true, true)
 	var again := movie.with_recipe({})
-	t.check(again.recording and again.invincible and again.layers_override == [1]
-			and again.active_args == movie.active_args,
-			"but does carry the movie flag and every word it was parsed from")
-	var args := config.active_args
+	t.check(again.records_a_movie() and again.is_invincible() and again.layers_override() == [1]
+			and again.dev_flag_words() == movie.dev_flag_words(),
+			"the run parsed again carries the movie flag and every word it was parsed from")
+	var args := config.dev_flag_words()
 	args.append("--invincible")
-	t.check(not "--invincible" in config.active_args,
+	t.check(not "--invincible" in config.dev_flag_words(),
 			"the words are a value: a reader's copy does not change the config's")
+
 
 ## A recipe is one whole authored setup: its seed, day, escape part and parent stand in for the
 ## flags' own, on a new config, while the one it came from stays what it was.
-func _test_a_recipe_stands_in_for_the_run_flags(t) -> void:
+func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 	var base := RunConfig.parse(_words(["--recipe", "scene.json", "--seed", "3", "--day", "2"]),
 			"", true)
 	var recipe := {"seed": 9, "kind": "escape", "setup": {"day": 7, "parent": "father",
 			"progression": {"escape_part": "lobby"}}}
 	var overlaid := base.with_recipe(recipe)
-	t.check(overlaid.seed_override == 9 and overlaid.day_override == 7 and overlaid.start_escape
-			and overlaid.start_escape_at == "lobby" and overlaid.parent_override == "father",
+	t.check(overlaid.seed_override() == 9 and overlaid.day_override() == 7
+			and overlaid.starts_in_the_escape()
+			and overlaid.start_escape_at() == "lobby" and overlaid.parent_override() == "father",
 			"the recipe's seed, day, escape part and parent are the run's")
-	t.check(overlaid.recipe_path == "scene.json",
+	t.check(overlaid.recipe_path() == "scene.json",
 			"the rest of the run is parsed from the same words")
-	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override == 0,
+	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override() == 0,
 			"a release build keeps no recipe, whatever it is handed")
-	t.check(base.seed_override == 3 and base.day_override == 2,
+	t.check(base.seed_override() == 3 and base.day_override() == 2,
 			"and the config it was put on is unchanged")
+
+## **How a run plays every charger** (`RunConfig.charger_timing()`): a debug build's `--chargers`,
+## or a release page's `?chargers=` once it asked `?debug=1`, which then counts as having used the
+## bundle; anywhere else the shipped timing, the one the catalogue is built from unless told
+## otherwise (minty-dolphin #834).
+func _test_the_charger_timing_is_the_flags_or_the_shipped_one(t: TestRunner) -> void:
+	var none := PackedStringArray()
+	var shipped := EventCatalogue.shipped_charger_timing()
+	var flagged := RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", true).charger_timing()
+	t.check(is_equal_approx(flagged.warning(), 1.5)
+			and is_equal_approx(flagged.notice(100.0), 120.0),
+			"--chargers 1.5 1.2 warns for 1.5s with every radius at 1.2 times its own")
+	var page := RunConfig.parse(none, "?debug=1&chargers=1.25,0.85", false)
+	t.check(is_equal_approx(page.charger_timing().warning(), 1.25)
+			and is_equal_approx(page.charger_timing().notice(100.0), 85.0)
+			and page.used_a_web_debug_flag(),
+			"a release page that asked ?debug=1 reads ?chargers= and counts as having used"
+			+ " the bundle")
+	for config: RunConfig in [RunConfig.parse(none, "?chargers=1.25,0.85", false),
+			RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", false),
+			RunConfig.parse(none, "", true)]:
+		t.check(config.charger_timing().same_as(shipped),
+				"a run that asked for no timing it can read plays the shipped one")
 
 ## A day's length is decided in one place and handed on as a number: `--day-length` for every day
 ## and every escape section when given, else each one's own.
-func _test_the_day_and_the_section_lengths(t) -> void:
+func _test_the_day_and_the_section_lengths(t: TestRunner) -> void:
 	var plain := RunConfig.parse(PackedStringArray(), "", true)
-	for day in [1, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
 		t.check(is_equal_approx(plain.day_length_for(day), Tuning.day_length(day)),
 				"day %d runs its own length with no flag" % day)
 	t.check(is_equal_approx(plain.escape_section_length(), RunConfig.FINALE_LENGTH_SECONDS),
@@ -155,20 +175,20 @@ func _test_the_day_and_the_section_lengths(t) -> void:
 
 ## One rig list: every flag on it makes the run a rig, `--tap` included, as do a movie recording
 ## and a scripted recipe; a plain debug run with other flags is a person's.
-func _test_every_rig_flag_makes_a_rig(t) -> void:
+func _test_every_rig_flag_makes_a_rig(t: TestRunner) -> void:
 	for words: Array in [["--screenshot", "x.png"], ["--walk", "1e"], ["--flee"],
 			["--press", "pause", "1"], ["--tap", "1", "1"], ["--route", "home"]]:
-		t.check(RunConfig.parse(_words(words), "", true).is_rig, "%s is a rig" % [words])
-	t.check(RunConfig.parse(PackedStringArray(), "", true, true).is_rig,
+		t.check(RunConfig.parse(_words(words), "", true).runs_as_a_rig(), "%s is a rig" % [words])
+	t.check(RunConfig.parse(PackedStringArray(), "", true, true).runs_as_a_rig(),
 			"a movie recording is a rig")
 	t.check(RunConfig.parse(_words(["--recipe", "x.json", "--recipe-mode", "scripted"]), "", true)
-			.is_rig, "a scripted recipe is a rig")
-	t.check(not RunConfig.parse(_words(["--seed", "1", "--day", "9"]), "", true).is_rig,
+			.runs_as_a_rig(), "a scripted recipe is a rig")
+	t.check(not RunConfig.parse(_words(["--seed", "1", "--day", "9"]), "", true).runs_as_a_rig(),
 			"a run that only chooses where it starts is a person's")
-	t.check(not RunConfig.parse(_words(["--walk", "1e"]), "", false).is_rig,
+	t.check(not RunConfig.parse(_words(["--walk", "1e"]), "", false).runs_as_a_rig(),
 			"and nothing is a rig on a release build")
 
-func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t) -> void:
+func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t: TestRunner) -> void:
 	t.check(not RunConfig.parse(PackedStringArray(), "", true).skips_the_title(),
 			"a plain run opens on the title")
 	t.check(RunConfig.parse(_words(["--screenshot", "x.png"]), "", true).skips_the_title(),
@@ -182,102 +202,229 @@ func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t) -> void:
 	t.check(RunConfig.parse(_words(["--recipe", "x.json", "--title"]), "", true).skips_the_title(),
 			"and a recipe, which is one authored day, always does")
 
-## `main` is the one place the configuration is read: the baby and the city it builds are handed
-## plain values, and neither reads a flag of its own.
-func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
+## A world as loud everywhere as a live row standing on her, for asking whether a baby's meter can
+## rise at all: one source of `NOISE` points a second, standing on the world itself.
+class LoudWorld extends WorldContext:
+	const NOISE := 50.0
+
+	var _noise := ExcitementSource.new(self)
+
+	## Overrides WorldContext.excitement_sources_at.
+	func excitement_sources_at(_world_position: Vector2) -> Array:
+		return [[_noise, NOISE]]
+
+## Whether `baby`'s excitement rises over a few physics ticks against a `LoudWorld`, her meter
+## ticking whether or not the title holds the game paused, and her own world, `own` (the city
+## `main` put her in), handed back after: what `Baby.freeze_excitement()`, which `main` tells her on
+## an invincible run, stops.
+func _her_excitement_rises(t: TestRunner, baby: Baby, own: WorldContext) -> bool:
+	var loud := LoudWorld.new()
+	t.add_child(loud)
+	var mode := baby.process_mode
+	baby.process_mode = Node.PROCESS_MODE_ALWAYS
+	baby.set_world(loud)
+	var before := baby.excitement_level()
+	for _tick in 3:
+		await t.get_tree().physics_frame
+	var rose := baby.excitement_level() > before
+	baby.set_world(own)
+	baby.process_mode = mode
+	loud.free()
+	return rose
+
+## How many of `agents` stand somewhere other than `at`, their places a while ago.
+func _how_many_moved(agents: Array[CrowdAgent], at: Array[Vector2]) -> int:
+	var moved := 0
+	for i in agents.size():
+		if agents[i].global_position != at[i]:
+			moved += 1
+	return moved
+
+## `main` is the one place the configuration is read: the baby, the city it builds and the parts
+## its builder stands in the city are handed plain values, and none reads a flag of its own.
+func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 	for invincible: bool in [false, true]:
 		var words := _words(["--skip", "shadows,motion", "--debug", "--ground-mode", "1",
-				"--blackout", "--pelican", "--force", "cyclist", "3"])
+				"--blackout", "--pelican", "--force", "cyclist", str(FORCED_INTERVAL)])
 		if invincible:
 			words.append("--invincible")
 		words.append_array(_words(["--no-save", "--no-telemetry"]))
 		# The run this boot plays is the test's own, parked in a home the game takes it from.
 		var run := RunState.new()
 		var home := Boot.home_playing(t, run)
-		# The city's flags as it enters the tree: `main` adds it before `build()`, which is where
-		# they take effect, so what is read here is what `build()` reads.
-		var entered := {}
-		var catch := func(node: Node) -> void:
-			if node is City:
-				var c := node as City
-				entered["flags"] = {"ground_mode": c.ground_mode, "skip_shadows": c.skip_shadows,
-						"skip_crowd_motion": c.skip_crowd_motion,
-						"skip_event_drawing": c.skip_event_drawing,
-						"skip_crowd_drawing": c.skip_crowd_drawing,
-						"blackout_forced": c.blackout_forced,
-						"all_cyclists_pelicans": c.all_cyclists_pelicans,
-						"forced_row": c.forced_row, "forced_interval": c.forced_interval,
-						"scenery_frame_locked": c.scenery_frame_locked}
-		t.get_tree().node_added.connect(catch)
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
-				func(main: Node) -> void: main.use_sitting_home(home))
-		t.get_tree().node_added.disconnect(catch)
+				func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 		var baby := Boot.baby(booted.main)
-		t.check(baby != null and baby.excitement_frozen == invincible,
+		var rises := false
+		if baby:
+			rises = await _her_excitement_rises(t, baby, Boot.city(booted.main))
+		t.check(baby != null and rises != invincible,
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
-		var f: Dictionary = entered.get("flags", {})
-		t.check(not f.is_empty() and f["ground_mode"] == SceneryGround.Mode.ALL
-				and f["skip_shadows"]
-				and f["skip_crowd_motion"] and not f["skip_event_drawing"]
-				and not f["skip_crowd_drawing"] and f["blackout_forced"] and f["all_cyclists_pelicans"]
-				and f["forced_row"] == "cyclist" and is_equal_approx(f["forced_interval"], 3.0)
-				and not f["scenery_frame_locked"],
-				"the city is handed what the flags chose before it builds")
+		# The city's own ground and shadows are read outward: the mode the flags chose, and a shadow
+		# layer that draws nothing once every chunk it stands is asked to draw again.
+		var city := Boot.city(booted.main)
+		var shadows := city.get_node("BuildingShadows") as BuildingShadows
+		var shade := RecordingShadowDrawer.new()
+		shadows.draw_through(shade)
+		var chunks := 0
+		for chunk in shadows.get_children():
+			if chunk is CanvasItem:
+				(chunk as CanvasItem).queue_redraw()
+				chunks += 1
+		await t.get_tree().process_frame
+		t.check(city.ground_mode_in_force() == SceneryGround.Mode.ALL and chunks > 0
+				and shade.draws.is_empty(),
+				"the city is handed what the flags chose for its own ground and shadows")
+		# The parts the builder stood are handed what the flags chose for each
+		# (`main._simulation_builder()`).
+		t.check(city != null and RunCity.events(city).world.surroundings().draws()
+				and RunCity.events(city).world.surroundings().pelican_rig()
+				== EventSpawner.PelicanRig.ALWAYS,
+				"and the events it stands are handed theirs")
+		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
+		# that nothing but a win ends (`DayController.set_invincible()`), so a walk can take its time.
+		if invincible and city != null:
+			# Past the title and the day's brief, as a played day is, so she walks the city and its
+			# parts are handed her (`WorldSimulation.meet_her()`).
+			var title := Boot.title(booted.main)
+			if title and title.is_open():
+				await Boot.press_title(t, booted.main)
+			if t.get_tree().paused:
+				await Boot.press_continue(t, booted.main)
+			# `--skip motion`: the crowd the builder stood stands where the day placed it while
+			# the game runs, and walks once it is let (the control, so the ticks did run it).
+			var crowd := RunCity.crowd(city)
+			var agents := crowd.agents()
+			var at: Array[Vector2] = []
+			for agent in agents:
+				at.append(agent.global_position)
+			await PhysicsTicks.pass_ticks(t, 30)
+			var walked := _how_many_moved(agents, at)
+			t.check(not agents.is_empty() and walked == 0,
+					"the crowd is handed --skip motion: it has not moved (%d of %d moved)"
+					% [walked, agents.size()])
+			crowd.leave_out(false, false)
+			await PhysicsTicks.pass_ticks(t, 30)
+			walked = _how_many_moved(agents, at)
+			t.check(walked > 0,
+					"and walks once it is let (%d of %d moved)" % [walked, agents.size()])
+			var her := Boot.player(booted.main)
+			# Far from the station on day 1, with no sabotage done: the lights go out only if the
+			# blackout was handed `--blackout`.
+			var lot := city.map().tile_rect_to_world(CityMap.blocks_tile_rect(city.map().power_station_blocks()))
+			her.set_physics_process(false)
+			her.global_position = Vector2(lot.get_center().x,
+					lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
+			await PhysicsTicks.pass_ticks(t, 2)
+			t.check(not city.traffic_signals().is_powered(),
+					"the blackout is handed --blackout: far from the station the lights go out")
+			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map())
+			t.check(first >= FORCED_INTERVAL - _walk_step() and first <= FORCED_WITHIN,
+					"the events are handed --force: the cyclist comes after its wait (%.1fs)" % first)
 		booted.free_all()
 		home.free()
 
+## **An atlas library that counts the crowd's pictures it hands out**, the `crowd/` regions a walker's
+## or a car's look asks for as it draws (`CrowdAgent.picture_region()`). Handed to the city the way
+## `main` hands it the sitting's library (`City.equip()`); the simulation's builder is equipped with
+## the same library (`RunCity.build()`, as `main` equips its own), hands it the crowd, and the crowd
+## every agent it makes.
+class CrowdPictureCount extends AtlasLibrary:
+	var asked := 0
+
+	## Overrides AtlasLibrary.region.
+	func region(name: StringName) -> AtlasTexture:
+		if String(name).begins_with("crowd/"):
+			asked += 1
+		return super.region(name)
+
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
-func _test_the_city_hands_each_value_to_its_part(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.ground_mode = SceneryGround.Mode.STEPPED
-	city.scenery_frame_locked = true
-	city.skip_shadows = true
-	city.skip_event_drawing = true
-	city.skip_crowd_drawing = true
-	city.skip_crowd_motion = true
-	city.blackout_forced = true
-	city.all_cyclists_pelicans = true
+func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	var pictures := CrowdPictureCount.new()
+	city.schedule_scenery(SceneryGround.Mode.STEPPED, true)
+	city.leave_out(true)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-	# The shadow layer is the scene's own child, found by the name the scene gives it.
+	# The other seven are the simulation's, handed to its builder as `main._simulation_builder()`
+	# hands them.
+	var builder := RunCity.new_builder()
+	builder.leave_out(true, true, true)
+	builder.force_the_blackout()
+	builder.make_every_cyclist_a_pelican()
+	RunCity.build(city, run, MapCache.of(SEED), builder, false, pictures)
+	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
+	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
+	# stands asked to draw again: under `--skip shadows` none draws a tile.
 	var shadows := city.get_node("BuildingShadows") as BuildingShadows
-	t.check(city.scenery_ground.mode == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
-			and shadows.skip_draw, "the ground, the scenery and the shadows")
-	t.check(city.events.skip_drawing
-			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS,
+	var shade := RecordingShadowDrawer.new()
+	shadows.draw_through(shade)
+	var chunks := 0
+	for chunk in shadows.get_children():
+		if chunk is CanvasItem:
+			(chunk as CanvasItem).queue_redraw()
+			chunks += 1
+	await t.get_tree().process_frame
+	t.check(city.ground_mode_in_force() == SceneryGround.Mode.STEPPED and chunks > 0
+			and shade.draws.is_empty(), "the ground and the shadows")
+	# The frame lock reaches the residency: an ordinary update under the stepped mode, after the
+	# view's first (which prepares what it shows wherever it stands), prepares the whole ground
+	# region that enters the load view in that one call, where an unlocked residency queues it.
+	# The view stands in the map's far south-east, away from the doorstep, with the load view's east
+	# edge a few pixels short of a region's border, which the second update's step then crosses.
+	var chunk := SceneryGround.CHUNK_PX
+	var far := Vector2(city.map().size_in_tiles()) * Tuning.TILE_SIZE * 0.75
+	var border := floorf(far.x / chunk)
+	var first := Rect2(border * chunk - 8.0 - 640.0 - SceneryResidency.LOAD_MARGIN, far.y,
+			640.0, 480.0)
+	city.scenery.update(first)
+	city.scenery.update(Rect2(first.position + Vector2(64.0, 0.0), first.size))
+	var entered := false
+	for key: Vector2i in city.scenery_ground.chunks():
+		entered = entered or key.x == int(border)
+	t.check(entered and city.scenery_ground.pending().is_empty(),
+			"and the scenery, whose update prepares the whole load view in one frame")
+	t.check(not RunCity.events(city).world.surroundings().draws()
+			and RunCity.events(city).world.surroundings().pelican_rig()
+			== EventSpawner.PelicanRig.ALWAYS,
 			"the events")
-	t.check(city.crowd.skip_motion and city.crowd.skip_agent_drawing, "the crowd")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
-	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+	var lot := city.map().tile_rect_to_world(CityMap.blocks_tile_rect(
+			city.map().power_station_blocks()))
 	var she := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	she.add_child(camera)
 	t.add_child(she)
 	she.set_physics_process(false)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, she)
 	she.global_position = Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
 	await PhysicsTicks.pass_ticks(t, 2)
 	she.free()
-	t.check(not city.signals.powered, "and the blackout, which puts the lights out with no sabotage done")
+	t.check(not city.traffic_signals().is_powered(), "and the blackout, which puts the lights out with no sabotage done")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
-	city.crowd.start_day(1, rng)
-	var agents := city.crowd.agents()
-	t.check(not agents.is_empty() and agents[0].skip_draw,
-			"and every agent the crowd makes skips its drawing")
+	RunCity.crowd(city).start_day(1, rng)
+	var agents := RunCity.crowd(city).agents()
 	var at: Array[Vector2] = []
 	for agent in agents:
 		at.append(agent.global_position)
 	for i in 30:
 		await t.get_tree().physics_frame
+	t.check(not agents.is_empty() and pictures.asked == 0,
+			"and every agent the crowd makes skips its drawing (%d of %d agents' pictures asked for)"
+			% [pictures.asked, agents.size()])
 	var moved := 0
 	for i in agents.size():
 		if agents[i].global_position != at[i]:
 			moved += 1
-	t.check(moved == 0, "and the crowd's physics frames under its skip_motion move none of them (%d moved)" % moved)
-	# The control: the same crowd without the flag does move on the same frames, so the frames above
-	# really ran the crowd.
-	city.crowd.skip_motion = false
+	t.check(moved == 0, "and the crowd's physics frames under --skip motion move none of them (%d moved)" % moved)
+	# The control: the same crowd without the flags does move and draw on the same frames, so the
+	# frames above really ran the crowd and would have drawn it.
+	RunCity.crowd(city).leave_out(true, false)
+	for agent in agents:
+		agent.skip_drawing(false)
+		agent.queue_redraw()
 	for i in 30:
 		await t.get_tree().physics_frame
 	moved = 0
@@ -285,6 +432,8 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 		if agents[i].global_position != at[i]:
 			moved += 1
 	t.check(moved > 0, "and without the flag the same frames do move them (%d moved)" % moved)
+	t.check(pictures.asked > 0,
+			"and draw them once they are told to draw (%d pictures asked for)" % pictures.asked)
 	city.free()
 
 ## `--force <row> <seconds>` reaches the director that sites what she meets: a city handed the flag
@@ -293,14 +442,15 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 ## ticks with her walking down the street by hand, the way the loose dog's suite does, and read
 ## off the instances the manager puts in the world: a day's own first row would not come in that
 ## time, and a flag the director never took up would send no cyclist on day 1.
-func _test_the_forced_row_is_handed_to_the_director(t) -> void:
+func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.forced_row = "cyclist"
-	city.forced_interval = FORCED_INTERVAL
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-	city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	var builder := RunCity.new_builder()
+	builder.force_a_row("cyclist", FORCED_INTERVAL)
+	RunCity.build(city, run, MapCache.of(SEED), builder)
+	RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var her := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -309,46 +459,63 @@ func _test_the_forced_row_is_handed_to_the_director(t) -> void:
 	her.add_child(camera)
 	t.add_child(her)
 	her.set_physics_process(false)
-	city.events.use_player(her)
+	RunCity.events(city).use_player(her)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(1), rng, consumed)
-	var start := CrowdLanes.arterial_pavement(city.map)
-	start.y = city.map.world_size().y * 0.5
+	var spec := DaySpec.for_day(1)
+	RigStreets.begin(city.streets(), city.map(), spec)
+	RunCity.events(city).start_day(spec, rng, consumed)
+	var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map())
+	t.check(first < INF and first >= FORCED_INTERVAL - _walk_step(),
+			"the forced cyclist comes after the wait the flag names, not before (%.1fs)" % first)
+	t.check(first <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
+	her.free()
+	city.free()
+
+## One tick of `_first_cyclist_on_a_walk()`'s walk, in game seconds.
+static func _walk_step() -> float:
+	return 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
+
+## **How far into a walk the first cyclist comes**, in game seconds, or INF for none: her walked
+## south down the middle of the arterial's sidewalk by hand at `Tuning.WALK_SPEED`, on real physics
+## ticks `FORCED_SCALE` times real time, for `FORCED_WITHIN` seconds, the way the loose dog's suite
+## walks her, and read off the cyclists `events` puts in the world that it had not before. Her own
+## physics is off for it, so only the walk moves her.
+func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller,
+		map: CityMap) -> float:
+	her.set_physics_process(false)
+	var start := CrowdLanes.arterial_pavement(map)
+	start.y = map.world_size().y * 0.5
 	her.global_position = start
-	var step := 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
-	var before := city.events.instances().duplicate()
+	var step := _walk_step()
+	var before := events.instances().duplicate()
 	var seen := {"first": INF}
 	var each := func(n: int) -> void:
 		her.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		her.global_position += her.velocity * step
-		for instance in city.events.instances():
-			if instance.def.id == "cyclist" and not before.has(instance) \
+		for instance in events.instances():
+			if instance.row_id() == "cyclist" and not before.has(instance) \
 					and seen["first"] == INF:
 				seen["first"] = n * step
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(FORCED_WITHIN, FORCED_SCALE), each,
 			FORCED_SCALE)
-	t.check(seen["first"] < INF and seen["first"] >= FORCED_INTERVAL - step,
-			"the forced cyclist comes after the wait the flag names, not before (%.1fs)"
-					% seen["first"])
-	t.check(seen["first"] <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
-	her.free()
-	city.free()
+	var first: float = seen["first"]
+	return first
 
 ## The escape's clock is a day's: a section's spec carries the section length it is handed, and the
 ## day's clock runs it and stands still when it is handed `invincible`.
-func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
+func _test_the_escape_clock_takes_its_length_and_invincible(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 25.0)
 	var clock := DayController.new()
-	clock.invincible = true
-	clock.spec = spec
+	clock.set_invincible(true)
+	clock.use_the_spec(spec)
 	t.add_child(clock)
 	clock.set_process(false)
-	clock.start(spec.length)
-	t.check(is_equal_approx(clock.time_remaining, 25.0), "a section runs the length handed in")
+	clock.start(spec.seconds_on_the_clock())
+	t.check(is_equal_approx(clock.seconds_left(), 25.0), "a section runs the length handed in")
 	clock.tick(5.0)
-	t.check(is_equal_approx(clock.time_remaining, 25.0), "and stands still when invincible")
+	t.check(is_equal_approx(clock.seconds_left(), 25.0), "and stands still when invincible")
 	clock.free()
 
 ## `--touch` and `--web` are the run's configuration like every other flag, a debug build's alone,
@@ -356,12 +523,12 @@ func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
 ## `QuitOption.available()` read nothing off the command line, and `main` hands the answers to the
 ## five screens it builds: the HUD, the day summary, the touch controls, the pause and the title.
 ## The screens are read the way a player meets the answers, on two real boots (`_the_screens_answer()`).
-func _test_touch_and_web_are_the_runs_answers(t) -> void:
+func _test_touch_and_web_are_the_runs_answers(t: TestRunner) -> void:
 	var words := _words(["--touch", "--web"])
 	var debug := RunConfig.parse(words, "", true)
 	var release := RunConfig.parse(words, "", false)
-	t.check(debug.touch_forced and debug.web_preview, "a debug build reads --touch and --web")
-	t.check(not release.touch_forced and not release.web_preview, "a release build reads neither")
+	t.check(debug.forces_touch() and debug.previews_the_web(), "a debug build reads --touch and --web")
+	t.check(not release.forces_touch() and not release.previews_the_web(), "a release build reads neither")
 	t.check(TouchInput.available(debug), "--touch answers the touch question yes")
 	t.check(not QuitOption.available(debug), "--web answers the quit question as the web does")
 	t.check(TouchInput.available(release) == DisplayServer.is_touchscreen_available()
@@ -380,7 +547,7 @@ func _test_touch_and_web_are_the_runs_answers(t) -> void:
 ## `Q` is not a key; on the platform this process has, a click is a press and `Q` quits. The quit is
 ## the one `main` is handed (`use_quit()`) in place of leaving the test runner. The HUD is read off
 ## where its meters stand, which is the touch layout's alone.
-func _the_screens_answer(t, flagged: bool) -> void:
+func _the_screens_answer(t: TestRunner, flagged: bool) -> void:
 	var label := "on --touch --web" if flagged else "with neither flag"
 	var quits := [0]
 	var run := RunState.new()
@@ -389,9 +556,10 @@ func _the_screens_answer(t, flagged: bool) -> void:
 	if flagged:
 		words.append_array(["--touch", "--web"])
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-			func(main: Node) -> void:
+			func(main: Boot.MainScript) -> void:
 				main.use_sitting_home(home)
-				main.use_quit(func() -> void: quits[0] += 1))
+				main.use_quit(func() -> void: quits[0] += 1),
+			false, MapCache.source())
 	var main := booted.main
 	var wanted_quits := 0 if flagged else 1
 
@@ -470,7 +638,7 @@ static func _a_walking_key_is_held() -> bool:
 
 ## Lifts what a press on the controls left held, the way a player does: the release of the press,
 ## then the keys themselves, since a heading held by a click stands until something stops it.
-func _let_go_of_the_walking_keys(t, controls: TouchControls, at: Vector2) -> void:
+func _let_go_of_the_walking_keys(t: TestRunner, controls: TouchControls, at: Vector2) -> void:
 	UI.push(controls, UI.touch_at(at, false))
 	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down"]:
 		Input.action_release(action)

@@ -1,36 +1,21 @@
 extends RefCounted
-## A scene recipe's `setup.task`: what the schema accepts, and what the director does with a pinned
-## mark and a pinned neighbor — stands the mark unread, places the task with its own placement when
-## it is read, and
-## refuses a pin rather than moving it. The scenes' own walks to their targets are
-## `tools/scene-recipes.sh`'s headless assertions.
+## A scene recipe's `setup.task`: what the schema accepts, its observations, and an authored
+## mast's id. What the runtime installs of an authored mast (the ground the day's masts may
+## stand on) is `tests/test_scene_recipe_install.gd`'s, and what the resistance director does
+## with a pinned mark and a pinned neighbor is `tests/test_resistance_recipe_task.gd`'s. The
+## scenes' own walks to their targets are `tools/scene-recipes.sh`'s headless assertions.
+## Nothing here builds a city: the schema is checked through `load_recipe()`.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
-const ResistanceReads := preload("res://tests/resistance_reads.gd")
-const ContactTouches := preload("res://tests/contact_touches.gd")
-const AlleyMarks := preload("res://tests/alley_marks.gd")
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 ## The context city every task scene is built on, so a mark here is a mark there.
 const CONTEXT := 1917501
-## An alley mouth of that city, the mark most task scenes start at.
-const MOUTH := Vector2i(92, 69)
-## The tile one step into that alley from the mouth, where its mark stands.
-const MARK := Vector2i(92, 68)
 ## The seed `_recipe()` gives a scene, which a recipe boot starts its run on.
 const RECIPE_SEED := 11
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_an_authored_mast_carries_its_own_id(t)
-	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
-	_test_a_pinned_mark_is_read_and_its_task_placed_near_it(t)
-	await _test_a_mark_is_touched_only_from_inside_its_alley(t)
-	_test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t)
-	_test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t)
-	_test_a_neighbor_start_the_day_could_not_draw_is_refused(t)
-	_test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t)
 
 func _recipe(day: int, task: Variant, observations := []) -> Dictionary:
 	var setup := {"day": day}
@@ -43,10 +28,10 @@ func _recipe(day: int, task: Variant, observations := []) -> Dictionary:
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func _refused(t, recipe: Dictionary, words: String) -> bool:
+func _refused(t: TestRunner, recipe: Dictionary, words: String) -> bool:
 	return _errors.refused(t, recipe, words)
 
-func _test_the_schema_names_a_mark_on_the_days_that_have_one(t) -> void:
+func _test_the_schema_names_a_mark_on_the_days_that_have_one(t: TestRunner) -> void:
 	t.check(_refused(t, _recipe(3, {}), "offers no resistance task"),
 			"a day before the first mark has no task to start")
 	t.check(_refused(t, _recipe(7, {}), "starts at a chalk mark"),
@@ -64,7 +49,7 @@ func _test_the_schema_names_a_mark_on_the_days_that_have_one(t) -> void:
 	t.check(_refused(t, _recipe(7, {"mark": [2960, 2224], "target": [0, 0]}), "setup.task.target"),
 			"an unknown task field is refused")
 
-func _test_the_task_observations_ask_about_the_task(t) -> void:
+func _test_the_task_observations_ask_about_the_task(t: TestRunner) -> void:
 	var on_the_task := [{"tick": 1, "subject": "task", "condition": "offered"},
 			{"tick": 1, "subject": "mark", "condition": "done"},
 			{"tick": 1, "subject": "rider", "condition": "beyond", "at": [0, 0], "distance": 576},
@@ -90,209 +75,10 @@ func _test_the_task_observations_ask_about_the_task(t) -> void:
 			[{"tick": 1, "subject": "row:fire_truck", "condition": "visible"}])).is_empty(),
 			"such as the engine a fire calls in")
 
-## The context city on `day` as a recipe starts it — the authored closures, no catalogue fill —
-## and a director, in a run of its own on that day (the recipes' seed, as a recipe boot starts its
-## run), which the city and the director are handed. A fresh map each time, since a day's bodies and
-## holds are recorded on it. `_free_day()` frees the city and the director.
-func _day(t, day: int) -> Array:
-	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
-			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
-	t.check(built.errors.is_empty(), "the context city builds: %s" % [built.errors])
-	var map: CityMap = built.map
-	var own_run := RunState.new()
-	own_run.start_run(RECIPE_SEED)
-	own_run.header.day = day
-	var state := CityState.new()
-	own_run.attempt_spend.city_state = state
-	state.begin_day(map.block_plans, day)
-	var city: City = CITY_SCENE.instantiate()
-	city.run = own_run
-	t.add_child(city)
-	city.build(map)
-	city.start_recipe_day(state, day, own_run.calendar.day_rng(day, "closures"))
-	# A recipe that selects no gate or barrier stands no region wall either, the way
-	# `SceneRecipeRuntime._select_structures()` leaves the day's plan.
-	if city.streets().region_plan():
-		city.streets().replace_region_plan(RegionPlanner.RegionPlan.new())
-	var empty: Array[EventScheduler.Planned] = []
-	city.events.start_recipe(empty, DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), day,
-			map.tile_to_world(MOUTH))
-	var director := ResistanceDirector.new()
-	t.add_child(director)
-	director.set_process(false)
-	director.setup(map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
-	return [city, director, own_run]
-
-func _free_day(made: Array) -> void:
-	(made[0] as City).free()
-	(made[1] as ResistanceDirector).free()
-
-func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
-	var made := _day(t, 7)
-	var city: City = made[0]
-	var director: ResistanceDirector = made[1]
-	var own_run: RunState = made[2]
-	var map := city.map
-	var mark := map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, mark)
-	t.check(errors.is_empty(), "a mark one tile in from an alley mouth is accepted: %s" % [errors])
-	# *(Inbox #555, "Unread, walk to it".)* The scene begins with the mark standing unread and no
-	# task on offer; a touch reads it and the task is placed then.
-	t.check(director.read_mark() == null and director.contact() != null
-			and director.contact().step.is_pickup and not director.contact().is_done
-			and director.contact().global_position == mark,
-			"the mark stands where the recipe put it, unread")
-	t.check(director.current_step().is_pickup and director.red_arrow_target() == Vector2.INF
-			and director.contact_position() == mark,
-			"no task is on offer and no arrow is drawn before she reads it")
-	t.check(not own_run.resistance.completed_steps.has(director.current_step().index),
-			"nothing is completed at the start")
-	director.contact().complete_now()
-	var task := director.current_step()
-	t.check(director.read_mark() != null and director.read_mark().global_position == mark
-			and director.read_mark().is_done, "reading it leaves the mark standing, read")
-	t.check(task != null and task.task_event_id == "delivery_van" and not task.is_pickup,
-			"and the day's task is on offer")
-	var target := director.contact_position()
-	t.check(target.distance_to(mark) >= ResistanceDirector.NEAR_THE_MARK
-			and target.distance_to(mark) < ResistanceDirector.NEAR_THE_MARK + Tuning.TILE_SIZE,
-			"placed where a path from the mark first reaches the circle round her (%.0fpx)"
-			% target.distance_to(mark))
-	t.check(director.red_arrow_target() == target, "with its arrow on the van")
-	_free_day(made)
-
-## *(feathery-hare; azure-puffin, inbox #664: "let's move the chalk mark one tile into the alley so
-## I actually have to enter the alley to activate it".)* The mark's centre is 48px in from the
-## street's edge and a touch reaches 36px: her centre 14px inside the alley (her body wholly past the
-## edge) touches it, standing on the pavement at the mouth, body wholly outside, does not, nor does
-## the centre on the street's edge.
-func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
-	var made := _day(t, 7)
-	var city: City = made[0]
-	var director: ResistanceDirector = made[1]
-	var own_run: RunState = made[2]
-	var map := city.map
-	var mark := map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, mark)
-	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
-	var outward := Vector2(MOUTH - MARK)
-	var street_edge := mark + outward * Tuning.TILE_SIZE * 1.5
-	var body := Tuning.PLAYER_BODY_RADIUS
-	var touched := await ContactTouches.touches_from(t, director, [street_edge - outward * body,
-			street_edge + outward * body, street_edge] as Array[Vector2])
-	t.check(touched[0],
-			"standing in the alley, her body wholly past the street's edge, touches the mark")
-	t.check(not touched[1],
-			"standing on the pavement at the mouth, her body wholly outside it, does not")
-	t.check(not touched[2],
-			"nor does her centre on the street's edge")
-	_free_day(made)
-
-## The guard keeps his distance from the mark (M213's floor and quiet-yak's "Two-thirds wins" weigh
-## exactly as before): a mark one tile in has him one tile further in than two-thirds through from the
-## mouth, the spot a mark on the mouth would have had, worked out from the map (`AlleyMarks`), so he
-## stands as far from the mark as he would from a mark on the mouth. The mark is pinned and its guard,
-## stood with it at dawn, read off the street.
-func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t) -> void:
-	var made := _day(t, 7)
-	var city: City = made[0]
-	var director: ResistanceDirector = made[1]
-	var own_run: RunState = made[2]
-	var map := city.map
-	var at_mouth := map.tile_to_world(MOUTH)
-	var at_mark := map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, at_mark)
-	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
-	var guards: Array[Vector2] = []
-	for instance in city.events.instances():
-		if instance.def.id == EventCatalogue.mark_guard().id and not instance.is_finished:
-			guards.append(instance.global_position)
-	var robbery := EventCatalogue.mark_guard()
-	var for_the_mouth := AlleyMarks.expected_guard_spot(map, MOUTH, at_mouth,
-			robbery.inner_radius + ContactPoint.REACH)
-	t.check(guards.size() == 1 and for_the_mouth != Vector2.INF, "the mark's guard stands in the street")
-	if guards.size() != 1:
-		_free_day(made)
-		return
-	var from_mark := guards[0]
-	t.check(absf(for_the_mouth.distance_to(at_mouth) - from_mark.distance_to(at_mark)) < 0.5,
-			"at the same distance from the mark as from a mark on the mouth (%.1fpx, %.1fpx)"
-			% [for_the_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)])
-	t.check(absf(from_mark.distance_to(for_the_mouth) - Tuning.TILE_SIZE) < 0.5
-			and (from_mark - for_the_mouth).dot(at_mark - at_mouth) > 0.0,
-			"one tile further in")
-	_free_day(made)
-
-func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t) -> void:
-	var made := _day(t, 7)
-	var city: City = made[0]
-	var director: ResistanceDirector = made[1]
-	var own_run: RunState = made[2]
-	var map := city.map
-	var inside := MOUTH + Vector2i.UP * 3
-	t.check(map.tile_at(inside) == GameEnums.TileType.ALLEY
-			and not AlleyMarks.is_a_mouth(map, inside),
-			"the probe stands inside the mark's own alley, not at its mouth")
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0,
-			map.tile_to_world(inside))
-	t.check("\n".join(errors).contains("is not one tile in from an alley mouth"),
-			"a mark in the middle of an alley is refused: %s" % [errors])
-	t.check(director.current_step() == null, "and nothing is offered in its place")
-	errors = director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0,
-			map.tile_to_world(MOUTH))
-	t.check("\n".join(errors).contains("is not one tile in from an alley mouth"),
-			"and so is one on the mouth's own tile: %s" % [errors])
-	_free_day(made)
-
-func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
-	var made := _day(t, 10)
-	var city: City = made[0]
-	var director: ResistanceDirector = made[1]
-	var own_run: RunState = made[2]
-	var map := city.map
-	var mark := map.tile_to_world(AlleyMarks.mark_tile_of_mouth(map, Vector2i(66, 146)))
-	# A sidewalk a block from her door: a few tiles of walk from home, nowhere near the band of
-	# about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
-	var near_home := Vector2i(62, 84)
-	t.check(map.tile_at(near_home) == GameEnums.TileType.SIDEWALK, "the probe stands on a sidewalk")
-	var errors := director.start_recipe_task(10, own_run.calendar.day_rng(10, "resistance"), 300.0, mark,
-			map.tile_to_world(near_home))
-	t.check(errors.is_empty(), "the mark is accepted; the neighbor is drawn when she reads it")
-	director.contact().complete_now()
-	errors = director.scene_task_errors()
-	t.check("\n".join(errors).contains("is not a start the day could draw"),
-			"a neighbor start the day's draw could not make is refused: %s" % [errors])
-	t.check(director.current_step() == null or director.current_step().is_pickup
-			or director.rider() == null, "and no neighbor is sent home in its place")
-	_free_day(made)
-
-## *(Inbox #486: "Now just add a new mast close by".)* A recipe installs no mast it does not name, so
-## day 11 meets a city with no live mast at all — which is still no mast near her, and one is put up
-## where her path first reaches the circle round her.
-func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t) -> void:
-	var made := _day(t, 11)
-	var city: City = made[0]
-	var director: ResistanceDirector = made[1]
-	var own_run: RunState = made[2]
-	var mark := city.map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(11, own_run.calendar.day_rng(11, "resistance"), 300.0, mark)
-	t.check(errors.is_empty(), "day 11's mark is accepted: %s" % [errors])
-	director.contact().complete_now()
-	t.check(director.scene_task_errors().is_empty() and director.current_step() != null
-			and not director.current_step().is_pickup,
-			"and its task finds a mast with none standing: %s" % [director.scene_task_errors()])
-	var mast := ResistanceReads.mast_at(director, city.events)
-	var foot := city.events.mast_foot(mast)
-	t.check(mast != "" and foot != Vector2.INF
-			and foot.distance_to(mark) >= ResistanceDirector.NEAR_THE_MARK,
-			"a mast put up for it on the circle round her")
-	_free_day(made)
-
 ## A scene recipe gives an authored loudspeaker a `mast_id`, the identity day 11's task and its red
 ## arrow answer to, so a scene can stand two masts and show the arrow move between them
 ## (`scene-recipes/task-11-two-masts.json`). Only a loudspeaker is a mast, and one id names one mast.
-func _test_an_authored_mast_carries_its_own_id(t) -> void:
+func _test_an_authored_mast_carries_its_own_id(t: TestRunner) -> void:
 	var mast := func(name: String, row: String, id: Variant) -> Dictionary:
 		var entry := {"name": name, "row": row, "at": [3440, 1936]}
 		if id != null:
@@ -312,75 +98,3 @@ func _test_an_authored_mast_carries_its_own_id(t) -> void:
 			"two masts cannot share an id")
 	t.check(_refused(t, with.call([mast.call("a", "loudspeaker", "")]), "unique nonempty string"),
 			"an empty id names nothing")
-
-## An authored mast is accepted by the checks `EventScheduler._place_masts()` makes of a site: a
-## day with masts, ground a mast site would be offered that is not closed, held or the home block,
-## and clear of the day's doors. (107, 60) is where day 11's own mast stands on the context city.
-## Each site is installed as a recipe installs it (`install()`), into the day's city in a run of its
-## own, and read off what the install says: a refused site is an install error naming the mast.
-func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
-	var at := Vector2(3440, 1936)
-	var made := _day(t, 11)
-	var city: City = made[0]
-	t.check(_mast_installs(t, made, at), "a mast stands on an eligible sidewalk of a day with masts")
-	# A site within the reach of a door a street could stand at (`MastSites`, the ground a mast is
-	# offered) is refused: found as a tile that only that reach rules out, so the install's refusal
-	# is the door's.
-	var beside_a_door := _a_site_only_a_door_rules_out(city.map)
-	t.check(beside_a_door != Vector2.INF and not _mast_installs(t, made, beside_a_door),
-			"but not with its field on the ground a door could stand beside")
-	var tile: Vector2i = city.map.world_to_tile(at)
-	var street := city.map.network.segment_containing(tile)
-	var shut: Array[RoadClosure] = city.streets().closures().duplicate()
-	shut.append(RoadClosure.new(RoadClosure.Kind.ROADWORKS, street))
-	city.map.close_streets(shut)
-	t.check(city.map.is_closed(tile), "fixture: the street's closure shuts the tile")
-	t.check(not _mast_installs(t, made, at), "nor on a closed tile")
-	city.map.close_streets(city.streets().closures())
-	city.map.hold_segment(city.map.network.segment_containing(tile).key())
-	t.check(not _mast_installs(t, made, at), "nor on a held street")
-	_free_day(made)
-	made = _day(t, Tuning.MAST_FIRST_DAY - 1)
-	t.check(not _mast_installs(t, made, at), "nor on a day before the masts")
-	_free_day(made)
-
-## A sidewalk or square point of `map` that a mast site is refused only for lying within the reach of
-## a point a street door could stand at: ground that is open, unheld, off the home block, and that
-## `MastSites.is_eligible()` accepts when no door is handed in, or `Vector2.INF` when there is none.
-func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
-	var reach := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
-	var nowhere := PackedVector2Array([Vector2(-1.0e7, -1.0e7)])
-	for door in MastSites.possible_door_points(map):
-		var centre := map.world_to_tile(door)
-		var span := ceili(reach / Tuning.TILE_SIZE)
-		for dy in range(-span, span + 1):
-			for dx in range(-span, span + 1):
-				var tile := centre + Vector2i(dx, dy)
-				if not map.in_bounds(tile) \
-						or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
-						or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
-					continue
-				var at := map.tile_to_world(tile)
-				if MastSites.is_eligible(at, map, nowhere) and not MastSites.is_eligible(at, map):
-					return at
-	return Vector2.INF
-
-## Whether a recipe's loudspeaker at `at` installs on the day `made` (`_day()`) stands, through the
-## runtime's own `install()` with her at the alley mouth: false when the install refuses the mast.
-func _mast_installs(t, made: Array, at: Vector2) -> bool:
-	var city: City = made[0]
-	var own_run: RunState = made[2]
-	var player: Stroller = STROLLER_SCENE.instantiate()
-	t.add_child(player)
-	var her := city.map.tile_to_world(MOUTH)
-	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": {"setup": {"day": own_run.header.day,
-			"player": {"at": [her.x, her.y]},
-			"events": [{"name": "mast", "row": "loudspeaker", "at": [at.x, at.y], "mast_id": "m"}]}},
-			"manifest": {}, "anchors": {}, "map": city.map},
-			RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), own_run)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
-			DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
-	runtime.free()
-	player.free()
-	return not "\n".join(errors).contains("event mast fails")

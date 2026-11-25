@@ -1,25 +1,38 @@
 class_name RunFlow
 extends RefCounted
-## The run's way through its screens: which screen stands in front of the walk (`mode`), and what
+## The run's way through its screens: which screen stands in front of the walk (`mode()`), and what
 ## that screen's continue leads to (`continued()`). `main` builds one per boot, tells it each time a
 ## screen comes up or a day ends, and carries out the `Step` its continue returns; the flow itself
 ## shows nothing, and builds a day only by having the `DayDirector` it is handed start it.
 ##
-## **A scene recipe is a configuration of it** (`author()`, `scene`): an authored scene is one day,
-## so every continue plays that scene again, a lost escape section is retried by the scene itself, a
-## won last day hands over to nothing, its day is installed by the scene rather than planned from the
-## run, its city is built on the scene's own map, the escape's city plans no finale of its own, and the
-## HUD says none of the control lessons the scene has learned.
+## **A scene recipe is a configuration of it** (`author()`, `scene()`): an authored scene is one
+## day, so every continue plays that scene again, a lost escape section is retried by the scene
+## itself, a won last day hands over to nothing, its day is installed by the scene rather than
+## planned from the run (the day director is handed the scene, `DayDirector.use_the_scene()`), its
+## city is built on the scene's own map, and the HUD says none of the control lessons the scene has
+## learned.
 ##
-## It also announces the day being walked to the observers that draw it — the developer readout, the
-## HUD's clock and the route rig — through `day_started` and `day_planned`, which carry the day's
-## `DaySpec`, and a brief going up through `brief_opened`; `main` connects them.
+## **It announces every walk to the observers and the view**, the one place they hear a day begin:
+## `day_started`, `world_stood` and `day_planned`, each carrying the walk's `DaySpec` — a day's, an
+## authored scene's or a section of the escape's, all the same way — and the last two its world
+## (`DayWorld`); and a brief going up through `brief_opened`. `main` connects the HUD, the page's
+## counter, the run log, the developer readout and the dev rigs to them.
 
-## A day or a section is about to be built: `spec` is what it is. Before anything is placed.
+## A day or a section begins, the first time or again after a loss: `spec` is what it is. The dawn is
+## photographed and nothing of the walk is stood or placed yet, so a listener clears yesterday's
+## state here, and whatever the walk's world does as it is built (the escape's city goes dark as it
+## is built) is already this walk's. The HUD, the page's counter and the developer readout read the
+## day being walked here.
 signal day_started(spec: DaySpec)
-## The day or section has been built and placed, and its shape announced on `EventBus.day_planned`.
-## An authored scene's day is never planned, so it never sends this.
-signal day_planned(spec: DaySpec)
+## The world `spec` is walked in stands (`world`), and nothing is dressed or placed in it yet: every
+## walk, an authored scene's included, the first time or again after a loss (`restarted`). The run
+## log heads the walk here, with what only its world can name, and watches the world from here.
+signal world_stood(spec: DaySpec, world: DayWorld, restarted: bool)
+## The day or section has been built and placed in `world`, she is put down and its clock runs. An
+## authored scene's day, a section of the escape included, is installed rather than planned, so it
+## never sends this. The run log writes the walk's plan lines, its dawn picture and her `start` line
+## here.
+signal day_planned(spec: DaySpec, world: DayWorld)
 ## A brief has been raised (`open_brief()`) over `spec`, the day or section it leads into. The screen
 ## itself is shown right after, by `main`; the route rig answers the first brief of an escape section a
 ## frame later by calling `main`'s continue handler.
@@ -96,121 +109,144 @@ enum Opening {
 	ESCAPE_BY_FLAG,
 }
 
-var mode := Mode.BOOTING
-var opening := Opening.FRESH
+var _mode := Mode.BOOTING
+var _opening := Opening.FRESH
 ## The day or section being walked; an ordinary day until one starts.
-var spec := DaySpec.new()
+var _spec := DaySpec.new()
+## The world the day or section being walked stands in, once its start has stood it; null before.
+var _world: DayWorld
 ## The authored scene (a scene recipe's playback) this boot plays, or null for the game's own run.
-var scene: AuthoredScene
-## Whether an authored scene is played rather than the game's own run.
-var authored: bool:
-	get:
-		return scene != null
+var _scene: AuthoredScene
 
 func _init(the_scene: AuthoredScene = null) -> void:
-	scene = the_scene
+	_scene = the_scene
 
 ## Configures the flow with the authored scene this boot plays, once it is built.
 func author(the_scene: AuthoredScene) -> void:
-	scene = the_scene
+	_scene = the_scene
+
+## Says how this boot came to the run it plays, once the boot knows: carried on from a checkpoint,
+## the escape handed over or resumed, picked up from the save, or the escape on its own by flag.
+func set_opening(the_opening: Opening) -> void:
+	_opening = the_opening
+
+## How this boot came to the run it plays (`Opening`), `FRESH` until the boot says otherwise.
+func opening() -> Opening:
+	return _opening
+
+## The screen in front of the walk, or that there is none: what a screen raised now was raised in.
+func mode() -> Mode:
+	return _mode
+
+## The day or section being walked, as its start was handed it; an ordinary day until one starts.
+func spec() -> DaySpec:
+	return _spec
+
+## The authored scene (a scene recipe's playback) this boot plays, or null for the game's own run.
+func scene() -> AuthoredScene:
+	return _scene
+
+## Whether an authored scene is played rather than the game's own run.
+func plays_an_authored_scene() -> bool:
+	return _scene != null
 
 ## Whether a run stands behind the escape this boot plays: its own ending, handed over or resumed,
 ## rather than the flag's walk, which settles nothing when she gets out.
 func escape_from_a_run() -> bool:
-	return opening == Opening.ESCAPE_HANDED_OVER or opening == Opening.ESCAPE_RESUMED
+	return _opening == Opening.ESCAPE_HANDED_OVER or _opening == Opening.ESCAPE_RESUMED
 
 ## Whether a won last day hands the run over to the escape. An authored scene's never does: its won
 ## day plays the scene again.
 func escape_follows() -> bool:
-	return not authored
-
-## Whether the escape's city plans its own finale. An authored scene installs its own.
-func plans_the_finale() -> bool:
-	return not authored
+	return not plays_an_authored_scene()
 
 ## The map the city is built on when it is an authored scene's own, or null for the one the run's
 ## seed generates.
 func authored_map() -> CityMap:
-	return scene.city_map() if authored else null
+	return _scene.city_map() if plays_an_authored_scene() else null
 
 ## Whether the run starts after the ordinary control lessons have been learned: an authored scene
 ## that says so. The game's own run teaches them.
 func lessons_learned() -> bool:
-	return authored and scene.lessons_learned()
+	return plays_an_authored_scene() and _scene.lessons_learned()
+
+## The world the day or section being walked stands in, as its start stood it (`world_stood`), or
+## null before the boot's first walk is started: what the director built to end the walk is handed.
+func world() -> DayWorld:
+	return _world
 
 func in_the_title() -> bool:
-	return mode == Mode.TITLE
+	return _mode == Mode.TITLE
 
 ## Whether the escape's brief or its last screen is up — the two screens Esc does not open over,
 ## since each stands in front of something that has not begun.
 func escape_screen_waits() -> bool:
-	return spec.section != DaySpec.Section.NONE \
-			and (mode == Mode.BRIEF or mode == Mode.EPILOGUE)
+	return _spec.section_kind() != DaySpec.Section.NONE \
+			and (_mode == Mode.BRIEF or _mode == Mode.EPILOGUE)
 
 # ------------------------------------------------------------------ the day ---
 
-## A day or a section begins: `the_spec` is what is walked from here, and the observers hear it.
-func begin(the_spec: DaySpec) -> void:
-	spec = the_spec
-	day_started.emit(the_spec)
+## A day or a section begins, the first time or again after a loss (`restarted`), and `director`
+## starts it (`DayDirector.start()`, the one start every walk goes through): announced started with
+## its spec once the dawn is photographed, its world announced as it stands, and announced planned
+## once placed. An authored scene's walk is installed by the scene rather than planned, and is never
+## announced planned. Returns the problems that kept an authored scene's setup from standing, empty
+## when the walk stands.
+func start(director: DayDirector, the_spec: DaySpec, restarted := false) -> Array[String]:
+	_spec = the_spec
+	var errors := director.start(the_spec, func() -> void: day_started.emit(the_spec),
+			func(world: DayWorld) -> void: _stood(world, restarted))
+	if not plays_an_authored_scene():
+		day_planned.emit(the_spec, _world)
+	return errors
 
-## The day or section just begun has been built and placed.
-func planned() -> void:
-	day_planned.emit(spec)
-
-## A day begins and `director` starts it: announced, built, and announced planned once placed. An
-## authored scene's day is the director's `start_authored_day()`, begun and never planned. Returns
-## the problems that kept an authored scene's setup from standing, empty when the day stands.
-func start_day(director: DayDirector, the_spec: DaySpec) -> Array[String]:
-	begin(the_spec)
-	if authored:
-		return director.start_authored_day(the_spec, scene)
-	director.start_day(the_spec)
-	planned()
-	return []
+## The world of the walk being started stands: kept for its plan's announcement, and announced.
+func _stood(world: DayWorld, restarted: bool) -> void:
+	_world = world
+	world_stood.emit(_spec, world, restarted)
 
 # ----------------------------------------------------------- the screens ---
 
 func open_title() -> void:
-	mode = Mode.TITLE
+	_mode = Mode.TITLE
 
 func open_brief() -> void:
-	mode = Mode.BRIEF
-	brief_opened.emit(spec)
+	_mode = Mode.BRIEF
+	brief_opened.emit(_spec)
 
 func engage() -> void:
-	mode = Mode.WALKING
+	_mode = Mode.WALKING
 
 func show_ending() -> void:
-	mode = Mode.ENDING
+	_mode = Mode.ENDING
 
 ## An ordinary day has ended, as `DayDirector.finish_day()` settled it.
 func day_ended(end: DayEnd) -> void:
-	if end.hands_over_to_the_escape:
-		mode = Mode.INTO_ESCAPE
-	elif end.goes_back:
-		mode = Mode.BACK_TO_CHECKPOINT
-	elif end.run_over:
-		mode = Mode.RUN_OVER
+	if end.continues_into_the_escape():
+		_mode = Mode.INTO_ESCAPE
+	elif end.sends_the_run_back():
+		_mode = Mode.BACK_TO_CHECKPOINT
+	elif end.ends_the_run():
+		_mode = Mode.RUN_OVER
 	else:
-		mode = Mode.DAY_OVER
+		_mode = Mode.DAY_OVER
 
 ## A section of the escape was lost, and `run_over` says whether that ended the run. An authored
 ## scene's runtime takes the retry over; otherwise the outcome screen comes up.
 func section_lost(run_over: bool) -> Step:
-	if authored:
+	if plays_an_authored_scene():
 		return Step.RETRY_AUTHORED
-	mode = Mode.RUN_OVER if run_over else Mode.SECTION_LOST
+	_mode = Mode.RUN_OVER if run_over else Mode.SECTION_LOST
 	return Step.SHOW_OUTCOME
 
 ## She got out of the city: the last screen of the escape.
 func escape_won() -> void:
-	mode = Mode.EPILOGUE
+	_mode = Mode.EPILOGUE
 
 ## The scene is being reloaded, whichever way the run came to it: the held restart, a step that
 ## reloads, or an authored scene that failed its own retry.
 func reload() -> void:
-	mode = Mode.RELOADING
+	_mode = Mode.RELOADING
 
 ## The continue of the screen raised in `raised_in`: the step it leads to, and the mode that step
 ## leaves the run in. **Answered by the mode the screen was raised in**, which `DaySummary` sends
@@ -219,25 +255,25 @@ func reload() -> void:
 ## is dropped once its screen is gone), so this is the flow's own rule, not the guard against a tap
 ## and a key reaching one screen.
 func continued(raised_in: Mode) -> Step:
-	if raised_in != mode:
+	if raised_in != _mode:
 		return Step.NONE
-	var step := _step_for(mode)
+	var step := _step_for(_mode)
 	match step:
 		Step.ENGAGE, Step.NEXT_DAY:
-			mode = Mode.WALKING
+			_mode = Mode.WALKING
 		Step.RETRY_SECTION:
-			mode = Mode.BRIEF
+			_mode = Mode.BRIEF
 		Step.SHOW_ENDING:
-			mode = Mode.ENDING
+			_mode = Mode.ENDING
 		Step.CARRY_TO_CHECKPOINT, Step.RESTART_RUN, Step.RELOAD_SCENE:
-			mode = Mode.RELOADING
+			_mode = Mode.RELOADING
 	return step
 
 func _step_for(current: Mode) -> Step:
 	match current:
 		Mode.BOOTING, Mode.TITLE, Mode.WALKING, Mode.RELOADING:
 			return Step.NONE
-	if authored:
+	if plays_an_authored_scene():
 		return Step.RELOAD_SCENE
 	match current:
 		Mode.BRIEF:

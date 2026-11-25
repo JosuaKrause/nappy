@@ -37,16 +37,18 @@ extends Node2D
 ## building, where the meter receives nothing, there is no line either, to within one `CUT_PIECE`. `_draw_fields()` is where the
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
-## **The building shows what the city shows.** Nothing here needs a day: the events are an event
-## source (anything answering `instances() -> Array[EventInstance]`, which the city's
-## `EventManager` and the building's answer alike), the crowd may be null, and the world is any `Node2D` whose subtree holds
-## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
+## **The building shows what the city shows.** Nothing here needs a day: the events are the
+## world's `EventManager`, the city's or the building's alike, asked only for `instances()`, the
+## crowd may be null, and the world is any `Node2D` whose subtree holds
+## the bodies — `City` or `InteriorScene`. Only the props are a city's: they are handed as a source
+## (`setup()`'s `props`), and a building hands none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
 ## amber the caret already uses for "worth going round", so this view speaks the vocabulary the
 ## game already has rather than inventing a third pair of danger colours.
 const FIELD_COSTLY := Palette.MARK_COSTLY
-## And the same deep red `Palette.MARK_LETHAL` for a `hard_fail` event's field and a car's strike
+## And the same deep red `Palette.MARK_LETHAL` for the field of an event that ends the day
+## (`EventInstance.ends_the_day()`) and a car's strike
 ## box — "lethal != noise ... lethal is when you get hit by a car" (the player, 2026-09-10): a
 ## car's ordinary noise field is never this colour, only the box that can end the day.
 const FIELD_LETHAL := Palette.MARK_LETHAL
@@ -66,26 +68,38 @@ var bodies_on := false
 ## it has queued the redraw the change owed. See `_wants_a_redraw()`.
 var _redraw_owed := false
 
-## The event source — see the class doc.
-var _events: Node
+## The world's events — see the class doc.
+var _events: EventManager
 ## Null where there is no crowd: the escape's building.
 var _crowd: Crowd
-## Whose subtree the bodies are walked from: the `City`, or the escape's `InteriorScene`.
+## Whose subtree the bodies are walked from: the `City`, or the escape's `InteriorScene`. Only a
+## `Node2D` root is asked of it, so nothing here tests what kind of world it is.
 var _world: Node2D
+## Answers the world's props, rebuilt each day; invalid where the world has none (the escape's
+## building).
+var _props: Callable
 var _player: Stroller
 
 ## **Called again when the escape walks out of the service door**, with the city in place of the
 ## building, so the one node and the state of its three switches carry across the section change.
-func setup(events: Node, crowd: Crowd, world: Node2D, player: Stroller) -> void:
+func setup(events: EventManager, crowd: Crowd, world: Node2D, props: Callable,
+		player: Stroller) -> void:
 	_events = events
 	_crowd = crowd
 	_world = world
+	_props = props
 	_player = player
 
-## The live instances, typed — see `DangerEdge._live()` for why the duck-typed source is read
-## through one function.
+## The live instances: the one question this layer asks its event source.
 func _live() -> Array[EventInstance]:
 	return _events.instances()
+
+## The world's props now, or none where the world hands no source.
+func _current_props() -> Array[Node2D]:
+	if not _props.is_valid():
+		return []
+	var props: Array[Node2D] = _props.call()
+	return props
 
 ## The crowd's agents, or none where there is no crowd.
 func _agents() -> Array[CrowdAgent]:
@@ -94,8 +108,8 @@ func _agents() -> Array[CrowdAgent]:
 	return _crowd.agents()
 
 ## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
-## `RunConfig.layers_override`. Pulled out from `DebugReadout.show_the_world()` so a test can drive it
-## with the indices it wants: see `DevFlags.layers_override()` for the same split.
+## `RunConfig.layers_override()`. Pulled out from `DebugReadout.show_the_world()` so a test can
+## drive it with the indices it wants: see `DevFlags.layers_override()` for the same split.
 func apply_initial_state(indices: Array[int]) -> void:
 	fields_on = 1 in indices
 	shadows_on = 2 in indices
@@ -154,12 +168,13 @@ func _draw() -> void:
 ## meter does: a capsule about a stationary body's own spine, an ellipse (focus at the emitter)
 ## about a moving one, and a plain circle at zero speed, exactly as it always drew — a mast's field
 ## included, now that it stands somewhere. A flock draws one pair per bird, at its own position and
-## its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` — the same
-## radius `_flock_contribution_at()` sums over, so drawing the flat number instead would show a
-## field wider than what the birds actually emit. Each outline is cut wherever the emitter's own
+## its own `heading * speed`, and its outer ring is one bird's reach rather than the row's
+## (`EventInstance.field_rings()` answers it for a flock) — the same radius
+## `_flock_contribution_at()` sums over, so drawing the row's reach instead would show a field
+## wider than what the birds actually emit. Each outline is cut wherever the emitter's own
 ## walls keep the field from that point — see `open_runs()`.
 func _draw_fields() -> void:
-	for drawn in field_runs(_view_rect()):
+	for drawn: Array in field_runs(_view_rect()):
 		for run: PackedVector2Array in drawn[0]:
 			draw_polyline(run, drawn[1], LINE_WIDTH, true)
 
@@ -170,38 +185,38 @@ func field_runs(view: Rect2) -> Array:
 	var cuts := {}
 	_cut_calls += 1
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
-		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
+		var colour := FIELD_LETHAL if instance.ends_the_day() else FIELD_COSTLY
 		var source := instance.global_position
-		var grid := instance.excitement.wall_grid()
+		var grid := instance.source().wall_grid()
+		var rings := instance.field_rings()
 		var id := instance.get_instance_id()
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
 			var axis := instance.solid_axis()
 			var velocity := instance.travel_velocity()
 			var shape := instance.field_shape()
-			var spine := shape.half_length if shape != null else 0.0
-			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
+			var spine := shape.spine_half_length() if shape != null else 0.0
+			for level: float in [rings.x, rings.y]:
 				if not _may_be_seen(view, source, level, spine):
 					continue
 				var outline := shape.field_outline(source, axis, velocity, level) if shape != null \
 						else GroundShape.field_outline_at(source, velocity, level)
 				_field_boundary(outline, source, grid, colour, [id, -1, level], view, cuts, drawn)
 			continue
-		var outer := instance.flock_outer_radius()
 		var velocities := instance.flock_velocities()
 		# Every bird's outline is cut by the flock's own line, from its centre, which is the line
 		# `contribution_at()` asks for the whole flock.
 		for i in offsets.size():
 			var at := source + offsets[i]
-			for level: float in [instance.def.inner_radius, outer]:
+			for level: float in [rings.x, rings.y]:
 				if not _may_be_seen(view, at, level):
 					continue
 				var outline := GroundShape.field_outline_at(at, velocities[i], level)
 				_field_boundary(outline, source, grid, colour, [id, i, level], view, cuts, drawn)
 	for agent in _agents():
-		var is_car := agent.kind == CrowdAgent.Kind.CAR
+		var is_car := agent.is_car()
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
 		var outer := Tuning.CAR_OUTER_RADIUS if is_car else Tuning.PEDESTRIAN_OUTER_RADIUS
 		# Noise, never lethal — a car's strike box is drawn in the bounding-box layer instead, in
@@ -210,12 +225,12 @@ func field_runs(view: Rect2) -> Array:
 		# doc), so it is outlined as a point whatever the agent's own shadow shape says.
 		var velocity := agent.velocity()
 		var levels: Array[float] = [inner, outer]
-		if agent.excitement.is_startled():
-			var jolt := agent.excitement.jolt_radii()
+		if agent.mood().is_startled():
+			var jolt := agent.mood().jolt_radii()
 			levels.append(jolt.x)
 			levels.append(jolt.y)
 		var source := agent.global_position
-		var grid := agent.excitement.wall_grid()
+		var grid := agent.mood().wall_grid()
 		var id := agent.get_instance_id()
 		for level in levels:
 			if not _may_be_seen(view, source, level):
@@ -400,21 +415,22 @@ static func _deep_ground_meets(grid: WorldMap, rect: Rect2) -> bool:
 ## `shape` still appears in the bounding-box layer below.
 func _draw_shadows() -> void:
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
-		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
+		for outline in instance.shadow_outlines(instance.global_position):
+			_draw_closed_polyline(outline, SHADOW_COLOUR)
 	for agent in _agents():
-		var axis := agent.heading() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
-		_draw_shadow_outline(agent.shape, agent.global_position, axis)
-	var props: Array = (_world as City).props() if _world is City else []
-	for prop in props:
+		for outline in agent.shadow_outlines(agent.global_position):
+			_draw_closed_polyline(outline, SHADOW_COLOUR)
+	for prop in _current_props():
 		if prop is Prop:
-			_draw_shadow_outline((prop as Prop).shape, prop.global_position, Vector2.RIGHT)
-	_draw_shadow_outline(_player.shape, _player.global_position, Vector2.RIGHT)
+			for outline in (prop as Prop).shadow_outlines(prop.global_position):
+				_draw_closed_polyline(outline, SHADOW_COLOUR)
+	_draw_shadow_outline(_player.shape(), _player.global_position, Vector2.RIGHT)
 	# In the escape she carries the baby and there is no pram, so no pram shadow is drawn
 	# (`Stroller._draw()`) and none is outlined here either.
-	if not _player.carrying:
-		_draw_shadow_outline(_player.pram_shape, _pram_position(), Vector2.RIGHT)
+	if not _player.is_carrying():
+		_draw_shadow_outline(_player.pram_shape(), _pram_position(), Vector2.RIGHT)
 
 func _draw_shadow_outline(shape: GroundShape, at: Vector2, axis: Vector2) -> void:
 	_draw_closed_polyline(shape.shadow_outline(at, axis), SHADOW_COLOUR)
@@ -449,7 +465,7 @@ func _draw_bodies() -> void:
 func _strike_box_agents() -> Array[CrowdAgent]:
 	var found: Array[CrowdAgent] = []
 	for agent in _agents():
-		if agent.kind == CrowdAgent.Kind.CAR and agent.speed() >= Tuning.CAR_STRIKE_MIN_SPEED:
+		if agent.is_car() and agent.speed() >= Tuning.CAR_STRIKE_MIN_SPEED:
 			found.append(agent)
 	return found
 
@@ -474,9 +490,10 @@ static func _collect_collision_nodes_into(root: Node, into: Array[Node]) -> void
 		return
 	if root is StaticBody2D or root is CharacterBody2D:
 		for child in root.get_children():
-			if child is CollisionShape2D and not child.disabled and child.shape != null:
+			if child is CollisionShape2D and not (child as CollisionShape2D).disabled \
+					and (child as CollisionShape2D).shape != null:
 				into.append(child)
-			elif child is CollisionPolygon2D and not child.disabled:
+			elif child is CollisionPolygon2D and not (child as CollisionPolygon2D).disabled:
 				into.append(child)
 	for child in root.get_children():
 		_collect_collision_nodes_into(child, into)
@@ -486,20 +503,23 @@ static func _collect_collision_nodes_into(root: Node, into: Array[Node]) -> void
 func _draw_collision_node(node: Node) -> void:
 	var at: Vector2 = (node as Node2D).global_position
 	if node is CollisionPolygon2D:
-		_draw_closed_polyline(_polygon_world_points(node), BODY_COLOUR)
+		_draw_closed_polyline(_polygon_world_points(node as CollisionPolygon2D), BODY_COLOUR)
 		return
 	var shape: Shape2D = (node as CollisionShape2D).shape
 	if shape is CircleShape2D:
-		draw_arc(at, shape.radius, 0.0, TAU, _CIRCLE_SEGMENTS, BODY_COLOUR, LINE_WIDTH, true)
+		draw_arc(at, (shape as CircleShape2D).radius, 0.0, TAU, _CIRCLE_SEGMENTS, BODY_COLOUR,
+				LINE_WIDTH, true)
 	elif shape is RectangleShape2D:
 		var axis := Vector2.RIGHT.rotated((node as Node2D).global_rotation)
-		_draw_closed_polyline(_rect_corners(at, axis, shape.size * 0.5), BODY_COLOUR)
+		_draw_closed_polyline(_rect_corners(at, axis, (shape as RectangleShape2D).size * 0.5),
+				BODY_COLOUR)
 	elif shape is CapsuleShape2D:
 		# Godot's capsule stands along local Y (`GroundShape.collision_shape()`'s own doc), so the
 		# spine's world axis is the node's rotated +Y, not its +X.
 		var axis := Vector2.UP.rotated((node as Node2D).global_rotation)
-		var half_length := maxf(0.0, shape.height * 0.5 - shape.radius)
-		_draw_closed_polyline(_capsule_outline(at, axis, half_length, shape.radius), BODY_COLOUR)
+		var capsule := shape as CapsuleShape2D
+		var half_length := maxf(0.0, capsule.height * 0.5 - capsule.radius)
+		_draw_closed_polyline(_capsule_outline(at, axis, half_length, capsule.radius), BODY_COLOUR)
 
 func _polygon_world_points(node: CollisionPolygon2D) -> PackedVector2Array:
 	var points := PackedVector2Array()

@@ -17,7 +17,8 @@ var _in_the_title: Callable
 var _readout_on: Callable
 var _graph_on: Callable
 var _log_on: Callable
-var _city: City
+var _events: EventManager
+var _crowd: Crowd
 var _player: Stroller
 var _day: DayController
 ## The run whose seed names the trace and whose calendar day each sample records, handed in by
@@ -29,19 +30,21 @@ var _metadata: Dictionary = {}
 var _user_flags: Array = []
 
 func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, log_on: Callable,
-		city: City, player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
+		events: EventManager, crowd: Crowd, player: Stroller, day: DayController,
+		user_flags: Array, run: RunState) -> void:
 	_run = run
 	_in_the_title = in_the_title
 	_readout_on = readout_on
 	_graph_on = graph_on
 	_log_on = log_on
-	_city = city
+	_events = events
+	_crowd = crowd
 	_player = player
 	_day = day
 	_user_flags = user_flags
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_metadata = environment()
-	_metadata["run_seed"] = _run.header.run_seed
+	_metadata["run_seed"] = _run.header().run_seed()
 	_metadata["build"] = BuildInfo.build_text()
 	_metadata["warmup_usec"] = WARMUP_USEC
 	RenderingServer.frame_post_draw.connect(_sample)
@@ -50,28 +53,28 @@ func _sample() -> void:
 	var now := Time.get_ticks_usec()
 	if get_tree().paused or _in_the_title.call() or not _day.is_running():
 		buffer.break_interval()
-		if buffer.count == 0:
+		if buffer.is_empty():
 			_started_usec = -1
 		return
 	if _started_usec < 0:
 		_started_usec = now
 	if now - _started_usec < WARMUP_USEC:
 		return
-	if buffer.count == FrameTraceBuffer.CAPACITY:
-		buffer.dropped += 1
+	if buffer.is_full():
+		buffer.drop_one()
 		return
-	var live := _city.events.instances()
+	var live := _events.instances()
 	var identities := 0
 	for instance in live:
 		identities += instance.get_instance_id()
 	var here := _player.global_position
 	var counters := PackedInt64Array([
 		Engine.get_physics_frames(), FrameCost.draw_calls(), FrameCost.objects(),
-		FrameCost.primitives(), live.size(), identities, _city.crowd.agent_count(),
+		FrameCost.primitives(), live.size(), identities, _crowd.agent_count(),
 		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
-		roundi(here.x * 1000.0), roundi(here.y * 1000.0), _run.header.day,
+		roundi(here.x * 1000.0), roundi(here.y * 1000.0), _run.header().day(),
 		int(_readout_on.call()), int(_graph_on.call()),
 		int(_log_on.call())])
 	buffer.append(now, Engine.get_process_frames(), Engine.get_frames_drawn(), counters)
@@ -112,7 +115,7 @@ func _exit_tree() -> void:
 		return
 	var path := "%s/trace-%s-seed%d-%d.json" % [directory,
 		Time.get_datetime_string_from_system().replace(":", "-"),
-		_run.header.run_seed, Time.get_ticks_usec()]
+		_run.header().run_seed(), Time.get_ticks_usec()]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("Cannot write frame trace: %s" % path)

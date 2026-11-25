@@ -1,0 +1,172 @@
+class_name GameDawn
+extends RefCounted
+## **A dawn planned the way the game plans one, for a suite or a probe that plans a day by hand**:
+## made over what every dawn has (its spec, the stream its seed is read off and the map), told
+## only what the test's day differs in, and planned with `plan()`. What is not said is what a
+## plain day has: every calm area unused (`CalmAreas.of()`), the mast sites worked out on the map
+## as it stands (`MastSites.compute()`), the route tree the city grows for the spec's day
+## (`RouteTree.for_day()`), nothing spent, no scars, no heat, no doors, nothing standing, no trace
+## and no roadblock row. **And the whole day**: the dawn draws no unit of the day's locations (each
+## draws as she comes near it), so `planned()` and `plan()` draw every unit into the plan, which is
+## what any walk that comes near every unit draws (`undrawn()` leaves the dawn as the game leaves
+## it). A helper, not a suite: the runner loads only `test_*.gd`.
+##
+## **The one place under `tests/` that knows how a dawn is handed its inputs**, so a change to
+## that reaches the suites and the probes through this file.
+
+var _spec: DaySpec
+var _rng: RandomNumberGenerator
+var _map: CityMap
+var _calm: CalmAreas = null
+var _masts: Array[MastSites.Site] = []
+## Whether `masts()` was called: an empty list said is no mast, and none said is the map's own.
+var _masts_are_said := false
+var _spent: Array[String] = []
+var _scars: Array[Dictionary] = []
+var _walk: RouteSource = null
+var _heat := 0
+var _doors := PackedVector2Array()
+var _standing: Array[EventPlan] = []
+var _trace: RunTrace = null
+var _roadblock: EventDef = null
+## Whether `undrawn()` was said: the dawn left as the game leaves it, no unit drawn.
+var _undrawn := false
+var _rows: Array[EventDef] = []
+
+## A dawn whose catalogue answers with some rows replaced: what the game's own rows are, but for the
+## ones the test hands in, each taking the place of the catalogue's row of its id
+## (`DawnContext.catalogue_rows()`). The row a test hands in is a copy it drafted
+## (`row.redraft()...build()`), so the catalogue's own row is never written.
+class _Dawn extends DawnContext:
+	var _handed: Array[EventDef] = []
+
+	func _init(spec: DaySpec, seed_value: int, map: CityMap, walk: RouteSource, calm: CalmAreas,
+			builder: PlanBuilder, ground_of: Callable, handed: Array[EventDef]) -> void:
+		super(spec, seed_value, map, walk, calm, builder, ground_of)
+		_handed = handed
+
+	## Overrides DawnContext.catalogue_rows.
+	func catalogue_rows(kind: GameEnums.EventKind) -> Array[EventDef]:
+		var rows: Array[EventDef] = []
+		for def in super.catalogue_rows(kind):
+			var stands_in := def
+			for handed in _handed:
+				if handed.id() == def.id():
+					stands_in = handed
+			rows.append(stands_in)
+		return rows
+
+## The dawn of the walk `spec` describes on `map`, its seed the one `rng` was made with.
+func _init(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap) -> void:
+	_spec = spec
+	_rng = rng
+	_map = map
+
+## The same dawn, said the way the suites read it: "the dawn of this day".
+static func of(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap) -> GameDawn:
+	return GameDawn.new(spec, rng, map)
+
+## The day's calm areas, where the test's are not `CalmAreas.of(map)`.
+func calm(areas: CalmAreas) -> GameDawn:
+	_calm = areas
+	return self
+
+## The run's mast sites, where the test worked them out once or wants none.
+func masts(sites: Array[MastSites.Site]) -> GameDawn:
+	_masts = sites
+	_masts_are_said = true
+	return self
+
+## The one-shots the run has spent.
+func spent(one_shots: Array[String]) -> GameDawn:
+	_spent = one_shots
+	return self
+
+## The scars the run left.
+func scars(left: Array[Dictionary]) -> GameDawn:
+	_scars = left
+	return self
+
+## The walk the day is placed against, where it is not the tree the city grows for the day. A walk
+## not said becomes that tree on every spec, the escape's one included, where the game hands the
+## escape the walk its chains make.
+func on(walk: RouteSource) -> GameDawn:
+	_walk = walk
+	return self
+
+## The run's heat.
+func heat(progress: int) -> GameDawn:
+	_heat = progress
+	return self
+
+## Where today's region-door bodies stand.
+func doors(at: PackedVector2Array) -> GameDawn:
+	_doors = at
+	return self
+
+## What stands whatever the dawn plans: the seals and the region wall's bodies.
+func standing(bodies: Array[EventPlan]) -> GameDawn:
+	_standing = bodies
+	return self
+
+## Where the planning writes its account.
+func traced(to: RunTrace) -> GameDawn:
+	_trace = to
+	return self
+
+## The catalogue's row of `row`'s id answers as `row` does, in a dawn the test plans.
+func with_row(row: EventDef) -> GameDawn:
+	_rows.append(row)
+	return self
+
+## The row the roadblock phase stands beside the day's routes.
+func roadblock(row: EventDef) -> GameDawn:
+	_roadblock = row
+	return self
+
+## The dawn's context as the game's planner makes it, not yet planned: for a probe that runs
+## one pass of the dawn.
+func context() -> DawnContext:
+	var dawn := _Dawn.new(_spec, _rng.seed, _map,
+			_walk if _walk else RouteTree.for_day(_map, _spec.day_number()),
+			_calm if _calm else CalmAreas.of(_map), GamePlanBuilder.over(_map),
+			EventScheduler.row_ground, _rows)
+	dawn.use_the_run(_spent, _scars, _heat)
+	dawn.use_the_doors(_doors)
+	dawn.use_what_stands(_standing)
+	dawn.use_mast_sites(_masts if _masts_are_said else MastSites.compute(_map))
+	dawn.use_trace(_trace)
+	dawn.use_the_roadblock_row(_roadblock)
+	return dawn
+
+## **The dawn left as the game leaves it**: no unit drawn (`DawnDraw` prepares the units' draw and
+## draws none; each unit draws as she comes near it, `EventsAhead`), for a test or a probe of the
+## dawn itself or of the draw as she walks. Without it, `planned()` and `plan()` draw every unit.
+func undrawn() -> GameDawn:
+	_undrawn = true
+	return self
+
+## **Draws every unit of `dawn` into its plan** (`DawnContext.unit_draw()`), nearest the city's
+## corner first: the whole day, the same whatever order the units are drawn in (`UnitDraw`), as a
+## walk that comes near every unit draws it. Nothing is left to draw where the dawn drew the walk
+## whole (`DaySpec.draws_before_she_sets_off()`, the escape's). For a probe that runs the dawn's
+## passes by hand.
+static func draw_every_unit(dawn: DawnContext) -> void:
+	var draw := dawn.unit_draw()
+	if not draw:
+		return
+	for unit in draw.units().undrawn_within(Vector2.ZERO, INF):
+		dawn.events().add_all(draw.draw(unit))
+
+## Plans the dawn and answers its context: the plan, and the locations and the ground it built,
+## every unit drawn into the plan (`draw_every_unit()`) unless `undrawn()` was said.
+func planned() -> DawnContext:
+	var dawn := context()
+	EventScheduler.build_day(dawn)
+	if not _undrawn:
+		draw_every_unit(dawn)
+	return dawn
+
+## Plans the dawn and answers its plan, every unit drawn into it unless `undrawn()` was said.
+func plan() -> DayEvents:
+	return planned().events()

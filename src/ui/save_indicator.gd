@@ -9,18 +9,19 @@ extends CanvasLayer
 ## 2026-10-02: "okay always show it. but show it for at least a second"; "every change in the save
 ## state needs to show the symbol".)* **`GameSave` announces every change on `EventBus` and this
 ## node is the only one that listens**: a write raises it through `EventBus.save_written`, deleting
-## the save file through `EventBus.save_deleted`, and the browser's later answer to either arrives
-## on `EventBus.save_write_settled` or `EventBus.save_deletion_settled`. Nothing is relayed by
+## the save file through `EventBus.save_deleted`, and every change is answered on
+## `EventBus.save_write_settled` or `EventBus.save_deletion_settled`, in the same call where the
+## answer is known at once and when the browser answers on the web. Nothing is relayed by
 ## `main`: the deletion a run's end makes comes from `GameSave`'s own `run_ended` subscriber,
 ## under the sitting, with no way to reach `main`, and a web save's answer may come after a scene
 ## reload has freed the `main` that saved, where a callable bound to it would be dropped and the
 ## symbol would stay fully shown for good. So one place decides when the symbol begins and is
 ## answered, and a change begins it exactly once.
 ## Every change carries its operation id from `GameSave`, on its announcement and on its answer, so
-## an answer settles the change it belongs to and nothing else. `begin()` raises it, and it is fully
+## an answer settles the change it belongs to and nothing else. `_begin()` raises it, and it is fully
 ## shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as long as **any**
 ## change it began is still unanswered, so nothing still being written looks finished —
-## `settle()` answers one, on the web only once the browser has said whether IndexedDB kept it, see
+## `_settle()` answers one, on the web only once the browser has said whether IndexedDB kept it, see
 ## `GameSave.write()` and `GameSave.clear()` — and then fades over `FADE_SECONDS`. There is no hold
 ## after the answer and no delay before the symbol shows.
 ##
@@ -55,7 +56,7 @@ extends CanvasLayer
 ## Built by `main._ready()` — before a resumed run's own charge can end the run and delete the
 ## save — the boot into a run's own escape included. The finale is reached in ordinary
 ## play (a won day 14 with every task complete hands the run over to it, see
-## `DayDirector.hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
+## `DayDirector._hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
 ## escape draws the symbol too. Not built under the `--start-escape` dev flag, where
 ## `GameSave._uses_save()` refuses every read, write and deletion and there is nothing to show.
 
@@ -205,8 +206,9 @@ var _plain_texture: Texture2D
 var _struck_texture: Texture2D
 var _showing: Showing
 ## The baked atlas pages the symbol draws from (`AtlasLibrary`), handed by `main` before it enters
-## the tree; a symbol nobody handed one (a suite's) makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+## the tree (`use_atlas()`); a symbol nobody handed one (a suite's) makes its own when it first
+## enters the tree.
+var _atlas: AtlasLibrary = null
 
 ## `timeline` is the symbol's timeline, handed in so whoever builds the symbol can keep a hand on it
 ## — begin and answer changes on it, move its clocks, read its state — and a fresh one by default.
@@ -216,21 +218,26 @@ func _init(timeline: Showing = null) -> void:
 	layer = _LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+## Hands the symbol the baked atlas pages it draws from: `main` hands the sitting's library,
+## before the symbol enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
+
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"ui")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	atlas.release(&"ui")
+	_atlas.release(&"ui")
 
 func _ready() -> void:
 	# For the life of the node, which is the process once `outlive_the_scene()` has run: a signal
 	# disconnects on its own when its object is freed, so a symbol a test frees listens to nothing.
-	EventBus.save_written.connect(_on_save_changed)
-	EventBus.save_write_settled.connect(settle)
-	EventBus.save_deleted.connect(_on_save_changed)
-	EventBus.save_deletion_settled.connect(settle)
+	EventBus.save_written.connect(_begin)
+	EventBus.save_write_settled.connect(_settle)
+	EventBus.save_deleted.connect(_begin)
+	EventBus.save_deletion_settled.connect(_settle)
 	var root := Control.new()
 	root.name = "Root"
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -240,8 +247,8 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(root)
 	_icon_rect = TextureRect.new()
 	_icon_rect.name = "Icon"
-	_plain_texture = atlas.region(_ICON)
-	_struck_texture = atlas.region(_ICON_UNAVAILABLE)
+	_plain_texture = _atlas.region(_ICON)
+	_struck_texture = _atlas.region(_ICON_UNAVAILABLE)
 	_icon_rect.texture = _plain_texture
 	_icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -257,34 +264,25 @@ func _ready() -> void:
 	_icon_rect.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	root.add_child(_icon_rect)
 
-## Called from `_on_save_changed()` the moment change `operation` starts — never for a run
-## `GameSave` refuses (a dev flag, a headless run, or one already ended, which announce nothing), so
-## the symbol is drawn on exactly the runs that save at all. Fully shown from here until every change
-## begun is settled and for at least `MIN_SHOWN_SECONDS`, even mid-fade; a symbol already fully
-## shown keeps its own clock.
-func begin(operation: int) -> void:
+## Heard on `EventBus.save_written` and `EventBus.save_deleted` the moment change `operation`
+## starts — never for a run `GameSave` refuses (a dev flag, a headless run, or one already ended,
+## which announce nothing), so the symbol is drawn on exactly the runs that save at all. Fully
+## shown from here until every change begun is settled and for at least `MIN_SHOWN_SECONDS`, even
+## mid-fade; a symbol already fully shown keeps its own clock.
+func _begin(operation: int) -> void:
 	_showing.begin(operation)
 	_apply()
 
-## Answers the `begin()` with the same `operation`: `kept` is whether the change was confirmed.
+## Answers the `_begin()` with the same `operation`: `kept` is whether the change was confirmed.
 ## Struck through if it is the newest change begun and was not kept, plain if it is the newest and
 ## was; an older change's answer leaves the picture as it is. The fade starts once every change
 ## begun is answered and the minimums have run out.
-func settle(operation: int, kept: bool) -> void:
+func _settle(operation: int, kept: bool) -> void:
 	_showing.settle(operation, kept)
 	_apply()
 
-## `EventBus.save_written` and `EventBus.save_deleted`: the save was written, or its file was
-## deleted, as change `operation`. `result` is a `GameSave.Result` as `int` — `PENDING` waits for
-## `EventBus.save_write_settled` or `EventBus.save_deletion_settled` with the same id, anything else
-## is the answer already, and is answered at once the way a desktop write is.
-func _on_save_changed(operation: int, result: int) -> void:
-	begin(operation)
-	if result != GameSave.Result.PENDING:
-		settle(operation, result == GameSave.Result.CONFIRMED)
-
 ## Whether the symbol is up at all — fully shown or fading.
-func is_showing() -> bool:
+func _is_showing() -> bool:
 	return not _showing.is_idle()
 
 ## Hands the symbol to `home`, the `Sitting` `main` keeps across the scene reload the held restart
@@ -293,7 +291,7 @@ func is_showing() -> bool:
 ## boot builds its own. Does nothing once it is already there (an idle one stays, and the next boot
 ## adopts it again), or off the tree.
 func outlive_the_scene(home: Sitting) -> void:
-	if get_tree() == null or home == null or not is_showing():
+	if get_tree() == null or home == null or not _is_showing():
 		return
 	if get_parent() != home:
 		reparent(home, false)

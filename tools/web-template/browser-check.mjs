@@ -15,7 +15,8 @@ const usage = `usage: node tools/web-template/browser-check.mjs --export DIR --o
 Requires Node 22 and Chrome/Chromium. Exercises title/play, save/reload, later days and escape.
 The output directory must not exist; logs/screenshots/results go there, never into the game.
 The browser runs in a temporary profile that is removed afterwards; it is closed through CDP
-and waited for, and scratch.json reports any browser scratch it removed, kept or could not attribute.
+and waited for. It is launched without Chrome's macOS code-sign clone, and removes only a clone lsof
+showed its own browser holding. scratch.json reports any browser scratch it removed, kept or could not attribute.
 Example: node tools/web-template/browser-check.mjs --export build/web --output /tmp/web-check --browser /usr/bin/google-chrome
 `;
 let options;

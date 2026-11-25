@@ -143,13 +143,15 @@ const _ICON_PAINTED_RADIUS := 62.5
 const _ICON_HALF_SIZE := 64.0
 ## The dot `_draw_focus_circles()` draws at the steering focus while she stands, offset toward her
 ## heading while she walks: a third of `PAUSE_RADIUS` (about 8.7px), so even the larger running knob
-## at `_FOCUS_KNOB_OFFSET` stays inside the ring rather than crowding the rim.
-const _FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
+## at `FOCUS_KNOB_OFFSET` stays inside the ring rather than crowding the rim.
+const FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
 ## How far the knob sits from the focus while she walks, 36px: just inside the ring's 48px with the
 ## larger running knob still within it. **Unrelated to `DEAD_ZONE_RADIUS`** *(2026-10-10, pebbly-alpaca:
 ## "the position where the dot it drawn should be independent of the deadzone -- those two have no
 ## relation")*; it keeps the value it had when the dead zone was 32px.
-const _FOCUS_KNOB_OFFSET := 36.0
+const FOCUS_KNOB_OFFSET := 36.0
+## How much larger the knob is drawn while she runs.
+const FOCUS_KNOB_RUNNING_SCALE := 1.3
 
 ## Hardware only — see the class doc's own paragraph on what this decides and what it no longer
 ## does. Read once into a member the same way `TouchInput.available()` already is everywhere else
@@ -190,8 +192,13 @@ var _mode := ControlsMode.Mode.TAP
 
 ## What these controls cover of the screen, and whether the scheme that covers it is in force: the
 ## one `ScreenCover` this node keeps current as the mode changes (`set_mode()`), handed on by `main`
-## to everything that asks what she can see (`VisibleView`).
-var covering := _covered_screen(false)
+## to everything that asks what she can see (`VisibleView`) through `covering()`.
+var _covering := _covered_screen(false)
+
+## What these controls cover of the screen (`ScreenCover`), the one object they keep current as the
+## mode changes, so whoever is handed it reads the scheme in force at every look.
+func covering() -> ScreenCover:
+	return _covering
 
 ## The left covered corner includes the painted ring or Run disc, never its invisible catch.
 static func _covered_left() -> Rect2:
@@ -210,7 +217,7 @@ static func _covered_right() -> Rect2:
 ## the covered footprint.
 static func _covered_screen(in_force := true) -> ScreenCover:
 	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, _covered_left(), _covered_right())
-	made.in_force = in_force
+	made.put_in_force(in_force)
 	return made
 
 ## The focus `Mode.JOYSTICK` steers from, `FOCUS_LEFT` or `FOCUS_RIGHT`; Run is the other one. Set
@@ -231,7 +238,7 @@ func set_mode(mode: ControlsMode.Mode, side := ControlsMode.Side.LEFT) -> void:
 		_run_before_pause = false
 	_mode = mode
 	_steering_focus = focus
-	covering.in_force = mode == ControlsMode.Mode.JOYSTICK
+	_covering.put_in_force(mode == ControlsMode.Mode.JOYSTICK)
 	if mode != ControlsMode.Mode.JOYSTICK:
 		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
 		_let_go_of_the_run_button()
@@ -243,14 +250,19 @@ func controls_mode() -> ControlsMode.Mode:
 	return _mode
 
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
-## `ScreenOrientation`. Set from outside rather than asked here, the same way `_touch` is a read
-## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
-## place that knows the window's own shape, and the pause button's own touch handling goes through
-## `ScreenOrientation.to_design_space()` with this flag before comparing a raw press to
-## `PAUSE_CENTRE`, which stays authored in the unrotated 1280x720 box regardless. A direction press
-## needs no such remap — it is turned straight into a world position through the viewport's own
-## canvas transform, which already carries the rotation.
-var rotated := false
+## `ScreenOrientation`. Handed in (`use_rotated()`) rather than asked here, the same way `_touch`
+## is a read of a platform fact rather than a query at each use site:
+## `main._apply_orientation()` is the one place that knows the window's own shape, and the pause
+## button's own touch handling goes through `ScreenOrientation.to_design_space()` with this flag
+## before comparing a raw press to `PAUSE_CENTRE`, which stays authored in the unrotated 1280x720
+## box regardless. A direction press needs no such remap — it is turned straight into a world
+## position through the viewport's own canvas transform, which already carries the rotation.
+var _rotated := false
+
+## Hands the controls whether the window presents rotated: `main` hands its answer at boot and
+## again whenever the window turns.
+func use_rotated(rotate: bool) -> void:
+	_rotated = rotate
 
 ## The touch or pointer index currently down on the pause button, or -1 when nothing is. Going down
 ## does not press anything — see `_on_pointer()` for why the action only fires on release, and only
@@ -295,16 +307,22 @@ var _drag_run := false
 
 var _was_paused := false
 ## The baked atlas pages the controls draw from (`AtlasLibrary`), handed by `main` before they
-## enter the tree; controls nobody handed one (a suite's) make their own when they first enter it.
-var atlas: AtlasLibrary = null
+## enter the tree (`use_atlas()`); controls nobody handed one (a suite's) make their own when they
+## first enter it.
+var _atlas: AtlasLibrary = null
+
+## Hands the controls the baked atlas pages they draw from: `main` hands the sitting's library,
+## before they enter the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"ui")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	atlas.release(&"ui")
+	_atlas.release(&"ui")
 
 ## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
 ## since it may not name the view.
@@ -380,7 +398,8 @@ func _input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		if motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
 			_on_drag(motion.position, _MOUSE_POINTER_INDEX)
-	elif event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
+	elif event is InputEventKey and (event as InputEventKey).pressed \
+			and not (event as InputEventKey).echo:
 		_yield_to_the_keyboard(event as InputEventKey)
 
 ## Stands in for the touch index a mouse event carries none of — the same role `PauseScreen
@@ -420,7 +439,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 			return
 		# The one correction a rotated presentation needs on the input side — see
 		# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
-		var design := ScreenOrientation.to_design_space(position, rotated)
+		var design := ScreenOrientation.to_design_space(position, _rotated)
 		if visible and _pause_touch == -1 \
 				and design.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
 			# Only grabs the index here — see `_send_pause_action()`'s doc for why
@@ -473,7 +492,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 		queue_redraw()
 		# Fires on release rather than on press, and only when the release itself is still over
 		# the button, so a press that lands wrong can slide off and lift without stopping the day.
-		var design := ScreenOrientation.to_design_space(position, rotated)
+		var design := ScreenOrientation.to_design_space(position, _rotated)
 		if _pause_fires(design):
 			_send_pause_action()
 
@@ -501,7 +520,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## has to be walked through, because the two spaces cannot be mixed:
 ## - "is this press in the dead zone or the band" is asked in **design space**, the 1280x720 box the
 ##   constants are authored in and where "two thirds of the way to Run" means what it says —
-##   `ScreenOrientation.to_design_space(screen_position, rotated)` is what gets there.
+##   `ScreenOrientation.to_design_space(screen_position, _rotated)` is what gets there.
 ## - the heading itself needs the focus in **world space**, the same space `target` (the press) is
 ##   already in. A design-space subtraction would ignore the camera, the zoom and — on a rotated
 ##   presentation — literally point the wrong way, since the design box does not carry the
@@ -540,7 +559,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		_set_direction(world, double)
 		return
 	# Mode.JOYSTICK, past here — see the class doc and this function's own doc above.
-	var design := ScreenOrientation.to_design_space(screen_position, rotated)
+	var design := ScreenOrientation.to_design_space(screen_position, _rotated)
 	if _in_dead_zone(design, _steering_focus) or _is_in_stop_band(design, _steering_focus):
 		_stop()
 		return
@@ -556,7 +575,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 ## world space once is left behind in the street the moment she walks and the camera follows her.
 func _focus_world(focus_design: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() \
-			* ScreenOrientation.to_presented_space(focus_design, rotated)
+			* ScreenOrientation.to_presented_space(focus_design, _rotated)
 
 ## Whether `world` lands within `TAP_STOP_RADIUS` of the centre of her sprite — `TAP_STOP_CENTRE_LIFT`
 ## above her feet, not her bare `global_position` (see that constant's own doc for why) —
@@ -591,7 +610,7 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 		return
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	if _mode == ControlsMode.Mode.JOYSTICK:
-		var design := ScreenOrientation.to_design_space(screen_position, rotated)
+		var design := ScreenOrientation.to_design_space(screen_position, _rotated)
 		if _in_dead_zone(design, _steering_focus) or _is_in_stop_band(design, _steering_focus):
 			_stop()
 			return
@@ -708,7 +727,7 @@ func _yield_to_the_keyboard(key: InputEventKey) -> void:
 	if get_tree().paused:
 		return
 	var pressed_action: StringName = &""
-	for action in [&"move_left", &"move_right", &"move_up", &"move_down"]:
+	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down"]:
 		if key.is_action(action, true):
 			pressed_action = action
 			break
@@ -855,7 +874,7 @@ func remember_before_pause() -> void:
 	_run_before_pause = _run_active
 
 ## The other half of *"Pause can keep the last direction just don't overwrite it from the button
-## press."* Called by `PauseScreen.close()`, once the tree is actually running again, so the
+## press."* Called by `PauseScreen._close()`, once the tree is actually running again, so the
 ## heading that was locked in before the pause is what she walks off with — **not** the press that
 ## dismissed the screen, which `_on_pointer()`'s own `get_tree().paused` guard already keeps from
 ## ever being armed for a heading of its own (see that function's own doc). A no-op while standing:
@@ -931,7 +950,7 @@ func _draw_pause_button() -> void:
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * PAUSE_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(atlas.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+	draw_texture_rect(_atlas.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Run's disc, on the focus the steering side leaves free, lit while any finger holds Run.
@@ -942,7 +961,7 @@ func _draw_run_button() -> void:
 	if _run_held:
 		draw_circle(center, RUN_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * RUN_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(atlas.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
+	draw_texture_rect(_atlas.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
 ## The steering ring at `RING_RADIUS` and a knob (the dot) at the heading she is actually walking,
@@ -953,9 +972,9 @@ func _draw_focus_circles() -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	var running := Input.is_action_pressed(&"run")
-	var knob_radius := _FOCUS_KNOB_RADIUS * (1.3 if running else 1.0)
+	var knob_radius := FOCUS_KNOB_RADIUS * (FOCUS_KNOB_RUNNING_SCALE if running else 1.0)
 	var knob_colour := Color(1.0, 1.0, 1.0, 1.0 if running else 0.8)
-	var offset := current_heading(_rig) * _FOCUS_KNOB_OFFSET
+	var offset := current_heading(_rig) * FOCUS_KNOB_OFFSET
 	draw_arc(_steering_focus, RING_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35),
 			FOCUS_STROKE_WIDTH, true)
 	draw_circle(_steering_focus + offset, knob_radius, knob_colour)

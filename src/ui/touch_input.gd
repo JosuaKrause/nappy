@@ -20,26 +20,13 @@ extends RefCounted
 ## by nothing at all. `QuitOption.available()` and `hud._debug` follow the same pattern for their
 ## own platform questions.
 ##
-## `--touch` forces this true (`RunConfig.touch_forced`, a debug build's flag like every other dev
+## `--touch` forces this true (`RunConfig.forces_touch()`, a debug build's flag like every other dev
 ## flag): nothing on the machine that runs `tools/test.sh` or an exported build has a real
 ## touchscreen, so without it a touch-only screen could never be rendered, and
 ## `tools/shot.sh out.png 3 --touch --walk north` is how the touch HUD is looked at. The run's
 ## configuration is handed in, so nothing here reads the command line; with none handed in (a
 ## screen built outside a boot) the answer is the hardware's alone.
 static func available(config: RunConfig = null) -> bool:
-	if config != null and config.touch_forced:
+	if config != null and config.forces_touch():
 		return true
 	return DisplayServer.is_touchscreen_available()
-
-## Whether `event` is a generic press from a pointing device — a real finger
-## (`InputEventScreenTouch`) or a left mouse click — the one shape `TitleScreen`, `DaySummary` and
-## `PauseScreen` all need to dismiss themselves: each already tests `ui_accept` on its own for the
-## keyboard's equivalent, and ORs this in alongside it rather than this folding `ui_accept` in
-## itself, since `ui_accept` has nothing to do with a touch device.
-static func is_press(event: InputEvent) -> bool:
-	if event is InputEventScreenTouch:
-		return (event as InputEventScreenTouch).pressed
-	if event is InputEventMouseButton:
-		var button := event as InputEventMouseButton
-		return button.pressed and button.button_index == MOUSE_BUTTON_LEFT
-	return false

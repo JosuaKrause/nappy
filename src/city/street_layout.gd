@@ -10,8 +10,9 @@ extends RefCounted
 ## assigned and before anything is built on the blocks between them.
 
 ## Paints `map`'s streets: every tile on a corridor the way its two offsets and kinds say, every
-## tile between them `BUILDING`, then the border's stubs sealed. Reads `map.main_road` and the
-## street kinds (`CityMap.street_kind_at()`), so both are set first.
+## tile between them `BUILDING`, then the border's stubs sealed. Reads
+## `map.main_road_corridor()` and the street kinds (`CityMap.street_kind_at()`), so both are set
+## first.
 static func lay(map: CityMap) -> void:
 	_lay_streets(map)
 	_seal_border_stubs(map)
@@ -20,18 +21,18 @@ static func _lay_streets(map: CityMap) -> void:
 	# The offsets are a modulo and the kinds are a short scan of the precinct list, so both are
 	# hoisted per row and per column rather than asked once per tile of a lattice this size.
 	var x_offsets := PackedInt32Array()
-	x_offsets.resize(map.size.x)
-	for x in map.size.x:
+	x_offsets.resize(map.size_in_tiles().x)
+	for x in map.size_in_tiles().x:
 		x_offsets[x] = CityMap.corridor_offset(x)
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var y_offset := CityMap.corridor_offset(y)
 		# The kind of each corridor *at this row*: a precinct is three blocks of a street, so a
 		# vertical corridor's kind changes as the row moves down it.
 		var x_kinds := PackedByteArray()
-		x_kinds.resize(map.size.x)
-		for x in map.size.x:
+		x_kinds.resize(map.size_in_tiles().x)
+		for x in map.size_in_tiles().x:
 			x_kinds[x] = map.street_kind_at(true, Vector2i(x, y))
-		for x in map.size.x:
+		for x in map.size_in_tiles().x:
 			var x_offset := x_offsets[x]
 			if x_offset < 0 and y_offset < 0:
 				map.set_tile(Vector2i(x, y), GameEnums.TileType.BUILDING)
@@ -88,10 +89,10 @@ static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 	return GameEnums.TileType.ROAD if (x_road or y_road) else GameEnums.TileType.SIDEWALK
 
 ## Every junction on the map's own border keeps only the arms that are actually streets. The map
-## simply stops at `map.size`, so a street meeting the border has nothing beyond it the same way a
-## dead end or an absorbed corridor does — `_street_tile` cannot see that, since it only ever
-## looks at one tile's own two offsets, so the border comes out painted as an ordinary four-way
-## with a zebra running off the edge of the world.
+## simply stops at `map.size_in_tiles()`, so a street meeting the border has nothing beyond it
+## the same way a dead end or an absorbed corridor does — `_street_tile` cannot see that, since
+## it only ever looks at one tile's own two offsets, so the border comes out painted as an
+## ordinary four-way with a zebra running off the edge of the world.
 ##
 ## Stated over **a side of the map**, not four rects written out by hand: the first pass to touch
 ## this wrote one border at a time, which is one bug per side waiting to happen. Every tile within
@@ -108,13 +109,13 @@ static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 ## touch the guarantee `tests/test_blocks.gd` holds across a block's whole arc.
 static func _seal_border_stubs(map: CityMap) -> void:
 	var band := Tuning.SIDEWALK_WIDTH
-	var spine_lo := map.main_road * CityMap.period()
+	var spine_lo := map.main_road_corridor() * CityMap.period()
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH
 	var strips := [
-		Rect2i(0, 0, map.size.x, band),
-		Rect2i(0, map.size.y - band, map.size.x, band),
-		Rect2i(0, 0, band, map.size.y),
-		Rect2i(map.size.x - band, 0, band, map.size.y),
+		Rect2i(0, 0, map.size_in_tiles().x, band),
+		Rect2i(0, map.size_in_tiles().y - band, map.size_in_tiles().x, band),
+		Rect2i(0, 0, band, map.size_in_tiles().y),
+		Rect2i(map.size_in_tiles().x - band, 0, band, map.size_in_tiles().y),
 	]
 	for i in strips.size():
 		var north_or_south := i < 2

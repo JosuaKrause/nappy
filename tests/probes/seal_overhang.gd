@@ -17,7 +17,7 @@ const LAST_SEED := 30
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var day_rows := {}
@@ -27,26 +27,26 @@ func run(t) -> void:
 		var ground := WalkGround.new(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day), rng):
 				_count(day_rows, map, ground, plan)
-		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(own_run.attempt_spend.city_state)
+		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		for plan in DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec()):
+				_city_spec(), GamePlanBuilder.over(map)):
 			_count(escape_rows, map, ground, plan)
 	_print("day", day_rows)
 	_print("escape", escape_rows)
 	t.check(true, "a probe asserts nothing")
 
 static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,
-		plan: EventScheduler.Planned) -> void:
-	var row: Array = rows.get(plan.def.id, [0, 0, 0.0, 0, 0.0])
+		plan: EventPlan) -> void:
+	var row: Array = rows.get(plan.row_id(), [0, 0, 0.0, 0, 0.0])
 	row[0] += 1
 	var body := Reach.body_overhang(map, ground, plan)
 	if body > 0.5:
@@ -56,7 +56,7 @@ static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,
 	if drawn > 0.5:
 		row[3] += 1
 		row[4] = maxf(row[4], drawn)
-	rows[plan.def.id] = row
+	rows[plan.row_id()] = row
 
 static func _print(where: String, rows: Dictionary) -> void:
 	var ids := rows.keys()

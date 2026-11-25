@@ -8,7 +8,7 @@ extends RefCounted
 ## hall belongs to the scenes suite.
 ##
 ## **What a recipe is checked for.** Booted scripted, then booted free, it starts from the same
-## actors, day and seed (`SceneRecipeRuntime.manifest`, read at `begin()`); booted free it starts
+## actors, day and seed (the manifest the runtime writes at `begin()`, `RecipeManifest`); booted free it starts
 ## where the recipe puts her, takes no save and no capture deadline, and real input moves her; a
 ## bounded scene installs no body outside its ground and lets her out and back, and a stretch keeps
 ## her on its ground at the void's edge. Then the scene is left the two ways a player leaves one: a
@@ -50,7 +50,7 @@ static func belongs(filename: String, prefix: String) -> bool:
 		return not filename.begins_with(PREFIX_TRAILER) and not filename.begins_with(PREFIX_TASK)
 	return filename.begins_with(prefix)
 
-func lifecycle(t, prefix: String) -> void:
+func lifecycle(t: TestRunner, prefix: String) -> void:
 	await PhysicsTicks.settle(t)
 	var tested := 0
 	for filename in DirAccess.get_files_at("res://scene-recipes"):
@@ -63,6 +63,8 @@ func lifecycle(t, prefix: String) -> void:
 				"%s free and scripted boots start from identical actors, day and seed" % filename)
 		tested += 1
 	t.check(tested > 0, "lifecycle discovery exercises saved recipes")
+	RecipeManifest.remove(_manifest_path("scripted"))
+	RecipeManifest.remove(_manifest_path("free"))
 	if prefix != PREFIX_OTHER:
 		return
 	var stem := "user://scene_recipe_lifecycle_%d" % OS.get_process_id()
@@ -76,58 +78,89 @@ func lifecycle(t, prefix: String) -> void:
 	t.check(later.bounded_returned,
 			"later-day bounded region bodies stay inside extent and real player exits and returns")
 	DirAccess.remove_absolute(later_day_path)
+	RecipeManifest.remove(_manifest_path("scripted"))
+	RecipeManifest.remove(_manifest_path("free"))
+
+## Where the manifest of a boot under `mode` is written, which `_boot()` hands the runtime.
+static func _manifest_path(mode: String) -> String:
+	return RecipeManifest.scratch_path("lifecycle_" + mode)
 
 ## A boot of the recipe at `path` under `mode` ("free" or "scripted"), the reload it asks for handed
 ## to `reloads` and its sitting parked in `home` as a real reload parks it at the root. Its save is
 ## at a scratch path, which `Boot.Booted.free_all()` removes.
-func _boot(t, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
+func _boot(t: TestRunner, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
 	var scratch := "user://scene_recipe_lifecycle_%s_%d.json" % [mode, OS.get_process_id()]
+	RecipeManifest.remove(_manifest_path(mode))
 	# Parsed for a window and without `--no-save`, so the save is refused by the recipe flags' own
 	# policy (`GameSave._uses_save()`) and not by the headless gate: a scratch save written is a failure.
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry", "--recipe", path,
-			"--recipe-mode", mode, "--no-focus-pause"]), "", true, false, {}, false)
-	return await Boot.boot(t, scratch, config, func(main: Node) -> void:
+			"--recipe-mode", mode, "--no-focus-pause", "--recipe-manifest", _manifest_path(mode)]),
+			"", true, false, {}, false)
+	return await Boot.boot(t, scratch, config, func(main: Boot.MainScript) -> void:
 			main.use_sitting_home(home)
 			main.use_reload(func() -> void: reloads.append(1))
 			main.use_quit(func() -> void: _quits.append(1)))
 
 ## The scripted boot of `path`: its start, read at `begin()`, or an empty dictionary when it did not
 ## stand. Freed at once, before the walk it plays can reach its end.
-func _scripted_boot(t, path: String, label: String) -> Dictionary:
+func _scripted_boot(t: TestRunner, path: String, label: String) -> Dictionary:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	_quits.clear()
 	var reloads: Array[int] = []
 	var booted := await _boot(t, path, "scripted", home, reloads)
 	var recipe := scene_of(booted.main)
-	var initial := _start_of(t, booted, run, recipe, label)
-	t.check(recipe != null and recipe.plays_by_script() and not recipe.manifest.get("setup_failed", false),
+	var initial := _start_of(t, booted, run, recipe, _authored(path), label, "scripted")
+	t.check(recipe != null and recipe.plays_by_script()
+			and not RecipeManifest.read(_manifest_path("scripted")).get("setup_failed", false),
 			"%s boots real scripted Main" % label)
 	booted.free_all()
 	home.free()
 	return initial
 
 ## What a scene started from: its actors and the events installed, as the manifest records them at
-## `begin()`, and the run's day and seed. Empty when no scene stands.
-func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime,
-		label: String) -> Dictionary:
-	if recipe == null or recipe.manifest.get("setup_failed", false):
+## `begin()`, and the run's day and seed, held against `authored`, the recipe as its file has it
+## (`_authored()`). Empty when no scene stands.
+func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime,
+		authored: Dictionary, label: String, mode: String) -> Dictionary:
+	var manifest := RecipeManifest.read(_manifest_path(mode))
+	if recipe == null or manifest.is_empty() or manifest.get("setup_failed", false):
 		return {}
-	var start := recipe.manifest.initial_actors.get("player", {}).get("position", [0, 0]) as Array
-	t.check(Vector2(start[0], start[1]).is_equal_approx(recipe.start_position()),
+	var actors: Dictionary = manifest["initial_actors"]
+	var player_start: Dictionary = actors.get("player", {})
+	var start: Array = player_start.get("position", [0, 0])
+	t.check(Vector2(start[0], start[1]).is_equal_approx(_where_it_puts_her(authored, manifest, recipe)),
 			"%s starts her where the recipe puts her" % label)
-	var authored_day: Variant = recipe.data.get("setup", {}).get("day")
-	t.check(authored_day == null or run.header.day == int(authored_day),
-			"%s starts the run on its authored day (day %d)" % [label, run.header.day])
+	var setup: Dictionary = authored.get("setup", {})
+	var authored_day: Variant = setup.get("day")
+	t.check(authored_day == null or run.header().day() == int(authored_day),
+			"%s starts the run on its authored day (day %d)" % [label, run.header().day()])
 	t.check(_quits.is_empty() and not t.get_tree().paused,
 			"%s boots without ending the game, running" % label)
-	_meters_hold(t, booted.main, recipe, label)
-	for collection in ["events", "actors"]:
-		for entry: Dictionary in recipe.data.get("setup", {}).get(collection, []):
-			t.check(recipe.named.has(entry.name), "%s installs the authored %s %s"
+	_meters_hold(t, booted.main, recipe, authored, label)
+	for collection: String in ["events", "actors"]:
+		var entries: Array = setup.get(collection, [])
+		for entry: Dictionary in entries:
+			t.check(actors.has(entry.name), "%s installs the authored %s %s"
 					% [label, collection, entry.name])
-	return {"actors": recipe.manifest.initial_actors, "day": run.header.day,
-			"events": recipe.manifest.get("installed_events", []), "seed": run.header.run_seed}
+	return {"actors": actors, "day": run.header().day(),
+			"events": manifest.get("installed_events", []), "seed": run.header().run_seed()}
+
+## Where the recipe puts her: `setup.player.at`, a point, one of the manifest's anchors or the doorstep
+## of the scene's map.
+func _where_it_puts_her(authored: Dictionary, manifest: Dictionary,
+		recipe: SceneRecipeRuntime) -> Vector2:
+	var setup: Dictionary = authored.get("setup", {})
+	var player: Dictionary = setup.get("player", {})
+	var at: Variant = player.get("at", "doorstep")
+	if at is Array:
+		var point: Array = at
+		return Vector2(float(point[0]), float(point[1]))
+	var anchors: Dictionary = manifest.get("anchors", {})
+	if anchors.has(at):
+		var anchor: Array = anchors[at]
+		return Vector2(float(anchor[0]), float(anchor[1]))
+	return recipe.city_map().doorstep_world_position()
 
 ## Her meters are what `setup.player` says, moved by no more than the ticks the scene has counted can
 ## move them: sleepiness at the fastest it fills (a one-block calm area, `Tuning.sleepiness_gain_calm()`)
@@ -135,27 +168,30 @@ func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime
 ## multiplier, `City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER`), and no more than the meter holds: what raises it (the crowd and every event near her) is not
 ## bounded by what the scene installs, so a rise is not checked. An escape and a
 ## full sleep meter start her asleep (`Baby.force_sleep()`).
-func _meters_hold(t, main: Node, recipe: SceneRecipeRuntime, label: String) -> void:
+func _meters_hold(t: TestRunner, main: Node, recipe: SceneRecipeRuntime, authored: Dictionary,
+		label: String) -> void:
 	var baby := Boot.baby(main)
 	if baby == null:
 		return
-	var authored: Dictionary = recipe.data.get("setup", {}).get("player", {})
-	var asleep: bool = recipe.data.get("kind", "city") == "escape" \
-			or float(authored.get("sleep", 0)) >= Tuning.METER_MAX
-	var seconds := float(recipe.tick) / Engine.physics_ticks_per_second
+	var setup: Dictionary = authored.get("setup", {})
+	var player: Dictionary = setup.get("player", {})
+	var asleep: bool = authored.get("kind", "city") == "escape" \
+			or float(player.get("sleep", 0)) >= Tuning.METER_MAX
+	var ticks := RecipeManifest.ticks_of(recipe)
+	var seconds := float(ticks) / Engine.physics_ticks_per_second
 	var sleep_rate := maxf(Tuning.sleepiness_gain_calm(1), Baby.SLEEPINESS_DRAIN_IDLE)
-	var sleep_from := Tuning.METER_MAX if asleep else float(authored.get("sleep", 0))
-	var excite_from := float(authored.get("excitement", 0))
-	t.check(absf(baby.sleepiness - sleep_from) <= sleep_rate * seconds + 0.01
-			and baby.excitement <= Tuning.METER_MAX
-			and baby.excitement >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER * seconds - 0.01,
+	var sleep_from := Tuning.METER_MAX if asleep else float(player.get("sleep", 0))
+	var excite_from := float(player.get("excitement", 0))
+	t.check(absf(baby.sleepiness_level() - sleep_from) <= sleep_rate * seconds + 0.01
+			and baby.excitement_level() <= Tuning.METER_MAX
+			and baby.excitement_level() >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER * seconds - 0.01,
 			"%s: her meters are %.2f sleep and %.2f excitement after %d ticks, from %.1f and %.1f"
-			% [label, baby.sleepiness, baby.excitement, recipe.tick, sleep_from, excite_from])
+			% [label, baby.sleepiness_level(), baby.excitement_level(), ticks, sleep_from, excite_from])
 
 ## The free-play boot of `path`, played the ways a player plays a scene and left the ways one is
 ## left. Returns `{"initial": <its start>, "bounded_returned": <she went out of a bounded scene
 ## and back>}`.
-func _free_play(t, path: String, label: String) -> Dictionary:
+func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 	var result := {"initial": {}, "bounded_returned": false}
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
@@ -166,7 +202,7 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 	var recipe := scene_of(main)
 	var player := Boot.player(main)
 	var city := Boot.city(main) if Boot.interior(main) == null else null
-	var initial := _start_of(t, booted, run, recipe, label)
+	var initial := _start_of(t, booted, run, recipe, _authored(path), label, "free")
 	t.check(not initial.is_empty() and player != null and not recipe.plays_by_script(),
 			"%s boots and completes real free-play lifecycle" % label)
 	if initial.is_empty() or player == null:
@@ -174,14 +210,15 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 		home.free()
 		return result
 	result.initial = initial
-	var map: CityMap = recipe.built.map
+	var map := recipe.city_map()
 	# Free play has no capture deadline: the scene keeps counting ticks and nothing ends it (a scripted
 	# one that reached its duration would end the game).
-	var counted := recipe.tick
+	var counted := RecipeManifest.ticks_of(recipe)
 	await PhysicsTicks.pass_ticks(t, 3)
 	var rig_lock := main.get_node_or_null("RigLock") as RigLock
-	t.check(recipe.tick > counted and not recipe.manifest.get("playback_complete", false)
-			and (rig_lock == null or not rig_lock.locked_out),
+	t.check(RecipeManifest.ticks_of(recipe) > counted
+			and not RecipeManifest.read(_manifest_path("free")).get("playback_complete", false)
+			and (rig_lock == null or not rig_lock.shuts_out_real_input()),
 			"%s free play has no capture deadline" % label)
 	var start := player.global_position
 	var direction := Vector2.ZERO
@@ -194,20 +231,21 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 	_press(Vector2.ZERO)
 	t.check(direction != Vector2.ZERO and player.global_position.distance_to(start) >= 3.0,
 			"%s physical Input actions move the real player" % label)
-	if map.recipe_bounds.has_area():
+	if map.recipe_window().has_area():
 		result.bounded_returned = await _go_out_and_back(t, main, map, label)
 		t.check(result.bounded_returned, "%s permits physical exit and return without resetting" % label)
 	if map.has_stretch():
 		await _walk_at_the_void(t, player, map, label)
-	if recipe.data.get("kind", "city") == "escape":
-		await _lose_the_escape(t, recipe, reloads, label)
+	if _authored(path).get("kind", "city") == "escape":
+		await _lose_the_escape(t, main, reloads, label)
 	else:
 		await _win_the_day(t, main, run, reloads, label)
 	t.check(_quits.is_empty() and not FileAccess.file_exists(booted.path),
 			"%s: played and left without ending the game or writing a save" % label)
 	if reloads.size() == 1:
 		var again := await _boot(t, path, "free", home, reloads)
-		var again_initial := _start_of(t, again, run, scene_of(again.main), label)
+		var again_initial := _start_of(t, again, run, scene_of(again.main), _authored(path), label,
+				"free")
 		t.check(again_initial == initial,
 				"%s real summary continuation or escape retry restores authored day and actors" % label)
 		again.free_all()
@@ -217,16 +255,16 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 
 ## Free play, left a second time through a won day: the day's win applies the normal progression,
 ## and the summary's continue reloads.
-func _win_the_day(t, main: Node, run: RunState, reloads: Array[int], label: String) -> void:
-	var authored_day := run.header.day
+func _win_the_day(t: TestRunner, main: Node, run: RunState, reloads: Array[int], label: String) -> void:
+	var authored_day := run.header().day()
 	if authored_day == Tuning.RUN_LENGTH_DAYS:
 		# The door touched, so the run has earned the good ending: outside a recipe that hands the
 		# won day over to the escape, and the reload would boot it with no director.
-		run.resistance.sabotage_done = true
+		run.resistance().record_the_sabotage()
 	Boot.day(main).day_finished.emit(GameEnums.DayResult.WON)
 	# The last night's win ends the run on its ending rather than moving on to a next day.
-	var progressed := run.header.ending != GameEnums.Ending.NONE \
-			if authored_day == Tuning.RUN_LENGTH_DAYS else run.header.day == authored_day + 1
+	var progressed := run.header().ending() != GameEnums.Ending.NONE \
+			if authored_day == Tuning.RUN_LENGTH_DAYS else run.header().day() == authored_day + 1
 	t.check(progressed, "%s: winning the recipe day applies normal progression" % label)
 	await Boot.press_continue(t, main)
 	t.check(reloads.size() == 1, "%s: the summary's continue reloads the authored setup" % label)
@@ -234,12 +272,11 @@ func _win_the_day(t, main: Node, run: RunState, reloads: Array[int], label: Stri
 ## Free play, left through a lost escape: perturbs a real actor as well as the player, so a retry
 ## that only moved the player could not pass because a stationary guard happens to remain at its
 ## start, and loses.
-func _lose_the_escape(t, recipe: SceneRecipeRuntime, reloads: Array[int], label: String) -> void:
+func _lose_the_escape(t: TestRunner, main: Node, reloads: Array[int], label: String) -> void:
 	var changed := false
-	for actor_name: String in recipe.named:
-		if actor_name != "player":
-			(recipe.named[actor_name] as Node2D).global_position += Vector2(64, 0)
-			changed = true
+	for instance in RunCity.events(Boot.city(main)).instances():
+		instance.global_position += Vector2(64, 0)
+		changed = true
 	t.check(changed, "%s: an escape retry probe has an authored actor to move" % label)
 	EventBus.hard_fail_triggered.emit("car_strike")
 	await PhysicsTicks.pass_ticks(t, 3)
@@ -247,10 +284,10 @@ func _lose_the_escape(t, recipe: SceneRecipeRuntime, reloads: Array[int], label:
 
 ## A bounded scene installs no body outside its ground; she walks out of it by the nearest way and
 ## back to where she started. Whether she did.
-func _go_out_and_back(t, main: Node, map: CityMap, label: String) -> bool:
+func _go_out_and_back(t: TestRunner, main: Node, map: CityMap, label: String) -> bool:
 	var player := Boot.player(main)
-	for plan: EventScheduler.Planned in Boot.city(main).events.plans():
-		if not map.recipe_bounds.has_point(map.world_to_tile(plan.position)):
+	for plan: EventPlan in RunCity.events(Boot.city(main)).plans():
+		if not map.recipe_window().has_point(map.world_to_tile(plan.placed_at())):
 			t.check(false, "%s: bounded region installs event bodies outside authored ground" % label)
 			return false
 	var return_at := player.global_position
@@ -261,7 +298,7 @@ func _go_out_and_back(t, main: Node, map: CityMap, label: String) -> bool:
 	for tile in path:
 		if not await _walk_to(t, player, map.tile_to_world(tile), label):
 			return false
-	if map.recipe_bounds.has_point(map.world_to_tile(player.global_position)):
+	if map.recipe_window().has_point(map.world_to_tile(player.global_position)):
 		t.check(false, "%s: bounded walk crosses the authored boundary" % label)
 		return false
 	path.reverse()
@@ -273,7 +310,7 @@ func _go_out_and_back(t, main: Node, map: CityMap, label: String) -> bool:
 ## The void round a stretch is a wall: she walks to the nearest of its cut-off streets by its open
 ## ground, then walks at the void for `EDGE_SECONDS` and never stands on a tile the scene does not
 ## have, having come to the edge.
-func _walk_at_the_void(t, player: Stroller, map: CityMap, label: String) -> void:
+func _walk_at_the_void(t: TestRunner, player: Stroller, map: CityMap, label: String) -> void:
 	var path := path_to_the_void(map, map.world_to_tile(player.global_position))
 	t.check(not path.is_empty(), "%s: the stretch has a street running into the void" % label)
 	if path.is_empty():
@@ -295,7 +332,7 @@ func _walk_at_the_void(t, player: Stroller, map: CityMap, label: String) -> void
 
 ## Walks `player` towards `target` on real input until it is within a quarter tile of it. False,
 ## with the check failed, when the walk is blocked, or a step moves her more than a tick can.
-func _walk_to(t, player: Stroller, target: Vector2, label: String) -> bool:
+func _walk_to(t: TestRunner, player: Stroller, target: Vector2, label: String) -> bool:
 	for _tick in PhysicsTicks.ticks_for(WALK_SECONDS, WALK_SCALE):
 		var before := player.global_position
 		# A stroller facing a wall stops its body six pixels before the tile center.
@@ -318,11 +355,11 @@ func _walk_to(t, player: Stroller, target: Vector2, label: String) -> bool:
 func _run_step() -> float:
 	return Tuning.RUN_SPEED * WALK_SCALE / Engine.physics_ticks_per_second
 
-func _tick_of_walking(t) -> void:
+func _tick_of_walking(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
 
 func _press(direction: Vector2) -> void:
-	for action in ["move_left", "move_right", "move_up", "move_down", "run"]:
+	for action: String in ["move_left", "move_right", "move_up", "move_down", "run"]:
 		Input.action_release(action)
 	if direction.x != 0:
 		Input.action_press("move_right" if direction.x > 0 else "move_left", absf(direction.x))
@@ -330,6 +367,13 @@ func _press(direction: Vector2) -> void:
 		Input.action_press("move_down" if direction.y > 0 else "move_up", absf(direction.y))
 
 ## The scene recipe a booted `main` plays: the runtime it builds as its own child, or null.
+## The recipe a scene plays, as its file at `path` has it: the runtime plays the recipe as the file
+## loads (`SceneRecipeRuntime.load_recipe()`), and no suite here boots a draft, the one run that
+## changes it.
+static func _authored(path: String) -> Dictionary:
+	var recipe: Dictionary = SceneRecipe.load_file(path)["data"]
+	return recipe
+
 static func scene_of(main: Node) -> SceneRecipeRuntime:
 	for child in main.get_children():
 		if child is SceneRecipeRuntime:
@@ -343,7 +387,7 @@ func exterior_path(map: CityMap, start: Vector2i) -> Array[Vector2i]:
 	while cursor < pending.size():
 		var tile := pending[cursor]
 		cursor += 1
-		if not map.recipe_bounds.has_point(tile):
+		if not map.recipe_window().has_point(tile):
 			var path: Array[Vector2i] = [tile]
 			while tile != start:
 				tile = previous[tile]

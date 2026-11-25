@@ -9,6 +9,10 @@ extends RefCounted
 ## The rig is the real day order (`CityState.begin_day()`, `City.start_day()`,
 ## `EventManager.start_day()`, then the director), on a seed whose fronts include ones whose door
 ## frontage lies on a held segment and one whose own frontage tile is under a body.
+##
+## **A real city, for a stated reason**: whether the door can be stood on rests on where the generator
+## put the fronts, which streets the day holds and which tiles the day's events put a body on, so
+## the guarantee spans the city, the day's events and the director, and no stand-in holds the three.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
@@ -16,12 +20,13 @@ const ContactTouches := preload("res://tests/contact_touches.gd")
 const SEED := 1
 const DAY := 8
 
-func run(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+func run(t: TestRunner) -> void:
+	var run := RunCity.started_run(SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
-			city.map, {})
+	RunCity.build(city, run, CityGenerator.generate(SEED))
+	var fronts := EventScheduler.row_ground(city.map()).tiles_for(
+			EventCatalogue.by_id("burning_building"))
 	t.check(not fronts.is_empty(), "the city has fronts a fire can catch on")
 	var held_doors := 0
 	var from_the_side := 0
@@ -29,24 +34,24 @@ func run(t) -> void:
 	var checked := 0
 	var step := maxi(1, fronts.size() / 10)
 	for i in range(0, fronts.size(), step):
-		var shell_at := city.map.tile_to_world(fronts[i])
-		city.run.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
-		var director := _task_on_offer(t, city)
+		var shell_at := city.map().tile_to_world(fronts[i])
+		GivenRun.scars(run, [{"id": "burnt_shell", "position": shell_at, "since_day": 3}])
+		var director := _task_on_offer(t, city, run)
 		var door := city.fronts().way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
 			director.free()
 			continue
 		checked += 1
-		var frontage := city.map.world_to_tile(door) + Vector2i.DOWN
+		var frontage := city.map().world_to_tile(door) + Vector2i.DOWN
 		# The tiles she can stand on within the door's reach, by the rule the director applies
 		# (held ground is ground), each a tile centre below the facade.
 		var stand_tiles: Array[Vector2i] = []
 		var reach := ResistanceReads.day_reachability(city)
-		for across in [-1, 0, 1]:
+		for across: int in [-1, 0, 1]:
 			var tile: Vector2i = frontage + Vector2i(across, 0)
-			if door.distance_to(city.map.tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
-					and city.map.is_walkable(tile) and not city.map.is_closed(tile) \
-					and not city.map.is_on_home_block(tile) and not city.map.is_obstructed(tile) \
+			if door.distance_to(city.map().tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
+					and city.map().is_walkable(tile) and not city.map().is_closed(tile) \
+					and not city.map().is_on_home_block(tile) and not city.map().is_obstructed(tile) \
 					and ResistanceReads.reaches_home(reach, tile):
 				stand_tiles.append(tile)
 		var tip := director.red_arrow_target()
@@ -56,20 +61,20 @@ func run(t) -> void:
 					"front %s: the arrow %s ends on the door %s" % [fronts[i], tip, door])
 			t.check(director.contact_position().is_equal_approx(door),
 					"front %s: and the contact stands on it" % fronts[i])
-			t.check(is_equal_approx(director.contact().reach, ResistanceDirector.DOOR_REACH),
+			t.check(is_equal_approx(director.contact().touch_reach(), ResistanceDirector.DOOR_REACH),
 					"front %s: touched under the door reach" % fronts[i])
 			# Standing on each tile she can stand on within reach completes it, the side tiles
 			# a door's own frontage tile under a café's tables leaves her too.
 			var places: Array[Vector2] = []
 			for tile in stand_tiles:
-				places.append(city.map.tile_to_world(tile))
-			var touched := await ContactTouches.touches_from(t, director, places)
+				places.append(city.map().tile_to_world(tile))
+			var touched := ContactTouches.touches_from(director, places)
 			for k in stand_tiles.size():
 				t.check(touched[k],
 						"front %s: a touch from the frontage tile %s counts" % [fronts[i], stand_tiles[k]])
 			if tile_is_taken(city, frontage):
 				from_the_side += 1
-			if city.map.is_held_at(frontage) and tip.is_equal_approx(door):
+			if city.map().is_held_at(frontage) and tip.is_equal_approx(door):
 				held_doors += 1
 		director.free()
 	t.check(checked > 0 and at_the_door > 0, "the sweep reached doors (%d of %d)" % [at_the_door, checked])
@@ -79,8 +84,8 @@ func run(t) -> void:
 			+ "being taken (%d)" % from_the_side)
 
 	# A run with no recorded scar burns a front for the task, and stands on that building's door too.
-	city.run.attempt_spend.scars = []
-	var director := _task_on_offer(t, city)
+	GivenRun.scars(run, [])
+	var director := _task_on_offer(t, city, run)
 	t.check(director.current_step() != null, "the fallback task is on offer")
 	if director.current_step() != null and director.rider() != null:
 		var door := city.fronts().way_in_behind(director.rider().global_position)
@@ -92,25 +97,26 @@ func run(t) -> void:
 
 ## Whether the frontage tile `tile` cannot be stood on today, whatever the reason.
 func tile_is_taken(city: City, tile: Vector2i) -> bool:
-	return not city.map.is_walkable(tile) or city.map.is_obstructed(tile)
+	return not city.map().is_walkable(tile) or city.map().is_obstructed(tile)
 
 ## Day 8 started through the real order and its mark read, so the task is placed. Reading the mark
-## completes a step of the city's run, so the run's resistance starts over for each front.
-func _task_on_offer(t, city: City) -> ResistanceDirector:
-	city.run.resistance.completed_steps = []
-	city.run.resistance.failed_steps = []
-	city.run.resistance.progress = 0
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, DAY)
+## completes a step of `run`, the one the city stands in, so the run's resistance starts over
+## for each front.
+func _task_on_offer(t: TestRunner, city: City, run: RunState) -> ResistanceDirector:
+	GivenRun.completed_steps(run, [])
+	GivenRun.failed_steps(run, [])
+	run.resistance().set_progress(0)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_day(DAY), _rng("events"), none, city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng("events"), none, city.map().doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()
 	return director

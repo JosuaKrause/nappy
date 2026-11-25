@@ -7,7 +7,7 @@ extends Control
 ## knowing the city; this is about not losing a won day to a wrong turn while carrying a
 ## sleeping baby, which is a different and much less interesting kind of failure.
 ##
-## **One class, two instances, never two drawing paths.** `colour` and `label_when_near` are
+## **One class, two instances, never two drawing paths.** `use_look()`'s colour and word are
 ## the only two things that differ between the home use and the task use — see `Hud._ready()`,
 ## which is the one place either is set, so `Palette` stays the one place a runtime color is
 ## decided.
@@ -30,18 +30,27 @@ var active := false
 ## Which color this instance draws in — `Palette.HOME_ARROW` for the return-home use,
 ## `Palette.TASK_ARROW` for the second instance a resistance task points with. Set
 ## once, from `Hud._ready()`, never per-frame.
-var colour := Palette.HOME_ARROW
+var _colour := Palette.HOME_ARROW
 ## The word shown once `target` is on screen — "home" for the return-home arrow, "task" for the
 ## one pointing at a resistance task. The "%d m" distance readout while it is off screen is
 ## shared by both; only this word differs.
-var label_when_near := Texts.ARROW_HOME
+var _label_when_near := Texts.ARROW_HOME
 
-## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
-## see `TouchControls.rotated`'s own doc for why this is a flag rather than a query at each use
+## Whether `main` has decided a portrait touch window is presenting rotated. Handed in from outside:
+## see `TouchControls._rotated`'s own doc for why this is a flag rather than a query at each use
 ## site. `hud.gd`'s `_root` is pinned to `ScreenOrientation.DESIGN_SIZE` regardless of rotation, so
 ## the raw canvas-space position below has to come back through `ScreenOrientation.to_design_space()`
 ## before it is usable as a local coordinate on this control.
-var rotated := false
+var _rotated := false
+
+## Hands the instance the colour it draws in and the word it shows once its target is on screen.
+func use_look(colour: Color, label_when_near: String) -> void:
+	_colour = colour
+	_label_when_near = label_when_near
+
+## Hands the instance whether the presentation is rotated (see `_rotated`).
+func use_rotated(rotate: bool) -> void:
+	_rotated = rotate
 
 func show_toward(world_position: Vector2) -> void:
 	target = world_position
@@ -72,7 +81,7 @@ func _draw() -> void:
 		return
 
 	var on_screen: Vector2 = ScreenOrientation.to_design_space(
-			get_viewport().get_canvas_transform() * target, rotated)
+			get_viewport().get_canvas_transform() * target, _rotated)
 	var centre := size * 0.5
 	var offset := on_screen - centre
 	if offset.length() < 1.0:
@@ -87,11 +96,11 @@ func _draw() -> void:
 
 	var angle := offset.angle()
 	_draw_chevron(at, angle)
-	var label := label_when_near if pointing else Texts.DISTANCE_METRES % roundi(_metres_to_target())
+	var label := _label_when_near if pointing else Texts.DISTANCE_METRES % roundi(_metres_to_target())
 	var font := ThemeDB.fallback_font
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 	draw_string(font, at + Vector2(-width * 0.5, SIZE + 15.0), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, colour)
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, _colour)
 
 func _draw_chevron(at: Vector2, angle: float) -> void:
 	var points := PackedVector2Array([
@@ -100,7 +109,7 @@ func _draw_chevron(at: Vector2, angle: float) -> void:
 	])
 	for i in points.size():
 		points[i] = at + points[i].rotated(angle)
-	draw_colored_polygon(points, colour)
+	draw_colored_polygon(points, _colour)
 	draw_polyline(points + PackedVector2Array([points[0]]), Palette.OUTLINE, 1.5)
 
 ## Distance from `centre` to where a ray leaves `bounds`.

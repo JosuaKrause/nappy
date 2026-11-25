@@ -11,8 +11,9 @@ extends CanvasLayer
 ##
 ## **A normal run's last nerve comes here as a lost day, not as an ending**: the same screen any
 ## lost day reaches, saying the day she goes back to and drawing the nerves she has again, with the
-## ordinary continue that carries on into it (`SummaryModel.day_over()`, `DayEnd.goes_back`). The
-## ending with no continue, `GAME OVER`, is hard mode's alone — see `_refresh_buttons()`.
+## ordinary continue that carries on into it (`SummaryModel.day_over()`,
+## `DayEnd.sends_the_run_back()`). The ending with no continue, `GAME OVER`, is hard mode's alone —
+## see `_refresh_buttons()`.
 ##
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.
@@ -29,9 +30,9 @@ signal restart_requested()
 @onready var _root: Control = $Root
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
-## Empty and hidden except on a day brief given a lost-day note (`SummaryModel.note`) — the one line
-## the day brief shows that is not always the same words. Its own label, not folded into `_body`,
-## since the two hide independently of each other.
+## Empty and hidden except on a day brief given a lost-day note (`SummaryModel.note_text()`) — the
+## one line the day brief shows that is not always the same words. Its own label, not folded into
+## `_body`, since the two hide independently of each other.
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The morning's own line — one or two plain sentences saying what is true of the city by that
@@ -45,9 +46,8 @@ signal restart_requested()
 ## the mark there is no need to mention tasks in the day brief at all"). A task is announced at
 ## the mark and nowhere else — see `Hud._on_resistance_step_completed()`.
 @onready var _brief: Label = $Root/Center/Lines/Brief
-## Always empty — see `PauseScreen._hint`'s own doc for why the label stays but nothing writes to
-## it any more: the continue/restart pair already says what a tap does, and nothing left to say
-## here does not name a key.
+## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* The continue/restart
+## pair already says what a tap does, and nothing left to say here does not name a key.
 @onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
 @onready var _continue_column: VBoxContainer = $Root/Center/Lines/Buttons/ContinueColumn
@@ -58,9 +58,8 @@ signal restart_requested()
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `TitleScreen` and `PauseScreen` each read it once into their own member instead of asking at
-## every use site. No longer chooses the hint's own wording (`_hint` is always empty now — see
-## its own doc), but still gates `_wants_rotation()` and the mouse branch in
-## `_handle_restart_touch()` below.
+## every use site. It does not choose the hint's wording (`_hint` is always empty); it gates
+## `_wants_rotation()` and the mouse branch in `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
 ## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
@@ -73,8 +72,8 @@ func use_touch(touch: bool) -> void:
 ## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
 ## screen built anywhere else leaves them to make their own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
-	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).use_atlas(atlas)
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).use_atlas(atlas)
 
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
@@ -127,20 +126,21 @@ func _refresh_buttons() -> void:
 ## widths (`SentenceLines.break_for_label()`), the title only when it is prose (`title_is_prose`: the
 ## clock line, a section's words, rather than "Day N of 14" or an ending's title). `_hint` is always
 ## empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still carries on, but
-## the continue/restart pair already says what a tap does — see `PauseScreen._hint`'s own doc.
+## the continue/restart pair already says what a tap does.
 func show_summary(model: SummaryModel, raised_in: int) -> void:
 	_raised_in = raised_in
-	_heading.text = model.heading
-	_heading.visible = model.heading != ""
-	_title.text = SentenceLines.break_for_label(model.title, _title) if model.title_is_prose \
-			else model.title
-	_note.text = SentenceLines.break_for_label(model.note, _note)
-	_note.visible = model.note != ""
-	_body.text = model.body(SentenceLines.break_for_label(model.body_prose, _body))
-	_brief.text = SentenceLines.break_for_label(model.brief, _brief)
-	_brief.visible = model.brief != ""
+	_heading.text = model.heading_text()
+	_heading.visible = model.heading_text() != ""
+	_title.text = model.title_text()
+	if model.title_is_a_sentence():
+		_title.text = SentenceLines.break_for_label(model.title_text(), _title)
+	_note.text = SentenceLines.break_for_label(model.note_text(), _note)
+	_note.visible = model.note_text() != ""
+	_body.text = model.body(SentenceLines.break_for_label(model.body_sentence(), _body))
+	_brief.text = SentenceLines.break_for_label(model.brief_text(), _brief)
+	_brief.visible = model.brief_text() != ""
 	_hint.text = ""
-	_continue_shown = model.shows_continue
+	_continue_shown = model.offers_continue()
 	_present()
 
 func _present() -> void:
@@ -244,7 +244,7 @@ var _screen_changes := 0
 
 ## Acknowledges a touch before the day it starts costs anything to look at. *(Playtest 27 finding
 ## 3: a press was not acknowledged, and the wait after it was long.)* `main._on_summary_continued()`
-## runs `_start_day()` synchronously in response to `continued` — measured at 610-900ms — and
+## runs `_start()` synchronously in response to `continued` — measured at 610-900ms — and
 ## nothing was ever rendered between the touch landing and that freeze, because both happened
 ## inside the same frame's input processing.
 ##
@@ -301,8 +301,8 @@ func _acknowledge_and_continue() -> void:
 ## control scheme invited a player to use the mouse. The pointer scheme now reads a click
 ## everywhere, so a laptop player is expected to click, and the screen has to accept one.
 ##
-## **The mouse branch is its own, gated on `not _touch`, rather than folded into `TouchInput
-## .is_press()`.** A real touch device emulates a mouse click from every finger it reads, and
+## **The mouse branch is its own, gated on `not _touch`, rather than read together with the touch
+## branch.** A real touch device emulates a mouse click from every finger it reads, and
 ## `_acknowledge_and_continue()`'s two-frame delay leaves `is_showing()` true for that whole
 ## window — long enough for the emulated click to arrive while it is still open. Reading it through
 ## the same `not _touch` gate `TouchControls` and `PauseScreen`'s own restart hold use means the

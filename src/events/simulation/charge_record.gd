@@ -1,0 +1,92 @@
+class_name ChargeRecord
+extends RefCounted
+## One charger's charge as it is counted: its warning, its start, and the one way it ended.
+##
+## **The one owner of the rule that a charge that began ends in exactly one way** — caught
+## (`pursuit_caught`), cut short by the day or the section ending some other way
+## (`pursuit_cut_short`), or over without catching her (`pursuit_ended`, shaken off or outlasted)
+## *(inbox #764 in minty-lemur: a charging counter is independent of an ended day)*. Every path that
+## ends a charge — the catch, the day's end closing what is still running, the charger giving up or
+## leaving — asks this record, and the first to ask is the only one heard. A warning is said once,
+## and a charge begins once. Nothing that decides how the day plays reads it; the one cue that does
+## is the screen-edge badge of a charge begun out of her sight, put up as it begins
+## (`EventInstance._begin_the_charge()`).
+
+## The name the charge is counted under, asked at the moment it is said: a charger's name can be
+## settled after it is made (the day-3 lesson's dog, day 13's task guard).
+var _name: Callable
+## Where the charge is said (`EventReports`), handed in by the charger: its own.
+var _reports: EventReports
+
+## Whether its warning has been said, its charge has begun, and its charge has ended.
+var _warned := false
+var _began := false
+var _ended := false
+
+## Whether its charge has begun, and whether it has ended.
+func has_begun() -> bool:
+	return _began
+
+func has_ended() -> bool:
+	return _ended
+
+## Its warning counted as not said yet, for a warning the task sets to give way to one of its
+## own.
+func take_back_its_warning() -> void:
+	_warned = false
+
+## A charger streamed back in: whether its charge had begun before it streamed out, and whether
+## its warning had been said, so neither is said again.
+func be_begun(on: bool) -> void:
+	_began = on
+
+func be_warned(on: bool) -> void:
+	_warned = on
+
+func _init(name_of: Callable, reports: EventReports) -> void:
+	_name = name_of
+	_reports = reports
+
+## Its warning going up, said once.
+func warn() -> void:
+	if _warned:
+		return
+	_warned = true
+	_reports.tell_pursuit_warned(_name.call())
+
+## It comes for her, said once.
+func begin() -> void:
+	if _began:
+		return
+	_began = true
+	_reports.tell_pursuit_began(_name.call())
+
+## Its charge caught her.
+func catch() -> void:
+	if _may_end():
+		_reports.tell_pursuit_caught(_name.call())
+
+## Its warning, its start and its end were all said before, by its charger before it streamed out:
+## counted as over, and none of them is said again.
+func count_as_over() -> void:
+	_warned = true
+	_began = true
+	_ended = true
+
+## Its charge was still running when the day or the section ended some other way.
+func cut_short() -> void:
+	if _may_end():
+		_reports.tell_pursuit_cut_short(_name.call())
+
+## Its charge is over without catching her: `shaken_off` when she outran it, otherwise outlasted.
+func end(shaken_off: bool) -> void:
+	if _may_end():
+		_reports.tell_pursuit_ended(_name.call(), shaken_off)
+
+## Whether a charge that began has not yet ended, marking it ended when it has not: the one gate
+## all three endings pass, so whichever comes first is the only one said.
+func _may_end() -> bool:
+	if not _began or _ended:
+		return false
+	_ended = true
+	return true

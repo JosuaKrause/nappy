@@ -25,11 +25,6 @@ func note(kind: String, text: String) -> void:
 	if _write.is_valid():
 		_write.call(kind, text)
 
-## A trace that keeps every line it is handed as `"kind text"`, for a test to read back.
-static func recording(into: Array[String]) -> RunTrace:
-	return RunTrace.new(func(kind: String, text: String) -> void:
-		into.append("%s %s" % [kind, text]))
-
 # ------------------------------------------------------------------ formatting ---
 # Shared by every writer, so a tile reads the same whichever system wrote the line — the run's own
 # account through a trace, or the run log's observer.
@@ -54,10 +49,12 @@ static func compass(direction: Vector2) -> String:
 	return "%d°" % degrees
 
 static func purpose(which: GameEnums.BlockPurpose) -> String:
-	return GameEnums.BlockPurpose.keys()[which].to_lower()
+	var name: String = GameEnums.BlockPurpose.keys()[which]
+	return name.to_lower()
 
 ## The ground somebody is standing on. Where she chose to stop is most of what a stand means:
 ## a kerb is somebody waiting for a gap in the traffic, a pavement in the middle of a block is
 ## somebody waiting for a meter.
 static func tile_type(which: GameEnums.TileType) -> String:
-	return GameEnums.TileType.keys()[which].to_lower()
+	var name: String = GameEnums.TileType.keys()[which]
+	return name.to_lower()

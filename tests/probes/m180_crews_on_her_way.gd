@@ -1,8 +1,8 @@
 extends RefCounted
 ## Measurement probe for M180, posters she notices: whether the day's poster crews are met, now that
-## her walk sites them (`EventDef.on_her_way`, `OnHerWay.at_a_front`), and how much they paste while
-## she is in sight of them. Not a suite: it prints rather than asserting, so it lives under
-## `tests/probes/` and runs only by name:
+## her walk sites them (`EventDef.is_sited_from_her_walk()`, `OnHerWay.pastes_a_front()`), and
+## how much they paste while she is in sight of them. Not a suite: it prints rather than
+## asserting, so it lives under `tests/probes/` and runs only by name:
 ##
 ##     tools/test.sh probes/m180_crews_on_her_way.gd
 ##
@@ -16,38 +16,47 @@ const STEP := 1.0 / 30.0
 const WALK_SECONDS := 240.0
 const PAST_THE_FORK := 6
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("seed   day walk          crews  sited  met  first sited  sheets pasted  waited on")
 	for seed_value: int in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
-		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
+		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for day: int in DAYS:
 			for walk_name: String in ["out and back", "turns back"]:
-				_walk_one(t, city, seed_value, day, walk_name)
+				_walk_one(t, city, run, seed_value, day, walk_name)
 		city.free()
 	t.check(true, "m180_crews_on_her_way probe ran")
 
-func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> void:
-	city.run.posters.reset()
-	var tree := RouteTree.for_day(city.map, day)
-	city.poster_walls().start_day(day, tree)
-	var before := _pasted_cells(city)
+func _walk_one(t: TestRunner, city: City, run: RunState, seed_value: int, day: int,
+		walk_name: String) -> void:
+	run.posters().reset()
+	var tree := RouteTree.for_day(city.map(), day)
+	var no_closures: Array[RoadClosure] = []
+	city.streets().begin_day(tree, null, no_closures)
+	RunCity.poster_walls(city).dress_for(day, DaySpec.for_day(day))
+	var before := _pasted_cells(run)
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
-	city.events.start_day(DaySpec.for_day(day), rng, consumed)
-	var crews: Array[EventScheduler.Planned] = []
-	for plan in city.events.plans():
-		if plan.def.id == "poster_crew":
+	var spec := DaySpec.for_day(day)
+	RigStreets.begin(city.streets(), city.map(), spec)
+	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
+	RunCity.events(city).start_day(spec, rng, consumed)
+	var crews: Array[EventPlan] = []
+	for plan in RunCity.events(city).plans():
+		if plan.row_id() == "poster_crew":
 			crews.append(plan)
 	var route := _the_walk(city, day, walk_name)
 	if route.size() < 2 or crews.is_empty():
 		print("%-6d %3d %-13s no route or no crews" % [seed_value, day, walk_name])
 		return
 	var rig := _walker(t, route[0])
-	city.events.use_player(rig)
+	RunCity.events(city).use_player(rig)
+	# The crews paste only while the walls have her, which the walk steps by hand.
+	RunCity.show_her_to_the_walls_and_the_blackout(city, rig)
 	var clock := 0.0
 	var first_sited := -1.0
 	for i in range(1, route.size()):
@@ -56,8 +65,8 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 			var heading := toward.normalized()
 			rig.velocity = heading * Tuning.WALK_SPEED
 			rig.global_position += heading * Tuning.WALK_SPEED * STEP
-			city.events._physics_process(STEP)
-			city.poster_walls()._physics_process(STEP)
+			RunCity.events(city)._physics_process(STEP)
+			RunCity.poster_walls(city)._physics_process(STEP)
 			clock += STEP
 			if first_sited < 0.0:
 				for plan in crews:
@@ -68,17 +77,17 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 	var met := 0
 	for plan in crews:
 		sited += 1 if plan.is_placed() else 0
-		met += 1 if plan.was_live else 0
-	var siting := city.events.ahead.walk_siting()
+		met += 1 if plan.has_been_in_the_world() else 0
+	var siting := siting_maker.latest()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
-			sited, met, first_sited, _pasted_cells(city) - before,
-			_refusal_summary(siting.waits if siting else {})])
+			sited, met, first_sited, _pasted_cells(run) - before,
+			_refusal_summary(siting.waits() if siting else {})])
 	rig.free()
 
 ## Every cell with a sheet on it, however it got there.
-func _pasted_cells(city: City) -> int:
+func _pasted_cells(run: RunState) -> int:
 	var count := 0
-	for tile: Vector2i in city.run.posters.cells:
+	for tile: Vector2i in run.posters().cells():
 		count += 1
 	return count
 
@@ -102,12 +111,12 @@ func _the_walk(city: City, day: int, walk_name: String) -> PackedVector2Array:
 ## without ever having been offered the fire at all.
 func _off_the_path(city: City) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	var at := city.map.doorstep_world_position()
+	var at := city.map().doorstep_world_position()
 	var heading := Vector2.DOWN
 	var step := Tuning.TILE_SIZE * 4.0
 	for i in 80:
 		var next := at + heading * step
-		if not city.map.in_bounds(city.map.world_to_tile(next + heading * step * 4.0)):
+		if not city.map().in_bounds(city.map().world_to_tile(next + heading * step * 4.0)):
 			heading = Vector2.RIGHT if heading == Vector2.DOWN else -heading
 			next = at + heading * step
 		at = next
@@ -135,11 +144,12 @@ const NEAR_HOME_CELLS := 8
 
 ## The day's longest route, walked from the doorstep out to its calm area and back again.
 func _out_and_back(city: City, day: int) -> PackedVector2Array:
-	var route := _longest_route(RouteTree.for_day(city.map, day))
+	var tree := RouteTree.for_day(city.map(), day)
+	var route := _longest_route(tree)
 	if route.is_empty():
 		return PackedVector2Array()
-	var out := _as_world(city, route, true)
-	var back := _as_world(city, route, false)
+	var out := _as_world(tree, route, true)
+	var back := _as_world(tree, route, false)
 	var whole := PackedVector2Array(out)
 	whole.append_array(back)
 	return whole
@@ -149,25 +159,25 @@ func _out_and_back(city: City, day: int) -> PackedVector2Array:
 ## anything to be sited at all. What it asks is that the fire lands on the branch she ended up on
 ## rather than the one she started down.
 func _turns_back_at_the_first_junction(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map, day)
+	var tree := RouteTree.for_day(city.map(), day)
 	var first := _longest_route(tree)
 	var second := _a_different_route(tree, first)
 	if first.is_empty() or second.is_empty():
 		return _out_and_back(city, day)
-	var wrong_way := _as_world(city, first, true)
+	var wrong_way := _as_world(tree, first, true)
 	var whole := PackedVector2Array()
 	var stop := mini(PAST_THE_FORK, wrong_way.size())
 	for i in stop:
 		whole.append(wrong_way[i])
 	for i in range(stop - 1, -1, -1):
 		whole.append(wrong_way[i])
-	whole.append_array(_as_world(city, second, true))
-	whole.append_array(_as_world(city, second, false))
+	whole.append_array(_as_world(tree, second, true))
+	whole.append_array(_as_world(tree, second, false))
 	return whole
 
 func _longest_route(tree: RouteTree) -> Array:
 	var best: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
@@ -181,7 +191,7 @@ func _a_different_route(tree: RouteTree, unlike: Array) -> Array:
 		shared[cell] = true
 	var best: Array = []
 	var best_shared := -1
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route == unlike or route.is_empty():
 				continue
@@ -197,16 +207,16 @@ func _a_different_route(tree: RouteTree, unlike: Array) -> Array:
 
 ## A route's cells as world points. `outward` reverses it, because a route is grown from the calm
 ## area to the doorstep and the walk out is the other way.
-func _as_world(city: City, route: Array, outward: bool) -> PackedVector2Array:
+func _as_world(tree: RouteTree, route: Array, outward: bool) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in route.size():
 		var cell: Vector2i = route[route.size() - 1 - i] if outward else route[i]
-		points.append(EventScheduler.WalkSiting._cell_centre(city.map, cell))
+		points.append(tree.cell_centre(cell))
 	return points
 
 # ------------------------------------------------------------------- the rig ---
 
-func _walker(t, at: Vector2) -> Stroller:
+func _walker(t: TestRunner, at: Vector2) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

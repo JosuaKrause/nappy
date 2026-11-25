@@ -26,45 +26,56 @@ const TAPE_ACROSS := &"closures/cordon_tape_across"
 const TAPE_ALONG := &"closures/cordon_tape_along"
 const POST := &"closures/cordon_post"
 
-var piece := Piece.TAPE
+var _piece := Piece.TAPE
 ## Whether a stretch runs across the screen (a north or south side) rather than up it.
-var across := true
+var _across := true
 ## A stretch's length, in pixels along its line.
-var length := Tuning.TILE_SIZE * 1.0
+var _length := Tuning.TILE_SIZE * 1.0
+
+## Sets this out as `which` piece, and for a tape its direction (across the way, `runs_across`, or
+## along it) and its `reach` along that direction, once, before it enters the tree.
+func set_out(which: Piece, runs_across: bool, reach: float) -> void:
+	_piece = which
+	_across = runs_across
+	_length = reach
 
 func _ready() -> void:
-	if piece != Piece.TAPE:
+	if _piece != Piece.TAPE:
 		return
 	var body := StaticBody2D.new()
 	var shape := CollisionShape2D.new()
 	var box := RectangleShape2D.new()
-	box.size = Vector2(length, DEPTH) if across else Vector2(DEPTH, length)
+	box.size = Vector2(_length, DEPTH) if _across else Vector2(DEPTH, _length)
 	shape.shape = box
-	body.position = Vector2.ZERO if across else Vector2(0.0, -length * 0.5)
+	body.position = Vector2.ZERO if _across else Vector2(0.0, -_length * 0.5)
 	body.add_child(shape)
 	add_child(body)
 
 ## The baked atlas pages this piece is drawn from (`AtlasLibrary`): the city's, handed by the cordon
 ## that strings it; a piece nobody handed one makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Hands this the atlas library its pictures are read from, once, before it enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"street_kit")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	atlas.release(&"street_kit")
+	_atlas.release(&"street_kit")
 
 func _draw() -> void:
-	if piece == Piece.POST:
-		Sprites.draw_standing(self, atlas.region(POST), Vector2.ZERO)
+	if _piece == Piece.POST:
+		Sprites.draw_standing(self, _atlas.region(POST), Vector2.ZERO)
 		return
-	if across:
+	if _across:
 		var native := Vector2(AtlasTable.baked().native_size(TAPE_ACROSS))
-		draw_texture_rect(atlas.region(TAPE_ACROSS),
-				Rect2(-length * 0.5, -native.y, length, native.y), false)
+		draw_texture_rect(_atlas.region(TAPE_ACROSS),
+				Rect2(-_length * 0.5, -native.y, _length, native.y), false)
 		return
 	var width := float(AtlasTable.baked().native_size(TAPE_ALONG).x)
-	draw_texture_rect(atlas.region(TAPE_ALONG),
-			Rect2(-width * 0.5, -length - LIFT, width, length), false)
+	draw_texture_rect(_atlas.region(TAPE_ALONG),
+			Rect2(-width * 0.5, -_length - LIFT, width, _length), false)

@@ -2,7 +2,7 @@ class_name ExcitementSources
 extends RefCounted
 ## **A set of things that charge the baby**, answered as one: a day's events (`EventSources`) or
 ## the crowd on the streets (`CrowdSources`). The world hands the baby every set it holds
-## (`WorldContext.excitement_sources`) and the halo is handed the same sets
+## (`WorldContext.use_excitement_sources()`) and the halo is handed the same sets
 ## (`ExcitementHalo.setup()`), so the city and the building answer the same way, and a set the world
 ## does not have — the building's crowd — is simply not in the list.
 ##
@@ -27,8 +27,8 @@ func holds_her_alone(_at: Vector2) -> bool:
 ## Summed excitement per second from this set at a point.
 func total_at(at: Vector2) -> float:
 	var total := 0.0
-	for pair in sources_at(at):
-		total += pair[1]
+	for pair: Array in sources_at(at):
+		total += pair[1] as float
 	return total
 
 ## Every set's pairs at `at`, in the sets' order — **unless one of them holds her alone, when its

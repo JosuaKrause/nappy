@@ -64,8 +64,8 @@ extends RefCounted
 ## The grid the tree this corridor answers for was grown on. `null` for an empty tree, which
 ## answers `AWAY` everywhere without needing a special case anywhere below.
 var _grid: ReachabilityGrid
-## The lattice of the map the tree was grown on (`CityMap.network`), which names the street a tile
-## is on. Set with `_grid`, so an empty tree's corridor needs none.
+## The lattice of the map the tree was grown on (`CityMap.street_network()`), which names the
+## street a tile is on. Set with `_grid`, so an empty tree's corridor needs none.
 var _network: StreetNetwork
 ## Node id -> how many grid steps off the tree it is, `DEEP` where the grid never reached it from
 ## the tree at all. A `PackedByteArray` indexed by node id rather than a `Dictionary`: node ids are
@@ -77,13 +77,13 @@ var _node_depth := PackedByteArray()
 ## Segment key -> how many turnings off the corridor that whole street is. See
 ## `RouteTree.segment_depths()`.
 var _segment_depth := {}
-## The covering set: the smallest set of streets such that every route touches one of them. Kept in
-## order rather than as a set, because a **set piece** is placed once at each of them.
-var _sites: Array[Vector3i] = []
 ## The streets between two adjacent strands of corridor, as a set. See `RouteTree.gaps()`.
 var _gaps := {}
 ## The junctions today's routes cross. See `RouteTree.junctions()` and `route_junctions()`.
 var _junctions: Array[Vector2i] = []
+## The street the routes start in, the one the front door opens onto. See
+## `street_it_starts_in()`.
+var _home_street: StreetNetwork.Segment = null
 
 ## `walked_sidewalks()`'s answer and the map it was worked out for.
 var _walked_sidewalks: Array = []
@@ -94,41 +94,41 @@ var _walked_for: CityMap = null
 ## anything to be inside or outside of.
 static func of(tree: RouteTree) -> Corridor:
 	var corridor := Corridor.new()
-	if not tree or not tree.grid:
+	if not tree or not tree.reachability_grid():
 		return corridor
-	corridor._grid = tree.grid
+	corridor._grid = tree.reachability_grid()
 	corridor._network = tree.network()
 	corridor._node_depth = PackedByteArray()
-	corridor._node_depth.resize(tree.grid.node_count())
+	corridor._node_depth.resize(corridor._grid.node_count())
 	corridor._node_depth.fill(DEEP)
 	var depths := tree.node_depths()
 	for node: int in depths:
 		corridor._node_depth[node] = mini(int(depths[node]), DEEP)
 	corridor._segment_depth = tree.segment_depths()
-	corridor._sites = tree.covering_sites()
 	for key in tree.gaps():
 		corridor._gaps[key] = true
 	corridor._junctions = tree.junctions()
+	corridor._home_street = tree.street_it_starts_in()
 	return corridor
 
 ## The junctions today's routes cross — `RouteTree.junctions()`, carried here because every
 ## placement decision is stated against a `Corridor` rather than against the tree itself.
 ##
 ## It is a list of **junction coordinates** rather than a question about a tile, which is the one
-## place this class answers in the tree's own units: the rule stated over it
-## (`EventScheduler._leaves_the_route_junctions_open`) is about a whole junction **box** staying
-## crossable, and a box is six tiles square. A per-tile answer would say *this tile is in a route
+## place this class answers in the tree's own units: the rule stated over it (`RouteLineRule`)
+## floods a whole junction **box** with the sidewalks she walks to it, and a box is six tiles
+## square. A per-tile answer would say *this tile is in a route
 ## junction* and could not say *that crossing is still open*, which is the whole question.
 func route_junctions() -> Array[Vector2i]:
 	return _junctions
 
-## The streets a set piece is placed on: every route touches one of them.
-##
-## *"We can have multiple candidate places and make sure all routes touch at least one of them."*
-## It is deliberately **the whole list** rather than a pick — the guarantee is that she meets one
-## whichever way she goes, and choosing one of them here would throw exactly that away.
-func sites() -> Array[Vector3i]:
-	return _sites
+## **The street the routes start in**: the one the front door opens onto
+## (`RouteTree.street_it_starts_in()`), null for an empty tree. The tree does not carry it, since a
+## door is not a route and every branch ends on it; it is still the first stretch of every route
+## she walks, so the line rule takes it as an arm of her line at its two junction boxes
+## (`RouteLineRule`). Nothing that counts the day's distinct routes asks it.
+func street_it_starts_in() -> StreetNetwork.Segment:
+	return _home_street
 
 ## How many grid steps off the corridor a tile is. Zero is on it, one is the rim, and it counts
 ## outwards; `DEEP` is the answer for ground the day's routes cannot reach at all or for a tile off
@@ -172,12 +172,12 @@ func carries_a_route(tile: Vector2i) -> bool:
 
 ## The sidewalks the day's routes are actually walked along, with the geometry the width rule asks
 ## about: `[segment, the band's tile rect, the same rect in world space]`
-## (`EventScheduler._leaves_the_routes_sidewalk_open()` asks it of every counted row). Worked out
+## (`RouteSidewalkRule._leaves_the_routes_sidewalk_open()` asks it of every counted row). Worked out
 ## once per map and kept, since the corridor is the day's.
 func walked_sidewalks(map: CityMap) -> Array:
 	if _walked_for != map:
 		var found: Array = []
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			var rect := segment.tile_rect()
 			if depth(rect.position) != 0:
 				continue
@@ -229,6 +229,59 @@ func is_in_a_gap(tile: Vector2i) -> bool:
 		return false
 	var segment := _network.segment_containing(tile)
 	return segment != null and _gaps.has(segment.key())
+
+## **Which of the three views `segment` is in** (`PlacementView.View`, inbox #1185 in gentle-owl), the one
+## definition every location of the street is told at dawn (`DayLocations.lay_out()`):
+##
+## - **on the route** where a route runs along the street, both its sidewalks — the street's grain,
+##   which the player's example asks for: a restaurant drawn on one side leaves the side across it a
+##   subset to draw from (inbox #1185 in gentle-owl), so the street as a whole is the route's;
+## - **route-adjacent** where it is beside the routes (`_is_beside_the_routes()`): off them, one of
+##   its two junctions crossed by a route (`route_junctions()`), a junction a park or alley cut
+##   crosses included;
+## - **off the route** everywhere else, and everywhere for a corridor with no tree.
+##
+## *Read as, the orchestrator's and open to correction:* the street grain and the junctions a park or
+## alley cut crosses (forks 1(a) and 1(b) of the placement proposal).
+func view_of(segment: StreetNetwork.Segment) -> int:
+	if not _grid:
+		return PlacementView.View.OFF_THE_ROUTE
+	if int(_segment_depth.get(segment.key(), DEEP)) == 0:
+		return PlacementView.View.ON_THE_ROUTE
+	if _is_beside_the_routes(segment):
+		return PlacementView.View.ROUTE_ADJACENT
+	return PlacementView.View.OFF_THE_ROUTE
+
+## **Which of the three views ground beyond the streets is in**: an alley, an open lot's cell or a
+## junction box (`DayLocations`), by the nearest of its tiles to the routes (`depth()`): on the route
+## where a route runs over any of them, route-adjacent one grid step off, off the route further. The
+## grid's own grain, which tells an alley or a park cut the routes take apart from the rest of the
+## same lot.
+func view_of_ground(tiles: Rect2i) -> int:
+	var nearest := DEEP
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			nearest = mini(nearest, depth(Vector2i(x, y)))
+	if nearest == 0:
+		return PlacementView.View.ON_THE_ROUTE
+	if nearest == 1:
+		return PlacementView.View.ROUTE_ADJACENT
+	return PlacementView.View.OFF_THE_ROUTE
+
+## **Whether `segment` is beside the routes**: a street no route runs along (its whole street is off
+## the tree, `depth()` above zero) one of whose two junction boxes a route crosses
+## (`route_junctions()`). Where dawn stands day 13's roadblocks and the task's swap takes a section,
+## close to her way and off it (inbox #1185 in gentle-owl).
+func _is_beside_the_routes(segment: StreetNetwork.Segment) -> bool:
+	if int(_segment_depth.get(segment.key(), DEEP)) == 0:
+		return false
+	if _junction_set.is_empty():
+		for junction in _junctions:
+			_junction_set[junction] = true
+	return _junction_set.has(segment.a) or _junction_set.has(segment.b)
+
+## `_junctions` as a set, made the first time `_is_beside_the_routes()` asks.
+var _junction_set := {}
 
 ## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.
 const DEEP := 3

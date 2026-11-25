@@ -3,136 +3,123 @@ extends RefCounted
 ## already covers the atlas contract every group shares (every member baked, no two regions
 ## overlap, geometry answered with nothing acquired, a page arriving and leaving with its
 ## references); this suite covers what is specific to this family: a prop's shadow reads its size
-## from the region table rather than from a loaded texture, `StreetTrees.footprint_radius()` plans
-## clearance off the same table its planted trees are drawn from, the "decoration" page is read
-## from disk once while a `City` stands, and `City._exit_tree()`'s `release()` actually balances
-## `build()`'s `acquire()`, each read off the run log's lines for the page (`tests/atlas_page_log.gd`).
-##
-## `tests/test_blocks.gd`'s own street-tree footprint check already builds a real `City` off
-## `CITY_SCENE` and frees it; the acquire/release checks here do the same rather than reaching for
-## a lighter double, since the group's lifetime is a fact about `City` and not about `AtlasLibrary`
-## on its own.
+## from the region table rather than from a loaded texture, and the clearance the street trees'
+## planner keeps round a pit (`TreePictures.widest_reach()`) covers every picture a street tree's prop
+## may be drawn as. The group's lifetime while a `City`
+## stands (read once, released when the city is freed) is a fact about `City` and is
+## `tests/test_city_atlas_holds.gd`'s.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const PageLog := preload("res://tests/atlas_page_log.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
-const SEED := 4242
-
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_shadow_sizes_read_the_region_table(t)
-	_test_street_tree_footprint_matches_the_region_table(t)
-	_test_the_city_reads_the_group_once(t)
-	_test_the_group_is_released_when_the_city_is_freed(t)
+	_test_the_street_tree_footprint_covers_every_picture(t)
 
-## A prop's shadow radius (and the swing frame's capsule) come from `AtlasTable.baked().native_size()`,
-## not from `get_size()` on a loaded texture — the change `docs/TODO.md`'s M171 decoration item
-## asks for by name. Built off the scene tree, one `Prop` at a time, in the order `City` itself
-## builds one: `Prop.new()`, then the exports, then `add_child()` — which is what fires `_ready()`
-## and computes `shape`.
-func _test_shadow_sizes_read_the_region_table(t) -> void:
+## A prop's shadow (`Prop.shadow_outlines()`, what it draws and the debug view traces) is sized from
+## `AtlasTable.baked().native_size()`, not from `get_size()` on a loaded texture — the change
+## `docs/TODO.md`'s M171 decoration item asks for by name: a point prop's oval reaches its radius to
+## either side, and the swing frame's two ovals stand under its two A-frames. Built off the scene
+## tree, one `Prop` at a time, in the order `City` itself builds one: `Prop.new()`, then the
+## exports, then `add_child()` — which is what fires `_ready()` and computes its ground shape.
+func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	var point_cases := [
 		[Prop.Kind.BOLLARD, Prop.BOLLARD, 0.4],
 		[Prop.Kind.SACK, Prop.SACK, 0.35],
 		[Prop.Kind.SACK_PILE, Prop.SACK_PILE, 0.3],
 	]
-	for case in point_cases:
+	for case: Array in point_cases:
 		var kind: Prop.Kind = case[0]
 		var region: StringName = case[1]
 		var fraction: float = case[2]
 		var prop := Prop.new()
-		prop.kind = kind
+		prop.dress(null, kind)
 		t.add_child(prop)
 		var expected: float = float(AtlasTable.baked().native_size(region).x) * fraction
-		t.check(prop.shape != null and is_equal_approx(prop.shape.radius, expected),
+		var radius := _shadow_half_width(prop)
+		t.check(is_equal_approx(radius, expected),
 				"Prop.Kind %d's shadow radius is off the region table's own size (%.2f against %.2f)"
-				% [kind, prop.shape.radius if prop.shape else -1.0, expected])
+				% [kind, radius, expected])
 		prop.free()
 
 	var tree := Prop.new()
-	tree.kind = Prop.Kind.TREE
-	tree.variant = 0
-	tree.scale_factor = 1.3
+	tree.dress(null, Prop.Kind.TREE, 0, 1.3)
 	t.add_child(tree)
-	var tree_name: StringName = Prop.TREES[0]
-	var expected_tree: float = float(AtlasTable.baked().native_size(tree_name).x) * 1.3 * 0.28
-	t.check(tree.shape != null and is_equal_approx(tree.shape.radius, expected_tree),
-			"a tree's shadow radius follows scale_factor off the region table's own size (%.2f against %.2f)"
-			% [tree.shape.radius if tree.shape else -1.0, expected_tree])
+	var expected_tree := TreePictures.shape(0, 1.3).reach()
+	var tree_radius := _shadow_half_width(tree)
+	t.check(is_equal_approx(tree_radius, expected_tree),
+			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
+			% [tree_radius, expected_tree])
+	var own_size_tree := Prop.new()
+	own_size_tree.dress(null, Prop.Kind.TREE, 0)
+	t.add_child(own_size_tree)
+	var own_reach := _shadow_half_width(own_size_tree)
+	t.check(own_reach > 0.0 and is_equal_approx(tree_radius, own_reach * 1.3),
+			"a tree dressed 1.3 times its picture's size reaches 1.3 times as far as one at its own size (%.2f against %.2f)"
+			% [tree_radius, own_reach])
+	own_size_tree.free()
 	tree.free()
 
 	var frame := Prop.new()
-	frame.kind = Prop.Kind.PLAYGROUND_FRAME
+	frame.dress(null, Prop.Kind.PLAYGROUND_FRAME)
 	t.add_child(frame)
 	var frame_size := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME))
-	var expected_radius := frame_size.y * 0.5
-	var expected_half_length := frame_size.x * 0.5 - expected_radius
-	t.check(frame.shape != null and is_equal_approx(frame.shape.radius, expected_radius)
-			and is_equal_approx(frame.shape.half_length, expected_half_length),
-			"the swing frame's capsule is sized off the region table (radius %.2f, half-length %.2f)"
-			% [frame.shape.radius if frame.shape else -1.0,
-					frame.shape.half_length if frame.shape else -1.0])
+	var a_frame := frame_size.x * 0.5 * Prop.SWING_A_FRAME_SHARE
+	var centres: Array[Vector2] = []
+	for outline in frame.shadow_outlines(Vector2.ZERO):
+		var bounds := _bounds(outline)
+		centres.append(bounds.get_center())
+	centres.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
+	t.check(centres.size() == 2
+			and centres[0].distance_to(Vector2(-a_frame, 0.0)) < 0.01
+			and centres[1].distance_to(Vector2(a_frame, 0.0)) < 0.01,
+			"the swing frame's shadow is an oval under each A-frame, %.2fpx either side of its middle (%s)"
+			% [a_frame, str(centres)])
 	frame.free()
 
-## `StreetTrees.footprint_radius()` (`src/city/street_trees.gd`) plans tree clearance for the
-## closure and event planners off `AtlasTable.baked().native_size()` now, ahead of any `City` existing —
-## the same table `Prop`'s own shadow reads, rather than a second source of the same number.
-## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` already establishes
-## that `native_size()` is bit-identical to the SVG import this used to read (see the docstring on
-## `footprint_radius()` itself), so this only pins the planner and the region table together.
-func _test_street_tree_footprint_matches_the_region_table(t) -> void:
+## `TreePictures.widest_reach()` is the reach `StreetTrees.footprint_tiles()` keeps the day's events
+## out of round every pit, ahead of any `City` existing, and a pit's prop picks its picture from its
+## own variant where it is built. So a street tree drawn as any picture reaches no further than that,
+## or an event could stand under a canopy; and the widest reaches exactly that, or the planners refuse
+## ground no tree takes. Each is built the way `City` builds a street tree: `Prop.new()`, dressed with
+## no scale, then `add_child()`.
+func _test_the_street_tree_footprint_covers_every_picture(t: TestRunner) -> void:
 	var widest := 0.0
-	for name: StringName in Prop.TREES:
-		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * 0.28)
-	t.check(is_equal_approx(StreetTrees.footprint_radius(), widest),
-			"StreetTrees.footprint_radius() (%.2f) is the widest street tree's region size times 0.28 (%.2f)"
-			% [StreetTrees.footprint_radius(), widest])
+	for variant in TreePictures.REGIONS.size():
+		var tree := Prop.new()
+		tree.dress(null, Prop.Kind.STREET_TREE, variant)
+		t.add_child(tree)
+		var reach := _shadow_half_width(tree)
+		t.check(reach <= TreePictures.widest_reach() + 0.001,
+				"a street tree drawn as %s reaches %.2fpx, within the %.2fpx the planners keep clear"
+				% [TreePictures.region(variant), reach, TreePictures.widest_reach()])
+		widest = maxf(widest, reach)
+		tree.free()
+		# A street tree dressed with any scale is still grounded at its picture's own size.
+		var scaled := Prop.new()
+		scaled.dress(null, Prop.Kind.STREET_TREE, variant, 2.0)
+		t.add_child(scaled)
+		var scaled_reach := _shadow_half_width(scaled)
+		t.check(is_equal_approx(scaled_reach, reach),
+				"a street tree of %s dressed with a scale reaches the same (%.2f against %.2f)"
+				% [TreePictures.region(variant), scaled_reach, reach])
+		scaled.free()
+	t.check(is_equal_approx(widest, TreePictures.widest_reach()),
+			"and the widest street tree reaches exactly the planners' clearance (%.2f against %.2f)"
+			% [widest, TreePictures.widest_reach()])
 
-## The "decoration" page arrives with `City.build()` and is read from disk once while the city
-## stands, so nothing in `Prop` or `CityDecals` could ever be asked to draw a region before the
-## group backing it exists: a draw from an unacquired group would mean the city itself never
-## actually acquired it, which the load line the run log carries after `build()` refuses.
-##
-## `AtlasLibrary.region()` on an unacquired group is deliberately not called here to provoke the
-## failure directly — see `tests/test_atlas_library.gd`'s own note beside the same choice: the
-## `push_error` it raises is a real engine error, and an engine error fails the whole run
-## (`docs/DECISIONS.md`, M164), which would be a worse silence than the state checks below.
-func _test_the_city_reads_the_group_once(t) -> void:
-	var atlas := AtlasLibrary.new()
-	var pages := PageLog.new(atlas)
-	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.atlas = atlas
-	t.add_child(city)
-	t.check(pages.loads(CityDecals.DECORATION_ATLAS) == 0,
-			"nothing reads the decoration page before the city is built")
-	city.build(map)
-	t.check(pages.held(CityDecals.DECORATION_ATLAS),
-			"City.build() acquires the decoration group")
-	t.check(pages.loads(CityDecals.DECORATION_ATLAS) == 1,
-			"and the page is read from disk once, however many props and decals draw from it (%d)"
-			% pages.loads(CityDecals.DECORATION_ATLAS))
-	# A region a real draw depends on actually resolves while the city stands.
-	var door := atlas.region(City.DOOR_TEXTURE)
-	t.check(door != null
-			and door.get_size() == Vector2(AtlasTable.baked().native_size(City.DOOR_TEXTURE)),
-			"the door's region resolves to its own size while the city holds the group")
-	city.free()
-	pages.stop()
+## How far a prop's shadow reaches to either side of where it stands, `INF` for one that casts
+## none: for a point prop, its ground shape's radius.
+func _shadow_half_width(prop: Prop) -> float:
+	var outlines := prop.shadow_outlines(Vector2.ZERO)
+	if outlines.is_empty():
+		return INF
+	var widest := 0.0
+	for outline in outlines:
+		for point in outline:
+			widest = maxf(widest, absf(point.x))
+	return widest
 
-## `City._exit_tree()` owes `build()`'s `acquire()` a matching `release()` — a city freed without
-## one would leave the page counted, and resident, for a city that no longer exists.
-func _test_the_group_is_released_when_the_city_is_freed(t) -> void:
-	var atlas := AtlasLibrary.new()
-	var pages := PageLog.new(atlas)
-	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.atlas = atlas
-	t.add_child(city)
-	city.build(map)
-	t.check(pages.held(CityDecals.DECORATION_ATLAS),
-			"the group is acquired while the city stands")
-	city.free()
-	t.check(pages.releases(CityDecals.DECORATION_ATLAS) == 1,
-			"the page is dropped once the city that acquired it is freed, with no reference left over")
-	pages.stop()
+## The box round `outline`.
+func _bounds(outline: PackedVector2Array) -> Rect2:
+	var box := Rect2(outline[0], Vector2.ZERO)
+	for point in outline:
+		box = box.expand(point)
+	return box

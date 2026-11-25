@@ -1,0 +1,23 @@
+# 9001 tunnel
+   0.0  plan     every unit drawn before she sets off: 32 units, 21 rows
+   0.0  plan     finale: tunnel via 3 calm, 148 cells | bridge via 3 calm, 122 cells | 32 open streets, 622 placements
+   0.0  start    entered the city at (75,80), facing 180°
+   0.0  near     finale_explosion (telegraph) at (67,86), 320px, exc 0, in 0.0/s (crowd 0.0, events 3.6), sleep 100
+   2.5  near     military_convoy (telegraph) at (72,61), 389px, exc 0, in 0.6/s (crowd 0.0, events 7.2), sleep 100
+   3.4  near     military_convoy (telegraph) at (72,65), 209px, exc 0, in 1.5/s (crowd 0.0, events 2.8), sleep 100
+   4.0  near     military_convoy (telegraph) at (72,67), 113px, exc 0, in 1.8/s (crowd 0.0, events 3.3), sleep 100
+  10.7  route    day 16: re-planned to 'tunnel' (10.7s, 76 waypoints)
+  11.2  route    day 16: re-planned to 'tunnel' (11.2s, 149 waypoints)
+  17.2  near     military_convoy at (86,31), 285px, exc 0, in 0.2/s (crowd 0.0, events 0.1), sleep 100
+  20.2  near     abduction at (76,29), 249px, exc 0, in 0.1/s (crowd 0.0, events 0.1), sleep 100
+  21.8  near     abduction at (76,29), 137px, exc 1, in 9.0/s (crowd 0.0, events 16.4), sleep 100
+  34.0  near     impact_crater at (45,25), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  35.0  near     impact_crater at (45,25), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  43.6  near     impact_crater at (65,13), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  44.5  near     impact_crater at (65,13), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  45.1  near     impact_crater at (69,17), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  45.8  near     impact_crater at (69,17), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  48.2  near     abduction at (80,19), 249px, exc 0, in 0.1/s (crowd 0.0, events 0.2), sleep 100
+  53.4  near     impact_crater at (86,6), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  54.4  near     impact_crater at (86,6), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  62.0  route    day 16: day won at 62.0s (day time), still walking to 'tunnel'

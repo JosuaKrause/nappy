@@ -5,10 +5,10 @@ extends RefCounted
 ## of them holds a sentence of its own.
 ##
 ## **What is in here** is every player-facing string: the title and the pause screen, the help
-## lines (a button's symbol is the token `HelpText` already uses, `{pause}` and `{run}`), the HUD's
-## lines, the day briefs, the loss and summary lines, the endings and the finale's body, the chalk
-## marks and the task line, and the escape's section lines. A text with a value in it (a day
-## number, a clock reading) is a format string here (`%d`, `%s`), filled where it is shown.
+## lines (a button's symbol is one of this file's tokens, `PAUSE_TOKEN` and `RUN_TOKEN`), the
+## HUD's lines, the day briefs, the loss and summary lines, the endings and the finale's body,
+## the chalk marks and the task line, and the escape's section lines. A text with a value in it
+## (a day number, a clock reading) is a format string here (`%d`, `%s`), filled where it is shown.
 ##
 ## **What is not** is a developer readout (the dev overlay, the debug HUD lines, a `?debug=1`
 ## panel) and a line written to a log or an error message: nobody plays those, so they stay at
@@ -83,9 +83,9 @@ const PAUSE_STANDING := "%s     ·     %s"
 ## **The run half names the run button in the joystick scheme only.** *(2026-10-04, the player, inbox
 ## #533: "joystick run should now say hold <run button> or double tap to run where it makes
 ## sense".)* The joystick scheme draws a run button from the first frame of play, so its line shows
-## it — `{run}` stands for the button's own symbol, see `HelpText` — and the tap scheme, which draws
-## none, keeps "double tap to run". That is the one place the body varies, and it varies by the
-## scheme the player chose, not by the device.
+## it — `{run}` (`RUN_TOKEN`, this file's) stands for the button's own symbol, which `HelpText`
+## draws — and the tap scheme, which draws none, keeps "double tap to run". That is the one place the
+## body varies, and it varies by the scheme the player chose, not by the device.
 ##
 ## `%s` is the run half, `RUN_TAP` or `RUN_JOYSTICK`.
 const WALKING_LESSON_PAUSE := "Tap to walk, %s. " \
@@ -96,10 +96,14 @@ const BUTTON_HOLD_TO_RESTART := "hold to restart"
 # ----------------------------------------------------------------- the lessons ---
 # Said by `HUD` on the day it teaches them, and by the pause screen's body.
 
+## A help line carries these where a button's symbol goes; `HelpText` draws the picture there.
+const PAUSE_TOKEN := "{pause}"
+const RUN_TOKEN := "{run}"
+
 ## The run half of a lesson in the tap scheme, which draws no run button.
 const RUN_TAP := "double tap to run"
 ## In the joystick scheme, whose run button is drawn: `{run}` is that button's symbol.
-const RUN_JOYSTICK := "hold " + HelpText.RUN_TOKEN + " or double tap to run"
+const RUN_JOYSTICK := "hold " + RUN_TOKEN + " or double tap to run"
 ## `%s` is the run half, `RUN_TAP` or `RUN_JOYSTICK`.
 const WALKING_LESSON := "Tap to walk, %s"
 ## `%s` is the pause button's symbol, `{pause}`.
@@ -288,8 +292,11 @@ const ENDING_BODY := {
 }
 ## The bad ending's extra line; `%d` is the last day played.
 const ENDING_DAY_REACHED := "\nYou made it to day %d."
-## `%s` the body, `%s` the run's length as a clock, `%s` the line above or "".
-const ENDING_PLAYED := "%s\n\nTime played: %s%s"
+## `%s` the body, `%s` the run's total length as a clock, `%s` the last day's own length
+## (`ENDING_LAST_DAY`) or "", `%s` the line above or "".
+const ENDING_PLAYED := "%s\n\nTime played: %s%s%s"
+## The last day's own clock, beside the total on a run's ending; `%s` is its clock.
+const ENDING_LAST_DAY := "\nThe last day: %s"
 
 # ---------------------------------------------------------------------- escape ---
 # The escape's own last screen, and the line each section of it opens on.
@@ -299,19 +306,19 @@ const FINALE_TITLE := "You are out."
 ## The bridge's body, which is also the one for an exit `FINALE_BODY` has no entry for.
 const FINALE_BODY_DEFAULT := "The water is under you and the city is behind you. " \
 		+ "She does not wake."
-## The key is a `CityEdge.Kind`.
+## The key is a `CityExit.Kind`.
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,
 ## and the city is still there. The two differ only in what she is standing on. Plain prose, one
 ## space between sentences: `DaySummary` breaks it through `SentenceLines.break_for_label()`,
 ## the same helper the rest of this file's prose goes through, rather than a `\n` of its own.
 const FINALE_BODY := {
-	CityEdge.Kind.TUNNEL:
+	CityExit.Kind.TUNNEL:
 		"The mountain closes over the road behind you. "
 		+ "She does not wake.",
-	CityEdge.Kind.BRIDGE: FINALE_BODY_DEFAULT,
+	CityExit.Kind.BRIDGE: FINALE_BODY_DEFAULT,
 }
-## `%s` the body, `%s` the time the escape took as a clock.
-const FINALE_OUT_IN := "%s\n\nOut in: %s"
+## `%s` the body, `%s` the time the escape took as a clock, `%s` the whole run's time as a clock.
+const FINALE_OUT_IN := "%s\n\nOut in: %s\nTime played: %s"
 const ESCAPE_BUILDING := "Escape the building"
 const ESCAPE_CITY := "Escape the city"
 
@@ -357,69 +364,6 @@ const ROADBLOCK_HEADER := "the roadblock"
 
 const LAST_NIGHT_TITLE := "The last night"
 const LAST_NIGHT_HEADER := "the power station's front door"
-
-# ---------------------------------------------------------------- event names ---
-# `EventDef.display_name` for each row of `EventCatalogue`, keyed by the row's id: what a day
-# summary or a codex would call the thing. The catalogue reads `EVENT_NAMES[def.id]`, so a row
-# without a name here fails to load rather than going nameless.
-
-const EVENT_NAMES := {
-	"neighbor": "Neighbor",
-	"playground": "Playground",
-	"cat_dash": "Cat",
-	"alley_mouse": "Mouse",
-	"homeless_yeller": "Man shouting",
-	"dog_walker": "Dog walker",
-	"cafe_tables": "Café tables",
-	"delivery_van": "Delivery van",
-	"busker": "Busker",
-	"construction": "Roadworks",
-	"fire_truck": "Fire engine",
-	"burning_building": "Burning building",
-	"burnt_shell": "Burnt-out building",
-	"loose_dog": "Loose dog",
-	"market_stall": "Market stall",
-	"leaf_blower": "Leaf blower",
-	"pigeon_flock": "Pigeons",
-	"cyclist": "Cyclist",
-	"ice_cream_van": "Ice cream van",
-	"reversing_lorry": "Reversing lorry",
-	"chatting_mother": "Another mother",
-	"charging_dog": "Charging dog",
-	"police_patrol": "Patrol",
-	"poster_crew": "Poster crew",
-	"poster_crew_square": "Poster crew",
-	"loudspeaker": "Loudspeaker mast",
-	"curfew_announce": "Curfew announcement",
-	"roadblock": "Roadblock",
-	"abduction": "Unmarked van",
-	"alley_robbery": "Robbery",
-	"robber_giving_chase": "Robber giving chase",
-	"van_guard_giving_chase": "Van guard giving chase",
-	"policeman_giving_chase": "Policeman giving chase",
-	"guardsman_giving_chase": "Guardsman giving chase",
-	"night_raid": "Raid",
-	"military_convoy": "Convoy",
-	"barricade": "Barricade",
-	"protest": "Protest",
-	"firefight": "Firefight",
-	"fallen_tree": "Fallen tree",
-	"car_accident": "Car accident",
-	"skip": "Skip",
-	"scaffolding": "Scaffolding",
-	"burst_water_main": "Burst water main",
-	"moving_van": "Moving van",
-	"burnt_out_car": "Burnt-out car",
-	"collapsed_frontage": "Collapsed frontage",
-	"checkpoint_hut": "Checkpoint hut",
-	"checkpoint_gate": "Checkpoint gate",
-	"checkpoint_post": "Checkpoint guard",
-	"door_guard": "Guard giving chase",
-	"finale_explosion": "Explosion",
-	"impact_crater": "Crater",
-	"masked_pursuer": "Masked man",
-	"basement_steam": "Steam",
-}
 
 ## The one place nerves become text on screen: a star per nerve, `-` for none, and never a digit.
 ## The HUD, the summary screens and the pause screen all read the count through it, so a digit or

@@ -29,7 +29,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const SEEDS_TO_SWEEP := 200
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M137: how often the trap's start falls back to beside_distance() ==")
 	print("| row | seeds | above/below, clear run | beside (fallback) | no clear run at all | no legal start |")
 	print("|---|---|---|---|---|---|")
@@ -38,7 +38,7 @@ func run(t) -> void:
 
 ## `day`'s mark touched at `mark_step_index`, the same way the matching `_director_on_..._perform()`
 ## test helper reaches the perform step, then `SEEDS_TO_SWEEP` cities swept for `row_id`'s own draw.
-func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
+func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> void:
 	var def := EventCatalogue.by_id(row_id)
 	if not def:
 		print("| %s | — | row not found |  |  |  |" % row_id)
@@ -48,14 +48,15 @@ func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
 	var no_clear_run := 0
 	var no_legal_start := 0
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-				city.spawn_siting)
+		director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+				city, null, RunCity.spawn_siting(city))
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:%s" % [seed_value, day, "resistance"])
 		director.start_day(day, rng, 300.0)

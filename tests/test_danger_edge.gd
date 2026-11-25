@@ -1,0 +1,94 @@
+extends RefCounted
+## The screen-edge badge's control (`DangerEdge`) alone: what it hands its badge model each frame
+## about what she can see. Which dangers get a badge and when is the model's, checked in
+## `tests/test_badge_model.gd` with a rectangle for a view and the edge's drawing there too; here
+## the edge is handed a stand-in `EventManager` answering the live events it is brought
+## (`instances()`), whose own view (`visible_view()`) the rig looks through about her, and one
+## stand-in live event, the military convoy, created under its warning
+## (`EventInstance.arrive_from_its_warning()`, as `EventManager.spawn_warned()` creates it) and moved
+## by hand between real frames. What is checked is that the edge asks the view she has: a badge
+## comes down on the frame any of its thing is in sight. The edge is hidden, so it draws nothing and
+## is handed no atlas.
+
+const StandIns := preload("res://tests/edge_stand_ins.gd")
+
+func run(t: TestRunner) -> void:
+	await _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t)
+
+## **A badge comes down on the frame any of its danger is in sight** (the danger vocabulary's badge,
+## kept until the thing is in sight). The convoy, created under its warning, closes on her from
+## above, out of sight, where the edge keeps its badge up; it drives on into the view, and the badge
+## is up on every frame until the first frame any of it shows, and down on that frame.
+func _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t: TestRunner) -> void:
+	var rig := _rig(t, Vector2(0.0, -421.0))
+	var edge: DangerEdge = rig["edge"]
+	var convoy: Node2D = rig["convoy"]
+	var went_up := false
+	var down_early := 0
+	var seen := false
+	var down_when_seen := false
+	while not seen and convoy.position.y < 0.0:
+		convoy.position.y += 8.0
+		await _next_frame(t)
+		var up := _up(edge)
+		if _in_sight(convoy.position):
+			seen = true
+			down_when_seen = not up
+		elif went_up and not up:
+			down_early += 1
+		went_up = went_up or up
+	t.check(went_up, "closing from out of sight, the convoy's badge is up")
+	t.check(down_early == 0,
+			"and stays up on every frame it is out of sight (%d frames down)" % down_early)
+	t.check(seen and down_when_seen,
+			"and comes down on the first frame any of it is in sight (at %s)" % convoy.position)
+	_put_away(rig)
+
+## The edge watching the stand-in source, with her standing at the origin and the convoy, created
+## under its warning, at `at`.
+func _rig(t: TestRunner, at: Vector2) -> Dictionary:
+	var source := StandIns.Source.new()
+	source.visible_view().look_from(Vector2.ZERO)
+	t.add_child(source)
+	var her := Node2D.new()
+	t.add_child(her)
+	var convoy := StandIns.Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
+	convoy.position = at
+	convoy.arrive_from_its_warning()
+	source.bring(convoy)
+	var edge := DangerEdge.new()
+	edge.visible = false
+	edge.setup(source, her)
+	t.add_child(edge)
+	return {"edge": edge, "convoy": convoy, "nodes": [edge, her, source]}
+
+func _put_away(rig: Dictionary) -> void:
+	for node: Node in rig["nodes"]:
+		node.free()
+
+## Whether any of a convoy standing at `at` is in the view about her at the origin: its feet, or
+## any of its drawn box.
+static func _in_sight(at: Vector2) -> bool:
+	var view := Rect2(-Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var box := _convoy_box()
+	return view.has_point(at) or view.intersects(Rect2(at + box.position, box.size))
+
+## The convoy's drawn box about its feet, driving along a north-south line as it does here, read off
+## the row (`EventFootprints.drawn_box_of()`, what `EventInstance.drawn_box()` asks): a change to its
+## picture or its footprint moves the box both the edge and `_in_sight()` are checked against.
+static func _convoy_box() -> Rect2:
+	return EventFootprints.drawn_box_of(EventCatalogue.by_id("military_convoy"), true)
+
+## Whether the convoy's badge is on the edge.
+static func _up(edge: DangerEdge) -> bool:
+	for badge in edge.badges().announcing():
+		if badge.logged_name() == "military_convoy":
+			return true
+	return false
+
+## Waits until the process frame count moves on, so the edge has measured the frame that began with
+## the convoy where it was put.
+static func _next_frame(t: TestRunner) -> void:
+	var asked_in := Engine.get_process_frames()
+	while Engine.get_process_frames() == asked_in:
+		await t.get_tree().process_frame

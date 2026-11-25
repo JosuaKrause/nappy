@@ -1,0 +1,29 @@
+== rig-135437
+start    doorstep (80,84), facing 180°
+ahead    police_patrol comes at her from 387px in front of her at (68,84)
+shot     burst started: asked for an animation burst at (64,84) | exc 0, sleep 4 | playing | asked/burst-22839335-001
+shot     burst complete: 26 frames | duration
+shot     burst started: asked for an animation burst at (64,84) | exc 0, sleep 1 | playing | asked/burst-25890227-002
+shot     burst complete: 25 frames | duration
+shot     burst started: asked for an animation burst at (64,84) | exc 0, sleep 0 | playing | asked/burst-28903780-003
+shot     burst complete: 26 frames | duration
+== rig-135547
+start    doorstep (80,84), facing 180°
+ahead    police_patrol comes at her from 360px in front of her at (68,84)
+shot     burst started: asked for an animation burst at (64,84) | exc 0, sleep 0 | playing | asked/burst-27743336-001
+shot     burst complete: 15 frames | duration
+shot     burst started: asked for an animation burst at (64,84) | exc 0, sleep 0 | playing | asked/burst-30924692-002
+shot     burst complete: 15 frames | duration
+shot     burst started: asked for an animation burst at (64,84) | exc 0, sleep 0 | playing | asked/burst-33941296-003
+shot     burst complete: 17 frames | duration
+== rig-135717
+start    doorstep (80,84), facing 180°
+cue      edge badge: military_convoy at 364px, closing 120px/s
+ahead    military_convoy comes down the road at her from ahead of her, 364px up it, at (71,84), its warning over
+cue      edge badge gone: military_convoy after 0.0s, now 353px away
+shot     burst started: asked for an animation burst at (69,84) | exc 0, sleep 5 | playing | asked/burst-19768942-001
+shot     burst complete: 15 frames | duration
+shot     burst started: asked for an animation burst at (63,84) | exc 0, sleep 5 | playing | asked/burst-22872543-002
+shot     burst complete: 16 frames | duration
+shot     burst started: asked for an animation burst at (63,84) | exc 0, sleep 2 | playing | asked/burst-26008606-003
+shot     burst complete: 17 frames | duration

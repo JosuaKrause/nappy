@@ -10,7 +10,9 @@ Run every saved scene (or each repeated --recipe FILE) through its headless scri
 Write logs and manifests to --output DIR (default build/scene-recipes).
 --screenshots also uses shot.sh twice per scene: NAME-start.png a tenth of a second in, and
 NAME.png at playback.capture_at seconds after the full simulation and movement begin.
-Retains the relevant stills, action/capture manifests and small logs only.
+The output folder holds each scene's log and manifest and, with --screenshots, each still with
+its capture manifest and capture log. A capture run writes its whole telemetry run log where the
+game keeps them: the capture log names the file, and a capture whose run log is missing fails.
 Example: tools/scene-recipes.sh --screenshots
 EOF
 }

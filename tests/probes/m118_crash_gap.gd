@@ -20,18 +20,18 @@ const STEP := 1.0 / 60.0
 ## Lateral sampling across the street, in px — fine enough to find the edge of a gap.
 const LANE_STEP := 2.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var worst_pass := INF
 	var best_pass := 0.0
 	var lanes_found := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 97)
-		for vertical in [false, true]:
+		for vertical: bool in [false, true]:
 			var at := _a_street_of(map, vertical)
 			if at == Vector2.INF:
 				continue
 			var instance := _accident_at(map, at)
-			var half: float = instance.def.obstructs_radius
+			var half: float = instance.row().obstructs_within()
 			var open := _open_lanes(instance, half)
 			lanes_found += open.size()
 			var costs := PackedFloat32Array()
@@ -45,7 +45,7 @@ func run(t) -> void:
 			worst_pass = minf(worst_pass, lo)
 			best_pass = maxf(best_pass, hi)
 			print("seed %d %s street: %d open lanes over %.0fpx, pass costs %.1f..%.1f of %d"
-					% [map.seed_used, "east-west" if vertical else "north-south", open.size(),
+					% [map.city_seed(), "east-west" if vertical else "north-south", open.size(),
 					2.0 * half, lo, hi, int(Tuning.METER_MAX)])
 			print("    gaps (px from the scene centre): %s" % [_gap_spans(open)])
 			instance.free()
@@ -57,12 +57,12 @@ func run(t) -> void:
 	# pace, less that pace's own decay. The crash is the one row where running is the cheaper of
 	# the two — see that table's own note.
 	var crash := EventCatalogue.by_id("car_accident")
-	var mean := crash.walk_through_cost() / (crash.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+	var mean := crash.walk_through_cost() / (crash.heard_within() * 2.0 / Tuning.WALK_SPEED) \
 			+ Tuning.EXCITEMENT_DECAY_WALKING
 	print("COST TABLE car_accident: walk %+.1f, run %+.1f"
 			% [crash.walk_through_cost(),
 			(mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING)
-			* (crash.outer_radius * 2.0 / Tuning.RUN_SPEED)])
+			* (crash.heard_within() * 2.0 / Tuning.RUN_SPEED)])
 	t.check(lanes_found > 0, "there were gaps to walk (%d)" % lanes_found)
 
 # ------------------------------------------------------------------------ rigs ---
@@ -70,13 +70,13 @@ func run(t) -> void:
 ## A tile on a real street of the asked-for axis, as a world point. `Vector2.INF` when this city
 ## has none, which no generated city actually is.
 func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		if segment.horizontal != vertical:
 			continue
 		var centre := map.tile_rect_to_world(segment.tile_rect()).get_center()
-		if EventInstance._spread_is_vertical(map, centre) == vertical:
+		if BodyStance.lies_vertically_at(map, centre) == vertical:
 			return centre
 	return Vector2.INF
 
@@ -85,24 +85,24 @@ func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
 ## collision body, and `contribution_at()` is a pure query.
 func _accident_at(map: CityMap, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("car_accident"), at, PackedVector2Array(), Vector2.RIGHT, map)
-	instance.age = 10.0
+	instance.setup(EventCatalogue.by_id("car_accident"), at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
+	instance.restore(EventSave.aged(10.0))
 	return instance
 
 ## Every lateral offset along the scene's own spread axis she can actually walk through: her centre
 ## clear of every car body by her own `PLAYER_BODY_RADIUS`, and her body inside the street.
 func _open_lanes(instance: EventInstance, half: float) -> PackedFloat32Array:
 	var open := PackedFloat32Array()
-	var centres := instance.solid_part_centres()
-	var shapes := instance.solid_part_shapes()
+	var pieces := instance.standing_pieces()
 	var vertical := instance.solid_axis() == Vector2.DOWN
 	var offset := -half + Tuning.PLAYER_BODY_RADIUS
 	while offset <= half - Tuning.PLAYER_BODY_RADIUS:
 		var blocked := false
-		for i in centres.size():
-			var along: float = (centres[i] - instance.global_position).y if vertical \
-					else (centres[i] - instance.global_position).x
-			if absf(offset - along) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+		for piece in pieces:
+			var delta := piece.center() - instance.global_position
+			var along: float = delta.y if vertical else delta.x
+			if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
 				blocked = true
 		if not blocked:
 			open.append(offset)
@@ -116,14 +116,14 @@ func _pass_cost(instance: EventInstance, offset: float) -> float:
 	var vertical := instance.solid_axis() == Vector2.DOWN
 	var across := Vector2.RIGHT if vertical else Vector2.DOWN
 	var along := Vector2.DOWN if vertical else Vector2.RIGHT
-	var reach: float = instance.def.field_reach() + 8.0
+	var reach: float = instance.row().field_reach() + 8.0
 	var walker: Vector2 = instance.global_position + along * offset - across * reach
 	var paid := 0.0
 	var travelled := 0.0
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * STEP
 		travelled += Tuning.WALK_SPEED * STEP
-		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		paid += (instance.source().contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 	return paid
 
 ## The open lanes as readable spans, so a run says where the gaps are rather than how many samples

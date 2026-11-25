@@ -34,6 +34,7 @@ extends RefCounted
 ##   --day           1
 ##   --day-length    1
 ##   --meters        2
+##   --chargers      2
 ##   --spawn         1
 ##   --follow        1
 ##   --route         1
@@ -101,10 +102,18 @@ extends RefCounted
 ## END_RIG_FLAGS
 ##
 ## The numbers `rig_quit_seconds_from()` below turns into a rig's own deadline, read by the same
-## shell helper (`tools/lib_dev_flags.sh`) so an external kill (`RIG_KILL_GRACE_SECONDS` past the
-## deadline) can never compute a shorter wait than the deadline the game itself is timing against.
-## See `rig_quit_seconds_from()`'s own doc for what each name means, and `RIG_MOVIE_SLOWDOWN` for
-## `movie_slowdown`.
+## shell helper (`tools/lib_dev_flags.sh`) so an external kill (`kill_grace` past the deadline) can
+## never compute a shorter wait than the deadline the game itself is timing against. See
+## `rig_quit_seconds_from()`'s own doc for what `margin` and `ceiling` mean. `kill_grace` is how
+## long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) external kill waits past the deadline
+## it computes with the same formula, before it decides the in-game timer did not fire: generous
+## enough that a slow atlas rebuild or a slow machine's boot never races it. `movie_slowdown` is how
+## many wall-clock seconds a recorded game second may take before `tools/record.sh` and
+## `tools/trailer.sh` kill Godot from outside. Under the movie writer the game counts its own
+## deadline in game seconds (`RigLock._process()`), so a wall-clock limit is only the outside backstop
+## for a process that stopped running; this factor stretches the game-second deadline into one,
+## generous against the slowest measured recording (a frame-by-frame PNG at 60fps records a game
+## second in about four).
 ##
 ## RIG_QUIT_SECONDS
 ##   margin 15.0
@@ -150,7 +159,7 @@ func enabled() -> bool:
 	return _debug_build
 
 ## The command line, or nothing at all outside a debug build — the one choke point every gated
-## getter below reads through, and what `RunConfig.active_args` keeps.
+## getter below reads through, and what `RunConfig.dev_flag_words()` answers.
 func active_args() -> PackedStringArray:
 	return _given if _debug_build else PackedStringArray()
 
@@ -173,14 +182,14 @@ static func _readout_from_query(query: String) -> bool:
 			return true
 	return false
 
-## The gate for the release-safe bundle: the flags that choose where a run starts or how it is
-## drawn (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`,
-## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
+## The gate for the release-safe bundle: the flags that choose where a run starts or how it is drawn
+## (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`, `start_escape()`,
+## `meters_override()`, `charger_timing_override()`, `day_length_override()`, `ending_override()`,
 ## `blackout_requested()`, `ground_mode()`, `frame_record_requested()`, and `WebDisplay`'s `?dpr=`)
 ## — never the input-driving or picture-taking half, and no file but the frame record's, which
-## leaves only through the browser's download when the player taps its page button. Open on a
-## debug build whatever the page says, and on a release page once `readout_requested()` holds,
-## so a release page nobody asked `?debug=1` of reads exactly as an ordinary one.
+## leaves only through the browser's download when the player taps its page button. Open on a debug
+## build whatever the page says, and on a release page once `readout_requested()` holds, so a
+## release page nobody asked `?debug=1` of reads exactly as an ordinary one.
 func live_debug_requested() -> bool:
 	return _live_debug_requested(enabled(), readout_requested())
 
@@ -194,8 +203,8 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## these never touches the save a real player's page shares, as against `?debug=1` alone, which
 ## opens the bundle without using any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
-	"day", "invincible", "layers", "controls", "escape", "meters", "daylength", "ending",
-	"blackout", "groundmode", "framerecord",
+	"day", "invincible", "layers", "controls", "escape", "meters", "chargers", "daylength",
+	"ending", "blackout", "groundmode", "framerecord",
 ]
 
 ## Whether the page's query named one of `live_debug_requested()`'s parameters while the bundle is
@@ -297,7 +306,8 @@ static func _seed_from_query(query: String) -> int:
 ## the default. A recipe's own day wins.
 func day_override() -> int:
 	if not _recipe.is_empty():
-		return int(_recipe.get("setup", {}).get("day", 1))
+		var setup: Dictionary = _recipe.get("setup", {})
+		return int(setup.get("day", 1))
 	var args := active_args()
 	var index := args.find("--day")
 	if index != -1 and index + 1 < args.size():
@@ -317,7 +327,7 @@ static func _day_from_query(query: String) -> int:
 			return clampi(int(pair[1]), 1, Tuning.RUN_LENGTH_DAYS)
 	return -1
 
-## `--spawn <target>`, the raw word, or "". What a target means reads the live `City`, so that
+## `--spawn <target>`, the raw word, or "". What a target means reads the live city's parts, so that
 ## lookup is `DevRig.for_spawn_target()`'s.
 func spawn_target() -> String:
 	return _word_after("--spawn")
@@ -327,7 +337,7 @@ func follow_target() -> String:
 	return _word_after("--follow")
 
 ## `--route mark,task,calm,home`, the ordered target words `RouteRig` walks to in turn, split on
-## commas with nothing else validated: the live `City` decides what a word means, so an unknown one
+## commas with nothing else validated: the live city decides what a word means, so an unknown one
 ## is `RouteRig`'s own warning. `[]` for an absent flag or an empty value: no rig. In the escape the
 ## building is walked by `BuildingWalker` (it presses the building's brief and walks her to the
 ## service exit), and the city by the rig, built with the city section, which presses that section's
@@ -341,7 +351,7 @@ func route_targets() -> Array[String]:
 
 ## `--force <event id> [seconds]`, the raw id, or "". **The flag for checking one row rather than one
 ## city**: the director hands out that row and nothing else, refilled as fast as it is spent, every
-## `forced_interval()` seconds. It bypasses `first_day` and the day's budget on purpose: the
+## `forced_interval()` seconds. It bypasses `first_day` and the day's count of moments on purpose: the
 ## question is what the row does when it reaches her. `--seed` and `--day` still decide the city and
 ## the act, so everything around the row is the ordinary game.
 func forced_row() -> String:
@@ -396,6 +406,51 @@ static func _meters_from_query(query: String) -> Vector2:
 					clampf(float(words[1]), 0.0, Tuning.METER_MAX))
 		push_warning("?meters: '%s' is not two comma-separated numbers, ignoring" % pair[1])
 		return Vector2(-1.0, -1.0)
+	return Vector2(-1.0, -1.0)
+
+## `--chargers <warning> <reach>` (or `?chargers=warning,reach` in the open bundle): every charger
+## warns for `warning` seconds and notices her within `reach` times the radius its row is written
+## with, in place of the shipped timing (`ChargerTiming`,
+## `EventCatalogue.shipped_charger_timing()`),
+## so other numbers can be played on the released page without a rebuild (minty-dolphin #834).
+## `(-1, -1)` for "not given".
+func charger_timing_override() -> Vector2:
+	var args := active_args()
+	var index := args.find("--chargers")
+	if index != -1 and index + 2 < args.size():
+		return _parse_charger_timing(args[index + 1], args[index + 2])
+	if live_debug_requested():
+		return _charger_timing_from_query(_query)
+	return Vector2(-1.0, -1.0)
+
+## The bare parsing of `?chargers=`: anything but two comma-separated words refuses the whole value
+## with `push_warning`, and the two are read as `--chargers`' are.
+static func _charger_timing_from_query(query: String) -> Vector2:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() != 2 or pair[0] != "chargers":
+			continue
+		var words := pair[1].split(",")
+		if words.size() == 2:
+			return _parse_charger_timing(words[0], words[1])
+		push_warning("?chargers: '%s' is not two comma-separated numbers, ignoring" % pair[1])
+		return Vector2(-1.0, -1.0)
+	return Vector2(-1.0, -1.0)
+
+## The bare parsing of a warning and a radius factor. A warning under
+## `Tuning.OFFSCREEN_WARNING_MIN`, the heads-up every charger's warning is held to
+## (`EventDef.validate()`), or a factor outside `ChargerTiming.LEAST_REACH` to `MOST_REACH` refuses
+## the whole flag with `push_warning`, rather than being clamped: a run played at numbers nobody
+## asked for would be judged as the asked ones.
+static func _parse_charger_timing(warning: String, reach: String) -> Vector2:
+	if warning.is_valid_float() and reach.is_valid_float() \
+			and float(warning) >= Tuning.OFFSCREEN_WARNING_MIN \
+			and float(reach) >= ChargerTiming.LEAST_REACH \
+			and float(reach) <= ChargerTiming.MOST_REACH:
+		return Vector2(float(warning), float(reach))
+	push_warning(("--chargers: '%s %s' is not a warning of %.1fs or more and a radius factor from "
+			% [warning, reach, Tuning.OFFSCREEN_WARNING_MIN]) + "%.2f to %.2f, ignoring the flag"
+			% [ChargerTiming.LEAST_REACH, ChargerTiming.MOST_REACH])
 	return Vector2(-1.0, -1.0)
 
 ## `--overview` frames the whole city at once.
@@ -456,7 +511,8 @@ static func _parse_ground_mode(raw: String) -> int:
 
 ## `--start-escape` (or `?escape=1` in the open bundle) skips the title and a day's city and starts
 ## `main` straight in the escape, whose two sections are days of their own: none of an ordinary
-## day's events and no crowd. A recipe of kind `escape` does the same.
+## day's rows from the event director (`DaySpec.director_sends()`) and no crowd. A recipe of kind
+## `escape` does the same.
 func start_escape() -> bool:
 	if not _recipe.is_empty():
 		return _recipe.get("kind", "city") == "escape"
@@ -481,7 +537,9 @@ static func _escape_from_query(query: String) -> bool:
 ## `--start-escape`, and never a word that starts with `--`, so the next flag is not swallowed.
 func start_escape_at() -> String:
 	if not _recipe.is_empty():
-		return str(_recipe.get("setup", {}).get("progression", {}).get("escape_part", "city"))
+		var setup: Dictionary = _recipe.get("setup", {})
+		var progression: Dictionary = setup.get("progression", {})
+		return str(progression.get("escape_part", "city"))
 	var word := _word_after("--start-escape")
 	return "" if word.begins_with("--") else word
 
@@ -570,8 +628,9 @@ static func _controls_from_query(query: String) -> String:
 
 ## `--layers 1,3` (or `?layers=1,3` in the open bundle): which of the debug layers start on, so a
 ## rig screenshot of a particular disagreement is reproducible without a keypress — `1`-`3` are
-## `DebugLayers`' geometry, `5` the day's routes (`RouteLines`) and `6` the spike view
-## (`FrameGraph`). `4`, the readout, defaults on already and is not part of this list.
+## `DebugLayers`' geometry, `5` the day's routes (`RouteLines`), `6` the spike view
+## (`FrameGraph`) and `7` every live event's own route (`EventRouteLines`). `4`, the readout,
+## defaults on already and is not part of this list.
 func layers_override() -> Array[int]:
 	var args := active_args()
 	var index := args.find("--layers")
@@ -593,7 +652,7 @@ static func _parse_layers(raw: String) -> Array[int]:
 			push_warning("--layers: ignoring non-numeric entry '%s'" % word)
 			continue
 		var n := int(word)
-		if n < 1 or n > 6 or n == 4:
+		if n < 1 or n > 7 or n == 4:
 			push_warning("--layers: ignoring out-of-range entry '%d'" % n)
 			continue
 		if not n in result:
@@ -611,8 +670,8 @@ static func _layers_from_query(query: String) -> String:
 ## clock stands still and nothing adds to the excitement meter, though decay may still run it down
 ## — so a capture waiting for a moment gets quiet held time rather than a flashing alarm and a
 ## darkening day (2026-09-11, the player: "when invincible the timer should never go down and
-## excitement should never go up"). `DayController.invincible` and `Baby.excitement_frozen` are the
-## two values the run hands it to.
+## excitement should never go up"). `DayController.set_invincible()` and
+## `Baby.freeze_excitement()` are the two places the run hands it to.
 func invincible() -> bool:
 	if _invincible_from_args(active_args()):
 		return true
@@ -764,7 +823,8 @@ func player_view_requested() -> bool:
 ## would be the one failure the shot list exists to rule out. A recipe's own parent wins.
 func parent_override() -> String:
 	if not _recipe.is_empty():
-		return str(_recipe.get("setup", {}).get("parent", "mother"))
+		var setup: Dictionary = _recipe.get("setup", {})
+		return str(setup.get("parent", "mother"))
 	var args := active_args()
 	var index := args.find("--parent")
 	if index == -1 or index + 1 >= args.size():
@@ -871,7 +931,7 @@ func recipe_draft_path() -> String:
 ## PLAYTEST-133: "since those are godot apps that launch in my view it could be that accidentally
 ## pressed a button maybe? since it takes the focus away from what I'm doing every time" — and,
 ## on the same fix, "will it also prevent godot windows from staying open indefinitely?" `main.gd`
-## reads `RunConfig.is_rig` once, at boot, to strip its own window's focus, gate out real input and
+## reads `RunConfig.runs_as_a_rig()` once, at boot, to strip its own window's focus, gate out real input and
 ## start the wall-clock quit timer below; `tools/shot.sh` and `tools/run.sh` read the identical
 ## `RIG_FLAGS` list (the marker block above) to decide the same three things on the shell side.
 
@@ -885,7 +945,7 @@ func is_rig() -> bool:
 	return _is_rig_from_args(active_args()) or recording() or recipe_scripted()
 
 static func _is_rig_from_args(args: PackedStringArray) -> bool:
-	for flag in _RIG_FLAGS:
+	for flag: String in _RIG_FLAGS:
 		if flag in args:
 			return true
 	return false
@@ -896,17 +956,6 @@ static func _is_rig_from_args(args: PackedStringArray) -> bool:
 ## out of the `RIG_QUIT_SECONDS` marker block above.
 const RIG_QUIT_MARGIN_SECONDS := 15.0
 const RIG_QUIT_CEILING_SECONDS := 240.0
-## How long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) external kill waits past the
-## deadline it computes with the same formula, before it decides the in-game timer did not fire —
-## generous enough that a slow atlas rebuild or a slow machine's boot never races it.
-const RIG_KILL_GRACE_SECONDS := 15.0
-## How many wall-clock seconds a recorded game second may take before `tools/record.sh` and
-## `tools/trailer.sh` kill Godot from outside. Under the movie writer the game counts its own
-## deadline in game seconds (`RigLock._process()`), so a wall-clock limit is only the outside backstop
-## for a process that stopped running; this factor stretches the game-second deadline into one,
-## generous against the slowest measured recording (a frame-by-frame PNG at 60fps records a game
-## second in about four).
-const RIG_MOVIE_SLOWDOWN := 10.0
 
 ## Pure: seconds until a rig quits itself. `after` is `--after`'s own value (a screenshot or
 ## timed-trace rig's wait, the common case) or `-1.0` for "not given"; `day_length` is the longest
@@ -916,8 +965,9 @@ static func rig_quit_seconds_from(after: float, day_length: float) -> float:
 	return clampf(script + RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_CEILING_SECONDS)
 
 ## `--after`'s own value, or `-1.0` for "not given or not a number" — the sentinel
-## `rig_quit_seconds_from()` reads as "fall back to the day's own length". `AutoScreenshot` reads
-## the same flag for its own wait.
+## `rig_quit_seconds_from()` reads as "fall back to the day's own length". `AutoScreenshot`
+## waits this long before its capture, through `RunConfig.rig_after()`, or its own default when
+## not given.
 func rig_after() -> float:
 	var args := active_args()
 	var index := args.find("--after")

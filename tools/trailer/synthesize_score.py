@@ -21,7 +21,10 @@ FADE_OUT_SECONDS: Final = 0.25
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Synthesize one option from trailer.sh's resolved score JSON.",
+        description=(
+            "Synthesize one option from trailer.sh's resolved score JSON as a deterministic 48 kHz stereo PCM16 WAV."
+            " It never plays it."
+        ),
     )
     parser.add_argument("--resolved", type=Path, required=True, help="resolved score JSON")
     parser.add_argument("--option", required=True, help="score option id")

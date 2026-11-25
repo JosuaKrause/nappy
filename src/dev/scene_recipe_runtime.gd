@@ -11,14 +11,24 @@ const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--w
 		"--title-card", "--start-escape", "--blackout", "--overview", "--day-length",
 		"--press", "--tap", "--ending", "--quit-when-still", "--skip", "--smooth-walk"]
 
-var data: Dictionary = {}
+var _data: Dictionary = {}
 ## The walk the scene was installed into (`install()`), handed in by the run flow.
 var _walk_spec: DaySpec = null
-var built: Dictionary = {}
-var manifest: Dictionary = {}
-var named: Dictionary = {}
+## What the recipe builder made of the recipe's city section: its map and the anchors' positions.
+var _built: Dictionary = {}
+## What the scene records of itself, which is how it is read from outside: written to the file
+## `--recipe-manifest PATH` names at `begin()`, at a capture, at the end, when the task's mark is read
+## or expires, and at every failure.
+var _manifest: Dictionary = {}
+## The actors an observation can name, by their recipe names (`player`, an event's or an actor's
+## `name`, `mark`, `task`, `rider`, `truck_N`).
+var _named: Dictionary = {}
+## The recipe's entry for each event plan the scene built (the plan to its authored entry), which
+## names the plan's event, and whether it is held, charging or relentless, once the walk starts.
+var _entry_of_plan: Dictionary = {}
 var _scripted := false
-var tick := 0
+## The physics ticks the scene has counted: its clock (`elapsed()`).
+var _tick := 0
 ## The run's configuration with this recipe on top, handed in by `configure()`: where the manifest
 ## and a draft go, whether to validate and quit, a screenshot's tick and a day's length.
 var _config: RunConfig
@@ -29,7 +39,28 @@ var _run: RunState
 ## own way of ending it (`Main._end_with()`). Empty, the scene quits the tree itself.
 var _end_game := Callable()
 var _player: Stroller
-var _city: City
+## The world the scene was installed into (`install()`): its map, today's streets, the city scene's
+## dressing, its events, its crowd and its poster walls, her and the baby.
+var _world: DayWorld
+## The scene's one ground for a row (`EventScheduler.row_ground()`): which tiles a row may stand
+## on, made once by `_event_plans()` and handed to every authored row's placement, to the
+## escape's actors' and to the scene's walk (`EventManager.start_recipe()`), so none of the
+## three scans the map again. It is made inside `install()`'s `witness_only()` bracket, and
+## keeps each answer from the first time it is asked: a question the install asks (every authored
+## row's) is answered with a bounded scene's exterior and a stretch's void off, and the walk
+## keeps that answer; a question first asked while she walks (day 8's burnt-building front) is
+## answered with the edges shown, as its side test reads `tile_at()`, `pavement_inward()` and
+## `is_street()`.
+var _ground: RowGround
+## The route tree and the day's locations the recipe's rows are placed against, made once by
+## `_event_plans()` and handed to the scene's walk beside the ground, so a siting made as she
+## walks grows and lays out none of its own. A scene with no route tree lays its locations out
+## under a corridor that answers none, so it hands the walk neither and the walk makes both
+## when it needs them.
+var _route_tree: RouteTree
+var _locations: DayLocations
+## Where the army column's lines go, handed in by `use_trace()`; a trace that writes nowhere until then.
+var _trace := RunTrace.new()
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
 var _plan: WalkPlan
 var _observations: Array = []
@@ -46,20 +77,21 @@ var _last_positions: Dictionary = {}
 var _resistance: ResistanceDirector
 ## A draft run's record of the walk (`--recipe-draft`), or null.
 var _draft: SceneRecipeDraft
-## The recipe as its file has it, which a draft run writes its stretch into; `data` is the copy it
+## The recipe as its file has it, which a draft run writes its stretch into; `_data` is the copy it
 ## plays (`SceneRecipeDraft.base_of()`).
 var _written: Dictionary = {}
 
 static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 	var loaded := SceneRecipe.load_file(path, "--recipe-draft" in args)
-	if not loaded.errors.is_empty():
+	var load_errors: Array = loaded.errors
+	if not load_errors.is_empty():
 		return loaded
 	var recipe: Dictionary = loaded.data
 	var written := recipe
 	if "--recipe-draft" in args:
 		recipe = SceneRecipeDraft.base_of(recipe)
 	var errors := _validate_runtime(recipe)
-	for flag in OWNED_FLAGS:
+	for flag: String in OWNED_FLAGS:
 		if flag in args:
 			errors.append("arguments: %s conflicts with recipe-owned setup/playback" % flag)
 	var mode := "free"
@@ -93,7 +125,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
 	if not setup.get("parent", "mother") in ["mother", "father"]:
 		errors.append("setup.parent must be mother or father")
-	for key in ["player", "background", "progression"]:
+	for key: String in ["player", "background", "progression"]:
 		if not setup.get(key, {}) is Dictionary:
 			errors.append("setup.%s must be an object" % key)
 	if not errors.is_empty():
@@ -103,13 +135,13 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	_position(player.get("at", "doorstep"), "setup.player.at", errors)
 	if not DIRECTIONS.has(player.get("facing", "south")):
 		errors.append("setup.player.facing must name a cardinal direction")
-	for key in ["excitement", "sleep"]:
+	for key: String in ["excitement", "sleep"]:
 		_number(player.get(key, 0), "setup.player." + key, 0, 100, errors)
 	var background: Dictionary = setup.get("background", {})
 	_keys(background, ["events", "crowd", "crowd_scope", "uniform_walkers", "walker_multiplier"], "setup.background", errors)
 	if background.get("events", false) != false:
 		errors.append("setup.background.events: authored scenes require explicit event selections")
-	for key in ["crowd", "uniform_walkers"]:
+	for key: String in ["crowd", "uniform_walkers"]:
 		if not background.get(key, false) is bool:
 			errors.append("setup.background.%s must be boolean" % key)
 	_number(background.get("walker_multiplier", 1), "setup.background.walker_multiplier", 1, 4, errors)
@@ -118,9 +150,9 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	if not background.get("crowd_scope", "player") in ["player", "city"]:
 		errors.append("setup.background.crowd_scope must be player or city")
 	if background.get("crowd_scope", "player") == "city" and (
-			not background.get("crowd", false) or recipe.get("extent", {}).get("scope", "") != "full"):
+			not background.get("crowd", false) or _object(recipe, "extent").get("scope", "") != "full"):
 		errors.append("setup.background.crowd_scope city requires crowd and full extent")
-	if recipe.get("extent", {}).get("scope", "") in ["bounded", "stretch"] and (
+	if _object(recipe, "extent").get("scope", "") in ["bounded", "stretch"] and (
 			background.get("crowd", false)):
 		errors.append("bounded and stretch scenes require authored actors/events; random background activity needs full extent")
 	_validate_route_bag(recipe, errors)
@@ -129,7 +161,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	if not progression.get("blackout", false) is bool:
 		errors.append("setup.progression.blackout must be boolean")
 	if recipe.get("kind", "city") == "escape":
-		if not recipe.get("city", {}).get("closures", []).is_empty():
+		if not _list(_object(recipe, "city"), "closures").is_empty():
 			errors.append("city.closures is unsupported for escape scenes; select explicit finale events")
 		if progression.get("escape_part", "city") != "city":
 			errors.append("setup.progression.escape_part: recipes currently support the real city escape")
@@ -139,20 +171,21 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
 	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
-	# every city's map holds (`CityMap.network`).
+	# every city's map holds (`CityMap.street_network()`).
 	var lattice := StreetNetwork.new()
 	var structure_streets := {}
-	for collection in ["seals", "gates", "barriers"]:
+	for collection: String in ["seals", "gates", "barriers"]:
 		if not setup.get(collection, []) is Array:
 			errors.append("setup.%s must be an array" % collection)
 			continue
-		if recipe.get("kind", "city") == "escape" and not setup.get(collection, []).is_empty():
+		if recipe.get("kind", "city") == "escape" and not _list(setup, collection).is_empty():
 			errors.append("setup.%s is unsupported for escape scenes; select explicit finale events" % collection)
 		var seen := {}
-		for entry: Variant in setup.get(collection, []):
-			if not entry is Dictionary:
+		for entry_value: Variant in _list(setup, collection):
+			if not entry_value is Dictionary:
 				errors.append("setup.%s entries must be objects" % collection)
 				continue
+			var entry: Dictionary = entry_value
 			_keys(entry, ["segment", "candidate"] if collection == "seals" else
 					(["segment", "end"] if collection == "barriers" else ["segment"]), collection, errors)
 			if not SceneRecipe.tuple(entry.get("segment"), 3, true):
@@ -166,10 +199,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				errors.append("setup structures select the same street in multiple collections")
 			structure_streets[key] = true
 			if collection == "seals":
-				var found := false
-				for candidate in SealPlanner.candidates():
-					found = found or candidate.id == entry.get("candidate", "")
-				if not found:
+				if not SealPlanner.candidate_named(str(entry.get("candidate", ""))):
 					errors.append("setup.seals requires an existing production candidate")
 			elif collection == "barriers" and entry.get("end") not in ["a", "b"]:
 				errors.append("setup.barriers requires end a or b")
@@ -177,10 +207,11 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("setup.roof_fixtures must be an array")
 	else:
 		var roof_lots := {}
-		for roof: Variant in setup.get("roof_fixtures", []):
-			if not roof is Dictionary:
+		for roof_value: Variant in _list(setup, "roof_fixtures"):
+			if not roof_value is Dictionary:
 				errors.append("setup.roof_fixtures entries must be objects")
 				continue
+			var roof: Dictionary = roof_value
 			_keys(roof, ["lot", "fixtures"], "setup.roof_fixtures", errors)
 			if not SceneRecipe.tuple(roof.get("lot"), 4, true) or not roof.get("fixtures") is Array:
 				errors.append("setup.roof_fixtures requires a tile lot [x,y,w,h] and fixtures array")
@@ -189,10 +220,11 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 			if roof_lots.has(lot):
 				errors.append("setup.roof_fixtures duplicates a lot")
 			roof_lots[lot] = true
-			for fixture: Variant in roof.fixtures:
-				if not fixture is Dictionary:
+			for fixture_value: Variant in roof.fixtures:
+				if not fixture_value is Dictionary:
 					errors.append("setup.roof_fixtures.fixtures entries must be objects")
 					continue
+				var fixture: Dictionary = fixture_value
 				_keys(fixture, ["cell", "kind"], "roof fixture", errors)
 				if not SceneRecipe.tuple(fixture.get("cell"), 2, true) \
 						or not Building.RECIPE_FURNITURE_KINDS.has(str(fixture.get("kind", "")).to_upper()):
@@ -200,10 +232,11 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	if not setup.get("posters", []) is Array:
 		errors.append("setup.posters must be an array")
 	else:
-		for entry: Variant in setup.get("posters", []):
-			if not entry is Dictionary:
+		for entry_value: Variant in _list(setup, "posters"):
+			if not entry_value is Dictionary:
 				errors.append("setup.posters entries must be objects")
 				continue
+			var entry: Dictionary = entry_value
 			_keys(entry, ["at", "kind"], "setup.posters", errors)
 			_position(entry.get("at"), "setup.posters.at", errors)
 			var key := str(entry.get("kind", "")).to_upper()
@@ -214,29 +247,32 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	var names := {"player": true}
 	_validate_task(recipe, names, errors)
 	if setup.has("column"):
-		if not setup.column is Dictionary:
+		var column_value: Variant = setup["column"]
+		if not column_value is Dictionary:
 			errors.append("setup.column must be an object")
 		else:
-			_keys(setup.column, ["at", "direction"], "setup.column", errors)
-			_position(setup.column.get("at"), "setup.column.at", errors)
-			if not setup.column.get("direction") in ["north", "south"]:
+			var column: Dictionary = column_value
+			_keys(column, ["at", "direction"], "setup.column", errors)
+			_position(column.get("at"), "setup.column.at", errors)
+			if not column.get("direction") in ["north", "south"]:
 				errors.append("setup.column.direction must be north or south")
 			if int(setup.get("day", 1)) != ResistanceHappenings.COLUMN_DAY \
 					or recipe.get("kind", "city") != "city" \
-					or recipe.get("extent", {}).get("scope", "") != "full":
+					or _object(recipe, "extent").get("scope", "") != "full":
 				errors.append("setup.column requires day 13 and a full city scene")
 		for i in Tuning.COLUMN_TRUCKS:
 			names["truck_%d" % (i + 1)] = true
 	var mast_ids := {}
-	for collection in ["events", "actors"]:
+	for collection: String in ["events", "actors"]:
 		if not setup.get(collection, []) is Array:
 			errors.append("setup.%s must be an array" % collection)
 			continue
-		for entry: Variant in setup.get(collection, []):
+		for entry_value: Variant in _list(setup, collection):
 			var where: String = "setup." + collection
-			if not entry is Dictionary:
+			if not entry_value is Dictionary:
 				errors.append(where + " entries must be objects")
 				continue
+			var entry: Dictionary = entry_value
 			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id", "heat", "hold", "charging", "relentless"] if collection == "events"
 					else ["name", "kind", "at", "direction", "speed"], where, errors)
 			var label: Variant = entry.get("name")
@@ -251,7 +287,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				if entry.has("mast_id"):
 					# A mast's identity is what the day's task and its arrow answer to, so two
 					# authored masts need two ids, and only a loudspeaker is a mast.
-					var mast_id: Variant = entry.mast_id
+					var mast_id: Variant = entry["mast_id"]
 					if entry.get("row") != "loudspeaker":
 						errors.append(where + ".mast_id belongs to a loudspeaker row")
 					elif not mast_id is String or str(mast_id).is_empty() or mast_ids.has(mast_id):
@@ -261,16 +297,16 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				_number(entry.get("age", 0), where + ".age", 0, 3600, errors)
 				_number(entry.get("route_seed", 1), where + ".route_seed", 0, 2147483647, errors, true)
 				_number(entry.get("heat", 0), where + ".heat", 0, Tuning.RESISTANCE_GOAL, errors, true)
-				if entry.has("hold") and not entry.hold is bool:
+				if entry.has("hold") and not entry["hold"] is bool:
 					errors.append(where + ".hold must be true or false")
-				if entry.has("charging") and not entry.charging is bool:
+				if entry.has("charging") and not entry["charging"] is bool:
 					errors.append(where + ".charging must be true or false")
-				if entry.has("relentless") and not entry.relentless is bool:
+				if entry.has("relentless") and not entry["relentless"] is bool:
 					errors.append(where + ".relentless must be true or false")
 				if not entry.get("path", []) is Array:
 					errors.append(where + ".path must be an array")
 				else:
-					for point: Variant in entry.get("path", []):
+					for point: Variant in _list(entry, "path"):
 						_position(point, where + ".path", errors)
 			else:
 				if not entry.get("kind") in ["walker", "car"]:
@@ -278,14 +314,14 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				if not DIRECTIONS.has(entry.get("direction")):
 					errors.append(where + ".direction must be cardinal")
 				if entry.has("speed"):
-					_number(entry.speed, where + ".speed", 0, 1000, errors)
+					_number(entry["speed"], where + ".speed", 0, 1000, errors)
 	if not errors.is_empty():
 		return errors
-	if setup.has("column") and not setup.get("events", []).is_empty():
+	if setup.has("column") and not _list(setup, "events").is_empty():
 		errors.append("setup.column cannot accompany other pinned events")
-	if background.get("crowd", false) and not setup.get("actors", []).is_empty():
-		for actor: Dictionary in setup.actors:
-			if not background.get("uniform_walkers", false) or actor.kind != "walker":
+	if background.get("crowd", false) and not _list(setup, "actors").is_empty():
+		for actor: Dictionary in _list(setup, "actors"):
+			if not background.get("uniform_walkers", false) or actor["kind"] != "walker":
 				errors.append("background crowd accepts only pinned walkers with uniform_walkers enabled")
 	_keys(playback, ["walk", "smooth", "duration", "capture_at", "camera", "caption", "title",
 			"observations", "settled_camera"],
@@ -302,7 +338,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("playback.smooth must be boolean")
 	if not playback.get("settled_camera", false) is bool:
 		errors.append("playback.settled_camera must be boolean")
-	for key in ["caption", "title"]:
+	for key: String in ["caption", "title"]:
 		if not playback.get(key, "") is String:
 			errors.append("playback.%s must be text" % key)
 	if not playback.get("camera", {}) is Dictionary:
@@ -314,9 +350,9 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 		if not camera.get("fixed", false) is bool:
 			errors.append("playback.camera.fixed must be boolean")
 		if camera.has("fixed_offset") and (not camera.get("fixed", false) \
-				or not SceneRecipe.tuple(camera.fixed_offset, 2, false)):
+				or not SceneRecipe.tuple(camera["fixed_offset"], 2, false)):
 			errors.append("playback.camera.fixed_offset requires fixed true and [x,y] numbers")
-		for key in camera:
+		for key: String in camera:
 			if key in ["fixed", "fixed_offset"]:
 				continue
 			_number(camera[key], "playback.camera." + key,
@@ -325,10 +361,11 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	if not playback.get("observations", []) is Array:
 		errors.append("playback.observations must be an array")
 	else:
-		for check: Variant in playback.get("observations", []):
-			if not check is Dictionary:
+		for check_value: Variant in playback.get("observations", []):
+			if not check_value is Dictionary:
 				errors.append("playback.observations entries must be objects")
 				continue
+			var check: Dictionary = check_value
 			_keys(check, ["tick", "subject", "condition", "at", "distance", "half", "walkers", "cars"],
 					"observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
@@ -358,7 +395,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 			if check.get("condition") == "crowd":
 				if subject != "player":
 					errors.append("observation.condition crowd asks about the picture round the player")
-				for key in ["walkers", "cars"]:
+				for key: String in ["walkers", "cars"]:
 					_number(check.get(key, 0), "observation." + key, 0, 1000, errors, true)
 			elif check.has("walkers") or check.has("cars"):
 				errors.append("observation.walkers and cars belong to crowd")
@@ -409,7 +446,7 @@ static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[
 	if task.has("neighbor"):
 		if not perform or perform.target_kind != ResistanceSteps.TargetKind.NEIGHBOR:
 			errors.append("setup.task.neighbor: only day %d's neighbor has a start to pin"
-					% ResistanceHappenings.NEIGHBOR_DAY)
+					% ResistanceSteps.NEIGHBOR_DAY)
 		else:
 			_position(task.neighbor, "setup.task.neighbor", errors)
 	names["task"] = true
@@ -432,15 +469,15 @@ static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> vo
 	var bag: Dictionary = setup.route_bag
 	_keys(bag, ["marbles", "pre_bag", "owed", "first_after"], "setup.route_bag", errors)
 	var day := int(setup.get("day", 1))
-	for field in ["marbles", "pre_bag"]:
+	for field: String in ["marbles", "pre_bag"]:
 		if not bag.get(field, []) is Array:
 			errors.append("setup.route_bag.%s must be an array of catalogue ids" % field)
 			continue
 		for id: Variant in bag.get(field, []):
 			var def := EventCatalogue.by_id(str(id)) if id is String else null
 			var mode := def.spawn_mode_on(day) if def else EventDef.SpawnMode.MAP
-			if not def or not def.available_on(day) or not mode in [
-					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]:
+			if not def or not def.available_on(day) or not (def.is_sent_ahead() or mode in [
+					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]):
 				errors.append("setup.route_bag.%s: %s is not a row the director sites on day %d"
 						% [field, id, day])
 	if bag.get("marbles", []) is Array and (bag.get("marbles", []) as Array).is_empty():
@@ -449,6 +486,16 @@ static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> vo
 		_number(bag.owed, "setup.route_bag.owed", 0, 1000, errors, true)
 	if bag.has("first_after"):
 		_number(bag.first_after, "setup.route_bag.first_after", 0, 600, errors)
+
+## `from[key]` as an object, empty where it holds none: a recipe's section as the file has it.
+static func _object(from: Dictionary, key: String) -> Dictionary:
+	var value: Variant = from.get(key, {})
+	return value if value is Dictionary else {}
+
+## `from[key]` as a list, empty where it holds none.
+static func _list(from: Dictionary, key: String) -> Array:
+	var value: Variant = from.get(key, [])
+	return value if value is Array else []
 
 static func _keys(object: Dictionary, allowed: Array, where: String, errors: Array[String]) -> void:
 	for key: Variant in object:
@@ -466,72 +513,88 @@ static func _number(value: Variant, where: String, low: float, high: float,
 static func _position(value: Variant, where: String, errors: Array[String]) -> void:
 	if value is String and not str(value).is_empty():
 		return
-	if not value is Array or value.size() != 2:
+	if not value is Array or (value as Array).size() != 2:
 		errors.append(where + " must name an anchor or be [world_x, world_y]")
 		return
 	_number(value[0], where + "[0]", -1000000, 1000000, errors)
 	_number(value[1], where + "[1]", -1000000, 1000000, errors)
+
+## The trace the army column's lines go to (`ResistanceHappenings.use_trace()`): the run's own, as
+## `main` hands the city's.
+func use_trace(trace: RunTrace) -> void:
+	_trace = trace
 
 func configure(result: Dictionary, config: RunConfig, run: RunState,
 		end_game := Callable()) -> void:
 	_config = config
 	_run = run
 	_end_game = end_game
-	data = result.data
+	_data = result.data
 	_written = result.get("written", result.data)
-	built = result
-	if config.recipe_draft_path != "":
+	_built = result
+	if config.recipe_draft_path() != "":
 		_draft = SceneRecipeDraft.new()
-	manifest = result.manifest.duplicate(true)
-	_scripted = config.recipe_scripted
-	manifest["recipe"] = data.get("name", "")
-	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
-	manifest["engine"] = Engine.get_version_info().string
-	manifest["physics_ticks_per_second"] = Engine.physics_ticks_per_second
-	manifest["playback_complete"] = false
-	manifest["observations"] = []
-	manifest["setup"] = data.get("setup", {}).duplicate(true)
-	manifest["anchors"] = {}
+	var built_manifest: Dictionary = result.manifest
+	_manifest = built_manifest.duplicate(true)
+	_scripted = config.plays_the_recipe_scripted()
+	_manifest["recipe"] = _data.get("name", "")
+	_manifest["recipe_sha256"] = JSON.stringify(_data, "", true).sha256_text()
+	_manifest["engine"] = Engine.get_version_info().string
+	_manifest["physics_ticks_per_second"] = Engine.physics_ticks_per_second
+	_manifest["playback_complete"] = false
+	_manifest["observations"] = []
+	_manifest["setup"] = _setup().duplicate(true)
+	_manifest["anchors"] = {}
 	for label: String in result.anchors:
 		var at: Vector2 = result.anchors[label]
-		manifest.anchors[label] = [at.x, at.y]
-	_plan = WalkPlan.make(AutoScreenshot.parse_script(str(data.get("playback", {}).get("walk", ""))),
-			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
-	_observations = data.get("playback", {}).get("observations", [])
-	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
-	if config.screenshot_path != "":
-		_capture_tick = ceili(maxf(config.rig_after, 0.0) * Engine.physics_ticks_per_second - 0.00001)
+		_manifest.anchors[label] = [at.x, at.y]
+	_plan = WalkPlan.make(AutoScreenshot.parse_script(str(_playback().get("walk", ""))),
+			Engine.physics_ticks_per_second, bool(_playback().get("smooth", false)))
+	_observations = _playback().get("observations", [])
+	_duration_ticks = roundi(float(_playback().get("duration", 5)) * Engine.physics_ticks_per_second)
+	if config.screenshot_path() != "":
+		_capture_tick = ceili(maxf(config.rig_after(), 0.0) * Engine.physics_ticks_per_second
+				- 0.00001)
 	# begin() supplies the first input; subsequent inputs are queued after the world's tick.
 	# Observations and completion therefore see the tick they name, including the final one.
 	process_physics_priority = 100
 	# The observer must report a gameplay stop rather than hang with the paused world.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-func position_of(value: Variant, errors: Array[String]) -> Vector2:
+func _position_of(value: Variant, errors: Array[String]) -> Vector2:
 	if value is Array:
 		return Vector2(float(value[0]), float(value[1]))
-	if built.anchors.has(value):
-		return built.anchors[value]
+	var anchors: Dictionary = _built["anchors"]
+	if anchors.has(value):
+		return anchors[value]
 	if value == "doorstep":
-		return (built.map as CityMap).doorstep_world_position()
+		return (_built.map as CityMap).doorstep_world_position()
 	errors.append("unresolved anchor: %s" % value)
 	return Vector2.INF
 
-func start_position() -> Vector2:
-	var errors: Array[String] = []
-	return position_of(data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
+## The recipe's `setup` section.
+func _setup() -> Dictionary:
+	return _object(_data, "setup")
 
-## The map the recipe's city section is built to (`built.map`).
+## The recipe's `playback` section.
+func _playback() -> Dictionary:
+	return _object(_data, "playback")
+
+func _start_position() -> Vector2:
+	var errors: Array[String] = []
+	return _position_of(_object(_setup(), "player").get("at", "doorstep"), errors)
+
+## The map the recipe's city section is built to (`_built.map`).
 ##
 ## Overrides AuthoredScene.city_map.
 func city_map() -> CityMap:
-	return built.map
+	return _built.map
 
 ## `setup.tutorial_complete`: a mid-game scene starts after the ordinary control lessons.
 ##
 ## Overrides AuthoredScene.lessons_learned.
 func lessons_learned() -> bool:
-	return bool(data.get("setup", {}).get("tutorial_complete", false))
+	return bool(_setup().get("tutorial_complete", false))
 
 ## Overrides AuthoredScene.plays_by_script.
 func plays_by_script() -> bool:
@@ -544,32 +607,30 @@ func plays_by_script() -> bool:
 ## recorded as failed in the manifest (`setup_failed`) as well as returned.
 ##
 ## Overrides AuthoredScene.install.
-func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
+func install(world: DayWorld, spec: DaySpec,
 		resistance: ResistanceDirector = null) -> Array[String]:
-	var errors := _install(city, player, baby, spec, resistance)
+	var errors := _install(world, spec, resistance)
 	if not errors.is_empty():
-		manifest["setup_failed"] = true
+		_manifest["setup_failed"] = true
+		_write_manifest()
 	return errors
 
-func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
-		resistance: ResistanceDirector) -> Array[String]:
+func _install(world: DayWorld, spec: DaySpec, resistance: ResistanceDirector) -> Array[String]:
+	if not world.is_in_a_city():
+		return ["a scene recipe is installed into a city's world"]
 	_walk_spec = spec
-	_city = city
+	_world = world
+	var player := world.player()
+	var baby := world.baby()
 	_player = player
 	_resistance = resistance
-	named = {"player": player}
+	_named = {"player": player}
 	var errors: Array[String] = []
-	var setup: Dictionary = data.get("setup", {})
-	var map := city.map
+	var setup: Dictionary = _data.get("setup", {})
+	var map := world.city_map()
 	for roof: Dictionary in setup.get("roof_fixtures", []):
-		var found := false
-		for building in city.buildings():
-			if building.lot == SceneRecipe.rect(roof.lot):
-				found = true
-				errors.append_array(building.author_roof_furniture(roof.fixtures))
-		if not found:
-			errors.append("roof_fixtures.lot: no complete production building at the authored footprint")
-	var at := position_of(setup.get("player", {}).get("at", "doorstep"), errors)
+		errors.append_array(world.dressing().furnish_a_roof(SceneRecipe.rect(roof.lot), roof.fixtures))
+	var at := _position_of(_object(setup, "player").get("at", "doorstep"), errors)
 	if not errors.is_empty():
 		return errors
 	var edges := map.witness_only()
@@ -577,79 +638,91 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		errors.append("setup.player.at must be open ground inside the authored extent")
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
-	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, spec, _run.header.day, at)
-	city.refresh_street_trees()
+	# One set of calm areas for the recipe's walk: what its rows are placed against and what the walk
+	# sites against after.
+	var calm := world.events().calm_as_the_map_stands()
+	var plans := _event_plans(at, errors, calm)
+	world.events().start_recipe(plans, spec, _run.header().day(), at, calm, _ground,
+			_route_tree, _locations if _route_tree else null)
+	world.dressing().refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
 		return errors
 	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
-		for plan in city.events.plans():
-			if plan.get_meta("recipe_name", "") == entry.name:
-				if not plan.live:
+		for plan in world.events().plans():
+			var planned: Dictionary = _entry_of_plan.get(plan, {})
+			if planned.get("name", "") == entry.name:
+				if not plan.is_in_the_world():
 					errors.append("event %s is not live at its required initial position" % entry.name)
 				else:
-					named[entry.name] = plan.live
-					if plan.get_meta("recipe_charging", false):
+					# Named and commanded, so asked of the event manager, which hands a plan's live
+					# event to the caller that commands it.
+					var event := world.events().event_of(plan)
+					_named[entry.name] = event
+					if bool(planned.get("charging", false)):
 						# Set on her from the first frame, as a guard sent after her is: no radius
 						# to cross and no warning to stand through.
-						plan.live.notice_her_at(at, 0.0)
-					if plan.get_meta("recipe_relentless", false):
-						_relentless.append(plan.live)
-					if plan.get_meta("recipe_hold", false):
-						_held.append(plan.live)
+						event.notice_her_at(at, 0.0)
+					if bool(planned.get("relentless", false)):
+						_relentless.append(event)
+					if bool(planned.get("hold", false)):
+						_held.append(event)
 						# Never streamed out either, however far she runs from it.
-						plan.kept_live = true
-	city.crowd.start_day(_run.header.day, _run.calendar.day_rng(_run.header.day, "crowd"), at,
+						plan.keep_in_the_world()
+	world.crowd().start_day(_run.header().day(),
+			_run.calendar().day_rng(_run.header().day(), "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
 		var area_scale := map.world_size().x * map.world_size().y / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) \
 				if background.get("crowd_scope", "player") == "city" else 1.0
-		var act := Tuning.act_for_day(_run.header.day)
+		var act := Tuning.act_for_day(_run.header().day())
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
-		if city.crowd.agent_count() != expected:
+		if world.crowd().agent_count() != expected:
 			errors.append("setup.background: too few eligible sidewalk positions for the requested uniform population")
 			return errors
-	if city.streets().region_plan():
-		city.crowd.set_gates(city.streets().region_plan().gates)
+	if world.streets().region_plan():
+		world.crowd().set_gates(world.streets().region_plan().gate_states())
 	for entry: Dictionary in setup.get("actors", []):
-		var actor_at := position_of(entry.at, errors)
+		var actor_at := _position_of(entry.at, errors)
 		if not errors.is_empty():
 			break
 		if not _inside_extent(actor_at):
 			errors.append("actor %s is outside authored bounds" % entry.name)
 			continue
-		var placed := city.crowd.add_recipe_actor(entry.name,
+		var placed := world.crowd().add_recipe_actor(entry.name,
 				CrowdAgent.Kind.CAR if entry.kind == "car" else CrowdAgent.Kind.WALKER,
 				actor_at, DIRECTIONS[entry.direction], float(entry.get("speed", -1)),
 				hash("actor:%s" % entry.name))
 		if not str(placed.error).is_empty():
 			errors.append("actor %s: %s" % [entry.name, placed.error])
 		else:
-			named[entry.name] = placed.actor
+			_named[entry.name] = placed.actor
 	if map.has_stretch():
-		city.crowd.use_stretch()
-	city.signals.elapsed = float(setup.get("signal_time", 0))
-	if setup.get("progression", {}).get("blackout", false):
-		city.signals.powered = false
-	player.reset_at(at, DIRECTIONS[setup.get("player", {}).get("facing", "south")])
+		world.crowd().use_stretch()
+	world.dressing().start_the_signals(float(setup.get("signal_time", 0)),
+			bool(_object(setup, "progression").get("blackout", false)))
+	player.reset_at(at, DIRECTIONS[_object(setup, "player").get("facing", "south")])
 	baby.reset()
 	var initial: Dictionary = setup.get("player", {})
-	baby.excitement = float(initial.get("excitement", 0))
-	baby.sleepiness = float(initial.get("sleep", 0))
-	if data.get("kind", "city") == "escape" or baby.sleepiness >= Tuning.METER_MAX:
+	baby.seed_meters(float(initial.get("sleep", 0)), float(initial.get("excitement", 0)))
+	# Asleep where the walk starts her asleep (`DaySpec.starts_with_the_baby_asleep()`, the escape's
+	# city), or where the scene fills her sleep.
+	if spec.starts_with_the_baby_asleep() or baby.sleepiness_level() >= Tuning.METER_MAX:
 		baby.force_sleep()
 	if setup.has("column"):
-		_install_column(setup.column, at, errors)
+		_install_column(setup.column, errors)
 	_install_posters(setup.get("posters", []), errors)
-	manifest["initial_actors"] = _snapshot()
-	manifest["installed_events"] = []
-	for plan in city.events.plans():
-		manifest.installed_events.append({"row": plan.def.id,
-				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
+	_manifest["initial_actors"] = _snapshot()
+	var installed: Array = []
+	_manifest["installed_events"] = installed
+	for plan in world.events().plans():
+		var placed := plan.placed_at()
+		var facing := plan.faces()
+		installed.append({"row": plan.row_id(),
+				"position": [placed.x, placed.y], "facing": [facing.x, facing.y]})
 	return errors
 
 ## `setup.task`, started once her own camera is the one on screen: the boot camera is gone by
@@ -659,37 +732,37 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 ## is met, so a day-14 scene starts with it met. False, with the scene stopped, when the director
 ## refused it.
 func _start_the_task() -> bool:
-	if not data.get("setup", {}).has("task"):
+	if not _setup().has("task"):
 		return true
-	var task: Dictionary = data.setup.task
+	var task: Dictionary = _data.setup.task
 	var errors: Array[String] = []
 	if not _resistance:
 		errors.append("setup.task: this boot has no resistance director")
-	var mark := position_of(task.mark, errors) if task.has("mark") else Vector2.INF
-	var neighbor := position_of(task.neighbor, errors) if task.has("neighbor") else Vector2.INF
+	var mark := _position_of(task.mark, errors) if task.has("mark") else Vector2.INF
+	var neighbor := _position_of(task.neighbor, errors) if task.has("neighbor") else Vector2.INF
 	if errors.is_empty():
 		var camera := get_viewport().get_camera_2d()
 		if camera:
 			camera.force_update_scroll()
-		if _run.calendar.is_final_day():
-			_run.resistance.progress = Tuning.RESISTANCE_GOAL
+		if _run.calendar().is_final_day():
+			_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
-		var edges := _city.map.witness_only()
-		errors = _resistance.start_recipe_task(_run.header.day,
-				_run.calendar.day_rng(_run.header.day, "resistance"),
-				_config.day_length_for(_run.header.day), mark, neighbor)
-		_city.map.restore_edges(edges)
+		var edges := _world.city_map().witness_only()
+		errors = _resistance.start_recipe_task(_run.header().day(),
+				_run.calendar().day_rng(_run.header().day(), "resistance"),
+				_config.day_length_for(_run.header().day()), mark, neighbor)
+		_world.city_map().restore_edges(edges)
 	if not errors.is_empty():
-		manifest["setup_failed"] = true
+		_manifest["setup_failed"] = true
 		for problem in errors:
 			print("[SceneRecipe] " + problem)
-		write_manifest()
+		_write_manifest()
 		_end_the_game(1)
 		return false
 	_task_from = mark if mark != Vector2.INF else _player.global_position
-	manifest["task"] = {"mark": [mark.x, mark.y] if mark != Vector2.INF else null}
+	_manifest["task"] = {"mark": [mark.x, mark.y] if mark != Vector2.INF else null}
 	_bind_task_names()
 	return true
 
@@ -709,93 +782,91 @@ var _task_from := Vector2.INF
 ## reaches them, a rider finishing, a deadline): the manifest's `task.expired_tick` records when,
 ## `task` names nothing from then on, and an observation that still asks about it fails on that.
 func _bind_task_names() -> void:
-	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
+	if not _resistance or not _setup().has("task") or _manifest.get("setup_failed", false):
 		return
 	var contact: ContactPoint = _resistance.contact()
 	if _resistance.read_mark():
-		named["mark"] = _resistance.read_mark()
-	elif contact and contact.step.is_pickup and not contact.is_done:
-		named["mark"] = contact
+		_named["mark"] = _resistance.read_mark()
+	elif contact and contact.task_step().is_pickup and not contact.is_finished():
+		_named["mark"] = contact
 		return
-	if (not contact or contact.step.is_pickup) and manifest.task.has("read_tick"):
-		if not manifest.task.has("expired_tick"):
-			manifest.task["expired_tick"] = tick
-			named.erase("task")
-			print("[SceneRecipe] setup.task: the task expired at tick %d" % tick)
-			write_manifest()
+	var task_record: Dictionary = _manifest["task"]
+	if (not contact or contact.task_step().is_pickup) and task_record.has("read_tick"):
+		if not task_record.has("expired_tick"):
+			task_record["expired_tick"] = _tick
+			_named.erase("task")
+			print("[SceneRecipe] setup.task: the task expired at tick %d" % _tick)
+			_write_manifest()
 		return
-	if not contact or contact.step.is_pickup:
-		manifest["setup_failed"] = true
+	if not contact or contact.task_step().is_pickup:
+		_manifest["setup_failed"] = true
 		for problem in _resistance.scene_task_errors():
 			print("[SceneRecipe] " + problem)
 		print("[SceneRecipe] setup.task: the mark's task has nowhere to go in this scene")
-		write_manifest()
+		_write_manifest()
 		if _scripted:
 			_active = false
 			_end_the_game(1)
 		return
-	if named.get("task") == contact:
+	if _named.get("task") == contact:
 		return
-	named["task"] = contact
+	_named["task"] = contact
 	if _resistance.rider():
-		named["rider"] = _resistance.rider()
+		_named["rider"] = _resistance.rider()
 	var step := _resistance.current_step()
 	var target := _resistance.contact_position()
 	var arrow := _resistance.red_arrow_target()
-	manifest.task.merge({"step": step.index, "title": step.title,
+	task_record.merge({"step": step.index, "title": step.title,
 			"target": [target.x, target.y], "distance": snappedf(_task_from.distance_to(target), 0.01),
-			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null, "read_tick": tick})
+			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null, "read_tick": _tick})
+	_write_manifest()
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
-func _install_column(column: Dictionary, player_at: Vector2, errors: Array[String]) -> void:
-	var map := _city.map
-	var at := position_of(column.at, errors)
+func _install_column(column: Dictionary, errors: Array[String]) -> void:
+	var map := _world.city_map()
+	var at := _position_of(column.at, errors)
 	if not errors.is_empty():
 		return
 	var going := -1.0 if column.direction == "north" else 1.0
-	var lane := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
-	var top := Tuning.TILE_SIZE * 0.5
-	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
-	var back := at.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
-	if not is_equal_approx(at.x, lane) or at.y < top or at.y > bottom or back < top or back > bottom:
+	var happening := ResistanceHappenings.new()
+	happening.use_trace(_trace)
+	happening.setup(map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
+			null, null, _world.events().spawn_siting())
+	if not happening.column_fits_at(at, going):
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
-	var happening := ResistanceHappenings.new()
-	happening.trace = _city.trace
-	happening.setup(map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
-	happening.start_day(_run.header.day)
-	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
-			lane, going, top, bottom)
-	for i in happening.column.size():
-		named["truck_%d" % (i + 1)] = happening.column[i]
+	happening.start_day(_run.header().day())
+	var trucks := happening.bring_the_column_at(at, going)
+	for i in trucks.size():
+		_named["truck_%d" % (i + 1)] = trucks[i]
 
 func _install_posters(entries: Array, errors: Array[String]) -> void:
-	var fronts := _city.poster_walls().fronts()
+	var fronts := _world.poster_walls().fronts()
 	var used := {}
 	var recorded: Array[Dictionary] = []
 	for entry: Dictionary in entries:
-		var at := position_of(entry.at, errors)
+		var at := _position_of(entry.at, errors)
 		if not errors.is_empty():
 			return
-		var tile := _city.map.world_to_tile(at)
+		var tile := _world.city_map().world_to_tile(at)
 		if not fronts.has(tile) or not _inside_extent(at) \
-				or not _city.map.tile_to_world(tile).is_equal_approx(at) or used.has(tile):
+				or not _world.city_map().tile_to_world(tile).is_equal_approx(at) or used.has(tile):
 			errors.append("poster must name a distinct production wall cell inside the scene")
 			continue
 		used[tile] = true
 		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
-		_run.posters.paste(tile, kind, false, 1)
+		_run.posters().paste(tile, kind, false, 1)
 		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
-	_city.poster_walls().refresh()
-	manifest["authored_posters"] = recorded
+	_world.poster_walls().refresh()
+	_manifest["authored_posters"] = recorded
 
 func _inside_extent(at: Vector2) -> bool:
-	var map: CityMap = built.map
+	var map: CityMap = _built.map
 	if map.has_stretch():
 		return map.in_stretch(map.world_to_tile(at))
-	return not map.recipe_bounds.has_area() or map.recipe_bounds.has_point(map.world_to_tile(at))
+	var window := map.recipe_window()
+	return not window.has_area() or window.has_point(map.world_to_tile(at))
 
 ## `setup.route_bag`: the director owes her route the recipe's marbles, drawn from its rigged bag
 ## by the game's own rules (`EventDirector.start_recipe_route()`). A scene with no route bag keeps
@@ -806,125 +877,135 @@ func _start_the_route(setup: Dictionary) -> void:
 	var bag: Dictionary = setup.route_bag
 	var marbles: Array = bag.get("marbles", [])
 	var pre_bag: Array = bag.get("pre_bag", [])
-	var owed := _city.events.start_recipe_route(marbles, pre_bag,
+	var owed := _world.events().start_recipe_route(marbles, pre_bag,
 			int(bag.get("owed", marbles.size() + pre_bag.size())), float(bag.get("first_after", -1.0)))
-	manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag, "owed": owed}
+	_manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag, "owed": owed}
 
 ## Keep only named production structures. The context plan supplies eligibility and geometry,
 ## never permission to install unrelated walls or checkpoint actors throughout the scene.
 func _select_structures(errors: Array[String]) -> void:
-	var region := _city.streets().region_plan()
+	var region := _world.streets().region_plan()
 	if not region:
 		return
-	var setup: Dictionary = data.get("setup", {})
-	var selected := RegionPlanner.RegionPlan.new()
+	var setup: Dictionary = _data.get("setup", {})
+	var selected := RegionPlan.new()
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.network.by_key(key)
+		var segment := _world.city_map().street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
-		if _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
+		if not _walk_spec.region_wall_stands():
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
-		if not region.doors.any(func(door): return door.key() == key):
+		if not region.door_segments().any(func(door: StreetNetwork.Segment) -> bool: return door.key() == key):
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
-					[region.doors.map(func(door): return door.key())])
+					[region.door_segments().map(func(door: StreetNetwork.Segment) -> Vector3i: return door.key())])
 			continue
-		RegionPlanner.stand_door(_city.map, segment, selected)
+		RegionPlanner.stand_door(_world.city_map(), segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.network.by_key(key)
+		var segment := _world.city_map().street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
-		if not _city.map.has_street(key) or _city.streets().route_tree().is_on_the_tree(key) \
-				or _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
+		if not _world.city_map().has_street(key) or _world.streets().route_tree().is_on_the_tree(key) \
+				or not _walk_spec.region_wall_stands():
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
-		selected.walls.append(segment)
-		selected.wall_bodies.append_array(SealPlanner.place_hard_on(_city.map, segment,
-				"roadblock", entry.end == "a"))
+		selected.add_wall(segment)
+		# The wall's bodies say so, as the day's do (`EventPlan.stand_in_the_wall()`).
+		var bodies := SealPlanner.place_hard_on(_world.city_map(), segment, "roadblock", entry.end == "a")
+		for body in bodies:
+			body.stand_in_the_wall()
+		selected.add_wall_plans(bodies)
 	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
 	# wall, and the siting's region is built from the plan it is handed.
-	_city.streets().replace_region_plan(selected)
+	_world.streets().replace_region_plan(selected)
 
 func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
-	if _city.map.has_stretch():
-		for tile in _city.map.rect_tiles(segment.tile_rect()):
-			if not _city.map.in_stretch(tile):
+	if _world.city_map().has_stretch():
+		for tile in _world.city_map().rect_tiles(segment.tile_rect()):
+			if not _world.city_map().in_stretch(tile):
 				return false
 		return true
-	return not _city.map.recipe_bounds.has_area() \
-			or _city.map.recipe_bounds.encloses(segment.tile_rect())
+	var window := _world.city_map().recipe_window()
+	return not window.has_area() or window.encloses(segment.tile_rect())
 
-func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
-	var plans: Array[EventScheduler.Planned] = []
-	var map := _city.map
+func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
+	var plans: Array[EventPlan] = []
+	var map := _world.city_map()
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
-	var route := _city.streets().route_tree()
-	for entry: Dictionary in data.get("setup", {}).get("seals", []):
+	var route := _world.streets().route_tree()
+	for entry: Dictionary in _list(_setup(), "seals"):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.network.by_key(key)
+		var segment := _world.city_map().street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.seals: selected street leaves the authored extent")
 			continue
 		if not SealPlanner.may_seal(map, _walk_spec, route, segment):
 			errors.append("setup.seals: requires a production off-route, non-home, non-spine street")
 			continue
-		for candidate in SealPlanner.candidates():
-			if candidate.id != entry.candidate:
-				continue
-			if not SealPlanner.offers(candidate, _run.header.day, lined.has(key)):
-				errors.append("setup.seals: candidate is unavailable on this day or street")
-				continue
-			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
-			plans.append_array(sited.bodies)
-			if candidate.strength == SealPlanner.Strength.HARD:
-				map.hold_segment(key)
-			else:
-				sited.shut_the_sidewalk(map, true)
-				sited.shut_the_sidewalk(map, false)
+		var candidate := SealPlanner.candidate_named(str(entry.candidate))
+		if not candidate:
+			continue
+		if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key)):
+			errors.append("setup.seals: candidate is unavailable on this day or street")
+			continue
+		var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
+		plans.append_array(sited.bodies())
+		sited.stand_whole(map)
 	map.set_seal_tree_pits(emptied)
 	return plans
 
-func _event_plans(player_at: Vector2, errors: Array[String],
-		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
-	var setup: Dictionary = data.get("setup", {})
-	var plans: Array[EventScheduler.Planned] = []
-	var map := _city.map
-	var tree := _city.streets().route_tree()
+func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
+		standing: Array[EventPlan] = []) -> Array[EventPlan]:
+	var setup: Dictionary = _data.get("setup", {})
+	var plans: Array[EventPlan] = []
+	var map := _world.city_map()
+	# The scene's plan builder over the city's map, made here as the event manager makes the city's.
+	var builder := PlanBuilder.new(map, EventInstance.mover_for,
+			StreetInvalidation.room_around)
+	var tree := _world.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
-	if data.get("kind", "city") == "escape":
+	if _data.get("kind", "city") == "escape":
 		finale = FinalePlanner.route(map)
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
 		DayPlanner.plan_the_escape_city(map, finale,
-				_run.calendar.day_rng(_run.header.day, "finale"), _walk_spec, false)
+				_run.calendar().day_rng(_run.header().day(), "finale"), _walk_spec, builder, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")
 		# The finale plan validates the real escape routes. Its randomly chosen scenery is
 		# not an authored scene's event list.
-	elif _city.streets().region_plan():
-		for body in _city.streets().region_plan().wall_bodies:
-			if _inside_extent(body.position):
+	elif _world.streets().region_plan():
+		for body in _world.streets().region_plan().wall_plans():
+			if _inside_extent(body.placed_at()):
 				plans.append(body)
-		for body in _city.streets().region_plan().door_bodies:
-			doors.append(body.position)
-			if _inside_extent(body.position):
+		for body in _world.streets().region_plan().door_plans():
+			doors.append(body.placed_at())
+			if _inside_extent(body.placed_at()):
 				plans.append(body)
 	if not finale:
 		plans.append_array(_authored_seals(errors))
-	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+	for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var counts := {}
+	# The day's locations, laid out once: an authored row's tile names the one it stands in.
+	# A scene with no route tree lays its locations out under a corridor that answers none.
+	_route_tree = tree
+	_locations = DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
+	# The scene's one ground, made now that the authored seals and the home's holds are on the
+	# map.
+	_ground = EventScheduler.row_ground(map, corridor,
+			_walk_spec.keeps_the_home_streets_clear())
 	for entry: Dictionary in setup.get("events", []):
-		var at := position_of(entry.at, errors)
+		var at := _position_of(entry.at, errors)
 		if not errors.is_empty():
 			break
 		if not _inside_extent(at):
@@ -935,65 +1016,73 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		# (`EventCatalogue.heated()`), for the heated rungs no ordinary authored day reaches.
 		if entry.has("heat"):
 			def = EventCatalogue.heated(def, int(entry.heat))
-		var plan: EventScheduler.Planned
-		if def.role == EventDef.Role.MAST:
-			plan = _mast_placement(def, at, plans)
+		var plan: EventPlan
+		var why: Array[String] = []
+		if def.is_a_mast():
+			plan = _mast_placement(def, builder, at, plans)
 		elif finale:
-			plan = _finale_placement(def, at, player_at, finale, plans,
+			plan = _finale_placement(def, builder, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
-		elif def.spawn_mode_on(_run.header.day) != EventDef.SpawnMode.MAP:
+		elif def.spawn_mode_on(_run.header().day()) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
-			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
-			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(_run.header.day) or def.pursuit == null or route.is_empty() \
+			var heading: Vector2 = DIRECTIONS[_object(setup, "player").get("facing", "south")]
+			var route := director.crossing_ahead_of(player_at, heading, def)
+			if not def.available_on(_run.header().day()) or not def.pursues() or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
-					or not EventScheduler.clear_of_the_doors(at, route, doors, def.field_reach()):
+					or not DoorClearanceRule.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
-			plan = EventScheduler.Planned.new(def, at, route)
+			plan = EventPlan.new(def, at, route)
 		else:
-			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
-					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
+			plan = EventScheduler.recipe_placement(def, _run.header().day(), map, builder, at,
+					int(entry.get("route_seed", 1)), plans, corridor, _ground, doors, calm,
+					standing, _locations, why)
 		if not plan:
-			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
+			errors.append("event %s fails ordinary day/ground/route/spacing placement%s"
+					% [entry.name, (": " + "; ".join(why)) if not why.is_empty() else ""])
 			continue
-		counts[def.id] = int(counts.get(def.id, 0)) + 1
-		if def.max_per_day > 0 and int(counts[def.id]) > def.max_per_day:
+		counts[def.id()] = int(counts.get(def.id(), 0)) + 1
+		# A day holds no cap on a row its units draw (one of a row in a unit instead,
+		# `MarbleDraw`), so a row a unit draws is held to none here either.
+		var beside := ResistanceSteps.guarded_row_on(_run.header().day())
+		var capped := not def.is_drawn_by_units(_run.header().day(), beside) \
+				and def.most_in_a_day() > 0
+		if capped and int(counts[def.id()]) > def.most_in_a_day():
 			errors.append("event %s exceeds the ordinary per-day cap" % entry.name)
 		var requested := PackedVector2Array()
 		for point: Variant in entry.get("path", []):
-			requested.append(position_of(point, errors))
-		if not requested.is_empty() and requested != plan.path:
+			requested.append(_position_of(point, errors))
+		if not requested.is_empty() and requested != plan.walks():
 			errors.append("event %s.path is not its production route for route_seed" % entry.name)
-		for point in plan.path:
+		for point in plan.walks():
 			if not _inside_extent(point):
 				errors.append("event %s route leaves the authored extent" % entry.name)
-		plan.age = float(entry.get("age", 0))
-		if plan.age > plan.def.telegraph_time:
+		# Staged part-way through its telegraph. No row a recipe's placements accept comes again
+		# (`EventPlan.repeats()`), so the age is its one instance's.
+		var age := float(entry.get("age", 0))
+		plan.arrive_aged(age)
+		if age > plan.telegraphs_for():
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
-		plan.set_meta("recipe_name", entry.name)
+		_entry_of_plan[plan] = entry
 		if bool(entry.get("hold", false)):
 			if hold_refusal(def) != "":
 				errors.append(hold_refusal_message(str(entry.name), def))
-		plan.set_meta("recipe_hold", bool(entry.get("hold", false)))
 		if bool(entry.get("charging", false)):
-			if charging_refusal(plan.def) != "":
+			if charging_refusal(plan.row()) != "":
 				errors.append("event %s.charging is refused: row %s %s"
-						% [entry.name, plan.def.id, charging_refusal(plan.def)])
-		plan.set_meta("recipe_charging", bool(entry.get("charging", false)))
-		if bool(entry.get("relentless", false)) and relentless_refusal(plan.def) != "":
+						% [entry.name, plan.row_id(), charging_refusal(plan.row())])
+		if bool(entry.get("relentless", false)) and relentless_refusal(plan.row()) != "":
 			errors.append("event %s.relentless is refused: row %s %s"
-					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
-		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
-		if def.role == EventDef.Role.MAST:
+					% [entry.name, plan.row_id(), relentless_refusal(plan.row())])
+		if def.is_a_mast():
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
-			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \
-					else EventScheduler.added_mast_id(plan.position)
+			plan.stand_as_a_mast(str(entry.mast_id) if entry.has("mast_id") \
+					else DawnMasts.added_mast_id(plan.placed_at()))
 		plans.append(plan)
 	return plans
 
-## An authored mast stands where the day's masts may, by the checks `EventScheduler._place_masts()`
+## An authored mast stands where the day's masts may, by the checks `DawnMasts`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
 ## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand, which holds the doors this
@@ -1001,56 +1090,55 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 ## lists, measured at the reach of `EventCatalogue.mast()`, which is the authored row's own only while
 ## `loudspeaker` is the one mast row and has no heat response: a later one needs the door rule back
 ## here); it is not closed, not on a held street and not on the home block; and no body placed
-## before it is too near (`EventScheduler._room_around()`). It does not ask what
+## before it is too near (`StreetInvalidation.room_around()`). It does not ask what
 ## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
 ## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
-func _mast_placement(def: EventDef, at: Vector2,
-		prior: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
-	var map := _city.map
+func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
+		prior: Array[EventPlan]) -> EventPlan:
+	var map := _world.city_map()
 	var tile := map.world_to_tile(at)
-	if _run.header.day < Tuning.MAST_FIRST_DAY \
+	if _run.header().day() < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
 			or not MastSites.is_eligible(at, map):
 		return null
-	return EventScheduler.place_at(def, map, tile, RandomNumberGenerator.new(), prior)
+	return builder.place_at(def, tile, RandomNumberGenerator.new(), prior)
 
-## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.bag_rows`), open
-## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
-## director stands in for it.
-func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
-		finale: FinalePlanner.Plan, prior: Array[EventScheduler.Planned],
-		route_seed: int) -> EventScheduler.Planned:
-	if not _walk_spec.bag_rows.has(def.id):
+## The escape's exact actors use its own row variants (the walk's spec's
+## `DaySpec.walk_bag_rows()`), open streets, tree exclusion, spawn clearance and body spacing. No
+## ordinary-day corridor or offscreen director stands in for it.
+func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_at: Vector2,
+		finale: FinalePlanner.Plan, prior: Array[EventPlan],
+		route_seed: int) -> EventPlan:
+	var rows := _walk_spec.walk_bag_rows()
+	if not rows.has(def.id()):
 		return null
-	def = _walk_spec.bag_rows[def.id]
-	var map := _city.map
+	def = rows[def.id()]
+	var map := _world.city_map()
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
 		return null
 	var ground_ok := false
-	var trees := StreetTrees.footprint_tiles(map)
 	for segment in finale.open_streets:
-		if tile in EventScheduler.street_ground(map, segment, def, trees, player_at, {},
-				_walk_spec.holds_the_home_streets):
+		if tile in EventScheduler.street_ground(map, _ground, segment, def, player_at):
 			ground_ok = true
 			break
 	if not ground_ok:
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	return EventScheduler.place_at(def, map, tile, rng, prior)
+	return builder.place_at(def, tile, rng, prior)
 
 ## Overrides AuthoredScene.begin.
 func begin() -> void:
 	if not _start_the_task():
 		return
-	manifest["initial_actors"] = _snapshot()
+	_manifest["initial_actors"] = _snapshot()
 	_record_crowd("initial_crowd")
-	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
-	write_manifest()
-	if _config.recipe_validate:
+	print("[SceneRecipe] manifest " + JSON.stringify(_manifest, "", true))
+	_write_manifest()
+	if _config.validates_the_recipe():
 		_end_the_game(0)
 		return
 	if not _scripted:
@@ -1060,9 +1148,9 @@ func begin() -> void:
 	# reset its smoothed screen centre once the player's camera owns the viewport, which is true
 	# here. Settle that state before the excluded moving lead-in begins so a movie never records the
 	# camera travelling from its boot position toward an already-moving actor.
-	if data.get("playback", {}).get("settled_camera", false):
+	if _playback().get("settled_camera", false):
 		_settle_starting_camera()
-	var playback: Dictionary = data.get("playback", {})
+	var playback: Dictionary = _data.get("playback", {})
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
 	if camera.get("fixed", false):
@@ -1071,9 +1159,10 @@ func begin() -> void:
 	if camera.has("zoom_out"):
 		var zoom := ZoomOutCamera.new()
 		_zoom = zoom
-		zoom.simulation_clock = elapsed
+		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
-		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size)).grow(
+		var map := _world.city_map()
+		var bounds := map.tile_rect_to_world(Rect2i(Vector2i.ZERO, map.size_in_tiles())).grow(
 				float(camera.get("landscape_margin", 0)))
 		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))
@@ -1093,8 +1182,8 @@ func _settle_starting_camera() -> void:
 ## Puts `camera` on `player` with her facing lead, at once and with no smoothing left to arrive: the
 ## first view of a scripted scene is the player, not a camera travelling to her.
 static func _settle_camera_on(camera: Camera2D, player: Stroller) -> void:
-	camera.offset = Vector2(player.facing.x,
-			player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	camera.offset = Vector2(player.facing_direction().x,
+			player.facing_direction().y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 	camera.force_update_scroll()
 	camera.reset_smoothing()
 	camera.reset_physics_interpolation()
@@ -1124,28 +1213,28 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 ## walk straight away from her that a pursuer on foot leaves by, so every row whose departure is
 ## anything else is refused, each with its own reason.
 static func hold_refusal(def: EventDef) -> String:
-	if def.pursuit == null:
+	if not def.pursues():
 		return "does not pursue her, so it has no straight walk away to hold"
-	if def.vehicle != null:
+	if def.drives():
 		return "drives, and a car leaves by its own rules"
 	if def.investigates():
 		return "lets men out, who walk back to it"
-	if def.stops_where_it_arrives:
+	if def.parks_where_it_arrives():
 		return "parks where it arrives"
-	if def.aftermath.on_finish != "":
+	if def.leaves_behind() != "":
 		return "hands on to another event when it finishes"
 	if def.leaves_its_body():
 		return "leaves a barrier standing as a guard walks off"
 	return ""
 
 ## Why `charging` is refused for a row, or "" when it may charge from the first frame. `charging: true`
-## has a pursuer that waits for her (`EventDef.notice`) start the scene already set on her, as
-## the guard a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording
-## shows the charge rather than waiting for her to walk into its radius. A row that does not
-## wait has no radius to skip, and one that sets off beside her or runs its own line does not
-## charge by that rule.
+## has a pursuer that waits for her (`EventDef.waits_for_her()`) start the scene already set on
+## her, as the guard a task sends is (`EventInstance.notice_her_at()`), its notice spent: the
+## recording shows the charge rather than waiting for her to walk into its radius. A row that
+## does not wait has no radius to skip, and one that sets off beside her or runs its own line
+## does not charge by that rule.
 static func charging_refusal(def: EventDef) -> String:
-	if def.pursuit == null or def.notice_within() <= 0.0:
+	if not def.pursues() or def.notice_within() <= 0.0:
 		return "does not wait for her, so it has no radius to skip"
 	if def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 		return "sets off beside her, on its own clock"
@@ -1155,27 +1244,27 @@ static func charging_refusal(def: EventDef) -> String:
 ## pursuer from giving up because she ran (`_keep_the_pursuers_coming()`), so a row that does not
 ## pursue her has nothing to keep.
 static func relentless_refusal(def: EventDef) -> String:
-	if def.pursuit == null:
+	if not def.pursues():
 		return "does not pursue her, so it has no chase to keep going"
 	return ""
 
 ## The error a refused `hold` reports, naming the event and the row.
 static func hold_refusal_message(event_name: String, def: EventDef) -> String:
-	return "event %s.hold is refused: row %s %s" % [event_name, def.id, hold_refusal(def)]
+	return "event %s.hold is refused: row %s %s" % [event_name, def.id(), hold_refusal(def)]
 
 ## The pursuers the recipe asked never to give up (`relentless`).
 var _relentless: Array[EventInstance] = []
 
 ## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
-## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit.outrun_for`), right for a played
-## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
-## tick this clears that running clock, so it never gets near the limit; nothing else about the
-## chase changes, and the game's rule is untouched.
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit`'s clock of her running), right for a
+## played day, and a guard who stops coming half a second into a mother's run in a trailer shot.
+## Each physics tick this has it forget that running clock (`EventInstance.forget_her_run()`), so it
+## never gets near the limit; nothing else about the chase changes, and the game's rule is untouched.
 func _keep_the_pursuers_coming() -> void:
 	for instance in _relentless:
-		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving \
-				and instance.pursuit != null:
-			instance.pursuit.outrun_for = 0.0
+		if is_instance_valid(instance) and not instance.is_gone() \
+				and not instance.is_on_its_way_out():
+			instance.forget_her_run()
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
@@ -1195,44 +1284,42 @@ func _process(delta: float) -> void:
 	if get_tree().paused:
 		return
 	for instance in _held:
-		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
+		if not is_instance_valid(instance) or instance.is_gone() or not instance.is_on_its_way_out():
 			continue
-		if instance.departure.walks_a_way() \
-				or (instance.on_foot != null and instance.on_foot.walks_back()) \
-				or (instance.barrier_post and instance.barrier_post.has_left_its_body()):
-			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
-					% instance.def.id
-			manifest["stopped_tick"] = tick
-			push_error(manifest["playback_error"])
+		if not instance.walks_straight_away():
+			_manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
+					% instance.row_id()
+			_manifest["stopped_tick"] = _tick
+			push_error(_manifest["playback_error"])
 			if _active:
-				write_manifest()
+				_write_manifest()
 				_active = false
 				_end_the_game(1)
 			return
 		# Walked here, once a drawn frame, so its manager does not step it and it is drawn where this
 		# puts it rather than interpolated between physics ticks; its look still redraws it.
-		instance.held_by_hand = true
+		instance.hold_by_hand()
 		instance.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		instance.walk_on_by_hand(delta)
 
 func _physics_process(_delta: float) -> void:
 	_keep_the_pursuers_coming()
 	if _hand_played and not get_tree().paused:
-		tick += 1
+		_tick += 1
 		_bind_task_names()
 		return
 	if not _active:
 		return
 	if get_tree().paused:
-		manifest["playback_error"] = "gameplay paused before the authored action completed"
-		manifest["stopped_tick"] = tick
-		manifest["final_actors"] = _snapshot()
-		print("[SceneRecipe] playback stopped: " + JSON.stringify(manifest))
-		write_manifest()
+		_manifest["playback_error"] = "gameplay paused before the authored action completed"
+		_manifest["stopped_tick"] = _tick
+		_manifest["final_actors"] = _snapshot()
+		print("[SceneRecipe] playback stopped: " + JSON.stringify(_manifest))
+		_write_manifest()
 		_active = false
 		_end_the_game(1)
 		return
-	tick += 1
+	_tick += 1
 	_observe()
 	if not _active:
 		return
@@ -1240,19 +1327,20 @@ func _physics_process(_delta: float) -> void:
 	_watch_the_crowd()
 	if _draft:
 		var step := _resistance.current_step() if _resistance else null
-		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
+		var walking_home: Node2D = _named.get("rider") if step and not step.is_pickup \
 				and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR else null
-		_draft.record(_player, _city, walking_home if is_instance_valid(walking_home) else null)
-	if _capture_tick >= 0 and tick >= _capture_tick:
+		_draft.record(_player, _world,
+				walking_home if is_instance_valid(walking_home) else null)
+	if _capture_tick >= 0 and _tick >= _capture_tick:
 		prepare_capture()
 		return
-	if tick >= _duration_ticks:
+	if _tick >= _duration_ticks:
 		_active = false
 		_release_input()
-		manifest["playback_complete"] = true
-		manifest["final_actors"] = _snapshot()
+		_manifest["playback_complete"] = true
+		_manifest["final_actors"] = _snapshot()
 		_record_crowd("final_crowd")
-		write_manifest()
+		_write_manifest()
 		if _draft:
 			_end_the_game(_write_the_draft())
 			return
@@ -1261,66 +1349,74 @@ func _physics_process(_delta: float) -> void:
 	_apply_input()
 
 func _apply_input() -> void:
-	WalkPlan.press(_plan.input_at(tick))
+	WalkPlan.press(_plan.input_at(_tick))
 
 ## Overrides AuthoredScene.elapsed.
 func elapsed() -> float:
-	return float(tick) / Engine.physics_ticks_per_second
+	return float(_tick) / Engine.physics_ticks_per_second
 
 ## Hold the exact simulated moment while the screenshot draws, even with a covered window.
 ##
 ## Overrides AuthoredScene.prepare_capture.
 func prepare_capture() -> void:
-	if manifest.has("capture_tick"):
+	if _manifest.has("capture_tick"):
 		return
 	if _zoom:
-		_zoom._process(0)
-		_zoom.set_process(false)
+		_zoom.hold_still()
 	var camera := get_viewport().get_camera_2d()
 	if camera:
 		camera.force_update_scroll()
-		manifest["capture_camera"] = {"position": [camera.global_position.x, camera.global_position.y],
+		_manifest["capture_camera"] = {"position": [camera.global_position.x, camera.global_position.y],
 				"zoom": camera.zoom.x}
-	manifest["capture_tick"] = tick
-	manifest["capture_actors"] = _snapshot()
+	_manifest["capture_tick"] = _tick
+	_manifest["capture_actors"] = _snapshot()
 	_record_crowd("capture_crowd")
-	write_manifest()
+	_write_manifest()
 	_active = false
 	get_tree().paused = true
 
 func _record_crowd(key: String) -> void:
-	if _city and _city.crowd:
-		manifest[key] = _city.crowd.recipe_coverage()
-		manifest[key.trim_suffix("_crowd") + "_activity"] = activity_snapshot()
+	if _world and _world.crowd():
+		_manifest[key] = _world.crowd().recipe_coverage()
+		_manifest[key.trim_suffix("_crowd") + "_activity"] = _activity_snapshot()
 
 ## Counts only live subjects whose ground positions are in the current picture. A visual review
 ## still checks occlusion and legibility; whole-field totals alone cannot establish a busy view.
-func activity_snapshot() -> Dictionary:
+func _activity_snapshot() -> Dictionary:
+	var walker_streets := {}
+	var visible_events := {}
 	var result := {"visible_walkers": 0, "visible_cars": 0, "moving_crowd": 0,
 			"walkers_left": 0, "walkers_right": 0,
-			"walker_streets": {},
-			"visible_events": {}}
+			"walker_streets": walker_streets,
+			"visible_events": visible_events}
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
-	for agent in _city.crowd.agents():
+	for agent in _world.crowd().agents():
 		if not view.has_point(transform * agent.global_position):
 			continue
-		var key := "visible_cars" if agent.kind == CrowdAgent.Kind.CAR else "visible_walkers"
+		var key := "visible_cars" if agent.is_car() else "visible_walkers"
 		result[key] += 1
-		if agent.kind == CrowdAgent.Kind.WALKER:
-			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.get("_corridor")]
-			if not result.walker_streets.has(street):
-				result.walker_streets[street] = {"walkers": 0, "moving": 0}
-			result.walker_streets[street].walkers += 1
-			result.walker_streets[street].moving += int(not agent.velocity().is_zero_approx())
+		if not agent.is_car():
+			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h",
+					agent.lane().corridor_index()]
+			if not walker_streets.has(street):
+				walker_streets[street] = {"walkers": 0, "moving": 0}
+			var counts: Dictionary = walker_streets[street]
+			counts["walkers"] = int(counts["walkers"]) + 1
+			counts["moving"] = int(counts["moving"]) + int(not agent.velocity().is_zero_approx())
 			result["walkers_left" if (transform * agent.global_position).x < view.size.x * 0.5
 					else "walkers_right"] += 1
 		if not agent.velocity().is_zero_approx():
 			result.moving_crowd += 1
-	for event in _city.events.instances():
+	for event in _world.events().instances():
 		if view.has_point(transform * event.global_position):
-			result.visible_events[event.def.id] = int(result.visible_events.get(event.def.id, 0)) + 1
+			visible_events[event.row_id()] = int(visible_events.get(event.row_id(), 0)) + 1
 	return result
+
+## Whether `event` is chasing her now: a pursuer whose warning has run and that is still in the
+## world. What the manifest's `pursuing` records and the `pursuing` observation asks.
+static func _is_pursuing(event: EventInstance) -> bool:
+	return event.pursues() and event.is_past_its_warning()
 
 func _release_input() -> void:
 	TouchControls.set_axis(&"move_left", &"move_right", 0)
@@ -1333,37 +1429,40 @@ func _exit_tree() -> void:
 
 func _snapshot() -> Dictionary:
 	var result := {}
-	for label: String in named:
-		if not is_instance_valid(named[label]):
+	for label: String in _named:
+		if not is_instance_valid(_named[label]):
 			result[label] = {"retired": true}
 			continue
-		var actor: Node2D = named[label]
+		var actor: Node2D = _named[label]
 		var at := actor.global_position
 		result[label] = {"position": [snappedf(at.x, 0.0001), snappedf(at.y, 0.0001)]}
 		if actor is Stroller:
-			result[label]["carrying"] = actor.carrying
-			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
-			result[label]["gait_frame"] = actor.mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
+			var stroller := actor as Stroller
+			result[label]["carrying"] = stroller.is_carrying()
+			result[label]["speed"] = snappedf(stroller.current_speed(), 0.0001)
+			result[label]["gait_frame"] = stroller.mother_gait_frame(
+					stroller.current_speed() / Tuning.WALK_SPEED)
 		elif actor is ContactPoint:
-			result[label]["done"] = actor.is_done
+			result[label]["done"] = (actor as ContactPoint).is_finished()
 		elif actor is EventInstance:
-			result[label]["row"] = actor.def.id
-			result[label]["telegraphing"] = actor.is_telegraphing()
-			result[label]["pursuing"] = actor.def.pursuit != null and not actor.is_waiting() \
-					and not actor.is_telegraphing() and not actor.is_finished and not actor.is_leaving
+			var event := actor as EventInstance
+			result[label]["row"] = event.row_id()
+			result[label]["telegraphing"] = event.is_telegraphing()
+			result[label]["pursuing"] = _is_pursuing(event)
 	return result
 
 func _observe() -> void:
 	_bind_task_names()
+	var observed: Array = _manifest["observations"]
 	for check: Dictionary in _observations:
 		if check.condition == "appeared" and not _appeared.has(check.subject):
-			var watched := subject_of(str(check.subject))
+			var watched := _subject_of(str(check.subject))
 			if watched and _she_can_see(watched):
-				_appeared[check.subject] = tick
+				_appeared[check.subject] = _tick
 	for check: Dictionary in _observations:
-		if int(check.tick) != tick:
+		if int(check.tick) != _tick:
 			continue
-		var actor := subject_of(str(check.subject))
+		var actor := _subject_of(str(check.subject))
 		var passed := actor != null
 		if check.condition == "appeared":
 			# Asked of the past, so the subject may be gone by now: a cat that crossed and left.
@@ -1380,26 +1479,23 @@ func _observe() -> void:
 					passed = _last_positions.has(check.subject) and actor.global_position.distance_to(
 							_last_positions[check.subject]) > 0.01
 				"running":
-					passed = actor is Stroller and actor.current_speed() > Tuning.WALK_SPEED
+					passed = actor is Stroller and (actor as Stroller).current_speed() > Tuning.WALK_SPEED
 				"carrying":
-					passed = actor is Stroller and actor.carrying
+					passed = actor is Stroller and (actor as Stroller).is_carrying()
 				"asleep", "awake":
 					# The baby's own state, the one `Baby` sets by the game's sleep rule and the
 					# pram's zzz is drawn from -- never a recipe-authored indicator.
 					var baby := actor.get_node_or_null("Baby") as Baby if actor is Stroller else null
-					passed = baby != null and (baby.state == GameEnums.BabyState.ASLEEP) \
-							== (check.condition == "asleep")
+					passed = baby != null and baby.is_asleep() == (check.condition == "asleep")
 				"pursuing":
-					passed = actor is EventInstance and actor.def.pursuit != null \
-							and not actor.is_telegraphing() and not actor.is_waiting() \
-							and not actor.is_finished and not actor.is_leaving
+					passed = actor is EventInstance and _is_pursuing(actor as EventInstance)
 				"near_player":
 					# What ties one actor to her: a pursuer that closes on her stays this close.
 					passed = is_instance_valid(_player) and actor.global_position.distance_to(
 							_player.global_position) <= float(check.distance)
 				"near", "beyond":
 					var errors: Array[String] = []
-					var target := position_of(check.at, errors)
+					var target := _position_of(check.at, errors)
 					var distance := actor.global_position.distance_to(target)
 					passed = errors.is_empty() and (distance <= float(check.distance)
 							if check.condition == "near" else distance >= float(check.distance))
@@ -1410,11 +1506,13 @@ func _observe() -> void:
 					passed = not _box_in_either_view(actor.global_position,
 							Vector2(float(check.half[0]), float(check.half[1])))
 				"offered":
-					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
+					passed = actor is ContactPoint and not (actor as ContactPoint).is_finished() \
+							and _resistance != null \
 							and _resistance.contact() == actor
 				"done":
-					passed = actor is ContactPoint and actor.is_done \
-							and actor.step.index in _run.resistance.completed_steps
+					passed = actor is ContactPoint and (actor as ContactPoint).is_finished() \
+							and (actor as ContactPoint).task_step().index \
+							in _run.resistance().completed_steps()
 				"arrowed":
 					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
 							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)
@@ -1428,24 +1526,24 @@ func _observe() -> void:
 		if is_instance_valid(_player):
 			record["player_at"] = [snappedf(_player.global_position.x, 0.01),
 					snappedf(_player.global_position.y, 0.01)]
-		if actor and not named.has(check.subject):
+		if actor and not _named.has(check.subject):
 			record["state"] = {"position": [snappedf(actor.global_position.x, 0.0001),
 					snappedf(actor.global_position.y, 0.0001)]}
-		manifest.observations.append(record)
+		observed.append(record)
 		if not passed and _draft:
 			print("[SceneRecipe] draft: unmet on the whole city, walked on: " + JSON.stringify(record))
 		elif not passed:
 			print("[SceneRecipe] unmet observation: " + JSON.stringify(record))
-			write_manifest()
+			_write_manifest()
 			_active = false
 			_end_the_game(1)
-	for label: String in named:
-		if is_instance_valid(named[label]):
-			_last_positions[label] = (named[label] as Node2D).global_position
+	for label: String in _named:
+		if is_instance_valid(_named[label]):
+			_last_positions[label] = (_named[label] as Node2D).global_position
 	for check: Dictionary in _observations:
 		var label := str(check.subject)
 		if label.begins_with(ROW_SUBJECT):
-			var summoned := subject_of(label)
+			var summoned := _subject_of(label)
 			if summoned:
 				_last_positions[label] = summoned.global_position
 
@@ -1469,8 +1567,9 @@ func _in_the_picture(at: Vector2) -> bool:
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var covering := _city.events.world.visible.controls if _city else null
-	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
+	var covering := _world.events().visible_view().screen_cover() if _world else null
+	var box: Rect2 = (actor as EventInstance).drawn_box() if actor is EventInstance \
+			else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
 	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0
 
@@ -1490,22 +1589,22 @@ func _camera_world_rect() -> Rect2:
 ## How many walkers and cars are moving in the picture now.
 func _moving_in_the_picture() -> Dictionary:
 	var counts := {"walkers": 0, "cars": 0}
-	if not _city or not _city.crowd:
+	if not _world or not _world.crowd():
 		return counts
-	for agent in _city.crowd.agents():
+	for agent in _world.crowd().agents():
 		if not agent.velocity().is_zero_approx() and _in_the_picture(agent.global_position):
-			counts["cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"] += 1
+			counts["cars" if agent.is_car() else "walkers"] += 1
 	return counts
 
 ## The node an observation names: a named actor, or for `row:<id>` the first live, unfinished
 ## instance of that catalogue row in the world. Null when there is none.
-func subject_of(label: String) -> Node2D:
+func _subject_of(label: String) -> Node2D:
 	if not label.begins_with(ROW_SUBJECT):
-		return named[label] if is_instance_valid(named.get(label)) else null
-	if not _city or not _city.events:
+		return _named[label] if is_instance_valid(_named.get(label)) else null
+	if not _world or not _world.events():
 		return null
-	for instance in _city.events.instances():
-		if instance.def.id == label.trim_prefix(ROW_SUBJECT) and not instance.is_finished:
+	for instance in _world.events().instances():
+		if instance.row_id() == label.trim_prefix(ROW_SUBJECT) and not instance.is_gone():
 			return instance
 	return null
 
@@ -1543,17 +1642,17 @@ func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 var _in_the_void := {}
 
 func _watch_the_void() -> void:
-	if not _city or not _city.map.has_stretch():
+	if not _world or not _world.city_map().has_stretch():
 		return
-	for instance in _city.events.instances():
+	for instance in _world.events().instances():
 		if _in_the_void.has(instance):
 			continue
-		var tile := _city.map.world_to_tile(instance.global_position)
-		if instance.is_waiting() and _city.map.is_void(tile):
+		var tile := _world.city_map().world_to_tile(instance.global_position)
+		if instance.is_waiting() and _world.city_map().is_void(tile):
 			_in_the_void[instance] = true
-			var found: Array = manifest.get("in_the_void", [])
-			found.append({"tile": [tile.x, tile.y], "row": instance.def.id, "tick": tick})
-			manifest["in_the_void"] = found
+			var found: Array = _manifest.get("in_the_void", [])
+			found.append({"tile": [tile.x, tile.y], "row": instance.row_id(), "tick": _tick})
+			_manifest["in_the_void"] = found
 
 ## Where each of the crowd stood last tick, to catch one that leaves or enters in view.
 var _crowd_was := {}
@@ -1565,24 +1664,24 @@ const PICTURE_REACH := float(Tuning.TILE_SIZE)
 
 ## **Nothing in a stretch's crowd appears or vanishes where she can see it** *(the player's rule,
 ## PR #597)*: a walker or car that moves further in one tick than any of them walks or drives — a
-## recycle — while it stood, or now stands, in either view (`CrowdAgent._beyond_every_view()`) is
+## recycle — while it stood, or now stands, in either view (`CrowdAgent.beyond_every_view()`) is
 ## recorded in the manifest's `seen_to_jump`, which `tests/test_scene_recipe_stretch_crowd.gd` holds
 ## empty over every stretch scene.
 func _watch_the_crowd() -> void:
-	if not _city or not _city.map.has_stretch() or not _city.crowd:
+	if not _world or not _world.city_map().has_stretch() or not _world.crowd():
 		return
-	for agent in _city.crowd.agents():
+	for agent in _world.crowd().agents():
 		var at := agent.global_position
 		if _crowd_was.has(agent):
 			var was: Vector2 = _crowd_was[agent]
 			if was.distance_to(at) > 2.0 * Tuning.TILE_SIZE \
-					and not (agent._beyond_every_view(was, PICTURE_REACH)
-					and agent._beyond_every_view(at, PICTURE_REACH)):
-				var jumps: Array = manifest.get("seen_to_jump", [])
-				jumps.append({"tick": tick, "from": [snappedf(was.x, 0.1), snappedf(was.y, 0.1)],
+					and not (agent.beyond_every_view(was, PICTURE_REACH)
+					and agent.beyond_every_view(at, PICTURE_REACH)):
+				var jumps: Array = _manifest.get("seen_to_jump", [])
+				jumps.append({"tick": _tick, "from": [snappedf(was.x, 0.1), snappedf(was.y, 0.1)],
 						"to": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)],
-						"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker"})
-				manifest["seen_to_jump"] = jumps
+						"kind": "car" if agent.is_car() else "walker"})
+				_manifest["seen_to_jump"] = jumps
 		_crowd_was[agent] = at
 
 ## `--recipe-draft FILE`: the stretch the walk just took, written as a recipe (`SceneRecipeDraft`).
@@ -1591,27 +1690,31 @@ func _write_the_draft() -> int:
 	var problems: Array[String] = []
 	var pinned: Array[Vector2] = []
 	var errors: Array[String] = []
-	for field: String in data.get("setup", {}).get("task", {}):
-		pinned.append(position_of(data.setup.task[field], errors))
-	var drafted := _draft.compose(_written, _run, _city, start_position(), pinned, problems)
+	for field: String in _object(_setup(), "task"):
+		pinned.append(_position_of(_data.setup.task[field], errors))
+	var drafted := _draft.compose(_written, _run, _world, _start_position(),
+			pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
-	var path := _config.recipe_draft_path
+	var path := _config.recipe_draft_path()
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		print("[SceneRecipe] cannot write the draft: " + path)
 		return 1
 	file.store_string(SceneRecipeDraft.to_json(drafted) + "\n")
 	file.close()
-	var stretch: Dictionary = drafted.stretch
+	var stretch: Dictionary = drafted["stretch"]
+	var drafted_setup: Dictionary = drafted["setup"]
 	var tiles := 0
-	for type: String in stretch.tiles:
-		for run: Array in stretch.tiles[type]:
+	var runs_by_type: Dictionary = stretch["tiles"]
+	for type: String in runs_by_type:
+		for run: Array in runs_by_type[type]:
 			tiles += int(run[2]) - int(run[1]) + 1
 	print("[SceneRecipe] draft written to %s: %d tiles, %d buildings, %d street trees, %d props, %d litter, %d cracks, %d posters, %d walkers and cars"
-			% [path, tiles, stretch.buildings.size(), stretch.trees.size(), stretch.props.size(),
-			stretch.litter.size(), stretch.cracks.size(), drafted.setup.posters.size(),
-			drafted.setup.actors.size()])
+			% [path, tiles, _list(stretch, "buildings").size(), _list(stretch, "trees").size(),
+			_list(stretch, "props").size(), _list(stretch, "litter").size(),
+			_list(stretch, "cracks").size(), _list(drafted_setup, "posters").size(),
+			_list(drafted_setup, "actors").size()])
 	return 0
 
 ## An escape section of this recipe was lost and is about to start again. A scripted recipe has
@@ -1622,8 +1725,8 @@ func _write_the_draft() -> int:
 func lose_the_attempt() -> bool:
 	if not _scripted:
 		return false
-	manifest["playback_error"] = "the authored escape attempt was lost"
-	write_manifest()
+	_manifest["playback_error"] = "the authored escape attempt was lost"
+	_write_manifest()
 	_active = false
 	_end_the_game(1)
 	return true
@@ -1635,8 +1738,8 @@ func _end_the_game(code: int) -> void:
 		return
 	get_tree().quit(code)
 
-func write_manifest() -> void:
-	var path := _config.recipe_manifest_path
+func _write_manifest() -> void:
+	var path := _config.recipe_manifest_path()
 	if path.is_empty():
 		return
 	var file := FileAccess.open(path, FileAccess.WRITE)
@@ -1644,4 +1747,4 @@ func write_manifest() -> void:
 		print("[SceneRecipe] cannot write manifest: " + path)
 		_end_the_game(1)
 		return
-	file.store_string(JSON.stringify(manifest, "\t", true) + "\n")
+	file.store_string(JSON.stringify(_manifest, "\t", true) + "\n")

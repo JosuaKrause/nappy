@@ -16,7 +16,7 @@ extends RefCounted
 const SEEDS := 8
 const SAMPLE_DAYS := [1, 5, 8, 11, 14]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_events_per_street_by_band()
 	t.check(true, "zz_m64_density probe ran")
 
@@ -33,9 +33,9 @@ func _events_per_street_by_band() -> void:
 
 	for i in SEEDS:
 		var map := CityGenerator.generate(90210 + i * 31)
-		for day in SAMPLE_DAYS:
+		for day: int in SAMPLE_DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
@@ -49,26 +49,25 @@ func _events_per_street_by_band() -> void:
 				seen[key] = true
 				streets[mini(int(depths[key]), 2)] += 1
 			# A street the tree never reached is as far out as this counts.
-			for segment in map.network.segments():
+			for segment in map.street_network().segments():
 				if not seen.has(segment.key()):
 					streets[2] += 1
 
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("zz_m64d:%d:%d" % [map.seed_used, day])
+			rng.seed = hash("zz_m64d:%d:%d" % [map.city_seed(), day])
 			var consumed: Array[String] = []
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), consumed, [], tree).placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
 				if not plan.is_placed():
 					continue
 				placed_total += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				# Only a thing standing on a street can be met by somebody walking down it.
-				if not map.network.segment_containing(tile):
+				if not map.street_network().segment_containing(tile):
 					continue
 				on_street_total += 1
 				var band := mini(corridor.depth(tile), 2)
 				events[band] += 1
-				if plan.role == GameEnums.BlockerRole.FRICTION:
+				if plan.role() == GameEnums.BlockerRole.FRICTION:
 					friction[band] += 1
 
 	var d := maxf(1.0, float(days))

@@ -27,7 +27,7 @@ native scale in the `-native.png` sheet and 3x in the `-3x.png` sheet — the sa
   a walker's is).
 - `birds-{native,3x}.png` — a pigeon's raised and lowered wing phase. Each bird holds its own sector
   from its own `heading`, independent of every other bird in the flock — the two rows here replicate
-  `_draw_birds()`'s own `bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)`
+  `_draw_birds()`'s own `_held_sectors[i] = EightDirection.update(_held_sectors[i], bird.heading)`
   directly on eight synthetic headings, since a flock needs a canvas to draw at all.
 
 **Not shown**: `mouse` (deliberately unbound — see `docs/GRAPHICS.md`'s row and

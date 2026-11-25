@@ -16,10 +16,18 @@ extends RefCounted
 const _LINE_FORMAT := "%6.1f  %-8s %s"
 
 ## Every line written this run, in order. Kept in memory as well as on disk so a test can
-## assert on the log without a file, and so `lines_since()` can answer questions cheaply.
-var lines: Array[String] = []
+## assert on the log without a file (`recorded_lines()`).
+var _lines: Array[String] = []
 ## Where it is being written, or "" for an in-memory log.
-var path := ""
+var _path := ""
+
+## Every line written this run, in order, as a copy.
+func recorded_lines() -> Array[String]:
+	return _lines.duplicate()
+
+## Where the log is being written, or "" for an in-memory log.
+func file_path() -> String:
+	return _path
 
 var _file: FileAccess
 
@@ -33,7 +41,7 @@ func _init(to_path: String = "") -> void:
 	if not _file:
 		push_warning("telemetry: cannot write %s (%d)" % [to_path, FileAccess.get_open_error()])
 		return
-	path = to_path
+	_path = to_path
 
 ## A line with no timestamp: the run preamble and each day's header. Blank `text` writes a
 ## blank line, which is the only separator the format has.
@@ -53,7 +61,7 @@ func close() -> void:
 		_file = null
 
 func _write(line: String) -> void:
-	lines.append(line)
+	_lines.append(line)
 	if not _file:
 		return
 	_file.store_line(line)

@@ -6,7 +6,7 @@ extends RefCounted
 ## tutorial dog may appear later but not as tutorial."* `EventDef.spawn_mode_on(day)` is what
 ## switches: `AHEAD_OF_PLAYER` through the teaching day, `MAP` after it, so the row is placed on a
 ## tile and met by routing into it, the way `alley_robbery` is, rather than sited by the director on
-## her heading or off it. See `EventScheduler._place_one()` and `EventDirector.start_day()`.
+## her heading or off it. See `DawnDraw` and `EventDirector.start_day()`.
 ##
 ## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
 ## her rather than announcing itself the moment it streams in — `EventDef.for_day(day)`,
@@ -16,16 +16,16 @@ extends RefCounted
 ## too")* — `EventDirector._owe_the_sprinkled_dog()` now and then sends the same unmodified def
 ## off her heading again, unguaranteed and without the tip.
 ##
-## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
-## seed's city is generated once in the test process and every case is handed a copy of its own,
-## the same city `CityGenerator.generate()` builds for the seed.
+## **The director is handed a hand-drawn map of streets** (`tests/fixtures/street_map.gd`): it sites
+## what it hands out on the streets under and ahead of her and reads nothing else of a city, so no
+## generated city is built for the cases here. Where the scheduler places the row past the
+## teaching day is `EventScheduler`'s answer and not the director's, so that case is in
+## `tests/test_events_scheduler.gd`.
 
-const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_day_3_is_still_sited_on_her_heading(t)
-	_test_day_4_is_a_map_placement(t)
 	_test_day_4_is_never_owed_to_the_director(t)
 	_test_the_notice_switches_after_the_teaching_day(t)
 	_test_day_4_dog_waits_until_she_is_in_its_field(t)
@@ -36,8 +36,9 @@ func run(t) -> void:
 	_test_no_other_day_hands_out_the_lesson(t)
 	_test_a_sprinkled_dog_is_never_the_lesson(t)
 
+## The streets she walks and the director sites on.
 func _map() -> CityMap:
-	return MapCache.of(4242)
+	return StreetMap.full()
 
 ## Walks a director until it hands out `charging_dog`, or returns two `Vector2.INF`s if a real
 ## street's worth of walking never gets one. `due()` sites relative to wherever she has walked to
@@ -61,14 +62,14 @@ func _site_the_dog(director: EventDirector, at: Vector2, heading: Vector2) -> Ar
 
 ## Day 3: unavoidable, on her exact line — `_teach_the_run()` puts it at the head of the queue and
 ## nothing about its siting has changed.
-func _test_day_3_is_still_sited_on_her_heading(t) -> void:
+func _test_day_3_is_still_sited_on_her_heading(t: TestRunner) -> void:
 	var map := _map()
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var def := EventCatalogue.by_id("charging_dog")
-	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
-	director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
+	var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
+	director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
@@ -83,30 +84,6 @@ func _test_day_3_is_still_sited_on_her_heading(t) -> void:
 	t.check(direction.dot(north) > 0.99,
 			"and it is on her exact heading — the lesson has to be unavoidable")
 
-## Day 4 and every day after: the row is placed on the map at dawn, the way `alley_robbery` is,
-## rather than left for the director to site. Walked over the planned placements of several seeds
-## and every day the row is eligible on past the teaching day, the same reason `alley_robbery`'s own
-## required-alley test is over placements rather than the pool directly: a def whose field answers
-## `MAP` and a scheduler that still refuses to place it are two different bugs.
-func _test_day_4_is_a_map_placement(t) -> void:
-	var checked := 0
-	for run_seed in [4242, 2102613802, 90210]:
-		var map := MapCache.of(run_seed)
-		var consumed: Array[String] = []
-		for day in range(Tuning.RUN_TAUGHT_DAY + 1, 15):
-			var tree := RouteTree.for_day(map, day)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), consumed, [], tree).placements():
-				if plan.def.id != "charging_dog":
-					continue
-				checked += 1
-				t.check(plan.is_placed(),
-						"seed %d day %d: 'charging_dog' has a position, not a director siting"
-						% [run_seed, day])
-	t.check(checked > 0, "some run placed charging_dog past the teaching day to check (%d)" % checked)
-
 ## And the other half, confirmed at the director: a `MAP`-mode plan is never turned into an owed
 ## encounter by `start_day()`'s own per-plan loop, so it can never be sited on her heading, or
 ## anywhere else the director reaches for, *by that mechanism*. Compared against an identical rng
@@ -115,20 +92,22 @@ func _test_day_4_is_a_map_placement(t) -> void:
 ## `EventDirector` can legitimately owe the row anyway — the two calls share a seed so the
 ## sprinkle's own roll, which reads nothing from `plans`, comes out identically either way, and
 ## the only thing left to differ is what the plan itself contributed.
-func _test_day_4_is_never_owed_to_the_director(t) -> void:
+func _test_day_4_is_never_owed_to_the_director(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.by_id("charging_dog")
-	for seed in [3, 17, 29, 41, 53]:
+	for seed: int in [3, 17, 29, 41, 53]:
 		var with_plan := EventDirector.new(map)
 		var rng_a := RandomNumberGenerator.new()
 		rng_a.seed = seed
-		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
-		with_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, plans, rng_a)
+		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
+		with_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, plans, rng_a,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 
 		var without_plan := EventDirector.new(map)
 		var rng_b := RandomNumberGenerator.new()
 		rng_b.seed = seed
-		without_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng_b)
+		without_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng_b,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 
 		t.check(with_plan.owed() == without_plan.owed(),
 				("seed %d: a MAP-mode plan changes nothing about what is owed — only the sprinkle, " +
@@ -137,27 +116,27 @@ func _test_day_4_is_never_owed_to_the_director(t) -> void:
 ## The notice a placement on a day is handed, the same question `_test_spawn_mode_switches_after_the_teaching_day`
 ## asks of `spawn_mode_on()` — `EventDef.for_day()` carries the same day-keyed switch, for the trigger
 ## rather than the siting.
-func _test_the_notice_switches_after_the_teaching_day(t) -> void:
+func _test_the_notice_switches_after_the_teaching_day(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def != null, "charging_dog is in the catalogue")
 	if not def:
 		return
-	t.check(def.for_day(Tuning.RUN_TAUGHT_DAY).notice == null,
+	t.check(not def.for_day(Tuning.RUN_TAUGHT_DAY).waits_for_her(),
 			"on the teaching day itself it still charges the moment it streams in")
-	var waiting: float = def.for_day(Tuning.RUN_TAUGHT_DAY + 1).notice.within
+	var waiting: float = def.for_day(Tuning.RUN_TAUGHT_DAY + 1).notice_within()
 	t.check(waiting > 0.0, "the day after, it waits for her to come within its own field")
-	var standoff := PursuitSpec.standoff(def.chase_speed(), def.inner_radius)
-	t.check(waiting < def.outer_radius and waiting > standoff,
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.core_within())
+	t.check(waiting < def.heard_within() and waiting > standoff,
 			"inside its own outer radius, an 'on sight' band before the trigger — alley_robbery's " +
 					"shape — and past the stand-off, or the notice would be spent standing still")
-	t.check(is_equal_approx(def.for_day(Tuning.RUN_TAUGHT_DAY + 11).notice.within, waiting),
+	t.check(is_equal_approx(def.for_day(Tuning.RUN_TAUGHT_DAY + 11).notice_within(), waiting),
 			"and it stays the waiting shape for every day after that")
 
 ## The waiting itself, on the copy `EventDef.for_day()` hands a `MAP` placement past the
 ## switch. `EventInstance` never asks a day of anybody — this is where the day answer actually has
-## to arrive: a different `EventDef`, `EventDef.notice` already set, never a mutation of the one
-## day 3's own dog reads.
-func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
+## to arrive: a different `EventDef` that already waits for her (`EventDef.waits_for_her()`),
+## never a mutation of the one day 3's own dog reads.
+func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("charging_dog")
 	if not cold:
 		return
@@ -165,32 +144,37 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 	var hot := cold.for_day(day)
 	t.check(hot.notice_within() > 0.0, "the day-4 copy carries a real trigger")
 
+	var her := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(hot, Vector2.ZERO)
-	# Inside the field (`outer_radius`) but outside the trigger (`EventDef.notice`) — the "on sight"
-	# band alley_robbery's own shape leaves room for.
-	dog.excitement.set_player_at(Vector2((hot.outer_radius + hot.notice_within()) * 0.5, 0.0))
+	dog.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
+	# Inside the field (outer radius) but outside the trigger (`EventDef.notice_within()`) — the
+	# "on sight" band alley_robbery's own shape leaves room for.
+	her.tell(Vector2((hot.heard_within() + hot.notice_within()) * 0.5, 0.0))
 	dog.step(STEP)
 	t.check(dog.is_waiting() and not dog.is_telegraphing(),
 			"inside its own field but outside the trigger, a day-4 dog has not noticed her yet")
 
-	dog.excitement.set_player_at(Vector2(hot.notice_within() - 10.0, 0.0))
+	her.tell(Vector2(hot.notice_within() - 10.0, 0.0))
 	dog.step(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
 			"inside the trigger, it notices her and starts its telegraph")
 	dog.free()
 
-## Day 3's own dog, unchanged: the raw catalogue def, `EventDef.notice` still 0.0, so it is already
-## telegraphing its charge from the first frame, wherever she happens to be standing. The same fact
-## `tests/test_danger.gd` checks from the caret's side; this is the trigger's own.
-func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
+## Day 3's own dog, unchanged: the raw catalogue def, `EventDef.notice_within()` still
+## 0.0, so it is already telegraphing its charge from the first frame, wherever she
+## happens to be standing. The same fact `tests/test_danger.gd` checks from the caret's
+## side; this is the trigger's own.
+func _test_day_3_dog_still_charges_the_moment_it_streams_in(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	if not def:
 		return
 	t.check(def.notice_within() <= 0.0, "day 3's own def is untouched by the switch")
+	var her := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(def, Vector2.ZERO)
-	dog.excitement.set_player_at(Vector2(1000.0, 1000.0))
+	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
+	her.tell(Vector2(1000.0, 1000.0))
 	dog.step(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
 			"a day-3 dog is already telegraphing its charge however far away she is standing")
@@ -201,7 +185,7 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
 ## streams in rather than waiting the way a `MAP` placement on the same day would. Swept over many
 ## seeds because "now and then" is a probability, not a certainty on any one day: both outcomes
 ## have to actually occur somewhere in the sweep, or the roll is dead code.
-func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
+func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t: TestRunner) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	var at := CrowdLanes.arterial_pavement(map)
@@ -212,7 +196,7 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
-		director.start_day(day, [], rng)
+		director.start_day(day, [], rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 		if director.owed() > 0:
 			offered += 1
 			var owed := director.owed()
@@ -221,7 +205,7 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 			t.check(handed.size() == owed, "seed %d: all %d the day owes are handed out (%d)"
 					% [seed, owed, handed.size()])
 			for row: EventDef in handed:
-				t.check(row.id == "charging_dog" and row.notice_within() <= 0.0,
+				t.check(row.id() == "charging_dog" and row.notice_within() <= 0.0,
 						("seed %d: the sprinkle is charging_dog itself, with no notice " +
 								"— day 3's own shape, not the waiting one a MAP placement " +
 								"past the switch would carry") % seed)
@@ -233,15 +217,16 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 ## And it never doubles the teaching day itself: `_teach_the_run()` already guarantees day 3 its
 ## one dog with the tip and the delay, and a second roll stacked on top would be two lessons where
 ## the entry asks for one guarantee and, separately, an unguaranteed sprinkle confined to later days.
-func _test_the_sprinkle_never_runs_on_the_teaching_day(t) -> void:
+func _test_the_sprinkle_never_runs_on_the_teaching_day(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.by_id("charging_dog")
 	for seed in range(50):
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
-		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
-		director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
+		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
+		director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		t.check(director.owed() == 1,
 				("seed %d: the teaching day owes exactly its one guaranteed dog, never a second " +
 						"from the sprinkle") % seed)
@@ -251,7 +236,7 @@ func _test_the_sprinkle_never_runs_on_the_teaching_day(t) -> void:
 func _handed_out(director: EventDirector, at: Vector2, heading: Vector2, seconds: float) -> Array[String]:
 	var ids: Array[String] = []
 	for row in _handed_out_rows(director, at, heading, seconds):
-		ids.append(row.id)
+		ids.append(row.id())
 	return ids
 
 ## The same, as the rows themselves.
@@ -271,14 +256,14 @@ func _handed_out_rows(director: EventDirector, at: Vector2, heading: Vector2,
 ## that stayed set would move every later dog's counts into the lesson's. The second dog is rigged
 ## into the front of her route's bag (`EventDirector.rig_her_route()`, as a task rigs one), since the
 ## day's route bag draws its marbles by chance.
-func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
+func _test_only_the_teaching_days_first_dog_is_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var dog := EventCatalogue.by_id("charging_dog")
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(dog, Vector2.INF)]
-	director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
+	var plans: Array[EventPlan] = [EventPlan.new(dog, Vector2.INF)]
+	director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
 	var first := _handed_out(director, at, Vector2.UP, EventDirector.LESSON_DELAY + 1.0)
@@ -294,20 +279,22 @@ func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
 ## dog is a copy of the row with its day switch taken off (`from_day_after`), so it is still
 ## director-sited past day 3, the shape the sprinkle sends, and so the one row that could be made the
 ## lesson there. Nothing the director hands out that day is the lesson's row.
-func _test_no_other_day_hands_out_the_lesson(t) -> void:
+func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var row := EventCatalogue.by_id("charging_dog")
-	var dog: EventDef = row.duplicate()
-	dog.shape = row.shape
-	dog.from_day_after = null
+	# The row with its day switch taken off: a switch no day reaches, so the row is director-sited on
+	# every day as the teaching day's is.
+	var unswitched := row.redraft()
+	unswitched.switching_after(Tuning.RUN_LENGTH_DAYS, EventDef.SpawnMode.MAP, null)
+	var dog := unswitched.build()
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	t.check(dog.spawn_mode_on(day) == EventDef.SpawnMode.AHEAD_OF_PLAYER,
 			"the copy is director-sited on day %d, as day 3's dog is" % day)
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(dog, Vector2.INF)]
-	director.start_day(day, plans, rng)
+	var plans: Array[EventPlan] = [EventPlan.new(dog, Vector2.INF)]
+	director.start_day(day, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
 	var ids := _handed_out(director, at, Vector2.UP, EventDirector.AHEAD_INTERVAL.y * 3.0)
@@ -316,7 +303,7 @@ func _test_no_other_day_hands_out_the_lesson(t) -> void:
 
 ## **And a sprinkled dog is not the lesson either**: the dog the director sprinkles in day 3's shape past
 ## the teaching day (`EventDirector._owe_the_sprinkled_dog()`) is the ordinary `charging_dog`.
-func _test_a_sprinkled_dog_is_never_the_lesson(t) -> void:
+func _test_a_sprinkled_dog_is_never_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
@@ -325,7 +312,8 @@ func _test_a_sprinkled_dog_is_never_the_lesson(t) -> void:
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
-		director.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng)
+		director.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		if director.owed() == 0:
 			continue
 		var ids := _handed_out(director, at, Vector2.UP, EventDirector.AHEAD_INTERVAL.y * 2.0)

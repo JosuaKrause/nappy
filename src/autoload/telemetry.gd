@@ -82,7 +82,7 @@ func configure(config: RunConfig) -> void:
 	_config = config
 
 func _invincible() -> bool:
-	return _config != null and _config.invincible
+	return _config != null and _config.is_invincible()
 
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
@@ -119,7 +119,7 @@ func is_active() -> bool:
 ## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
 ## Whether the deployed page has asked, this run, to be logged anyway: the page's own query, as the
-## run read it at boot (`RunConfig.page_query`), since the page has no command line.
+## run read it at boot (`RunConfig.page_query_string()`), since the page has no command line.
 ##
 ## **A debug build's alone, like every other developer flag** (2026-09-06, the player: "I never
 ## asked for telemetry on web. you added that to debug in a browser. that browser build should be
@@ -131,9 +131,9 @@ func is_active() -> bool:
 ## can check.
 func _web_override_requested() -> bool:
 	if _config == null \
-			or not TelemetryPage.reads_the_url(_config.debug_build, OS.get_name() == "Web"):
+			or not TelemetryPage.reads_the_url(_config.is_debug_build(), OS.get_name() == "Web"):
 		return false
-	return TelemetryPage.asks_for_telemetry(_config.page_query)
+	return TelemetryPage.asks_for_telemetry(_config.page_query_string())
 
 ## **Silently does nothing on a web export, unless the page's own `?telemetry=1` says otherwise.**
 ## `user://` is browser storage there — a stranger's browser rather than a developer's disk — so by
@@ -161,8 +161,8 @@ func begin_run(run_seed: int, played := true) -> void:
 	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			BuildInfo.source_version()])
-	if _log.path != "":
-		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.path))
+	if _log.file_path() != "":
+		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.file_path()))
 
 ## Makes the run's own folder under `_directory` and sets `_run_dir` to it, or warns and answers
 ## false when it cannot be made, which leaves the run untraced.
@@ -249,17 +249,17 @@ func set_clock(seconds: float) -> void:
 	if _day_open:
 		_clock = seconds
 
-## The section's clock, put back to zero for a fresh walk — a retried section, or the second
-## section beginning after the first — with the automatic-snapshot schedule reset alongside it.
+## The section's clock, put back to zero for a fresh walk — a retried day or section, or the next
+## one beginning after the last — with the automatic-snapshot schedule reset alongside it.
 ##
 ## **`set_clock(0.0)` alone is not this.** It leaves the last shot's time wherever the previous walk's
 ## last automatic shot fell, so `snapshot()`'s spacing gate (the clock less the last shot's time under
-## `SHOT_SPACING`)
+## `TelemetryShots.SPACING`)
 ## would stay true — the new clock read as still inside the old walk's three-second window — until
 ## the new walk's own clock climbed back past whatever the old one had reached, holding every
 ## automatic snapshot back for exactly that long. This gives a walk the same clean slate
-## `begin_day()` gives a day's; `TelemetryObserver.start_section()` asks it as each section of the
-## escape begins, after its own `begin_section()`.
+## `begin_day()` gives a day's; `TelemetryObserver.start()` asks it as each walk is placed, after
+## the walk's own header.
 func restart_section_clock() -> void:
 	if not _day_open:
 		return
@@ -291,11 +291,6 @@ func current_log() -> TelemetryLog:
 #   that raise the question a picture answers. See `TelemetryObserver`.
 # - **It has to stay small.** Capped per day and spaced, because a burst of near-identical frames is
 #   a directory nobody opens.
-
-## The least time between two shots — `TelemetryShots` holds it, with the most shots one day may
-## produce (`TelemetryShots.PER_DAY`) and the day's count; this is where it is named for the callers
-## that read it.
-const SHOT_SPACING := TelemetryShots.SPACING
 
 ## The day's allowance, the spacing and the run-wide counter that names every picture.
 var _shots := TelemetryShots.new()
@@ -337,7 +332,7 @@ func _default_bursts() -> BurstRecorder:
 ## another shot was taken a moment ago, or when there is no screen to photograph — a headless test
 ## run has a viewport with nothing in it, and the suite must not start writing images.
 func snapshot(kind: String) -> void:
-	if not _log or _log.path == "" or not _shots.allows(_clock):
+	if not _log or _log.file_path() == "" or not _shots.allows(_clock):
 		return
 	if not _screen.can_draw():
 		return
@@ -347,7 +342,7 @@ func snapshot(kind: String) -> void:
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
 ##
-## **It bypasses `TelemetryShots.PER_DAY` and `SHOT_SPACING`, and that is the whole difference.** Those two
+## **It bypasses `TelemetryShots.PER_DAY` and `TelemetryShots.SPACING`, and that is the whole difference.** Those two
 ## exist because a heuristic firing on a condition that stays true for two seconds would write a
 ## hundred and twenty near-identical frames; somebody pressing a key has already decided this frame
 ## is worth keeping, and a cap that silently swallows the seventh press is a tool that lies about
@@ -365,7 +360,7 @@ func snapshot_now(context: String) -> void:
 	if not _log:
 		return
 	note("shot", context)
-	if _log.path == "" or not _screen.can_draw():
+	if _log.file_path() == "" or not _screen.can_draw():
 		return
 	_shots.take_asked()
 	_capture("%s/%s" % [_type_dir("asked"), _shots.next_name("asked", _attempt_suffix())])
@@ -375,7 +370,7 @@ func snapshot_now(context: String) -> void:
 ## run folder to write in.
 func start_burst(context: String) -> bool:
 	var asked_dir := ""
-	if _log and _log.path != "" and _screen.can_draw():
+	if _log and _log.file_path() != "" and _screen.can_draw():
 		asked_dir = _type_dir("asked")
 	return _bursts.start(asked_dir, context)
 
@@ -413,9 +408,9 @@ func start_burst(context: String) -> bool:
 ## wrong. `_attempt_suffix()` names the attempt every time, including the first, so a filename is
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
+		tree: RouteTree = null, plans: Array[EventPlan] = [],
 		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
-	if not _log or _log.path == "":
+	if not _log or _log.file_path() == "":
 		return
 	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
 			"-dusk" if at_dusk else ""]

@@ -30,7 +30,7 @@ const STEP := 0.2
 ## Seconds of walking home, act III and act IV — the return legs `EventDirector.RETURN_PATROLS_PER_ACT` names.
 const RETURN_LEG := {3: 33.0, 4: 47.0}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure()
 	_measure_the_return()
 	t.check(true, "zz_olive_badger_route_mix probe ran")
@@ -51,24 +51,24 @@ func _measure() -> void:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		for day in DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), [], [], tree,
-							0).placements()
+			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
+			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+					.on(tree).plan().placements()
 			var bought := 0
 			for plan in planned:
-				var mode := plan.def.spawn_mode_on(day)
+				var mode := plan.spawn_mode_on(day)
 				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
-						or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+						or mode == EventDef.SpawnMode.TOWARD_PLAYER \
+						or (plan.is_sent_ahead() and not plan.is_placed()):
 					bought += 1
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
-			director.start_day(day, planned, director_rng)
+			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var met := _walk_a_day(map, director, day)
 			var shares := _intended_shares(day)
 			var counts := {}
@@ -96,7 +96,7 @@ func _measure() -> void:
 			bought_sum += bought
 			days_run += 1
 			print("  seed %d day %2d: bought %2d, met %2d, mismatch %4.0f%%, longest run %d  %s"
-					% [map.seed_used, day, bought, met.size(), mismatch * 100.0, streak,
+					% [map.city_seed(), day, bought, met.size(), mismatch * 100.0, streak,
 					" ".join(_short(met))])
 	print("\n-- over %d days --" % days_run)
 	print("  mean bought/day %.1f, mean met/day %.1f" % [float(bought_sum) / days_run,
@@ -124,18 +124,17 @@ func _measure_the_return() -> void:
 			if not RETURN_LEG.has(act):
 				continue
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), [], [], tree,
-							0).placements()
+			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
+			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+					.on(tree).plan().placements()
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
-			director.start_day(day, planned, director_rng)
+			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var day_len := Tuning.day_length(day)
 			var leg: float = RETURN_LEG[act]
 			var y_max: float = map.world_size().y
@@ -151,7 +150,7 @@ func _measure_the_return() -> void:
 					director.owe_the_return(day, 0)
 				var step := minf(STEP, day_len - t)
 				var due: Array = director.due(step, pos, vel)
-				if returned and not due.is_empty() and (due[0] as EventDef).id == "police_patrol":
+				if returned and not due.is_empty() and (due[0] as EventDef).id() == "police_patrol":
 					in_leg += 1
 				pos += vel * step
 				if pos.y < 0.0 or pos.y > y_max:
@@ -165,7 +164,7 @@ func _measure_the_return() -> void:
 			if in_leg > 0:
 				legs_with_one += 1
 			print("  seed %d day %2d (act %d): %d of %d return patrols land in the %.0fs leg"
-					% [map.seed_used, day, act, in_leg, count, leg])
+					% [map.city_seed(), day, act, in_leg, count, leg])
 	print("  over %d legs: %d of %d owed patrols land, %d legs meet at least one" % [legs, landed,
 			owed, legs_with_one])
 
@@ -182,7 +181,7 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 		var step := minf(STEP, day_len - t)
 		var due: Array = director.due(step, pos, vel)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 		pos += vel * step
 		if pos.y < 0.0 or pos.y > y_max:
 			vel.y = -vel.y
@@ -190,16 +189,18 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 		t += step
 	return met
 
-## Each director-sited row's share of the day by `weight`, among the rows available that day.
+## Each director-sited row's share of the day by `weight`, among the rows available that day, the
+## rows the director sends ahead of her among them (`EventDef.is_sent_ahead()`).
 func _intended_shares(day: int) -> Dictionary:
 	var shares := {}
 	var total := 0.0
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
 		var mode := def.spawn_mode_on(day)
-		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER:
+		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER \
+				and not def.is_sent_ahead():
 			continue
-		shares[def.id] = def.weight
-		total += def.weight
+		shares[def.id()] = def.drawn_as_often()
+		total += def.drawn_as_often()
 	for id: String in shares:
 		shares[id] = float(shares[id]) / total
 	return shares

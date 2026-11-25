@@ -85,10 +85,10 @@ const EXCITEMENT_WAKE_THRESHOLD := 60.0
 const EXCITEMENT_DECAY_WALKING := 6.0
 
 
-## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
+## What a `chatting_mother` conversation adds over its whole `detains_for()`, while the baby is
 ## awake — "consumes 25%" in the player's own words (`docs/playtests/PLAYTEST-18.md` finding 4, read as
 ## *adds 25 points*, because the same sentence calls the awake case an overstimulation risk).
-## Divided by `detain_seconds` for the flat per-second rate a captured player is charged while she
+## Divided by `detains_for()` for the flat per-second rate a captured player is charged while she
 ## is inside the conversation; zero while asleep, which is what makes it a *pure* time loss then —
 ## see `EventInstance.current_intensity()`.
 const CHAT_EXCITEMENT := 25.0
@@ -117,7 +117,6 @@ const EXPECTED_IMPACT_HORIZON := 5.0
 
 # ---------------------------------------------------------------- telegraph ---
 
-const TELEGRAPH_TIME_DEFAULT := 2.5
 ## Hard-fail events must give twice the escape margin of an ordinary event.
 const TELEGRAPH_HARD_FAIL_MARGIN := 2.0
 
@@ -159,9 +158,10 @@ const COLUMN_SPACING := 128.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
-# *that* it answers to the resistance with `EventDef.heat_response`; these say what answering costs.
-# Keeping the numbers here rather than on the rows is what stops heat becoming a per-row difficulty
-# dial — there is one ladder and every row that climbs it climbs the same one.
+# *that* it answers to the resistance (`EventDef.answers_to_heat()`); these say what
+# answering costs. Keeping the numbers here rather than on the rows is what stops heat
+# becoming a per-row difficulty dial — there is one ladder and every row that climbs it climbs
+# the same one.
 #
 # **All of it is spent between progress 0 and `RESISTANCE_GOAL`**, so the escalation is finished at
 # the moment the subquest qualifies rather than trailing past it.
@@ -201,7 +201,7 @@ const SIDEWALK_WIDTH := 2
 ## On a lattice too small for both, the home gets walked outward until it is far enough, landing
 ## against the boundary, where most directions are a wall.
 ##
-## Everything downstream of this is stated over it — the event budget per block, the crowd
+## Everything downstream of this is stated over it — the event locations per street, the crowd
 ## population per corridor, the arterial index — so a change here is a change to the whole density
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
@@ -388,8 +388,8 @@ const REGION_WALL_FIRST_DAY := 9
 
 ## How much clear ground a region door keeps around each of its own bodies — a hut, a boom or an
 ## alley post. No event may be sited so that its own field (`EventDef.field_reach()`) reaches inside
-## this radius of one, and no mover's beat or path may run through it: `EventScheduler._place_one()`
-## refuses the candidate and rolls again, and `EventDirector.due()` waits rather than siting one in
+## this radius of one, and no mover's beat or path may run through it: the day's rules refuse the
+## candidate (`DoorClearanceRule`), and `EventDirector.due()` waits rather than siting one in
 ## front of her there. *(2026-09-20, the player: "there should be a gap for events immediately
 ## surrounding the gates".)*
 ##
@@ -398,7 +398,7 @@ const REGION_WALL_FIRST_DAY := 9
 ## covers both without either having to be computed at placement.
 ##
 ## **The number is the door's own field plus the clearance the release sets her down at.** She comes
-## out `obstructs_radius + PLAYER_BODY_RADIUS + CheckpointController.CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
+## out `obstructs_within() + PLAYER_BODY_RADIUS + CheckpointController.CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
 ## let her out, and the widest field a door's own structure carries is the gate's 120px
 ## `outer_radius` — so from either release point she walks the full width of the door's own field,
 ## and then some, before anything else can start charging her. At `WALK_SPEED` that is about a
@@ -410,7 +410,7 @@ const REGION_WALL_FIRST_DAY := 9
 ## scheduler already has. The wall's own `roadblock` bodies are **not** given a gap — a wall is
 ## structure, it stands where the boundary is, and dropping one would open a street the partition
 ## means to hold. What keeps a wall from summing with the door it stands beside is
-## `EventDef.barrier_structure` instead.
+## `FieldSpec.as_one_barrier()` instead.
 const CHECKPOINT_EVENT_GAP := 176.0
 
 
@@ -688,6 +688,18 @@ const EVENT_STREAM_RADIUS := 900.0
 ## And how far past it an event has to get before it is taken away again, so an event on the
 ## boundary does not flicker in and out as the player paces.
 const EVENT_STREAM_HYSTERESIS := 260.0
+## **How far beyond the stream radius a unit of the day's locations draws** (a street, a
+## junction box, an alley, a park or a square; `UnitDraw`): one period of the lattice, 448px. A
+## unit is wanted once any part of it is within `EVENT_STREAM_RADIUS` plus this of her, and drawn a
+## unit a tick (`EventsAhead.draw_what_comes_near()`), so a draw is paid for well before the
+## streaming looks there. It is also how far round its place a placement made from her walk
+## draws the units first (`EventsAhead.draw_the_ground_round()`; round every eighth tile of the way
+## from home too, for a place the resistance sends her to beyond the ground already drawn round
+## her, `WayConfirmation`): wider than the widest reach a placement rule asks (a lethal field of
+## 270px), so no unit drawn later can conflict with what was sited there.
+## It changes when a draw is paid, never what a day holds: every unit draws the same whatever order
+## the units are drawn in.
+const EVENT_DRAW_AHEAD := float((BLOCK_SIZE + STREET_WIDTH) * TILE_SIZE)
 
 ## Far enough from the player that nothing there can be seen, which is what *nothing vanishes while
 ## you are looking at it* is measured against.
@@ -724,7 +736,7 @@ const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
 ## (just a part or too far off the edge doesn't count)".)*
 const ENCOUNTER_SEEN_SHARE := 0.8
 
-## The default seconds of notice a row gives from off screen (`EventDef.offscreen_notice`): for a
+## The default seconds of notice a row gives from off screen (`WarningSpec.badge_notice()`): for a
 ## row created at once — a patrol sent down the road — the seconds it still has to be off screen
 ## once it is created, at the speed the gap is actually closing. *(2026-09-07: "events that go
 ## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning.")*
@@ -744,9 +756,9 @@ const AHEAD_MIN_SPEED := 40.0
 
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
-# happens several times a day rather than once. The density itself lives in
-# `EventScheduler.budget_for()` and the catalogue's `max_per_day`, both **measured** rather than
-# derived.
+# happens several times a day rather than once. The density itself lives in the declared table
+# (`PlacementDensity`: events per hundred draw locations by view, kind of ground and act) and the
+# rows' weights, both **measured** rather than derived.
 #
 # What lives here is what the density needs in order to be legible. Placement is a uniform random
 # tile, so a low per-type cap is the only thing keeping two of the same event off one pavement —
@@ -757,23 +769,21 @@ const AHEAD_MIN_SPEED := 40.0
 # **corridor** — the ways from the doorstep to the calm areas still worth reaching — and what each
 # of these numbers does is pull one kind of thing toward one part of it.
 #
-# Both are stated as **how many times a tile is offered to the roll**, which is `_ground_for`'s
-# existing mechanism rather than a new one: the roll is an index into the candidate array, so
-# offering a tile four times over *is* the weight, and every spacing rule downstream keeps working
-# unchanged. The precinct weight above is the same shape and is multiplied through, so a corridor
-# tile in a precinct is offered sixteen times.
+# Both are stated as **how many times over a row weighs in a view's bag**, which a unit's bag fill
+# reads for a row's role (`UnitFills`, handed them by the day's ground, `RowGround.Weights`):
+# friction four times over on the route, a costly wall four times over beside it. The precinct weight above is a location's own weight, which
+# scales every row a precinct's location draws (`RuledLocationGround.scale()`), so a
+# friction row on a precinct route street weighs sixteen times over.
 #
-# Neither is a filter, and the one filter there is lives in `EventScheduler._copies_of`: **a wall
-# never stands on ground a route runs along.** That one can be absolute because the whole
-# off-corridor city remains available to it, so it cannot starve a row of ground — which is what a
-# weight buys everywhere else here and is why these are weights. It is stated per **sidewalk**, so
-# the far side of a route's own street is legal ground for a wall at the weight of ordinary far
-# ground; the weights below are still read off the street's depth, so the rim is still where a wall
-# is pulled.
+# Neither is a filter, and the one filter there is lives in the row's own ground
+# (`RowGround.offers_for_role()`): **a wall never stands on ground a route runs along.** That one
+# can be absolute because the whole off-corridor city remains available to it, so it cannot starve
+# a row of ground. It is stated per **sidewalk**, so the far side of a route's own street is legal
+# ground for a wall, which is where a wall the route view's bag draws stands.
 
 
 # ----------------------------------------------------- solid things are solid ---
-# The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it
+# The rule is in `EventDef.obstructs_within()`: **anything that stands still is solid at the width it
 # is drawn**, derived rather than set per row — a field only ever *reached for* leaves large,
 # visibly solid objects with no body at all. What lives here is the one number that rule needs from
 # outside itself.
@@ -827,7 +837,7 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## walk out of its field that `required_telegraph_time()` prices is not a walk she can take during
 ## the badge; an ordinary pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, while a sent
 ## robber or guard arrives chasing after its badge alone. A row with an in-world telegraph owes
-## the minimum its field sets even when it has no coming badge (`EventDef.telegraphs` is false).
+## the minimum its field sets even when it has no coming badge (`EventDef.telegraphs_its_coming()` is false).
 const OFFSCREEN_WARNING_MIN := 1.0
 ## The longest a screen-edge badge is up alone, with nothing in the world, before the thing it warns
 ## of is placed just out of sight where it points (`PendingWarning`). *(calm-kestrel, inbox #559: "it
@@ -836,7 +846,7 @@ const OFFSCREEN_WARNING_MIN := 1.0
 ## turning off the warning"; busy-quail, inbox #569: "1s warning should be enough -- there is enough
 ## screen space to cross -- let's apply that to the others as well".)* A ceiling, not a length: a row
 ## whose own is already shorter keeps it, as the day-3 dog keeps its half second
-## (`EventDef.offscreen_notice`). `EventDef.validate()` refuses a row warned of first whose badge
+## (`EventDef.warned_for()`). `EventDef.validate()` refuses a row warned of first whose badge
 ## alone (`EventDef.warned_for()`) is longer.
 const WARNING_ALONE_MAX := 1.0
 
@@ -850,13 +860,14 @@ const WARNING_ALONE_MAX := 1.0
 ## (`EventInstance.notice_her_at()`), which no row's contract states.
 ##
 ## **Two other kinds of pursuer are owed something else.** A sent robber or guard has no approach:
-## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside her
-## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
-## is owed is the indicator that it is about to, for at least the off-screen charger's
-## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own: his warning came
-## before he was set on her, a hut's guard's raised hand from her crossing for `CheckpointController.CROSSING_WARNING`
-## (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her warns on its own clock
-## inside its one radius (`PursuitSpec.warns_for`), so this floor bounds nothing it does.
+## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside
+## her (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what
+## she is owed is the indicator that it is about to, for at least the off-screen charger's
+## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own:
+## his warning came before he was set on her, a hut's guard's raised hand from her crossing for
+## `ChargerTiming.warning()` (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her
+## warns on its own clock inside its one radius (`PursuitSpec.warns_for()`), so this floor bounds
+## nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she has to be **running** before it gives up, in seconds.
@@ -905,7 +916,7 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ##   sets off beside her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`) stands with its warning up
 ##   for its notice and is owed the badge's heads-up, `OFFSCREEN_WARNING_MIN`, rather than an
 ##   approach she never sees.
-## - **A pursuer that waited for her warns inside its one radius for its `PursuitSpec.warns_for`
+## - **A pursuer that waited for her warns inside its one radius for its `PursuitSpec.warns_for()`
 ##   and charges if she is still inside once that has run** (`EventInstance.warns_by_radius()`;
 ##   inbox #788 in minty-lemur). Leaving the radius first is never charged, and once charged
 ##   walking loses and running wins by the speed clauses above. `tests/test_events_pursuit.gd`
@@ -915,11 +926,12 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
 ##   found by walking a rig rather than by reading it.
 ## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
-##   never going to move from and the telegraph is a formality. (`EventDef.notice` only.)
+##   never going to move from and the telegraph is a formality. (Only a row that waits for her,
+##   `EventDef.waits_for_her()`.)
 ## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
 ##   starts making decisions about her is the chance to have felt it: the meter is the only thing
 ##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
-##   past `outer_radius`. (`EventDef.notice` only.)
+##   past `outer_radius`. (Only a row with a notice radius, `EventDef.notice_within()`.)
 ##
 ## **Two clauses that used to be here are gone, and their absence is the design.** The chase used to
 ## end at a *distance*, so the contract needed "walking cannot reach it inside the chase" and
@@ -1047,7 +1059,7 @@ func longest_act_days() -> int:
 	return longest
 
 ## How many calm areas a city has to have: one per day of the longest act, plus one in reserve.
-## See `CityGenerator.MIN_CALM_BLOCKS`, which this is asserted against on boot.
+## `tests/test_tuning_fairness.gd` holds `CityGenerator.MIN_CALM_BLOCKS` to at least this.
 func calm_areas_needed() -> int:
 	return longest_act_days() + 1
 
@@ -1076,7 +1088,7 @@ const DEGRADATION_FIRST_DAY := 5
 
 ## The one density every visible sign of decline reads — cracked ground, litter, sacks, shuttered
 ## fronts — so the city degrades as one thing rather than as several unrelated rolls. Zero before
-## `DEGRADATION_FIRST_DAY`, rising the way `EventScheduler.budget_for()` rises, to 1.0 on the run's
+## `DEGRADATION_FIRST_DAY`, rising the way the day's events rise, to 1.0 on the run's
 ## last day. A per-block factor (a `BURNT_OUT` block further gone than a `RESIDENTIAL` one) can
 ## multiply this later; nothing below reads anything but this one number today.
 func degradation_for(day: int) -> float:
@@ -1167,7 +1179,7 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## forward reach growing past what its telegraph already priced is a fairness question; growing
 ## far enough to touch an unvisited calm area it used to clear is a different one —
 ## `EventScheduler` refuses that placement outright (`CalmAreas.unused_ground()`,
-## `_reaches_any`), so a row whose whole path is long enough to brush one can lose its only site
+## `UnusedCalmRule`), so a row whose whole path is long enough to brush one can lose its only site
 ## and simply not happen that day, however fair its telegraph is. The value was set by measuring
 ## exactly that on the longest-routed scheduled row of the day (`docs/DECISIONS.md`, M114); no
 ## scheduled row currently drives a route that long — the fire engine is summoned to a route
@@ -1194,8 +1206,8 @@ const FINALE_DISTANT_FLASH_MEAN_SECONDS := 1.3
 
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a
-# street with a field, not a floor under the whole city. See `MastSites`, `EventScheduler.
-# _place_masts()` and `EventManager`'s own broadcast clock.
+# street with a field, not a floor under the whole city. See `MastSites`, `DawnMasts` and
+# `EventManager`'s own broadcast clock.
 
 ## How many masts a city carries. The orchestrator's own number, open to overturn: enough that one
 ## is never far from a route without turning every street into one.

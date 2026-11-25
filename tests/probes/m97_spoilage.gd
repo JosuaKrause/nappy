@@ -12,17 +12,18 @@ extends RefCounted
 ## seed's city has at the time. For each visit it measures two things separately, because the
 ## TODO item names two different candidate causes and this is how to tell them apart:
 ##
-## 1. **The spoil roll alone** — `EventScheduler._spoil_the_parks_she_used` called on its own,
+## 1. **The spoil roll alone** — `DawnSpoilers` run on its own,
 ##    the way the "roll" telemetry line ("<ids> in the park she used yesterday, <tile>") reports
 ##    it. Its own count and how much of the park's open ground it actually denies.
 ## 2. **The full day's plan** — `EventScheduler.build_day` with the same park as `used_calm`,
-##    filtered to whatever reaches the park the way `DayRepairs.ensure_one_usable_park` already
-##    asks the question (`EventScheduler.Planned.reaches()`). This is what a player actually
+##    filtered to whatever reaches the park the way the day asks whether a row spoils one
+##    (`EventPlan.reaches()`). This is what a player actually
 ##    meets, which can be *more* than the roll alone placed: the visited park is not protected
 ##    from the day's ordinary fill the way an unvisited one is (`CalmAreas.unused_ground()` only
 ##    lists calm areas she has not used).
 ##
-## "Denies" is read the way `_denial_radius` defines it: a tile is denied if it is within the
+## "Denies" is read the way `DawnSpoilers._denial_radius()` defines it: a tile is denied if it
+## is within the
 ## radius at which the source's field still outpaces the calm-ground decay, not merely within its
 ## outer radius. The fraction of a park's open tiles NOT denied is the walkable edge playtest 20
 ## described ("I could just walk at the edge of it").
@@ -34,7 +35,7 @@ const BASE_SEED := 419070
 ## crowd conditions. The spoiled day is settle-day + 1.
 const SETTLE_DAYS: Array[int] = [1, 4, 8, 12]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_reproduce_zero_density_visits()
 	t.check(true, "zz_m97_spoilage probe ran")
 
@@ -68,33 +69,33 @@ func _reproduce_zero_density_visits() -> void:
 			# and `m64_measure.gd` use, since `begin_day` replays every scheduled step up to the
 			# day asked for rather than requiring the days in between.
 			var settle_state := CityState.new()
-			settle_state.begin_day(map.block_plans, settle_day)
+			settle_state.begin_day(map.plans_by_block(), settle_day)
 			map.repaint(settle_state)
-			var candidates := map.calm_blocks.duplicate()
+			var candidates := map.calm_blocks_now().duplicate()
 
 			# The city as it is the next day, when the roll fires.
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 
 			for block: Vector2i in candidates:
 				trials += 1
-				var lot_tiles := EventScheduler._calm_rect(map, block)
+				var lot_tiles := ClosurePlanner.calm_area_rect(map, block)
 				var lot_world := map.tile_rect_to_world(lot_tiles)
 				var open_tiles: Array[Vector2i] = []
 				for tile in map.rect_tiles(lot_tiles):
 					if not map.is_closed(tile):
 						open_tiles.append(tile)
 
-				var still_calm := block in map.calm_blocks
+				var still_calm := block in map.calm_blocks_now()
 				if not still_calm:
 					not_calm_count += 1
 					continue
 				if open_tiles.is_empty():
 					open_empty_count += 1
 					continue
-				var pool := EventScheduler._things_to_put_in_a_park(day, lot_world, 0)
+				var pool := DawnSpoilers._things_to_put_in_a_park(day, lot_world, 0)
 				if pool.is_empty():
 					pool_empty_count += 1
 					continue
@@ -102,31 +103,27 @@ func _reproduce_zero_density_visits() -> void:
 				# 1. The roll alone, on its own RNG stream — an independent sample of what the
 				# spoil mechanism by itself produces for this park.
 				var rng1 := RandomNumberGenerator.new()
-				rng1.seed = hash("m97:roll:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
+				rng1.seed = hash("m97:roll:%d:%d:%d" % [map.city_seed(), day, block.x * 100000 + block.y])
 				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
-				var roll_events := DayEvents.over(roll_calm)
-				EventScheduler._spoil_the_parks_she_used(day, rng1, map, roll_events, roll_calm,
-						0)
-				var roll_planned := roll_events.placements()
+				var roll := GameDawn.of(DaySpec.for_day(day), rng1, map).calm(roll_calm) \
+						.masts([] as Array[MastSites.Site]).on(RouteSource.new()).context()
+				DawnSpoilers.new().run(roll)
+				var roll_planned := roll.events().placements()
 				var rc := roll_planned.size()
 				roll_counts.append(rc)
 				var rd := _tiles_denied_fraction(map, open_tiles, roll_planned)
 				roll_denied.append(rd)
 
 				# 2. The full day, exactly as `build_day` plans it with this park as `used_calm`,
-				# filtered to whatever actually reaches the park — matching
-				# `DayRepairs.ensure_one_usable_park`'s own question.
+				# filtered to whatever actually reaches the park — the day's own question of a
+				# spoiler (`EventPlan.reaches()`).
 				var rng2 := RandomNumberGenerator.new()
-				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
-				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-						DaySpec.for_day(day), rng2, map, CalmAreas.of(map, [block] as Array[Vector2i]),
-						[], [], tree, 0).placements()
-				var full_in_lot: Array[EventScheduler.Planned] = []
-				for plan: EventScheduler.Planned in full_planned:
-					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
-							or not plan.is_placed():
-						continue
-					if plan.reaches(lot_world):
+				rng2.seed = hash("m97:full:%d:%d:%d" % [map.city_seed(), day, block.x * 100000 + block.y])
+				var full_planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), rng2, map) \
+						.calm(CalmAreas.of(map, [block] as Array[Vector2i])).on(tree).plan().placements()
+				var full_in_lot: Array[EventPlan] = []
+				for plan: EventPlan in full_planned:
+					if plan.spoils(lot_world):
 						full_in_lot.append(plan)
 				var fc := full_in_lot.size()
 				full_counts.append(fc)
@@ -138,8 +135,8 @@ func _reproduce_zero_density_visits() -> void:
 							% [i, day, block, rc, rd * 100.0])
 				elif fd < 0.34 and low_examples.size() < MAX_EXAMPLES:
 					var ids: Array[String] = []
-					for plan: EventScheduler.Planned in full_in_lot:
-						ids.append(plan.def.id)
+					for plan: EventPlan in full_in_lot:
+						ids.append(plan.row_id())
 					low_examples.append("  seed=%d day=%d block=%s: %s in the park she used yesterday, %s — denied %.0f%% of open ground (roll alone: %d placed, denied %.0f%%)"
 							% [i, day, block, ", ".join(ids), RunTrace.tile(block), fd * 100.0, rc, rd * 100.0])
 
@@ -154,8 +151,8 @@ func _reproduce_zero_density_visits() -> void:
 	print("valid visits (calm, open, and a pool to draw from): %d" % valid)
 
 	if valid > 0:
-		print("\n-- the roll alone (EventScheduler.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
-				% EventScheduler.SPOILERS_TO_DENY_A_PARK)
+		print("\n-- the roll alone (DawnSpoilers.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
+				% DawnSpoilers.SPOILERS_TO_DENY_A_PARK)
 		_print_int_distribution("placements", roll_counts)
 		_print_float_distribution("open ground denied", roll_denied)
 
@@ -190,13 +187,15 @@ func _reproduce_zero_density_visits() -> void:
 		for line in low_examples:
 			print(line)
 
-## The fraction of `open_tiles` within `EventScheduler._denial_radius` of at least one placed
-## plan — the same question `_denial_radius`'s own doc states: not the outer radius, the radius at
+## The fraction of `open_tiles` within `DawnSpoilers._denial_radius()` of at least one placed
+## plan — the same question `DawnSpoilers._denial_radius()`'s own doc states: not the outer
+## radius, the radius at
 ## which the source still outpaces the calm-ground decay. Everything in `plans` is stationary
-## (`_things_to_put_in_a_park` excludes `mobile`), so a point-to-position distance is exact rather
+## (`DawnSpoilers._things_to_put_in_a_park()` excludes a row that moves), so a point-to-position
+## distance is exact rather
 ## than an approximation of a route.
 func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
-		plans: Array[EventScheduler.Planned]) -> float:
+		plans: Array[EventPlan]) -> float:
 	if open_tiles.is_empty():
 		return 1.0
 	if plans.is_empty():
@@ -205,10 +204,10 @@ func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
 	for tile in open_tiles:
 		var world := map.tile_to_world(tile)
 		var is_denied := false
-		for plan: EventScheduler.Planned in plans:
+		for plan: EventPlan in plans:
 			if not plan.is_placed():
 				continue
-			if world.distance_to(plan.position) <= EventScheduler._denial_radius(plan.def):
+			if world.distance_to(plan.placed_at()) <= DawnSpoilers._denial_radius(plan.row()):
 				is_denied = true
 				break
 		if is_denied:

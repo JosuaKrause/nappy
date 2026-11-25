@@ -21,7 +21,7 @@ const CHASE_FROM := 90
 const WARMUP := 150
 const WINDOW := 600
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var reps := int(OS.get_environment("LANE_PARITY_REPS")) if OS.has_environment("LANE_PARITY_REPS") else 1
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -32,34 +32,41 @@ func run(t) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(city_seed))
+		var builder := RunCity.new_builder()
+		var drawn := DrawnView.on(t)
+		builder.use_the_drawn_view(drawn)
+		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
+		RunCity.build(city, run, CityGenerator.generate(city_seed), builder)
 		for day in DAYS:
 			for walk in WALKS:
 				for repetition in reps:
 					var report := _run_once(city, rig, city_seed, day, walk)
 					report["repetition"] = repetition
 					print("LANE_PARITY_JSON " + JSON.stringify(report))
-		city.crowd._player = null
+		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	rig.free()
 	t.check(true, "ran")
 
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	crowd.start_day(day, rng, start)
-	crowd.set_gates(city.streets().region_plan().gates)
+	crowd.set_gates(city.streets().region_plan().gate_states())
 	crowd._player = rig
+	crowd.use_focus(StrollerFocus.new(rig))
+	crowd.use_bus(EventBus)
 	var chain := PackedByteArray()
 	chain.resize(32)
 	var drawn := PackedByteArray()
@@ -105,7 +112,7 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
 	var best := INF
 	var target := here
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.WALKER:
+		if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 			continue
 		var distance := agent.global_position.distance_squared_to(here)
 		if distance < best:
@@ -134,9 +141,10 @@ func _drawn(previous: PackedByteArray, crowd: Crowd) -> PackedByteArray:
 		var heading_key: Vector2i = agent.get("_drawn_heading")
 		var velocity := agent.velocity()
 		var heading := agent.heading()
+		var colour := agent.clothing_colour()
 		state.append_array([picture.x, picture.y, picture.z, heading_key.x, heading_key.y,
 				1.0 if agent.visible else 0.0, float(agent.lane_key()), velocity.x, velocity.y,
-				heading.x, heading.y, agent.colour.r, agent.colour.g, agent.colour.b])
+				heading.x, heading.y, colour.r, colour.g, colour.b])
 	var context := HashingContext.new()
 	context.start(HashingContext.HASH_SHA256)
 	context.update(previous)

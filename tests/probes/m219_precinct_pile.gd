@@ -12,32 +12,35 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const CASES := [[67, 3, Vector2i(10, 156)], [24757, 5, Vector2i(122, 156)]]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for case: Array in CASES:
 		var seed_value: int = case[0]
 		var day: int = case[1]
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-		city.run.header.day = day
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.new_city(CITY_SCENE)
+		run.header().set_day(day)
 		t.add_child(city)
-		city.build(map)
-		city.run.attempt_spend.city_state.begin_day(map.block_plans, day)
-		city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"))
+		RunCity.build(city, run, map)
+		run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), day)
+		city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+				"closures"))
 		var doorstep := map.doorstep_world_position()
-		city.events.start_day(DaySpec.for_day(day), city.run.calendar.day_rng(), city.run.attempt_spend.consumed_one_shots, doorstep)
+		RunCity.events(city).start_day(DaySpec.for_day(day), run.calendar().day_rng(),
+				run.attempt_spend().consumed_one_shots(), doorstep)
 		var at := map.tile_to_world(case[2])
-		city.events.stream_around(at)
-		city.crowd.start_day(day, city.run.calendar.day_rng(day, "crowd"), at)
-		city.crowd.set_gates(city.streets().region_plan().gates)
+		RunCity.events(city).stream_around(at)
+		RunCity.crowd(city).start_day(day, run.calendar().day_rng(day, "crowd"), at)
+		RunCity.crowd(city).set_gates(city.streets().region_plan().gate_states())
 		var most := 0
 		var total := 0
 		var frames := int(round(30.0 / STEP))
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 		for frame in frames:
-			city.crowd.set_focus(at)
-			city.crowd.step(STEP)
+			RunCity.crowd(city).step(STEP)
 			var near := 0
-			for agent in city.crowd.agents():
-				if agent.kind == CrowdAgent.Kind.WALKER \
+			for agent in RunCity.crowd(city).agents():
+				if agent.lane().kind() == CrowdAgent.Kind.WALKER \
 						and agent.position.distance_to(at) < 1.5 * Tuning.TILE_SIZE:
 					near += 1
 			most = maxi(most, near)

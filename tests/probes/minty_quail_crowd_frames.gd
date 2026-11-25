@@ -27,22 +27,26 @@ const FRAMES := 12
 const ZOOM := Vector2(2.0, 2.0)
 const CROP := Vector2i(240, 150)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var out := OS.get_environment("CROWD_FRAMES_OUT")
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.crowd_view = ScreenCrowdView.new(t)
-	city.build(CityGenerator.generate(CITY_SEED))
+	var builder := RunCity.new_builder()
+	var drawn := DrawnView.on(t)
+	builder.use_the_drawn_view(drawn)
+	builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
+	RunCity.build(city, run, CityGenerator.generate(CITY_SEED), builder)
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 1)
+	state.begin_day(city.map().plans_by_block(), 1)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-frames-closures")
 	city.start_day(state, 1, closures)
-	var focus := city.map.doorstep_world_position()
+	var focus := city.map().doorstep_world_position()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-frames")
-	city.crowd.start_day(1, rng, focus)
+	RunCity.crowd(city).start_day(1, rng, focus)
 	var camera := Camera2D.new()
 	camera.zoom = ZOOM
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -51,7 +55,7 @@ func run(t) -> void:
 	camera.make_current()
 	for _tick in WARMUP_TICKS:
 		await t.get_tree().physics_frame
-	var car := _moving_car_nearest(city.crowd, focus)
+	var car := _moving_car_nearest(RunCity.crowd(city), focus)
 	var window := Vector2(t.get_viewport().get_visible_rect().size)
 	var images: Array[Image] = []
 	var rows: Array[Dictionary] = []
@@ -115,7 +119,7 @@ func run(t) -> void:
 func _moving_car_nearest(crowd: Crowd, at: Vector2) -> CrowdAgent:
 	var best: CrowdAgent = null
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.CAR or agent.speed() < 60.0:
+		if agent.lane().kind() != CrowdAgent.Kind.CAR or agent.speed() < 60.0:
 			continue
 		if best == null or agent.global_position.distance_squared_to(at) \
 				< best.global_position.distance_squared_to(at):

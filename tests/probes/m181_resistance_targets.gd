@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m181_resistance_targets.gd
 ##
-## **The real day order**, as `main.gd`'s `_start_day()` runs it: `City.start_day()` (the tree, the
+## **The real day order**, as `DayDirector.start()` runs it: `City.start_day()` (the tree, the
 ## region plan and the closures), then `EventManager.start_day()` (the seals, the catalogue, the
 ## wall and door bodies), then the director. Each day is asked fresh, with no history, the way
 ## `--day N` boots.
@@ -27,10 +27,10 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
-	own_run.resistance.progress = Tuning.RESISTANCE_GOAL
+	own_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	print("\n== M181: the day's resistance target, reachable from home ==")
 	print("%-12s %4s %-8s %6s %6s %6s  %s" % ["seed", "day", "target", "legal", "open", "reach",
 			"placed at (reachable?)"])
@@ -40,41 +40,41 @@ func run(t) -> void:
 	for i in EXTRA_SEEDS:
 		seeds.append(BASE_SEED + i * 7919)
 	for seed_value in seeds:
-		var city: City = RunCity.in_run(CITY_SCENE, own_run)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, own_run, CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
 			var state := CityState.new()
-			state.begin_day(city.map.block_plans, day)
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+					city.map().doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map(), own_run, RunCity.events(city), city.streets(),
+					city.fronts(), city, null, RunCity.spawn_siting(city))
 			var step: ResistanceSteps.Step = _step_for(day)
 			var candidates := _candidates(city, day)
 			var region_plan := city.streets().region_plan()
-			var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
-			var door_bodies: Array[EventScheduler.Planned] = \
-					region_plan.door_bodies if region_plan else []
-			var blockers: Array[EventScheduler.Planned] = []
-			for plan in city.events.plans():
+			var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
+			var door_bodies: Array[EventPlan] = \
+					region_plan.door_plans() if region_plan else []
+			var blockers: Array[EventPlan] = []
+			for plan in RunCity.events(city).plans():
 				if not plan.is_placed() or plan in door_bodies:
 					continue
-				if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+				if plan.obstructs_within() > 0.0 or plan.ends_the_day():
 					blockers.append(plan)
-			var grid := ReachabilityGrid.build(city.map)
-			var blocked := EventScheduler.blocked_by(city.map, blockers)
-			var reached := grid.flood([city.map.home_rect.position], blocked)
+			var grid := ReachabilityGrid.build(city.map())
+			var blocked := EventScheduler.blocked_by(city.map(), blockers)
+			var reached := grid.flood([city.map().home_tile_rect().position], blocked)
 			var legal := 0
 			var open := 0
 			var reach := 0
 			var allow_held := ResistanceSteps.stands_on_held_ground(step)
 			for tile in candidates:
-				var map := city.map
+				var map := city.map()
 				if not map.is_walkable(tile) or map.is_closed(tile) \
 						or (not allow_held and map.is_held_at(tile)) or map.is_on_home_block(tile) \
 						or map.is_in_walled_alley(tile, walled):
@@ -89,8 +89,8 @@ func run(t) -> void:
 			var at := director._place_contact(step, director_rng)
 			var placed := "nowhere"
 			if at != Vector2.INF:
-				var tile := city.map.world_to_tile(at)
-				var ok := grid.reaches(tile, blocked, reached) and not city.map.is_obstructed(tile)
+				var tile := city.map().world_to_tile(at)
+				var ok := grid.reaches(tile, blocked, reached) and not city.map().is_obstructed(tile)
 				placed = "%s (%s)" % [tile, "yes" if ok else "NO"]
 				if not ok:
 					failures += 1
@@ -128,5 +128,5 @@ func _name(step: ResistanceSteps.Step) -> String:
 
 ## The director's own candidate pool, asked of the one function planning and the director share.
 func _candidates(city: City, day: int) -> Array[Vector2i]:
-	return ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), city.map,
+	return NarrowTargetPool.tiles(ResistanceSteps.narrow_target_on(day), city.map(),
 			city.streets().region_plan())

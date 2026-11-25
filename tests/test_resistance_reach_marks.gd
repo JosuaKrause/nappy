@@ -1,7 +1,11 @@
 extends "res://tests/resistance_rig.gd"
-## M188: a mark is never placed in an alley she cannot reach.
+## M188: a mark is never placed in an alley she cannot reach, and one placed across the city
+## stands on a way from home whose ground has drawn.
+##
+## **A real city, for a stated reason**: reachability is the director's over the ground of a day's
+## real plan, the closures and the bodies the events stand, which a stand-in would restate.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	_free_city()
 
@@ -15,47 +19,66 @@ func run(t) -> void:
 ## — reusing `_day_reachability()`/`_stands_on_legal_ground()` rather than a second implementation
 ## of either. A full-city-generation sweep is the expensive kind (M125's own finding, cut from six
 ## seeds to three for the same reason), so this stays at four rather than growing further.
+##
+## **And a mark is confirmed along a way from home** (`ResistanceDirector._pick_reachable()`,
+## `WayConfirmation`): the dawn draws no unit and the day's start only those round her door, so a
+## mark across the city is found reachable over ground whose units have not drawn, and a body
+## drawn there later could shut the way. As the day starts, before she is placed, the units along
+## a way from home to the mark and round the mark have drawn (`_the_way_has_drawn()`); the sweep
+## counts the marks that stand beyond what the start drew round her door, where the confirmation
+## had ground to draw.
 const MARK_REACHABILITY_SWEEP_SEEDS: Array[int] = [2295276695, 291862120, 314159, 555555]
 
-func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
+func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) -> void:
 	var checked := 0
+	var far_marks := 0
 	for seed_value in MARK_REACHABILITY_SWEEP_SEEDS:
 		# One city of a run of its own per seed: each day below clears the steps and the alleys
 		# used on that run, so no day leans on what the day before did.
 		var this_run := _build_city_in_a_new_run(t, seed_value)
 		var city := _city
-		for day in REACHABILITY_SWEEP_DAYS:
-			this_run.resistance.completed_steps = []
-			this_run.resistance.failed_steps = []
-			this_run.facts.completed_resistance_alley_tiles.clear()
+		for day: int in REACHABILITY_SWEEP_DAYS:
+			GivenRun.completed_steps(this_run, [])
+			GivenRun.failed_steps(this_run, [])
+			GivenRun.alley_tiles(this_run, [])
 			var closure_state := CityState.new()
-			closure_state.begin_day(city.map.block_plans, day)
+			closure_state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
+					city.map().doorstep_world_position())
 
 			var director := _director(t)
 			director.start_day(day, _production_rng(seed_value, day, "resistance"),
 					Tuning.day_length(day))
+			# Read as the day starts, before she is placed and a tick may move the mark near her.
+			var placed_step := director.current_step()
+			if placed_step != null and placed_step.is_pickup:
+				var placed_at := director.contact_position()
+				t.check(_the_way_has_drawn(city.map().world_to_tile(placed_at)),
+						"seed %d day %d: the units along a way from home to the mark have drawn"
+						% [seed_value, day])
+				if placed_at.distance_to(city.map().doorstep_world_position()) \
+						> Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_DRAW_AHEAD:
+					far_marks += 1
 			# `main.gd`'s own order: she is placed and ticks once before this checks anything —
 			# see `_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground`'s own
 			# doc for why the tick is load-bearing.
-			var player := _rig_player(t, city.map.doorstep_world_position())
+			var player := _rig_player(t, city.map().doorstep_world_position())
 			director.use_player(player)
 			director.tick(STEP)
 
 			var mark_step := director.current_step()
 			if mark_step != null and mark_step.is_pickup:
 				checked += 1
-				var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
+				var region_plan: RegionPlan = city.streets().region_plan()
 				var walled_alleys: Array[Rect2i] = \
-						region_plan.alley_walls if region_plan else []
+						region_plan.walled_alleys() if region_plan else []
 				var reachability := _day_reachability(city)
 				var grid: ReachabilityGrid = reachability[0]
 				var blocked: Dictionary = reachability[1]
 				var reached: Dictionary = reachability[2]
-				var mark_tile := city.map.world_to_tile(director.contact_position())
-				t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false,
+				var mark_tile := city.map().world_to_tile(director.contact_position())
+				t.check(_stands_on_legal_ground(city.map(), mark_tile, walled_alleys, false,
 						grid, blocked, reached),
 						("seed %d day %d: the mark stands on walkable, unobstructed, " +
 						"reachable ground at %s, never a sealed or closed alley")
@@ -64,3 +87,6 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 			director.free()
 	_free_city()
 	t.check(checked > 0, "the sweep actually checked something (%d)" % checked)
+	t.check(far_marks > 0,
+			"and some marks stood beyond the ground the day's start drew round her door (%d)"
+			% far_marks)

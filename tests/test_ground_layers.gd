@@ -24,7 +24,7 @@ var recipe := GroundRecipe.new()
 ## The library every build here reads its page through, fresh for this suite.
 var atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_component_rotation_is_clockwise(t)
 	_test_sparse_grass_selection_is_stable_and_varied(t)
 	_test_manifest_covers_the_authored_ground_sources(t)
@@ -40,7 +40,7 @@ func run(t) -> void:
 ## the four kerb sources are one curbstone component turned to face each direction, so the stone
 ## stands on the north edge of the north kerb and on the east, south and west edge of the others.
 ## Where the stone is is where the composed tile differs from the sidewalk base it is laid over.
-func _test_component_rotation_is_clockwise(t) -> void:
+func _test_component_rotation_is_clockwise(t: TestRunner) -> void:
 	if _svg_bake():
 		return
 	var page := _page(t)
@@ -72,7 +72,7 @@ func _test_component_rotation_is_clockwise(t) -> void:
 				"kerb source %d turns its stone to the %s edge (offset %s)"
 				% [source_id, direction, offset])
 
-func _test_sparse_grass_selection_is_stable_and_varied(t) -> void:
+func _test_sparse_grass_selection_is_stable_and_varied(t: TestRunner) -> void:
 	var tile_set := TileSet.new()
 	var grass := TileSetAtlasSource.new()
 	grass.texture_region_size = GroundLayers.TILE_SIZE
@@ -92,28 +92,27 @@ func _test_sparse_grass_selection_is_stable_and_varied(t) -> void:
 	t.check(GroundLayers.atlas_coords_for(0, 4242, Vector2i(3, 5), tile_set) == Vector2i.ZERO,
 			"non-grass sources retain their authored atlas coordinate")
 
-func _test_damage_pools_are_shared_without_changing_source_semantics(t) -> void:
+func _test_damage_pools_are_shared_without_changing_source_semantics(t: TestRunner) -> void:
 	var manifest := _layer_manifest(t)
 	if manifest.is_empty():
 		return
 	var components: Dictionary = manifest.get("components", {})
 	var pools: Dictionary = manifest.get("damage_pools", {})
-	for damage_type in ["hairline", "cracked", "broken"]:
+	for damage_type: String in ["hairline", "cracked", "broken"]:
 		var pool: Array = pools.get(damage_type, [])
 		t.check(pool.size() == GroundLayers.DAMAGE_VARIANTS,
 				"the shared %s pool retains all six accepted stencils" % damage_type)
 		var provenance: Dictionary = {}
-		for component_value in pool:
-			var component: String = str(component_value)
+		for component: String in pool:
 			provenance[component.get_slice("_", 0)] = true
 			t.check(components.has(component),
 					"the shared %s pool names a published transparent component" % damage_type)
 		t.check(provenance.has_all(["road", "sidewalk", "alley"]),
 				"the shared %s pool makes every accepted surface drawing available on every base" % damage_type)
 	var source_layers: Dictionary = manifest.get("source_layers", {})
-	for first_source in [40, 46, 52]:
+	for first_source: int in [40, 46, 52]:
 		for offset in range(6):
-			var source_id: int = int(first_source) + offset
+			var source_id: int = first_source + offset
 			t.check(not source_layers.has(str(source_id)),
 					"damage source %d selects a shared pool instead of a surface-bound layer" % source_id)
 			t.check(AUTHORED_GROUND.get_source(source_id) != null,
@@ -124,7 +123,7 @@ func _test_damage_pools_are_shared_without_changing_source_semantics(t) -> void:
 ## for a direction, drawn from one component turned to face it: so the four sources of a family
 ## share one component, turn it four different ways, and a direction is turned the same way in
 ## every family. The rotation is read off the sources `GroundTiles` names, not retyped here.
-func _test_directional_component_pairs_match_ground_tiles(t) -> void:
+func _test_directional_component_pairs_match_ground_tiles(t: TestRunner) -> void:
 	var manifest := _layer_manifest(t)
 	if manifest.is_empty():
 		return
@@ -162,7 +161,7 @@ func _test_directional_component_pairs_match_ground_tiles(t) -> void:
 				"the %s's four directions are one component (%s)" % [family, components.keys()])
 		t.check(turns.size() == 4, "the %s turns it four different ways (%s)" % [family, turns.keys()])
 
-func _test_manifest_covers_the_authored_ground_sources(t) -> void:
+func _test_manifest_covers_the_authored_ground_sources(t: TestRunner) -> void:
 	var manifest := _layer_manifest(t)
 	if manifest.is_empty():
 		return
@@ -170,24 +169,22 @@ func _test_manifest_covers_the_authored_ground_sources(t) -> void:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var components: Dictionary = manifest.get("components", {})
 	var source_layers: Dictionary = manifest.get("source_layers", {})
-	for source_key_value in source_bases:
-		var source_key: String = str(source_key_value)
+	for source_key: String in source_bases:
 		var source_id := int(source_key)
 		var base_name: String = str(source_bases[source_key])
 		t.check(AUTHORED_GROUND.get_source(source_id) != null,
 			"layer manifest source %d remains a real authored TileSet source" % source_id)
 		t.check(bases.has(base_name), "source %d names a declared shared base" % source_id)
-	for source_key_value in source_layers:
-		var source_key: String = str(source_key_value)
+	for source_key: String in source_layers:
 		var layers: Array = source_layers[source_key]
-		for layer_value in layers:
+		for layer_value: Variant in layers:
 			if layer_value is Dictionary:
 				var component: String = str((layer_value as Dictionary).get("component", ""))
 				t.check(components.has(component),
 						"source %s names a declared transparent component" % source_key)
 	var grass_features: Array = manifest.get("grass_features", [])
-	for feature_value in grass_features:
-		var feature_name: String = str(feature_value).trim_suffix(".png")
+	for feature_value: String in grass_features:
+		var feature_name: String = feature_value.trim_suffix(".png")
 		t.check(components.has(feature_name),
 			"grass feature %s names a declared transparent component" % feature_value)
 	# Every picture the recipe names has to be on the page, or the source it belongs to composes
@@ -201,10 +198,10 @@ func _test_manifest_covers_the_authored_ground_sources(t) -> void:
 	if _svg_bake():
 		return
 	var filenames: Array[String] = []
-	for value in bases.values():
-		filenames.append(str(value))
-	for value in components.values():
-		filenames.append(str(value))
+	for value: String in bases.values():
+		filenames.append(value)
+	for value: String in components.values():
+		filenames.append(value)
 	var unbaked: Array[String] = []
 	for filename in filenames:
 		var name := _region_name_of(filename)
@@ -215,7 +212,7 @@ func _test_manifest_covers_the_authored_ground_sources(t) -> void:
 			% [GroundLayers.ATLAS_GROUP, ", ".join(unbaked.slice(0, 5))])
 	t.check(filenames.size() > 20, "there were recipe pictures to look for (%d)" % filenames.size())
 
-func _layer_manifest(t) -> Dictionary:
+func _layer_manifest(t: TestRunner) -> Dictionary:
 	var parser := JSON.new()
 	t.check(parser.parse(FileAccess.get_file_as_string(MANIFEST_PATH)) == OK,
 		"the runtime layer manifest parses before source selection uses it")
@@ -224,7 +221,7 @@ func _layer_manifest(t) -> Dictionary:
 ## A day's repaint is a `build_tile_set()`, and it may not go back to the disk for the recipe: a
 ## file that moved under a running game would compose nothing and draw whole authored tiles. Two
 ## builds, one read: the recipe the first ask read is the very dictionary after both builds.
-func _test_the_recipe_is_read_from_disk_once(t) -> void:
+func _test_the_recipe_is_read_from_disk_once(t: TestRunner) -> void:
 	if _page(t) == null:
 		return
 	var fresh_recipe := GroundRecipe.new()
@@ -232,14 +229,10 @@ func _test_the_recipe_is_read_from_disk_once(t) -> void:
 	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	t.check(first != null and second != null, "both ground builds produced a TileSet")
-	t.check(not first.has_source(GroundTiles.WATER) and not second.has_source(GroundTiles.WATER),
-			"water is absent from both static compositions, including a daily repaint")
-	t.check(AtlasTable.baked().has_region(&"tiles/water"),
-			"the independent water surface still has its original baked picture")
 	t.check(is_same(fresh_recipe.manifest(), held),
 			"two ground builds leave the recipe the one read the first ask made, not read again")
 
-func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
+func _test_composed_sources_keep_ids_and_visible_detail(t: TestRunner) -> void:
 	if _svg_bake():
 		return
 	var page := _page(t)
@@ -279,7 +272,7 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var pools: Dictionary = manifest.get("damage_pools", {})
 	var source_types: Dictionary = manifest.get("source_damage_types", {})
-	for source_id in [40, 46, 52]:
+	for source_id: int in [40, 46, 52]:
 		var damage := composed.get_source(source_id) as TileSetAtlasSource
 		t.check(damage != null and damage.has_tile(Vector2i(GroundLayers.DAMAGE_VARIANTS - 1, 0)),
 				"damage source %d receives a six-cell shared-stencil atlas" % source_id)
@@ -304,7 +297,7 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 ## The eight grass cells share one base and differ only where a feature was scattered, and every
 ## feature lands whole inside its own cell — the half `tests/test_atlas_ground.gd` cannot state,
 ## because the scatter is its own RNG rather than something the manifest says.
-func _test_the_grass_atlas_scatters_whole_features_over_one_base(t) -> void:
+func _test_the_grass_atlas_scatters_whole_features_over_one_base(t: TestRunner) -> void:
 	if _svg_bake():
 		return
 	var page := _page(t)
@@ -334,7 +327,7 @@ func _test_the_grass_atlas_scatters_whole_features_over_one_base(t) -> void:
 	t.check(plain < GroundLayers.GRASS_VARIANTS,
 			"not every grass cell is the bare base, so features are actually scattered")
 
-func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
+func _test_damage_atlas_selection_is_stable_and_shared(t: TestRunner) -> void:
 	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe, atlas)
 	if _svg_bake():
 		# An SVG bake draws the authored damage tiles as they were drawn, one cell each, so there
@@ -346,7 +339,7 @@ func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
 	var road := GroundLayers.atlas_coords_for(40, 4242, tile, composed)
 	t.check(road == GroundLayers.atlas_coords_for(40, 4242, tile, composed),
 			"the same city seed and damage coordinate select the same shared atlas cell")
-	for source_id in [46, 52]:
+	for source_id: int in [46, 52]:
 		t.check(road == GroundLayers.atlas_coords_for(source_id, 4242, tile, composed),
 				"one seed and coordinate select the same shared variation regardless of its material")
 	var seen: Dictionary = {}
@@ -361,7 +354,7 @@ func _components_filename(manifest: Dictionary, component: String) -> String:
 	var components: Dictionary = manifest.get("components", {})
 	return str(components.get(component, ""))
 
-func _check_damage_base_pixels(t, cell: Image, base: Image, overlay: Image, source_id: int,
+func _check_damage_base_pixels(t: TestRunner, cell: Image, base: Image, overlay: Image, source_id: int,
 		variant: int) -> void:
 	for y in GroundLayers.TILE_SIZE.y:
 		for x in GroundLayers.TILE_SIZE.x:
@@ -373,7 +366,7 @@ func _check_damage_base_pixels(t, cell: Image, base: Image, overlay: Image, sour
 ## against `GroundTiles.SIDEWALK_KERB_N`, whose plain source puts the stone in a place each bake
 ## names differently — the `curbstone` component's own alpha in a default bake, the authored
 ## kerb's `y=0 height=2` band in an SVG bake.
-func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
+func _test_route_kerb_twin_tints_the_stone_alone(t: TestRunner) -> void:
 	var page := _page(t)
 	if page == null:
 		return
@@ -428,7 +421,7 @@ func _color_distance(a: Color, b: Color) -> float:
 func _svg_bake() -> bool:
 	return AtlasTable.baked().bake_mode() == "svg"
 
-func _page(t) -> Image:
+func _page(t: TestRunner) -> Image:
 	var page := atlas.page_image(GroundLayers.ATLAS_GROUP)
 	t.check(page != null, "the baked ground page reads back as an image")
 	return page

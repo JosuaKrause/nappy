@@ -7,10 +7,13 @@ extends RefCounted
 ## `_title` unbroken, and `Texts.DAY_BRIEF`'s day-1 entry had no break in it at all — both pinned checks
 ## below would have read the whole thing as a single line with no `\n` in it.
 
+const UI := preload("res://tests/ui_screens.gd")
+const DaySummary := preload("res://src/ui/day_summary.gd")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var was_paused: bool = t.get_tree().paused
 	_test_a_short_multi_sentence_text_stays_on_one_line(t)
 	_test_a_decimal_and_a_clock_reading_never_split(t)
@@ -34,7 +37,7 @@ static func _label(font_size: int, width: float) -> Label:
 	label.custom_minimum_size.x = width
 	return label
 
-func _test_a_short_multi_sentence_text_stays_on_one_line(t) -> void:
+func _test_a_short_multi_sentence_text_stays_on_one_line(t: TestRunner) -> void:
 	var text := "A. B."
 	var wide := _label(26, 100000.0)
 	t.check(SentenceLines.break_for_label(text, wide) == text,
@@ -43,7 +46,7 @@ func _test_a_short_multi_sentence_text_stays_on_one_line(t) -> void:
 
 ## Where a sentence ends is read where it shows: at a width no two sentences can share, the text
 ## breaks after every sentence and nowhere else.
-func _test_a_decimal_and_a_clock_reading_never_split(t) -> void:
+func _test_a_decimal_and_a_clock_reading_never_split(t: TestRunner) -> void:
 	var narrow := _label(26, 1.0)
 	var decimal := "The distance was 1.5 miles today."
 	t.check(SentenceLines.break_for_label(decimal, narrow) == decimal,
@@ -54,7 +57,7 @@ func _test_a_decimal_and_a_clock_reading_never_split(t) -> void:
 			"a period followed by a space still ends a sentence even right after a clock reading")
 	narrow.free()
 
-func _test_a_single_long_sentence_is_handed_back_unbroken(t) -> void:
+func _test_a_single_long_sentence_is_handed_back_unbroken(t: TestRunner) -> void:
 	var text := "A very long single sentence with no period anywhere inside it at all"
 	var narrow := _label(26, 1.0)
 	t.check(SentenceLines.break_for_label(text, narrow) == text,
@@ -62,7 +65,7 @@ func _test_a_single_long_sentence_is_handed_back_unbroken(t) -> void:
 			"label's own autowrap is what wraps it, word by word")
 	narrow.free()
 
-func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t) -> void:
+func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t: TestRunner) -> void:
 	var narrow := _label(26, 1.0)
 	var wrapped := SentenceLines.break_for_label(
 			"One sentence here. Another one there. And a third.", narrow)
@@ -77,13 +80,11 @@ func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t) -> 
 ## is the title `SummaryModel.day_over()` builds from `DayController`'s `"She started crying.
 ## There is no settling her now."` with the clock worked into the first sentence — see
 ## `SummaryModel._clock_line()`'s own doc.
-func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t: TestRunner) -> void:
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
-	var end := DayEnd.new()
-	end.result = GameEnums.DayResult.LOST_CRYING
-	end.reason = "She started crying. There is no settling her now."
-	end.elapsed_seconds = 10.0
+	var end := DayEnd.new(GameEnums.DayResult.LOST_CRYING,
+			"She started crying. There is no settling her now.", 10.0)
 	var run := RunState.new()
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.DAY_OVER)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
@@ -96,11 +97,11 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 ## break falls only where the text must wrap: "same for \"She won't settle indoors. It is quiet in
 ## the park. Walk until she sleeps, then bring her home.\" the newline goes after park" — the
 ## latter.)* Day 1's own `Texts.DAY_BRIEF` entry is exactly this three-sentence text.
-func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t: TestRunner) -> void:
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var run := RunState.new()
-	run.header.day = 1
+	run.header().set_day(1)
 	summary.show_summary(SummaryModel.brief_for(run), RunFlow.Mode.BRIEF)
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
 	t.check(brief.text == "She won't settle indoors. It is quiet in the park.\n" +
@@ -115,7 +116,7 @@ func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t) -> v
 ## every finale body, the resumed-day note and the pause screen's own instructions, so a future
 ## entry in any of those tables is covered by the same sweep rather than only by the two pinned
 ## cases above.
-func _check_breaks_only_between_sentences(t, source: String, label: Label, description: String) -> void:
+func _check_breaks_only_between_sentences(t: TestRunner, source: String, label: Label, description: String) -> void:
 	var wrapped := SentenceLines.break_for_label(source, label)
 	var lines := wrapped.split("\n")
 	for i in range(lines.size() - 1):
@@ -125,31 +126,31 @@ func _check_breaks_only_between_sentences(t, source: String, label: Label, descr
 	t.check(" ".join(lines) == source,
 			"%s keeps every word — the break neither drops nor rewrites anything in it" % description)
 
-func _test_every_day_brief_breaks_only_between_sentences(t) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+func _test_every_day_brief_breaks_only_between_sentences(t: TestRunner) -> void:
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
-	for day in Texts.DAY_BRIEF.keys():
+	for day: int in Texts.DAY_BRIEF.keys():
 		var source: String = Texts.DAY_BRIEF[day]
 		_check_breaks_only_between_sentences(t, source, brief, "day %d's brief" % day)
 	summary.queue_free()
 
-func _test_every_ending_and_finale_body_breaks_only_between_sentences(t) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+func _test_every_ending_and_finale_body_breaks_only_between_sentences(t: TestRunner) -> void:
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
-	for ending in Texts.ENDING_BODY.keys():
+	for ending: GameEnums.Ending in Texts.ENDING_BODY.keys():
 		var source: String = Texts.ENDING_BODY[ending]
 		_check_breaks_only_between_sentences(t, source, body, "the %s ending's body" % ending)
-	for kind in Texts.FINALE_BODY.keys():
+	for kind: CityExit.Kind in Texts.FINALE_BODY.keys():
 		var source: String = Texts.FINALE_BODY[kind]
 		_check_breaks_only_between_sentences(t, source, body, "the finale body for exit kind %d" % kind)
 	summary.queue_free()
 
 ## `Texts.RESUMED_DAY_LOST` (`src/ui/texts.gd`) — the day brief's own line for a resumed run whose
 ## save said a day was under way: the two sentences the note is made of.
-func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+func _test_the_resumed_day_note_breaks_only_between_sentences(t: TestRunner) -> void:
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	_check_breaks_only_between_sentences(t,
@@ -157,27 +158,37 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 			"the resumed-day note")
 	summary.queue_free()
 
-func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
+## The body is read as its label shows it (`RichTextLabel.get_parsed_text()`, where the run button's
+## symbol stands as the one space a picture takes), and the symbol as the picture its line asks of
+## the atlas the screen is handed (`use_atlas()`, as `main` hands it one).
+func _test_the_pause_screens_body_breaks_only_between_sentences(t: TestRunner) -> void:
 	# The touch layer holds the control scheme, and the screen words its body again on every open.
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
-	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
+	var pause: PauseScreen = PAUSE_SCENE.instantiate()
 	var run := RunState.new()
 	pause.use_run(run)
+	var atlas := RecordingAtlas.new()
+	pause.use_atlas(atlas)
 	t.add_child(pause)
 	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
-	for joystick in [false, true]:
+	for joystick: bool in [false, true]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
+		# Forgets what was asked before this open: the buttons' glyphs as they entered the tree.
+		atlas.pictures_asked()
 		pause.open()
+		var symbols := atlas.pictures_asked()
 		var source: String = Texts.WALKING_LESSON_PAUSE % (
 				Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
-		var lines := body.line.split("\n")
+		var lines := body.get_parsed_text().split("\n")
 		for i in range(lines.size() - 1):
 			t.check(lines[i].ends_with(".") or lines[i].ends_with("?") or lines[i].ends_with("!"),
 					"the pause screen's instructions (joystick %s) break only after a sentence's end"
 							% joystick)
-		t.check(" ".join(lines) == source,
+		t.check(" ".join(lines) == source.replace(Texts.RUN_TOKEN, " ")
+				and symbols == ([&"ui/run"] if joystick else []),
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
-		pause.close()
+		UI.dismiss(pause)
 	pause.free()
 	controls.free()

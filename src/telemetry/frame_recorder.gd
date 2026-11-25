@@ -53,7 +53,11 @@ var _record: FrameRecord
 ## Whether the title is up, asked of whoever runs the screen and handed in by `setup()`: a frame
 ## behind the title is not kept, since nobody is playing it.
 var _in_the_title: Callable
-var _city: City
+var _events: EventManager
+var _crowd: Crowd
+## How the ground is scheduled this run, written into a record's metadata: `Mode.ONE` until
+## `setup()` hands it one.
+var _ground_mode := SceneryGround.Mode.ONE
 var _player: Stroller
 var _day: DayController
 ## The run whose seed names the record and whose calendar day each frame carries, handed in by
@@ -63,7 +67,7 @@ var _metadata: Dictionary = {}
 ## The window's viewport, whose render time the engine measures while the record is on.
 var _viewport: RID
 
-## The sitting that keeps where a native record is written (`Sitting.frame_record_path`), handed
+## The sitting that keeps where a native record is written (`Sitting.frame_record_file()`), handed
 ## in by `setup()`: chosen by the first save of the sitting, so every scene exit rewrites the same
 ## file and a restart, which builds a new recorder, does not start a second.
 var _sitting: Sitting
@@ -74,13 +78,16 @@ var _records_dir := ""
 ## `_add_page_button()`.
 var _save_callback: JavaScriptObject
 
-func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController,
+func setup(in_the_title: Callable, events: EventManager, crowd: Crowd,
+		ground_mode: SceneryGround.Mode, player: Stroller, day: DayController,
 		run: RunState, sitting: Sitting, records_dir: String) -> void:
 	_run = run
 	_records_dir = records_dir
 	_sitting = sitting
 	_in_the_title = in_the_title
-	_city = city
+	_events = events
+	_crowd = crowd
+	_ground_mode = ground_mode
 	_player = player
 	_day = day
 	name = "FrameRecorder"
@@ -91,10 +98,10 @@ func setup(in_the_title: Callable, city: City, player: Stroller, day: DayControl
 	var budget_usec := roundi(1000000.0 / (refresh if refresh > 0.0 else 60.0))
 	var resolution := _clock_resolution()
 	var pair := _calibrate()
-	_record = _sitting.frame_timing as FrameRecord
-	_record.start(_record.ledger if _record.ledger != null
+	_record = _sitting.kept_frame_timing() as FrameRecord
+	_record.start(_record.frame_ledger() if _record.frame_ledger() != null
 			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
-	ledger = _record.ledger
+	ledger = _record.frame_ledger()
 	_listen_for_draws()
 	_metadata = {"refresh_hz": refresh, "refresh_assumed": refresh <= 0.0,
 		"display_budget_usec": budget_usec, "timer_pair_usec": pair,
@@ -122,14 +129,14 @@ func _process(_delta: float) -> void:
 ## the start of drawing. The counters are read here, before the clock moves to `draw`, so their
 ## own cost is the process step's.
 func at_process_end() -> void:
-	ledger.keep = not get_tree().paused and not _in_the_title.call() and _day.is_running()
-	if ledger.keep:
+	ledger.keep_this_frame(not get_tree().paused and not _in_the_title.call() and _day.is_running())
+	if ledger.is_keeping():
 		var here := _player.global_position
-		ledger.set_counter(FrameLedger.CROWD_AGENTS, _city.crowd.agent_count())
-		ledger.set_counter(FrameLedger.LIVE_EVENTS, _city.events.active_count())
+		ledger.set_counter(FrameLedger.CROWD_AGENTS, _crowd.agent_count())
+		ledger.set_counter(FrameLedger.LIVE_EVENTS, _events.active_count())
 		ledger.set_counter(FrameLedger.PLAYER_X, roundi(here.x))
 		ledger.set_counter(FrameLedger.PLAYER_Y, roundi(here.y))
-		ledger.set_counter(FrameLedger.DAY, _run.header.day)
+		ledger.set_counter(FrameLedger.DAY, _run.header().day())
 		ledger.set_counter(FrameLedger.PROCESS_FRAME, Engine.get_process_frames())
 	ledger.process_end(Time.get_ticks_usec())
 
@@ -187,7 +194,7 @@ static func _draw_kind(node: Node) -> int:
 	return node.get_meta(FrameTiming.DRAW_KIND_META, -1)
 
 func _drew(kind: int) -> void:
-	if _record.on:
+	if _record.is_on():
 		_record.drew(kind)
 
 ## What one `FrameRecord.enter()`/`leave()` pair costs on this device, in microseconds, timed over
@@ -290,9 +297,8 @@ func _report_text() -> String:
 			+ "counts, not times"
 	var metadata := _metadata.duplicate()
 	metadata["build"] = BuildInfo.build_text()
-	metadata["run_seed"] = _run.header.run_seed
-	# The mode the city was handed, or a city's default for a recorder that watches none.
-	metadata["ground_mode"] = int(_city.ground_mode if _city else SceneryGround.Mode.ONE)
+	metadata["run_seed"] = _run.header().run_seed()
+	metadata["ground_mode"] = int(_ground_mode)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
 	metadata["engine"] = Engine.get_version_info()
 	metadata["renderer"] = RenderingServer.get_current_rendering_method()
@@ -312,18 +318,18 @@ func _report_text() -> String:
 ## Saves the record: through the browser's download on the web, into the folder `setup()` was
 ## handed on the desktop. Answers where it went. The frame this runs in is not kept, since building the
 ## file is the slowest thing in it.
-func save() -> String:
+func _save() -> String:
 	var text := _report_text()
-	ledger.keep = false
+	ledger.keep_this_frame(false)
 	if OS.get_name() == "Web":
-		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header.run_seed,
+		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header().run_seed(),
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
-	if _sitting.frame_record_path == "":
-		_sitting.frame_record_path = "%s/record-%s-seed%d.json" % [_records_dir,
-			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
-	var path := _sitting.frame_record_path
+	if _sitting.frame_record_file() == "":
+		_sitting.keep_frame_record_file("%s/record-%s-seed%d.json" % [_records_dir,
+			Time.get_datetime_string_from_system().replace(":", "-"), _run.header().run_seed()])
+	var path := _sitting.frame_record_file()
 	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""
@@ -359,7 +365,7 @@ func _exit_tree() -> void:
 		if window != null:
 			window.call("nappyFrameRecordHide")
 	else:
-		save()
+		_save()
 
 ## The page's own button, added once per page: a reload of the scene hands the button the new
 ## recorder's callback and shows it again rather than adding a second button; leaving the day
@@ -418,7 +424,7 @@ window.nappyFrameRecordButton = function (save) {
 ## The tap's answer: the button's label says the file was handed to the browser, with its name,
 ## for six seconds. It does not say the download finished, which the page cannot observe.
 func _on_page_save(_arguments: Array) -> void:
-	var file_name := save()
+	var file_name := _save()
 	var window := JavaScriptBridge.get_interface("window")
 	if window != null and file_name != "":
 		window.call("nappyFrameRecordSent", file_name)

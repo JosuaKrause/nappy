@@ -8,5 +8,5 @@ extends RefCounted
 
 const Rig := preload("res://tests/full_run_rig.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await Rig.new().run(t, 1234567)

@@ -49,6 +49,9 @@ ENTRY_POINTS = (
     "release-notes.py",
     "inbox.py",
     "agent-stats.py",
+    "usage-report.py",
+    "agents-to-reassess.py",
+    "sweep-agent-leftovers.py",
     "reddit.py",
     "check_citations.py",
     "ci_classify.py",
@@ -57,12 +60,17 @@ ENTRY_POINTS = (
     "ci_queue_update.py",
     "ci_transcription.py",
     "ci_code_pr_queue.py",
+    "ci_fable_only.py",
     "ci_pr_questions.py",
     "check_layers.py",
     "check_overrides.py",
     "check_test_only_members.py",
     "merge-test-only-members.py",
     "check_field_reads.py",
+    "field_answers.py",
+    "field_to_method.py",
+    "compare-placement-rows.py",
+    "dead_code.py",
 )
 
 SOUND_FILES = (
@@ -574,6 +582,11 @@ class CliHelpTests(unittest.TestCase):
             with self.subTest(tool=name):
                 result = self.run_tool(name, "--this-flag-does-not-exist")
                 self.assertNotEqual(result.returncode, 0, f"{name} accepted an unknown flag")
+
+    def test_dead_code_rejects_an_abbreviated_flag(self) -> None:
+        result = self.run_tool("dead_code.py", "--sec", "enums")
+        self.assertNotEqual(result.returncode, 0, "dead_code.py accepted an abbreviated flag")
+        self.assertNotIn("==", result.stdout)
 
     def test_agent_identity_help_and_unknown_flag_do_no_work(self) -> None:
         # run's own "role -- command" without the "--" is rejected the same way as an unknown

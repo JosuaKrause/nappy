@@ -22,7 +22,7 @@ var _home_door: City.HomeDoor = null
 ## door exists, so it is handed as a value rather than read off the door node.
 var _door_x_range := Vector2.ZERO
 var _map: CityMap = null
-## The run whose scars say which front burnt (`attempt_spend.scars`).
+## The run whose scars say which front burnt (`attempt_spend().scars()`).
 var _run: RunState = null
 ## Where the boarded window is written down for the run log.
 var _trace := RunTrace.new()
@@ -49,15 +49,15 @@ static func over(buildings: Array[Building], home_door: City.HomeDoor, door_x_ra
 ## purpose above too — the same look for a different, per-building reason.
 ##
 ## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
-## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
+## about the run (`run.attempt_spend().scars()`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall the city actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
-## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
+## tile one step north of the scar (`Vector2i.UP`, the same direction `RowGround.
 ## _wants_this_side()`'s `AT_THE_FRONT` case checks, on the map and `BUILDING`) is always a real
 ## lot. `tests/test_acts.gd` checks that over every site the fire can be given.
 ##
-## Idempotent, like every other per-day override of the city's: `Building.condition`'s own setter is
-## a no-op once it already says `BURNT`, so the city calling this from every `_dress_blocks()` pass —
+## Idempotent, like every other per-day override of the city's: `Building.show_condition()` is
+## a no-op once the building already shows `BURNT`, so the city calling this from every `_dress_blocks()` pass —
 ## the ordinary day and the finale's own dressing alike — costs nothing once the frontage is found,
 ## and finds nothing before day 4, when the scar does not exist yet. A run records one `burnt_shell`
 ## scar, and every one the list holds burns its own building all the same.
@@ -69,13 +69,11 @@ static func over(buildings: Array[Building], home_door: City.HomeDoor, door_x_ra
 func mark_the_burnt_frontage() -> void:
 	if _run == null:
 		return
-	for scar in _run.attempt_spend.scars:
-		if String(scar["id"]) != City.BURNT_FRONTAGE_SCAR:
-			continue
-		var wall_tile := _map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
+	for scar_at in _run.attempt_spend().scar_positions(EventCatalogue.BURNT_SHELL_ID):
+		var wall_tile := _map.world_to_tile(scar_at) + Vector2i.UP
 		for building in _buildings:
-			if building.lot.has_point(wall_tile):
-				building.condition = Building.Condition.BURNT
+			if building.lot_rect().has_point(wall_tile):
+				building.show_condition(Building.Condition.BURNT)
 				break
 
 ## The way in of the building directly north of the sidewalk point `sidewalk` — the same lot
@@ -88,7 +86,7 @@ func way_in_behind(sidewalk: Vector2) -> Vector2:
 		return Vector2.INF
 	var wall_tile := _map.world_to_tile(sidewalk) + Vector2i.UP
 	for building in _buildings:
-		if building.lot.has_point(wall_tile):
+		if building.lot_rect().has_point(wall_tile):
 			var x := building.way_in_local_x(sidewalk.x - building.position.x)
 			return building.position + Vector2(x, -Tuning.TILE_SIZE * 0.5)
 	return Vector2.INF
@@ -101,10 +99,10 @@ func way_in_behind(sidewalk: Vector2) -> Vector2:
 func present_block(block: Vector2i, state: CityState) -> void:
 	if _map == null:
 		return
-	var condition := City.condition_for(state.purpose_of(_map.block_plans, block))
+	var condition := City.condition_for(state.purpose_of(_map.plans_by_block(), block))
 	for building in _buildings:
-		if City.block_of(building.lot) == block:
-			building.condition = condition
+		if City.block_of(building.lot_rect()) == block:
+			building.show_condition(condition)
 	mark_the_burnt_frontage()
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
@@ -118,7 +116,7 @@ func present_block(block: Vector2i, state: CityState) -> void:
 ## rather than rolled, so there is no shorter front here for a topmost row to stand in for it.
 func board_neighbor_window() -> void:
 	var building := _home_door_building()
-	if not building or building.neighbor_window_col >= 0:
+	if not building or building.neighbor_window_col() >= 0:
 		return
 	var door_centre_x := (_door_x_range.x + _door_x_range.y) * 0.5
 	var best_col := 0
@@ -128,20 +126,20 @@ func board_neighbor_window() -> void:
 		if distance < best_distance:
 			best_distance = distance
 			best_col = col
-	building.neighbor_window_col = best_col
+	building.board_neighbor_window_at(best_col)
 	_trace.note("contact",
 			"the neighbor's window is boarded at column %d, row %d (the third floor)"
 			% [best_col, building.neighbor_window_row()])
 
 ## The one home-block `Building` the door's own world-space span actually stands in front of —
-## every lot on the home block carries `is_home_building`, but the door notch's columns are cut
+## every lot on the home block answers `is_on_home_block()`, but the door notch's columns are cut
 ## out of every other one (`City._spawn_buildings()`'s own doc), so only this lot's world footprint
 ## overlaps the door's span.
 func _home_door_building() -> Building:
 	for building in _buildings:
-		if not building.is_home_building:
+		if not building.is_on_home_block():
 			continue
-		var world := _map.tile_rect_to_world(building.lot)
+		var world := _map.tile_rect_to_world(building.lot_rect())
 		if world.position.x < _door_x_range.y and world.end.x > _door_x_range.x:
 			return building
 	return null

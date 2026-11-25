@@ -237,15 +237,15 @@ var _stands_on: SpawnSiting.Ask
 ## her, with no reach ahead of him. His walks keep to tile-centre ways and to the park's edge, where
 ## a reach would only stop him short of a point beside a solid that his feet can stand on.
 var _officer_walks := Mover.on_foot()
-## How far an officer's body reaches round his feet, for his move (`MoveProposal.radius`): the
-## policeman's own figure, as he walks when he is an event (`EventInstance.mover_for()` of
-## `OFFICER_ROW`), though his own walks go at no reach.
-var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).radius
+## How far an officer's body reaches round his feet, for his move
+## (`MoveProposal.body_radius()`): the policeman's own figure, as he walks when he is an event
+## (`EventInstance.mover_for()` of `OFFICER_ROW`), though his own walks go at no reach.
+var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).body_reach()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
 ## The park, as its block, and its calm ground in world space.
-var park := Vector2i(-1, -1)
+var _park := Vector2i(-1, -1)
 var _area := Rect2()
 var _rect := Rect2i()
 ## The rectangle the tape stands on: the park's ground, half a barrier's depth in. She is shut in
@@ -266,8 +266,8 @@ var _closed_at := -1.0
 var last_gap := Vector2.INF
 ## The stretches the last gap is, with their tiles and the side of the park they face. Public for
 ## the same reason as `last_gap`: the sweep checks the chosen gap against the map, and a test stands
-## her square before it, before any tape shows it. The CI list of test-only members cannot hold it,
-## since other classes have a member of the same name.
+## her square before it, before any tape shows it. Its line in the CI list of test-only members
+## (`tools/test_only_members.txt`) keeps it public with that reason.
 var gap: Array[Stretch] = []
 ## The way out for the park's people and their escorts: from inside the last gap, through it and
 ## along the ground outside to a place out of her sight, in world points.
@@ -279,12 +279,26 @@ var _leaving: Array[EventInstance] = []
 var _started := false
 ## Where the cordon writes its own account for the run log; the happenings' trace, handed on as it is
 ## built.
-var trace := RunTrace.new()
+var _trace := RunTrace.new()
+
+## Hands the cordon the trace its account is written to (the happenings' own, handed on).
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
+
+## The signals the cordon reports on (`EventBus`'s script), so the bus it is handed has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## The bus it says she is shut in on (`hard_fail_triggered`), the happenings' own, handed on as it
+## is built (`use_bus()`); none, and a closed cordon tells nobody.
+var _bus: _BUS
+
+## Hands the cordon the bus it says she is shut in on.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
 
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
-## the day's obstruction the last gap is checked under (`ResistanceDirector`'s `_reach_blocked`).
-## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through; `events` the
+## the day's obstruction the last gap is checked under (`DayReach.shut()`, as the director hands it).
+## `navigator` is the city's (`City.navigator()`), which the officers walk through; `events` the
 ## day's, or null for none; `world` where its pieces are drawn, from `atlas`, or null to draw
 ## nothing; `siting` is the one the officers are placed by: the ground they may stand on and the
 ## camera's whole view.
@@ -299,7 +313,7 @@ func _init(map: CityMap, navigator: Navigator, events: EventManager, world: Worl
 	_world = world
 	_atlas = atlas
 	_blocked = blocked
-	park = block
+	_park = block
 	_rect = ClosurePlanner.calm_area_rect(map, block)
 	_area = map.tile_rect_to_world(_rect)
 	var inset := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
@@ -346,7 +360,7 @@ func tick(delta: float, her: Vector2) -> void:
 ## about a tile; a stretch needs tape where the park's edge under it opens onto walkable ground
 ## (`ParkClosure.fence()`'s runs, the late park's own entrances).
 func _cut_the_stretches(rect: Rect2i) -> void:
-	var runs: Array[ParkClosure] = ParkClosure.fence(_map, park)
+	var runs: Array[ParkClosure] = ParkClosure.fence(_map, _park)
 	var corners: Array[Vector2] = [_line.position, Vector2(_line.end.x, _line.position.y), _line.end,
 			Vector2(_line.position.x, _line.end.y)]
 	var outs: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
@@ -377,10 +391,10 @@ func _edge_tiles(rect: Rect2i, stretch: Stretch) -> Array[Vector2i]:
 
 func _opens_out(runs: Array[ParkClosure], stretch: Stretch) -> bool:
 	for run in runs:
-		if run.outward != stretch.outward:
+		if run.outward() != stretch.outward:
 			continue
 		for tile in stretch.tiles:
-			if run.segment.tile_rect().has_point(tile):
+			if run.covers_tile(tile):
 				return true
 	return false
 
@@ -476,11 +490,11 @@ func _choose_the_gap(her: Vector2) -> int:
 			other_calm_reached = true
 			break
 	if best_rank > 0:
-		trace.note("contact", "no stretch of the park's edge opens onto ground that reaches "
+		_trace.note("contact", "no stretch of the park's edge opens onto ground that reaches "
 				+ "home clear of the day's events: the last gap is the best of them (reaches home: "
 				+ "%s, clear of bodies and fields: %s)" % [best_rank < 2, best_rank % 2 == 0])
 	if not other_calm_reached:
-		trace.note("contact", "with the park cordoned off, no other calm ground is reached "
+		_trace.note("contact", "with the park cordoned off, no other calm ground is reached "
 				+ "from home")
 	return best
 
@@ -511,7 +525,7 @@ func _ground_outside() -> PackedInt32Array:
 	var blocked := _blocked.duplicate()
 	for tile in _map.rect_tiles(_rect):
 		blocked[tile] = true
-	return _map.walk_field(_map.home_rect.position, blocked)
+	return _map.walk_field(_map.home_tile_rect().position, blocked)
 
 ## Whether the ground outside a stretch — the tile beyond each of its edge tiles — reaches home.
 func _outside_reaches(stretch: Stretch, ground: PackedInt32Array) -> bool:
@@ -524,27 +538,10 @@ func _outside_reaches(stretch: Stretch, ground: PackedInt32Array) -> bool:
 ## Whether `point` stands clear of everything the day put down that bounds or bites: farther from
 ## each body than its obstruction and her whole shape (`HER_REACH`), and outside the field of any
 ## body that carries one (a car crash's, which is there to stop her walking past it) and the
-## lethal reach of anything that ends the day. The park's own people are not asked: they are being
-## walked out.
+## lethal reach of anything that ends the day (`WalkEvents.is_clear_at()`). The park's own people
+## are not asked: they are being walked out.
 func _clear_of_the_day(point: Vector2) -> bool:
-	if not _events:
-		return true
-	for plan in _events.plans():
-		if plan.spent or not plan.is_placed() or _area.has_point(plan.position):
-			continue
-		var def := plan.def
-		if def.obstructs_radius <= 0.0 and not def.hard_fail:
-			continue
-		var reach := def.obstructs_radius + HER_REACH
-		if def.intensity > 0.0:
-			reach = maxf(reach, def.field_reach())
-		if def.hard_fail:
-			reach = maxf(reach, def.lethal_reach() + HER_REACH)
-		var at := plan.live.global_position if plan.live and is_instance_valid(plan.live) \
-				else plan.position
-		if point.distance_to(at) < reach:
-			return false
-	return true
+	return not _events or _events.walk_events().is_clear_at(point, HER_REACH, _area)
 
 # -------------------------------------------------------------- setting out ---
 
@@ -590,8 +587,8 @@ func _set_out(her: Vector2) -> void:
 	_exit_crossing = _tiles_along(_exit[0], _exit.slice(1, 2))
 	_send_escorts()
 	_time_the_close(her)
-	trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
-			% [park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
+	_trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
+			% [_park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
 			% [last_gap, _deadline])
 
 func _needed_count() -> int:
@@ -600,16 +597,6 @@ func _needed_count() -> int:
 		if stretch.needed:
 			count += 1
 	return count
-
-## The point of the line `s` clockwise from the north-west corner.
-func _point_at(s: float) -> Vector2:
-	var left := s
-	for stretch in _stretches:
-		var length := stretch.length()
-		if left <= length:
-			return stretch.a.lerp(stretch.b, left / maxf(length, 0.001))
-		left -= length
-	return _stretches[0].a
 
 ## **Where an officer comes from**: out from `door` across the sidewalk by a tile, then along that
 ## sidewalk one way or the other, half a tile at a time, to the first place none of his figure
@@ -681,7 +668,7 @@ func _time_the_close(her: Vector2) -> void:
 	_deadline = paced
 	if soonest == INF:
 		if her != Vector2.INF:
-			trace.note("contact", "no officer of the park's cordon comes into her view from "
+			_trace.note("contact", "no officer of the park's cordon comes into her view from "
 					+ "where she stood: it closes on the plain clock")
 		return
 	_deadline = maxf(_deadline, soonest)
@@ -947,20 +934,13 @@ func _way_in() -> PackedVector2Array:
 func _send_escorts() -> void:
 	if not _events:
 		return
-	for plan in _events.plans():
-		if plan.spent or plan.live or not plan.is_placed() or not _area.has_point(plan.position):
-			continue
-		if plan.def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		# Not in the world yet, and out of her sight by construction (it would be streamed in
-		# otherwise): the same removal `EventManager.take_away_within()` makes of a plan.
-		plan.spent = true
-		_map.release_obstruction(plan.get_instance_id())
+	# Not in the world yet, and out of her sight by construction (it would be streamed in otherwise).
+	_events.take_away_the_unseen_within(_area)
 	var sent := 0
 	for live in _events.instances():
 		if not _walks_out(live):
 			continue
-		if live.is_leaving or sent >= PARK_CLOSING_ESCORTS:
+		if live.is_on_its_way_out() or sent >= PARK_CLOSING_ESCORTS:
 			_send_off(live)
 			continue
 		var escort := Officer.new()
@@ -974,18 +954,16 @@ func _send_escorts() -> void:
 		_take_on(escort)
 		sent += 1
 	if sent > 0 or not _leaving.is_empty():
-		trace.note("contact", "%d officers come to walk the park's people out, %d more sent off "
+		_trace.note("contact", "%d officers come to walk the park's people out, %d more sent off "
 				% [sent, _leaving.size()] + "on their own, through the last gap")
 
 ## Whether a live event is one of the park's people, to be walked out.
 func _walks_out(live: EventInstance) -> bool:
-	if not live or not is_instance_valid(live) or live.is_finished:
+	if not live or not is_instance_valid(live) or live.is_gone():
 		return false
 	if not _area.has_point(live.global_position):
 		return false
-	var def := live.def
-	return def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and def.vehicle == null \
-			and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING)
+	return not live.is_ambient() and not live.was_sent_at_her() and not live.drives()
 
 ## Sends one person in the park off on foot, out through the last gap and down the way out
 ## (`EventInstance.leave_along()`: no field and no cue, and gone only once she could not be
@@ -994,9 +972,9 @@ func _walks_out(live: EventInstance) -> bool:
 ## her, through the tape. A row that stands where it was placed has no departure of its own, so it
 ## walks out at `PARK_CLOSING_LEAVE_SPEED`.
 func _send_off(person: EventInstance) -> void:
-	if not person or not is_instance_valid(person) or person.is_finished or _leaving.has(person):
+	if not person or not is_instance_valid(person) or person.is_gone() or _leaving.has(person):
 		return
-	var speed := PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
+	var speed := PARK_CLOSING_LEAVE_SPEED if person.departure_speed() <= 0.0 else 0.0
 	if not person.leave_along(_way_out_from(person.global_position), speed, _rect):
 		if _events:
 			_events.retire(person)
@@ -1009,7 +987,7 @@ func _send_off(person: EventInstance) -> void:
 ## mover's step): his move is opened where he stands, he is walked through the navigator, which
 ## checks each part of the walk as he takes it, and the pose the walk ended on is recorded on the
 ## move and committed, before his figure is shown there. Nothing can change the move between: it is
-## the pose he publishes for the others to read, since he keeps his course (`MoveProposal.yields`
+## the pose he publishes for the others to read, since he keeps his course (`MoveProposal.gives_way()`
 ## false). What the tick acts on as he walks — a stretch taped at the end of a leg, the edge reached,
 ## a person sent off, gone out of her sight — is acted on at a pose the navigator has already let
 ## him take, which nothing after takes back.
@@ -1032,7 +1010,7 @@ func _move(officer: Officer, delta: float, her: Vector2) -> void:
 		Officer.Phase.LEAVING:
 			_walk_path(officer, officer.speed * delta)
 			_maybe_gone(officer)
-	officer.move.to = officer.at
+	officer.move.step_to(officer.at)
 	officer.at = officer.move.commit()
 	_show(officer)
 
@@ -1065,7 +1043,7 @@ func _walk_path_for(officer: Officer, step: float) -> float:
 	officer.stuck += 1
 	if officer.stuck >= STUCK_FRAMES:
 		officer.straight = true
-		trace.note("contact", "an officer of the park's cordon at %s finds no way on round what "
+		_trace.note("contact", "an officer of the park's cordon at %s finds no way on round what "
 				% officer.at + "stands in his way and walks the rest of his walk straight")
 		return _walk_straight(officer, step - walked.travelled)
 	officer.path = _lay(officer.at, officer.path, officer.avoid, false)
@@ -1261,7 +1239,7 @@ func _tiles_along(from: Vector2, points: PackedVector2Array) -> Dictionary:
 func _walkers() -> PackedVector2Array:
 	var found := PackedVector2Array()
 	for person in _leaving:
-		if is_instance_valid(person) and not person.is_finished \
+		if is_instance_valid(person) and not person.is_gone() \
 				and not person.is_queued_for_deletion():
 			found.append(person.global_position)
 	for officer in _officers:
@@ -1269,7 +1247,7 @@ func _walkers() -> PackedVector2Array:
 			continue
 		found.append(officer.at)
 		var person := officer.person
-		if is_instance_valid(person) and not person.is_finished \
+		if is_instance_valid(person) and not person.is_gone() \
 				and not person.is_queued_for_deletion() and not _leaving.has(person):
 			found.append(person.global_position)
 	return found
@@ -1289,7 +1267,7 @@ func _still_to_come_out() -> bool:
 				if at_the_line.has_point(officer.at):
 					return true
 	for person in _leaving:
-		if is_instance_valid(person) and not person.is_finished \
+		if is_instance_valid(person) and not person.is_gone() \
 				and not person.is_queued_for_deletion() \
 				and at_the_line.has_point(person.global_position):
 			return true
@@ -1301,10 +1279,8 @@ func _tape_up(stretch: Stretch) -> void:
 	if not _world:
 		return
 	var tape := CordonTape.new()
-	tape.atlas = _atlas
-	tape.piece = CordonTape.Piece.TAPE
-	tape.across = stretch.across()
-	tape.length = stretch.length()
+	tape.use_atlas(_atlas)
+	tape.set_out(CordonTape.Piece.TAPE, stretch.across(), stretch.length())
 	stretch.node = tape
 	# A tile-long stretch is one slice of the park's edge, standing at its own feet: the middle of a
 	# broadside stretch, the near end of an end-on one (`DrawLayer.slice_feet()`).
@@ -1323,8 +1299,8 @@ func _plant_a_post(at: Vector2) -> void:
 	if not _world:
 		return
 	var post := CordonTape.new()
-	post.atlas = _atlas
-	post.piece = CordonTape.Piece.POST
+	post.use_atlas(_atlas)
+	post.set_out(CordonTape.Piece.POST, true, Tuning.TILE_SIZE * 1.0)
 	post.position = at
 	_posts.append(post)
 	_world.add_entity(post)
@@ -1334,12 +1310,12 @@ func _plant_a_post(at: Vector2) -> void:
 ## he sends off once he reaches them or the end of his way up to them.
 func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 	var person := officer.person
-	if not person or not is_instance_valid(person) or person.is_finished:
+	if not person or not is_instance_valid(person) or person.is_gone():
 		_leave(officer)
 		return
 	# Someone who set off on their own before he reached them is turned onto the way out at once,
 	# and he walks out behind them from where he is.
-	var already := person.is_leaving and not _leaving.has(person)
+	var already := person.is_on_its_way_out() and not _leaving.has(person)
 	if not already:
 		var there := person.global_position
 		if officer.aim != Vector2.INF and officer.aim.distance_to(there) > REAIM:
@@ -1364,7 +1340,7 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 ## her sight.
 func _escort(officer: Officer, delta: float) -> void:
 	var person := officer.person
-	if not person or not is_instance_valid(person) or person.is_finished \
+	if not person or not is_instance_valid(person) or person.is_gone() \
 			or person.is_queued_for_deletion():
 		officer.phase = Officer.Phase.LEAVING
 		_maybe_gone(officer)
@@ -1390,12 +1366,13 @@ func _close(her: Vector2) -> void:
 			_set_path(officer, _route_away(from, her) if not _rect.has_point(from)
 					else PackedVector2Array())
 	if trapped:
-		trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
+		_trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
 				% _elapsed + "swing, with her inside: she is shut in")
-		EventBus.hard_fail_triggered.emit(TRAPPED)
+		if _bus:
+			_bus.hard_fail_triggered.emit(TRAPPED)
 	else:
-		trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
-				% [park, _elapsed] + "with her outside")
+		_trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
+				% [_park, _elapsed] + "with her outside")
 
 ## Sends an escort whose person has gone before he reached them back down the way out, past
 ## where she can see: from inside the gap if he is in the park, else from its point nearest him.
@@ -1413,23 +1390,23 @@ func _maybe_gone(officer: Officer) -> void:
 # ------------------------------------------------------------------ figures ---
 
 ## Takes an officer on: one of the cordon's from now, his move on the map's list of moves
-## (`WorldMap.moves`) and his figure in the world.
+## (`WorldMap.list_move()`) and his figure in the world.
 func _take_on(officer: Officer) -> void:
 	_officers.append(officer)
-	officer.move.radius = _officer_reach
-	_map.moves.join(officer.move, officer.at)
+	officer.move.use_body_radius(_officer_reach)
+	_map.list_move(officer.move, officer.at)
 	_make_figure(officer)
 
 ## Lets an officer go: his move off the map's list and his figure out of the world.
 func _let_go(officer: Officer) -> void:
-	_map.moves.leave(officer.move)
+	_map.unlist_move(officer.move)
 	_free_figure(officer)
 
 func _make_figure(officer: Officer) -> void:
 	if not _world:
 		return
 	var figure := CordonOfficer.new()
-	figure.atlas = _atlas
+	figure.use_atlas(_atlas)
 	figure.position = officer.at
 	officer.node = figure
 	_world.add_entity(figure)

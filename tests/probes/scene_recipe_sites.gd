@@ -2,58 +2,63 @@ extends RefCounted
 ## Prints production-accepted sites on one explicit construction context for recipe authoring.
 ## It varies no city seed; use the resulting coordinates as reviewed pins in saved recipes.
 
-func run(_t) -> void:
+func run(_t: TestRunner) -> void:
 	var data := {"version": 1, "name": "sites", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}}
 	var built := RecipeCityBuilder.build(data)
 	var map: CityMap = built.map
 	print("HOME ", map.doorstep_world_position())
-	print("MAIN_ROAD ", map.main_road, " north lane=", CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, -1)))
+	print("MAIN_ROAD ", map.main_road_corridor(), " north lane=", CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, -1)))
 	var own_run := RunState.new()
 	for day: int in [1, 13]:
 		own_run.start_run(11)
-		own_run.header.day = day
+		own_run.header().set_day(day)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
-		var regions := RegionPlanner.plan_day(map, day, tree)
+		var regions := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 		var corridor := Corridor.of(tree)
 		var doors := PackedVector2Array()
-		for body in regions.door_bodies:
-			doors.append(body.position)
-			if body.def.id == "checkpoint_hut":
-				print("GATE ", body.position)
+		var calm := CalmAreas.of(map)
+		for body in regions.door_plans():
+			doors.append(body.placed_at())
+			if body.row_id() == "checkpoint_hut":
+				print("GATE ", body.placed_at())
 		var def := EventCatalogue.by_id("leaf_blower" if day == 1 else "military_convoy")
-		var ground := {}
-		var tiles := EventScheduler._ground_for(def, map, ground, corridor,
-				EventScheduler._role_for(def, day))
+		var tiles: Array[Vector2i] = []
+		var ground := EventScheduler.row_ground(map, corridor)
+		tiles.assign(ground.offers_for_role(def, EventScheduler.role_for(def, day)).keys())
 		tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 			return a.distance_squared_to(Vector2i(65, 60)) < b.distance_squared_to(Vector2i(65, 60)))
 		var accepted := 0
+		var locations := DayLocations.lay_out(map, corridor)
+		var none: Array[EventPlan] = []
 		for tile in tiles:
-			var prior: Array[EventScheduler.Planned] = []
+			var prior: Array[EventPlan] = []
 			var at := map.tile_to_world(tile)
-			var plan := EventScheduler.recipe_placement(def, day, map, at, 1, prior, corridor, doors)
+			var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+					at, 1, prior, corridor, ground, doors, calm, none, locations)
 			if not plan:
 				continue
-			print("SITE ", def.id, " tile=", tile, " world=", at, " path=", plan.path)
+			print("SITE ", def.id(), " tile=", tile, " world=", at, " path=", plan.walks())
 			accepted += 1
 			if accepted >= 5:
 				break
-	own_run.header.day = 14
+	own_run.header().set_day(14)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 14)
+	state.begin_day(map.plans_by_block(), 14)
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
-	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar.day_rng(14, "finale"), _city_spec())
+	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),
+			GamePlanBuilder.over(map))
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
+	var escape_ground := EventScheduler.row_ground(map, null, false)
 	for segment in finale.open_streets:
-		var ground := EventScheduler.street_ground(map, segment, guards,
-				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map), {},
-				false)
+		var ground := EventScheduler.street_ground(map, escape_ground, segment, guards,
+				FinalePlanner.service_exit_world_position(map))
 		if ground.is_empty():
 			continue
 		print("ESCAPE_GUARD ", map.tile_to_world(ground[ground.size() / 2]), " street=", segment.key())
@@ -62,7 +67,7 @@ func run(_t) -> void:
 			break
 	var dog := EventCatalogue.by_id("charging_dog")
 	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
-			dog.chase_speed() + Tuning.WALK_SPEED, dog.offscreen_notice))
+			dog.chase_speed() + Tuning.WALK_SPEED, dog.warned_for()))
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:

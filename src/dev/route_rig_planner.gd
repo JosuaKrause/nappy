@@ -58,33 +58,36 @@ const _STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vec
 ## `Tuning.TILE_SIZE`, fine enough that a cut cannot skip clean over a one-tile obstruction.
 const _LINE_OF_SIGHT_STEP := 8.0
 
-var _city: City
+var _map: CityMap
+var _events: EventManager
+## Answers where a `spawn:<name>` word's name starts her: takes the name, answers a `Vector2`.
+var _spawn_start: Callable
 var _player: Stroller
 var _resistance: ResistanceDirector
 var _day: DayController
-## The run whose header `spawn:<name>` hands `DevRig.for_spawn_target()`.
-var _run: RunState
 
 ## Every `ROAD` tile in the map, built once — the lattice itself never changes within a run, only
 ## which blocks are calm and which streets are closed today, neither of which moves a `ROAD` tile.
-## Kept out of `_blocked_for_phase()`'s own per-call cost, which only has `closed_tiles` (small,
-## and genuinely different every day) left to copy.
+## Kept out of `_blocked_for_phase()`'s own per-call cost, which only has `closed_tile_set()`
+## (small, and genuinely different every day) left to copy.
 var _road_tiles: Dictionary = {}
 
-## The rig's planner over `city`, for her (`player`), today's resistance (`resistance`, null in the
-## escape, which has no subquest), the day's clock (`day`, whose spec names the escape city's exits)
-## and the run (`run`).
-func _init(city: City, player: Stroller, resistance: ResistanceDirector, day: DayController,
-		run: RunState) -> void:
-	_city = city
+## The rig's planner over the city's `map` and its `events`, for her (`player`), today's
+## resistance (`resistance`, null in the escape, which has no subquest) and the day's clock (`day`,
+## whose spec names the escape city's exits). `spawn_start` answers where a `spawn:<name>` word's
+## name is: it takes the name and answers a `Vector2`.
+func _init(map: CityMap, events: EventManager, spawn_start: Callable, player: Stroller,
+		resistance: ResistanceDirector, day: DayController) -> void:
+	_map = map
+	_events = events
+	_spawn_start = spawn_start
 	_player = player
 	_resistance = resistance
 	_day = day
-	_run = run
-	for y in _city.map.size.y:
-		for x in _city.map.size.x:
+	for y in _map.size_in_tiles().y:
+		for x in _map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
+			if _map.tile_at(tile) == GameEnums.TileType.ROAD:
 				_road_tiles[tile] = true
 
 ## Forgets every answer worked out for the day before, for the day just built — the rig asks it
@@ -116,15 +119,14 @@ func resolve(word: String) -> Vector2:
 		"calm:home":
 			return _nearest_calm(true)
 		"home":
-			return _city.map.home_world_position()
+			return _map.home_world_position()
 		"tunnel":
-			return _day.spec.exits.get(CityEdge.Kind.TUNNEL, Vector2.INF)
+			return _day.spec().exit_points().get(CityExit.Kind.TUNNEL, Vector2.INF)
 		"bridge":
-			return _day.spec.exits.get(CityEdge.Kind.BRIDGE, Vector2.INF)
+			return _day.spec().exit_points().get(CityExit.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
-				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance,
-						_run.header)
+				return _spawn_start.call(word.get_slice(":", 1))
 			push_warning("--route: unknown target '%s'" % word)
 			return Vector2.INF
 
@@ -144,8 +146,8 @@ func _task_target() -> Vector2:
 		return Vector2.INF
 	if step.is_one_place:
 		var at := _resistance.contact_position()
-		var tile := _city.map.world_to_tile(at) if at != Vector2.INF else Vector2i.ZERO
-		if at != Vector2.INF and (not _city.map.is_walkable(tile) or _city.map.is_obstructed(tile)):
+		var tile := _map.world_to_tile(at) if at != Vector2.INF else Vector2i.ZERO
+		if at != Vector2.INF and (not _map.is_walkable(tile) or _map.is_obstructed(tile)):
 			return _reachable_point_near(at)
 		return at
 	return _nearest_live_instance(step.task_event_id)
@@ -161,12 +163,12 @@ var _task_instance: EventInstance = null
 ## streamed out (freed) is let go, and the nearest live one answers again.
 func _nearest_live_instance(event_id: String) -> Vector2:
 	if _task_instance != null and (not is_instance_valid(_task_instance)
-			or _task_instance.is_finished or _task_instance.def.id != event_id):
+			or _task_instance.is_gone() or _task_instance.row_id() != event_id):
 		_task_instance = null
 	if _task_instance == null:
 		var best_distance := INF
-		for instance: EventInstance in _city.events.instances():
-			if instance.def.id != event_id or instance.is_finished:
+		for instance: EventInstance in _events.instances():
+			if instance.row_id() != event_id or instance.is_gone():
 				continue
 			var distance := _player.global_position.distance_squared_to(instance.global_position)
 			if distance < best_distance:
@@ -177,19 +179,20 @@ func _nearest_live_instance(event_id: String) -> Vector2:
 	return _reachable_point_near(_task_instance.global_position)
 
 ## How far outward `_reachable_point_near()` searches, in tiles, before giving up and handing back
-## `centre` unchanged — past `roadblock`'s own solid reach (`obstructs_radius` 60px, under two
-## tiles) with room to spare, so a body this catalogue actually places is always found well inside
-## the budget and only a malformed future row would ever exhaust it.
+## `centre` unchanged — past `roadblock`'s own solid reach (`EventDef.obstructs_within()`, 64px,
+## two tiles) with room to spare, so a body this catalogue actually places is always found well
+## inside the budget and only a malformed future row would ever exhaust it.
 const _NEAREST_OPEN_SEARCH_RADIUS := 6
 
 ## The walkable, unobstructed ground nearest `centre`, or `centre` itself when it already qualifies
-## — every any-instance task but `roadblock` has no body at all (`homeless_yeller`'s own
-## `obstructs_radius` is 0), so this is a no-op for them and changes nothing about how they resolve.
+## — every any-instance task but `roadblock` has no body at all (`homeless_yeller`'s
+## `EventDef.has_a_body()` is false), so this is a no-op for them and changes nothing about how
+## they resolve.
 ##
-## **A solid row's own centre is exactly the ground `plan()` refuses.** `roadblock` carries
-## `def.solid(GroundShape.band(60.0))`, so `EventManager` rasterises its footprint into
-## `CityMap.obstructed_tiles` the same way any parked body is (`_blocked_for_phase()`'s own doc),
-## and unlike a hazard's own margin — which `_cheapest()` explicitly drops for the tile a leg is
+## **A solid row's own centre is exactly the ground `plan()` refuses.** `roadblock`'s body is a
+## band (`GroundShape.band(EventCatalogue.ROADBLOCK_REACH)`), so `EventManager` rasterises its
+## footprint into `CityMap.obstructed_tiles` the same way any parked body is
+## (`_blocked_for_phase()`'s own doc), and unlike a hazard's own margin — which `_cheapest()` explicitly drops for the tile a leg is
 ## walking to — an obstructed tile is never exempted for either end of a plan, because a body is
 ## really standing there. Handing the rig a target sitting inside one is a target no path can ever
 ## end on, which is the day 13 "no path to 'task'" this function exists to fix (a `--route`
@@ -197,18 +200,18 @@ const _NEAREST_OPEN_SEARCH_RADIUS := 6
 ##
 ## **Walking to the nearest open ground next to the body reaches the row exactly as reliably as
 ## the real game's own random-bearing offset does, without reproducing its RNG draw.**
-## `ResistanceDirector._touch_reach()` completes an any-instance task from `obstructs_radius +
-## Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH` of the instance's centre (110px for `roadblock`,
-## 60 + 14 + 36) — comfortably past where the solid edge itself sits (60px) — so standing on the
-## closest ground the body actually leaves open is always well inside that reach, whichever side
-## of it she approaches from.
+## `ResistanceDirector._touch_reach()` completes an any-instance task from its body's reach plus
+## `Tuning.PLAYER_BODY_RADIUS` plus `ContactPoint.REACH` of the instance's centre (114px for
+## `roadblock`, 64 + 14 + 36) — comfortably past where the solid edge itself sits (64px) — so
+## standing on the closest ground the body actually leaves open is always well inside that reach,
+## whichever side of it she approaches from.
 ##
 ## **Clear of the body's own outline too, not only off its recorded tiles**, since a tile beside a
 ## body can be one she cannot stand in the middle of (`body_clear_tiles()`): a leg aimed there
 ## would press her against the body for its last few pixels. Where the clearance leaves nothing
 ## inside `_NEAREST_OPEN_SEARCH_RADIUS`, the nearest open, unrecorded tile answers instead.
 func _reachable_point_near(centre: Vector2) -> Vector2:
-	var centre_tile := _city.map.world_to_tile(centre)
+	var centre_tile := _map.world_to_tile(centre)
 	var clear := body_clear_tiles()
 	if _stands_open(centre_tile, clear):
 		return centre
@@ -217,7 +220,7 @@ func _reachable_point_near(centre: Vector2) -> Vector2:
 			for offset in _ring_nearest_first(radius):
 				var tile := centre_tile + offset
 				if _stands_open(tile, keep_clear):
-					return _city.map.tile_to_world(tile)
+					return _map.tile_to_world(tile)
 	return centre
 
 ## The tiles of the square ring `radius` out from a tile, as offsets, **nearest first**: the four
@@ -246,7 +249,7 @@ static func _ring_nearest_first(radius: int) -> Array[Vector2i]:
 	return nearest_first
 
 func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
-	return _city.map.is_open(tile) and not _city.map.is_obstructed(tile) and not keep_clear.has(tile)
+	return _map.is_open(tile) and not _map.is_obstructed(tile) and not keep_clear.has(tile)
 
 ## The nearest calm tile by walking distance, sidewalks, hazard-free ground and ground clear of
 ## every body preferred exactly as `plan()` prefers them — see `_blocked_for_phase()` and
@@ -264,8 +267,8 @@ func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
 ## `calm`** — nearest to her — since nothing in the calendar but this one day and seed needed the
 ## other reading; `calm:home` is here for a caller (a probe, a future measurement) that wants it.
 func _nearest_calm(toward_home: bool = false) -> Vector2:
-	var here := _city.map.world_to_tile(_player.global_position)
-	var home := _city.map.world_to_tile(_city.map.home_world_position())
+	var here := _map.world_to_tile(_player.global_position)
+	var home := _map.world_to_tile(_map.home_world_position())
 	var hazards := _hazard_tiles()
 	var guarded := hazards.duplicate()
 	guarded.merge(body_clear_tiles())
@@ -274,33 +277,33 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 			_blocked_for_phase(false)]
 	for blocked in phases:
 		blocked.erase(here)
-		var field := _city.map.walk_field(here, blocked)
+		var field := _map.walk_field(here, blocked)
 		var best: Vector2i
 		if toward_home:
 			var home_blocked: Dictionary = blocked.duplicate()
 			home_blocked.erase(home)
-			best = _nearest_in_field_toward_home(field, _city.map.walk_field(home, home_blocked))
+			best = _nearest_in_field_toward_home(field, _map.walk_field(home, home_blocked))
 		else:
 			best = _nearest_in_field(field)
 		if best != Vector2i(-1, -1):
-			return _city.map.tile_to_world(best)
+			return _map.tile_to_world(best)
 	return Vector2.INF
 
 ## `CityMap.calm_tiles()` less the ground of any lot the day has stopped counting as calm, which is
 ## the ground of a lot being taken while she watches. Day 12's park, once she has reached its swing,
-## leaves `CityMap.calm_blocks` that instant (`Happenings.take_the_park()`), but its grass stays
+## leaves `CityMap.calm_blocks_now()` that instant (`Happenings.take_the_park()`), but its grass stays
 ## grass while the police cordon it off (`ParkCordon`), so its tiles still read calm one by one: a
 ## calm area chosen from the tiles alone is the swing's own park, which is taped shut round her
 ## seconds later (`ParkCordon.deadline`), and being shut in ends the day. So the calm leg goes to
 ## the day's second calm area, which the day keeps reachable for exactly this. On every other day
 ## no lot's calm ground outlives its purpose, so this is the tiles unchanged.
 func _calm_tiles_left() -> Array[Vector2i]:
-	var map := _city.map
+	var map := _map
 	var calm := {}
-	for block: Vector2i in map.calm_blocks:
+	for block: Vector2i in map.calm_blocks_now():
 		calm[block] = true
 	var going := {}
-	for block: Vector2i in map.block_plans:
+	for block: Vector2i in map.blocks_with_plans():
 		if calm.has(block):
 			continue
 		for tile in map.rect_tiles(map.lot_rect(block)):
@@ -316,7 +319,7 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var best_distance := -1
 	for tile in _calm_tiles_left():
-		var distance := _city.map.distance_at(field, tile)
+		var distance := _map.distance_at(field, tile)
 		if distance < 0:
 			continue
 		if best_distance == -1 or distance < best_distance:
@@ -332,10 +335,10 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 	var best := Vector2i(-1, -1)
 	var best_total := -1
 	for tile in _calm_tiles_left():
-		var distance := _city.map.distance_at(field, tile)
+		var distance := _map.distance_at(field, tile)
 		if distance < 0:
 			continue
-		var home_distance := _city.map.distance_at(home_field, tile)
+		var home_distance := _map.distance_at(home_field, tile)
 		if home_distance < 0:
 			continue
 		var total := distance + home_distance
@@ -346,22 +349,22 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 
 # ----------------------------------------------------------------- planning ---
 
-## Today's `closed_tiles`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
-## (`CityMap.soft_sealed_tiles`), the ground a street door's boom would take her on
+## Today's `closed_tile_set()`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
+## (`CityMap.soft_sealed_tiles()`), the ground a street door's boom would take her on
 ## (`_gate_ground()`), the ground under a door body that has just let her out
 ## (`_latched_door_bodies()`) and the ground round a precinct's posts (`_post_tiles()`), which block
 ## a plan whatever else it asks, plus `_road_tiles` while `sidewalk_only`; `hazards` (see
 ## `_hazard_tiles()`) and `avoid` (ground the tile grid calls open but she cannot stand in the
 ## middle of or should keep off, see `plan()`) are added on top of all of that. Built fresh every
-## call since `closed_tiles`, every live obstruction's own footprint and every live hazard's own
-## position genuinely change day to day and frame to frame, and a stale copy would let a plan walk
-## through today's own barrier, a body parked since the last check, or yesterday's guard.
-## `CityMap.obstructed_tiles` (`src/city/ city_map.gd`) is what the rig's re-plan check reads —
-## folding it in here too is what makes a replan actually route around the thing it just detected,
-## rather than recomputing the identical path onto the same obstruction and re-detecting it
-## forever; a plan that never looked at `obstructed_tiles` at all was the shape of that bug.
-## `hazards` is taken as a dictionary rather than computed here so a caller can drop the one tile
-## it is actually trying to reach from it first — see `_cheapest()`.
+## call since `closed_tile_set()`, every live obstruction's own footprint and every live
+## hazard's own position genuinely change day to day and frame to frame, and a stale copy would
+## let a plan walk through today's own barrier, a body parked since the last check, or
+## yesterday's guard. `CityMap.obstructed_tiles` (`src/city/ city_map.gd`) is what the rig's
+## re-plan check reads — folding it in here too is what makes a replan actually route around the
+## thing it just detected, rather than recomputing the identical path onto the same obstruction
+## and re-detecting it forever; a plan that never looked at `obstructed_tiles` at all was the
+## shape of that bug. `hazards` is taken as a dictionary rather than computed here so a caller
+## can drop the one tile it is actually trying to reach from it first — see `_cheapest()`.
 ##
 ## **A soft seal (`skip`/`scaffolding`, `moving_van`) shuts its pavement to a walker in every plan,
 ## not only while `sidewalk_only`.** `WalkerStrategy.cannot_go_on()` refuses
@@ -376,11 +379,11 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 	if sidewalk_only:
 		for tile: Vector2i in _road_tiles:
 			blocked[tile] = true
-	for tile: Vector2i in _city.map.closed_tiles:
+	for tile: Vector2i in _map.closed_tile_set():
 		blocked[tile] = true
-	for tile: Vector2i in _city.map.soft_sealed_tiles:
+	for tile: Vector2i in _map.soft_sealed_tiles():
 		blocked[tile] = true
-	for tile: Vector2i in _city.map.obstructed_tiles:
+	for tile: Vector2i in _map.obstructed_tiles():
 		blocked[tile] = true
 	for tile: Vector2i in _gate_ground():
 		blocked[tile] = true
@@ -394,60 +397,64 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		blocked[tile] = true
 	return blocked
 
-## Margin added past a live hard_fail event's own `lethal_reach()` when deciding what ground to
+## Margin added past the ground a live lethal event's catch shuts when deciding what ground to
 ## keep off — `Tuning.PLAYER_BODY_RADIUS` (14px), the width of the body actually walking the
 ## boundary `_hazard_tiles()` draws. `_hazard_tiles()` tests each tile's own **nearest point**
 ## against the reach, not its centre, so this margin does not also have to cover a tile's own
 ## half-diagonal the way a centre-distance test would — a nearest-point test already sees a tile's
 ## corner for what it is. A bigger margin here (an earlier build used the half-diagonal-plus-body
 ## sum, 38px, over a centre-distance test) blocks a wider ring than the true kill radius needs,
-## and on a two-tile-wide alley — the guard's own placement, `alley_robbery.placement = [ALLEY]`,
-## and *"a robber who never moves is avoidable by walking two tiles wide of him"* — a wide enough
-## ring can span the whole width and leave no tile within one hop of wherever she is already
-## standing that is not itself still "blocked", which is a plan that can never get out from
-## wherever it started rather than one that avoids the guard. See `_hazard_tiles()`'s own doc.
+## and on a two-tile-wide alley — the guard's own placement, `alley_robbery`'s `ground_kinds()`
+## being `[ALLEY]`, and *"a robber who never moves is avoidable by walking two tiles wide of
+## him"* — a wide enough ring can span the whole width and leave no tile within one hop of
+## wherever she is already standing that is not itself still "blocked", which is a plan that can
+## never get out from wherever it started rather than one that avoids the guard. See
+## `_hazard_tiles()`'s own doc.
 const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
 
-## Whether `instance` is a hard_fail row worth planning a route around at all — live, and
-## `not def.mobile`. A stationary kill (the guard `alley_robbery` places over every mark, an
-## idling `abduction` van, `reversing_lorry`, `car_accident`) is exactly the shape a route can
-## detour once and stay clear of for the whole leg, the same as a parked obstruction. A `mobile`
+## Whether `instance` is a lethal place worth planning a route around at all — live, and its catch
+## shutting ground where it holds its place (`EventInstance.catch_shuts_within()`, the one stated
+## fact `EventDef.catch_shuts_within()` answers). A stationary kill (the guard `alley_robbery`
+## places over every mark, an idling `abduction` van, `reversing_lorry`, `car_accident`) is exactly
+## the shape a route can detour once and stay clear of for the whole leg, the same as a parked
+## obstruction. A moving
 ## one (`cyclist`, `masked_pursuer`) is somewhere else by the time a replan's own path would get
 ## there — blocking around its instantaneous position chases a moving point with a stale detour,
 ## which is what turned day 6 seed 4242's 'task' leg (homeless_yeller's own pacing crossing a
 ## cyclist's route) into a replan every `RouteRig._REPLAN_INTERVAL` for the rest of the run rather
-## than a leg that ever finished. A moving hard_fail hazard is exactly what the excitement meter and
+## than a leg that ever finished. A moving lethal hazard is exactly what the excitement meter and
 ## the screen-edge badge already warn a player to react to as it closes, not something a route is
-## planned around from a distance; the rig has no reactive dodge, so it leaves a mobile hazard to
+## planned around from a distance; the rig has no reactive dodge, so it leaves a moving hazard to
 ## its ordinary stuck/obstruction handling instead of a dedicated avoidance.
 func _is_stationary_hazard(instance: EventInstance) -> bool:
-	return not instance.is_finished and instance.def.hard_fail and not instance.def.mobile
+	return instance.catch_shuts_within() > 0.0
 
-## Whether `point` sits within a live stationary hard_fail event's own kill reach plus
+## Whether `point` sits within the ground a live stationary lethal event's catch shuts plus
 ## `_HAZARD_MARGIN` — every mark is guarded (`docs/DECISIONS.md`, "every mark is guarded"), and the
 ## guard carries no body for `is_obstructed()` to see, only a radius that ends the day. A player
 ## backs off the instant the excitement meter spikes; this is what the same caution reads as for a
 ## rig with no meter to watch. The rig asks it of every waypoint still ahead at each re-plan check.
 func is_hazardous(point: Vector2) -> bool:
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if not _is_stationary_hazard(instance):
 			continue
-		if point.distance_to(instance.global_position) <= instance.def.lethal_reach() + _HAZARD_MARGIN:
+		var reach := instance.catch_shuts_within() + _HAZARD_MARGIN
+		if point.distance_to(instance.global_position) <= reach:
 			return true
 	return false
 
-## Every tile within a live stationary hard_fail event's own kill reach plus `_HAZARD_MARGIN`,
+## Every tile within a live stationary lethal event's own kill reach plus `_HAZARD_MARGIN`,
 ## tested against each candidate tile's own **nearest point** to the hazard rather than its
 ## centre — see `_HAZARD_MARGIN`'s own doc for why a centre-distance test blocks a wider ring than
-## the true kill radius needs. Cheap: a handful of hard_fail instances are ever live at once, each
+## the true kill radius needs. Cheap: a handful of lethal instances are ever live at once, each
 ## with a two-or-three-tile reach.
 func _hazard_tiles() -> Dictionary:
 	var blocked := {}
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if not _is_stationary_hazard(instance):
 			continue
-		var reach := instance.def.lethal_reach() + _HAZARD_MARGIN
-		var centre := _city.map.world_to_tile(instance.global_position)
+		var reach := instance.catch_shuts_within() + _HAZARD_MARGIN
+		var centre := _map.world_to_tile(instance.global_position)
 		var radius_tiles := ceili(reach / Tuning.TILE_SIZE) + 1
 		for dy in range(-radius_tiles, radius_tiles + 1):
 			for dx in range(-radius_tiles, radius_tiles + 1):
@@ -461,7 +468,7 @@ func _hazard_tiles() -> Dictionary:
 ## `_hazard_tiles()` needs: not whether the tile's *centre* is far enough from a hazard, but
 ## whether *any ground on the tile* is close enough to end the day.
 func _tile_nearest_distance(tile: Vector2i, point: Vector2) -> float:
-	var centre := _city.map.tile_to_world(tile)
+	var centre := _map.tile_to_world(tile)
 	var half := Tuning.TILE_SIZE / 2.0
 	var dx := maxf(absf(point.x - centre.x) - half, 0.0)
 	var dy := maxf(absf(point.y - centre.y) - half, 0.0)
@@ -487,20 +494,21 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ## re-plan check, for a body now lying over a waypoint still ahead.
 ##
 ## **Every body the day has, not only the ones streamed in near her.** `EventManager` builds an
-## instance only once she is within `EventManager.stream_radius` of its plan and takes it away
-## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn, because
-## "a body is a body whether or not the player has come near enough to stream it in". A plan that
-## knew only the live ones kept meeting a van streaming in over a waypoint a few tiles ahead, and
-## re-planned onto a street whose own van streamed in next. So each placed, unspent plan answers
-## from where its instance will stand (`_planned_body_tiles()`), and a live instance from where it
-## does stand, which also covers a body the director sites from her walk and has no plan position
-## at dawn.
+## instance only once she is within `EventManager.stream_radius()` of its plan and takes it away
+## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn,
+## because "a body is a body whether or not the player has come near enough to stream it in". A
+## plan that knew only the live ones kept meeting a van streaming in over a waypoint a few tiles
+## ahead, and re-planned onto a street whose own van streamed in next. So each placed, unspent
+## plan answers from where its instance will stand (`_planned_body_tiles()`, off
+## `BodyStance.pieces()`), and a live instance from where it does stand, which also covers a
+## body the director sites from her walk and has no plan position at dawn.
 func body_clear_tiles() -> Dictionary:
 	var near := {}
-	for plan: EventScheduler.Planned in _city.events.plans():
-		if plan.live == null and plan.is_placed() and not plan.spent and _is_planned_body(plan.def):
+	for plan: EventPlan in _events.plans():
+		if not plan.is_in_the_world() and plan.is_placed() and not plan.is_spent() \
+				and plan.stands_as_a_fixed_body():
 			near.merge(_planned_body_tiles(plan))
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if _is_standing_body(instance):
 			near.merge(_tiles_near_body(instance, _BODY_CLEARANCE))
 	return near
@@ -509,49 +517,32 @@ func body_clear_tiles() -> Dictionary:
 ## Cleared in `start_day()`.
 var _planned_clear := {}
 
-func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
+func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 	if _planned_clear.has(plan):
 		return _planned_clear[plan]
-	var parts := _planned_parts(plan)
-	var tiles := _tiles_near_pieces(parts[0], parts[1], parts[2], _BODY_CLEARANCE)
+	var tiles := _tiles_near_pieces(_planned_pieces(plan), _BODY_CLEARANCE)
 	_planned_clear[plan] = tiles
 	return tiles
 
-## A placed plan's solid pieces as its instance will stand — `[centres, shapes, axis]`, the
-## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
-func _planned_parts(plan: EventScheduler.Planned) -> Array:
-	var at := _planned_position(plan)
-	var vertical := EventInstance._spread_is_vertical(_city.map, at)
-	var centres := PackedVector2Array()
-	var shapes: Array[GroundShape] = []
-	for piece in plan.def.parts():
-		var offset := piece.offset_for(vertical)
-		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
-		shapes.append(piece.shape)
-	return [centres, shapes, EventFootprints.body_axis(_city.map, plan.def, at, plan.facing)]
+## A placed plan's solid pieces as its instance will stand (`BodyStance.pieces()`, the layout the
+## walk's ground and the map's record ask too).
+func _planned_pieces(plan: EventPlan) -> Array[StandingPiece]:
+	return BodyStance.of_plan(_map, plan).pieces()
 
-## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
-## first point of its path or its position, moved to the middle of the sidewalk band for a
-## stationary solid row that `pavement_side` does not pin to an edge.
-func _planned_position(plan: EventScheduler.Planned) -> Vector2:
-	var at := plan.path[0] if plan.path.size() > 0 else plan.position
-	if not plan.def.mobile and plan.def.obstructs_radius > 0.0 \
-			and plan.def.pavement_side == EventDef.Pavement.ANY:
-		at = EventInstance._centred_on_the_pavement_band(_city.map, at)
-	return at
+## The angle a piece's spine lies at: its axis for a shape with a spine, none for a disc.
+func _angle_of(piece: StandingPiece) -> float:
+	return piece.axis().angle() if piece.ground_shape().spine_half_length() > 0.0 else 0.0
 
-## The planned rows `CityMap.obstructed_tiles` records a body for
-## (`EventSpawner.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
-## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door body, which is a
-## crossing the day keeps open: a hut or a post (`detain_seconds`) or the boom
-## (`EventDef.SolidWhen.WHILE_LOWERED`), whose ground `_gate_ground()` keeps off instead.
-func _is_planned_body(def: EventDef) -> bool:
-	return def.shape != null and def.obstructs_radius > 0.0 and not def.mobile \
-			and def.detain_seconds <= 0.0 and def.solid_when != EventDef.SolidWhen.WHILE_LOWERED
+## Where a door body stands now: its live event's place while it is in the world
+## (`EventPlan.where_it_stands_now()`), where its instance will stand otherwise
+## (`BodyStance.of_plan()`).
+func _door_now(plan: EventPlan) -> Vector2:
+	return plan.where_it_stands_now() if plan.is_in_the_world() \
+			else BodyStance.of_plan(_map, plan).center()
 
-## Every tile whose centre lies within a door's reach — `EventDef.detain_distance()` from a
-## `checkpoint_hut` or `checkpoint_post` (the `redetains` rows, the two that inspect her), plus
-## `ARRIVE_RADIUS` for the corner she cuts at a waypoint — except the tiles on any door body's own
+## Every tile whose centre lies within a door's reach — `EventPlan.detain_distance()` from a
+## `checkpoint_hut` or `checkpoint_post` (`EventPlan.detains_again()`, the two that inspect her),
+## plus `ARRIVE_RADIUS` for the corner she cuts at a waypoint — except the tiles on any door body's own
 ## crossing line, the row or column through it along its facing, which is the axis the door sets her
 ## down across. Every door of the day, for the streaming reason `body_clear_tiles()` gives: a door
 ## is planned at dawn with the region wall it stands in. The rig asks it at each re-plan check, for
@@ -573,24 +564,24 @@ func _is_planned_body(def: EventDef) -> bool:
 ## inside — a park beside a door — keeps only the true reach off for that door, since every step
 ## out of the margin would otherwise read as blocked and the plan would give up the doors' reach
 ## altogether. `chatting_mother` detains too but walks, so she is left to the hold handling, the
-## way `_is_stationary_hazard()` leaves a mobile hazard. **A street door's boom (`checkpoint_gate`)
+## way `_is_stationary_hazard()` leaves a moving hazard. **A street door's boom (`checkpoint_gate`)
 ## is not a door body here**: it inspects nobody, so it has no reach and opens no line, and the
 ## ground under it is never planned at all (`_gate_ground()`).
 func door_tiles() -> Dictionary:
 	var here := _player.global_position
 	var near := {}
 	var lines := {}
-	for plan: EventScheduler.Planned in _city.events.plans():
-		if not plan.is_placed() or plan.spent or not plan.def.redetains:
+	for plan: EventPlan in _events.plans():
+		if not plan.is_placed() or plan.is_spent() or not plan.detains_again():
 			continue
-		var door := _planned_position(plan)
-		var facing := plan.facing
-		if plan.live != null:
-			if plan.live.is_finished:
+		var door := BodyStance.of_plan(_map, plan).center()
+		var facing := plan.faces()
+		if plan.is_in_the_world():
+			if plan.its_event_is_gone():
 				continue
-			door = plan.live.global_position
-			facing = plan.live.facing_now()
-		var trigger := plan.def.detain_distance()
+			door = plan.where_it_stands_now()
+			facing = plan.faces_now()
+		var trigger := plan.detain_distance()
 		var distance := here.distance_to(door)
 		if _latched_doors.has(plan):
 			if distance <= trigger:
@@ -617,11 +608,10 @@ var _latched_doors := {}
 func latch_the_doors_round_her() -> void:
 	_latched_doors = {}
 	var here := _player.global_position
-	for plan: EventScheduler.Planned in _city.events.plans():
-		if not plan.is_placed() or plan.spent or not plan.def.redetains:
+	for plan: EventPlan in _events.plans():
+		if not plan.is_placed() or plan.is_spent() or not plan.detains_again():
 			continue
-		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
-		if here.distance_to(door) <= plan.def.detain_distance():
+		if here.distance_to(_door_now(plan)) <= plan.detain_distance():
 			_latched_doors[plan] = true
 
 ## The ground under every door body that has just let her out (`_latched_doors`): the tiles whose
@@ -634,13 +624,13 @@ func latch_the_doors_round_her() -> void:
 ## let go.
 func _latched_door_bodies() -> Dictionary:
 	var under := {}
-	for plan: EventScheduler.Planned in _latched_doors:
-		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
-		under.merge(_tiles_near_point(door, plan.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS))
+	for plan: EventPlan in _latched_doors:
+		var reach := plan.solid_reach() + Tuning.PLAYER_BODY_RADIUS
+		under.merge(_tiles_near_point(_door_now(plan), reach))
 	return under
 
 ## Every tile under a street door's boom (`checkpoint_gate`, the plan carrying a
-## `RegionPlanner.GateState`): within reach of her body touching the boom's — its own
+## `GateState`): within reach of her body touching the boom's — its own
 ## `solid_reach()` plus `Tuning.PLAYER_BODY_RADIUS`, plus `ARRIVE_RADIUS` for the corner she cuts
 ## at a waypoint — and nearer the boom than any other door body. Always blocked, in every plan
 ## (`_blocked_for_phase()`), because **the rig never goes through the boom**, raised or
@@ -655,29 +645,30 @@ func _gate_ground() -> Dictionary:
 		return _gate_ground_tiles
 	_gate_ground_ready = true
 	_gate_ground_tiles = {}
-	var doors: Array[EventScheduler.Planned] = []
-	# Every door body — the huts and posts by `redetains`, the boom by its `GateState` — since the
-	# ground kept off is the ground nearer the boom than any of the others.
-	for plan: EventScheduler.Planned in _city.events.plans():
-		if plan.is_placed() and not plan.spent and (plan.def.redetains or plan.gate_state != null):
+	var doors: Array[EventPlan] = []
+	# Every door body (`EventPlan.is_door()`: the huts, the posts and the boom), since the ground
+	# kept off is the ground nearer the boom than any of the others.
+	for plan: EventPlan in _events.plans():
+		if plan.is_placed() and not plan.is_spent() and plan.is_door():
 			doors.append(plan)
 	for gate in doors:
-		if gate.gate_state == null:
+		if gate.gate() == null:
 			continue
-		var at := _planned_position(gate)
-		var reach := gate.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ARRIVE_RADIUS
-		var centre_tile := _city.map.world_to_tile(at)
+		var at := BodyStance.of_plan(_map, gate).center()
+		var reach := gate.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ARRIVE_RADIUS
+		var centre_tile := _map.world_to_tile(at)
 		var span := ceili(reach / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
 			for dx in range(-span, span + 1):
 				var tile := centre_tile + Vector2i(dx, dy)
-				var point := _city.map.tile_to_world(tile)
+				var point := _map.tile_to_world(tile)
 				var distance := point.distance_to(at)
 				if distance > reach:
 					continue
 				var nearest_is_gate := true
 				for other in doors:
-					if other != gate and point.distance_to(_planned_position(other)) < distance:
+					var other_at := BodyStance.of_plan(_map, other).center()
+					if other != gate and point.distance_to(other_at) < distance:
 						nearest_is_gate = false
 						break
 				if nearest_is_gate:
@@ -692,12 +683,12 @@ var _gate_ground_ready := false
 func _add_door_reach(door: Vector2, facing: Vector2, reach: float, near: Dictionary,
 		lines: Dictionary) -> void:
 	var axis := facing.normalized()
-	var centre_tile := _city.map.world_to_tile(door)
+	var centre_tile := _map.world_to_tile(door)
 	var span := ceili(reach / Tuning.TILE_SIZE) + 1
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre_tile + Vector2i(dx, dy)
-			var offset := _city.map.tile_to_world(tile) - door
+			var offset := _map.tile_to_world(tile) - door
 			if offset.length() > reach:
 				continue
 			# At most half a tile, not under it: a door body stands in the middle of its two-lane
@@ -708,11 +699,12 @@ func _add_door_reach(door: Vector2, facing: Vector2, reach: float, near: Diction
 			else:
 				near[tile] = true
 
-## A live instance `body_clear_tiles()` keeps clear of — the same rows `_is_planned_body()` names,
-## while the instance is solid (`EventInstance.is_solid()`: a pursuer that has stopped waiting, or
-## a `SolidWhen.ONCE_IT_STARTS` row still in its notice, is not).
+## A live instance `body_clear_tiles()` keeps clear of — the same rows a placed plan is kept clear of
+## (`EventInstance.stands_as_a_fixed_body()`), while the instance is solid
+## (`EventInstance.is_solid()`: a pursuer that has stopped waiting, or a row solid only once it
+## starts and still in its notice, is not).
 func _is_standing_body(instance: EventInstance) -> bool:
-	return not instance.is_finished and instance.is_solid() and _is_planned_body(instance.def)
+	return not instance.is_gone() and instance.is_solid() and instance.stands_as_a_fixed_body()
 
 ## The ground a leg keeps off once `instance`'s solid body has caught her: the tiles whose centre
 ## lies within `_CAUGHT_CLEARANCE` of its pieces. The rig asks it when a stall finds her pressed
@@ -727,40 +719,37 @@ func ground_round_point(point: Vector2) -> Dictionary:
 	return _tiles_near_point(point, _CAUGHT_CLEARANCE)
 
 ## The tiles whose centre lies within `margin` of `instance`'s own solid pieces — its
-## `EventInstance.solid_part_centres()` and `solid_part_shapes()`, the same pieces its collision is
-## built from, along `solid_axis()`.
+## `EventInstance.standing_pieces()`, the same pieces its collision is built from.
 func _tiles_near_body(instance: EventInstance, margin: float) -> Dictionary:
-	return _tiles_near_pieces(instance.solid_part_centres(), instance.solid_part_shapes(),
-			instance.solid_axis(), margin)
+	return _tiles_near_pieces(instance.standing_pieces(), margin)
 
-## The tiles whose centre lies within `margin` of any of a body's pieces, each measured against its
-## real shape: a segment turned along `axis` the way `EventInstance._build_obstruction()` turns its
+## The tiles whose centre lies within `margin` of any of a body's `StandingPiece`s, each measured
+## against its real shape: a segment turned along its axis the way `EventBody.go_down()` turns its
 ## capsule, and a rectangle left square.
-func _tiles_near_pieces(centres: PackedVector2Array, shapes: Array[GroundShape], axis: Vector2,
-		margin: float) -> Dictionary:
+func _tiles_near_pieces(pieces: Array[StandingPiece], margin: float) -> Dictionary:
 	var near := {}
-	for k in centres.size():
-		var shape := shapes[k]
-		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
-		var centre_tile := _city.map.world_to_tile(centres[k])
+	for piece in pieces:
+		var shape := piece.ground_shape()
+		var angle := _angle_of(piece)
+		var centre_tile := _map.world_to_tile(piece.center())
 		var span := ceili((shape.reach() + margin) / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
 			for dx in range(-span, span + 1):
 				var tile := centre_tile + Vector2i(dx, dy)
-				var local := (_city.map.tile_to_world(tile) - centres[k]).rotated(-angle)
-				if shape.distance_to_spine(local) - shape.radius < margin:
+				var local := (_map.tile_to_world(tile) - piece.center()).rotated(-angle)
+				if shape.distance_to_spine(local) - shape.rounding_radius() < margin:
 					near[tile] = true
 	return near
 
 ## The tiles whose centre lies within `margin` of `point`.
 func _tiles_near_point(point: Vector2, margin: float) -> Dictionary:
 	var near := {}
-	var centre_tile := _city.map.world_to_tile(point)
+	var centre_tile := _map.world_to_tile(point)
 	var span := ceili(margin / Tuning.TILE_SIZE) + 1
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre_tile + Vector2i(dx, dy)
-			if _city.map.tile_to_world(tile).distance_to(point) < margin:
+			if _map.tile_to_world(tile).distance_to(point) < margin:
 				near[tile] = true
 	return near
 
@@ -824,7 +813,7 @@ func plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Arr
 ## target on it is aimed beside for exactly the reasons a plan would never step on it.
 func _standable_near(tile: Vector2i) -> Vector2i:
 	var blocked := _blocked_for_phase(false)
-	if _city.map.is_walkable(tile) and not blocked.has(tile):
+	if _map.is_walkable(tile) and not blocked.has(tile):
 		return tile
 	for radius in range(1, 3):
 		var best := Vector2i(-1, -1)
@@ -835,7 +824,7 @@ func _standable_near(tile: Vector2i) -> Vector2i:
 					continue
 				var near := tile + Vector2i(dx, dy)
 				var distance := Vector2(dx, dy).length()
-				if _city.map.is_walkable(near) and not blocked.has(near) and distance < best_distance:
+				if _map.is_walkable(near) and not blocked.has(near) and distance < best_distance:
 					best = near
 					best_distance = distance
 		if best != Vector2i(-1, -1):
@@ -852,12 +841,12 @@ var _post_cache := {}
 var _post_cache_map: CityMap
 
 func _post_tiles() -> Dictionary:
-	if _post_cache_map == _city.map:
+	if _post_cache_map == _map:
 		return _post_cache
-	_post_cache_map = _city.map
+	_post_cache_map = _map
 	_post_cache = {}
-	var reach := _BODY_CLEARANCE + Prop.bollard_shape().radius
-	for at in _city.map.post_positions():
+	var reach := _BODY_CLEARANCE + Prop.bollard_shape().rounding_radius()
+	for at in _map.post_positions():
 		_post_cache.merge(_tiles_near_point(at, reach))
 	return _post_cache
 
@@ -893,7 +882,7 @@ func crossed() -> Dictionary:
 ## `to_tile` is dropped from the hazards, `keep_off` and `costs` before they count — the fairness
 ## contract that guards a mark (`docs/DECISIONS.md`, "The guard robber is placed inside a
 ## building": the least a guarded mark's own contact point is ever placed from its guard is
-## `alley_robbery.inner_radius + ContactPoint.REACH`, 62px) already keeps the exact point she is
+## the field's inner radius (`alley_robbery`'s `core_within()`) `+ ContactPoint.REACH`, 62px) already keeps the exact point she is
 ## walking to outside the true kill radius; `_HAZARD_MARGIN`'s own slack can still read the
 ## target's own tile as blocked without this, which would report a guarded mark unreachable rather
 ## than merely guarded, and a mark beside a parked van is still a mark, since
@@ -916,7 +905,7 @@ func _cheapest(from_tile: Vector2i, to_tile: Vector2i, keep_off: Dictionary = {}
 	var extra := costs.duplicate()
 	extra.erase(to_tile)
 	var field := _weighted_field(from_tile, blocked, extra)
-	if _city.map.distance_at(field, to_tile) < 0:
+	if _map.distance_at(field, to_tile) < 0:
 		return []
 	var reversed: Array[Vector2i] = [to_tile]
 	var current := to_tile
@@ -938,9 +927,9 @@ func _cheapest(from_tile: Vector2i, to_tile: Vector2i, keep_off: Dictionary = {}
 ## than that holds every distance still to be settled. The four neighbour steps are written out,
 ## as `walk_field()`'s are, for its reason.
 func _weighted_field(from: Vector2i, blocked: Dictionary, extra: Dictionary) -> PackedInt32Array:
-	var map := _city.map
-	var width := map.size.x
-	var cells := width * map.size.y
+	var map := _map
+	var width := map.size_in_tiles().x
+	var cells := width * map.size_in_tiles().y
 	var field := PackedInt32Array()
 	field.resize(cells)
 	field.fill(CityMap.UNREACHED)
@@ -1006,28 +995,30 @@ var _steps := PackedInt32Array()
 
 func _walkable_cells() -> PackedByteArray:
 	if _walkable.is_empty():
-		var map := _city.map
-		_walkable.resize(map.size.x * map.size.y)
-		for y in map.size.y:
-			for x in map.size.x:
-				_walkable[y * map.size.x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
+		var map := _map
+		var size := map.size_in_tiles()
+		_walkable.resize(size.x * size.y)
+		for y in size.y:
+			for x in size.x:
+				_walkable[y * size.x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
 	return _walkable
 
 func _base_steps() -> PackedInt32Array:
 	if _steps.is_empty():
-		var map := _city.map
-		_steps.resize(map.size.x * map.size.y)
+		var map := _map
+		var size := map.size_in_tiles()
+		_steps.resize(size.x * size.y)
 		_steps.fill(1)
 		for tile: Vector2i in _road_tiles:
-			_steps[tile.y * map.size.x + tile.x] = 1 + _ROAD_STEP_COST
+			_steps[tile.y * size.x + tile.x] = 1 + _ROAD_STEP_COST
 	return _steps
 
 func _smaller_neighbour(field: PackedInt32Array, tile: Vector2i) -> Vector2i:
 	var best := tile
-	var best_distance := _city.map.distance_at(field, tile)
+	var best_distance := _map.distance_at(field, tile)
 	for step in _STEPS:
 		var neighbour := tile + step
-		var distance := _city.map.distance_at(field, neighbour)
+		var distance := _map.distance_at(field, neighbour)
 		if distance >= 0 and distance < best_distance:
 			best = neighbour
 			best_distance = distance
@@ -1082,8 +1073,8 @@ const _LINE_OF_SIGHT_CLEARANCE := 24.0
 func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 	if a.x != b.x and a.y != b.y:
 		return false
-	var start := _city.map.tile_to_world(a)
-	var stop := _city.map.tile_to_world(b)
+	var start := _map.tile_to_world(a)
+	var stop := _map.tile_to_world(b)
 	var offset := stop - start
 	if offset.length() < 0.001:
 		return true
@@ -1091,11 +1082,11 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 	var steps := maxi(1, ceili(offset.length() / _LINE_OF_SIGHT_STEP))
 	for i in steps + 1:
 		var centre := start.lerp(stop, float(i) / float(steps))
-		for point in [centre, centre + perpendicular, centre - perpendicular]:
-			var tile := _city.map.world_to_tile(point)
-			if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+		for point: Vector2 in [centre, centre + perpendicular, centre - perpendicular]:
+			var tile := _map.world_to_tile(point)
+			if not _map.is_open(tile) or _map.is_obstructed(tile):
 				return false
-			if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
+			if _map.tile_at(tile) == GameEnums.TileType.ROAD:
 				return false
 			if is_hazardous(point):
 				return false
@@ -1112,8 +1103,8 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 ## plan starting there walked her straight back in, and the door took her across again.
 func standing_tile() -> Vector2i:
 	var here := _player.global_position
-	var tile := _city.map.world_to_tile(here)
-	if _city.map.is_open(tile):
+	var tile := _map.world_to_tile(here)
+	if _map.is_open(tile):
 		return tile
 	var doors := door_tiles()
 	var best := tile
@@ -1122,8 +1113,8 @@ func standing_tile() -> Vector2i:
 		for dy in range(-2, 3):
 			for dx in range(-2, 3):
 				var near := tile + Vector2i(dx, dy)
-				var distance := _city.map.tile_to_world(near).distance_to(here)
-				if _city.map.is_open(near) and not keep_off.has(near) and distance < best_distance:
+				var distance := _map.tile_to_world(near).distance_to(here)
+				if _map.is_open(near) and not keep_off.has(near) and distance < best_distance:
 					best = near
 					best_distance = distance
 		if best_distance < INF:
@@ -1140,7 +1131,7 @@ func to_world(path: Array[Vector2i]) -> Array[Vector2]:
 		# Not the tile she stands on: she is already on it, and walking to another point of it
 		# first takes her back and forth across a pinch the stall checks then never see her stuck in.
 		world.append(_roomiest_point(tile) if k > 0 and _plan_accepted.has(tile)
-				else _city.map.tile_to_world(tile))
+				else _map.tile_to_world(tile))
 	return world
 
 ## How far off a tile's centre `_roomiest_point()` looks, in each axis — short of half a tile, so
@@ -1156,7 +1147,7 @@ const _NUDGE_STEP := 2.5
 ## Asked only of a tile the plan crosses in a body's clearance; everywhere else a tile's centre is
 ## already at least `_BODY_CLEARANCE` from every body.
 func _roomiest_point(tile: Vector2i) -> Vector2:
-	var centre := _city.map.tile_to_world(tile)
+	var centre := _map.tile_to_world(tile)
 	var pieces := _body_pieces_near(centre, Tuning.TILE_SIZE * 3.0)
 	if pieces.is_empty():
 		return centre
@@ -1164,7 +1155,7 @@ func _roomiest_point(tile: Vector2i) -> Vector2:
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
 			var near := tile + Vector2i(dx, dy)
-			if near != tile and not _city.map.is_open(near):
+			if near != tile and not _map.is_open(near):
 				walls.append(near)
 	var best := centre
 	var best_room := _room_at(centre, pieces, walls)
@@ -1179,43 +1170,39 @@ func _roomiest_point(tile: Vector2i) -> Vector2:
 	return best
 
 ## How far `point` is from the nearest of `pieces`' surfaces and `walls`' squares.
-func _room_at(point: Vector2, pieces: Array, walls: Array[Vector2i]) -> float:
+func _room_at(point: Vector2, pieces: Array[StandingPiece], walls: Array[Vector2i]) -> float:
 	var room := INF
-	for piece: Array in pieces:
-		var shape: GroundShape = piece[1]
-		var local := (point - (piece[0] as Vector2)).rotated(-float(piece[2]))
-		room = minf(room, shape.distance_to_spine(local) - shape.radius)
+	for piece in pieces:
+		var shape := piece.ground_shape()
+		var local := (point - piece.center()).rotated(-_angle_of(piece))
+		room = minf(room, shape.distance_to_spine(local) - shape.rounding_radius())
 	for wall in walls:
 		room = minf(room, _tile_nearest_distance(wall, point))
 	return room
 
-## Every solid piece of a standing body within `radius` of `point`, as `[centre, shape, angle]` —
-## the live instances `body_clear_tiles()` keeps clear of, and the placed plans not yet built,
-## measured the same way.
-func _body_pieces_near(point: Vector2, radius: float) -> Array:
-	var pieces: Array = []
-	for instance: EventInstance in _city.events.instances():
+## Every solid `StandingPiece` of a standing body within `radius` of `point` — the live
+## instances `body_clear_tiles()` keeps clear of, and the placed plans not yet built
+## (`BodyStance.pieces()`), measured the same way.
+func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
+	var pieces: Array[StandingPiece] = []
+	for instance: EventInstance in _events.instances():
 		if _is_standing_body(instance):
-			_add_pieces_near(pieces, instance.solid_part_centres(), instance.solid_part_shapes(),
-					instance.solid_axis(), point, radius)
-	for planned: EventScheduler.Planned in _city.events.plans():
-		if planned.live != null or not planned.is_placed() or planned.spent \
-				or not _is_planned_body(planned.def):
+			_add_pieces_near(pieces, instance.standing_pieces(), point, radius)
+	for planned: EventPlan in _events.plans():
+		if planned.is_in_the_world() or not planned.is_placed() or planned.is_spent() \
+				or not planned.stands_as_a_fixed_body():
 			continue
-		if _planned_position(planned).distance_to(point) > radius + planned.def.shape.reach() * 2.0:
+		var bound := radius + planned.ground_shape().reach() * 2.0
+		if BodyStance.of_plan(_map, planned).center().distance_to(point) > bound:
 			continue
-		var parts := _planned_parts(planned)
-		_add_pieces_near(pieces, parts[0], parts[1], parts[2], point, radius)
+		_add_pieces_near(pieces, _planned_pieces(planned), point, radius)
 	return pieces
 
-func _add_pieces_near(pieces: Array, centres: PackedVector2Array, shapes: Array[GroundShape],
-		axis: Vector2, point: Vector2, radius: float) -> void:
-	for k in centres.size():
-		var shape := shapes[k]
-		if centres[k].distance_to(point) - shape.reach() > radius:
-			continue
-		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
-		pieces.append([centres[k], shape, angle])
+func _add_pieces_near(pieces: Array[StandingPiece], candidates: Array[StandingPiece],
+		point: Vector2, radius: float) -> void:
+	for piece in candidates:
+		if piece.center().distance_to(point) - piece.ground_shape().reach() <= radius:
+			pieces.append(piece)
 
 # ----------------------------------------------------------------- unsticking ---
 
@@ -1245,7 +1232,7 @@ func unstick_order(away: Vector2, reach: float) -> Array[Vector2]:
 			return a.dot(away) > b.dot(away))
 	var clear_of_doors: Array[Vector2] = []
 	var into_doors: Array[Vector2] = []
-	for direction in order:
+	for direction: Vector2 in order:
 		if _into_a_door(_player.global_position + direction * reach):
 			into_doors.append(direction)
 		else:
@@ -1254,13 +1241,11 @@ func unstick_order(away: Vector2, reach: float) -> Array[Vector2]:
 	return clear_of_doors
 
 ## Whether `point` lies inside the circle a door body takes her in from
-## (`EventDef.detain_distance()` of a hut or a post, the `redetains` rows).
+## (`EventPlan.detain_distance()` of a hut or a post, `EventPlan.detains_again()`).
 func _into_a_door(point: Vector2) -> bool:
-	for planned: EventScheduler.Planned in _city.events.plans():
-		if not planned.is_placed() or planned.spent or not planned.def.redetains:
+	for planned: EventPlan in _events.plans():
+		if not planned.is_placed() or planned.is_spent() or not planned.detains_again():
 			continue
-		var door := planned.live.global_position if planned.live != null \
-				else _planned_position(planned)
-		if point.distance_to(door) <= planned.def.detain_distance():
+		if point.distance_to(_door_now(planned)) <= planned.detain_distance():
 			return true
 	return false

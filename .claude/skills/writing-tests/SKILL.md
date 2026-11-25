@@ -1,9 +1,21 @@
 ---
 name: writing-tests
-description: How a test is written — a suite tests the one module it is named for and mocks every other real object, a realistic mock is made in two steps, which suites combine modules and why, and what a test holds and what holds nothing. Load this BEFORE writing or changing a test.
+description: How a test is written — a suite tests the one module it is named for and mocks every other real object, a test reaches the game the way the game does (methods and seams the game uses, game state through the game's writers, drawn art through an injected drawer), a realistic mock is made in two steps, which suites combine modules and why, and what a test holds and what holds nothing. Load this BEFORE writing or changing a test.
 ---
 
 # Writing tests
+
+- **`test_<x>` tests only `<x>` and builds no real object it does not test: it mocks it.** An exception gives its reason in the suite's header.
+- **Only collaborators that do something are mocked**; plain values and data are built as they are.
+- **A realistic mock is made in two steps**: build the real state and read off what the test uses, then commit only the mock.
+- **A test never asserts what a setting is**; a relationship between settings that encodes a guarantee stays.
+- **A test holds nothing when** the game cannot reach its setup, it asserts back what it just set, it would pass with the code deleted, or another suite already holds the behavior.
+- **A public member only tests read is deleted, or made internal when its own file uses it.** `tools/check_test_only_members.py` fails a new one; fix the member, never list it.
+- **A suite, a rig, a fake and a probe are typed like the code they test**: a new suite opens with the typed runner header and carries no opt-out line.
+- **A test reads what it tests only through methods**, never another object's field.
+- **A test reaches the game the way the game does**: through methods and seams the game itself uses; a private read is a sign to look again.
+- **A hand-drawn map for one specific interaction; a generated map for a realistic walk or a measurement.**
+- **The suite exits clean**: a leak warning at shutdown is a real retain bug.
 
 Test what a screenshot cannot see, and screenshot what a test cannot judge. How a change is
 verified (the commands, CI's kinds of pull request, the dev flags, the rig traps) is **verify**'s;
@@ -13,24 +25,24 @@ how a test is written is this file's.
 
 **A test builds no real object it does not test, it mocks it, and a test module `test_<x>` tests
 only `<x>`: a hard rule, with an exception only for a stated good reason**
-(inbox #1159 in gray-dolphin). *Asked for as guidance rather than a hard rule (inbox #1018 in brisk-ferret) · made a
-hard rule with exceptions only for good reasons on 2026-11-06, because as guidance it did not work
-(inbox #1159 in gray-dolphin).*
+(inbox #1159 in gray-dolphin).
 Break the problem into components that can be tested apart, and test each in its own suite. Confirm a
 component's correctness by injecting its dependencies through the paths the game itself uses, a
 fake or a mock that records what it is asked handed in where the game hands the real one. A test
 that reads a private member or opens an escape hatch is a sign to look again: it is a sign of
 testing too much at once, of not injecting as intended, or of testing internals where the outside
-behaviour is what matters, and those are examples, not the only reasons. Where a component has
-nothing to hand a fake to, **designing-classes** says what its design owes.
+behaviour is what matters, and those are examples, not the only reasons
+(inbox #1018 in brisk-ferret). Where a component has nothing to hand a fake to,
+**designing-classes** says what its design owes.
 
-- **Only mock what you do not want to test** (inbox #1159 in gray-dolphin). *Read as, the filer's reading and not
-  the player's words:* a check whose subject is another object's answers is not this suite's; it
+- **Only mock what you do not want to test** (inbox #1159 in gray-dolphin). A check whose subject
+  is another object's answers is not this suite's; it
   moves to that object's own suite, rather than keeping that object real here.
 - **The real logic is checked once, in the real object's own suite** (inbox #1156 in gray-dolphin). Do not retest
   a component another suite already tests: the general drawing code is tested once, not again by
-  everything that draws through it. The city is built only by a direct test of the city, or by a
-  suite that gives its reason (inbox #1156 in gray-dolphin; inbox #1159 in gray-dolphin).
+  everything that draws through it (inbox #1018 in brisk-ferret). The city is built only by a
+  direct test of the city, or by a suite that gives its reason (inbox #1156 in gray-dolphin;
+  inbox #1159 in gray-dolphin).
 - **Mocking makes the suites faster** (inbox #1159 in gray-dolphin): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
 - **Plain values and data are built as they are** (a position, a day's spec, a `Tuning`
@@ -46,22 +58,88 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   requires.
 - **A suite a pull request touches for another reason is converted only as far as the pull
   request's change reaches** (inbox #1159 in gray-dolphin).
+- **A test reads what it tests only through methods** (inbox #1182 in gray-dolphin): a field becomes
+  the method the game asks, or a realistic mock made in two steps, and a member only a test then
+  reads goes internal or is kept with its reason (below). `tools/check_field_reads.py` does not
+  read `tests/`; its header says how a suite's reads are found (a run over a scratch copy of the
+  tree with `tests/` moved under `src/`).
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159 in gray-dolphin), such as a guarantee
-that spans modules or the game's composition. *Proposed by the filer, open to overturn:* the reason
+that spans modules or the game's composition. The reason
 is stated in the suite's `##` header comment, in words a reader can check, so a combined suite
 without one reads as a suite to split. **Any suite that builds a real city and is not a direct test
-of the city gives its reason** (inbox #1159 in gray-dolphin), in its header as proposed above. The ones that do,
+of the city gives its reason** (inbox #1159 in gray-dolphin), in its header. The ones that do,
 each for the reason its header states:
 
-- **`tests/test_event_manager.gd` runs the event manager against a real generated `City`**,
-  because the bugs it holds are wiring between the two (an instance freed but left in the list, a
-  successor spawned but never tracked), invisible to a data-level test; its header says so.
+- **`tests/test_event_manager.gd` stands the event manager on drawn streets, on a generated map for
+  the cases that start a day through it, and in a real `City` for the one case that asks the city's
+  own dawn**; its header says which and why.
 - **`tests/test_full_run_a.gd`, `_b.gd` and `_c.gd`** (one seed each, the run in
   `tests/full_run_rig.gd`) play three seeds through all 14 days with time actually advancing: the
   game's composition is what they test. Keep it that way: a version that only *plans* each day
   leaves the mobile one-shots unfinished and the whole successor-and-scar chain untested while the
   test passes.
+
+## A test reaches the game the way the game does
+
+**A test reaches the game through what the game itself offers, methods and seams its own code
+uses** (inbox #813 in curly-moose; minty-lemur #794). A private read is a sign to look again, not
+a hard rule (inbox #1018 in brisk-ferret; "A suite tests the one module it is named for", above),
+and reading only through methods is the paragraph above. One command lists the places to look,
+each file with its line count: `rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests -g '*.gd' -g '!tests/probes/**'` counts the lines that read a private member, one named in
+a string included.
+
+It skips comment lines and reads every file under `tests/` but the measurement probes (the rigs, the
+fixtures and the helpers the suites share as well as the suites). It prints nothing but for the two
+files that state their exception in their `##` header: `tests/shared_state.gd` (the runner's table
+of statics it leaves out of its comparison, read by name, since comparing every static is its job)
+and `tests/test_prediction_reuse.gd` (it changes one input of an event or a crowd body at a time,
+which no game path does, to prove the cache notices). A line it prints anywhere else is looked at
+again: the read is fixed, or its exception is stated in the suite's header. **What it does not see** is a private name held in
+a variable, an override of a private method, a game collection edited by hand, and a public member
+only tests call (`tools/check_test_only_members.py`, below, holds that last one).
+
+- **A seam is one the game itself uses** (minty-lemur #794; inbox #1095 in curly-rabbit). A member
+  made public, or added, has a caller among the game's own classes or is a dependency the game's
+  own code hands in (a hand-in, below). A public member only a test reads is not a seam, however
+  it is named. Where the game has no reader, the test goes through what the game exposes: what is
+  drawn, a signal, real input and frames.
+- **A suite drives a step of the tick by hand only where the step is the tick's own**: the tick
+  calls exactly that step, so the two cannot drift. The real ticks must have been measured as
+  slower, or as running what no case asks about, and the measurement goes on the member's `[kept]`
+  line in `tools/test_only_members.txt`.
+- **A test writes game state through the game's own writer** (`RunState.add_scar()`,
+  `close_streets()`, an `EventPlan` handed to `EventStreaming.add()`, and the like). State no
+  game writer reaches alone is written through the game's accessors or the save's round trip
+  (`to_data()`, `restore()`). This extends "A test whose setup the game cannot reach holds
+  nothing" (below; inbox #1097 in curly-rabbit).
+- **A holder of drawn art (a building's roof, an event's picture) is tested with an injected mock
+  drawer that confirms every element is drawn** (inbox #1018 in brisk-ferret). Where the elements
+  stand is tested apart, through the random draws as a function of the seed, and the general
+  drawing code is not retested ("The real logic is checked once", above).
+
+## A suite is typed, and opens with the typed runner header
+
+**Test code is typed wherever the language can type it, as the code it tests is** (inbox #1280 in olive-ferret);
+**godot**'s "Types" owns the rule and says what the engine fails and what it cannot type. **A fake
+goes in through a public seam, so nothing stays untyped to make a test work** (inbox #1280 in olive-ferret): the
+seam's parameter has a type, and the fake extends it, as `tests/recording_log.gd` extends
+`Telemetry` and is handed to `main.use_run_log()`.
+
+**A new suite opens with this one line**, and every function it hands the runner to takes it the
+same way, `t: TestRunner`:
+
+```gdscript
+func run(t: TestRunner) -> void:
+```
+
+The runner, `tests/run_tests.gd`, is `class_name TestRunner`, so that the header is one line and
+a suite preloads nothing to name it (inbox #1282 in grassy-trout). `t.check()`, `t.close_to()` and
+the runner's own `Node` calls (`t.add_child()`, `t.get_tree()`) are then typed calls. A bare
+`func run(t)` does not parse: the parameter is an untyped
+declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **No suite
+opts out of the typing warnings**: `tools/check_field_reads.py` fails a file that carries an
+`@warning_ignore` of them.
 
 ## A realistic mock is made in two steps
 
@@ -78,16 +156,14 @@ the real build nor the step that read it off survives into the pull request.
   where a bug is invisible until it ruins somebody's run.
 - **Not tested, checked by eye:** layout, colour, readability, whether a cue is legible from across
   a street.
-- **A test never asserts what a setting is** (inbox #1159 in gray-dolphin). *Asked for as a judgment call, a test
-  that only doubles the work of a change deleted (PLAYTEST-67) · overturned to absolute on
-  2026-11-06, because a test must never test configuration settings (inbox #1159 in gray-dolphin).* A test that
-  reads a setting only to restate it goes: asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is
+- **A test never asserts what a setting is** (inbox #1159 in gray-dolphin). A test that
+  reads a setting only to restate it goes, since it only doubles the work of a change
+  (PLAYTEST-67): asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is
   `[1, 4, 8, 12]` is the table restated, so moving an act boundary means editing the constant *and*
   editing the test, and no arrangement of those two numbers was ever going to disagree.
 
   **The kept relationship tests stay, since they encode a guarantee between settings**
-  (inbox #1173 in gray-dolphin). *Kept for fairness guarantees only (inbox #1159 in gray-dolphin) · widened on 2026-11-07 to any
-  guarantee between settings (inbox #1173 in gray-dolphin).* A fairness floor, the difficulty ramp (a late day
+  (inbox #1173 in gray-dolphin). A fairness floor, the difficulty ramp (a late day
   holds more events than an early one) and a derived number kept in step with its setting (the
   flash curve's shape `FINALE_DISTANT_FLASH_SHAPE_B` is solved from the mean wait
   `FINALE_DISTANT_FLASH_MEAN_SECONDS` between the building's distant window flashes, and the test
@@ -116,42 +192,84 @@ the real build nor the step that read it off survives into the pull request.
   be had another way, and the test needs it to confirm the behavior; such a case may hint that its
   module's design is suboptimal. Its line goes in a kept group of `tools/test_only_members.txt` with
   the reason (the fairness helpers `Tuning.required_horn_time`, `required_horn_sight` and
-  `sleepiness_gain_calm` are there, since the relationship tests above rest on them).
-  `tools/check_test_only_members.py` (CI's `gates` job) fails a test that reads a public member
-  nothing else under `src/` reads. *Proposed by the orchestrator, not asked for, open to the player's
-  correction:* the rule also reaches a var, a signal or a constant with no use anywhere under `src/`,
+  `sleepiness_gain_calm` are there, since the relationship tests above rest on them). The rule also
+  reaches a var, a signal or a constant with no use anywhere under `src/`,
   a constant nothing reads being the same dead weight.
 - **A public function only its own file and the tests use is internal** (inbox #1098 in curly-rabbit): it gets the
   underscore, and its tests check what the class does from outside. A function stays public only where
   nothing outside can confirm the behavior, with the reason written down on its line in a kept
-  group of the list. The same check enforces it. *Proposed by the orchestrator, not asked for, open
-  to the player's correction:* the rule also reaches vars and signals, and not constants, since a test
+  group of the list. The rule also reaches vars and signals, and not constants, since a test
   reading a constant to assert a relationship is what this policy wants; a constant is flagged only
   when nothing under `src/` uses it, its own file included.
-- *Proposed by the orchestrator, not asked for, open to the player's correction:* a **hand-in**, a
-  `use_*` setter that hands the object what it depends on, stays public and sits in a kept group
-  with that reason, since the game uses its default and a test hands in a fake (dependency injection,
-  minty-lemur #794; mocking, inbox #1095 in curly-rabbit).
-- **What the list enforces, and nothing more.** Its `[no reader]` and `[own file only]` groups only
-  shrink: with `--base <the pull request's base>`, which CI passes, the check fails a line added to
-  either, so a builder answers its failure by fixing the member, never by listing it. A line gone
-  stale (the member gained a reader in another file, lost its test, is a constant used in its own file,
-  is an engine name, is a function passed rather than called, or is gone) fails as a `REMOVE` line, so the
-  pull request that fixes a member deletes its line. A file move carries its
-  lines: an added line passes when a line of the same group with the same member name is removed in the
-  same diff and git reports its file as renamed to the added line's file, each removed line pairing with
-  one added line; before a commit git sees the move only once the moved file is tracked (`git mv`,
-  or `git add` it first). A listed member that is renamed is the moment to fix it (or to put it in a kept line
-  with its reason), never to carry its line. A merge of `main` that conflicts in the list is
-  resolved by `tools/merge-test-only-members.py`, which replays the branch's own added and removed lines on main's file. A
-  `[kept]` group takes a new line, and the check fails one with no reason after its `#`; whether the
-  reason holds (the player's exception, a hand-in, a line the check misreads) is the reviewer's to
-  read. The check cannot see a member whose name is also a word in another file or a test of an
-  unreachable setup; those stay review's. A member a game reader reaches only through a string
-  (`call("name")`, `has_method`) is a false failure that goes in a kept line with its reason.
+- **A hand-in**, a `use_*` setter that hands the object what it depends on (a clock with a
+  wall-clock default included, as the mode button, the return window, the title screen and the
+  touch controls take), stays public and sits in a kept group with that reason, since the game
+  uses its default and a test hands in a fake (dependency injection, minty-lemur #794; mocking,
+  inbox #1095 in curly-rabbit).
+- **`tools/check_test_only_members.py` (CI's `gates` job) holds the two rules above**: it fails a
+  test that reads a public member nothing else under `src/` reads, unless
+  `tools/test_only_members.txt` lists it. Its `--help` and the header of that list say what it
+  counts as a reader and what each group is. What a builder does about it:
+  - **A failure is answered by fixing the member, never by listing it.** The list's `[no reader]`
+    and `[own file only]` groups only shrink, and CI fails a line added to either.
+  - **The pull request that fixes a member deletes its line**, which the check prints as a `REMOVE`
+    line once the line is stale.
+  - **A `[kept]` line carries its reason after the `#`**, and whether the reason holds (the
+    player's exception, a hand-in, a line the check misreads) is the reviewer's to read. A member a
+    game reader reaches only through a string (`call("name")`, `has_method`) is a false failure
+    and goes there with that reason.
+  - **A file move carries its lines, and a renamed member does not**: a moved file is tracked
+    first (`git mv`, or `git add` it), so git reports the rename and the check pairs each line; a
+    listed member that is renamed is fixed, or kept with its reason.
+  - **A merge of `main` that conflicts in the list is resolved by
+    `tools/merge-test-only-members.py`**, which replays the branch's own added and removed lines on
+    main's file.
+  - **What the check cannot see stays review's**: a member whose name is also a word in another
+    file, and a test of an unreachable setup.
 - **A duplicate test is deleted** (inbox #1097 in curly-rabbit): the same behavior already tested by another suite
   is a second place to edit and no second chance to catch a bug. Search `tests/` for the behavior
   before writing a test, and if a suite holds it, extend that one.
 - **An identity is not the property.** Asserting a relationship that is *true* but is not the
   condition the sentence beside it claims pins nothing.
 - The suite must exit clean. **Leak warnings at shutdown mean a real retain bug.**
+
+## Proposed, not asked for
+
+These rules above are the filer's or the orchestrator's proposals and readings, not the player's
+words, and hold until the player corrects them. The citation is the player's word each one extends:
+
+- **A check whose subject is another object's answers moves to that object's suite** ("A suite
+  tests the one module it is named for"), a reading of "only mock what you do not want to test"
+  (inbox #1159 in gray-dolphin).
+- **The rule that a test reads only through methods covers the suites, not the probes under
+  `tests/probes/`**: a probe is a measurement script run by name that no suite runs, a reading of
+  inbox #1182 in gray-dolphin, open to the player's correction.
+- **A caller under `src/dev` counts as a game caller** ("A test reaches the game the way the game
+  does"): a reading of the seam rule. The rigs and the scene-recipe runtime are the composition
+  root in `tools/layer_map.py`'s layering, which makes them the game's own classes, and
+  `tools/check_test_only_members.py` applies it (minty-lemur #794; inbox #1095 in curly-rabbit).
+- **Driving the tick's own step by hand, with its measured reason**: the orchestrator's reading of
+  the speed the player wanted from the suites (inbox #1159 in gray-dolphin).
+- **The drawn-art answer covers any holder whose drawing nothing in the game reads back**, the
+  roof art and the event pictures it was first applied to among them: the player asked for it as a
+  general statement on designing unit tests, and the filer reads it that way (inbox #1018 in
+  brisk-ferret).
+- **A scene-level test lets real frames pass and calls no frame function by hand, and a line the frame
+  count prints is a breach, not a sign to look again**: the refactor ticket's own rule (the
+  records minty-quail, on the runner letting frames pass, and minty-quail-47), which the player's
+  words do not hold. `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests -g '*.gd' -g '!tests/probes/**'` counts the lines that call a frame function or emit the frame
+  signal by hand; it reads what the private-member command reads and prints nothing today.
+- **A suite says why it needs state only the game's accessors or the save's round trip reach**, in
+  its header (the writer rule above); the filer's addition, beside inbox #1097 in curly-rabbit.
+- **The reason for a combined suite, or for a real city, is stated in the suite's `##` header
+  comment** (inbox #1159 in gray-dolphin).
+- **The test-only rule also reaches a var, a signal or a constant with no use anywhere under
+  `src/`** (inbox #1095 in curly-rabbit).
+- **The own-file rule also reaches vars and signals, and not constants** (inbox #1098 in
+  curly-rabbit).
+- **A hand-in stays public, in a kept group**, a clock with a wall-clock default only tests replace
+  included, open to the player's overturn: read strictly, the seam rule would rule those setters
+  out and replace them with real time and short waits (minty-lemur #794; inbox #1095 in
+  curly-rabbit).
+- **The runner's class name, `TestRunner`**, is the builder's choice; the player's words ask for
+  a class name so that the header is one line, and name none (inbox #1282 in grassy-trout).

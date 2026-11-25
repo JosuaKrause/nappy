@@ -5,7 +5,7 @@ extends RefCounted
 ## Run explicitly: `tools/test.sh probes/m159_tick_sweep_events_cost.gd`; one `TICK_SWEEP_JSON`
 ## line per run is printed, and the evidence's `analyse.py` reads them.
 ##
-## Every run starts the seed's city on the day the way `main._start_day()` does — the day's
+## Every run starts the seed's city on the day the way `main._start()` does — the day's
 ## closures and region plan (`City.start_day()`), the day's events planned and streamed around the
 ## doorstep (`EventManager.start_day()`), the crowd from a fixed RNG seed with the day's gates — and
 ## walks a player rig with a real `Baby` down from the doorstep and then along one of two walks
@@ -53,7 +53,7 @@ const EVENT_PARTS: Array[String] = ["retire", "camera", "site", "stream", "owed"
 ## The sweep's queries, then the baby's whole step.
 const SWEEP_PARTS: Array[String] = ["event_sources", "door", "crowd_sources", "baby"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -63,14 +63,15 @@ func run(t) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		for day in DAYS:
 			for walk in WALKS:
 				for repetition in REPETITIONS:
 					var chains := {}
-					for mode in ["whole", "split"]:
+					for mode: String in ["whole", "split"]:
 						var report := _run_once(city, rig, city_seed, day, mode, walk)
 						report["repetition"] = repetition
 						chains[mode] = report.chain
@@ -79,8 +80,9 @@ func run(t) -> void:
 							("seed %d, day %d, %s walk, repetition %d: the split step changes every "
 							+ "event, agent and meter exactly as the real one")
 							% [city_seed, day, walk, repetition])
-		city.events.clear()
-		city.crowd._player = null
+		RunCity.events(city).stand_down()
+		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	rig.free()
 
@@ -92,17 +94,19 @@ func run(t) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String,
 		walk: String) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng("closures", city_seed, day))
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	var consumed: Array[String] = []
-	var events := city.events
+	var events := RunCity.events(city)
 	events.start_day(DaySpec.for_day(day), _rng("events", city_seed, day), consumed, start)
 	events.stream_around(start)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
-	crowd.set_gates(city.streets().region_plan().gates)
+	crowd.set_gates(city.streets().region_plan().gate_states())
 	crowd._player = rig
+	crowd.use_focus(StrollerFocus.new(rig))
+	crowd.use_bus(EventBus)
 	events.use_player(rig)
 	rig.global_position = start
 	rig.velocity = Vector2.ZERO
@@ -110,6 +114,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	rig._alert_left = 0.0
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	rig.add_child(baby)
 	baby.set_physics_process(false)
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.
@@ -130,7 +135,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		rig.global_position = here
 		rig.velocity = going * Tuning.WALK_SPEED
 		crowd._physics_process(STEP)
-		var was_crying := baby.state == GameEnums.BabyState.CRYING
+		var was_crying := baby.condition() == GameEnums.BabyState.CRYING
 		var row: Array[int] = []
 		if mode == "whole":
 			var began := Time.get_ticks_usec()
@@ -145,9 +150,9 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		# Wherever the step left her: a door's release sets her down somewhere else.
 		here = rig.global_position
 		chain = _chain(chain, city, rig, baby)
-		if baby.last_incoming > 0.0:
+		if baby.last_frame_incoming() > 0.0:
 			reached_ticks += 1
-		if baby.state == GameEnums.BabyState.CRYING:
+		if baby.condition() == GameEnums.BabyState.CRYING:
 			crying_ticks += 1
 		if rig._alert != Stroller.Alert.NONE:
 			alert_ticks += 1
@@ -180,33 +185,33 @@ func _rng(stream: String, city_seed: int, day: int) -> RandomNumberGenerator:
 ## microseconds in `EVENT_PARTS` order; a call the step skips this tick reads 0.
 func _split_events(events: EventManager, delta: float) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	events.streaming.broadcast_clock += delta
-	events.streaming.retire_finished()
+	events._streaming.advance_the_broadcast(delta)
+	events._streaming.retire_finished()
 	stamps.append(Time.get_ticks_usec())
 	var found := events.world.has_player()
 	if found:
 		events._look_through_the_camera()
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events.ahead.site_what_is_on_her_way(delta)
+		events._ahead.site_what_is_on_her_way(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.stream_around(events.world.player.global_position)
+		events.stream_around(events.world.player().global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events.ahead.place_what_is_owed_ahead(delta)
+		events._ahead.place_what_is_owed_ahead(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.spawner.summon_what_has_been_sighted(events.plans())
+		events._spawner.summon_what_has_been_sighted(events.plans())
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.spawner.report_the_pelicans_in_view()
+		events._spawner.report_the_pelicans_in_view()
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._watch_the_encounters(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.warnings.run(delta, events.world.player.global_position)
+		events._warnings.run(delta, events.world.player().global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._tell_them_where_she_is()
@@ -214,16 +219,16 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 	events._step_them(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.ahead.let_the_officers_out()
+		events._ahead.let_the_officers_out()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.warnings.warn_about_the_ground_she_is_on()
+		events._warnings.warn_about_the_ground_she_is_on()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.checkpoints.watch_the_door_lines()
+		events._checkpoints.watch_the_door_lines()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.checkpoints.check_detentions()
+		events._checkpoints.check_detentions()
 	stamps.append(Time.get_ticks_usec())
 	events.check_hard_fails()
 	stamps.append(Time.get_ticks_usec())
@@ -236,11 +241,11 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 ## microseconds in `SWEEP_PARTS` order.
 func _split_sweep(city: City, baby: Baby, her: Vector2) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	city.events.sources.sources_at(her)
+	RunCity.events(city).excitement_sources().sources_at(her)
 	stamps.append(Time.get_ticks_usec())
-	city.events.door_holding_her_at(her)
+	RunCity.events(city).door_holding_her_at(her)
 	stamps.append(Time.get_ticks_usec())
-	city.crowd.sources.sources_at(her)
+	RunCity.crowd(city).sources().sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	baby._physics_process(STEP)
 	stamps.append(Time.get_ticks_usec())
@@ -262,7 +267,7 @@ func _heading_at_the_next_event(events: EventManager, here: Vector2, reached: Di
 	var best := INF
 	var target: EventInstance = null
 	for instance in events.instances():
-		if instance.is_finished or reached.has(instance):
+		if instance.is_gone() or reached.has(instance):
 			continue
 		var distance := instance.global_position.distance_squared_to(here)
 		if distance < best:
@@ -283,31 +288,31 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 	context.start(HashingContext.HASH_SHA256)
 	context.update(previous)
 	var state := PackedFloat64Array()
-	for instance in city.events.instances():
-		context.update(instance.def.id.to_utf8_buffer())
+	for instance in RunCity.events(city).instances():
+		context.update(instance.row_id().to_utf8_buffer())
 		state.append(instance.global_position.x)
 		state.append(instance.global_position.y)
-		state.append(instance.age)
-		state.append(float(instance.is_finished))
-		state.append(float(instance.is_leaving))
+		state.append(instance.age())
+		state.append(float(instance.is_gone()))
+		state.append(float(instance.is_on_its_way_out()))
 		state.append(float(instance.is_telegraphing()))
-		state.append(instance.excitement.landed())
-	state.append(float(city.events.pending_warnings().size()))
-	state.append(float(city.events.active_count()))
-	for agent in city.crowd.agents():
+		state.append(instance.source().landed())
+	state.append(float(RunCity.events(city).pending_warnings().size()))
+	state.append(float(RunCity.events(city).active_count()))
+	for agent in RunCity.crowd(city).agents():
 		state.append(agent.global_position.x)
 		state.append(agent.global_position.y)
 		state.append(agent.speed())
-		state.append(agent.excitement.landed())
+		state.append(agent.mood().landed())
 	state.append(rig.global_position.x)
 	state.append(rig.global_position.y)
 	state.append(float(rig._alert))
 	state.append(rig._alert_left)
-	state.append(baby.excitement)
-	state.append(baby.sleepiness)
-	state.append(float(baby.state))
-	state.append(baby.last_incoming)
-	state.append(baby.last_decay)
+	state.append(baby.excitement_level())
+	state.append(baby.sleepiness_level())
+	state.append(float(baby.condition()))
+	state.append(baby.last_frame_incoming())
+	state.append(baby.last_frame_decay())
 	state.append(baby.self_landed())
 	state.append(baby.decay_in_window())
 	context.update(state.to_byte_array())

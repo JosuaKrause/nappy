@@ -44,7 +44,7 @@ const ACT_SAMPLE_DAYS: Array[int] = [2, 5, 9, 13]
 const BASE_SEED := 730105
 const STEP := 0.2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure_return_phase()
 	t.check(true, "zz_m98_return_phase probe ran")
 
@@ -68,12 +68,12 @@ func _measure_return_phase() -> void:
 		for day in ACT_SAMPLE_DAYS:
 			var act := Tuning.act_for_day(day)
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
-			if tree.branches.is_empty():
+			if tree.branches().is_empty():
 				continue
-			var branch: RouteTree.Branch = tree.branches[0]
+			var branch: RouteTree.Branch = tree.branches()[0]
 			if branch.routes.is_empty():
 				continue
 			var route: Array = branch.routes[0]
@@ -85,10 +85,9 @@ func _measure_return_phase() -> void:
 			var return_seconds := minf(out_seconds, maxf(0.0, day_len - out_seconds))
 
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("m98:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), [], [], tree,
-							0).placements()
+			plan_rng.seed = hash("m98:plan:%d:%d" % [map.city_seed(), day])
+			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+					.on(tree).plan().placements()
 
 			var y_min := 0.0
 			var y_max: float = map.world_size().y
@@ -100,8 +99,8 @@ func _measure_return_phase() -> void:
 			# no call to `owe_the_return()` at all.
 			var before := EventDirector.new(map)
 			var before_rng := RandomNumberGenerator.new()
-			before_rng.seed = hash("m98:ahead:%d:%d" % [map.seed_used, day])
-			before.start_day(day, planned, before_rng)
+			before_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
+			before.start_day(day, planned, before_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var out_result := _walk_and_count(before, start_pos, start_vel, out_seconds, y_min, y_max)
 			var out_count: int = out_result[0]
 			var return_before := _walk_and_count(before, out_result[2], out_result[3],
@@ -114,8 +113,8 @@ func _measure_return_phase() -> void:
 			# own return leg walks.
 			var after := EventDirector.new(map)
 			var after_rng := RandomNumberGenerator.new()
-			after_rng.seed = hash("m98:ahead:%d:%d" % [map.seed_used, day])
-			after.start_day(day, planned, after_rng)
+			after_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
+			after.start_day(day, planned, after_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var out_result_after := _walk_and_count(after, start_pos, start_vel, out_seconds,
 					y_min, y_max)
 			after.owe_the_return(day, 0)
@@ -124,12 +123,12 @@ func _measure_return_phase() -> void:
 			var after_count: int = return_after[0]
 			var after_ids: Array[String] = return_after[1]
 
-			out_seconds_by_act[act].append(out_seconds)
-			return_seconds_by_act[act].append(return_seconds)
-			return_fraction_by_act[act].append(return_seconds / maxf(1.0, day_len))
-			out_encounters_by_act[act].append(out_count)
-			return_encounters_before_by_act[act].append(before_count)
-			return_encounters_after_by_act[act].append(after_count)
+			(out_seconds_by_act[act] as Array).append(out_seconds)
+			(return_seconds_by_act[act] as Array).append(return_seconds)
+			(return_fraction_by_act[act] as Array).append(return_seconds / maxf(1.0, day_len))
+			(out_encounters_by_act[act] as Array).append(out_count)
+			(return_encounters_before_by_act[act] as Array).append(before_count)
+			(return_encounters_after_by_act[act] as Array).append(after_count)
 
 			if examples.size() < MAX_EXAMPLES:
 				examples.append(
@@ -142,7 +141,7 @@ func _measure_return_phase() -> void:
 
 	print("\n-- per act (mean over %d seeds) --" % SEEDS)
 	print("  act  out-leg(s)  return-leg(s)  return-of-day   owed-out  owed-return-before  owed-return-after")
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		var n: Array = out_seconds_by_act[act]
 		if n.is_empty():
 			print("  %-4d (no sampled day reached a calm area)" % act)
@@ -153,14 +152,14 @@ func _measure_return_phase() -> void:
 				_mean_i(return_encounters_before_by_act[act]),
 				_mean_i(return_encounters_after_by_act[act])])
 
-	for label in ["before", "after"]:
+	for label: String in ["before", "after"]:
 		var counts: Dictionary = return_encounters_before_by_act if label == "before" \
 				else return_encounters_after_by_act
 		var all_counts: Array = []
-		for act in [1, 2, 3, 4]:
+		for act: int in [1, 2, 3, 4]:
 			all_counts.append_array(counts[act])
 		var zero := 0
-		for c in all_counts:
+		for c: int in all_counts:
 			if int(c) == 0:
 				zero += 1
 		if not all_counts.is_empty():
@@ -190,7 +189,7 @@ func _walk_and_count(director: EventDirector, start_pos: Vector2, start_vel: Vec
 		if not due.is_empty():
 			count += 1
 			var def: EventDef = due[0]
-			ids.append(def.id)
+			ids.append(def.id())
 		pos += vel * step
 		if pos.y < y_min or pos.y > y_max:
 			vel.y = -vel.y
@@ -202,7 +201,7 @@ func _mean_f(values: Array) -> float:
 	if values.is_empty():
 		return 0.0
 	var total := 0.0
-	for v in values:
+	for v: float in values:
 		total += float(v)
 	return total / float(values.size())
 

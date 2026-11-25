@@ -34,9 +34,17 @@ static func centre(button_node: ModeButton) -> Vector2:
 static func push(screen: Node, event: InputEvent) -> void:
 	screen.get_viewport().push_input(event, true)
 
+## Dismisses a pause screen the way a keyboard player does: `space`, the key every screen takes as
+## carry on, pushed through the viewport the screen is in. It closes at once, with no frame between.
+static func dismiss(screen: PauseScreen) -> void:
+	var event := InputEventAction.new()
+	event.action = &"ui_accept"
+	event.pressed = true
+	push(screen, event)
+
 ## Lets `count` frames pass. A `process_frame` resumes before the nodes' own `_process` of the frame
 ## it names, so two are what one full frame of processing takes.
-static func frames(t, count := 2) -> void:
+static func frames(t: TestRunner, count := 2) -> void:
 	for i in count:
 		await t.get_tree().process_frame
 
@@ -57,9 +65,7 @@ static func mouse_at(position: Vector2, pressed: bool) -> InputEventMouseButton:
 ## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence,
 ## the clock it ended on, and whether it sent a normal run back to its checkpoint.
 static func ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0, goes_back := false) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
-	end.reason = reason
-	end.elapsed_seconds = elapsed
-	end.goes_back = goes_back
+	var end := DayEnd.new(result, reason, elapsed)
+	if goes_back:
+		end.mark_sending_the_run_back()
 	return end

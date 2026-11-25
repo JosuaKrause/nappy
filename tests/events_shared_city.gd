@@ -21,10 +21,24 @@ extends RefCounted
 ## file asserting about a city that no longer exists.
 var _shared_map: CityMap
 
+var _shared_sites: Array[MastSites.Site] = []
+
+## The shared city's mast sites, worked out once on it as built.
+func _sites() -> Array[MastSites.Site]:
+	_map()
+	return _shared_sites
+
 func _map() -> CityMap:
 	if not _shared_map:
 		_shared_map = CityGenerator.generate(4242)
+		_shared_sites = _sites_of(_shared_map)
 	return _shared_map
+
+## `map`'s mast sites as the game works them out (`EventWorld.work_out_mast_sites()` is this call):
+## once per city, on the city as built, before any day repaints it. A suite that plans a city over
+## many days asks once and hands the answer to every dawn it plans on that city.
+func _sites_of(map: CityMap) -> Array[MastSites.Site]:
+	return MastSites.compute(map)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -33,28 +47,34 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 ## The shared map's plan for `day`, memoized.
 ##
-## **Ten checks below ask for exactly this** — `build_day(day, _rng(day), _map(), consumed)` with a
-## fresh empty `consumed` — and `build_day` is the most expensive call in this suite at roughly two
-## thirds of a second for an early day and a second for a late one. Planning the same fourteen days
-## ten times over was six or seven minutes of re-deriving an answer that nothing between the calls
-## had changed, and none of the ten was checking anything the first one had not already produced.
+## **Ten checks below ask for exactly this**: `GameDawn.of(DaySpec.for_day(day), _rng(day),
+## _map())` with a fresh empty `consumed` handed to `spent()`, and `build_day` is the most expensive
+## call in this suite at roughly two thirds of a second for an early day and a second for a late
+## one. Planning the same fourteen days ten times over was six or seven minutes of re-deriving an
+## answer that nothing between the calls had changed, and none of the ten was checking anything
+## the first one had not already produced.
 ##
 ## Every caller reads the plans and none writes to them, which is what makes one copy safe to
 ## share. **Two callers go round this on purpose and both have to.**
 ## `_test_scheduler_is_deterministic` is *about* `build_day` repeating itself, so a cache hit would
 ## be the test asking a dictionary rather than the scheduler; and the calm-memory sweeps pass a
 ## `used` set as a further argument, so their plans are a different question.
-var _plans := {}
+var _dawns := {}
 
-func _planned(day: int) -> Array[EventScheduler.Planned]:
+func _planned(day: int) -> Array[EventPlan]:
 	return _day_events(day).placements()
 
 ## The shared map's plan for `day` as the scheduler answers it (`DayEvents`), memoized the same
 ## way: what a check asks when it wants a fact of the day — which calm areas are spoiled —
 ## rather than the rows themselves.
 func _day_events(day: int) -> DayEvents:
-	if not _plans.has(day):
+	return _dawn(day).events()
+
+## The shared map's dawn for `day`, planned and memoized: its plan (`DawnContext.events()`) and the
+## locations and the ground it built.
+func _dawn(day: int) -> DawnContext:
+	if not _dawns.has(day):
 		var consumed: Array[String] = []
-		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(),
-				CalmAreas.of(_map()), consumed)
-	return _plans[day]
+		_dawns[day] = GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+				.spent(consumed).planned()
+	return _dawns[day]

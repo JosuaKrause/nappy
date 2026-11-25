@@ -12,7 +12,7 @@ func _init(record: FrameTiming) -> void:
 
 ## Overrides CrowdTiming.running.
 func running() -> bool:
-	return _record.on
+	return _record.is_on()
 
 ## Overrides CrowdTiming.enter.
 func enter() -> int:

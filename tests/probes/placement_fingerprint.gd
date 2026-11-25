@@ -11,11 +11,11 @@ extends RefCounted
 ## Three kinds of walk, each started the way the game starts it, through a real `City` or
 ## `InteriorScene` and the walk's `EventManager`:
 ##
-## - **the escape's city** (`main._plan_the_finale_city()`) on the eight seeds record
+## - **the escape's city** (`DayDirector.start()`'s plan for the city section) on the eight seeds record
 ##   minty-quail-8 fingerprinted, on the `--start-escape city` boot's stream (the run on day 1) and
 ##   on the stream a played run reaches it on (day 14);
-## - **the building** (`main._start_section()`'s building half) on a few seeds;
-## - **a day** (`DayDirector.start_day()`'s city and events half) on days 1, 4, 8, 9, 10, 12 and 14
+## - **the building** (`DayDirector.start()`'s plan for the building section) on a few seeds;
+## - **a day** (`DayDirector.start()`'s city and events half) on days 1, 4, 8, 9, 10, 12 and 14
 ##   of two seeds.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -27,7 +27,7 @@ const BUILDING_SEEDS: Array[int] = [4242, 1, 77]
 const DAY_SEEDS: Array[int] = [4242, 77]
 const DAYS: Array[int] = [1, 4, 8, 9, 10, 12, 14]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var lines := 0
 	for seed_value in ESCAPE_SEEDS:
 		for day in ESCAPE_DAYS:
@@ -40,65 +40,68 @@ func run(t) -> void:
 	print("FP_TOTAL %d placements" % lines)
 	t.check(lines > 0, "there were placements to print (%d)" % lines)
 
-## The escape's city, built and dressed as `main._build_the_finale_city()` does and planned as
-## `main._plan_the_finale_city()` does.
-func _the_escape_city(t, seed_value: int, day: int) -> int:
+## The escape's city, built as `main._build_the_escape_city()` does and dressed and planned as
+## `DayDirector.start()` does.
+func _the_escape_city(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = day
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(day)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
-			spec)
-	var start := FinalePlanner.service_exit_world_position(city.map)
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), spec)
+	var start := FinalePlanner.service_exit_world_position(city.map())
 	var none: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
-	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map,
-			city.events.plans())
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(day, "finale"), none, start)
+	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map(),
+			RunCity.events(city).plans())
 	city.free()
 	return printed
 
 ## The building, with its events started as every entry into the section starts them.
-func _the_building(t, seed_value: int) -> int:
+func _the_building(t: TestRunner, seed_value: int) -> int:
 	var own_run := RunState.new()
 	own_run.start_run(seed_value)
-	own_run.header.day = Tuning.RUN_LENGTH_DAYS
+	own_run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var rng := own_run.calendar.day_rng(own_run.header.day, "finale-interior")
+	var rng := own_run.calendar().day_rng(own_run.header().day(), "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng, own_run)
-	var printed := _print("building seed %d" % seed_value, scene.map, events.plans())
+	var printed := _print("building seed %d" % seed_value, scene.map(), events.plans())
 	events.free()
 	scene.free()
 	return printed
 
-## A day, as `DayDirector.start_day()` plans it: the city's own morning, then the events.
-func _a_day(t, seed_value: int, day: int) -> int:
+## A day, as `DayDirector.start()` plans it: the city's own morning, then the events.
+func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = day
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	run.header().set_day(day)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
-			spec)
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
+	run.attempt_spend().block_arcs().begin_day(city.map().plans_by_block(), day)
+	city.start_day(run.attempt_spend().block_arcs(), day, run.calendar().day_rng(day,
+			"closures"), spec)
 	var consumed: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(day), consumed,
-			city.map.doorstep_world_position())
-	var printed := _print("day seed %d day %d" % [seed_value, day], city.map,
-			city.events.plans())
+	RunCity.events(city).start_day(spec, run.calendar().day_rng(day), consumed,
+			city.map().doorstep_world_position())
+	var printed := _print("day seed %d day %d" % [seed_value, day], city.map(),
+			RunCity.events(city).plans())
 	city.free()
 	return printed
 
-func _print(walk: String, map: WorldMap, plans: Array[EventScheduler.Planned]) -> int:
+func _print(walk: String, map: WorldMap, plans: Array[EventPlan]) -> int:
 	print("FP_WALK %s | %d placements" % [walk, plans.size()])
 	for i in plans.size():
 		var plan := plans[i]
-		var tile := map.world_to_tile(plan.position) if plan.is_placed() else Vector2i(-1, -1)
+		var tile := map.world_to_tile(plan.placed_at()) if plan.is_placed() else Vector2i(-1, -1)
 		print("FP %s | %d | %s | tile %s | at %s | facing %s | role %d | comes_in %.3f | every %.3f"
-				% [walk, i, plan.def.id, tile, plan.position, plan.facing, plan.role,
-				plan.comes_in, plan.repeat_every]
+				% [walk, i, plan.row_id(), tile, plan.placed_at(), plan.faces(), plan.role(),
+				plan.first_comes_in(), plan.comes_again_every()]
 				+ " | after %.3f | aged %.3f | at_her %s | mast %s | path %s"
-				% [plan.repeat_after, plan.arrives_aged, plan.at_her, plan.mast_id, plan.path])
+				% [plan.comes_again_after(), plan.arrives_aged(), plan.comes_where_she_stands(),
+				plan.mast_id(), plan.walks()])
 	return plans.size()

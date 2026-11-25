@@ -1,0 +1,321 @@
+class_name DayPlanner
+extends RefCounted
+## **What a walk places before she sets off, chosen by its spec**: the planning half of every walk
+## `EventManager.start_day()` starts. One planner for the three kinds of walk the run is made of,
+## each on the stream it is handed and in the order its streams have always been drawn:
+##
+## - **a day** (`_plan_a_day()`): the day's holds, its seals (`SealPlanner.plan_day()`), the
+##   catalogue's rows (`EventScheduler.build_day()`, on the `DawnContext` this makes) and the
+##   region's wall and doors, against the route tree the city grew this morning;
+## - **the escape's city** (`plan_the_escape_city()`), whose spec closes no streets of a tree
+##   (`DaySpec.closes_the_streets()`): its walk is the two chains `FinalePlanner.route()` grows, the seals
+##   are the same `SealPlanner.plan_day()` off them and the events the same `build_day()` on them;
+## - **the escape's building** (`DaySpec.World.BUILDING`): the building's own placements
+##   (`BuildingPlan.plan()`), the one walk allowed its own way of placing (minty-lemur #785).
+##
+## **Which of the three is the spec's**, read off its settings rather than off a flag naming the
+## escape: the building is the spec's world, and a city walk whose streets are not closed off a tree
+## is planned on the walk handed in with it.
+##
+## Handed the world the walk is planned over (`EventWorld`: its map, the city's map and today's
+## streets where the world is the city, the run its streams and scars come from, the trace a day's
+## planning writes to); the spec, the stream and the one-shots already spent come with each plan.
+
+## **One walk's plan**: what it places, the walk it was placed against, and what of it is kept
+## past dawn.
+class Plan extends RefCounted:
+	## Everything the walk places, in the order it is handed to the streaming (`placements()`).
+	var _placements: Array[EventPlan] = []
+	## The walk the placements are stated against (`walk()`).
+	var _walk: RouteSource = null
+	## Where today's region doors stand, for what the director sites after dawn (`doors()`).
+	var _doors := PackedVector2Array()
+	## Whether it is a day's plan (`belongs_to_a_day()`).
+	var _belongs_to_a_day := true
+	## The calm areas the walk was planned against (`calm()`).
+	var _calm: CalmAreas = null
+
+	## **A plan of `placements`, stated against `walk`**, whose region doors stand at `doors`
+	## (a day's only) and which is a day's unless `belongs_to_a_day` says it is not.
+	func _init(placements: Array[EventPlan], walk: RouteSource = null,
+			doors := PackedVector2Array(), belongs_to_a_day := true) -> void:
+		_placements = placements
+		_walk = walk
+		_doors = doors
+		_belongs_to_a_day = belongs_to_a_day
+
+	## Everything the walk places, in the order it is handed to the streaming.
+	func placements() -> Array[EventPlan]:
+		return _placements
+
+	## The walk the placements are stated against (`RouteSource`): the day's route tree, a scene
+	## recipe's (the one its rows were placed against, null for a rig's), the escape's two
+	## chains (`FinalePlanner.Plan`), or null in the building.
+	func walk() -> RouteSource:
+		return _walk
+
+	## Where today's region doors stand, for what the director sites after dawn: a day's only.
+	func doors() -> PackedVector2Array:
+		return _doors
+
+	## Whether it is a day's plan: its bodies recorded for the crowd, and the director siting
+	## after dawn what the day left for her walk. False for a walk planned whole before she sets
+	## off (the escape's two sections), whose plans that come again come on their own clocks.
+	func belongs_to_a_day() -> bool:
+		return _belongs_to_a_day
+
+	## **The calm areas the walk was planned against**: a day's own (`CalmAreas.of()` made once in
+	## `_plan_a_day()`), which what is sited while she walks is stated against too; null for the
+	## escape's walks and the building, where nothing is.
+	func calm() -> CalmAreas:
+		return _calm
+
+	## Hands the plan the calm areas it was planned against. See `calm()`.
+	func use_calm(calm: CalmAreas) -> void:
+		_calm = calm
+
+	## The day's locations, as the dawn's context laid them out (`DawnContext.locations()`) or a
+	## scene recipe laid them out for its rows (`EventManager.start_recipe()`), which the walk
+	## hands day 13's task and every siting made as she walks (`WalkEvents.locations()`); null
+	## on a day that laid none out and for a rig's recipe walk.
+	var _locations: DayLocations = null
+
+	## The day's locations. See `_locations`.
+	func locations() -> DayLocations:
+		return _locations
+
+	## Hands the plan the day's locations. See `_locations`.
+	func use_locations(locations: DayLocations) -> void:
+		_locations = locations
+
+	## The day's ground for a row, as the dawn's context made it (`DawnContext.ground()`), which the
+	## walk hands every placement made while she walks (`WalkEvents.ground()`); a scene recipe's
+	## walk is handed the ground its rows were placed on (`EventManager.start_recipe()`); null
+	## for a walk no ground was handed to (the escape's walks, the building, a rig's recipe
+	## walk).
+	var _ground: RowGround = null
+
+	## The day's ground for a row. See `_ground`.
+	func ground() -> RowGround:
+		return _ground
+
+	## Hands the plan the day's ground for a row. See `_ground`.
+	func use_ground(ground: RowGround) -> void:
+		_ground = ground
+
+	## The day's units' draw, as the dawn's context holds it (`DawnContext.unit_draw()`), which the
+	## walk draws from as she comes near each unit (`WalkEvents.unit_draw()`); null for a walk that
+	## draws nothing as she walks (the escape's walks, the building, a scene recipe's).
+	var _unit_draw: UnitDraw = null
+
+	## The day's units' draw. See `_unit_draw`.
+	func unit_draw() -> UnitDraw:
+		return _unit_draw
+
+	## Hands the plan the day's units' draw. See `_unit_draw`.
+	func use_unit_draw(draw: UnitDraw) -> void:
+		_unit_draw = draw
+
+## The world the walk is planned over.
+var world: EventWorld
+
+func _init(the_world: EventWorld) -> void:
+	world = the_world
+
+## **`spec`'s plan**, on `rng`, with `consumed` the one-shots the run has already spent (handed to
+## the day's dawn, which owes her walk none of them a second time; one is spent where it becomes
+## real, `EventStreaming.stream_in()`).
+func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
+	if spec.world_kind() == DaySpec.World.BUILDING:
+		return _plan_the_building(rng)
+	if not spec.closes_the_streets():
+		return _plan_the_escape_city(spec, rng)
+	return _plan_a_day(spec, rng, consumed)
+
+# ------------------------------------------------------------------- a day ---
+
+## A day's plan, the day being `spec.day_number()`.
+func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
+	var day := spec.day_number()
+	var city_map := world.city_map()
+	# Today's streets as dawn left them (`EventWorld.streets()`): the corridor the city grew this
+	# morning, the region wall and doors grown from it, and the closures placed off both. Read
+	# rather than grown again so that the walls, the friction and the picture are all stated against
+	# one tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
+	# is a thing that stops being true the first time one of them takes an argument. Kept as locals
+	# for the same reason — `SealPlanner` needs the same tree the catalogue's own placements were
+	# just stated against. A rig that starts the day with no dawn before it hands streets whose day
+	# it began itself.
+	var streets: DayStreets = world.streets()
+	var tree: RouteTree = streets.route_tree()
+	var region_plan: RegionPlan = streets.region_plan()
+
+	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
+	# `CityMap.held`. Closures, the region's own wall and door segments, and the
+	# streets around the home block are all known already; the hard seals are not, which is
+	# why `SealPlanner.plan_day` is planned ahead of `build_day` below (see that call's own note).
+	city_map.clear_day_holds()
+	for closure in streets.closures():
+		city_map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
+	for segment in region_plan.wall_segments():
+		city_map.hold_segment(segment.key(), HeldStreets.Why.WALL)
+	for segment in region_plan.door_segments():
+		city_map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
+	if spec.keeps_the_home_streets_clear():
+		for segment in city_map.street_network().around_blocks(Rect2i(city_map.home_block_coordinate(), Vector2i.ONE)):
+			city_map.hold_segment(segment.key(), HeldStreets.Why.HOME)
+
+	# Apart from the catalogue's own events on purpose — see `SealPlanner`'s own doc. It seals everything
+	# `EventScheduler` was not permitted to touch: every street off `tree` (a share of them from
+	# `Tuning.REGION_WALL_FIRST_DAY` on, see `SealPlanner._seals_this_street`), hard or soft, plus the
+	# mouths of any through-alley that never reaches it — except today's region boundary, wall or
+	# door, and any crossing alley, both skipped here: the wall already carries its own hard seal
+	# below, and a door or a crossing alley's own door is meant to stay open for the structure the
+	# milestone's second half places there. Segment keys (`Vector3i`) and alley rect positions
+	# (`Vector2i`) share one `Dictionary` without colliding — see `SealPlanner.plan_day`'s own doc.
+	var boundary := {}
+	for segment in region_plan.wall_segments():
+		boundary[segment.key()] = true
+	for segment in region_plan.door_segments():
+		boundary[segment.key()] = true
+	for rect in region_plan.walled_alleys():
+		boundary[rect.position] = true
+	for rect in region_plan.door_alleys():
+		boundary[rect.position] = true
+	# **Planned before `build_day`.** `SealPlanner.plan_day` is a pure function of the map, the day,
+	# `tree` and its own RNG stream (`world.run().calendar().day_rng(day, "seals")`, never shared
+	# with the catalogue's), so planning it first changes which seals a day gets not at all —
+	# only how soon `build_day` can see where they landed. `held` is `city_map.held_streets()`
+	# itself: a hard seal's segment is marked there as it is placed, so the catalogue never
+	# offers a candidate row that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a
+	# fully blocked street").
+	var seals := SealPlanner.plan_day(city_map, spec, tree,
+			world.run().calendar().day_rng(day, "seals"), boundary, city_map.held_streets())
+	# Each says it is a seal, one of the city's fixed parts (`EventPlan.is_a_fixed_part()`), which day
+	# 13's swap never takes.
+	for seal in seals:
+		seal.stand_as_a_seal()
+	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
+	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
+	# onto, on either side — by refusing a candidate whose field or beat reaches inside it, which is
+	# the same "checked before it is accepted, never repaired afterwards" every closure is placed
+	# under. The wall's own bodies are deliberately not in this list: a wall is structure and stands
+	# where the boundary is.
+	var doors := PackedVector2Array()
+	for body in region_plan.door_plans():
+		doors.append(body.placed_at())
+	# What obstructs the day whatever the catalogue does: the seals just planned and the region
+	# wall's own bodies, which the day's rules read with what it places (`StreetInvalidation`).
+	var standing: Array[EventPlan] = []
+	standing.append_array(seals)
+	standing.append_array(region_plan.wall_plans())
+	# The wall's own bodies say so, as a door's do (`EventPlan.stand_as_a_door()`): day 13's task never
+	# takes one for a roadblock the day placed, nor swaps one out.
+	for body in region_plan.wall_plans():
+		body.stand_in_the_wall()
+	# The day's narrow resistance target — day 9's door, day 12's swing, the station's front door —
+	# as the tiles its contact may stand on today: the swing's park is the calm area set aside. The
+	# route to it is the day's route tree's, which the day's rules keep open (`docs/CITY.md`,
+	# "Guarantees").
+	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
+	# The day's calm areas, made once here where the map, the run and the day meet, and handed
+	# to the scheduler, which hands them to every pass that asks about calm ground.
+	var calm := CalmAreas.of(city_map, world.run().calendar().settled_this_act(), day, target)
+	# The day's guarded-band task row, day 13's roadblock, stood beside her routes at dawn so that one
+	# is close by wherever she reads its mark; none on any other day.
+	var guarded := ResistanceSteps.guarded_row_on(day)
+	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
+			world.run().resistance().progress()) if guarded != "" else null
+	var dawn := DawnContext.new(spec, rng.seed, city_map, tree, calm, world.plan_builder(),
+			EventScheduler.row_ground)
+	dawn.use_the_run(consumed, world.run().attempt_spend().scars(), world.run().resistance().progress())
+	dawn.use_the_doors(doors)
+	dawn.use_what_stands(standing)
+	dawn.use_mast_sites(world.mast_sites())
+	dawn.use_trace(world.trace())
+	dawn.use_the_roadblock_row(beside)
+	EventScheduler.build_day(dawn)
+	var placements := dawn.events().placements()
+	placements.append_array(seals)
+	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
+	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
+	# wants to know where the wall stands reads `region_plan.wall_plans()` directly rather than
+	# filtering it back out of the whole day's plan.
+	placements.append_array(region_plan.wall_plans())
+	# The door structure — a hut on each pavement and a gate over the road at a street door, a
+	# guard at each mouth of an alley door. Same reasoning as `wall_plans()` just above: kept as
+	# its own list on `region_plan` and appended here rather than merged into `SealPlanner`'s, so
+	# `region_plan.door_plans()` stays the one place that answers "where do today's doors stand"
+	# without filtering.
+	placements.append_array(region_plan.door_plans())
+	var result := Plan.new(placements, tree, doors)
+	result.use_calm(calm)
+	result.use_locations(dawn.locations())
+	result.use_ground(dawn.ground())
+	result.use_unit_draw(dawn.unit_draw())
+	return result
+
+## **The day's calm areas as the map stands now**, with the areas she settled in this act
+## (`CalmAreas.of()`): what a scene recipe's walk, planned by hand rather than here, is sited
+## against (`EventManager.start_recipe()`).
+func calm_as_the_map_stands() -> CalmAreas:
+	return CalmAreas.of(world.city_map(), world.run().calendar().settled_this_act())
+
+# ------------------------------------------------------------ the escape's city ---
+
+## The escape city's plan: its walk (`FinalePlanner.route()`) and what stands on and off it
+## (`plan_the_escape_city()`), on `rng`. **Nothing is held**: a hold keeps the catalogue's own roll
+## off ground something else has taken, and the escape's seals keep their own record instead, so
+## the day's holds are cleared once the walk is placed rather than left for a rig that ran a day
+## on the same map.
+func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
+	var walk := FinalePlanner.route(world.city_map())
+	var result := Plan.new(plan_the_escape_city(world.city_map(), walk, rng, spec,
+			world.plan_builder(), true, world.trace()), walk, PackedVector2Array(), false)
+	world.city_map().clear_day_holds()
+	return result
+
+## **What the escape puts in the city, on its walk `walk`**: each placed by the day's own code under
+## `spec`, the city section's (`DaySpec.for_section()`), on `rng` — the seals off the walk first
+## (`SealPlanner.plan_day()`), then the events on it (`EventScheduler.build_day()`) on what is left
+## of the same stream. A recipe asks for the seals alone (`populate_events` false) and validates its
+## own actors on the streets.
+##
+## **Every pass is handed the tile she is put down on.** *(2026-09-19: "the spawning shouldn't be a
+## check. the pathing should start from the position. then obstacles can never happen.")* The chains
+## already start there (`FinalePlanner.route()` enters the grid at her own cell), and the walk hands
+## its start to both passes that place things: the sealing spares the street she is standing in
+## rather than the one the front door opens onto (`RouteSource.street_it_starts_in()`), and the
+## events are never offered the ground she is on. Neither is a check on the spawn and neither moves
+## anything afterwards. The events are handed the seals too, because what they may not close is the
+## walk from where she stands to either exit with the seals already down.
+##
+## `builder` makes every plan the dawn sites (`DawnContext.builder()`), and `populate_events` says
+## whether the events are sited at all.
+##
+## `trace` is where the dawn's draw writes its line for the run log (`EventScheduler.build_day()`).
+static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
+		rng: RandomNumberGenerator, spec: DaySpec, builder: PlanBuilder,
+		populate_events := true, trace: RunTrace = null) -> Array[EventPlan]:
+	var placements: Array[EventPlan] = []
+	var seals := SealPlanner.plan_day(map, spec, walk, rng)
+	for seal in seals:
+		seal.stand_as_a_seal()
+	placements.append_array(seals)
+	if populate_events:
+		# The escape's walk draws its streets from its bag and stands no mast, so it is handed none.
+		var dawn := DawnContext.new(spec, rng.seed, map, walk, CalmAreas.of(map), builder,
+				EventScheduler.row_ground)
+		dawn.use_what_stands(seals)
+		dawn.use_trace(trace)
+		EventScheduler.build_day(dawn)
+		placements.append_array(dawn.events().placements())
+	return placements
+
+# --------------------------------------------------------------- the building ---
+
+## The building's own placements on its map, from `rng` (`BuildingPlan.plan()`). Its world is not
+## the city, so there is nothing to hold.
+func _plan_the_building(rng: RandomNumberGenerator) -> Plan:
+	return Plan.new(BuildingPlan.plan(world.map() as InteriorMapPlan, rng), null,
+			PackedVector2Array(), false)

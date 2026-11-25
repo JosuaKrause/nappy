@@ -1,13 +1,12 @@
 extends RefCounted
 ## `CalmAreas`, the day's calm areas as dawn sees them: the one place what a calm area's ground
-## and calm tiles are, which of them she has used this act, and which one the swing day sets
+## is, which of them she has used this act, and which one the swing day sets
 ## aside, is worked out, checked here once on a map laid out by hand with known answers.
 ## Everything else that needs these facts is handed the object, or a stand-in with the answers
 ## set (`tests/fake_calm_areas.gd`).
 ##
 ## The map is two blocks: a park filling its block's lot, and a courtyard whose calm is the court
-## alone (`BlockLayout.open_rect`), the case a whole-lot reading gets wrong. A tile of each lot is
-## left not calm, so the calm tiles are the area's own and not its rect's.
+## alone (`BlockLayout.open_ground()`), the case a whole-lot reading gets wrong.
 
 ## The park's block, whose calm ground is its whole lot: tiles (6, 6) to (13, 13).
 const PARK := Vector2i(0, 0)
@@ -16,9 +15,8 @@ const COURT := Vector2i(1, 0)
 ## A block she settled in that is not calm today, as a requisitioned park is.
 const TAKEN := Vector2i(2, 0)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_area_answers_its_own_calm_ground(t)
-	_test_the_calm_tiles_are_the_calm_ones_of_that_ground(t)
 	_test_used_and_unused_are_read_off_the_act(t)
 	_test_the_swing_park_is_set_aside_on_the_swing_day_only(t)
 
@@ -31,12 +29,12 @@ func _map() -> CityMap:
 	map.fill_rect(court, GameEnums.TileType.COURTYARD)
 	map.set_tile(Vector2i(25, 11), GameEnums.TileType.BUILDING)
 	var layout := BlockLayout.new()
-	layout.open_rect = court
-	map.block_layouts[COURT] = layout
-	map.calm_blocks = [PARK, COURT] as Array[Vector2i]
+	layout.carve_open_ground(court)
+	map.carve_block(COURT, layout)
+	map.recompute_calm(FakeCityState.new().with_calm([PARK, COURT] as Array[Vector2i]))
 	return map
 
-func _test_each_area_answers_its_own_calm_ground(t) -> void:
+func _test_each_area_answers_its_own_calm_ground(t: TestRunner) -> void:
 	var calm := CalmAreas.of(_map())
 	t.check(calm.blocks() == ([PARK, COURT] as Array[Vector2i]),
 			"the calm areas are the map's calm blocks, in its order")
@@ -49,27 +47,19 @@ func _test_each_area_answers_its_own_calm_ground(t) -> void:
 	t.check(calm.rect_of(TAKEN) == Rect2i() and calm.ground_of(TAKEN) == Rect2(),
 			"a block that is not calm has no calm ground")
 
-func _test_the_calm_tiles_are_the_calm_ones_of_that_ground(t) -> void:
-	var calm := CalmAreas.of(_map())
-	var court := calm.calm_tiles_of(COURT)
-	t.check(court.size() == 15 and not court.has(Vector2i(25, 11)),
-			"the court's calm tiles are its fifteen calm ones, not the built tile in it (%d)"
-			% court.size())
-	t.check(court[0] == Vector2i(22, 8), "walked row by row from the court's corner")
-	var park := calm.calm_tiles_of(PARK)
-	t.check(park.size() == 63 and not park.has(Vector2i(6, 6)),
-			"the park's are its sixty-three calm ones, not the sidewalk tile on its corner (%d)"
-			% park.size())
-
-func _test_used_and_unused_are_read_off_the_act(t) -> void:
+func _test_used_and_unused_are_read_off_the_act(t: TestRunner) -> void:
 	var used: Array[Vector2i] = [TAKEN, COURT]
 	var calm := CalmAreas.of(_map(), used)
-	t.check(calm.unused() == ([PARK] as Array[Vector2i]),
-			"the calm areas she has not used are the rest, and a block no longer calm is not one")
+	var unused: Array[Vector2i] = []
+	for block in calm.blocks():
+		if not calm.used().has(block):
+			unused.append(block)
+	t.check(unused == ([PARK] as Array[Vector2i]),
+			"the calm areas she has not used are the rest of the calm blocks")
 	t.check(calm.unused_ground() == ([Rect2(192, 192, 256, 256)] as Array[Rect2]),
-			"and the ground nothing may be placed near is theirs")
+			"the ground nothing may be placed near is theirs")
 	var fresh := CalmAreas.of(_map())
-	t.check(fresh.unused().size() == 2,
+	t.check(fresh.unused_ground().size() == 2,
 			"with nothing used this act, every calm area is unused")
 
 ## The first day whose narrow resistance target (`ResistanceSteps.narrow_target_on()`) is another
@@ -81,13 +71,13 @@ func _a_day_whose_narrow_target_is_not_the_swing() -> int:
 			return step.day
 	return 0
 
-## The park is the city's swing park (`BlockPlan.forced_open_on`, which
+## The park is the city's swing park (`BlockPlan.force_open_on()`, which
 ## `CityGenerator.swing_park()` reads), and the swing's tile stands in it.
-func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t) -> void:
+func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t: TestRunner) -> void:
 	var map := _map()
 	var plan := BlockPlan.of(GameEnums.BlockPurpose.PARK)
-	plan.forced_open_on = ResistanceSteps.swing_day()
-	map.block_plans[PARK] = plan
+	plan.force_open_on(ResistanceSteps.swing_day())
+	map.plan_block(PARK, plan)
 	var swing: Array[Vector2i] = [Vector2i(9, 9)]
 	var none: Array[Vector2i] = []
 	var day := ResistanceSteps.swing_day()
@@ -101,6 +91,6 @@ func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t) -> void:
 			"and on a day whose narrow target is another place, with a target to reach, too")
 	t.check(CalmAreas.of(map, none, day, none).besides() == CalmAreas.NONE,
 			"and on the swing day with no swing to reach, every calm area counts")
-	map.calm_blocks = [COURT] as Array[Vector2i]
+	map.recompute_calm(FakeCityState.new().with_calm([COURT] as Array[Vector2i]))
 	t.check(CalmAreas.of(map, none, day, swing).besides() == CalmAreas.NONE,
 			"as it does once the swing's park is no longer calm")

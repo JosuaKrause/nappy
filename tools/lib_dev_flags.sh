@@ -144,10 +144,39 @@ reject_route_with_screenshot() {
     return 0
 }
 
+# `--walk`, `--flee`, `--press` and `--tap` are pressed by AutoScreenshot (src/dev/auto_screenshot.gd),
+# which the game builds only for a run it can drive: a `--screenshot <path>`, or a `--frame-trace`,
+# a `--frame-record` or a movie recording bounded by `--after` (`RunConfig.screenshot_rig()`). On
+# any other command line they are accepted and move nothing, so such a line is refused here, before
+# Godot is launched, rather than run as a standing-still game. $1 is "recording" when the caller
+# is itself the movie writer (tools/record.sh), anything else when it is not; the rest is the
+# forwarded dev flags.
+reject_input_flag_without_carrier() {
+    local recording="$1" tok input="" carrier_flag="" after=""
+    shift
+    for tok in "$@"; do
+        case "$tok" in
+            --walk|--flee|--press|--tap) [[ -z "$input" ]] && input="$tok" ;;
+            --screenshot) return 0 ;;
+            --frame-trace|--frame-record) carrier_flag=1 ;;
+            --after) after=1 ;;
+        esac
+    done
+    [[ -z "$input" ]] && return 0
+    if [[ -n "$after" && ( -n "$carrier_flag" || "$recording" == recording ) ]]; then
+        return 0
+    fi
+    echo "$input has nothing to carry it: it moves her only in a run that has a screenshot rig, and" >&2
+    echo "this one has none, so she would stand on the doorstep for the whole run. Add" >&2
+    echo "--screenshot <path>, or --frame-trace or --frame-record together with --after <seconds>" >&2
+    echo "(a movie recording from tools/record.sh needs --after <seconds> too)." >&2
+    return 1
+}
+
 # ------------------------------------------------------------------ a rig's own lockdown ---
 # M195: a rig's window takes no focus, hears no stray key, and always closes. `rig_flag_present()`
 # and `rig_kill_after_seconds()` below are the shell half of the same three-defence lockdown
-# `RunConfig.is_rig`/`RigLock` (src/dev/rig_lock.gd) apply from inside the game -- see the
+# `RunConfig.runs_as_a_rig()`/`RigLock` (src/dev/rig_lock.gd) apply from inside the game -- see the
 # `RIG_FLAGS` and `RIG_QUIT_SECONDS` marker blocks in src/dev/dev_flags.gd's own doc comment,
 # which both sides read live so shot.sh/run.sh can never name a different set of flags, or a
 # different deadline, than the game itself is locking down and timing against.
@@ -192,8 +221,7 @@ _rig_quit_constant() {
 }
 
 # `src/autoload/tuning.gd`'s own DAY_LENGTH_SECONDS -- read live, the day-length fallback for a
-# rig with no --after and no --day-length of its own (a --route, or a bare --walk/--flee/--press/
-# --tap with none of --screenshot, --frame-trace or --frame-record beside it), matching what
+# rig with no --after and no --day-length of its own (a --route), matching what
 # `RunConfig.rig_quit_seconds()` falls back to on the GDScript side (that side additionally shortens
 # it for a curfew day; this side stays with the longer, ordinary-day number, which can only ever
 # make the external kill wait a little longer than the in-game timer, never race it).
@@ -205,7 +233,7 @@ _tuning_day_length_seconds() {
 # Whole seconds tools/shot.sh's own external kill (or a rig-flagged tools/run.sh's) waits before
 # deciding the in-game timer did not fire and killing the process from outside: the same
 # script-length-plus-margin-under-a-ceiling formula `DevFlags.rig_quit_seconds_from()` computes,
-# plus its own RIG_KILL_GRACE_SECONDS. Args are the dev flags being forwarded to the game --
+# plus its own kill_grace. Args are the dev flags being forwarded to the game --
 # an --after value takes precedence over --day-length, the same order the GDScript side reads.
 rig_kill_after_seconds() {
     local margin ceiling grace day_length after=""
@@ -240,8 +268,8 @@ rig_kill_after_seconds() {
 # tools/record.sh and tools/trailer.sh launch with), given the dev flags being forwarded. Under the
 # writer the game counts its own deadline -- the same script-plus-margin-under-a-ceiling one -- in
 # game seconds rather than wall seconds (`RigLock._process()`), so this stretches that deadline by
-# `movie_slowdown` (`DevFlags.RIG_MOVIE_SLOWDOWN`, the wall seconds a recorded game second may
-# take) and adds the same kill grace.
+# `movie_slowdown` (the wall seconds a recorded game second may take, from the
+# `RIG_QUIT_SECONDS` block) and adds the same kill grace.
 rig_kill_after_movie_seconds() {
     local margin ceiling grace slowdown day_length after=""
     margin="$(_rig_quit_constant margin)"

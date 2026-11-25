@@ -20,8 +20,8 @@ extends RefCounted
 ## the boot builds draws from (`tests/test_atlas_loading.gd`).
 ##
 ## Making one points the library it watches at a recording trace of its own
-## (`AtlasLibrary.trace_note`, a `RunTrace.recording()`'s `note`), so only the lines written from then
-## on are read. A boot over the library's sitting points the library at the boot's own run log, so a
+## (`AtlasLibrary.use_trace_note()`, the `note` of a `RecordingTrace`, `tests/recording_trace.gd`), so
+## only the lines written from then on are read. A boot over the library's sitting points the library at the boot's own run log, so a
 ## suite that watches a boot hands it `boot_log()`, a recording fake (`tests/recording_log.gd`) that
 ## keeps its lines in the same list. `stop()` lets the library go and frees that log, which a test
 ## owes before it ends.
@@ -29,15 +29,15 @@ extends RefCounted
 const RecordingLog := preload("res://tests/recording_log.gd")
 
 var _lines: Array[String] = []
-## Held here, since the library's `trace_note` is only a `Callable` over it.
-var _trace := RunTrace.recording(_lines)
+## Held here, since what the library is handed (`use_trace_note()`) is only a `Callable` over it.
+var _trace := RecordingTrace.new(_lines)
 var _atlas: AtlasLibrary
 var _boot_log: Telemetry
 
 ## Starts watching `atlas`.
 func _init(atlas: AtlasLibrary) -> void:
 	_atlas = atlas
-	atlas.trace_note = _trace.note
+	atlas.use_trace_note(_trace.note)
 
 ## The run log to hand a boot over the watched library's sitting (`main.use_run_log()`): open, and
 ## keeping what the boot's trace writes beside the library's own lines.
@@ -49,7 +49,7 @@ func boot_log() -> Telemetry:
 
 ## Stops the library writing here, and frees the boot's log if one was handed out.
 func stop() -> void:
-	_atlas.trace_note = Callable()
+	_atlas.use_trace_note(Callable())
 	if _boot_log:
 		_boot_log.free()
 

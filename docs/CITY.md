@@ -27,7 +27,7 @@ The city is a grid of **blocks** separated by **streets**.
 
 **Odd on both axes, and that is a constraint.** An odd lattice has a middle block, and the home goes
 in it — see "The home" below. Everything downstream is stated over `CITY_BLOCKS` rather than over a
-literal (the event budget per block, the crowd population per corridor, the arterial index), so a
+literal (the event locations per street, the crowd population per corridor, the arterial index), so a
 resize moves the city and nothing else. It is still a density change: re-measure rather than assume.
 
 **A 1-tile sidewalk does not work**: the rig's collision circle is 28 px across, so a 32 px
@@ -42,8 +42,8 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 | Kind | How many | What it is |
 | --- | --- | --- |
 | `ORDINARY` | everything else | Two lanes, a zebra at every junction with a carriageway on the far side, and traffic that gives way to somebody standing at the kerb. Where the far side is a precinct there is no carriageway to zebra: the street ends at the precinct's edge instead, a T rather than a crossroads. |
-| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Every crossing at one of its junctions — the side street's two arms as well as its own — is two dotted lines rather than a zebra, because one light governs all four and a zebra on any of them is a promise the traffic there does not make. `CityMap.main_road`. |
-| `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
+| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Every crossing at one of its junctions — the side street's two arms as well as its own — is two dotted lines rather than a zebra, because one light governs all four and a zebra on any of them is a promise the traffic there does not make. `CityMap.main_road_corridor()`. |
+| `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_stretches()`. |
 
 **With one kind of street the only route question is *which way*; with three it is also *which
 kind*, and that is the trade the whole game is made of.** A main road is quick to cross at a light,
@@ -175,7 +175,7 @@ tile exactly once.
 **Every building casts a one-tile shadow to its south and west**, from a light standing to the
 north-east: a full tile where its own footprint sits at that tile's north-east corner, and a
 triangle cut on the 45° diagonal from a corner's north-east to its south-west, the building's own
-side filled, where only its north neighbour does. `BuildingShadows.compute()` reads the tile union
+side filled, where only its north neighbour does. `BuildingShadows` works out the tile union
 of every building's own footprint at once rather than one building at a time, so two buildings that
 share an edge shade as one and nothing is drawn on the seam between them — an alley beside a
 building therefore carries that building's own shadow band down its length, which is part of what
@@ -184,7 +184,7 @@ and `Buildings` in `city.tscn`.
 
 ### Guarantees
 
-Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
+Checked by `CityGenerator.validation_problems()` and by `tests/test_generator.gd` across 200 seeds:
 
 - Every walkable tile is reachable from the home.
 - Every calm area is somewhere calm ground may go: clear of the home, clear of the map's outer
@@ -201,7 +201,7 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
   `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
 - One **park with a playground is day 12's**, the park that day's task sends her to the swing of
-  (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_on`). A park whose arc already
+  (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_day()`). A park whose arc already
   requisitions it is preferred; in a city whose arcs take no park, the chosen one gets a
   `REQUISITIONED` step of its own on `BlockCause.TAKEN`, and the calm that lasts to the end is
   counted without it. Drawn from the seed's hash rather than the generator's stream, so no other
@@ -209,7 +209,8 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 
 **Each day adds its own, planned with the day rather than checked of the city.** At least two calm
 areas stay reachable through the day's closures ("The invariant"), and some calm stays reachable
-through the day's events (`DayRepairs.ensure_the_city_is_still_walkable`). And on the three
+through the day's events, since every body the day places is judged by the rules that keep its
+routes open (`StreetInvalidation`; the routes reach the calm). And on the three
 days the resistance sends her to one narrow place — **day 9's region door, day 12's swing and the
 power station's front door on the last night** (`ResistanceSteps.narrow_target_on`) — **a route
 from home to that place is kept open by construction**, so the day's own closures, seals and
@@ -222,17 +223,21 @@ bodies never seal it off:
   it, by the rules each already follows for the rest of the tree.
 - **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
   would cut off every tile of it is refused. The second opinion, as it is for the calm.
-- **The catalogue's own bodies are the last line**, and the one mechanism that is not already a
-  rule about the tree, since friction stands on the corridor.
-  `DayRepairs.ensure_the_city_is_still_walkable` drops the widest of them until some tile of the
-  place is reachable from home under the discs of every obstructing or hard-fail body the day has —
-  the seals and the region wall's own included, which it never drops — the question
-  `ResistanceDirector._reachable_from_home()` asks too, with the soft seals' bands added since the
-  red arrow reads those as shut. A soft seal stands only off the tree, so the bands never cut the
-  tree's way to the place. Only ever a removal, which is the city's one monotonic exception.
+- **The catalogue's own bodies keep the tree open as they are placed**, since friction stands on the
+  corridor: every body a day judges, at dawn or on her walk, is judged by the rules that keep her
+  line through its junctions, its walked sidewalk and a pacing beat's opening open (`RouteLineRule`,
+  `RouteSidewalkRule`, `PacingOpeningRule`) and by the one that keeps its ground off the streets
+  free (`RouteGroundRule`: no obstructing body's disc, no deadly row's catch round where it
+  holds its place and no counted row's line reach covers a tile a route runs along on an alley, a
+  park cut or a square), asked against everything already down, the seals and the region wall's own
+  bodies included. The run's scars and the park spoilers are asked `RouteGroundRule` alone, with
+  a street's route tiles and the street she starts on counted too, since they stand where they
+  stand rather than where a draw put them and the line rules are not asked of them. So no body
+  closes the tree, and nothing floods the city to see whether one has. A soft seal stands only off
+  the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
-pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the
+pool is the tiles the contact may stand on (`NarrowTargetPool.tiles`) that pass the
 director's own refusals of the tile — walkable, not closed, not held (a door excepted), not on the
 home block, not in a walled-off alley — and the director draws among them asking reachability of
 every draw, so the tile it picks is one the day kept. The contact itself stands on the thing the
@@ -245,6 +250,33 @@ where it starts). `tests/test_resistance_reach_narrow.gd` plans the three days o
 day's seals and bodies have been found to ring, and finds the place's tile reached and the contact
 reached from it.
 
+**Nothing placed during the walk closes a route, so nothing is checked live** (inbox #1173). The
+day's routes are fixed at dawn, and everything drawn or sited while she walks — each unit's draw as
+she comes near it, day 3's fire, the poster crews, her route's bag, day 11's added mast — is what
+the day's own placement rules accept, none of it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
+street no route runs along (`DawnRoadblocks`), or one put across the
+nearest such section out of her sight in place of what it held
+(`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out as the walk starts, from the dawn's plan, and
+learns each unit's draw as it is drawn (`DayReach`). **Every place it fixes for her to walk to is
+asked one question wherever a contact is stood or moved, by where the place stands**
+(`ResistanceDirector._she_can_be_sent_to()`, `WayConfirmation`). A place inside the ground already
+drawn round her stands as it is: her own paths reach it without coming within
+`WayConfirmation.CLEAR` of an undrawn unit. That ground is the stream radius the walk keeps drawn
+round her, and, where she reads a mark, what a task looked for near her draws first, as far as it
+is looked for and `Tuning.EVENT_DRAW_AHEAD` beyond. A place beyond that ground has a way from home
+confirmed, the units along the way and round the place drawn first, so nothing drawn later can
+shut the way or stand on the place. A place that is refused is no place: a search takes its next,
+a move is not made, and a step left with none has nowhere to go that day. Day 8's burnt building
+stands where the run's fire burned, also on a day none of its frontage can be reached. Where
+several places answer a task (any man shouting, any roadblock, any live mast), the red arrow
+points at the closest on foot, chosen again twice a second over the ground as it has drawn: a
+choice, not a place fixed. A man shouting or a roadblock it points at is in the world, which the
+streaming keeps to the ground drawn round her, and the contact stays where it was stood; a mast it
+moves day 11's contact to is asked the same question. Day 10's neighbor is given a walk
+home the units along which have drawn, laid again where one of them stood a body across it
+(`ResistanceDirector._send_the_neighbor_home()`). `tests/test_resistance_sent_places.gd` asks the
+outcome of whatever contact stands, on days 6 to 13.
+
 **Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
 *(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the
 day "guarantees a second open park she can reach from the swing".)* The swing's pool is the swing
@@ -254,13 +286,13 @@ calm area it is that day. Once she has reached the swing it is taken, so the cal
 baby in has to be somewhere else, and the day plans for that too:
 
 - **`ClosurePlanner` already keeps two calm areas reachable**, so one of them is not the swing's.
-- **One other area is clean.** `DayRepairs.ensure_one_usable_park` is asked for a clean calm
-  area other than the swing's, and strips the least disturbed of the others if none is — day 12 is
-  the first day of act IV, so every area is unused and placement has already kept them clean.
-- **A route to it is kept.** `DayRepairs.ensure_the_city_is_still_walkable` asks its calm half of
-  the clean areas other than the swing's that today's closures leave reachable, not of any calm
-  tile, and drops bodies until one of them is reached. Reached from home, it is reached from the
-  swing: the swing is kept reachable from home, and walking is the same both ways.
+- **One other area is clean.** Day 12 is the first day of act IV, so every area is unused and the
+  calm rule has kept them clean (`CalmAreas.unused_ground()`); where she has used every area there
+  is, the one the spoilers pass over is kept clean the same way (`DawnCalmKeptClean`,
+  never the swing's park).
+- **A route to it is kept** by the day's route rules, which keep the tree open, and the tree reaches
+  the calm. Reached from home, it is reached from the swing: the swing is kept reachable from home,
+  and walking is the same both ways.
 
 Which areas count as calm on day 12 is any calm purpose, not only a park: a forest or a quiet
 square settles the baby as well as a park does.
@@ -281,7 +313,8 @@ assigned, and **calm ground is kept a clearance of blocks away from it**
 than deciding where it goes. The clearance is derived from `MIN_HOME_TO_PARK_TILES` rather than
 authored beside it: a block `d` away starts `d × period()` tiles out, of which `BLOCK_SIZE` is the
 home's own lot, so the clearance is the smallest `d` clearing the guarantee. It is a floor, not the
-guarantee — walking is not straight-line — and `validate()` still checks the real thing.
+guarantee — walking is not straight-line — and `CityGenerator.validation_problems()` still checks
+the real thing.
 
 **And that is what the lattice size is for.** Both rules can only hold on a city whose centre is
 `MIN_HOME_TO_PARK_TILES` of walking from every park — a 7×7 lattice is not, and 11×11 is, with the
@@ -303,7 +336,7 @@ rects on every seed.** The notch is centred on the south edge of a fixed-size lo
 nothing about where the home sits or how big its lots are depends on the seed to begin with —
 only what a seed's own lattice puts around it does. `City` reaches past every per-seed roll on
 these three buildings as a result: a fixed wall/roof colour and window pattern
-(`City._variant_for()`, a hash of the lot's own position rather than of `map.seed_used`) and a
+(`City._variant_for()`, a hash of the lot's own position rather than of `map.city_seed()`) and a
 fixed height (`City._home_building_height()`) — `HOME_BUILDING_WALL_ROWS` (4) for the one lot the
 door's own world-space span stands in front of, `HOME_FLANKING_WALL_ROWS` (2) for the other two —
 so the block reads the same however a run's own dice landed elsewhere. Her own building's four
@@ -413,7 +446,7 @@ calm inside its 5–7 band throughout. Generation retries per city are **0.00**,
 home clearance stated as a distance instead: a courtyard cut beside the front door fails the
 home-distance guarantee and rolls the whole map again, where the clearance refuses the block.
 
-**The spine clause is stated over `map.main_road`** and nothing else. `CrowdLanes.arterial_index` is
+**The spine clause is stated over `map.main_road_corridor()`** and nothing else. `CrowdLanes.arterial_index` is
 the *default* a map is built from, and **asking it where the spine is is the trap**: it answers for
 both axes, which is how a phantom east-west arterial gets into a busyness curve and a zone that
 would absorb the middle east-west corridor gets refused. There is one main road, it runs north to
@@ -439,8 +472,8 @@ calm area obeys, asked of the whole footprint:
   so this needs no guard of its own.
 - **Never beside other calm**, the same rule a single calm block obeys.
 
-The streets it absorbed live in `CityMap.absent_segments`, and `CityMap.blocked_segments()` adds
-them to whatever a day has closed. Every route search takes that set, so the graph half of
+The streets it absorbed are absent from the map (`CityMap.has_street()` answers false for each), and
+`CityMap.blocked_segments()` adds them to whatever a day has closed. Every route search takes that set, so the graph half of
 `StreetNetwork` — route counting, the invariant, the doorway exemptions — needs no special case: a
 street that is not there is a street that is permanently shut, as far as a search is concerned.
 What is *not* true of a closure is true here and matters: **the ground is calm and
@@ -492,8 +525,8 @@ each is stated where its decision is taken:
 | the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness stands in for, asserted directly |
 
 The count of *areas* is two because one may be spoiled with events while its ground remains
-walkable. A physically fenced area is removed from `calm_blocks` before this count; it cannot
-satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
+walkable. A physically fenced area is removed from `calm_blocks_now()` before this count; it
+cannot satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
@@ -507,15 +540,15 @@ A park that is always safe would collapse the game into one memorised loop, so a
 already settled in this act is **spoiled with events**, not by taking the ground away — the park is
 still there, still calm ground, still walkable, and things are standing in it that she can see from
 the street and decide about. *(PLAYTEST-140, statement 8: "a used park is shut by the events placed
-in it, as before".)* `EventScheduler._spoil_the_parks_she_used` is the mechanism; its measurements
+in it, as before".)* `DawnSpoilers` is the mechanism; its measurements
 are in `docs/EVENTS.md`, "The city remembers where she went".
 
 **And the day's route tree plans around every one of them.** `ClosurePlanner.calm_to_shut()`, called
 from `CityMap.repaint()` before the day's route tree is grown, decides which used areas the tree
-neither grows a branch to nor routes through — `CityMap.shut_calm` records which, `CityMap.is_shut()`
+neither grows a branch to nor routes through — `CityMap.shut_calm()` names which, `CityMap.is_shut()`
 which tiles — so the tree, the region plan and the street closures all plan around them. *(PLAYTEST-
 140, statement 8: "no route of the day goes through it".)* This costs the area nothing physical: it
-stays exactly as open as any other calm ground, in `CityMap.calm_blocks`, reachable by anyone who
+stays exactly as open as any other calm ground, in `CityMap.calm_blocks_now()`, reachable by anyone who
 walks there without a route pointing the way.
 
 - **It is the ones she used, not a roll over the map.** A calm area she has never settled in is
@@ -529,7 +562,7 @@ walks there without a route pointing the way.
 - **The day 12 swing is never taken off the tree or fenced on its day**, whatever she has settled in:
   the day's own task is in it, and `CityState.is_forced_open()` is what `CityMap.repaint()` reads to
   protect it.
-- **One used area, at most once a run, is fenced instead of spoiled** — `CityMap.fenced_park`, the
+- **One used area, at most once a run, is fenced instead of spoiled** — `CityMap.fenced_park_block()`, the
   first used area `calm_to_shut()` accepts on a day in act III or later, closed the way a street is
   for the rest of that act and never chosen again. *(PLAYTEST-140, statement 9: "doing it for one
   park, sure, more towards the later stages of the game once but not for regular".)* `ParkClosure`
@@ -538,12 +571,12 @@ walks there without a route pointing the way.
   shows. `ParkFenceMarker` draws both rails above one ground line: side runs show their narrow top
   surfaces mounted inward of visible upright poles, and corners share one pole with rail collars.
   Each run's closed sign is mounted on a support at its exact midpoint.
-  The run (`run.facts`) retains the first fenced block and its act for the whole run, including saves;
+  The run (`run.facts()`) retains the first fenced block and its act for the whole run, including saves;
   `CityMap` exposes a physical fence only during that act. An expired fence spends the run's
   allowance even when no barrier stands today.
-- **At least one calm area is always usable.** `DayRepairs.ensure_one_usable_park` is the last line
-  under it, for the day she has settled in every calm area there is. The player has to find out
-  which.
+- **At least one calm area is always usable.** On the day she has settled in every calm area there
+  is, the one the spoilers pass over joins the ground nothing may reach
+  (`DawnCalmKeptClean`). The player has to find out which.
 
 ## Road closures
 
@@ -557,10 +590,10 @@ The lattice is a graph: a **junction** at each end of every block — one more p
 blocks — and the **streets** between them, each one block long and one corridor wide.
 `StreetNetwork` owns that view of the city, and a closure takes out one whole street. A few hundred
 segments is cheap enough that validating a whole day's closures costs less than one tile-level flood
-fill. Each `CityMap` holds its own (`map.network`), built with the map, and everything that asks
-about streets is handed it with the map rather than reading a lattice kept for the process; the
-lattice is a function of the block count alone, so every city's network has the same streets in the
-same order and a segment key names the same street on all of them.
+fill. Each `CityMap` holds its own (`map.street_network()`), built with the map, and everything
+that asks about streets is handed it with the map rather than reading a lattice kept for the
+process; the lattice is a function of the block count alone, so every city's network has the
+same streets in the same order and a segment key names the same street on all of them.
 
 Half a street would be a closure the player cannot see the shape of, and a whole corridor
 would delete a route rather than narrow the choice. A street is the unit the player already
@@ -634,13 +667,14 @@ question below:
 - `CalmAreas.unused_ground()` is the ground `EventScheduler` refuses: **nothing is placed near a
   calm area she has not used this act**, so those stay clean rather than being cleaned up
   afterwards.
-- `DayRepairs.ensure_one_usable_park` is the last line under it, for the day she has used
-  every calm area there is and nothing was protected.
-- `_spoil_the_parks_she_used` spoils every area she has already settled in **this act** — what stops
-  her going back to the same bench every day — except the currently active `CityMap.fenced_park`,
+- `DawnCalmKeptClean` covers the day she has used every calm area there is: the one
+  area the spoilers pass over joins the ground nothing may reach.
+- `DawnSpoilers` spoils every area she has already settled in **this act** — what stops
+  her going back to the same bench every day — except the currently active `CityMap.fenced_park_block()`,
   the run's single physical fence, which stands for the remainder of its chosen act.
-- `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal the city, or
-  seal off the one place the resistance sends her to that day (see "Guarantees").
+- Every body the day places, the scars and the spoilers included, is judged by the rules that keep
+  the routes open, so nothing seals the city or the one place the resistance sends her to that day
+  (see "Guarantees").
 
 **One thing that reads as guidance and was not designed as any:** the crowd respects closures, so
 a shut street is the street with nobody on it, and that is legible from a block away.
@@ -736,8 +770,9 @@ player learns while the closures re-cut the map every morning.
 **The ground stops, and that is the whole difference from a zone's absorbed street.** An absorbed
 corridor is *calm ground rather than a closure* — the tiles are park and she walks over them, which
 is exactly right for a shortcut and exactly wrong for a hard blocker.
-`CityMap.dead_ends` is kept separate from `absent_segments` for that reason: the two are absent
-for opposite reasons, and anything reasoning about **why** a street is missing has to tell them
+`CityMap.streets_built_over()` (the dead ends' and the landmarks' streets, each with the rect
+built over) is kept separate from the absent streets for that reason: the two are absent for
+opposite reasons, and anything reasoning about **why** a street is missing has to tell them
 apart. Anything asking *can a route go this way* wants `blocked_segments()`, which is both and
 does not care.
 
@@ -833,8 +868,7 @@ answer.
 then the pair nearest industrial ground (`CityGenerator.power_station_rank`), the seed's own shuffle
 breaking ties. The industrial district is six blocks placed one at a time, so a free two-wide
 industrial pair that is also far enough out and outside the home's region is rare, and the station
-usually stands on one industrial block or beside the district. `CityMap.power_station_industrial_
-blocks` records which, since the blocks themselves become `BIG_BUILDING` once the mass is down.
+usually stands on one industrial block or beside the district.
 
 **On the day she is sent there, the corridor reaches the door, and on no other day.** On
 `Tuning.POWER_STATION_DAY` — the last day — `RouteTree.for_day` joins the door's pavement to the
@@ -845,23 +879,25 @@ reachable, through rules the day already follows for the rest of the tree: a bou
 the spur takes is a door rather than wall, no seal stands on it, and no closure lands on it. And
 `ClosurePlanner` asks for the door beside the calm before accepting each closure that day, so a
 closure that would cut it off is refused, not repaired — the second opinion, as it is for the calm —
-and the scheduler's walkability pass keeps a route to it among the day's bodies, since it is the
-last night's narrow resistance target (see "Guarantees").
+and no body the day places closes a route to it (the route rules, `RouteGroundRule` among them),
+since it is the last night's narrow resistance target and the day's routes run to it (see
+"Guarantees").
 Because the door is outside the home's region, every way there crosses a region door;
 `tests/test_power_station.gd` plans the day with its walls, seals and closures standing, finds the
 door reachable, and finds it out of reach again with the doors shut. On every other day the tree
 ignores the station, so nothing leads her there before she is sent.
 
-A city where no candidate passes has no station, and `validate()` refuses it like any other broken
-guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pair,
-`power_station_door` the pavement in front of the door, `power_station_door_street()` the street it
-faces and `power_station_door_position()` the point she stands on to reach it.
+A city where no candidate passes has no station, and `CityGenerator.validation_problems()` refuses
+it like any other broken guarantee, so `generate` rolls the next seed. `CityMap.power_station_blocks()` is
+the pair, `power_station_door_tiles()` the pavement in front of the door,
+`power_station_door_street()` the street it faces and `power_station_door_position()` the point she
+stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
-sabotage is done (`run.resistance.sabotage_done`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
+sabotage is done (`run.resistance().sabotage_went_through()`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
-(`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
+(`Building.switch_power()`), every traffic light on the spine (`TrafficSignals.use_power()`, see "Traffic
 signals") and every loudspeaker mast (`EventManager.silence_all_masts()`). *(The player,
 2026-09-20: "just wait until a certain distance away -- then everything is off at once".)* The
 station's own hall goes with them: on the last night its clerestory is dimly lit while the power
@@ -945,12 +981,11 @@ door, the last night's task — see "The power station" and "Guarantees".
 ground on the way out and separate later, since they end in distinct places. Where several
 corridors run together, that shared stretch is a **chokepoint**.
 
-**A chokepoint is a bundle, not a guarantee.** It narrows *how many places* a thing has to be in
-order to be met; it never narrows it to one. Even in the ideal case — a day with exactly two
-distinct paths — anything that must be encountered has to exist in **at least two** places. So the
-value of a chokepoint is arithmetic: it is what makes "every route touches one of these" cost two
-or three candidate sites instead of a dozen. **Anything written as "the tile she must cross" is
-wrong**, and it is the easiest sentence in this section to write by accident.
+**A chokepoint is a bundle, not a guarantee.** Even in the ideal case — a day with exactly two
+distinct paths — she can take either, so nothing placed at dawn on one of them is met whichever way
+she goes. **Anything written as "the tile she must cross" is wrong**, and it is the easiest sentence
+in this section to write by accident. What she has to meet is sited from the walk she is taking
+(day 3's fire; "A set piece has to be met" below).
 
 **A calm area is reached two distinct ways where the map allows it**, and one will often be longer
 than the other. That asymmetry is **incidental**: nothing should be tuned to produce it and no rule
@@ -998,9 +1033,9 @@ street.
 
 ### What a row denies is what it charges for
 
-**Every rule below is stated over one disc, and it is not the row's `outer_radius`.** A row denies
+**Every rule below is stated over one disc, and it is not the row's outer radius.** A row denies
 the ground inside which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` — the rate an ordinary street
-gives back while she walks — plus its `obstructs_radius` wherever it has a body, whichever is
+gives back while she walks — plus its `obstructs_within()` wherever it has a body, whichever is
 larger. Past that crossing a walk through the field nets the meter *down*, so the ground is taken
 without being planned around, and a rule that refused a placement over it would be refusing ground
 nobody has to route around.
@@ -1016,27 +1051,56 @@ at all — a hoarding, a parked van — denies exactly its body. `EventDef.line_
 the one place the answer lives, and `tests/probes/m129_zero_cost_line.gd` asks it rather than
 keeping a second copy, so what the probe measures is what the rules refuse.
 
-### A route's junctions stay clear
+### Her line is followed through a route's junctions
 
 **A junction is the only place a line along a route may change from one pavement to the other**, so
 it is the one piece of a route that nothing on either side of it can answer. A street with a van on
 one pavement still has the other; a crossing covered end to end has nowhere to turn, and the walk
 has to go back the way it came.
 
-So **the junctions the day's routes cross are kept crossable** — the junctions at each end of every
-street the tree runs along, plus any the tree cuts through from a park or an alley
-(`RouteTree.junctions()`). A row is refused ground where its reach, together with everything the
-morning has already put down, would leave the junction box with no walk joining the route streets
-that meet there. **Checked before the row is accepted, never repaired after**, the same shape the
-closure invariant has: the day is asked, one row at a time, whether the city it is joining still has
-a line through every crossing, so a closed one never exists even for a moment.
+So **her line is followed from a junction the day's routes cross onto the sidewalks she walks to it
+and from it** — the junctions at each end of every street the tree runs along, plus any the tree
+cuts through from a park or an alley (`RouteTree.junctions()`) — and the box and those sidewalks
+are flooded as one piece of ground (`RouteLineRule`). A row is refused ground where its reach,
+together with everything the morning has already put down, would leave no free walk from the far
+end of one route street meeting the box, through the box, to the far end of every other, and to
+every alley mouth or park cut a route runs into beside the box or a walked sidewalk. A row that
+leaves the box a free region and the sidewalk a free line is still refused if the two do not touch:
+a free region and a free line that do not meet leave her no line, and no rule that checks one piece
+sees it. **Checked
+before the row is accepted, never repaired after**, the same shape the closure invariant has: the
+day is asked, one row at a time, whether the city it is joining still has a line through every
+crossing, so a closed one never exists even for a moment.
+
+**The home street is part of her line.** The street the front door opens onto is the first stretch
+of every route, and the tree does not carry it, since a door is not a route. So at each of its two
+junction boxes the rule takes it as an arm like a route street, with both its sidewalks as the
+sidewalks she walks, whether or not a route crosses that box: the free-line probe takes the home
+street as ground from the doorstep the same way. A row on a street beside the home that cuts the
+mouth of the alley or park her route leaves the home street by, or the home street's way to its
+boxes, is refused. *Read as* (the player's "sure" to a rule that follows her line the way the probe
+does, inbox #1461 in silky-lemur): the home street is part of her line. This widens the ground the line rule
+floods and nothing else: the doorstep's exemption from the route-redundancy guarantee, which is about
+counting distinct routes, is as it was.
+
+**A man shouting is passed on the far side of his own street.** A pacing row denies only the
+ground its beat never leaves free, and on the street it paces the far sidewalk is part of the
+ground the flood may take, so his lens over the sidewalk she walks is answered by crossing; a body
+on that far sidewalk then closes his opening, and whichever of the two comes second is refused. A
+man on another street gets no such room: whoever could close the far sidewalk stands in a unit his
+own draw may not see.
 
 **Stating it over the pair rather than over the row is what makes it the rule the measurement asked
 for.** The crossing that breaks most routes is covered by two ordinary rows between them — a café on
 one corner and a yeller on the other — and a rule that only asked *does this one row take the whole
 box* would accept both of them.
 
-Six kinds of row are outside it, and each for a reason it already had. **A mast**, the six fixed ones and the two day 11 adds, is a fixture of the street it stands on and its field reaches the junction box at the end of any street, so none of the three line rules is asked of it. **Scenery** (a flock) is free already. **A pursuer, and anything
+**One case is left open, as the player's condition on it has it** (inbox #1461 in silky-lemur): two rows in units at
+the two ends of one walked sidewalk, neither standing on that street, each reaching far into it
+from opposite sides, are never judged together, since neither unit's draw sees the other's.
+`tests/probes/m129_zero_cost_line.gd` measures whether it ever happens.
+
+Six kinds of row are outside it, and each for a reason it already had. **A mast**, the six fixed ones and the two day 11 adds, is a fixture of the street it stands on and its field reaches the junction box at the end of any street, so none of the line rules is asked of it. **Scenery** (a flock) is free already. **A pursuer, and anything
 the director sites in front of her**, pay the telegraph contract instead and have no tile the day
 chose. **A city-wide row** has no place, so there is no other side of the street to be on. **A
 region door and a moving row that does not pace are not blocks at all** — a door costs by design,
@@ -1044,7 +1108,7 @@ and a row that travels is passed by crossing, waiting and crossing back.
 
 **A wall is not outside it.** It bounds the corridor and never stands on a route, but its field
 reaches in from one street out, and a corridor whose crossings are covered by the thing bounding it
-is guidance the player is being charged for. So a wall is asked the same three questions as
+is guidance the player is being charged for. So a wall is asked the same questions as
 everything else — and what makes that fair rather than a second tax on the wall pool is the disc
 the questions are asked over: what a wall may still put across a route junction is the part of its
 field under the walking decay, which is a crossing the walk takes without planning around it. The
@@ -1099,7 +1163,7 @@ reason a beat answers by itself.
 branch she is walking and the engine parks across from it for the rest of the day: *"you're not
 supposed to go past it"*, *"when you see the fire the reaction should be to take a different route"*
 (PLAYTEST-119). Asking whether a line survives along that sidewalk would refuse every site the beat
-of the day is made of, so `EventDef.has_a_line_to_avoid()` leaves an `EventDef.on_her_way` one-shot
+of the day is made of, so `EventDef.has_a_line_to_avoid()` leaves an `OnHerWay` one-shot
 out of the line rules altogether. (A poster crew is sited from her walk too, and is not exempt: it
 closes nothing.) **What replaces the guarantee is stated over the day rather than over
 the street**, and it is the stronger statement of the two: a site is accepted only where, from where
@@ -1107,6 +1171,46 @@ she is standing and with **both fields taken as closed ground**, the home and a 
 used are still reachable. So the street she is on can be shut, and the day always has another way
 round it. Checked before accepting, never repaired — a refused siting is asked again a second later
 from wherever she has walked to.
+
+### A street of her routes keeps one sidewalk past its bodies
+
+**Where a street has to keep a sidewalk she can walk, the draw makes sure of it.** The player, on
+the board: "what I said was *if* a street needs to have one sidewalk walkable *then* the placement
+of the drawn events needs to make sure of that" (inbox #1465 in spry-plover). *Read as:* no street is newly
+required to keep one; the streets that already are, her routes' own streets, keep it by
+construction. On a day's walk a body (a row she cannot pass, or one that ends the day, at the disc
+it blocks with) is refused where, for a street of her routes it reaches, neither sidewalk could then
+be walked from one junction to the other past the bodies standing round it, and one could without
+it (`OneSidewalkOpenRule`). A street draws all its locations at once and its touching units draw
+before or after it with what it drew in view, so the rule holds both ways round: a street's own
+second wall is refused, and so is a body in the box at its end reaching its last open sidewalk. It
+asks a body, never a cost: a row whose field alone covers the street is the line rules' question. A
+street a closure, a seal or the region wall already closes keeps no sidewalk to refuse anything for.
+The streets beside the routes and off them keep their blocking events all over (PLAYTEST-17), and
+the escape keeps its own, stricter rule (`DaySpec.keeps_her_walk_open()`).
+
+**The line rules do not already hold it on a route's street.** They ask only a row that counts
+against her line, and a pursuer (the alley robbery, the charging dog) does not, since it follows her
+rather than holding a tile, yet it stands as a body. A pursuer on one sidewalk and a roadblock or
+another pursuer on the other close the street with every line rule satisfied, so this rule asks
+every body, not only the roadblock.
+
+**A roadblock is asked too**: the catalogue's `roadblock` is the open kind ("there are two kinds of
+roadblocks. one that is open and one that is closing the street", inbox #1491 in silky-lemur; the closing kind is
+M199, the roadblock closes its whole street, in the queue). It spans the street by design, and its
+band takes the sidewalk on its own side of the road and the road, standing on the kerb between
+them, and leaves the far sidewalk whole, so it is refused where a body already closes that far
+sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin; "okay
+let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
+inbox #1465 in spry-plover). Every reading of a body here takes the band where it stands
+(`EventPlan.body_at()`). **The band is the disc every rule reads at every heat.** Its guard
+catches at a man's 28px, inside its band, so the ground its catch shuts
+(`EventDef.catch_shuts_within()`) never reaches past the band, and a hunting roadblock stands on a
+route's street wherever a cold one does; the escape reads the same hunting roadblock at its band
+(`WalkGround`). The robber and the dog have no body and are read at their catch, which takes one
+sidewalk. Day 13's roadblock phase stands its roadblocks in sections beside the routes, which the
+rule does not cover, and the task's own swap, which puts a roadblock across such a section where
+the day placed none close by, is not judged by the day's rules, so neither loses one.
 
 ### A pacing row is passed by waiting, or left at a crossing
 
@@ -1196,9 +1300,9 @@ the player switching between them cannot see — and has no reason to care — t
 colour. What tells two *routes* apart is `RouteTree.branches_on()`, and that is the telemetry's
 question: the trace has to be able to say she left one path and joined another.
 
-**Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
-a budget *per role and per region*, but not a single per-block number that the whole city competes
-for. And the important half: **budget is not spent on what she never sees.** So the day places
+**Placement follows the tree, not one number for the city.** Plan the tree first and place from it —
+a density *per view* (the bags per view), not a single per-block number that the whole city competes
+for. And the important half: **nothing is held for what she never sees.** So the day places
 **placeholders**, and a placeholder is resolved into a concrete row when she actually reaches it.
 
 **Which means the one-shots must bind late.** *"This has to influence the design of one-off events
@@ -1212,33 +1316,22 @@ An authored set piece that fires once per run and is missed is a fairness contra
 spent on nothing — which is what placing it like everything else, at a legal spot somewhere on the
 map, produces on a day she may never walk that way.
 
-There are two ways to make that impossible and the day picks between them per row. A **set piece
-sited against the tree** picks a **set** of candidate sites such that **every corridor passes at
-least one**, and the one she reaches is the one that fires: it needs no knowledge of what she chose,
-so the guarantee is structural and holds whichever way she goes. A **set piece sited from her walk**
-waits instead — the day budgets it with no position and puts it on a building face **on the branch
-of the tree she is actually walking**, ahead of her by distance along that route, once her heading
-is clear. That is what day 3's fire does, and it is steered onto her on purpose: *"the fire needs to
-spawn on the current path the player is on"* (PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens
-where she is going", is the built mechanism for both.
+A **set piece sited from her walk** makes that impossible: the day plans it with no position and
+puts it on a building face **on the branch of the tree she is actually walking**, ahead of her by
+distance along that route, once her heading is clear. That is what day 3's fire does, and it is
+steered onto her on purpose: *"the fire needs to spawn on the current path the player is on"*
+(PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens where she is going", is the built mechanism.
 
-Either way it stays a **place** rather than a moment: a tile, a body, a field, and every question
-the corridor asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning
-building is not one. What the second way changes is *when* the tile is chosen, never what it is.
+**Something she must meet exists wherever she goes**, since she can take either way: things are to
+be accounted for as potentially in one of two places at the very least
+(M50-the-city-points-somewhere). So a row she must meet is sited on her way, and
+`EventDef.validate()` refuses a one-shot that is not (`on_her_way`): placed at dawn it would stand in
+one place and be met only if she walked there. Her walk lays it on a location of the next unit on
+her way that has not drawn (`docs/EVENTS.md`, "A set piece happens where she is going").
 
-**"All routes" is load-bearing and means routes, not destinations.** A covering set that counts an
-area as met when **either**
-of its two ways in is met comes back as a **single** street on nine planned days out of 32 — the
-one they all share on the way out. Placed there, the set piece is met by a player who takes the
-first way out of everywhere and missed by one who takes the second, which is the "tile she must
-cross" mistake with a covering set drawn round it. Covering every route costs nothing extra and
-almost never goes wrong that way: the two routes to one area share no **cell** by construction —
-`ReachabilityGrid`'s two-tile-square unit, the grain the whole corridor is now grown on — so a
-single site covers both only on the rare street where the two routes' cells still resolve to the
-same `StreetNetwork.Segment`, a street being three cells wide. *"At least two places"* is arithmetic
-on the common case rather than a rule anybody enforces, and the rare exception is measured, not
-guarded against, in `tests/test_events.gd`.
-It comes out at two to six sites against about fifteen routes.
+It stays a **place** rather than a moment: a tile, a body, a field, and every question the corridor
+asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning building is not
+one. What siting it from her walk changes is *when* the tile is chosen, never what it is.
 
 **Two invariants this runs into, and both are smaller than they look.**
 
@@ -1258,8 +1351,8 @@ It comes out at two to six sites against about fifteen routes.
   rest of the day, because then *where she walked* would move everything planned after it.
 
 **No invariant forbids any of this**, which is worth stating because it is easy to assume
-otherwise. `DayRepairs._park_is_reachable` asks only that **some** calm area is still reachable
-from home, not that the city stays connected, so a sealed quarter is legal. `ClosurePlanner`'s
+otherwise. The route rules keep only the day's routes open, which reach the calm, not the city
+connected, so a sealed quarter is legal. `ClosurePlanner`'s
 two-distinct-routes rule is likewise about reaching calm rather than about global connectivity.
 
 So the honest summary: **the city permits routes to calm and protects them from becoming
@@ -1366,8 +1459,8 @@ that a seal may be loud, and only this one is — the fallen tree (one trunk ker
 burst main (a crater between two barriers) leave no gaps to close and stay at zero.
 
 **The seal still seals.** `ClosurePlanner` goes on counting a closed street as closed for the route
-guarantee, and `CityMap.held_segments` still keeps the crowd off a hard seal's street; both are
-stated over `obstructs_radius` — the ground the scene *closes*, unmoved at 96px — rather than over
+guarantee, and `CityMap.held_streets()` still keeps the crowd off a hard seal's street; both are
+stated over `obstructs_within()` — the ground the scene *closes*, unmoved at 96px — rather than over
 the bodies it puts down. That is the conservative direction and deliberately so: taking obstruction
 away can only add reachable ground, so a day proved winnable against the whole-street band is still
 winnable with two cars standing in it.
@@ -1432,12 +1525,12 @@ almost nothing. See `docs/DECISIONS.md` under M45 for the measurement.
 
 ### Everything else has to know
 
-A closed street's ground goes into `CityMap.closed_tiles` wherever the barriers actually cut it
-off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway can open
-onto the middle of a closed street, and the ground beside it is still reachable from that side
-however the two mouths are sealed. `ReachabilityGrid` is what tells the difference, flooding the
-day's tiles with every barrier tile added on top; what the flood never reaches is what
-`closed_tiles` holds.
+A closed street's ground goes into `CityMap.closed_tile_set()` wherever the barriers actually
+cut it off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway
+can open onto the middle of a closed street, and the ground beside it is still reachable from
+that side however the two mouths are sealed. `ReachabilityGrid` is what tells the difference,
+flooding the day's tiles with every barrier tile added on top; what the flood never reaches is
+what `closed_tile_set()` holds.
 
 - The **event scheduler** places nothing there, shortens a mobile event's route so it stops
   before a barrier, and counts closures as part of what is in the way when it checks that a
@@ -1446,12 +1539,12 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
   never do.
 - The **resistance** never puts a contact behind one. Steps expire, so that would silently
   cost a run its good ending.
-- **Every figure that moves** is stopped by it as she is. `closed_tiles` is one layer of the
-  map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts, the
-  soft seals and the stationary bodies; every step, walk, line and way a figure takes is asked of
-  that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves by), so a
-  dog, a bike or a pursuer never walks through a closure's barrier, and a closure's barrier body
-  stands on ground the closure took (`City._barrier_footprint()`).
+- **Every figure that moves** is stopped by it as she is. `closed_tile_set()` is one layer of
+  the map's one blocked record (a `BlockedLayer` the map holds), beside a precinct's posts,
+  the soft seals and the stationary bodies; every step, walk, line and way a figure takes is
+  asked of that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves
+  by), so a dog, a bike or a pursuer never walks through a closure's barrier, and a closure's
+  barrier body stands on ground the closure took (`City._barrier_footprint()`).
 
 ### Sealing the tree
 
@@ -1464,7 +1557,7 @@ separate pass that does that: every street off the day's tree, real and not the 
 about 187 of the lattice's 264 on a typical day — carries a **seal** (a share of them from the
 gatehouse day on, below), so the corridor stops being the *cheapest* way through and becomes the
 *only* free one. It is planned the same morning as the
-closures, off the same tree, and counted apart from the day's event budget: a seal is a fact about
+closures, off the same tree, and counted apart from the day's events: a seal is a fact about
 where she may walk, not a piece of the catalogue's variety.
 
 **Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A
@@ -1523,9 +1616,9 @@ be taken and discovered rather than reading as a wall on sight the moment she gl
 **The winnability guarantee is not repeated here, it is true by construction.** A seal never
 stands on tree ground or the doorstep — the two things the tree and `ClosurePlanner` already
 guarantee a route through, and the trunk above is what makes the first of those cover the join as
-well — so nothing a seal does can cut the corridor. `EventScheduler._ensure_the_city_is_still_
-walkable` stays what it always was, a repair pass for the catalogue's own placements; sealing needs
-no equivalent; `tests/test_seals.gd` measures the guarantee over many seeds and days instead of
+well — so nothing a seal does can cut the corridor. The catalogue's own placements are kept off
+it as they are placed (the route rules of `StreetInvalidation`); sealing needs no equivalent; `tests/test_seals.gd`
+measures the guarantee over many seeds and days instead of
 asserting it at runtime.
 
 ### The escape is a chain, not a tree
@@ -1580,7 +1673,7 @@ happen".)* Every pass that puts something in the city is handed the tile she is 
 chains enter the grid at her own cell, the sealing spares her street, and the events
 (`EventScheduler.build_day()`, drawing the section's marble bag) are never offered ground a body of
 their own would reach her from — a
-tile within `obstructs_radius + PLAYER_BODY_RADIUS` of her, plus the half tile a stationary body
+tile within `obstructs_within() + PLAYER_BODY_RADIUS` of her, plus the half tile a stationary body
 may be moved by when it is centred on its pavement band. It is refused rather than cleared up
 afterwards, and the spawn itself is never checked or moved: a check that rejected a bad spawn is
 the option the player named and rejected.
@@ -1611,8 +1704,8 @@ growth always takes a whole atom at once, so no boundary segment ever borders ca
 square, is the home street, or cuts a precinct.
 
 **Regions are grown by a round-robin flood.** `Tuning.REGION_COUNT` seed junctions are chosen by
-farthest-point sampling over the real-segment graph — `absent_segments`, both the zone-absorbed and
-the built-over kind, is never traversed — with the graph's own seed deciding only the first pick and
+farthest-point sampling over the real-segment graph — an absent street, of the zone-absorbed and
+the built-over kind alike, is never traversed — with the graph's own seed deciding only the first pick and
 never choosing two seeds from the same atom. Growth then proceeds one step per region in turn, each
 claim taking a junction's whole atom, so the regions come out comparable in size rather than the
 first seed's flood eating the map before the others start.
@@ -1624,7 +1717,7 @@ alley is a **crossing** instead when the ground at its two mouths (see below) be
 different regions; one whose two mouths agree is left untouched, exactly as it always was.
 
 **The wall stands at a crossing's mouth, one tile deep, never a segment's midpoint.** A boundary
-segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, decided at generation);
+segment's wall stands at one of its two ends (`CityMap.wall_stands_at_a()`, decided at generation);
 a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the roadblock
 row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
 alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
@@ -1643,14 +1736,14 @@ sidewalk — and posts four guards between them, never six.** *(2026-09-25, PLAY
 8: "maybe four? one on each sidewalk. would that cover everything?")* The two sidewalk bodies keep
 the row's own two guards, one on each side of the band; the road body between them posts none,
 since a guard stands where she can walk up to it and the tarmac between the sidewalks is not that
-ground (`EventDef.guard_sides`, `SealPlanner.place_hard_on`). A crossing alley's own two mouth
+ground (`LookSpec.guard_sides()`, `SealPlanner.place_hard_on`). A crossing alley's own two mouth
 bodies post one guard each rather than two — *(2026-09-25, the player: "one guard in alleys on
 each end")* — on the side facing out of the alley, never the one that would stand inside an alley
 walled at both ends where she can never reach (`RegionPlanner._alley_mouth_wall_body`,
 `_alley_mouth_street_side`). Wall guards never chase, on a street or an alley alike — a wall body
 is never `EventCatalogue.heated()` — so this is drawing only.
 
-**The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
+**The wall is the day's, not the absent streets'.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
 a crossing — a boundary segment or a crossing alley — the day's `RouteTree` uses is a **door**;
 every other crossing is **wall**, placed as hard seals of the roadblock row. Before that day nothing
 is drawn at all — the partition exists from generation, but the milestone's own words are
@@ -1669,7 +1762,7 @@ door gets a `checkpoint_hut` on each pavement lane and a `checkpoint_gate` over 
 them, at the wall's own three positions (`SealPlanner.positions_across` at `Tuning.TILE_SIZE`,
 which comes out at three across `STREET_WIDTH`); an alley door gets a single `checkpoint_post` at
 each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
-alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a gatehouse or a post —
+alongside the wall's own bodies, among the region plan's door plans (`RegionPlan.door_plans()`). The toll is paid at a gatehouse or a post —
 see docs/EVENTS.md, "Checkpoints" — and the gate never inspects her: lowered it is a wall across the
 carriageway, and raised for a car it is ground she may walk under.
 
@@ -1680,8 +1773,8 @@ no event may stand, no event's field may reach, and no mover's beat or run may p
 is taken to the nearest point of a candidate's whole route, and the candidate's own
 `EventDef.field_reach()` is added to the gap, so a patrol that merely walks through it and a row
 sitting outside it with a radius that crosses it are both refused. **Refused at placement, never
-cleared away afterwards** — `EventScheduler._place_one()` rolls again and `EventDirector.due()`
-waits, the same way every closure in this city is checked before it is accepted. A row that can
+cleared away afterwards** — the day's rules refuse the candidate (`DoorClearanceRule`) and
+`EventDirector.due()` waits, the same way every closure in this city is checked before it is accepted. A row that can
 find no ground outside every door simply is not placed that day, which is the failure direction
 the scheduler already has everywhere else; measured over six seeds on days 7 and 11 it costs under
 one percent of what a day places.
@@ -1689,7 +1782,7 @@ one percent of what a day places.
 **The wall's own `roadblock` bodies get no gap**, and that is deliberate: a wall is structure, it
 stands where the boundary is, and dropping one would open a street the partition means to hold. A
 corner where a wall meets a door therefore still has barriers a step from the release point — what
-stops them adding up is `EventDef.barrier_structure` (docs/EVENTS.md, "Checkpoints"), which makes
+stops them adding up is the field's one-barrier flag (`FieldSpec.as_one_barrier()`, asked as `counts_as_one_barrier()`) (docs/EVENTS.md, "Checkpoints"), which makes
 the whole boundary kit charge as one source.
 
 **The ground a door lets her out onto is survivable by construction, and a door is never refused
@@ -1749,14 +1842,14 @@ burnt. `burning_building` only ever catches on a wall `building.gd` actually
 draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
 tile behind it is on the map), so there is always a real facade behind the scar to burn. Never the
 power station's: its facade is drawn whole whatever its condition says, and its transformer yard
-has no wall at all (`EventScheduler.open_ground_for()` refuses that front to a row that burns).
+has no wall at all (`RowGround.tiles_for()` refuses that front to a row that burns).
 
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
 ashes tomorrow.
 
 **Day 12's park is the one block whose purpose is not its arc's for a day.** It is a park on its
-day whatever its arc has reached (`BlockPlan.forced_open_on`, `CityState.purpose_of`), and when she
+day whatever its arc has reached (`BlockPlan.forced_open_day()`, `CityState.purpose_of`), and when she
 reaches its swing `CityState.take()` takes its `REQUISITIONED` step there and then, whatever the
 step's own day or cause — a requisition scheduled for day 13 comes a day early. Park and
 requisitioned park are the same walkable ground, so neither half moves a walkable tile.
@@ -1792,9 +1885,9 @@ shortcut or invalidate a route the player learned on day 1. Per-day **closures**
 one deliberate exception, and they are per-day, sealed at both ends and validated against
 the route invariant before they are accepted — see "Road closures" above.
 
-`CityGenerator.validate()` also guarantees that at least `MIN_CALM_BLOCKS_AT_END` blocks stay calm
-for the whole run. A day can only be won on calm ground, so an arc set that requisitions everything
-makes an unwinnable run rather than a hard one.
+`CityGenerator.validation_problems()` also guarantees that at least `MIN_CALM_BLOCKS_AT_END` blocks
+stay calm for the whole run. A day can only be won on calm ground, so an arc set that requisitions
+everything makes an unwinnable run rather than a hard one.
 
 ### Where the state lives
 
@@ -1802,7 +1895,7 @@ makes an unwinnable run rather than a hard one.
 - `BlockLayout` — the carves (open rect, playground, square, alley, courtyard passage).
   Also fixed, which is why repainting a block on day 12 re-rolls nothing: the same court is
   a court on day 1 and churned mud on day 12, in the same place and the same size.
-- `CityState` — run-scoped, held by the run's `AttemptSpendState` (`run.attempt_spend.city_state`). Only records how far along each arc the run has
+- `CityState` — run-scoped, held by the run's `AttemptSpendState` (`run.attempt_spend().block_arcs()`). Only records how far along each arc the run has
   got. A day is therefore reconstructible from a seed, a day number and the causes fired.
 
 ## The city degrades
@@ -1812,7 +1905,7 @@ under her feet tells the same story without a word. Cracked paving, litter, garb
 shuttered shopfronts read the same one curve, `Tuning.degradation_for(day)` — zero through the
 early days, rising from `Tuning.DEGRADATION_FIRST_DAY` (day 5, one day into act II, so the ground
 catches up with what the act already told her rather than turning on the same morning) to 1.0 on
-the run's last day, the way `EventScheduler.budget_for()` rises. **None of it changes what a route
+the run's last day, the way the day's events rise. **None of it changes what a route
 costs** — not a tile's type, not its cost, not the crowd's lanes — it is presentation, the same way
 a closure is silent and a scar is a mark rather than an obstruction. One exception is stated below
 rather than smuggled in.
@@ -1927,7 +2020,7 @@ is loud, and the reason a park is quiet.
   all.
 
 - **And the same predicate covers a hard seal, a region wall and a soft seal.** `CityMap.
-  held_segments` (the day's no-catalogue-row ground) and `CityMap.soft_sealed_tiles` (a soft seal's
+  held_streets()` (the day's no-catalogue-row ground, and why each segment is held) and `CityMap.soft_sealed_tiles()` (a soft seal's
   own pavement tiles, kept apart because its carriageway is not held) are what each kind's
   `cannot_go_on()` (`CarStrategy`, `WalkerStrategy`) asks alongside a closure: a hard seal or a
   wall shuts the whole street to both walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
@@ -1949,7 +2042,7 @@ is loud, and the reason a park is quiet.
 
 - **And no car is put somewhere it could never leave.** A junction whose every arm is held for
   the day is a **pocket**: carriageway with no street out of it. `CrowdPockets` floods the
-  carriageway once per day from the same `held_segments` the crowd already reads, and labels every
+  carriageway once per day from the same `CityMap.held_streets()` the crowd already reads, and labels every
   connected piece that reaches at most one junction. A car's placement — the morning's and every
   recycle after it — refuses a spot inside one the way it refuses a spot with no room, because a
   car cannot turn round against a barrier and one stopped nose-on holds its queue. **A walker has
@@ -1964,8 +2057,12 @@ is loud, and the reason a park is quiet.
   `OUT_OF_SIGHT` from the camera, which is *nothing vanishes while you are looking at it* again. In
   view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
   crossing holds a car or two standing rather than shunting between its seals. The distance
-  is measured from `CrowdField.centre`, which is the player, and the field's own edge is twice as
-  far out — so this is the only recycle that ever happens somewhere she could have been standing.
+  is measured from `CrowdField.centre_point()`, which is the player, and the field's own edge is
+  twice as far out — so this and the recycle of a car a body is put down on near her (day 13's
+  swapped roadblock, an added mast, a place put on her route, a siting moved;
+  `Crowd.recycle_cars_on()`, docs/MECHANICS.md) are the only recycles that can happen somewhere she
+  could have been standing. A unit's draw lands out by the field's edge and asks `OUT_OF_SIGHT` all
+  the same.
 
 - **Bodies are solid, and cars are lethal.** Walking into somebody displaces you both and startles
   them; stepping into the carriageway in front of a moving car ends the day; traffic gives way at a
@@ -2030,7 +2127,7 @@ which must not say *"at a zebra"* on a street that has none.
   crossing is kept by the side street's contract, the painted carriageway and the horn — see
   docs/MECHANICS.md, "The traffic fairness contract". **The roads are harder that night on
   purpose.** *(The player, 2026-09-20: dead traffic lights are "part of the challenge of coming home
-  after the sabotage".)* `tests/test_blackout.gd` runs the spine lit and dark on the same day and
+  after the sabotage".)* `tests/test_crowd_streets.gd` runs the spine lit and dark on the same day and
   holds the dark one to carrying its traffic as well as the lit one does.
 
 ## Junctions
@@ -2071,8 +2168,9 @@ an invisible wall.
   water, no buildings; east and west a fence, then grass going into forest; north scree and then
   mountainside. It is the land rather than a ring of frontages dressing the edge.
   `City._paint_outside_the_map` is the whole of it — ground rather than objects, outside the map,
-  where no tile, route or event can reach. Water has its own animated surface, absent from the
-  static ground sheet and TileMap; the bulkhead and bridge remain in the static ground.
+  where no tile, route or event can reach. Water has its own surfaces, drawn from one live tile of drifting
+  lines and absent from the static ground sheet and TileMap; the bulkhead and bridge remain in the
+  static ground, and the water is drawn beneath the bulkhead row too, behind its sea wall.
 - **A band runs the full width of the map, and there is nothing at a corner.** North and south own
   the corners outright, so the mountain and the water run the whole way across and the fence, grass
   and forest are what is left in between. **Giving a corner to whichever side it is further out of
@@ -2141,7 +2239,7 @@ Top-down camera with a fake vertical extrusion:
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
-  (`Building.district`) — vents, installed HVAC and connected mounted duct networks on `INDUSTRIAL`,
+  (`Building.district()`) — vents, installed HVAC and connected mounted duct networks on `INDUSTRIAL`,
   skylights and service bulkheads on `CIVIC`, mostly water tanks with vents and bulkheads on
   `RESIDENTIAL` and `COMMERCIAL`.
   Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
@@ -2175,8 +2273,8 @@ Top-down camera with a fake vertical extrusion:
   it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic
   portico and the fire escape exactly where they already stand. A column she cannot stand in front
   of is the exception below. **Her own building is the other exception** and keeps its ground-floor
-  windows, read off `CityMap.home_block` rather than off anything drawn — except the column(s) her
-  own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
+  windows, read off `CityMap.home_block_coordinate()` rather than off anything drawn — except the column(s) her
+  own front door's footprint overlaps (`Building.mark_door_span()`), which draw plain wall
   instead, since a window behind a door she is standing in front of never showed anything. A
   facade only one wall row tall is not multi-story, so its single row is unaffected either way. Each complete
   two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
@@ -2199,7 +2297,7 @@ Top-down camera with a fake vertical extrusion:
   the potted-plant picture or the plain one, a third of them at random, rather than one variant
   for the whole escape. A two-story front carries none, since its escape would be that platform
   alone; the roll that decides an escape is still made on it, so the bound moves no stream. **Her
-  own building carries none either** (`Building.is_home_building`), since she has a stair inside
+  own building carries none either** (`Building.is_on_home_block()`), since she has a stair inside
   instead — the roll still runs on her front exactly as it does on any other `RESIDENTIAL` front,
   only the column it would have kept is dropped, so the bound moves no stream there either. The
   awning is the one piece of a front that leaves the wall plane; it stays inside the
@@ -2223,15 +2321,15 @@ Top-down camera with a fake vertical extrusion:
   wall, window, door, portico or fire escape — since every rule above only ever describes ground
   she can actually stand on. The building standing there instead draws its own roof deeper to meet
   it: extended north by exactly the covered building's own `wall_tiles()` (`Building.
-  roof_extension_rows`), enough to reach the world row the covered building's roof already starts
+  extend_roof_over()`), enough to reach the world row the covered building's roof already starts
   at, edge to edge, in its own colour, with a parapet cap (`ROOF_EDGE_N`) where the two meet —
   except between two pieces of one courtyard, below — and a step cap (`ROOF_EDGE_W`/`ROOF_EDGE_E`)
   wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and
   nothing is drawn where the covered front's wall would have been.
   Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
-  ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
+  ground row (`Building.covered_ground_cols()`, set once by `City._spawn_buildings()`), never from
   anything drawn and never from a day's own closures — a covered column stays covered for the whole
-  run, the same fixed fact `CityMap.building_rects` already is. A power station's yard is fenced
+  run, the same fixed fact `CityMap.building_lots()` already is. A power station's yard is fenced
   ground with no roof to extend, so a column facing it keeps its facade (below). A partly covered
   front keeps every other column's ordinary ground floor untouched:
   its storefront span only lands
@@ -2258,17 +2356,17 @@ Top-down camera with a fake vertical extrusion:
   that is the same wall-meets-roof relationship the bullet above already extends a roof to fill,
   but the two pieces are physically one building's roof rather than a front covering a genuinely
   separate one behind it. `City.assign_roof_extensions()` marks both sides of such a seam wherever
-  both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`): the covering
-  piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
-  top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on
+  both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`), handing each
+  piece its side (`Building.mark_courtyard_seams()`): the covering piece's column draws no
+  `ROOF_EDGE_N` at its extension's top, and the covered piece's column draws no `ROOF_EDGE_S` on
   its first roof row, so the two roofs run into each other with no lip on either side.
   `Building._roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
   with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own
-  carries on above the extension. Every piece of the lot takes one tint (`Building.tint_variant`,
+  carries on above the extension. Every piece of the lot takes one tint (`Building.share_tint()`,
   wall and roof alike), since four tints read as four buildings. An ordinary city takes its first
   piece's tint; an authored stretch that shows only part of the courtyard takes the first authored
   piece in the same rectangle order, so hidden context cannot choose the visible colour. The tint
-  is a field of its own rather than a shared `variant`, which seeds every other roll a building
+  is a field of its own rather than a shared variant (`Building.look_variant()`), which seeds every other roll a building
   makes. The ordinary front-and-back case (two genuinely separate buildings) keeps both lips and
   its own colour, since that step is the real, visible one.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
@@ -2286,7 +2384,7 @@ Top-down camera with a fake vertical extrusion:
   pins a floor for that day and a higher one for the last. A new sheet on an old one
   mostly covers it exactly; a quarter of the time the older one shows beneath, offset enough to
   read as pasted over. What is on the walls is run state
-  (`run.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest
+  (`run.posters()`, a `PosterState`): it is saved, and a lost day gives it back like the rest
   of what the attempt spent, so the retry's dawn pastes the same sheets again. A burnt front shows
   none. Nothing takes a sheet down but her: pushing against the wall tears it (`docs/MECHANICS.md`,
   "Tearing a poster down"), and a torn sheet stays torn until a crew or a dawn pastes that wall
@@ -2300,7 +2398,7 @@ Top-down camera with a fake vertical extrusion:
   straight stretch of `StreetTrees.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
   five) consecutive blocks along one street line, horizontal or vertical, and there are
   `StreetTrees.STREET_TREE_RUNS` of them placed at random across the map, well under the
-  `StreetTrees.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  quarter-of-ordinary-streets ceiling `tests/test_blocks.gd` holds over a
   seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
   events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
   to read past, and a street full of them is a street where an obstacle is hard to spot.
@@ -2322,7 +2420,7 @@ Top-down camera with a fake vertical extrusion:
 - **A tree and an event never share ground.** *(2026-09-12, the player: "events can only be placed
   where no trees are (except for the fallen tree which must empty out one tree lot)".)* The trees
   are the city's and fixed for the run while the events are the day's, so the day is what yields:
-  `EventScheduler.open_ground_for` refuses any tile a standing tree occupies or its footprint
+  `RowGround.tiles_for()` refuses any tile a standing tree occupies or its footprint
   reaches, the same way it refuses a closed street, and `SealPlanner._seal_along_tile` steps a
   seal's bodies along the street to the nearest clear cross-section. Both refuse where the
   candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
@@ -2339,7 +2437,7 @@ Top-down camera with a fake vertical extrusion:
   and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one
   prop undrawn for the day. The planting itself never changes: where a city's trees stand is a
   fact about the run, which one is lying in the road is a fact about the day, so the day's answer
-  lives beside `closed_tiles` rather than inside `StreetTrees`.
+  lives beside `closed_tile_set()` rather than inside `StreetTrees`.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

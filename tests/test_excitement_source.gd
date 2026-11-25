@@ -5,12 +5,13 @@ extends RefCounted
 ## rules that are only its own, and the door rule the world states once
 ## (`ExcitementSources.all_at()`).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_ledger_is_a_sliding_sum_on_the_source_clock(t)
 	_test_the_first_landing_is_told_once(t)
 	_test_the_nets_sum_to_the_bar_rise(t)
 	_test_an_event_caches_its_rate_on_its_age(t)
 	_test_an_event_caret_reads_where_its_instance_says_she_is(t)
+	_test_the_caret_strength_follows_her_place_and_motion(t)
 	_test_an_outranked_source_projects_nothing(t)
 	_test_a_crowd_body_is_never_cached(t)
 	_test_a_crowd_body_jolt_widens_its_set(t)
@@ -38,15 +39,12 @@ class Fixed extends ExcitementSources:
 		return alone
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
-	var def := EventDef.new()
-	def.id = id
-	def.intensity = intensity
-	def.inner_radius = inner
-	def.outer_radius = outer
-	def.telegraph_time = 0.0
-	return def
+	var draft := EventDraft.new(id)
+	draft.field(FieldSpec.of(intensity, inner, outer))
+	draft.warning(WarningSpec.lasting(0.0))
+	return draft.build()
 
-func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t) -> void:
+func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t: TestRunner) -> void:
 	var body := Node2D.new()
 	var source := Clocked.new(body)
 	source.accumulate_landed(10.0)
@@ -56,16 +54,16 @@ func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t) -> void:
 	source.now = ExcitementSource.WINDOW + 0.5
 	t.close_to(source.landed(), 5.0, "the first landing has left the window on the source's clock",
 			0.0001)
-	t.close_to(source.landed_ever, 15.0, "and what has ever landed is never pruned", 0.0001)
+	t.close_to(source.landed_ever(), 15.0, "and what has ever landed is never pruned", 0.0001)
 	source.accumulate_landed(0.0)
-	t.close_to(source.landed_ever, 15.0, "nothing lands for a share of zero", 0.0001)
+	t.close_to(source.landed_ever(), 15.0, "nothing lands for a share of zero", 0.0001)
 	body.free()
 
-func _test_the_first_landing_is_told_once(t) -> void:
+func _test_the_first_landing_is_told_once(t: TestRunner) -> void:
 	var body := Node2D.new()
 	var source := ExcitementSource.new(body)
 	var told := [0]
-	source.on_first_landing = func() -> void: told[0] += 1
+	source.when_it_first_lands(func() -> void: told[0] += 1)
 	source.accumulate_landed(0.0)
 	t.check(told[0] == 0, "a share of nothing is not a landing")
 	source.accumulate_landed(2.0)
@@ -75,10 +73,10 @@ func _test_the_first_landing_is_told_once(t) -> void:
 
 ## The relationship the halo's colours rest on: each source's net, summed, is the bar's own rise
 ## while the decay is under what landed, and every net is zero together once it is not.
-func _test_the_nets_sum_to_the_bar_rise(t) -> void:
+func _test_the_nets_sum_to_the_bar_rise(t: TestRunner) -> void:
 	var landed := [12.0, 5.0, 3.0]
 	var total := 20.0
-	for decay in [4.0, 19.0]:
+	for decay: float in [4.0, 19.0]:
 		var nets := 0.0
 		for points: float in landed:
 			nets += ExcitementSource.net_landed(points, total, decay)
@@ -89,82 +87,92 @@ func _test_the_nets_sum_to_the_bar_rise(t) -> void:
 		none += ExcitementSource.net_landed(points, total, 25.0)
 	t.check(none == 0.0, "a decay past everything landed leaves every net at zero")
 
-func _test_an_event_caches_its_rate_on_its_age(t) -> void:
+## An event caches the rate its field gives at an age and a point until the source is told to
+## work it out again (`invalidate_contribution()`). The cache is keyed on the event's age, so it
+## goes stale in play when a phase changes, a mast is silenced or the event is moved, each of which
+## clears it. The silenced mast's case, the cache primed and then the rate asked again in the same
+## tick, is held by `tests/test_masts.gd`, `_test_silencing_one_mast_works_for_the_rest_of_the_day`
+## (`contribution_at() answers zero in the same tick, not the pre-silence cache`), so it is not
+## held twice here. What this holds is the cache answering the same at the same age and point and
+## a row whose field peaks higher being charged more.
+func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(_def("cached", 20.0), Vector2.ZERO)
-	var source := instance.excitement
+	var source := instance.source()
 	var at := Vector2(60.0, 0.0)
 	var first := source.contribution_at(at)
 	t.check(first > 0.0 and first == instance.field_at(at, -1.0, Vector2.INF),
 			"an event's rate on open ground is its field (%.2f/s)" % first)
-	instance.def.intensity = 40.0
 	t.check(source.contribution_at(at) == first,
 			"asked again at the same age and point, the cached rate answers")
-	source.invalidate_contribution()
-	t.check(source.contribution_at(at) > first,
-			"invalidated, it is worked out again from the field as it now stands")
 	t.check(source.contribution_at(Vector2(1000.0, 0.0)) == 0.0,
 			"and a point past its reach is charged nothing")
+	var stronger := EventInstance.new()
+	stronger.setup(_def("cached_stronger", 40.0), Vector2.ZERO)
+	t.check(stronger.source().contribution_at(at) > first,
+			"a row whose field peaks higher is charged more at the same point")
+	stronger.free()
 	instance.free()
 
-func _test_an_event_caret_reads_where_its_instance_says_she_is(t) -> void:
+func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
-	for _i in int(ceil(def.telegraph_time / 0.1)) + 1:
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]),
+			Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
+	for _i in int(ceil(def.telegraphs_for() / 0.1)) + 1:
 		instance.step(0.1)
-	instance.player_at = instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0)
-	t.check(instance.excitement.caret_strength() == 2,
+	# Nobody has said where she is yet, so the caret is asked of `Vector2.INF`: an answer cached
+	# for this age against that must not be the one she is given once she is told.
+	t.check(instance.source().caret_strength() == 0, "with nobody to aim at there is no caret")
+	instance_where.tell(instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0))
+	t.check(instance.source().caret_strength() == 2,
 			"her place told to the instance by its manager is where the caret measures her from")
-	instance.player_at = instance.global_position + Vector2(0.0, def.outer_radius * 4.0)
-	t.check(instance.excitement.caret_strength() == 0,
+	instance_where.tell(instance.global_position + Vector2(0.0, def.heard_within() * 4.0))
+	t.check(instance.source().caret_strength() == 0,
 			"and the answer moves with her inside one tick, keyed on where she is")
-	instance.excitement.set_player_at(instance.global_position + Vector2(10.0, 0.0))
-	t.check(instance.player_at == instance.global_position + Vector2(10.0, 0.0),
-			"the halo's word on where she is reaches the instance too")
 	instance.free()
 
-func _test_an_outranked_source_projects_nothing(t) -> void:
+func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	var instance := EventInstance.new()
-	var def := _def("moving", 30.0)
-	def.mobile = true
-	def.speed = 80.0
+	var moving := _def("moving", 30.0).redraft()
+	moving.route(RouteSpec.at(80.0))
+	var def := moving.build()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
 	var her := Vector2(200.0, 0.0)
-	var gross := instance.excitement.expected_gross_at(her)
-	instance.excitement.outranked = true
-	t.check(gross > 0.0 and instance.excitement.expected_gross_at(her) == 0.0,
+	var gross := instance.source().expected_gross_at(her)
+	instance.source().set_outranked(true)
+	t.check(gross > 0.0 and instance.source().expected_gross_at(her) == 0.0,
 			"a source outranked by another projects nothing (%.2f before)" % gross)
 	instance.free()
 
-func _test_a_crowd_body_is_never_cached(t) -> void:
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
+func _test_a_crowd_body_is_never_cached(t: TestRunner) -> void:
+	var walker := CrowdAgent.new(CrowdAgent.Kind.WALKER)
 	var at := Vector2(Tuning.PEDESTRIAN_INNER_RADIUS * 0.5, 0.0)
-	var before := walker.excitement.contribution_at(at)
+	var before := walker.mood().contribution_at(at)
 	walker.position = Vector2(-Tuning.PEDESTRIAN_OUTER_RADIUS * 3.0, 0.0)
-	t.check(before > 0.0 and walker.excitement.contribution_at(at) == 0.0,
+	t.check(before > 0.0 and walker.mood().contribution_at(at) == 0.0,
 			"a body moved from outside its own frame answers from where it is, its clock unmoved")
 	walker.position = Vector2.ZERO
-	walker.excitement.startle(30.0, 1.0, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
-	t.check(walker.excitement.contribution_at(at) > before,
+	walker.mood().startle(30.0, 1.0, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+	t.check(walker.mood().contribution_at(at) > before,
 			"and a startle shows on the same frame it happens")
 	walker.free()
 
-func _test_a_crowd_body_jolt_widens_its_set(t) -> void:
+func _test_a_crowd_body_jolt_widens_its_set(t: TestRunner) -> void:
 	var crowd := Crowd.new()
-	var narrow := crowd.sources.silent_beyond()
-	var car := CrowdAgent.new()
-	car.excitement.heard_in = crowd.sources
-	car.kind = CrowdAgent.Kind.CAR
-	car.excitement.startle(30.0, 1.0, 45.0, 900.0)
-	t.check(crowd.sources.silent_beyond() >= 900.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
-			and crowd.sources.silent_beyond() > narrow,
+	var narrow := crowd.sources().silent_beyond()
+	var car := CrowdAgent.new(CrowdAgent.Kind.CAR)
+	car.mood().hear_in(crowd.sources())
+	car.mood().startle(30.0, 1.0, 45.0, 900.0)
+	t.check(crowd.sources().silent_beyond() >= 900.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+			and crowd.sources().silent_beyond() > narrow,
 			"a jolt wider than any body's field widens what its crowd's sweep skips beyond")
 	car.free()
 	crowd.free()
 
-func _test_a_held_door_is_the_whole_answer(t) -> void:
+func _test_a_held_door_is_the_whole_answer(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	var door_body := Node2D.new()
 	var street_body := Node2D.new()
@@ -172,7 +180,8 @@ func _test_a_held_door_is_the_whole_answer(t) -> void:
 	door.pairs = [[ExcitementSource.new(door_body), 7.0]]
 	var street := Fixed.new()
 	street.pairs = [[ExcitementSource.new(street_body), 3.0]]
-	world.excitement_sources = [door, street]
+	var sets: Array[ExcitementSources] = [door, street]
+	world.use_excitement_sources(sets)
 	t.close_to(_total_at_the_origin(world), 10.0,
 			"with nobody held, every set's pairs are summed", 0.0001)
 	t.check(world.excitement_sources_at(Vector2.ZERO).size() == 2
@@ -181,7 +190,8 @@ func _test_a_held_door_is_the_whole_answer(t) -> void:
 	door.alone = true
 	t.close_to(_total_at_the_origin(world), 7.0,
 			"inside a held door its toll is the whole answer", 0.0001)
-	world.excitement_sources = [street, door]
+	var swapped: Array[ExcitementSources] = [street, door]
+	world.use_excitement_sources(swapped)
 	t.close_to(_total_at_the_origin(world), 7.0,
 			"whichever order the sets are handed in", 0.0001)
 	door_body.free()
@@ -191,6 +201,39 @@ func _test_a_held_door_is_the_whole_answer(t) -> void:
 ## What the meter would be charged at the origin: every pair the world answers, summed.
 func _total_at_the_origin(world: WorldContext) -> float:
 	var total := 0.0
-	for pair in world.excitement_sources_at(Vector2.ZERO):
+	for pair: Array in world.excitement_sources_at(Vector2.ZERO):
 		total += pair[1]
 	return total
+
+## The caret's own 0/1/2 strength follows where she is and how she moves: a loose dog that ends
+## the day on contact (a copy of its row with lethal set) is amber when she is far off and
+## closing on it, doubled red with her on it, and nothing with her away and still.
+func _test_the_caret_strength_follows_her_place_and_motion(t: TestRunner) -> void:
+	var def := _made_lethal(EventCatalogue.by_id("loose_dog"))
+	var her := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
+	var here := instance.global_position
+	var states := [
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+		[Vector2(150.0, 0.0), Vector2(-100.0, 0.0), 1],
+		[Vector2.ZERO, Vector2.ZERO, 2],
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+	]
+	var strengths := []
+	for state: Array in states:
+		her.tell(here + state[0])
+		instance.source().set_her_motion(state[1])
+		strengths.append(instance.source().caret_strength())
+	t.check(strengths == [0, 1, 2, 0],
+			"she is far off, closing, on it and far off again (%s)" % [strengths])
+	instance.free()
+
+## A copy of `def` that ends the day at its core, the catalogue's own row left as it is, since
+## every suite shares it: made the way the game makes a derived row (`EventDef.at_heat()`,
+## `as_warned_first()`), a redraft, which shares the row's body value.
+static func _made_lethal(def: EventDef) -> EventDef:
+	var draft := def.redraft()
+	draft.lethal(LethalSpec.at_its_core())
+	return draft.build()

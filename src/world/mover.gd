@@ -19,9 +19,9 @@ extends RefCounted
 const GROUND := 1
 ## A precinct's posts (`CityMap.post_tiles()`).
 const POSTS := 2
-## Today's closures and the fenced park's ground (`CityMap.closed_tiles`).
+## Today's closures and the fenced park's ground (`CityMap.closed_tile_set()`).
 const CLOSED := 4
-## The pavement tiles a soft seal shuts to walkers (`CityMap.soft_sealed_tiles`).
+## The pavement tiles a soft seal shuts to walkers (`CityMap.soft_sealed_tiles()`).
 const SOFT_SEALS := 8
 ## The tiles under a stationary solid body (`CityMap.obstructed_tiles`).
 const BODIES := 16
@@ -34,22 +34,26 @@ const STREETS := 32
 const TODAY := CLOSED | SOFT_SEALS | BODIES
 
 ## The layers that stop this mover, `GROUND | POSTS | ...`.
-var blocked_by := GROUND | POSTS
+var _blocked_by := GROUND | POSTS
 ## How far its body reaches round the point it stands on, in px: a step is refused when this much
 ## past where it would land is solid (`Navigator.step()`).
-var radius := 0.0
+var _radius := 0.0
 
 func _init(layers := GROUND | POSTS, body_radius := 0.0) -> void:
-	blocked_by = layers
-	radius = body_radius
+	_blocked_by = layers
+	_radius = body_radius
+
+## Every layer this mover is stopped by, as the bits of the layer constants above.
+func layers_blocked() -> int:
+	return _blocked_by
+
+## The reach of the mover's body round its feet; zero for a point.
+func body_reach() -> float:
+	return _radius
 
 ## Whether `layer` (one of the constants above) stops this mover.
 func is_blocked_by(layer: int) -> bool:
-	return blocked_by & layer != 0
-
-## The same layers at another radius.
-func with_radius(body_radius: float) -> Mover:
-	return Mover.new(blocked_by, body_radius)
+	return _blocked_by & layer != 0
 
 ## The mover of no body stopped by `layers`, shared: one is built per set of layers and handed to
 ## every caller that asks, so a question asked every frame by hundreds of walkers builds nothing.
@@ -79,7 +83,7 @@ static func on_foot(body_radius := 0.0) -> Mover:
 
 ## **A car that drives**: stopped by the ground, the posts, today's closures and every stationary
 ## body, and kept to street ground. A soft seal takes only the pavements, so its carriageway stays
-## open to a car (`CityMap.soft_sealed_tiles`).
+## open to a car (`CityMap.soft_sealed_tiles()`).
 static func vehicle(body_radius := 0.0) -> Mover:
 	return Mover.new(GROUND | POSTS | CLOSED | BODIES | STREETS, body_radius)
 

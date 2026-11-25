@@ -21,21 +21,22 @@ const SEEDS := 40
 const TEARS_A_DAY := 5
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var printed := 0
 	var nobody := 0
 	for seed_value in range(1, SEEDS + 1):
-		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := RunCity.started_run(seed_value)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in range(PosterWalls.FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
-			city.run.header.day = day
-			var state := CityState.new()
-			city.run.attempt_spend.city_state = state
-			state.begin_day(city.map.block_plans, day)
+			run.header().set_day(day)
+			var state := run.attempt_spend().block_arcs()
+			state.reset()
+			state.begin_day(city.map().plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-					city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+					city.map().doorstep_world_position())
 			var player := Stroller.new()
 			var camera := Camera2D.new()
 			camera.name = "Camera2D"
@@ -44,8 +45,8 @@ func run(t) -> void:
 			t.add_child(player)
 			player.set_physics_process(false)
 			player.add_to_group("player")
-			city.events.use_player(player)
-			var sheets: Array = city.run.posters.cells.keys()
+			RunCity.events(city).use_player(player)
+			var sheets: Array = run.posters().cells().keys()
 			sheets.sort()
 			var picked: Array[Vector2i] = []
 			for i in mini(TEARS_A_DAY, sheets.size()):
@@ -53,32 +54,30 @@ func run(t) -> void:
 			var tears := 0
 			for tile: Vector2i in picked:
 				tears += 1
-				city.run.posters.tears = tears
-				var her := city.map.tile_to_world(tile)
+				GivenRun.tears(run, tears)
+				var her := city.map().tile_to_world(tile)
 				player.global_position = her
-				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+				RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0), null)
-				city.events.ahead.clear()
-				city.events.send_a_pursuer()
+				RunCity.events(city).send_a_pursuer()
 				var shown := 0.0
-				while not city.events.pending_warnings().is_empty() and shown < 5.0:
-					city.events.warnings.run(STEP, her)
+				while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
+					RunCity.events(city)._warnings.run(STEP, her)
 					shown += STEP
 				var sent: EventInstance = null
-				for instance in city.events.instances():
-					if instance.def.id in ["policeman_giving_chase", "guardsman_giving_chase"]:
+				for instance in RunCity.events(city).instances():
+					if instance.row_id() in ["policeman_giving_chase", "guardsman_giving_chase"]:
 						sent = instance
 				var made := "nobody"
 				if sent:
-					made = "%s at (%s, %s)" % [sent.def.id, var_to_str(sent.global_position.x),
+					made = "%s at (%s, %s)" % [sent.row_id(), var_to_str(sent.global_position.x),
 							var_to_str(sent.global_position.y)]
-					city.events.retire(sent)
+					RunCity.events(city).retire(sent)
 				else:
 					nobody += 1
 				print("PP seed %d day %d tear %d at %s -> %s" % [seed_value, day, tears,
 						RunTrace.tile(tile), made])
 				printed += 1
-			city.events.ahead.clear()
 			player.free()
 		city.free()
 	print("PP_TOTAL %d tears, %d sent nobody" % [printed, nobody])

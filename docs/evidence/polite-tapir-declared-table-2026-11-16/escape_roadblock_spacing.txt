@@ -1,0 +1,43 @@
+
+ESCAPE_SPACING seed  1 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed  2 |  2 roadblocks | nearest two 1944px apart, (77, 2) (128, 35)
+ESCAPE_SPACING seed  3 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed  4 |  0 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed  5 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed  6 |  4 roadblocks | nearest two 375px apart, (17, 62) (21, 73)
+ESCAPE_SPACING seed  7 |  2 roadblocks | nearest two 2640px apart, (87, 63) (45, 134)
+ESCAPE_SPACING seed  8 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed  9 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 10 |  3 roadblocks | nearest two 1042px apart, (59, 106) (35, 128)
+ESCAPE_SPACING seed 11 |  2 roadblocks | nearest two 929px apart, (48, 59) (77, 58)
+ESCAPE_SPACING seed 12 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 13 |  2 roadblocks | nearest two 1581px apart, (76, 45) (50, 87)
+ESCAPE_SPACING seed 14 |  0 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 15 |  3 roadblocks | nearest two 448px apart, (87, 90) (87, 104)
+ESCAPE_SPACING seed 16 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 17 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 18 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 19 |  0 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 20 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 21 |  2 roadblocks | nearest two 417px apart, (92, 100) (105, 101)
+ESCAPE_SPACING seed 22 |  3 roadblocks | nearest two 373px apart, (44, 35) (50, 45)
+ESCAPE_SPACING seed 23 |  2 roadblocks | nearest two 1017px apart, (21, 86) (34, 115)
+ESCAPE_SPACING seed 24 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 25 |  2 roadblocks | nearest two 2688px apart, (45, 8) (44, 92)
+ESCAPE_SPACING seed 26 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 27 |  3 roadblocks | nearest two 1250px apart, (86, 105) (77, 143)
+ESCAPE_SPACING seed 28 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 29 |  2 roadblocks | nearest two 2989px apart, (50, 3) (16, 90)
+ESCAPE_SPACING seed 30 |  2 roadblocks | nearest two 4412px apart, (35, 2) (91, 128)
+ESCAPE_SPACING seed 31 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 32 |  0 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 33 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 34 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 35 |  2 roadblocks | nearest two 1652px apart, (92, 115) (48, 142)
+ESCAPE_SPACING seed 36 |  2 roadblocks | nearest two 2688px apart, (104, 31) (105, 115)
+ESCAPE_SPACING seed 37 |  2 roadblocks | nearest two 1231px apart, (114, 34) (120, 72)
+ESCAPE_SPACING seed 38 |  1 roadblocks | nearest two infpx apart, 
+ESCAPE_SPACING seed 39 |  3 roadblocks | nearest two 1191px apart, (106, 16) (87, 48)
+ESCAPE_SPACING seed 40 |  2 roadblocks | nearest two 864px apart, (72, 22) (72, 49)
+ESCAPE_SPACING | 40 seeds | 62 roadblocks | 34 pairs, 0 nearer than their two notices | nearest 373px
+

@@ -9,7 +9,7 @@ extends RefCounted
 ## roadblocks on a street are `EventInstance`s built on the real map from its placements, stepped by hand at 60Hz the way `EventManager` steps them: told where
 ## she is and whether she runs (`_tell_them_where_she_is()`), asked whether one catches her
 ## (`is_lethal_at()`), and the meter fed from the strongest of them — they are
-## `barrier_structure`, so only the strongest counts (`excitement_sources_at()`) — the way
+## one-barrier flag, so only the strongest counts (`excitement_sources_at()`) — the way
 ## `Baby._update_excitement()` feeds it, with `Baby.SLEEPING_SENSITIVITY` while asleep and the
 ## wake at `Tuning.EXCITEMENT_WAKE_THRESHOLD`. Her body is a point moved along her line; the decay
 ## is the street's (`Tuning.EXCITEMENT_DECAY_WALKING`, `_RUNNING` and `_IDLE` at a multiplier of
@@ -31,24 +31,25 @@ const TAIL := 10.0
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 1)
+	state.begin_day(map.plans_by_block(), 1)
 	map.repaint(state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
 	return {"map": map, "plan": walk,
-			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
+			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec(),
+				GamePlanBuilder.over(map))}
 
 ## The roadblocks among `placements` on each open street of the walk `plan` that carries any,
-## `[segment, Array[Planned]]` pairs.
+## `[segment, Array[EventPlan]]` pairs.
 static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
-		placements: Array[EventScheduler.Planned]) -> Array:
+		placements: Array[EventPlan]) -> Array:
 	var found: Array = []
 	for segment in plan.open_streets:
 		var rect := map.tile_rect_to_world(segment.tile_rect())
-		var group: Array[EventScheduler.Planned] = []
+		var group: Array[EventPlan] = []
 		for placement in placements:
-			if placement.def.id == "roadblock" and rect.grow(1.0).has_point(placement.position):
+			if placement.row_id() == "roadblock" and rect.grow(1.0).has_point(placement.placed_at()):
 				group.append(placement)
 		if not group.is_empty():
 			found.append([segment, group])
@@ -57,7 +58,7 @@ static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
 ## The two ends of her line along the street, or empty when no offset across the street fits at
 ## every band.
 static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
-		group: Array[EventScheduler.Planned]) -> PackedVector2Array:
+		group: Array[EventPlan]) -> PackedVector2Array:
 	var ground := WalkGround.new(map)
 	var along := Vector2.RIGHT if segment.horizontal else Vector2.DOWN
 	var across := Vector2(-along.y, along.x)
@@ -103,8 +104,39 @@ static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
 			widest = run
 	var lane := (widest.x + widest.y) * 0.5
 	places.sort()
-	return PackedVector2Array([centre + along * (places[0] - BEYOND) + across * lane,
-			centre + along * (places[places.size() - 1] + BEYOND) + across * lane])
+	return PackedVector2Array([_as_far_as_ground_goes(map, centre + along * places[0] + across * lane,
+			-along), _as_far_as_ground_goes(map, centre + along * places[places.size() - 1]
+			+ across * lane, along)])
+
+## The point `BEYOND` from `from` along `way`, or the last one before the ground stops her body.
+static func _as_far_as_ground_goes(map: CityMap, from: Vector2, way: Vector2) -> Vector2:
+	var at := from
+	var gone := 0.0
+	while gone < BEYOND and _she_fits(map, at + way * LANE_SCAN):
+		at += way * LANE_SCAN
+		gone += LANE_SCAN
+	return at
+
+## Where she is after trying to walk to `wanted`: there, or where she was when the ground does not
+## take her body there (a building, the edge of the map), as it stops her in play, so a walk that
+## runs on past a street's end meets the wall at the end of the street and does not carry on
+## through it where no guard can follow.
+static func _on_ground(map: CityMap, was: Vector2, wanted: Vector2) -> Vector2:
+	return wanted if _she_fits(map, wanted) else was
+
+## **Which way she turns where the ground ahead stops her**: of the two ways square to `heading`,
+## the one her body fits along further (up to `BEYOND`), so at a street's end she turns the corner
+## into the cross street rather than standing at the wall; `Vector2.ZERO` where neither takes a
+## step.
+static func _the_way_round(map: CityMap, at: Vector2, heading: Vector2) -> Vector2:
+	var best := Vector2.ZERO
+	var best_gone := 0.0
+	for side: Vector2 in [Vector2(-heading.y, heading.x), Vector2(heading.y, -heading.x)]:
+		var gone := _open_along(map, at, side, BEYOND)
+		if gone > best_gone:
+			best = side
+			best_gone = gone
+	return best
 
 static func _she_fits(map: CityMap, at: Vector2) -> bool:
 	var reach := Tuning.PLAYER_BODY_RADIUS - 1.0
@@ -115,55 +147,76 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 			return false
 	return true
 
-## A world of its own for events to stand in, and the manager that puts them there: the world
+## A world of its own for events to stand in, and a manager over it: the world
 ## node a city or a building is to its map (`WorldContext`, which the map is handed as its own), a
 ## run of its own and an `EventManager` over them, its physics off so nothing steps but the caller.
-## A `Planned` is handed to the manager's streaming (`EventStreaming.add()`, then `stream_in()`, as
-## the manager's `stream_around()` does when she comes near it), so the spawner makes the
-## instance the way a day's is made: on the map, in the world's entity layer, with its look's nodes
-## to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
-## the plans recorded on the map and leaves the map and every plan as the stage found them.
+## The Stage's own `EventStreaming` and `EventSpawner` over that manager's world put each plan in
+## (`EventStreaming.add()`, then `stream_in()`, as the manager's `stream_around()` does when she
+## comes near it), so the spawner makes the instance the way a day's is made, and `event_of()` is
+## the Stage's to answer, never the manager's. An instance stands on the map, in the world's entity
+## layer, with its look's nodes to attach on the next idle frame (`settle()`). `close()` frees the
+## world, gives back the bodies the plans recorded on the map and leaves the map as the stage found
+## it, every plan stood out of the world.
 class Stage extends RefCounted:
 	var world: WorldContext
 	var manager: EventManager
+	## The plans' own streaming and the spawner it makes instances through, over the manager's
+	## world: the manager never ticks, so nothing else streams them.
+	var _spawner: EventSpawner
+	var _streaming: EventStreaming
 	var _map: WorldMap
-	var _was_world: WorldContext
-	## Each plan stood, with whether it had been live and what it held.
-	var _stood: Array = []
+	## Each plan stood.
+	var _stood: Array[EventPlan] = []
 	var _successors: Array[EventInstance] = []
 
 	## Under `t`, or in no tree when `t` is null, for a rig that only reads where an event
 	## stands once it is made. `atlas` is the page set the manager hands every event it makes, for a
-	## case that lets real frames draw them.
-	func _init(t: Node, map: WorldMap, atlas: AtlasLibrary = null) -> void:
+	## case that lets real frames draw them, and `drawer` the drawer it hands them to paint through,
+	## for a case that reads what they were drawn with.
+	func _init(t: Node, map: WorldMap, atlas: AtlasLibrary = null,
+			drawer: EventDrawer = null) -> void:
 		_map = map
-		_was_world = map.world if map.has_world() else null
 		world = WorldContext.new()
 		if t != null:
 			t.add_child(world)
 		var run := RunState.new()
-		map.world = world
-		manager = EventManager.new()
-		manager.setup_world(map, run)
+		var surroundings := EventSurroundings.new().on(map).drawn_in(world)
 		if atlas != null:
-			manager.atlas = atlas
+			surroundings.drawn_from(atlas)
+		if drawer != null:
+			surroundings.drawing_through(drawer)
+		manager = EventManager.new(surroundings)
+		manager.setup(run)
 		world.add_child(manager)
 		manager.set_physics_process(false)
+		_spawner = EventSpawner.new(manager.world, WarningBoard.new(manager.world))
+		_streaming = EventStreaming.new(manager.world, _spawner, WalkEvents.new())
 
 	## Puts `plan` in the world as the day's streaming does, and answers the instance, its
 	## own process off (a case that lets frames draw it turns it on).
-	func stand(plan: EventScheduler.Planned) -> EventInstance:
-		_stood.append([plan, plan.was_live, plan.live])
-		manager.streaming.add(plan)
-		manager.streaming.stream_in(plan)
-		var instance := plan.live
+	func stand(plan: EventPlan) -> EventInstance:
+		_stood.append(plan)
+		_streaming.add(plan)
+		_streaming.stream_in(plan)
+		var instance := event_of(plan)
 		instance.set_process(false)
 		return instance
+
+	## The live instance of `plan`, null when it is out of the world.
+	func event_of(plan: EventPlan) -> EventInstance:
+		return _streaming.event_of(plan)
+
+	## Streams `plan` out of the world and in again, answering the instance streamed back in. A
+	## stage holds no player, so nothing is watching the plan go.
+	func stream_out_and_in(plan: EventPlan) -> EventInstance:
+		_streaming.stream_out(plan)
+		_streaming.stream_in(plan)
+		return event_of(plan)
 
 	## What `instance` leaves behind when it finishes, made where it stands as the spawner makes it
 	## (`EventSpawner.successor_of()`), or null for a row that leaves nothing.
 	func successor_of(instance: EventInstance) -> EventInstance:
-		var made := manager.spawner.successor_of(instance)
+		var made := _spawner.successor_of(instance)
 		if made != null:
 			_successors.append(made)
 		return made
@@ -173,14 +226,12 @@ class Stage extends RefCounted:
 		for made in _successors:
 			_map.release_obstruction(made.get_instance_id())
 		_stood.reverse()
-		for stood: Array in _stood:
-			var plan: EventScheduler.Planned = stood[0]
-			_map.release_obstruction(plan.get_instance_id())
-			if plan.live != null and is_instance_valid(plan.live):
-				_map.release_obstruction(plan.live.get_instance_id())
-			plan.was_live = stood[1]
-			plan.live = stood[2]
-		_map.world = _was_world
+		for stood: EventPlan in _stood:
+			_map.release_obstruction(stood.get_instance_id())
+			var instance := event_of(stood)
+			if instance != null and is_instance_valid(instance):
+				_map.release_obstruction(instance.get_instance_id())
+			stood.leave_the_world(stood.saved())
 		world.free()
 
 ## Lets the idle frames pass that a made event's drawing nodes wait for (`EventLook.build_nodes()`
@@ -194,7 +245,7 @@ static func settle(t: Node) -> void:
 ## The street's roadblocks, live: `[stage, Array[EventInstance]]`. `Stage.close()` frees them and
 ## their bands. Each is handed `atlas` (the pages the spawner hands every event it makes) when a
 ## case lets real frames draw them.
-static func build(t: Node, map: WorldMap, group: Array[EventScheduler.Planned],
+static func build(t: Node, map: WorldMap, group: Array[EventPlan],
 		atlas: AtlasLibrary = null) -> Array:
 	var stage := Stage.new(t, map, atlas)
 	var made: Array[EventInstance] = []
@@ -216,7 +267,7 @@ class Meter extends RefCounted:
 	func feed(instances: Array[EventInstance], her: Vector2, running: bool, idle: bool) -> void:
 		var strongest := 0.0
 		for instance in instances:
-			strongest = maxf(strongest, instance.excitement.contribution_at(her))
+			strongest = maxf(strongest, instance.source().contribution_at(her))
 		var incoming := strongest + (Baby.EXCITEMENT_FROM_RUNNING if running else 0.0)
 		incoming *= Baby.SLEEPING_SENSITIVITY if asleep else 1.0
 		var decay := Baby.EXCITEMENT_DECAY_IDLE if idle else (
@@ -229,21 +280,19 @@ class Meter extends RefCounted:
 ## The camera's view round her once it has settled on her walking `heading`: `Tuning.VIEW_HALF_EXTENT`
 ## either way of her, led by `Stroller.CAMERA_LOOK_AHEAD` the way `Stroller` leads it (its
 ## `OBLIQUE_Y` squash on the vertical). What `EventManager` hands a waiting charger as
-## `EventInstance.player_view`; the view round her alone for no heading.
+## `WhereSheIs.view()`; the view round her alone for no heading.
 static func view_round(her: Vector2, heading: Vector2) -> Rect2:
 	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 	return Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 
-## One frame of the world round her: every instance told where she is and stepped, then asked
-## whether it catches her. True on a catch. With a `heading` (the way she faces), each is handed the
-## camera's view round her too (`view_round()`).
-static func tick(instances: Array[EventInstance], her: Vector2, running: bool,
-		heading := Vector2.ZERO) -> bool:
+## One frame of the world round her: `where` (the one the instances were handed) told where
+## she is, every instance stepped, then asked whether it catches her. True on a catch. With a
+## `heading` (the way she faces), the camera's view round her is told too (`view_round()`).
+static func tick(where: WhereSheIs, instances: Array[EventInstance], her: Vector2,
+		running: bool, heading := Vector2.ZERO) -> bool:
+	var view := view_round(her, heading) if heading != Vector2.ZERO else Rect2()
+	where.tell(her, Vector2.INF, view, running, false)
 	for instance in instances:
-		instance.player_at = her
-		instance.player_view = view_round(her, heading) if heading != Vector2.ZERO else Rect2()
-		instance.player_running = running
-		instance.baby_awake = false
 		instance.step(STEP)
 	for instance in instances:
 		if instance.is_lethal_at(her):
@@ -260,46 +309,133 @@ static func _charging(instances: Array[EventInstance]) -> int:
 ## At a walk from `from` to `to` past the street's roadblocks, `built` (from `build()`) or a fresh
 ## set, which it frees. Answers `cost` (the meter's peak less where it started), `peak`, `end`,
 ## `caught`, `charged` (how many guards charged her), `strongest` (the most any of them charged a
-## second at her on the way) and `at`, where she stopped. A charge begun when her line ends is followed
-## on (`TAIL`).
-static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
+## second at her on the way), `at`, where she stopped, and `turned`, how many corners she turned.
+## A charge begun when her line ends is followed on (`TAIL`).
+##
+## **Once a charge is under way she turns the first corner she comes to**, round the building she
+## was walking beside (`_its_corner_is_open()`: the corner at her street's end, or an alley mouth),
+## as a walker with a guard behind her would, so the building stands between them; and where the
+## ground ahead stops her she turns along it (`_the_way_round()`). Before he charges she keeps to
+## her line, so his warning is met as on a straight walk.
+##
+## Also `chase_frames`, `chase_usec` and `chase_worst_usec`: how many frames a charge was under way,
+## and the wall-clock microseconds those frames' ticks took in all and at most, what a probe prints
+## as the chase's cost.
+static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		to: Vector2, meter: Meter, built: Array = []) -> Dictionary:
 	var made: Array = built if not built.is_empty() else build(t, map, group)
 	var instances: Array[EventInstance] = made[1]
+	var stage: Stage = made[0]
+	var where := stage.manager.world.where_she_is()
 	var start := meter.value
 	# The peak is this walk's own, not what an earlier lure ran the meter up to.
 	meter.peak = meter.value
 	var her := from
 	var heading := (to - from).normalized()
+	var beside := _the_building_side(map, from, heading)
 	var length := from.distance_to(to)
 	var walked := 0.0
 	var caught := false
 	var charged := {}
 	var strongest := 0.0
+	var turned := 0
+	var timing := {"chase_frames": 0, "chase_usec": 0, "chase_worst_usec": 0}
 	while walked < length:
-		her = from + heading * walked
-		if tick(instances, her, false, heading):
+		if turned == 0:
+			her = _on_ground(map, her, from + heading * walked)
+		else:
+			her = _on_ground(map, her, _ahead(map, her, heading))
+		if _timed_tick(where, instances, her, heading, timing):
 			caught = true
 			break
 		for instance in instances:
 			if instance.is_chasing():
 				charged[instance] = true
-			strongest = maxf(strongest, instance.excitement.contribution_at(her))
+			strongest = maxf(strongest, instance.source().contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
+		if turned == 0 and _charging(instances) > 0 and _its_corner_is_open(map, her, beside):
+			heading = beside
+			turned += 1
 	# A charge that has begun is not over where her line ends: she walks on at the same pace until
-	# every charge has caught her or given up (`TAIL`), as she would past the end of a street.
+	# every charge has caught her or given up (`TAIL`), as she would past the end of a street, round
+	# the first corner and along the ground where it stops her.
 	var tail := 0
 	while not caught and _charging(instances) > 0 and tail < int(TAIL / STEP):
-		her += heading * Tuning.WALK_SPEED * STEP
-		if tick(instances, her, false, heading):
+		if turned == 0 and _its_corner_is_open(map, her, beside):
+			heading = beside
+			turned += 1
+		var next := her + heading * Tuning.WALK_SPEED * STEP
+		if not _she_fits(map, next):
+			var way_round := _the_way_round(map, her, heading)
+			if way_round != Vector2.ZERO:
+				heading = way_round
+				turned += 1
+				next = her + heading * Tuning.WALK_SPEED * STEP
+		her = _on_ground(map, her, next)
+		if _timed_tick(where, instances, her, heading, timing):
 			caught = true
 			break
 		meter.feed(instances, her, false, false)
 		tail += 1
-	made[0].close()
+	stage.close()
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
-			"charged": charged.size(), "strongest": strongest, "at": her}
+			"charged": charged.size(), "strongest": strongest, "at": her, "turned": turned,
+			"chase_frames": timing["chase_frames"], "chase_usec": timing["chase_usec"],
+			"chase_worst_usec": timing["chase_worst_usec"]}
+
+## A step on from `her` along `heading`, or along the ground where it stops her there
+## (`_the_way_round()`): her walk after she has turned off her line.
+static func _ahead(map: CityMap, her: Vector2, heading: Vector2) -> Vector2:
+	var next := her + heading * Tuning.WALK_SPEED * STEP
+	if _she_fits(map, next):
+		return next
+	var way_round := _the_way_round(map, her, heading)
+	return her + way_round * Tuning.WALK_SPEED * STEP
+
+## How deep, in px, the ground beside her has to open for her to turn into it: three tiles, past
+## the frontage she was walking beside, so a doorway's notch is no corner and a cross street or an
+## alley mouth is.
+const CORNER_DEPTH := 3.0 * Tuning.TILE_SIZE
+
+## **The side of her line the buildings stand on**: of the two ways square to `heading` at `at`,
+## the one the ground stops her body sooner along, or `Vector2.ZERO` where both run open past
+## `CORNER_DEPTH` (no frontage beside her to turn round).
+static func _the_building_side(map: CityMap, at: Vector2, heading: Vector2) -> Vector2:
+	var nearest := Vector2.ZERO
+	var nearest_gone := INF
+	for side: Vector2 in [Vector2(-heading.y, heading.x), Vector2(heading.y, -heading.x)]:
+		var gone := _open_along(map, at, side, CORNER_DEPTH)
+		if gone < CORNER_DEPTH and gone < nearest_gone:
+			nearest = side
+			nearest_gone = gone
+	return nearest
+
+## Whether the ground on `beside` (`_the_building_side()`) opens at `at` at least `CORNER_DEPTH`
+## deep: the building she was walking beside has ended, at a corner or an alley's mouth.
+static func _its_corner_is_open(map: CityMap, at: Vector2, beside: Vector2) -> bool:
+	return beside != Vector2.ZERO and _open_along(map, at, beside, CORNER_DEPTH) >= CORNER_DEPTH
+
+## How far, in px and up to `limit`, her body fits along `way` from `at`, in `LANE_SCAN` steps.
+static func _open_along(map: CityMap, at: Vector2, way: Vector2, limit: float) -> float:
+	var gone := 0.0
+	while gone < limit and _she_fits(map, at + way * (gone + LANE_SCAN)):
+		gone += LANE_SCAN
+	return gone
+
+## `tick()` at a walk along `heading`, its wall-clock time added to `timing` (`walk()`'s
+## `chase_frames`, `chase_usec`, `chase_worst_usec`) when a charge was under way as it began.
+static func _timed_tick(where: WhereSheIs, instances: Array[EventInstance], her: Vector2,
+		heading: Vector2, timing: Dictionary) -> bool:
+	var chasing := _charging(instances) > 0
+	var began := Time.get_ticks_usec()
+	var caught := tick(where, instances, her, false, heading)
+	if chasing:
+		var took := Time.get_ticks_usec() - began
+		timing["chase_frames"] = int(timing["chase_frames"]) + 1
+		timing["chase_usec"] = int(timing["chase_usec"]) + took
+		timing["chase_worst_usec"] = maxi(int(timing["chase_worst_usec"]), took)
+	return caught
 
 ## Her reaction to a charge, in seconds, in `lure()`.
 const REACTION := 0.3
@@ -309,11 +445,14 @@ const REACTION := 0.3
 ## `Tuning.ACCELERATION` as hers does, until he charges; `REACTION` later turned and run straight
 ## back, until every charge has given up; then standing until each guard who charged has left his
 ## post for good (at most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
-## `walk()`'s shape; `after` is empty when the lure itself was caught.
-static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
+## `walk()`'s shape, the lure's with `nearest` as well, the closest any charging guard came to her
+## in px; `after` is empty when the lure itself was caught.
+static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		to: Vector2, meter: Meter) -> Dictionary:
 	var made := build(t, map, group)
 	var instances: Array[EventInstance] = made[1]
+	var stage: Stage = made[0]
+	var where := stage.manager.world.where_she_is()
 	var start := meter.value
 	var heading := (to - from).normalized()
 	var her := from
@@ -325,27 +464,29 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var warned := false
 	while _charging(instances) == 0 and her.distance_to(from) < from.distance_to(to) \
 			and frames < int(20.0 / STEP):
-		if tick(instances, her, false, heading):
+		if tick(where, instances, her, false, heading):
 			caught = true
 			break
 		meter.feed(instances, her, false, speed == 0.0)
 		for instance in instances:
-			warned = warned or (not instance.is_waiting() and not instance.barrier_post.is_spent())
+			warned = warned or (not instance.is_waiting() and not instance.has_lost_its_guard())
 		speed = move_toward(speed, 0.0 if warned else Tuning.WALK_SPEED, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		if warned:
 			frames += 1
 	frames = 0
 	var since := 0.0
+	var nearest := INF
 	while not caught and _charging(instances) > 0 and frames < int(20.0 / STEP):
 		for instance in instances:
 			if instance.is_chasing():
 				lured[instance] = true
+				nearest = minf(nearest, instance.global_position.distance_to(her))
 		var wanted := 0.0 if since < REACTION else -Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		var running := speed < -Tuning.WALK_SPEED
-		if tick(instances, her, running, heading if speed >= 0.0 else -heading):
+		if tick(where, instances, her, running, heading if speed >= 0.0 else -heading):
 			caught = true
 			break
 		meter.feed(instances, her, running, false)
@@ -355,18 +496,19 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	while not caught and frames < int(30.0 / STEP):
 		var gone := true
 		for instance: EventInstance in lured:
-			gone = gone and instance.barrier_post.is_spent() and not instance.is_leaving
+			gone = gone and instance.has_lost_its_guard() and not instance.is_on_its_way_out()
 		if gone:
 			break
-		if tick(instances, her, false, -heading):
+		if tick(where, instances, her, false, -heading):
 			caught = true
 			break
 		meter.feed(instances, her, false, true)
 		frames += 1
 	var luring := {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value,
-			"caught": caught, "charged": lured.size(), "strongest": 0.0, "at": her}
+			"caught": caught, "charged": lured.size(), "strongest": 0.0, "at": her,
+			"nearest": nearest}
 	if caught:
-		made[0].close()
+		stage.close()
 		return {"lure": luring, "after": {}}
 	return {"lure": luring, "after": walk(t, map, group, her, to, meter, made)}
 

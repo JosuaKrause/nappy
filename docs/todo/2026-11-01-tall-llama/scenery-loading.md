@@ -12,13 +12,7 @@ gameplay reads no evictable visual data, and no half-prepared ground is ever dra
   already done, no? in 444", and #444 measured a detached probe. Measure boot, day start, frame
   tails and memory at the parent of #445's merge against `main`, and file the result as an entry of its own — or the
   player waives it, in their words.
-- #444's parked probes `tests/probes/lazy_scenery_{city,measure,routes}.gd` no longer run, since
-  `City/Ground` is no longer a `TileMapLayer`; delete them and their `.uid` files (the #444 reruns
-  check out pinned revisions, so nothing is lost).
-- Water is one surface per ground chunk, phased by `SceneryGround`'s clock, but
-  `docs/ARCHITECTURE.md` (its water paragraph), `docs/GRAPHICS.md` (its water lines) and
-  `src/city/scenery_water.gd`'s header comment describe the old arrangement. Rewrite all three.
-- `src/city/building_shadows.gd`: `_by_chunk` is never read, and the `if not streamed` it guards is
+- `src/city/building_shadows.gd`: `_by_chunk` is never read, and the `if not _streamed` it guards is
   always true there. Remove both.
 - `src/city/city.gd`: the docstring #445 rewrote keeps "This used to be ~120 lines…", which the
   present-tense rule rules out.
@@ -27,6 +21,6 @@ gameplay reads no evictable visual data, and no half-prepared ground is ever dra
 - `tests/test_scenery_residency.gd` (the stepped preparation is mode 3 of `--ground-mode`, breezy-walrus): the check "camera relocation completes pending destination
   ground before returning" never starts from a pending region, so nothing covers what keeps a half-built region off screen. A mutation that lets the
   guard skip pending regions passes the whole suite. Make the region pending with `prepare_step`
-  before the relocation and assert the same layer lands in `chunks`; add a case for the guard
+  before the relocation and assert the same layer lands in `chunks()`; add a case for the guard
   without a relocation. The check "synchronous guard completion promotes the existing pending
-  owner" never compares the layer; assert `ground.chunks[key] == owner`.
+  owner" never compares the layer; assert `ground.chunks()[key] == owner`.

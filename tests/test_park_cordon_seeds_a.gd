@@ -5,5 +5,5 @@ extends RefCounted
 
 const SWEEP := preload("res://tests/park_cordon_sweep.gd")
 
-func run(t) -> void:
-	SWEEP.new().sweep(t, SWEEP.part(0, 3))
+func run(t: TestRunner) -> void:
+	await SWEEP.new().sweep(t, SWEEP.part(0, 3))

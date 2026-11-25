@@ -90,7 +90,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
             " none under src/ or tests/, none of docs/TELEMETRY.md, docs/COSTS.md, docs/ARCHITECTURE.md, and no"
             " .gdignore)"
             " and touches-code (a file under src/ or tests/). Writes queue_only, docs_only and touches_code"
-            " to GITHUB_OUTPUT when CI sets it, and prints them."
+            " to GITHUB_OUTPUT when CI sets it, and prints them. A rename counts as a deletion and an addition, and"
+            " an empty diff is none of the three."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

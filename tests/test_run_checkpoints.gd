@@ -19,8 +19,16 @@ extends RefCounted
 ## building's own `exit_requested`, and real frames; what they built is found by the names `main`
 ## gives it. Every save goes to a scratch file (`GameSave.new()` at a scratch path), never the
 ## player's own.
+##
+## **Combined by composition, for this reason:** the calendar's own checkpoint rules are driven on a
+## `RunState` of the test's own with nothing built. The cases that boot `main` hold what the rules
+## are for: that the state a checkpoint's dawn recorded is the state the *booted world* plays (the
+## continue, the reload, the title's box, the building's and the day's lost endings), which crosses
+## the calendar, the save, the title, the screens and the world's boot at once. Each boot is on a
+## cached generated city (`tests/city_map_cache.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
 ## Her street door and the building it stands in front of, read off the city's nodes.
 const HomeDoorReads := preload("res://tests/home_door_reads.gd")
@@ -40,7 +48,7 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 ## The save under test, at a scratch path.
 var _save := GameSave.new(_scratch_path)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
@@ -102,48 +110,47 @@ static func _windowed() -> RunConfig:
 ## the save fails here until it is changed too — and once that going back gave it back. A field the
 ## restore left out keeps its changed value and fails the second check; a field the save never
 ## carries at all is `tests/test_save.gd`'s `_test_round_trip_field_list_matches_the_property_list`.
-func _test_going_back_restores_every_field_the_save_carries(t) -> void:
+func _test_going_back_restores_every_field_the_save_carries(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	for d in range(1, 4):
-		run.calendar.begin_day()
-		run.calendar.remember_where_she_settled(Vector2i(d, d))
-		run.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(run.header.day == 4, "three won days reach day 4")
-	run.header.nerves = 3
-	run.calendar.begin_day()
-	var expected := run.run_parts.run_data()
-	t.check(run.calendar.checkpoint == expected, "beginning day 4 keeps its dawn as the checkpoint")
+		run.calendar().begin_day()
+		run.calendar().remember_where_she_settled(Vector2i(d, d))
+		run.calendar().finish_day(GameEnums.DayResult.WON)
+	t.check(run.header().day() == 4, "three won days reach day 4")
+	run.header().set_nerves(3)
+	run.calendar().begin_day()
+	var expected := run.run_parts().run_data()
+	t.check(run.calendar().checkpoint() == expected, "beginning day 4 keeps its dawn as the checkpoint")
 
 	# On past it: a lost attempt at day 4, a won one, and into day 5.
 	run.add_scar("after_the_checkpoint", Vector2(40.0, 40.0))
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	run.calendar.begin_day()
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.begin_day()
-	t.check(run.header.day == 5 and run.calendar.checkpoint == expected,
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	run.calendar().begin_day()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().begin_day()
+	t.check(run.header().day() == 5 and run.calendar().checkpoint() == expected,
 			"day 5 is under way and the checkpoint is still day 4's dawn")
 
 	# Through the file, so the checkpoint given back is the one a closed game would come back to.
 	t.check(_write_to_the_scratch_file(run), "the run is written with its checkpoint")
 	run.start_run(_SEED + 1)
 	t.check(not _read_from_the_scratch_file(run).is_empty(), "and read back")
-	t.check(run.calendar.checkpoint_day() == 4, "with its checkpoint on day 4")
 
 	var keys := _run_keys(run)
 	t.check(keys.size() > 10, "there are fields to check (%d)" % keys.size())
-	var before := _flatten(run.run_parts.run_data())
+	var before := _flatten(run.run_parts().run_data())
 	_change_everything(run)
-	var changed := _flatten(run.run_parts.run_data())
+	var changed := _flatten(run.run_parts().run_data())
 	for key in keys:
 		t.check(changed[key] != before[key] and changed[key] != _flatten_run(expected)[key],
 				"'%s' is changed after the checkpoint — a field this test does not change cannot "
 						% key + "show that going back gives it back; change it in _change_everything()")
 
-	run.header.nerves = 1
-	t.check(run.calendar.a_loss_goes_back_to_the_checkpoint(), "losing now spends a normal run's last nerve")
-	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL), "and the run goes on")
-	var after := _flatten(run.run_parts.run_data())
+	run.header().set_nerves(1)
+	t.check(run.calendar().a_loss_goes_back_to_the_checkpoint(), "losing now spends a normal run's last nerve")
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_HARD_FAIL), "and the run goes on")
+	var after := _flatten(run.run_parts().run_data())
 	var wanted := _flatten_run(expected)
 	wanted["state.nerves"] = Tuning.STARTING_NERVES
 	# The one field going back does not give back: the time played only grows (inbox #920 in plaid-penguin).
@@ -152,17 +159,19 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 		t.check(after[key] == wanted[key],
 				"'%s' is the checkpoint's own dawn again (%s, wanted %s)"
 						% [key, str(after[key]).left(80), str(wanted[key]).left(80)])
-	t.check(run.header.nerves == Tuning.STARTING_NERVES and run.header.day == 4,
-			"back at day 4 with every nerve")
-	t.check(run.calendar.checkpoint_day() == 4 and not run.calendar.hard_mode,
-			"still a normal run, whose checkpoint is still day 4")
-	t.check(run.header.ending == GameEnums.Ending.NONE, "and a normal run has no bad ending")
+	t.check(run.header().nerves() == Tuning.STARTING_NERVES and run.header().day() == 4,
+			"back at day 4 with every nerve, the checkpoint the file gave back")
+	run.header().set_nerves(1)
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_HARD_FAIL) and not run.calendar().in_hard_mode()
+			and run.header().day() == 4 and run.header().nerves() == Tuning.STARTING_NERVES,
+			"still a normal run, whose checkpoint is still day 4: its last nerve goes back there again")
+	t.check(run.header().ending() == GameEnums.Ending.NONE, "and a normal run has no bad ending")
 
 ## Every key of the file that is the run's own state — top-level riders by name, and `"state"`'s
 ## fields as `state.<name>` — read off `RunStateRegistry.run_data()` itself.
 func _run_keys(run: RunState) -> Array[String]:
 	var keys: Array[String] = []
-	for key: String in _flatten(run.run_parts.run_data()):
+	for key: String in _flatten(run.run_parts().run_data()):
 		keys.append(key)
 	return keys
 
@@ -187,86 +196,86 @@ func _flatten_run(data: Dictionary) -> Dictionary:
 ## (`RunStateRegistry.photograph()`, which `RunCalendar.begin_day()` calls), so each holds the
 ## changed value rather than the checkpoint's.
 func _change_everything(run: RunState) -> void:
-	run.header.run_seed += 1
-	run.header.player_is_male = not run.header.player_is_male
-	run.header.day = 10
-	run.header.nerves = 2
-	run.resistance.progress += 3
-	run.header.ending = GameEnums.Ending.NEUTRAL
-	run.header.play_ticks += 15000
-	run.attempt_spend.consumed_one_shots.append("spent_after_the_checkpoint")
-	run.resistance.completed_steps.append(99)
-	run.resistance.failed_steps.append(98)
+	run.header().use_seed(run.header().run_seed() + 1)
+	run.header().set_parent_is_father(not run.header().parent_is_father())
+	run.header().set_day(10)
+	run.header().set_nerves(2)
+	run.resistance().set_progress(run.resistance().progress() + 3)
+	run.header().set_ending(GameEnums.Ending.NEUTRAL)
+	run.header().set_play_ticks(run.header().play_ticks() + 15000)
+	run.facts().set_last_day_seconds(run.facts().last_day_seconds() + 321.0)
+	run.attempt_spend().consumed_one_shots().append("spent_after_the_checkpoint")
+	run.resistance().complete(99, false)
+	run.resistance().fail(98)
 	run.add_scar("scarred_after_the_checkpoint", Vector2(120.0, 80.0))
-	run.attempt_spend.city_state.apply_cause({Vector2i(30, 30): _fake_block_plan()}, Vector2i(30, 30),
+	run.attempt_spend().block_arcs().apply_cause({Vector2i(30, 30): _fake_block_plan()}, Vector2i(30, 30),
 			GameEnums.BlockCause.FIRE, 10)
-	run.resistance.sabotage_done = not run.resistance.sabotage_done
-	run.resistance.carrying_package = not run.resistance.carrying_package
-	run.settled.settled_in[10] = Vector2i(5, 5)
-	run.facts.escape_section = DaySpec.Section.CITY
-	run.facts.completed_resistance_alley_tiles.append(Vector2i(77, 77))
-	run.facts.fenced_park = Vector2i(3, 3)
-	run.facts.fenced_park_act = 3
-	run.posters.paste(Vector2i(9, 9), 0, false, 1)
-	run.posters.tears += 1
-	run.posters.pasted_through += 4
-	run.pelican.draws += 5
-	run.run_parts.photograph()
+	GivenRun.sabotage(run, not run.resistance().sabotage_went_through())
+	GivenRun.carrying_package(run, not run.resistance().is_carrying_package())
+	GivenRun.settled(run, 10, Vector2i(5, 5))
+	run.facts().set_escape_section(DaySpec.Section.CITY)
+	run.facts().record_completed_alley_tile(Vector2i(77, 77))
+	GivenRun.fenced_park(run, Vector2i(3, 3), 3)
+	run.posters().paste(Vector2i(9, 9), 0, false, 1)
+	GivenRun.tears(run, run.posters().tears_made() + 1)
+	GivenRun.pasted_through(run, run.posters().pasted_through() + 4)
+	GivenRun.pelican_draws(run, run.pelican().draws() + 5)
+	run.run_parts().photograph()
 
 func _fake_block_plan() -> BlockPlan:
-	var plan := BlockPlan.new()
-	plan.steps = [
-		BlockPlan.Step.new(GameEnums.BlockPurpose.RESIDENTIAL, 1, GameEnums.BlockCause.SCHEDULED),
-		BlockPlan.Step.new(GameEnums.BlockPurpose.BURNT_OUT, 1, GameEnums.BlockCause.FIRE),
-	]
+	var plan := BlockPlan.of(GameEnums.BlockPurpose.RESIDENTIAL).then(GameEnums.BlockPurpose.BURNT_OUT,
+			1, GameEnums.BlockCause.FIRE)
 	return plan
 
 ## The checkpoint is the first dawn of its day and nothing later: a retry of day 4, a run sent back
 ## to day 4, and days 5 to 7 all keep day 4's; only day 8 replaces it.
-func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
+func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	t.check(run.calendar.checkpoint_day() == 1, "a fresh run's checkpoint is day 1")
-	run.header.day = 4
-	run.calendar.begin_day()
-	var day_four := run.calendar.checkpoint.duplicate(true)
-	t.check(run.calendar.checkpoint_day() == 4, "day 4 is a checkpoint")
-	run.header.play_ticks = 2310
-	run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint == day_four, "a retry of day 4 does not replace its dawn")
+	t.check(run.calendar().checkpoint().is_empty(),
+			"a fresh run keeps nothing: its checkpoint is checkpoint zero, day 1")
+	run.header().set_day(4)
+	run.calendar().begin_day()
+	var day_four := run.calendar().checkpoint().duplicate(true)
+	t.check(day_four == run.run_parts().run_data(), "day 4's dawn is the checkpoint")
+	run.header().set_play_ticks(2310)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	run.calendar().begin_day()
+	t.check(run.calendar().checkpoint() == day_four, "a retry of day 4 does not replace its dawn")
 	for d in range(4, 8):
-		run.calendar.finish_day(GameEnums.DayResult.WON)
-		run.calendar.begin_day()
-		if run.header.day < 8:
-			t.check(run.calendar.checkpoint == day_four,
-					"day %d is not a checkpoint, so day 4's stands" % run.header.day)
-	t.check(run.header.day == 8 and run.calendar.checkpoint_day() == 8, "day 8 replaces it")
-	run.header.day = 12
-	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint_day() == 12, "day 12, the last act's first, replaces it too")
+		run.calendar().finish_day(GameEnums.DayResult.WON)
+		run.calendar().begin_day()
+		if run.header().day() < 8:
+			t.check(run.calendar().checkpoint() == day_four,
+					"day %d is not a checkpoint, so day 4's stands" % run.header().day())
+	t.check(run.header().day() == 8 and run.calendar().checkpoint() == run.run_parts().run_data()
+			and run.calendar().checkpoint() != day_four, "day 8's dawn replaces it")
+	run.header().set_day(12)
+	run.calendar().begin_day()
+	t.check(run.calendar().checkpoint() == run.run_parts().run_data(),
+			"day 12's dawn, the last act's first, replaces it too")
 
 ## Before day 4, the last nerve goes back to day 1 of the same city — the same seed, and the same
 ## parent pushing the pram — rather than a new run.
-func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
+func _test_checkpoint_zero_is_day_one_of_the_same_city(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	run.header.player_is_male = not run.header.player_is_male
-	var parent := run.header.player_is_male
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.begin_day()
+	run.header().set_parent_is_father(not run.header().parent_is_father())
+	var parent := run.header().parent_is_father()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().begin_day()
 	run.complete_resistance_step(0)
-	run.header.nerves = 1
+	run.header().set_nerves(1)
 	var events := []
 	var listen := func(day: int, lost_day: int) -> void: events.append([day, lost_day])
 	EventBus.went_back_to_a_checkpoint.connect(listen)
-	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING), "the run goes on")
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING), "the run goes on")
 	EventBus.went_back_to_a_checkpoint.disconnect(listen)
-	t.check(run.header.day == 1 and run.header.run_seed == _SEED, "day 1 of the same city")
-	t.check(run.header.nerves == Tuning.STARTING_NERVES and run.resistance.progress == 0
-			and run.resistance.completed_steps.is_empty(), "with every nerve and nothing done")
-	t.check(run.header.player_is_male == parent, "pushed by the same parent")
+	t.check(run.header().day() == 1 and run.header().run_seed() == _SEED, "day 1 of the same city")
+	t.check(run.header().nerves() == Tuning.STARTING_NERVES and run.resistance().progress() == 0
+			and run.resistance().completed_steps().is_empty(), "with every nerve and nothing done")
+	t.check(run.header().parent_is_father() == parent, "pushed by the same parent")
 	t.check(events == [[1, 3]], "and the counter hears checkpoint 1 from day 3 (%s)" % [events])
 
 ## **The run's play time only ever grows** (inbox #920 in plaid-penguin): going back to checkpoint zero, going back
@@ -274,50 +283,49 @@ func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 ## time exactly as it was, and a new game from the title is the one thing that starts it at zero.
 ## The go-back paths to checkpoint zero and to a later checkpoint fail on the code before the fix
 ## (zero reset it, a later one took the dawn's); the retry and the save passed before and pin it.
-func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
+func _test_the_play_time_only_grows_across_every_way_back(t: TestRunner) -> void:
 	var run := RunState.new()
 	# Back to checkpoint zero, from day 3.
 	run.start_run(_SEED)
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.begin_day()
-	run.header.play_ticks = 4321
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(run.header.day == 1 and run.header.play_ticks == 4321,
-			"back to checkpoint zero keeps the play time (%d)" % run.header.play_ticks)
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().begin_day()
+	run.header().set_play_ticks(4321)
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(run.header().day() == 1 and run.header().play_ticks() == 4321,
+			"back to checkpoint zero keeps the play time (%d)" % run.header().play_ticks())
 
 	# Back to a later checkpoint: the dawn of day 4 held less time than the loss on day 5.
 	run.start_run(_SEED)
-	run.header.day = 4
-	run.header.play_ticks = 1000
-	run.calendar.begin_day()
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.begin_day()
-	run.header.play_ticks = 7777
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(run.header.day == 4 and run.calendar.checkpoint_day() == 4
-			and run.header.play_ticks == 7777,
-			"back to a later checkpoint keeps the play time, not the dawn's (%d)" % run.header.play_ticks)
+	run.header().set_day(4)
+	run.header().set_play_ticks(1000)
+	run.calendar().begin_day()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().begin_day()
+	run.header().set_play_ticks(7777)
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(run.header().day() == 4 and run.header().play_ticks() == 7777,
+			"back to a later checkpoint keeps the play time, not the dawn's (%d)" % run.header().play_ticks())
 
 	# A lost day retried with nerves left: no go-back, the header is not given back.
-	run.header.nerves = 3
-	run.header.play_ticks = 8000
-	run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-	run.calendar.begin_day()
-	t.check(run.header.play_ticks == 8000, "a lost day's retry keeps the play time")
+	run.header().set_nerves(3)
+	run.header().set_play_ticks(8000)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	run.calendar().begin_day()
+	t.check(run.header().play_ticks() == 8000, "a lost day's retry keeps the play time")
 
 	# A save continued after a go-back holds the time the go-back kept.
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	var kept := run.header.play_ticks
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	var kept := run.header().play_ticks()
 	t.check(_write_to_the_scratch_file(run), "the run is written after the go-back")
 	run.start_run(_SEED + 1)
-	t.check(run.header.play_ticks == 0, "a new game starts at zero")
+	t.check(run.header().play_ticks() == 0, "a new game starts at zero")
 	_read_from_the_scratch_file(run)
-	t.check(kept == 8000 and run.header.play_ticks == 8000,
-			"a save continued after a go-back keeps the play time (%d)" % run.header.play_ticks)
+	t.check(kept == 8000 and run.header().play_ticks() == 8000,
+			"a save continued after a go-back keeps the play time (%d)" % run.header().play_ticks())
 
 ## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
 ## for the rest of the run (`CityFronts.board_neighbor_window()`), which nothing in a dawn takes down; a
@@ -332,15 +340,15 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 ## of the tree's root (`main.use_sitting_home()`), with the sitting that holds the run parked in
 ## it: the continue leaves that sitting there, carrying the run and the title's answer, and the
 ## next boot takes it from there.
-func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t) -> void:
+func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t: TestRunner) -> void:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var reloads := []
-	var hand := func(main: Node) -> void:
+	var hand := func(main: Boot.MainScript) -> void:
 		main.use_sitting_home(home)
 		main.use_reload(func() -> void: reloads.append(1))
 	var config := Boot.config(["--day", "8"])
-	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, config, hand)
+	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, config, hand, false, MapCache.source())
 	var main := booted.main
 	# A joystick, steered from the right: what the title answered has to hold for the sitting, and
 	# the boot going back opens no title to ask again.
@@ -348,10 +356,10 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	for d in range(8, 11):
 		Boot.day(main).day_finished.emit(GameEnums.DayResult.WON)
 		await Boot.press_continue(t, main)
-	t.check(run.header.day == 11 and run.calendar.checkpoint_day() == 8,
-			"day 11 is under way, with day 8 the checkpoint")
+	t.check(run.header().day() == 11,
+			"day 11 is under way, with day 8 the checkpoint its last nerve goes back to below")
 	var boarded := HomeDoorReads.building(Boot.city(main))
-	t.check(boarded != null and boarded.neighbor_window_col >= 0,
+	t.check(boarded != null and boarded.neighbor_window_col() >= 0,
 			"day 11 boarded the neighbor's window")
 
 	var back := []
@@ -360,26 +368,26 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	var on_begun := func(day: int, resumed: bool) -> void: begun.append([day, resumed])
 	EventBus.went_back_to_a_checkpoint.connect(on_back)
 	EventBus.run_begun.connect(on_begun)
-	run.header.nerves = 1
-	# The day's own timeout: its clock runs out and one physics tick ends the day.
-	Boot.day(main).time_remaining = 0.0
+	run.header().set_nerves(1)
+	# The day's own timeout: one tick of every second it had left runs its clock out and ends it.
+	Boot.day(main).tick(Boot.day(main).seconds_left())
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(run.header.day == 8 and Boot.summary(main).is_showing(), "the lost-day screen is up, at day 8")
+	t.check(run.header().day() == 8 and Boot.summary(main).is_showing(), "the lost-day screen is up, at day 8")
 	await Boot.press_continue(t, main)
 
 	var playing := booted
 	if reloads.size() == 1:
 		booted.free_all()
 		var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
-		t.check(parked != null and parked.carry_the_run_over,
+		t.check(parked != null and parked.carries_the_run_over(),
 				"the continue leaves the sitting in its home, carrying the run over")
-		playing = await Boot.boot(t, _scratch_path, config, hand)
+		playing = await Boot.boot(t, _scratch_path, config, hand, false, MapCache.source())
 	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
-	t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
+	t.check(run.header().day() == 8 and run.header().nerves() == Tuning.STARTING_NERVES,
 			"she plays day 8 with every nerve")
 	var building := HomeDoorReads.building(Boot.city(playing.main))
-	t.check(building != null and building.neighbor_window_col < 0,
+	t.check(building != null and building.neighbor_window_col() < 0,
 			"and the neighbor's window is not boarded on day 8")
 	t.check(not Boot.title(playing.main).is_open() and not t.get_tree().paused,
 			"straight into the day, with no title in front of it")
@@ -388,41 +396,42 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.check(controls.controls_mode() == ControlsMode.Mode.JOYSTICK
 			and controls.run_button_center() == TouchControls.FOCUS_LEFT,
 			"with the joystick the title chose, steered from the right, as before")
-	t.check(run.calendar.hard_mode == false, "in the mode the title chose")
+	t.check(run.calendar().in_hard_mode() == false, "in the mode the title chose")
 	t.check(back == [[8, 11]], "the checkpoint restart was counted once (%s)" % [back])
 	t.check(begun.is_empty(), "and the reload begins no new run (%s)" % [begun])
 	EventBus.went_back_to_a_checkpoint.disconnect(on_back)
 	EventBus.run_begun.disconnect(on_begun)
 	t.get_tree().paused = false
-	t.check(home.get_child_count() == 1 and not (home.get_child(0) as Sitting).carry_the_run_over,
+	t.check(home.get_child_count() == 1
+			and not (home.get_child(0) as Sitting).carries_the_run_over(),
 			"and the next boot took that sitting and spent the carry")
 	playing.free_all()
 	home.free()
 
-func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
+func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	run.calendar.choose_mode(true)
-	run.header.day = 8
-	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint.is_empty(), "a hard run keeps no checkpoint on day 8")
-	run.header.nerves = 1
-	t.check(not run.calendar.a_loss_goes_back_to_the_checkpoint(), "its last nerve does not go back")
-	t.check(not run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT), "the run ends")
-	t.check(run.header.ending == GameEnums.Ending.BAD and run.header.day == 8,
+	run.calendar().choose_mode(true)
+	run.header().set_day(8)
+	run.calendar().begin_day()
+	t.check(run.calendar().checkpoint().is_empty(), "a hard run keeps no checkpoint on day 8")
+	run.header().set_nerves(1)
+	t.check(not run.calendar().a_loss_goes_back_to_the_checkpoint(), "its last nerve does not go back")
+	t.check(not run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT), "the run ends")
+	t.check(run.header().ending() == GameEnums.Ending.BAD and run.header().day() == 8,
 			"with the bad ending, on the day it was lost")
-	run.header.ending = GameEnums.Ending.NONE
+	run.header().set_ending(GameEnums.Ending.NONE)
 
 ## A `--day 8` boot keeps day 8's dawn behind the title before the mode is chosen; choosing hard
 ## mode on that title drops it.
-func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
+func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	run.header.day = 8
-	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint_day() == 8, "a normal run keeps day 8")
-	run.calendar.choose_mode(true)
-	t.check(run.calendar.hard_mode and run.calendar.checkpoint.is_empty(), "hard mode has none")
+	run.header().set_day(8)
+	run.calendar().begin_day()
+	t.check(run.calendar().checkpoint() == run.run_parts().run_data(), "a normal run keeps day 8's dawn")
+	run.calendar().choose_mode(true)
+	t.check(run.calendar().in_hard_mode() and run.calendar().checkpoint().is_empty(), "hard mode has none")
 
 # ------------------------------------------------------------------- the escape ---
 
@@ -432,22 +441,22 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 ## fewer star and the section's own words, its continue is the section again behind its brief, and
 ## the last nerve is the bad ending, with no continue, rather than the section again — shown after
 ## the outcome screen, as a lost day's is.
-func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
+func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	run.calendar.choose_mode(true)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.header.nerves = 2
-	run.facts.escape_section = DaySpec.Section.BUILDING
+	run.calendar().choose_mode(true)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.header().set_nerves(2)
+	run.facts().set_escape_section(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, Boot.config([]),
-			func(main: Node) -> void: main.use_sitting_home(home))
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var summary := Boot.summary(main)
 	await Boot.press_continue(t, main)
 	EventBus.hard_fail_triggered.emit("abduction")
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
-	t.check(run.header.nerves == 1 and summary.is_showing()
+	t.check(run.header().nerves() == 1 and summary.is_showing()
 			and body.text.contains("Escape the building"),
 			"a lost section costs a hard run a nerve, and comes up on the day's outcome screen")
 	t.check(body.text.contains("Nerves left: %s" % Texts.nerve_stars(1))
@@ -458,13 +467,15 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	await Boot.press_continue(t, main)
 	await Boot.press_continue(t, main)
 	EventBus.hard_fail_triggered.emit("abduction")
-	t.check(run.header.nerves == 0 and summary.is_showing(),
+	t.check(run.header().nerves() == 0 and summary.is_showing(),
 			"the last nerve does not start it again")
 	await Boot.press_continue(t, main)
 	var heading: Label = summary.get_node("Root/Center/Lines/Heading")
-	t.check(run.header.ending == GameEnums.Ending.BAD and summary.is_showing(),
+	t.check(run.header().ending() == GameEnums.Ending.BAD and summary.is_showing(),
 			"it is the bad ending")
 	t.check(heading.visible and heading.text == "GAME OVER", "on the GAME OVER screen")
+	t.check(body.text.contains("The last day:") and body.text.contains("Time played"),
+			"which shows the total and the last day's own time ('%s')" % body.text)
 	t.check(not UI.control(summary, "ContinueColumn").visible, "which has no continue button")
 
 	booted.free_all()
@@ -474,16 +485,16 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 ## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
 ## — the signal the building emits when she walks out of it — brings the city's brief up with the
 ## nerves it had, none given back.
-func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
+func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	run.calendar.choose_mode(true)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.header.nerves = 3
-	run.facts.escape_section = DaySpec.Section.BUILDING
+	run.calendar().choose_mode(true)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.header().set_nerves(3)
+	run.facts().set_escape_section(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, Boot.config([]),
-			func(main: Node) -> void: main.use_sitting_home(home))
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var interior := Boot.interior(main)
 	t.check(interior != null and Boot.summary(main).is_showing(),
@@ -492,7 +503,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 			"the service door is wired to the day's own goal")
 	await Boot.press_continue(t, main)
 	interior.exit_requested.emit()
-	t.check(run.header.nerves == 3, "leaving the building gives the hard run no nerve back")
+	t.check(run.header().nerves() == 3, "leaving the building gives the hard run no nerve back")
 	var body: Label = Boot.summary(main).get_node("Root/Center/Lines/Body")
 	t.check(Boot.summary(main).is_showing() and body.text.contains(Texts.nerve_stars(3)),
 			"and the city's brief shows the same count ('%s')" % body.text)
@@ -503,16 +514,14 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 
 ## *(gentle-osprey: the lost-day screen says e.g. "Back to day 8" with five stars and keeps the
 ## ordinary continue button.)*
-func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
+func _test_the_lost_day_screen_says_where_she_goes_back_to(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	run.header.day = 8
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	run.header().set_day(8)
+	var summary: Boot.DaySummaryScript = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
-	var end := DayEnd.new()
-	end.result = GameEnums.DayResult.LOST_TIMEOUT
-	end.reason = "Dusk came."
-	end.goes_back = true
+	var end := DayEnd.new(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.")
+	end.mark_sending_the_run_back()
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.BACK_TO_CHECKPOINT)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Back to day 8"), "it names the day she goes back to ('%s')" % body.text)
@@ -524,7 +533,7 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 
 ## A title of the real scene, handed `run` and the platform's touch answer the way `main` hands
 ## them before the screen enters the tree (`use_run()`, `use_platform()`), under `t`.
-func _title_for(t, run: RunState, touch := false) -> TitleScreen:
+func _title_for(t: TestRunner, run: RunState, touch := false) -> TitleScreen:
 	var title: TitleScreen = TITLE.instantiate()
 	title.use_run(run)
 	title.use_platform(touch, QuitOption.available())
@@ -543,7 +552,7 @@ static func _the_catch_owed(title: TitleScreen) -> Rect2:
 	var drawn := box.get_global_transform() * Rect2(Vector2.ZERO, box.size)
 	return ButtonGeometry.margin_rect(drawn).merge(drawn.grow(_HARD_MODE_FLOOR_REACH))
 
-func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
+func _test_the_checkbox_shows_only_for_a_new_game(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var title := _title_for(t, run)
@@ -555,7 +564,7 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 			"a resumed game shows none")
 	UI.push(title, _key(KEY_H))
 	t.check(not title.hard_mode_checked(), "and H flips nothing that is not there")
-	run.calendar.hard_mode = true
+	run.calendar().restore_mode(true)
 	title.open(false, true)
 	t.check(title.hard_mode_checked(), "--hard opens it checked")
 	title.free()
@@ -578,7 +587,7 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 ## (`_windowed()`), reading the run the test wrote there or finding none, so what is checked is the
 ## boot's own decision; the title's own `open()` answers the two openings no boot here reaches (the
 ## title again after an ending, the epilogue's), on the booted title.
-func _test_which_titles_show_the_checkbox_today(t) -> void:
+func _test_which_titles_show_the_checkbox_today(t: TestRunner) -> void:
 	# [what the save holds: null for nothing, else whether its day was under way, and whether it
 	#  was closed in the building; the box shown; the name of the case]
 	var cases := [
@@ -592,13 +601,13 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 			var saved := RunState.new()
 			saved.start_run(_SEED)
 			if case[1]:
-				saved.header.day = Tuning.RUN_LENGTH_DAYS
-				saved.facts.escape_section = DaySpec.Section.BUILDING
+				saved.header().set_day(Tuning.RUN_LENGTH_DAYS)
+				saved.facts().set_escape_section(DaySpec.Section.BUILDING)
 			_with_saving(func() -> void: _save.write(saved, bool(case[0])))
 		var run := RunState.new()
 		var home := Boot.home_playing(t, run)
 		var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
-				func(main: Node) -> void: main.use_sitting_home(home))
+				func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 		var title := Boot.title(booted.main)
 		t.check(title.is_open() and _box_shown(title) == case[2],
 				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
@@ -619,7 +628,7 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 ## The box answers a touch, a click and `H`, and none of them starts the run; the three buttons
 ## still do. Each press is pushed through the viewport, the GUI pass and then the title's own
 ## handler, as a real one arrives.
-func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
+func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var title := _title_for(t, run, false)
@@ -675,7 +684,7 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 ## drawn rect and just inside two corners of its catch: *"the whole bounding box should trigger"*
 ## (inbox #746 in woolly-penguin). Each tap must flip the box exactly once. The window is sized to the device for
 ## the span, since real dispatch maps a window position through the stretch.
-func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> void:
+func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var original_window_size: Vector2i = t.get_window().size
@@ -743,7 +752,7 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 ## that keeps the default would silently swallow every press over it, as the bottom scrim once did
 ## over the Hard Mode box; this names it. A container's default, `MOUSE_FILTER_PASS`, hands the press
 ## on and is fine.
-func _test_no_control_on_the_title_stops_a_press(t) -> void:
+func _test_no_control_on_the_title_stops_a_press(t: TestRunner) -> void:
 	var run := RunState.new()
 	var title := _title_for(t, run)
 	title.open(false, true)
@@ -760,7 +769,7 @@ func _test_no_control_on_the_title_stops_a_press(t) -> void:
 ## A tap at `presented`, a point in the viewport's own (stretched, possibly rotated) box, sent as a
 ## real device sends it: from a phone a screen touch, which the engine also turns into an emulated
 ## click; from a desktop a left click. Press and release, so no touch is left held for the next.
-func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
+func _tap_through_the_engine(t: TestRunner, presented: Vector2, touch: bool) -> void:
 	var on_the_window: Vector2 = t.get_viewport().get_final_transform() * presented
 	for pressed: bool in [true, false]:
 		var event: InputEvent
@@ -784,21 +793,21 @@ func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
 ## counter the mode only for the new game. Two real boots of `main.tscn` under a windowed release
 ## configuration handed a scratch save: one resuming a hard run the test wrote there, between
 ## days, and one with nothing to resume, whose box is pressed through the viewport before Tap.
-func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
+func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t: TestRunner) -> void:
 	var modes := []
 	var listen := func(hard: bool, day: int) -> void: modes.append([hard, day])
 	EventBus.run_mode_chosen.connect(listen)
 
 	var saved := RunState.new()
 	saved.start_run(_SEED)
-	saved.calendar.choose_mode(true)
+	saved.calendar().choose_mode(true)
 	_with_saving(func() -> void: _save.write(saved, false))
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
-			func(main: Node) -> void: main.use_sitting_home(home))
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	await Boot.press_title(t, booted.main, "Tap")
-	t.check(run.calendar.hard_mode and modes.is_empty(),
+	t.check(run.calendar().in_hard_mode() and modes.is_empty(),
 			"a resumed run keeps the mode its save carries, and reports none")
 	booted.free_all()
 	home.free()
@@ -806,12 +815,12 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	run = RunState.new()
 	home = Boot.home_playing(t, run)
 	booted = await Boot.boot(t, _scratch_path, _windowed(),
-			func(main: Node) -> void: main.use_sitting_home(home))
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var title := Boot.title(booted.main)
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(_the_catch_owed(title).get_center(), true))
 	await Boot.press_title(t, booted.main, "Tap")
-	t.check(run.calendar.hard_mode and modes == [[true, 1]],
+	t.check(run.calendar().in_hard_mode() and modes == [[true, 1]],
 			"a new game takes the box's answer and reports it with the day behind the title (%s)"
 					% [modes])
 

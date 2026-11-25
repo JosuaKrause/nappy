@@ -19,11 +19,14 @@ scenes/
   ui/touch_controls.tscn  the pointer scheme's overlay
 src/
   main.gd                 boot: generate the city, drop the player on the doorstep, then the HUD
+  simulation_builder.gd   the one place an event manager and a crowd are made: stands what moves
+                          and happens in a world already built (the city's poster walls, events,
+                          crowd and blackout; the building's events), handed by `main`
   run_config.gd           the run's configuration: every dev flag and the page's query, resolved
                           once at boot and never changed (see "Dev flags and release builds")
   build_info.gd           which build is running: git's answer, or what an export baked
   run_trace.gd            the sink game logic writes its account of a decision into, handed in
-  drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture
+  drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture (an observer's)
   game_enums.gd           shared enums (see below)
   frame_timing.gd         the sink a timed system charges its time to the frame record through; the null
                           sink here, `FrameRecord` (`src/telemetry/`) is the one that keeps the ledger
@@ -51,8 +54,9 @@ src/
 	attempt_spend_state.gd   one-shots, scars, block arcs; given back by a lost day
 	settled_state.gd      the calm block she settled in each day
 	run_facts.gd          escape section, used alleys, fenced park: riders beside the snapshot
-	day_director.gd       starts a day (the ordered construction of its world) and ends it, handed
-	                      the world and the run's calendar; `main` and the tests both call it
+	day_director.gd       the one start every walk goes through, a day, an authored scene's day or
+	                      a section of the escape, in its one order, and the one end; handed where
+	                      each walk's world comes from and the run's calendar
 	day_end.gd            what a day's end settled: its cause, its words, the calendar, the hand-over
 	run_flow.gd           which screen is up, what its continue leads to, and the day being walked,
 	                      announced to the readout, the HUD and the route rig
@@ -60,13 +64,22 @@ src/
 	summary_model.gd      what a summary screen says, pure; the run's standing and the tally, once
   player/
 	stroller.gd           movement, input, speed state
+	view_shake.gd         the small eased shake of her view an explosion near gives (full on top of
+	                      it, none at its reach), which the stroller adds to its camera's follow
 	baby.gd               the two meters + baby state machine
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
 	city_generator.gd     seeded generation
+	through_roads.gd      the stretches of carriageway a car can drive into and go on from without
+	                      turning round, worked out once a walk from the map as it stands
+	held_streets.gd       today's held street segments and why each is held (closure, wall, door, home
+	                      street, seal), worked out once at dawn and asked by siting and the crowd
 	street_layout.gd      the street lattice painted onto a map's tiles; the generator lays every
 	                      city's streets through it, and a test's street map does too
 	city.gd               the scene: ground, buildings, props, boundary, queries (is_alley)
+	city_dressing.gd      what the day director asks of the city a walk starts in (dress it for
+	                      the day, the act and the light, the street trees, the kerb tint, the
+	                      scenery round her); the city extends it, a test hands a fake
 	day_streets.gd        today's streets as dawn left them: the route tree, the region wall and
 	                      doors, the closures, the region a siting reads; the city writes it
 	city_fronts.gd        the building fronts the story changes (the burnt frontage, a block
@@ -84,12 +97,20 @@ src/
 	shadow_drawer.gd      what the buildings' shadows draw their shaded tiles through; the city hands it in
 	scenery_ground.gd     freeable ground chunks, prepared whole or across frames by mode
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
+	scenery_residence.gd  one placement's standing with the residency: resident or not, the
+	                      ground it covers, and the switch; a building, the home door and
+	                      every scenery sprite are each composed of one
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands
-	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
+	scenery_water.gd      separate south-water surface: its cells drawn from the one water tile
+	south_water_tile.gd   the south water's one live tile of drifting Voronoi lines, on the city clock
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
+	city_exit.gd          the two ways out of the city, the tunnel or the bridge, as a value (data:
+	                      the texts, the day's spec and the finale key on it)
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
+	tree_pictures.gd      the pictures a tree is drawn as and the ground its trunk takes; the
+	                      props draw with it and the street trees' planner keeps it clear
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
 	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in
@@ -99,19 +120,26 @@ src/
 	reachability_grid.gd  the tile graph contracted into two-tile cells; is there a walkable path
 	road_closure.gd       one street shut for one day, and what shut it
 	closure_planner.gd    picks the day's closures; enforces the two-routes invariant
+	narrow_target_pool.gd the tiles a narrow task's contact may stand on, which the closures keep
+	                      one of reachable and the director draws from
     closure_marker.gd     one barrier panel, sign or piece of wreckage
 	route_source.gd       the walk placement is stated against, as the questions it asks of it —
 	                      a day's route tree and the escape's two chains both answer them
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
-	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
+	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep;
+	                      and the view a whole street is in: on the route, route-adjacent, off it
 	seal_planner.gd       seals every street off the day's route tree (a share of them from the
 	                      gatehouse day), and every street off the escape's two chains
+	region_plan.gd        one day's wall and doors, and the bodies and gates they stand as; read and built through methods
+	gate_state.gd         one checkpoint gate's ground point and boom, shared by the crowd and the gate's instance
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
 	                      rather than released between days; spaces out the traffic and meets
-	                      her once a physics tick, then steps every agent; hands the world its
-	                      agents as one set of things that charge her
+	                      her once a physics tick, then steps every agent; tells each car through
+	                      its lane what it found (a box or a gate to hold at, somebody near its
+	                      road); reports a bump, a strike and a horn on the bus it is handed with
+	                      her; hands the world its agents as one set of things that charge her
 	crowd_sources.gd      the crowd as one set of things that charge her (`CrowdSources`): the
 	                      sweep that skips a body out of earshot, and the widest jolt it skips by
 	crowd_excitement.gd   a crowd body as a thing that charges her (`CrowdExcitement`): its field,
@@ -130,6 +158,9 @@ src/
 	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
 	crowd_view.gd         what the crowd is handed of the screen: the drawn box and the camera's
 	                      square, and the out-of-view rule built on them (`ScreenCrowdView` answers)
+	crowd_focus.gd        where the crowd's simulated patch stands, asked once a tick (`StrollerFocus`
+	                      answers with her position)
+	stroller_focus.gd     the game's `CrowdFocus`: the patch stands where she does
 	crowd_timing.gd       the sink the crowd charges its time and draws to; the null sink here,
 	                      `FrameRecordTiming` feeds the record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
@@ -142,91 +173,268 @@ src/
 	car_strike.gd         the box in front of a driving car that kills, from its centre forward
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
-	event_def.gd          authored event data
-	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
-	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
-	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
-	day_switch.gd         how a row is sited and noticed from the day after its first appearance
-	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
-	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
-	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
-	abduction_spec.gd     the unmarked van's take of a bystander
-	event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
-	                      box it draws, all it can put on the screen, its solid footprint and its
-	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
-	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
-	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
-	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
-	                       its field (`field_at()`), and the behaviours it is composed of, stepped
-	                       in order on its manager's physics tick (`step()`: proposed, checked, then
-	                       committed, a car's by its own checks); drawn by its look,
-	                       which each drawn frame redraws it if its picture changed, interpolated
-	                       between ticks; its excitement is a composed `EventExcitement`
-	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
-	                       present rate cached on its age, the walls it does not pass, its live
-	                       course and rate for the projection, whether that course is lethal
-	event_sources.gd      a day's live events as one set of things that charge her
-	                       (`EventSources`): the door's toll alone inside a held door, a region
-	                       boundary's structures as their strongest
-	views/                how an event looks, read off its public state: `EventPictures` names
-	                       every picture (each a region of the baked `events` page) and the
-	                       tables that pick one; `EventLooks.for_row()` gives each row the look
-	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
-	                       rank, the roadblock, a fire, the checkpoint kit, the flock), which
-	                       holds the redraw gate, the caret and the slices a long picture is
-	                       drawn in; every picture a look draws goes through one `EventDrawer`
-	                       (`views/event_drawer.gd`), which the manager builds over its atlas
-	                       and its spawner hands every instance (`EventInstance.drawer`)
-	behaviours/           what an event does, one rule and its state each, composed per row
-	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
-	                       line run, a route, a flock, a hold, a stop, a departure, a car's
-	                       driving, a barrier's posts, a van's take, ...; each saves and restores
-	                       its own state, which a streamed-out plan carries
-	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
-	warning.gd            the one warning clock: started, held, called off or run out, read against
-	                      its owner's clock — an event's notice, a door crossing, a badge up alone
-	checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
-	                      under a raised boom, the crossing's warning and the guard it sets on her;
-	                      what a door does to her it says as an intent the manager carries out
-	event_catalogue.gd    every event, defined in code
-	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
-	                      day, or the escape city's streets from its marble bag
-	day_events.gd         the day's planned rows read through one object: what each spoils, what
-	                      blocks the way, a pursuit; kept in step as the plan is built, never saved
-	calm_areas.gd         the day's calm areas as dawn sees them: their ground and calm tiles,
-	                      which she used this act, the one that does not count today
-	day_repairs.gd        the two repairs that keep a planned day winnable: one calm area clean,
-	                      and a route to it from home
-	walk_ground.gd        the walk kept open past everything standing on it: each street a
-	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
-	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
-	                       junction corners, squares and the main road; a pure function of the map
-	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the
-	                       run and the player; starts every walk the one way, `start_day(spec)`,
-	                       a day, the escape's city or its building; holds one reference on the `events`
-	                       atlas page; steps the live instances once a physics tick in a fixed
-	                       order (tells them where she is, steps them, then the catches and hard
-	                       fails); hands the world its events as one set of things that charge
-	                       her (`sources`); hands its work to the parts below,
-	                       all working over one `EventWorld` (event_world.gd)
-	day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
-	                       holds, seals, rows and doors; the escape city's seals and rows on its
-	                       chains; the building's own placements
-	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
-	                       its state out and back; the repeats, the masts, a finished plan spent
-	event_spawner.gd      every instance made, with its scar, its body and the bang outside;
-	                       what a finished row leaves; the rows summoned on sight; the pelican bag,
-	                       and the pelican's first landing on her
-	warning_board.gd      the screen-edge badges up for something not in the world yet, and the
-	                       mark over her head
-	events_ahead.gd       what the director puts in front of her while she walks: sited on her
-	                       way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
-	                       a task's mast or row placed after dawn, the fire lit at dusk
-	event_director.gd     sites what the day budgeted and did not place, from her own walk:
-	                       the moments that cross her line, and day 3's fire
-	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
-	                       second: where its badge points, fixed against her, and where the
-	                       thing is then placed just out of sight on its own ground
+	data/                 what a row is written in: the catalogue, the row, the draft, the declared density
+	                      table and the settings of a row's parts
+	  event_def.gd          authored event data
+	  event_draft.gd        the one way a row is written: one statement per setting and part, then build()
+	  event_scenery_parts.gd registered bounds and atlas names for the source-art spans of pipe and crash scenery
+	  event_catalogue.gd    every event, defined in code
+	  placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
+	  placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
+	                        park or a square, and which tile types each holds for a row to stand on
+	  placement_density.gd  the declared table: the events a bag holds for every hundred draw
+	                        locations, by view, kind of ground and act, and the moments an act owes her
+	  parts/                the settings a row holds as values (private fields, a factory, refinements
+	                        that each return a new value):
+	    notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
+	    pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
+	    hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
+	    charger_timing.gd     how a run plays every charger's warning and notice radius (`--chargers`)
+	    day_switch.gd         how a row is sited and noticed from the day after its first appearance
+	    on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	    sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
+	    aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
+	    vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
+	    abduction_spec.gd     the unmarked van's take of a bystander
+	    lethal_spec.gd        whether contact ends her day and the reach it is measured from
+	    hold_spec.gd          whether a row holds her when she comes to it: its seconds, its reach, whether it holds again
+	    warning_spec.gd       what a row does before it acts: its telegraph, whether it holds still, whether its coming is announced, whether it is warned first
+	    route_spec.gd         how a row travels: whether it moves, how fast, how its route is built and how long, whether it paces a beat, whether it parks where it arrives
+	    flock_spec.gd         how many creatures a row is and how far they spread
+	    look_spec.gd          how a row is drawn: its picture, its warning picture, its shadow, its lead, whether its hold hides it, the pelican, its guards' sides
+	model/                the day's plans and everything that builds them: the scheduler, the draws,
+	                      the locations, the grounds, the street rules, the plan and the save of a live event
+	  event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, the escape
+	                        city's as well; a row's role, the walk's ground and the view bags
+	  dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
+	                        builds once, the corridor, the day's events, locations, ground and rules;
+	                        handed to every phase, and what a phase asks it to record or judge: a fixed
+	                        part's location, a body off the routes
+	  event_plan.gd         one placed event's row, position, role and path: what the manager needs to
+	                        spawn one instance; told when its live event enters and leaves the world
+	  event_save.gd         what a live event was in the middle of when it left the world: its age,
+	                        distance, notice and each behaviour's state, one value its plan carries
+	  where_it_stands.gd    where a plan's live event stands now (`WhereItStands`): there or not, where,
+	                        facing which way, over or not; the plan asks it without naming the event
+	  plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along
+	                        the street, room among placed plans, where its body stands; handed the map
+	                        and what it asks (what stops a row, where a body stands, the room)
+	  row_ground.gd         which tiles a row may stand on today and how many times over each is
+	                        offered: one object a walk, made at dawn and handed to every placement
+	                        that asks, then to the walk; handed the map, the corridor, the
+	                        home-street rule, the weights and which wall is one by cost, and answers the
+	                        weights it was made with
+	  day_events.gd         the day's planned rows read through one object: what each spoils, a
+	                        pursuit; kept in step as the plan is built, never saved
+	  calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used
+	                        this act, the one that does not count today
+	  walk_events.gd        the walk's plans read through one object once it has started: the plans
+	                        in the order they stream, everything but one, what stands in an area, the
+	                        doors, the calm areas, the reach, the day's locations, its ground and its
+	                        units' draw
+	  day_reach.gd          where she can get to from home: the ground the walk's plan shuts and the
+	                        flood over it, made as the walk starts and told what each unit draws; a
+	                        shortest walk from home to a tile; and the walk her paths take within a
+	                        circle, the measure of close by
+	  way_confirmation.gd   whether she can be sent to a place, by where it stands: inside the ground
+	                        drawn round her as it is, beyond it once the units along a way from home
+	                        have drawn and a way stands that no undrawn unit lies near
+	  walk_ground.gd        the walk kept open past everything standing on it: each street a
+	                        sidewalk, the walk joined — the rule a spec keeping its walk open asks
+	  body_stance.gd        how a body built at a point stands on its street, derived once and handed
+	                        round: where, which way it lies, the side a vehicle shows, and its
+	                        pieces laid out there, the one layout the walk, the record, the live body
+	                        and its look and the rig ask
+	  standing_piece.gd     one solid piece of a body where it stands: its middle, shape and axis
+	  day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
+	                        lots, junction boxes), laid out at dawn and handed round: each one's view,
+	                        what a fixed part holds, what is taken or drawn,
+	                        and the open section of a view nearest along her paths; for a walk with no
+	                        corridor, the streets the walk names and nothing beyond them
+	  street_locations.gd   one street's locations: three sections along it, two sidewalk locations
+	                        in each, a section taken whole by an event that spans the street
+	  location.gd           one location: its street, section, tiles, view, what stands on it and the
+	                        beat her walk stood there, the whole it is part of and the run a route
+	                        starting in it may lie on
+	  placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
+	                        an alley, a park or a square (its kind of ground); its name, its rank and
+	                        its stream for the day, its view, the most permissive of its locations',
+	                        and the beats her walk stands on its locations
+	  unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
+	                        sections and half-filled ones, what share of a street (a section, a
+	                        location) a marble may still take
+	  day_units.gd          the day's units grouped from its locations, and which touch which: a shared
+	                        junction box, or a shared alley, park or square
+	  unit_bags.gd          the bag a unit draws from, answered by the walk: on a day, the fresh bag of
+	                        the fill `UnitFills` answers for the unit's view and kind of ground
+	  unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
+	                        every touching unit of lower rank, from the bag the walk's bags answer
+	                        for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
+	                        answers for its view and kind of ground), judged among the dawn's plans,
+	                        the touching units' draws and the beats her walk laid in the unit or a
+	                        touching one; a walk drawn whole is drawn at dawn in its units' order,
+	                        each among everything before it
+	  whole_walk_bag.gd     one bag every unit of a walk draws from, a refused marble left in it for the
+	                        next unit: the escape's
+	  unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
+	                        table's events per hundred as row marbles, the rows among themselves by
+	                        weight (their own, on the ground, for their role in the view), empty for
+	                        the rest; each worked out the first time a unit of it draws, kept for the
+	                        day; and each unit's fresh bag of its fill
+	  roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
+	                        toward the farthest from those placed, until every route tile has one close by
+	  scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
+	                        the row's role, offered the row and assigned what it took
+	  view_bag.gd           a bag of marbles drawn without putting back: a unit's, of its view's and
+	                        ground's fill, or a whole walk's; every row possible there as often as its
+	                        weight, and the empty event, only what the unit accepts
+	  marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
+	                        out again largest first as each is added, what the room left or the
+	                        layout cannot hold left out, at most one of a row in the unit
+	                        (the designer's proposal, not asked for)
+	  location_ground.gd    what the dawn draw and her walk's siting ask of the day: a row's event at a
+	                        location if valid among the plans it is handed (on a tile of the draw's
+	                        choosing or a tile the siting brings), the location's own weight; the
+	                        day's own is `RuledLocationGround`
+	  ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
+	                        fits and the day's rules leave it valid among the plans it is handed, the
+	                        location's weight; handed the walk's ground and the bodies the day stands,
+	                        and its two settings: the first allowed tile or the roomiest, and a route
+	                        kept on its location's run
+	  location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
+	                        ground on the day, and the candidate built on one
+	  street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
+	                        may stand, given what the walk placed and what stands round it
+	  street_rules/         one file per rule: the unused calm, a door's clear ground, her line from a
+	                        route's junction box onto the sidewalks she walks, her walked sidewalk, a
+	                        pacing beat's opening, a route's ground off the streets kept free of
+	                        bodies and of cost, one sidewalk of a street of her routes kept open
+	                        past its bodies, and the escape's one notice at a time and its walk kept
+	                        open
+	  street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
+	                        where one refuses, else the room round it
+	  roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
+	                        if valid, the route tiles one is close by, standing one; the day's own is
+	                        `RuledRoadblockGround`
+	  dawn_phases/          the dawn's phases, one class each with run(context), handed the dawn's
+	                        context: the ambient rows, the scars, the masts, the wall's bodies, the calm
+	                        area kept clean, the roadblocks, the scripted rows, the one-shots, the park
+	                        spoilers, the moments, the dawn draw (prepared, each unit drawn as she
+	                        walks), the run lesson, the roadblock count; and the roadblock phase's
+	                        ruled ground
+	  mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
+	                         junction corners, squares and the main road; a pure function of the map
+	simulation/           the live event and what runs it: the manager, the spawner, streaming, the
+	                      director, the warnings, the behaviours and the looks
+	  way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
+	                        junction box to junction box by the walk's through roads, a walker
+	                        straight on; made once a walk and handed to the director
+	  event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
+	                        box it draws, all it can put on the screen, its solid footprint and its
+	                        spine, the roadblock guard's post, a warning's picture, its hold's hiding
+	  event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
+	  event_instance.gd     runtime node: position, its phase (one `_transition()`), telegraph,
+	                         its field (`field_at()`), and the behaviours it is composed of, stepped
+	                         in order on its manager's physics tick (`step()`: proposed, checked, then
+	                         committed, a car's by its own checks); drawn by its look,
+	                         which each drawn frame redraws it if its picture changed, interpolated
+	                         between ticks; its excitement is a composed `EventExcitement` and
+	                         its body a composed `EventBody`
+	  event_body.gd         what a live event is on the ground (`EventBody`): its collision body,
+	                         the tiles it is recorded on, a boom's body following its arm; handed
+	                         its row, how it stands on its street (`BodyStance`), where she is and
+	                         its gate's boom state, asked by its event and told what happens to it
+	  event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
+	                         map and navigator, where she is, the world it is drawn in, its drawer,
+	                         the drawn view its looks are gated by, its timing sink, its trace, its
+	                         atlas, the car's lights and where a protest points; built once where the
+	                         world is (`SimulationBuilder`), handed to the manager as it is made and
+	                         to every live event's one `EventInstance.setup()` call, which takes the
+	                         shared boom state last
+	  event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
+	                         present rate cached on its age, the walls it does not pass, its live
+	                         course and rate for the projection, whether that course is lethal
+	  where_she_is.gd       where she is this tick (`WhereSheIs`): her place, her pram's, the
+	                         camera's view, whether she runs, whether the baby is awake, whether a
+	                         door holds her; told once a tick by the manager, handed to every live
+	                         event, which hands it on to its behaviours and its excitement
+	  event_sources.gd      a day's live events as one set of things that charge her
+	                         (`EventSources`): the door's toll alone inside a held door, a region
+	                         boundary's structures as their strongest
+	  views/                how an event looks, asked of the event and, in the family looks,
+	                         still partly read off its public state: `EventPictures` names
+	                         every picture (each a region of the baked `events` page) and the
+	                         tables that pick one; `EventLooks.for_row()` gives each row the look
+	                         that draws its family (a figure, a vehicle, a pursuer, a spread, a
+	                         rank, the roadblock, a fire, the checkpoint kit, the flock), handed
+	                         its event, its look part, its body part and its drawer (the van's
+	                         look its abduction part) as it is made, which holds the
+	                         redraw gate, the caret and the slices a long picture is drawn in;
+	                         every picture a look draws goes through one `EventDrawer`
+	                         (`views/event_drawer.gd`), which the manager builds over its atlas
+	                         and its world hands every instance in its surroundings
+	                         (`EventSurroundings.drawer()`) as `setup()` hands it to the look
+	  behaviours/           what an event does, one rule and its state each, composed per row
+	                         by `EventBehaviours.compose()` from the row's data: a pursuit, a
+	                         line run, a route, a flock, a hold, a stop, a departure, a car's
+	                         driving, a barrier's posts, a van's take, ...; each saves and restores
+	                         its own state, which a streamed-out plan carries; each is handed what
+	                         never changes as it is composed and asks its event what changes through
+	                         the event's narrow view of itself (`EventInstance.Figure`); none holds
+	                         its event
+	  charge_record.gd      a charger's warning, charge and the one way it ended, as counted
+	  warning.gd            the one warning clock: started, held, called off or run out, read against
+	                        its owner's clock — an event's notice, a door crossing, a badge up alone
+	  checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
+	                        under a raised boom, the crossing's warning and the guard it sets on her;
+	                        what a door does to her it says as an intent the manager carries out
+	  event_manager.gd      a day's events as the rest of the game sees them: made over what its
+	                         events are set up in (`EventSurroundings`), then handed the run,
+	                         today's streets, the poster walls and the player; starts every walk
+	                         the one way, `start_day(spec)`, a day, the escape's city or its
+	                         building; holds one reference on the `events`
+	                         atlas page; steps the live instances once a physics tick in a fixed
+	                         order (tells them where she is, steps them, then the catches and hard
+	                         fails); hands the world its events as one set of things that charge
+	                         her (`sources`); hands its work to the parts below,
+	                         all working over one `EventWorld` (event_world.gd)
+	  day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
+	                         holds, seals, rows and doors, against the day's streets the manager is
+	                         handed (`DayStreets`), the rows planned on the dawn's context it makes;
+	                         the escape city's seals and rows on its chains; the building's own
+	                         placements
+	  event_streaming.gd    the day's plan and the live instance each plan streams in as, kept in its
+	                         own table with the clock of a plan that comes again, carrying its state
+	                         out and back; the repeats, the masts, a finished plan spent
+	  event_spawner.gd      every instance made, with its scar, its body and the bang outside;
+	                         what a row leaves where it goes off; the rows summoned on sight; the pelican bag,
+	                         and the pelican's first landing on her
+	  warning_board.gd      the screen-edge badges up for something not in the world yet, and the
+	                         mark over her head
+	  set_off_watch.gd      the places that set a row off, the masked man's on the escape's stairs and
+	                         the escape city's explosions: its warning put up as she reaches its
+	                         place, and it brought in there after it, out of her sight
+	  events_ahead.gd       what the director puts in front of her while she walks: sited on her
+	                         way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
+	                         a task's mast placed after dawn and day 13's roadblock put across a
+	                         route-adjacent section in place of what it held, the fire lit at dusk,
+	                         and the day's units drawn as she comes near them
+	  siting_maker.gd       makes a day's siting from the walk's rules and locations; what the events
+	                         ahead are handed, so a test hands in one that answers a stand-in
+	  walk_siting.gd        lays the rows her walk places: the free locations on her way, a unit's
+	                         that has not drawn first, the first the day's rules take; a row a mark
+	                         rigs straight ahead of her on her branch, just out of her view
+	  sited_ground.gd       the tiles a row her walk lays may stand on: a crew's fronts, a mast's
+	                         sites
+	  event_director.gd     sites what the day planned and did not place, from her own walk:
+	                         the moments that cross her line, and day 3's fire
+	  pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
+	                         second: where its badge points, fixed against her, and where the
+	                         thing is then placed just out of sight on its own ground
+	  event_reports.gd      what a day's events say happened, one teller a signal, on the bus the
+	                         manager is handed (`EventManager.use_bus()`); one for the world's life
+	                         (`EventWorld.reports()`), shared by every part, each live event and its
+	                         charge's record; with no bus handed in, it tells nobody
   day/
 	day_spec.gd           what one day is: its number, its words, its clock, its goal, who is on
 	                      its streets, what stands on them and how it is placed, and what losing
@@ -235,8 +443,20 @@ src/
 	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
 	                      spec: her front door, the building's service exit or the city's two
 	                      ways out is its goal; ticked by `main` on the walk's physics tick
+	escape_walk_in.gd     the escape's last steps: once the city section is won at the threshold of
+	                      the tunnel or the bridge, leads her on by herself into the tunnel's
+	                      opening or across the deck and says when she is in; `main` freezes the
+	                      world for it and raises the ending after
 	loss_cause.gd         what ended a hard-fail or crying day: pure rules over plain values, no
 	                      nodes and no globals; `DayDirector` reads the world and hands them in
+	day_world_source.gd   where the day director gets the world a spec is walked in: stands it and
+	                      answers it standing; `main` implements it, a test hands a fake
+	day_world.gd          a world standing for one spec: the scene, its events, her and the baby,
+	                      where she is put down, and the city's parts where it is one (its map,
+	                      streets, crowd and dressing), never the city but for an authored scene
+	world_simulation.gd   what moves or happens in one world, as `SimulationBuilder` stood it: a
+	                      node under the world (`Simulation`) holding its events, and in a city
+	                      the crowd, the poster walls and the blackout; hands her to them
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
 	                         perform step the moment the mark that unlocks it is touched; ticked
@@ -247,8 +467,7 @@ src/
 	happenings.gd           what the story puts in the street that is not a task (the neighbor's
 	                         mornings, day 10's raid, day 11's market, day 12's park, day 13's
 	                         column); owned by the director, built and ticked on its own over a
-	                         city (`setup()`, `start_day()`, `tick()`); `spine_x()` says where the main
-	                         road's middle is
+	                         city (`setup()`, `start_day()`, `tick()`)
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a
@@ -261,6 +480,8 @@ src/
 	                      and a section's start and end off the bus, holds the observer
 	goatcounter_outbox.gd the gate, the queue for events asked before `count.js` has loaded and the
 	                      page call that counts one (the VisitCounter hands its events to it)
+	goatcounter_platform.gd the answers the gate asks the machine: the web, a debug build and
+	                      whether the page's `count.js` is there (`main` hands the engine's)
 	telemetry_shots.gd    the day's shot allowance, the spacing and the run-wide picture counter
 	                      that Telemetry asks before it photographs
 	telemetry_page.gd     whether a page's query is read, and whether it asks for the log
@@ -272,12 +493,13 @@ src/
 	world_map.gd          the one map interface the city's map and the building's implement and
 	                      everything in a world is handed: tile conversions, passability, the
 	                      line walk, the wall's depth, the blocked record, the street questions,
-	                      the navigator, adding to its world, what its ground does to her walk;
+	                      what its ground does to her walk (`slope_dir_at()`); it names nothing of
+	                      the world, which hands out the navigator and the draw layers;
 	                      open ground (`open_ground()`) for a rig with no world
 	world_context.gd      the only questions the baby may ask the world (how loud it is here: the
 	                      answer of the sets of sources it is handed), adding a node to the
-	                      world on a draw layer (`add_entity()`), and what its ground does to her
-	                      each frame and how it shows a bang outside
+	                      world on a draw layer (`add_entity()`), what its ground does to her
+	                      each frame (`process_player()`) and how it shows a bang outside
 	excitement_source.gd  one thing that charges her (`ExcitementSource`), composed by an event and
 	                      a crowd body alike: the ledger of what it landed and its window, its first
 	                      landing, the walls, what she is doing, the cached present rate, the
@@ -314,16 +536,23 @@ src/
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a
-	                      city away; handed to every mover by whoever builds it
+	                      city away; holds nothing but its map, so whoever builds a world builds
+	                      one over it (`City.build()`, `InteriorScene.build()`) and hands it
+	                      to every mover
 	walk_field.gd         the walking-distance sweep over a map's ground, out from the places it is
 	                      begun from, a slice a frame: the red arrow's "closest by walking" and
 	                      the chase way's walk to her
 	chase_way.gd          the way a chaser follows to her round the buildings between them: a sweep
 	                      out from her kept fresh as she moves, read a step at a time; made by
-	                      `Navigator.way_to()`, held by day 13's task guard alone
+	                      `Navigator.way_to()`, held by day 13's task guard and the posted roadblock
+	                      guard
 	visible_view.gd       what she can see: the camera's view less the corners the joystick's
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
+	drawn_view.gd         what can be on the screen: the camera's view grown by two tiles, worked out
+	                      once a process frame, the one box every off-screen redraw gate asks,
+	                      made once by `main` and handed to the events' looks and the crowd's view
+	                      (`DrawnView`); the covered corners count, unlike `VisibleView`
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,
@@ -367,16 +596,25 @@ src/
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	texts.gd              `Texts`, every text the game shows on screen: one constant per line, grouped by
-	                      screen; callers read `Texts.<NAME>`, and tests/test_texts_catalogue.gd fails on a
+	                      screen, and the `{pause}` and `{run}` tokens `HelpText` draws as a button's symbol;
+	                      callers read `Texts.<NAME>`, and tests/test_texts_catalogue.gd fails on a
 	                      quoted sentence anywhere else under src/
 	meter_bar.gd
 	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home
+	edge_badges.gd        the badges up at the screen edge as the run log reads them (`EdgeBadges`, on the
+	                      model's layer, below the observers and the view): the badge model extends it, and
+	                      `main` hands the edge's to the run log, which may not name the view
 	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
 	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
+	blast_light.gd        the light of the bombs over the escape city: the city's light lifted by
+	                      each explosion's flash and the far ones between, her view shaken by a near one
+	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, no second
+	                      holding more than three flashes
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
-	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
+	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on
+	                      the world's layer, beside the excitement source that holds its rim)
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run; renders a
 	                      `SummaryModel`
@@ -416,7 +654,8 @@ src/
 	                       moment she holds still again, reusing AutoScreenshot's own capture
 	dev_flags.gd          the parser behind RunConfig, and the flag manifest the shell tools read
 	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters against the
-	                       live City, handed the values, testable without booting main
+	                       city's map, events and streets, handed the values, testable without
+	                       booting main
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
 	                       ordinary input path; presses an escape brief's continue as a key would
@@ -453,7 +692,7 @@ art/                      the authoring pictures, behind a .gdignore: the engine
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 assets/                   what the engine still reads at runtime, and only that
-  shaders/                the excitement halo's silhouette rim and the shared south-water ripple;
+  shaders/                the excitement halo's silhouette rim and the south water's Voronoi lines;
                           both boot paths issue real transparent canvas draws before play because
                           Compatibility has no shader-precompile call
   atlases/membership.json which picture belongs on which atlas page, with each group's
@@ -485,9 +724,10 @@ tools/
   cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
-  check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and its
-                          list of the breaks that still stand
-  split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
+  check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and the
+                          place a break that has to stand is listed
+  split-scenes.py         regenerate or check the static and moving SVG spans of the pipe and
+                          crash scenes and the busker, café-sitter and poster-crew figures,
                           runtime registration and atlas membership; evidence metadata is an
                           explicit output rather than an ordinary regeneration side effect
   run.sh                  play; rebuilds the import cache first when a pull left it stale
@@ -510,28 +750,31 @@ Every file under `src/` sits in one layer, and a layer names only its own and th
 catalogue, `Tuning`, `RunConfig`, the specs, `Texts`, the art's pages, the value types rows are
 written in), **the domain model** (the map and its interface, generation, routes, closures, the
 run's sub-states, the building's plan), **the world** (the navigator, the world's context, the draw
-layers, siting, and the scene nodes that draw the city's and the building's ground and furniture),
+layers, siting, the scene nodes that draw the city's and the building's ground and furniture, and the
+rim a body draws round itself, `EntityHalo` and `SourceRim`),
 **simulation** (her, the baby, the crowd, the events, the resistance, each with the looks it draws
 itself by), **run flow** (the day's director and controller, the screens' order), **observers** (the
 run log, GoatCounter, the save, the developer's readouts) and **the view** (the HUD, the screens, the
-badges, the halo, the controls), **siblings at one level** that both read from the run flow and the
+badges, the halo's lighting, the controls), **siblings at one level** that both read from the run flow and the
 simulation below and neither names the other (the player's, inbox #904 in freckled-moose), and **the composition
 root** (`main.gd` and the developer's rigs). The map's lookup (`WorldMap` and its records) is with
 the city maps in the domain model, as the player decided (inbox #904 in freckled-moose).
 The world and simulation are also handed what they read, never fetching it through a group, an
 autoload or a static that holds state.
 
-`tools/layer_map.py` is the one place that says which folder and which file is in which layer, and
-lists by file every break that still stands, each with its reason and, where a file uses the name
-more than once, how many times; `tools/check_layers.py` holds the code to it in CI and fails on a
-new break (a further use of a listed name included) and on a listed one that is gone. Besides group
+`tools/layer_map.py` is the one place that says which folder and which file is in which layer. No
+break of it stands; one that has to is listed there by file with its reason and, where a file uses
+the name more than once, how many times, and is declared with the same reason in
+**designing-classes**, in the pull request that adds it. `tools/check_layers.py` holds the code to
+the map in CI and fails on a new break (a further use of a listed name included) and on a listed
+one that is gone. Besides group
 lookups, autoloads and stateful statics, the world and simulation also fetch nothing by an absolute
 node path, from the root or as the current scene.
 
 ### `GameEnums`
 
 An autoload's name cannot also be a `class_name`, so the enums that signals and exports
-need to annotate (`BabyState`, `DayResult`, `Ending`, `EventKind`, `TileType`, `District`)
+need to annotate (`BabyState`, `DayResult`, `Ending`, `EventKind`, `TileType`)
 live in `src/game_enums.gd` rather than on an autoload.
 
 ### Verifying visuals
@@ -546,18 +789,19 @@ quits.
 **The run's configuration is resolved at each boot, and handed out from `main`.**
 `RunConfig.at_boot()` (`src/run_config.gd`) reads the command line and, on the web, the page's
 query (`window.location.search`, the one read of the address bar the game makes) and keeps every
-answer in an immutable `RunConfig`: a later write is refused with a warning and its
-arrays are read-only. `main` is the one place it is read, at each boot (no static holds it; a scene reload parses the same
+answer in an immutable `RunConfig`: its fields are private, written by `parse()` alone and read
+through one method each, and the arrays it hands out are read-only. `main` is the one place it is read, at each boot (no static holds it; a scene reload parses the same
 words again, and an immutable config makes that the same configuration; a malformed flag's warning prints again at each boot). It hands the config itself to the
 observers — `Telemetry.configure()`, `GameSave.configure()`, `VisitCounter.configure()` — and to
 the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and hands the world, the
 day and the baby the plain values they need out of it: a day's length
 (`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
 resistance and the run log, and an escape section's length (`RunConfig.escape_section_length()`)
-to its `DaySpec`; `DayController.invincible` and `Baby.excitement_frozen`; and, on `City` before
-`build()`, the ground mode,
-the frame lock, the four `--skip` words, the forced blackout, `--pelican` and `--force`, which the
-city passes to the part each belongs to. Nothing in the simulation reads a flag, the command line
+to its `DaySpec`; `DayController.set_invincible()` and the baby's frozen meter
+(`Baby.freeze_excitement()`); on `City` before `build()`, the ground mode, the frame lock and
+`--skip shadows`, which are the city's own drawing; and to the simulation's builder
+(`SimulationBuilder`), the other three `--skip` words, the forced blackout, `--pelican` and
+`--force`, which it hands the part each belongs to as it stands it. Nothing in the simulation reads a flag, the command line
 or the address bar, and nothing asks for them every frame. A test builds the run it wants with
 `RunConfig.parse(words, query, debug_build)` and hands it in (`main.configure()`), or hands a
 component its plain value directly.
@@ -578,22 +822,24 @@ onto a building part's name, with the command line taken out of it; the real `ma
 **A named subset of that same list also answers a release page's own query string, behind
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
-invincible, etc.) so debugging the live build is easier".)* `RunConfig.live_debug` — a debug
-build, or `?debug=1` (`readout_requested`) — is the gate: `?day=`, `?invincible=1`, `?layers=`,
-`?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-`?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
+invincible, etc.) so debugging the live build is easier".)* `RunConfig.is_live_debug()` — a debug
+build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
+`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?chargers=`, `?daylength=`,
+`?ending=`/`?blackout=1`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind
 the debug build alone, with no release-page door at all. `GameSave._uses_save()` refuses the
 player's own save the moment a release page's query actually used one of the flags above
-(`RunConfig.web_debug_flag_used`), the same way it already refuses a debug build's own argv.
+(`RunConfig.used_a_web_debug_flag()`), the same way it already refuses a debug build's own argv.
 
-`src/dev/auto_screenshot.gd` parses `--screenshot` and the flags nested under it (`--after`,
-`--walk`, `--smooth-walk`, `--flee`, `--press`, `--tap`) itself, from the gated words the config
-holds (`RunConfig.active_args`, empty on a release build), so none of it has a release-page door.
+`src/dev/auto_screenshot.gd` drives `--screenshot` and the flags nested under it. It takes the
+picture's path and `--after`'s wait from the configuration (`RunConfig.screenshot_path()`,
+`RunConfig.rig_after()`, worked out once for every rig that reads them) and parses `--walk`,
+`--smooth-walk`, `--flee`, `--press` and `--tap` itself, from the gated words the config holds
+(`RunConfig.dev_flag_words()`, empty on a release build), so none of it has a release-page door.
 One rig list decides what a rig is — `DevFlags`' `RIG_FLAGS`, `--tap` included, plus a movie
-recording and a scripted recipe (`RunConfig.is_rig`) — for the window lockdown, the wall-clock
+recording and a scripted recipe (`RunConfig.runs_as_a_rig()`) — for the window lockdown, the wall-clock
 quit and whether the run log is a playtest; `RigLock` (`src/dev/rig_lock.gd`) applies the
 lockdown and the quit from inside the game. `--no-telemetry`
 is not part of this: it is a documented player-facing opt-out (see docs/TELEMETRY.md), not
@@ -610,11 +856,12 @@ state — a field's inner and outer falloff boundary, the ground extent a shadow
 every collision body's own outline — read from `EventInstance`, `CrowdAgent`, `Building`, `Prop`
 and `Stroller` rather than drawn by any of them. `RouteLines` (`src/dev/route_lines.gd`), a sibling
 node rather than a fourth case on that class, draws a fourth: the day's own `RouteTree` as one
-purple polyline per route. Each of those four, plus the readout, is a numbered layer (`1`-`5`, `4`
-is the readout) `DebugReadout._unhandled_input()` toggles on raw keycodes rather than an input-map
+purple polyline per route, and `EventRouteLines`, a third such node, draws every live event's own
+route as a hot-pink polyline (layer `7`). Each of those, plus the readout and the frame graph, is a
+numbered layer (`1`-`7`, `4` is the readout) `DebugReadout._unhandled_input()` toggles on raw keycodes rather than an input-map
 action, so `project.godot` carries no binding a release build could ever reach. `DevFlags.layers_override()`
 (`--layers 1,3` or the page's own `?layers=1,3,5`, also open to a release page behind `?debug=1`)
-sets which of the four non-readout layers start on; the readout defaults on regardless, so an
+sets which of the non-readout layers start on; the readout defaults on regardless, so an
 unflagged debug run looks exactly as it always has.
 See docs/TELEMETRY.md, "The debug view", for the key mapping and what each layer draws.
 
@@ -628,8 +875,8 @@ release one — the same axis `Telemetry.begin_run()` already uses to stay silen
 and their `Q` handler always agree, and so a test — never itself a web export — can set the member
 and drive both platform shapes; `main` hands each screen its answer (`use_platform()`) before it
 enters the tree. A debug build can preview the web shape without a real export: `--web`
-(`RunConfig.web_preview`, handed in as `QuitOption.available(config)`) forces the answer false, the
-same role `TouchInput`'s own `--touch` (`RunConfig.touch_forced`) plays for its platform fact;
+(`RunConfig.previews_the_web()`, handed in as `QuitOption.available(config)`) forces the answer false, the
+same role `TouchInput`'s own `--touch` (`RunConfig.forces_touch()`) plays for its platform fact;
 neither class reads the command line.
 
 ### Playing on a touch device
@@ -655,17 +902,17 @@ and `FOCUS_RIGHT`, each choosing its own side, and a `Symbol.TAP` disc midway be
 that lands anywhere else on the screen does nothing — and a direction key or `space` begins one in
 `Mode.TAP` instead, on the reasoning that a player pressing a key has told the screen nothing about
 a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode and side from
-`ControlsMode.from_word()` and `side_from_word()` over `RunConfig.controls_word` (the command
+`ControlsMode.from_word()` and `side_from_word()` over `RunConfig.controls_word()` (the command
 line's `--controls joystick|joystick-left|joystick-right|tap`, then the page's own `?controls=`,
 then `TAP`) before the title screen
 exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
 `main._on_title_start()` overrides both the moment a player actually presses a button. The side is
 never saved: it lasts until the title asks again. The day-14 hand-over to the escape and a run
 carried on to its checkpoint reload the scene and open no title, so `main._on_title_start()` keeps
-the title's answer on the `Sitting` (`controls_word`, in the words `--controls` takes, written by
+the title's answer on the `Sitting` (`keep_controls_word()`, read back by `controls_word()`, in the words `--controls` takes, written by
 `ControlsMode.word_for()`), and those boots' `_add_touch_controls()` take it instead of the
 configured word. The command-line door stays behind the debug build; the query door behind
-`RunConfig.live_debug`, so a release page's own `?debug=1&controls=` reaches it too
+`RunConfig.is_live_debug()`, so a release page's own `?debug=1&controls=` reaches it too
 (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags").
 
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
@@ -699,7 +946,7 @@ pause and summary screens use it
 for both hover and press after converting presented coordinates to design coordinates.
 The joystick dead zone and Run's half do not use this multiplier.
 The pause button shows only during a running day. `PauseScreen` and `DaySummary` also handle
-background presses through `TouchInput.is_press()`, so a press away from restart continues;
+background presses (a finger, or a left click on a device with no touch hardware), so a press away from restart continues;
 `TitleScreen` requires a press on one of its three mode buttons.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
@@ -736,21 +983,27 @@ file. The contracts that are about shared numbers rather than about a row (traff
 return patrols) are `tests/test_tuning_fairness.gd`'s checks, so an unfair number fails the suite.
 
 ### `EventBus`
-Global signal hub. Decouples systems that should not know about each other. Every signal is
-declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run state,
-events, bodies, resistance, the escape, presentation — read it directly for the current list and
-each signal's payload type; `event_telegraphed` and `event_activated` are deliberately untyped,
-since this autoload loads before `EventInstance`'s class does.
+Global signal hub. Decouples systems that should not know about each other. The observers and the
+view listen on the autoload. The baby is handed it rather than fetching it (`Baby.use_bus()`, which
+`main._make_player()` calls), and a baby handed none tells nobody. Every emitter in the world and
+the simulation is handed its bus the same way: the events through `EventManager.use_bus()` and the
+one `EventReports` (`event_reports.gd`) their parts share, the resistance through
+`ResistanceDirector.use_bus()`, which hands it on to its happenings and their park cordon, and the
+crowd, the poster walls and the blackout through `SimulationBuilder.use_bus()`. Every
+signal is declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run
+state, events, bodies, resistance, the escape, presentation — read it directly for the current
+list and each signal's payload type; `event_telegraphed` and `event_activated` are deliberately
+untyped, since this autoload loads before `EventInstance`'s class does.
 
 ### `Telemetry`
 The run log: one plain-text file per run, written as it happens. **Inert until
 `begin_run()`**, which only `RunSession.open()` calls — so the test suite, which never opens one
 unless a test boots the game, writes no files and pays nothing. It is an observer: `RunSession`
-writes the run flow's lines off the bus, `TelemetryObserver` the walk's, and game logic its own
+writes the run flow's lines off the run flow's signals and the bus, `TelemetryObserver` the walk's, and game logic its own
 account through the `RunTrace` it is handed — see docs/TELEMETRY.md, "Who writes it". `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
 ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, read from the query the run
-read at boot (`RunConfig.page_query`), since the deployed page has no command line, and honoured
+read at boot (`RunConfig.page_query_string()`), since the deployed page has no command line, and honoured
 on a debug export only. See `docs/TELEMETRY.md` for the format and what belongs in it.
 
 The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no
@@ -768,13 +1021,14 @@ it**, together with its dawn copy and its save shape; starting a run, the dawn p
 day's give-back, the snapshot and the save all walk the list, so a part on the list is walked by every one
 of them and no part can be missed in one; within a part, each field is written in each of its methods,
 and `tests/test_run_state.gd` checks that every field reaches its data and that a lost day gives back
-what was photographed. The parts are `RunHeader` (`run_seed`, `day`, `nerves`, the
+what was photographed. The parts are `RunHeader` (the seed, the day, the nerves, the
 ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shots, scars, block
 arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
 save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
-beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
-(`run.header.day`, `run.attempt_spend.scars`); code written against a part takes it as
-an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
+beside it with a default for absence, or under a key of its own. Readers take the part that owns a
+fact through the run's method and ask the part through its own (`run.header().day()`,
+`run.attempt_spend().scars()`), since every part's fields are private; code written against a part
+takes it as an argument. **The `Sitting` is where the run lives** (`Sitting.take_the_run()`): the sitting outlives the
 scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and a
 held restart hands it a fresh run (`main._restart_run()`), which the boot after starts
 (`start_run()`). `main`, the composition root, takes it off the sitting once a boot and hands it,
@@ -798,7 +1052,7 @@ puts no run back between suites; the visit counter, under the sitting, holds onl
 `Sitting` holds it by reference, it goes when its last holder lets it go, and it reaches nothing in
 the scene tree.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
-builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
+builds over the parts and exposes as `run.calendar()`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day
 a win moves on to), the mode and the checkpoint a normal run goes back to, where she settled
 (`settled_this_act()`), and the day's random streams (`day_rng()`). `DayDirector` is handed it, with
@@ -824,27 +1078,31 @@ checkpoint, the escape handed over, resumed or from the flag). **A scene recipe 
 of it** (`author(scene)`, an `AuthoredScene`, which `SceneRecipeRuntime` extends and a test hands
 bare): every continue plays the authored scene again, a lost escape section is the scene's to
 retry, a won last day hands over to nothing, the city is built on the scene's own map
-(`authored_map()`), the escape's city plans no finale of its own (`plans_the_finale()`), and the HUD
-says none of the control lessons the scene has learned (`lessons_learned()`, handed to
-`HUD.configure()`). `main` keeps no recipe of its own: every place an authored scene differs asks
-the flow. It starts each day: `start_day(director, spec)` announces it, has the director build it —
-`DayDirector.start_day()` for the game's own run, `start_authored_day()` for an authored scene,
-whose setup the scene installs — and announces it planned. It announces each day or section to the
-observers that draw it — `day_started(spec)` before anything is built and `day_planned(spec)` once
-it is placed — and `main` connects the developer readout (the day's line and its routes), the HUD
-(whether its clock reads to the hundredth) and the route rig (its targets for the day) to them; an
-authored scene's day is never planned.
+(`authored_map()`), the scene installs its own walk in place of the plan (the day director is handed
+it), and the HUD says none of the control lessons the scene has learned (`lessons_learned()`,
+handed to `HUD.configure()`). `main` keeps no recipe of its own: every place an authored scene
+differs asks the flow. It starts every walk, a day or a section of the escape alike:
+`start(director, spec, restarted)` has the director start it (`DayDirector.start()`, the one
+start), which tells it when the walk has begun and when its world stands, and announces it planned
+once the director returns. It is where every observer and the view hear a walk begin, the same way
+for every spec: `day_started(spec)` once the dawn is photographed and before the world stands,
+`world_stood(spec, world, restarted)` as the world stands and before anything is placed in it, and
+`day_planned(spec, world)` once it is placed. `main` connects the HUD (its clock's format, its
+lessons, yesterday's contact cleared), the page's counter (`VisitCounter`, a day's `began`) and the
+developer readout's day line to `day_started`; the run log (`RunSession`) to `world_stood` and
+`day_planned`; and the readout's routes and the route rig to `day_planned`. An authored scene's walk
+is installed rather than planned, and never announced planned.
 
 ### `Sitting`
 Not an autoload: a plain `Node` (`src/autoload/sitting.gd`, on the model's layer) that holds what one
 sitting keeps across the scene reloads a run makes, the held restart, the day-14 hand-over to the
 escape, a run carried on to its checkpoint and a recipe's lost section played again, since
 `reload_current_scene()` frees every node `main` built. It holds these facts and is one home: the run
-carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
-held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
-desktop frame record's one file (`frame_record_path`), the run (`run`, a `RunState`, which `main`
-takes off it once a boot, `take_the_run()` starting one of the sitting's own on its first boot), the ground's composition recipe, read once
-per process (`ground_recipe`), the baked atlas pages and which of them are held (`atlas`, the one
+carried over (`carries_the_run_over()`), the title's answer (`controls_word()`), the instant of the last
+held restart, which the title's restart guard measures a press against (`restart_requested_at_msec()`), the
+desktop frame record's one file (`frame_record_file()`), the run (a `RunState`, which `main`
+takes off it once a boot, `take_the_run()` starting one of the sitting's own on its first boot, and hands a fresh one on a held restart, `use_run()`), the ground's composition recipe, read once
+per process (`ground_recipe()`), the baked atlas pages and which of them are held (`atlas()`, the one
 `AtlasLibrary`, so the pages a boot holds for the process and its loading moments outlive the
 reload), the save symbol a reload carries, which
 `SaveIndicator.outlive_the_scene()` reparents under it, and the `GameSave`, a child `main` makes
@@ -852,15 +1110,14 @@ and finds there (the sitting names neither: it is on the model's layer, they are
 takes the one the boot before parked at the tree's root, or builds one as its own child on the
 sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
 and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, its
-run to every reader it builds (see "`RunState`"), its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`), and its library
+run to every reader it builds (see "`RunState`"), its recipe to every city it builds (`main._new_city()` calls `City.use_ground_recipe()`), and its library
 to everything that acquires a group or draws a region (the city, which hands it on to its
 furniture, crowd and events; her; the escape's building, its events and its steam grates; the
 screens, which hand it to their buttons and lines; the touch controls; the badge and the save
 symbol);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
-boot before parked there, and hands a `main` it drives off the tree one directly
-(`main.use_sitting()`), holding the run the test built where the test hands one (`Sitting.run`).
+boot before parked there, holding the run the test built where the test hands one (`Sitting.use_run()`).
 
 ### `SummaryModel`
 Not an autoload: a pure `RefCounted` (`src/run/summary_model.gd`, the domain model) saying what one
@@ -872,24 +1129,45 @@ continue. It is also the one place the run's standing (the day of fourteen, the 
 and the resistance tally are worded; the pause screen reads `standing_line()`.
 
 ### `DayDirector`
-Not an autoload: a `RefCounted` that `main` builds for the world as it stands when a day starts or
-ends, and a test builds over whatever world it has. `start_day(spec)` is a day's construction in
-its one order — the dawn photograph, the city's closures, the events, the resistance's mark, the
-crowd, the player and the baby, the clock, then `day_planned` — drawing every random stream from the
-run's seed; `finish_day(result)` ends it: the won last night's fire, the cause (`LossCause`), the
-charges still running closed, `day_ended`, and for an ordinary day the calendar's move. It returns a
-`DayEnd`; the save and the summary screen are `main`'s. `start_day()` requires the city (whose
-events it plans), the resistance, the player, the baby and the clock; `finish_day()` requires only
-the clock and the run, since the escape's building has no city, crowd or resistance, and reads the
-events, city, player and baby where there are some. It calls no observer: the readout, the HUD and
-the route rig hear the day from `RunFlow`. It is handed the run, a `RunState`, rather than reading it off a global. `start_authored_day(spec, scene)`
-starts an authored scene's day from the same components, the scene installing its own setup.
+Not an autoload: a `RefCounted` (`src/run/day_director.gd`, the run flow) that `main` builds for the
+world as it stands when a walk starts or ends, and a test builds over whatever world it has.
+**`start(spec, started, stood)` is the one start**, for the fourteen days, an authored scene's day
+and both sections of the escape, in one order: the spec to the clock; the dawn photograph where the
+spec takes one; `started` called; the spec's world asked for, and `stood` called with it; the city
+dressed for the day where the world
+is one (its repaint and closures, the act, the night); the events planned (`EventManager.start_day()`)
+and, in a city, the street trees refreshed and a handed-in walk tinted; the resistance's day where
+the spec runs it, or an authored scene installing itself instead; the events streamed round her
+start, the crowd at the spec's density, her and the baby put down, the baby asleep where the spec
+says so; and the clock — drawing every random stream from the run's seed. `started` and `stood` are
+the run flow's, which announces the walk at those two moments (`RunFlow.day_started`,
+`world_stood`) and announces it planned once `start()` returns. What
+differs between walks is the spec's settings (`DaySpec.photographs_the_dawn()`,
+`runs_the_resistance()`, `starts_with_the_baby_asleep()`, `start_point()` and the rest), never a
+question of which walk it is. The world comes from a `DayWorldSource` it is handed
+(`src/day/day_world_source.gd`, which `main` implements): asked to stand a spec's world, it answers
+a `DayWorld` (`src/day/day_world.gd`) — the map of the ground she walks, its events, her and the
+baby in it, where she is
+put down and facing which way, the city's parts where the world is one (its map, today's streets, its
+crowd, its poster walls and what dresses it for the day, `CityDressing`; an authored scene is handed
+the same world and installs itself into it), the
+walk's own random stream where it has one (the building's), and what the walk is won at in it: the
+map her front door is on for a walk home, the ways out of the city for the escape's. The director
+hands those on, the ways out to the spec and her and the home's map to the day's clock
+(`DayController.use_the_walk()`), so a source only stands a world. `finish_day(result)` ends it:
+the won last night's fire, the cause (`LossCause`), the charges still running closed, `day_ended`, and for an
+ordinary day the calendar's move. It returns a `DayEnd`; the save and the summary screen are
+`main`'s. `finish_day()` requires only the clock and the run, since the escape's building has no
+city, crowd or resistance, and reads the events, the crowd, player and baby where there are some. It
+calls no observer: every observer and the view hear the walk from `RunFlow`. It is handed
+the run's parts rather than reading them off a global.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and
 met — see docs/TELEMETRY.md, "The page counts visits" for the full event list. Only listens: every
-method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended` (which carries what
-ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
+method answers the run flow's `day_started` (a walk begun, its day read off the spec; `main` hands
+it each boot's flow, `listen_to_the_flow()`) or an `EventBus` signal — `run_begun`, `day_ended`
+(which carries what ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
 `resistance_step_completed`/`_step_failed`/`_mark_seen`, `event_sighted`, `event_lit_unmet`,
 `city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_cut_short`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
 `player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,
@@ -897,7 +1175,7 @@ ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_c
 with `?debug=1` unasked and `window.goatcounter.count` actually present — `GoatCounterOutbox.may_ever_send()` and `send()`'s `present` are the gate, and
 `tests/test_visit_counter.gd` drives its truth table through them and the event names through a bus
 the counter is handed with `listen(bus)`, and what reaches the page through the outbox it is handed
-with `send_through(outbox)`.
+with `send_through(outbox, platform)`.
 
 ## WorldMap
 
@@ -906,17 +1184,21 @@ The city and the building implement one map interface, `WorldMap` (`src/world/wo
 handed its map by whoever builds it, never fetches it — the event manager and each event, the
 navigator, the stroller and the run log — and asks it every question about the ground: which tile a
 point is on, whether a mover may stand there (`passable()`), whether a line is clear
-(`clear_line()`), whether a wall keeps a field from her (`wall_between()`), a way round
-(`navigator()`), the list every mover's move for the tick stands on (`moves`, a `ProposedMoves`
+(`clear_line()`), whether a wall keeps a field from her (`wall_between()`), the list every mover's move for the tick stands on (`moves`, a `ProposedMoves`
 of `MoveProposal`s, each proposed, checked by its mover and then committed) and the pass over it a
-crowd body gives way through (`separation`, a `SeparationPass`), adding something to
-the world on a draw layer (`add_entity()`, through the world node that draws the map), what the ground does to her walk (`process_player()`, the building's
-doors; `slope_dir_at()`, its flights), and the street questions, which a map with no streets answers
+crowd body gives way through (`separation`, a `SeparationPass`), what the ground does to her walk
+(`slope_dir_at()`, the building's flights), and the street questions, which a map with no streets answers
 "no street here". The line walk, the wall's depth, the blocked record and the tile conversions are
 written once in `WorldMap`, over each map's own answer about its ground. A rig with no world stands
 an event on open ground (`WorldMap.open_ground()`), where nothing is walled and every way is
-straight; nothing asks whether it has a map. Which world a day spec is walked in is the run flow's
-choice (`main`), which hands that world's map down.
+straight; nothing asks whether it has a map. **The map names nothing of the world**: the way round
+is the navigator's (`Navigator`, over a map, which whoever builds a world builds and hands on: the
+city holds its own, `City.navigator()`, `SimulationBuilder` hands it to the events and the crowd and
+`main` to the resistance; the building holds its own, `InteriorScene.navigator()`, which `main` hands
+to the builder as it hands the city's), and what is drawn in the world is the world's
+(`WorldContext`, handed to the event manager in the surroundings it is made over,
+`EventSurroundings.drawn_in()`, which every event it makes is set up in). Which world a day spec
+is walked in is the run flow's choice (`main`), which hands that world's map down.
 
 ## WorldContext
 
@@ -926,13 +1208,16 @@ is the entire surface between the meters and the world. Whether a point is calm 
 the map's question (`CityMap.is_calm_zone()`), asked by the run log and the debug readout.
 The debug world answers with hand-placed test data; the generated
 city and the event manager answer for real. **No world sums its events itself**: it is handed the
-sets of things that charge her (`WorldContext.excitement_sources`, each an `ExcitementSources` in the
-world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars
+sets of things that charge her (`WorldContext.use_excitement_sources()`, by whoever stands its
+simulation, `SimulationBuilder`; each an `ExcitementSources` in the world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars
 (`CrowdSources`) — and `WorldContext.excitement_sources_at()` hands the baby every set's pairs, the
 door rule stated once (`ExcitementSources.all_at()`). The world names no event and no crowd, so it
 depends on nothing above it. `InteriorScene` (the escape's building) is a third implementor: its
 set is the day's own `EventManager`'s, run on the building's map, it has no crowd, and its basement
-gives no decay back. `main` hands her the world she walks
+gives no decay back. `WorldContext` is also the world's own service to what stands in it: the draw layers a node is
+added on (`add_entity()`), a bang from outside the walls (`bang_outside()`) and what its ground does
+to her each frame (`process_player()`, the building's doors and light), which the run flow asks of
+the world she walks. `main` hands her the world she walks
 (`Baby.set_world()`) each time it puts her into one. Adding an event type therefore never touches
 the meter code, and the meters can be unit-tested against a fake world.
 
@@ -1029,7 +1314,9 @@ one figure a slice, a wide scene one
   reconstructed from fixed seeds and current state on return. A building frees its separately
   parented roof objects and their rotor children on eviction, then restores their roof-foot
   placement in the shared entity layer on return. Props and closure markers retain
-  placement facts and release renderer commands. Shared atlas pages and ground composition stay
+  placement facts and release renderer commands. The residency asks each of them through the
+  `SceneryResidence` it is composed of, since a building, the home door and a scenery sprite
+  share no class below `Node2D`. Shared atlas pages and ground composition stay
   at loading moments. `SceneryGround.Mode`, set by `--ground-mode`, schedules an off-screen
   ground region inside the soft CPU budget, which each frame applies afresh to what the last
   one left: mode 1 prepares every needed region whole in its frame, as many as the
@@ -1038,10 +1325,11 @@ one figure a slice, a wide scene one
   internals each step, its incomplete regions separately owned until complete and paused
   between the load and retention boundaries. State edits and leaving retention cancel them.
   In every mode the safety guard completes a region synchronously. The camera's transformed viewport determines coverage, including rotation
-  and overview; lifecycle relocations prepare their destination before play. A city clock keeps
-  resident water surfaces in phase and restores returning roof animation phases.
+  and overview; lifecycle relocations prepare their destination before play. A city clock drives
+  the south water's one tile, which every resident water surface draws from, and restores
+  returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
-  assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
+  assembles that same lot out of 32px tiles — a front wall (the southern `Building.height()` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she
   walks on, which is not the same as keeping them off *her* — see the layer note above. A taller building therefore shows more wall and less roof, which is
   what an oblique view of a taller building should look like.
@@ -1074,7 +1362,10 @@ field with its value before and after (`tests/shared_state.gd`).
   exact building coverage, and route redundancy under street closures.
 - `test_power_station.gd` — the power station across a spread of seeds: exactly one, outside the
   home's region, its door a reasonable walk away on a real street, and reachable on its day only
-  through a region door with that day's walls, seals and closures in place.
+  through a region door with that day's walls, seals and closures in place; and the station's
+  hall lit only on the last night.
+- `test_precinct_posts.gd` — a generated map's precinct posts: every gap in a row narrower than her
+  body, and a post's tile closed to a pursuer's step, the walk field and the reachability grid.
 - `test_ground_floor.gd` — the ground floor of a multi-story building is shops or blank wall,
   never windows, except hers: fixtures per district plus a spread of generated cities, the
   `_build_windows()`/`_build_front()` RNG streams pinned unchanged, and `Building.
@@ -1082,9 +1373,24 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.
-- `test_event_manager.gd` — the manager against a real generated city: retirement,
-  successors, summed excitement. Its header gives the reason it builds one: an instance freed but
-  left in the list and a successor spawned but never tracked are invisible to a data-level test.
+- `test_event_manager.gd` — the manager over drawn streets, with plans of the case's own:
+  retirement, successors, summed excitement, streaming. Its header says which cases stand it on
+  the generated map (a day started through it) or in a city (the city's own dawn), and why: an
+  instance freed but left in the list and a successor spawned but never tracked are invisible to a
+  data-level test of one part, so the manager is real.
+- `test_event_manager_units.gd` — the manager over a generated map, the day's units drawn as she
+  comes near them: a unit draws before the streaming looks at its ground, a beat her walk lays
+  stands in a unit before it draws (the one case in a city, for the blank walls a crew pastes),
+  what the resistance swaps in or takes away draws the units round it first, and a day started
+  twice or walked two ways draws the same units. Its header gives the reason it plans a day on a
+  generated map: each rule is the order of two parts the manager owns.
+- `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
+  route tree, the locations and the judge: the nearest free location on her branch, a
+  unit's that has not drawn first (a location still open), takes a beat which the location then holds, a placed beat gives its
+  location back only once it has another, a row a mark rigs takes the nearest free location
+  straight ahead of her and out of her view, a mast near the mark and the fire lit at dusk take the
+  first location offered; and
+  `test_sited_ground.gd`, the tiles a row her walk lays may stand on.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —
   pushing every block to the end of its arc moves no walkable tile.
@@ -1096,7 +1402,8 @@ field with its value before and after (`tests/shared_state.gd`).
   accumulated street closures.
 - `test_masts.gd` — the loudspeaker masts: fixed sites from `Tuning.MAST_FIRST_DAY`, none
   reaching the doorstep or a calm interior, the field's own edge, the shared broadcast clock,
-  and silencing one or all for the rest of the day.
+  silencing one or all for the rest of the day, and a queued mast kept out of a planned lethal
+  field.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `booted_main.gd` — a helper the runner does not load, shared by the suites that boot the real
   `scenes/main.tscn`: it hands each boot a save at a scratch path, lets real frames pass until she
@@ -1113,9 +1420,9 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,
-  `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `crossing`, `replacement`,
-  `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the rig's circle) and
-  `reach_relocated` read the day's obstruction (`ResistanceReads.day_reachability()`) and
+  `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `sent_places`, `crossing`,
+  `replacement`, `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the
+  rig's circle), `reach_relocated` and `sent_places` read the day's obstruction (`ResistanceReads.day_reachability()`) and
   the way home over it from `ReachabilityGrid`, in `tests/resistance_reads.gd` with the red arrow's
   tip and what stands under it): `steps` (the step table, touch-completion, a
   task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
@@ -1126,16 +1433,23 @@ field with its value before and after (`tests/shared_state.gd`).
   guard set on her from off screen), `placement_kinds` (the four placement kinds a perform step
   may use, each task's own site, a day built in its order), `arrow` (the red
   arrow: what it points at, chosen and swept by the director's ticks), `crossing` (day 9's door
-  done by crossing it) and `reach_marks`, `reach_contacts`, `reach_relocated` and `reach_narrow`
-  (every mark and contact placed where she can reach it).
+  done by crossing it), `reach_marks`, `reach_contacts`, `reach_relocated` and `reach_narrow`
+  (every mark and contact placed where she can reach it) and `sent_places` (whatever contact
+  stands on days 6 to 13, a mark moved near her, a mast the arrow moves the contact to and a
+  look-alike it rides onto: inside the ground drawn round her, with a way from home whose
+  ground has drawn, or, for day 8's burnt building when no sidewalk below its door can be reached,
+  on the facade with nothing asked).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.
-- `test_blackout.gd` — the last night's blackout: nothing off without the sabotage or beside the
-  station, every window, light and mast off in one call past the distance, dark for as long as the
-  sabotage stands and lit again on a retry, the station's hall lit only on the last night, the dark
-  spine left to the box rule and still carrying its traffic, and the escape's city dark from its
-  first frame.
+- `test_blackout.gd` — the last night's blackout over the parts `Blackout` is handed (a map,
+  buildings, signals, the run's resistance and a fake event manager), no city built: nothing off
+  without the sabotage or beside the station, every window, light and mast told off in one call
+  past the distance, dark for as long as the sabotage stands and lit again on a retry, and the
+  escape's blackout dark from its first frame. What the switched parts do dark is theirs:
+  `test_traffic_light.gd` (a signal head with no lamp), `test_traffic_signals.gd` (a dark junction
+  left to the box rule) and `test_crowd_streets.gd` (the dark spine still carrying its traffic, on a
+  real city and crowd).
 - `test_full_run_a.gd`, `_b.gd` and `_c.gd` — three seeds, one per part (`tests/full_run_rig.gd`), each
   played through all 14 days with the real City, EventManager and ResistanceDirector, each day started
   by the real DayDirector, with time actually advancing. This is the check

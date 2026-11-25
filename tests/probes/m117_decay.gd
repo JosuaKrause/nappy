@@ -31,14 +31,13 @@ const SECONDS := 40.0
 const SEEDS := [4242, 90210, 1337]
 const SAMPLE_DAYS := [1, 9]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_ground_rates(t)
 	_cost_table()
-	t.check(true, "m117 decay probe ran")
 
 # ------------------------------------------------------------------ ground rates ---
 
-func _ground_rates(t) -> void:
+func _ground_rates(t: TestRunner) -> void:
 	print("\n== net excitement rate by ground, %.0fs walks, %d seeds ==" % [SECONDS, SEEDS.size()])
 	print("walking decay %.2f/s  ×  calm %.2f  precinct %.2f  street 1.00  main road %.2f"
 			% [Tuning.EXCITEMENT_DECAY_WALKING, City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,
@@ -46,17 +45,18 @@ func _ground_rates(t) -> void:
 			City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 	print("alley trickle %.2f/s" % Baby.EXCITEMENT_FROM_ALLEY)
 
-	for day in SAMPLE_DAYS:
+	for day: int in SAMPLE_DAYS:
 		var totals := {}
 		var counts := {}
 		print("\n-- day %d (act %d) --" % [day, Tuning.act_for_day(day)])
 		print("  %-16s %8s %8s %8s %10s %8s  %s"
 				% ["ground", "crowd/s", "ground/s", "net/s", "clears in", "×", "seed"])
-		for city_seed in SEEDS:
-			var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		for city_seed: int in SEEDS:
+			var run := RunCity.started_run(RUN_SEED)
+			var city: City = RunCity.new_city(CITY_SCENE)
 			t.add_child(city)
-			city.build(CityGenerator.generate(city_seed))
-			for row in _legs(city):
+			RunCity.build(city, run, CityGenerator.generate(city_seed))
+			for row: Dictionary in _legs(city):
 				var name: String = row["name"]
 				var result := _walk(city, row["from"], row["to"], day, city_seed)
 				_print_row(name, result, city_seed)
@@ -64,7 +64,7 @@ func _ground_rates(t) -> void:
 				counts[name] = int(counts.get(name, 0)) + 1
 			city.free()
 		print("  -- means --")
-		for name in totals:
+		for name: String in totals:
 			var mean: float = totals[name] / maxf(1.0, float(counts[name]))
 			print("  %-16s %8s %8s %8.2f %10s"
 					% [name, "", "", mean, _clears_in(mean)])
@@ -72,17 +72,17 @@ func _ground_rates(t) -> void:
 ## The five grounds, as a start and an end point she walks between. Each leg is a straight line she
 ## paces back and forth along for the whole measurement, which keeps her on the ground the row is
 ## about — a park is 704px across and forty seconds of walking is 3,680.
-func _legs(city: City) -> Array:
-	var map := city.map
-	var legs: Array = []
-	var height := float(map.size.y) * Tuning.TILE_SIZE
+func _legs(city: City) -> Array[Dictionary]:
+	var map := city.map()
+	var legs: Array[Dictionary] = []
+	var height := float(map.size_in_tiles().y) * Tuning.TILE_SIZE
 
 	var quietest := 0
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		if CrowdLanes.busyness_for(map, true, index, true) < CrowdLanes.busyness_for(map, true, quietest, true):
 			quietest = index
 	var quiet := map.tile_to_world(Vector2i(
-			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size.y / 2))
+			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size_in_tiles().y / 2))
 	legs.append({"name": "quiet pavement", "from": Vector2(quiet.x, height * 0.3),
 			"to": Vector2(quiet.x, height * 0.7)})
 
@@ -114,7 +114,7 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("m117:%d:%d" % [city_seed, day])
 	var at := (from + to) * 0.5
-	city.crowd.start_day(day, rng, at)
+	RunCity.crowd(city).start_day(day, rng, at)
 
 	var toward := to
 	var crowd_total := 0.0
@@ -129,11 +129,11 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 			gap = at.distance_to(toward)
 		if gap > 0.0:
 			at += (toward - at) / gap * step
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
+		RunCity.crowd(city).step(STEP)
 
 		var multiplier := city.decay_multiplier(at)
-		var incoming := city.crowd.sources.total_at(at)
+		var incoming := RunCity.crowd(city).sources().total_at(at)
 		if city.is_alley(at):
 			incoming += Baby.EXCITEMENT_FROM_ALLEY
 		crowd_total += incoming
@@ -166,7 +166,7 @@ func _dominant_multiplier(multipliers: Dictionary) -> String:
 	var best := ""
 	var best_count := 0
 	var total := 0
-	for key in multipliers:
+	for key: String in multipliers:
 		total += int(multipliers[key])
 		if int(multipliers[key]) > best_count:
 			best_count = int(multipliers[key])
@@ -177,9 +177,9 @@ func _dominant_multiplier(multipliers: Dictionary) -> String:
 
 ## A line along whichever precinct this city put inland, taken down the middle of its corridor.
 func _precinct_leg(map: CityMap) -> Array:
-	if map.precinct_spans.is_empty():
+	if map.precinct_stretches().is_empty():
 		return []
-	var span: Vector4i = map.precinct_spans[map.precinct_spans.size() - 1]
+	var span: Vector4i = map.precinct_stretches()[map.precinct_stretches().size() - 1]
 	var vertical := span.x == 1
 	var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
 	var from_along := span.z * CityMap.period() + Tuning.STREET_WIDTH
@@ -190,9 +190,9 @@ func _precinct_leg(map: CityMap) -> Array:
 
 ## A diagonal across the largest calm block, so the walk stays on grass while it paces.
 func _calm_leg(map: CityMap) -> Array:
-	if map.calm_blocks.is_empty():
+	if map.calm_blocks_now().is_empty():
 		return []
-	var rect := CityMap.block_rect(map.calm_blocks[0])
+	var rect := CityMap.block_rect(map.calm_blocks_now()[0])
 	var from := map.tile_to_world(rect.position + Vector2i.ONE)
 	var to := map.tile_to_world(rect.position + rect.size - Vector2i.ONE * 2)
 	return [from, to]
@@ -203,10 +203,10 @@ func _alley_leg(map: CityMap) -> Array:
 	var best_from := Vector2i(-1, -1)
 	var best_to := Vector2i(-1, -1)
 	var best_length := 0
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var run_start := -1
-		for x in map.size.x + 1:
-			var alley := x < map.size.x \
+		for x in map.size_in_tiles().x + 1:
+			var alley := x < map.size_in_tiles().x \
 					and Tile.is_alley(map.tile_at(Vector2i(x, y)))
 			if alley and run_start < 0:
 				run_start = x
@@ -216,10 +216,10 @@ func _alley_leg(map: CityMap) -> Array:
 					best_from = Vector2i(run_start, y)
 					best_to = Vector2i(x - 1, y)
 				run_start = -1
-	for x in map.size.x:
+	for x in map.size_in_tiles().x:
 		var run_start := -1
-		for y in map.size.y + 1:
-			var alley := y < map.size.y \
+		for y in map.size_in_tiles().y + 1:
+			var alley := y < map.size_in_tiles().y \
 					and Tile.is_alley(map.tile_at(Vector2i(x, y)))
 			if alley and run_start < 0:
 				run_start = y
@@ -243,17 +243,17 @@ func _cost_table() -> void:
 	print("walking decay %.2f/s, running decay %.2f/s, running penalty %.2f/s"
 			% [Tuning.EXCITEMENT_DECAY_WALKING, Baby.EXCITEMENT_DECAY_RUNNING,
 			Baby.EXCITEMENT_FROM_RUNNING])
-	var rows: Array = []
-	for def in EventCatalogue.all():
-		rows.append({"id": def.id, "walk": def.walk_through_cost(),
+	var rows: Array[Dictionary] = []
+	for def in CatalogueRows.every():
+		rows.append({"id": def.id(), "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
-				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
-				"pursues": def.pursuit != null, "emission": _mean_emission(def),
-				"intensity": def.intensity, "outer": def.outer_radius})
-	rows.sort_custom(func(a, b): return a["walk"] < b["walk"])
+				"hard_fail": def.ends_the_day(), "flock": def.flock().count() > 1,
+				"pursues": def.pursues(), "emission": _mean_emission(def),
+				"intensity": def.peak(), "outer": def.heard_within()})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")
 	print("| --- | ---: | ---: |")
-	for row in rows:
+	for row: Dictionary in rows:
 		var mark := ""
 		if row["hard_fail"]:
 			mark = " *"
@@ -269,18 +269,18 @@ func _cost_table() -> void:
 	# rows a change to that decay would turn free — `walk` is that comparison already taken.
 	print("\n-- mean emission along the line, against a candidate walking decay --")
 	print("  %-20s %9s %9s %9s %9s" % ["event", "emission", "intensity", "outer", "walk@now"])
-	for row in rows:
+	for row: Dictionary in rows:
 		print("  %-20s %9.2f %9.2f %9.0f %9.1f"
 				% [row["id"], row["emission"], row["intensity"], row["outer"], row["walk"]])
 
 ## The same integral at running pace, with the running penalty in place of the walking decay —
 ## `tests/test_events.gd._cost_to_run_through`, which is where the assertion lives.
 func _run_through_cost(def: EventDef) -> float:
-	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
+	var seconds := def.heard_within() * 2.0 / Tuning.RUN_SPEED
 	return (_mean_emission(def) - Baby.EXCITEMENT_DECAY_RUNNING
 			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
 ## The mean emission along the line through the centre, read back from what walking through costs.
 func _mean_emission(def: EventDef) -> float:
-	return def.walk_through_cost() / (def.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+	return def.walk_through_cost() / (def.heard_within() * 2.0 / Tuning.WALK_SPEED) \
 			+ Tuning.EXCITEMENT_DECAY_WALKING

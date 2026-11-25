@@ -1,0 +1,28 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[RunState] run started, seed=4242
+[Main] 9 atlas pages held from startup in 21 ms
+[Main] city generated in 317 ms (seed 4242)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 1 started in 1803 ms (act 1): 312 events (42 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6)
+[Main] day 1 started in 1557 ms (act 1): 312 events (42 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6)
+[Main] day 1 started in 1540 ms (act 1): 312 events (42 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6)
+[Main] day 1 started in 1547 ms (act 1): 312 events (42 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6)
+[Main] day 1 started in 1549 ms (act 1): 312 events (42 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6)
+[Main] day 2 started in 2007 ms (act 1): 330 events (32 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6)
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 101 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[Main] day 15 started in 1 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 1011 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+-- test_observers.gd                      14326 ms
+
+27 checks, 0 failures
+PARTIAL RUN — only suites matching test_observers. Not a green build.

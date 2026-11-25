@@ -1,7 +1,10 @@
 extends RefCounted
-## Measurement probe for the one-radius charger (inbox #788 in minty-lemur): every charger that waits for her, warns
-## while she is inside its one radius and charges once its warning has run with her still inside.
-## For each, at several warning times, four walks on the real `EventInstance` at 60Hz on open
+## Measurement probe for the one-radius charger (inbox #788 in minty-lemur; curly-moose #803): every
+## charger that waits for her, warns while she is inside its one radius and charges once its warning
+## has run with her still inside. For each candidate timing (`ChargerTiming`: a warning, and a
+## factor on every written notice radius, the pairs `--chargers` plays), the catalogue is built from
+## it (`EventCatalogue.use_charger_timing()`, which validates every row's fairness contracts on the
+## way) and every waiting charger is walked five ways on the real `EventInstance` at 60Hz on open
 ## ground, her speed changing at `Tuning.ACCELERATION` as hers does. Not a suite: it prints rather
 ## than asserts. Run by name:
 ##
@@ -11,6 +14,12 @@ extends RefCounted
 ## post on the line between the band and her). The walks, from the frame his warning starts:
 ##
 ## - **back**: she turns `REACTION` later and runs back out. Fair if he never charges.
+## - **late**: she is first seen just outside his stand-off, deep inside his radius (round an
+##   alley's mouth, from behind a wall), walking in, turns `REACTION` later and runs back out. Fair
+##   if he never charges; the margin is how long before his warning ran she was out.
+## - **late run**: as **late**, but she runs in at `Tuning.RUN_SPEED` when first seen, turns
+##   `REACTION` later and runs back out, keeping her run through her reaction until she turns. Fair
+##   if he never catches her; a charge she outruns prints her closest.
 ## - **stand**: she stops and stands where she is. Fair if he charges and catches her.
 ## - **bait**: she stops, stands until he charges, and runs back `REACTION` after his charge. Fair
 ##   if she gets away (his closest is printed against his catch).
@@ -19,61 +28,75 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 ## Her reaction to his warning starting, or to his charge, in seconds.
 const REACTION := 0.3
-const TIMES: Array[float] = [1.0, 1.5, 2.0, 2.5, 3.0]
+## The candidate warnings, in seconds, and factors on the written notice radii.
+const WARNINGS: Array[float] = [1.0, 1.25, 1.5, 1.75, 2.0]
+const REACHES: Array[float] = [0.85, 1.0, 1.15, 1.25, 1.4]
 
-func run(t) -> void:
-	for def in _waiting_chargers():
-		for warns_for in TIMES:
-			var copy := def.duplicate() as EventDef
-			copy.shape = def.shape
-			copy.solid_parts = def.solid_parts
-			copy.pursuit = def.pursuit.duplicate() as PursuitSpec
-			copy.pursuit.warns_for = warns_for
-			var said: Array[String] = []
-			for walk in ["back", "stand", "bait", "on"]:
-				var r := _walk(t, copy, walk)
-				said.append("%s: %s%s" % [walk,
-						"caught" if r["caught"] else ("charged, got away" if r["charged"]
-						else "never charged"),
-						", closest %.0fpx" % r["closest"] if r["charged"] else ""])
-			print("WARNING %s (radius %.0fpx, catch %.0fpx) warns %.1fs | %s" % [def.id,
-					def.notice_within(), def.lethal_reach(), warns_for, " | ".join(said)])
+func run(t: TestRunner) -> void:
+	var was := EventCatalogue.charger_timing()
+	for reach in REACHES:
+		for warning in WARNINGS:
+			EventCatalogue.use_charger_timing(ChargerTiming.of(warning, reach))
+			for def in _waiting_chargers():
+				var said: Array[String] = []
+				for walk: String in ["back", "late", "late run", "stand", "bait", "on"]:
+					var r := _walk(t, def, walk)
+					var verdict := "caught" if r["caught"] else ("charged, got away" if r["charged"]
+							else "never charged")
+					if r["charged"]:
+						verdict += ", closest %.0fpx" % r["closest"]
+					elif walk in ["back", "late", "late run"]:
+						var early := def.pursuit().warns_for() - float(r["out_after"])
+						verdict += ", out %.2fs early" % early
+					said.append("%s: %s" % [walk, verdict])
+				print(("WARNING %s reach x%.2f warns %.2fs (radius %.0fpx, field %.0fpx, stand-off "
+						% [def.id(), reach, warning, def.notice_within(), def.heard_within()])
+						+ "%.0fpx, catch %.0fpx) | %s" % [PursuitSpec.standoff(def.chase_speed(),
+						def.standoff_reach()), def.lethal_reach(), " | ".join(said)])
+	EventCatalogue.use_charger_timing(was)
 
 ## Every row that waits for her, warns by its one radius and pursues her, once each.
 static func _waiting_chargers() -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	var seen := {}
-	for row in EventCatalogue.all():
+	for row in CatalogueRows.every():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 				var def := EventCatalogue.heated(row, level).for_day(day)
-				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 					continue
-				var key := "%s|%.2f|%.2f" % [def.id, def.notice_within(), def.chase_speed()]
+				var key := "%s|%.2f|%.2f" % [def.id(), def.notice_within(), def.chase_speed()]
 				if not seen.has(key):
 					seen[key] = true
 					rows.append(def)
 	return rows
 
-## One walk; `{"charged", "caught", "closest"}`, the closest measured from his charge on.
-static func _walk(t, def: EventDef, walk: String) -> Dictionary:
+## One walk; `{"charged", "caught", "closest", "out_after"}`, the closest measured from his charge
+## on, and `out_after` the seconds from his warning's start to her leaving his radius.
+static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(0.0, def.notice_within() + 20.0)
+	if walk in ["late", "late run"]:
+		her = Vector2(0.0, PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()) + 4.0)
 	# Positive is away from him, along +y.
-	var speed := -Tuning.WALK_SPEED
+	# The speed she comes in at, and keeps until she reacts to his warning.
+	var coming_in := -(Tuning.RUN_SPEED if walk == "late run" else Tuning.WALK_SPEED)
+	var speed := coming_in
 	var warned_at := INF
 	var charged_at := INF
 	var elapsed := 0.0
-	var result := {"charged": false, "caught": false, "closest": INF}
-	while elapsed < 20.0 and not instance.is_leaving and not instance.gave_up:
-		var wanted := -Tuning.WALK_SPEED
+	var result := {"charged": false, "caught": false, "closest": INF, "out_after": INF}
+	while elapsed < 20.0 and not instance.is_on_its_way_out() and not instance.has_given_up():
+		var wanted := coming_in
 		if warned_at != INF:
 			match walk:
-				"back":
+				"back", "late", "late run":
 					if elapsed - warned_at >= REACTION:
 						wanted = Tuning.RUN_SPEED
 				"stand":
@@ -84,8 +107,7 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 						wanted = Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her.y += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if warned_at == INF and not instance.is_waiting():
@@ -99,7 +121,11 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 		if instance.is_lethal_at(her):
 			result["caught"] = true
 			break
-		if walk == "back" and warned_at != INF and instance.is_waiting() and her.y > def.notice_within() + 60.0:
+		if walk in ["back", "late", "late run"] and warned_at != INF and instance.is_waiting() \
+				and float(result["out_after"]) == INF:
+			result["out_after"] = elapsed - warned_at
+		if walk in ["back", "late", "late run"] and warned_at != INF and instance.is_waiting() \
+				and her.distance_to(instance.global_position) > def.notice_within() + 60.0:
 			break
 	instance.free()
 	return result

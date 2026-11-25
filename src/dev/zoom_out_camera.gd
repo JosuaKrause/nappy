@@ -22,7 +22,8 @@ var _seconds := 1.0
 var _delay := 0.0
 var _elapsed := 0.0
 ## Saved recipes supply physics time so a held screenshot cannot advance the camera in idle time.
-var simulation_clock: Callable
+## Handed in by `use_simulation_clock()`.
+var _simulation_clock: Callable
 ## The camera the move starts from — hers — read at the moment it starts.
 var _from: Camera2D
 var _end_position := Vector2.ZERO
@@ -41,13 +42,18 @@ func setup(from: Camera2D, bounds: Rect2, viewport_size: Vector2, seconds: float
 	_end_position = bounds.get_center()
 	_end_zoom = _overview_zoom(bounds, viewport_size)
 
+## Hands it the clock it moves by, read each frame in place of frame time: a saved recipe's physics
+## time (`SceneRecipeRuntime.elapsed()`).
+func use_simulation_clock(clock: Callable) -> void:
+	_simulation_clock = clock
+
 ## The zoom that fits all of `bounds` in `viewport_size` — `DevRig.make_overview_camera()`'s own.
 static func _overview_zoom(bounds: Rect2, viewport_size: Vector2) -> float:
 	return minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
 
 func _process(delta: float) -> void:
-	if simulation_clock.is_valid():
-		_elapsed = float(simulation_clock.call())
+	if _simulation_clock.is_valid():
+		_elapsed = float(_simulation_clock.call())
 	else:
 		_elapsed += delta
 	if _elapsed < _delay:
@@ -59,6 +65,12 @@ func _process(delta: float) -> void:
 			_end_zoom)
 	_camera.position = Vector2(pose.x, pose.y)
 	_camera.zoom = Vector2.ONE * pose.z
+
+## Sets the pose for the clock's current reading and stops moving, so a held screenshot draws
+## the moment it was taken at.
+func hold_still() -> void:
+	_process(0.0)
+	set_process(false)
 
 func _start() -> void:
 	_start_zoom = _from.zoom.x if _from else 2.0

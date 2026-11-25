@@ -1,6 +1,8 @@
 extends RefCounted
-## Measurement probe for olive-badger's day-7 route van: once the rigged bag puts a second
-## `delivery_van` on her route, does a played walk ever bring it into her view? Not a suite: it
+## Measurement probe for olive-badger's day-7 route van: once reading the mark rigs her route's bag
+## with a second `delivery_van` (`EventManager.rig_her_route()`) and her walk lays it on her path just
+## ahead of her when its marble is handed out (`WalkSiting.lay_just_ahead()`), does a played walk
+## bring it into her view? Not a suite: it
 ## prints what each walk met, so it lives under `tests/probes/` and runs only by name:
 ##
 ##     tools/test.sh probes/calm_pelican_day7_van_met.gd      (prints DAY7_VAN lines)
@@ -11,19 +13,18 @@ extends RefCounted
 ## what the manager's own tick runs for her walk (`EventsAhead.site_what_is_on_her_way()`,
 ## `EventsAhead.place_what_is_owed_ahead()`, `EventStreaming.stream_around()`), at `Tuning.WALK_SPEED`.
 ##
-## **What is counted**, per seed: whether the van's marble was drawn; where the van was put — how far
-## ahead of her, and how near her own later walk ever came to it; whether it was ever inside her view
-## (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen); and, where it was not, why:
-## never sited, sited past where she stopped walking, or sited off the way she then walked. Of each
-## van put on her route, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in
-## the camera's view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, the moment it was put
-## there; whether its tile carries one of the day's routes (`Corridor.carries_a_route()`); and
-## whether her later walk passed within its body and hers (`obstructs_radius` plus
+## **What is counted**, per seed: whether her walk laid the rigged van (the walk's plan of the row
+## the director put on her way, `EventDirector.is_from_her_route()`); where it stands — how far from
+## her when it was laid, and how near her own later walk ever came to it; and whether it was ever
+## inside her view (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen). Of each van
+## laid, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in the camera's
+## view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, on the tick it was laid; whether its
+## tile carries one of the day's routes (`Corridor.carries_a_route()`); and
+## whether her later walk passed within its body and hers (`obstructs_within()` plus
 ## `Tuning.PLAYER_BODY_RADIUS`) of its feet — stood on the line she walked.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The day and row measured, and the same for day 6's man shouting, rigged and sited the way the
-## other places on her route are, for comparison.
+## The day and row measured, and the same for day 6's man shouting, rigged and laid the same way.
 const CASES := [[7, "delivery_van"], [6, "homeless_yeller"]]
 const STEP := 0.1
 const SETTLE_SECONDS := 12.0
@@ -32,7 +33,7 @@ const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 90210, 1234567, 7, 31337, 2024, 555, 8080, 99, 123456, 271828,
 		314159]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for case: Array in CASES:
 		var tally := {}
 		for seed_value in SEEDS:
@@ -40,26 +41,27 @@ func run(t) -> void:
 			tally[outcome] = int(tally.get(outcome, 0)) + 1
 		print("DAY7_VAN day %d %s, %d walks: %s" % [case[0], case[1], SEEDS.size(), tally])
 
-func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> String:
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, run, CityGenerator.generate(seed_value))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	city.run.resistance.completed_steps.assign(done)
+	GivenRun.completed_steps(run, done)
 	# A read mark's alley is remembered and never chosen again; each walk's run starts with none.
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	resistance.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -68,13 +70,13 @@ func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	player.global_position = city.map().doorstep_world_position()
+	RunCity.events(city).use_player(player)
 	var walk := Walk.new()
 	walk.city = city
 	walk.row = row
 	var mark := resistance.current_step()
-	var map := city.map
+	var map := city.map()
 	var outcome := "no mark"
 	if mark and mark.is_pickup:
 		var mark_at := resistance.contact_position()
@@ -107,7 +109,7 @@ class Walk extends RefCounted:
 	var row := ""
 	var read_at := Vector2.INF
 	var walked := 0.0
-	var van: EventScheduler.Planned = null
+	var van: EventPlan = null
 	var drawn_at := -1.0
 	var sited_at := -1.0
 	var her_at_siting := Vector2.INF
@@ -119,7 +121,6 @@ class Walk extends RefCounted:
 	var was_live := false
 	var phase := "to the mark"
 	var drawn_phase := ""
-	var sited_phase := ""
 	var drawn_in_view_at_siting := false
 	var on_a_route := false
 
@@ -143,60 +144,55 @@ class Walk extends RefCounted:
 			waited += STEP
 
 	func _tick(player: Stroller) -> void:
-		var events := city.events
-		events.ahead.site_what_is_on_her_way(STEP)
-		events.ahead.place_what_is_owed_ahead(STEP)
+		var events := RunCity.events(city)
+		events._ahead.site_what_is_on_her_way(STEP)
+		events._ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
 		if van == null:
-			for plan: EventScheduler.Planned in events.ahead._director._placed_from_the_route:
-				if plan.def.id == row:
+			for plan in events.walk_events().plans():
+				if plan.row_id() == row and events._ahead.director().is_from_her_route(plan):
 					van = plan
 					drawn_at = walked
 					drawn_phase = phase
 		if van and van.is_placed():
 			if sited_at < 0.0:
 				sited_at = walked
-				sited_phase = phase
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
-				ahead_at_siting = van.position.distance_to(player.global_position)
-				var box := EventFootprints.footprint_of(van.def)
+				ahead_at_siting = van.placed_at().distance_to(player.global_position)
+				var box := EventFootprints.footprint_of(van.row())
 				var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
 						* Stroller.CAMERA_LOOK_AHEAD
 				var view := Rect2(player.global_position + lead - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0)
-				drawn_in_view_at_siting = view.intersects(Rect2(van.position + box.position,
+				drawn_in_view_at_siting = view.intersects(Rect2(van.placed_at() + box.position,
 						box.size), true)
 				on_a_route = Corridor.of(city.streets().route_tree()).carries_a_route(
-						city.map.world_to_tile(van.position))
-			var off := (van.position - player.global_position).abs()
-			nearest_after = minf(nearest_after, van.position.distance_to(player.global_position))
+						city.map().world_to_tile(van.placed_at()))
+			var off := (van.placed_at() - player.global_position).abs()
+			nearest_after = minf(nearest_after, van.placed_at().distance_to(player.global_position))
 			if seen_at < 0.0 and off.x <= Tuning.VIEW_HALF_EXTENT.x \
 					and off.y <= Tuning.VIEW_HALF_EXTENT.y:
 				seen_at = walked
-			was_live = was_live or van.was_live
+			was_live = was_live or van.has_been_in_the_world()
 
 	func outcome() -> String:
 		if van == null:
-			return "marble not drawn"
-		if not van.is_placed():
-			return "drawn, never sited"
+			return "never laid"
 		if seen_at >= 0.0:
 			return "seen"
-		return "sited, never in view"
+		return "laid, never in view"
 
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
-			var on_her_line := nearest_after <= van.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+			var on_her_line := nearest_after <= van.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
-					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when put there %s; on a route %s; on her line %s" \
+					van.placed_at()] + "laid %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when laid %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
-		var waits: Dictionary = city.events.ahead._siting.waits if city.events.ahead._siting else {}
-		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
-				drawn_at, drawn_phase, sited_phase, where, waits,
-				"%.0fs" % seen_at if seen_at >= 0.0 else "never"]
+		return "walked %.0fs, laid at %.0fs (%s) | %s | seen at %s" % [walked, drawn_at,
+				drawn_phase, where, "%.0fs" % seen_at if seen_at >= 0.0 else "never"]
 
 ## The shortest walkable path from `from` to the nearest of `goals`, as tile centres, over ground
 ## that is walkable, open and unobstructed today.

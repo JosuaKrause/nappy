@@ -1,7 +1,7 @@
 extends RefCounted
 ## The world's one answer to "can this mover stand here": the map's blocked record read through a
 ## `Mover` (`CityMap.passable()`, `CityMap.clear_line()`), a `Navigator` every mover moves by, and a
-## `Footprint` both a solid's body and its record come from.
+## `StandingPiece` layout both a solid's body and its record come from.
 ##
 ## The player: "I mean that happens with a lot of events (eg cat / bike just completely ignoring
 ## buildings; neighbor walking through barricades) we need to do a fix for this at some point but
@@ -21,10 +21,12 @@ const SEED := 4242
 const WALK_DAY := 9
 const TILE := float(Tuning.TILE_SIZE)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_mover_is_stopped_by_its_own_layers(t)
 	_test_is_walkable_is_the_lattice(t)
 	_test_a_line_stops_at_a_body_and_sees_out_of_its_own(t)
+	_test_a_clear_line_is_every_tile_the_line_crosses(t)
+	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
 	_test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t)
 	_test_a_step_keeps_the_body_clear(t)
 	_test_a_mover_on_blocked_ground_may_walk_off_it(t)
@@ -38,18 +40,18 @@ func run(t) -> void:
 			_test_the_cat_crossing_never_ends_in_a_lot,
 			_test_a_departure_leaves_round_a_building,
 			_test_every_row_that_moves_stays_off_blocked_ground,
-			_test_every_mover_on_a_map_shares_its_one_navigator]:
+			_test_the_far_guard_of_a_roadblock_stays_off_blocked_ground,
+			_test_the_citys_events_move_by_the_navigator_the_city_built]:
 		_in_a_day(t, check)
 
-## **One navigator per map** (`WorldMap.navigator()`): the city's and its event manager's are the
-## map's one object. The crowd and the director take it when handed none; a crowd's is checked in
-## `test_navigator_fallbacks.gd`. A director handed only the map is checked here by what it does (it
-## sites a crossing round a body standing across it), which does not pin that it shares the map's one
-## navigator: a director that builds its own `Navigator.new(map)` passes.
-func _test_every_mover_on_a_map_shares_its_one_navigator(t, city: City) -> void:
-	t.check(city.map.navigator() == city.navigator
-			and city.events.world.navigator() == city.navigator,
-			"the city and its events move by the map's one navigator")
+## **The city's events move by the navigator the city built** (`City.navigator()`): the one the
+## builder hands its event manager. The crowd and the director build one over the map when handed none; a
+## crowd's is checked in `test_navigator_fallbacks.gd`. A director handed only the map is checked
+## here by what it does (it sites a crossing round a body standing across it), which does not pin
+## that it shares the city's navigator: a director that builds its own `Navigator.new(map)` passes.
+func _test_the_citys_events_move_by_the_navigator_the_city_built(t: TestRunner, city: City) -> void:
+	t.check(RunCity.events(city).world.navigator() == city.navigator(),
+			"the city's events move by the navigator the city built")
 
 # ---------------------------------------------------------------------- ground ---
 
@@ -64,7 +66,7 @@ static func _yard(size := Vector2i(12, 12)) -> CityMap:
 ## closes the ground the street's two barriers cut off from the doorstep.
 static func _yard_with_a_street_shut() -> CityMap:
 	var map := _yard(Vector2i.ONE * CityMap.period() * 2)
-	var street := map.network.by_key(Vector3i(0, 0, 1))
+	var street := map.street_network().by_key(Vector3i(0, 0, 1))
 	var wall := street.tile_rect()
 	map.fill_rect(Rect2i(Vector2i(Tuning.STREET_WIDTH, wall.position.y), Vector2i(1, wall.size.y)),
 			GameEnums.TileType.BUILDING)
@@ -77,10 +79,9 @@ static func _centre(tile: Vector2i) -> Vector2:
 
 ## One tile of each solid in a row, and a park beside them: what each mover is stopped by is the
 ## layers it names, and nothing else.
-func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
+func _test_each_mover_is_stopped_by_its_own_layers(t: TestRunner) -> void:
 	var map := _yard_with_a_street_shut()
 	var building := Vector2i(1, 1)
-	var post := Vector2i(2, 1)
 	var closed := Vector2i(3, CityMap.period() / 2)
 	var soft := Vector2i(4, 1)
 	var body := Vector2i(5, 1)
@@ -88,20 +89,27 @@ func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
 	var park := Vector2i(7, 1)
 	map.set_tile(building, GameEnums.TileType.BUILDING)
 	map.set_tile(park, GameEnums.TileType.PARK)
-	map.blocked.posts[post] = true
+	# A precinct on the lattice's vertical street at the origin: its posts stand where the game
+	# records them (`CityMap.index_posts()`), and the fixture takes the first of them.
+	map.add_precinct(Vector4i(1, 0, 0, 0))
+	map.index_posts()
+	var post: Vector2i = map.tiles_shut_to(Mover.POSTS).keys()[0]
+	t.check(not [building, closed, soft, body, open, park].has(post)
+			and Tile.is_walkable(map.tile_at(post)),
+			"fixture: a post stands on ground of its own, open to walk but for the post")
 	t.check(map.is_closed(closed), "fixture: the shut street holds the closed tile")
 	map.seal_soft_tile(soft)
 	var covered: Array[Vector2i] = [body]
 	map.obstruct_tiles(1, covered)
 	var on_foot := Mover.on_foot()
-	for tile in [building, post, closed, soft, body]:
+	for tile: Vector2i in [building, post, closed, soft, body]:
 		t.check(not map.passable(tile, on_foot), "a figure on foot is stopped at %s" % tile)
 	t.check(map.passable(open, on_foot) and map.passable(park, on_foot),
 			"and walks open sidewalk and park")
 	var car := Mover.vehicle()
 	t.check(map.passable(soft, car), "a car drives past a soft seal, which takes only the pavement")
 	t.check(not map.passable(park, car), "a car keeps to street ground")
-	for tile in [building, post, closed, body]:
+	for tile: Vector2i in [building, post, closed, body]:
 		t.check(not map.passable(tile, car), "a car is stopped at %s" % tile)
 	var lattice := Mover.lattice()
 	t.check(map.passable(closed, lattice) and map.passable(soft, lattice)
@@ -114,11 +122,11 @@ func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
 
 ## `CityMap.is_walkable()` is `passable()` for the lattice, spelt out for speed: they answer the same
 ## over a whole generated city.
-func _test_is_walkable_is_the_lattice(t) -> void:
+func _test_is_walkable_is_the_lattice(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var disagree := 0
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile) != map.passable(tile, Mover.lattice()):
 				disagree += 1
@@ -126,7 +134,7 @@ func _test_is_walkable_is_the_lattice(t) -> void:
 
 ## A line through a body is no clear line for a figure on foot; one from inside a band it stands in
 ## sees out; and a body over her own tile does not hide her.
-func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t) -> void:
+func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t: TestRunner) -> void:
 	var map := _yard()
 	var band: Array[Vector2i] = [Vector2i(5, 5), Vector2i(6, 5)]
 	map.obstruct_tiles(1, band)
@@ -142,9 +150,92 @@ func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t) -> void:
 	t.check(not map.clear_line(_centre(Vector2i(2, 5)), _centre(Vector2i(6, 5)), on_foot),
 			"one standing in front of her does")
 
+## A 48x48 sidewalk map with a block of buildings and an alley through it, to draw lines near
+## building corners on.
+func _a_block_with_an_alley() -> CityMap:
+	var map := CityMap.new(Vector2i(48, 48))
+	map.fill_rect(Rect2i(0, 0, 48, 48), GameEnums.TileType.SIDEWALK)
+	map.fill_rect(Rect2i(10, 10, 8, 8), GameEnums.TileType.BUILDING)
+	map.fill_rect(Rect2i(13, 10, 2, 8), GameEnums.TileType.ALLEY)
+	return map
+
+## Every tile a straight line passes through, found by sampling it `per_px` times a pixel.
+func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px := 4.0) -> bool:
+	var samples := maxi(1, ceili(from.distance_to(to) * per_px))
+	for i in samples + 1:
+		if not map.is_walkable(map.world_to_tile(from.lerp(to, float(i) / float(samples)))):
+			return false
+	return true
+
+## **`clear_line()` against the sampled line, over the hand-built map.** Seeded segments up to a
+## stand-off long from walkable ground near buildings, in every direction, each answered both by
+## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
+## The guard counts how many of them crossed a building, so a sweep that only ever asked open
+## ground cannot pass.
+func _test_a_clear_line_is_every_tile_the_line_crosses(t: TestRunner) -> void:
+	var map := _a_block_with_an_alley()
+	var on_foot := Mover.on_foot()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 544
+	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
+	var asked := 0
+	var blocked := 0
+	var disagreed := 0
+	while asked < 400:
+		var near: Vector2i = buildings[rng.randi_range(0, buildings.size() - 1)]
+		var from := map.tile_to_world(near) + Vector2(rng.randf_range(-64.0, 64.0),
+				rng.randf_range(-64.0, 64.0))
+		if not map.is_walkable(map.world_to_tile(from)):
+			continue
+		var to := from + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 116.0)
+		var sampled := _sampled_line_is_walkable(map, from, to, 8.0)
+		asked += 1
+		if not sampled:
+			blocked += 1
+		if map.clear_line(from, to, on_foot) != sampled:
+			disagreed += 1
+	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
+	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
+
+## A 10×10 map of sidewalk with the given tiles built on, for the stepper's exact cases.
+func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
+	var map := CityMap.new(Vector2i(10, 10))
+	map.fill_rect(Rect2i(0, 0, 10, 10), GameEnums.TileType.SIDEWALK)
+	for tile in buildings:
+		map.set_tile(tile, GameEnums.TileType.BUILDING)
+	return map
+
+func _clear_on(map: CityMap, from: Vector2, to: Vector2) -> bool:
+	return map.clear_line(from, to, Mover.on_foot())
+
+## **The cases a random sweep never lands on, each on exact binary fractions so the arithmetic is
+## exact.** A 45° line through a tile vertex, (80, 80) to (112, 112) through (96, 96), crosses both
+## axes at once: a building on either tile beside the vertex blocks it, the x-side one (3, 2) and
+## the y-side one (2, 3) asked separately, since stepping one axis and then the other visits only one
+## of them. A line ending exactly on a tile's edge, (64, 80) to (128, 80), ends on the building
+## beyond the edge (4, 2), since a point on an edge is the tile it opens (`world_to_tile()` floors),
+## so its last crossing, at exactly the whole of the segment, is asked. A line starting on a
+## building is blocked though it crosses into open ground. A line inside one open tile is clear.
+func _test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t: TestRunner) -> void:
+	var through_the_vertex := [Vector2(80.0, 80.0), Vector2(112.0, 112.0)]
+	t.check(_clear_on(_a_small_map([]), through_the_vertex[0], through_the_vertex[1]),
+			"a line through an open vertex is clear")
+	t.check(not _clear_on(_a_small_map([Vector2i(3, 2)]), through_the_vertex[0],
+			through_the_vertex[1]), "a building on the x side of the vertex blocks the line")
+	t.check(not _clear_on(_a_small_map([Vector2i(2, 3)]), through_the_vertex[0],
+			through_the_vertex[1]), "a building on the y side of the vertex blocks the line")
+	t.check(not _clear_on(_a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
+			Vector2(128.0, 80.0)), "a line ending exactly on a building's edge is blocked")
+	t.check(_clear_on(_a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
+			Vector2(127.5, 80.0)), "and half a pixel short of it is clear")
+	t.check(not _clear_on(_a_small_map([Vector2i(2, 2)]), Vector2(80.0, 80.0),
+			Vector2(100.0, 80.0)), "a line starting on a building is blocked")
+	t.check(_clear_on(_a_small_map([]), Vector2(66.0, 66.0), Vector2(90.0, 90.0)),
+			"a line inside one open tile is clear")
+
 ## A wall a tile thick, and a step three tiles long across it, as a long frame gives a chaser: the
 ## tile it lands on is open, so only a swept step refuses it.
-func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t) -> void:
+func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t: TestRunner) -> void:
 	var map := _yard()
 	map.fill_rect(Rect2i(5, 0, 1, 12), GameEnums.TileType.BUILDING)
 	var from := _centre(Vector2i(4, 5))
@@ -157,12 +248,12 @@ func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t) -> void:
 	taken = Navigator.new(map).step(from, diagonal, Mover.on_foot())
 	t.check(map.world_to_tile(from + taken).x < 5,
 			"a slide along it never crosses it either (%s)" % taken)
-	t.check(Navigator.open_ground().step(from, across, Mover.on_foot()) == across,
+	t.check(Navigator.new().step(from, across, Mover.on_foot()) == across,
 			"open ground takes every step whole")
 
 ## A step keeps its body's reach clear in the way it is going: a man 9px wide stops short of a wall
 ## a point mover would walk up to.
-func _test_a_step_keeps_the_body_clear(t) -> void:
+func _test_a_step_keeps_the_body_clear(t: TestRunner) -> void:
 	var map := _yard()
 	map.fill_rect(Rect2i(5, 0, 1, 12), GameEnums.TileType.BUILDING)
 	var navigator := Navigator.new(map)
@@ -177,7 +268,7 @@ func _test_a_step_keeps_the_body_clear(t) -> void:
 
 ## A figure standing on a day's solid — put there before the solid was — walks off it; one on open
 ## ground does not walk onto it.
-func _test_a_mover_on_blocked_ground_may_walk_off_it(t) -> void:
+func _test_a_mover_on_blocked_ground_may_walk_off_it(t: TestRunner) -> void:
 	var map := _yard()
 	var band: Array[Vector2i] = [Vector2i(5, 5), Vector2i(6, 5)]
 	map.obstruct_tiles(1, band)
@@ -194,7 +285,7 @@ func _test_a_mover_on_blocked_ground_may_walk_off_it(t) -> void:
 
 ## A route is cut at the farthest point a mover reaches down it, never past a solid, and refused
 ## where its first point is not ground the mover may stand on.
-func _test_a_route_is_cut_where_a_solid_stands(t) -> void:
+func _test_a_route_is_cut_where_a_solid_stands(t: TestRunner) -> void:
 	var map := _yard()
 	var body: Array[Vector2i] = [Vector2i(6, 5)]
 	map.obstruct_tiles(1, body)
@@ -209,7 +300,7 @@ func _test_a_route_is_cut_where_a_solid_stands(t) -> void:
 
 ## A walk down points goes round a body put across it since: stopped whole, it asks for a way round
 ## to its next point and the way round never enters the body.
-func _test_a_walk_goes_round_what_was_put_down(t) -> void:
+func _test_a_walk_goes_round_what_was_put_down(t: TestRunner) -> void:
 	var map := _yard()
 	var wall: Array[Vector2i] = [Vector2i(6, 4), Vector2i(6, 5), Vector2i(6, 6)]
 	map.obstruct_tiles(1, wall)
@@ -230,20 +321,24 @@ func _test_a_walk_goes_round_what_was_put_down(t) -> void:
 ## A car drives on street ground only, and sees her wherever she stands: an investigating patrol
 ## notices her one tile into an alley, a square or a park as it does on the sidewalk, along a line
 ## its own driving would never take.
-func _test_a_car_sees_her_off_street_ground(t) -> void:
+func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
-	t.check(patrol.vehicle != null, "the patrol is a car that drives")
-	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
-			GameEnums.TileType.SIDEWALK]:
+	t.check(patrol.drives(), "the patrol is a car that drives")
+	for ground: GameEnums.TileType in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE,
+			GameEnums.TileType.PARK, GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
 		map.fill_rect(Rect2i(0, 1, 8, 1), GameEnums.TileType.ROAD)
 		map.fill_rect(Rect2i(3, 3, 2, 2), ground)
+		var car_where := WhereSheIs.nowhere()
 		var car := EventInstance.new()
-		car.skip_draw = true
-		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT, map)
+		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map) \
+					.hearing(car_where) \
+					.drawing_nothing())
 		t.add_child(car)
 		var her := _centre(Vector2i(3, 3))
-		t.check(car.clear_line_to(her), "a car sees her standing on %s" % ground)
+		car_where.tell(her)
+		t.check(car.sight_line_to_her() != Vector2.ZERO, "a car sees her standing on %s" % ground)
 		t.check(map.passable(map.world_to_tile(her), EventInstance.mover_for(patrol))
 				== (ground == GameEnums.TileType.SIDEWALK),
 				"and drives only where street ground is (%s)" % ground)
@@ -251,15 +346,15 @@ func _test_a_car_sees_her_off_street_ground(t) -> void:
 
 ## A cat whose run a solid cut short crouches longer by the run it lost, so it reaches the middle of
 ## its crossing when a whole run would have: when she, walked up by its lead, gets there.
-func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
+func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var whole := float(Tuning.STREET_WIDTH) * TILE
-	var on_time := cat.telegraph_time + whole / cat.speed
-	for run in [whole, whole * 0.5, TILE]:
+	var on_time := cat.telegraphs_for() + whole / cat.speed()
+	for run: float in [whole, whole * 0.5, TILE]:
 		var instance := EventInstance.new()
-		instance.skip_draw = true
 		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])
-		instance.setup(cat, path[0], path)
+		instance.setup(cat, path[0], path, Vector2.RIGHT,
+				EventSurroundings.new().drawing_nothing())
 		t.add_child(instance)
 		instance.set_process(false)
 		instance.hold_still_longer(cat.crouch_for_a_run(run))
@@ -278,8 +373,8 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 func _a_director_owing_the_cat(map: CityMap) -> EventDirector:
 	var director := EventDirector.new(map)
 	director.force("cat_dash", 5.0)
-	var no_plans: Array[EventScheduler.Planned] = []
-	director.start_day(1, no_plans, _rng("director"))
+	var no_plans: Array[EventPlan] = []
+	director.start_day(1, no_plans, _rng("director"), DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## What the director hands out when she is at `her` walking `heading`, once its wait has passed: the
@@ -293,7 +388,7 @@ func _sited_ahead_of(director: EventDirector, her: Vector2, heading: Vector2) ->
 ## across the way it would run on one side: a director handed only the map (`EventDirector.new(map)`)
 ## moves by the map's navigator, so the run it sites never goes through the body, and on a map with
 ## nothing standing there the same director sites the whole run.
-func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t) -> void:
+func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
 	var her := _centre(Vector2i(5, 20))
@@ -338,17 +433,17 @@ func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t) -> vo
 
 ## Seed 4242's day 9, its closures, seals and bodies put down, in a city and a run of its own, handed
 ## to `check` and freed after, so no check leans on what another left standing.
-func _in_a_day(t, check: Callable) -> void:
+func _in_a_day(t: TestRunner, check: Callable) -> void:
 	var run_state := RunState.new()
 	run_state.start_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, run_state)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
-	var state := CityState.new()
-	run_state.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, WALK_DAY)
+	RunCity.build(city, run_state, MapCache.of(SEED))
+	var state := run_state.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
-	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map().doorstep_world_position())
 	check.call(t, city)
 	city.free()
 
@@ -357,28 +452,29 @@ static func _rng(stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("world-passability:%d:%s" % [SEED, stream])
 	return rng
 
-## Every planned body's record is the tiles of the footprint its instance builds its physics body
+## Every planned body's record is the tiles of the pieces its instance builds its physics body
 ## from: the instance's own pieces, where it stands and the way it lies, rasterised, are the plan's
 ## recorded tiles.
-func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
-	var map := city.map
+func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) -> void:
+	var map := city.map()
 	var compared := 0
 	var differ := 0
-	for plan in city.events.plans():
-		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
-				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_radius <= 0.0:
+	for plan in RunCity.events(city).plans():
+		if not plan.is_placed() or plan.row().moves() or plan.detains_her() \
+				or plan.is_a_boom() or plan.obstructs_within() <= 0.0:
 			continue
-		var recorded := EventSpawner.obstructed_footprint(map, plan.def, plan.position,
-				plan.facing)
+		var recorded := EventSpawner.footprint_of(
+				BodyStance.of(map, plan.row(), plan.placed_at(),
+				plan.faces()))
 		var instance := EventInstance.new()
-		instance.skip_draw = true
-		instance.setup(plan.def, plan.position, PackedVector2Array(), plan.facing, map)
-		var built := Footprint.new()
-		var centres := instance.solid_part_centres()
-		var shapes := instance.solid_part_shapes()
-		for i in shapes.size():
-			built.add(shapes[i], centres[i] - instance.position, instance.solid_axis())
-		var tiles := built.tiles(instance.position)
+		instance.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
+				EventSurroundings.new().on(map) \
+					.drawing_nothing())
+		var tiles: Array[Vector2i] = []
+		for piece in instance.standing_pieces():
+			for tile in piece.tiles():
+				if not tiles.has(tile):
+					tiles.append(tile)
 		tiles.sort()
 		recorded.sort()
 		compared += 1
@@ -394,8 +490,8 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 ## A closure's barrier line stands on ground the closure took, so every mover is stopped by the same
 ## line that stops her. Read off the solid the city put in the world at each mouth: its collision box,
 ## laid down the tiles it covers, is on closed ground.
-func _test_a_closure_barrier_stands_on_closed_ground(t, city: City) -> void:
-	var map := city.map
+func _test_a_closure_barrier_stands_on_closed_ground(t: TestRunner, city: City) -> void:
+	var map := city.map()
 	var lines := 0
 	var stood := 0
 	var outside := 0
@@ -407,7 +503,7 @@ func _test_a_closure_barrier_stands_on_closed_ground(t, city: City) -> void:
 				continue
 			stood += 1
 			var box := (body.get_child(0) as CollisionShape2D).shape as RectangleShape2D
-			for tile in Footprint.of(GroundShape.rect(box.size * 0.5)).tiles(mouth):
+			for tile in GroundShape.rect(box.size * 0.5).tiles_under(mouth):
 				if not map.is_closed(tile):
 					outside += 1
 	t.check(lines > 0, "the day has barrier lines to check (%d)" % lines)
@@ -423,10 +519,9 @@ func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
 	return null
 
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
-## and runs clear between, never out of or into a lot; so does the scheduler's own crossing from any
-## road tile a cat may stand on.
-func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
-	var map := city.map
+## and runs clear between, never out of or into a lot.
+func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> void:
+	var map := city.map()
 	var cat := EventCatalogue.by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
 	var director := _a_director_owing_the_cat(map)
@@ -454,9 +549,9 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 			if crouch > 0.0:
 				cut += 1
 			var clock := 0.0
-			while clock <= cat.telegraph_time + crouch:
+			while clock <= cat.telegraphs_for() + crouch:
 				if (her + heading * Tuning.WALK_SPEED * clock).distance_to(run[0]) \
-						<= cat.outer_radius:
+						<= cat.heard_within():
 					in_its_field += 1
 					break
 				clock += 0.02
@@ -467,30 +562,11 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 	t.check(in_its_field == 0,
 			"walking on, she is never inside the crouching cat's field before it runs (%d were)"
 			% in_its_field)
-	var ends := 0
-	var in_a_lot := 0
-	var none: Array[EventScheduler.Planned] = []
-	# No catalogue row is planned as a crossing (`EventDef.PathMode.CROSS_STREET`: the cat is sited by
-	# the director), so the row is the cat with the scheduler's crossing path laid for it.
-	var scheduled := cat.duplicate() as EventDef
-	scheduled.path_mode = EventDef.PathMode.CROSS_STREET
-	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
-		if tile.x % 7 != 0 or not map.passable(tile, Mover.on_foot()):
-			continue
-		var placed := EventScheduler.place_at(scheduled, map, tile, _rng("cross-street"), none)
-		if placed == null:
-			continue
-		for end in placed.path:
-			ends += 1
-			if not map.passable(map.world_to_tile(end), Mover.on_foot()):
-				in_a_lot += 1
-	t.check(ends > 0 and in_a_lot == 0,
-			"the scheduler's crossings end on open ground (%d of %d do not)" % [in_a_lot, ends])
 
 ## A dog that loses interest facing a building leaves round it: every frame of its departure is on
 ## ground it may stand on, and it gets away from her.
-func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
-	var map := city.map
+func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> void:
+	var map := city.map()
 	var dog := EventCatalogue.by_id("loose_dog")
 	var start := Vector2.INF
 	var into := Vector2.ZERO
@@ -505,87 +581,77 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 	t.check(start != Vector2.INF, "there is a pavement against a building to stand the dog on")
 	if start == Vector2.INF:
 		return
-	var instance := city.events.spawn_extra(dog, start)
+	var instance := RunCity.events(city).spawn_extra(dog, start)
 	instance.set_process(false)
-	instance.excitement.set_player_at(start - into * 80.0)
+	RunCity.events(city).world.where_she_is().tell(start - into * 80.0)
 	instance.give_up_the_chase()
-	t.check(instance.is_leaving and instance.facing_now().is_equal_approx(into),
+	t.check(instance.is_on_its_way_out() and instance.facing_now().is_equal_approx(into),
 			"it starts leaving facing the building, away from her (%s)" % instance.facing_now())
 	var mover := EventInstance.mover_for(dog)
 	var off := 0
 	var before := instance.global_position
 	for _frame in 120:
-		instance.departure.leave(0.05)
-		if instance.is_finished:
+		instance.step(0.05)
+		if instance.is_gone():
 			break
-		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.blocked_by)):
+		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.layers_blocked())):
 			off += 1
 		before = instance.global_position
 	t.check(off == 0, "its departure never enters a building (%d steps did)" % off)
-	t.check(instance.is_finished or instance.global_position.distance_to(start) > 2.0 * TILE,
+	t.check(instance.is_gone() or instance.global_position.distance_to(start) > 2.0 * TILE,
 			"and it gets away rather than standing against the wall (%.0fpx)"
 			% instance.global_position.distance_to(start))
-	city.events.retire(instance)
+	RunCity.events(city).retire(instance)
 
 ## **The walker**: every catalogue row that moves, on seed 4242's day 9, started on its own ground
 ## nearest her doorstep, given a route straight north through whatever stands there — her own
 ## building, from her street — and her standing north of it across the same, for
-## six seconds of its event and four of its departure. No step it takes, nor any step of a far
-## guard it sends off, enters ground its mover may not.
-func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
-	var map := city.map
+## six seconds of its event and four of its departure. No step it takes enters ground its mover
+## may not. A far guard is the hunting roadblock's, which none of these rows is: his walk is the
+## case after.
+func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
+	var map := city.map()
 	var walked := 0
 	var steps := 0
 	var bad: Array[String] = []
 	var stalled: Array[String] = []
 	var anchor := map.doorstep_world_position()
-	for def in EventCatalogue.all():
-		if not (def.mobile or def.pursuit != null or def.flock_size > 0):
+	for def in CatalogueRows.every():
+		if not (def.moves() or def.pursues() or def.is_a_flock()):
 			continue
 		var mover := EventInstance.mover_for(def)
 		var at := _a_start_for(map, def, mover, anchor)
 		if at == Vector2.INF:
 			continue
 		var route := PackedVector2Array()
-		if def.mobile and def.pursuit == null:
+		if def.moves() and not def.pursues():
 			route = PackedVector2Array([at, at + Vector2(0.0, -12.0 * TILE)])
-		var instance := city.events.spawn_extra(def, at, route)
+		var instance := RunCity.events(city).spawn_extra(def, at, route)
 		instance.set_process(false)
 		var her := at + Vector2(0.0, -6.0 * TILE)
-		var asked := Mover.of(mover.blocked_by)
+		var asked := Mover.of(mover.layers_blocked())
 		var before := instance.global_position
-		var guard_before := Vector2.INF
 		var left_from := Vector2.INF
 		walked += 1
 		for frame in 200:
-			instance.excitement.set_player_at(her)
-			if frame == 120 and not instance.is_leaving:
+			RunCity.events(city).world.where_she_is().tell(her)
+			if frame == 120 and not instance.is_on_its_way_out():
 				instance.give_up_the_chase()
-			if instance.is_leaving:
-				if left_from == Vector2.INF:
-					left_from = instance.global_position
-				instance.departure.leave(0.05)
-			else:
-				instance.step(0.05)
-			if instance.is_finished:
+			if instance.is_on_its_way_out() and left_from == Vector2.INF:
+				left_from = instance.global_position
+			instance.step(0.05)
+			if instance.is_gone():
 				break
 			var now := instance.global_position
 			if map.passable(map.world_to_tile(before), asked):
 				steps += 1
 				if not map.step_is_clear(before, now, asked):
-					bad.append("%s %s -> %s" % [def.id, before, now])
+					bad.append("%s %s -> %s" % [def.id(), before, now])
 			before = now
-			if instance.barrier_post and instance.barrier_post.far.at != Vector2.INF:
-				if guard_before != Vector2.INF \
-						and map.passable(map.world_to_tile(guard_before), asked) \
-						and not map.step_is_clear(guard_before, instance.barrier_post.far.at, asked):
-					bad.append("%s's far guard %s -> %s" % [def.id, guard_before,
-							instance.barrier_post.far.at])
-				guard_before = instance.barrier_post.far.at
-		if left_from != Vector2.INF and not instance.is_finished \
+		if left_from != Vector2.INF and not instance.is_gone() \
 				and instance.global_position.distance_to(left_from) < TILE:
-			stalled.append(def.id)
-		city.events.retire(instance)
+			stalled.append(def.id())
+		RunCity.events(city).retire(instance)
 	# What the remeasuring step reads: a departure that a solid holds within a tile of where it
 	# began, which the contract that nothing vanishes in her view keeps standing there.
 	print("WALKER day %d seed %d: %d rows, %d steps asked, departures held within a tile: %s"
@@ -595,11 +661,47 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 	t.check(bad.is_empty(), "no step entered ground its mover may not (%d did: %s)"
 			% [bad.size(), bad.slice(0, 5)])
 
+## **The far guard**: the hunting roadblock's, put on its own ground nearest her doorstep with his
+## partner sent off and her standing six tiles north of it, walked for ten seconds of his walk away
+## (`RoadblockParts`: the barrier post composed as the event composes it, driven a frame at a time). No
+## step of his enters ground his mover may not, and he walks.
+func _test_the_far_guard_of_a_roadblock_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
+	var map := city.map()
+	var row := EventCatalogue.escape_roadblock()
+	var mover := EventInstance.mover_for(row)
+	var at := _a_start_for(map, row, mover, map.doorstep_world_position())
+	t.check(at != Vector2.INF, "there is ground to stand a roadblock on")
+	if at == Vector2.INF:
+		return
+	var where := WhereSheIs.nowhere()
+	where.tell(at + Vector2(0.0, -6.0 * TILE))
+	var parts := RoadblockParts.on(t, row, at, map, where)
+	parts.lose_the_guard()
+	var asked := Mover.of(mover.layers_blocked())
+	var before := parts.post.where_the_far_guard_walks()
+	t.check(before != Vector2.INF, "the far guard is sent off with his partner")
+	var steps := 0
+	var bad: Array[String] = []
+	for _frame in 200:
+		parts.tick(0.05)
+		var now := parts.post.where_the_far_guard_walks()
+		if now == Vector2.INF or before == Vector2.INF:
+			break
+		if map.passable(map.world_to_tile(before), asked):
+			steps += 1
+			if not map.step_is_clear(before, now, asked):
+				bad.append("%s -> %s" % [before, now])
+		before = now
+	parts.release()
+	t.check(steps > 20, "the far guard walked (%d steps asked)" % steps)
+	t.check(bad.is_empty(), "no step of his entered ground his mover may not (%d did: %s)"
+			% [bad.size(), bad.slice(0, 5)])
+
 ## The nearest tile to `anchor` of a ground the row is placed on, that its mover may stand on.
 static func _a_start_for(map: CityMap, def: EventDef, mover: Mover, anchor: Vector2) -> Vector2:
 	var best := Vector2.INF
 	var best_distance := INF
-	for type in def.placement:
+	for type in def.ground_kinds():
 		for tile in map.tiles_of_type(type as GameEnums.TileType):
 			var at := map.tile_to_world(tile)
 			var distance := at.distance_squared_to(anchor)

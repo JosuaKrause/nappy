@@ -1,3 +1,4 @@
+class_name TestRunner
 extends Node
 ## Headless test runner.
 ##
@@ -21,8 +22,8 @@ extends Node
 ## Runs as a scene rather than via `--script` so that the autoloads (`Tuning` and `EventBus`)
 ## actually exist — `--script` replaces the main loop and skips them.
 ##
-## **No suite reads a global run.** The game's run lives on the `Sitting` (`Sitting.run`), which
-## `main` takes it from; each suite makes a `RunState` of its own and hands it to what it tests (a
+## **No suite reads a global run.** The game's run lives on the `Sitting`
+## (`Sitting.take_the_run()`), which `main` takes it from; each suite makes a `RunState` of its own and hands it to what it tests (a
 ## part directly, a city through `RunCity`, a booted `main` through its sitting), so there is no
 ## run to put back between suites and `SharedState` compares every autoload's variables.
 ##
@@ -109,20 +110,20 @@ func _ready() -> void:
 	var chosen := _discover(filters)
 	var orders: Array = []
 	for pass_number in range(1, repeat + 1):
-		var order := chosen.duplicate()
+		var order: Array[String] = chosen.duplicate()
 		var pass_seed := _pass_seed(shuffle_seed, pass_number)
 		if shuffled:
 			_shuffle(order, pass_seed)
 		orders.append(order)
 		if shuffled:
 			var names: PackedStringArray = []
-			for path in order:
+			for path: String in order:
 				names.append(path.trim_prefix("res://tests/"))
 			print("ORDER  seed %d  pass %d/%d  %s" % [pass_seed, pass_number, repeat, " ".join(names)])
 			print("REPLAY tools/test.sh --shuffle %d %s" % [pass_seed, " ".join(names)])
 	for pass_number in range(1, repeat + 1):
 		var failures_before := failures.size()
-		for path in orders[pass_number - 1]:
+		for path: String in orders[pass_number - 1]:
 			await _run_suite(path, pass_number, repeat)
 		if repeat > 1:
 			for i in range(failures_before, failures.size()):
@@ -142,6 +143,12 @@ func _ready() -> void:
 ## One suite, one pass: load it, run it, and say what it left behind and how long it took.
 func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 	var started := Time.get_ticks_msec()
+	# **The snapshot comes before the suite is loaded.** A snapshot `load()`s every script that holds
+	# a `static var`, and a suite parsed before that first snapshot (the first suite of a process,
+	# which `--shuffle` makes any suite) reaches the script graph from the other side; the process
+	# then ended with "10 ObjectDB instances were leaked at exit" and exit code 1 though every check
+	# passed (`test_run_state.gd` first did it, deterministically).
+	var shared_before := SharedState.snapshot(self)
 	# `load()` on a suite with a parse error returns a non-null GDScript that this guard
 	# catches before `.new()` ever runs — `.new()` on it is a runtime error with nothing to
 	# catch it, which is what used to abort `_ready()` before `quit()` and leave the headless
@@ -154,11 +161,10 @@ func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 		return
 	var suite: Object = script.new()
 	_running = path.get_file()
-	var shared_before := SharedState.snapshot(self)
-	# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
+	# `suite` is typed `Object`, so the call goes through `call()`: `await` on a `run` that is a plain
 	# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 	# coroutine waits for it.
-	await suite.run(self)
+	await suite.call("run", self)
 	# One frame and one physics frame between suites let the message queue (deferred calls,
 	# `queue_redraw`, Control layout) and the delete queue (`queue_free`) drain, which a
 	# synchronous run never lets happen.
@@ -248,12 +254,12 @@ func _pass_seed(shuffle_seed: int, pass_number: int) -> int:
 ## Fisher-Yates over `items` in place, drawn from a generator seeded with `seed_value`: the same
 ## seed and the same list give the same order on any machine (the generator is Godot's PCG, not
 ## the global one, which nothing else may disturb).
-func _shuffle(items: Array, seed_value: int) -> void:
+func _shuffle(items: Array[String], seed_value: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	for i in range(items.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
-		var held = items[i]
+		var held := items[i]
 		items[i] = items[j]
 		items[j] = held
 

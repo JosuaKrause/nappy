@@ -42,7 +42,7 @@ var _depths: Array[Vector2] = [Vector2.INF,
 		Vector2(Tuning.WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH),
 		Vector2(Tuning.THIN_WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH)]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var mismatches := 0
 	var grand_events := [0.0, 0.0, 0.0]
 	var grand_crowd := [0.0, 0.0, 0.0]
@@ -54,31 +54,32 @@ func run(t) -> void:
 	print("  %6s %4s %6s %8s   %-26s   %-26s" % ["seed", "day", "routes", "seconds",
 			"events", "crowd"])
 	for city_seed in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, run, CityGenerator.generate(city_seed))
 		for day in DAYS:
-			city.run.header.day = day
+			run.header().set_day(day)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("polite-rabbit-walls:%d:%d" % [city_seed, day])
 			city.start_day(CityState.new(), day, rng)
 			var consumed: Array[String] = []
-			city.events.start_day(DaySpec.for_day(day), rng, consumed, city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), rng, consumed, city.map().doorstep_world_position())
 			var events := [0.0, 0.0, 0.0]
 			var crowd := [0.0, 0.0, 0.0]
 			var seconds := 0.0
 			var routes := 0
 			var tree := city.streets().route_tree()
-			for branch in tree.branches:
+			for branch in tree.branches():
 				for route: Array in branch.routes:
-					var path := _waypoints(city.map, route)
+					var path := _waypoints(city.map(), route)
 					if path.size() < 2:
 						continue
 					routes += 1
 					var walked := _walk(city, path, day, rng, events, crowd)
 					seconds += walked.x
 					mismatches += int(walked.y)
-			city.events.clear()
+			RunCity.events(city).stand_down()
 			print("  %6d %4d %6d %8.0f   %s   %s" % [city_seed, day, routes, seconds,
 					_three(events), _three(crowd)])
 			for i in 3:
@@ -124,9 +125,9 @@ func _waypoints(map: CityMap, route: Array) -> PackedVector2Array:
 ## `contribution_at()`.
 func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGenerator,
 		events: Array, crowd: Array) -> Vector2:
-	var map := city.map
+	var map := city.map()
 	var here := path[0]
-	city.crowd.start_day(day, rng, here)
+	RunCity.crowd(city).start_day(day, rng, here)
 	var next := 1
 	var seconds := 0.0
 	var mismatches := 0
@@ -139,21 +140,22 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		if next < path.size():
 			here += (path[next] - here).normalized() * step
 		seconds += STEP
-		city.events.stream_around(here)
-		city.crowd.set_focus(here)
-		city.crowd.step(STEP)
+		RunCity.events(city).stream_around(here)
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(here))
+		RunCity.crowd(city).step(STEP)
 		var rates := [0.0, 0.0, 0.0]
 		var barrier := [0.0, 0.0, 0.0]
 		var charged := 0.0
 		var charged_barrier := 0.0
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			var live := instance.caret_intensity_over_horizon()
 			var field := instance.field_at(here, live, Vector2.INF)
 			if field <= 0.0:
 				continue
-			var actual := 0.0 if instance.excitement._walled_off(instance.global_position, here) \
+			var grid := instance.source().wall_grid()
+			var actual := 0.0 if grid != null and grid.wall_between(instance.global_position, here) \
 					else field
-			if instance.def.barrier_structure:
+			if instance.counts_as_one_barrier():
 				charged_barrier = maxf(charged_barrier, actual)
 			else:
 				charged += actual
@@ -161,7 +163,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 				if i != NONE and map.wall_between(instance.global_position, here, _depths[i].x,
 						_depths[i].y):
 					continue
-				if instance.def.barrier_structure:
+				if instance.counts_as_one_barrier():
 					barrier[i] = maxf(barrier[i], field)
 				else:
 					rates[i] += field
@@ -171,11 +173,11 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 			events[i] += (rates[i] + barrier[i]) * STEP
 		var heard := 0.0
 		var noise := [0.0, 0.0, 0.0]
-		for agent in city.crowd.agents():
-			var field := agent.excitement._field(here)
+		for agent in RunCity.crowd(city).agents():
+			var field := agent.mood()._field(here)
 			if field <= 0.0:
 				continue
-			heard += agent.excitement.contribution_at(here)
+			heard += agent.mood().contribution_at(here)
 			for i in 3:
 				if i != NONE and map.wall_between(agent.global_position, here, _depths[i].x,
 						_depths[i].y):

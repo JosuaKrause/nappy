@@ -1,8 +1,9 @@
 class_name AgentLook
 extends RefCounted
 ## How a crowd member looks: the picture it is drawn in, the state that picture keeps, and what the
-## redraw gate reads of it. `WalkerLook` and `CarLook` answer for their kind, and `CrowdAgent.kind`
-## installs one beside the kind's `LaneStrategy`, so the agent never asks which kind it is to draw.
+## redraw gate reads of it. `WalkerLook` and `CarLook` answer for their kind, and a `CrowdAgent`
+## installs one beside the kind's `LaneStrategy` when it takes its kind, so the agent never asks
+## which kind it is to draw.
 ##
 ## **A look reads the agent and never writes it.** It holds the state only the picture has (the
 ## sector last drawn, a walker's stride, a car's travelled ground) and reads the agent's lane state,
@@ -37,10 +38,6 @@ func restart() -> void:
 ## `velocity()`. Called once per tick by the mover's strategy, never from the drawing.
 func advance(_moving: Vector2, _delta: float) -> void:
 	pass
-
-## The sector this look draws in now, advanced from the agent's heading first.
-func sector() -> int:
-	return view
 
 ## Whether the picture is mirrored for the sector drawn.
 func flipped() -> bool:
@@ -78,3 +75,10 @@ func palette() -> Array:
 ## silhouette, and the ordinary frame once at the agent itself.
 func draw_body(_canvas: CanvasItem) -> void:
 	pass
+
+## The ground this agent's shadow covers with the agent at `at`: the one oval of its own ground
+## shape (`GroundShape.shadow_outline()`) for anything not on wheels. What `CrowdAgent.draw_shadow()`
+## fills and the debug view's shadow layer traces, so the two cannot disagree.
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = [_agent.shape().shadow_outline(at)]
+	return outlines

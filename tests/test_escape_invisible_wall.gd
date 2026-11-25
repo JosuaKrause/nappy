@@ -9,7 +9,7 @@ extends RefCounted
 ## blocked along the city's whole width: the strip from y 832 to 864. The city is built beside the
 ## building in the same viewport and the same physics space, and none of the blockers has a
 ## picture, so left in place they are a wall across the city that nobody can see — the player met
-## it at tile 74,27. `main._build_the_world_for()` takes them out
+## it at tile 74,27. `main._stand_the_world()` takes them out
 ## (`InteriorScene.take_the_walls_out()`) before it builds the city.
 ##
 ## **Driven through the real `main.tscn`** (`tests/booted_main.gd`), booted on the building the way
@@ -32,13 +32,13 @@ const DAY := 1
 ## Where the player stood, a tile below the strip.
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seat := Seat.new(t, func(fresh: RunState) -> void:
 			fresh.start_run(SEED)
-			fresh.header.day = DAY
-			fresh.facts.escape_section = DaySpec.Section.BUILDING)
+			fresh.header().set_day(DAY)
+			fresh.facts().set_escape_section(DaySpec.Section.BUILDING))
 	# Handed the watch's log: a boot points the sitting's library at the log it writes.
-	var pages := PageLog.new(seat.sitting.atlas)
+	var pages := PageLog.new(seat.sitting.atlas())
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], pages.boot_log())
 	var main := booted.main
 	var interior := Boot.interior(main)
@@ -65,12 +65,12 @@ func run(t) -> void:
 
 ## The player's own moment: on the sidewalk at 74,27, with the street open ahead of her, a step
 ## north is not stopped.
-func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> void:
+func _test_she_can_walk_north_from_where_the_player_stood(t: TestRunner, main: Node2D) -> void:
 	var player := Boot.player(main)
 	var city := Boot.city(main)
-	player.global_position = city.map.tile_to_world(WHERE_SHE_STOOD)
-	t.check(city.map.is_walkable(WHERE_SHE_STOOD + Vector2i.UP)
-			and city.map.is_walkable(WHERE_SHE_STOOD + Vector2i.UP * 2),
+	player.global_position = city.map().tile_to_world(WHERE_SHE_STOOD)
+	t.check(city.map().is_walkable(WHERE_SHE_STOOD + Vector2i.UP)
+			and city.map().is_walkable(WHERE_SHE_STOOD + Vector2i.UP * 2),
 			"the two tiles north of %s are walkable city ground" % WHERE_SHE_STOOD)
 	var hit := KinematicCollision2D.new()
 	var blocked := player.test_move(player.global_transform, Vector2.UP * Tuning.TILE_SIZE, hit)
@@ -81,10 +81,10 @@ func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> vo
 ## The same thing asked of the whole walk: on every walkable tile of the two chains' open cells, her
 ## body overlaps no collision body that is not the city's own — the city's buildings, its boundary
 ## and every event's body all live under `City`, so anything else there is a wall nobody drew.
-func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) -> void:
+func _test_nothing_but_the_city_stands_on_the_escape_streets(t: TestRunner, main: Node2D) -> void:
 	var city := Boot.city(main)
 	var player := Boot.player(main)
-	var plan := FinalePlanner.route(city.map)
+	var plan := FinalePlanner.route(city.map())
 	var space := city.get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var circle := CircleShape2D.new()
@@ -99,10 +99,10 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) ->
 		for dy in ReachabilityGrid.CELL:
 			for dx in ReachabilityGrid.CELL:
 				var tile := cell * ReachabilityGrid.CELL + Vector2i(dx, dy)
-				if not city.map.is_walkable(tile):
+				if not city.map().is_walkable(tile):
 					continue
 				asked += 1
-				query.transform = Transform2D(0.0, city.map.tile_to_world(tile))
+				query.transform = Transform2D(0.0, city.map().tile_to_world(tile))
 				for found in space.intersect_shape(query, 8):
 					var body := found["collider"] as Node
 					if body == null or city.is_ancestor_of(body):
@@ -122,7 +122,7 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) ->
 ## canvas from the world origin, so its walls and doors stand on the city's top streets: drawn,
 ## they would show over the city's ground and buildings there. Every picture under the building
 ## but its fade, which `InteriorScene.clear_fade()` still lifts over the street, is hidden.
-func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void:
+func _test_nothing_of_the_building_is_drawn_in_the_city(t: TestRunner, main: Node2D) -> void:
 	var interior := Boot.interior(main)
 	var fade := interior.get_node("FadeLayer")
 	var asked := 0
@@ -153,7 +153,8 @@ func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void
 ## release and a second load.
 static func _her_page_lives(pages: PageLog, player: Stroller) -> Array[Vector2i]:
 	var lives: Array[Vector2i] = []
-	for group: StringName in [Stroller.parent_atlas(player.is_male), Stroller.STROLLER_ATLAS,
+	var father := player.pose(1.0).mother_sources[0].begins_with("rig/father_")
+	for group: StringName in [Stroller.parent_atlas(father), Stroller.STROLLER_ATLAS,
 			Stroller.INDICATOR_ATLAS]:
 		lives.append(Vector2i(pages.loads(group), pages.releases(group)))
 	return lives

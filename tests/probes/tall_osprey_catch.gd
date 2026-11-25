@@ -6,50 +6,50 @@ extends RefCounted
 ##     tools/test.sh probes/tall_osprey_catch.gd
 ##
 ## **Two arrangements, measured side by side.** `follows`: the stand-off follows the catch
-## (`PursuitSpec.lunge_reach` 0), `PursuitSpec.standoff(130, catch)` is `catch + 78`, so the room
+## (`PursuitSpec.lunge_reach()` 0), `PursuitSpec.standoff(130, catch)` is `catch + 78`, so the room
 ## between lunge and catch stays 78px whatever the catch. `held`: the lunge held at 108px
-## (`PursuitSpec.lunge_reach` 30) whatever the catch, so the room is 108 minus the catch.
+## (`PursuitSpec.lunge_reach()` 30) whatever the catch, so the room is 108 minus the catch.
 ##
 ## **Then the lunge moved out**, for the alley robber alone, at catches of 30, 26 and 24px: stand-offs
-## of 108, 112, 116, 120 and 130px (`PursuitSpec.lunge_reach` = stand-off less 78). The game
-## ships the 26px catch with the 116px lunge (`PursuitSpec.lunge_reach` 38); the probe sets both
+## of 108, 112, 116, 120 and 130px (`PursuitSpec.lunge_reach()` = stand-off less 78). The game
+## ships the 26px catch with the 116px lunge (`PursuitSpec.lunge_reach()` 38); the probe sets both
 ## per row, whatever the catalogue says.
 ##
-## The rig walks her along a line at the robber from outside his notice (`EventDef.notice`, read off
-## the row), and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds
-## after the lunge (the chase begins), accelerating at `Tuning.ACCELERATION`. Other rigs: stands
-## still, walks away, runs from the notice.
+## The rig walks her along a line at the robber from outside his notice
+## (`EventDef.notice_within()`, read off the row), and answers after a reaction time drawn per
+## seed: `turns` runs away `reaction` seconds after the lunge (the chase begins), accelerating
+## at `Tuning.ACCELERATION`. Other rigs: stands still, walks away, runs from the notice.
 
 const STEP := 1.0 / 60.0
 const SEEDS := 200
 const CATCHES := [30.0, 28.0, 26.0, 24.0, 22.0, 20.0, 18.0, 16.0]
 
-func run(t) -> void:
-	for lunge in [0.0, 30.0]:
+func run(t: TestRunner) -> void:
+	for lunge: float in [0.0, 30.0]:
 		print("== %s ==" % ("held: lunge_reach 30 (108px)" if lunge > 0.0 else "follows the catch"))
-		for catch_radius in CATCHES:
+		for catch_radius: float in CATCHES:
 			_report(float(catch_radius), lunge)
-	# The robber-only stand-off override: `PursuitSpec.lunge_reach` is the stand-off less 78
+	# The robber-only stand-off override: `PursuitSpec.lunge_reach()` is the stand-off less 78
 	# (130 x 0.6).
-	for catch_radius in [30.0, 26.0, 24.0]:
+	for catch_radius: float in [30.0, 26.0, 24.0]:
 		print("== catch %.0f, lunge moved out ==" % catch_radius)
-		for standoff in [108.0, 112.0, 116.0, 120.0, 130.0]:
+		for standoff: float in [108.0, 112.0, 116.0, 120.0, 130.0]:
 			_report(catch_radius, standoff - 78.0)
 	t.check(true, "tall_osprey_catch probe ran")
 
 func _def(catch_radius: float, lunge: float) -> EventDef:
-	var def := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
-	def.inner_radius = catch_radius
-	def.pursuit = def.pursuit.duplicate() as PursuitSpec
-	def.pursuit.lunge_reach = lunge
-	return def
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var draft := robbery.redraft()
+	draft.field(robbery.field().holding_to(catch_radius))
+	draft.pursuit(robbery.pursuit().lunging_from(lunge))
+	return draft.build()
 
 func _report(catch_radius: float, lunge: float) -> void:
 	var standoff := PursuitSpec.standoff(130.0, _def(catch_radius, lunge).standoff_reach())
 	var out := "catch %4.0f  standoff %5.1f  notice-to-lunge walking in %.3fs standing %.3fs |" % [
 			catch_radius, standoff, _notice_to_lunge(_def(catch_radius, lunge), true),
 			_notice_to_lunge(_def(catch_radius, lunge), false)]
-	for mode in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
+	for mode: String in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
 		var got_away := 0
 		for seed_i in SEEDS:
 			var rng := RandomNumberGenerator.new()
@@ -62,13 +62,15 @@ func _report(catch_radius: float, lunge: float) -> void:
 ## **The notice she really gets**: seconds from the frame (counted frame to frame, so a lunge on the
 ## frame after the notice reads one step, 0.017s) the real `EventInstance` leaves waiting (he
 ## turns to face her) to the frame its telegraph ends (he lunges). He is not still during it: he
-## closes on her at his notice walk (`PursuitSpec.walk_speed`, or `PursuitSpec.speed` on a row with
+## closes on her at his notice walk (`PursuitSpec.walk_speed()`, or `PursuitSpec.speed()` on a row with
 ## none) until she is at the stand-off, so the gap closes at that plus 92px/s when she walks in
 ## (from 60px outside his notice, at `WALK_SPEED`) and at his walk alone when she stands 1px inside
 ## it. Not the `(notice - stand-off) / WALK_SPEED` of her walk alone.
 func _notice_to_lunge(def: EventDef, walking: bool) -> float:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	var her := Vector2(def.notice_within() + (60.0 if walking else -1.0), 0.0)
 	var noticed := -1.0
 	var elapsed := 0.0
@@ -76,7 +78,7 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 	while elapsed < 6.0 and result < 0.0:
 		if walking:
 			her.x -= Tuning.WALK_SPEED * STEP
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 		elapsed += STEP
 		if noticed < 0.0 and not instance.is_waiting():
@@ -89,8 +91,10 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 ## One chase. She starts 30-90px outside his notice walking in, or 10px inside it still or walking
 ## away.
 func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	var her := Vector2(def.notice_within() + rng.randf_range(30.0, 90.0), 0.0)
 	var reaction := rng.randf_range(0.15, 0.75)
 	var speed := -Tuning.WALK_SPEED
@@ -107,7 +111,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 	var since_notice := INF
 	var since_lunge := INF
 	var caught := false
-	while elapsed < 14.0 and not instance.is_leaving and not instance.is_finished and not caught:
+	while elapsed < 14.0 and not instance.is_on_its_way_out() and not instance.is_gone() and not caught:
 		if not instance.is_waiting() and since_notice == INF:
 			since_notice = 0.0
 		if not instance.is_waiting() and not instance.is_telegraphing() and since_lunge == INF:
@@ -120,8 +124,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 			wanted = Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her.x += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_notice != INF:

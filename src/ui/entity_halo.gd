@@ -69,6 +69,11 @@ extends Node2D
 ## rim built in it, not the count after the frame. Freed on the spot, before `ExcitementHalo` builds
 ## anything that frame, the block is back first.
 
+## The most opaque any halo may ever draw, once a source's `landed()` clears
+## `ExcitementHalo.LOW_EMPHASIS_POINTS` — see docs/EVENTS.md, "Soft, and under everything." The rim's
+## own alpha eases over this range, and `ExcitementHalo` scales its target by it.
+const MAX_ALPHA := 0.75
+
 ## How many directions the ring redraws the body in. Checked against a leaf blower's own concave
 ## silhouette (the arm breaks the body's own outline) at 8 first, which already read as a smooth
 ## rim rather than a facetted one at this scale. 12 is kept anyway, in the middle of the "eight to
@@ -179,7 +184,7 @@ func _has_settled() -> bool:
 ## nothing below it, and `_process()` asks for a fresh trace on every frame it is true, whether or
 ## not either channel is still easing. Nothing about a steady glow says the body under it is
 ## steady — see `_process()`.
-func is_showing() -> bool:
+func _is_showing() -> bool:
 	return _alpha > 0.0
 
 ## Eases the drawn alpha and colour toward their targets, one shared per-frame step size driving
@@ -220,14 +225,14 @@ func _process(delta: float) -> void:
 		# `delta / duration` per frame -- the same shape `_alpha`'s own step takes, scaled to its own
 		# 0..MAX_ALPHA range instead.
 		var channel_step := delta / duration
-		_alpha = move_toward(_alpha, _target_alpha, ExcitementHalo.MAX_ALPHA * channel_step)
+		_alpha = move_toward(_alpha, _target_alpha, MAX_ALPHA * channel_step)
 		_colour.r = move_toward(_colour.r, _target_colour.r, channel_step)
 		_colour.g = move_toward(_colour.g, _target_colour.g, channel_step)
 		_colour.b = move_toward(_colour.b, _target_colour.b, channel_step)
 		set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
 	# The frame a fade finally reaches zero still redraws once, which is what clears the last rim
 	# off the screen; after that a dark halo costs nothing at all.
-	if not settled or snapped or is_showing():
+	if not settled or snapped or _is_showing():
 		queue_redraw()
 
 ## The ring this rim is traced at: `HALO_OFFSETS` translations `HALO_MARGIN` out, all riding
@@ -251,7 +256,7 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 ## has to be handed the offset rather than left to discover it. See `Sprites.BASE_TRANSFORM_META` for
 ## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
-	if not is_showing():
+	if not _is_showing():
 		return
 	var bob: float = _bob.call()
 	for offset in trace_offsets(bob):

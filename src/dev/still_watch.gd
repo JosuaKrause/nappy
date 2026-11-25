@@ -34,13 +34,13 @@ extends Node
 ## still"* — a mother who is really stuck is still stuck once the light turns green, and the watch
 ## catches her then.
 ##
-## - **`Stroller.is_detained()`** — the one gate every `EventDef.detain_seconds` row goes through,
+## - **`Stroller.is_detained()`** — the one gate every `EventDef.detains_for()` row goes through,
 ##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and both checkpoint
 ##   rows that inspect her (`checkpoint_hut`, `checkpoint_post`; the boom never does) for the whole
 ##   of the controls-locked part of their hold. It is the single call site
 ##   (`CheckpointController.check_detentions()` → `body.detain()`) every input-taking mechanic
 ##   in the catalogue runs through, so nothing else in the game needs a query of its own.
-## - **`CheckpointController.door_holding_her_at()`** — only a `redetains` row (the two
+## - **`CheckpointController.door_holding_her_at()`** — only a `detains_again()` row (the two
 ##   checkpoint ones) ever needs this on top of `is_detained()`, because a checkpoint's own hold
 ##   is a clock on the instance (`EventInstance.is_chatting()`, stepped on the events' physics
 ##   tick) and the input lock is a separate clock on `Stroller` (ticked in its own
@@ -81,7 +81,11 @@ const STILL_RADIUS := 4.0
 ## answers the same default, and this is what the hold is before `setup()` hands it one.
 const DEFAULT_SECONDS := 1.0
 
-var _city: City
+var _map: CityMap
+var _signals: TrafficSignals
+## Null where the world has no events or no crowd; each is asked only when handed.
+var _events: EventManager
+var _crowd: Crowd
 var _player: Stroller
 var _day: DayController
 var _seconds := DEFAULT_SECONDS
@@ -101,13 +105,21 @@ var _elapsed := 0.0
 ## Set the moment the picture is asked for, so a still-running instance (the capture itself takes
 ## a frame or two to land) never asks twice.
 var _done := false
-## Where its `still` line goes: the boot's run trace, which `main` hands it before `setup()`; one
-## nobody handed writes nowhere.
-var trace := RunTrace.new()
+## Where its `still` line goes: the boot's run trace, which `main` hands it (`use_trace()`) before
+## `setup()`; one nobody handed writes nowhere.
+var _trace := RunTrace.new()
 
-func setup(city: City, player: Stroller, day: DayController, hold_seconds: float,
-		picture_dir: String, recording := false) -> void:
-	_city = city
+## Hands in where its `still` line goes, before `setup()`.
+func use_trace(run_trace: RunTrace) -> void:
+	_trace = run_trace
+
+func setup(map: CityMap, signals: TrafficSignals, events: EventManager, crowd: Crowd,
+		player: Stroller, day: DayController, hold_seconds: float, picture_dir: String,
+		recording := false) -> void:
+	_map = map
+	_signals = signals
+	_events = events
+	_crowd = crowd
 	_player = player
 	_day = day
 	_seconds = hold_seconds
@@ -124,14 +136,14 @@ func _watching() -> bool:
 	return _day.is_running() and not get_tree().paused
 
 ## Whether she cannot presently choose to walk somewhere — see the class doc for the three cases
-## and why each is needed. Touches `_city` and `_player`, so unlike `_feed()` this has no pure test
+## and why each is needed. Touches `_events` and `_player`, so unlike `_feed()` this has no pure test
 ## of its own; the geometry and signal half of it (`facing_a_red_light()`) does.
 func _held() -> bool:
 	if _player.is_detained():
 		return true
-	if _city.events and _city.events.door_holding_her_at(_player.global_position):
+	if _events and _events.door_holding_her_at(_player.global_position):
 		return true
-	return facing_a_red_light(_city.map, _city.signals, _player.global_position, _visible_world_rect())
+	return facing_a_red_light(_map, _signals, _player.global_position, _visible_world_rect())
 
 ## The world-space rect the screen currently shows, computed the same way `TouchControls`'s own
 ## screen-to-world reads do: `get_viewport().get_canvas_transform()` maps a
@@ -263,13 +275,13 @@ static func _nearest_visible_signalled_junction(map: CityMap, signals: TrafficSi
 func _trigger() -> void:
 	_done = true
 	set_physics_process(false)
-	trace.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
-		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
+	_trace.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
+		_seconds, RunTrace.tile(_map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
 ## Where the picture goes in a game run: a `still/` folder beside the run's other picture kinds
 ## (`auto/`, `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
-## the boot's run log `run_log` (`current_log().path`) — the one public handle onto where a run
+## the boot's run log `run_log` (`current_log().file_path()`) — the one public handle onto where a run
 ## writes anything, rather than a second copy of `Telemetry`'s own folder-naming. Falls back to
 ## `Telemetry.DIRECTORY` itself when telemetry is off (`--no-telemetry` alongside this flag) — an
 ## edge case the flag was not asked to solve, but one a picture dropped into the working directory
@@ -277,7 +289,7 @@ func _trigger() -> void:
 ## makes it.
 static func telemetry_picture_dir(run_log: Telemetry) -> String:
 	var log := run_log.current_log()
-	return (log.path.get_base_dir() + "/still") if log and log.path != "" \
+	return (log.file_path().get_base_dir() + "/still") if log and log.file_path() != "" \
 			else (Telemetry.DIRECTORY + "/still")
 
 ## The picture's file, in the folder the watch was handed (made here). A fixed filename is enough:
@@ -293,17 +305,17 @@ func _picture_path() -> String:
 func _nearest() -> String:
 	var best := INF
 	var describe := "nothing live"
-	if _city.events:
-		for instance: EventInstance in _city.events.instances():
-			if instance.is_finished:
+	if _events:
+		for instance: EventInstance in _events.instances():
+			if instance.is_gone():
 				continue
 			var distance: float = instance.global_position.distance_to(_player.global_position)
 			if distance < best:
 				best = distance
-				describe = "%s %.0fpx" % [instance.def.id, distance]
-	if _city.crowd:
-		for agent: CrowdAgent in _city.crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+				describe = "%s %.0fpx" % [instance.row_id(), distance]
+	if _crowd:
+		for agent: CrowdAgent in _crowd.agents():
+			if not agent.is_car():
 				continue
 			var distance: float = agent.global_position.distance_to(_player.global_position)
 			if distance < best:

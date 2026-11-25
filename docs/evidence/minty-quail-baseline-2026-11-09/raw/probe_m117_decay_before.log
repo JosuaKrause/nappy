@@ -1,0 +1,177 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== net excitement rate by ground, 40s walks, 3 seeds ==
+walking decay 6.00/s  ×  calm 2.00  precinct 1.50  street 1.00  main road 0.02
+alley trickle 3.00/s
+
+-- day 1 (act 1) --
+  ground            crowd/s ground/s    net/s  clears in        ×  seed
+  quiet pavement       1.12     6.00    -4.88      20.5s 1.00/100%  4242
+  main road            6.18     0.12     6.06      never 0.02/100%  4242
+  precinct             1.31     9.00    -7.69      13.0s 1.50/100%  4242
+  calm                 0.00     9.63    -9.63      10.4s 2.00/61%  4242
+  alley                3.06     3.48    -0.42     238.6s 0.58/100%  4242
+  quiet pavement       1.70     6.83    -5.14      19.5s 1.00/86%  90210
+  main road            5.74     0.12     5.62      never 0.02/100%  90210
+  precinct             0.61     9.00    -8.39      11.9s 1.50/100%  90210
+  calm                 0.00    10.17   -10.17       9.8s 2.00/70%  90210
+  alley                3.01     3.48    -0.47     211.5s 0.58/100%  90210
+  quiet pavement       1.95     6.00    -4.05      24.7s 1.00/100%  1337
+  main road            7.49     0.12     7.37      never 0.02/100%  1337
+  precinct             0.52     9.00    -8.48      11.8s 1.50/100%  1337
+  calm                 0.00    10.91   -10.91       9.2s 2.00/82%  1337
+  alley                3.02     3.48    -0.46     217.0s 0.58/100%  1337
+  -- means --
+  quiet pavement                        -4.69      21.3s
+  main road                              6.35      never
+  precinct                              -8.19      12.2s
+  calm                                 -10.24       9.8s
+  alley                                 -0.45     221.8s
+
+-- day 9 (act 3) --
+  ground            crowd/s ground/s    net/s  clears in        ×  seed
+  quiet pavement       0.90     6.00    -5.10      19.6s 1.00/100%  4242
+  main road            2.37     0.12     2.25      never 0.02/100%  4242
+  precinct             0.05     9.00    -8.95      11.2s 1.50/100%  4242
+  calm                 0.00     9.63    -9.63      10.4s 2.00/61%  4242
+  alley                3.00     3.48    -0.48     208.3s 0.58/100%  4242
+  quiet pavement       0.17     6.83    -6.66      15.0s 1.00/86%  90210
+  main road            1.60     0.12     1.48      never 0.02/100%  90210
+  precinct             0.08     9.00    -8.92      11.2s 1.50/100%  90210
+  calm                 0.00    10.17   -10.17       9.8s 2.00/70%  90210
+  alley                3.00     3.48    -0.48     208.3s 0.58/100%  90210
+  quiet pavement       0.77     6.00    -5.23      19.1s 1.00/100%  1337
+  main road            1.11     0.12     0.99      never 0.02/100%  1337
+  precinct             0.10     9.00    -8.90      11.2s 1.50/100%  1337
+  calm                 0.00    10.91   -10.91       9.2s 2.00/82%  1337
+  alley                3.00     3.48    -0.48     210.3s 0.58/100%  1337
+  -- means --
+  quiet pavement                        -5.66      17.7s
+  main road                              1.57      never
+  precinct                              -8.92      11.2s
+  calm                                 -10.24       9.8s
+  alley                                 -0.48     209.0s
+
+== docs/EVENTS.md, "What an event actually costs" ==
+walking decay 6.00/s, running decay 0.50/s, running penalty 14.00/s
+| Event | walk through | run through |
+| --- | ---: | ---: |
+| `burning_building` | -33.9 | +41.8 |
+| `construction` | -26.1 | +32.1 |
+| `roadblock` | -23.3 | +28.8 |
+| `delivery_van` | -19.6 | +24.1 |
+| `playground` | -19.6 | +24.1 |
+| `checkpoint_gate` | -15.7 | +19.3 |
+| `barricade` | -15.7 | +19.3 |
+| `fallen_tree` | -15.7 | +19.3 |
+| `skip` | -15.7 | +19.3 |
+| `impact_crater` | -15.7 | +19.3 |
+| `scaffolding` | -15.7 | +19.3 |
+| `burst_water_main` | -15.7 | +19.3 |
+| `moving_van` | -15.7 | +19.3 |
+| `collapsed_frontage` | -15.7 | +19.3 |
+| `burnt_out_car` | -15.7 | +19.3 |
+| `burnt_shell` | -6.9 | +14.3 |
+| `poster_crew_square` | -5.3 | +22.6 |
+| `poster_crew` | -5.3 | +22.6 |
+| `neighbor` | -5.2 | +6.4 |
+| `checkpoint_post` | -4.7 | +20.2 |
+| `checkpoint_hut` | -4.7 | +20.2 |
+| `chatting_mother` | -2.7 | +14.8 |
+| `police_patrol` | +5.9 | +46.2 |
+| `cafe_tables` | +6.1 | +18.2 |
+| `market_stall` | +8.5 | +19.5 |
+| `charging_dog` * | +8.8 | — |
+| `alley_mouse` | +12.7 | +20.9 |
+| `cyclist` * | +16.0 | +29.7 |
+| `cat_dash` | +17.6 | +37.5 |
+| `ice_cream_van` | +18.4 | +65.8 |
+| `van_guard_giving_chase` * | +19.3 | — |
+| `masked_pursuer` * | +19.3 | +38.4 |
+| `door_guard` * | +19.3 | — |
+| `reversing_lorry` * | +23.1 | +53.3 |
+| `robber_giving_chase` * | +23.3 | — |
+| `policeman_giving_chase` * | +23.3 | — |
+| `guardsman_giving_chase` * | +23.3 | — |
+| `alley_robbery` * | +23.3 | — |
+| `basement_steam` | +25.2 | +34.7 |
+| `busker` | +34.7 | +63.1 |
+| `loudspeaker` | +40.0 | +70.7 |
+| `homeless_yeller` | +40.0 | +70.7 |
+| `dog_walker` | +42.7 | +47.8 |
+| `pigeon_flock` † | +44.9 | +63.6 |
+| `protest` | +46.4 | +87.9 |
+| `abduction` * | +47.7 | +84.1 |
+| `leaf_blower` | +52.9 | +73.1 |
+| `car_accident` | +65.7 | +58.3 |
+| `military_convoy` | +68.6 | +107.2 |
+| `loose_dog` | +69.3 | +70.5 |
+| `curfew_announce` | +73.7 | +89.1 |
+| `night_raid` | +83.9 | +122.6 |
+| `fire_truck` | +97.0 | +132.0 |
+| `firefight` * | +132.1 | +159.2 |
+| `finale_explosion` | +165.2 | +211.2 |
+
+-- mean emission along the line, against a candidate walking decay --
+  event                 emission intensity     outer  walk@now
+  burning_building          0.00      0.00       260     -33.9
+  construction              0.00      0.00       200     -26.1
+  roadblock                 0.00      0.00       179     -23.3
+  delivery_van              0.00      0.00       150     -19.6
+  playground                0.00      0.00       150     -19.6
+  checkpoint_gate           0.00      0.00       120     -15.7
+  barricade                 0.00      0.00       120     -15.7
+  fallen_tree               0.00      0.00       120     -15.7
+  skip                      0.00      0.00       120     -15.7
+  impact_crater             0.00      0.00       120     -15.7
+  scaffolding               0.00      0.00       120     -15.7
+  burst_water_main          0.00      0.00       120     -15.7
+  moving_van                0.00      0.00       120     -15.7
+  collapsed_frontage        0.00      0.00       120     -15.7
+  burnt_out_car             0.00      0.00       120     -15.7
+  burnt_shell               1.92      2.50        78      -6.9
+  poster_crew_square        3.79      5.00       110      -5.3
+  poster_crew               3.79      5.00       110      -5.3
+  neighbor                  0.00      0.00        40      -5.2
+  checkpoint_post           3.81      4.00        98      -4.7
+  checkpoint_hut            3.81      4.00        98      -4.7
+  chatting_mother           4.20      4.50        70      -2.7
+  police_patrol             7.46     10.00       185       5.9
+  cafe_tables              10.38     12.00        64       6.1
+  market_stall             12.10     14.00        64       8.5
+  charging_dog              8.69     12.00       150       8.8
+  alley_mouse              15.75     21.00        60      12.7
+  cyclist                  14.20     18.00        90      16.0
+  cat_dash                 12.75     17.00       120      17.6
+  ice_cream_van             9.53     13.00       240      18.4
+  van_guard_giving_chase     13.40     18.00       120      19.3
+  masked_pursuer           13.40     18.00       120      19.3
+  door_guard               13.40     18.00       120      19.3
+  reversing_lorry          12.07     16.00       175      23.1
+  robber_giving_chase      11.36     16.00       200      23.3
+  policeman_giving_chase     11.36     16.00       200      23.3
+  guardsman_giving_chase     11.36     16.00       200      23.3
+  alley_robbery            11.36     16.00       200      23.3
+  basement_steam           18.89     25.00        90      25.2
+  busker                   14.39     19.30       190      34.7
+  loudspeaker              14.76     20.00       210      40.0
+  homeless_yeller          14.76     20.00       210      40.0
+  dog_walker               24.72     33.00       105      42.7
+  pigeon_flock             18.30     42.00       168      44.9
+  protest                  13.94     19.50       269      46.4
+  abduction                14.77     20.00       250      47.7
+  leaf_blower              18.81     19.30       190      52.9
+  car_accident             37.50     50.00        96      65.7
+  military_convoy          16.52     22.00       300      68.6
+  loose_dog                28.79     39.00       140      69.3
+  curfew_announce          22.14     30.00       210      73.7
+  night_raid               17.70     24.00       330      83.9
+  fire_truck               19.12     26.00       340      97.0
+  firefight                22.25     30.00       374     132.1
+  finale_explosion         20.62     24.00       520     165.2
+-- m117_decay.gd               614618 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m117_decay.gd. Not a green build.

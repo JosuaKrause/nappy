@@ -91,7 +91,7 @@ static func _compute_components(mask: int) -> Array:
 		while not stack.is_empty():
 			var slot: int = stack.pop_back()
 			component.append(slot)
-			for pair in _ADJACENT_LOCAL:
+			for pair: Array in _ADJACENT_LOCAL:
 				var other := -1
 				if pair[0] == slot:
 					other = pair[1]
@@ -116,10 +116,11 @@ static func _compute_components(mask: int) -> Array:
 static func build(map: CityMap, mover: Mover = null) -> ReachabilityGrid:
 	var ground := mover if mover else Mover.lattice()
 	var grid := ReachabilityGrid.new()
-	grid._map_size = map.size
-	grid._cells = map.size / CELL
+	var map_size := map.size_in_tiles()
+	grid._map_size = map_size
+	grid._cells = map_size / CELL
 	var components_by_mask := _components_by_mask()
-	var tile_count := map.size.x * map.size.y
+	var tile_count := map_size.x * map_size.y
 	grid._node_of_tile = PackedInt32Array()
 	grid._node_of_tile.resize(tile_count)
 	grid._node_of_tile.fill(NONE)
@@ -135,13 +136,13 @@ static func build(map: CityMap, mover: Mover = null) -> ReachabilityGrid:
 				tiles.append(tile)
 				if map.passable(tile, ground):
 					mask |= 1 << slot
-			for component in components_by_mask[mask]:
+			for component: Array[int] in components_by_mask[mask]:
 				var node := grid._edges.size()
 				grid._edges.append([])
 				grid._cell_of_node.append(cell)
 				for slot in component:
 					var tile: Vector2i = tiles[slot]
-					grid._node_of_tile[tile.y * map.size.x + tile.x] = node
+					grid._node_of_tile[tile.y * map_size.x + tile.x] = node
 	grid._build_edges()
 	return grid
 
@@ -164,8 +165,8 @@ func _maybe_edge(a: Vector2i, b: Vector2i) -> void:
 	var nb := node_at(b)
 	if na < 0 or nb < 0:
 		return
-	_edges[na].append([nb, a, b])
-	_edges[nb].append([na, b, a])
+	(_edges[na] as Array).append([nb, a, b])
+	(_edges[nb] as Array).append([na, b, a])
 
 # ------------------------------------------------------------------------ base ---
 
@@ -265,7 +266,7 @@ func flood(sources: Array, blocked: Dictionary = {}) -> Dictionary:
 	var dirty := _dirty_cells(blocked)
 	var reached := {}
 	var queue: Array[int] = []
-	for source in sources:
+	for source: Vector2i in sources:
 		var key := _key_of(source, blocked, dirty)
 		if key != NONE and not reached.has(key):
 			reached[key] = true

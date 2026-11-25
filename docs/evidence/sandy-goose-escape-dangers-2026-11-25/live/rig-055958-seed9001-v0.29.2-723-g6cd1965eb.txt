@@ -1,0 +1,20 @@
+# 9001 bridge
+   0.0  plan     every unit drawn before she sets off: 32 units, 21 rows
+   0.0  plan     finale: tunnel via 3 calm, 148 cells | bridge via 3 calm, 122 cells | 32 open streets, 622 placements
+   0.0  start    entered the city at (75,80), facing 180°
+   0.0  near     finale_explosion (telegraph) at (67,86), 320px, exc 0, in 0.0/s (crowd 0.0, events 3.6), sleep 100
+   5.3  near     impact_crater at (67,86), 119px, exc 1, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   9.1  near     impact_crater at (55,87), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  10.1  near     impact_crater at (55,87), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  22.3  near     impact_crater at (44,118), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  32.9  near     impact_crater at (67,132), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  33.9  near     impact_crater at (67,132), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  49.0  near     impact_crater at (111,128), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  51.5  near     impact_crater at (119,129), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  52.4  near     impact_crater at (119,129), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  55.6  near     roadblock at (130,138), 198px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  58.7  near     roadblock at (127,138), 108px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  59.9  near     roadblock at (126,143), 58px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  60.2  near     roadblock at (126,144), 30px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  60.2  lost     lost_hard_fail in the city after 60.2s to roadblock — It went wrong. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100 | near: roadblock 28px
+  60.2  route    day 16: day ended (LOST_HARD_FAIL) before reaching 'bridge', 60.2s (day time)

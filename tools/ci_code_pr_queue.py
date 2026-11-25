@@ -88,7 +88,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         description=(
             "Fails when the branch changes a file under src/ or tests/ since BASE without also deleting or"
             " rewriting a file under docs/todo/ and adding or changing a file under docs/decisions/, unless the"
-            " pull request's description, read now through the API, carries a line `No queue item: <reason>`."
+            " pull request's description, read now through the API, carries a line `No queue item: <reason>`,"
+            " which it prints for the reviewer."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

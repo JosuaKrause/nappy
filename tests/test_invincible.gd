@@ -1,8 +1,8 @@
 extends RefCounted
 ## `--invincible`, M100 "An invincible mode for playtesting": `DevFlags`' own parsing of the flag,
-## and what the run hands on from it — `DayController.invincible`, whose `_ignores_loss()` is the
-## single predicate all three losing paths consult, so a lost day under the flag stays running and
-## a won day still ends; `Baby.excitement_frozen`; the HUD's own note (the run log's is
+## and what the run hands on from it — `DayController.set_invincible()`, whose `_ignores_loss()` is
+## the single predicate all three losing paths consult, so a lost day under the flag stays running and
+## a won day still ends; `Baby.freeze_excitement()`; the HUD's own note (the run log's is
 ## `tests/test_telemetry.gd`'s). Each is
 ## handed its value directly, the way `main` hands it from the run's configuration.
 
@@ -11,6 +11,7 @@ const SEED := 4242
 ## tree (`_let_the_baby_tick()`).
 const METER_SECONDS := 3.0
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const HudScript := preload("res://src/ui/hud.gd")
 
 ## Stands in for the city, the same shape `tests/test_meters.gd`'s own `FakeWorld` uses: a live
 ## noise source `Baby.excitement_sources_at()` can actually sum, so the meter test below drives
@@ -38,7 +39,7 @@ var _player: Node2D
 var _day: DayController
 var _results: Array[GameEnums.DayResult] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_invincible_from_args(t)
 	_test_invincible_from_query(t)
 	_test_crying_does_not_end_the_day_under_invincible(t)
@@ -52,7 +53,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------ DevFlags parsing ---
 
-func _test_invincible_from_args(t) -> void:
+func _test_invincible_from_args(t: TestRunner) -> void:
 	t.check(not _from_args(PackedStringArray()),
 		"no command-line modifier leaves the day mortal")
 	t.check(not _from_args(PackedStringArray(["--invincible=1"])),
@@ -60,7 +61,7 @@ func _test_invincible_from_args(t) -> void:
 	t.check(_from_args(PackedStringArray(["--invincible"])),
 		"--invincible selects the mode")
 
-func _test_invincible_from_query(t) -> void:
+func _test_invincible_from_query(t: TestRunner) -> void:
 	t.check(not _from_query(""),
 		"an absent URL parameter leaves the day mortal")
 	t.check(not _from_query("?invincible=0"),
@@ -73,17 +74,17 @@ func _test_invincible_from_query(t) -> void:
 		"the invincible parameter is found among other URL parameters")
 
 ## Whether a debug build's run configuration on command-line `args` is invincible
-## (`RunConfig.invincible`, which `DevFlags.invincible()` answers).
+## (`RunConfig.is_invincible()`, which `DevFlags.invincible()` answers).
 static func _from_args(args: PackedStringArray) -> bool:
-	return RunConfig.parse(args, "", true).invincible
+	return RunConfig.parse(args, "", true).is_invincible()
 
 ## Whether a debug build's run configuration on the page query `query` is invincible.
 static func _from_query(query: String) -> bool:
-	return RunConfig.parse(PackedStringArray(), query, true).invincible
+	return RunConfig.parse(PackedStringArray(), query, true).is_invincible()
 
 # ---------------------------------------------------------------------- rig ---
 
-func _build(t) -> void:
+func _build(t: TestRunner) -> void:
 	if not _map:
 		_map = CityGenerator.generate(SEED)
 	_results = []
@@ -96,7 +97,8 @@ func _build(t) -> void:
 	_day.set_process(false)
 	_run = RunState.new()
 	_run.start_run(SEED)
-	_day.setup(_map, _player, _run)
+	_day.setup(_run)
+	_day.use_the_walk(_map, _player)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 func _teardown() -> void:
@@ -106,7 +108,7 @@ func _teardown() -> void:
 ## A `Baby` on a live `Stroller`, standing on a `FakeWorld` — the same shape `tests/test_meters.
 ## gd`'s own `_build()` uses, kept local to this suite so a rig this small does not need a shared
 ## fixture with a file whose meters are not about the flag.
-func _build_meter_rig(t) -> _MeterRig:
+func _build_meter_rig(t: TestRunner) -> _MeterRig:
 	var rig := _MeterRig.new()
 	rig.world = FakeWorld.new()
 	t.add_child(rig.world)
@@ -136,20 +138,20 @@ func _teardown_meter_rig(rig: _MeterRig) -> void:
 
 # ---------------------------------------------------------------- day loop ---
 
-func _test_crying_does_not_end_the_day_under_invincible(t) -> void:
+func _test_crying_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
 	t.check(_results.is_empty(), "crying does not end the day under --invincible")
 	t.check(_day.is_running(), "the day is still running")
-	t.check(_day.failure_reason == "", "nothing set a failure reason — nothing has failed")
+	t.check(_day.loss_reason() == "", "nothing set a failure reason — nothing has failed")
 	_teardown()
 
-func _test_hard_fail_does_not_end_the_day_under_invincible(t) -> void:
+func _test_hard_fail_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	EventBus.hard_fail_triggered.emit("abduction")
 	t.check(_results.is_empty(), "a hard fail does not end the day under --invincible")
 	t.check(_day.is_running(), "the day is still running")
@@ -159,67 +161,67 @@ func _test_hard_fail_does_not_end_the_day_under_invincible(t) -> void:
 ## evening: "when invincible the timer should never go down ... this is just noisy flashing of
 ## alarms and the day gets dark." The clock does not merely hold at zero once it gets there — it
 ## never moves at all, so the light never runs down to dusk in the first place.
-func _test_the_clock_never_moves_under_invincible(t) -> void:
+func _test_the_clock_never_moves_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(10.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	_day.tick(9.0)
-	t.close_to(_day.time_remaining, 10.0,
+	t.close_to(_day.seconds_left(), 10.0,
 			"the clock has not moved even after what would be most of the day", 0.001)
 	t.check(_results.is_empty(), "and nothing ended the day either")
 	_day.tick(5.0)
-	t.close_to(_day.time_remaining, 10.0,
+	t.close_to(_day.seconds_left(), 10.0,
 			"or after running past what would have been dusk", 0.001)
 	t.check(_results.is_empty(), "dusk still never arrives")
 	t.check(_day.is_running(), "the day is still running")
 	_teardown()
 
-func _test_a_won_day_still_ends_under_invincible(t) -> void:
+func _test_a_won_day_still_ends_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	_player.global_position = _map.home_world_position()
 	EventBus.return_phase_started.emit()
 	t.check(_results == [GameEnums.DayResult.WON], "a won day still ends under --invincible")
 	_teardown()
 
 ## PLAYTEST-57: "excitement should never go up" under the flag. `FakeWorld.noise` stands in for a
-## live event well above any walking decay, so a straight read of `Baby.excitement` after several
+## live event well above any walking decay, so a straight read of `Baby.excitement_level()` after several
 ## seconds against it is a read of `_update_excitement()`'s own arithmetic, not of the predicate.
 ## Starts above zero so decay has something to do: the flag freezes what feeds the meter, never
 ## the meter itself, so it may still fall.
-func _test_the_meter_does_not_rise_under_invincible(t) -> void:
+func _test_the_meter_does_not_rise_under_invincible(t: TestRunner) -> void:
 	var rig := _build_meter_rig(t)
-	rig.baby.excitement = 20.0
+	rig.baby.seed_meters(rig.baby.sleepiness_level(), 20.0)
 	rig.world.noise = 50.0
 
-	rig.baby.excitement_frozen = true
+	rig.baby.freeze_excitement()
 	await _let_the_baby_tick(rig, METER_SECONDS)
-	t.check(rig.baby.excitement <= 20.0 + 0.01,
+	t.check(rig.baby.excitement_level() <= 20.0 + 0.01,
 			"excitement never rises under --invincible, even against a live source (got %.2f)"
-			% rig.baby.excitement)
+			% rig.baby.excitement_level())
 	_teardown_meter_rig(rig)
 
 ## The flag off: the same rig, the same source, moves both meters — the day clock and the
 ## excitement meter — so the frozen behaviour above is the flag's doing and not a rig that cannot
 ## move either number at all.
-func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t) -> void:
+func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t: TestRunner) -> void:
 	_build(t)
 	_day.start(10.0)
-	_day.invincible = false
+	_day.set_invincible(false)
 	_day.tick(3.0)
-	t.check(_day.time_remaining < 10.0 - 0.01, "the clock counts down with the flag off")
+	t.check(_day.seconds_left() < 10.0 - 0.01, "the clock counts down with the flag off")
 	_teardown()
 
 	var rig := _build_meter_rig(t)
 	rig.world.noise = 50.0
 	await _let_the_baby_tick(rig, METER_SECONDS)
-	t.check(rig.baby.excitement > 0.01, "and excitement rises too, against the same source")
+	t.check(rig.baby.excitement_level() > 0.01, "and excitement rises too, against the same source")
 	_teardown_meter_rig(rig)
 
 ## The day's own default leaves the ordinary behaviour alone, so the predicate's off branch is
 ## exercised rather than only the flag's on branch.
-func _test_the_three_losses_still_end_the_day_with_the_flag_off(t) -> void:
+func _test_the_three_losses_still_end_the_day_with_the_flag_off(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
@@ -245,7 +247,7 @@ func _test_the_three_losses_still_end_the_day_with_the_flag_off(t) -> void:
 
 ## Each HUD is configured as `main` configures it, before it enters the tree, where it draws its
 ## header (`Root/Header`) from the run it is handed, a run of the test's own.
-func _test_the_hud_names_the_mode_when_invincible(t) -> void:
+func _test_the_hud_names_the_mode_when_invincible(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(SEED)
 	var on := _hud_drawing(t, run, true)
@@ -260,8 +262,8 @@ func _test_the_hud_names_the_mode_when_invincible(t) -> void:
 
 ## The header a debug HUD draws on entering the tree, configured `invincible` or not and handed
 ## `run`; its owner is the HUD, which the caller frees.
-func _hud_drawing(t, run: RunState, invincible: bool) -> Label:
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
+func _hud_drawing(t: TestRunner, run: RunState, invincible: bool) -> Label:
+	var hud: HudScript = HUD_SCENE.instantiate()
 	hud.configure(true, invincible, false)
 	hud.use_run(run)
 	t.add_child(hud)

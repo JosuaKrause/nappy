@@ -6,7 +6,10 @@ eleven roof objects are manually arranged on one oversized roof so the whole fam
 in one frame; this is a presentation rig, not a claim that ordinary generation places every kind
 on one building.
 
-After `./tools/check.sh`, reproduce it with:
+The rig's runtime and scene source is revision `58a472913bf0237504cca9352fd94928a8483f27`, the
+squashed commit of pull request 441 that holds this folder and
+`scenes/dev/roof_context_preview.tscn`. The scene is not in the current tree, so check that
+revision out in a fresh checkout, run `./tools/check.sh`, and reproduce it with:
 
 ```sh
 /Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1280x720 \

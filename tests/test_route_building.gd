@@ -22,7 +22,7 @@ const POLL_MSEC := 500
 ## The run log's own folder name, which sits somewhere under the child's home.
 const LOG_FOLDER := "telemetry"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var started_at := Time.get_unix_time_from_system()
 	# Kept alive until `run()` ends: freeing it removes the folder and all it holds, hidden files too.
 	var scratch := DirAccess.create_temp("route_building_home")

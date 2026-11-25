@@ -1,14 +1,15 @@
 extends EventDrawer
 ## An event drawer that records what a look tells it to draw instead of painting it, handed to an
-## instance through `EventInstance.drawer` the way its manager's spawner hands the real one. A check
+## instance through `EventSurroundings.drawing_through()` the way its manager's spawner hands the real one. A check
 ## reads the pictures an event was drawn with off this, without reading what the look holds; which
 ## picture an event shows where is the look's to decide, and how a picture looks on a canvas is the
 ## real drawer's.
 ##
-## The scenery of a crash's or a burst main's slices is built for real, since the look stands it
-## behind its slice as a node: a drawer recording scenery is handed the atlas the scenery is cut
-## from, and one handed none records no scenery and must not be asked to. The scenery lays its
-## pictures through the real drawer's own, or through `scenery_drawer` when a test hands one.
+## The scenery of a partly animated picture (a crash's or a burst main's slices, a café sitter, the
+## busker, a poster crew pasting) is built for real, since the look stands it as a node: a drawer
+## handed the atlas the scenery is cut from builds it, and one handed none builds a scenery that
+## lays nothing (`InertScenery`), which is still recorded. The scenery lays its pictures through the
+## real drawer's own, or through `scenery_drawer` when a test hands one.
 
 ## Every picture the look asked for, in order: `{"canvas", "kind", "picture", "foot", "size",
 ## "rect", "mirrored", "colour", "band", "pass", "frame"}`. `kind` is `&"stand"`, `&"paint"`, `&"caret"` (a danger caret: `foot` is its tip, `size` its width twice over, `colour` its colour),
@@ -24,8 +25,8 @@ var draws: Array[Dictionary] = []
 ## its `draw` signal, emitted before every `_draw()` but the one it was first seen in, counts them.
 var _passes := {}
 
-## What the scenery this builds lays its pictures through, handed on to it through
-## `EventScenery.drawer` in place of the one the real drawer hands; null to keep that one.
+## What the scenery this builds lays its pictures through, handed to it in
+## `EventScenery.draw_through()` in place of the one the real drawer hands; null to keep that one.
 var scenery_drawer: SceneryDrawer = null
 
 func _init(atlas: AtlasLibrary = null) -> void:
@@ -53,15 +54,28 @@ func caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void
 
 ## Overrides EventDrawer.scenery.
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
-		band: Rect2) -> EventScenery:
-	var built := super(picture, extent, anchor, shadow, band)
-	if scenery_drawer != null:
-		built.drawer = scenery_drawer
+		band: Rect2, mirrored := false) -> EventScenery:
+	var built: EventScenery = super(picture, extent, anchor, shadow, band, mirrored) \
+			if _atlas != null else InertScenery.new()
 	draws.append({"canvas": built, "kind": &"scenery", "picture": picture, "foot": anchor,
 		"size": extent, "rect": Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
-		"mirrored": false, "colour": Color.WHITE, "band": band, "pass": 0,
+		"mirrored": mirrored, "colour": Color.WHITE, "band": band, "pass": 0,
 		"frame": Engine.get_process_frames()})
 	return built
+
+## A scenery for a drawer handed no atlas: it has nothing to cut its pictures from, so it builds
+## no layers and lays nothing.
+class InertScenery extends EventScenery:
+	## Overrides EventScenery._ready.
+	func _ready() -> void:
+		pass
+
+## The scenery's drawer is this one's `scenery_drawer` when a test hands one, handed through the
+## same `EventScenery.draw_through()` call the real drawer makes.
+##
+## Overrides EventDrawer._scenery_drawer.
+func _scenery_drawer() -> SceneryDrawer:
+	return scenery_drawer if scenery_drawer != null else super()
 
 func _record(canvas: CanvasItem, kind: StringName, picture: String, rect: Rect2, foot: Vector2,
 		size: Vector2, mirrored: bool, colour: Color, band := Rect2()) -> void:
@@ -98,6 +112,22 @@ func canvases() -> Array[CanvasItem]:
 	for entry in draws:
 		if entry.canvas != null and not found.has(entry.canvas):
 			found.append(entry.canvas)
+	return found
+
+## The slices a long picture was drawn in (`SpreadLook.Slice`, the nodes a look stands beside its
+## event): each one drawn on, and each one a scenery was drawn behind (a crash's slice paints
+## nothing of its own), in their order in the tree. A slice is drawn the frame after it is put in,
+## so a check asks after that frame.
+func slices() -> Array[SpreadLook.Slice]:
+	var found: Array[SpreadLook.Slice] = []
+	for canvas in canvases():
+		var slice := canvas as SpreadLook.Slice
+		if slice == null and canvas is EventScenery:
+			slice = canvas.get_parent() as SpreadLook.Slice
+		if slice != null and is_instance_valid(slice) and not found.has(slice):
+			found.append(slice)
+	found.sort_custom(func(first: SpreadLook.Slice, second: SpreadLook.Slice) -> bool:
+		return first.get_index() < second.get_index())
 	return found
 
 ## What every canvas shows now (`shown_on()`), the canvases in the order `canvases()` gives.

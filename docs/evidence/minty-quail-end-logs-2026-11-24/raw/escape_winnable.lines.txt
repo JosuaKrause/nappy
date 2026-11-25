@@ -1,0 +1,150 @@
+ESCAPE_WINNABLE [as built] seed 4242 | 32 streets, 12 with none, 20 dangers | military_convoy 7, finale_explosion 7, abduction 4, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 4242 | 32 streets, 3 with none, 29 dangers | military_convoy 9, finale_explosion 7, abduction 9, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 4242 | 32 streets, 5 with none, 27 dangers | military_convoy 7, finale_explosion 6, abduction 9, roadblock 5
+ESCAPE_WINNABLE [0,0,0,0,1] seed 4242 | 32 streets, 32 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 1 | 34 streets, 13 with none, 21 dangers | military_convoy 7, finale_explosion 7, abduction 4, roadblock 3
+ESCAPE_WINNABLE [5,4,3,2,1] seed 1 | 34 streets, 3 with none, 31 dangers | military_convoy 8, finale_explosion 9, abduction 9, roadblock 5
+ESCAPE_WINNABLE [6,5,4,3,2] seed 1 | 34 streets, 4 with none, 30 dangers | military_convoy 9, finale_explosion 8, abduction 7, roadblock 6
+ESCAPE_WINNABLE [0,0,0,0,1] seed 1 | 34 streets, 34 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 77 | 35 streets, 11 with none, 24 dangers | military_convoy 8, finale_explosion 9, abduction 4, roadblock 3
+ESCAPE_WINNABLE [5,4,3,2,1] seed 77 | 35 streets, 3 with none, 32 dangers | military_convoy 9, finale_explosion 10, abduction 9, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 77 | 35 streets, 4 with none, 31 dangers | military_convoy 9, finale_explosion 9, abduction 7, roadblock 6
+ESCAPE_WINNABLE [0,0,0,0,1] seed 77 | 35 streets, 35 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 9001 | 32 streets, 11 with none, 21 dangers | military_convoy 7, finale_explosion 10, abduction 3, roadblock 1
+ESCAPE_WINNABLE [5,4,3,2,1] seed 9001 | 32 streets, 3 with none, 29 dangers | military_convoy 7, finale_explosion 8, abduction 11, roadblock 3
+ESCAPE_WINNABLE [6,5,4,3,2] seed 9001 | 32 streets, 4 with none, 28 dangers | military_convoy 8, finale_explosion 8, abduction 8, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 9001 | 32 streets, 32 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 23 | 33 streets, 12 with none, 21 dangers | military_convoy 8, finale_explosion 6, abduction 5, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 23 | 33 streets, 4 with none, 29 dangers | military_convoy 7, finale_explosion 8, abduction 11, roadblock 3
+ESCAPE_WINNABLE [6,5,4,3,2] seed 23 | 33 streets, 5 with none, 28 dangers | military_convoy 8, finale_explosion 5, abduction 10, roadblock 5
+ESCAPE_WINNABLE [0,0,0,0,1] seed 23 | 33 streets, 33 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 5 | 29 streets, 10 with none, 19 dangers | military_convoy 6, finale_explosion 8, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 5 | 29 streets, 2 with none, 27 dangers | military_convoy 5, finale_explosion 9, abduction 9, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 5 | 29 streets, 4 with none, 25 dangers | military_convoy 7, finale_explosion 7, abduction 9, roadblock 2
+ESCAPE_WINNABLE [0,0,0,0,1] seed 5 | 29 streets, 29 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 31337 | 28 streets, 9 with none, 19 dangers | military_convoy 8, finale_explosion 6, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 31337 | 28 streets, 2 with none, 26 dangers | military_convoy 8, finale_explosion 8, abduction 6, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 31337 | 28 streets, 3 with none, 25 dangers | military_convoy 5, finale_explosion 8, abduction 8, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 31337 | 28 streets, 28 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 2024 | 28 streets, 9 with none, 19 dangers | military_convoy 8, finale_explosion 7, abduction 3, roadblock 1
+ESCAPE_WINNABLE [5,4,3,2,1] seed 2024 | 28 streets, 2 with none, 26 dangers | military_convoy 10, finale_explosion 7, abduction 7, roadblock 2
+ESCAPE_WINNABLE [6,5,4,3,2] seed 2024 | 28 streets, 3 with none, 25 dangers | military_convoy 8, finale_explosion 7, abduction 7, roadblock 3
+ESCAPE_WINNABLE [0,0,0,0,1] seed 2024 | 28 streets, 28 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 7 | 31 streets, 11 with none, 20 dangers | military_convoy 8, finale_explosion 6, abduction 4, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 7 | 31 streets, 3 with none, 28 dangers | military_convoy 8, finale_explosion 8, abduction 8, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 7 | 31 streets, 4 with none, 27 dangers | military_convoy 8, finale_explosion 7, abduction 9, roadblock 3
+ESCAPE_WINNABLE [0,0,0,0,1] seed 7 | 31 streets, 31 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 808 | 27 streets, 8 with none, 19 dangers | military_convoy 7, finale_explosion 7, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 808 | 27 streets, 3 with none, 24 dangers | military_convoy 5, finale_explosion 7, abduction 8, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 808 | 27 streets, 4 with none, 23 dangers | military_convoy 5, finale_explosion 6, abduction 8, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 808 | 27 streets, 27 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 4216201080 | 33 streets, 12 with none, 21 dangers | military_convoy 7, finale_explosion 9, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 4216201080 | 33 streets, 3 with none, 30 dangers | military_convoy 7, finale_explosion 8, abduction 9, roadblock 6
+ESCAPE_WINNABLE [6,5,4,3,2] seed 4216201080 | 33 streets, 5 with none, 28 dangers | military_convoy 7, finale_explosion 10, abduction 10, roadblock 1
+ESCAPE_WINNABLE [0,0,0,0,1] seed 4216201080 | 33 streets, 33 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 11 | 40 streets, 13 with none, 27 dangers | military_convoy 11, finale_explosion 8, abduction 6, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 11 | 40 streets, 4 with none, 36 dangers | military_convoy 8, finale_explosion 9, abduction 14, roadblock 5
+ESCAPE_WINNABLE [6,5,4,3,2] seed 11 | 40 streets, 5 with none, 35 dangers | military_convoy 9, finale_explosion 10, abduction 9, roadblock 7
+ESCAPE_WINNABLE [0,0,0,0,1] seed 11 | 40 streets, 40 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 13 | 29 streets, 9 with none, 20 dangers | military_convoy 8, finale_explosion 7, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 13 | 29 streets, 2 with none, 27 dangers | military_convoy 6, finale_explosion 9, abduction 7, roadblock 5
+ESCAPE_WINNABLE [6,5,4,3,2] seed 13 | 29 streets, 2 with none, 27 dangers | military_convoy 8, finale_explosion 7, abduction 8, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 13 | 29 streets, 29 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 17 | 35 streets, 13 with none, 22 dangers | military_convoy 8, finale_explosion 7, abduction 5, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 17 | 35 streets, 4 with none, 31 dangers | military_convoy 7, finale_explosion 9, abduction 11, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 17 | 35 streets, 6 with none, 29 dangers | military_convoy 7, finale_explosion 7, abduction 11, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 17 | 35 streets, 35 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 19 | 31 streets, 11 with none, 20 dangers | military_convoy 8, finale_explosion 6, abduction 4, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 19 | 31 streets, 3 with none, 28 dangers | military_convoy 7, finale_explosion 6, abduction 10, roadblock 5
+ESCAPE_WINNABLE [6,5,4,3,2] seed 19 | 31 streets, 4 with none, 27 dangers | military_convoy 7, finale_explosion 8, abduction 7, roadblock 5
+ESCAPE_WINNABLE [0,0,0,0,1] seed 19 | 31 streets, 31 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 29 | 27 streets, 8 with none, 19 dangers | military_convoy 6, finale_explosion 8, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 29 | 27 streets, 3 with none, 24 dangers | military_convoy 6, finale_explosion 6, abduction 8, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 29 | 27 streets, 2 with none, 25 dangers | military_convoy 5, finale_explosion 7, abduction 8, roadblock 5
+ESCAPE_WINNABLE [0,0,0,0,1] seed 29 | 27 streets, 27 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 31 | 29 streets, 9 with none, 20 dangers | military_convoy 8, finale_explosion 8, abduction 2, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 31 | 29 streets, 3 with none, 26 dangers | military_convoy 8, finale_explosion 7, abduction 8, roadblock 3
+ESCAPE_WINNABLE [6,5,4,3,2] seed 31 | 29 streets, 4 with none, 25 dangers | military_convoy 7, finale_explosion 8, abduction 6, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 31 | 29 streets, 29 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 37 | 36 streets, 11 with none, 25 dangers | military_convoy 9, finale_explosion 9, abduction 5, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 37 | 36 streets, 4 with none, 32 dangers | military_convoy 8, finale_explosion 8, abduction 12, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 37 | 36 streets, 4 with none, 32 dangers | military_convoy 9, finale_explosion 10, abduction 7, roadblock 6
+ESCAPE_WINNABLE [0,0,0,0,1] seed 37 | 36 streets, 36 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 41 | 29 streets, 11 with none, 18 dangers | military_convoy 5, finale_explosion 8, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 41 | 29 streets, 3 with none, 26 dangers | military_convoy 8, finale_explosion 7, abduction 7, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 41 | 29 streets, 4 with none, 25 dangers | military_convoy 7, finale_explosion 7, abduction 6, roadblock 5
+ESCAPE_WINNABLE [0,0,0,0,1] seed 41 | 29 streets, 29 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 43 | 35 streets, 13 with none, 22 dangers | military_convoy 8, finale_explosion 8, abduction 4, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 43 | 35 streets, 4 with none, 31 dangers | military_convoy 7, finale_explosion 8, abduction 12, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 43 | 35 streets, 5 with none, 30 dangers | military_convoy 7, finale_explosion 8, abduction 11, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 43 | 35 streets, 35 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 47 | 31 streets, 11 with none, 20 dangers | military_convoy 7, finale_explosion 8, abduction 4, roadblock 1
+ESCAPE_WINNABLE [5,4,3,2,1] seed 47 | 31 streets, 4 with none, 27 dangers | military_convoy 7, finale_explosion 6, abduction 11, roadblock 3
+ESCAPE_WINNABLE [6,5,4,3,2] seed 47 | 31 streets, 5 with none, 26 dangers | military_convoy 7, finale_explosion 8, abduction 9, roadblock 2
+ESCAPE_WINNABLE [0,0,0,0,1] seed 47 | 31 streets, 31 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 53 | 25 streets, 8 with none, 17 dangers | military_convoy 9, finale_explosion 4, abduction 3, roadblock 1
+ESCAPE_WINNABLE [5,4,3,2,1] seed 53 | 25 streets, 2 with none, 23 dangers | military_convoy 6, finale_explosion 5, abduction 8, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 53 | 25 streets, 4 with none, 21 dangers | military_convoy 7, finale_explosion 5, abduction 4, roadblock 5
+ESCAPE_WINNABLE [0,0,0,0,1] seed 53 | 25 streets, 25 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 59 | 33 streets, 13 with none, 20 dangers | military_convoy 6, finale_explosion 7, abduction 5, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 59 | 33 streets, 3 with none, 30 dangers | military_convoy 7, finale_explosion 8, abduction 11, roadblock 4
+ESCAPE_WINNABLE [6,5,4,3,2] seed 59 | 33 streets, 4 with none, 29 dangers | military_convoy 7, finale_explosion 9, abduction 7, roadblock 6
+ESCAPE_WINNABLE [0,0,0,0,1] seed 59 | 33 streets, 33 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] seed 61 | 30 streets, 10 with none, 20 dangers | military_convoy 7, finale_explosion 8, abduction 3, roadblock 2
+ESCAPE_WINNABLE [5,4,3,2,1] seed 61 | 30 streets, 3 with none, 27 dangers | military_convoy 8, finale_explosion 6, abduction 8, roadblock 5
+ESCAPE_WINNABLE [6,5,4,3,2] seed 61 | 30 streets, 4 with none, 26 dangers | military_convoy 7, finale_explosion 7, abduction 8, roadblock 4
+ESCAPE_WINNABLE [0,0,0,0,1] seed 61 | 30 streets, 30 with none, 0 dangers | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE [as built] | 24 seeds | 0.66 dangers a street, 34% of streets with none | military_convoy 181, finale_explosion 178, abduction 89, roadblock 46
+ESCAPE_WINNABLE [5,4,3,2,1] | 24 seeds | 0.90 dangers a street, 10% of streets with none | military_convoy 176, finale_explosion 183, abduction 223, roadblock 97
+ESCAPE_WINNABLE [6,5,4,3,2] | 24 seeds | 0.87 dangers a street, 13% of streets with none | military_convoy 175, finale_explosion 182, abduction 193, roadblock 104
+ESCAPE_WINNABLE [0,0,0,0,1] | 24 seeds | 0.00 dangers a street, 100% of streets with none | military_convoy 0, finale_explosion 0, abduction 0, roadblock 0
+ESCAPE_WINNABLE walk seed 4242 tunnel | LOST_HARD_FAIL at 62.7s
+ESCAPE_WINNABLE walk seed 1 tunnel | LOST_HARD_FAIL at 25.1s
+ESCAPE_WINNABLE walk seed 77 tunnel | LOST_HARD_FAIL at 6.0s
+ESCAPE_WINNABLE walk seed 9001 tunnel | out at 61.6s
+ESCAPE_WINNABLE walk seed 23 tunnel | out at 53.2s
+ESCAPE_WINNABLE walk seed 5 tunnel | out at 67.1s
+ESCAPE_WINNABLE walk seed 31337 tunnel | LOST_HARD_FAIL at 6.4s
+ESCAPE_WINNABLE walk seed 2024 tunnel | out at 53.2s
+ESCAPE_WINNABLE walk seed 7 tunnel | LOST_HARD_FAIL at 76.3s
+ESCAPE_WINNABLE walk seed 808 tunnel | LOST_HARD_FAIL at 49.4s
+ESCAPE_WINNABLE walk seed 4216201080 tunnel | LOST_HARD_FAIL at 34.5s
+ESCAPE_WINNABLE walk seed 11 tunnel | out at 88.1s
+ESCAPE_WINNABLE walk seed 13 tunnel | LOST_HARD_FAIL at 48.7s
+ESCAPE_WINNABLE walk seed 17 tunnel | LOST_HARD_FAIL at 49.8s
+ESCAPE_WINNABLE walk seed 19 tunnel | LOST_HARD_FAIL at 46.8s
+ESCAPE_WINNABLE walk seed 29 tunnel | out at 45.6s
+ESCAPE_WINNABLE walk seed 31 tunnel | out at 54.8s
+ESCAPE_WINNABLE walk seed 37 tunnel | LOST_HARD_FAIL at 10.3s
+ESCAPE_WINNABLE walk seed 41 tunnel | LOST_HARD_FAIL at 15.7s
+ESCAPE_WINNABLE walk seed 43 tunnel | out at 58.2s
+ESCAPE_WINNABLE walk seed 47 tunnel | LOST_HARD_FAIL at 5.9s
+ESCAPE_WINNABLE walk seed 53 tunnel | out at 53.2s
+ESCAPE_WINNABLE walk seed 59 tunnel | LOST_HARD_FAIL at 22.9s
+ESCAPE_WINNABLE walk seed 61 tunnel | out at 62.4s
+ESCAPE_WINNABLE walk seed 4242 bridge | out at 40.5s
+ESCAPE_WINNABLE walk seed 1 bridge | LOST_HARD_FAIL at 24.6s
+ESCAPE_WINNABLE walk seed 77 bridge | LOST_HARD_FAIL at 5.5s
+ESCAPE_WINNABLE walk seed 9001 bridge | LOST_HARD_FAIL at 60.2s
+ESCAPE_WINNABLE walk seed 23 bridge | LOST_HARD_FAIL at 69.6s
+ESCAPE_WINNABLE walk seed 5 bridge | LOST_HARD_FAIL at 36.5s
+ESCAPE_WINNABLE walk seed 31337 bridge | out at 39.8s
+ESCAPE_WINNABLE walk seed 2024 bridge | out at 57.7s
+ESCAPE_WINNABLE walk seed 7 bridge | LOST_HARD_FAIL at 13.3s
+ESCAPE_WINNABLE walk seed 808 bridge | out at 50.2s
+ESCAPE_WINNABLE walk seed 4216201080 bridge | out at 60.1s
+ESCAPE_WINNABLE walk seed 11 bridge | LOST_HARD_FAIL at 15.2s
+ESCAPE_WINNABLE walk seed 13 bridge | out at 68.9s
+ESCAPE_WINNABLE walk seed 17 bridge | LOST_HARD_FAIL at 52.7s
+ESCAPE_WINNABLE walk seed 19 bridge | out at 69.3s
+ESCAPE_WINNABLE walk seed 29 bridge | LOST_HARD_FAIL at 38.7s
+ESCAPE_WINNABLE walk seed 31 bridge | LOST_HARD_FAIL at 34.7s
+ESCAPE_WINNABLE walk seed 37 bridge | LOST_HARD_FAIL at 17.6s
+ESCAPE_WINNABLE walk seed 41 bridge | LOST_HARD_FAIL at 19.1s
+ESCAPE_WINNABLE walk seed 43 bridge | LOST_HARD_FAIL at 55.5s
+ESCAPE_WINNABLE walk seed 47 bridge | out at 41.7s
+ESCAPE_WINNABLE walk seed 53 bridge | LOST_HARD_FAIL at 37.7s
+ESCAPE_WINNABLE walk seed 59 bridge | out at 63.4s
+ESCAPE_WINNABLE walk seed 61 bridge | LOST_HARD_FAIL at 9.6s
+ESCAPE_WINNABLE walks to the tunnel | { "LOST_HARD_FAIL": 14, "out": 10 } | out in 59.7s on average
+ESCAPE_WINNABLE walks to the bridge | { "out": 9, "LOST_HARD_FAIL": 15 } | out in 54.6s on average

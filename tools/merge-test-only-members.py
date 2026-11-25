@@ -118,7 +118,10 @@ def run(path: str, ref: str, dry_run: bool, cwd: Path) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description=f"Resolve a merge conflict in {LIST_PATH} (this file only) from main's side.",
+        description=f"Resolve a merge conflict in {LIST_PATH} (this file only) from main's side:"
+        " starts from main's side, replays the lines the branch removed and added, stages the file and checks the"
+        " result against MERGE_HEAD. It refuses, changing nothing, when a line cannot be placed (a removed blank"
+        " separator occurs more than once, so it is refused: resolve that by hand).",
         epilog="Example: uv run python tools/merge-test-only-members.py --dry-run",
     )
     parser.add_argument("path", nargs="?", default=LIST_PATH, help=f"the unmerged list (only {LIST_PATH})")

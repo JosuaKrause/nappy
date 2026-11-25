@@ -26,7 +26,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const _HORN_CALLS := 200000
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M191 — first horn distance and time, per car speed ==")
 	var old_watch := Tuning.CAR_ZEBRA_SIGHT
 	var new_watch := Crowd.CAR_HORN_SIGHT
@@ -73,15 +73,17 @@ func run(t) -> void:
 ## widening the horn's own comparison from `<= CAR_ZEBRA_SIGHT` to `<= CAR_HORN_SIGHT` adds no new
 ## query, only a wider band of cars for which `_horn()` itself now runs. So the added cost per
 ## frame is bounded by (live cars) × (one `_horn()` call), measured directly rather than guessed.
-func _measure_cost(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+func _measure_cost(t: TestRunner) -> void:
+	var run := RunCity.started_run(RUN_SEED)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
-	city.crowd.start_day(1, RandomNumberGenerator.new())
+	RunCity.build(city, run, CityGenerator.generate(4242))
+	RunCity.crowd(city).start_day(1, RandomNumberGenerator.new())
+	RunCity.crowd(city).use_bus(EventBus)
 	var live_cars := 0
 	var sample: CrowdAgent = null
-	for agent in city.crowd.agents():
-		if agent.kind != CrowdAgent.Kind.CAR:
+	for agent in RunCity.crowd(city).agents():
+		if agent.lane().kind() != CrowdAgent.Kind.CAR:
 			continue
 		live_cars += 1
 		if sample == null:
@@ -95,7 +97,7 @@ func _measure_cost(t) -> void:
 	var at: Vector2 = sample.global_position + sample.heading() * 250.0
 	var start := Time.get_ticks_usec()
 	for i in _HORN_CALLS:
-		city.crowd._horn(sample, at)
+		RunCity.crowd(city)._horn(sample, at)
 	var per_call_us := float(Time.get_ticks_usec() - start) / float(_HORN_CALLS)
 	var frame_budget_us := 1000000.0 / 60.0
 	print("_horn() costs %.3fus a call (measured over %d calls)" % [per_call_us, _HORN_CALLS])

@@ -85,14 +85,14 @@ const CANVAS_BOTTOM_MARGIN := {
 ## How much ground this car has covered, wrapped to one `WheelBob.WAVELENGTH`, which is the phase of
 ## the rise and fall its body rides over its wheels. Advanced by distance actually covered, once per
 ## tick, the way a walker's stride is.
-var travelled := 0.0
+var _travelled := 0.0
 
 ## Adds the ground this tick covered. Called once per tick, never from the drawing, which a halo
 ## ring calls several times a frame.
 ##
 ## Overrides AgentLook.advance.
 func advance(moving: Vector2, delta: float) -> void:
-	travelled = wrapf(travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)
+	_travelled = wrapf(_travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)
 
 ## The lift this car's body rides right now, the `bob()` `EntityHalo` asks every owner for:
 ## `WheelBob.lift()` over the ground it has covered, at full height from `BOB_FULL_SPEED` up and
@@ -103,31 +103,25 @@ func advance(moving: Vector2, delta: float) -> void:
 ##
 ## Overrides AgentLook.bob.
 func bob() -> float:
-	return WheelBob.lift(travelled, _agent.velocity().length() / BOB_FULL_SPEED)
+	return WheelBob.lift(_travelled, _agent.velocity().length() / BOB_FULL_SPEED)
 
 ## Overrides AgentLook.carets.
 func carets() -> bool:
 	return true
 
-## Advances the sector from the car's velocity alone. There is no cross term the way a walker has
-## one: `velocity()` is already the instantaneous line of travel, cardinal in a lane and the tangent
-## of the arc mid-turn, so the sector runs through the diagonal for exactly the length of a turn and
-## holds at whichever cardinal or diagonal it last pointed while the car is at or under
-## `IDLE_SPEED`. A placement leaves the heading exactly on a lane axis, a sector centre 45 degrees
-## clear of its neighbours and twice the hold's reach, so the ordinary update replaces the sector
-## drawn before with no reset.
-##
-## Overrides AgentLook.sector.
-func sector() -> int:
-	view = EightDirection.update(view, _agent.velocity(), IDLE_SPEED)
-	return view
-
-## One `velocity()` serves the bob and the sector, the value `bob()` and `sector()` would each have
-## computed.
+## What the car draws at `moving`, its `velocity()`: the sector, the mirror, and the bob quantised
+## by `BOB_STEPS_PER_PX`, one `velocity()` serving the bob and the sector, and the sector
+## `draw_body()` draws. The sector is advanced from the car's velocity alone. There is no cross term
+## the way a walker has one: `velocity()` is already the instantaneous line of travel, cardinal in a
+## lane and the tangent of the arc mid-turn, so the sector runs through the diagonal for exactly the
+## length of a turn and holds at whichever cardinal or diagonal it last pointed while the car is at
+## or under `IDLE_SPEED`. A placement leaves the heading exactly on a lane axis, a sector centre 45
+## degrees clear of its neighbours and twice the hold's reach, so the ordinary update replaces the
+## sector drawn before with no reset.
 ##
 ## Overrides AgentLook.picture.
 func picture(moving: Vector2) -> Vector3i:
-	var third := roundi(WheelBob.lift(travelled, moving.length() / BOB_FULL_SPEED) * BOB_STEPS_PER_PX)
+	var third := roundi(WheelBob.lift(_travelled, moving.length() / BOB_FULL_SPEED) * BOB_STEPS_PER_PX)
 	view = EightDirection.update(view, moving, IDLE_SPEED)
 	return Vector3i(view, 1 if flipped() else 0, third)
 
@@ -177,9 +171,24 @@ func palette() -> Array:
 ## cardinal, so this is an exact value there. Because it is read off the heading, the redraw gate
 ## reads the heading too (`heading_key()`).
 static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
-	var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
+	return Vector2(0.0, ground_line(forward) + float(CANVAS_BOTTOM_MARGIN[view_name]))
+
+## How far below the car's centre its picture meets the ground, heading along `forward`: the
+## southern reach of its body, `26·|heading.y| + 14·|heading.x|` (`body_anchor()` says why that is
+## the line every view stands on). Where its wheels touch the road, so where its shadow lies
+## (`shadow_outlines()`).
+static func ground_line(forward: Vector2) -> float:
+	return Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
 			+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(forward.x)
-	return Vector2(0.0, south_reach + float(CANVAS_BOTTOM_MARGIN[view_name]))
+
+## A car's shadow: one oval per wheel pair (`GroundShape.paired_shadow_outlines()`), the pairs at the
+## two ends of its capsule along the live heading, the nearer one on its picture's ground line
+## (`ground_line()`), so the shadow lies under its tyres and never above its roof.
+##
+## Overrides AgentLook.shadow_outlines.
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	var forward := _agent.heading()
+	return _agent.shape().paired_shadow_outlines(at, forward, ground_line(forward))
 
 ## Draws the body, trim and wheels onto `canvas`. **Both callers have already lifted the canvas by
 ## `bob()`**, so what stays on the ground, a car's wheels and its shadow, is drawn back down by the
@@ -190,19 +199,19 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 ##
 ## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
-	var frame := sector()
-	var flip := flipped()
+	var drawn := picture(_agent.velocity())
+	var flip := drawn.y == 1
 	var forward := _agent.heading()
 	var grounded := Vector2(0.0, -bob())
-	_agent.draw_shadow(canvas, grounded, forward)
-	var view_name: String = VIEW_BY_SECTOR[frame]
+	_agent.draw_shadow(canvas, grounded)
+	var view_name: String = VIEW_BY_SECTOR[drawn.x]
 	# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 	# picture cannot register against a car that is not there.
 	var anchor := body_anchor(view_name, forward)
-	var body := _agent.atlas.region(region_of(BODY_BY_VIEW[view_name]))
-	var trim := _agent.atlas.region(region_of(TRIM_BY_VIEW[view_name]))
-	var wheels := _agent.atlas.region(region_of(WHEELS_BY_VIEW[view_name]))
-	Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, _agent.colour)
+	var body := _agent.picture_region(region_of(BODY_BY_VIEW[view_name]))
+	var trim := _agent.picture_region(region_of(TRIM_BY_VIEW[view_name]))
+	var wheels := _agent.picture_region(region_of(WHEELS_BY_VIEW[view_name]))
+	Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, _agent.clothing_colour())
 	Sprites.draw_standing(canvas, trim, anchor, Vector2.ZERO, flip)
 	# Last: each tyre is drawn over the paint.
 	Sprites.draw_standing(canvas, wheels, anchor + grounded, Vector2.ZERO, flip)

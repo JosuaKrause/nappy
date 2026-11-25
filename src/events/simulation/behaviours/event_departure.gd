@@ -1,0 +1,336 @@
+class_name EventDeparture
+extends EventBehaviour
+## **Going away.** Nothing vanishes while you are looking at it: an event that is over leaves
+## (`Phase.LEAVING`) — the cat runs on, the flock climbs away, the dog that lost interest trots off —
+## and is gone because it left, never by a fade. Every event is composed of one; it ticks only while
+## its event is leaving, on its own call (`leave()`).
+##
+## A departure goes down a way it was given (day 12's park people walked out through the cordon's
+## last gap), back along a man's trail to the vehicle that let him out (`EventOfficer`), or on the
+## way it was going; **something solid straight ahead turns it onto a way out** planned over walkable
+## ground from where she is now, rather than holding it against the solid in her view.
+##
+## **A row whose route is worked out as it goes leaves by legs of the same** (`go_on_by()`, a row the
+## director sent ahead of her): a car drives on through roads from junction box to junction box,
+## turning at a box as a live one does, and a walker walks straight on, each leg its `WayOn` gives,
+## until it is out of her sight; only where it gives none does it fall to the way out every event has.
+
+## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
+## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
+## backstop for a departure she is standing next to** (`_must_clear_sight`).
+const LEAVING_GIVES_UP := 6.0
+## The most legs a departure by legs asks for in one tick's step (`_walk_the_way()`).
+const LEGS_IN_A_STEP := 2
+
+## How long it has been leaving, in seconds.
+var _leaving_for := 0.0
+## **Whether `LEAVING_GIVES_UP` may not end it while she could still be watching**: a completed
+## task's departure, which starts with her beside it, a car that drives (whose body she can stand
+## against, so a departure can be held up beside her), a guard walking away from his barrier, who is
+## in her view as he goes, the man a vehicle let out walking back to it, a walk down a way it was
+## given, and a row whose route is worked out as it goes, which she may be walking beside.
+var _must_clear_sight := false
+## The way `along()` gave, each point dropped as it is reached; the way planned on from its end, the
+## same, and the tiles that one never enters; whether this departure walks one; and its pace, 0 for
+## the row's own.
+var _way := PackedVector2Array()
+var _way_on := PackedVector2Array()
+var _way_avoids := Rect2i()
+var _walks_a_way := false
+var _way_speed := 0.0
+## Whether this departure has begun (`begin()`, `for_a_completed_task()`, `along()`) and not been
+## cleared since (`reset()`): what `save()` carries only then.
+var _begun := false
+## Its row: whether it drives, the pace it leaves and chases at.
+var _row: EventDef
+## How it travels (`RouteSpec`): whether it moves along a route at all.
+var _course: RouteSpec
+## The ground it plans a way out over, and plans and steps it through, as what it walks as.
+var _map: WorldMap
+var _navigator: Navigator
+var _mover: Mover
+## The barrier its guard walks out of (`EventBarrierPost`), and the man on foot who may walk back to
+## the vehicle that let him out (`EventOfficer`); null for a row with neither.
+var _barrier_post: EventBarrierPost
+var _on_foot: EventOfficer
+## What gives it the legs it leaves by (`WayOn`), or null for a departure that is not by legs. Not
+## saved: a row whose route is worked out as it goes is sent outside the streaming
+## (`EventSpawner.spawn()`), so it is never streamed out and back.
+var _goes_on_by: WayOn = null
+
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the
+## ground and how it moves over it, and the two behaviours its way out depends on.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
+		map: WorldMap, navigator: Navigator, mover: Mover, barrier_post: EventBarrierPost,
+		on_foot: EventOfficer) -> void:
+	_steps_each_tick = false
+	_figure = figure
+	_where = where
+	_row = row
+	_course = course
+	_map = map
+	_navigator = navigator
+	_mover = mover
+	_barrier_post = barrier_post
+	_on_foot = on_foot
+
+## The departure's start, the frame its event turns to `Phase.LEAVING` (`EventInstance._be_done()`):
+## something on a route carries on the way it was going, anything else goes away from her — the
+## only direction a flushed flock or a dog that has lost interest can mean.
+func begin() -> void:
+	_begun = true
+	_leaving_for = 0.0
+	var her: Vector2 = _where.at()
+	if not (_course.moves() and _figure.walks().size() > 1) and her != Vector2.INF \
+			and not _figure.place().is_equal_approx(her):
+		_figure.turn_to((_figure.place() - her).normalized())
+	if _row.drives():
+		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
+		# into her is refused, and a car that has a body she can stand against is gone only once she
+		# could not be watching. An investigating car reaches here only at the end of its route,
+		# which it drives on to once its man is back in, so it leaves the way it was going.
+		_must_clear_sight = true
+	if _goes_on_by != null:
+		# **It leaves by legs, and is gone only once she could not be watching**: she may be walking
+		# beside it, so the backstop never deletes it in her view, and a car keeps to carriageway as
+		# it goes (`_walk_the_way()`).
+		_must_clear_sight = true
+		_walks_a_way = true
+		_way = PackedVector2Array()
+		_way_on = PackedVector2Array()
+	if _barrier_post and _barrier_post.has_left_its_body():
+		# **He is in her view as he goes**, and **he walks off over walkable ground**, by the way
+		# planned on from here, never in a straight line across a roof — and never through his own
+		# band (`_way_avoids`): she usually stands on the side she lured him from, so the nearest
+		# ground out of her sight lies straight through the concrete she cannot pass. On a band
+		# whose far guard leaves too, his partner at the far post goes with him.
+		_must_clear_sight = true
+		_walks_a_way = true
+		_way = PackedVector2Array()
+		_way_on = PackedVector2Array()
+		_way_avoids = _barrier_post.tiles_under_the_band()
+		_barrier_post.send_the_far_guard_off()
+	if _on_foot and _on_foot.walks_back():
+		# **A man a vehicle let out walks back to it** rather than away from her, in her view as he
+		# goes, so he is gone only at its door or out of her sight.
+		_must_clear_sight = true
+
+## **Makes its departure one by legs** (`WayOn`), told by whoever sends its row ahead of her
+## (`EventInstance.go_on_by()`).
+func go_on_by(way_on: WayOn) -> void:
+	_goes_on_by = way_on
+
+## **A departure that is a task's answer** (`EventInstance.leave_for_a_completed_task()`): she is
+## standing right next to it when it starts, so it is held to her sight, and it turns away from her
+## whichever way a beat it was pacing happened to be walking.
+func for_a_completed_task() -> void:
+	_begun = true
+	_must_clear_sight = true
+	var her: Vector2 = _where.at()
+	if her != Vector2.INF and not _figure.place().is_equal_approx(her):
+		_figure.turn_to((_figure.place() - her).normalized())
+
+## **Leaves down a way chosen for it** (`EventInstance.leave_along()`): walks `way`'s points in order
+## at `speed` (0 keeps the row's own departure speed), then **plans the rest from where she is
+## now** and walks that at the same pace, again each time it runs out, until she could not be
+## watching — `Tuning.OUT_OF_SIGHT` from her. Steering straight away from her instead runs into
+## walls and the city's edge. **It never ends at the way's last point**: that point was chosen out
+## of her sight from where she was when the way was planned, and she may since have walked there.
+## `avoid` is ground the rest planned past the way's end never enters, nor a step away from her: the
+## cordon's park, whose grass is walkable and whose tape is a body rather than a tile. Answers
+## whether it is now leaving along the way: not for something finished, parked, a spent guard or a
+## guard leaving his barrier, or a row that ends rather than leaving (`aftermath.leaves_behind()`).
+func along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
+	if _figure.is_gone() or _figure.has_parked() or _figure.is_only_its_barrier() \
+			or _barrier_post and _barrier_post.has_left_its_body():
+		return false
+	_way_speed = speed
+	if not _figure.is_on_its_way_out():
+		_figure.be_done(false)
+	if not _figure.is_on_its_way_out():
+		_way_speed = 0.0
+		return false
+	_way = way.duplicate()
+	_way_on = PackedVector2Array()
+	_way_avoids = avoid
+	_walks_a_way = true
+	_must_clear_sight = true
+	_begun = true
+	return true
+
+## Whether it walks a way rather than straight on: one `along()` gave, or a guard's walk off his
+## barrier.
+func walks_a_way() -> bool:
+	return _walks_a_way
+
+## What is left of the way `along()` gave, in order; empty once it is walked, or for any other
+## departure. The way planned on from its end is not part of it.
+func way_left() -> PackedVector2Array:
+	return _way
+
+## How fast it walks away: a pace a way was given at, a guard leaving his barrier at the pace he
+## chased at (a roadblock never travelled, so has no departure speed of its own), or the row's own
+## departure speed.
+func speed() -> float:
+	if _way_speed > 0.0:
+		return _way_speed
+	if _barrier_post and _barrier_post.has_left_its_body():
+		return _row.chase_speed()
+	return _row.departure_speed()
+
+## One tick of the departure. **It is gone once she could not be watching**: past
+## `Tuning.OUT_OF_SIGHT` from her, or — only for a departure not held to her sight, or with no
+## player to be out of sight of — after `LEAVING_GIVES_UP`. A guard leaving his barrier is not gone:
+## his instance goes back to being the barrier (`EventBarrierPost.stand_as_the_barrier()`).
+func leave(delta: float) -> void:
+	_leaving_for += delta
+	var step := speed() * delta
+	var her: Vector2 = _where.at()
+	if _walks_a_way:
+		_walk_the_way(step)
+	elif _on_foot and _on_foot.walks_back():
+		if not _on_foot.walk_back(step):
+			return
+	else:
+		var wanted: Vector2 = _figure.heading() * step
+		var moved: Vector2 = _navigator.step(_figure.place(), wanted, _mover)
+		if moved.is_zero_approx() and not wanted.is_zero_approx() and her != Vector2.INF:
+			_walks_a_way = true
+			_way = PackedVector2Array()
+			_way_on = PackedVector2Array()
+			_walk_the_way(step)
+		else:
+			_figure.step_by(moved)
+			_figure.walk_on(step if moved == wanted else moved.length())
+	var gone: bool = her != Vector2.INF \
+			and _figure.place().distance_to(her) > Tuning.OUT_OF_SIGHT
+	var may_give_up: bool = not _must_clear_sight or her == Vector2.INF or gone
+	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
+		if _barrier_post and _barrier_post.has_left_its_body():
+			_barrier_post.stand_as_the_barrier()
+		else:
+			_figure.begin(EventInstance.Phase.DONE)
+
+## Clears a departure that has ended in its event standing again (a guard back as his barrier).
+func reset() -> void:
+	_begun = false
+	_walks_a_way = false
+	_way_avoids = Rect2i()
+	_leaving_for = 0.0
+	_must_clear_sight = false
+
+## **The rest of a way out from `at`, planned from where she is now** (`Navigator.way_out()`): the
+## tile centres to the nearest tile it may stand on more than `Tuning.OUT_OF_SIGHT` and a tile from
+## her, outside the ground it avoids, square steps only. Empty when none is found. The far guard at a
+## band walks off from his post by the same search.
+func way_out_from(at: Vector2) -> PackedVector2Array:
+	return _navigator.way_out(at, _where.at(), Tuning.OUT_OF_SIGHT, _mover, _way_avoids)
+
+## The ground a departure from here never steps onto (`along()`'s `avoid`, a guard's own band).
+func avoids() -> Rect2i:
+	return _way_avoids
+
+## Puts its event where a walk (`Navigator.walk()`) ended, facing the way it last walked toward a
+## point it did not reach, and counts the ground it covered. **A departure by legs faces the way it
+## last walked toward any point**, since a leg's last point is reached exactly and the next leg is
+## asked from the way it faces.
+func take_the_walk(walked: Navigator.Walked) -> void:
+	if walked.heading != Vector2.ZERO:
+		_figure.turn_to(walked.heading)
+	elif _goes_on_by != null and walked.toward != Vector2.ZERO:
+		_figure.turn_to(walked.toward)
+	_figure.arrive_at(walked.at)
+	_figure.walk_on(walked.travelled)
+
+## Walks `step` pixels of the way it was given; past its end, for a departure by legs, of the next
+## leg its `WayOn` gives (`WayOn.leg_to_leave_by()`), asked again each time one is walked; where it
+## gives none, of a way planned on from where it stands (again each time one runs out while she could
+## still be watching); and only where none is found, or one is walked to its end inside this step,
+## away from her over ground it may walk.
+func _walk_the_way(step: float) -> void:
+	var left := _walk_points(false, step)
+	if left <= 0.0:
+		return
+	var her: Vector2 = _where.at()
+	if _goes_on_by != null and _way_on.is_empty():
+		# A leg is at least the rest of a junction box, so a tick's step walks two at the most.
+		for _leg in LEGS_IN_A_STEP:
+			var leg := _goes_on_by.leg_to_leave_by(_row, _figure.place(), _figure.heading(), her)
+			if leg.size() < 2:
+				break
+			_way = leg.slice(1)
+			left = _walk_points(false, left)
+			if left <= 0.0:
+				return
+	if _way_on.is_empty() and her != Vector2.INF:
+		_way_on = way_out_from(_figure.place())
+	left = _walk_points(true, left)
+	if left <= 0.0:
+		return
+	var away: Vector2 = _figure.heading()
+	if her != Vector2.INF and not _figure.place().is_equal_approx(her):
+		away = (_figure.place() - her).normalized()
+	var moved := _step_clear_of_the_avoided(away * left)
+	if moved.is_zero_approx() and her != Vector2.INF:
+		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
+		# farther from her.
+		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
+			var along_it := _step_clear_of_the_avoided(side * left)
+			if not along_it.is_zero_approx() \
+					and (_figure.place() + along_it).distance_to(her) \
+					> (_figure.place() + moved).distance_to(her):
+				moved = along_it
+	if moved.is_zero_approx():
+		return
+	_figure.turn_to(moved.normalized())
+	_figure.step_by(moved)
+	_figure.walk_on(moved.length())
+
+## Its step of `delta_pos` through the navigator (`Navigator.step()`), or none where it would end on
+## the ground it avoids.
+func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
+	var moved: Vector2 = _navigator.step(_figure.place(), delta_pos, _mover)
+	if _way_avoids.has_point(_map.world_to_tile(_figure.place() + moved)):
+		return Vector2.ZERO
+	return moved
+
+## Walks up to `step` pixels down the given way, or the planned one when `planned`, dropping each
+## point as it is reached; answers how much of the step is left once that way is walked, 0 while it
+## is not. **A way a solid now stands across is given up** where it stops, so a body put down after
+## the way was chosen turns the walker rather than holding it in front of her.
+func _walk_points(planned: bool, step: float) -> float:
+	var points := _way_on if planned else _way
+	var walked: Navigator.Walked = _navigator.walk(_figure.place(), points, step, _mover)
+	take_the_walk(walked)
+	if walked.stopped:
+		walked.points = PackedVector2Array()
+	if planned:
+		_way_on = walked.points
+	else:
+		_way = walked.points
+	return walked.left
+
+## Its state once it has begun, and nothing before: **a departure that never began is never written
+## over**, since `EventInstance.restore()` can begin one (a route cut since by something solid ends
+## there) before `EventStreaming.stream_in()` restores what was saved.
+##
+## Overrides EventBehaviour.save.
+func save() -> Dictionary:
+	if not _begun:
+		return {}
+	return {"leaving_for": _leaving_for, "must_clear_sight": _must_clear_sight, "way": _way,
+			"way_on": _way_on, "way_avoids": _way_avoids, "walks_a_way": _walks_a_way,
+			"way_speed": _way_speed}
+
+## Overrides EventBehaviour.restore.
+func restore(state: Dictionary) -> void:
+	if state.is_empty():
+		return
+	_begun = true
+	_leaving_for = float(state.get("leaving_for", 0.0))
+	_must_clear_sight = bool(state.get("must_clear_sight", false))
+	_way = state.get("way", PackedVector2Array())
+	_way_on = state.get("way_on", PackedVector2Array())
+	_way_avoids = state.get("way_avoids", Rect2i())
+	_walks_a_way = bool(state.get("walks_a_way", false))
+	_way_speed = float(state.get("way_speed", 0.0))

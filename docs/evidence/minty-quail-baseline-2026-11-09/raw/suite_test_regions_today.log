@@ -1,0 +1,11 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[test_regions] junctions per region, one line per seed: ["seed 260917: [56, 32, 30, 24]", "seed 261054: [34, 44, 25, 39]", "seed 261191: [39, 40, 32, 31]", "seed 261328: [41, 52, 33, 16]", "seed 261465: [30, 38, 39, 34]", "seed 261602: [45, 50, 23, 23]"]
+[test_regions] over 36 sampled (seed, day) pairs: 972 walls, 318 doors; a calm-less region had a door on 3 of them (the tree crossing it, which the decree says wins)
+[test_regions] 9 alleys are crossings, doors and walls, over 6 maps
+[test_regions] reachable without the main road too, with the wall standing: 42 of 42
+-- test_regions.gd                       118892 ms
+
+388618 checks, 0 failures
+PARTIAL RUN — only suites matching test_regions. Not a green build.

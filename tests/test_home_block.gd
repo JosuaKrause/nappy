@@ -10,9 +10,16 @@ extends RefCounted
 ## view with her facing, but in frame once she turns to face the building (PLAYTEST-134, statement
 ## 4 revisited).
 ##
+## The suite also holds what the city does with the resistance's story at her door: the street door
+## drawn sealed on a boot whose scars carry the seal and drawn ordinary again once a lost day 10
+## gives the scar back (`City._sync_home_door()`), and the neighbor's window unboarded until the
+## fronts are asked to board it (`CityFronts.board_neighbor_window()`), boarded once on one cell,
+## and on the same cell when asked again and on a fresh load. When the happenings ask for it is
+## `tests/test_resistance_happenings.gd`'s.
+##
 ## **The home block's own lot geometry was already seed-independent before this change** —
 ## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `CityGenerator.HOME_SIZE_TILES` and the fixed
-## middle block alone, never from `map.seed_used` — which is what makes `City._variant_for()` and
+## middle block alone, never from `map.city_seed()` — which is what makes `City._variant_for()` and
 ## `City._height_for()` cheap to fix: each takes an early return for a home-block rect to a fixed
 ## choice (a hash of the rect's own position alone, or one of two fixed wall-row counts) and
 ## otherwise runs exactly the code it always has, so a non-home building's own roll is untouched.
@@ -29,6 +36,8 @@ const UI := preload("res://tests/ui_screens.gd")
 const FrontReads := preload("res://tests/front_reads.gd")
 ## Her street door and the building it stands in front of, read off the city's nodes.
 const HomeDoorReads := preload("res://tests/home_door_reads.gd")
+## The seed of the run's own state in the door cases.
+const RUN_SEED := 2
 ## The seed PLAYTEST-134 found with only two wall rows on her own building, before this fix.
 const SHORT_SEED := 4242
 ## A second seed with nothing else in common with the first, for the cross-seed comparisons.
@@ -40,21 +49,25 @@ const WIDE_SWEEP_SEEDS := 60
 ## own real-city sweep, which is the expensive part of this suite.
 const CITY_SWEEP_SEEDS := 6
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_home_block_lot_geometry_is_already_seed_independent(t)
 	await _test_every_home_block_building_is_the_same_across_two_seeds(t)
 	_test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t)
 	_test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t)
 	_test_non_home_buildings_still_roll_the_seed(t)
 	_test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t)
+	_test_the_neighbors_window_boards_once_and_stays_on_one_cell(t)
+	_test_the_sealed_door_stands_after_a_reload(t)
+	_test_a_lost_day_ten_restores_the_ordinary_door(t)
 
 # ------------------------------------------------------------------- fixtures ---
 
-static func _city_for(t, seed_value: int) -> City:
+static func _city_for(t: TestRunner, seed_value: int, library: AtlasLibrary = null) -> City:
 	var map := CityGenerator.generate(seed_value)
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, run, map, null, false, library)
 	return city
 
 ## The window picture drawn on each wall cell of `building`, row by row: the building's window style
@@ -66,18 +79,18 @@ static func _window_pictures(building: Building) -> Array[StringName]:
 ## Every home-block building rect, sorted so two independently-collected lists compare directly.
 static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 	var rects: Array[Rect2i] = []
-	for rect in map.building_rects:
-		if City.block_of(rect) == map.home_block:
+	for rect in map.building_lots():
+		if City.block_of(rect) == map.home_block_coordinate():
 			rects.append(rect)
-	rects.sort_custom(func(a, b): return a.position < b.position)
+	rects.sort_custom(func(a: Rect2i, b: Rect2i) -> bool: return a.position < b.position)
 	return rects
 
 ## The deepest of the home block's own rects — the one the door notch's world span stands in front
 ## of, since a wider, shallower notch never outgrows it on any lot `CityGenerator` carves.
 static func _deepest_home_block_rect(map: CityMap) -> Rect2i:
 	var deepest := Rect2i()
-	for rect in map.building_rects:
-		if City.block_of(rect) == map.home_block and rect.size.y > deepest.size.y:
+	for rect in map.building_lots():
+		if City.block_of(rect) == map.home_block_coordinate() and rect.size.y > deepest.size.y:
 			deepest = rect
 	return deepest
 
@@ -85,8 +98,8 @@ static func _deepest_home_block_rect(map: CityMap) -> Rect2i:
 static func _home_buildings_by_lot(city: City) -> Dictionary:
 	var result := {}
 	for building: Building in city.buildings():
-		if building.is_home_building:
-			result[building.lot] = building
+		if building.is_on_home_block():
+			result[building.lot_rect()] = building
 	return result
 
 ## The roof units standing on `building`'s roof, as the city's entity layer holds them (the layer a
@@ -96,7 +109,7 @@ static func _home_buildings_by_lot(city: City) -> Dictionary:
 ## Each is `[where, picture]`, `where` taken from the building's own origin so the same roof on two
 ## cities compares directly, in the layer's own order.
 static func _roof_units_on(city: City, building: Building) -> Array:
-	var lot := city.map.tile_rect_to_world(building.lot)
+	var lot := city.map().tile_rect_to_world(building.lot_rect())
 	var units: Array = []
 	for node in city.get_node("Entities").get_children():
 		var unit := node as Building.RoofObject
@@ -118,13 +131,13 @@ static func _roof_units_in(city: City) -> int:
 
 ## Whether the helper above can see a roof unit at all: some building that is not the home block's
 ## carries one, and every unit in the city stands on exactly one lot.
-func _check_the_units_are_seen(t, city: City, label: String) -> void:
+func _check_the_units_are_seen(t: TestRunner, city: City, label: String) -> void:
 	var seen := 0
 	var with_units := 0
 	for building: Building in city.buildings():
 		var units := _roof_units_on(city, building)
 		seen += units.size()
-		if not building.is_home_building and not units.is_empty():
+		if not building.is_on_home_block() and not units.is_empty():
 			with_units += 1
 	t.check(with_units > 0, "%s: some building off the home block carries roof units (%d)" % [label, with_units])
 	t.check(seen == _roof_units_in(city),
@@ -135,7 +148,7 @@ func _check_the_units_are_seen(t, city: City, label: String) -> void:
 ## The premise the rest of this suite leans on: the home block's own three lots — the door's own
 ## and the two flanking the notch — are the same rects on every seed, because `CityGenerator`
 ## derives them from `Tuning` constants and the fixed middle block alone.
-func _test_the_home_block_lot_geometry_is_already_seed_independent(t) -> void:
+func _test_the_home_block_lot_geometry_is_already_seed_independent(t: TestRunner) -> void:
 	var short := CityGenerator.generate(SHORT_SEED)
 	var other := CityGenerator.generate(OTHER_SEED)
 	var short_rects := _home_block_rects(short)
@@ -151,14 +164,17 @@ func _test_the_home_block_lot_geometry_is_already_seed_independent(t) -> void:
 ## empty — see the class doc) on two seeds with nothing else in common, including the one
 ## PLAYTEST-134 found short. The buildings are matched up by lot, since the lots themselves are
 ## already identical across seeds.
-func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
-	var short := _city_for(t, SHORT_SEED)
-	var other := _city_for(t, OTHER_SEED)
+func _test_every_home_block_building_is_the_same_across_two_seeds(t: TestRunner) -> void:
+	var short_library := AtlasLibrary.new()
+	var other_library := AtlasLibrary.new()
+	var short := _city_for(t, SHORT_SEED, short_library)
+	var other := _city_for(t, OTHER_SEED, other_library)
 	var short_by_lot := _home_buildings_by_lot(short)
 	var other_by_lot := _home_buildings_by_lot(other)
-	for by_lot in [short_by_lot, other_by_lot]:
-		for lot: Rect2i in by_lot:
-			FrontReads.watch(by_lot[lot])
+	for lot: Rect2i in short_by_lot:
+		FrontReads.watch(short_by_lot[lot], short_library)
+	for lot: Rect2i in other_by_lot:
+		FrontReads.watch(other_by_lot[lot], other_library)
 	await UI.frames(t, 2)
 	t.check(short_by_lot.size() == 3 and other_by_lot.size() == 3,
 			"both seeds build all three home-block buildings (%d vs %d)"
@@ -170,10 +186,10 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 		var a: Building = short_by_lot[lot]
 		var b: Building = other_by_lot[lot]
 		t.check(a.wall_tiles() == b.wall_tiles(), "lot %s: floor count matches across seeds" % lot)
-		t.check(a.variant == b.variant, "lot %s: colour variant matches across seeds" % lot)
+		t.check(a.look_variant() == b.look_variant(), "lot %s: colour variant matches across seeds" % lot)
 		t.check(not _window_pictures(a).is_empty() and _window_pictures(a) == _window_pictures(b),
 				"lot %s: window style and lit-window pattern match across seeds" % lot)
-		t.check(a.scenery_resident and b.scenery_resident,
+		t.check(a.residence().is_resident() and b.residence().is_resident(),
 				"lot %s: the scenery is built on both seeds, so the roof is drawn" % lot)
 		# Every home-block roof is empty (see the class doc), so comparing the two seeds' lists would
 		# compare empty with empty; each is asked to be empty instead.
@@ -193,7 +209,7 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 ## full `City` scene sixty times over. Never found short: see
 ## `_test_the_home_block_lot_geometry_is_already_seed_independent` for why not — the door
 ## building's own lot does not move.
-func _test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t) -> void:
+func _test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t: TestRunner) -> void:
 	var checked := 0
 	for i in WIDE_SWEEP_SEEDS:
 		var seed_value := 1000 + i * 8191
@@ -207,7 +223,7 @@ func _test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_s
 
 ## The same guarantee end to end through a real `City` and `Building.wall_tiles()`, on a smaller
 ## spread since this one pays for a full city build each time.
-func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t) -> void:
+func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t: TestRunner) -> void:
 	var checked := 0
 	for i in CITY_SWEEP_SEEDS:
 		var seed_value := 500_000 + i * 104_729
@@ -230,32 +246,32 @@ func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t) -> v
 ## Proof that a non-home building still rolls with the seed: matched by lot across two seeds, at
 ## least one still differs in colour variant or floor count — if this ever reads zero, the fix
 ## has stopped being a home-block-only fix.
-func _test_non_home_buildings_still_roll_the_seed(t) -> void:
+func _test_non_home_buildings_still_roll_the_seed(t: TestRunner) -> void:
 	var short := _city_for(t, SHORT_SEED)
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := {}
 	for building: Building in short.buildings():
-		if not building.is_home_building:
-			short_by_lot[building.lot] = building
+		if not building.is_on_home_block():
+			short_by_lot[building.lot_rect()] = building
 	var compared := 0
 	var differing := 0
 	var variants_differing := 0
 	var same_ground := 0
 	var heights_differing := 0
 	for building: Building in other.buildings():
-		if building.is_home_building or not short_by_lot.has(building.lot):
+		if building.is_on_home_block() or not short_by_lot.has(building.lot_rect()):
 			continue
 		compared += 1
-		var partner: Building = short_by_lot[building.lot]
-		if partner.variant != building.variant:
+		var partner: Building = short_by_lot[building.lot_rect()]
+		if partner.look_variant() != building.look_variant():
 			variants_differing += 1
-		if partner.variant != building.variant or partner.wall_tiles() != building.wall_tiles():
+		if partner.look_variant() != building.look_variant() or partner.wall_tiles() != building.wall_tiles():
 			differing += 1
 		# The height rolls within the range its block's purpose allows, so it is the lots whose
 		# block has the same purpose on both seeds that show the roll itself.
-		if partner.district == building.district and not building.power_station:
+		if partner.district() == building.district() and not building.is_power_station():
 			same_ground += 1
-			if not is_equal_approx(partner.height, building.height):
+			if not is_equal_approx(partner.height(), building.height()):
 				heights_differing += 1
 	t.check(compared > 20, "the sweep found enough shared non-home lots to compare (%d)" % compared)
 	t.check(differing > 0,
@@ -276,26 +292,26 @@ func _test_non_home_buildings_still_roll_the_seed(t) -> void:
 ## for (`City.MAX_HEIGHT_FRACTION` of its depth, and always at least a tile of roof unless the lot is
 ## one tile deep); and the heights of a city are not all one value, so the roll is not a constant.
 ## Which stream the roll comes from is the game's own business, so it is not copied here.
-func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
-	for seed_value in [SHORT_SEED, OTHER_SEED]:
+func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) -> void:
+	for seed_value: int in [SHORT_SEED, OTHER_SEED]:
 		var city := _city_for(t, seed_value)
 		var again := _city_for(t, seed_value)
 		var twin := {}
 		for building: Building in again.buildings():
-			twin[building.lot] = building
+			twin[building.lot_rect()] = building
 		var checked := 0
 		var heights := {}
 		for building: Building in city.buildings():
-			if building.is_home_building or building.power_station:
+			if building.is_on_home_block() or building.is_power_station():
 				continue
-			var rect := building.lot
+			var rect := building.lot_rect()
 			var partner: Building = twin.get(rect)
-			t.check(partner != null and partner.variant == building.variant,
+			t.check(partner != null and partner.look_variant() == building.look_variant(),
 					"seed %d, lot %s: a non-home building's colour variant is the same on a rebuilt city"
 					% [seed_value, rect])
-			t.check(partner != null and is_equal_approx(partner.height, building.height),
+			t.check(partner != null and is_equal_approx(partner.height(), building.height()),
 					"seed %d, lot %s: and so is its height" % [seed_value, rect])
-			var tiles := building.height / float(Tuning.TILE_SIZE)
+			var tiles := building.height() / float(Tuning.TILE_SIZE)
 			var cap := maxi(1, mini(rect.size.y - 1, floori(rect.size.y * City.MAX_HEIGHT_FRACTION)))
 			t.check(is_equal_approx(tiles, roundf(tiles)) and tiles >= 1.0 and tiles <= cap,
 					"seed %d, lot %s: its height (%.2f tiles) is whole, at least one and at most %d"
@@ -309,11 +325,11 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
 		var by_block := {}
 		var by_block_and_depth := {}
 		for building: Building in city.buildings():
-			if building.is_home_building or building.power_station:
+			if building.is_on_home_block() or building.is_power_station():
 				continue
-			var block := City.block_of(building.lot)
+			var block := City.block_of(building.lot_rect())
 			by_block[block] = by_block.get(block, []) + [building]
-			var key := [block, building.lot.size.y]
+			var key := [block, building.lot_rect().size.y]
 			by_block_and_depth[key] = by_block_and_depth.get(key, []) + [building]
 		var varied_heights := 0
 		var height_groups := 0
@@ -323,7 +339,7 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
 			height_groups += 1
 			var seen := {}
 			for building: Building in group:
-				seen[roundi(building.height)] = true
+				seen[roundi(building.height())] = true
 			if seen.size() >= 2:
 				varied_heights += 1
 		var varied_variants := 0
@@ -334,7 +350,7 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
 			variant_groups += 1
 			var seen := {}
 			for building: Building in group:
-				seen[building.variant] = true
+				seen[building.look_variant()] = true
 			if seen.size() >= 2:
 				varied_variants += 1
 		t.check(height_groups > 0 and varied_heights * 8 >= height_groups,
@@ -347,3 +363,63 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
 				% [seed_value, heights.keys()])
 		city.free()
 		again.free()
+
+# ---------------------------------------------------------- the window and the door ---
+
+## The neighbor's boarded window: absent until the city's fronts are asked to board it
+## (`CityFronts.board_neighbor_window()`, which the resistance's happenings ask from day 11), then
+## set on the one home-block building the door notch stands in front of, and the same cell when
+## asked again and on a fresh load of the same seed. Its row, the third floor, is held above.
+func _test_the_neighbors_window_boards_once_and_stays_on_one_cell(t: TestRunner) -> void:
+	var city := _city_for(t, SHORT_SEED)
+	var building := HomeDoorReads.building(city)
+	t.check(building != null, "the door notch stands in front of exactly one home-block building")
+	if building == null:
+		city.free()
+		return
+	t.check(building.neighbor_window_col() == -1, "unboarded until the fronts are asked")
+	city.fronts().board_neighbor_window()
+	var col := building.neighbor_window_col()
+	t.check(col >= 0, "boarded once asked")
+	city.fronts().board_neighbor_window()
+	t.check(building.neighbor_window_col() == col, "the same cell when asked again")
+	var reloaded := _city_for(t, SHORT_SEED)
+	reloaded.fronts().board_neighbor_window()
+	t.check(HomeDoorReads.building(reloaded).neighbor_window_col() == col,
+			"and the same cell on a fresh load")
+	reloaded.free()
+	city.free()
+
+## Her street door is sealed on a boot whose scars already carry the seal: `City.build()` reads the
+## run's scars once, at boot, which is what a resumed or reloaded run's own boot does (see
+## `main.gd`'s two `City.build()` call sites, both after the run has already loaded).
+func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
+	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	RunCity.build(city, run, CityGenerator.generate(SHORT_SEED))
+	t.check(HomeDoorReads.is_sealed(city),
+			"a boot whose scars already carry the seal starts the door sealed")
+	city.free()
+
+## A lost day 10 gives the scar back (the run's `run_parts.give_back()`) and the next dawn's own
+## `_sync_home_door()` puts the ordinary door back, exactly the restore every other scar already
+## gets: the door of a city built sealed shows the ordinary one once `start_day()` finds no scar.
+func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
+	GivenRun.scars(run, [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}])
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	RunCity.build(city, run, CityGenerator.generate(SHORT_SEED))
+	t.check(HomeDoorReads.is_sealed(city), "the door starts sealed, or this test checks nothing")
+	GivenRun.scars(run, [])
+	var state := CityState.new()
+	state.begin_day(city.map().plans_by_block(), ResistanceSteps.NEIGHBOR_DAY)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	city.start_day(state, ResistanceSteps.NEIGHBOR_DAY, rng)
+	t.check(not HomeDoorReads.is_sealed(city), "a lost day 10 restores the ordinary door")
+	city.free()

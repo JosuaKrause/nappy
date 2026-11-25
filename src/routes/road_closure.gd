@@ -36,12 +36,18 @@ const KINDS := {
 	Kind.PARK: {"name": "Park closed", "first_day": 1, "weight": 0.0},
 }
 
-var kind := Kind.ROADWORKS
-var segment: StreetNetwork.Segment
+var _kind := Kind.ROADWORKS
+## The street closed. Every reader outside this file asks the methods below.
+var _segment: StreetNetwork.Segment
 
 func _init(closure_kind: Kind, closed_street: StreetNetwork.Segment) -> void:
-	kind = closure_kind
-	segment = closed_street
+	_kind = closure_kind
+	_segment = closed_street
+
+## What closed the street: what its barriers carry and what lies in the road (`ClosureMarker`), and
+## the name the run log gives it (`display_name()`).
+func kind() -> Kind:
+	return _kind
 
 static func display_name(closure_kind: Kind) -> String:
 	return String(KINDS[closure_kind]["name"])
@@ -58,34 +64,69 @@ static func kinds_on(day: int) -> Array[int]:
 			found.append(closure_kind)
 	return found
 
+## What this closure is and where, in the run log's words: its kind, which way the street runs and
+## the tile it starts at, such as `roadworks v(8,6)`.
+func summary_words() -> String:
+	return "%s %s" % [RoadClosure.display_name(_kind).to_lower(), street_words()]
+
+## Where this closure is, in the run log's words: which way its street runs and the tile it starts
+## at, such as `v(8,6)`.
+func street_words() -> String:
+	return "%s%s" % ["h" if _segment.horizontal else "v", RunTrace.tile(_segment.a)]
+
+## The lattice key of the street this closure closes (`StreetNetwork.Segment.key()`), which tells it
+## apart from the day's other closures. A park's fence answers a key no street has
+## (`ParkClosure.Edge.key()`).
+func street_key() -> Vector3i:
+	return _segment.key()
+
 # ------------------------------------------------------------------ geometry ---
 
 ## Every tile of the street this closure's segment covers — the geometry, not the verdict.
 ##
-## **This is not the same set as what ends up in `CityMap.closed_tiles`.** The barriers stand at
-## the two mouths, and ground between them that opens onto an alley or a courtyard archway mid-
-## segment is still somewhere a pedestrian can get to from that side, whatever the two ends of the
-## street say. Which of these tiles are genuinely unreachable is a question about the whole day's
-## walkable ground, not about one closure in isolation, so `CityMap.close_streets` is what answers
-## it — with `ReachabilityGrid`, once, for every closure of the day together.
+## **This is not the same set as what ends up in `CityMap.closed_tile_set()`.** The barriers
+## stand at the two mouths, and ground between them that opens onto an alley or a courtyard
+## archway mid- segment is still somewhere a pedestrian can get to from that side, whatever the
+## two ends of the street say. Which of these tiles are genuinely unreachable is a question
+## about the whole day's walkable ground, not about one closure in isolation, so
+## `CityMap.close_streets` is what answers it — with `ReachabilityGrid`, once, for every closure
+## of the day together.
 func tiles(map: CityMap) -> Array[Vector2i]:
-	return map.rect_tiles(segment.tile_rect())
+	return map.rect_tiles(_segment.tile_rect())
+
+## Whether `tile` lies on the ground this closure's segment covers: a street's tiles, or a park
+## fence's strip of edge (`ParkClosure.Edge`). The geometry, not the verdict, as `tiles()`.
+func covers_tile(tile: Vector2i) -> bool:
+	return _segment.tile_rect().has_point(tile)
+
+## Whether the whole street this closure's segment covers lies inside `window` (a tile rectangle).
+func fits_within(window: Rect2i) -> bool:
+	return window.encloses(_segment.tile_rect())
+
+## The two mouths the barriers stand across, the `a` end first, each a tile rectangle one tile thick
+## across the street (`StreetNetwork.Segment.mouth_rect()`). A `ParkClosure`'s are its run's strip,
+## twice.
+func mouth_rects() -> Array[Rect2i]:
+	var found: Array[Rect2i] = []
+	for at_a: bool in [true, false]:
+		found.append(_segment.mouth_rect(at_a))
+	return found
 
 ## Where the two barriers stand: the middle of each mouth, on the ground plane.
 func mouth_centres(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
-	for at_a in [true, false]:
-		found.append(map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center())
+	for mouth in mouth_rects():
+		found.append(map.tile_rect_to_world(mouth).get_center())
 	return found
 
 ## The middle of the closed street, where whatever caused it is lying.
 func cause_centre(map: CityMap) -> Vector2:
-	return map.tile_rect_to_world(segment.tile_rect()).get_center()
+	return map.tile_rect_to_world(_segment.tile_rect()).get_center()
 
 ## True when the barrier line runs left-to-right across the screen, which it does for a
 ## north-south street. It decides which of the two fence sprites is used.
 func barrier_runs_across() -> bool:
-	return not segment.horizontal
+	return not _segment.horizontal
 
 ## How wide a line of barrier is, in pixels — a street's own width, since its mouth is exactly
 ## that wide by construction. `City._spawn_barrier()` reads this rather than `Tuning.STREET_WIDTH`

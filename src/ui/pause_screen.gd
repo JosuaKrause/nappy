@@ -14,7 +14,6 @@ extends CanvasLayer
 ## Quitting keeps its key, one step further in. A run that is abandoned is still a run worth
 ## reading, so the run session closes its log on the way out (`main._quit()`).
 
-signal resumed()
 signal restart_requested()
 signal quit_requested()
 
@@ -25,11 +24,6 @@ signal quit_requested()
 @onready var _continue_caption: Label = $Root/Center/Lines/Buttons/ContinueColumn/ContinueCaption
 @onready var _restart_caption: Label = $Root/Center/Lines/Buttons/RestartColumn/RestartCaption
 @onready var _body: HelpText = $Root/Center/Lines/Body
-## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space`/`esc`/`r`/`q`
-## keep working, and the continue/restart pair already says what a tap does — there is nothing
-## left for a sentence here to say that does not name a key, so the label stays only to be looked
-## at and found blank rather than for a function to keep writing "" into.
-@onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
 @onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
@@ -55,7 +49,7 @@ func use_platform(touch: bool, can_quit: bool) -> void:
 ## Set once by `main._ready()`, the same way `_connect_summary_and_pause_signals()` wires the
 ## signals this screen fires — null in a test that builds a bare `PauseScreen`, which is why every
 ## use below is guarded. *"Pause can keep the last direction just don't overwrite it from the
-## button press."* `open()` and `close()` are the only two places this is read, so a run that never
+## button press."* `open()` and `_close()` are the only two places this is read, so a run that never
 ## reaches a real `main` (most of this file's own suite) never remembers or restores anything and
 ## behaves exactly as it always has.
 var _touch_controls: TouchControls
@@ -76,9 +70,9 @@ func use_run(run: RunState) -> void:
 ## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
 ## screen built anywhere else leaves them to make their own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Center/Lines/Body") as HelpText).atlas = atlas
-	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
-	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Body") as HelpText).use_atlas(atlas)
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).use_atlas(atlas)
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).use_atlas(atlas)
 
 ## The body as the scheme in force words it.
 static func _body_for(joystick: bool) -> String:
@@ -171,7 +165,7 @@ func open() -> void:
 
 const DIM_OVER_THE_CITY := 0.78
 
-func close() -> void:
+func _close() -> void:
 	visible = false
 	get_tree().paused = _was_paused
 	# The heading she carried in, not the press that just dismissed this screen — see
@@ -181,9 +175,10 @@ func close() -> void:
 		_touch_controls.resume_after_pause()
 	_restart_button.cancel_hold()
 
-## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in from
-## `main`, because `TouchControls` is the only file `main._apply_orientation()` reaches with a
-## `rotated` property and this screen is not on that list (see `TouchControls.rotated`'s own doc).
+## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in
+## from `main`, because `main._apply_orientation()` hands its answer (`use_rotated()`) to the
+## touch controls and the edge badge, and the HUD's arrows through `_hud.set_rotated()`, and this
+## screen is not on that list (see `TouchControls._rotated`'s own doc).
 ## `ScreenOrientation.wants_rotation()` is a pure function of the same two facts `main` itself asks
 ## it with, so recomputing it here needs no wire of its own.
 func _wants_rotation() -> bool:
@@ -281,17 +276,17 @@ func _update_hover(position: Vector2) -> void:
 	_restart_button.set_hovered(_buttons.visible and _restart_button.contains_design_point(at))
 
 ## Whether an acknowledge-and-resume coroutine is already in flight — guards the same double-fire a
-## real touch device's own emulated mouse click could otherwise cause, since `TouchInput.is_press()`
-## reads both event types and a device with real touch hardware delivers one of each for a single
-## finger.
+## real touch device's own emulated mouse click could otherwise cause, since a device with real
+## touch hardware delivers both an `InputEventScreenTouch` and an `InputEventMouseButton` for a
+## single finger.
 var _resuming := false
 
 ## Flashes the continue button pressed for two frame boundaries before actually resuming — the same
 ## shape `DaySummary._acknowledge_and_continue()` already uses and for the same reason. *(Playtest
-## 34 finding 1: "buttons still don't light up when pressed or hovered.")* `close()` used to run
+## 34 finding 1: "buttons still don't light up when pressed or hovered.")* `_close()` used to run
 ## synchronously inside the same input-processing pass that set the pressed fill, and Godot never
 ## draws a frame between one call and the next within a single input dispatch, so the fill was set
-## and then hidden again — by `close()`'s own `visible = false` — without a frame ever rendering it.
+## and then hidden again — by `_close()`'s own `visible = false` — without a frame ever rendering it.
 ## Two `process_frame` awaits, not one: `SceneTree.process_frame` fires *before* the frame it names
 ## is drawn, so the second is what actually lands after the draw that happens between them.
 ##
@@ -308,14 +303,13 @@ func _acknowledge_and_resume() -> void:
 	await get_tree().process_frame
 	_continue_button.clear_forced_press()
 	_resuming = false
-	close()
-	resumed.emit()
+	_close()
 
 ## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
 ## **except on the web**, where `QuitOption.available()` is false and the key is not handled at
-## all. None of the four is named on screen any more — see `_hint`'s own doc — so a keyboard
-## player learns them from playing rather than from a sentence, the compromise this milestone
-## settled on in place of deleting them outright. Handled here rather than in `main` so that the
+## all. None of the four is named on screen (*(2026-09-06: "never should it be mentioned to the
+## user".)* The scene's Hint label stays blank and nothing writes to it), so a keyboard player
+## learns them from playing rather than from a sentence. Handled here rather than in `main` so that the
 ## screen owns its own keys while it is up, and `main` only owns the one that opens it.
 ##
 ## **`space` continues**, because it is the key the title screen and the between-days summary mean
@@ -344,24 +338,23 @@ func _unhandled_input(event: InputEvent) -> void:
 	# `_acknowledge_and_resume()`'s own doc for the one that does.
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
-		close()
-		resumed.emit()
+		_close()
 		return
 	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
 	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
 	# has to accept one too rather than leaving the keyboard as the only way past it.
 	#
-	# **The two event shapes are split rather than read through `TouchInput.is_press()`, the same
-	# way `DaySummary._unhandled_input()`'s own equivalent branch already is.** *(M211: "the pause
+	# **The two event shapes are read apart, the same way `DaySummary._unhandled_input()`'s own
+	# equivalent branch reads them, so the mouse one can be gated on `not _touch`.** *(M211: "the pause
 	# screen is currently bugged where you cannot restart from it. it just goes back to the current
 	# game when pressing the button.")* A real touch device emulates a mouse click from every finger
 	# it reads, and — confirmed by driving a real touch through `Input.parse_input_event()` +
 	# `flush_buffered_events()` in `tests/test_held_restart.gd` — that emulated `InputEventMouseButton`
 	# press dispatches *before* the real `InputEventScreenTouch` press for the same finger, not
-	# after. A press on the restart button used to reach here first as the emulated click, since
-	# `TouchInput.is_press()` does not ask whether this device even has touch hardware to emulate
-	# one from, firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
-	# `_handle_restart_touch()` above — and that coroutine's own `close()` cancels whatever hold the
+	# after. A mouse branch that does not ask whether this device even has touch hardware to emulate
+	# one from would let a press on the restart button reach here first as the emulated click,
+	# firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
+	# `_handle_restart_touch()` above — and that coroutine's own `_close()` cancels whatever hold the
 	# real touch had just started and resumes the day before the hold could ever complete. Gating
 	# the mouse branch on `not _touch`, exactly as `_handle_restart_touch()`'s own mouse branch
 	# already is, means the emulated click never reaches a branch at all on a device where a real
@@ -379,7 +372,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _touch and event is InputEventMouseMotion:
 		_update_hover((event as InputEventMouseMotion).position)
 		return
-	if not (event is InputEventKey and event.pressed):
+	if not (event is InputEventKey and (event as InputEventKey).pressed):
 		return
 	match (event as InputEventKey).keycode:
 		KEY_R:

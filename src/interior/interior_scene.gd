@@ -6,7 +6,7 @@ extends WorldContext
 ## fourteen days. It has no crowd of its own, and its excitement is its events' — `WorldContext`'s own
 ## defaults (1.0 recovery, no excitement sources) are exactly "meters idle" without them.
 ##
-## **The scene draws the building's map and reads it** (`map`, an `InteriorMapPlan`, the building's
+## **The scene draws the building's map and reads it** (`map()`, an `InteriorMapPlan`, the building's
 ## `WorldMap`): where she may stand, where its flights run, what a door leads to and where its events
 ## are sited are the map's, and this paints them, puts up the walls she collides with, lights the part
 ## she is in and fades her through a door.
@@ -27,7 +27,8 @@ extends WorldContext
 ## **One map, seven parts, no loading.** `InteriorMap.build()` lays all seven parts at once, `64`
 ## tiles apart from each other — comfortably more than the 20×11.25 tiles a 640×360 view at zoom 2
 ## can ever show, so no part is in view from another. A door does not rebuild anything: it fades to
-## black, moves her to the counterpart door's own tile, and fades back in — see
+## black, says she arrived at the counterpart door's own tile (`arrived_through_a_door`, which whoever
+## builds the building connects to what puts her there), and fades back in — see
 ## `_start_door_transition()`. There is no "current part" in this class.
 ##
 ## **A door tile is both where she leaves from and where she arrives.** Nothing here makes the
@@ -91,6 +92,11 @@ const FINALE_WINDOW_FLASH_SECONDS := 0.12
 
 signal exit_requested
 
+## She has come through a door, under the black: she stands at `at`, facing `look`. Whoever builds
+## the building connects it to what puts her there (`main` connects her own `reset_at()`), since
+## the building is the world's and does not name her class.
+signal arrived_through_a_door(at: Vector2, look: Vector2)
+
 ## Every picture below is a region name on the `interior` atlas group; `_enter_tree()`/
 ## `_exit_tree()` acquire and release it, and every draw site fetches its texture through
 ## `atlas.region()` — a live `AtlasTexture` over the group's shared page, whose own
@@ -124,12 +130,16 @@ const TILE := float(Tuning.TILE_SIZE)
 const FADE_SECONDS := 0.35
 
 ## The building's map (`InteriorMapPlan`), the one everything standing in the building is handed:
-## built by `build()` and drawn by this scene (`WorldMap.world`).
-var map: InteriorMapPlan
+## built by `build()` and drawn by this scene, and asked through `map()`.
+var _map: InteriorMapPlan
+## How everything that moves over `_map` moves (`Navigator`): built with the map by `build()` and
+## held here for as long as the building stands, so the events and whatever else moves over the map
+## share the one (`navigator()`), which `main` hands on.
+var _navigator: Navigator
 ## The baked atlas pages the building draws from (`AtlasLibrary`), handed by `main` before the
-## scene is added; a scene nobody handed one (a suite's) makes its own when it first enters the
-## tree.
-var atlas: AtlasLibrary = null
+## scene is added (`use_atlas()`); a scene nobody handed one (a suite's) makes its own when it first
+## enters the tree.
+var _atlas: AtlasLibrary = null
 var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
@@ -160,16 +170,31 @@ var _door_release_latch := ReleaseLatch.new()
 ## staying rather than as leaving and re-entering.
 const _DOOR_RELEASE_RADIUS := TILE * 1.5
 
+## The building's map (`InteriorMapPlan`), built by `build()`; null before the scene is first
+## built.
+func map() -> InteriorMapPlan:
+	return _map
+
+## How everything that moves over the building's map moves: the navigator `build()` made, which
+## `main` hands to the builder and the builder to the events; null before the scene is first built.
+func navigator() -> Navigator:
+	return _navigator
+
+## Hands the scene the baked atlas pages it draws from: `main` hands the sitting's library, before
+## the scene is added.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
+
 ## Acquires the `interior` atlas group before `_ready()` builds anything that draws from it, and
 ## releases it on the matching exit — see `Building._enter_tree()`'s own doc for why this is
 ## paired with `_exit_tree()` rather than folded into `_ready()`.
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"interior")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"interior")
 
 func _exit_tree() -> void:
-	atlas.release(&"interior")
+	_atlas.release(&"interior")
 
 func _ready() -> void:
 	build()
@@ -178,7 +203,7 @@ func _ready() -> void:
 ## since the map never changes after the first — there is nothing left to rebuild once every part
 ## is laid out and painted, only her position to move.
 func build() -> void:
-	if map:
+	if _map:
 		return
 	_ground = TileMapLayer.new()
 	_ground.name = "Ground"
@@ -201,19 +226,19 @@ func build() -> void:
 	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade_layer.add_child(_fade_rect)
 
-	map = InteriorMap.build()
-	map.world = self
-	_tile_set = InteriorTileSet.build(atlas)
+	_map = InteriorMap.build()
+	_navigator = Navigator.new(_map)
+	_tile_set = InteriorTileSet.build(_atlas)
 	_ground.tile_set = _tile_set
-	for tile: Vector2i in map.tiles:
-		var source := InteriorTileSet.source_id_for(map.tiles[tile])
+	for tile: Vector2i in _map.floor_tiles():
+		var source := InteriorTileSet.source_id_for(_map.floor_kind_at(tile))
 		if source >= 0:
 			_ground.set_cell(tile, source, Vector2i.ZERO)
 	_rebuild_walls()
 	_rebuild_stairwell_backdrops()
 	_rebuild_overlays()
 	_rebuild_collision()
-	modulate = _lighting_at(map.start_tile)
+	modulate = _lighting_at(_map.start_position())
 
 ## One blocker per non-walkable cell in a margin around the whole building's footprint, including
 ## every gap between parts — so a gap blocks her exactly the way a wall does, and the only way from
@@ -224,20 +249,20 @@ const _MARGIN := 1
 func _rebuild_collision() -> void:
 	for child in _collision.get_children():
 		child.queue_free()
-	var box := map.footprint().grow(_MARGIN)
-	var bands := map.flight_bands()
+	var box := _map.footprint().grow(_MARGIN)
+	var bands := _map.flight_bands()
 	for y in range(box.position.y, box.position.y + box.size.y):
 		for x in range(box.position.x, box.position.x + box.size.x):
 			var tile := Vector2i(x, y)
-			if map.is_walkable(tile):
+			if _map.is_walkable(tile):
 				continue
 			# A clearance is only for an absent pinch corner. Painted `c`, `C` and `b` cells stay
 			# solid even if another diagonal elsewhere happens to name the same position.
-			if not map.tiles.has(tile) and map.collision_clearance.has(tile):
+			if not _map.has_floor_at(tile) and _map.has_collision_clearance_at(tile):
 				continue
 			var body := StaticBody2D.new()
 			var shape := CollisionShape2D.new()
-			var outline := map.blocker_outline(tile, bands)
+			var outline := _map.blocker_outline(tile, bands)
 			if outline.is_empty():
 				var rectangle := RectangleShape2D.new()
 				rectangle.size = Vector2.ONE * TILE
@@ -246,7 +271,7 @@ func _rebuild_collision() -> void:
 				var polygon := ConvexPolygonShape2D.new()
 				polygon.points = outline
 				shape.shape = polygon
-			body.position = map.tile_to_world(tile)
+			body.position = _map.tile_to_world(tile)
 			body.add_child(shape)
 			_collision.add_child(body)
 
@@ -257,30 +282,30 @@ func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
 	# both leaves visible instead of letting a neighbouring wall crop one side.
 	_window_sprites.clear()
-	for at: Vector2i in map.walls:
-		var kind: InteriorTile.Kind = map.walls[at]
+	for at: Vector2i in _map.wall_tiles():
+		var kind: InteriorTile.Kind = _map.wall_kind_at(at)
 		if kind == InteriorTile.Kind.LIFT_DOOR or kind == InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		var texture := _wall_texture(kind)
 		var sprite := _add_wall_sprite(at, texture)
 		if sprite and kind == InteriorTile.Kind.WINDOW:
 			_window_sprites.append(sprite)
-	for at: Vector2i in map.walls:
-		var kind: InteriorTile.Kind = map.walls[at]
+	for at: Vector2i in _map.wall_tiles():
+		var kind: InteriorTile.Kind = _map.wall_kind_at(at)
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		_add_wall_sprite(at, _wall_texture(kind))
 	_add_rubble()
-	for at: Vector2i in map.entrance_tiles:
+	for at: Vector2i in _map.entrance_positions():
 		var barricade := Sprite2D.new()
-		var texture := atlas.region(ENTRANCE_BARRICADE_TEXTURE)
+		var texture := _atlas.region(ENTRANCE_BARRICADE_TEXTURE)
 		barricade.texture = texture
 		barricade.centered = false
 		barricade.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		add_entity(barricade, DrawLayer.Layer.BUILDINGS)
 
-## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
+## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble_area()`
 ## closes. One picture registered at the patch's own top-left corner rather than one sprite per
 ## cell: a heap is a single mass, and four copies of the same tile would read as four crates.
 ##
@@ -288,18 +313,18 @@ func _rebuild_walls() -> void:
 ## gives for putting elevation there — nothing can legitimately stand behind a thing that closes a
 ## corridor, so there is nothing for it to sort against.
 func _add_rubble() -> void:
-	if map.rubble.size == Vector2i.ZERO:
+	if _map.rubble_area().size == Vector2i.ZERO:
 		return
 	var heap := Sprite2D.new()
-	heap.texture = atlas.region(HALLWAY_RUBBLE_TEXTURE)
+	heap.texture = _atlas.region(HALLWAY_RUBBLE_TEXTURE)
 	heap.centered = false
-	heap.position = Vector2(map.rubble.position) * TILE
+	heap.position = Vector2(_map.rubble_area().position) * TILE
 	add_entity(heap, DrawLayer.Layer.BUILDINGS)
 
 func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 	if name == &"":
 		return null
-	var texture := atlas.region(name)
+	var texture := _atlas.region(name)
 	if texture == null:
 		return null
 	var sprite := Sprite2D.new()
@@ -356,7 +381,7 @@ var _window_flash_left := 0.0
 ## two texture assignments.
 func _flash_windows() -> void:
 	_window_flash_left = FINALE_WINDOW_FLASH_SECONDS
-	var texture := atlas.region(HALLWAY_WINDOW_FLASH)
+	var texture := _atlas.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
@@ -431,7 +456,7 @@ func _process(delta: float) -> void:
 	_window_flash_left = maxf(0.0, _window_flash_left - delta)
 	if _window_flash_left > 0.0:
 		return
-	var texture := atlas.region(HALLWAY_WINDOW)
+	var texture := _atlas.region(HALLWAY_WINDOW)
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
@@ -457,22 +482,22 @@ func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 ## `_add_standing()` and `_add_threshold()`; only the chandeliers and the decals are in the
 ## y-sorted layer the player joins through `add_entity()`.
 func _rebuild_overlays() -> void:
-	for id: String in map.doors:
-		var door: InteriorMapPlan.Door = map.doors[id]
+	for id: String in _map.door_ids():
+		var door: InteriorMapPlan.Door = _map.door(id)
 		if _is_edge_threshold(door.id):
 			_add_threshold(door.tile, OPEN_THRESHOLD_TEXTURE)
 		else:
 			_add_standing(door.tile, DOOR_TEXTURE)
-	for tile: Vector2i in map.locked_thresholds:
+	for tile: Vector2i in _map.locked_threshold_positions():
 		_add_threshold(tile, APARTMENT_THRESHOLD_TEXTURE)
-	if map.exit_tile.x >= 0:
-		_add_standing(map.exit_tile, EMERGENCY_EXIT_TEXTURE)
-	for tile: Vector2i in map.decals:
-		var kind: InteriorTile.Kind = map.decals[tile]
+	if _map.exit_position().x >= 0:
+		_add_standing(_map.exit_position(), EMERGENCY_EXIT_TEXTURE)
+	for tile: Vector2i in _map.decal_tiles():
+		var kind: InteriorTile.Kind = _map.decal_kind_at(tile)
 		var name := _decal_texture(kind)
 		var sprite := Sprite2D.new()
-		sprite.texture = atlas.region(name)
-		sprite.position = map.tile_to_world(tile)
+		sprite.texture = _atlas.region(name)
+		sprite.position = _map.tile_to_world(tile)
 		add_entity(sprite)
 	_add_chandeliers()
 
@@ -483,15 +508,15 @@ func _is_edge_threshold(door_id: String) -> bool:
 ## A chandelier at each hallway midpoint. The lobby's entrance has the same central column, so its
 ## chandelier would overlap the barricade that needs to read as the closed main way out.
 func _add_chandeliers() -> void:
-	for id in ["hallway_third", "hallway_second", "hallway_first"]:
-		if not map.waypoints.has(id):
+	for id: String in ["hallway_third", "hallway_second", "hallway_first"]:
+		if not _map.has_waypoint(id):
 			continue
 		var chandelier := Sprite2D.new()
-		var texture := atlas.region(CHANDELIER_TEXTURE)
+		var texture := _atlas.region(CHANDELIER_TEXTURE)
 		chandelier.texture = texture
 		chandelier.centered = false
 		chandelier.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
-		chandelier.position = map.tile_to_world(map.waypoints[id] + Vector2i(0, -1))
+		chandelier.position = _map.tile_to_world(_map.waypoint(id) + Vector2i(0, -1))
 		add_entity(chandelier)
 
 func _decal_texture(kind: InteriorTile.Kind) -> StringName:
@@ -508,18 +533,18 @@ func _decal_texture(kind: InteriorTile.Kind) -> StringName:
 ## actor, in the door layer under her.
 func _add_standing(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
-	var texture := atlas.region(name)
+	var texture := _atlas.region(name)
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
-	sprite.position = map.tile_to_world(tile)
+	sprite.position = _map.tile_to_world(tile)
 	add_entity(sprite, DrawLayer.Layer.DOORS)
 
 ## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
 ## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
 func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
-	var texture := atlas.region(name)
+	var texture := _atlas.region(name)
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -530,10 +555,10 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 ## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:
 ## collision and walkability still come only from the parsed symbols.
 func _rebuild_stairwell_backdrops() -> void:
-	var segment_texture := atlas.region(STAIRWELL_SEGMENT_BACKDROP)
-	var cap_texture := atlas.region(STAIRWELL_SHAFT_CAP_TOP)
-	for side in ["left", "right"]:
-		var top_landing: Vector2i = map.waypoints["stairwell_%s" % side]
+	var segment_texture := _atlas.region(STAIRWELL_SEGMENT_BACKDROP)
+	var cap_texture := _atlas.region(STAIRWELL_SHAFT_CAP_TOP)
+	for side: String in ["left", "right"]:
+		var top_landing: Vector2i = _map.waypoint("stairwell_%s" % side)
 		var origin := top_landing - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for panel in 4:
 			var backdrop := Sprite2D.new()
@@ -551,11 +576,11 @@ func _rebuild_stairwell_backdrops() -> void:
 
 ## Where a fresh run starts (`InteriorMapPlan.start_world_position()`).
 func start_world_position() -> Vector2:
-	return map.start_world_position()
+	return _map.start_world_position()
 
 ## Where `--start-escape <part>` puts her (`InteriorMapPlan.part_world_position()`).
 func part_world_position(part: String) -> Vector2:
-	return map.part_world_position(part)
+	return _map.part_world_position(part)
 
 ## The whole building's own footprint, grown by a wide margin — **wider than it looks like it
 ## needs to be, on purpose.** `Stroller`'s `Camera2D` is authored at `zoom = Vector2(2, 2)`
@@ -569,7 +594,7 @@ func part_world_position(part: String) -> Vector2:
 ## the difference between working and pinned.
 const _CAMERA_MARGIN := 400.0
 func camera_bounds() -> Rect2:
-	var box := map.footprint()
+	var box := _map.footprint()
 	return Rect2(Vector2(box.position) * TILE, Vector2(box.size) * TILE).grow(_CAMERA_MARGIN)
 
 ## The building's node for `layer`, named `name`, handed over as its node for that draw layer
@@ -581,8 +606,9 @@ func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
 
 # ------------------------------------------------------------------ the meters ---
 # `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here: the answer of the
-# events it is handed (`WorldContext.excitement_sources`, the sources of the day's `EventManager` on
-# the building's map, or none while the building is walked empty), and the basement's decay.
+# events it is handed (`WorldContext.use_excitement_sources()`, the sources of the day's
+# `EventManager` on the building's map, or none while the building is walked empty), and the
+# basement's decay.
 
 ## **The basement gives nothing back**: the meter does not fall while she is in it, awake or asleep
 ## (`EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she
@@ -590,39 +616,39 @@ func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
 ##
 ## Overrides WorldContext.decay_multiplier.
 func decay_multiplier(world_position: Vector2) -> float:
-	if InteriorMap.part_at(map.world_to_tile(world_position)) == "basement":
+	if InteriorMap.part_at(_map.world_to_tile(world_position)) == "basement":
 		return EXCITEMENT_DECAY_BASEMENT_MULTIPLIER
 	return 1.0
 
 # ------------------------------------------------------------------ transitions ---
 
-## What the building's ground does to her each frame she walks it (`WorldMap.process_player()`,
-## asked by the run flow through the map): the light of the part she is in, and a door or the service
-## exit under her (`InteriorMapPlan.transition_at()`). Reads `player`'s own tile rather than being
-## told about it — the question is "what is on this ground", not "what did somebody just do".
+## What the building's ground does to her each frame she walks it (`WorldContext.process_player()`,
+## asked by the run flow of the world she walks, `main`'s walking frame): the light of the part she
+## is in, and a door or the service exit under her (`InteriorMapPlan.transition_at()`). Reads
+## `player`'s own tile rather than being told about it — the question is "what is on this ground", not "what did somebody just do".
 ## Nothing here is a rate the fade `Tween` does not already own, so `_delta` is not read.
 ##
 ## Overrides WorldContext.process_player.
 func process_player(player: Node2D, _delta: float) -> void:
-	modulate = _lighting_at(map.world_to_tile(player.global_position))
+	modulate = _lighting_at(_map.world_to_tile(player.global_position))
 	_door_release_latch.update(player.global_position)
 	if _transitioning or _door_release_latch.holds():
 		return
-	var tile := map.world_to_tile(player.global_position)
-	var result := map.transition_at(tile)
+	var tile := _map.world_to_tile(player.global_position)
+	var result := _map.transition_at(tile)
 	if result.is_empty():
 		return
 	if result["kind"] == "door":
-		_start_door_transition(result["door"], player)
+		_start_door_transition(result["door"])
 	else:
 		_start_exit()
 
-func _start_door_transition(door: InteriorMapPlan.Door, player: Node2D) -> void:
+func _start_door_transition(door: InteriorMapPlan.Door) -> void:
 	_transitioning = true
 	var target_door: String = door.target_door
 	var tween := create_tween()
 	tween.tween_property(_fade_rect, "modulate:a", 1.0, FADE_SECONDS)
-	tween.tween_callback(func() -> void: _teleport_to_door(target_door, player))
+	tween.tween_callback(func() -> void: _teleport_to_door(target_door))
 	tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_SECONDS)
 	tween.tween_callback(func() -> void: _transitioning = false)
 
@@ -677,27 +703,19 @@ func put_the_pictures_away() -> void:
 	for node in layers().nodes():
 		node.hide()
 
-## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
-## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than
-## kept behind the tween above, so a test can drive the same teleport the running game uses without
-## also driving the fade's timing — see `transition_at()`'s own doc for the same reasoning.
-##
-## `reset_at()` rather than a bare `global_position` assignment: it also resets the camera's own
-## smoothing (`Camera2D.reset_smoothing()`), which is what makes this a *snap* to the door rather
+## Says she has come through the door named `door_id`, at its own tile — "just inside its counterpart
+## door," in the TODO's own words, since the door tile is exactly where she is placed — and lights
+## the part she arrives in. Whoever listens to `arrived_through_a_door` puts her there; `main`
+## connects her `reset_at()`, which also resets the camera's own smoothing
+## (`Camera2D.reset_smoothing()`), which is what makes this a *snap* to the door rather
 ## than a slide across the empty ground between two parts — *(2026-09-10, playtest 55: "fade to
 ## black, teleport, then fade in again", and the camera "snapping with her, not sliding across the
 ## gap")*. Facing chosen as north on arrival: arbitrary, and open to revisit once the scene is
 ## actually played rather than stepped.
-func _teleport_to_door(door_id: String, player: Node2D) -> void:
-	var door := map.door(door_id)
-	var at := map.tile_to_world(door.tile)
+func _teleport_to_door(door_id: String) -> void:
+	var door := _map.door(door_id)
+	var at := _map.tile_to_world(door.tile)
 	_door_release_latch.arm(at, _DOOR_RELEASE_RADIUS)
 	# Under the black, so the part she arrives in is never seen in the light of the one she left.
 	modulate = _lighting_at(door.tile)
-	if player is Stroller:
-		(player as Stroller).reset_at(at, Vector2.UP)
-	else:
-		player.global_position = at
-		# `reset_at()` already does this for the `Stroller` branch above; a bare test double
-		# still needs it or physics interpolation draws it sliding in from the part it left.
-		player.reset_physics_interpolation()
+	arrived_through_a_door.emit(at, Vector2.UP)

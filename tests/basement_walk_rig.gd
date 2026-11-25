@@ -5,10 +5,11 @@ extends RefCounted
 ##
 ## **What is real and what is stood in for.** The vents, their clocks, the blows and the field each
 ## blow charges her with are the building's own plans on the day's `EventManager` and
-## `EventInstance` themselves, ticked the way the game ticks them; the corridor is `InteriorScene.basement_walk()`; the decay is the baby's own
-## rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING` times the scene's
-## `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she waits) and the
-## sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
+## `EventInstance` themselves, ticked the way the game ticks them (the manager's own
+## `step_the_repeats()`, then each blow's `step()`); the corridor is `InteriorScene.basement_walk()`;
+## the decay is the baby's own rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING`
+## times the scene's `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she
+## waits) and the sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
 ## `Tuning.WALK_SPEED` and held `HELD_OUT` from a vent whose body is down, which is what the
 ## physics does to her at a one-tile gate. **Steam alone**: the basement's mouse, the fire and the
 ## bangs are not ticked, so the figures are what the vents cost.
@@ -37,8 +38,8 @@ func _init(t: Node) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	_events = BuildingEvents.events_in(t, _scene, rng, _run)
-	for tile in _scene.map.basement_walk():
-		_points.append(_scene.map.tile_to_world(tile))
+	for tile in _scene.map().basement_walk():
+		_points.append(_scene.map().tile_to_world(tile))
 
 func free_rig() -> void:
 	_events.free()
@@ -92,9 +93,9 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	var vents := BuildingEvents.vents(_events)
 	for i in vents.size():
-		var vent: EventScheduler.Planned = vents[i]
-		var there := candidate.distance_to(vent.position)
-		if there >= HELD_OUT or there >= pos.distance_to(vent.position):
+		var vent: EventPlan = vents[i]
+		var there := candidate.distance_to(vent.placed_at())
+		if there >= HELD_OUT or there >= pos.distance_to(vent.placed_at()):
 			continue
 		var blow := _blow_at(vent)
 		if blow != null and blow.is_solid():
@@ -102,10 +103,10 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	return -1
 
 ## The blow standing at a vent right now, or null between blows.
-func _blow_at(vent: EventScheduler.Planned) -> EventInstance:
+func _blow_at(vent: EventPlan) -> EventInstance:
 	for instance in _events.instances():
-		if instance.def.id == "basement_steam" and not instance.is_finished \
-				and instance.global_position.distance_to(vent.position) < 1.0:
+		if instance.row_id() == "basement_steam" and not instance.is_gone() \
+				and instance.global_position.distance_to(vent.placed_at()) < 1.0:
 			return instance
 	return null
 
@@ -114,14 +115,12 @@ func _blow_at(vent: EventScheduler.Planned) -> EventInstance:
 ## no player in the rig the bangs outside charge nothing, and the masked man, never ticked, never
 ## runs out of the shaft to come again.
 func _tick(at: Vector2, awake: bool) -> float:
-	_events.streaming.retire_finished()
-	_events.streaming.bring_back_what_repeats(STEP)
+	_events.step_the_repeats(STEP)
 	var incoming := 0.0
+	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
 	for instance in _events.instances():
-		if instance.def.id != "basement_steam":
+		if instance.row_id() != "basement_steam":
 			continue
-		instance.player_at = at
-		instance.baby_awake = awake
 		instance.step(STEP)
-		incoming += instance.excitement.contribution_at(at)
+		incoming += instance.source().contribution_at(at)
 	return incoming

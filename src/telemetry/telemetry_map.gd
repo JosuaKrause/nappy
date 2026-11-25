@@ -79,17 +79,17 @@ const NO_ROLE_MARK := Color("8c93a1")
 ## carry it — what is stored is the mix.
 const CORRIDOR_ALPHA := 0.55
 
-## The single tile put through the middle of an event she **met** — came within `def.outer_radius`
-## of, the field she can actually feel — which is what tells a placement that cost her something
-## from one that merely stood there.
+## The single tile put through the middle of an event she **met** — came within the field she can
+## actually feel (`EventPlan.field_reaches()`) — which is what tells a placement that
+## cost her something from one that merely stood there.
 ##
 ## **It is a mark added rather than strength taken away, and the first version was the other way
 ## round.** Fading what she never reached is the obvious design and it answers the wrong question:
 ## a wall placed in the far corner of a map she never walked into is still a wall in the wrong
 ## place, and it is the placement no trace can report — so the picture would have whispered exactly
 ## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
-## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the outer
-## radius rather than against `EventScheduler.Planned.was_live`, which only says the plan was once
+## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the field
+## rather than against `EventPlan.has_been_in_the_world()`, which only says the plan was once
 ## loaded into the world at `Tuning.EVENT_STREAM_RADIUS` — more than twice the reach of a typical
 ## row, so it would mark a great deal of decoration as if it had cost her something.
 const MET_MARK := Color("ffffff")
@@ -138,7 +138,7 @@ const BUILDING_GROUND := Color("211f26")
 
 ## The grid as an image: one `SCALE`-square block of flat colour per tile, then the marks.
 ##
-## `closed_today` is the day's closures rather than `map.closed_tiles`, because the caller has them
+## `closed_today` is the day's closures rather than `map.closed_tile_set()`, because the caller has them
 ## as objects and the mouths are what a reader is looking for — a closed street reads as a street
 ## with two crosses on it, which is what it looks like from the junction.
 ##
@@ -155,11 +155,11 @@ const BUILDING_GROUND := Color("211f26")
 ## to have cost her anything. Both are optional and empty by default — on the dawn map there is no
 ## walk yet, and a picture that invented one would be worse than a picture with none.
 static func render(map: CityMap, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
+		tree: RouteTree = null, plans: Array[EventPlan] = [],
 		trail: Array[Vector3] = [], met: Dictionary = {}) -> Image:
-	var image := Image.create_empty(map.size.x * SCALE, map.size.y * SCALE, false, Image.FORMAT_RGB8)
-	for y in map.size.y:
-		for x in map.size.x:
+	var image := Image.create_empty(map.size_in_tiles().x * SCALE, map.size_in_tiles().y * SCALE, false, Image.FORMAT_RGB8)
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			var type := map.tile_at(tile)
 			var colour := BUILDING_GROUND if type == GameEnums.TileType.BUILDING \
@@ -201,11 +201,11 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 ## darkest thing in the picture and a line on it would be invisible — and because what the reader
 ## is looking for is the *edge* of the barrier the spine is, which is where she walks.
 static func _mark_the_spine(image: Image, map: CityMap) -> void:
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return
-	var corridor := map.main_road * CityMap.period()
-	for offset in [0, Tuning.STREET_WIDTH - 1]:
-		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size.y)),
+	var corridor := map.main_road_corridor() * CityMap.period()
+	for offset: int in [0, Tuning.STREET_WIDTH - 1]:
+		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size_in_tiles().y)),
 				SPINE_MARK)
 
 ## The day's corridor, as the ground it actually is: every cell the tree touches, translucent.
@@ -245,25 +245,21 @@ static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 ## **An unplaced plan is skipped and that is the honest answer, not a gap.** An `AHEAD_OF_PLAYER`
 ## row has no position — the day budgets one more cat and the director decides where out of where
 ## she turns out to walk — so drawing it anywhere would be the picture claiming a placement that
-## nothing made. `_role_for` gives it `NONE` for the same reason.
-##
-## A **spent** offer is drawn like any other: a set piece is planned at every site of a covering set
-## and exactly one happens, so the sites that did not are what makes the covering set visible at
-## all. They come out without a pip, which is right — she never reached them.
+## nothing made. `EventScheduler.role_for()` gives it `NONE` for the same reason.
 ##
 ## `met` says which of `plans` she actually met — `TelemetryObserver._watch_met_events`, keyed by
 ## the plan itself. Empty on the dawn map, so nothing carries a pip there, which is correct: there
 ## is no walk yet to have met anything.
 static func _mark_the_events(image: Image, map: CityMap,
-		plans: Array[EventScheduler.Planned], met: Dictionary = {}) -> void:
+		plans: Array[EventPlan], met: Dictionary = {}) -> void:
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var colour := _role_mark(plan.role)
-		if plan.path.size() >= 2:
-			_blend_tiles(image, _route_stroke(map, plan.path), colour, ROUTE_ALPHA)
-		_mark_one_event(image, map.world_to_tile(plan.position), colour,
-				plan.def.effect() == GameEnums.BlockerEffect.LETHAL, met.has(plan))
+		var colour := _role_mark(plan.role())
+		if not plan.stands_still():
+			_blend_tiles(image, _route_stroke(map, plan.walks()), colour, ROUTE_ALPHA)
+		_mark_one_event(image, map.world_to_tile(plan.placed_at()), colour, plan.ends_the_day(),
+				met.has(plan))
 
 ## One event's glyph, three tiles across whatever it is.
 ##
@@ -344,13 +340,13 @@ static func _mark_the_trail(image: Image, map: CityMap, trail: Array[Vector3]) -
 ## thing nobody spots, and a hard blocker nobody can spot in the one picture built to check
 ## placements might as well not have been placed.
 static func _mark_the_dead_ends(image: Image, map: CityMap) -> void:
-	for key: Vector3i in map.built_over:
-		_fill_tiles(image, map.built_over[key] as Rect2i, DEAD_END_MARK)
+	for key: Vector3i in map.streets_built_over():
+		_fill_tiles(image, map.streets_built_over()[key] as Rect2i, DEAD_END_MARK)
 
 ## Every calm area, outlined at its lot. Outlined rather than tinted because *how big it is* is
 ## most of what this picture is being asked, and a tint over grass answers that worse than a box.
 static func _mark_the_calm(image: Image, map: CityMap) -> void:
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		_outline_tiles(image, map.lot_rect(block), CALM_MARK)
 
 ## Both mouths of every street closed today, where the barriers actually stand.
@@ -361,8 +357,8 @@ static func _mark_the_calm(image: Image, map: CityMap) -> void:
 ## street without covering it.
 static func _mark_the_closures(image: Image, closures: Array[RoadClosure]) -> void:
 	for closure in closures:
-		for at_a in [true, false]:
-			_fill_tiles(image, closure.segment.mouth_rect(at_a), CLOSURE_MARK)
+		for mouth in closure.mouth_rects():
+			_fill_tiles(image, mouth, CLOSURE_MARK)
 
 ## The home, filled at exactly its own size.
 ##
@@ -371,7 +367,7 @@ static func _mark_the_closures(image: Image, closures: Array[RoadClosure]) -> vo
 ## out: it is the only red in a picture with no other red in it, and it was already the first thing
 ## the eye lands on — so the reach was buying nothing and covering two streets to buy it.
 static func _mark_the_home(image: Image, map: CityMap) -> void:
-	_fill_tiles(image, map.home_rect, HOME_MARK)
+	_fill_tiles(image, map.home_tile_rect(), HOME_MARK)
 
 # ------------------------------------------------------------------ tile drawing ---
 # All three take a rect in **tiles** and scale it here, so nothing above multiplies by SCALE and

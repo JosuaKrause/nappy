@@ -35,35 +35,36 @@ const STEP := 1.0 / 60.0
 
 var _lines: Array[String] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var printed := 0
 	for seed_value in SEEDS:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, run, CityGenerator.generate(seed_value))
 		for day in DAYS:
-			printed += _a_day(t, city, seed_value, day)
+			printed += _a_day(t, city, run, seed_value, day)
 		city.free()
 	print("TA_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were starts to print (%d)" % printed)
 
-func _a_day(t, city: City, seed_value: int, day: int) -> int:
+func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int) -> int:
 	var finale := day == Tuning.RUN_LENGTH_DAYS
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 			done.append(step.index)
-	city.run.resistance.completed_steps = done
-	city.run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-	city.run.facts.completed_resistance_alley_tiles = []
-	city.run.attempt_spend.scars.clear()
-	city.run.header.day = day
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, day)
+	GivenRun.completed_steps(run, done)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+	GivenRun.alley_tiles(run, [])
+	GivenRun.scars(run, [])
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+			city.map().doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -72,17 +73,17 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.add_to_group("player")
-	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	player.global_position = city.map().doorstep_world_position()
+	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	_lines.clear()
-	director.trace = RunTrace.recording(_lines)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.use_trace(RecordingTrace.new(_lines))
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	var printed := 0
@@ -101,7 +102,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 			_point(director.contact_position()), _point(director.red_arrow_target())])
 	printed += 1
 	var her := director.contact_position()
-	if her != Vector2.INF and not city.map.is_walkable(city.map.world_to_tile(her)):
+	if her != Vector2.INF and not city.map().is_walkable(city.map().world_to_tile(her)):
 		her += Vector2(0.0, Tuning.TILE_SIZE)
 	if her != Vector2.INF:
 		_stand(city, player, her)
@@ -117,7 +118,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 			_stand(city, player, spot)
 			_lines.clear()
 			director._send_at_her(robber, front_door)
-			var where := RunTrace.tile(city.map.world_to_tile(spot))
+			var where := RunTrace.tile(city.map().world_to_tile(spot))
 			printed += _run_out(city, director, player, "%s sweep %s%s" % [label, where,
 					" front door" if front_door else ""], DRIFT)
 	director.free()
@@ -127,7 +128,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 ## Stands her at `at`, the day's view looked through about her as the camera would.
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## Runs every warning up to its end, her stepping `drift` halfway through its time, and prints what
@@ -135,53 +136,53 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## and the director's stream. The pursuer is then taken out of the world.
 func _run_out(city: City, director: ResistanceDirector, player: Stroller, label: String,
 		drift: Vector2) -> int:
-	var warnings := city.events.pending_warnings().duplicate()
+	var warnings := RunCity.events(city).pending_warnings().duplicate()
 	if warnings.is_empty():
 		_print("%s nothing sent | %s | rng %d" % [label, " / ".join(_lines), director._rng.state])
 		return 1
 	var warning: PendingWarning = warnings[0]
-	var pointed := warning.place
+	var pointed := warning.points_at()
 	var her := player.global_position
-	var half := warning.left * 0.5
+	var half := warning.seconds_left() * 0.5
 	var shown := 0.0
 	var drifted := false
-	while not city.events.pending_warnings().is_empty() and shown < 5.0:
+	while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
 		if not drifted and shown >= half and drift != Vector2.ZERO:
 			drifted = true
 			var stepped := her + drift
-			if city.map.is_walkable(city.map.world_to_tile(stepped)):
+			if city.map().is_walkable(city.map().world_to_tile(stepped)):
 				her = stepped
 				_stand(city, player, her)
-		city.events.warnings.run(STEP, her)
+		RunCity.events(city)._warnings.run(STEP, her)
 		shown += STEP
 	var sent: EventInstance = null
-	for instance in city.events.instances():
-		if instance.def.id == warning.def.id and not instance.is_finished:
+	for instance in RunCity.events(city).instances():
+		if instance.row_id() == warning.row().id() and not instance.is_gone():
 			sent = instance
-	var made := "nobody (withdrawn)" if warning.withdrawn else "nobody"
+	var made := "nobody (withdrawn)" if warning.was_withdrawn() else "nobody"
 	if sent != null and is_instance_valid(sent):
-		made = "%s at %s %s" % [sent.def.id, _point(sent.global_position),
-				RunTrace.tile(city.map.world_to_tile(sent.global_position))]
-	_print("%s %s badge %s -> %s | %s | rng %d" % [label, warning.def.id, _point(pointed), made,
+		made = "%s at %s %s" % [sent.row_id(), _point(sent.global_position),
+				RunTrace.tile(city.map().world_to_tile(sent.global_position))]
+	_print("%s %s badge %s -> %s | %s | rng %d" % [label, warning.row().id(), _point(pointed), made,
 			" / ".join(_lines), director._rng.state])
 	if sent != null and is_instance_valid(sent):
-		city.events.retire(sent)
+		RunCity.events(city).retire(sent)
 	return 1
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
-					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
+			if city.map().tile_at(tile) == GameEnums.TileType.SIDEWALK \
+					and city.map().is_walkable(tile) and not city.map().is_on_home_block(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = []
 	if sidewalk.is_empty():
 		return spots
 	for i in SPOTS:
-		spots.append(city.map.tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
+		spots.append(city.map().tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
 				+ sidewalk.size() / (SPOTS * 2)]))
 	return spots
 

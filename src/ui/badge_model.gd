@@ -1,52 +1,25 @@
 class_name BadgeModel
-extends RefCounted
+extends EdgeBadges
 ## **Which dangers get a screen-edge badge, when it goes up and when it comes down.** The decision
 ## `DangerEdge` draws, made in one place that is handed plain data and can be stepped in a test with
-## no scene, no camera and no frame timing: the live dangers and the warnings that are up
-## (`Subject`), where she is, how long the frame was, and a `sees` Callable that answers "is this
-## world point in sight, counting this many screen px past the edge as in sight". `DangerEdge`
-## builds those from the event source and the camera once a frame and draws what `announcing()` says
-## (every badge in `coming`, soonest arrival first).
+## no scene, no camera and no frame timing: the warnings that are up and the live dangers
+## (`Subject`) and where she is. `DangerEdge` builds those from the event source and the camera once
+## a frame and draws what `drawn()` says (every badge up, soonest arrival first).
 ##
-## **The seam for the event manager's warning board.** Whatever collects the live dangers and the
-## pending warnings (`EventManager`, or the `WarningBoard` split out of it) hands this model
-## `Subject`s and a view and reads `coming` / `announcing()` back; nothing here knows `EventInstance`,
-## `PendingWarning`, `VisibleView` or a node.
+## **One path: a warning put up before its danger is placed** *(minty-dolphin #852: "Don't let
+## legacy implementations prevent you from establishing a clean design")*. A warning with nothing in
+## the world yet is announced for the whole of its warning, pointing at where the thing will come
+## from (`PendingWarning`); the thing it warns of is then created where it pointed
+## (`EventInstance.was_warned_of()`), and **keeps the badge until she can see it** *("Anyway a badge
+## shouldn't disappear before the entity is visible")*, or until it is over or gone. A charger whose
+## charge begins out of her sight takes the same path, its start being its warning
+## (`EventInstance.was_warned_of()`). Nothing in the world is measured: a danger whose coming was
+## not warned of carries no badge, and one seen once carries none again.
 ##
-## The thresholds are the badge's: see each constant. The reasons for the rules (its own approach
-## rather than the gap's, a margin on the screen edge for raising, and a badge kept until its danger is in sight) are written beside
-## them below.
-
-## How fast something has to be closing before it is worth an arrow, in px/s — **its own
-## approach, with the player held still.** Anything slower she can simply walk away from, which
-## is the same line `required_telegraph_time()` draws.
-##
-## **Not the rate the *gap* is shrinking.** That is her speed plus its speed, and she walks at 92
-## against a threshold of 20 — so walking towards anything lethal raises its badge whether or not
-## the thing is coming, and *"they show events far away"*, *"they disappear when you walk towards
-## them"* and *"they flicker"* all fall out of that one line. Her own velocity is hers to control
-## and does not need announcing at the edge of the screen.
-const CLOSING_SPEED := 20.0
-## The range limit, stated as time rather than as pixels: something is announced once it would
-## reach her within this many seconds at its current approach.
-##
-## A distance would have to be wrong for something — a badge at 900px is scenery with a number
-## on it for a dog, and is exactly what the cue exists for when it is a fire engine. Stated as a
-## window it scales itself: at `fire_truck`'s 190px/s this is most of the stream radius, at a
-## cyclist's pace about half of it, and a 60px/s mover has to be within 300px. It is the same
-## quantity the fairness contract is written in — how long she has to get out of the way.
-const LEAD_TIME := 5.0
-## How fast the measured approach follows the raw frame-to-frame one, per second. A single
-## frame's difference is mostly noise at these distances; this is the same smoothing the badge
-## would otherwise need three of.
-const SMOOTHING := 6.0
-## How far out of sight something has to be before it is raised a badge, in screen px. A thing
-## sitting on the boundary would otherwise trade places with its own badge every frame. **It only
-## decides whether a badge goes up.** Once up, a badge stays up until its danger is in sight (the
-## view proper, no margin) or leaves the world; the margin plays no part in keeping it. A charger's
-## margin is 0 from the frame it runs, and a warned arrival's until it has been seen once, so each is
-## raised from outside the view proper.
-const SCREEN_MARGIN := 130.0
+## **The seam for the event manager's warning board.** Whatever collects the pending warnings and
+## the live dangers (`EventManager`, through its `WarningBoard`) hands this model `Subject`s and reads
+## `announcing()` / `drawn()` back; nothing here knows `EventInstance`, `PendingWarning`,
+## `VisibleView` or a node.
 
 ## One thing the badge may have to say something about, as plain data. The event source's adapter
 ## fills the fields it has; a warning with nothing in the world yet is a `Subject` with `pending`
@@ -55,182 +28,118 @@ class Subject extends RefCounted:
 	## Identity across frames (the instance id); unused for a pending warning.
 	var key := 0
 	var position := Vector2.ZERO
-	## The row's own facts the rule reads.
-	var speed := 0.0
-	var outer_radius := 0.0
-	## Its speed while pursuing, where the row pursues.
-	var chase_speed := 0.0
-	var telegraphs := true
-	## Whether there is a silhouette to put in the badge.
-	var has_icon := true
-	## Sited ahead of her across her line (`EventDef.SpawnMode.AHEAD_OF_PLAYER`).
-	var ahead_of_player := false
-	var pursues := false
-	var hard_fail := false
-	var mobile := false
+	## Whether it deserves an arrow at all: its row announces its coming
+	## (`EventDef.announces_its_coming()`, asked at her walk). That does not change while it is
+	## handed over, so the adapter asks once.
+	var announces := true
+	## How fast it comes at her under its own steam (`EventDef.approach_speed()`): what its arrival is
+	## reckoned at, for the order the badges are drawn in.
+	var approach_speed := 0.0
+	## How far from its centre its field reaches her (`EventDef.heard_within()`): the badge's gap is
+	## measured to there.
+	var heard_within := 0.0
 	## Over and done with: ignored.
 	var finished := false
-	## It was created under a warning that already ran (`EventInstance.came_under_a_warning`).
+	## Its coming was put on the badge (`EventInstance.was_warned_of()`): it was created under a
+	## warning that already ran, or its charge began out of her sight.
 	var warned := false
-	## It is charging this frame (`EventInstance.has_charged()`).
-	var charging := false
 	## Any of it is in sight (its point or what it draws).
 	var shown := false
 	var logged_name := ""
-	## Handed back untouched on a badge, for the drawing (the row).
-	var payload: Variant = null
+	## Handed back untouched on a badge, for the drawing; null where a suite sets none.
+	var payload: EventDef = null
 	## A warning not yet a thing: the place it will come from and the seconds its warning has left.
 	var pending := false
 	var left := 0.0
 
-	## Whether something with these facts deserves an arrow at all: lethal always, and otherwise
-	## only what she cannot outwalk (an event slower than a walk is one she can turn round and leave).
-	## A thing that does not telegraph is outside the badge; one with no silhouette has nothing to
-	## say; an `AHEAD_OF_PLAYER` crossing is sited close and gone in seconds and is its own moment,
-	## except a pursuer, which is warned of first and then placed just out of sight to close in.
-	## `TOWARD_PLAYER` falls through on purpose: a road, not an ambush.
-	func worth_an_arrow(walk_speed: float) -> bool:
-		if not telegraphs or not has_icon:
-			return false
-		if ahead_of_player and not pursues:
-			return false
-		if hard_fail:
-			return true
-		return mobile and speed > walk_speed
 
-## What to put on the edge this frame, soonest arrival first:
-## `[time_to_reach, distance, payload, world position, approach, logged name]`.
-var coming: Array = []
-## Per live subject: where it was last frame (`was`), its smoothed approach speed (`approach`),
-## whether its badge is up (`up`), whether it has been in sight (`seen`), whether its charge has been
-## met (`charged`), and the generation it was last touched on (`generation`). Keyed by `Subject.key` and mutated in
-## place, so a subject that stops being handed over drops out the frame after.
-var watch := {}
-var _generation := 0
+## One badge as the edge draws it: what the run log reads (`EdgeBadges.Badge`) and what only the
+## model's sort and the drawing read, how long until it arrives, its row and where it points.
+class Drawn extends EdgeBadges.Badge:
+	var _arrives_in := 0.0
+	var _row: EventDef = null
+	var _points_at := Vector2.ZERO
 
-## How fast something at `was`, now at `now`, is closing on a player standing at `player`.
-## Passing the same point for both distances is what "with the player held still" *means*.
-static func _approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
-	if delta <= 0.0:
-		return 0.0
-	return (was.distance_to(player) - now.distance_to(player)) / delta
+	func _init(logged_name_: String, distance_: float, approach_: float, arrives_in_: float,
+			row_: EventDef, points_at_: Vector2) -> void:
+		super(logged_name_, distance_, approach_)
+		_arrives_in = arrives_in_
+		_row = row_
+		_points_at = points_at_
 
-## Whether something closing at `approach` px/s with `gap` px of clear ground left is worth announcing.
-static func _announces(approach: float, gap: float) -> bool:
-	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
+	## Seconds until it reaches her at its approach; the order the badges are sorted in.
+	func arrives_in() -> float:
+		return _arrives_in
 
-## One frame. `here` is where she stands; `sees(point, margin_px)` is whether a world point is in
-## sight with `margin_px` screen px past the edge counted as in sight; `walk_speed` is her walk
-## (`Tuning.WALK_SPEED`). Replaces `coming`.
-##
-## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
-## warning is put up before its danger is placed, the badge points at where it will come from, and
-## nothing is measured. `_measure_dangers_in_the_world()` (with `watch`, `SMOOTHING`, `LEAD_TIME`,
-## `CLOSING_SPEED`, `SCREEN_MARGIN`, `_announces()`, `_approach_speed()` and the `Subject` fields only it
-## reads) badges dangers that are already in the world; the stairwell's masked man and the army truck
-## still need it, and it goes, as a deletion, in the follow-up that places those two after their badge.
-func step(delta: float, here: Vector2, subjects: Array, sees: Callable, walk_speed: float) -> void:
-	coming.clear()
-	if delta <= 0.0:
-		return
-	_measure_dangers_in_the_world(delta, here, subjects, sees, walk_speed)
-	_announce_the_warnings(here, subjects, walk_speed)
-	coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	## The row it announces, whose picture and colour the edge draws.
+	func row() -> EventDef:
+		return _row
+
+	## The world point it points at.
+	func points_at() -> Vector2:
+		return _points_at
+
+## What to put on the edge this frame, soonest arrival first.
+var _coming: Array[Drawn] = []
+## The live things created under a warning that she has seen, by `Subject.key`: their badge has done
+## its job and does not come back. A key no longer handed over is dropped.
+var _seen := {}
+
+## One frame, her standing at `here`: takes down last frame's badges and puts up this frame's.
+func step(here: Vector2, subjects: Array) -> void:
+	_coming.clear()
+	var handed := {}
+	for subject: Subject in subjects:
+		if not subject.announces:
+			continue
+		if subject.pending:
+			_announce_the_warning(subject, here)
+		elif subject.warned and not subject.finished:
+			handed[subject.key] = true
+			_keep_the_warning(subject, here)
+	for key: int in _seen.keys():
+		if not handed.has(key):
+			_seen.erase(key)
+	_coming.sort_custom(func(a: Drawn, b: Drawn) -> bool: return a.arrives_in() < b.arrives_in())
 
 ## A warning with nothing in the world yet is announced for the whole of its warning, on screen or
 ## off: it points at where the thing will come from, and there is nothing there to see yet. Sorted
 ## by when the thing will exist, which is the soonest it can arrive.
-func _announce_the_warnings(here: Vector2, subjects: Array, walk_speed: float) -> void:
-	for subject: Subject in subjects:
-		if not subject.pending or not subject.worth_an_arrow(walk_speed):
-			continue
-		coming.append([maxf(subject.left, 0.0), subject.position.distance_to(here), subject.payload,
-				subject.position, subject.speed, subject.logged_name])
+func _announce_the_warning(subject: Subject, here: Vector2) -> void:
+	_coming.append(Drawn.new(subject.logged_name, subject.position.distance_to(here),
+			subject.approach_speed, maxf(subject.left, 0.0), subject.payload, subject.position))
 
-## The in-the-world path: see `step()`.
-func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array, sees: Callable,
-		walk_speed: float) -> void:
-	_generation += 1
-	for subject: Subject in subjects:
-		if not subject.pending and not subject.finished:
-			_measure(subject, delta, here, sees, walk_speed)
-	# Only the subjects alive this frame carry state forward; a key not touched above still reads an
-	# earlier generation and is erased here, which also keeps a freshly streamed thing from
-	# flashing an arrow on the frame it appears, and ends the badge of a danger that left the world.
-	for key in watch.keys():
-		if watch[key]["generation"] != _generation:
-			watch.erase(key)
-
-func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
-		walk_speed: float) -> void:
-	var at := subject.position
-	var state: Dictionary
-	if watch.has(subject.key):
-		state = watch[subject.key]
-	else:
-		# **A thing that arrives under its own warning keeps the badge it already had.** It is
-		# created just out of sight, inside `SCREEN_MARGIN`, where a fresh thing would not raise
-		# one; and it starts with no measured approach. Without this its badge would flicker off
-		# for the frames before it comes into view. So it starts closing at its own speed (a
-		# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
-		# seen once.
-		var own_speed := subject.chase_speed if subject.pursues else subject.speed
-		state = {"was": at, "approach": own_speed if subject.warned else 0.0,
-				"up": subject.warned, "seen": not subject.warned}
-		watch[subject.key] = state
-	# The event's own approach: how much closer *it* got to where she is standing now. Both
-	# distances are measured to the same point, so her own walking cancels out of it.
-	var raw := _approach_speed(state["was"], at, here, delta)
-	var approach: float = lerpf(state["approach"], raw, clampf(delta * SMOOTHING, 0.0, 1.0))
-	# **A charge is met at its true approach on its first moving frame** *(inbox #788 in minty-lemur,
-	# the player, of the stairwell's masked man, whose only heads-up is this badge once he runs:
-	# "Let's show that at least")*. The smoothing is there for a thing hovering near the threshold;
-	# a charger setting off is a step from standing to its full speed, and smoothed it would reach
-	# the badge's line about a tenth of a second after he ran.
-	if not state.get("charged", false) and raw > 0.0 and subject.charging:
-		approach = maxf(approach, raw)
-		state["charged"] = true
-		# **A charger is raised from outside the view proper, wherever it stands.** Fired once, on
-		# the first frame a pursuer's charge is on and it is moving. Judged against the margin band, a
-		# charger that set off from inside the band was never raised (the masked man's start on the
-		# stairs). Its margin is 0 until it has been in sight again.
-		state["seen"] = false
-	var distance := at.distance_to(here)
-	# The gap to its *field*, not to its centre: an event reaches her when its outer radius
-	# does, and for a fire engine that is a third of a block earlier.
-	var gap := maxf(0.0, distance - subject.outer_radius)
-	# **A badge, once up, stays up until the danger is in sight or gone** *(the player: "a badge
-	# shouldn't disappear before the entity is visible")*: no timer ends it and neither does turning
-	# away, slowing, or the approach test lapsing. It is raised only for what announces and is outside
-	# the margin band (or the view proper, for a charger and a warned arrival). Coming into sight ends
-	# it: that is the badge's job done by the thing itself. A danger that leaves the world is no longer
-	# handed over, which prunes it below.
+## **The thing a warning created keeps the warning's badge until she can see it**: created just out
+## of sight, it points at where it is, until any of it comes into sight, which is the badge's job done
+## by the thing itself; then it carries none again. Sorted by when it arrives at its own approach,
+## measured to its field's edge.
+func _keep_the_warning(subject: Subject, here: Vector2) -> void:
 	if subject.shown:
-		state["seen"] = true
-		state["up"] = false
-	elif subject.worth_an_arrow(walk_speed) and _announces(approach, gap) \
-			and not sees.call(at, SCREEN_MARGIN if state["seen"] else 0.0):
-		state["up"] = true
-	state["was"] = at
-	state["approach"] = approach
-	state["generation"] = _generation
-	if state["up"]:
-		# Sorted by *when it arrives* rather than by how near it is: the soonest arrival comes first
-		# (and is drawn last, on top where badges overlap), which a slow thing standing closer is not.
-		coming.append([gap / maxf(approach, 1.0), distance, subject.payload, at, approach,
-				subject.logged_name])
+		_seen[subject.key] = true
+	if _seen.has(subject.key):
+		return
+	var distance := subject.position.distance_to(here)
+	var gap := maxf(0.0, distance - subject.heard_within)
+	_coming.append(Drawn.new(subject.logged_name, distance, subject.approach_speed,
+			gap / maxf(subject.approach_speed, 1.0), subject.payload, subject.position))
 
-## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
-## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
-## is nothing between `coming` and this list: every badge is in it, and `DangerEdge` draws exactly it.
-func announcing() -> Array[Dictionary]:
-	var badges: Array[Dictionary] = []
-	for i in coming.size():
-		badges.append({
-			"id": str(coming[i][5]),
-			"distance": float(coming[i][1]),
-			"approach": float(coming[i][4]),
-			"def": coming[i][2],
-			"position": coming[i][3],
-		})
+## Whether any badge is up now.
+func has_badges() -> bool:
+	return not _coming.is_empty()
+
+## Takes every badge down, ahead of the frame's new measurement.
+func clear_badges() -> void:
+	_coming.clear()
+
+## What is on the edge right now, nearest arrival first, one entry per badge: the same objects
+## `drawn()` answers, read as the run log reads them.
+## Overrides EdgeBadges.announcing.
+func announcing() -> Array[EdgeBadges.Badge]:
+	var badges: Array[EdgeBadges.Badge] = []
+	badges.assign(_coming)
 	return badges
+
+## What the edge draws right now, nearest arrival first: every badge up, with its row and where it
+## points.
+func drawn() -> Array[Drawn]:
+	return _coming

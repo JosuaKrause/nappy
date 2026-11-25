@@ -1,13 +1,21 @@
 extends RefCounted
 ## The day loop: the two phases, the four ways a day ends, and the run-level bookkeeping
 ## that decides which ending you get.
+##
+## **Mostly its one module.** The day's controller, the run's calendar and the summary screen are each
+## driven with a hand-built map and plain runs. One case combines other modules, for its reason: the
+## booted one (`_test_day_finished_shows_the_summary_with_no_observer_in_the_tree`) holds that the
+## summary comes up from the day's own end signal with no observer in the tree, a guarantee of
+## `main`'s wiring. It is on a cached generated city (`tests/city_map_cache.gd`). That a retried day
+## puts the mark in the same alley is the resistance director's placement, in
+## `tests/test_resistance_steps.gd`.
 
 const SEED := 4242
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 ## The save the boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_day_loop_scratch.json"
 
@@ -18,8 +26,8 @@ var _day: DayController
 var _run: RunState
 var _results: Array[GameEnums.DayResult] = []
 
-func run(t) -> void:
-	_map = CityGenerator.generate(SEED)
+func run(t: TestRunner) -> void:
+	_map = MapCache.of(SEED)
 	_test_start_sets_the_clock(t)
 	_test_running_out_of_daylight_loses(t)
 	_test_sleeping_starts_the_return_phase(t)
@@ -43,7 +51,6 @@ func run(t) -> void:
 	_test_the_bad_ending_names_the_day_it_reached(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
 	_test_a_lost_day_gives_back_what_it_burned(t)
-	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -55,7 +62,7 @@ func _fresh_run() -> RunState:
 	return run
 
 ## The rig's day over `_run`, a run of its own unless the test handed one it keeps across builds.
-func _build(t) -> void:
+func _build(t: TestRunner) -> void:
 	_results = []
 	if _run == null:
 		_run = _fresh_run()
@@ -65,7 +72,8 @@ func _build(t) -> void:
 	_day = DayController.new()
 	t.add_child(_day)
 	_day.set_process(false)
-	_day.setup(_map, _player, _run)
+	_day.setup(_run)
+	_day.use_the_walk(_map, _player)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 ## `keep_run` leaves `_run` for the next `_build()` to hand its day again.
@@ -92,36 +100,36 @@ func map_edge_tile() -> int:
 
 # ------------------------------------------------------------------- phases ---
 
-func _test_start_sets_the_clock(t) -> void:
+func _test_start_sets_the_clock(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	t.check(_day.phase == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
-	t.close_to(_day.time_remaining, 300.0, "the clock starts full")
+	t.check(_day.phase() == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
+	t.close_to(_day.seconds_left(), 300.0, "the clock starts full")
 	t.close_to(_day.fraction_remaining(), 1.0, "the light starts at midday")
 	_tick(150.0)
 	t.close_to(_day.fraction_remaining(), 0.5, "the light tracks the clock")
 	_teardown()
 
-func _test_running_out_of_daylight_loses(t) -> void:
+func _test_running_out_of_daylight_loses(t: TestRunner) -> void:
 	_build(t)
 	_day.start(10.0)
 	_tick(9.0)
 	t.check(_results.is_empty(), "the day is still running before dusk")
 	_tick(2.0)
 	t.check(_results == [GameEnums.DayResult.LOST_TIMEOUT], "dusk loses the day")
-	t.check(_day.failure_reason != "", "a timeout explains itself")
+	t.check(_day.loss_reason() != "", "a timeout explains itself")
 	_teardown()
 
-func _test_sleeping_starts_the_return_phase(t) -> void:
+func _test_sleeping_starts_the_return_phase(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
-	t.check(_day.phase == GameEnums.DayPhase.RETURNING,
+	t.check(_day.phase() == GameEnums.DayPhase.RETURNING,
 			"a sleeping baby starts the walk home")
 	t.check(_results.is_empty(), "falling asleep does not by itself win the day")
 	_teardown()
 
-func _test_home_only_wins_during_the_return(t) -> void:
+func _test_home_only_wins_during_the_return(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	_at_home()
@@ -133,7 +141,7 @@ func _test_home_only_wins_during_the_return(t) -> void:
 	t.check(_results == [GameEnums.DayResult.WON], "getting a sleeping baby home wins the day")
 	_teardown()
 
-func _test_falling_asleep_at_home_wins_immediately(t) -> void:
+func _test_falling_asleep_at_home_wins_immediately(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	_at_home()
@@ -142,12 +150,12 @@ func _test_falling_asleep_at_home_wins_immediately(t) -> void:
 			"falling asleep on the doorstep does not need a lap of the block")
 	_teardown()
 
-func _test_being_woken_resumes_walking(t) -> void:
+func _test_being_woken_resumes_walking(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.AWAKE)
-	t.check(_day.phase == GameEnums.DayPhase.WALKING,
+	t.check(_day.phase() == GameEnums.DayPhase.WALKING,
 			"being woken on the way home puts you back to walking her down")
 
 	_at_home()
@@ -157,46 +165,46 @@ func _test_being_woken_resumes_walking(t) -> void:
 
 # -------------------------------------------------------------------- losses ---
 
-func _test_crying_loses(t) -> void:
+func _test_crying_loses(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
 	t.check(_results == [GameEnums.DayResult.LOST_CRYING], "crying loses the day")
-	t.check(_day.failure_reason != "", "crying explains itself")
+	t.check(_day.loss_reason() != "", "crying explains itself")
 	_teardown()
 
-func _test_hard_fail_loses_with_a_reason(t) -> void:
+func _test_hard_fail_loses_with_a_reason(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	t.check(_results == [GameEnums.DayResult.LOST_HARD_FAIL], "a hard fail loses the day")
-	t.check(_day.failure_reason.contains("van"),
+	t.check(_day.loss_reason().contains("van"),
 			"a hard fail explains itself in the event's own words")
 
 	_teardown()
 	_build(t)
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("something_unwritten")
-	t.check(_day.failure_reason != "", "an unwritten hard fail still says something")
+	t.check(_day.loss_reason() != "", "an unwritten hard fail still says something")
 	_teardown()
 
 ## The escape's own catch — `EventBus.hard_fail_triggered` is the same signal a day's own lethal
 ## rows fire (`EventManager.check_hard_fails()`, the building's as a day's), so this table has to carry it too, or losing
 ## the section on the stairs falls back to the generic "It went wrong." the table's own default
 ## reads whenever an id has no line.
-func _test_the_masked_pursuer_has_its_own_hard_fail_line(t) -> void:
+func _test_the_masked_pursuer_has_its_own_hard_fail_line(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
 	t.check(_results == [GameEnums.DayResult.LOST_HARD_FAIL], "the masked man ends the day too")
-	t.check(_day.failure_reason == "He caught you on the stairs.",
+	t.check(_day.loss_reason() == "He caught you on the stairs.",
 			"and names him rather than falling back to the generic line (got '%s')"
-			% _day.failure_reason)
+			% _day.loss_reason())
 	_teardown()
 
 ## Every outcome runs through _end(), and a day that has already ended must stay ended —
 ## otherwise a cry during the dusk frame would spend two nerves.
-func _test_a_day_ends_only_once(t) -> void:
+func _test_a_day_ends_only_once(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
@@ -209,143 +217,143 @@ func _test_a_day_ends_only_once(t) -> void:
 
 # ------------------------------------------------------------ run bookkeeping ---
 
-func _test_nerves_and_endings(t) -> void:
+func _test_nerves_and_endings(t: TestRunner) -> void:
 	var run := _fresh_run()
 
 	run.start_run(SEED)
-	t.check(run.header.nerves == Tuning.STARTING_NERVES, "a run starts with full nerves")
-	t.check(run.calendar.finish_day(GameEnums.DayResult.WON), "winning day 1 continues the run")
-	t.check(run.header.day == 2, "winning advances the calendar")
-	t.check(run.header.nerves == Tuning.STARTING_NERVES, "winning costs no nerves")
+	t.check(run.header().nerves() == Tuning.STARTING_NERVES, "a run starts with full nerves")
+	t.check(run.calendar().finish_day(GameEnums.DayResult.WON), "winning day 1 continues the run")
+	t.check(run.header().day() == 2, "winning advances the calendar")
+	t.check(run.header().nerves() == Tuning.STARTING_NERVES, "winning costs no nerves")
 
 	# Playtest 06, finding 4: *"we shouldn't advance the day, that's for sure."* A nerve buys
 	# another attempt at the same day rather than a day off the calendar.
-	run.calendar.remember_where_she_settled(Vector2i(4, 4))
-	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING), "losing a day continues")
-	t.check(run.header.day == 2, "and the calendar stays where it is, so the day is retried")
-	t.check(run.header.nerves == Tuning.STARTING_NERVES - 1, "losing costs a nerve")
+	run.calendar().remember_where_she_settled(Vector2i(4, 4))
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING), "losing a day continues")
+	t.check(run.header().day() == 2, "and the calendar stays where it is, so the day is retried")
+	t.check(run.header().nerves() == Tuning.STARTING_NERVES - 1, "losing costs a nerve")
 	# Where she settled belongs to the attempt, not to the run: left behind, tomorrow would
 	# spoil a park the winning attempt never went to, and the record is written once a day.
-	t.check(run.settled.settled_in.get(2, Vector2i(-1, -1)) == Vector2i(-1, -1),
+	t.check(GivenRun.settled_on(run, 2) == Vector2i(-1, -1),
 			"and a lost attempt's calm block is forgotten with it")
 
 	# Burn the rest, in hard mode — the one mode whose last nerve ends the run.
-	run.calendar.hard_mode = true
+	run.calendar().restore_mode(true)
 	for i in Tuning.STARTING_NERVES - 1:
-		run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-	t.check(run.header.nerves <= 0, "nerves run out")
-	t.check(run.header.ending == GameEnums.Ending.BAD,
+		run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	t.check(run.header().nerves() <= 0, "nerves run out")
+	t.check(run.header().ending() == GameEnums.Ending.BAD,
 			"running out of nerves in hard mode is the bad ending")
-	t.check(run.header.day == 2, "having spent all three on the same day, which is now allowed")
+	t.check(run.header().day() == 2, "having spent all three on the same day, which is now allowed")
 
 	# A normal run never reaches it: the same five losses send it back to day 1 of the same city.
 	run.start_run(SEED)
-	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.calendar().finish_day(GameEnums.DayResult.WON)
 	for i in Tuning.STARTING_NERVES:
-		t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT),
+		t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT),
 				"every loss of a normal run continues it, the last one included")
-	t.check(run.header.ending == GameEnums.Ending.NONE, "so a normal run has no bad ending")
-	t.check(run.header.day == 1 and run.header.nerves == Tuning.STARTING_NERVES
-			and run.header.run_seed == SEED,
+	t.check(run.header().ending() == GameEnums.Ending.NONE, "so a normal run has no bad ending")
+	t.check(run.header().day() == 1 and run.header().nerves() == Tuning.STARTING_NERVES
+			and run.header().run_seed() == SEED,
 			"it goes back to day 1 of the same city, with every nerve")
 
 	# The run length is a promise rather than a budget: with nerves left, the final day is
 	# played until it is won, and the only way to lose a run is to run out of nerves.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT),
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT),
 			"losing the last day with nerves left does not end the run")
-	t.check(run.header.day == Tuning.RUN_LENGTH_DAYS and run.header.ending == GameEnums.Ending.NONE,
+	t.check(run.header().day() == Tuning.RUN_LENGTH_DAYS and run.header().ending() == GameEnums.Ending.NONE,
 			"it is still day %d, with the run undecided" % Tuning.RUN_LENGTH_DAYS)
 
 	# Surviving to the end without the resistance is the neutral ending.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	t.check(not run.calendar.finish_day(GameEnums.DayResult.WON), "the final day ends the run")
-	t.check(run.header.ending == GameEnums.Ending.NEUTRAL,
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	t.check(not run.calendar().finish_day(GameEnums.DayResult.WON), "the final day ends the run")
+	t.check(run.header().ending() == GameEnums.Ending.NEUTRAL,
 			"finishing without the resistance is the neutral ending")
 
 	# Doing the legwork and then skipping the last night is still the neutral ending:
 	# reaching the goal earns the CHANCE at the good one, the sabotage is the act.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	for step in Tuning.RESISTANCE_GOAL:
 		run.complete_resistance_step(step + 1)
-	t.check(run.resistance.progress >= Tuning.RESISTANCE_GOAL, "the goal is reached")
+	t.check(run.resistance().progress() >= Tuning.RESISTANCE_GOAL, "the goal is reached")
 	t.check(run.sabotage_available(), "which puts the sabotage on offer")
-	t.check(not run.calendar.earned_good_ending(), "but the goal alone does not earn the ending")
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(run.header.ending == GameEnums.Ending.NEUTRAL,
+	t.check(not run.calendar().earned_good_ending(), "but the goal alone does not earn the ending")
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	t.check(run.header().ending() == GameEnums.Ending.NEUTRAL,
 			"reaching the goal without doing the sabotage is still the neutral ending")
 
 	# Both, and it is the good one.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	for step in Tuning.RESISTANCE_GOAL:
 		run.complete_resistance_step(step + 1)
-	run.resistance.sabotage_done = true
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(run.header.ending == GameEnums.Ending.GOOD,
+	run.resistance().record_the_sabotage()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	t.check(run.header().ending() == GameEnums.Ending.GOOD,
 			"the goal plus the sabotage is the good ending")
 
 	# And the sabotage without the legwork is not enough either.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.sabotage_done = true
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(run.header.ending == GameEnums.Ending.NEUTRAL,
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().record_the_sabotage()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	t.check(run.header().ending() == GameEnums.Ending.NEUTRAL,
 			"the sabotage without the progress is not the good ending")
 
 	# A completed step never counts twice.
 	run.start_run(SEED)
 	run.complete_resistance_step(1)
 	run.complete_resistance_step(1)
-	t.check(run.resistance.progress == 1, "a resistance step counts once")
+	t.check(run.resistance().progress() == 1, "a resistance step counts once")
 
 ## Player, 2026-09-27: *"one thing to do quickly: a won day recovers a nerve up to the max"* — "that
 ## way you can recover from a bad single day without being in a tight spot towards the end of the
-## game". `run.calendar.regain_a_nerve()` is what `finish_day()` calls for an ordinary won day; the
+## game". `run.calendar().regain_a_nerve()` is what `finish_day()` calls for an ordinary won day; the
 ## escape's own win reaches the same `finish_day()` call with the city section's `DaySpec`, whose
 ## rules exclude it, since "the escape doesn't have nerves" (the player).
-func _test_a_won_day_gives_a_nerve_back(t) -> void:
+func _test_a_won_day_gives_a_nerve_back(t: TestRunner) -> void:
 	var run := _fresh_run()
 
 	run.start_run(SEED)
-	run.header.nerves = 3
-	t.check(run.calendar.finish_day(GameEnums.DayResult.WON), "winning at 3 nerves continues the run")
-	t.check(run.header.nerves == 4, "a won day at 3 nerves goes to 4")
+	run.header().set_nerves(3)
+	t.check(run.calendar().finish_day(GameEnums.DayResult.WON), "winning at 3 nerves continues the run")
+	t.check(run.header().nerves() == 4, "a won day at 3 nerves goes to 4")
 
-	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT), "losing still continues")
-	t.check(run.header.nerves == 3, "a lost day still costs one, even after a gain")
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT), "losing still continues")
+	t.check(run.header().nerves() == 3, "a lost day still costs one, even after a gain")
 
-	run.header.nerves = Tuning.STARTING_NERVES
-	t.check(run.calendar.finish_day(GameEnums.DayResult.WON), "winning at the max continues")
-	t.check(run.header.nerves == Tuning.STARTING_NERVES,
+	run.header().set_nerves(Tuning.STARTING_NERVES)
+	t.check(run.calendar().finish_day(GameEnums.DayResult.WON), "winning at the max continues")
+	t.check(run.header().nerves() == Tuning.STARTING_NERVES,
 			"and a won day at the max stays at the max")
 
 	# The escape's own completion reaches `finish_day(WON)` too (`main._finish_the_section()`),
 	# with the city section's spec — that is what excludes it.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.header.nerves = 3
-	run.facts.escape_section = DaySpec.Section.CITY
-	run.calendar.finish_day(GameEnums.DayResult.WON,
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.header().set_nerves(3)
+	run.facts().set_escape_section(DaySpec.Section.CITY)
+	run.calendar().finish_day(GameEnums.DayResult.WON,
 			DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
-	t.check(run.header.nerves == 3, "the escape's own win gives no nerve back")
+	t.check(run.header().nerves() == 3, "the escape's own win gives no nerve back")
 
 	# Hard Mode: a won day gives nothing back through `finish_day()`, and the wrapper day 14's
 	# hand-over calls does the same. This tests the function; the hand-over itself is driven in
 	# `test_main.gd`. (dotted-hawk, #709)
 	run.start_run(SEED)
-	run.calendar.hard_mode = true
-	run.header.nerves = 3
-	t.check(run.calendar.finish_day(GameEnums.DayResult.WON), "a hard run's win continues")
-	t.check(run.header.nerves == 3, "a won day gives a hard run no nerve back")
-	run.calendar.regain_a_nerve_for_a_won_day()
-	t.check(run.header.nerves == 3, "nor does the wrapper the hand-over calls")
-	run.calendar.hard_mode = false
-	run.calendar.regain_a_nerve_for_a_won_day()
-	t.check(run.header.nerves == 4, "while a normal run's wrapper call still gives one")
+	run.calendar().restore_mode(true)
+	run.header().set_nerves(3)
+	t.check(run.calendar().finish_day(GameEnums.DayResult.WON), "a hard run's win continues")
+	t.check(run.header().nerves() == 3, "a won day gives a hard run no nerve back")
+	run.calendar().regain_a_nerve_for_a_won_day()
+	t.check(run.header().nerves() == 3, "nor does the wrapper the hand-over calls")
+	run.calendar().restore_mode(false)
+	run.calendar().regain_a_nerve_for_a_won_day()
+	t.check(run.header().nerves() == 4, "while a normal run's wrapper call still gives one")
 
 ## The recording half of M24. The scheduler's half is tested in `test_events.gd`; this is the
 ## half that decides *what* it gets told, and it is easy to get subtly wrong in two ways —
@@ -354,7 +362,7 @@ func _test_a_won_day_gives_a_nerve_back(t) -> void:
 ##
 ## It lives in `DayController` rather than in `Baby` because of the invariant: the baby's whole
 ## interface to the world is three questions and none of them is about blocks.
-func _test_the_city_learns_where_she_settled(t) -> void:
+func _test_the_city_learns_where_she_settled(t: TestRunner) -> void:
 	_build(t)
 	var run := _run
 	_day.start(300.0)
@@ -362,23 +370,23 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 	# Asleep on an ordinary pavement is not a park and does not spend one.
 	_away_from_home()
 	EventBus.return_phase_started.emit()
-	t.check(run.calendar.settled_this_act().is_empty(),
+	t.check(run.calendar().settled_this_act().is_empty(),
 			"nothing is remembered yet on day 1")
-	t.check(not run.settled.settled_in.has(1),
+	t.check(GivenRun.settled_on(run, 1) == Vector2i(-1, -1),
 			"falling asleep on a pavement does not spend a park")
 	_teardown(true)
 
 	# Asleep on calm ground records the block she is standing in.
 	_build(t)
 	_day.start(300.0)
-	var calm: Vector2i = _map.calm_blocks[0]
+	var calm: Vector2i = _map.calm_blocks_now()[0]
 	_player.global_position = _map.tile_rect_to_world(CityMap.block_rect(calm)).get_center()
 	EventBus.return_phase_started.emit()
-	t.check(run.settled.settled_in.get(1, Vector2i(-1, -1)) == calm,
+	t.check(GivenRun.settled_on(run, 1) == calm,
 			"the calm block she settled in is remembered")
 
-	run.header.day = 2
-	t.check(run.calendar.settled_this_act() == [calm],
+	run.header().set_day(2)
+	t.check(run.calendar().settled_this_act() == [calm],
 			"and tomorrow is the day that reads it")
 	_teardown()
 
@@ -397,13 +405,13 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 ## `RunSession` watches the city with no observer, exactly the way a telemetry-off run leaves it:
 ## the title pressed through the viewport, the day lost by the baby crying, and the summary read
 ## off the screen.
-func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> void:
+func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t: TestRunner) -> void:
 	var saved_paused: bool = t.get_tree().paused
 
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--seed", str(SEED)]),
-			func(unbooted: Node2D) -> void: unbooted.use_sitting_home(home))
+			func(unbooted: Boot.MainScript) -> void: unbooted.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var session := main.get_node("RunSession") as RunSession
 	t.check(not session.get_children().any(func(child: Node) -> bool: return child is TelemetryObserver),
@@ -411,7 +419,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	await Boot.press_title(t, main, "Tap")
 	var day := Boot.day(main)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
-	t.check(day.failure_reason != "",
+	t.check(day.loss_reason() != "",
 			"the rig actually lost the day before asking the summary for anything")
 
 	t.check(Boot.summary(main).is_showing(),
@@ -436,12 +444,12 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 ## `Texts.DAY_BRIEF`. `SummaryModel.day_over()` reads it off the run's day directly, whichever
 ## `DayResult` this is, so a lost day's own line reads exactly as it did this morning and a second
 ## call shows the same words again rather than nothing.
-func _test_the_day_brief_shows_the_days_own_line(t) -> void:
+func _test_the_day_brief_shows_the_days_own_line(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	run.header.day = 6
+	run.header().set_day(6)
 
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	var expected := SentenceLines.break_for_label(Texts.DAY_BRIEF[6], _line(summary, "Brief"))
@@ -467,10 +475,10 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 ## **`_title`, not `_body`**: the one line about the day that ended is the screen's own title,
 ## with everything under it — `_body`'s "Day N of N" and its nerve line, `_brief`'s morning
 ## line — about the day that is coming instead. See `SummaryModel.day_over()`'s own doc.
-func _test_the_summary_shows_when_the_day_ended(t) -> void:
+func _test_the_summary_shows_when_the_day_ended(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	_show_day(summary, run, _ended(GameEnums.DayResult.WON, "", 84.0))
@@ -500,25 +508,25 @@ func _test_the_summary_shows_when_the_day_ended(t) -> void:
 	t.get_tree().paused = saved_paused
 
 ## The day number the summary prints is the run's day — the day about to start — never the day
-## that just ended. A win has already moved `run.header.day` on by the time the summary comes up
-## (`DayDirector.finish_day()` calls `run.calendar.finish_day()` first), so day 4's own win shows
-## day 5; a loss with nerves left leaves `run.header.day` on the day being retried, so it shows the
+## that just ended. A win has already moved `run.header().day()` on by the time the summary comes up
+## (`DayDirector.finish_day()` calls `run.calendar().finish_day()` first), so day 4's own win shows
+## day 5; a loss with nerves left leaves `run.header().day()` on the day being retried, so it shows the
 ## same day again, with the retry line naming it too.
-func _test_the_summary_shows_the_coming_days_number(t) -> void:
+func _test_the_summary_shows_the_coming_days_number(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	run.header.day = 5
-	run.header.nerves = 3
+	run.header().set_day(5)
+	run.header().set_nerves(3)
 	_show_day(summary, run, _ended(GameEnums.DayResult.WON, "", 84.0))
 	t.check("Day 5 of %d" % Tuning.RUN_LENGTH_DAYS in _line(summary, "Body").text,
 			"a win shows the day it moved on to, not the day it left ('%s')" % _line(summary, "Body").text)
 	t.check(not "Day 4" in _line(summary, "Body").text, "never the day that just ended")
 
-	run.header.day = 4
-	run.header.nerves = 2
+	run.header().set_day(4)
+	run.header().set_nerves(2)
 	_show_day(summary, run, _ended(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 84.0))
 	t.check("Day 4 of %d" % Tuning.RUN_LENGTH_DAYS in _line(summary, "Body").text,
 			"a retry shows the same day again ('%s')" % _line(summary, "Body").text)
@@ -530,32 +538,32 @@ func _test_the_summary_shows_the_coming_days_number(t) -> void:
 ## Nerves are stars everywhere they show, never a digit — on a win as much as a loss, since the
 ## count carried into the coming day matters whichever way the last one went — and on the day
 ## brief a resumed run opens on too, the first day's own brief included.
-func _test_nerves_are_stars_never_numbers(t) -> void:
+func _test_nerves_are_stars_never_numbers(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	run.header.nerves = 3
+	run.header().set_nerves(3)
 	_show_day(summary, run, _ended(GameEnums.DayResult.WON, "", 84.0))
 	t.check("Nerves left: ***" in _line(summary, "Body").text,
 			"a win shows the nerves it carries into the coming day too ('%s')" % _line(summary, "Body").text)
 
-	run.header.nerves = 1
+	run.header().set_nerves(1)
 	_show_day(summary, run, _ended(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 84.0))
 	t.check("Nerves left: *" in _line(summary, "Body").text and not "1 nerve" in _line(summary, "Body").text,
 			"a single nerve is one star, never the word or the digit ('%s')" % _line(summary, "Body").text)
 
-	run.header.day = 1
-	run.header.nerves = 4
+	run.header().set_day(1)
+	run.header().set_nerves(4)
 	summary.show_summary(SummaryModel.brief_for(run), RunFlow.Mode.BRIEF)
 	t.check(_line(summary, "Title").text == "Day 1 of %d" % Tuning.RUN_LENGTH_DAYS,
 			"the first day's own brief pins the number too ('%s')" % _line(summary, "Title").text)
 	t.check("Nerves left: ****" in _line(summary, "Body").text,
 			"and the day brief draws nerves as stars ('%s')" % _line(summary, "Body").text)
 
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.header.nerves = 2
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.header().set_nerves(2)
 	summary.show_summary(SummaryModel.brief_for(run, "", "Escape the building"),
 			RunFlow.Mode.BRIEF)
 	t.check("Nerves left: **" in _line(summary, "Body").text,
@@ -568,18 +576,17 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 ## resumed run's day brief adds (`DaySummary._note`), which every other screen hides on the way in
 ## and the epilogue hides too, so a section's brief or a resumed day's note cannot leak onto the
 ## last screen of the run.
-func _test_the_epilogue_carries_no_brief_note(t) -> void:
+func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	summary.show_summary(SummaryModel.brief_for(run, Texts.RESUMED_DAY_LOST),
 			RunFlow.Mode.BRIEF)
 	t.check(note.visible, "a resumed day's brief shows its note")
-	var out := _ended(GameEnums.DayResult.WON, "", 42.0)
-	out.exit_reached = CityEdge.Kind.TUNNEL
-	summary.show_summary(SummaryModel.epilogue(out), RunFlow.Mode.EPILOGUE)
+	var out := DayEnd.new(GameEnums.DayResult.WON, "", 42.0, CityExit.Kind.TUNNEL)
+	summary.show_summary(SummaryModel.epilogue(run, out), RunFlow.Mode.EPILOGUE)
 	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
 	t.get_tree().paused = saved_paused
@@ -587,13 +594,13 @@ func _test_the_epilogue_carries_no_brief_note(t) -> void:
 ## The day 7 brief breaks its line before "The same face is on most of them." — `Texts.DAY_BRIEF[7]` is
 ## plain prose with no break of its own; `SentenceLines.break_for_label()` (see its own suite,
 ## `tests/test_sentence_lines.gd`) is what puts one in, at the only sentence end there is to choose.
-func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
+func _test_the_day_7_brief_breaks_before_the_same_face(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	run.header.day = 7
+	run.header().set_day(7)
 	_show_day(summary, run, _ended(GameEnums.DayResult.WON, "", 84.0))
 	var lines: PackedStringArray = _line(summary, "Brief").text.split("\n")
 	t.check(lines.size() == 2,
@@ -608,23 +615,23 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 ## The `BAD` ending names the last day played, not the last day completed — a run that loses its
 ## last nerve on day 1 reads day 1, not 0. The neutral and good endings are reached by finishing
 ## day 14 and say nothing about which day, since the run finished rather than stopped mid-day.
-func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
+func _test_the_bad_ending_names_the_day_it_reached(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	run.header.day = 9
+	run.header().set_day(9)
 	summary.show_summary(SummaryModel.ending(run, GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check("You made it to day 9." in _line(summary, "Body").text,
 			"the bad ending names the day it reached ('%s')" % _line(summary, "Body").text)
 
-	run.header.day = 1
+	run.header().set_day(1)
 	summary.show_summary(SummaryModel.ending(run, GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check("You made it to day 1." in _line(summary, "Body").text,
 			"dying on the first day says 1, not 0 ('%s')" % _line(summary, "Body").text)
 
-	run.header.day = 14
+	run.header().set_day(14)
 	summary.show_summary(SummaryModel.ending(run, GameEnums.Ending.NEUTRAL),
 			RunFlow.Mode.ENDING)
 	t.check(not "made it to day" in _line(summary, "Body").text,
@@ -639,17 +646,13 @@ func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
 	t.get_tree().paused = saved_paused
 
 ## The summary of the day `end` settled, as `main` raises it over the run as it stands.
-func _show_day(summary: CanvasLayer, run: RunState, end: DayEnd) -> void:
+func _show_day(summary: Boot.DaySummaryScript, run: RunState, end: DayEnd) -> void:
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.DAY_OVER)
 
 ## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence
 ## and the clock it ended on.
 func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
-	end.reason = reason
-	end.elapsed_seconds = elapsed
-	return end
+	return DayEnd.new(result, reason, elapsed)
 
 # ------------------------------------------------------- the resistance's own day ---
 
@@ -662,112 +665,70 @@ func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd
 ##
 ## Drives a run directly rather than through a director: the five fields are what the director
 ## reads to decide what today offers, and the sub-test below holds that it actually does.
-func _test_a_lost_day_gives_the_resistance_back(t) -> void:
+func _test_a_lost_day_gives_the_resistance_back(t: TestRunner) -> void:
 	var run := _fresh_run()
 
 	# The mark she found on the day she lost. Touching it granted no progress — it never does.
 	run.start_run(SEED)
-	run.header.day = 6
-	run.calendar.begin_day()
+	run.header().set_day(6)
+	run.calendar().begin_day()
 	run.complete_resistance_step(1, false)
-	t.check(run.resistance.completed_steps.has(1), "the rig actually touched the mark")
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(not run.resistance.completed_steps.has(1),
+	t.check(run.resistance().completed_steps().has(1), "the rig actually touched the mark")
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(not run.resistance().completed_steps().has(1),
 			"a mark touched on a lost day is untouched again")
-	t.check(run.header.day == 6, "and the retry is the same day")
-	var offered := ResistanceSteps.for_day(run.header.day, run.resistance.completed_steps,
-			run.resistance.failed_steps, run.sabotage_available())
+	t.check(run.header().day() == 6, "and the retry is the same day")
+	var offered := ResistanceSteps.for_day(run.header().day(), run.resistance().completed_steps(),
+			run.resistance().failed_steps(), run.sabotage_available())
 	t.check(offered != null and offered.index == 1,
 			"so the day's own table offers the same mark again")
 
 	# Both the mark and the task it unlocks, done on a day that is won, stand — and then a task
 	# done on a day that is lost does not.
 	run.start_run(SEED)
-	run.header.day = 6
-	run.calendar.begin_day()
+	run.header().set_day(6)
+	run.calendar().begin_day()
 	run.complete_resistance_step(1, false)
 	run.complete_resistance_step(2, true)
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(run.header.day == 7 and run.resistance.completed_steps.has(1)
-			and run.resistance.completed_steps.has(2),
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	t.check(run.header().day() == 7 and run.resistance().completed_steps().has(1)
+			and run.resistance().completed_steps().has(2),
 			"a mark and its task, both done on a day that was won, stand, and the calendar moves")
 
-	run.calendar.begin_day()
+	run.calendar().begin_day()
 	run.complete_resistance_step(3, false)
-	run.resistance.carrying_package = true
+	run.resistance().pick_up_package()
 	run.fail_resistance_step(999)
-	t.check(run.resistance.progress == 1, "yesterday's task counted; today's own mark has not")
-	run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-	t.check(not run.resistance.completed_steps.has(3),
+	t.check(run.resistance().progress() == 1, "yesterday's task counted; today's own mark has not")
+	run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	t.check(not run.resistance().completed_steps().has(3),
 			"today's own mark, touched on the lost day, is on offer again")
-	t.check(run.resistance.completed_steps.has(1) and run.resistance.completed_steps.has(2),
+	t.check(run.resistance().completed_steps().has(1) and run.resistance().completed_steps().has(2),
 			"and yesterday's won mark and task still stand")
-	t.check(not run.resistance.failed_steps.has(999),
+	t.check(not run.resistance().failed_steps().has(999),
 			"a contact lost to its deadline is given back with the day")
-	t.check(not run.resistance.carrying_package, "and the package is put down")
-	t.check(run.header.day == 7, "on the same day, which is the one being retried")
+	t.check(not run.resistance().is_carrying_package(), "and the package is put down")
+	t.check(run.header().day() == 7, "on the same day, which is the one being retried")
 
 	# The last night is no exception: the sabotage is an act on a day like any other.
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.calendar.begin_day()
-	run.resistance.sabotage_done = true
-	run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(not run.resistance.sabotage_done,
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.calendar().begin_day()
+	run.resistance().record_the_sabotage()
+	run.calendar().finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(not run.resistance().sabotage_went_through(),
 			"the last night's sabotage is undone by losing the last night")
 
 	# A win commits, so the next day's loss gives back what that win left rather than nothing.
 	run.start_run(SEED)
-	run.header.day = 6
-	run.calendar.begin_day()
+	run.header().set_day(6)
+	run.calendar().begin_day()
 	run.complete_resistance_step(1, false)
 	run.complete_resistance_step(2, true)
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(run.resistance.completed_steps.has(2) and run.resistance.progress == 1,
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(run.resistance().completed_steps().has(2) and run.resistance().progress() == 1,
 			"a won day's own work is committed and survives the next day's loss")
-
-## The half a test of the run alone cannot see: that the *director* re-offers what the restored
-## state says is untouched, in the place the day first put it. Its placement is drawn from
-## `run.calendar.day_rng(day, "resistance")`, so a retry of the same day with the same run seed and an
-## untouched step is the same alley — the mark is not merely on offer again, it is where she
-## already knows to look.
-func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	var run := city.run
-	run.header.day = 6
-	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-
-	run.calendar.begin_day()
-	var first := _resistance_director(t, city)
-	first.start_day(run.header.day, run.calendar.day_rng(run.header.day, "resistance"), 300.0)
-	var step := first.current_step()
-	t.check(step != null and step.is_pickup, "day 6 puts the first chalk mark on offer")
-	var where := first.contact_position()
-	t.check(where != Vector2.INF, "and the rig knows where it is")
-	run.complete_resistance_step(step.index, step.grants_progress)
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-
-	run.calendar.begin_day()
-	var retry := _resistance_director(t, city)
-	retry.start_day(run.header.day, run.calendar.day_rng(run.header.day, "resistance"), 300.0)
-	t.check(retry.current_step() != null and retry.current_step().index == step.index,
-			"the retry is offered the same step the lost attempt was")
-	t.close_to(retry.contact_position().distance_to(where), 0.0,
-			"in the same alley, from the same seed", 0.01)
-
-	first.free()
-	retry.free()
-	city.free()
-
-func _resistance_director(t, city: City) -> ResistanceDirector:
-	var director := ResistanceDirector.new()
-	t.add_child(director)
-	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
-	return director
 
 ## **A lost day gives back what the attempt did to the city**, not only what it did to the
 ## resistance. *("a retry always rolls new -- nothing that happened on the day that got retried can
@@ -782,43 +743,43 @@ func _resistance_director(t, city: City) -> ResistanceDirector:
 ##
 ## **And a won day keeps all of it**, which is the half that would pass on its own if the give-back
 ## were simply a `clear()`.
-func _test_a_lost_day_gives_back_what_it_burned(t) -> void:
+func _test_a_lost_day_gives_back_what_it_burned(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var block := Vector2i(3, 3)
 
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_TAUGHT_DAY
-	run.calendar.begin_day()
-	var arc_at_dawn := CityStateReads.changed_on(run.attempt_spend.city_state, block)
-	run.attempt_spend.consumed_one_shots.append("burning_building")
+	run.header().set_day(Tuning.RUN_TAUGHT_DAY)
+	run.calendar().begin_day()
+	var arc_at_dawn := CityStateReads.changed_on(run.attempt_spend().block_arcs(), block)
+	run.attempt_spend().consumed_one_shots().append("burning_building")
 	run.add_scar("burnt_shell", Vector2(1000.0, 1000.0))
-	run.attempt_spend.city_state.apply_cause(_burnable_plans(block), block, GameEnums.BlockCause.FIRE,
-			run.header.day)
-	t.check(CityStateReads.changed_on(run.attempt_spend.city_state, block) == run.header.day,
+	run.attempt_spend().block_arcs().apply_cause(_burnable_plans(block), block, GameEnums.BlockCause.FIRE,
+			run.header().day())
+	t.check(CityStateReads.changed_on(run.attempt_spend().block_arcs(), block) == run.header().day(),
 			"the rig actually burned a block down on the day it is about to lose")
 
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(not "burning_building" in run.attempt_spend.consumed_one_shots,
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(not "burning_building" in run.attempt_spend().consumed_one_shots(),
 			"a lost day 3 owes the fire again, whether or not she saw it burn")
-	t.check(run.attempt_spend.scars.is_empty(), "and leaves no shell standing where it burned")
-	t.check(CityStateReads.changed_on(run.attempt_spend.city_state, block) == arc_at_dawn,
+	t.check(run.attempt_spend().scars().is_empty(), "and leaves no shell standing where it burned")
+	t.check(CityStateReads.changed_on(run.attempt_spend().block_arcs(), block) == arc_at_dawn,
 			"and hands the block back at the step it was on that morning")
 
 	# The retry wins with a fire of its own, somewhere else. That one is the run's.
-	run.calendar.begin_day()
-	run.attempt_spend.consumed_one_shots.append("burning_building")
+	run.calendar().begin_day()
+	run.attempt_spend().consumed_one_shots().append("burning_building")
 	run.add_scar("burnt_shell", Vector2(2000.0, 2000.0))
-	run.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check("burning_building" in run.attempt_spend.consumed_one_shots,
+	run.calendar().finish_day(GameEnums.DayResult.WON)
+	t.check("burning_building" in run.attempt_spend().consumed_one_shots(),
 			"a won day keeps the fire spent")
-	t.check(run.attempt_spend.scars.size() == 1
-			and Vector2(run.attempt_spend.scars[0]["position"]).is_equal_approx(Vector2(2000.0, 2000.0)),
+	t.check(run.attempt_spend().scars().size() == 1
+			and Vector2(run.attempt_spend().scars()[0]["position"]).is_equal_approx(Vector2(2000.0, 2000.0)),
 			"and the shell the run keeps is the one the winning attempt left")
 
 	# Losing the day after it does not reach back into the day that was won.
-	run.calendar.begin_day()
-	run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-	t.check("burning_building" in run.attempt_spend.consumed_one_shots and run.attempt_spend.scars.size() == 1,
+	run.calendar().begin_day()
+	run.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	t.check("burning_building" in run.attempt_spend().consumed_one_shots() and run.attempt_spend().scars().size() == 1,
 			"and a later lost day gives back its own attempt only, never a won day's")
 
 ## A block plan with a fire in its arc, so `CityState.apply_cause` has somewhere to advance to.
@@ -830,5 +791,5 @@ func _burnable_plans(block: Vector2i) -> Dictionary:
 	return {block: plan}
 
 ## The summary's line the scene names `node_name` ("Title", "Body", "Brief"), under its lines.
-static func _line(summary: Node, node_name: String) -> Label:
+static func _line(summary: Boot.DaySummaryScript, node_name: String) -> Label:
 	return summary.get_node("Root/Center/Lines/" + node_name) as Label

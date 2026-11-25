@@ -34,19 +34,19 @@ extends RefCounted
 ## crossing alley is instead.
 ##
 ## **Growth.** `Tuning.REGION_COUNT` seed junctions, spread by farthest-point sampling over the
-## real-segment graph (`absent_segments` — both the zone-absorbed and the built-over kind — is
-## never traversed, so a region can never grow across ground that is not there to cross), then a
-## round-robin breadth-first flood: one step per region in turn, claiming a junction **and its
+## real-segment graph (an absent street, `CityMap.has_street()` false, of either the zone-absorbed
+## or the built-over kind, is never traversed, so a region can never grow across ground that is not
+## there to cross), then a round-robin breadth-first flood: one step per region in turn, claiming a junction **and its
 ## whole atom** on every claim. The round-robin is what keeps the regions comparable in size
 ## rather than the first seed eating the map before the others start.
 ##
 ## **The wall stands at a boundary crossing's mouth, one tile deep, never its midpoint.** A segment
-## has two mouths and the wall stands at one of them (`CityMap.boundary_wall_at_a`, decided at
+## has two mouths and the wall stands at one of them (`CityMap.wall_stands_at_a()`, decided at
 ## generation); an alley has two mouths and, when it is a crossing, both are walled. A midpoint
 ## band reaches roughly two tiles either way at the checkpoint row's own radius, wide enough to
 ## cover a nearby alley's mouth outright — the mouth is one tile deep and never bleeds sideways.
 ##
-## **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY`, every
+## **The wall is the day's, not the absent streets'.** From `Tuning.REGION_WALL_FIRST_DAY`, every
 ## boundary crossing — a segment or a crossing alley — the day's tree uses is a **door**; every
 ## other one is **wall**. That is the whole rule: the tree wins. A region with no calm area
 ## therefore gets no doors on every day its own boundary is off the tree, which is every day unless
@@ -63,60 +63,13 @@ extends RefCounted
 ## commit**, or the wall silently starts sealing nothing.
 const _WALL_DEF_ID := "roadblock"
 
-## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
-## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
-## through `EventScheduler.Planned.gate_state` (which is what it draws raised or lowered from) and
-## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
-## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
-## can never disagree about whether a boom is up.
-class GateState extends RefCounted:
-	## The gate's own ground point, in world space — the same position its `checkpoint_gate`
-	## instance stands at, and what `Crowd` measures a car's distance from.
-	var position := Vector2.ZERO
-	## Whether the boom is up. `Crowd._stop_for_gates()` is the only writer; the instance only
-	## reads it, once a frame, to choose which of the four boom textures to draw.
-	var raised := false
-	## Seconds the car at the front of this gate's queue has been held at the stop line —
-	## `Crowd`'s own clock for `Crowd.GATE_STOP_SECONDS`, reset the moment nobody is held here.
-	var stopped_for := 0.0
-
-## One region growth's result: which crossings are wall today and which are doors, plus the
-## bodies the wall and the doors stand as.
-class RegionPlan extends RefCounted:
-	## Boundary segments that are wall today — the whole day if before `Tuning.REGION_WALL_
-	## FIRST_DAY`, since nothing is drawn before then.
-	var walls: Array[StreetNetwork.Segment] = []
-	## Boundary segments the day's tree crosses — a hut on each pavement and a gate over the road,
-	## from `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
-	var doors: Array[StreetNetwork.Segment] = []
-	## Through-alley rects that are **crossings** (`ground_region_of` differs at their two mouths)
-	## and wall today — both mouths walled, the alley equivalent of `walls`.
-	var alley_walls: Array[Rect2i] = []
-	## Crossing alley rects the day's tree uses — a single guard at each of its two mouths, from
-	## `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
-	var alley_doors: Array[Rect2i] = []
-	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the roadblock row, one
-	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
-	## appended to the day's plan (`EventManager.plans()`) by the caller, rather than merged
-	## anywhere: a caller that only wants to know where the wall runs never has to filter it back
-	## out of the day's whole plan.
-	var wall_bodies: Array[EventScheduler.Planned] = []
-	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
-	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
-	## from `wall_bodies` for the same reason that list is kept apart from everything else — a
-	## caller that wants the wall alone never has to filter the doors back out, and vice versa.
-	var door_bodies: Array[EventScheduler.Planned] = []
-	## One `GateState` per street door, in the same order as `doors` — `Crowd` reads this to know
-	## where today's gates are and to raise and lower them; the `checkpoint_gate` `Planned` at the
-	## same crossing carries the identical object. Empty for an alley door, which has no gate.
-	var gates: Array[GateState] = []
-
 # ------------------------------------------------------------------- generation ---
 
-## Assigns every junction to a region and stores the result on `map` — `region_of_junction`,
-## `region_has_calm`. Called once, at generation, after hard blockers have taken their streets
-## (`CityGenerator._assign_regions`): a region may not grow across ground a dead end or a big
-## building just built over, and `absent_segments` only carries that once the blockers are placed.
+## Assigns every junction to a region and stores the result on `map`
+## (`CityMap.record_junction_regions()`, `record_calm_regions()`). Called once, at generation, after
+## hard blockers have taken their streets (`CityGenerator._assign_regions`): a region may not grow
+## across ground a dead end or a big building just built over, and the absent streets (`CityMap.has_street()`) only carry that once
+## the blockers are placed.
 ##
 ## `rng` seeds only the farthest-point sample's starting junction — everything after that is
 ## deterministic BFS — and it is the caller's own stream, seeded from the map's seed rather than
@@ -132,9 +85,10 @@ static func assign(map: CityMap, rng: RandomNumberGenerator) -> void:
 		if not (adjacency[node] as Array).is_empty():
 			real.append(node)
 	var seeds := _pick_seeds(adjacency, real, dsu, rng)
-	map.region_of_junction = _grow_regions(total, adjacency, dsu, seeds)
-	map.region_has_calm = _compute_region_has_calm(map, map.region_of_junction)
-	map.boundary_wall_at_a = _assign_wall_ends(map)
+	var regions := _grow_regions(total, adjacency, dsu, seeds)
+	map.record_junction_regions(regions)
+	map.record_calm_regions(_compute_region_has_calm(map, regions))
+	map.record_wall_ends(_assign_wall_ends(map))
 
 ## Unions every atom's junctions together before growth, so a claim can never split one across a
 ## boundary. See the class doc, "Atoms".
@@ -155,12 +109,12 @@ static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 	# as unguarded a bypass as an unatomised calm area would be, since nothing about the wall's
 	# mouth placement (see `ground_region_of`) stops a walk that never sets foot on the segment the
 	# wall actually stands on.
-	for rect in map.square_rects:
+	for rect in map.square_lots():
 		_union_touch_points(map, rect, dsu)
 	var home := ClosurePlanner.home_street(map)
 	if home:
 		dsu.union(StreetNetwork.node_of(home.a), StreetNetwork.node_of(home.b))
-	for span: Vector4i in map.precinct_spans:
+	for span: Vector4i in map.precinct_stretches():
 		var junctions := _precinct_span_junctions(span)
 		for i in range(1, junctions.size()):
 			dsu.union(StreetNetwork.node_of(junctions[0]), StreetNetwork.node_of(junctions[i]))
@@ -169,8 +123,8 @@ static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 ## commercial square's own rect.
 static func _union_touch_points(map: CityMap, rect: Rect2i, dsu: _DSU) -> void:
 	var first := -1
-	for pair in _area_touch_points(map, rect):
-		for junction in pair:
+	for pair: Array in _area_touch_points(map, rect):
+		for junction: Vector2i in pair:
 			var node := StreetNetwork.node_of(junction)
 			if first < 0:
 				first = node
@@ -209,7 +163,7 @@ static func _area_touch_points(map: CityMap, rect: Rect2i) -> Array:
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		if segment:
 			if not seen_keys.has(segment.key()):
 				seen_keys[segment.key()] = true
@@ -222,7 +176,7 @@ static func _area_touch_points(map: CityMap, rect: Rect2i) -> Array:
 ## Every junction along a precinct span's own corridor, first block to last block inclusive —
 ## `length + 1` of them for a `length`-block span. `span` is `(axis, corridor, first block, last
 ## block)`; `axis == 1` runs the span along y at a fixed x (`corridor`), `axis == 0` along x at a
-## fixed y. See `CityMap.precinct_spans`.
+## fixed y. See `CityMap.precinct_stretches()`.
 static func _precinct_span_junctions(span: Vector4i) -> Array[Vector2i]:
 	var junctions: Array[Vector2i] = []
 	var corridor := span.y
@@ -247,8 +201,8 @@ static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
 	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-	var segment_a := map.network.beside_block(block, side_a)
-	var segment_b := map.network.beside_block(block, side_b)
+	var segment_a := map.street_network().beside_block(block, side_a)
+	var segment_b := map.street_network().beside_block(block, side_b)
 	if not segment_a or not segment_b:
 		return []
 	return [segment_a, segment_b, vertical]
@@ -307,7 +261,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var rb := region_of_junction(map, segment.b)
 		wall_at_a[segment.key()] = ra < rb
 	var demanded := {}
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
@@ -330,7 +284,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 			var a_ends := [region_of_junction(map, segment_a.a), region_of_junction(map, segment_a.b)]
 			var b_ends := [region_of_junction(map, segment_b.a), region_of_junction(map, segment_b.b)]
 			var shared := -1
-			for r in a_ends:
+			for r: int in a_ends:
 				if b_ends.has(r):
 					shared = r
 					break
@@ -342,7 +296,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var wanted: int = demanded[key]
 		if wanted < 0:
 			continue   # a conflict was recorded; keep the default
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		var ra := region_of_junction(map, segment.a)
 		var rb := region_of_junction(map, segment.b)
 		if ra == wanted:
@@ -361,17 +315,17 @@ static func _demand_ground(demanded: Dictionary, segment: StreetNetwork.Segment,
 	elif demanded[key] != region:
 		demanded[key] = -1
 
-## Junction adjacency over real segments only — `absent_segments` is never traversed, so a region
-## can never grow across ground that is not there to cross. Built fresh per call: this only ever
-## runs once per city, at generation, so keeping it the way `StreetNetwork` keeps the full
-## lattice's adjacency would save nothing.
+## Junction adjacency over real segments only — an absent street (`CityMap.has_street()`) is never
+## traversed, so a region can never grow across ground that is not there to cross. Built fresh per
+## call: this only ever runs once per city, at generation, so keeping it the way `StreetNetwork`
+## keeps the full lattice's adjacency would save nothing.
 static func _growth_graph(map: CityMap) -> Array:
 	var total := StreetNetwork.node_total()
 	var adjacency: Array = []
 	adjacency.resize(total)
 	for i in total:
 		adjacency[i] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		var u := StreetNetwork.node_of(segment.a)
@@ -522,9 +476,7 @@ static func region_of_junction(map: CityMap, junction: Vector2i) -> int:
 	if not StreetNetwork.in_bounds(junction):
 		return -1
 	var node := StreetNetwork.node_of(junction)
-	if node < 0 or node >= map.region_of_junction.size():
-		return -1
-	return map.region_of_junction[node]
+	return map.region_of_node(node)
 
 ## The region a segment belongs to when both its ends agree, or `-1` when it is absent from the
 ## lattice or is itself a boundary segment. Never confuse the two `-1`s without checking
@@ -539,7 +491,7 @@ static func _region_of_segment(map: CityMap, segment: StreetNetwork.Segment) -> 
 ## The region a segment's whole **ground** belongs to — the question the wall's mouth placement
 ## makes meaningful where `_region_of_segment` cannot answer at all. An interior segment's ground is
 ## simply its own region, the same answer either function gives. A boundary segment's wall stands
-## one tile deep at one mouth (`CityMap.boundary_wall_at_a`), so the rest of its length — right up
+## one tile deep at one mouth (`CityMap.wall_stands_at_a()`), so the rest of its length — right up
 ## to that one-tile band — is walkable from the **far** end and unreachable from the near one; this
 ## returns the far end's region. `-1` for an absent segment, same as `_region_of_segment`.
 ##
@@ -553,24 +505,23 @@ static func ground_region_of(map: CityMap, segment: StreetNetwork.Segment) -> in
 	var rb := region_of_junction(map, segment.b)
 	if ra == rb:
 		return ra
-	var wall_at_a: bool = map.boundary_wall_at_a.get(segment.key(), ra < rb)
+	var wall_at_a: bool = map.wall_stands_at_a(segment.key(), ra < rb)
 	return rb if wall_at_a else ra
 
 ## Every real segment whose two ends disagree about their region — the wall, permanent for the
 ## run and independent of any day's tree.
 static func boundary_segments(map: CityMap) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		if region_of_junction(map, segment.a) != region_of_junction(map, segment.b):
 			found.append(segment)
 	return found
 
-## Which regions hold a calm area — the generation-time fact `assign()` stored on `map`, wrapped
-## here so a caller never reaches into the map's field directly.
+## Which regions hold a calm area — the generation-time fact `assign()` stored on `map`.
 static func regions_with_calm(map: CityMap) -> PackedByteArray:
-	return map.region_has_calm
+	return map.region_has_calm()
 
 ## The region the home street's own two junctions belong to. Never `-1` in practice: the home
 ## street's atom unions its two junctions before growth, so they always resolve to one region
@@ -585,7 +536,7 @@ static func home_region(map: CityMap) -> int:
 
 ## The day's wall and doors, built from the permanent partition and today's `RouteTree`.
 ##
-## **Before `Tuning.REGION_WALL_FIRST_DAY`, nothing is drawn.** The regions exist from generation,
+## **On a day the wall does not stand (`DaySpec.region_wall_stands()`), nothing is drawn.** The regions exist from generation,
 ## but the milestone's own words are "checkpoints in the later acts" — returns an empty plan.
 ##
 ## **From it on, a boundary crossing — a segment or a crossing alley — is a door if the day's tree
@@ -604,16 +555,16 @@ static func home_region(map: CityMap) -> int:
 ## on the tree, never on which regions are calm-less. `tests/test_regions.gd` restates "the home
 ## region has a door, or every calm area the tree reaches is in the home region" as the
 ## unconditional sentence it always was rather than working around a rule that no longer exists.
-static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
+static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan:
 	var plan := RegionPlan.new()
-	if day < Tuning.REGION_WALL_FIRST_DAY or not tree:
+	if not spec.region_wall_stands() or not tree:
 		return plan
 	for segment in boundary_segments(map):
 		if tree.is_on_the_tree(segment.key()):
 			stand_door(map, segment, plan)
 		else:
-			plan.walls.append(segment)
-	for rect in map.alley_rects:
+			plan.add_wall(segment)
+	for rect in map.alley_lots():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
@@ -627,34 +578,34 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 				on_tree = true
 				break
 		if on_tree:
-			plan.alley_doors.append(rect)
+			plan.add_door_alley(rect)
 		else:
-			plan.alley_walls.append(rect)
-	for segment in plan.walls:
+			plan.add_walled_alley(rect)
+	for segment in plan.wall_segments():
 		var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
-		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
-	for rect in plan.alley_walls:
+		var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
+		plan.add_wall_plans(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
+	for rect in plan.walled_alleys():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
 		var vertical: bool = info[2]
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
-	for rect in plan.alley_doors:
+		plan.add_wall_plan(_alley_mouth_wall_body(map, rect, vertical, true))
+		plan.add_wall_plan(_alley_mouth_wall_body(map, rect, vertical, false))
+	for rect in plan.door_alleys():
 		_add_alley_door_bodies(map, rect, plan)
 	return plan
 
 ## The wall's own body at one mouth of a crossing alley — `SealPlanner.alley_mouth_wall()`'s own
 ## placement, with its def's shape then overridden to a point of half the alley's own width
 ## (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0`, 32px) rather than left at the catalogue
-## row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
-## duplicated the def, so this touches nothing the catalogue or another instance shares.
+## row's own 64px reach. The row is a redraft of the catalogue's (`SealPlanner.sealed_draft()`), so
+## this touches nothing the catalogue or another instance shares.
 ##
 ## **The same reach `place_hard_on` already overrides, at the alley's own mouth this time.** The
-## catalogue `roadblock` row's band (`GroundShape.band(60.0)`) draws and collides at 120px across
-## — nearly double an alley's own `ALLEY_WIDTH_TILES` × `Tuning.TILE_SIZE` (64px) — so the barrier
-## used to lie across the roof edges of the lots either side of the mouth
+## catalogue `roadblock` row's band (`EventCatalogue.ROADBLOCK_REACH`) draws and collides at 128px
+## across — double an alley's own `ALLEY_WIDTH_TILES` × `Tuning.TILE_SIZE` (64px) — so the barrier
+## would lie across the roof edges of the lots either side of the mouth
 ## (`docs/playtests/PLAYTEST-57.md`, "Roofs": *"the barrier looks on top of the roof in those
 ## pictures"*). A point of 32px draws and collides at exactly 64px, edge to edge with the mouth's
 ## own paving and no further — measured in `tests/test_regions.gd`,
@@ -663,18 +614,21 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## **Draws one guard, on the street side, never the one inside the alley.** *(2026-09-25, the
 ## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
-## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
-## `body.def.solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
-## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
-## name in the array rather than assuming two.
+## reach — so its look's guard sides are set here to the one side that does, on the sealed draft
+## (`SealPlanner.sealed_draft()` redrafts the row, drops its aftermath and pins its lane), where the
+## body is replaced too, before `SealPlanner.alley_mouth_wall()` is handed the built row — with no
+## change to `RoadblockLook._draw_roadblock()`, which already draws one guard per name in the array
+## rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
-		at_start: bool) -> EventScheduler.Planned:
-	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
-	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
-	body.def.guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
-	return body
+		at_start: bool) -> EventPlan:
+	var wall := EventCatalogue.by_id(_WALL_DEF_ID)
+	var draft := SealPlanner.sealed_draft(wall, true)
+	draft.body(wall.body().reshaped(
+			GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0)))
+	draft.look(wall.look().guarded_on([_alley_mouth_street_side(at_start)] as Array[int]))
+	return SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, draft.build())
 
-## Which side of a mouth body's own band is the street side, in `EventDef.guard_sides`'s own `-1`/
+## Which side of a mouth body's own band is the street side, in `LookSpec.guard_sides()`'s own `-1`/
 ## `+1` reading of `EventFootprints.guard_post_offset()`'s `side` — the one this mouth's alone,
 ## `-1` at the mouth `SealPlanner.alley_mouth_rect()` places at `rect.position` (`at_start`), `+1`
 ## at the one it places at `rect.end - 1`.
@@ -692,7 +646,7 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 
 ## The along-street axis a door's own bodies share: `RIGHT` for a segment/alley that runs
 ## east-west (`horizontal`), `DOWN` for one that runs north-south. Carried on every door body's own
-## `Planned.facing`, which is what lets a stationary instance answer "which side of the crossing is
+## `EventPlan.faces()`, which is what lets a stationary instance answer "which side of the crossing is
 ## she on" without a second lookup — see `EventManager`'s detention teleport.
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
@@ -702,7 +656,7 @@ static func _along_axis(horizontal: bool) -> Vector2:
 ## each of the day's street doors through, and a scene recipe's authored checkpoint
 ## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
 static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
-	plan.doors.append(segment)
+	plan.add_door(segment)
 	_add_door_bodies(map, segment, plan)
 
 ## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
@@ -715,24 +669,24 @@ static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: Regio
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
 static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
 	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
-	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+	var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
 	var positions := SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)
 	if positions.is_empty():
 		return
 	var axis := _along_axis(segment.horizontal)
 	var road_index := positions.size() / 2
-	var gate := GateState.new()
-	gate.position = positions[road_index]
-	plan.gates.append(gate)
+	var gate := GateState.new(positions[road_index])
+	plan.add_gate(gate)
 	for i in positions.size():
 		var def_id := "checkpoint_gate" if i == road_index else "checkpoint_hut"
 		var def := SealPlanner.sealed_variant(EventCatalogue.by_id(def_id), true)
-		var body := EventScheduler.Planned.new(def, positions[i])
-		body.facing = axis
+		var body := EventPlan.new(def, positions[i])
+		body.face(axis)
 		if i == road_index:
-			body.gate_state = gate
-		plan.door_bodies.append(body)
+			body.stand_as_the_boom_of(gate)
+		body.stand_as_a_door()
+		plan.add_door_plan(body)
 
 ## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
 ## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_rect` a
@@ -741,11 +695,12 @@ static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan)
 	var vertical := rect.size.x < rect.size.y
 	var axis := _along_axis(not vertical)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_post"), true)
-	for at_start in [true, false]:
+	for at_start: bool in [true, false]:
 		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
-		var body := EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
-		body.facing = axis
-		plan.door_bodies.append(body)
+		var body := EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
+		body.face(axis)
+		body.stand_as_a_door()
+		plan.add_door_plan(body)
 
 # --------------------------------------------------------------------------------- dsu ---
 

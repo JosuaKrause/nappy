@@ -2,10 +2,11 @@ extends SceneryDrawer
 ## A scenery drawer that records what a layer tells it to lay instead of laying it, handed to the
 ## owner of the layers the way the game hands the real one: to the city's decals through
 ## `CityDecals.drawer`, to a vent's rotor through the roof drawer's constructor (`RoofDrawer`), and
-## to an event's scenery through `EventScenery.drawer` (`tests/recording_event_drawer.gd`). A check
-## reads the textures a layer stood off this, without reading what the layer holds; which texture
-## stands where, and which of a picture's two frames shows, is the layer's to decide, and how a
-## texture is laid on a canvas is the real drawer's.
+## to an event's scenery in `EventScenery.draw_through()`, which the recording event drawer hands
+## its own to (`tests/recording_event_drawer.gd`). A check reads the textures a layer stood off
+## this, without reading what the layer holds; which texture stands where, and which of a picture's
+## two frames shows, is the layer's to decide, and how a texture is laid on a canvas is the real
+## drawer's.
 
 ## Every picture a layer asked for, in order: `{"canvas", "texture", "rect", "source", "pass"}`, with
 ## `rect` and `source` as `draw()` was given them and `pass` the times `canvas` was drawn before

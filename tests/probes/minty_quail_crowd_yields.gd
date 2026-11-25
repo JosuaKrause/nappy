@@ -19,9 +19,9 @@ extends RefCounted
 ## - **day 12's cordon** from the swing's touch, she at the swing, `CORDON_TICKS` ticks;
 ## - **day 13's column** sent down the main road toward her at the doorstep, `TICKS * 2` ticks.
 ##
-## **An event figure** is a move on the map's list (`WorldMap.moves`) that does not give way
-## (`MoveProposal.yields` false) and has a body (`radius` above zero), by the rules the crowd gives
-## way by (`SeparationPass`): **for a walker**, one under way (moved in the last
+## **An event figure** is a move on the map's list (`WorldMap.list_move()`) that does not
+## give way (`MoveProposal.gives_way()` false) and has a body (`radius` above zero), by the rules
+## the crowd gives way by (`SeparationPass`): **for a walker**, one under way (moved in the last
 ## `SeparationPass.UNDER_WAY_TICKS` ticks) or standing with `stood_round`; **for a car**, one that
 ## has moved since the probe first saw it, as long as it stands. A step longer than
 ## `SeparationPass.PLACEMENT_STEP` is a placement and not a move. Every event the probe makes is
@@ -41,6 +41,8 @@ extends RefCounted
 ## `PROBE_SEEDS` (comma-separated) runs other seeds.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## This file's own script, the type of the probe a `Meeting` reads the crowd's counts off.
+const YieldsProbe := preload("res://tests/probes/minty_quail_crowd_yields.gd")
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 1]
@@ -60,20 +62,26 @@ var _bumps := 0
 var _strikes := 0
 var _lines := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	EventBus.car_near_miss.connect(func(_at: Vector2) -> void: _horns += 1)
 	EventBus.crowd_bumped.connect(func(_at: Vector2) -> void: _bumps += 1)
 	EventBus.hard_fail_triggered.connect(func(cause: String) -> void:
 		if cause == "car_strike":
 			_strikes += 1)
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var library := AtlasLibrary.new()
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(seed_value))
+		var builder := RunCity.new_builder()
+		var drawn := DrawnView.on(t)
+		builder.use_the_drawn_view(drawn)
+		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
+		RunCity.build(city, run, CityGenerator.generate(seed_value), builder, false, library)
 		for day: int in [3, 12, 13]:
-			_a_day(t, city, seed_value, day)
-		city.crowd._player = null
+			_a_day(t, city, run, library, seed_value, day)
+		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	t.check(_lines > 0, "there were runs to print (%d)" % _lines)
 
@@ -85,22 +93,23 @@ func _listed(name: String, fallback: Array[int]) -> Array[int]:
 		listed.append(int(part))
 	return listed
 
-func _a_day(t, city: City, seed_value: int, day: int) -> void:
+func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, seed_value: int,
+		day: int) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.index <= 2 * (day - 6):
 			done.append(step.index)
-	city.run.resistance.completed_steps = done
-	city.run.resistance.progress = 0
-	city.run.facts.completed_resistance_alley_tiles = []
-	city.run.attempt_spend.scars.clear()
-	city.run.header.day = day
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, day)
+	GivenRun.completed_steps(run, done)
+	run.resistance().set_progress(0)
+	GivenRun.alley_tiles(run, [])
+	GivenRun.scars(run, [])
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
+	state.begin_day(city.map().plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
-			city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+			city.map().doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -110,15 +119,15 @@ func _a_day(t, city: City, seed_value: int, day: int) -> void:
 	player.set_physics_process(false)
 	player.set_process(false)
 	player.add_to_group("player")
-	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	player.global_position = city.map().doorstep_world_position()
+	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+			null, RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := {"seed": seed_value, "day": day}
 	if day == 3:
@@ -134,7 +143,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> void:
 		director._on_contact_completed(offered.index)
 	var task := director.current_step()
 	if day == 12 and task and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-		_the_cordon(city, director, player, task, label.merged({"run": "cordon"}))
+		_the_cordon(city, library, director, player, task, label.merged({"run": "cordon"}))
 	if day == ResistanceHappenings.COLUMN_DAY:
 		_the_column(city, director, player, label.merged({"run": "column"}))
 	director.free()
@@ -145,19 +154,19 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, label: D
 	var her := spot
 	_stand(city, player, her)
 	var at := her + Vector2(OFFSET, 0.0)
-	if not city.map.is_walkable(city.map.world_to_tile(at)):
+	if not city.map().is_walkable(city.map().world_to_tile(at)):
 		at = her + Vector2(0.0, OFFSET)
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var made := city.events.spawn_extra(def, at)
+	var made := RunCity.events(city).spawn_extra(def, at)
 	if made == null:
 		_take_out(city, before)
 		return
 	var away := (her - at).normalized()
 	for tick in TICKS:
 		var next := her + away * Tuning.WALK_SPEED * STEP
-		if city.map.is_walkable(city.map.world_to_tile(next)):
+		if city.map().is_walkable(city.map().world_to_tile(next)):
 			her = next
 			_stand(city, player, her)
 			player.velocity = away * Tuning.WALK_SPEED
@@ -170,26 +179,27 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, label: D
 	_take_out(city, before)
 
 ## Day 12's cordon from the swing's touch, she at the swing.
-func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
-		task: ResistanceSteps.Step, label: Dictionary) -> void:
+func _the_cordon(city: City, library: AtlasLibrary, director: ResistanceDirector,
+		player: Stroller, task: ResistanceSteps.Step, label: Dictionary) -> void:
 	var swing := director.contact_position()
 	director._on_contact_completed(task.index)
 	var happenings: ResistanceHappenings = director._happenings
 	var her := [swing]
 	var camera := Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	_stand(city, player, swing)
-	city.events.visible_view().look(camera, null)
+	RunCity.events(city).visible_view().look(camera, null)
 	happenings.tick(STEP, swing, Vector2.ZERO)
-	var park := happenings.cordon.park
+	var park := CityGenerator.swing_park(city.map())
 	happenings.cordon.clear()
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
-			city.spawn_siting, director._reach_blocked)
+	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
+			library, park, RunCity.spawn_siting(city),
+			RunCity.events(city).walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)
-		city.events.visible_view().look(camera, null)
+		RunCity.events(city).visible_view().look(camera, null)
 		cordon.tick(STEP, swing)
 		meeting.tick_the_crowd()
 		meeting.observe(before, cordon._officers)
@@ -200,9 +210,9 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 ## Day 13's column sent down the main road toward her at the doorstep.
 func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		label: Dictionary) -> void:
-	var her := city.map.doorstep_world_position()
+	var her := city.map().doorstep_world_position()
 	_stand(city, player, her)
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
 	var happenings: ResistanceHappenings = director._happenings
@@ -210,7 +220,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		_take_out(city, before)
 		return
 	for tick in TICKS * 2:
-		city.events.warnings.run(STEP, her)
+		RunCity.events(city)._warnings.run(STEP, her)
 		_tick_events(city)
 		meeting.tick_the_crowd()
 		meeting.observe(before, [])
@@ -220,37 +230,39 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 ## The movers' half of the event manager's tick, without the streaming and the siting, so only what
 ## the probe made moves.
 func _tick_events(city: City) -> void:
-	var events := city.events
+	var events := RunCity.events(city)
 	events._tell_them_where_she_is()
 	events._step_them(STEP)
-	events.ahead.let_the_officers_out()
-	events.streaming.retire_finished()
+	events._ahead.let_the_officers_out()
+	events._streaming.retire_finished()
 
 func _take_out(city: City, before: Array) -> void:
-	for instance in city.events.instances().duplicate():
-		if not before.has(instance) and is_instance_valid(instance):
-			city.events.retire(instance)
-	city.events.streaming.retire_finished()
+	# Each element is read as a Variant: one may be freed by the time it is reached (the
+	# validity test), and a typed loop variable fails on a freed instance.
+	for item: Variant in RunCity.events(city).instances().duplicate():
+		if not before.has(item) and is_instance_valid(item):
+			RunCity.events(city).retire(item as EventInstance)
+	RunCity.events(city)._streaming.retire_finished()
 
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
 func _spots(city: City) -> Array[Vector2]:
 	var sidewalk: Array[Vector2i] = []
-	for y in city.map.size.y:
-		for x in city.map.size.x:
+	for y in city.map().size_in_tiles().y:
+		for x in city.map().size_in_tiles().x:
 			var tile := Vector2i(x, y)
-			if city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK \
-					and city.map.is_walkable(tile) and not city.map.is_on_home_block(tile):
+			if city.map().tile_at(tile) == GameEnums.TileType.SIDEWALK \
+					and city.map().is_walkable(tile) and not city.map().is_on_home_block(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = []
 	if sidewalk.is_empty():
 		return spots
 	for i in SPOTS:
-		spots.append(city.map.tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
+		spots.append(city.map().tile_to_world(sidewalk[(i * sidewalk.size()) / SPOTS
 				+ sidewalk.size() / (SPOTS * 2)]))
 	return spots
 
@@ -267,7 +279,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 ## `minty_quail_crowd_cadence.gd` counts the figures with when it runs the day's events, handed no
 ## probe, so it reports the figures' counts alone.
 class Meeting extends RefCounted:
-	var _probe
+	var _probe: YieldsProbe
 	var _city: City
 	var _label: Dictionary
 	## Every figure seen, by move: its last pose and how many ticks in a row it has stood still.
@@ -294,7 +306,7 @@ class Meeting extends RefCounted:
 	var _bumps := 0
 	var _strikes := 0
 
-	func _init(probe, city: City, label: Dictionary) -> void:
+	func _init(probe: YieldsProbe, city: City, label: Dictionary) -> void:
 		_probe = probe
 		_city = city
 		_label = label
@@ -308,13 +320,15 @@ class Meeting extends RefCounted:
 	func start_the_crowd(player: Stroller) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("crowd-yields:%s" % JSON.stringify(_label))
-		_city.crowd.start_day(int(_label.day), rng, player.global_position)
-		_city.crowd.set_gates(_city.streets().region_plan().gates)
-		_city.crowd._player = player
+		RunCity.crowd(_city).start_day(int(_label.day), rng, player.global_position)
+		RunCity.crowd(_city).set_gates(_city.streets().region_plan().gate_states())
+		RunCity.crowd(_city)._player = player
+		RunCity.crowd(_city).use_focus(StrollerFocus.new(player))
+		RunCity.crowd(_city).use_bus(EventBus)
 
 	func tick_the_crowd() -> void:
 		var started := Time.get_ticks_usec()
-		_city.crowd._physics_process(STEP)
+		RunCity.crowd(_city)._physics_process(STEP)
 		_crowd_usec += Time.get_ticks_usec() - started
 
 	## Counts this tick: `before` is the instances standing before the run began, `officers` the
@@ -322,12 +336,12 @@ class Meeting extends RefCounted:
 	func observe(before: Array, officers: Array) -> void:
 		_ticks += 1
 		var line := "%d" % _ticks
-		for instance in _city.events.instances():
+		for instance in RunCity.events(_city).instances():
 			if before.has(instance) or not is_instance_valid(instance):
 				continue
-			line += "|%s:%s,%s,%d" % [instance.def.id, var_to_str(instance.position.x),
-					var_to_str(instance.position.y), instance.phase]
-		for officer in officers:
+			line += "|%s:%s,%s,%s" % [instance.row_id(), var_to_str(instance.position.x),
+					var_to_str(instance.position.y), _phase_word(instance)]
+		for officer: ParkCordon.Officer in officers:
 			line += "|o:%s,%s,%d" % [var_to_str(officer.at.x), var_to_str(officer.at.y),
 					officer.phase]
 		_chain.update(line.to_utf8_buffer())
@@ -335,20 +349,20 @@ class Meeting extends RefCounted:
 		# rules: walkers give way to one under way or standing round, cars to one that has moved.
 		var for_walkers: Array[MoveProposal] = []
 		var for_cars: Array[MoveProposal] = []
-		for move in _city.map.moves.keeping_their_course():
-			if move.radius <= 0.0:
+		for move in _city.map().listed_moves().keeping_their_course():
+			if move.body_radius() <= 0.0:
 				continue
-			var seen: Array = _seen.get(move, [move.to, SeparationPass.NEVER_MOVED])
+			var seen: Array = _seen.get(move, [move.steps_to(), SeparationPass.NEVER_MOVED])
 			var still: int = seen[1]
-			var step: float = move.to.distance_to(seen[0])
+			var step: float = move.steps_to().distance_to(seen[0])
 			if step > SeparationPass.PLACEMENT_STEP:
 				step = 0.0
 			if step > 0.0:
 				still = 0
 			elif still < SeparationPass.NEVER_MOVED:
 				still += 1
-			_seen[move] = [move.to, still]
-			if still <= SeparationPass.UNDER_WAY_TICKS or move.stood_round:
+			_seen[move] = [move.steps_to(), still]
+			if still <= SeparationPass.UNDER_WAY_TICKS or move.is_walked_round():
 				for_walkers.append(move)
 			if still != SeparationPass.NEVER_MOVED:
 				for_cars.append(move)
@@ -358,29 +372,30 @@ class Meeting extends RefCounted:
 				figures.append(move)
 		_most_figures = maxi(_most_figures, figures.size())
 		var now := {}
-		for agent in _city.crowd.agents():
-			var is_car := agent.kind == CrowdAgent.Kind.CAR
+		for agent in RunCity.crowd(_city).agents():
+			var is_car := agent.lane().kind() == CrowdAgent.Kind.CAR
 			var here := agent.global_position
 			var forward := agent.heading()
 			var side := Vector2(-forward.y, forward.x)
 			var standing := is_car and agent.speed() < 1.0
 			var for_a_figure := false
 			for figure in (for_cars if is_car else for_walkers):
-				var offset := figure.to - here
+				var offset := figure.steps_to() - here
 				if offset.length() > 200.0:
 					continue
 				var overlaps := false
 				if is_car:
-					var spine := clampf(offset.dot(forward), -agent.shape.half_length,
-							agent.shape.half_length)
+					var spine := clampf(offset.dot(forward), -agent.shape().spine_half_length(),
+							agent.shape().spine_half_length())
 					overlaps = (offset - forward * spine).length() \
-							< agent.shape.radius + figure.radius - 0.5
+							< agent.shape().rounding_radius() + figure.body_radius() - 0.5
 					var along := offset.dot(forward)
 					if standing and along > 0.0 and along < AHEAD \
-							and absf(offset.dot(side)) < agent.shape.radius + figure.radius + 4.0:
+							and absf(offset.dot(side)) < agent.shape().rounding_radius() + figure.body_radius() + 4.0:
 						for_a_figure = true
 				else:
-					overlaps = offset.length() < agent.shape.reach() + figure.radius - 0.5
+					overlaps = offset.length() \
+							< agent.shape().reach() + figure.body_radius() - 0.5
 				if not overlaps:
 					continue
 				var key := [agent, figure]
@@ -415,6 +430,26 @@ class Meeting extends RefCounted:
 			else:
 				_box_run.erase(agent)
 		_overlapping = now
+
+	## The phase as a word, from the questions the event answers, since the stored phase is not
+	## readable. An officer who has stopped her prints his own word; "charging" and "active" are
+	## told apart by whether his charge has begun.
+	static func _phase_word(instance: EventInstance) -> String:
+		if instance.is_gone():
+			return "gone"
+		if instance.is_on_its_way_out():
+			return "leaving"
+		if instance.is_only_its_barrier():
+			return "barrier"
+		if instance.has_parked():
+			return "parked"
+		if instance.has_stopped_her():
+			return "stopped"
+		if instance.is_waiting():
+			return "waiting"
+		if instance.is_telegraphing():
+			return "warning"
+		return "charging" if instance.is_chasing() else "active"
 
 	func report() -> Dictionary:
 		var minutes := float(_ticks) * STEP / 60.0

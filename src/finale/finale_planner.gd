@@ -47,8 +47,8 @@ class CalmArea extends RefCounted:
 
 ## One way out, from the door to an edge.
 class Chain extends RefCounted:
-	## `CityEdge.Kind.TUNNEL` or `CityEdge.Kind.BRIDGE`.
-	var exit_kind := CityEdge.Kind.TUNNEL
+	## `CityExit.Kind.TUNNEL` or `CityExit.Kind.BRIDGE`.
+	var exit_kind := CityExit.Kind.TUNNEL
 	## The three calm areas it runs through, in the order it meets them.
 	var stops: Array[CalmArea] = []
 	## Every `ReachabilityGrid` node the walk covers, in order, and the cells they sit in.
@@ -73,7 +73,7 @@ class Plan extends RouteSource:
 	var _ends: Array[Vector2] = []
 	## `open_streets`' keys, for the kerb tint's question about a tile.
 	var _open_keys := {}
-	## The escape city's street lattice (`CityMap.network`), which names the street a tile is on.
+	## The escape city's street lattice (`CityMap.street_network()`), which names the street a tile is on.
 	var _network: StreetNetwork
 
 	## Overrides RouteSource.streets_on_the_walk.
@@ -131,7 +131,7 @@ class Plan extends RouteSource:
 		var parts: Array[String] = []
 		for chain in chains:
 			parts.append("%s via %d calm, %d cells%s" % [
-				"tunnel" if chain.exit_kind == CityEdge.Kind.TUNNEL else "bridge",
+				CityExit.name_of(chain.exit_kind),
 				chain.stops.size(), chain.cells.size(), "" if chain.complete else " (incomplete)"])
 		parts.append("%d open streets, %d placements" % [open_streets.size(), placements])
 		return " | ".join(parts)
@@ -148,7 +148,7 @@ static func route(map: CityMap) -> Plan:
 	var start := _service_exit_tile(map)
 	var areas := calm_areas(map, grid)
 	var result := Plan.new()
-	result._network = map.network
+	result._network = map.street_network()
 	# Sorted north to south, so the tunnel chain takes the calm nearest the top of the map and the
 	# bridge chain the calm nearest the bottom. The home lot sits between the two ends of the
 	# spine, so neither exit is trivially nearer and neither chain is the short one.
@@ -163,15 +163,15 @@ static func route(map: CityMap) -> Plan:
 	northern.reverse()
 	var southern := areas.slice(areas.size() - per_chain)
 
-	var tunnel := _grow(grid, start, northern, exit_tile(map, CityEdge.Kind.TUNNEL),
-			CityEdge.Kind.TUNNEL, {})
+	var tunnel := _grow(grid, start, northern, exit_tile(map, CityExit.Kind.TUNNEL),
+			CityExit.Kind.TUNNEL, {})
 	# The tunnel chain's own cells are forbidden to the bridge chain, except the cell she starts
 	# in: *"they part at the service exit, or as near it as the lattice allows"*, and the door
 	# itself is one cell that both walks have to leave from.
 	var taken := tunnel.cells.duplicate()
 	taken.erase(_cell_of(start))
-	var bridge := _grow(grid, start, southern, exit_tile(map, CityEdge.Kind.BRIDGE),
-			CityEdge.Kind.BRIDGE, taken)
+	var bridge := _grow(grid, start, southern, exit_tile(map, CityExit.Kind.BRIDGE),
+			CityExit.Kind.BRIDGE, taken)
 
 	result.chains = [tunnel, bridge]
 	for chain in result.chains:
@@ -181,9 +181,9 @@ static func route(map: CityMap) -> Plan:
 	for segment in result.open_streets:
 		result._open_keys[segment.key()] = true
 	result._start = map.tile_to_world(start)
-	result._starts_in = map.network.segment_containing(start)
-	result._ends = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
-			map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
+	result._starts_in = map.street_network().segment_containing(start)
+	result._ends = [map.tile_to_world(exit_tile(map, CityExit.Kind.TUNNEL)),
+			map.tile_to_world(exit_tile(map, CityExit.Kind.BRIDGE))]
 	return result
 
 ## One chain: the door, each stop in turn, then the edge. Each leg is a shortest walk on the grid
@@ -267,7 +267,7 @@ static func _cell_of(tile: Vector2i) -> Vector2i:
 ## walkable tile on the block's own perimeter is taken instead, so this always answers with ground
 ## she can stand on.
 static func _service_exit_tile(map: CityMap) -> Vector2i:
-	var lot := map.lot_blocks(map.home_block)
+	var lot := map.lot_blocks(map.home_block_coordinate())
 	var tiles := CityMap.blocks_tile_rect(lot)
 	var row := tiles.position.y + tiles.size.y / 2
 	var west := Vector2i(tiles.position.x - 1, row)
@@ -278,7 +278,7 @@ static func _service_exit_tile(map: CityMap) -> Vector2i:
 	var fallback := west if wanted == east else east
 	if map.is_walkable(fallback):
 		return fallback
-	for tile in map.perimeter_tiles(map.home_block):
+	for tile in map.perimeter_tiles(map.home_block_coordinate()):
 		if map.is_walkable(tile):
 			return tile
 	return map.world_to_tile(map.doorstep_world_position())
@@ -287,12 +287,13 @@ static func service_exit_world_position(map: CityMap) -> Vector2:
 	return map.tile_to_world(_service_exit_tile(map))
 
 ## The last walkable tile of the spine at one end of the map — the carriageway under the tunnel's
-## portal, or the one running out onto the bridge deck. `City.tunnel_world_position()` draws the
+## portal, or the one running out onto the bridge deck, which is as far as she can
+## stand (`Main._the_city_exits()` puts the threshold on its row; `EscapeWalkIn` walks her on). `City.tunnel_world_position()` draws the
 ## picture at the same place; this is the tile the chain has to reach to be standing in it.
 static func exit_tile(map: CityMap, exit_kind: int) -> Vector2i:
-	var column := map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
-	var row := 0 if exit_kind == CityEdge.Kind.TUNNEL else map.size.y - 1
-	var step := 1 if exit_kind == CityEdge.Kind.TUNNEL else -1
+	var column := map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var row := 0 if exit_kind == CityExit.Kind.TUNNEL else map.size_in_tiles().y - 1
+	var step := 1 if exit_kind == CityExit.Kind.TUNNEL else -1
 	# The outermost rows are painted as the border band rather than as city, so the first walkable
 	# tile inward is the one the walk can actually end on.
 	for i in Tuning.STREET_WIDTH:
@@ -322,8 +323,8 @@ const _SMALLEST_CALM_AREA := 16
 static func calm_areas(map: CityMap, grid: ReachabilityGrid) -> Array[CalmArea]:
 	var seen := {}
 	var found: Array[CalmArea] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if seen.has(tile) or not Tile.is_calm(map.tile_at(tile)):
 				continue
@@ -346,7 +347,7 @@ static func _flood_calm(map: CityMap, grid: ReachabilityGrid, from: Vector2i,
 		var node := grid.node_at(tile)
 		if node >= 0:
 			nodes[node] = true
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = tile + step
 			if seen.has(next) or not map.in_bounds(next) or not Tile.is_calm(map.tile_at(next)):
 				continue
@@ -366,7 +367,7 @@ static func _flood_calm(map: CityMap, grid: ReachabilityGrid, from: Vector2i,
 ## truck on it would put one behind a wall.
 static func _streets_covering(map: CityMap, open_cells: Dictionary) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if map.has_street(segment.key()) and SealPlanner.runs_through(segment, open_cells):
 			found.append(segment)
 	return found

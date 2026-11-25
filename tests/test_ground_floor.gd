@@ -8,37 +8,33 @@ extends RefCounted
 ##
 ## PLAYTEST-124's own finding is the one further exception: the ground-floor column(s) her front
 ## door's own footprint overlaps draw no window either, even on her own building —
-## `Building.door_world_x_range` is the geometry fact `City._spawn_buildings()` hands the building
+## `Building.mark_door_span()` hands the building the geometry fact `City._spawn_buildings()` works out
 ## for it, and a column the door's footprint overlaps is the one that draws none. A geometry fact, not a roll, so it moves
 ## no RNG stream — only which of the already-computed windows gets painted where.
 ##
 ## A covered column reaches the same columns for the opposite reason: where the tile directly
 ## south of a non-home front's own column is another building rather than walkable ground
-## (`Building.covered_ground_cols`, another geometry fact `City._spawn_buildings()` hands over, read
+## (`Building.covered_ground_cols()`, another geometry fact `City._spawn_buildings()` hands over, read
 ## off `CityMap.is_walkable()`), that column draws no facade at all — no wall, no window at any
 ## floor, no storefront, no blank-wall plinth, no door, no portico, no fire escape. The building
 ## that covers it draws its own roof further north instead, up to exactly the covered building's
-## own roof line (`Building.roof_extension_rows`, `City.assign_roof_extensions()`) — roof meets
+## own roof line (`Building.extend_roof_over()`, `City.assign_roof_extensions()`) — roof meets
 ## roof, so nothing is drawn on a wall nobody can stand in front of. Every roll runs as far on a
 ## covered front as on an open one (the storefront pair, the portico, the door's own covered filter,
 ## the fire escape's drop in `_build_front()`); coverage
 ## decides only which of the answers gets painted, or in the door's case which reachable column it
-## lands on. `roof_extension_rows` itself is pure geometry, not a roll.
+## lands on. The extension itself is pure geometry, not a roll.
+##
+## **Every building here is set up by hand**, the way `City._spawn_buildings()` sets one up. What the
+## real city hands its buildings (`is_on_home_block()`, the door span, `covered_ground_cols()` and
+## the roof rows, off the generated map) is asked of generated cities in `tests/test_city_buildings.gd`.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RoofReads := preload("res://tests/roof_reads.gd")
 const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with (`tests/front_reads.gd`).
 const FrontReads := preload("res://tests/front_reads.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
-## A spread of cities, built in full (buildings, street trees, crowd, events) so the sweep exercises
-## `City._spawn_buildings()`'s own wiring of `is_home_building`, not only the isolated fixtures the
-## rest of this suite uses for the fast, per-district checks.
-const SWEEP_SEEDS := 5
-const BASE_SEED := 61_400
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_no_ground_floor_window_on_a_multistory_non_home_building(t)
 	await _test_commercial_storefronts_remain_and_the_odd_column_is_blank(t)
 	await _test_her_own_building_keeps_ground_floor_windows(t)
@@ -63,50 +59,32 @@ func run(t) -> void:
 	_test_setting_an_extension_late_rebuilds_the_roof_furniture(t)
 	await _test_a_shallow_roof_carries_furniture_on_its_extension(t)
 	await _test_the_furniture_pool_is_exactly_the_lip_free_interior(t)
-	_test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t)
 	await _test_covered_columns_move_no_storefront_roll(t)
 	await _test_the_door_only_lands_on_a_reachable_column(t)
 	await _test_a_fully_covered_front_has_no_door(t)
 	await _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t)
 	await _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t)
-	await _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t)
-	await _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t)
-	await _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t)
-	await _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t)
-	await _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
 
 # ------------------------------------------------------------------- fixtures ---
 
-## One `Building`, built the way `City._spawn_buildings()` builds one — the exports set, then
-## `add_child()`, which is what fires `_ready()` and rolls `_build_windows()`/`_build_front()`.
-## `covered` is `Building.covered_ground_cols`, empty by default — the same "nothing in
+## One `Building`, built the way `City._spawn_buildings()` builds one — its facts handed over through `stand_on()`, `stand_on_home_block()` and
+## `mark_covered_ground_cols()`, as the city hands them, then `add_child()`, which is what fires `_ready()` and rolls `_build_windows()`/`_build_front()`.
+## `covered` is `Building.covered_ground_cols()`, empty by default — the same "nothing in
 ## front of it" a real front with clear sidewalk south of it reads as.
-static func _new_building(t, district: int, footprint: Vector2, height: float, is_home := false,
+static func _new_building(t: TestRunner, district: int, footprint: Vector2, height: float, is_home := false,
 		position := Vector2.ZERO, covered: Array[bool] = []) -> Building:
 	var building := FrontReads.new_building()
-	building.district = district
-	building.footprint = footprint
-	building.height = height
+	building.stand_on(Rect2i(), footprint, 0, district as GameEnums.BlockPurpose, height)
 	building.position = position
-	building.is_home_building = is_home
-	building.covered_ground_cols = covered
+	building.stand_on_home_block(is_home)
+	building.mark_covered_ground_cols(covered)
 	t.add_child(building)
 	return building
 
-## Hands every building of `city` a drawer that records, has it drawn, and answers each building's
-## reads of its front once two frames have passed.
-func _watch_the_fronts(t, city: City) -> Dictionary:
-	for building in city.buildings():
-		FrontReads.watch(building)
-	await UI.frames(t, 2)
-	var fronts := {}
-	for building in city.buildings():
-		fronts[building] = FrontReads.look(building)
-	return fronts
 
 # ------------------------------------------------------------------- the rule ---
 
-func _test_no_ground_floor_window_on_a_multistory_non_home_building(t) -> void:
+func _test_no_ground_floor_window_on_a_multistory_non_home_building(t: TestRunner) -> void:
 	var districts: Array[int] = [GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.COMMERCIAL,
 			GameEnums.BlockPurpose.INDUSTRIAL, GameEnums.BlockPurpose.CIVIC]
 	var buildings: Array[Building] = []
@@ -115,7 +93,7 @@ func _test_no_ground_floor_window_on_a_multistory_non_home_building(t) -> void:
 	await UI.frames(t, 2)
 	for i in districts.size():
 		var building := buildings[i]
-		var front = FrontReads.look(building)
+		var front: FrontReads = FrontReads.look(building)
 		t.check(building.wall_tiles() >= 2,
 				"the fixture is genuinely multi-story (%d wall rows)" % building.wall_tiles())
 		for col in building.columns():
@@ -128,9 +106,9 @@ func _test_no_ground_floor_window_on_a_multistory_non_home_building(t) -> void:
 						% [districts[i], col, row])
 		building.free()
 
-func _test_commercial_storefronts_remain_and_the_odd_column_is_blank(t) -> void:
+func _test_commercial_storefronts_remain_and_the_odd_column_is_blank(t: TestRunner) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.COMMERCIAL, Vector2(96.0, 96.0), 64.0)
-	var front = await _see(t, building)
+	var front: FrontReads = await _see(t, building)
 	t.check(front.ground_floor_at(1) == &"",
 			"a three-column facade has one complete storefront pair, whose second column its first holds")
 	var storefront_texture: StringName = front.ground_floor_at(0)
@@ -144,13 +122,11 @@ func _test_commercial_storefronts_remain_and_the_odd_column_is_blank(t) -> void:
 				"no window is drawn under the ground floor either way (column %d)" % col)
 	building.free()
 
-func _test_her_own_building_keeps_ground_floor_windows(t) -> void:
+func _test_her_own_building_keeps_ground_floor_windows(t: TestRunner) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0, true)
-	var front = await _see(t, building)
-	t.check(building.is_home_building, "the fixture is flagged as her own building")
+	var front: FrontReads = await _see(t, building)
+	t.check(building.is_on_home_block(), "the fixture is flagged as her own building")
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
-	t.check(building.door_world_x_range == Vector2.INF,
-			"a building nobody told about a door keeps the empty Vector2.INF sentinel")
 	for col in building.columns():
 		t.check(front.window_at(col, 0) != &"",
 				"her own building's ground floor still draws a window at every column (%d) with no door standing there"
@@ -159,35 +135,35 @@ func _test_her_own_building_keeps_ground_floor_windows(t) -> void:
 
 ## A door 26px wide against a 32px `Building.TILE` column may straddle two of them — set here dead
 ## on the boundary between columns 2 and 3, so both blank and every other column keeps its window.
-func _test_the_door_blanks_only_the_columns_it_covers(t) -> void:
+func _test_the_door_blanks_only_the_columns_it_covers(t: TestRunner) -> void:
 	var position := Vector2(500.0, 700.0)
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(160.0, 96.0), 64.0, true, position)
 	var boundary := building.global_position.x - building.columns() * Building.TILE * 0.5 \
 			+ 3 * Building.TILE
-	building.door_world_x_range = Vector2(boundary - 3.0, boundary + 3.0)
-	var front = await _see(t, building)
+	building.mark_door_span(Vector2(boundary - 3.0, boundary + 3.0))
+	var front: FrontReads = await _see(t, building)
 	for col in building.columns():
 		var under_door := col == 2 or col == 3
 		t.check((front.window_at(col, 0) != &"") != under_door,
 				"column %d: a window is drawn iff the door does not stand there" % col)
 	building.free()
 
-func _test_a_one_row_facade_is_unchanged(t) -> void:
+func _test_a_one_row_facade_is_unchanged(t: TestRunner) -> void:
 	var buildings: Array[Building] = []
-	for is_home in [false, true]:
+	for is_home: bool in [false, true]:
 		buildings.append(_new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 32.0), 32.0, is_home))
 	await UI.frames(t, 2)
 	for building in buildings:
-		var front = FrontReads.look(building)
+		var front: FrontReads = FrontReads.look(building)
 		t.check(building.wall_tiles() == 1, "the fixture is genuinely one row tall (%d)" % building.wall_tiles())
 		t.check(front.window_at(0, 0) != &"",
 				"a one-row facade is not multi-story, so it keeps its window regardless of the home flag (home=%s)"
-				% building.is_home_building)
+				% building.is_on_home_block())
 		building.free()
 
 # ---------------------------------------------------------------- the accessor ---
 
-func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) -> void:
+func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t: TestRunner) -> void:
 	# CIVIC, an odd column count: the portico lands on exactly the one middle column.
 	var civic_odd := _new_building(t, GameEnums.BlockPurpose.CIVIC, Vector2(96.0, 96.0), 64.0)
 	var odd_entrance: Array[int] = (await _see(t, civic_odd)).portico_cols()
@@ -218,26 +194,26 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) ->
 			"a three-column commercial front has exactly one blank cell, the odd final column (%d)"
 			% commercial_cells.size())
 	if not commercial_cells.is_empty():
-		var odd_col_cell := _ground_cell(commercial, 2)
+		var odd_col_cell := GroundFloorChecks.ground_cell(commercial, 2)
 		t.check(commercial_cells[0] == odd_col_cell, "the one blank cell is exactly the odd final column")
 	commercial.free()
 
 	# Every returned cell is ground-floor (row 0's own y) and exactly one tile, and neither the
 	# door's column nor the one the fire escape stands against is among them.
 	var residential := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0)
-	var shown = await _see(t, residential)
+	var shown: FrontReads = await _see(t, residential)
 	var residential_cells := residential.blank_ground_floor_cells()
 	var excluded := {shown.door_col(): true}
-	for escape_col in shown.escape_cols():
+	for escape_col: int in shown.escape_cols():
 		excluded[escape_col] = true
 	t.check(shown.door_col() >= 0, "the residential fixture has a door")
 	t.check(residential_cells.size() == residential.columns() - excluded.size(),
 			"a residential front is blank across every column but its door's and its fire escape's (%d of %d)"
 			% [residential_cells.size(), residential.columns()])
 	for cell in residential_cells:
-		t.check(not excluded.has(_col_of(residential, cell)),
+		t.check(not excluded.has(GroundFloorChecks.col_of(residential, cell)),
 				"no accessor cell is the door's column or the fire escape's")
-	var ground_row_y := _ground_cell(residential, 0).position.y
+	var ground_row_y := GroundFloorChecks.ground_cell(residential, 0).position.y
 	for cell in residential_cells:
 		t.check(is_equal_approx(cell.position.y, ground_row_y), "every accessor cell sits on the ground row")
 		t.check(cell.size == Vector2(Building.TILE, Building.TILE), "every accessor cell is exactly one tile")
@@ -245,7 +221,7 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) ->
 
 	# The three guards: the power station, her own building and a one-row facade offer nothing.
 	var station := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, Vector2(96.0, 256.0), 64.0)
-	station.power_station = true
+	station.dress_as_power_station(0, Vector2i.ZERO)
 	t.check(station.blank_ground_floor_cells().is_empty(),
 			"the power station draws its own front, so the accessor has nothing to offer")
 	station.free()
@@ -266,18 +242,18 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) ->
 ## the public consts the windows are drawn with — never the private `_WindowStyle` enum —
 ## so this pins the *behaviour* `main` already has rather than an implementation detail of it. Run
 ## for both a home and a non-home building at the same seed, since the rule change reads
-## `is_home_building` only in which cells draw a window and must not have touched this roll at all.
-func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t) -> void:
+## `is_on_home_block()` only in which cells draw a window and must not have touched this roll at all.
+func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t: TestRunner) -> void:
 	var buildings: Array[Building] = []
-	for is_home in [false, true]:
+	for is_home: bool in [false, true]:
 		buildings.append(_new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0,
 				is_home, Vector2(4321.0, 9876.0)))
 	await UI.frames(t, 2)
 	for building in buildings:
-		var front = FrontReads.look(building)
-		var is_home := building.is_home_building
+		var front: FrontReads = FrontReads.look(building)
+		var is_home := building.is_on_home_block()
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%d:%d" % [building.variant, int(building.global_position.x), int(building.global_position.y)])
+		rng.seed = hash("%d:%d:%d" % [building.look_variant(), int(building.global_position.x), int(building.global_position.y)])
 		var expected_lit: Array[bool] = []
 		for i in building.columns() * building.wall_tiles():
 			expected_lit.append(rng.randf() < Building.LIT_WINDOW_CHANCE)
@@ -305,7 +281,7 @@ func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t) -> void:
 						% [is_home, index])
 		building.free()
 
-## `_build_front()`'s own seed string never mentions `is_home_building`, so two otherwise-identical
+## `_build_front()`'s own seed string never mentions `is_on_home_block()`, so two otherwise-identical
 ## buildings — one flagged hers, one not — roll the exact same storefront bag, awning and
 ## ambient-shutter values (checked directly, since `tests/test_city_decay.gd` already pins what the
 ## stream itself produces), and the exact same fire-escape roll — whether one exists and its column
@@ -315,15 +291,15 @@ func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t) -> void:
 ## stair inside instead — so its `_fire_escape_cols` stays empty and `_build_fire_escape_extras()`'s
 ## own `escape:` stream never runs, while a non-home front at the same seed keeps exactly what the
 ## replay below predicts.
-func _test_the_home_flag_changes_no_front_roll(t) -> void:
+func _test_the_home_flag_changes_no_front_roll(t: TestRunner) -> void:
 	var shared_position := Vector2(1234.0, 5678.0)
 	var plain := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 128.0), 96.0, false, shared_position)
 	var home := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 128.0), 96.0, true, shared_position)
 	await UI.frames(t, 2)
-	var plain_front = FrontReads.look(plain)
-	var home_front = FrontReads.look(home)
+	var plain_front: FrontReads = FrontReads.look(plain)
+	var home_front: FrontReads = FrontReads.look(home)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("front:%d:%d:%d" % [plain.variant, int(plain.global_position.x), int(plain.global_position.y)])
+	rng.seed = hash("front:%d:%d:%d" % [plain.look_variant(), int(plain.global_position.x), int(plain.global_position.y)])
 	var expected_cols: Array[int] = []
 	if plain.wall_tiles() >= 2 and rng.randf() < Building.FIRE_ESCAPE_SHARE:
 		var cols := plain.columns()
@@ -378,28 +354,28 @@ static func _replayed_storefront(columns: int, col: int, variants: Array[int], a
 ## building, the picture each column shows (`&""` where none), day after day, which is the whole of
 ## what the `front:` stream rolled for a shop (the storefront each pair shows, awning or not, and the
 ## day its fixed severity shutters it).
-func _ground_floors_over_the_run(t, buildings: Array[Building]) -> Array[Array]:
+func _ground_floors_over_the_run(t: TestRunner, buildings: Array[Building]) -> Array[Array]:
 	var drawn: Array[Array] = []
 	for building in buildings:
 		var none: Array[StringName] = []
 		drawn.append(none)
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for building in buildings:
-			building.day = day
+			building.show_day(day)
 		await UI.frames(t, 2)
 		for i in buildings.size():
-			var front = FrontReads.look(buildings[i])
+			var front: FrontReads = FrontReads.look(buildings[i])
 			for col in buildings[i].columns():
 				drawn[i].append(front.ground_floor_at(col))
 	for building in buildings:
-		building.day = 1
+		building.show_day(1)
 	return drawn
 
 
 
 ## `{col: {row: has_pot}}` for every balcony `front` draws, over every column and floor line: the
 ## whole of it, so a balcony drawn for a column or a floor line it should not have shows too.
-static func _pots_of(front) -> Dictionary:
+static func _pots_of(front: FrontReads) -> Dictionary:
 	var pots := {}
 	var balconies: Dictionary = front.balconies()
 	for col: int in balconies:
@@ -409,28 +385,10 @@ static func _pots_of(front) -> Dictionary:
 			pots[col][row] = picture == Building.FIRE_ESCAPE_A or picture == Building.FIRE_ESCAPE_PLATFORM_A
 	return pots
 
-## The ground floor's cell of column `col`, in local space: one tile, in the same top-left convention
-## every picture's corner is put in (a cell's corner is `(-columns * TILE / 2 + col * TILE, -TILE)`).
-static func _ground_cell(building: Building, col: int) -> Rect2:
-	return Rect2(Vector2(-building.columns() * Building.TILE * 0.5 + col * Building.TILE, -Building.TILE),
-			Vector2(Building.TILE, Building.TILE))
 
-static func _col_of(building: Building, cell: Rect2) -> int:
-	return roundi((cell.position.x + building.columns() * Building.TILE * 0.5) / Building.TILE)
-
-## The rows the roof is taller than the building's own at column `col`, as `City` sets them
-## (`Building.roof_extension_rows`), 0 where it sets none.
-static func _extension_of(building: Building, col: int) -> int:
-	return building.roof_extension_rows[col] if col >= 0 and col < building.roof_extension_rows.size() else 0
-
-## Whether ground-floor column `col` of `building` stands under its door, which `door_world_x_range`
-## says is where the door covers it: the column's own world span overlaps the door's.
-static func _under_door(building: Building, col: int) -> bool:
-	var min_x := building.global_position.x - building.columns() * Building.TILE * 0.5 + col * Building.TILE
-	return min_x < building.door_world_x_range.y and min_x + Building.TILE > building.door_world_x_range.x
 
 ## The reads of `building`'s front once it has been drawn: two frames pass first.
-func _see(t, building: Building):
+func _see(t: TestRunner, building: Building) -> FrontReads:
 	await UI.frames(t, 2)
 	return FrontReads.look(building)
 
@@ -441,7 +399,7 @@ func _see(t, building: Building):
 ## windows and her own door, a one-row facade keeps its windows, and the power station draws its
 ## own. A one-column commercial front is too narrow for a storefront, so it is the one commercial
 ## front with a door.
-func _test_a_front_with_no_other_way_in_has_one_door(t) -> void:
+func _test_a_front_with_no_other_way_in_has_one_door(t: TestRunner) -> void:
 	var cases := [
 		[GameEnums.BlockPurpose.RESIDENTIAL, Vector2(160.0, 96.0), 64.0, false, true, Building.ENTRANCE_DOOR],
 		[GameEnums.BlockPurpose.INDUSTRIAL, Vector2(160.0, 96.0), 64.0, false, true, Building.ENTRANCE_DOOR_INDUSTRIAL],
@@ -452,15 +410,15 @@ func _test_a_front_with_no_other_way_in_has_one_door(t) -> void:
 		[GameEnums.BlockPurpose.INDUSTRIAL, Vector2(160.0, 32.0), 32.0, false, false, &""],
 	]
 	var buildings: Array[Building] = []
-	for case in cases:
+	for case: Array in cases:
 		buildings.append(_new_building(t, case[0], case[1], case[2], case[3]))
 	var station := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, Vector2(160.0, 256.0), 64.0)
-	station.power_station = true
+	station.dress_as_power_station(0, Vector2i.ZERO)
 	await UI.frames(t, 2)
 	for i in cases.size():
 		var case: Array = cases[i]
 		var building := buildings[i]
-		var front = FrontReads.look(building)
+		var front: FrontReads = FrontReads.look(building)
 		var col: int = front.door_col()
 		var label := "district %d, %d columns, %d wall rows, home=%s" % [case[0], building.columns(),
 				building.wall_tiles(), case[3]]
@@ -476,7 +434,7 @@ func _test_a_front_with_no_other_way_in_has_one_door(t) -> void:
 ## Every fire escape's landings reach into both neighbouring columns at the ground floor, so the
 ## door never stands on any escape's column or beside it where the front has any other column to
 ## offer — one escape or two.
-func _test_the_door_keeps_clear_of_the_fire_escape(t) -> void:
+func _test_the_door_keeps_clear_of_the_fire_escape(t: TestRunner) -> void:
 	var with_escape := 0
 	var with_two_escapes := 0
 	var buildings: Array[Building] = []
@@ -486,7 +444,7 @@ func _test_the_door_keeps_clear_of_the_fire_escape(t) -> void:
 				Vector2(cols * Building.TILE, 128.0), 96.0, false, Vector2(i * 37.0, i * 53.0)))
 	await UI.frames(t, 2)
 	for building in buildings:
-		var front = FrontReads.look(building)
+		var front: FrontReads = FrontReads.look(building)
 		var cols := building.columns()
 		var door: int = front.door_col()
 		var escapes: Array[int] = front.escape_cols()
@@ -509,70 +467,10 @@ func _test_the_door_keeps_clear_of_the_fire_escape(t) -> void:
 
 # ------------------------------------------------------------- the fire escape ---
 
-## What `_draw_fire_escape()` puts on a front, asked of one: a balcony on every floor line from
-## the first floor's up to the top floor's — none on the ground floor's own, so nothing stands on
-## the sidewalk — the lowest the platform alone and every other the balcony with its flight, the
-## potted-plant picture or the plain one per that balcony's own roll; and nothing on a front with
-## no escape. A wide front's second escape (if any) keeps the minimum gap from the first. Answers
-## whether the front had at least one escape, so a sweep can say it was not vacuous.
-static func _check_fire_escape(t, front, label: String) -> bool:
-	var building: Building = front.building
-	var escapes: Array[int] = front.escape_cols()
-	if escapes.is_empty():
-		t.check(front.balcony_count() == 0, "%s: a front with no fire escape draws no piece of one" % label)
-		return false
-	var balconies: Dictionary = front.balconies()
-	var landings: Array[int] = []
-	for row: int in balconies[escapes[0]]:
-		landings.append(row)
-	landings.sort()
-	for col in escapes:
-		var rows: Array[int] = []
-		for row: int in balconies[col]:
-			rows.append(row)
-		rows.sort()
-		t.check(rows == landings, "%s: every escape on a front climbs the same floors (%s, %s)" % [label, rows, landings])
-	t.check(building.district == GameEnums.BlockPurpose.RESIDENTIAL,
-			"%s: only a residential front carries a fire escape" % label)
-	t.check(building.wall_tiles() >= Building.FIRE_ESCAPE_MIN_WALL_ROWS,
-			"%s: a front with a fire escape has three floors at least (%d)" % [label, building.wall_tiles()])
-	t.check(landings[0] == 1,
-			"%s: the lowest balcony is the first floor's, on the ground floor's top edge (row %d)"
-			% [label, landings[0]])
-	t.check(landings[-1] == building.wall_tiles() - 1,
-			"%s: the highest balcony is on the top floor's floor line, so the stack starts at the bottom of the top floor (row %d of %d)"
-			% [label, landings[-1], building.wall_tiles()])
-	for i in range(1, landings.size()):
-		t.check(landings[i] == landings[i - 1] + 1,
-				"%s: a balcony on every floor between, so each flight lands on the next (%s)" % [label, landings])
-	t.check(escapes.size() <= 2, "%s: a front never carries more than two fire escapes (%d)" % [label, escapes.size()])
-	if escapes.size() == 2:
-		t.check(absi(escapes[0] - escapes[1]) >= Building.FIRE_ESCAPE_GAP_COLUMNS,
-				"%s: two escapes on one front keep the minimum gap (%s, need %d)"
-				% [label, escapes, Building.FIRE_ESCAPE_GAP_COLUMNS])
-		t.check(building.columns() >= Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS,
-				"%s: a second escape only appears on a front wide enough for one (%d columns)"
-				% [label, building.columns()])
-	for col in escapes:
-		t.check(building.columns() < 3 or (col > 0 and col < building.columns() - 1),
-				"%s: escape at column %d keeps off the corner columns (%d columns)"
-				% [label, col, building.columns()])
-		for row in landings:
-			var drawn: StringName = balconies[col][row]
-			var pot := drawn == Building.FIRE_ESCAPE_A or drawn == Building.FIRE_ESCAPE_PLATFORM_A
-			var expected: StringName
-			if row == landings[0]:
-				expected = Building.FIRE_ESCAPE_PLATFORM_A if pot else Building.FIRE_ESCAPE_PLATFORM_B
-			else:
-				expected = Building.FIRE_ESCAPE_A if pot else Building.FIRE_ESCAPE_B
-			t.check(drawn == expected,
-					"%s: column %d row %d draws %s — the platform alone at the bottom, the balcony and its flight above, the pot per its own roll"
-					% [label, col, row, expected])
-	return true
 
 ## Fronts of every height the class can build, two to six wall rows, across a spread of lots: an
 ## escape reaches every floor of a front of three or more, and a front of two never has one.
-func _test_a_fire_escape_climbs_every_floor_from_the_first(t) -> void:
+func _test_a_fire_escape_climbs_every_floor_from_the_first(t: TestRunner) -> void:
 	var escapes_by_rows := {}
 	var buildings: Array[Building] = []
 	var rows_of: Array[int] = []
@@ -584,11 +482,11 @@ func _test_a_fire_escape_climbs_every_floor_from_the_first(t) -> void:
 				false, Vector2(i * 41.0, i * 67.0)))
 	await UI.frames(t, 2)
 	for i in buildings.size():
-		if _check_fire_escape(t, FrontReads.look(buildings[i]), "fixture %d, %d wall rows" % [i, rows_of[i]]):
+		if GroundFloorChecks.check_fire_escape(t, FrontReads.look(buildings[i]), "fixture %d, %d wall rows" % [i, rows_of[i]]):
 			escapes_by_rows[rows_of[i]] = int(escapes_by_rows.get(rows_of[i], 0)) + 1
 		buildings[i].free()
 	t.check(not escapes_by_rows.has(2), "a two-story front never carries a fire escape (%s)" % escapes_by_rows)
-	for wall_rows in [3, 4, 5, 6]:
+	for wall_rows: int in [3, 4, 5, 6]:
 		t.check(int(escapes_by_rows.get(wall_rows, 0)) > 0,
 				"the sweep met a fire escape on a front of %d wall rows (%s)" % [wall_rows, escapes_by_rows])
 
@@ -596,7 +494,7 @@ func _test_a_fire_escape_climbs_every_floor_from_the_first(t) -> void:
 ## home building shouldn't have a fire escape (it has a double staircase inside)"): across a sweep
 ## of seeds wide enough to roll several escapes on a non-home front at the same position, her own
 ## building never keeps one, even on a front tall and wide enough for two.
-func _test_a_home_building_never_carries_a_fire_escape(t) -> void:
+func _test_a_home_building_never_carries_a_fire_escape(t: TestRunner) -> void:
 	var plain_escapes := 0
 	var plains: Array[Building] = []
 	var homes: Array[Building] = []
@@ -610,8 +508,8 @@ func _test_a_home_building_never_carries_a_fire_escape(t) -> void:
 		homes.append(_new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, height, true, at))
 	await UI.frames(t, 2)
 	for i in plains.size():
-		var plain_front = FrontReads.look(plains[i])
-		var home_front = FrontReads.look(homes[i])
+		var plain_front: FrontReads = FrontReads.look(plains[i])
+		var home_front: FrontReads = FrontReads.look(homes[i])
 		if not plain_front.escape_cols().is_empty():
 			plain_escapes += 1
 		t.check(home_front.escape_cols().is_empty(),
@@ -629,7 +527,7 @@ func _test_a_home_building_never_carries_a_fire_escape(t) -> void:
 ## carries none, and rolls no pots or second escape either, since `_build_fire_escape_extras()` only
 ## ever runs once `_fire_escape_cols` already holds the first. Replayed the way
 ## `_test_the_front_rolls_replay_their_own_streams` replays it.
-func _test_a_two_story_front_rolls_its_escape_and_carries_none(t) -> void:
+func _test_a_two_story_front_rolls_its_escape_and_carries_none(t: TestRunner) -> void:
 	var rolled := 0
 	var buildings: Array[Building] = []
 	for i in 60:
@@ -641,7 +539,7 @@ func _test_a_two_story_front_rolls_its_escape_and_carries_none(t) -> void:
 		var at := Vector2(3000.0 + i * 96.0, 1000.0 + i * 64.0)
 		t.check(building.wall_tiles() == 2, "fixture %d is two stories (%d)" % [i, building.wall_tiles()])
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("front:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
+		rng.seed = hash("front:%d:%d:%d" % [building.look_variant(), int(at.x), int(at.y)])
 		if rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			rolled += 1
 			rng.randi_range(1, building.columns() - 2)
@@ -654,7 +552,7 @@ func _test_a_two_story_front_rolls_its_escape_and_carries_none(t) -> void:
 ## what the platform picture puts below its brackets is what an escape puts on the sidewalk: read
 ## off the baked page, the pixels the game draws. The stair picture's flight does reach that low,
 ## which is what makes the platform a picture of its own rather than the stair cut short.
-func _test_the_ground_floor_carries_only_the_platform(t) -> void:
+func _test_the_ground_floor_carries_only_the_platform(t: TestRunner) -> void:
 	var page := AtlasLibrary.new().page_image(&"buildings")
 	t.check(page != null, "the baked buildings page reads back as an image")
 	if page == null:
@@ -690,7 +588,7 @@ static func _opaque_rows(page: Image, rect: Rect2i, from_row: int) -> int:
 ## `door:` seed. Each stream is keyed on its own prefix and read by nothing else, so the door and the
 ## escape's extras each add a roll without moving any other; a replay that still matches after both
 ## exist is the proof.
-func _test_the_front_rolls_replay_their_own_streams(t) -> void:
+func _test_the_front_rolls_replay_their_own_streams(t: TestRunner) -> void:
 	var escapes_seen := 0
 	var buildings: Array[Building] = []
 	for i in 40:
@@ -708,10 +606,10 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 	await UI.frames(t, 2)
 	for i in buildings.size():
 		var building := buildings[i]
-		var front = FrontReads.look(building)
+		var front: FrontReads = FrontReads.look(building)
 		var at := Vector2(1000.0 + i * 96.0, 2000.0 + i * 64.0)
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("front:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
+		rng.seed = hash("front:%d:%d:%d" % [building.look_variant(), int(at.x), int(at.y)])
 		var expected_col := -1
 		if rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			expected_col = rng.randi_range(1, building.columns() - 2)
@@ -725,7 +623,7 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 	t.check(escapes_seen > 0, "the replay met a fire escape (%d)" % escapes_seen)
 
 	var shop_rng := RandomNumberGenerator.new()
-	shop_rng.seed = hash("front:%d:%d:%d" % [shop.variant, int(shop_at.x), int(shop_at.y)])
+	shop_rng.seed = hash("front:%d:%d:%d" % [shop.look_variant(), int(shop_at.x), int(shop_at.y)])
 	var bag: Array[int] = []
 	var previous := -1
 	var variants: Array[int] = []
@@ -760,7 +658,7 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 			"the storefront bag, awning and ambient-shutter rolls are `_build_front()`'s own stream: "
 			+ "the replayed ground floor is drawn on every day of the run")
 	shop.free()
-	var doored_front = FrontReads.look(doored)
+	var doored_front: FrontReads = FrontReads.look(doored)
 	var shop_cols := 0
 	for col in doored.columns():
 		var picture: StringName = doored_front.ground_floor_at(col)
@@ -772,9 +670,9 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 ## A front wide enough for two escapes (`Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS`, 7 columns) may
 ## carry a second one, and every one the sweep meets keeps the minimum gap
 ## (`Building.FIRE_ESCAPE_GAP_COLUMNS`, 4 columns centre to centre) and stays off the corner columns
-## — the same checks `_check_fire_escape()` already runs, asked again with a sweep built to meet the
+## — the same checks `GroundFloorChecks.check_fire_escape()` already runs, asked again with a sweep built to meet the
 ## case reliably.
-func _test_a_wide_front_may_carry_a_second_escape_with_the_gap(t) -> void:
+func _test_a_wide_front_may_carry_a_second_escape_with_the_gap(t: TestRunner) -> void:
 	var with_two := 0
 	var buildings: Array[Building] = []
 	for i in 500:
@@ -798,7 +696,7 @@ func _test_a_wide_front_may_carry_a_second_escape_with_the_gap(t) -> void:
 ## Nothing under `Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS` (7 columns) ever carries a second escape:
 ## the interior range `[1, cols - 2]` a narrower front rolls from is not wide enough to fit two
 ## columns `Building.FIRE_ESCAPE_GAP_COLUMNS` apart.
-func _test_no_second_escape_on_a_front_too_narrow_for_one(t) -> void:
+func _test_no_second_escape_on_a_front_too_narrow_for_one(t: TestRunner) -> void:
 	var with_escape := 0
 	var buildings: Array[Building] = []
 	for i in 400:
@@ -821,7 +719,7 @@ func _test_no_second_escape_on_a_front_too_narrow_for_one(t) -> void:
 ## tall enough escape mixes both pictures across its own landings rather than showing the same one
 ## on every floor. Swept rather than asserted of one fixture, since which building shows the mix is
 ## itself a roll.
-func _test_the_flower_pot_varies_within_one_escape(t) -> void:
+func _test_the_flower_pot_varies_within_one_escape(t: TestRunner) -> void:
 	var mixed_seen := 0
 	var buildings: Array[Building] = []
 	for i in 300:
@@ -829,9 +727,9 @@ func _test_the_flower_pot_varies_within_one_escape(t) -> void:
 				false, Vector2(i * 59.0, i * 131.0)))
 	await UI.frames(t, 2)
 	for building in buildings:
-		var front = FrontReads.look(building)
+		var front: FrontReads = FrontReads.look(building)
 		var pots := _pots_of(front)
-		for col in front.escape_cols():
+		for col: int in front.escape_cols():
 			var values: Array = (pots[col] as Dictionary).values()
 			if values.has(true) and values.has(false):
 				mixed_seen += 1
@@ -845,19 +743,19 @@ func _test_the_flower_pot_varies_within_one_escape(t) -> void:
 ## `RESIDENTIAL` with no door rolled onto either uncovered column (checked below).
 ## `_draw()`'s own wall loop skips a
 ## covered column's whole cell, so a covered column shows no window at any floor.
-func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t) -> void:
+func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t: TestRunner) -> void:
 	var covered: Array[bool] = [true, false, true, false]
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0),
 			64.0, false, Vector2(5555.0, 6666.0), covered)
-	var front = await _see(t, building)
+	var front: FrontReads = await _see(t, building)
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
 	for col in building.columns():
 		t.check(front.window_at(col, 0) == &"",
 				"column %d: no ground-floor window is drawn, covered or not" % col)
-	for col in [0, 2]:
+	for col: int in [0, 2]:
 		t.check(not front.facade_drawn_in(col),
 				"column %d: a covered column draws no facade at all, wall, window, shop or door" % col)
-	for col in [1, 3]:
+	for col: int in [1, 3]:
 		for row in range(1, building.wall_tiles()):
 			t.check(front.window_at(col, row) != &"",
 					"column %d row %d: an uncovered column still draws its upper floor's window" % [col, row])
@@ -866,18 +764,18 @@ func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t)
 					"column %d: an uncovered column of the same front keeps its plain-wall ground floor" % col)
 	building.free()
 
-## `roof_extension_rows` is a geometry fact the city hands each building, per column: a column's
+## The roof extension is a geometry fact the city hands each building, per column: a column's
 ## roof is drawn that many rows taller than the building's own, and a building nobody told about one
 ## draws only its own roof.
-func _test_the_roof_is_as_tall_as_its_extension_per_column(t) -> void:
+func _test_the_roof_is_as_tall_as_its_extension_per_column(t: TestRunner) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0), 64.0)
-	var plain = await _see(t, building)
+	var plain: FrontReads = await _see(t, building)
 	for col in building.columns():
 		t.check(plain.roof_rows_at(col) == building.roof_tiles(),
 				"column %d: a building nobody told about an extension draws only its own roof" % col)
 	var extension: Array[int] = [0, 3, 0, 5]
-	building.roof_extension_rows = extension
-	var extended = await _see(t, building)
+	building.extend_roof_over(extension)
+	var extended: FrontReads = await _see(t, building)
 	for col in building.columns():
 		t.check(extended.roof_rows_at(col) == building.roof_tiles() + extension[col],
 				"column %d: the roof is drawn as many rows taller as its extension says" % col)
@@ -888,19 +786,22 @@ func _test_the_roof_is_as_tall_as_its_extension_per_column(t) -> void:
 ## five rows deep with two wall rows has three roof rows of its own; columns 1 and 2 extend two rows
 ## further north, column 1 seamlessly (into another piece of its own courtyard) and column 2 into a
 ## separate building. The covered piece's first roof row is asked on both kinds of seam as well.
-func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(t) -> void:
+func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(t: TestRunner) -> void:
 	var front_building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
 			Vector2(4 * Building.TILE, 5 * Building.TILE), 64.0)
 	t.check(front_building.roof_tiles() == 3, "the fixture front has three roof rows of its own")
-	front_building.roof_extension_rows = [0, 2, 2, 0]
-	front_building.roof_extension_seamless = [false, true, false, false]
+	front_building.extend_roof_over([0, 2, 2, 0])
+	var no_seams: Array[bool] = []
+	var extension_seams: Array[bool] = [false, true, false, false]
+	front_building.mark_courtyard_seams(extension_seams, no_seams)
 	var covered: Array[bool] = [true, true]
 	var back_building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
 			Vector2(2 * Building.TILE, 4 * Building.TILE), 64.0, false, Vector2.ZERO, covered)
-	back_building.seamless_cover_cols = [true, false]
+	var covered_seams: Array[bool] = [true, false]
+	back_building.mark_courtyard_seams(no_seams, covered_seams)
 	await UI.frames(t, 2)
-	var front = FrontReads.look(front_building)
-	var back = FrontReads.look(back_building)
+	var front: FrontReads = FrontReads.look(front_building)
+	var back: FrontReads = FrontReads.look(back_building)
 	var roof := front_building.roof_tiles()
 	var top := roof + 2 - 1
 	var n := Building.ROOF_EDGE_BIT_N
@@ -930,24 +831,25 @@ func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(
 	front_building.free()
 	back_building.free()
 
-## The roof furniture reads `roof_extension_rows`, so a value set after the building is in the tree
-## rolls the same roof as one set before it — the setter rebuilds rather than only redrawing.
-func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t) -> void:
+## The roof furniture reads the roof extension, so one handed after the building is in the tree
+## rolls the same roof as one handed before it — `extend_roof_over()` rebuilds rather than only
+## redrawing.
+func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t: TestRunner) -> void:
 	var footprint := Vector2(6 * Building.TILE, 7 * Building.TILE)
 	var at := Vector2(4321.0, 8765.0)
+	var extension: Array[int] = [0, 4, 4, 4, 4, 0]
 	var early := Building.new()
-	early.district = GameEnums.BlockPurpose.INDUSTRIAL
-	early.footprint = footprint
-	early.height = 64.0
+	early.stand_on(Rect2i(), footprint, 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
 	early.position = at
-	early.roof_extension_rows = [0, 4, 4, 4, 4, 0]
+	early.extend_roof_over(extension)
 	t.add_child(early)
 	var late := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, footprint, 64.0, false, at)
-	late.roof_extension_rows = [0, 4, 4, 4, 4, 0]
-	t.check(not RoofReads.units_of(early).is_empty() and RoofReads.units_of(late) == RoofReads.units_of(early),
+	late.extend_roof_over(extension)
+	var early_units := RoofReads.units_of(early, extension, early)
+	t.check(not early_units.is_empty() and RoofReads.units_of(late, extension, late) == early_units,
 			"an extension set after entering the tree rolls the same furniture as one set before")
 	var on_extension := 0
-	for unit: Dictionary in RoofReads.units_of(early):
+	for unit: Dictionary in early_units:
 		if (unit["cell"] as Vector2i).y >= early.roof_tiles():
 			on_extension += 1
 	t.check(on_extension > 0, "the fixture's furniture reaches onto the extension (%d)" % on_extension)
@@ -957,22 +859,25 @@ func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t) -> void:
 ## A roof too shallow for an interior cell of its own carries units once its extension gives it
 ## one: the furniture gate reads the tallest column, extension included, rather than the
 ## building's own roof depth. The same building with nothing to cover stays bare.
-func _test_a_shallow_roof_carries_furniture_on_its_extension(t) -> void:
+func _test_a_shallow_roof_carries_furniture_on_its_extension(t: TestRunner) -> void:
 	var footprint := Vector2(6 * Building.TILE, 4 * Building.TILE)
 	var at := Vector2(2468.0, 1357.0)
 	var bare := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, 64.0, false, at)
 	t.check(bare.roof_tiles() < 3,
 			"the fixture's own roof is too shallow for an interior cell (%d rows)" % bare.roof_tiles())
-	t.check(RoofReads.units_of(bare).is_empty(),
+	var none: Array[int] = []
+	t.check(RoofReads.units_of(bare, none, bare).is_empty(),
 			"with nothing to cover, the shallow roof has no pool and carries nothing")
 	var covering := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, 64.0, false, at)
-	covering.roof_extension_rows = [0, 2, 4, 4, 2, 0]
-	var front = await _see(t, covering)
-	t.check(RoofReads.tallest_of(covering) >= 3,
+	var extension: Array[int] = [0, 2, 4, 4, 2, 0]
+	covering.extend_roof_over(extension)
+	var front: FrontReads = await _see(t, covering)
+	var units := RoofReads.units_of(covering, extension, covering)
+	t.check(RoofReads.tallest_of(covering, extension) >= 3,
 			"the extended shallow roof is deep enough, at its tallest column, for interior cells")
-	t.check(not RoofReads.units_of(covering).is_empty(),
-			"the extended shallow roof carries at least one unit (%d)" % RoofReads.units_of(covering).size())
-	for unit: Dictionary in RoofReads.units_of(covering):
+	t.check(not units.is_empty(),
+			"the extended shallow roof carries at least one unit (%d)" % units.size())
+	for unit: Dictionary in units:
 		var cell: Vector2i = unit["cell"]
 		t.check(front.roof_edges_at(cell.x, cell.y) == 0,
 				"a unit on the extended shallow roof sits on a cell with no lip (%s)" % cell)
@@ -984,20 +889,20 @@ func _test_a_shallow_roof_carries_furniture_on_its_extension(t) -> void:
 ## (the fixture's tallest extension is 4 rows). Asked
 ## of a stepped extension on a shallow roof and a deep one, so each has step cells beside a
 ## shorter column to leave out, and every unit rolled lands inside the pool.
-func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
+func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t: TestRunner) -> void:
 	var extension: Array[int] = [0, 2, 4, 4, 2, 0]
 	var found_units := 0
 	for lot_rows: int in [4, 5, 6]:
 		var building := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL,
 				Vector2(6 * Building.TILE, lot_rows * Building.TILE), 64.0, false,
 				Vector2(1111.0 * lot_rows, 2222.0))
-		building.roof_extension_rows = extension
-		var front = await _see(t, building)
+		building.extend_roof_over(extension)
+		var front: FrontReads = await _see(t, building)
 		var expected: Array[Vector2i] = []
 		var lipped := 0
 		for row in range(1, building.roof_tiles() + 4 - 1):
 			for col in range(1, building.columns() - 1):
-				if row >= building.roof_tiles() + _extension_of(building, col) - 1:
+				if row >= building.roof_tiles() + RoofReads.extension_of(extension, col) - 1:
 					continue
 				if front.roof_edges_at(col, row) == 0:
 					expected.append(Vector2i(col, row))
@@ -1009,8 +914,8 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 		# lip-free interior and every cell of it is stood on by some seed.
 		var reached := {}
 		for variant in 120:
-			building.variant = variant
-			for unit: Dictionary in RoofReads.units_of(building):
+			building.draw_as(building.district(), variant, building.height())
+			for unit: Dictionary in RoofReads.units_of(building, extension, building):
 				for cell: Vector2i in unit["cells"]:
 					reached[cell] = true
 		t.check(expected.all(func(cell: Vector2i) -> bool: return reached.has(cell))
@@ -1019,10 +924,11 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 		var drawn := 0
 		for child in building.get_children():
 			drawn += 1 if child is Building.RoofObject else 0
-		t.check(RoofReads.units_of(building).size() == drawn,
+		var standing := RoofReads.units_of(building, extension, building)
+		t.check(standing.size() == drawn,
 				"roof of %d rows: every roof object the building stands is read back as a unit" % roof)
 		found_units += drawn
-		for unit: Dictionary in RoofReads.units_of(building):
+		for unit: Dictionary in standing:
 			var cell: Vector2i = unit["cell"]
 			for step in int(unit["span"]):
 				t.check(expected.has(cell + Vector2i(step, 0)),
@@ -1030,62 +936,14 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 		building.free()
 	t.check(found_units > 0, "the sweep met roof units to check (%d)" % found_units)
 
-## A roof with nothing to cover lands its units on exactly the cells `main` rolls for it: its pool
-## is the interior in row-major order, the order the shuffle has always permuted, so an extension
-## elsewhere in the city moves no other roof's furniture. Every unextended roof of the sweep
-## stands its units only on its interior, and two roofs of seed 61400 are pinned to the layout
-## `main` rolls for them (cell, then the unit's picture), which a pool built in any other order
-## breaks.
-func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -> void:
-	var main_layouts := {
-		Vector2i(6, 6): [[Vector2i(5, 2), Building.WATER_TANK], [Vector2i(2, 2), Building.SERVICE_BULKHEAD],
-				[Vector2i(2, 1), Building.SERVICE_BULKHEAD]],
-		Vector2i(34, 6): [[Vector2i(2, 2), Building.WATER_TANK], [Vector2i(1, 2), Building.EXHAUST_FAN],
-				[Vector2i(4, 1), Building.WATER_TANK], [Vector2i(6, 1), Building.EXHAUST_FAN]],
-	}
-	var pinned := 0
-	var ordered := 0
-	for i in SWEEP_SEEDS:
-		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(map)
-		for building: Building in city.buildings():
-			if building.roof_extension_rows.any(func(e: int) -> bool: return e > 0):
-				continue
-			var expected: Array[Vector2i] = []
-			if building.roof_tiles() >= 3 and building.columns() >= 3:
-				for row in range(1, building.roof_tiles() - 1):
-					for col in range(1, building.columns() - 1):
-						expected.append(Vector2i(col, row))
-			building.set_scenery_resident(true)
-			var inside := true
-			for unit: Dictionary in RoofReads.units_of(building):
-				for cell: Vector2i in unit["cells"]:
-					inside = inside and expected.has(cell)
-			t.check(inside, "seed %d: the unextended roof at %s stands its units on its interior"
-					% [map.seed_used, building.lot.position])
-			ordered += 1
-			if map.seed_used == BASE_SEED and main_layouts.has(building.lot.position):
-				var layout: Array = []
-				for unit: Dictionary in RoofReads.units_of(building):
-					layout.append([unit["cell"], unit["texture"]])
-				t.check(layout == main_layouts[building.lot.position],
-						"seed %d: the roof at %s carries main's layout %s (got %s)"
-						% [map.seed_used, building.lot.position,
-						main_layouts[building.lot.position], layout])
-				pinned += 1
-		city.free()
-	t.check(ordered > 0, "the sweep met unextended roofs to ask (%d)" % ordered)
-	t.check(pinned == 2, "both pinned roofs of seed %d were found (%d)" % [BASE_SEED, pinned])
 
 
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
-## rolls — reads nothing about `covered_ground_cols`, so two otherwise-identical fronts, one fully
+## rolls — reads nothing about `covered_ground_cols()`, so two otherwise-identical fronts, one fully
 ## covered and one not, roll it identically; only whether a pair actually draws
 ## (`_pair_is_storefront()`) differs. A fully covered commercial front shows no storefront on any
 ## column and, since nothing is visible, still has no door of its own — nobody can reach any of it.
-func _test_covered_columns_move_no_storefront_roll(t) -> void:
+func _test_covered_columns_move_no_storefront_roll(t: TestRunner) -> void:
 	var at := Vector2(7777.0, 8888.0)
 	var footprint := Vector2(6 * Building.TILE, 96.0)
 	var plain := _new_building(t, GameEnums.BlockPurpose.COMMERCIAL, footprint, 64.0, false, at)
@@ -1111,7 +969,7 @@ func _test_covered_columns_move_no_storefront_roll(t) -> void:
 	t.check(compared > 0 and (Building.STOREFRONT_TEXTURES.has(drawn_plain[2])
 			or Building.STOREFRONT_AWNING_TEXTURES.has(drawn_plain[2])),
 			"and there were storefronts after the covered pair to compare (%d)" % compared)
-	var covered_front = await _see(t, fully_covered)
+	var covered_front: FrontReads = await _see(t, fully_covered)
 	for col in plain.columns():
 		t.check(covered_front.ground_floor_at(col) == &"",
 				"column %d: a fully covered commercial front shows no storefront anywhere" % col)
@@ -1124,7 +982,7 @@ func _test_covered_columns_move_no_storefront_roll(t) -> void:
 ## The door is re-placed onto whichever column is still reachable, through the same tiered pick
 ## that already keeps it off a fire escape — `INDUSTRIAL` rolls no fire escape and no storefront or
 ## portico, so this isolates the covered-column filter alone.
-func _test_the_door_only_lands_on_a_reachable_column(t) -> void:
+func _test_the_door_only_lands_on_a_reachable_column(t: TestRunner) -> void:
 	var buildings: Array[Building] = []
 	for keep in range(0, 5):
 		var covered: Array[bool] = [true, true, true, true, true]
@@ -1133,18 +991,18 @@ func _test_the_door_only_lands_on_a_reachable_column(t) -> void:
 				64.0, false, Vector2(keep * 401.0, keep * 293.0), covered))
 	await UI.frames(t, 2)
 	for keep in buildings.size():
-		var front = FrontReads.look(buildings[keep])
+		var front: FrontReads = FrontReads.look(buildings[keep])
 		t.check(front.door_col() == keep,
 				"keep=%d: the door lands on the one column left reachable (%d)" % [keep, front.door_col()])
 		t.check(front.door_picture() == Building.ENTRANCE_DOOR_INDUSTRIAL,
 				"keep=%d: the industrial front still draws its own steel door" % keep)
 		buildings[keep].free()
 
-func _test_a_fully_covered_front_has_no_door(t) -> void:
+func _test_a_fully_covered_front_has_no_door(t: TestRunner) -> void:
 	var covered: Array[bool] = [true, true, true, true]
 	var building := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, Vector2(4 * Building.TILE, 96.0),
 			64.0, false, Vector2(9001.0, 4002.0), covered)
-	var front = await _see(t, building)
+	var front: FrontReads = await _see(t, building)
 	t.check(front.door_col() == -1, "a fully covered front has no door")
 	t.check(building.blank_ground_floor_cells().is_empty(),
 			"a fully covered front offers no blank cell either, since every column draws no facade at all")
@@ -1155,7 +1013,7 @@ func _test_a_fully_covered_front_has_no_door(t) -> void:
 ## covered one roll the exact same fire escape (replayed by hand, the way that test replays it);
 ## only whether the result survives into `_fire_escape_cols` differs — no platform or brackets can
 ## ever reach a column nobody can stand in front of.
-func _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t) -> void:
+func _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t: TestRunner) -> void:
 	var rolled_plain := 0
 	var rolled_and_dropped := 0
 	var plains: Array[Building] = []
@@ -1175,7 +1033,7 @@ func _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t) 
 		var plain := plains[i]
 		var at := Vector2(i * 61.0, i * 83.0)
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("front:%d:%d:%d" % [plain.variant, int(at.x), int(at.y)])
+		rng.seed = hash("front:%d:%d:%d" % [plain.look_variant(), int(at.x), int(at.y)])
 		var expected_col := -1
 		if plain.wall_tiles() >= 2 and rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			var roll_cols := plain.columns()
@@ -1200,7 +1058,7 @@ func _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t) 
 ## A portico is one picture across one or two columns, so covering either drops the whole thing
 ## rather than half of it — and once it is gone, this front needs its own door the way any other
 ## front with no other way in does, on whichever column is not the covered one.
-func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t) -> void:
+func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t: TestRunner) -> void:
 	var at := Vector2(3333.0, 2222.0)
 	var footprint := Vector2(96.0, 96.0)
 	var civic := _new_building(t, GameEnums.BlockPurpose.CIVIC, footprint, 64.0, false, at)
@@ -1211,7 +1069,7 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 	for col in roundi(footprint.x / Building.TILE):
 		covered.append(col == entrance_cols[0])
 	var covered_civic := _new_building(t, GameEnums.BlockPurpose.CIVIC, footprint, 64.0, false, at, covered)
-	var front = await _see(t, covered_civic)
+	var front: FrontReads = await _see(t, covered_civic)
 	t.check(not front.portico_drawn(),
 			"the portico does not draw once its own column is covered")
 	t.check(front.door_col() >= 0,
@@ -1220,357 +1078,10 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 			"the door does not land on the covered portico column")
 	covered_civic.free()
 
-## `City.assign_roof_extensions()`'s own wiring, asked of whatever the generator actually builds:
-## every covered column's own south-neighbour tile that is still on the map belongs to some
-## building's lot, and that building's own `roof_extension_rows` at the matching column is exactly
-## the covered building's own `wall_tiles()` — enough roof to reach exactly the world row the
-## covered building's own roof already starts at, never more and never less. `has_point()` over
-## every building's own `lot` rather than a spatial index, since the whole set is small and this
-## only runs once per seed. **No column anywhere is left with neither a facade nor a covering
-## roof:** every covered column's south tile belongs to a lot whose roof reaches it, so a front
-## facing the map's own edge, where no lot stands, keeps its facade.
-func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t) -> void:
-	var checked := 0
-	var edge_fronts := 0
-	for i in SWEEP_SEEDS:
-		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(map)
-		var fronts := await _watch_the_fronts(t, city)
-		var buildings := city.buildings()
-		for building: Building in buildings:
-			if building.covered_ground_cols.is_empty():
-				continue
-			if building.lot.end.y >= map.size.y:
-				edge_fronts += 1
-				t.check(not building.covered_ground_cols.has(true),
-						"seed %d: a front facing the map's edge at %s keeps its facade"
-						% [map.seed_used, building.lot.position])
-			for col in building.covered_ground_cols.size():
-				if not building.covered_ground_cols[col]:
-					continue
-				var south := Vector2i(building.lot.position.x + col,
-						building.lot.position.y + building.lot.size.y)
-				t.check(map.in_bounds(south),
-						"seed %d: a covered column's south tile is on the map" % map.seed_used)
-				if not map.in_bounds(south):
-					continue
-				var front: Building = null
-				for candidate: Building in buildings:
-					if candidate.lot.has_point(south):
-						front = candidate
-						break
-				t.check(front != null,
-						"seed %d: a column with no facade has a lot south of it to cover it"
-						% map.seed_used)
-				if front == null:
-					continue
-				var local_col := south.x - front.lot.position.x
-				var extension: int = fronts[front].roof_rows_at(local_col) - front.roof_tiles()
-				t.check(extension == building.wall_tiles(),
-						"seed %d: no column is left with neither a facade nor a covering roof (%d rows expected, got %d)"
-						% [map.seed_used, building.wall_tiles(), extension])
-				checked += 1
-		city.free()
-	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
-	t.check(edge_fronts > 0, "the sweep met a front facing the map's edge (%d)" % edge_fronts)
 
-## A cul-de-sac wall (`CityGenerator._wall_off_one_end()`, a 2-tile lot) can stand directly north
-## of the power station. Over the station's yard no roof stands to extend, so the wall keeps its
-## facade and the station draws no roof there; over its hall the wall is covered and the hall's roof
-## is drawn as many rows taller as the wall is high. Seeds 823576 (a wall over the yard) and 966118
-## (a wall over the hall) are cities that have each.
-func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t) -> void:
-	var over_yard := 0
-	var over_hall := 0
-	for seed_value in [823576, 966118]:
-		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(map)
-		var fronts := await _watch_the_fronts(t, city)
-		var station: Building = null
-		for building: Building in city.buildings():
-			if building.power_station:
-				station = building
-		t.check(station != null, "seed %d: the city has its power station" % seed_value)
-		if station == null:
-			city.free()
-			continue
-		var hall := station.hall_cols()
-		for wall: Building in city.buildings():
-			if wall.power_station or wall.lot.end.y != station.lot.position.y:
-				continue
-			for col in wall.columns():
-				var local := wall.lot.position.x + col - station.lot.position.x
-				if local < 0 or local >= station.columns():
-					continue
-				var covered: bool = col < wall.covered_ground_cols.size() and wall.covered_ground_cols[col]
-				var station_rows: int = fronts[station].roof_rows_at(local)
-				if local >= hall.x and local < hall.y:
-					over_hall += 1
-					t.check(covered and not fronts[wall].facade_drawn_in(col),
-							"seed %d: a wall over the hall (column %d) is covered and draws no facade" % [seed_value, col])
-					t.check(station_rows == station.roof_tiles() + wall.wall_tiles(),
-							"seed %d: the hall's roof is drawn %d rows taller over that wall (%d rows)"
-							% [seed_value, wall.wall_tiles(), station_rows])
-				else:
-					over_yard += 1
-					t.check(not covered and fronts[wall].facade_drawn_in(col),
-							"seed %d: a wall over the yard (column %d) keeps its facade" % [seed_value, col])
-					t.check(station_rows == 0,
-							"seed %d: the station draws no roof over its yard (%d rows)" % [seed_value, station_rows])
-		city.free()
-	t.check(over_yard > 0, "the seeds have a wall over the station's yard (%d)" % over_yard)
-	t.check(over_hall > 0, "the seeds have a wall over the station's hall (%d)" % over_hall)
 
-## `City.assign_roof_extensions()`'s own courtyard wiring: a covered column's extension is
-## seamless exactly when the covered building and the covering building were both cut from the same
-## courtyard lot — a single-block courtyard's own `map.lot_rect(block)`, or an apartment complex's
-## (`_build_block()`'s shared `COURTYARD` branch cuts both the same way, `_subtract_all()` around
-## the hole). Recomputes the courtyard-lot membership independently here, the same way the roof-
-## extension sweep above recomputes "front" independently rather than trusting `_assign_roof_
-## extensions()`'s own bookkeeping — so this only passes if the wiring is actually right, not merely
-## self-consistent. Every OTHER covered column (an ordinary front and back, two genuinely
-## separate buildings) must NOT be seamless, or a real parapet step would silently vanish there too.
-## A covered piece with no roof of its own is the one courtyard seam that still caps, since nothing
-## of its own carries on above the extension. Each seam is asked what it *draws*
-## on both sides: no lip on either side of a seamless one, a lip on
-## both sides of an ordinary one — and both pieces of a courtyard seam carry the same roof tint.
-func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t) -> void:
-	var checked_courtyard := 0
-	var checked_ordinary := 0
-	for i in SWEEP_SEEDS:
-		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var courtyard_lots: Array[Rect2i] = []
-		for block in map.block_layouts.keys():
-			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
-				courtyard_lots.append(map.lot_rect(block))
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(map)
-		var fronts := await _watch_the_fronts(t, city)
-		var buildings := city.buildings()
-		for building: Building in buildings:
-			if building.power_station or building.covered_ground_cols.is_empty():
-				continue
-			for col in building.covered_ground_cols.size():
-				if not building.covered_ground_cols[col]:
-					continue
-				var south := Vector2i(building.lot.position.x + col,
-						building.lot.position.y + building.lot.size.y)
-				if not map.in_bounds(south):
-					continue
-				var front: Building = null
-				for candidate: Building in buildings:
-					if candidate.lot.has_point(south):
-						front = candidate
-						break
-				if front == null:
-					continue
-				var back_lot := -1
-				var front_lot := -1
-				for lot_index in courtyard_lots.size():
-					if courtyard_lots[lot_index].encloses(building.lot):
-						back_lot = lot_index
-					if courtyard_lots[lot_index].encloses(front.lot):
-						front_lot = lot_index
-				var same_courtyard := back_lot >= 0 and back_lot == front_lot
-				var expect_seamless := same_courtyard and building.roof_tiles() > 0
-				var local_col := south.x - front.lot.position.x
-				if same_courtyard:
-					t.check(front.tint_variant >= 0 and front.tint_variant == building.tint_variant,
-							"seed %d: two pieces of one courtyard lot share one tint (%d, %d)"
-							% [map.seed_used, front.tint_variant, building.tint_variant])
-				var extension: int = fronts[front].roof_rows_at(local_col) - front.roof_tiles()
-				if extension <= 0 or building.roof_tiles() <= 0:
-					continue
-				var top := front.roof_tiles() + extension - 1
-				var cap_drawn: bool = (fronts[front].roof_edges_at(local_col, top) & Building.ROOF_EDGE_BIT_N) != 0
-				var lip_drawn: bool = (fronts[building].roof_edges_at(col, 0) & Building.ROOF_EDGE_BIT_S) != 0
-				t.check(cap_drawn != expect_seamless,
-						"seed %d: the covering piece's extension top draws a north lip exactly off a seamless seam"
-						% map.seed_used)
-				t.check(lip_drawn != expect_seamless,
-						"seed %d: the covered piece's first roof row draws a front lip exactly off a seamless seam"
-						% map.seed_used)
-				if expect_seamless:
-					checked_courtyard += 1
-				else:
-					checked_ordinary += 1
-		city.free()
-	t.check(checked_ordinary > 0,
-			"the sweep met at least one ordinary (non-courtyard) covered column to check (%d)" % checked_ordinary)
-	t.check(checked_courtyard > 0,
-			"the sweep met at least one courtyard seam to check seamlessness on (%d)" % checked_courtyard)
 
-## No roof unit on any real building sits on a cell whose own lips are drawn, extended or not — the
-## rule every roof keeps, asked of the extension too, where a taller column steps down beside a
-## shorter one. The power station's hall is left out: its own yard edge is a lip the ordinary
-## interior bound was never measured against.
-func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
-	var checked := 0
-	var on_extension := 0
-	var on_shallow_extension := 0
-	for i in SWEEP_SEEDS:
-		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(map)
-		var fronts := await _watch_the_fronts(t, city)
-		for building: Building in city.buildings():
-			if building.power_station:
-				continue
-			for unit: Dictionary in RoofReads.units_of(building):
-				var cell: Vector2i = unit["cell"]
-				for step in int(unit["span"]):
-					var at := cell + Vector2i(step, 0)
-					t.check(fronts[building].roof_edges_at(at.x, at.y) == 0,
-							"seed %d: a roof unit at %s sits on a cell with no lip" % [map.seed_used, at])
-					checked += 1
-					if at.y >= building.roof_tiles():
-						on_extension += 1
-						if building.roof_tiles() < 3:
-							on_shallow_extension += 1
-		city.free()
-	t.check(checked > 0, "the sweep met roof units to check (%d)" % checked)
-	t.check(on_extension > 0, "the sweep met at least one roof unit on an extension (%d)" % on_extension)
-	t.check(on_shallow_extension > 0,
-			"the sweep met a unit on the extension of a roof too shallow on its own (%d)"
-			% on_shallow_extension)
 
 # --------------------------------------------------------------------- the sweep ---
 
-## Every accessor cell a real building offers is plain wall (the ground floor shows
-## `WALL_BASE` there) and never one of the portico's own columns while the portico actually
-## draws (a portico dropped for a covered column frees the other one it straddled) — the same two contracts
-## `_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells` pins on fixtures, asked
-## again of whatever the generator actually builds.
-func _check_accessor_invariant(t, building: Building, front, seed_used: int) -> void:
-	var entrance_cols: Array[int] = []
-	if front.portico_drawn():
-		entrance_cols = front.portico_cols()
-	var ground_row_y := _ground_cell(building, 0).position.y
-	for cell in building.blank_ground_floor_cells():
-		var col := _col_of(building, cell)
-		t.check(is_equal_approx(cell.position.y, ground_row_y),
-				"seed %d: every accessor cell sits on the ground row" % seed_used)
-		t.check(front.ground_floor_at(col) == Building.WALL_BASE,
-				"seed %d: every accessor cell is plain wall, not a window or a storefront" % seed_used)
-		t.check(not entrance_cols.has(col),
-				"seed %d: no accessor cell is a drawn civic entrance's own column" % seed_used)
-		t.check(col != front.door_col() and not front.escape_cols().has(col),
-				"seed %d: no accessor cell is the door's column or a fire escape's" % seed_used)
-		t.check(not building.covered_ground_cols[col] if col < building.covered_ground_cols.size() else true,
-				"seed %d: no accessor cell is a covered column — those draw no facade at all, never blank wall" % seed_used)
 
-## Full `City` scenes across a spread of seeds — the only path that exercises
-## `City._spawn_buildings()`'s own wiring of `is_home_building`, `door_world_x_range` and
-## `covered_ground_cols` off `CityMap.home_block`, `map.home_rect` and `map.is_walkable()`,
-## rather than a fixture set directly.
-func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
-	var checked_non_home := 0
-	var checked_home := 0
-	var checked_home_multistory := 0
-	var checked_door_columns := 0
-	var checked_commercial := 0
-	var checked_doors := 0
-	var checked_escapes := 0
-	var checked_covered_columns := 0
-	var checked_fully_covered_fronts := 0
-	for i in SWEEP_SEEDS:
-		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(map)
-		var fronts := await _watch_the_fronts(t, city)
-		for building: Building in city.buildings():
-			var front = fronts[building]
-			_check_accessor_invariant(t, building, front, map.seed_used)
-			if _check_fire_escape(t, front, "seed %d" % map.seed_used):
-				checked_escapes += 1
-			if building.power_station:
-				continue
-			if building.is_home_building:
-				checked_home += 1
-				t.check(building.covered_ground_cols.is_empty(),
-						"seed %d: her own building is never told about a covered column" % map.seed_used)
-				t.check(front.escape_cols().is_empty(),
-						"seed %d: her own building never carries a fire escape, wired the real way through the city's building spawn"
-						% map.seed_used)
-				if building.wall_tiles() >= 2:
-					checked_home_multistory += 1
-					var saw_a_window := false
-					for col in building.columns():
-						var under_door := _under_door(building, col)
-						if under_door:
-							checked_door_columns += 1
-						t.check((front.window_at(col, 0) != &"") != under_door,
-								"seed %d: her own building draws a ground-floor window at column %d iff the door does not stand there"
-								% [map.seed_used, col])
-						saw_a_window = saw_a_window or not under_door
-					t.check(saw_a_window,
-							"seed %d: her own building still shows a ground-floor window somewhere the door does not stand"
-							% map.seed_used)
-				continue
-			checked_non_home += 1
-			if building.wall_tiles() < 2:
-				continue
-			var any_covered := false
-			for col in building.columns():
-				# Never a window, covered or not: a covered column draws nothing on the wall at all,
-				# since the roof in front of it reaches up to meet this building's own roof.
-				t.check(front.window_at(col, 0) == &"",
-						"seed %d: no ground-floor column of a building that is not her own draws a window, covered or not (district %d)"
-						% [map.seed_used, building.district])
-				if col < building.covered_ground_cols.size() and building.covered_ground_cols[col]:
-					any_covered = true
-					checked_covered_columns += 1
-					t.check(not front.facade_drawn_in(col),
-							"seed %d: a covered column (%d) draws no facade at all, no storefront and no blank-wall plinth (district %d)"
-							% [map.seed_used, col, building.district])
-			var fully_covered := any_covered and building.covered_ground_cols.count(true) == building.columns()
-			if fully_covered:
-				checked_fully_covered_fronts += 1
-				t.check(front.door_col() == -1,
-						"seed %d: a fully covered front has no door (district %d)" % [map.seed_used, building.district])
-			var door: int = front.door_col()
-			var shop_col := -1
-			for probe_col in building.columns():
-				var picture: StringName = front.ground_floor_at(probe_col)
-				if picture != Building.WALL_BASE and picture != &"":
-					shop_col = probe_col
-					break
-			var has_other_way_in: bool = (building.district == GameEnums.BlockPurpose.CIVIC and front.portico_drawn()) \
-					or (building.district == GameEnums.BlockPurpose.COMMERCIAL and shop_col >= 0)
-			if has_other_way_in:
-				t.check(door == -1, "seed %d: a front with a drawn storefront or portico has no extra door" % map.seed_used)
-			elif fully_covered:
-				t.check(door == -1, "seed %d: a fully covered front with no other way in still has no door" % map.seed_used)
-			else:
-				checked_doors += 1
-				t.check(door >= 0 and door < building.columns() and not front.escape_cols().has(door)
-						and not (door < building.covered_ground_cols.size() and building.covered_ground_cols[door]),
-						"seed %d: a multi-story front with no other way in has one door, off every fire escape and every covered column (district %d)"
-						% [map.seed_used, building.district])
-			if building.district == GameEnums.BlockPurpose.COMMERCIAL and shop_col >= 0:
-				checked_commercial += 1
-				var texture: StringName = front.ground_floor_at(shop_col)
-				t.check(Building.STOREFRONT_TEXTURES.has(texture) or Building.STOREFRONT_AWNING_TEXTURES.has(texture)
-						or Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
-						"seed %d: a real commercial building's storefront is still drawn" % map.seed_used)
-		city.free()
-	t.check(checked_non_home > 0, "the sweep built non-home buildings to check (%d)" % checked_non_home)
-	t.check(checked_home > 0, "the sweep built her own building at least once (%d)" % checked_home)
-	t.check(checked_home_multistory > 0,
-			"the sweep built a multi-story home building at least once (%d)" % checked_home_multistory)
-	t.check(checked_door_columns > 0,
-			"the sweep met at least one ground-floor column standing behind the door (%d)" % checked_door_columns)
-	t.check(checked_commercial > 0, "the sweep built a commercial storefront at least once (%d)" % checked_commercial)
-	t.check(checked_doors > 0, "the sweep built a front with an entrance door (%d)" % checked_doors)
-	t.check(checked_escapes > 0, "the sweep built a front with a fire escape (%d)" % checked_escapes)
-	t.check(checked_covered_columns > 0,
-			"the sweep met at least one real covered ground-floor column (%d)" % checked_covered_columns)
-	t.check(checked_fully_covered_fronts > 0,
-			"the sweep met at least one real fully covered front (%d)" % checked_fully_covered_fronts)

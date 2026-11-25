@@ -13,13 +13,14 @@ const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
+const MainScript := preload("res://src/main.gd")
 ## The save the boot is handed, so the player's own is never touched.
 const SCRATCH_SAVE := "user://lazy_scenery_measure_scratch.json"
 
 ## The library every city measured here is handed, holding the shared pages for the whole probe.
 var _atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("LAZY_META " + JSON.stringify({"engine": Engine.get_version_info(),
 		"os": OS.get_name(), "processor": OS.get_processor_name(),
 		"mode": "headless synchronous; no engine frame between stages"}))
@@ -37,21 +38,21 @@ func run(t) -> void:
 		_atlas.release(group)
 	_actual_boot(t)
 
-func _measure(t, seed_value: int, trial: int) -> void:
+func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	var started := Time.get_ticks_usec()
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
-	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	# The run is held here: swapping the script drops the one the city was handed.
-	var own_run := city.run
+	var run := RunCity.started_run(seed_value)
+	var city: City = RunCity.new_city(CITY_SCENE)
+	# The run is held here: `build()` hands it to the city after the script is swapped.
+	var own_run := run
 	city.set_script(TIMED_CITY)
-	city.run = own_run
-	city.atlas = _atlas
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()
-	city.build(map)
-	var row: Dictionary = city.get("spans").duplicate()
+	RunCity.build(city, own_run, map, null, false, _atlas)
+	var built_spans: Dictionary = city.get("spans")
+	var row := built_spans.duplicate()
 	row.merge({"seed": seed_value, "trial": trial, "stage": "build",
 		"generation_ms": generation_ms, "total_ms": (Time.get_ticks_usec() - started) / 1000.0,
 		"static_memory_delta": OS.get_static_memory_usage() - memory_before,
@@ -62,12 +63,13 @@ func _measure(t, seed_value: int, trial: int) -> void:
 		_counterfactual(city, t)
 	var state := CityState.new()
 	for day: int in [1, 8, 14]:
-		own_run.header.day = day
-		state.begin_day(map.block_plans, day)
+		own_run.header().set_day(day)
+		state.begin_day(map.plans_by_block(), day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()
-		city.start_day(state, day, own_run.calendar.day_rng())
-		row = city.get("spans").duplicate()
+		city.start_day(state, day, own_run.calendar().day_rng())
+		var day_spans: Dictionary = city.get("spans")
+		row = day_spans.duplicate()
 		row.merge({"seed": seed_value, "trial": trial, "stage": "day", "day": day,
 			"total_ms": (Time.get_ticks_usec() - started) / 1000.0,
 			"nodes_including_pending_free": _nodes(city), "props": city.props().size()})
@@ -85,10 +87,10 @@ func _nodes(node: Node) -> int:
 	return result
 
 func _coverage(city: City) -> void:
-	var map := city.map
+	var map := city.map()
 	var home := map.doorstep_world_position()
 	var view := Rect2(home - HALF_VIEW, HALF_VIEW * 2)
-	var home_rect := map.tile_rect_to_world(CityMap.block_rect(map.home_block))
+	var home_rect := map.tile_rect_to_world(CityMap.block_rect(map.home_block_coordinate()))
 	var ground: SceneryGround = city.scenery_ground
 	_prepare_every_region(ground, city)
 	var cells := GroundCells.used_cells(ground)
@@ -106,25 +108,31 @@ func _coverage(city: City) -> void:
 	var roof_layers := 0
 	for building in city.buildings():
 		building_nodes += _nodes(building)
-		for col in building.columns():
-			max_roof_north_overhang = maxf(max_roof_north_overhang,
-				(building.roof_extension_rows[col] if col < building.roof_extension_rows.size() else 0) * 32.0)
+		# How far the building's own scenery bounds reach north of its lot: the roof's extension and
+		# the two tiles of margin the bounds keep beyond it, which are taken off again.
+		var footprint_depth := map.tile_rect_to_world(building.lot_rect()).size.y
+		var reach := building.global_position.y - footprint_depth - building.residence().bounds().position.y
+		var extension_rows := maxi(0, roundi(reach / 32.0) - 2)
+		max_roof_north_overhang = maxf(max_roof_north_overhang, extension_rows * 32.0)
+		var extension: Array[int] = []
+		extension.resize(building.columns())
+		extension.fill(extension_rows)
 		# The roof furniture each stands feet-anchored on its roof cell (read off where its roof
 		# objects stand, the building made resident for the read and handed back as it was): its
 		# picture rises from the floor line of its row by the region's height at the equipment's
 		# scale, and how far that clears the lot's north edge (-footprint.y) is the overhang.
-		var was_resident := building.scenery_resident
-		building.set_scenery_resident(true)
-		var units := RoofReads.units_of(building)
-		building.set_scenery_resident(was_resident)
+		var was_resident := building.residence().is_resident()
+		building.residence().set_resident(true)
+		var units := RoofReads.units_of(building, extension, city.layers().node(DrawLayer.Layer.ENTITIES))
+		building.residence().set_resident(was_resident)
 		for unit: Dictionary in units:
 			roof_layers += 1
 			var picture := _atlas.region(unit["texture"])
 			var rise := picture.get_height() * RoofReads.equipment_scale(unit["texture"])
 			var foot := -float(building.wall_tiles() + (unit["cell"] as Vector2i).y) * 32.0
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
-					-(foot - rise) - building.footprint.y)
-	print("LAZY_BOOT " + JSON.stringify({"seed": map.seed_used,
+					-(foot - rise) - footprint_depth)
+	print("LAZY_BOOT " + JSON.stringify({"seed": map.city_seed(),
 		"viewport_world": str(view), "home_block_world": str(home_rect),
 		"ground_prepared": cells.size(), "visible_ground_inside_home": boot_inside,
 		"visible_ground_outside_home": boot_outside, "building_nodes": building_nodes,
@@ -170,9 +178,9 @@ func _coverage(city: City) -> void:
 					if GroundCells.source_id(ground, cell) >= 0:
 						seen_cells[cell] = true
 			for building in city.buildings():
-				if rect.intersects(map.tile_rect_to_world(building.lot)):
-					seen_buildings[building.lot] = true
-		print("LAZY_COVERAGE " + JSON.stringify({"seed": map.seed_used,
+				if rect.intersects(map.tile_rect_to_world(building.lot_rect())):
+					seen_buildings[building.lot_rect()] = true
+		print("LAZY_COVERAGE " + JSON.stringify({"seed": map.city_seed(),
 			"route": "nearest_calm_return" if goal == near else "farthest_bfs_calm_return",
 			"round_trip_px": (path.size() - 1) * 64,
 			"unique_ground_cells": seen_cells.size(), "prepared_ground_cells": cells.size(),
@@ -185,29 +193,29 @@ func _coverage(city: City) -> void:
 func _prepare_every_region(ground: SceneryGround, city: City) -> void:
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
 	var world := Rect2(Vector2.ONE * -depth,
-			Vector2(city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)
+			Vector2(city.map().size_in_tiles()) * 32.0 + Vector2.ONE * depth * 2.0)
 	for key in ground.keys_in(world):
 		ground.prepare(key)
 
 func _building_count(city: City, rect: Rect2) -> int:
 	var result := 0
 	for building in city.buildings():
-		result += int(rect.intersects(city.map.tile_rect_to_world(building.lot)))
+		result += int(rect.intersects(city.map().tile_rect_to_world(building.lot_rect())))
 	return result
 
-func _counterfactual(city: City, t) -> void:
+func _counterfactual(city: City, t: TestRunner) -> void:
 	var source: SceneryGround = city.scenery_ground
 	var expected_count := GroundCells.used_cells(source).size()
-	var home := city.map.doorstep_world_position()
+	var home := city.map().doorstep_world_position()
 	var nearby := Rect2(home - HALF_VIEW, HALF_VIEW * 2).grow(128)
-	var sheet := (source.tile_set.get_source(source.tile_set.get_source_id(0)) as TileSetAtlasSource).texture
+	var sheet := (source.tile_set().get_source(source.tile_set().get_source_id(0)) as TileSetAtlasSource).texture
 	for mode: String in ["full", "nearby", "nearby", "full"]:
 		var baseline := OS.get_static_memory_usage()
 		var layer := TileMapLayer.new()
-		layer.tile_set = source.tile_set
+		layer.tile_set = source.tile_set()
 		# Deliberately outside the tree: no renderer/physics/quadrant processing in this experiment.
 		var lo := Vector2i(-CityMap.OUTSIDE_DEPTH_TILES, -CityMap.OUTSIDE_DEPTH_TILES)
-		var hi := city.map.size + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
+		var hi := city.map().size_in_tiles() + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
 		if mode == "nearby":
 			lo = Vector2i((nearby.position / 32).floor())
 			hi = Vector2i((nearby.end / 32).ceil())
@@ -216,12 +224,13 @@ func _counterfactual(city: City, t) -> void:
 		for y in range(lo.y, hi.y):
 			for x in range(lo.x, hi.x):
 				var tile := Vector2i(x, y)
-				var inside := x >= 0 and y >= 0 and x < city.map.size.x and y < city.map.size.y
-				var source_id := GroundTiles.source_for(city.map, tile, 1) if inside \
+				var extent := city.map().size_in_tiles()
+				var inside := x >= 0 and y >= 0 and x < extent.x and y < extent.y
+				var source_id := GroundTiles.source_for(city.map(), tile, 1) if inside \
 					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:
 					layer.set_cell(tile, source_id, GroundLayers.atlas_coords_for(
-						source_id, city.map.seed_used, tile, source.tile_set))
+						source_id, city.map().city_seed(), tile, source.tile_set()))
 					count += 1
 		var insert_ms := (Time.get_ticks_usec() - started) / 1000.0
 		var allocated := OS.get_static_memory_usage() - baseline
@@ -241,7 +250,7 @@ func _counterfactual(city: City, t) -> void:
 			"counterfactual paints nonempty cells identical to the actual boot ground")
 		if mode == "full":
 			t.check(count == expected_count, "full counterfactual covers boot ground")
-		print("LAZY_SUBSET " + JSON.stringify({"seed": city.map.seed_used, "mode": mode,
+		print("LAZY_SUBSET " + JSON.stringify({"seed": city.map().city_seed(), "mode": mode,
 			"cells": count, "insert_ms": insert_ms, "clear_ms": clear_ms,
 			"static_memory_delta": allocated, "static_memory_after_clear_delta": after_clear,
 			"static_memory_after_free_delta": after_free,
@@ -250,12 +259,12 @@ func _counterfactual(city: City, t) -> void:
 
 ## Observe the real first suspended boot frame, then complete its two warmup awaits as the
 ## camera regression suite does. This validates geometry, not a rendered image or boot timing.
-func _actual_boot(t) -> void:
+func _actual_boot(t: TestRunner) -> void:
 	# Booted the way `Boot.boot()` boots it, a scratch save and a sitting playing a run of its own,
 	# but not waited on: the point is the first frame, before the warm-up awaits complete.
 	var seat := Seat.new(t)
 	var save := GameSave.new(SCRATCH_SAVE)
-	var main: Node2D = Boot.MAIN_SCENE.instantiate()
+	var main: MainScript = Boot.MAIN_SCENE.instantiate()
 	main.use_save(save)
 	main.configure(Boot.config([]))
 	main.use_sitting_home(seat.home)
@@ -265,11 +274,11 @@ func _actual_boot(t) -> void:
 	print("LAZY_REAL_BOOT " + JSON.stringify({"viewport_px": str(main.get_viewport_rect().size),
 		"zoom": str(camera.zoom), "world_size": str(size),
 		"camera_center": str(camera.get_screen_center_position()),
-		"doorstep": str(main._city.map.doorstep_world_position()),
+		"doorstep": str(main._city.map().doorstep_world_position()),
 		"player_absent": main._player == null}))
 	t.check(size.is_equal_approx(HALF_VIEW * 2), "real boot matches coverage viewport")
 	t.check(camera.get_screen_center_position().distance_to(
-		main._city.map.doorstep_world_position()) < 1, "real boot camera centers on doorstep")
+		main._city.map().doorstep_world_position()) < 1, "real boot camera centers on doorstep")
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	t.get_tree().paused = false

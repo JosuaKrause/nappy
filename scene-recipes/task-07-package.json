@@ -149,7 +149,6 @@
     "main_road": 4,
     "home_block": [5,5],
     "power_station_door_key": [8,2,0],
-    "power_station_industrial_blocks": 0,
     "tiles": [
       [["sidewalk",58],["crossing",2],["sidewalk",100]],
       [["sidewalk",58],["crossing",2],["sidewalk",100]],
@@ -7748,7 +7747,6 @@
       [6,4,0],
       [6,5,0],
       [9,1,1]
-    ],
-    "dead_ends": [[8,1,0],[9,8,0],[5,7,1],[5,10,1],[0,4,1],[0,2,0],[6,4,0],[6,5,0]]
+    ]
   }
 }

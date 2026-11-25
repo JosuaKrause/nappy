@@ -2,7 +2,7 @@ class_name AtlasTable
 extends RefCounted
 ## The baked atlases' region table (`PATH`), read from disk once and never
 ## written after: which group every region belongs to, where it sits on its page, its native size,
-## each page's size and padding, and which bake the tree carries.
+## each page's size, and which bake the tree carries.
 ##
 ## **Geometry, with no texture anywhere.** Every answer here comes from a few hundred rectangles, so
 ## a layout pass, a shadow's footprint, a planner keeping a tree's reach clear or a placement
@@ -27,7 +27,7 @@ const PATH := "res://assets/atlases/baked/regions.json"
 
 ## Region name -> `{"group", "rect", "size"}`, as the bake wrote it.
 var _regions: Dictionary = {}
-## Group -> `{"size": Vector2i, "padding": String}`.
+## Group -> `{"size": Vector2i}`.
 var _pages: Dictionary = {}
 var _mode := ""
 
@@ -61,7 +61,6 @@ func _read(path: String) -> void:
 		var size: Array = record.get("size", [0, 0])
 		_pages[StringName(group)] = {
 			"size": Vector2i(int(size[0]), int(size[1])),
-			"padding": str(record.get("padding", "transparent")),
 		}
 	_regions = table.get("regions", {})
 
@@ -77,10 +76,6 @@ func groups() -> Array[StringName]:
 		names.append(group)
 	names.sort()
 	return names
-
-## Whether the bake wrote a page for `group`.
-func has_group(group: StringName) -> bool:
-	return _pages.has(group)
 
 ## Whether the bake knows this name.
 func has_region(name: StringName) -> bool:
@@ -105,12 +100,6 @@ func page_size(group: StringName) -> Vector2i:
 	var page: Dictionary = _pages.get(group, {})
 	var size: Vector2i = page.get("size", Vector2i.ZERO)
 	return size
-
-## The page's padding kind, `"transparent"` or `"extruded"` (see `AtlasLibrary.PADDING`).
-func page_padding(group: StringName) -> String:
-	var page: Dictionary = _pages.get(group, {})
-	var padding: String = page.get("padding", "transparent")
-	return padding
 
 ## The rect a region occupies on its page, or an empty rect for a name the bake does not know.
 func region_rect(name: StringName) -> Rect2i:

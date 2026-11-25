@@ -38,8 +38,9 @@ var _clock: Callable = Time.get_ticks_msec
 var _has_left_the_game := false
 ## The viewport whose input is switched off for the window; `setup()` sets it, a test sets its own.
 var _viewport: Viewport = null
-## `--no-focus-pause` (which `--screenshot` implies) and a rig's run (`RigLock.locked_out`) are
-## never slowed by the window. Members, so a test can set either.
+## `--no-focus-pause` (which `--screenshot` implies) and a rig's run
+## (`RigLock.shuts_out_real_input()`) are never slowed by the window. Members, so a test can set
+## either.
 var _no_focus_pause := false
 var _rig := false
 ## The page-side callback the web listeners call, held for the node's lifetime: a
@@ -52,7 +53,7 @@ func setup(viewport: Viewport, no_focus_pause: bool, rig: bool) -> void:
 	_viewport = viewport
 	_no_focus_pause = no_focus_pause
 	_rig = rig
-	end(true)
+	_end(true)
 	_viewport.set_disable_input(false)
 	_listen_on_the_web()
 
@@ -67,10 +68,10 @@ func _ignoring_input() -> bool:
 	return _clock.call() < _ignored_until_msec
 
 func _process(_delta: float) -> void:
-	end()
+	_end()
 
 func _exit_tree() -> void:
-	end(true)
+	_end(true)
 	_stop_listening_on_the_web()
 
 ## `NOTIFICATION_APPLICATION_FOCUS_OUT` is the one this game has one window to lose: the OS giving
@@ -99,7 +100,7 @@ func _arm() -> void:
 	_viewport.set_disable_input(true)
 
 ## Puts input back once the window has passed, or at once with `force`.
-func end(force := false) -> void:
+func _end(force := false) -> void:
 	if _ignored_until_msec == 0 or (not force and _ignoring_input()):
 		return
 	_ignored_until_msec = 0
@@ -115,23 +116,26 @@ func _listen_on_the_web() -> void:
 	_web_callback = JavaScriptBridge.create_callback(_on_web_callback)
 	var document := JavaScriptBridge.get_interface("document")
 	var window := JavaScriptBridge.get_interface("window")
-	document.addEventListener("visibilitychange", _web_callback)
-	window.addEventListener("focus", _web_callback)
-	window.addEventListener("blur", _web_callback)
+	# A page object's members are the page's own, which the engine types none of, so they are
+	# called and read by name (`call()`, `get()`), the form a direct `.addEventListener()` takes.
+	document.call("addEventListener", "visibilitychange", _web_callback)
+	window.call("addEventListener", "focus", _web_callback)
+	window.call("addEventListener", "blur", _web_callback)
 
 ## Removes what `_listen_on_the_web()` added, so a scene reload does not pile up listeners.
 func _stop_listening_on_the_web() -> void:
 	if _web_callback == null:
 		return
-	JavaScriptBridge.get_interface("document").removeEventListener("visibilitychange", _web_callback)
-	JavaScriptBridge.get_interface("window").removeEventListener("focus", _web_callback)
-	JavaScriptBridge.get_interface("window").removeEventListener("blur", _web_callback)
+	JavaScriptBridge.get_interface("document").call(
+			"removeEventListener", "visibilitychange", _web_callback)
+	JavaScriptBridge.get_interface("window").call("removeEventListener", "focus", _web_callback)
+	JavaScriptBridge.get_interface("window").call("removeEventListener", "blur", _web_callback)
 	_web_callback = null
 
 func _on_web_callback(args: Array) -> void:
 	var event: JavaScriptObject = args[0] if args.size() > 0 else null
-	var kind := str(event.type) if event != null else ""
-	on_web_event(kind, str(JavaScriptBridge.get_interface("document").visibilityState))
+	var kind := str(event.get("type")) if event != null else ""
+	on_web_event(kind, str(JavaScriptBridge.get_interface("document").get("visibilityState")))
 
 ## The decision half of the web callback, with the browser's answers passed in so a test can drive
 ## it: a `blur`, or a `visibilitychange` to anything but "visible", is a departure; a `focus`, or a

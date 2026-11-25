@@ -68,7 +68,7 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
   --auditions-reuse  build the three mixes only when a compatible retained base exists; refuse
                      a mismatch without opening a recording window
   --selected        capture every tracked scene and build the chosen Glass Alarm composition,
-                    including additive bass (and an ending layer only when `ending_events` in
+                    including additive bass (and an ending layer only when \`ending_events\` in
                     final-score.json is non-empty); requires no retained historical movies
   --selected-reuse  render the changed hook, dog and title, replace those intervals in the
                     exact retained audition base, and build the selected Glass Alarm cut; refuses a
@@ -83,6 +83,11 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
   --check-load NAME|all  compare an ordinary render with one under a CPU load worker
   --validate       headlessly validate every recipe; never open a recording window
   --list           print the shot list (name, kind, source, length, gap); render nothing
+
+The three --selected modes refuse when the delivery final-score.json names already exists in
+TRAILER_OUT (choose a new output filename or a fresh TRAILER_OUT: a review movie is never
+overwritten), and keep the whole mix rendered to PCM before the AAC encode (selected-mix.wav, under
+TRAILER_OUT/experiments/<output>/source/) for decoded-audio verification.
 
 Environment:
   TRAILER_SHOTS    use another shot-list JSON (default: tools/trailer/shots.json)
@@ -1741,4 +1746,8 @@ case "$MODE" in
         ;;
 esac
 assert_tree_untouched || status=1
+if [[ "$status" -eq 0 && "$MODE" != validate && "$MODE" != check* ]]; then
+    # No edit hook sees a video being written, so the tool that writes one names its rules.
+    echo "A recording, clip or trailer stays out of the repository unless a pull request needs a short clip to show motion: .claude/skills/session-captures/SKILL.md" >&2
+fi
 exit "$status"

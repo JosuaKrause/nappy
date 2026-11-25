@@ -1,40 +1,36 @@
 extends RefCounted
 ## Contribution parity covers the elliptical boundary, transient jolts and externally moved bodies.
 ##
-## The bodies are the crowd's own: agents a city's crowd made (`Crowd.add_recipe_actor()` for the
+## The bodies are the crowd's own: agents a crowd made (`Crowd.add_recipe_actor()` for the
 ## pinned ones, `start_day()` for a day's crowd), startled through `CrowdExcitement.startle()` and
 ## aged through `advance()`, which the crowd calls, and read through the public queries the baby's
 ## halo asks (`contribution_at()`, `CrowdSources.sources_at()`).
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
 ## The pace of the car brought to a standstill rather than placed at one.
 const STOPPED := -1.0
 
-var _rig = RIG.new()
+var _rig: RIG = RIG.new()
 
-func run(t) -> void:
-	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(city)
-	city.build(map)
+func run(t: TestRunner) -> void:
+	var map := MapCache.of(SEED)
+	var crowd := _rig.a_crowd(t, map)
 	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(street.x >= 0, "this city has a straight stretch of street to put a body on")
 	if street.x >= 0:
-		_test_the_contribution_matches_the_unfiltered_kernel(t, city, map, street)
-		_test_the_sweep_matches_the_unfiltered_loop(t, city, map)
-		_test_a_wide_jolt_widens_what_the_sweep_asks(t, city)
-	city.free()
+		_test_the_contribution_matches_the_unfiltered_kernel(t, crowd, map, street)
+		_test_the_sweep_matches_the_unfiltered_loop(t, crowd, map)
+		_test_a_wide_jolt_widens_what_the_sweep_asks(t, crowd)
+	_rig.free_crowd(crowd)
 
 ## One walker and one car of the crowd, each at both ends of its kind's pace, a walker also giving
 ## way (hurrying and waiting), a car also stopped by a crash, a jolt of each radius running or not, and a car on a curved heading.
-func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: CityMap,
+func _test_the_contribution_matches_the_unfiltered_kernel(t: TestRunner, crowd: Crowd, map: CityMap,
 		street: Vector2i) -> void:
 	# The crowd's set the bodies are heard in, which their jolts widen as a crowd's own bodies do.
-	var heard_in := city.crowd.sources
+	var heard_in := crowd.sources()
 	var mismatches := 0
 	var positive := 0
 	var zero := 0
@@ -42,7 +38,7 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: Ci
 	var along := float(street.y + 2) * Tuning.TILE_SIZE
 	var car_lane: int = CrowdLanes.road_lane(true, 1.0)
 	var jolt_intensity := 18.0
-	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+	for kind: CrowdAgent.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var paces: Vector2 = Tuning.CAR_SPEED if kind == CrowdAgent.Kind.CAR \
 				else Tuning.PEDESTRIAN_SPEED
 		# A car is also asked at a standstill, which a crash brings it to (`crashed_into()`, the
@@ -51,11 +47,11 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: Ci
 		var paces_asked: Array = [paces.x, paces.y]
 		if kind == CrowdAgent.Kind.CAR:
 			paces_asked.append(STOPPED)
-		for pace in paces_asked:
-			for yielding in ([0, 1, 2] if kind == CrowdAgent.Kind.WALKER else [0]):
-				city.crowd.start_day(1, _rng(), Vector2.ZERO)
-				city.crowd.clear()
-				var agent: CrowdAgent = _rig.agent_on(city, map, kind, street.x,
+		for pace: float in paces_asked:
+			for yielding: int in ([0, 1, 2] if kind == CrowdAgent.Kind.WALKER else [0]):
+				crowd.start_day(1, _rng(), Vector2.ZERO)
+				crowd.clear()
+				var agent: CrowdAgent = _rig.place_on(crowd, map, kind, street.x,
 						car_lane if kind == CrowdAgent.Kind.CAR else 0, along, 1.0, true,
 						CrowdLanes.SIDEWALK_OFFSETS, paces.x if pace == STOPPED else pace)
 				if pace == STOPPED:
@@ -67,11 +63,11 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: Ci
 					agent.step_aside(agent.heading(), Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
 				elif yielding == 2:
 					agent.step_aside(-agent.heading(), Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
-				for jolt_radius in [0.0, Tuning.CAR_HORN_OUTER_RADIUS, 400.0]:
+				for jolt_radius: float in [0.0, Tuning.CAR_HORN_OUTER_RADIUS, 400.0]:
 					# Ages any jolt out, the way a body's own steps do.
-					agent.excitement.advance(60.0)
+					agent.mood().advance(60.0)
 					if jolt_radius > 0.0:
-						agent.excitement.startle(jolt_intensity, 0.9, 45.0, jolt_radius)
+						agent.mood().startle(jolt_intensity, 0.9, 45.0, jolt_radius)
 					var outer := Tuning.CAR_OUTER_RADIUS if kind == CrowdAgent.Kind.CAR \
 						else Tuning.PEDESTRIAN_OUTER_RADIUS
 					outer = maxf(outer, jolt_radius)
@@ -80,30 +76,31 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: Ci
 						wider_than_the_crowds += 1
 					for bearing in 24:
 						var direction := Vector2.RIGHT.rotated(bearing * TAU / 24.0)
-						for distance in [0.0, outer * 0.5, outer, bound - 0.001,
+						for distance: float in [0.0, outer * 0.5, outer, bound - 0.001,
 							bound, bound + 0.001, bound * 2.0]:
 							var at: Vector2 = agent.global_position + direction * distance
 							var expected := full_contribution(map, agent, at, jolt_intensity)
-							if expected != agent.excitement.contribution_at(at):
+							if expected != agent.mood().contribution_at(at):
 								mismatches += 1
 							if expected > 0.0:
 								positive += 1
 							else:
 								zero += 1
 	# A real curved heading, then a position and jolt change without advancing its own clock.
-	city.crowd.start_day(1, _rng(), Vector2.ZERO)
-	city.crowd.clear()
-	var turner: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.CAR, street.x, car_lane,
+	crowd.start_day(1, _rng(), Vector2.ZERO)
+	crowd.clear()
+	var turner: CrowdAgent = _rig.place_on(crowd, map, CrowdAgent.Kind.CAR, street.x, car_lane,
 			along, 1.0)
-	var arc := CarTurn.new()
-	arc.radius = 48.0
-	arc.travelled = 23.0
+	# A quarter turn into the far-side arm (`CarTurn.into_an_arm()`), a little way round.
+	var arc := CarTurn.into_an_arm(false, 1.0, 0, CrowdLanes.lane_centre(0, CrowdLanes.road_lane(false,
+			1.0)), 0, CrowdLanes.ROAD_OFFSETS[1], 1.0, Vector2i.ZERO)
+	arc.travel_on(23.0)
 	turner.take_the_turn(arc, 0.0)
 	turner.position = Vector2(700.0, -320.0)
-	turner.excitement.startle(30.0, 1.0, 45.0, 600.0)
-	for offset in [Vector2(800.0, 0.0), Vector2(100.0, 100.0), Vector2(-40.0, 0.0)]:
+	turner.mood().startle(30.0, 1.0, 45.0, 600.0)
+	for offset: Vector2 in [Vector2(800.0, 0.0), Vector2(100.0, 100.0), Vector2(-40.0, 0.0)]:
 		var at: Vector2 = turner.global_position + offset
-		if full_contribution(map, turner, at, 30.0) != turner.excitement.contribution_at(at):
+		if full_contribution(map, turner, at, 30.0) != turner.mood().contribution_at(at):
 			mismatches += 1
 	t.check(positive > 0 and zero > 0, "parity covers contributing and silent bodies")
 	t.check(mismatches == 0, "every tested contribution exactly matches the unfiltered kernel")
@@ -114,10 +111,10 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: Ci
 
 ## Last, since the crowd's set only ever grows (`CrowdSources.widen_to()`) and the sweep above is
 ## asked of the reach the tests before it made.
-func _test_a_wide_jolt_widens_what_the_sweep_asks(t, city: City) -> void:
-	var body: CrowdAgent = city.crowd.agents()[0]
-	body.excitement.startle(30.0, 1.0, 45.0, 2000.0)
-	t.check(city.crowd.sources.silent_beyond() >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
+func _test_a_wide_jolt_widens_what_the_sweep_asks(t: TestRunner, crowd: Crowd) -> void:
+	var body: CrowdAgent = crowd.agents()[0]
+	body.mood().startle(30.0, 1.0, 45.0, 2000.0)
+	t.check(crowd.sources().silent_beyond() >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
 			"a jolt radius a body is startled to still widens what the sweep asks")
 
 func _rng() -> RandomNumberGenerator:
@@ -128,38 +125,39 @@ func _rng() -> RandomNumberGenerator:
 ## `CrowdSources.sources_at()` against an unfiltered loop over the same agents: the same agents, in
 ## the same order, with the same contributions, at points among a day's crowd of walkers and cars near
 ## and far — a horn-startled car among them, heard from further than any unstartled body reaches.
-func _test_the_sweep_matches_the_unfiltered_loop(t, city: City, map: CityMap) -> void:
-	city.crowd.start_day(1, _rng())
-	var agents := city.crowd.agents()
+func _test_the_sweep_matches_the_unfiltered_loop(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
+	# The day's crowd is built round the middle of the map, which the points below are sampled round.
+	var centre := map.world_size() * 0.5
+	crowd.start_day(1, _rng(), centre)
+	var agents := crowd.agents()
 	var loud: CrowdAgent = null
 	for i in agents.size():
 		var body := agents[i]
 		if i % 7 == 0:
-			body.excitement.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
-		if body.kind == CrowdAgent.Kind.CAR and (loud == null or body.speed() > loud.speed()):
+			body.mood().startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+		if body.lane().kind() == CrowdAgent.Kind.CAR and (loud == null or body.speed() > loud.speed()):
 			loud = body
 	# The fastest car of the day sounds the loudest horn: a moving body's field reaches furthest ahead.
-	loud.excitement.startle(30.0, 1.0, 45.0, 400.0)
-	var sources := city.crowd.sources
+	loud.mood().startle(30.0, 1.0, 45.0, 400.0)
+	var sources := crowd.sources()
 	var heard := 0
 	var skipped := 0
 	var differed := 0
 	var reach := sources.silent_beyond()
-	var centre := city.crowd.field().centre
 	# Points among the crowd, and points a loud car's jolt alone reaches, beyond what an unstartled
 	# body is heard from.
 	var points: Array[Vector2] = []
 	for sample in 30:
 		points.append(centre + Vector2.RIGHT.rotated(sample * 0.9) * (sample * 45.0))
 	for bearing in 8:
-		for distance in [250.0, 390.0, 520.0, 650.0, 780.0]:
+		for distance: float in [250.0, 390.0, 520.0, 650.0, 780.0]:
 			points.append(loud.global_position + Vector2.RIGHT.rotated(bearing * TAU / 8.0) * distance)
 	for at in points:
 		var expected: Array = []
 		for body in agents:
-			var contribution := body.excitement.contribution_at(at)
+			var contribution := body.mood().contribution_at(at)
 			if contribution > 0.0:
-				expected.append([body.excitement, contribution])
+				expected.append([body.mood(), contribution])
 			if body.global_position.distance_to(at) > reach:
 				skipped += 1
 		heard += expected.size()
@@ -177,13 +175,13 @@ func _test_the_sweep_matches_the_unfiltered_loop(t, city: City, map: CityMap) ->
 static func full_contribution(map: CityMap, agent: CrowdAgent, at: Vector2, jolt_intensity: float) -> float:
 	var distance := GroundShape.eccentric_distance(agent.global_position, agent.velocity(), at)
 	var total := 0.0
-	if agent.kind == CrowdAgent.Kind.CAR:
+	if agent.lane().kind() == CrowdAgent.Kind.CAR:
 		total = Field.falloff(distance, CrowdExcitement.CAR_INTENSITY,
 			Tuning.CAR_INNER_RADIUS, Tuning.CAR_OUTER_RADIUS)
 	else:
 		total = Field.falloff(distance, CrowdExcitement.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
-	var jolt := agent.excitement
+	var jolt := agent.mood()
 	if jolt.is_startled():
 		total += Field.falloff(distance, jolt_intensity * jolt.jolt_swell_after(0.0),
 			jolt.jolt_radii().x, jolt.jolt_radii().y)

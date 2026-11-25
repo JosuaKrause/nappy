@@ -26,8 +26,9 @@ At `sleepiness = 100` the baby falls asleep and the day enters its **return phas
 
 **In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
 fires the moment `EventBus.return_phase_started` does, owing `EventDirector.RETURN_PATROLS_PER_ACT`
-(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so it comes within
-`EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
+(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so its marble is drawn
+within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before (a patrol with no room
+then waits for a later turn that has some), and switching its pacing to
 `EventDirector.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
 — see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
 and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
@@ -88,7 +89,7 @@ Sources:
 
 | Source | Contribution |
 | --- | --- |
-| Proximity to an active event | `intensity × falloff(distance)` per second |
+| Proximity to an active event | `peak × falloff(distance)` per second |
 | Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `30` |
 | Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `104` |
 | Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 14.0` per second |
@@ -198,7 +199,7 @@ vocabulary," for the whole cue and its colour and transparency curves.
 
 `chatting_mother` is the one row in the catalogue that takes the player's own controls away rather
 than costing a meter: coming within `EventDef.detain_distance()` of an instance that has not yet
-chatted locks her movement input for `detain_seconds` (5s) — the run key does nothing, and she
+chatted locks her movement input for `detains_for()` (5s) — the run key does nothing, and she
 keeps no speed of her own: velocity runs out through
 the ordinary friction rather than stopping her dead, the same as letting go of every key would.
 
@@ -266,11 +267,11 @@ lift it I expect it to remain active".)* The release zeroes her velocity. A key,
 joystick drag still down at the release steer her from that frame on; one let go during the hold is
 gone, so she stands still until the player chooses again. A tap's or a drag's locked heading whose
 finger is already up counts as let go and is dropped (`TouchControls.stand_still_after_hold()`). It
-is one mechanism for every `redetains` hold: the street doors' gatehouses and the alley guard.
+is one mechanism for every `detains_again()` hold: the street doors' gatehouses and the alley guard.
 `tests/test_checkpoints.gd` holds both halves for a key, a tap's finger and a joystick drag's.
 
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
-a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
+a `detains_again()` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`. Every other event field
 and the whole crowd are off: a set of sources that holds her alone is the whole of what
 `WorldContext.excitement_sources_at()` answers (`ExcitementSources.all_at()`), and the events' set
@@ -306,7 +307,7 @@ walker has no about-face to make once it is standing in a queue.
 
 It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
 `WalkerStrategy`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
-reads no catalogue row: not `detain_radius`, which is the reach *she* is caught at, and none of the
+reads no catalogue row: not `detain_distance()`, which is the reach *she* is caught at, and none of the
 detention above, which teleports her, hides her, moves the camera and charges her meter.
 
 **The camera eases onto the door instead of following her**, and back again once she is released —
@@ -318,7 +319,7 @@ two calls rather than a second camera.
 **An ease starts from where the camera was drawing, which is not where the camera is.** Three
 things sit between `Camera2D.global_position` and the point on screen — `position_smoothing_enabled`
 still catching up, the walking look-ahead in `offset`, and the city limits — so
-`Stroller.camera_screen_center()` is what the ease reads. Two more belong to the switch itself:
+`Stroller._camera_screen_center()` is what the ease reads. Two more belong to the switch itself:
 taking the camera off her transform (`top_level`) leaves its *local* position, the world origin, as
 its new global one, so it is put back on the drawn point in the same call; and its own smoothing is
 switched off for the duration, because the ease is the smoothing and two of them in series make a
@@ -523,7 +524,7 @@ meter, none of which a data-level test can see:
 
 ### The bump is a source, not a write
 
-**Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
+**Excitement stays a pure query.** A contact does not touch the baby's excitement meter (`Baby.excitement_level()` reads it); it *startles
 the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
 every other one. So contacts still compose by plain addition, there is still no ordering to get
 wrong, and `WorldContext.excitement_sources_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
@@ -540,7 +541,7 @@ empty street.
   but may walk through a person or an animal standing still** (inbox #905 in freckled-moose): he walks round a
   parked van, the patrol car at a light or the fire engine at its fire, and through a street
   musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
-  Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
+  Each row says which it is (its body's `is_walked_round()`); a figure counts as under way for a third of a
   second after it last moved. An object with a solid body, a stall or a café's tables, is walked
   round by its tiles as well. A person or an animal put on the map who has not yet taken a step, a dog
   waiting for her or a policeman at his post, is a figure standing still, so he is walked through.
@@ -564,7 +565,7 @@ empty street.
   that has parked it turns round**, as it does at a blocked street, rather than hold the lane all
   day: the fire engine once it is at its fire. Behind one that is only stopping — the patrol car at
   a red light or while its man is out, a dog standing for its notice — it waits until it moves.
-  Each row says whether its figure parks (`EventDef.when_it_stops`), and the figure says when it
+  Each row says whether its figure parks (its body's `parks()`), and the figure says when it
   has: one that drives to where it stops has parked only once it is there, so the fire engine at a
   red light on its way is waited for. What was placed and never moved, a stall or a barricade, is left
   to the map: it is a blockage by its tiles, as it always was, and a thing standing there with no
@@ -584,8 +585,7 @@ check (`MoveProposal`).
 
 ### A car is lethal
 
-Stepping into the carriageway in front of a moving car ends the day (`hard_fail`
-`car_strike`). The strike volume is a **box** — 26px along the car, 14px either side of its
+Stepping into the carriageway in front of a moving car ends the day (`car_strike`). The strike volume is a **box** — 26px along the car, 14px either side of its
 axis — from the car's centre forward, so it is the front half of the car and its sides; behind a
 car that drives away from her she is safe. A box rather than a radius, because a car is two tiles
 long and one wide and a radius that covered its length would kill people standing beside it. It
@@ -844,8 +844,9 @@ every solid body should do that -- not necessarily force a turn around but at le
 solid".)* A café's tables, a construction band, a kerbed van, a stall, a skip, a burnt-out car:
 `CityMap.obstructed_tiles` records the tiles each stationary solid body stands on — every piece of
 it, for the one row that is several (`docs/EVENTS.md`, "A row may be solid in parts") — filled from
-the day's whole plan rather than from the events near the player, because the crowd is steered
-across the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
+the day's plan rather than from the events in the world: the dawn's plan as the day starts, and
+each unit's rows as the unit draws, which is before any of its ground comes within the stream
+radius of her. The crowd is steered over ground wider than the reach an event exists within. Mobile rows are exempt, the way the
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
 is a door, because a hard seal and a gatehouse each already have an answer.
 
@@ -917,11 +918,30 @@ recycle refuse a car a spot inside one, because a car cannot turn round against 
 stopped nose-on holds the queue behind it. A car a seal goes up around while it is already standing
 there stands exactly where it caught it — no step, no steering, no turn — until it is recycled out,
 at the first frame it is further from the camera than `OUT_OF_SIGHT`: the field's own edge is off
-camera by hundreds of pixels, and this is the one recycle that has to check. **A car can be caught
+camera by hundreds of pixels, and this is one of the two recycles that have to check, the
+third below being the other. **A car can be caught
 one scale below a pocket** — on a stub of carriageway too short to turn round in, between a
 precinct's paving and a van parked on its lane, which is not a junction and so is invisible to the
 pocket record. It does the same thing for the same reason: it stands, and it goes when nobody is
 looking.
+
+**A car a body lands on is the third.** A body placed after dawn can land on a lane where a car
+already stands: a unit's stall or barrier drawn as she comes near it (900px or more from her, out
+of her view), day 13's roadblock swapped in across a section, a mast put up, a place put on her
+route, a siting moved. `City` hands the events' streaming the crowd's `Crowd.recycle_cars_on()`,
+which `EventStreaming.add()` (a plan new to the walk: the draw, the swap, the mast, a route's place)
+and `EventStreaming.move_the_body()` (a plan the walk already holds that the director sites on her
+way, the first time or again: day 3's fire, a poster crew, a route's mast before it is in the
+world) call, through one routine, with the ground the body stands on
+(`EventSpawner.footprint_of()`) once the body is recorded, so the car's new place is
+rolled with the body already on the map. Every car whose body covers one of those tiles is
+recycled (`LaneMover.leave_if_unseen()`). A car can stand there because the crowd's field reaches
+further than a draw's distance: its box's corners are 1,131px from her, and a lane's entry band
+runs 420px beyond the box's edge. A draw lands twice `OUT_OF_SIGHT` or more from her, so on a played day every
+such car is out of view; a body put down near her, as day 13's swapped roadblock is, can have a car
+under it in view, and the check against `OUT_OF_SIGHT` is what keeps it from vanishing there. A car
+it finds in view is left alone and drives out of the body, as a walker walks out: it is in no
+pocket, so the pocket rule above does not hold it. A walker needs none of this.
 
 **Sealed-off ground has walkers in it, and they keep walking.** *(2026-09-19: "they should be able
 to spawn inside a closed off section but shouldn't stand in one place but instead walk until they
@@ -967,7 +987,7 @@ events ever coming within reach: a twenty-second event planted across the city a
 before the player could have reached it. An event that waits for her is an event she meets.
 
 **And some events have no place at all.** `EventDef.SpawnMode.AHEAD_OF_PLAYER` events are
-budgeted by the day and sited by `EventDirector`, which puts them across her line
+owed by the day and sited by `EventDirector`, which puts them across her line
 `AHEAD_LEAD_DISTANCE` in front of her while she is walking. See docs/EVENTS.md, "Where an event
 happens", for which events earn that and what the contract on them is.
 
@@ -975,9 +995,9 @@ happens", for which events earn that and what the contract on them is.
 
 **The density target is one event per block**, and streaming is what makes it computable: the
 stream radius is a knowable fraction of the map, so what she is standing in is a knowable fraction
-of what the day planned. `EventScheduler.budget_for()` is stated per block for the same reason, and
-the caps have to move before the budget — see docs/EVENTS.md, "The density, and why it is caps
-before budget".
+of what the day planned. The declared table's cells are per location for the same reason
+(`PlacementDensity`, events per hundred draw locations), and no daily cap bounds a row the units
+draw — see docs/EVENTS.md, "The density, and why it is a declared table".
 
 What the density does to the game is a change of kind, not of degree. A street with one event every
 four blocks is a street with an event *on* it — you see it, you route around it, and the rest of the
@@ -987,24 +1007,22 @@ is the route decision the whole game is about, and a sparse city cannot ask it.
 
 ## Excitement falloff
 
-Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.
+Each active event's field has a peak, an inner radius (`inner` below) and an outer radius (`outer` below).
 
 ```
-contribution(d) = intensity                              , d <= inner_radius
-                = intensity × (1 − t^power)               , inner < d < outer
-                = 0                                      , d >= outer_radius
-   where t = (d − inner_radius) / (outer_radius − inner_radius)
+contribution(d) = peak                                   , d <= inner
+                = peak × (1 − t²)                    , inner < d < outer
+                = 0                                      , d >= outer
+   where t = (d − inner) / (outer − inner)
 ```
 
-`power` is `EventDef.falloff_power` and **every row in the catalogue is at its 2.0 default**, which
-is the curve the rest of this section is about. It exists so that a row needing a shape its two
-radii cannot give — a fast drop with a long tail, or a plateau with a cliff at the end of it — is a
-decision that row takes rather than a change to the one function thirty other rows share.
+The square is the one curve: every row, the crowd and the debug layers drop by `t²` (`Field.falloff()`),
+and it is the curve the rest of this section is about. A row's shape comes from its two radii alone.
 
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
 detail.** The meter has to go substantially up from some way off rather than waiting for contact.
 
-**One row has a second, louder part close in.** `EventDef.core_intensity` and `core_radius` put the
+**One row has a second, louder part close in.** The field's core (`FieldSpec.with_a_core(rate, reach)`) puts the
 same curve over a shorter band and the row emits the larger of the two at every distance, so the
 leaf blower is a wall inside the pavement it stands on and a busker beyond it. Both numbers are
 zero everywhere else. It is one field rather than two: the same
@@ -1013,16 +1031,16 @@ instance's telegraph and pulse damp the core by the fraction they damp the field
 
 **`d` is a distance to a field, not always to a point.** The field is the Minkowski sum of the
 object's own `GroundShape` and a kernel — a disc while it stands still, an ellipse while it
-moves — so `inner_radius`/`outer_radius` mean distance *from that shape*, not from a fixed centre.
+moves — so the inner and outer radii mean distance *from that shape*, not from a fixed centre.
 A point body's field is exactly the circle above; a segment's (a café frontage, a barricade) is a
 capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter is a point either
 way — nobody builds the general capsule-and-ellipse sum, because the one emitting segment that
 moves, the patrol car, has its whole body inside its own field's core — and its field is
 `GroundShape.eccentric_distance()`: a conic with the emitter at one
 focus rather than at the centre, eccentricity from speed (`Field.eccentricity()`). **The
-resting disc's own width is what the ellipse keeps**: it holds exactly `outer_radius` abeam of a
-moving thing whatever its speed, reaches `outer_radius · Field.scale(e)` ahead of it — more
-than a disc's `outer_radius`, since motion only ever adds reach — and less far, `outer_radius /
+resting disc's own width is what the ellipse keeps**: it holds exactly the outer radius abeam of a
+moving thing whatever its speed, reaches `outer radius · Field.scale(e)` ahead of it — more
+than a disc's outer radius, since motion only ever adds reach — and less far, `outer radius /
 (1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
 view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
@@ -1068,18 +1086,18 @@ accident to be tuned away — an event that merely emits is a *place*, and the a
 a route.
 
 The exception is the one kind of thing a route cannot answer: something that **follows**.
-`EventDef.pursuit` marks it, and three properties make walking and running give *opposite
+Such a row says so (`EventDef.pursues()`), and three properties make walking and running give *opposite
 outcomes* rather than the same outcome at two prices:
 
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
+| Lethal | it ends the day (`ends_the_day()`), so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement()`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
 telegraphs. One sent at her from off screen is warned of first like everything that arrives from off
-screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
+screen, its badge alone its own half second (`EventDef.warned_for()`): the day-3 dog is then
 placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
 fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
 and guard arrive already chasing (`PursuitSpec.Start.ARRIVES_CHASING`: "the proximity rule is only for
@@ -1089,9 +1107,10 @@ telegraphs hands her more ground in two seconds than the entire chase can take b
 owed by an ordinary pursuer is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
-**And it stops at walls.** A chase is a straight line at whatever is chasing her (all but day 13's
-task guard, set on her from wherever he stands, who walks the way to her round buildings where no
-clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and every step of it goes through
+**And it stops at walls.** A chase is a straight line at whatever is chasing her (all but two, who
+walk the way to her round buildings where no clear line runs to her: day 13's task guard, set on her
+from wherever he stands, `docs/EVENTS.md`, the resistance's trap; and the roadblock's posted guard,
+so turning a corner past his post is no way past him), and every step of it goes through
 the one navigator every mover moves by (`Navigator.step()`): it is refused where it would enter
 ground a figure on foot may not stand on — a building, a precinct's post, a closure, a soft seal or
 a stationary body (`CityMap.passable()`) — sliding along whichever single axis is still open when
@@ -1099,21 +1118,21 @@ the direct line is not, rather than cutting the corner of a building or a barrie
 unclamped chase would. **The step is swept**: every tile it crosses is asked, so a long frame cannot
 carry a chaser through a wall a tile thick, and the ground his body's reach takes past where he
 lands, in the way he is going, has to be open too. It is not a body — a pursuer stays exempt from
-`obstructs_radius` for the same reason `dog_walker` is, a moving wall on a two-tile pavement pins her
+`obstructs_within()` for the same reason `dog_walker` is, a moving wall on a two-tile pavement pins her
 against a building.
 
 **Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:
 "Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
-**and** a clear line — `EventInstance.is_lethal_at()` asks `clear_line_to()` whether the straight
+**and** a clear line — `EventInstance.is_lethal_at()` asks whether the straight
 line from it to her crosses any ground a figure on foot may not enter (`CityMap.clear_line()`),
 every tile the line enters, so within reach across a building's corner, a barrier or a café is not
 a catch. The line sees out of a band the pursuer stands in, and the tile she stands on never hides
 her. The reach itself is unchanged, and only
-a pursuer asks — every other `hard_fail` row's catch is still the straight-line distance.
+a pursuer asks — every other lethal row's catch is still the straight-line distance.
 
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
 clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
-clear line".)* A waiting pursuer notices her within `EventDef.notice` only along the same clear line,
+clear line".)* A waiting pursuer notices her within `EventDef.notice_within()` only along the same clear line,
 and its charge asks for it too: a waiting charger whose warning runs out with a wall between them
 goes on warning until the line clears or she leaves its radius. For a pursuer that comes for her, a
 lunge the wall holds back is not simply deferred
@@ -1124,10 +1143,10 @@ it stands while she is nearer than the stand-off, follows at the stand-off once 
 lunges the moment she is back at the full stand-off with the line clear. One held while it stands
 for its notice (day 13's task guard set on her in her view, `EventInstance.notice_her_at()`)
 follows nowhere: it stands where it is and lunges the same way. **A pursuer that
-waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`), so a
+waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for()`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
 keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
-held lunge has her inside the stand-off** (`_pause_a_held_notice()`), since a notice ending there
+held lunge has her inside the stand-off** (`EventPursuit.pause_a_held_notice()`), since a notice ending there
 would start the chase from a fraction of it, the same trap reached by standing still. A
 held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
 up and its field charging her, and the way out is the walk the contract was written for. A waiting
@@ -1147,7 +1166,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`PursuitSpec.standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is the inner radius unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach()`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1204,21 +1223,21 @@ own telegraph, which a player has watched and called nonsense. See `docs/playtes
 ### A pursuer can be a place before it is a moment
 
 `charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
-it. `EventDef.notice` is the other shape — a thing that is **somewhere**, that you can see
+it. A row that waits for her (`EventDef.waits_for_her()`) is the other shape — a thing that is **somewhere**, that you can see
 and price and route around, and that becomes a chase if you do not. Three states rather than two:
 
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **warning** (for its `PursuitSpec.warns_for` while she is inside `EventDef.notice`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands`: the waiting dog, the hunting roadblock's guard) |
+| **warning** (for its `PursuitSpec.warns_for()` while she is inside `EventDef.notice_within()`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed()`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands_for_its_notice()`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
 and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
-comes inside `EventDef.notice` along a clear line and with its warning picture in the camera's view,
-not when the day put it there; leaving the radius before its `PursuitSpec.warns_for` has run stops it, and it
+comes inside `EventDef.notice_within()` along a clear line and with its warning picture in the camera's view,
+not when the day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
 arrive charging warns first"). A guard a task sets
@@ -1229,7 +1248,7 @@ sent at her under a badge of the same second. And its warning does **not** damp 
 that alley since she came round the corner has started. What has not started is the lunge.
 
 **The second of those flips for a row whose waiting state is the harmless one**, and
-`NoticeSpec.quiet` is where a row says so. `pigeon_flock` waits the same way without
+`NoticeSpec.is_quiet()` is where a row says so. `pigeon_flock` waits the same way without
 being a pursuer at all — birds pecking on a pavement, priced and walked around from down the
 street — and there the damping is telling the truth: what is standing there is nearly nothing and
 the event is the flock going up. With the flag, the top two rows of the table above read *at
@@ -1237,10 +1256,10 @@ the event is the flock going up. With the flag, the top two rows of the table ab
 
 **And what ends a telegraph is her, wherever a clock cannot know when the thing started.** The
 lunge of a pursuer that comes for her through its telegraph (the day-3 dog) fires when she reaches
-its stand-off rather than when its clock runs out, and a flock's flush fires when she reaches the birds — `flock_spread` plus her own body — for the same
+its stand-off rather than when its clock runs out, and a flock's flush fires when she reaches the birds — the flock's spread plus her own body — for the same
 reason: the birds are on the ground for the whole telegraph, so its length is the wait between her
 walking into them and them reacting, and a fixed wait puts them up behind whoever walked in.
-`telegraph_time` is then the backstop for a flock she came near and never reached, and the
+`telegraphs_for()` is then the backstop for a flock she came near and never reached, and the
 geometry `Tuning.validate_event()` checks is untouched either way.
 
 `validate_pursuit()` gained two clauses for the trigger and a third that was found by measuring
@@ -1260,7 +1279,7 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 
 | she | outcome |
 | --- | --- |
-| walks up and stops | charged once his 2.0s warning has run, and caught |
+| walks up and stops | charged once his 1.75s warning has run, and caught |
 | walks on in | caught |
 | walks or runs away as he warns, out of his radius | never charged: he stops and waits again |
 | runs inside his radius as he warns, then stands | charged once his warning has run, and caught: running shakes him off only once he has charged |
@@ -1269,11 +1288,11 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 
 ### A beat rather than a journey
 
-`EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
-a `dog_walker`, which is *going somewhere* and is gone at the end of thirty tiles, and a man
-shouting, who is **at** a place. Without it the only way to say the second thing is to make him
-stationary, and a stationary source on a fixed patch is a line you draw once rather than something
-to time.
+A route that paces (`RouteSpec.pacing()`) walks and turns round at the ends, for ever. It is the difference between
+a `dog_walker`, which is *going somewhere* and is gone at the end of its route, sent down her
+sidewalk toward her and past her (inbox #1460 in silky-lemur), and a man shouting, who is **at** a place. Without
+it the only way to say the second thing is to make him stationary, and a stationary source on a
+fixed patch is a line you draw once rather than something to time.
 
 A paced event never reaches the end of its path, so it never departs and never expires: it is a
 fixture that moves. The price is its body — anything mobile is exempt from "solid things are solid",
@@ -1319,7 +1338,7 @@ empty bag is filled again with the same set, so over every bag the share is exac
 the same odds runs streaks. The run's first bag is a pre-bag of one "no pursuit" marble, so the
 first tear is always safe; every bag after it holds one "pursuit" and nine "no pursuit"
 (`PosterWalls.TEAR_PRE_BAG`, `TEAR_BAG`). The bag draws from a stream of its own off the run's
-seed, and its whole state is how many tears the run has made (`PosterState.tears`), so a save, a
+seed, and its whole state is how many tears the run has made (`PosterState.tears_made()`), so a save, a
 lost day and a retry all draw the same marbles. **A pursuit marble sends a pursuer on foot at
 once**, a policeman through day 8 and a guardsman from day 9 (`EventManager.send_a_pursuer()`;
 inbox #591: "the pursuer is not a scheduled event. it is instant! policemen get switched to guardman
@@ -1337,7 +1356,7 @@ drawn from (`docs/EVENTS.md`, "What she meets on her route is drawn from a marbl
 
 ## Telegraphing
 
-Every event has a `telegraph_time` (default `2.5 s`, longer for big events) during which:
+Every event has a `telegraphs_for()` (default `2.5 s`, longer for big events) during which:
 
 - The event is **visible** (sprite, audio cue).
 - It emits at most `TELEGRAPH_INTENSITY_FRACTION` (default `0.15`) of its full intensity.
@@ -1351,19 +1370,19 @@ The design contract: *from the moment an event becomes visible, the player must 
 time to walk out of its outer radius at normal walking speed.* Event authoring must satisfy
 
 ```
-telegraph_time × walk_speed >= escape_distance × margin
+telegraphs_for() × walk_speed >= escape_distance × margin
 ```
 
-where `margin` is 2 for `hard_fail` events, and
+where `margin` is 2 for lethal events, and
 
 ```
-escape_distance = outer_radius − inner_radius     for anything at or below walking pace
-                = outer_radius                    for anything FASTER than walking
+escape_distance = outer − inner     for anything at or below walking pace
+                = outer                    for anything FASTER than walking
 ```
 
-The split matters for a row that is in the world while it telegraphs, not a row without a badge of
-its own — the map-placed `military_convoy` has a badge that rises as it comes and still keeps this
-split, because it exists and telegraphs in the world rather than being warned first. A stationary
+The split matters for a row that is in the world while it telegraphs. A row warned of before it
+exists is not one: it is created with its telegraph spent and held to the floor below, the escape's
+`military_convoy` trucks among them, which are sent ahead of her as a day's convoy is. A stationary
 event, or one slower than the player (a dog walker at 32 px/s), only has to be walked away from, so
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
@@ -1381,10 +1400,12 @@ the whole catalogue, so an unfair event fails loudly rather than quietly ruining
 fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
 (PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
 *only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
-patrol — is outside the screen-edge badge and warning-first placement, and is met as it comes.
-Its in-world telegraph still satisfies the fairness contract: the cat's crouch, the mouse's and
-flock's wait, and the patrol's approach. Only the loose dog, met with its telegraph already spent,
-has none to validate (`docs/EVENTS.md`, "What telegraphs").
+patrol, the dog walker the director sends ahead of her — is outside the screen-edge badge and
+warning-first placement, and is met as it comes. Its in-world telegraph still satisfies the fairness
+contract: the cat's crouch, the mouse's and flock's wait, and the patrol's approach. The two sent down
+her line at once, the loose dog and the dog walker the director sends ahead of her, are met with
+their telegraph already spent, so neither has one to validate (`docs/EVENTS.md`, "What
+telegraphs").
 
 ## Calm zones, and what every other ground does
 
@@ -1422,37 +1443,41 @@ Alley tiles apply a constant `+3.0/s` excitement trickle. They are shortcuts, an
 where the resistance meets. Both facts are the point: the fastest route and the story route
 are the ones that cost you the baby's calm.
 
-A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
-only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
-visible world's own 180px vertical half-extent so the point is inside the camera's view on every
-bearing rather than only a favourable one — never right at the screen's own edge) of it, and in
-sight — what she can see, `VisibleView`: in the tap scheme that is every point within 150px, and in
-the joystick scheme a mark down and to one side can be under a corner its controls cover, where it
-is not in sight and its dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
-enough, that walking past it rather than to it is a choice, not the instant its tile merely
+A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed only
+once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the visible world's
+own 180px vertical half-extent so the point is inside the camera's view on every bearing rather than
+only a favourable one — never right at the screen's own edge) of it, and in sight — what she can
+see, `VisibleView`: in the tap scheme that is every point within 150px, and in the joystick scheme a
+mark down and to one side can be under a corner its controls cover, where it is not in sight and its
+dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough,
+for long enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
-`ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
-alley mouth within that radius of her instead — a mark is only ever chosen at an alley's mouth, at
-dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)),
-and stands one tile in from it (a courtyard's one-tile passage puts it on the courtyard tile
-just past), 48px in from the street's edge, so that touching it, within the 36px touch reach of its
-centre, takes her at least 12px inside the alley, never from the pavement at the mouth
-(*"let's move the chalk mark one tile into the alley so I actually have to enter the alley to
-activate it"*, 2026-10-10, azure-puffin, inbox #664), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
-through that alley (or at the courtyard's inner end, past a courtyard's passage), would be on her
-screen — the camera's whole view, a corner the joystick's controls cover included, since what
-stands under the controls is still drawn there — so neither is ever planted in front of her —
-skipping an alley a completed step's mark already stood at as long as some other one is still
-in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
-nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
-distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
-courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `EventDef.notice` of her or in view when he is placed — so where that spot is 216px or
-more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
-never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
-is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
-once read, the mark never moves and its guard stays until the day ends. The guard a task stands at
-its own contact, placed the instant she reads its mark, is never placed in view of her either.
+`ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable alley
+mouth within that radius of her instead — a mark is only ever chosen at an alley's mouth, at dawn as
+on every move (*"Mouth only"*, 2026-10-03, inbox #486 in
+[quiet-yak](playtests/2026-10-03-quiet-yak.md)), and stands one tile in from it (a courtyard's
+one-tile passage puts it on the courtyard tile just past), 48px in from the street's edge, so that
+touching it, within the 36px touch reach of its centre, takes her at least 12px inside the alley,
+never from the pavement at the mouth (*"let's move the chalk mark one tile into the alley so I
+actually have to enter the alley to activate it"*, 2026-10-10, azure-puffin, inbox #664), on the
+path rather than off it, and never where any part of the mark's picture, or of the guard standing
+two-thirds through that alley (or at the courtyard's inner end, past a courtyard's passage), would
+be on her screen — the camera's whole view, a corner the joystick's controls cover included, since
+what stands under the controls is still drawn there — so neither is ever planted in front of her —
+skipping an alley a completed step's mark already stood at as long as some other one is still in
+reach. Its guard moves with it, to two-thirds of the way through that alley from the end nearer
+wherever the mark lands, plus the tile the mark stands in from that end so he keeps the distance
+from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end,
+for a courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
+his own `EventDef.notice_within()` of her or in view when he is placed. A move never lands where
+that spot would be within his notice of her, as it never lands where he would be in view, so a moved
+mark always has its guard — so where that spot is 261px or more from the mark (his notice, 225px as
+shipped, and her 36px reach), entering the alley from the mark's own end, reading it and leaving the
+same way never wakes him, and in a shorter alley reading it may. The mark does not move while its
+guard is awake or any part of him is on her screen, since the move retires him and he would vanish
+in front of her or out of a chase; once read, the mark never moves and its guard stays until the day
+ends. The guard a task stands at its own contact, placed the instant she reads its mark, is never
+placed in view of her either.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
@@ -1516,14 +1541,14 @@ label's own line count is the number of lines `SentenceLines` returned.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`Texts.DAY_BRIEF`, below) all read off
-`run.header.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
+`run.header().day()` — the day about to start, whether that is tomorrow (a win moves the calendar) or
 today again (a loss with nerves left retries the same day) — never off the day that just ended.
 The day brief a resumed run opens on (`SummaryModel.brief_for()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
 
 ## The run clock
 
-`run.header.play_ticks` is a second clock, over the whole run rather than one day: the
+`run.header().play_ticks()` is a second clock, over the whole run rather than one day: the
 physics ticks on which she walked a day — a section of the escape included — `WALKING` or
 `RETURNING`, with the tree unpaused and no screen in front of the walk and no scene reload on its
 way, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
@@ -1545,7 +1570,7 @@ the millisecond calls it rather than carrying a second copy of the string.
 **The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
 beside "Time played" — the last day played rather than the last day completed, so a hard run that
 loses its last nerve on day 1 reads day 1, not 0, and one that loses it in the escape reads day
-14. `run.header.day` already holds it: the calendar
+14. `run.header().day()` already holds it: the calendar
 is never advanced past the day nerves ran out on, or past the day a load spent the last one on
 (`RunCalendar.finish_day()` ends the run before it would move the calendar). The neutral and good
 endings say nothing about the day, since both are reached by finishing day 14.
@@ -1562,9 +1587,9 @@ clock's precision, the night it is walked in, what losing or winning it costs �
 the day's own `DayController`, so the clock, the three ways to lose, the loss and its cause, the
 outcome screen, the counters and the run log are a day's. Each is counted as a day of its own,
 **day 15** the building and **day 16** the city (`DaySpec.BUILDING_DAY`, `DaySpec.CITY_DAY`),
-while the calendar (`run.header.day`) stays on day 14, since the run has not moved past it.
+while the calendar (`run.header().day()`) stays on day 14, since the run has not moved past it.
 
-**It is where a won run ends.** A day 14 that is won with every task complete — `run.calendar
+**It is where a won run ends.** A day 14 that is won with every task complete — `run.calendar()
 .earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
 performed, the same pair that has always decided the good ending — goes on from its own summary to
 the building instead of to the ending screen. A won day 14 without them keeps the neutral ending it
@@ -1590,9 +1615,11 @@ not time the city has lost: the service door is the building's goal, which ends 
 city's begins with a whole clock. The countdown, the three losing paths, the
 `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
 a day's and none of them change; **the goal is the section's own**: the building's service exit,
-reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
-`DayController.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
-the baby is.
+reached once its fade has covered the screen, and the city's tunnel or bridge, won when her centre
+is on the spine's last row at either end, across the carriageway
+(`DayController.FINALE_EXIT_DEPTH`), reached however the baby is. The border junction's crossing
+before that row is still the city. The last row is the threshold: her own control ends there, and
+the game walks her on by herself into the tunnel or across the bridge (`EscapeWalkIn`).
 
 **The clock reads to the hundredth** — `%d:%02d.%02d` through `RunState.format_clock_hundredths()`,
 in place of a day's `%d:%02d` — and the day's clock tells the HUD on every frame while a section's
@@ -1627,7 +1654,7 @@ have the wrong turn in the last minutes count.
 
 **Every section opens on its brief** — the same day brief a resumed run opens on
 (`SummaryModel.brief_for()`), titled *"Escape the building"* or *"Escape the city"* where a day's
-number stands (`DaySpec.title`), and carrying the Nerve count as the run holds it — unchanged in a
+number stands (`DaySpec.title()`), and carrying the Nerve count as the run holds it — unchanged in a
 normal run, whose escape spends none, and in a hard run whatever its lost sections spent. A retry
 opens on it too, after the lost section's outcome screen: the outcome screen says why the section
 was lost (minty-lemur #785), and its continue brings up the section's brief before she walks it
@@ -1636,7 +1663,7 @@ Continuing from the brief is the moment she starts walking, and the section's ow
 by the HUD every time she does — a first walk, a retry and a resumed one alike.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
-comes up, carrying which section it is (`run.facts.escape_section`, written beside the day-under-
+comes up, carrying which section it is (`run.facts().escape_section()`, written beside the day-under-
 way flag rather than inside the run snapshot, so a save from before the escape existed still
 loads), and opening the game again puts that section's brief back up with a whole clock behind it
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
@@ -1646,7 +1673,7 @@ nerve is already on disk, written as its lost section's outcome screen comes up.
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
-`run.facts.escape_section` cleared, the same way it ends any other run. There is one boot: the
+`run.facts().escape_section()` cleared, the same way it ends any other run. There is one boot: the
 HUD, the touch controls, the summary, the pause and the title screens, the orientation handling,
 the developer readout and the debug-mode note are built the same way for whichever day it opens on,
 and only the world the first day is walked in differs.
@@ -1689,9 +1716,13 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
-*(inbox #764 in minty-lemur, inbox #782 in minty-lemur)*, with no warning clock, the one waiting charger without one *(inbox
-#788 in minty-lemur, the player: "No delay, as on main")*, which coming down from the second floor is at the head of the second
+nearest corridor door and let him pass. **A place sets him off** *(minty-dolphin #852, the player:
+"The stair guard can become a charger that is triggered by a location if necessary")*: he is not in
+the world until she comes within 426px of the foot of the shaft *(inbox #764 in minty-lemur, inbox
+#782 in minty-lemur)*, and walking into that place puts his badge up and brings him there on the same
+tick, already running, with no warning clock *(inbox #788 in minty-lemur, the player: "No delay, as
+on main")*; inside the place already when he may come, his badge is up alone for a second first.
+Coming down from the second floor, that place begins at the head of the second
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
@@ -1699,8 +1730,8 @@ plain left from that landing tile gets through, and the margins are thin against
 *(inbox #865 in minty-dolphin)* (on the tightest runner's line, walking until he runs, then running, and turning plain
 left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
 down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
-late). In the stairwell his warning is off screen,
-and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
+late). In the stairwell the foot of the shaft is off screen,
+and only the screen-edge badge shows him coming, up from his warning until he is in her view *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 
@@ -1772,11 +1803,11 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 
 **Section two is the city she knows with the men in it.** Army trucks, off-screen explosions,
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
-drawn from one marble bag for the whole escape: each street has one slot
-(`DaySpec.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
-then roadblocks, and fewest of all the empty marbles that leave a slot with nothing
-(`DaySpec.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
-none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
+drawn from one marble bag for the whole escape: each street draws one marble and holds one row at
+most, and the bag holds the most trucks, then explosions, then vans, then roadblocks
+(`DaySpec.FINALE_BAG_TRUCKS` and the three after it), beside the empty marbles that leave a street
+with nothing (`FINALE_BAG_EMPTY`). A danger a street has no room for stays in the bag for a later
+street, so most streets stand one danger and the rest stand none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
 barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock
 is a barrier with a guard standing at it from
@@ -1785,9 +1816,38 @@ leaves stays drawn and stays shut across the road behind him. What takes the bab
 (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man on the stairs) — nothing about the
 barricade catches her. See `docs/EVENTS.md`, "The heat".
 
+**An explosion goes off out of her sight, under its badge, and leaves its crater as it does**
+*(minty-lemur #785: explosions off screen with a warning sign showing the explosion; craters already
+there when she walks toward them; a bright flash with each, matching the building's; random flashes
+for bombs further away; a little shake for a close one; nothing so short or quick it is dangerous
+for viewers)*. One the bag stood on a street is set off as she comes within
+`EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN` of it: its screen-edge badge, the mushroom cloud,
+points at it for a second, and then it goes off there, but only while it and the crater it leaves
+are wholly out of her sight, so neither a bang nor a crater ever appears in her view. The distance
+is its field's reach (`EventCatalogue.FINALE_EXPLOSION_HEARD_WITHIN`) and as far again as she runs
+in its badge and its bang, so heading straight at one, at a walk or a run, she hears none of its
+bang, and the badge never comes down with nothing after it. The crater is laid the moment it goes
+off. As it goes off the city's light is lifted toward
+`Palette.ESCAPE_FLASH_LIGHT`, the light a hallway of the building lifts to while its windows flash,
+by `FlashRhythm.NEAR_PEAK`, rising in a twentieth of a second and dying away eased over
+`FlashRhythm.FALL_SECONDS`; between the bangs, fainter flashes (`FlashRhythm.DISTANT_PEAK`) come on the
+building's own waits, light with no noise. **No more than three flashes begin in any one second**,
+near and far together (`FlashRhythm.LEAST_GAP`), the usual guidance for photosensitive viewers; a
+bang's flash that comes sooner waits for the gap. The screen-edge badges, the HUD and the controls
+are drawn over the world and are never lit or moved. Her view shakes by how near the explosion goes off
+(`ViewShake.share_at()`: full on top of her, none at `EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN`,
+further than the bang is heard), at most `ViewShake.MOST_PX` and eased away over `ViewShake.SECONDS`;
+the game has no reduced-motion setting for it to honour. **The building's window flashes keep the
+player's own curve**, down to a tenth of a second and a double flash; whether they take the city's
+limit waits on the player's answer on the board.
+
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
-charge. Walking in until he charges and running back until he gives up takes him off for good, and
+charge, which catches a straight walker along his street, some 260px past the band, and a walker who
+turns the next corner first is caught round it: once he is after her he walks the way to her round
+buildings where no clear line runs to her *(inbox #1534 in velvet-alpaca: "sure, your pick", the
+pick being that he follows her round the corner)*.
+Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
 (`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included
@@ -1809,7 +1869,7 @@ in the middle of a block, through an alley, a park or a courtyard, the ground ar
 still joins up everything it joined without it, so a van and a roadblock either side of an alley's
 mouth cannot shut it while the street's far sidewalk stays open. Each placement is checked before
 it is accepted (`WalkGround.accepts()`: the day's own sidewalk-band reading asked of both bands, and
-the day's junction rule asked of the ground around the placement), so a van and a
+the day's line rule at a junction asked of the ground around the placement), so a van and a
 roadblock can stand on the same side of a street and never on opposite sides of it, and the walk
 from the service exit reaches both exits past everything that stands on it.
 
@@ -1819,9 +1879,15 @@ street either chain runs through. *(Inbox #747: "yes, of course the yellow tint.
 game establishing that why would it be different in the last section?")* A street a chain only
 turns at is sealed and plain.
 
-**It ends on the tunnel or the bridge**, within `DayController.FINALE_EXIT_REACH` of the exit `CityEdge`
-draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
-she took, to the millisecond, which is the only number that screen carries.
+**It ends in the tunnel or across the bridge.** The section is won, and the clock stops, when she
+stands on the last row of the spine, where the tunnel's portal `CityEdge` draws begins (the bridge
+has no portal: its deck begins at the map's edge). Her control ends there. The game walks her on by
+herself, at a walk as deep as the tunnel's opening (she darkens step by step in its dark ramp) or
+at a run along the whole length of the deck, the camera
+following her past the map's edge, and **the summary screen comes up when she is in**, with the way
+out behind her and nothing triumphant on it — and the clock she took, to the millisecond, which is
+the only number that screen carries. Nothing can catch her on the way: the section is already won
+and the world stands still around her, the baby's meters with it. No walkable ground is added.
 
 ## Nerves
 
@@ -1859,9 +1925,16 @@ hides act I from the player who needs act I most.
 
 Three consequences, all of them chosen:
 
-- **A retry is the same day.** The city, the closures and the whole event plan are deterministic
-  from the seed and the day number, which is what makes a retry worth having in a game about
-  learning a route.
+- **A retry is the same day.** The city, the closures, the dawn's plan and every unit's draw (a
+  street, a junction box, an alley, a park or a square, each drawing its locations as she comes
+  near it, `UnitDraw`) follow from the seed and the day number whatever her path, which is what
+  makes a retry worth having in a game about learning a route; the exception is a unit a beat of her
+  walk stands in or beside, which draws round it, and a unit touching one whose draw that changed. What is sited from her walk (the moments, day 3's
+  fire, the poster crews' walls, a task's places, day 6's second man shouting and day 7's second
+  van) is sited from the walk she takes
+  then: *"if the player does something differently different things might happen. if the player
+  were to do exactly the same everything would behave exactly the same. beats are marbles, yes"*
+  (inbox #1521 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md)).
 - **What a lost attempt spent is given back.** *"a retry always rolls new -- nothing that happened
   on the day that got retried can influence the next repeat -- that has been a long standing
   rule"*, and *"it is the same day exactly how the player encountered it the first time this run.
@@ -1885,10 +1958,10 @@ player who lost walking east and retries walking west meets it on another street
 shell standing in the meantime. The city photograph is taken **before** the dawn arc roll, since
 `RunCalendar.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
 roll again from the same seed and the same day rather than inheriting it. **The once-only
-happenings of days 10 to 13 come back the same way**, since each is kept in one of those fields: the
-block day 11 boarded up and the park day 12 took are arc steps in `CityState`, the barricade day
-13's column left is a scar, and whether day 10's neighbor was taken is read off the completed steps
-(`run.neighbor_was_taken()`). A retry of any of those days meets its happening again.
+happenings of days 10 to 12 come back the same way**, since each is kept in one of those fields: the
+block day 11 boarded up and the park day 12 took are arc steps in `CityState`, and whether day 10's
+neighbor was taken is read off the completed steps (`run.neighbor_was_taken()`). Day 13's column
+leaves nothing to keep. A retry of any of those days meets its happening again.
 - **The run cannot end by running out of days while nerves remain.** The run length is a promise
   rather than a budget. In a hard run the bad ending is the only way to lose; a normal run cannot
   lose at all, only go back to a checkpoint.
@@ -1904,7 +1977,7 @@ remembered between sittings. A touch or a click on its box or label, or anywhere
 5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen._hard_mode_target()`),
 or `H` on a keyboard, flips it and never starts the run:
 the run still begins only from the title's three controls buttons or a key, so the box can be set
-first (`TitleScreen`). The mode is `RunCalendar.hard_mode`, fixed for the run and carried in the save.
+first (`TitleScreen`). The mode is `RunCalendar.in_hard_mode()`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
 it: *"hard mode doesn't affect gameplay -- only restart pacing"*. **Gameplay is anything that
 happens during a day** *(dotted-hawk, the player: "by gameplay I mean -- enemies are not harder. or
@@ -1962,7 +2035,7 @@ flagless `tools/run.sh` session asks for the same thing with.
 
 **Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
 handed to the player, when opening the save charged a nerve** — `main._write_dawn_for_a_resumed_run()`,
-called right after `main._start_day()` (its `DayDirector`) builds the retry, before the title, or the title and then
+called right after `main._start()` (its `DayDirector`) builds the retry, before the title, or the title and then
 the day brief, is ever shown — **and written `day_under_way: true` the instant she actually starts
 playing a day**: continuing from the title on a fresh run, from the day brief a resumed one opens
 on, or from the previous day's own end-of-day message straight into the next day, which has no gate
@@ -1984,7 +2057,7 @@ closing the window and quitting all still do what they always have — the game 
 loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
 the run and the day, never the moment inside one (PLAYTEST-82).
 
-**A save holds the run, never the moment inside a day.** The run's registered parts (`run.run_parts`; `run.run_parts.run_data()["state"]` is the ones in the snapshot) — the seed,
+**A save holds the run, never the moment inside a day.** The run's registered parts (`run.run_parts()`; `run.run_parts().run_data()["state"]` is the ones in the snapshot) — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
 history has moved, where she settled each day and the run's clock — plus the facts that ride beside
 it: whether a day was under way when the file was written, which section of the escape it is in, if
@@ -2019,7 +2092,7 @@ opening it again finds the same nerve count and shows the same screen, and press
 is what actually spends anything.
 
 **A save written inside the escape comes up the same way.** The escape's own boot always knows
-which section a save named — `run.facts.escape_section`, restored before the section is built, is
+which section a save named — `run.facts().escape_section()`, restored before the section is built, is
 what decides whether the building or the city is built at all, not only where she stands inside
 it — and a save closed mid-city-section reopens in the city rather than being rebuilt underneath
 her from the hallway. What is asked first is whether this boot is **reading that section off a

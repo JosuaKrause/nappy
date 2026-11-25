@@ -24,8 +24,8 @@ corresponding `art/<family>/<name>.svg`. Keep the native canvas dimensions and p
 Authorized direct PNGs use a named `art/illustrated/<family>/` folder and direct atlas membership;
 their reviewed dimensions and anchors define registration without a placeholder SVG.
 Do not change draw offsets, camera scale or animation to compensate for a misregistered transfer.
-`art/` has a `.gdignore`: no `.import` sidecars, the bake reads the files (VISUALS.md, "Where the
-pictures live"). Do not copy a worktree's `.godot/` cache.
+A PNG under `art/` has no `.import` sidecar (the **godot** skill, "Structure", owns that rule). Do
+not copy a worktree's `.godot/` cache.
 
 ## Verify the player's checkout
 
@@ -42,7 +42,8 @@ git status --short
 Inspect every error, including resource import failures. The full suite runs in CI. Every tool that
 starts the engine (`check.sh`, `test.sh`, `shot.sh`, `run.sh`) rebakes in the default PNG mode, so
 an `--svg` bake cannot be tested or captured through them. Compare against the SVG with source
-previews at the same scale (**svg-art**, "Render with the game's SVG parser"). Keep captures bounded
+previews at the same scale (**svg-art**, `references/drawing-and-rendering.md`, "Render with the
+game's SVG parser"). Keep captures bounded
 to one or two windowed runs. Preserve only the relevant artifacts with the provenance
 session-captures requires, and record build, flags and coverage in the entry's decision record under
 `docs/decisions/`.

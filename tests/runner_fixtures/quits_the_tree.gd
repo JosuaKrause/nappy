@@ -11,7 +11,7 @@ extends RefCounted
 
 const SENTINEL := "M-quit sentinel: quits_the_tree.gd is running and is about to quit the tree"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print(SENTINEL)
 	t.check(true, "the fixture's own assertion passes before it quits the tree")
 	t.get_tree().quit()

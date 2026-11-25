@@ -101,12 +101,12 @@ The events:
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over every source's own window (`ExcitementSource.WINDOW`, 5s) at the moment she
   cried: the row id of the event that landed it (`ExcitementSource.landed()` on the event's source, grouped by
-  `EventInstance.logged_name()` in `DayDirector.landed_by_group()`) — a catalogue row's, or one of the three rows met on one occasion that
+  `EventInstance.logged_name()` in `DayDirector._landed_by_group()`) — a catalogue row's, or one of the three rows met on one occasion that
   sit outside the catalogue's list, so a day cried away mostly under day 13's task guard is
   `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
   guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
   again `pelican` for a pelican, `crowd` for
-  walkers or `traffic` for cars (`ExcitementSource.landed()` on the body's source, told apart by `CrowdAgent.kind`), or `self`
+  walkers or `traffic` for cars (`ExcitementSource.landed()` on the body's source, told apart by `CrowdAgent.is_car()`), or `self`
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
@@ -132,14 +132,14 @@ The events:
   (`VisitCounter._charger_counter_name()` names it, `EventInstance.counts_a_charge()` says which):
   - `-warned` — its warning goes up (`EventBus.pursuit_warned`), the level below the charge: a
     charger that waited for her noticing her (the dog that waits past the teaching day, the alley
-    robber and the guards drawn from him, the hunting roadblock's guard), the masked man's raised
-    hand at the foot of the escape's stairwell, and the raised hand of the man a vehicle lets out
+    robber and the guards drawn from him, the hunting roadblock's guard), the masked man on the escape's
+    stairs on the tick he comes, with his charge, since his badge was his warning, and the raised hand of the man a vehicle lets out
     and of day 13's guard set on her in her view — each once per instance — and the checkpoint
     guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand
     from her crossing of the door's line (`CheckpointController.warn_at_the_doors()`).
   - `-chased` — its charge (`EventBus.pursuit_began`), never its warning: a waiting charger when
     its warning has run with her still inside its radius; a vehicle's man and day 13's guard in her
-    view when their raised hand has been up its second; the masked man when he starts his run; the
+    view when their raised hand has been up its second; the masked man from his first tick; the
     checkpoint guard from his first frame, once the crossing's warning has run with her still
     across, at a boom or an alley's door alike; the day-3 dog, whose approach is its telegraph, and
     every charger sent from off screen, from their first frame.
@@ -147,11 +147,11 @@ The events:
     its charge reached her, a catch that ends the day — which also sends that day's own
     `lost-hard-fail-<row>` — or a patrol car's man stopping her, which does not; `-shaken`, she ran
     it off; `-outlasted`, its own clock ran out, or the masked man's run ended without a catch
-    (`EventInstance._be_done()`, `EventInstance.gave_up`); or `-ended`, the day or the escape's
+    (`EventInstance._be_done()`, `EventInstance.has_given_up()`); or `-ended`, the day or the escape's
     section ended some other way while it was still charging — the meter at its cap, another
     thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
     which `DayDirector.finish_day()` asks of the city's or the building's events before the day's or
-    the section's own end is sent). A charger's own `ChargeRecord` (`src/events/charge_record.gd`) is the one owner
+    the section's own end is sent). A charger's own `ChargeRecord` (`src/events/simulation/charge_record.gd`) is the one owner
     of that rule: every ending asks it, and the first to ask is the only one sent.
 
   `<charger>` is the row's own id hyphenated, as the encounter events are (`alley-robbery`,
@@ -160,7 +160,7 @@ The events:
   `dog-outlasted` count what they always counted, and **day 13's task guard counts as
   `task-guard`**, waiting at his roadblock or sent from out of her view: his own rows,
   `task_guard` (`EventCatalogue.task_guard()`) and `task_guard_sent`, whose charges count as his
-  (`EventDef.counts_charges_as`), apart from every other alley robber and sent robber. A man out of a
+  (`EventDef.charges_counted_as()`), apart from every other alley robber and sent robber. A man out of a
   patrol car or a hunting van counts under his row, `policeman-giving-chase` or
   `guardsman-giving-chase`, as the one a torn poster sends does.
   **The day-3 lesson's dog has its own set**, `nappy-day-3-dog-tutorial-chased`, `-caught`,
@@ -193,7 +193,7 @@ The events:
   dog is `seen-`, `influenced-` and `influenced-unseen-charging-dog-tutorial`, never
   `-charging-dog`, and day 13's task guard is `-task-guard` waiting and `-task-guard-sent` sent at
   her, never the alley robber's or the robber giving chase's (`EncounterWatch` names an encounter
-  by `EventInstance.logged_name()`, the row's id). `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  by `EventInstance.logged_name()`, the row's id). `EncounterWatch` (`src/events/simulation/encounter_watch.gd`), asked once a physics frame by
   `EventManager` while a day is played — the escape's city included, as day 16, but not behind
   the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
   each:
@@ -281,9 +281,9 @@ The events:
   the charging counters (`nappy-day-15-masked-pursuer-warned`, `-chased`, and `-ended` for a
   charge still running when the section ends); both sections' encounters and runs, the
   building's events being the day's own `EventManager` as the city's are; the city's holds;
-  and `nappy-day-16-blackout` as the escape's city is built dark. `run.header.day`, the calendar,
-  stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
-  `day_started` announced rather than by the calendar.
+  and `nappy-day-16-blackout` as the escape's city is built dark. `run.header().day()`, the calendar,
+  stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day of the
+  walk last begun (`RunFlow.day_started`, off its spec) rather than by the calendar.
 - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
   the run on the title screen, or `keys` when a key did (`space` or a walking key, which begins the
   run in tap mode; the name comes from the input that began it, not the mode it falls back to),
@@ -298,26 +298,36 @@ Every signal named above that exists purely for this page — `event_sighted`,
 `encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so. The day's and
 the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
-called inline. The page hears `run_begun`, `day_started`, `day_ended`, `escape_begun`,
+called inline. A walk begins on the run flow (`RunFlow`), the same way for a day, an authored
+scene's day and each section of the escape, each signal carrying the walk's spec: `day_started`
+once the dawn is photographed and before its world stands, `world_stood` with the world as it
+stands, and `day_planned` with the world once it is placed. Its end is `day_ended` on `EventBus`.
+The page hears the flow's `day_started` and, on the bus, `run_begun`, `day_ended`, `escape_begun`,
 `escape_city_entered`, `escape_lost` and `escape_out`, and is the only listener of `run_begun`,
 `escape_begun`, `escape_city_entered`, `escape_lost` and `escape_out`. The run log (`RunSession`)
-hears `day_started`, `day_planned`, `day_ended` and `escape_section_started`. The HUD hears
-`day_started` alone.
+hears the flow's `world_stood` and `day_planned` and the bus's `day_ended`. The HUD hears the
+flow's `day_started` alone.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
-things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
-(`RunConfig.debug_build`), the page was not asked for `?debug=1`
-(`RunConfig.readout_requested`, from the run's configuration `main` hands the counter at boot —
-nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
+things holds: the build is running on the web (the engine's `OS.get_name() == "Web"`, given
+through `GoatCounterPlatform.is_on_the_web()`), it is not a debug build
+(`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), the
+page was not asked for `?debug=1`
+(`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at
+boot — nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. `GoatCounterOutbox.may_ever_send()` decides the three that never change, and
+independent switch. The counter asks the first, the second and the fourth of the machine through
+the `GoatCounterPlatform` it is handed (`main` hands `GoatCounterPlatform.of_the_engine()`, the
+engine's own answers; a suite hands a released web page's), and the third of the configuration.
+`GoatCounterOutbox.may_ever_send()` decides the three that never change, and
 `GoatCounterOutbox.send()` takes the fourth as its `present` argument, and
 `tests/test_visit_counter.gd` drives the truth table through both. The same `GoatCounterOutbox` holds
 the events asked for before `count.js` has loaded and counts them in order once it has, and is
-handed the evaluator of the page's script; the counter is handed its outbox with `send_through()`
-(its `_ready()` hands it the page's), so a test hands one with a recorder and reads the script each
-event sends, or that a refused event never reached it. A missing or failing
+handed the evaluator of the page's script; the counter is handed its outbox and its platform with
+`send_through()` (`main` hands it the page's), so a test hands an outbox with a recorder and the
+platform of the page it stands for, and reads the script each event sends, or that a refused event
+never reached it. A missing or failing
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and
 the call itself sits inside the page's own `try`/`catch`.
 
@@ -418,8 +428,8 @@ so it stays behind its own dev flag rather than being folded into telemetry's ow
 
 **It is off by default on a web export**, and the page's own `?telemetry=1` query parameter is the
 one way to turn it on there — but only in a **debug** web export. `_web_override_requested()` is
-gated behind the debug build (`RunConfig.debug_build`) like every other developer flag, and reads
-the query the run read at boot (`RunConfig.page_query`): a
+gated behind the debug build (`RunConfig.is_debug_build()`) like every other developer flag, and reads
+the query the run read at boot (`RunConfig.page_query_string()`): a
 release build — the one `.github/workflows/deploy.yml` publishes — answers nothing here regardless
 of the query string, and a debug build — the one `tools/serve-web.sh` exports and serves locally —
 answers immediately. `user://` on the web is still a stranger's browser storage rather than a
@@ -499,19 +509,20 @@ watched by the observer a day has, so what a day writes about the walk the escap
 ```
 day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    entered the building at (129,2), facing 0°
-   4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
-   9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
-  10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
-  11.0  lost     lost_hard_fail in the building after 11.0s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
+   4.2  cue      edge badge: masked_pursuer at 421px, closing 130px/s
+   5.9  cue      edge badge gone: masked_pursuer after 1.7s, now 175px away
+   6.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
+   6.9  lost     lost_hard_fail in the building after 6.9s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
 
 day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    restarted the building at (7,1), facing 0°
 ```
 
-`TelemetryObserver.setup_escape()` hands it the day's own `DayController`, and `RunSession` says
-which world she is in as each section starts — `watch_building()` or `watch_city()`, off
-`EventBus.escape_section_started`, which carries the section's world — before `start_section()`,
-the escape's `start_day()`; a section ends on `day_ended`, as a day does. The events are read from
+A section is watched exactly as a day is: `TelemetryObserver.setup()` hands it the day's own
+`DayController` once a boot, `RunSession` hands it each walk's world as it stands
+(`TelemetryObserver.watch()`, off `RunFlow.world_stood`, which carries the world), its `start` line
+is written once the walk is placed (`TelemetryObserver.start()`, off `RunFlow.day_planned`), and a
+section ends on `day_ended`, as a day does. The events are read from
 an `EventManager` either way, the building's in the
 building and the city's outside it, so these read a section exactly as they read a
 day: `start`, `near`, `chase`, `cue` (the mark over her head and the screen-edge badges), `freeze` /
@@ -524,7 +535,7 @@ grid, which is not the city's.
 how far into its clock, `to <cause>`, the reason, the meter breakdown and what was nearest. The
 retry then opens its own section under the same day's header, and its `start` line says
 `restarted`, stamped `0.0` because the retry has a fresh clock. The automatic-snapshot schedule
-(`TelemetryShots.PER_DAY`, `SHOT_SPACING` — see "Snapshots" below) restarts with that section, the
+(`TelemetryShots.PER_DAY`, `TelemetryShots.SPACING` — see "Snapshots" below) restarts with that section, the
 same clean slate a day's own retry gets, so a retried section is not left with its whole allowance
 already spent by the attempt that was lost. Walking out of the building is a `home` line, `out of
 the building, 42.1s to spare`, and getting out of the city one with the way out, `escaped by the
@@ -607,7 +618,7 @@ back.
 | Record | Do not record |
 | --- | --- |
 | The seed the generator actually used, and the version it ran on | The city layout, block purposes, building rects — recomputable from that seed |
-| **Random outcomes that branch the run**: a one-shot that fired, with the roll and the threshold; which block arc advanced and what caused it; the alley trap roll; the scar an event left | Falloff curves, meter rates, event intensities and radii — they are in `Tuning` and the catalogue |
+| **Random outcomes that branch the run**: a one-shot that was owed her walk and the day it fired; which block arc advanced and what caused it; the alley trap roll; the scar an event left | Falloff curves, meter rates, event intensities and radii — they are in `Tuning` and the catalogue |
 | What the player did, in order: where they went, when they turned back, when they ran, when they crossed a road | Derived aggregates — the circling ratio, total distance. Computable when reading, and a reading aid at best |
 | What the world did to them: what came within range and how close, when sleep froze and what was near, which closure they saw | Which tiles are calm, which streets exist — recomputable |
 | The outcome and its cause: result, elapsed, margin, what was nearby at the moment of a loss, which nerve went and on which day | — |
@@ -616,7 +627,7 @@ back.
 remembers which calm block the baby actually went to sleep in and spoils it the next day — which is
 exactly what the `calm` entries say. Reading them back is the smaller change and it breaks the
 invariant in the loudest possible way: the game would play differently with `--no-telemetry`. So
-`run.settled.settled_in` is its own run-scoped record, written by `DayController` at the moment she
+the run's `SettledState` is its own run-scoped record, written by `DayController` at the moment she
 settles, and the log merely *also* mentions it. **Where a trace and a rule want the same fact, the
 rule keeps its own copy.**
 
@@ -639,13 +650,13 @@ is made as the warning goes up, so the first line already knows.
 
 | Kind | Written by | Answers |
 | --- | --- | --- |
-| `plan` | `RunSession`, `main.gd`, `City`, `ClosurePlanner`, `EventScheduler` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm; and, on the escape's city, how many marbles its bag drew for how many rows |
-| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
+| `plan` | `RunSession`, `main.gd`, `City`, `ClosurePlanner`, `EventScheduler`, the dawn's phases (`DawnPhase`) | What today is: what is shut, where the calm is, what the dawn placed and the units drawn as the day starts (each unit draws as she comes near it, so the dusk map shows what the walk drew), and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm; and, on the escape's city, how many marbles its bag drew for how many rows |
+| `roll` | the dawn's phases (`DawnPhase`), `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot, that the day owes it her walk (none is rolled for). A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's, day 7's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
-| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the man shouting after day 6's mark, the mast after day 11's), the men a vehicle let out where it stopped for her — the investigating patrol's one or a hunting van's two, where it stood, how far from her, and who got out (`EventsAhead.let_the_officers_out()`) — or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
-| `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
-| `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detain_seconds` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |
+| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, a dog walker or a patrol the director sends ahead of her as it is created, a convoy it sends down the road beside her at the moment its warning is over and it is created, from ahead of her, and how far up the road, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the mast after day 11's mark, laid past the streaming band; the man shouting after day 6's mark and the van after day 7's, laid just ahead of her), and how far ahead of her, the men a vehicle let out where it stopped for her — the investigating patrol's one or a hunting van's two, where it stood, how far from her, and who got out (`EventsAhead.let_the_officers_out()`) — or — on a day she won without it ever entering the world — where it was lit at dusk instead, a line that ends with what her walk waited on (`reason xN; ...`, the reasons `WalkSiting.waits()` counts, or "nothing"). The only record of a placement no seed reproduces, since it depends on the route she took |
+| `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (where she is, `WhereSheIs.at()`, and its own age), and that is what lets a data-level rig assert it with no map or city behind it |
+| `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detains_for()` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true. **And a door she walked through instead** — which body's line she crossed on foot, heading where, and whether the boom was up: a crossing under a raised boom that skipped the toll, detected rather than guessed (docs/EVENTS.md, "Checkpoints"), so a trace can say whether the player took the dash and a rig run can be held to never taking it |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial, and did an unseen pickup mark have to move to stay findable — where it was, and where it went |
 | `start` | observer | Where the day began — or, in the escape, which section she entered and where, and whether it was a retry after a loss |
@@ -672,10 +683,10 @@ is made as the warning goes up, so the first line already knows.
 | `quiet` | observer | The blackout came and the masts went off with the power — once she was far enough from the station after the sabotage, not at its door |
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. A crying or hard-fail day's `lost` line names what ended it as `to <cause>`, the cause the page's counter folds into its loss event (`DayDirector.loss_cause()`, `LossCause.of()`). In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
 | `nerve` | the run's calendar (`RunCalendar`) | Where the nerves went — which day, which act, and in a hard run's escape; the run's mode once it is chosen; the dawn a normal run keeps as its checkpoint; and the checkpoint it went back to when its last nerve was spent, from which day |
-| `ending` | the run's calendar (`RunCalendar`) | How the run finished, and how long the world was actually moving to get there — `run.header.play_seconds()`, the run's play ticks in seconds, formatted `%d:%02d.%03d` |
+| `ending` | the run's calendar (`RunCalendar`) | How the run finished, and how long the world was actually moving to get there — `run.header().play_seconds()`, the run's play ticks in seconds, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |
 | `shot` | `RunSession`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
-| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`CheckpointController.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
+| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detains_for()` row), a checkpoint hold that outlives the input lock (`CheckpointController.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
 
 ### Reading the meter breakdown
 
@@ -985,14 +996,14 @@ in it. On a desktop the whole cost, the record on against off, measured between 
 half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`), so a reader who
 subtracts the product from a phone's frames subtracts too little.
 
-**Off, it costs every player as little as the wrap can.** The live events are timed once each a
-frame, so each holds the `FrameTiming` its manager hands it (`EventInstance.timing`) and, off, pays
-a member read and a read of its `on` before its body, which stays in its own `_process()`; a static
-read and a call into a second function there, on a couple of hundred timed bodies a frame, made
-every player's frame measurably longer on a desktop, with the record off. A crowd agent is not timed on its own: it steps
+**Off, the wrap is one member read, one `is_on()` call and one branch.** The live events are timed
+once each a frame, so each holds the `FrameTiming` it is handed at setup (`EventSurroundings.timing()`, kept in its private `_timing`) and, off, pays
+a member read and one `is_on()` call before its body, which stays in its own `_process()`: a static
+read and a call into a second function there, on a couple of hundred timed bodies a frame, would
+cost every player more than that one call. A crowd agent is not timed on its own: it steps
 inside the crowd's tick, which is. The systems timed once a frame (the crowd's and the event
 manager's physics steps, the scenery queue's update, the sweep, the halo and the edge) are handed
-the sink when `main` builds them and read its `on` each frame (the crowd's through its
+the sink when `main` builds them and ask its `is_on()` each frame (the crowd's through its
 `CrowdTiming`). The measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 
 **The game's own `_draw()` overrides carry no counting code.** With the record on, `FrameRecorder`
@@ -1056,21 +1067,21 @@ through something it was handed:
 
 - **`RunSession`** (`src/telemetry/run_session.gd`) owns the log for a boot: `main` builds it and
   calls only its `open()` (once per boot, keeping a log a reload carried over) and `close()` (the
-  held restart and a quit; it hears the window's close request itself). It listens on `EventBus`
-  for the run flow's own facts — `day_started` opens a day's section, the escape's sections
-  included, `day_planned` writes the plan lines, the dawn map and her `start` line,
-  `day_ended(day, result, cause, elapsed)` writes the outcome and the dusk map and closes the
-  section, and `escape_section_started` points the observer at the world an escape section is
-  walked in and writes its `start` line — and holds the `TelemetryObserver` it builds when a log is
-  open.
+  held restart and a quit; it hears the window's close request itself), and `watch()` once a boot
+  with what no world holds (the day's clock, the resistance, the badges). It listens for the run
+  flow's own facts, the same way for every spec — `RunFlow.world_stood` opens the walk's section
+  (a day's, an authored scene's or an escape section's) and points the observer at the world it is
+  walked in, `RunFlow.day_planned` writes the plan lines, the dawn map and her `start` line, and
+  `EventBus.day_ended(day, result, cause, elapsed)` writes the outcome and the dusk map and closes
+  the section — and holds the `TelemetryObserver` it builds when a log is open.
 - **`TelemetryObserver`** watches the walk frame by frame and writes everything that has no single
   point of decision, into the log `RunSession` hands it as it makes it.
 - **Game logic writes its own account through a `RunTrace`** (`src/run_trace.gd`): the one sink
   `RunSession` makes, which `main` hands to the run it takes from the sitting (`RunState`, and its `CityState`), to the `City` (and
   from there its posters, its `EventManager`, every instance it creates and the day's planners) and
   to the `ResistanceDirector`, and to the observers and rigs that write a line of their own: the save
-  (`GameSave.trace`), the atlas pages and the composed ground (`AtlasLibrary.trace_note`, the
-  trace's `note`), `--route`'s walkers and `--quit-when-still`. A component handed none writes nowhere, so a test builds the part it
+  (`GameSave.use_trace()`), the atlas pages and the composed ground (`AtlasLibrary.use_trace_note()`,
+  the trace's `note`), `--route`'s walkers and `--quit-when-still`. A component handed none writes nowhere, so a test builds the part it
   wants and hands it a trace that records into a list. These are the lines a decision writes at the
   point of its roll — why a placement went where it did, which way a roll fell, what a director set
   in motion — built from what is in scope there; the facts other observers need (a nerve, a
@@ -1130,7 +1141,7 @@ Three rules:
   `lost` (what the street looked like as the day ended), `chase` starting (the one encounter with a
   right answer, and the open question is whether a dog that stops short *reads* as "go now"), and
   the doubled `NOW` mark going up (every complaint about that cue has been about **when**).
-- **It stays small.** `TelemetryShots.PER_DAY` and `SHOT_SPACING` — six a day, three seconds
+- **It stays small.** `TelemetryShots.PER_DAY` and `TelemetryShots.SPACING` — six a day, three seconds
   apart, so a condition that is true for two seconds is one picture rather than a hundred and
   twenty. A directory of near-identical frames is a directory nobody opens.
 - **It does not touch gameplay**, which is the constraint the whole file is built on. A capture is
@@ -1145,7 +1156,7 @@ same reason — into the run's own `asked/` folder, kept apart from the heuristi
 directory listing already says which of the two asked for a picture — and
 a `shot` entry beside it in `run.log`. `Telemetry.snapshot_now()` is the heuristic one with the two
 limits taken off, and that is the
-whole difference: `TelemetryShots.PER_DAY` and `SHOT_SPACING` exist because a condition that stays true for
+whole difference: `TelemetryShots.PER_DAY` and `TelemetryShots.SPACING` exist because a condition that stays true for
 two seconds would otherwise write a hundred and twenty frames, and **somebody pressing a key has
 already decided this frame is worth keeping**. A cap that silently swallows the seventh press is a
 tool that lies about having worked.
@@ -1192,8 +1203,11 @@ today's tree (`DayStreets.route_tree()`, `City.streets()`) once rather than quer
 `FrameGraph` (`src/ui/frame_graph.gd`), the sixth layer below, answers a third question again — not
 the ground truth and not the day's plan, but what the last 240 frames actually cost — and reads
 `DebugReadout._process()`'s own `delta` each frame it is on rather than querying the world at all.
+`EventRouteLines` (`src/dev/event_route_lines.gd`), the seventh layer below, answers a fourth — where
+each live event's own route runs — and asks each live `EventInstance` for it (`walks()`) every frame
+it is on.
 
-Six layers, each a number key, read as a raw keycode rather than an input-map action so a release
+Seven layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:
 
 - **`1` fields** — every emitter's actual falloff boundary, inner and outer level, for events,
@@ -1207,7 +1221,7 @@ build has nothing in `project.godot` to reach:
   Only what is on screen is drawn, and a standing source's cut is reused while it stands. A flock
   draws one pair per bird, at its own position and its own velocity, rather than one for the whole
   event. Amber (`Palette.MARK_COSTLY`) for a merely costly field, deep red (`Palette.MARK_LETHAL`)
-  for a `hard_fail` event's — the same two colours the caret already uses, so this view speaks the
+  for a lethal event's — the same two colours the caret already uses, so this view speaks the
   vocabulary the game already has. A car's own noise field is always amber; its strike box, which
   is what actually ends the day, is in the bounding-box layer instead.
 - **`2` shadows** — the ground extent every `GroundShape` shadow is drawn over: events, crowd
@@ -1226,7 +1240,7 @@ build has nothing in `project.godot` to reach:
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
   parsed straight off the page's query string and not gated behind `enabled()`. The readout builds
-  the geometry layers (`1`-`3`, `5`, `DebugReadout.show_the_world()` and `draw_routes()`) under that
+  the geometry layers (`1`-`3`, `5`, `7`, `DebugReadout.show_the_world()` and `draw_routes()`) under that
   same `_debug or _readout_requested` gate too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
   to draw (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
   key presses that toggle one by hand stay debug-build only, since a release page sends no such
@@ -1318,11 +1332,20 @@ build has nothing in `project.godot` to reach:
   from that moment rather than a window that silently skipped the time it spent off. The run log's
   own `spike` line (see "What a frame cost" above) stays on `--spikes` alone regardless of `6`: it
   is the log's own line, not this view's recording.
+- **`7` event routes** — every live event that has a route, drawn as one hot-pink
+  (`EventRouteLines.ROUTE_COLOUR`) polyline from where it starts to where it ends, a dot at the
+  start and a square at the end, read from `EventInstance.walks()` on the frame it is drawn: a dog
+  walker's block, a police patrol's street, a convoy's way, the beat a pacing row folds over. An
+  event that stands, or is gone, draws nothing. It answers where each event's own route runs, as
+  layer `5` answers where *her* day's routes run, so a change to how a row's route is cut shows
+  as a different picture. Built under the same `_debug or _readout_requested` gate as the others,
+  off by default, `--layers 7` (or `?layers=7`) starts it on, and the `7` key toggles it in a
+  debug build.
 
 The mapping above is printed once on boot in a debug build. With no `--layers` flag and no
-`--spikes`, a run opens with the readout on and the other five layers off, so an unflagged debug
-run looks exactly as it did before this existed. `--layers 1,3,5,6` (or the page's own
-`?layers=1,3,5,6`) sets which of the five non-readout layers start on instead, so a rig screenshot
+`--spikes`, a run opens with the readout on and the other six layers off, so an unflagged debug
+run looks exactly as it did before this existed. `--layers 1,3,5,6,7` (or the page's own
+`?layers=1,3,5,6,7`) sets which of the six non-readout layers start on instead, so a rig screenshot
 of a particular disagreement is reproducible without a keypress; a malformed entry is dropped with
 a printed note rather than failing the whole flag. `4` is not part of that list — it defaults on
 already. `--spikes` starts `6` on the same way, whether or not `--layers` also names it.
@@ -1429,7 +1452,7 @@ Every **sited** event is drawn where the day put it, carrying the three things `
 |---|---|---|
 | colour | **role** — what it was placed *for* | wall (yellow), friction (blue), set piece (magenta), none (grey) |
 | shape | **effect** — what it does to a route | lethal fills its three tiles, costly is a cross |
-| a white pip in the middle | whether she **met** it | drawn only once she has come within `outer_radius` — the field she can actually feel |
+| a white pip in the middle | whether she **met** it | drawn only once she has come within outer radius — the field she can actually feel |
 
 - **The role gets the colour because the role is the question.** A wall drawn *on* the corridor
   instead of beside it is the central defect a placement pass can have, and it is one glance to see
@@ -1441,8 +1464,6 @@ Every **sited** event is drawn where the day put it, carrying the three things `
 - **An unplaced plan is not drawn**, and that is the honest answer rather than a gap. An
   `AHEAD_OF_PLAYER` row has no position at dawn, so drawing it anywhere would be the picture
   claiming a placement nothing made.
-- **A spent set-piece offer is drawn like any other**, because the sites that did not fire are what
-  makes the covering set visible at all. They come out without a pip, which is right.
 - A **routed** event also gets a faint band along the ground it covers. It is much fainter than
   the mark, and that number was set by looking: at the mark's own strength the routes were the
   loudest thing in the picture and read as *corridor* — thin coloured lines down the middle of
@@ -1460,7 +1481,7 @@ into is still a wall in the wrong place, and it is the placement no trace can re
 picture would whisper exactly the thing it exists to shout. Drawn instead, every mark stays at full
 strength and the ones she met carry the pip on top of it.
 
-**Met means she came within the event's own `outer_radius`** — the field that actually reaches
+**Met means she came within the event's own outer radius** — the field that actually reaches
 her — not merely that `EventManager.stream_around` had loaded it into the world. Streaming happens
 at `Tuning.EVENT_STREAM_RADIUS` (900px), more than twice the reach of a typical row, so a day where
 she met eight of forty events and one where she was merely near forty are very different days, and
@@ -1482,7 +1503,7 @@ it: the trail is drawn, never logged, the same as the corridor.
 
 **The dawn map keeps drawing no trail.** There is no walk yet, and a picture that invented one
 would be worse than a picture without one — the same reasoning that keeps the corridor off a
-picture given no tree. **A lost day restarts the trail**, in the same `start_day()` reset that
+picture given no tree. **A lost day restarts the trail**, in the same `TelemetryObserver.start()` reset that
 clears everything else about yesterday: a rewound day was not walked.
 
 **It has to be read *against* the corridor the day planned for her**, which is the entire value of

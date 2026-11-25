@@ -266,6 +266,8 @@ assert_exit "agent-setup.sh unknown" nonzero ./tools/agent-setup.sh --not-a-flag
 assert_exit "agent-setup.sh missing include path" nonzero ./tools/agent-setup.sh a feature/a --include
 assert_exit "agent-setup.sh stray word" nonzero ./tools/agent-setup.sh only-one
 assert_exit "agent-setup.sh --detach without a name" nonzero ./tools/agent-setup.sh --detach HEAD
+assert_exit "agent-setup.sh --remove without a name" nonzero ./tools/agent-setup.sh --remove
+assert_exit "agent-setup.sh --remove of a path" nonzero ./tools/agent-setup.sh --remove ../somewhere
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
@@ -568,6 +570,79 @@ else
     echo "ok   reject_route_with_screenshot leaves a plain --screenshot alone"
 fi
 
+# --walk, --flee, --press and --tap move her only where a screenshot rig carries them
+# (RunConfig.screenshot_rig()): refused with no launch when nothing does, accepted when something does.
+for input in "--walk 3n" "--flee" "--press pause 1" "--tap 1 1"; do
+    # shellcheck disable=SC2086
+    set -- $input
+    checks=$(( checks + 1 ))
+    if reject_input_flag_without_carrier live --seed 1 "$@" 2>/dev/null; then
+        echo "FAIL reject_input_flag_without_carrier: $1 with no rig was accepted" >&2
+        failures=$(( failures + 1 ))
+    else
+        echo "ok   reject_input_flag_without_carrier refuses $1 with no rig"
+    fi
+    for carrier in "--screenshot out.png" "--frame-trace --after 25" "--frame-record --after 25"; do
+        checks=$(( checks + 1 ))
+        # shellcheck disable=SC2086
+        if ! reject_input_flag_without_carrier live --seed 1 "$@" $carrier 2>/dev/null; then
+            echo "FAIL reject_input_flag_without_carrier: $1 with $carrier was refused" >&2
+            failures=$(( failures + 1 ))
+        fi
+    done
+done
+checks=$(( checks + 1 ))
+if reject_input_flag_without_carrier live --walk 3n --frame-record 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: --walk beside a --frame-record with no --after was accepted" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_input_flag_without_carrier wants --after beside --frame-record"
+fi
+checks=$(( checks + 1 ))
+if reject_input_flag_without_carrier recording --walk 3n 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: a recording with --walk and no --after was accepted" >&2
+    failures=$(( failures + 1 ))
+elif ! reject_input_flag_without_carrier recording --walk 3n --after 5 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: a recording with --walk and --after was refused" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_input_flag_without_carrier takes a recording bounded by --after as a carrier"
+fi
+checks=$(( checks + 1 ))
+if ! reject_input_flag_without_carrier live --seed 1 --day 3 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: a line with no input flag was refused" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_input_flag_without_carrier leaves a line with no input flag alone"
+fi
+
+# A recording of a recipe with --walk gets the recipe's own refusal, not the carrier message.
+out="$(./tools/record.sh --recipe "$work_dir/none.json" --walk 3n 2>&1)"
+checks=$(( checks + 1 ))
+if grep -q "nothing to carry it" <<<"$out"; then
+    echo "FAIL record.sh --recipe --walk: the carrier message was given for a recipe line" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   record.sh --recipe --walk leaves the refusal to the recipe's own checks"
+fi
+
+rm -f "$GODOT_MARKER"
+out="$(./tools/run.sh --no-save --seed 1 --walk 3n 2>&1)"
+status=$?
+checks=$(( checks + 1 ))
+if [[ $status -eq 0 ]]; then
+    echo "FAIL run.sh --walk with no rig: expected a non-zero exit, got 0" >&2
+    failures=$(( failures + 1 ))
+elif ! grep -q -- "--screenshot" <<<"$out"; then
+    echo "FAIL run.sh --walk with no rig: the message did not name what carries it" >&2
+    failures=$(( failures + 1 ))
+elif [[ -f "$GODOT_MARKER" ]]; then
+    echo "FAIL run.sh --walk with no rig: launched Godot" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   run.sh --walk with no rig is refused before any launch"
+fi
+
 rm -f "$GODOT_MARKER"
 out="$(./tools/shot.sh "$work_dir/shot-route.png" 1 --route mark 2>&1)"
 status=$?
@@ -730,7 +805,7 @@ done
 
 # rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
 # passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
-# silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after
+# silently falls back to the day's own length times `movie_slowdown`, killing a hung Godot after
 # about 38 minutes instead of about 4 for a short shot. Checked two ways: the function itself
 # answers differently for a short --after than for none at all, and trailer.sh's own call site is
 # grepped for the exact --after shape rather than a bare value, which is the one thing that would
@@ -813,6 +888,23 @@ wok_out="$(
 )"
 check_that "wait_or_kill refuses a limit that is not whole seconds and leaves the caller's fd 9 alone" \
     '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
+# The full-run guard: a live process whose command line names the test scene refuses a full run
+# (exit 3, before the Godot stub is touched) and spares --plan.
+guard_stub="$work_dir/guard-live-run.sh"
+printf '#!/usr/bin/env bash\nsleep 60\n' > "$guard_stub"
+chmod +x "$guard_stub"
+"$guard_stub" --headless --path /elsewhere res://tests/tests.tscn -- fake &
+guard_pid=$!
+rm -f "$GODOT_MARKER"
+guard_out="$(./tools/test.sh 2>&1)"; guard_status=$?
+check_that "test.sh full-run refusal exits 3, names the process, runs nothing" \
+    '[[ $guard_status -eq 3 && "$guard_out" == *"$guard_pid"* && ! -f "$GODOT_MARKER" ]]'
+check_that "test.sh --serial and --record-costs are refused too" \
+    '[[ "$(./tools/test.sh --serial >/dev/null 2>&1; echo $?)" == 3 && "$(./tools/test.sh --record-costs >/dev/null 2>&1; echo $?)" == 3 ]]'
+check_that "test.sh --plan is not refused" './tools/test.sh --plan >/dev/null 2>&1'
+kill "$guard_pid" 2>/dev/null; wait "$guard_pid" 2>/dev/null
+check_that "test.sh --help mentions the full-run refusal" '[[ "$(./tools/test.sh --help 2>&1)" == *"refuses to start"* ]]'
+
 check_that "test.sh --help lists --shuffle and --repeat" \
     '[[ "$(./tools/test.sh --help 2>&1)" == *"--shuffle SEED"*"--repeat N"* ]]'
 # A flag test.sh does not know reaches the runner on a filtered run. Run in a scratch project of its
@@ -971,6 +1063,66 @@ if command -v rg >/dev/null 2>&1; then
 else
     echo "skip decisions.sh's search cases: rg is not on PATH"
 fi
+
+# ------------------------------------ new-name.sh checks the open pull requests' branches too ---
+# A scratch git checkout whose `gh` stub lists three open branches: `other`, whose head holds a
+# review item named busy-badger while the checkout's own origin/other is stale (an older commit
+# without it), `gone`, which cannot be read, and `fork`, a fork's pull request. Two branches cut
+# from the same main must not draw the same pair, so the draw skips busy-badger, reads the pull
+# request's head rather than the stale ref, leaves the caller's FETCH_HEAD and refs/ as they were,
+# and says that it skipped `gone` and `fork`; with a `gh` that fails (no network) it draws from
+# this tree alone.
+pr_repo="$work_dir/names-pr-repo"
+pr_bin="$work_dir/names-pr-bin"
+mkdir -p "$pr_repo/tools/names" "$pr_repo/docs/todo" "$pr_repo/docs/decisions" "$pr_repo/docs/review" \
+    "$pr_repo/docs/playtests" "$pr_bin"
+cp "$root/tools/new-name.sh" "$pr_repo/tools/"
+printf 'busy\n' > "$pr_repo/tools/names/adjectives.txt"
+printf 'badger\notter\n' > "$pr_repo/tools/names/animals.txt"
+touch "$pr_repo/docs/review/.gitkeep"
+(
+    cd "$pr_repo" || exit 1
+    git init --quiet
+    git add -A
+    git -c user.name=t -c user.email=t@example.com commit --quiet -m main
+    git init --quiet --bare "$pr_repo.origin.git"
+    git remote add origin "$pr_repo.origin.git"
+    git update-ref refs/remotes/origin/other HEAD
+    git checkout --quiet -b other
+    printf '# busy-badger — Taken elsewhere\n' > docs/review/2026-09-02-busy-badger.md
+    git add -A
+    git -c user.name=t -c user.email=t@example.com commit --quiet -m other
+    git push --quiet origin other
+    git rev-parse HEAD > "$pr_repo.other-oid"
+    git checkout --quiet -
+    git branch --quiet -D other
+    printf 'kept\n' > .git/FETCH_HEAD
+)
+pr_oid="$(cat "$pr_repo.other-oid")"
+printf '#!/usr/bin/env bash\nprintf "other\\t%s\\tfalse\\ngone\\t%s\\tfalse\\nfork\\t%s\\ttrue\\n"\n' \
+    "$pr_oid" "$(printf '%040d' 1)" "$pr_oid" > "$pr_bin/gh"
+chmod +x "$pr_bin/gh"
+# With the one pair the other branch holds as the only one, the draw has nothing free (a draw that
+# ignored the branch would take it).
+printf 'badger\n' > "$pr_repo/tools/names/animals.txt"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Only" 2>&1)"; pr_status=$?
+check_that "new-name.sh finds no free pair when an open branch holds the only one" \
+    '[[ $pr_status -ne 0 && "$pr_out" == *"no free adjective-animal pair"* ]]'
+printf 'badger\notter\n' > "$pr_repo/tools/names/animals.txt"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Second" 2>&1)"
+check_that "new-name.sh passes over a name an open pull request's branch holds" \
+    '[[ "$pr_out" == *"2026-09-27-busy-otter"* && -s "$pr_repo/docs/playtests/2026-09-27-busy-otter.md" ]]'
+check_that "new-name.sh says that it skipped a branch it cannot read, and goes on" \
+    '[[ "$pr_out" == *"cannot read branch gone; skipped"* ]]'
+check_that "new-name.sh skips a fork's pull request with a note" \
+    '[[ "$pr_out" == *"fork is from a fork; skipped"* ]]'
+check_that "new-name.sh leaves the caller's FETCH_HEAD and refs/new-name alone" \
+    '[[ "$(cat "$pr_repo/.git/FETCH_HEAD")" == kept && -z "$(git -C "$pr_repo" for-each-ref refs/new-name)" ]]'
+rm -f "$pr_repo/docs/playtests/2026-09-27-busy-otter.md"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$pr_bin/gh"
+pr_out="$(cd "$pr_repo" && PATH="$pr_bin:$PATH" ./tools/new-name.sh --date 2026-09-27 playtest "Offline" 2>&1)"
+check_that "new-name.sh offline says so and draws from its own tree" \
+    '[[ "$pr_out" == *"gh pr list failed; names on open pull requests are not checked"* && -n "$(ls "$pr_repo/docs/playtests")" ]]'
 
 # ------------------------------------------------------- lint.sh's checks of the queue's layout ---
 # On the same scratch tree: an entry, its review items and an old entry's decision share names on
@@ -1162,6 +1314,28 @@ queue_check_fails "queue.sh --check rejects a repeated upnext" "twice"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 printf 'upnext: true\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
 queue_check_fails "queue.sh --check rejects an upnext below the opening block" "outside the opening block"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+# The same three for `fable-only:`, the line that says every pull request building one of the
+# entry's items carries the GitHub label; then the line whole, which changes no order and tags the
+# entry's line, after `[up next]` where the entry has both.
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nfable-only: yes')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a fable-only with any value but true" "\`fable-only:\` takes only"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nfable-only: true\nfable-only: true')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a repeated fable-only" "\`fable-only: true\` twice"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+printf 'fable-only: true\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
+queue_check_fails "queue.sh --check rejects a fable-only below the opening block" "outside the opening block of the file: \`fable-only: true\`"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nfable-only: true')" "slow-owl — Parked"
+add_entry 2026-09-02-calm-fox "$(printf 'priority: next\nupnext: true\nfable-only: true\nafter: 2026-09-25-lazy-cat')" "calm-fox — Waits · filed 2026-09-02"
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+tagged_order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk '{ print $1 " " $2 }' | tr '\n' ' ')"
+line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
+both="$(cd "$queue_repo" && ./tools/queue.sh | grep calm-fox)"
+plain="$(cd "$queue_repo" && ./tools/queue.sh | grep -c 'fable-only')"
+check_that "queue.sh --check passes a fable-only beside a band, which tags the entry's line and no other and moves nothing" \
+    '[[ $status -eq 0 && "$tagged_order" == "$order" && "$line" == "parked  2026-09-03-slow-owl  slow-owl — Parked  [fable-only]" && "$both" == *"(after 2026-09-25-lazy-cat)  [up next]  [fable-only]" && "$plain" -eq 2 ]]'
+add_entry 2026-09-02-calm-fox "$(printf 'priority: next\nafter: 2026-09-25-lazy-cat')" "calm-fox — Waits · filed 2026-09-02"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 # A bug entry prints before now (newest first among bugs); an upnext entry prints first under its
 # heading with its own band shown, and leaves its band's place.

@@ -49,7 +49,7 @@ var _horns := 0
 var _bumps := 0
 var _strikes := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var frames: Array[int] = []
 	for word in (OS.get_environment("CADENCE_FRAMES") if OS.has_environment("CADENCE_FRAMES")
 			else "1,2,4").split(","):
@@ -73,16 +73,21 @@ func run(t) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in seeds:
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(city_seed))
+		var builder := RunCity.new_builder()
+		var drawn := DrawnView.on(t)
+		builder.use_the_drawn_view(drawn)
+		builder.use_the_crowds_screen(ScreenCrowdView.new(t, drawn), CrowdTiming.new())
+		RunCity.build(city, run, CityGenerator.generate(city_seed), builder)
 		for day in DAYS:
 			for walk in WALKS:
 				for per_tick in frames:
 					print("CROWD_CADENCE_JSON " + JSON.stringify(
 							_run_once(city, rig, city_seed, day, walk, per_tick)))
-		city.crowd._player = null
+		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	rig.free()
 	t.check(true, "ran")
@@ -90,27 +95,29 @@ func run(t) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String,
 		per_tick: int) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map().plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
-	var start := city.map.doorstep_world_position()
+	var start := city.map().doorstep_world_position()
 	crowd.start_day(day, rng, start)
-	crowd.set_gates(city.streets().region_plan().gates)
+	crowd.set_gates(city.streets().region_plan().gate_states())
 	crowd._player = rig
+	crowd.use_focus(StrollerFocus.new(rig))
+	crowd.use_bus(EventBus)
 	var with_events := OS.get_environment("CADENCE_EVENTS") != ""
-	var meeting = null
+	var meeting: YIELDS.Meeting = null
 	if with_events:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("crowd-cadence-events:%d:%d" % [city_seed, day])
-		city.events.start_day(DaySpec.for_day(day), events_rng, [], start)
-		city.events.use_player(rig)
+		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], start)
+		RunCity.events(city).use_player(rig)
 		meeting = YIELDS.Meeting.new(null, city, {"seed": city_seed, "day": day, "walk": walk})
 	var steps_its_agents := crowd.has_method("_step_the_agents")
-	var across := _crossing(city.map, start)
+	var across := _crossing(city.map(), start)
 	var here: Vector2 = across[0] if walk == "road" else start
 	var walk_file := "%d-%d-%s-%d.var" % [city_seed, day, walk, per_tick]
 	var recorded := PackedVector2Array()
@@ -144,7 +151,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		recorded.append(rig.global_position)
 		recorded.append(rig.velocity)
 		if with_events:
-			city.events._tick_the_events(STEP)
+			RunCity.events(city)._tick_the_events(STEP)
 		crowd._physics_process(STEP)
 		if with_events and tick >= WARMUP:
 			meeting.observe([], [])
@@ -157,9 +164,9 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 			bumps_at_warmup = _bumps
 			strikes_at_warmup = _strikes
 		for agent in crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
-			var now_startled := agent.excitement.is_startled()
+			var now_startled := agent.mood().is_startled()
 			var box := agent.junction_occupied()
 			var in_box := box != Vector2i(-1, -1)
 			if tick >= WARMUP:
@@ -167,8 +174,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 					car_startles += 1
 				if in_box and boxed.get(agent, Vector2i(-1, -1)) != box:
 					box_entries += 1
-				if agent.speed() > 1.0 and is_finite(agent.gap_ahead):
-					gaps.append(agent.gap_ahead)
+				if agent.speed() > 1.0 and is_finite(agent.lane().gap_ahead()):
+					gaps.append(agent.lane().gap_ahead())
 				speeds += agent.speed()
 				speed_samples += 1
 			startled[agent] = now_startled
@@ -183,9 +190,9 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	var figures := {}
 	if with_events:
 		figures = meeting.report()
-		city.events.use_player(null)
+		RunCity.events(city).use_player(null)
 		# The next run on this city starts with none of this run's events on the map's list.
-		city.events.clear()
+		RunCity.events(city).stand_down()
 	return figures.merged({"seed": city_seed, "day": day, "walk": walk, "frames_per_tick": per_tick,
 		"steps_on_the_tick": steps_its_agents, "agents": crowd.agent_count(),
 		"window_seconds": WINDOW * STEP,
@@ -241,7 +248,7 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
 	var best := INF
 	var target := here
 	for agent in crowd.agents():
-		if agent.kind != CrowdAgent.Kind.WALKER:
+		if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 			continue
 		var distance := agent.global_position.distance_squared_to(here)
 		if distance < best:

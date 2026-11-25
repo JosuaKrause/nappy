@@ -1,0 +1,23 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[RunState] run started, seed=2
+FIELDS seed 4242: 13 events live, 234 crowd
+FIELDS   uncut outlines everywhere, as the layer built them before: 494 outlines, 3.7 ms
+FIELDS   whole map, cold: 496 outlines, 37.0 ms
+FIELDS   whole map, again: 496 outlines, 5.0 ms
+FIELDS   one screen at her doorstep, cold: 42 outlines, 4.3 ms
+FIELDS   one screen at her doorstep, again: 42 outlines, 1.0 ms
+FIELDS   one screen round each of 13 events, cold: mean 3.8 ms, worst 6.3 ms
+[RunState] run started, seed=2
+FIELDS seed 5551212: 16 events live, 234 crowd
+FIELDS   uncut outlines everywhere, as the layer built them before: 500 outlines, 3.9 ms
+FIELDS   whole map, cold: 504 outlines, 38.0 ms
+FIELDS   whole map, again: 504 outlines, 5.9 ms
+FIELDS   one screen at her doorstep, cold: 39 outlines, 2.5 ms
+FIELDS   one screen at her doorstep, again: 39 outlines, 1.0 ms
+FIELDS   one screen round each of 16 events, cold: mean 4.5 ms, worst 6.2 ms
+-- calm_pelican_fields_layer_cost.gd       7157 ms
+
+0 checks, 0 failures
+PARTIAL RUN — only suites matching probes/calm_pelican_fields_layer_cost.gd. Not a green build.

@@ -25,11 +25,10 @@ const RUN_SEED := 2
 const SEED := 4242
 const SAMPLES := 150
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	_diagnose_recycle(map)
 	_diagnose_day_start(t, map)
-	t.check(true, "probe finished")
 
 ## Candidate 1: `CrowdAgent._recycle()`, driven directly the way M120's own entry test
 ## (`tests/crowd_rig.gd`, `_test_the_entry_roll_is_kept_inside_its_own_room`) drives it, at each of
@@ -48,12 +47,12 @@ func _diagnose_recycle(map: CityMap) -> void:
 		"west": [false, 1.0, _cross_positions(size.y, Tuning.TILE_SIZE, false)],
 		"east": [false, -1.0, _cross_positions(size.y, size.x - Tuning.TILE_SIZE, false)],
 	}
-	for name in edges:
+	for name: String in edges:
 		var vertical: bool = edges[name][0]
 		var entering_direction: float = edges[name][1]
-		var points: Array = edges[name][2]
+		var points: Array[Vector2] = edges[name][2]
 		var limit: float = size.y if vertical else size.x
-		for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+		for kind: CrowdAgent.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 			var clearance := _picture_clearance(kind, vertical)
 			var samples := 0
 			var unsafe := 0
@@ -61,9 +60,7 @@ func _diagnose_recycle(map: CityMap) -> void:
 			for at: Vector2 in points:
 				var field := CrowdField.new(map, at)
 				var agent := CrowdAgent.new()
-				agent.kind = kind
-				agent._map = map
-				agent.field = field
+				agent.setup(kind, map, field, 0, 0.0)
 				for seed in SAMPLES:
 					agent._rng.seed = seed
 					agent._recycle()
@@ -76,7 +73,7 @@ func _diagnose_recycle(map: CityMap) -> void:
 					# `CarStrategy.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
 					# the tunnel and the bridge, not this defect, so it is left out of the tally
 					# rather than counted as "unsafe".
-					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road:
+					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road_corridor():
 						continue
 					samples += 1
 					var along := agent._along()
@@ -95,8 +92,8 @@ func _diagnose_recycle(map: CityMap) -> void:
 ## Spawn points along the edge itself, holding the axis coordinate (`fixed`) and varying the
 ## cross-axis one across a spread of the map so at least some land on a corridor whose lane
 ## offsets carry the direction being asked about.
-func _cross_positions(cross_extent: float, fixed: float, vertical: bool) -> Array:
-	var points: Array = []
+func _cross_positions(cross_extent: float, fixed: float, vertical: bool) -> Array[Vector2]:
+	var points: Array[Vector2] = []
 	for i in range(1, 6):
 		var cross := cross_extent * float(i) / 6.0
 		points.append(Vector2(cross, fixed) if vertical else Vector2(fixed, cross))
@@ -105,27 +102,28 @@ func _cross_positions(cross_extent: float, fixed: float, vertical: bool) -> Arra
 ## Candidate 2: the morning's own placement. `Crowd.start_day()` places every agent through
 ## `CrowdAgent.setup()`, which rolls freely between `CrowdField.along_bounds()` — already clamped
 ## flush to the true edge near one — with no room question asked at all.
-func _diagnose_day_start(t, map: CityMap) -> void:
+func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 	var size := map.world_size()
 	var edges := {
 		"west": Vector2(Tuning.TILE_SIZE, size.y * 0.5),
 		"east": Vector2(size.x - Tuning.TILE_SIZE, size.y * 0.5),
 	}
-	for name in edges:
+	for name: String in edges:
 		var at: Vector2 = edges[name]
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		var run := RunCity.started_run(RUN_SEED)
+		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, run, map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m100-probe-day-start:%s" % name)
-		city.crowd.start_day(1, rng, at)
+		RunCity.crowd(city).start_day(1, rng, at)
 		var total := 0
 		var unsafe := 0
 		var out_of_bounds := 0
-		for agent in city.crowd.agents():
+		for agent in RunCity.crowd(city).agents():
 			total += 1
 			var limit: float = size.y if agent._vertical else size.x
-			var clearance := _picture_clearance(agent.kind, agent._vertical)
+			var clearance := _picture_clearance(agent.lane().kind(), agent._vertical)
 			var along := agent._along()
 			if along < 0.0 or along > limit:
 				out_of_bounds += 1
@@ -146,7 +144,7 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 ## north and south overhang are real and unequal; the larger one is kept so one number covers
 ## either edge of the axis without asking which edge this call is about. Only the cardinal (`front`,
 ## `side`) views are asked, since a fresh entry never lands mid-turn.
-func _picture_clearance(kind: int, vertical: bool) -> float:
+func _picture_clearance(kind: CrowdAgent.Kind, vertical: bool) -> float:
 	if kind == CrowdAgent.Kind.CAR:
 		if vertical:
 			var body := AtlasTable.baked().native_size(

@@ -10,7 +10,7 @@ extends RefCounted
 ## Nothing here knows what is closed or what is calm. The lattice is fixed for the run; what
 ## today has done to it arrives as a set of segment keys.
 ##
-## **An instance is one city's lattice, and each `CityMap` holds its own** (`CityMap.network`), so
+## **An instance is one city's lattice, and each `CityMap` holds its own** (`CityMap.street_network()`), so
 ## a planner is handed the streets with the map it is handed. The lattice is a function of
 ## `Tuning.CITY_BLOCKS` alone, a constant, so every network has the same streets in the same order
 ## and a segment key means the same street on all of them; a `Segment` object belongs to the
@@ -45,6 +45,14 @@ class Segment extends RefCounted:
 					Vector2i(Tuning.BLOCK_SIZE, Tuning.STREET_WIDTH))
 		return Rect2i(origin + Vector2i(0, Tuning.STREET_WIDTH),
 				Vector2i(Tuning.STREET_WIDTH, Tuning.BLOCK_SIZE))
+
+	## The street's tiles grown by a street's width at both ends along the street: the street and
+	## the two junction boxes at its ends, and nothing past them.
+	func run_rect() -> Rect2i:
+		var street := tile_rect()
+		if horizontal:
+			return street.grow_individual(Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH, 0)
+		return street.grow_individual(0, Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH)
 
 	## The one-tile strip where the street meets the junction at one of its ends. A closure
 	## is sealed here rather than in the middle of the street, so that it is visible from
@@ -114,7 +122,7 @@ func by_key(key: Vector3i) -> Segment:
 ## The four streets that meet at a junction — three at an edge, two at a corner.
 func at_junction(junction: Vector2i) -> Array[Segment]:
 	var found: Array[Segment] = []
-	for candidate in [
+	for candidate: Vector3i in [
 			Vector3i(junction.x, junction.y, 0), Vector3i(junction.x - 1, junction.y, 0),
 			Vector3i(junction.x, junction.y, 1), Vector3i(junction.x, junction.y - 1, 1)]:
 		var segment: Segment = _by_key.get(candidate)
@@ -218,7 +226,7 @@ func route_count(from: Segment, access: Array[Segment], closed: Dictionary,
 		capacity[v * total + u] = 1
 	links.resize(total)
 	var out_of_source: Array[int] = []
-	for junction in [from.a, from.b]:
+	for junction: Vector2i in [from.a, from.b]:
 		var node := node_of(junction)
 		capacity[source * total + node] = 1
 		out_of_source.append(node)
@@ -227,7 +235,7 @@ func route_count(from: Segment, access: Array[Segment], closed: Dictionary,
 	for segment in access:
 		if closed.has(segment.key()):
 			continue
-		for junction in [segment.a, segment.b]:
+		for junction: Vector2i in [segment.a, segment.b]:
 			var node := node_of(junction)
 			if int(capacity.get(node * total + sink, 0)) > 0:
 				continue

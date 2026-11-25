@@ -25,6 +25,9 @@ extends RefCounted
 ## The rest are about *placement and coverage* and hold for either bake.
 
 const BakedRegions := preload("res://tests/baked_regions.gd")
+## The ground's authored tile set, read only for which source each whole ground tile's region is
+## (its `resource_name`), so the coverage sweep asks `GroundTiles` what the ground asks.
+const AUTHORED_GROUND: TileSet = preload("res://assets/ground_tileset.tres")
 ## How far a picture's visible centre may sit from the anchor its caller draws it on.
 const ANCHOR_TOLERANCE := 1.5
 ## The ground components' own canvas — `GroundLayers.TILE_SIZE`, restated as the number this file
@@ -33,11 +36,11 @@ const ANCHOR_TOLERANCE := 1.5
 const LAYER_CANVAS := Vector2i(32, 32)
 
 ## **How many whole ground tiles there are to ask about is the bake's.** An `--svg` bake carries
-## all 58; a default bake carries the twelve whose source the compositor composes nothing for, and
+## all 57; a default bake carries the eleven whose source the compositor composes nothing for, and
 ## the other 46 are composed from layers rather than drawn. This is the smaller of the two, so the
 ## sweep below stays a guard against having found nothing rather than a second copy of the
 ## per-mode membership `tests/test_atlas_ground.gd` already pins exactly.
-const FEWEST_WHOLE_GROUND_TILES := 12
+const FEWEST_WHOLE_GROUND_TILES := 11
 ## And how many layer components there are: 31 in a default bake, none at all in an `--svg` one,
 ## which composes nothing and carries no layer in return.
 const FEWEST_GROUND_COMPONENTS := 25
@@ -63,7 +66,7 @@ var _transfer_rules := false
 ## The library each page image is read through, fresh for this suite.
 var _atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_transfer_rules = AtlasTable.baked().bake_mode() == "png"
 	if not _transfer_rules:
 		print("test_visuals: %s bake — the transfer registration rules are not asked of the "
@@ -81,7 +84,7 @@ func run(t) -> void:
 ## centred across it — otherwise she floats or walks beside herself when she turns. Each also has
 ## to carry real transparency *inside* its own bounds: the gaps between an arm and a body, and
 ## between a pram's wheels, are what stop a figure reading as a filled block.
-func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
+func _test_the_rig_stands_on_its_canvas_bottom(t: TestRunner) -> void:
 	var checked := 0
 	for name: StringName in BakedRegions.names():
 		if not String(name).begins_with("rig/"):
@@ -112,11 +115,17 @@ func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 ## exception and are excluded here by name — those are drawn *over* a base and are supposed to be
 ## mostly transparent.
 ##
+## **A tile that stands in the south water owes something else** (`GroundTiles.stands_in_water()`,
+## the bulkhead's sea wall): its top row opaque, the stone, and its bottom row fully clear, since
+## the ground draws the south water beneath it and the hole shows that water, not the void.
+##
 ## **How many whole tiles there are to ask about is the bake's** — see
 ## `FEWEST_WHOLE_GROUND_TILES`.
-func _test_ground_tiles_cover_their_cell(t) -> void:
+func _test_ground_tiles_cover_their_cell(t: TestRunner) -> void:
 	var checked := 0
+	var standing := 0
 	var holed: Array[String] = []
+	var footless: Array[String] = []
 	for name: StringName in BakedRegions.names():
 		var text := String(name)
 		if not text.begins_with("tiles/") or text.begins_with("tiles/layers/"):
@@ -126,10 +135,17 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 			t.check(false, "%s reads back off its page" % name)
 			continue
 		checked += 1
-		if not _is_opaque(image):
+		if GroundTiles.stands_in_water(_ground_source_named(text)):
+			standing += 1
+			if not _row_is(image, 0, true) or not _row_is(image, image.get_height() - 1, false):
+				footless.append(text)
+		elif not _is_opaque(image):
 			holed.append(text)
 	t.check(holed.is_empty(), "every ground tile covers its full opaque canvas (%s)"
 			% ", ".join(holed.slice(0, 5)))
+	t.check(standing > 0 and footless.is_empty(),
+			"every tile that stands in the water (%d) is opaque along its top and clear along its "
+			% standing + "foot, where the water drawn beneath it shows (%s)" % ", ".join(footless))
 	t.check(checked >= FEWEST_WHOLE_GROUND_TILES,
 			"there were whole ground tiles to ask about (%d)" % checked)
 
@@ -146,7 +162,7 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 ## **An `--svg` bake has no components at all to ask about**, since it composes nothing and its
 ## page carries no layer: there the sweep asserts that absence rather than a count, which is the
 ## same claim from the other side.
-func _test_ground_components_keep_their_canvas(t) -> void:
+func _test_ground_components_keep_their_canvas(t: TestRunner) -> void:
 	var checked := 0
 	var bases := 0
 	for name: StringName in BakedRegions.names():
@@ -183,7 +199,7 @@ func _test_ground_components_keep_their_canvas(t) -> void:
 ## The props whose caller draws them on a point rather than on a rectangle. A ground decal is
 ## placed by its canvas centre and a standing object by its canvas bottom, so where the artwork
 ## sits inside its canvas *is* where the object sits in the world.
-func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
+func _test_props_keep_the_placement_their_callers_draw_on(t: TestRunner) -> void:
 	for name in CENTRED_PROPS:
 		var image := _region_image(name)
 		t.check(image != null, "%s is a baked region" % name)
@@ -219,7 +235,7 @@ func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
 ## triple wave: the outermost row and column of each baby cue's baked image carry no part of
 ## the stroke. The anchor offset is not held here; each SVG's header states it beside
 ## `Stroller.INDICATOR_BOTTOM_PADDING`.
-func _test_baby_cues_keep_a_transparent_border(t) -> void:
+func _test_baby_cues_keep_a_transparent_border(t: TestRunner) -> void:
 	for name in BABY_CUES:
 		var image := _region_image(name)
 		t.check(image != null, "%s is a baked region" % name)
@@ -257,6 +273,22 @@ func _is_opaque(image: Image) -> bool:
 		for x in image.get_width():
 			if image.get_pixel(x, y).a < 0.99:
 				return false
+	return true
+
+## The ground source whose authored picture is the region `name`, or -1 if none is.
+func _ground_source_named(name: String) -> int:
+	for index in AUTHORED_GROUND.get_source_count():
+		var id := AUTHORED_GROUND.get_source_id(index)
+		if AUTHORED_GROUND.get_source(id).resource_name == name:
+			return id
+	return -1
+
+## Whether every pixel of row `y` is opaque (`opaque`) or fully clear (not).
+func _row_is(image: Image, y: int, opaque: bool) -> bool:
+	for x in image.get_width():
+		var alpha := image.get_pixel(x, y).a
+		if (alpha < 0.99) if opaque else (alpha > 0.01):
+			return false
 	return true
 
 func _has_opaque_and_clear(image: Image) -> bool:

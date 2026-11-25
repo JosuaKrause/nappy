@@ -1,318 +1,63 @@
 extends RefCounted
-## The emission model: the meter arithmetic a live `EventInstance` charges as she moves past it --
-## telegraph damping, the pulse envelope, a two-part field's core against its outer radius, that
-## adding a second part never moves the first -- plus the two states every instance owes regardless
-## of kind: it is awake (or asleep) at the right moment, it finishes and leaves rather than
-## vanishing mid-frame.
-##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again" -- this half keeps
-## `_instance()`/`_advance()`, the two helpers that drive a bare `EventInstance` through real
-## seconds without a scheduler or a city underneath it.
+## What a row's field answers, asked of the row alone: the swing of its pulse and the two parts of a
+## two-part field (a louder core inside a quieter field), as relationships between the row's own
+## settings. A row is a plain value, so none is built here but the catalogue's own; what a live
+## event charges as it moves through its phases is `tests/test_event_phase.gd`'s.
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
-	_test_telegraph_damps_emission(t)
+func run(t: TestRunner) -> void:
 	_test_pulse_envelope(t)
-	_test_the_leaf_blowers_core_is_in_the_meter(t)
-	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
-	_test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t)
-	_test_duration_and_finish(t)
-	_test_an_event_leaves_rather_than_vanishing(t)
-	_test_no_field_reaches_past_silent_beyond(t)
-	_test_contribution_skips_only_silence(t)
-	_test_flocks_are_not_skipped(t)
+	_test_the_leaf_blowers_core_is_in_the_field(t)
 
-
-func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
-	var instance := EventInstance.new()
-	instance.setup(def, at, path)
-	t.add_child(instance)
-	instance.set_process(false)
-	return instance
-
-func _advance(instance: EventInstance, seconds: float) -> void:
-	for i in int(round(seconds / STEP)):
-		instance.step(STEP)
-
-func _test_telegraph_damps_emission(t) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
-	var instance := _instance(t, def)
-
-	t.check(instance.is_telegraphing(), "an event starts in its telegraph phase")
-	t.close_to(instance.current_intensity(), def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
-			"a telegraphing event emits only a fraction of its intensity")
-	t.close_to(instance.excitement.contribution_at(Vector2(1000.0, 0.0)), 0.0,
-			"an event contributes nothing beyond its outer radius")
-
-	_advance(instance, def.telegraph_time + 0.05)
-	t.check(not instance.is_telegraphing(), "the telegraph phase ends after telegraph_time")
-	t.close_to(instance.current_intensity(), def.intensity,
-			"an active event emits its full intensity", 0.05)
-	t.close_to(instance.excitement.contribution_at(Vector2(def.inner_radius * 0.5, 0.0)), def.intensity,
-			"inside the inner radius the full intensity applies", 0.05)
-	instance.free()
-
-func _test_pulse_envelope(t) -> void:
+## A pulsing row's peak swings over one beat of its pulse and stays inside its stated peak: sampled
+## after its telegraph, a burst's length at a time, since `EventDef.peak_through()` is the peak a live
+## event carries once the phase's damping is one.
+func _test_pulse_envelope(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
-	t.check(def.pulse_period > 0.0, "the yeller pulses rather than holding")
-	var instance := _instance(t, def)
-	_advance(instance, def.telegraph_time + 0.05)
+	t.check(def.pulses_every() > 0.0, "the yeller pulses rather than holding")
+	var from := def.telegraphs_for() + 0.05
 
 	var lowest := INF
 	var highest := -INF
-	for i in int(def.pulse_period / STEP):
-		instance.step(STEP)
-		lowest = minf(lowest, instance.current_intensity())
-		highest = maxf(highest, instance.current_intensity())
+	for i in int(def.pulses_every() / STEP):
+		var into := float(i + 1) * STEP
+		var peak := def.peak_through(from + into, into)
+		lowest = minf(lowest, peak)
+		highest = maxf(highest, peak)
 
 	t.check(highest > lowest * 2.0, "the pulse envelope has a real swing between beats")
 	t.check(lowest > 0.0, "a pulsing event never goes completely silent")
-	t.check(highest <= def.intensity + 0.001, "the pulse never exceeds the stated intensity")
-	instance.free()
+	t.check(highest <= def.peak() + 0.001, "the pulse never exceeds the stated intensity")
 
-## **A two-part field is two parts in the meter, not only in the cost table.** The leaf blower is a
-## wall close in and a busker further out (`EventDef.core_intensity` / `core_radius`), and the thing
-## that makes that a *field* rather than a price is that an instance charges for it — walked past,
-## against the row the outer half was copied from.
-##
-## Both are asked through a real `EventInstance`, at the peak each catalogues, so what is compared is
-## the query the baby makes. 32px is inside the leaf blower's core and 100px is well outside it,
-## where the two rows are the same numbers and have to answer the same rate.
-func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
+## **A two-part field is two parts in the price, not only in the cost table.** The leaf blower is a
+## wall close in and a busker further out (the field's core rate / core reach), and the thing
+## that makes that a *field* rather than a price is that the row's own emission carries it —
+## against the row the outer half was copied from. 32px is inside the leaf blower's core and 100px
+## is well outside it, where the two rows are the same numbers and have to answer the same rate.
+func _test_the_leaf_blowers_core_is_in_the_field(t: TestRunner) -> void:
 	var leaf := EventCatalogue.by_id("leaf_blower")
 	var busker := EventCatalogue.by_id("busker")
-	t.check(leaf.core_intensity > 0.0 and leaf.core_radius > 0.0,
+	t.check(leaf.field().core_rate() > 0.0 and leaf.field().core_reach() > 0.0,
 			"the leaf blower carries a core")
-	t.check(busker.core_intensity == 0.0,
+	t.check(busker.field().core_rate() == 0.0,
 			"the busker is one field, which is what makes it the row to compare against")
-	t.check(is_equal_approx(leaf.intensity, busker.intensity)
-			and is_equal_approx(leaf.outer_radius, busker.outer_radius),
+	t.check(is_equal_approx(leaf.peak(), busker.peak())
+			and is_equal_approx(leaf.heard_within(), busker.heard_within()),
 			"away from the core the leaf blower is the busker, number for number")
 
-	var blower := _instance(t, leaf)
-	var player := _instance(t, busker)
-	var near := Vector2(32.0, 0.0)
-	var far := Vector2(100.0, 0.0)
-	t.check(near.length() < leaf.core_radius and far.length() > leaf.core_radius,
+	var near := 32.0
+	var far := 100.0
+	t.check(near < leaf.field().core_reach() and far > leaf.field().core_reach(),
 			"32px is inside the core and 100px is outside it")
 
-	var blower_near := blower.field_at(near, leaf.intensity, Vector2.INF)
-	var busker_near := player.field_at(near, busker.intensity, Vector2.INF)
+	var blower_near := leaf.emission_at_distance(near, leaf.peak())
+	var busker_near := busker.emission_at_distance(near, busker.peak())
 	t.check(blower_near > busker_near + 1.0,
 			"a leaf blower charges more than a busker inside its core (%.2f/s against %.2f/s)"
 			% [blower_near, busker_near])
-	t.close_to(blower_near, leaf.core_intensity,
+	t.close_to(blower_near, leaf.field().core_rate(),
 			"and what it charges there is the core's own rate")
-	t.close_to(blower.field_at(far, leaf.intensity, Vector2.INF),
-			player.field_at(far, busker.intensity, Vector2.INF),
+	t.close_to(leaf.emission_at_distance(far, leaf.peak()),
+			busker.emission_at_distance(far, busker.peak()),
 			"past the core the two rows charge the same rate")
-
-	# The damping is the half a def-level check cannot see: a quarter of a beat has to be a quarter
-	# of *both* parts, or a leaf blower between bursts is a full wall inside a quiet field. Stated
-	# as the fraction the phase put on the row's own peak, so it holds wherever in the telegraph and
-	# the pulse envelope this instance happens to be standing.
-	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
-	var fraction := blower.current_intensity() / leaf.intensity
-	t.check(fraction < 1.0, "and is emitting less than its catalogued peak while it does")
-	t.close_to(blower.excitement.contribution_at(near), leaf.core_intensity * fraction,
-			"the phase damps the core by exactly the fraction it damps the field by")
-	blower.free()
-	player.free()
-
-## M174 item 3: PLAYTEST-115 overturned the walk-beside target above (standing still at
-## `inner_radius`) for **the pass** — she and the row moving different directions, at the fixed
-## lateral offsets an ordinary sidewalk actually allows. *(PLAYTEST-115: "what matters for the
-## dogs is walking past them. and it shouldn't be free"; "walking past ... is what matters. in my
-## playthrough I walked next to him without effect".)* `M174Pass.pass_net_averaged()` —
-## `tests/probes/m174_pass.gd`'s own simulation, shared rather than duplicated here — walks a real
-## `EventInstance` past her, moving as the row actually moves, averaged over its own pulse.
-##
-## **A relationship, not a pinned value.** What must never quietly go false is that a pass costs
-## something awake at an offset a sidewalk allows — not the exact figure, which the probe prints
-## and `docs/EVENTS.md` records, and which moves as the catalogue is rebalanced. `dog_walker` does
-## not fully restore its pre-M117 pass without crossing `EventScheduler.WALL_WORTH_OF_COST` — see that
-## row's own docstring — so this asserts only what these rows actually clear, not a target the
-## `WALL` line refuses one of them.
-##
-## **The two rows she walks up to.** Both are `MAP` placements made at dawn, so the rig starts
-## their pass after the telegraph because that is when she meets them. A row `EventDirector` sites
-## down her own line is met inside its telegraph instead and is a different claim, made where its
-## own siting is decided rather than folded in here.
-func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
-	for id in ["homeless_yeller", "dog_walker"]:
-		var def := EventCatalogue.by_id(id)
-		for offset in [0.0, 20.0, 40.0]:
-			var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-			t.check(net > 0.0,
-					"%s: a pass at %.0fpx of an ordinary sidewalk nets %.2f/s awake, above zero"
-					% [id, offset, net])
-
-## **The loose dog stays above the dog walker**, which is the relation the player asked to be kept.
-## *(2026-09-20: "unleashed dog still has too little influence -- needs to be more intense"; "but
-## keep things in relation to each other".)* A dog running loose at 132px/s costs more to be passed
-## by than a leashed one costs to walk past. Both figures come off `M174Pass`, the same simulation
-## `docs/COSTS.md` prints, so the two can never disagree about what a pass is.
-##
-## That the loose dog meets her at that intensity at all — created with its warning over rather than
-## still telegraphing at `EventInstance.TELEGRAPH_INTENSITY_FRACTION` — is asked of the game's own warning
-## and creation, on a real city: `tests/test_event_manager.gd`,
-## `_test_a_row_warned_down_her_line_arrives_at_its_own_intensity`.
-func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t) -> void:
-	var dog := EventCatalogue.by_id("loose_dog")
-	var walker := EventCatalogue.by_id("dog_walker")
-	for offset in [0.0, 20.0, 40.0]:
-		var loose := M174Pass.pass_net_averaged(dog, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-		var leashed := M174Pass.pass_net_averaged(walker, offset, Tuning.EXCITEMENT_DECAY_WALKING,
-				1.0)
-		t.check(loose > leashed,
-				("a loose dog's pass at %.0fpx costs %.2f awake, above the %.2f a dog walker's "
-				+ "does") % [offset, loose, leashed])
-
-func _test_duration_and_finish(t) -> void:
-	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.
-	var def := EventCatalogue.by_id("abduction")
-	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
-	var instance := _instance(t, def)
-	_advance(instance, def.telegraph_time + def.duration + 0.1)
-	t.check(instance.is_finished, "an event with a duration finishes")
-	t.close_to(instance.excitement.contribution_at(Vector2.ZERO), 0.0,
-			"a finished event contributes nothing")
-	instance.free()
-
-## **Nothing vanishes while you are looking at it.** *(M35, playtest 08 findings 2 and 3: "running
-## dog events etc — things that move disappear on screen; they should at least run offscreen before
-## despawning", and "pigeons are also completely ineffective", which is the same sentence about a
-## flock that hangs in the air and then is not there.)*
-##
-## Three separate claims, and the middle one is the one that could have gone wrong quietly: an event
-## on its way out is **over**. It emits nothing, it cannot end the day, and it carries no cue — or a
-## cat that has finished its run would trail its whole field behind it for as long as it took to get
-## off screen, which is a worse bug than the one being fixed.
-func _test_an_event_leaves_rather_than_vanishing(t) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.departure_speed() > 0.0, "a flock has somewhere to go")
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(60.0, 0.0)
-	_advance(instance, def.telegraph_time + def.duration + 0.1)
-	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
-	t.check(instance.is_leaving, "it is leaving")
-	t.close_to(instance.excitement.contribution_at(instance.player_at), 0.0,
-			"and it stops emitting the moment it does")
-
-	# Away from her, since a flock has no route to carry on along.
-	_advance(instance, 0.5)
-	t.check(instance.global_position.distance_to(instance.player_at) > 60.0,
-			"it goes away from her rather than in any direction it likes")
-	_advance(instance, Tuning.OUT_OF_SIGHT / def.departure_speed())
-	t.check(instance.is_finished, "and it is gone once it is out of sight")
-	instance.free()
-
-	# The backstop, for a rig or a streamed-out day where there is nobody to be out of sight of. One
-	# frame with her standing in it is what starts the flock's own clock — it waits until it notices
-	# her — and she is gone again for the whole of the rest of it.
-	var alone := _instance(t, def, Vector2.ZERO)
-	alone.player_at = Vector2.ZERO
-	alone.step(STEP)
-	alone.player_at = Vector2.INF
-	_advance(alone, def.telegraph_time + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
-	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
-	alone.free()
-
-## `EventExcitement`'s present rate answers zero for a point past `EventDef.silent_beyond()`
-## without working the field out, so for every row in the catalogue the field itself has to be
-## zero there: at every bearing, standing or at a speed past the most a field stretches, with the
-## body lying either way, and at a peak no row carries. A row that adds a radius to its field and
-## not to `silent_beyond()` fails here rather than going quiet a tile early. Flocks are left out,
-## since a flock's birds are not at its node and the instance does not ask it of them.
-func _test_no_field_reaches_past_silent_beyond(t) -> void:
-	var heard_inside := 0
-	var heard_past := 0
-	var rows := 0
-	for def: EventDef in EventCatalogue.all():
-		if def.flock_size > 0:
-			continue
-		rows += 1
-		var peak := maxf(maxf(def.intensity, def.core_intensity), 1.0) * 2.0
-		var past := def.silent_beyond() + 0.01
-		for facing: Vector2 in [Vector2.RIGHT, Vector2(1.0, 1.0).normalized()]:
-			var instance := EventInstance.new()
-			instance.setup(def, Vector2.ZERO, PackedVector2Array(), facing)
-			for heading in 8:
-				var moving := Vector2.RIGHT.rotated(heading * TAU / 8.0) * 10000.0
-				for velocity: Vector2 in [Vector2.ZERO, moving]:
-					if instance.field_at(Vector2.ZERO, peak, velocity) > 0.0:
-						heard_inside += 1
-					for bearing in 24:
-						var at := Vector2.RIGHT.rotated(bearing * TAU / 24.0) * past
-						if instance.field_at(at, peak, velocity) != 0.0:
-							heard_past += 1
-			instance.free()
-	t.check(rows > 0 and heard_inside > 0,
-			"the sweep asked %d rows and heard them at their node" % rows)
-	t.check(heard_past == 0,
-			"no row's field reaches past its silent_beyond() (%d samples did)" % heard_past)
-
-## The other half of the bound: `contribution_at()` itself, with its early-out, answers exactly what
-## the field answers (`_field_at()`, nothing skipped; no wall grid, so no wall either) inside and
-## just past `silent_beyond()`, for every non-flock row and for two made-up bodies long and wide
-## enough that only the body's own reach in the bound keeps their far end heard. The node stands
-## off the origin, so a bound measured from anywhere but the node the field is centred on fails.
-func _test_contribution_skips_only_silence(t) -> void:
-	var rows: Array[EventDef] = []
-	for def: EventDef in EventCatalogue.all():
-		if def.flock_size <= 0:
-			rows.append(def)
-	for shape: GroundShape in [GroundShape.segment(500.0, 10.0),
-			GroundShape.rect(Vector2(400.0, 300.0))]:
-		var long_body: EventDef = EventCatalogue.by_id("scaffolding").duplicate()
-		long_body.intensity = 10.0
-		long_body.inner_radius = 20.0
-		long_body.outer_radius = 60.0
-		long_body.core_intensity = 0.0
-		long_body.solid(shape)
-		rows.append(long_body)
-	var node := Vector2(300.0, -200.0)
-	var differed := 0
-	var heard := 0
-	var heard_by_its_body := 0
-	for def in rows:
-		var bodyless := (maxf(def.inner_radius, def.outer_radius) + 1.0) \
-				/ (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
-		var instance := EventInstance.new()
-		instance.setup(def, node, PackedVector2Array(), Vector2.RIGHT)
-		var reach := def.silent_beyond()
-		for bearing in 24:
-			var direction := Vector2.RIGHT.rotated(bearing * TAU / 24.0)
-			for share: float in [0.0, 0.3, 0.6, 0.8, 0.85, 0.9, 0.999, 1.001, 1.5]:
-				var at := node + direction * reach * share
-				for velocity: Vector2 in [Vector2.INF, direction * -10000.0,
-						direction * 10000.0]:
-					var field := instance.field_at(at, -1.0, velocity)
-					if instance.field_at(at, -1.0, velocity) != field:
-						differed += 1
-					if field > 0.0:
-						heard += 1
-						if reach * share > bodyless:
-							heard_by_its_body += 1
-		instance.free()
-	t.check(heard > 0 and heard_by_its_body > 0,
-			"the parity hears rows (%d samples), some only through their body's reach (%d)"
-			% [heard, heard_by_its_body])
-	t.check(differed == 0,
-			"contribution_at() answers what the field answers, skip or no skip (%d differed)"
-			% differed)
-
-## A flock's birds charge from away from the instance's node, so `contribution_at()` does not skip
-## them by the node's distance: a bird put far past `silent_beyond()` is still heard where it is.
-## (A roadblock's band, which a guard walking away leaves behind, has no field to hear.)
-func _test_flocks_are_not_skipped(t) -> void:
-	var flock := EventInstance.new()
-	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
-	flock.flock.build()
-	var far_bird := Vector2(flock.def.silent_beyond() * 3.0, 0.0)
-	flock.flock.birds[0].at = far_bird
-	t.check(flock.excitement.contribution_at(far_bird) > 0.0,
-			"a bird far past its flock's silent_beyond() is still heard where it is")
-	flock.free()

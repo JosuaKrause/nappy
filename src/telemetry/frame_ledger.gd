@@ -96,7 +96,15 @@ var _overwritten := 0
 var _slow_frames := 0
 ## Whether the open frame is to be kept when it closes. `FrameRecorder` sets it each frame, so a
 ## paused game, the title and the summary are timed (the phases stay in step) but not kept.
-var keep := false
+var _keep := false
+
+## Whether the open frame is to be kept when it closes.
+func is_keeping() -> bool:
+	return _keep
+
+## Marks the open frame to be kept when it closes, or not (`on` false).
+func keep_this_frame(on := true) -> void:
+	_keep = on
 ## The last kept slow frame's row, meaningful once `_slow_frames` is above zero. Copied into
 ## place rather than sliced, so a slow frame allocates nothing either.
 var _last_slow := PackedInt64Array()
@@ -118,13 +126,13 @@ func _init(rows: int = CAPACITY, budget_usec: int = 16667) -> void:
 	capacity = clampi(rows, 1, CAPACITY)
 	display_budget_usec = budget_usec
 	slow_after_usec = budget_usec * 3 / 2
-	assert(WIDTH == columns().size(), "FrameLedger.WIDTH must match its columns")
+	assert(WIDTH == _columns().size(), "FrameLedger.WIDTH must match its columns")
 	_rows.resize(capacity * WIDTH)
 	_spent.resize(FrameRecord.BUCKET_NAMES.size())
 	_counters.resize(COUNTER_NAMES.size())
 	_last_slow.resize(WIDTH)
 
-static func columns() -> Array[String]:
+static func _columns() -> Array[String]:
 	var names: Array[String] = ["start_usec", "frame_usec", "slow"]
 	for bucket in FrameRecord.BUCKET_NAMES:
 		names.append(bucket + "_usec")
@@ -207,11 +215,11 @@ func drawn(now: int) -> void:
 func _begin_frame(now: int) -> void:
 	if _frame_start >= 0:
 		switch_to(_current, now)
-		if keep:
+		if _keep:
 			_keep_frame(now - _frame_start)
 	_spent.fill(0)
 	_counters.fill(0)
-	keep = false
+	_keep = false
 	_frame_start = now
 	_since = now
 	_phase = Phase.IN_FRAME
@@ -264,7 +272,7 @@ static func work_usec(row: PackedInt64Array) -> int:
 ## Whether any scenery job ran in a row's frame, guard preparations included.
 static func scenery_ran(row: PackedInt64Array) -> bool:
 	var jobs := 0
-	for counter in [JOBS_GROUND, JOBS_BUILDING, JOBS_PROP, JOBS_SHADOW, JOBS_DECAL,
+	for counter: int in [JOBS_GROUND, JOBS_BUILDING, JOBS_PROP, JOBS_SHADOW, JOBS_DECAL,
 			GUARD_PREPARATIONS]:
 		jobs += row[FIRST_COUNTER + counter]
 	return jobs > 0
@@ -288,7 +296,7 @@ func readout_line(fits: Callable = Callable()) -> String:
 		if slow_cause(_last_slow) == OUTSIDE_CALLBACKS:
 			_readout = head + "  outside callbacks"
 		else:
-			for n in [3, 2, 1]:
+			for n: int in [3, 2, 1]:
 				var parts: Array[String] = []
 				for cost: Array in _top_costs(_last_slow, n):
 					parts.append("%s %.1f" % [SHORT_NAMES[cost[0]], cost[1] / 1000.0])
@@ -351,7 +359,7 @@ func report() -> Dictionary:
 		"mean_ms_per_slow_frame_without_scenery_jobs": _means(without_spent, without_count),
 		"largest_cost_in_slow_frames_without_scenery_jobs": largest_without}
 	return {"capacity": capacity, "retained": kept.size(), "overwritten": _overwritten,
-		"slow_frames_ever": _slow_frames, "columns": columns(), "rows": json_rows,
+		"slow_frames_ever": _slow_frames, "columns": _columns(), "rows": json_rows,
 		"summary": summary}
 
 static func _means(spent: PackedInt64Array, frames: int) -> Dictionary:

@@ -31,17 +31,17 @@ const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 ## Overrides test_day13_guard.run.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()
 		for part in OS.get_environment("PROBE_SEEDS").split(","):
 			seeds.append(int(part))
 	for seed_value: int in seeds:
-		for walks in [false, true]:
+		for walks: bool in [false, true]:
 			_measure(t, seed_value, walks)
 
-func _measure(t, seed_value: int, walks: bool) -> void:
+func _measure(t: TestRunner, seed_value: int, walks: bool) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -62,12 +62,12 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 		_finish(player, director, city)
 		return
 	_choose_again(director)
-	var map := city.map
+	var map := city.map()
 	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
 	director.contact().complete_now()
 	var route := walk_away_from(map, at) if walks else PackedVector2Array()
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var start := guard.global_position.distance_to(at)
 	var times := PackedFloat64Array()
 	var sweeping := 0
@@ -78,12 +78,12 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 	var her := at
 	var next := 0
 	var clock := 0.0
-	while clock < CHASE_SECONDS and not guard.is_finished:
+	while clock < CHASE_SECONDS and not guard.is_gone():
 		if next < route.size():
 			her = her.move_toward(route[next], Tuning.WALK_SPEED * FRAME)
 			if her.distance_to(route[next]) < 0.01:
 				next += 1
-		guard.player_at = her
+		RunCity.events(city).world.where_she_is().tell(her)
 		var before: WalkField = guard._chase_way.sweep_under_way() if guard._chase_way else null
 		var t0 := Time.get_ticks_usec()
 		guard.step(FRAME)
@@ -120,8 +120,8 @@ static func walk_away_from(map: CityMap, from: Vector2) -> PackedVector2Array:
 	var origin := map.world_to_tile(from)
 	var out := map.walk_field(origin)
 	var far := origin
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.distance_at(out, tile) > map.distance_at(out, far):
 				far = tile

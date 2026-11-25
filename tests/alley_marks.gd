@@ -7,7 +7,7 @@ extends RefCounted
 ## An alley's mouth, worked out from the map alone: the end tile of a through-alley along its long
 ## axis, or a courtyard passage's tile beside walkable ground that is neither alley nor courtyard.
 static func is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			var vertical := rect.size.y >= rect.size.x
 			var along := tile.y - rect.position.y if vertical else tile.x - rect.position.x
@@ -21,10 +21,10 @@ static func is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 	return false
 
 ## The tile a mark stands on for the alley whose mouth is `mouth`: one step in from it along a
-## through-alley's long axis (`CityMap.alley_rects`), and for a courtyard's passage the next
+## through-alley's long axis (`CityMap.alley_lots()`), and for a courtyard's passage the next
 ## walkable alley or courtyard tile away from the street. `mouth` itself where no tile lies in from it.
 static func mark_tile_of_mouth(map: CityMap, mouth: Vector2i) -> Vector2i:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if not rect.has_point(mouth):
 			continue
 		var step := Vector2i.ZERO
@@ -47,7 +47,7 @@ static func mark_tile_of_mouth(map: CityMap, mouth: Vector2i) -> Vector2i:
 ## or no alley at all).
 static func through_ends(map: CityMap, tile: Vector2i, at: Vector2) -> Array[Vector2]:
 	var ends: Array[Vector2] = []
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		var a: Vector2
@@ -91,17 +91,17 @@ static func expected_guard_spot(map: CityMap, tile: Vector2i, mark: Vector2,
 ## mark on the courtyard's first tile), or the one a longer passage runs straight into. An empty rect
 ## for a mark in a through-alley.
 static func courtyard_of(map: CityMap, tile: Vector2i) -> Rect2i:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			return Rect2i()
-	for court in map.courtyard_rects:
+	for court in map.courtyard_lots():
 		if court.has_point(tile):
 			return court
 	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 		var at := tile
 		while map.tile_at(at) == GameEnums.TileType.ALLEY:
 			at += step
-		for court in map.courtyard_rects:
+		for court in map.courtyard_lots():
 			if court.has_point(at):
 				return court
 	return Rect2i()

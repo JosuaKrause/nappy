@@ -34,7 +34,7 @@ static func answering(events: EventManager, step: ResistanceSteps.Step) -> Array
 	if step == null:
 		return found
 	for instance in events.instances():
-		if instance.def.id == step.task_event_id and not instance.is_finished:
+		if instance.row_id() == step.task_event_id and not instance.is_gone():
 			found.append(instance)
 	return found
 
@@ -52,47 +52,40 @@ static func pointed_at(director: ResistanceDirector,
 static func mast_at(director: ResistanceDirector, events: EventManager) -> String:
 	var tip := director.red_arrow_target()
 	for plan in events.plans():
-		if plan.mast_id != "" and events.mast_foot(plan.mast_id).distance_to(tip) < 1.0:
-			return plan.mast_id
+		if plan.mast_id() != "" and events.mast_foot(plan.mast_id()).distance_to(tip) < 1.0:
+			return plan.mast_id()
 	return ""
 
 ## The day's reachability answer as `ResistanceDirector._reachable_from_home()` builds it
 ## (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan, flooded from
 ## home), built independently here so a sweep is not just asking the director to grade its own
 ## homework. A region door's own bodies are excluded, the same way the director excludes them: they
-## are doors she walks through, not a block. The soft seals' bands (`CityMap.soft_sealed_tiles`) are
+## are doors she walks through, not a block. The soft seals' bands (`CityMap.soft_sealed_tiles()`) are
 ## blocked on top, as the director blocks them: the red arrow reads a band as ground she cannot walk,
 ## so a place reached only through one is not a place the arrow can lead her to. `[grid, blocked,
-## reached]`, the shape `home_reach()` answers and `reaches_home()` takes. Plans standing within a
+## reached]`, the shape `reaches_home()` takes. Plans standing within a
 ## tile and a half of a point in `except_near` are left out: a task's own body, placed after the day's
 ## first placement asked, does not shut its own tile.
 static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Array:
-	var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
-	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
-	var blockers: Array[EventScheduler.Planned] = []
-	for plan in city.events.plans():
+	var region_plan: RegionPlan = city.streets().region_plan()
+	var door_bodies: Array[EventPlan] = region_plan.door_plans() if region_plan else []
+	var blockers: Array[EventPlan] = []
+	for plan in RunCity.events(city).plans():
 		if not plan.is_placed() or plan in door_bodies:
 			continue
 		var excepted := false
 		for point in except_near:
-			excepted = excepted or plan.position.distance_to(point) < Tuning.TILE_SIZE * 1.5
+			excepted = excepted or plan.placed_at().distance_to(point) < Tuning.TILE_SIZE * 1.5
 		if excepted:
 			continue
-		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+		if plan.obstructs_within() > 0.0 or plan.ends_the_day():
 			blockers.append(plan)
-	var grid := ReachabilityGrid.build(city.map)
-	var blocked := EventScheduler.blocked_by(city.map, blockers)
-	blocked.merge(city.map.soft_sealed_tiles)
-	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+	var grid := ReachabilityGrid.build(city.map())
+	var blocked := EventScheduler.blocked_by(city.map(), blockers)
+	blocked.merge(city.map().soft_sealed_tiles())
+	return [grid, blocked, grid.flood([city.map().home_tile_rect().position], blocked)]
 
-## The tiles her paths reach from home under `blocked` (the day's obstruction), as
-## `[grid, blocked, reached]` for `reaches_home()`: the same `ReachabilityGrid` flood from the home
-## block that the director's placements are asked of.
-static func home_reach(map: CityMap, blocked: Dictionary) -> Array:
-	var grid := ReachabilityGrid.build(map)
-	return [grid, blocked, grid.flood([map.home_rect.position], blocked)]
-
-## Whether `tile` is reachable from home in a `home_reach()`.
+## Whether `tile` is reachable from home in the `reach` `day_reachability()` answers.
 static func reaches_home(reach: Array, tile: Vector2i) -> bool:
 	var grid: ReachabilityGrid = reach[0]
 	return grid.reaches(tile, reach[1], reach[2])
