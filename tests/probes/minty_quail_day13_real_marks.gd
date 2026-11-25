@@ -2,10 +2,12 @@ extends RefCounted
 ## **Day 13's task roadblock, read from real chalk marks**: what the task's placement
 ## (`ResistanceDirector._place_the_roadblock_near()`) does when she reads the mark where a mark
 ## actually stands, one tile into an alley from its mouth (`ResistanceDirector._marks()`), rather
-## than on a route tile. Every mark tile the day's draw could pick is read (`_pick_reachable()`'s
-## two tests: legal ground, and open to it and reachable from home under the day's plan), or an
-## evenly spaced `PER_SEED` of them where a city has more. Not a suite: it prints rather than
-## asserts.
+## than on a route tile. The candidates are the mark tiles `_pick_reachable()`'s first two tests
+## leave (legal ground; open to it and reachable from home under the day's plan), or an evenly
+## spaced `PER_SEED` of them where a city has more. Each is then asked the pick's third test, a
+## way from home confirmed at dawn (`_she_can_be_sent_to()`, `_the_day_would_pick()`): a mark the
+## dawn refuses is reported as `RM_UNPICKABLE` and not read, so a seed may read fewer than
+## `PER_SEED`. Not a suite: it prints rather than asserts.
 ##
 ##     tools/test.sh probes/minty_quail_day13_real_marks.gd > out.txt
 ##     grep '^RM' out.txt
@@ -37,6 +39,7 @@ func run(t: TestRunner) -> void:
 	var totals := {}
 	var distances := {}
 	var asked := 0
+	var unpickable := 0
 	for seed_value in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
 		var city := RunCity.new_city(CITY_SCENE)
@@ -58,9 +61,15 @@ func run(t: TestRunner) -> void:
 				city.free()
 				continue
 		var per_seed := {}
+		var refused := 0
 		for index in chosen.size():
 			if index > 0:
 				_restart_the_day(city, run, director, seed_value)
+			if not _the_day_would_pick(city, director, chosen[index]):
+				unpickable += 1
+				refused += 1
+				print("RM_UNPICKABLE seed %d mark %s" % [seed_value, chosen[index]])
+				continue
 			var at := city.map().tile_to_world(chosen[index])
 			var outcome := _read_the_mark_at(city, director, player, at, seed_value)
 			var kind: String = outcome[0]
@@ -74,12 +83,13 @@ func run(t: TestRunner) -> void:
 			print("RM_MARK seed %d mark %s | %s | %s" % [seed_value, chosen[index], kind,
 					"%.0fpx" % outcome[1] if outcome[1] != INF else "-"])
 			asked += 1
-		print("RM_SEED seed %d | %d legal marks, %d read | %d roadblocks the day placed | %s"
-				% [seed_value, marks.size(), chosen.size(), roadblocks, per_seed])
+		print("RM_SEED seed %d | %d candidate marks, %d read | %d roadblocks the day placed | %s"
+				% [seed_value, marks.size(), chosen.size() - refused, roadblocks, per_seed])
 		player.free()
 		director.free()
 		city.free()
-	print("RM_TOTAL %d marks over %d seeds | %s" % [asked, SEEDS.size(), totals])
+	print("RM_TOTAL %d marks over %d seeds, %d the day would not pick | %s" % [asked, SEEDS.size(),
+			unpickable, totals])
 	for key: String in distances:
 		var list: Array = distances[key]
 		list.sort()
@@ -93,9 +103,21 @@ func run(t: TestRunner) -> void:
 		list.sort()
 		print("RM_TIME %s | n %d | median %.1f max %.1f ms" % [what, list.size(), list[list.size() / 2],
 				list.back()])
-	t.check(asked > 0, "there were marks to read (%d)" % asked)
+	t.check(asked + unpickable > 0, "there were marks to read (%d)" % (asked + unpickable))
 
 var _misses := 0
+
+## Whether the dawn's draw can pick the mark at `tile`: `_pick_reachable()`'s last test, asked as
+## the dawn asks it with her nowhere yet (`Vector2.INF`), a way from home confirmed with the units
+## along it and round the place drawn first. A tile whose way no confirmation can stand is never a
+## mark, however open it reads before those units draw.
+func _the_day_would_pick(city: City, director: ResistanceDirector, tile: Vector2i) -> bool:
+	var siting: SpawnSiting = RunCity.spawn_siting(city)
+	var ground := siting.ask_of_ground()
+	var free := func(at: Vector2i) -> bool:
+		return siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, city.map().tile_to_world(at))
+	return director._she_can_be_sent_to(tile, Vector2.INF, free)
+
 ## What -> the milliseconds each `_place_the_roadblock_near()` call took (`RM_TIME`).
 var _times := {}
 
@@ -104,8 +126,9 @@ func _took(what: String, ms: float) -> void:
 		_times[what] = []
 	(_times[what] as Array).append(ms)
 
-## The mark tiles the day's draw could pick, in `_marks()`'s order: those `_pick_reachable()` takes,
-## legal ground and open to it and reachable from home.
+## The candidate mark tiles, in `_marks()`'s order: those `_pick_reachable()`'s first two tests
+## take, legal ground and open to it and reachable from home. The third test, the way from home
+## confirmed at dawn, is `_the_day_would_pick()`'s.
 func _legal_marks(city: City, director: ResistanceDirector) -> Array[Vector2i]:
 	var siting: SpawnSiting = RunCity.spawn_siting(city)
 	var ground := siting.ask_of_ground()

@@ -11,4 +11,6 @@ after: 2026-10-18-minty-quail
 
 **Proposed, not asked for:** the band `later` after minty-quail is the filer's proposal (the orchestrator's), open to the player's correction.
 
+**The probe changed after the comparison.** Since minty-quail-downy-finch the probe draws the units along a way from home to each mark before timing the placement (bouncy-elk), so its RM_TIME lines now measure different ground; they are not comparable with downy-finch's, and the frames are measured again before and after, on the same probe, before anything is concluded.
+
 **What would close it.** The probe's RM_TIME lines with the found frame back near 4 ms and the swap near 35 ms, or the remainder named and accepted; first, find which part of those frames grew.
