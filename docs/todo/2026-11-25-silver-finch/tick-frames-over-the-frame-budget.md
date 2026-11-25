@@ -1,0 +1,1 @@
+Spread or shorten the work done on the 30 Hz tick frame so that the frames carrying a tick stay within what a 60 fps frame allows, and measure them with `frame_ticks.py` against v0.29.0's 10 ms. Nothing is built before the phone's frame record says the long frame shows.

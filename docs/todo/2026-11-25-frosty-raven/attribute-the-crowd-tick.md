@@ -1,0 +1,1 @@
+Split the 700 µs a tick that head's crowd tick costs more than v0.29.0's between the mover base, the lane interface and the rest, with the same probe run on trees that differ by one step each, and report which part is worth a change. Nothing is optimized before the player has the attribution and the phone's frame record says the cost shows.

@@ -1,0 +1,1 @@
+Find which work on the frame she reads a day-13 chalk mark grew since sunny-owl's measurement (found frame 4 to 49 ms, swap frame 35 to 96 ms), and why swaps went from 40 to 58 of 480 marks, then cut it. Then the same probe measures the two frames again.
