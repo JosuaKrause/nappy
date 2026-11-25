@@ -100,7 +100,7 @@ func _measure_return_phase() -> void:
 			var before := EventDirector.new(map)
 			var before_rng := RandomNumberGenerator.new()
 			before_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
-			before.start_day(day, planned, before_rng)
+			before.start_day(day, planned, before_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var out_result := _walk_and_count(before, start_pos, start_vel, out_seconds, y_min, y_max)
 			var out_count: int = out_result[0]
 			var return_before := _walk_and_count(before, out_result[2], out_result[3],
@@ -114,7 +114,7 @@ func _measure_return_phase() -> void:
 			var after := EventDirector.new(map)
 			var after_rng := RandomNumberGenerator.new()
 			after_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
-			after.start_day(day, planned, after_rng)
+			after.start_day(day, planned, after_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var out_result_after := _walk_and_count(after, start_pos, start_vel, out_seconds,
 					y_min, y_max)
 			after.owe_the_return(day, 0)

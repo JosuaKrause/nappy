@@ -240,8 +240,9 @@ func _owe_the_return() -> void:
 ## escape's sections keep the run's last day**, on whose streams their plans are drawn
 ## (`DaySpec.day_number()`'s own doc), and count her encounters under their own number. A day leaves the
 ## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
-## the crowd; a walk planned whole before she sets off owes the director nothing
-## (`EventsAhead.start_a_given_walk()`), and a plan of it that comes again
+## the crowd; a walk planned whole before she sets off owes the director no plan of the dawn's
+## and hands it the walk's own setting of what it may send her (`EventsAhead.start_a_given_walk()`,
+## `DaySpec.director_sends()`: none, for the escape's city), and a plan of it that comes again
 ## (`EventPlan.repeats()`) comes on its own clock
 ## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
 ## detentions and the hard fails are the same for all three: an explosion leaves its crater through
@@ -267,7 +268,8 @@ func _begin(spec: DaySpec) -> void:
 ## takes `plan`'s placements, draws the day's units round `focus` (a day's alone has a unit draw)
 ## and streams the events around `focus`. A day's plan, and a scene recipe's
 ## (`records_its_bodies`), records its bodies; a day's hands the director what the day owes her, and
-## a walk planned whole hands it nothing. `world.day()` is the plan's: the day's own number for a day,
+## a walk planned whole hands it the plans it holds and what the spec lets it send, the escape's
+## city nothing of an ordinary day's rows. `world.day()` is the plan's: the day's own number for a day,
 ## the run's last day for the escape's sections.
 func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bodies: bool) -> void:
 	world.take_the_day(spec.day_number() if plan.belongs_to_a_day() else world.run().header().day())
@@ -553,7 +555,7 @@ func step_the_doors(delta: float) -> void:
 ## location of a unit that has not drawn where her way has one, and that unit draws round it
 ## (`WalkSiting.lay_ahead()`). What her walk sites comes before the streaming, so a plan sited
 ## this frame is in the world on the same frame it would have been had the day placed it at
-## dawn; nothing is sited in a world with no director or in a walk planned whole. What is owed
+## dawn; nothing is sited in a world with no director or in a scene recipe's walk. What is owed
 ## comes after it. The tick calls it, and a suite that walks her down a day's route and reads
 ## what the director met on the way calls it in the tick's place: a real tick there also meets
 ## what the walk is not about, measured in the run log: a district door's hold that put her down

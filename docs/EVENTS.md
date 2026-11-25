@@ -2428,7 +2428,13 @@ not the walker the probe measures. **The draw is the day's own**: `EventSchedule
 runs the same dawn phases for the escape as for a day, the phases that place the catalogue's
 rows find none for a walk with a bag of its own (`DawnContext.catalogue_rows()`), and
 `DawnDraw` draws the walk's streets (`DayLocations.along()`, `DayUnits`, `MarbleDraw`) with
-every candidate asked of the same rules a day's is (`StreetInvalidation`).
+every candidate asked of the same rules a day's is (`StreetInvalidation`). **The event director,
+which sites the rows of a day's route bag ahead of her as she walks, is started for the walk like
+any day's and sends what the spec lets it** (`DaySpec.director_sends()`): both of the escape's sections'
+are `DirectorSends.NOTHING`, so it has no route bag, owes nothing from the plan and rolls neither the
+day-one dog walkers nor the sprinkled charging dog, on day 1 (a direct boot) and on day 14 (a run's
+escape) alike, since the day's number decides none of it. Every danger the escape holds is placed
+before she sets off; a later setting of the spec can give the director a bag of its own to send.
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds

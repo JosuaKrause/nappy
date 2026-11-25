@@ -426,7 +426,8 @@ func _walk_every_day(reach: float) -> void:
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
-			director.start_day(day, plans, director_rng, siting)
+			director.start_day(day, plans, director_rng,
+					DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 			drawing.walked_by(walk, director, siting)
 			var sited := {}
 			# The units a beat was laid in, moved off later or not, by name.

@@ -48,9 +48,9 @@ func _measure_sprinkle_rate() -> void:
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("m96:ahead:%d:%d" % [map.city_seed(), day])
-			director.start_day(day, planned, director_rng)
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			for queued: EventDef in director._owed:
-				if queued.id() == "charging_dog":
+				if queued and queued.id() == "charging_dog":
 					offered_this_run += 1
 
 			var y_min := 0.0

@@ -47,7 +47,7 @@ func _director(map: CityMap, forced := "") -> EventDirector:
 	if forced != "":
 		director.force(forced, 5.0)
 	var no_plans: Array[EventPlan] = []
-	director.start_day(1, no_plans, rng)
+	director.start_day(1, no_plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## A director started on `RETURN_DAY` over the plans a real dawn buys on `map`, so its route is the
@@ -65,7 +65,7 @@ func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	director.start_day(RETURN_DAY, plans, rng)
+	director.start_day(RETURN_DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## Her walking along the arterial's sidewalk, back and forth between the map's ends at

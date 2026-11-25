@@ -230,7 +230,8 @@ func _test_the_patrol_sent_down_the_road(t: TestRunner) -> void:
 		director.force("police_patrol", 1.0)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		director.start_day(int(Tuning.ACT_START_DAYS[1]), none, rng)
+		director.start_day(int(Tuning.ACT_START_DAYS[1]), none, rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		for her in _beside_the_streets(map):
 			var inward := map.pavement_inward(map.world_to_tile(her))
 			var along := Vector2(inward.y, inward.x)

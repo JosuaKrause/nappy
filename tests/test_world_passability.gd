@@ -374,7 +374,7 @@ func _a_director_owing_the_cat(map: CityMap) -> EventDirector:
 	var director := EventDirector.new(map)
 	director.force("cat_dash", 5.0)
 	var no_plans: Array[EventPlan] = []
-	director.start_day(1, no_plans, _rng("director"))
+	director.start_day(1, no_plans, _rng("director"), DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## What the director hands out when she is at `her` walking `heading`, once its wait has passed: the

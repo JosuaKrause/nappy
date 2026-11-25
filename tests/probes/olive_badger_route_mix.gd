@@ -68,7 +68,7 @@ func _measure() -> void:
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
-			director.start_day(day, planned, director_rng)
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var met := _walk_a_day(map, director, day)
 			var shares := _intended_shares(day)
 			var counts := {}
@@ -134,7 +134,7 @@ func _measure_the_return() -> void:
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
-			director.start_day(day, planned, director_rng)
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 			var day_len := Tuning.day_length(day)
 			var leg: float = RETURN_LEG[act]
 			var y_max: float = map.world_size().y

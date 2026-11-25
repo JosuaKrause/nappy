@@ -17,8 +17,9 @@ extends RefCounted
 ## `queue_a_mast()`), and builds the parts it hands `EventsAhead` (the world, streaming, spawner
 ## and board) the way `EventManager._init()` does for the second: `EventsAhead` is the module
 ## under test, the maker is a fake.
-## **The director is real**, over that map (`EventDirector`); the siting the fake maker answers is a
-## stand-in (`FakeWalkSiting`), so no siting is built over a city.
+## The director is real in the siting cases (a rigged route needs its route bag), over that map; in
+## the hand-off case it is a fake that records what it is handed (`_RecordingDirector`). The siting
+## the fake maker answers is a stand-in (`FakeWalkSiting`), so no siting is built over a city.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 
@@ -28,6 +29,7 @@ const SEED := 4242
 func run(t: TestRunner) -> void:
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_the_events_ask_the_maker_they_are_handed_for_every_siting(t)
+	_test_a_walk_hands_the_director_what_its_spec_lets_it_send(t)
 	_test_a_given_walk_sites_over_the_tree_it_is_handed(t)
 	_test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(t, MapCache.of(SEED))
 
@@ -100,7 +102,9 @@ func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
 ## under (`EventsAhead.use_the_walk_of()`). Neither the ground nor the maker shows in any siting's
 ## answers, so the maker is a fake that records what it was asked, handed in as the game hands the
 ## real one (`EventsAhead.use_sitings()`). A siting no caller asks of the maker is a siting made by
-## the class itself, which this holds cannot happen.
+## the class itself, which this holds cannot happen. A rigged route is not asked on a
+## walk that does not hold the home's streets: that walk (the escape's city) has no route bag, so
+## nothing rigs it.
 func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
 	var def := EventCatalogue.by_id("burning_building")
@@ -147,13 +151,6 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	t.check(maker.made.size() == before + 1
 			and (maker.made.back()[2] as RowGround).tiles_for(def) == holds_it,
 			"on a ground that keeps off the home street where the spec holds the home's streets")
-	ahead.use_the_walk_of(_spec_that(false))
-	ahead.start_day(DAY, tree)
-	before = maker.made.size()
-	ahead.rig_her_route([EventCatalogue.mast().id()], 4)
-	t.check(maker.made.size() == before + 1
-			and (maker.made.back()[2] as RowGround).tiles_for(def) == leaves_it,
-			"and on one that offers it where the spec does not")
 	ahead.use_the_walk_of(_spec_that(true))
 	ahead.start_day(DAY, tree)
 	before = maker.made.size()
@@ -208,6 +205,49 @@ func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 	ahead.queue_a_mast(offered)
 	t.check(maker.made.size() == 2 and maker.made[1][1] == null,
 			"and on the next walk, handed none, over none: the first walk's tree is not kept")
+
+## **Both starts of a walk hand the director what its spec lets it send**
+## (`DaySpec.director_sends()`), not the day's number: a recording director is handed what
+## `EventsAhead.start_day()` (a day's) and `start_a_given_walk()` (a walk placed whole) pass it.
+## The escape city's spec hands `NOTHING` on day 1 (the direct boot's day) and day 14 (a run's), and
+## a day's hands the ordinary rows. What the director does with the value is
+## `test_event_director.gd`'s.
+func _test_a_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -> void:
+	var map: CityMap = MapCache.of(SEED)
+	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	world.use_run(RunState.new())
+	var board := WarningBoard.new(world)
+	var spawner := EventSpawner.new(world, board)
+	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
+	var ahead := EventsAhead.new(world, streaming, spawner, board, FakeWalkEvents.new())
+	var director := _RecordingDirector.new(map, world.navigator())
+	ahead.use_director(director, null)
+	ahead.use_sitings(FakeSitingMaker.new(FakeWalkSiting.new()))
+	ahead.use_the_walk_of(DaySpec.for_day(1))
+	ahead.start_a_given_walk(1)
+	ahead.start_day(1, null)
+	var ordinary := DaySpec.DirectorSends.THE_DAYS_ROWS
+	t.check(director.handed == [ordinary, ordinary],
+			"both starts of an ordinary day's walk hand the ordinary rows (%s)" % [director.handed])
+	director.handed.clear()
+	ahead.use_the_walk_of(escape)
+	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
+		ahead.start_a_given_walk(day)
+		ahead.start_day(day, null)
+	t.check(director.handed == [DaySpec.DirectorSends.NOTHING, DaySpec.DirectorSends.NOTHING,
+			DaySpec.DirectorSends.NOTHING, DaySpec.DirectorSends.NOTHING],
+			"the escape city's walk hands nothing on day 1 and day 14, by either start (%s)"
+			% [director.handed])
+
+## A director that records the `sends` each `start_day()` is handed and does nothing else.
+class _RecordingDirector extends EventDirector:
+	var handed: Array[DaySpec.DirectorSends] = []
+
+	## Overrides EventDirector.start_day.
+	func start_day(_day: int, _plans: Array[EventPlan], _rng: RandomNumberGenerator,
+			sends: DaySpec.DirectorSends, _siting: WalkSiting = null, _heat: int = 0) -> void:
+		handed.append(sends)
 
 ## A walk's spec that holds the home's streets (a day's), or one that does not (the escape's).
 func _spec_that(holds: bool) -> DaySpec:

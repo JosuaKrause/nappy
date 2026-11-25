@@ -43,7 +43,7 @@ func run(t: TestRunner) -> void:
 		var director := EventDirector.new(map)
 		var director_rng := RandomNumberGenerator.new()
 		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
-		director.start_day(day, planned, director_rng)
+		director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var met := _walk_a_day(map, director, day)
 		var dogs := met.count(DOG)
 		dogs_sum += dogs
