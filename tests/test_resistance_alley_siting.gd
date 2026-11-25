@@ -605,7 +605,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
 			for plan in GameDawn.of(DaySpec.for_day(day), events_rng, map).masts(sites) \
@@ -723,7 +723,7 @@ func _test_a_walled_alley_escapes_no_other_check(t: TestRunner) -> void:
 	var seed_value := 2199579682
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(seed_value)
-	var tree := RouteTree.for_day(map, day)
+	var tree := RouteTree.for_day(map, day, null)
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	t.check(not region_plan.walled_alleys().is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"

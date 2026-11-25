@@ -286,7 +286,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 	for run_seed: int in [4242]:
 		var map := _map()
 		for day in range(8, 15):
-			var corridor := Corridor.of(RouteTree.for_day(map, day))
+			var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 			for plan in _planned(day):
 				if plan.row_id() != "alley_robbery" or not plan.is_placed():
 					continue
@@ -741,7 +741,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var map := _map()
 	var sites := _sites()
 	var day := 13
-	var tree := RouteTree.for_day(map, day)
+	var tree := RouteTree.for_day(map, day, null)
 	var corridor := Corridor.of(tree)
 	var told: Array[String] = []
 	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
@@ -801,7 +801,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunner) -> void:
 	var map := _map()
 	var day := 13
-	var corridor := Corridor.of(RouteTree.for_day(map, day))
+	var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 	var def := EventCatalogue.by_id("roadblock").for_day(day)
 	var events := DayEvents.over(CalmAreas.of(map))
 	var judged := RuledRoadblockGround.new(def, day, map,
@@ -1122,7 +1122,7 @@ func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void:
 	var map := _map()
 	var day := 5
-	var corridor := Corridor.of(RouteTree.for_day(map, day))
+	var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 	var laid := DayLocations.lay_out(map, corridor)
 	var spots: Array[Location] = []
 	for location in laid.open_locations():
@@ -1703,7 +1703,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 	crew_draft.not_sited_from_her_walk()
 	var crew := crew_draft.build()
 	for day: int in [4, 8, 12]:
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var handed := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(sites).on(tree).plan() \
 				.placements()
 		var kept := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(sites).with_row(crew) \

@@ -62,7 +62,7 @@ func _measure_caps() -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("m99:plan:%d:%d" % [map.city_seed(), day])

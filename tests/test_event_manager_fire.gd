@@ -254,7 +254,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 ## never sited against measures nothing.
 func _days_tree(day: int) -> RouteTree:
 	var tree := _stage.streets().route_tree()
-	return tree if tree else RouteTree.for_day(_stage.map(), day)
+	return tree if tree else RouteTree.for_day(_stage.map(), day, null)
 
 ## The longest route of the day's own tree as the line she walks: out from the doorstep to the calm
 ## area it reaches when `outward`, back down the same ground when not.

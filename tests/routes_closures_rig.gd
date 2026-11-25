@@ -438,7 +438,8 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng)
+	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng,
+			RouteTree.for_day(map, day, null))
 
 ## Today's city, and then today's corridor grown on it — the order `City.start_day` uses.
 ## Memoized for the same reason `_plan` is: several functions below ask for the same seed's same
@@ -449,7 +450,7 @@ func _todays_tree(map: CityMap, day: int) -> RouteTree:
 	_repaint_for(map, day)
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _tree_cache.has(key):
-		_tree_cache[key] = RouteTree.for_day(map, day)
+		_tree_cache[key] = RouteTree.for_day(map, day, null)
 	return _tree_cache[key]
 
 func _closed_set(closures: Array[RoadClosure]) -> Dictionary:

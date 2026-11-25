@@ -7,7 +7,8 @@ extends RefCounted
 ## Read once off a real day and committed as the mock: `tests/test_route_bag.gd` stands the
 ## director on it. Each key is `day:seed`, the seed of the generated map the day was planned on. A
 ## day is read again by calling `CityState.begin_day()` and `CityMap.repaint()` on that map for the
-## day, then `GameDawn.of(DaySpec.for_day(day), rng, map).on(RouteTree.for_day(map, day)).plan()`
+## day, then `GameDawn.of(DaySpec.for_day(day), rng, map)
+## .on(RouteTree.for_day(map, day, null)).plan()`
 ## and `placements()` on the result, with `rng` seeded from the hash of `route-bag:<seed>` for
 ## day 2, `route-bag:day-one:<seed>` for day 1 and `route-bag:lesson:<seed>` for day 3. A moment is the row of a plan the dawn left unsited
 ## (`EventPlan.row_id()`): the director reads its row and nothing else of it.

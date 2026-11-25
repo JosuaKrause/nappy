@@ -93,7 +93,7 @@ func _tree_for(map: CityMap, day: int) -> RouteTree:
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _tree_cache.has(key):
 		_repaint_for(map, day)
-		_tree_cache[key] = RouteTree.for_day(map, day)
+		_tree_cache[key] = RouteTree.for_day(map, day, null)
 	return _tree_cache[key]
 
 func _seals_for(map: CityMap, day: int) -> Array[EventPlan]:
@@ -225,7 +225,7 @@ func _test_the_tree_itself_is_untouched(t: TestRunner) -> void:
 	for map in _maps:
 		var day := 5
 		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var before := tree.cells()
 		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var after := tree.cells()
@@ -473,7 +473,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		var day := 6
 		_repaint_for(map, day)
 		var home := ClosurePlanner.home_street(map)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		if tree.branches().is_empty():
 			continue
 		# Sealing (and its thinning pass) is run for its side effect on
@@ -727,7 +727,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 			var felled := {}
 			for plan in planned:
@@ -810,7 +810,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 	for map in _maps:
 		for day: int in [1, 5, 9, 13]:
 			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])

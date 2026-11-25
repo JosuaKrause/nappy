@@ -128,7 +128,7 @@ func roadblock(row: EventDef) -> GameDawn:
 ## one pass of the dawn.
 func context() -> DawnContext:
 	var dawn := _Dawn.new(_spec, _rng.seed, _map,
-			_walk if _walk else RouteTree.for_day(_map, _spec.day_number()),
+			_walk if _walk else RouteTree.for_day(_map, _spec.day_number(), null),
 			_calm if _calm else CalmAreas.of(_map), GamePlanBuilder.over(_map),
 			EventScheduler.row_ground, _rows)
 	dawn.use_the_run(_spent, _scars, _heat)
