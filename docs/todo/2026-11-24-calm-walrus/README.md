@@ -23,5 +23,5 @@ escape fixes the player named, snowy-goose and lilac-marten's fuller escape (gen
 not for this entry.
 
 **Items:** `no-dog-walkers.md`, `ends-at-the-tunnel-or-bridge.md`. The remark "from what I saw
-that was the only actual obstacle showing up" is its own entry, sandy-goose (do the escape city's trucks,
-explosions, vans and roadblocks show up on her way).
+that was the only actual obstacle showing up" is its own entry, sandy-goose (do the escape city's
+trucks, explosions, vans and roadblocks show up on her way).

@@ -1,11 +1,13 @@
-priority: bug
+priority: now
+after: 2026-10-18-minty-quail
 
 # sandy-goose — Do the escape city's trucks, explosions, vans and roadblocks show up on her way · filed 2026-11-24
 
 The player, of what they saw in the escape (inbox #1733 in spry-ferret): "from what I saw that was
-the only actual obstacle showing up", said of the dog walker. The band `bug` is the filer's
-proposal, since the player named none (**playtest-feedback**: `bug` is filed when a refactor step
-finds one, which this may be); it waits for nothing.
+the only actual obstacle showing up", said of the dog walker. The band `now` is the filer's
+proposal, since the player named none, and it waits for minty-quail (the refactor rule). A filer
+never proposes `bug` (**playtest-feedback**); a defect the check finds is filed as its own `bug`
+entry.
 
 **Read as:** the escape city's bag (`DaySpec._place_the_escape_city()`) holds 23 danger marbles,
 10 military convoys, 8 finale explosions, 3 abductions and 2 roadblocks, against 9 empty over the

@@ -6,14 +6,17 @@ so four are done only after day 9's. Do the tasks of days 6, 7, 8 and 9, then pl
 later day. From then on a roadblock on the day's route is the hunting kind: its guard leaves his
 post and comes at you when you linger inside his radius, where the guard of an earlier day's
 roadblock stays posted. Walk a street your route runs along to a roadblock and past it on its far
-sidewalk, the one way past, as the day's guard-and-band picture shows it. Leave the invincible flag
-off: the guard's catch ends the day, and that risk is what is asked about.
+sidewalk, the one way past. Leave the invincible flag
+off: the guard's catch ends the day, and that risk is what is asked about. A region wall (a
+district closed at a street's mouth) is the same barrier with guards posted from the plain
+roadblock row: its guards never hunt and can stand where your route crosses from day 9. The
+question is about a roadblock on your route whose guard comes after you.
 
 **Where to look.** The hunting roadblock now closes to the day's routes only its barrier, its own
 sidewalk and the road, 64px, where an 86px circle round it did. The far sidewalk is no longer
 closed, so a route can run along it still inside the 180px at which the guard notices her.
 
-**The question a run answers.** When the player next plays a late day with four resistance tasks
-done, does walking the far sidewalk past the hunting checkpoint guard feel fair, or does it read as
-a route the day should not have handed you? The player named this a question for the Review tab
+**The question a run answers.** When you next play a late day with four resistance tasks done,
+does walking the far sidewalk past the hunting checkpoint guard feel fair, or does it read as a
+route the day should not have handed you? It is a question for the Review tab
 (inbox #1734 in spry-ferret).
