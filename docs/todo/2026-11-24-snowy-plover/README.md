@@ -5,7 +5,7 @@ after: 2026-10-18-minty-quail
 
 **What this is.** Four behaviors of the scene recipes (the developer's scenes that put her in one
 situation and play it, run by `src/dev/scene_recipe_runtime.gd`) that no suite checks.
-minty-quail's README sends its scene-recipe test gaps here, and the record
+minty-quail's scene-recipe test gaps are sent here, and the record
 minty-quail-bouncy-hare says where they came from. No playtest note is behind it; the band,
 `later`, is the filer's proposal, and the `after:` line is minty-quail's, whose test conversion
 decides which suites exist to hold these checks.

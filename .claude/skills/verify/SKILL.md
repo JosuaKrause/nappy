@@ -235,7 +235,7 @@ How a test is written — what it builds, what it mocks, what it holds — is **
   names the field). A suite gives back what it took; an exemption is a field with a reason, never
   a convenience.
 - **A new suite takes the runner typed**, `func run(t: TestRunner) -> void:`, `TestRunner` being
-  the `class_name` of `tests/run_tests.gd`; a bare `run(t)` is a `LOAD FAIL` in a file without the opt-out line
+  the `class_name` of `tests/run_tests.gd`; a bare `run(t)` is a `LOAD FAIL`
   (**writing-tests**, "A suite is typed, and opens with the typed runner header").
 - **A suite never quits the tree**, which ends the process and drops every later suite of the
   shard; code that quits is driven through a stand-in (`tests/route_rig_no_quit.gd`).

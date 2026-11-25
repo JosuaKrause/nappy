@@ -8,7 +8,7 @@ purpose" (that wording is the filer's, not the player's: inbox #813 in curly-moo
 remeasure at the end). Its picture group took what the existing flags and recipes could stage and
 listed the rest as not taken, with the reason each could not be staged: the record
 minty-quail-curly-magpie ("Not taken") and `docs/evidence/minty-quail-end-pictures-2026-11-24/README.md`.
-They are owed here, as GoatCounter's counts are owed in minty-quail's README. No playtest note is behind
+They are owed here, as GoatCounter's counts are owed in plaid-marmot. No playtest note is behind
 it; the band, `later`, and the `after:` line are the filer's proposal.
 
 **Read as:** most pictures need either a harness or a field on a scene recipe that does not exist yet;

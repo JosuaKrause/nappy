@@ -340,8 +340,8 @@ before spawning:
   (`tools/decisions.sh --in all <noun>`), not to whichever of the code or the doc reads better. A
   defect the step introduces, or one a review finds in the step's open pull request, is fixed inside
   that pull request (**pr-review**). The entry is filed `bug`, the band above `now`, since a bug is a bug and the band exists to be used
-  (inbox #1519 in breezy-magpie), and so is started at once beside the refactor, not held by the fence
-  that keeps other work waiting until the refactor is done (inbox #1210 in gentle-owl; the reading is
+  (inbox #1519 in breezy-magpie), and so is started at once beside a refactor, not held by the fence
+  that keeps other work waiting while the player has put one entry first (inbox #1210 in gentle-owl; the reading is
   listed under "Proposed, not asked for"); nothing else is filed `bug` on a reading (**playtest-feedback**, mossy-ferret #710).
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
@@ -444,8 +444,8 @@ to the player's correction:
   doing what the player's decisions or the docs say it should not, the board's wording; a finding the
   investigation shows is not one (a probe or a doc that is wrong) leaves the band. The player's words
   are that such a bug is filed in the bug band (inbox #1519 in breezy-magpie).
-- **That a bug a refactor step finds starts at once beside the refactor** ("What the orchestrator
-  keeps"), not held by the fence that keeps other work waiting until the refactor is done (inbox #1210
+- **That a bug a refactor step finds starts at once beside a refactor** ("What the orchestrator
+  keeps"), not held by the fence that keeps other work waiting while the player has put one entry first (inbox #1210
   in gentle-owl): the board's option for the bug band said so, and the player answered "bug is higher
   than now" (inbox #1519 in breezy-magpie), read as taking that option whole.
 - **Every row of the model table that carries no citation**, the merging row among them, to be
