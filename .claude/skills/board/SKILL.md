@@ -306,7 +306,8 @@ the player corrects them. The citation is the player's word each one extends:
   same-turn update (inbox #948 in bouncy-marten).
 - **What a Review-tab question that needs a run owes** ("The layout"): the player's words say
   where such a question goes (inbox #1765 in gray-plover, inbox #1766 in gray-plover); the list of what it carries, and
-  that it has no file when no sign-off waits on it, are the filer's reading.- **A bold lead word on a Context item, and which pictures are meant** ("The layout";
+  that it has no file when no sign-off waits on it, are the filer's reading.
+- **A bold lead word on a Context item, and which pictures are meant** ("The layout";
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
