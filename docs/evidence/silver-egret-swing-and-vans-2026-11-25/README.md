@@ -5,8 +5,8 @@ under a body read off their picture (`EventVehicleLook._wheel_shape()`), where b
 oval as wide as the scene round it, wider than the van. The playground swing frame casts one oval
 under each of its two A-frames (`Prop.shadow_outlines()`), where before one capsule lay under its
 whole picture, and day 12's touch spot at its base is the size and place it was, both ovals inside
-it. The spot has no mark of its own: the pick's chalk mark there waits on the player
-(`docs/todo/2026-10-03-silver-egret/swing-frame.md`).
+it. The spot has no mark of its own: it is found by its red arrow, as every red-arrow destination is
+(the record silver-egret-sunny-magpie).
 
 **What each file shows.**
 

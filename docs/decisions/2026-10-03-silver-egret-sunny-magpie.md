@@ -4,8 +4,9 @@
 whole picture.)* One agent branch, `feature-silver-egret-swing-and-vans`, building the entry's two
 open items after the vehicles (the record silver-egret). The swing frame is built on the
 orchestrator's pick on the board (swing-frame-shadow, open to the player's overturn): ovals under
-the frame's legs, and day 12's touch spot kept at today's size and place. **The pick's third part,
-the chalk task's usual mark drawn at the spot, is not built**, below.
+the frame's legs, and day 12's touch spot kept at today's size and place, found by its red arrow
+with no mark of its own, below. The pick first also asked for the chalk task's usual mark at the
+spot; that part is corrected on the board and is not built.
 
 **The riot van and the moving van.** Their ground shape is the scene round them
 (`EventVehicleLook.SCENE_SHAPED`: the night raid's 44px disc holding its officers, the moving van's
@@ -41,14 +42,14 @@ spot to the picture, from eight bearings a pixel inside and two pixels clear of 
 shadow's two ovals inside it. `ResistanceDirector._swing_base()`, which read the shadow through
 a private member of `Prop`, is gone; `_shape_the_touch()` asks `Prop.swing_frame_base()`.
 
-**Not built: a chalk mark at the swing.** The pick drew the task's usual mark at the spot, since
-the shadow no longer shows it. A red-arrow task's destination draws no chalk mark (the record
-snowy-kestrel, azure-koala 6: "red arrow tasks show a chalk mark at their destination", which the
-player called wrong: the alleys have one, the tasks should not), and day 12's swing is one of the
-four destinations that record took the mark off. Drawing one there would overturn the player's
-words, which no pick may do before they are asked (**playtest-feedback**), so the item
-`swing-frame.md` stays open with only that question in it. Without it, the spot is shown by the
-two ovals inside it and by the red arrow ending on the frame's base.
+**The spot is found by its red arrow, with no mark.** The shadow no longer shows the spot, and
+nothing is drawn in its place: the red arrow ends on the frame's base, as every red-arrow task's
+does, and the two ovals lie inside the spot. A red-arrow task's destination draws no chalk mark (the
+record snowy-kestrel, azure-koala 6: "red arrow tasks show a chalk mark at their destination", which
+the player called wrong: the alleys have one, the tasks should not), and day 12's swing is one of
+the four destinations that record took the mark off, so a mark there would overturn the player's
+words. The pick's first version drew the chalk task's usual mark at the spot; it was corrected on
+the board to this reading, and with it built the entry has no item left and its folder goes.
 
 **Evidence** (`docs/evidence/silver-egret-swing-and-vans-2026-11-25/`): the vans sheet, the riot
 van at every sector and the moving van side on and end on, before and after; the swing frame sheet,
