@@ -83,15 +83,13 @@ a nested collection (`Array[Array[Thing]]` is itself a parse error, so the inner
 `Array`s) or what `back()` or `get()` returns, and it is then read through a typed name, as
 below. **writing-tests** says what that asks of a suite and its fakes.
 
-**So a new file is typed from its first line; only a file not yet typed opts out, with one line.**
-That line is the file's very first, `@warning_ignore_start("untyped_declaration",
+**So a file is typed from its first line, and no file opts out.** The one form of opt-out line the
+check still reads is the file's very first, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
 nothing else, and it silences them to the end of the file. It has one form: the whole first line,
 the names in double quotes separated by `, `, each once and in the order of the list above, and
-nothing after the closing parenthesis. The files carrying it are a list that
-only shrinks: the change that types a file deletes its line, or the names the file no longer
-trips (a name deleted while the file still trips it fails the file's parse, in `check.sh`'s boot
-or its suite's load, which is how to find out). No other ignore of the three is written anywhere:
+nothing after the closing parenthesis. No file carries it, and CI fails a file that gains it or
+a warning on it. No other ignore of the three is written anywhere:
 `tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
 `@warning_ignore_restore` that names one of them, or whose argument it cannot read, anywhere but
 that line in its one form, in every `.gd` file outside `docs/`, and in CI a file that gains the
@@ -106,8 +104,7 @@ Thing in things`, `things[0] as Thing`).
 **Nor does the engine warn of a method named without its parentheses**, on any receiver:
 `thing.is_ready` is a reference to the function, and always true in a condition.
 
-**What the field-read check adds to the engine.** In a file under `src/` without the opt-out line,
-`tools/check_field_reads.py` fails a field's or a method's name read through a receiver whose
+**What the field-read check adds to the engine.** In a file under `src/`, `tools/check_field_reads.py` fails a field's or a method's name read through a receiver whose
 class it cannot tell, such as a Variant, and the fix is a typed name to read through (for a
 dictionary's key, a subscript). In every file under `src/` it also fails a method a class under
 `src/` declares, named without its parentheses on a receiver it types as that class or one
@@ -119,8 +116,7 @@ text `uv run python tools/check_field_reads.py --help` prints.
 **The setting reaches every script a debug build parses in this project, and no release export.**
 That is `src/`, `tests/` with its rigs, fixtures and probes, the `.gd` scripts under `tools/`
 whether run with `--script` or as a scene, and a script a test writes at run time and boots in a
-child process: its source string is typed like a file, or opens with the opt-out line where it is
-not yet. A debug export is a debug build, so the debug Web export (`tools/export-web.sh debug`,
+child process: its source string is typed like a file. A debug export is a debug build, so the debug Web export (`tools/export-web.sh debug`,
 which `tools/serve-web.sh` serves) is held to the setting too. The engine generates the warnings
 only in a debug build, so the release Web export is not held to it and proves nothing about it;
 `check.sh` and the suites do.

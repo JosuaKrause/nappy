@@ -59,26 +59,18 @@ request that fixes one deletes it from both. The declaration here is held by the
 
 **The map lookup stays with the city maps in the model** (inbox #904 in freckled-moose), and a
 record the map holds is placed on the map's layer as it appears. Each thing's own drawing is on the
-layer of the thing it draws. The refactor entry (minty-quail, one engine: the codebase refactored
-by layer) files the same seven layers in its README, under "The layering the code is moved to";
-where that list and `tools/layer_map.py` differ, the file is what CI enforces and the list is
-corrected. A fix
-lands in the shared mechanism rather than a branch keyed on one row's id or picture; new code
-follows the target shape and adds nothing to the divergence the refactor entry lists; a brief names
-the layer its work belongs to.
-
-**The one exception to this whole section** is a minimal fix the queue orders
-before the refactor, which names itself as the exception in its entry, and **it holds only until the
-refactor**: the refactor replaces the code the fix touched, and the PR that closes the refactor entry
-removes the exception from this section, so it never outlives that PR (minty-lemur #799).
+layer of the thing it draws. Where this list and `tools/layer_map.py` differ, the file is what CI
+enforces and the list is corrected. A fix lands in the shared mechanism rather than a branch keyed
+on one row's id or picture; new code follows these layers; a brief names the layer its work belongs
+to. This section has no exception: a minimal fix ordered ahead of a larger change keeps to it like
+any other (minty-lemur #799).
 
 **Code that nothing reaches is deleted, not kept, and so is code that only serves a feature the game
 no longer has** (inbox #1180 in gray-dolphin). It costs maintenance, and it misleads whoever reads it, an agent
 included: a doc comment on unreached code reads as live behavior. A feature wanted back is built
 fresh, which also makes it keep to the current principles. A member only tests read is
 **writing-tests**' to rule on (the kept groups of
-`tools/test_only_members.txt`), so "nothing reaches" does not delete one a test holds on purpose, and
-the exception above, for a minimal fix ordered before the refactor, does not reach this rule.
+`tools/test_only_members.txt`), so "nothing reaches" does not delete one a test holds on purpose.
 `tools/dead_code.py` lists the candidates.
 
 **An event is asked through one consistent interface** (inbox #1173 in gray-dolphin). A caller uses it without
@@ -105,14 +97,12 @@ class needs is kept in an underscore field behind a method.
 the field was read from: in the events' design `is_finished` becomes `is_gone()` and `hard_fail`
 becomes `ends_the_day()`. Under the field's old name a read left behind without its parentheses is
 a reference to the function, always true in a condition. The field-read check fails it on a
-receiver it types as a class under `src/`, and, in a file without the opt-out line, on a receiver
-whose class it cannot tell, such as a Variant, unless its `--help` excuses the name; nothing
-reports it on a receiver typed too wide (a `Node` holding the class), nor on a receiver the check
-cannot tell in a file that carries the line (**godot**, "Types"). Under a new name the read left behind names nothing
-and fails: at the parse on a typed receiver in a file that does not silence
-`unsafe_property_access`, and when the line runs everywhere else (a file whose opt-out line names
-that warning, a receiver typed too wide, a Variant). The rule stops at yes-or-no fields: a field
-of another kind can be read in ways that take a function as silently (a test against null, a
+receiver it types as a class under `src/`, and on a receiver whose class it cannot tell, such as a
+Variant, unless its `--help` excuses the name; nothing reports it on a receiver typed too wide (a
+`Node` holding the class; **godot**, "Types"). Under a new name the read left behind names nothing
+and fails: at the parse on a typed receiver (the engine's `unsafe_property_access` is an error
+everywhere), and when the line runs everywhere else (a receiver typed too wide, a Variant). The rule
+stops at yes-or-no fields: a field of another kind can be read in ways that take a function as silently (a test against null, a
 `match`, a lookup), and this rule does not cover it. One method that predates the rule keeps a
 yes-or-no field's name, `EventDef.investigates()`, with no read of it left without parentheses.
 
@@ -127,26 +117,22 @@ name makes the compiler find such a read; a field of another kind keeps its name
 behind is the silent function reference above, which the field-read check reports only in the
 cases the paragraph above names.
 
-**Two lists hold "Fields are not API" while `src/` is converted, and neither grows except by what only moved.** Much of `src/` still
-reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
-adds a read of another class's field, today's being listed in `tools/field_reads.txt`, unless the
-read only moved (inbox #1350 in grassy-trout; its reader file renamed, code moved into a new file with no more uses of that
-class's field, or an inner class lifted into a file of its own, whose reads the list gains as
-lines; the check cannot count those, so review reads a lifting diff for a reader that is new), and a change that converts a file's last read of a field deletes its line.
-The second list is what makes the check see every read (inbox #1268 in olive-ferret), since a read through a
-receiver whose class nothing can tell is a read no list holds. `project.godot` makes the engine
-fail an access it cannot type: the warnings `untyped_declaration`, `unsafe_property_access` and
-`unsafe_method_access` are errors. A file not yet typed carries one `@warning_ignore_start(...)`
-line at its top naming the warnings it still trips, and the files carrying it are that second list:
-a module's pass types its receivers and deletes the line, a new file never carries it, since code
-is typed wherever the language can type it (inbox #1280 in olive-ferret), and CI's run of the check fails a file
-that gains it (**godot**, "Types", owns that rule and says what the errors are and how a value is
-typed). In a file under `src/` without the line, the check fails a field's or a method's name
-read through a receiver whose class it cannot tell, since the engine warns of nothing on a
-property read off a Variant; in a file with the line it skips such a read, and its `--summary`
-counts the files and the skipped uses. In no file does it see a further read of a field its reader
-file is already listed for, so review still reads the diff for those; which names it counts and
-the rarer blind spots are in the text `uv run python tools/check_field_reads.py --help` prints.
+**One check holds "Fields are not API", and it has no list of reads to shrink.**
+`tools/check_field_reads.py` (CI's `gates` job) fails a change that adds a read of another class's
+field. `tools/field_reads.txt` lists no read (its header alone remains), so a read that only moved
+passes only as the check's own rules say (inbox #1350 in grassy-trout): its reader file renamed, code
+moved into a new file with no more uses of that class's field, or an inner class lifted into a file
+of its own, whose reads the list then gains as lines; the check cannot count those, so review reads a
+lifting diff for a reader that is new. `project.godot` makes the engine fail an access it cannot
+type: the warnings `untyped_declaration`, `unsafe_property_access` and `unsafe_method_access` are
+errors. No file under `src/` carries the `@warning_ignore_start(...)` opt-out line, and a file never
+gains it, since code is typed wherever the language can type it (inbox #1280 in olive-ferret): CI's
+run of the check fails a file that does (**godot**, "Types", owns that rule and says what the errors
+are and how a value is typed). In every file under `src/` the check fails a field's or a method's
+name read through a receiver whose class it cannot tell, since the engine warns of nothing on a
+property read off a Variant. In no file does it see a further read of a field its reader file is
+already listed for, so review still reads the diff for those; which names it counts and the rarer
+blind spots are in the text `uv run python tools/check_field_reads.py --help` prints.
 
 **Every pull request that changes code answers the architecture questions** in
 **pr-review**'s `references/architecture-questions.md`, so the layering does not drift once the
@@ -221,8 +207,8 @@ that proposes it, and says so where the player's words name nothing on the point
   draws**, proposed by the layer map's builder (minty-quail-35). The player's words on the layers
   (inbox #904 in freckled-moose) decide the siblings and the map lookup, and name neither of
   these.
-- **A member a test holds on purpose is not deleted as unreached, and the minimal-fix exception
-  does not reach the deletion rule**, a reading of inbox #1180 in gray-dolphin.
+- **A member a test holds on purpose is not deleted as unreached**, a reading of inbox #1180 in
+  gray-dolphin.
 - **One interface and composition for anything many classes use, not only events**, a reading of
   inbox #1173 in gray-dolphin.
 - **Which members "Fields are not API" covers**, a reading of inbox #1173 in gray-dolphin.
@@ -240,10 +226,10 @@ that proposes it, and says so where the player's words name nothing on the point
   cannot do.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
-- **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,
-  the builder's choice (minty-quail-busy-heron). The player's words ask that the check be made to
-  work and approve the design review's way to do it (inbox #1268 in olive-ferret), and that design has the check
-  fail an unknown receiver only once no file carries the line.
+- **The check fails a read through a receiver whose class it cannot tell, in every file under
+  `src/`**, the builder's choice (minty-quail-busy-heron). The player's words ask that the check be
+  made to work and approve the design review's way to do it (inbox #1268 in olive-ferret), and that
+  design has the check fail an unknown receiver once no file carries the opt-out line, which holds.
 - **Which moves count as a read that only moved** (a reader file renamed, a new file with no more
   uses, an inner class lifted out), the planning agent's proposal (minty-quail-breezy-bison). That
   such a read passes the field-read check and the list gains its lines is the player's

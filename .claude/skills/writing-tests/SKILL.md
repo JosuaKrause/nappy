@@ -136,10 +136,10 @@ func run(t: TestRunner) -> void:
 The runner, `tests/run_tests.gd`, is `class_name TestRunner`, so that the header is one line and
 a suite preloads nothing to name it (inbox #1282 in grassy-trout). `t.check()`, `t.close_to()` and
 the runner's own `Node` calls (`t.add_child()`, `t.get_tree()`) are then typed calls. A bare
-`func run(t)` does not parse in a file without the opt-out line: the parameter is an untyped
-declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **A suite
-that carries the opt-out line keeps it until it is typed, and a new one never has it**:
-`tools/check_field_reads.py` fails a file that gains the line.
+`func run(t)` does not parse: the parameter is an untyped
+declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **No suite
+carries the opt-out line, and a new one never has it**: `tools/check_field_reads.py` fails a file
+that gains the line.
 
 ## A realistic mock is made in two steps
 
