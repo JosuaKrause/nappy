@@ -252,13 +252,21 @@ func _dress() -> void:
 func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
-## The drop shadow under this agent's own `shape()`, skipped for its own halo ring — the same rule
-## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
-## and a cue for what is charging her right now has nothing to say about it.
-func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
-	if canvas == _rim.entity_halo():
+## The drop shadow under this agent with it at `at` in `canvas`'s own coordinates — its look's
+## `AgentLook.shadow_outlines()`, an oval under a walker's feet and one per wheel pair under a car —
+## skipped for its own halo ring, the same rule `EventLook._draw_body_shadow` has: the shadow is the
+## ground under the thing, not the thing, and a cue for what is charging her right now has nothing
+## to say about it.
+func draw_shadow(canvas: CanvasItem, at: Vector2) -> void:
+	if canvas == _rim.entity_halo() or not shape().casts_a_shadow():
 		return
-	shape().draw_shadow(canvas, at, axis)
+	for outline in _look.shadow_outlines(at):
+		canvas.draw_colored_polygon(outline, Palette.SHADOW)
+
+## The ground this agent's shadow covers with it standing at `at`, what `draw_shadow()` fills:
+## read by the debug view's shadow layer (`DebugLayers`) at the agent's own position.
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	return _look.shadow_outlines(at)
 
 func _draw() -> void:
 	if frame_timing != null and frame_timing.running():

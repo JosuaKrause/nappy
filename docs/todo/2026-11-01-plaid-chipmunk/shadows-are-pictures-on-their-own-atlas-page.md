@@ -12,16 +12,16 @@ about forty draw calls and a little of `draw`; on the phone the saving is not ye
 **What it keeps and what it replaces.** The M61 record ("One shape per object · the shape, the
 shadow and the body") draws every shadow from the object's `GroundShape`; the shape stays the
 source, and the bake draws it once into a picture on a shadow page that the object then draws as a
-sprite, tilted and squashed by its transform as now. The crowd car's capsule
-(`CarStrategy.shadow_shape()`) is two ellipses' hull rather than one ellipse and gets its own
-picture. **It is not M139's shadow pass**
+sprite, tilted and squashed by its transform as now. A vehicle's shadow, bar the riot van's and the moving van's, which keep one whole-body
+oval, is one oval per wheel pair (`GroundShape.paired_shadow_outlines()`), two polygons where every other object
+fills one, and each oval gets its picture. **It is not M139's shadow pass**
 ([M139](../../decisions/2026-09-14-M139-one-atlas-for-the-crowd-built-the-shadow-pass-measured-and-rejected.md)):
 that drew every agent's shadow from one canvas item spanning the field, which defeated the
 per-agent culling and was measured slower and reverted; here each object still draws its own
-shadow, as now, from a picture instead of a polygon. **It prepares [silver-egret](../2026-10-03-silver-egret/README.md), a shadow is where the object
-meets the ground**, which changes the shapes themselves: the page is where those better shadows
-land, so this item does not redesign any shadow, and silver-egret's pictures replace these when it
-is built.
+shadow, as now, from a picture instead of a polygon. **It follows [silver-egret](../../decisions/2026-10-03-silver-egret.md), a shadow is where the
+object meets the ground**, which changed the shadow a vehicle draws from its shape and kept it ovals: this item does
+not redesign any shadow, and if the player picks a picture of its own for each object's shadow
+instead (silver-egret's review item), the page is where those pictures land.
 
 Evidence: the frame record's `draw_calls` and `draw`/`render` on the same seed and route before and
 after, desktop native and the phone's web page, and a still comparing a stretch of street before and

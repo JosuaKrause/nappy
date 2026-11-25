@@ -395,19 +395,36 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## untouched: this is the one function that puts a shadow patch down, so refusing here is the whole
 ## of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
-	if not _look.casts_a_shadow():
-		return
 	if canvas == event.rim():
 		return
-	var pieces := _stance.round_the_origin()
-	if event.drives():
-		var axis := event.solid_axis()
-		if _driven_pieces.is_empty() or axis != _driven_axis:
-			_driven_axis = axis
-			_driven_pieces = _stance.pieces_at(Vector2.ZERO, axis)
-		pieces = _driven_pieces
-	for piece in pieces:
-		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
+	for outline in shadow_outlines(origin):
+		canvas.draw_colored_polygon(outline, Palette.SHADOW)
+
+## The ground this row's body shadow covers with its node at `origin`, what `_draw_body_shadow()`
+## fills: one `GroundShape` outline per solid piece of its stance, none for a look that casts no
+## shadow (`LookSpec.casts_a_shadow()`). Read by the debug view's shadow layer (`DebugLayers`,
+## through `EventInstance.shadow_outlines()`) at the event's own position, so the layer and the
+## shadow cannot disagree.
+func shadow_outlines(origin := Vector2.ZERO) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = []
+	if not _look.casts_a_shadow():
+		return outlines
+	for piece in _shadow_pieces():
+		if piece.ground_shape().casts_a_shadow():
+			outlines.append(piece.ground_shape().shadow_outline(origin + piece.center(),
+					piece.axis()))
+	return outlines
+
+## The pieces of its stance a shadow is laid under, round the origin: the stance's own for a body
+## that stands, and for a car that drives laid out again along its heading whenever that turns.
+func _shadow_pieces() -> Array[StandingPiece]:
+	if not event.drives():
+		return _stance.round_the_origin()
+	var axis := event.solid_axis()
+	if _driven_pieces.is_empty() or axis != _driven_axis:
+		_driven_axis = axis
+		_driven_pieces = _stance.pieces_at(Vector2.ZERO, axis)
+	return _driven_pieces
 
 ## Whether this event is worth a mark at all.
 ##
@@ -587,9 +604,21 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 ## car rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
 ## caret over it is lowered by the same amount (`_picture_drop_now()`).
 func body_anchor(view: String) -> Vector2:
+	return Vector2(0.0, _south_reach()
+			+ float(EventPictures.canvas_margins(_look.picture()).get(view, 0.0)))
+
+## How far below its node this event's picture meets the ground: its body's southern reach for a car
+## drawn over its body (`body_anchor()`), zero for every other row, which stands on its node.
+func _ground_line() -> float:
+	if not EventPictures.is_anchored_over_its_body(_look.picture()) or event.ground_shape() == null:
+		return 0.0
+	return _south_reach()
+
+## The southern reach of its body, a capsule laid along `EventInstance.solid_axis()`: its spine's
+## half length times `|axis.y|` plus its rounding.
+func _south_reach() -> float:
 	var shape := event.ground_shape()
-	var south := shape.spine_half_length() * absf(event.solid_axis().y) + shape.rounding_radius()
-	return Vector2(0.0, south + float(EventPictures.canvas_margins(_look.picture()).get(view, 0.0)))
+	return shape.spine_half_length() * absf(event.solid_axis().y) + shape.rounding_radius()
 
 ## How far below its own node the event's picture is drawn this frame — a car's
 ## `body_anchor()`, zero for every other row — so the caret over it stands the same height
