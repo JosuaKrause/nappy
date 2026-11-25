@@ -395,7 +395,8 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 ## **The badge is drawn on the frame it goes up, redrawn every frame it is up, and redrawn once to
 ## come off** — and with none up and none drawn there is nothing to redraw. The edge runs its own
 ## frames; a frame "redraws" when the engine drew the edge in it (its `draw` signal). The fire engine
-## is moved by hand at its own speed over each frame's own length, and the manager's tick is off, so
+## is created under its warning (`EventManager.spawn_warned()`), so it carries the badge, and moved
+## by hand at its own speed over each frame's own length, and the manager's tick is off, so
 ## nothing else moves it, bar the one tick that retires it.
 func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunner) -> void:
 	# The page the badge's picture and the engine's are drawn from, as `main` hands the edge it.
@@ -426,7 +427,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	t.check(not await _redraws(t, edge, drawn), "nothing coming, nothing drawn: no redraw")
 
 	var def := EventCatalogue.by_id("fire_truck")
-	var engine := manager.spawn_extra(def, Vector2(1200.0, 0.0))
+	var engine := manager.spawn_warned(def, PackedVector2Array([Vector2(1200.0, 0.0), Vector2.ZERO]))
 	engine.set_process(false)
 	var asked_when_up := false
 	var went_up := false
