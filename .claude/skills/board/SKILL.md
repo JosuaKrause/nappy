@@ -99,15 +99,19 @@ a batch, so the two kinds stay apart; a review item stays a file in the reposito
 shows it. **A question the player can answer only by running the game or comparing settings in it**
 (which bag fills the escape right, which charger timing feels right) **is a Review-tab item too,
 with no file when no sign-off waits on it** (inbox #1765 in gray-plover, inbox #1766 in gray-plover); it
-is never put on the Main tab, whatever work it decides. A question with a part that needs a run and
-a part that does not is split, one question per part (below). The answer goes to a playtest file as before, which closes the item's file
-(**playtest-feedback**). The tab holds
+is never put on the Main tab, whatever work it decides. **The two kinds are answered differently**:
+the answer to an item with a file goes to a playtest file as before, which closes the item's file
+(**playtest-feedback**); the answer to a question with no file is given on the tab and recorded
+where the work it decides records it (**Blocking, and no dialogs**, "A conclusion is written down
+in the turn it is reached"). The tab holds
 a title and one line saying what it is for, `## Waiting on you` with the items ready to answer (or
 the one line "Nothing is ready for you right now."), and below it a section for items held until
 something happens, such as `## Waiting for a release`, where the item's file says what it waits
 for; each item is a question in the layout below with its review item's name in its Question line
-and the steps in its Context; and an item added, held or closed in the repository is added, moved
-or removed on the tab in the same turn.
+(a question with no file, its own name) and the steps in its Context; and an item with a file,
+added, held or closed in the repository, is added, moved or removed on the tab in the same turn,
+so the tab is kept in step with `docs/review/`, and a question with no file is added when it is
+asked and leaves when answered.
 
 **What a Review-tab question that needs a run owes**, so the player can answer it from the tab
 without opening anything else:
@@ -122,8 +126,8 @@ without opening anything else:
   run, and the line says when it ships.
 - The You and Me stubs, as for every question.
 
-Today's two items for lilac-marten (the escape's marble bags; the charger timing) are the shape:
-what it is, what to do with the commands as a list, where to look, the question a run answers.
+The shape: a line on what it is, then what to do with the commands as a list, where to look, the
+question a run answers, and the You and Me stubs.
 
 **A question is a level-3 heading with a stable kebab-case name and one bullet list under it**,
 nested exactly like this, the layout the player set on the board:
@@ -303,6 +307,8 @@ the player corrects them. The citation is the player's word each one extends:
 - **What a Review-tab question that needs a run owes** ("The layout"): the player's words say
   where such a question goes (inbox #1765 in gray-plover, inbox #1766 in gray-plover); the list of what it carries, and
   that it has no file when no sign-off waits on it, are the filer's reading.
+- **That a question with a run part and a part without is split, one question per part**
+  ("The layout"): the filer's reading, with "A question asks one thing" (inbox #1163 in gray-dolphin).
 - **A bold lead word on a Context item, and which pictures are meant** ("The layout";
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
