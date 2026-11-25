@@ -144,12 +144,12 @@ func _test_the_charger_timing_is_the_flags_or_the_shipped_one(t: TestRunner) -> 
 	var flagged := RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", true).charger_timing()
 	t.check(is_equal_approx(flagged.warning(), 1.5) and is_equal_approx(flagged.notice(100.0), 120.0),
 			"--chargers 1.5 1.2 warns for 1.5s with every radius at 1.2 times its own")
-	var page := RunConfig.parse(none, "?debug=1&chargers=1.25,0.8", false)
+	var page := RunConfig.parse(none, "?debug=1&chargers=1.25,0.85", false)
 	t.check(is_equal_approx(page.charger_timing().warning(), 1.25)
-			and is_equal_approx(page.charger_timing().notice(100.0), 80.0)
+			and is_equal_approx(page.charger_timing().notice(100.0), 85.0)
 			and page.used_a_web_debug_flag(),
 			"a release page that asked ?debug=1 reads ?chargers= and counts as having used the bundle")
-	for config: RunConfig in [RunConfig.parse(none, "?chargers=1.25,0.8", false),
+	for config: RunConfig in [RunConfig.parse(none, "?chargers=1.25,0.85", false),
 			RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", false),
 			RunConfig.parse(none, "", true)]:
 		t.check(config.charger_timing().same_as(shipped),

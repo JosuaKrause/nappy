@@ -543,15 +543,15 @@ sets what the warning is:
    | --- | --- | --- | --- | --- | --- | --- | --- |
    | the waiting dog (day 4 on) | 162.5px | 1.75s | never charged, out 1.00s early | never charged, out 0.67s early | caught | gets away, closest 101px | caught |
    | the roadblock's guard, a day's and the escape's | 225px from the band | 1.75s | never charged, out 1.00s early | never charged, out 0.32s early | caught | gets away, closest 118px | caught |
-   | the alley robber | 180px | 1.75s | never charged, out 0.77s early | never charged, out 0.52s early | caught | gets away, closest 62px | caught |
+   | the alley robber | 225px | 1.75s | never charged, out 0.77s early | never charged, out 0.17s early | caught | gets away, closest 94px | caught |
 
    **The walker seen late is what binds the pair**, since a shorter warning or a wider radius leaves
    her less time to cross more of his radius: walked over every warning from 1s to 2s and radii from
-   0.8 to 1.2 times these, a pair either keeps every walk above or leaves the roadblock's guard or
+   0.85 to 1.4 times these, a pair either keeps every walk above or leaves the roadblock's guard or
    the robber charging her as she runs back out from a late sighting (she still gets away running).
-   The shipped warning keeps every walk at these radii with at least 0.3s to spare; 1.5s keeps them
-   too, the guard's late sighting by under a tenth of a second, and the robber at 225px needs 1.75s
-   (0.17s to spare). `--chargers` (or a release page's `?debug=1&chargers=W,R`) plays any other
+   The shipped warning keeps every walk at these radii with at least 0.17s to spare, the robber's
+   late sighting being the tightest; 1.5s keeps the dog's and the guard's, the guard's by 0.07s,
+   and the robber at 225px needs 1.75s. `--chargers` (or a release page's `?debug=1&chargers=W,R`) plays any other
    pair (`ChargerTiming`; the player chooses after playing, minty-dolphin #834).
 
    **It warns only once its warning would stand in her view** (`EventInstance._would_stand_in_her_view()`):
