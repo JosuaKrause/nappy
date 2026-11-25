@@ -67,12 +67,12 @@ its one read). Handing the run's rows from `main` (47 files under `src/`, 183 un
 her first seen at his stand-off plus 4px, inside his radius, running in at `Tuning.RUN_SPEED` rather
 than walking, turning `REACTION` (0.3s) after his warning starts and running out. At the shipped
 pair (1.75s, x1.25) the waiting dog never charges (she is out 0.33s early) and the alley robber and
-the roadblock's guard do charge her, and she gets away, closest 205px and 177px against a 90px catch
+the roadblock's guard do charge her, and she gets away, closest 205px and 177px against a 26px and 28px catch
 (the walking **late** walk leaves the robber 0.17s and the guard 0.32s to spare). The walk first
 slowed her toward walking speed during her 0.3s reaction, which showed the robber 0.15s to spare;
 she now keeps running until she turns. Over warnings 1.0 to 2.0s and factors 0.85 to 1.4 no pair
-catches her in either late walk, and the robber leaves her uncharged only from 1.75s at x1.0, 2.0s
-at x1.15 and x1.25 and at no warning of the range at x1.4.
+catches her in either late walk, and the robber leaves her uncharged only at x0.85 from 1.5s, x1.0 from
+1.75s, x1.15 and x1.25 at 2.0s, and at no warning of the range at x1.4.
 
 **Open to the player:** the pair itself; a charger's field growing with its notice; a vehicle's
 notice capped at its field; a mark that does not move where its guard would notice her.
