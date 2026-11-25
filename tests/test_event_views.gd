@@ -161,6 +161,7 @@ func run(t: TestRunner) -> void:
 	_test_reversing_lorry_only_ever_faces_the_side_view(t)
 	_test_vehicle_views_are_grounded_at_the_canvas_bottom(t)
 	_test_burst_water_main_draws_no_body_shadow(t)
+	_test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t)
 	_test_every_moving_vehicle_has_wheels_on_its_own_canvas(t)
 	_test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t)
 	_test_a_walking_event_keeps_its_stride_bob(t)
@@ -1049,6 +1050,60 @@ func _test_burst_water_main_draws_no_body_shadow(t: TestRunner) -> void:
 			"burst_water_main opts out of the body shadow every other seal draws")
 	t.check(EventCatalogue.by_id("fallen_tree").look().casts_a_shadow(),
 			"fallen_tree, burst_water_main's same-geometry sibling, keeps the ordinary body shadow")
+
+## **The riot van and the moving van cast one oval per wheel pair, under a body of their own**
+## (minty-hedgehog 1): their ground shape is the scene round them (`EventVehicleLook.SCENE_SHAPED`,
+## the night raid's disc holding its officers, the moving van's band under its ramp), wider than the
+## van, so their shadow is laid under a body read off the picture they are drawn with. The riot van
+## at every sector, and the moving van side on and end on, cast two ovals together no wider than the
+## picture drawn for that view, where the night raid's scene is wider than the riot van.
+func _test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t: TestRunner) -> void:
+	var raid := EventCatalogue.by_id("night_raid")
+	var raid_side := EventPictures.native_size(EventPictures.RIOT_VAN_BY_VIEW["side"]).x
+	t.check(_outlines_bounds([raid.ground_shape().shadow_outline(Vector2.ZERO)]).size.x
+			> raid_side, "the night raid's scene is wider than the riot van's side picture")
+	for sector in range(8):
+		var instance := FakeEvent.new()
+		instance.heading = Vector2.from_angle(deg_to_rad(sector * 45.0))
+		instance.shape = raid.ground_shape()
+		var look := instance.look_for(raid)
+		var drawn := EventPictures.native_size(
+				EventPictures.RIOT_VAN_BY_VIEW[look.select_view(instance.heading)]).x
+		var outlines := look.shadow_outlines(Vector2.ZERO)
+		var width := _outlines_bounds(outlines).size.x
+		t.check(outlines.size() == 2 and width <= drawn,
+				"the riot van at sector %d casts two ovals no wider than its %.0fpx picture (%d, %.1fpx)"
+				% [sector, drawn, outlines.size(), width])
+		instance.free()
+	var moving := EventCatalogue.by_id("moving_van")
+	for side_on: bool in [true, false]:
+		var instance := FakeEvent.new()
+		instance.side_on = side_on
+		instance.solid_direction = Vector2.RIGHT if side_on else Vector2.DOWN
+		instance.shape = moving.ground_shape()
+		var look := instance.look_for(moving)
+		var picture := EventPictures.stationary_vehicle_texture(EventDef.Look.MOVING_VAN, side_on)
+		var drawn := EventPictures.stationary_vehicle_extent(picture, side_on,
+				moving.body().drawn_width()).x
+		var outlines := look.shadow_outlines(Vector2.ZERO)
+		var width := _outlines_bounds(outlines).size.x
+		t.check(outlines.size() == 2 and width <= drawn,
+				"the moving van %s casts two ovals no wider than its %.0fpx picture (%d, %.1fpx)"
+				% ["side on" if side_on else "end on", drawn, outlines.size(), width])
+		instance.free()
+
+## The box round every point of `outlines`.
+func _outlines_bounds(outlines: Array[PackedVector2Array]) -> Rect2:
+	var bounds := Rect2()
+	var first := true
+	for outline in outlines:
+		for point in outline:
+			if first:
+				bounds = Rect2(point, Vector2.ZERO)
+				first = false
+			else:
+				bounds = bounds.expand(point)
+	return bounds
 
 # ------------------------------------------------------------ the wheels ---
 
