@@ -414,7 +414,7 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source.mood().set_her_motion(Vector2(92.0, 0.0))
 		_crowd_parity(t, source, at, "crowd player")
 		source.lane().ease_speed_toward(source.speed() + 1.25, 1000.0)
-		_crowd_parity(t, source, at, "crowd external _speed")
+		_crowd_parity(t, source, at, "crowd pace")
 		for field: String in ["_direction", "_turn_back_hold"]:
 			source.set(field, float(source.get(field)) + 1.25)
 			_crowd_parity(t, source, at, "crowd external " + field)
@@ -424,8 +424,9 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		# A yield and a door hold are a walker's, kept by its strategy; a car has neither.
 		var walking := kind == CrowdAgent.Kind.WALKER
 		if walking:
-			# Somebody walks into it along its own line: it hurries or waits for a moment.
-			var along := Vector2.DOWN if source.lane().is_vertical() else Vector2.RIGHT
+			# Somebody walks into it against its own way, so it waits for a moment.
+			var along := (Vector2.DOWN if source.lane().is_vertical() else Vector2.RIGHT) \
+					* -source.lane().direction()
 			source.lane().strategy().step_aside(along, 0.0, 1.25)
 			_crowd_parity(t, source, at, "crowd yield")
 		source.mood().startle(80.0, 2.0, 30.0, 170.0)
@@ -436,17 +437,18 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		_crowd_parity(t, source, at, "crowd heading")
 		if walking:
 			# The yield ends where the walker forgets what it was dodging; the door is entered
-			# the way the crowd's tick walks it in: seen ahead, joined, waited at and admitted.
+			# the way the crowd's tick walks it in: seen ahead, joined and waited at.
 			var walker := source.lane().strategy()
 			walker.forget_the_detour()
 			var hut := WalkerDoorHold.new()
 			hut.stand_at(source.position)
 			source.lane().see_a_door_ahead(hut, 0.0)
 			walker.advance_the_door_hold(0.0)
-			walker.advance_the_door_hold(0.0)
 			_crowd_parity(t, source, at, "crowd door hold")
-			walker.advance_the_door_hold(WalkerStrategy.WALKER_DOOR_HOLD_SECONDS)
+			# The hut is let go of where the walker waits (the way the game does when the hut is
+			# no longer ahead), so the release moves nothing but the door's state.
 			source.lane().clear_the_door_ahead()
+			walker.advance_the_door_hold(0.0)
 			_crowd_parity(t, source, at, "crowd door release")
 		# An about-face, the half turn of 16px radius between the two lanes of one carriageway.
 		var turn := CarTurn.about_face(false, 1.0, 0, CrowdLanes.road_lane(false, 1.0), 0.0, 0.0,
