@@ -12,5 +12,5 @@ declaration in **designing-classes**, "Code is designed by layer".
 Its size when filed: 47 files under `src/` (128 calls into the catalogue) and 183 files under
 `tests/` and `tools/` (991 calls), since every row reaches its readers through the static
 catalogue (under `src/`, `by_id()` 46 times and `heated()` 11). `tools/check_layers.py` reports
-nine files under the exception: the readers in the world and simulation layers. The rest read the
+ten files under the exception: the readers in the world and simulation layers. The rest read the
 catalogue from layers the static rule does not police.

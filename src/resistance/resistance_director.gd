@@ -1008,11 +1008,10 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
 ## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her
-## view
-## when she stands beside the roadblock, and the street through it runs on past the view's edge.
-## *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want. If we
-## need to move multiple times so be it".)* On the ring no touch is within his notice; the task sets
-## him on her when she has done it, wherever he stands (`_set_the_task_guard_on_her()`).
+## view when she stands beside the roadblock, and the street through it runs on past the view's
+## edge. *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want.
+## If we need to move multiple times so be it".)* On the ring no touch is within his notice; the
+## task sets him on her when she has done it, wherever he stands (`_set_the_task_guard_on_her()`).
 ##
 ## **Where the far side has no spot at all**, `near_side_too` decides: true, for the guard placed
 ## with the task, the near side is drawn from the same way, and the run log says so; false, for a

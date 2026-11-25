@@ -1,7 +1,7 @@
 class_name EventSetOffRun
 extends EventBehaviour
-## **A row a place set off, running its line at her** (`EventDef.is_set_off_by_a_place()`): the
-## masked man on the escape's stairs. It is created where its warning pointed, with its telegraph
+## **A row a place set off, running its line at her** (`EventDef.is_set_off_by_a_place()`, a row
+## that moves): the masked man on the escape's stairs. It is created where its warning pointed, with its telegraph
 ## spent (`SetOffWatch`), so from its first tick it runs its route. Its warning was its badge and
 ## its run is its charge, each said once for its counter (`EventBus.pursuit_warned`,
 ## `pursuit_began`) on its first tick.

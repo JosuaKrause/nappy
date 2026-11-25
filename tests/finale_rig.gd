@@ -926,14 +926,14 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 	t.check(crossings > 0, "there were roadblock crossings to walk (%d)" % crossings)
 
 ## **Every walk straight past a posted guard is caught**, on every crossing: the walk is the control
-## that shows the lure walk beside it is not walking past nothing, and the player's rule is that luring
-## the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock while she
-## walks on, so the charge starts with her about level with the band, and it closes the gap at
-## 38px/s more than her walk: on every street the rig walks her along the sidewalk to where the
-## ground ends, and
-## a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has caught her, **round the
-## corner where her street ends sooner**, since he follows her round buildings (`ChaseWay`) and
-## turning the next corner is no way past him (inbox #1534 in velvet-alpaca).
+## that shows the lure walk beside it is not walking past nothing, and the player's rule is that
+## luring the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock
+## while she walks on, so the charge starts with her about level with the band, and it closes the
+## gap at 38px/s more than her walk: on every street the rig walks her along the sidewalk to where
+## the ground ends, and a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has
+## caught her, **round the corner where her street ends sooner**, since he follows her round
+## buildings (`ChaseWay`) and turning the next corner is no way past him (inbox #1534 in
+## velvet-alpaca).
 static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted: Dictionary) -> void:
 	t.check(posted["caught"] and posted["charged"] > 0,
 			"%s: walking straight past a posted guard is caught (%d charged)" % [where, posted["charged"]])
@@ -1789,38 +1789,50 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 			"the crater obstructs %.0fpx against a %.0fpx picture"
 			% [crater.obstructs_within(), drawn_width])
 
-	# And the wiring: a burst that has run its course is replaced by a crater standing where it
-	# was, through the row's `aftermath.leaves_behind()`.
+	# And the wiring: a burst's plan is not in the world with nobody near, since a place sets it off
+	# (`SetOffWatch`); one that arrives where its warning pointed, as a set-off one does, leaves its
+	# crater standing where it went off on the manager's next physics frame, while it still bangs, and
+	# no second one when it is over (`aftermath.leaves_behind()`).
 	var run := RunCity.started_run(SEEDS[0])
 	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	RunCity.build(city, run, MapCache.of(SEEDS[0]))
 	RunCity.events(city).stream_within(INF)
 	var road := city.map().tiles_of_type(GameEnums.TileType.ROAD)[0]
-	var plans: Array[EventPlan] = [
-		EventPlan.new(burst, city.map().tile_to_world(road))]
+	var at := city.map().tile_to_world(road)
+	var plans: Array[EventPlan] = [EventPlan.new(burst, at)]
 	GivenPlanner.hand_in(RunCity.events(city), plans)
 	var none: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
-	t.check(RunCity.events(city).instances().size() == 1, "the burst is in the world")
-	var live := RunCity.events(city).instances()[0]
+	t.check(RunCity.events(city).instances().is_empty(),
+			"the burst's plan is not streamed in: a place sets it off")
+	var live := RunCity.events(city).spawn_warned(burst, PackedVector2Array([at]))
+	# `EventStreaming.retire_finished()` runs inside the manager's own physics frame, which the city
+	# in the tree is let have.
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
+	t.check(not live.is_gone(), "the burst is still going off")
+	t.check(_craters_of(city, crater) == 1, "and its crater already stands where it went off")
 	var steps := 0
 	while not live.is_gone() and steps < 400:
 		live.step(0.05)
 		steps += 1
 	t.check(live.is_gone(), "the burst is over after %.1fs" % (steps * 0.05))
-	# `EventStreaming.retire_finished()` runs inside the manager's own physics frame, which the city
-	# in the tree is let have.
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
+	t.check(_craters_of(city, crater) == 1, "exactly one crater is left where the burst was")
+	city.free()
+
+## How many of `crater`'s row stand in `city`, each checked solid.
+func _craters_of(city: City, crater: EventDef) -> int:
 	var craters := 0
 	for instance in RunCity.events(city).instances():
-		if instance.row_id() == crater.id():
+		if is_instance_valid(instance) and instance.row_id() == crater.id():
 			craters += 1
-			t.check(instance.is_solid(), "and the crater it left is solid")
-	t.check(craters == 1, "exactly one crater is left where the burst was")
-	city.free()
+			if not instance.is_solid():
+				return -1
+	return craters
 
 # ------------------------------------------------------------------ the clock ---
 

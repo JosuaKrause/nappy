@@ -134,7 +134,9 @@ static func compose(row: EventDef, where: WhereSheIs, figure: EventInstance.Figu
 		made._notice_run = EventNoticeRun.new(
 				figure, where, row.route(), row.flock(), row.notice(), route)
 		out.append(made._notice_run)
-	if row.is_set_off_by_a_place():
+	# A row a place set off that runs a line (the masked man) runs it from its first tick; one that
+	# stands where it went off (the escape city's explosion) only happens there.
+	if row.is_set_off_by_a_place() and row.moves():
 		out.append(EventSetOffRun.new(figure, route))
 	elif row.moves() and not row.investigates() and not row.pursues() and not row.waits_for_her():
 		out.append(route)

@@ -64,6 +64,8 @@ src/
 	summary_model.gd      what a summary screen says, pure; the run's standing and the tally, once
   player/
 	stroller.gd           movement, input, speed state
+	view_shake.gd         the small eased shake of her view an explosion near gives (full on top of
+	                      it, none at its reach), which the stroller adds to its camera's follow
 	baby.gd               the two meters + baby state machine
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
@@ -405,12 +407,13 @@ src/
 	                         own table with the clock of a plan that comes again, carrying its state
 	                         out and back; the repeats, the masts, a finished plan spent
 	  event_spawner.gd      every instance made, with its scar, its body and the bang outside;
-	                         what a finished row leaves; the rows summoned on sight; the pelican bag,
+	                         what a row leaves where it goes off; the rows summoned on sight; the pelican bag,
 	                         and the pelican's first landing on her
 	  warning_board.gd      the screen-edge badges up for something not in the world yet, and the
 	                         mark over her head
-	  set_off_watch.gd      the places that set a row off, the masked man's on the escape's stairs:
-	                         his warning put up as she reaches his place, and him brought in after it
+	  set_off_watch.gd      the places that set a row off, the masked man's on the escape's stairs and
+	                         the escape city's explosions: its warning put up as she reaches its
+	                         place, and it brought in there after it, out of her sight
 	  events_ahead.gd       what the director puts in front of her while she walks: sited on her
 	                         way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
 	                         a task's mast placed after dawn and day 13's roadblock put across a
@@ -604,6 +607,10 @@ src/
 	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
 	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
+	blast_light.gd        the light of the bombs over the escape city: the city's light lifted by
+	                      each explosion's flash and the far ones between, her view shaken by a near one
+	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, no second
+	                      holding more than three flashes
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on

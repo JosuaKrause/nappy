@@ -237,6 +237,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/crowd/crowd.gd",
             "src/events/simulation/day_planner.gd",
             "src/events/simulation/event_director.gd",
+            "src/events/simulation/event_footprints.gd",
             "src/events/simulation/event_manager.gd",
             "src/events/simulation/event_spawner.gd",
             "src/events/simulation/events_ahead.gd",

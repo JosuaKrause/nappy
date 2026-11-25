@@ -155,9 +155,10 @@ direction.
 
 Four exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid": anything
 **mobile** (a moving wall pins her) but a car that drives, anything **director-sited**
-(`validate()` refuses it), anything with no silhouette, and a **flock** (`validate()` refuses that
-too — several bodies wheeling inside one disc have no silhouette to be half of, and being walked into
-is the event). `tests/test_events_solid.gd` requires everything else to have one.
+(`validate()` refuses it), anything with nothing drawn in the world
+(`LookSpec.is_drawn_in_the_world()`: no picture, or one drawn only in its badge), and a **flock**
+(`validate()` refuses that too — several bodies wheeling inside one disc have no silhouette to be
+half of, and being walked into is the event). `tests/test_events_solid.gd` requires everything else to have one.
 
 **A body is a route cost, not a closure.** `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD` is the
 `obstructs_within()` a spoiler may carry and still count as something a park can hold — a body you can

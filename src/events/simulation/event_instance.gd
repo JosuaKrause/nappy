@@ -30,6 +30,8 @@ var _came_under_a_warning := false
 ## its warning, so it carries the screen-edge badge from then until she can see it
 ## (`was_warned_of()`).
 var _charged_out_of_sight := false
+## Whether it has handed over what it leaves where it goes off (`take_what_it_leaves()`).
+var _left_what_it_leaves := false
 
 ## **Tells it that it was created where a warning pointed**, once that warning was over
 ## (`EventManager.spawn_warned()`), before `restore()` reads it: a restore otherwise restores an
@@ -1070,6 +1072,9 @@ func _restore_the_moment(saved: EventSave) -> void:
 	# its warning pointed is not streamed back in**: `EventSpawner.spawn_warned()` sets
 	# `arrive_from_its_warning()` before restoring only to spend a telegraph the warning already ran.
 	_charge.be_begun(not _came_under_a_warning and not is_waiting())
+	# Streamed back in after it went off, it left what it leaves then; one created where its warning
+	# pointed, its telegraph spent to get it there, goes off now and leaves it on its first tick.
+	_left_what_it_leaves = not _came_under_a_warning and not is_telegraphing()
 	# A warning it had already given before it streamed out is not reported again.
 	_charge.be_warned(saved.noticed_at() != INF)
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a restored instance is
@@ -1151,7 +1156,7 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
 ## event with an `aftermath.leaves_behind()` stops **where the thing it leaves belongs** — the escape's
-## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
+## explosion left its crater where it went off, and goes no further. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
 ## `EventDef.route().parks_where_it_arrives()` **parks**: the fire engine is sent to the near kerb
 ## across from the building (`CityMap.kerb_across_from()`) and stays there for the
@@ -2155,10 +2160,21 @@ func row() -> EventDef:
 func row_id() -> String:
 	return _def.id()
 
-## The id of the row it leaves where it ends (`EventDef.leaves_behind()`), or "" for a row that
-## leaves nothing.
-func leaves_behind() -> String:
+## **The id of the row it leaves, handed over once, as it goes off**: on the first ask with its
+## telegraph over, "" on every other ask and for a row that leaves nothing. The escape's explosion
+## leaves its crater the moment it bangs, so the crater stands where nothing of it could be seen
+## (`EventStreaming.retire_finished()` asks every tick). An instance streamed back in after it had
+## gone off already left it (`_restore_the_moment()`).
+func take_what_it_leaves() -> String:
+	if _left_what_it_leaves or _def.leaves_behind() == "" or is_telegraphing():
+		return ""
+	_left_what_it_leaves = true
 	return _def.leaves_behind()
+
+## Whether the sky lights up as it goes off (`LookSpec.flashes_as_it_goes_off()`): the escape
+## city's explosion, which `BlastLight` flashes the screen for.
+func flashes_as_it_goes_off() -> bool:
+	return _def.look().flashes_as_it_goes_off()
 
 ## Whether it is over and gone (`Phase.DONE`).
 func is_gone() -> bool:

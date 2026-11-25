@@ -56,9 +56,20 @@ through the shot.
 **The timing in a static.** The catalogue keeps the run's timing in `EventCatalogue._chargers`,
 written once at boot by `main.configure()`. The first build listed it among the layer map's
 stateless caches, which hid it from the layer check. It is declared instead as the map's one
-exception, in `tools/layer_map.py` and **designing-classes**, the orchestrator's ruling. Handing the
-run's rows from `main` (47 files under `src/`, 183 under `tests/` and `tools/`) is filed as
-curly-finch.
+exception, in `tools/layer_map.py` and **designing-classes**, the orchestrator's ruling, standing
+for the ten world and simulation files that read the static catalogue (the tenth,
+`EventFootprints.footprint_of()`, fetches the row an escape explosion leaves behind with
+`EventCatalogue.by_id()`; handing that row in would change its seven callers, so it is listed with
+its one read). Handing the run's rows from `main` (47 files under `src/`, 183 under `tests/` and
+`tools/`) is filed as curly-finch.
+
+**The robber seen late, at a run.** The **late run** walk of `tests/probes/charger_warning.gd` puts
+her first seen at his stand-off plus 4px, inside his radius, running in at `Tuning.RUN_SPEED` rather
+than walking, turning `REACTION` (0.3s) after his warning starts and running out. At the shipped
+pair (1.75s, x1.25) he never charges: she is out of his radius 0.15s before his warning has run (the
+walking **late** walk 0.17s; the waiting dog 0.63s, the roadblock guard 0.28s). The margin is thin,
+and shorter warnings lose it: at 1.25s and the written radius he charges her and she gets away,
+closest 178px.
 
 **Open to the player:** the pair itself; a charger's field growing with its notice; a vehicle's
 notice capped at its field; a mark that does not move where its guard would notice her.

@@ -15,9 +15,10 @@ extends RefCounted
 ##
 ## - **back**: she turns `REACTION` later and runs back out. Fair if he never charges.
 ## - **late**: she is first seen just outside his stand-off, deep inside his radius (round an
-##   alley's
-##   mouth, from behind a wall), walking in, turns `REACTION` later and runs back out. Fair if he
-##   never charges; the margin is how long before his warning ran she was out.
+##   alley's mouth, from behind a wall), walking in, turns `REACTION` later and runs back out. Fair
+##   if he never charges; the margin is how long before his warning ran she was out.
+## - **late run**: as **late**, but she runs in at `Tuning.RUN_SPEED` when first seen, turns
+##   `REACTION` later and runs back out. Fair if he never charges.
 ## - **stand**: she stops and stands where she is. Fair if he charges and catches her.
 ## - **bait**: she stops, stands until he charges, and runs back `REACTION` after his charge. Fair
 ##   if she gets away (his closest is printed against his catch).
@@ -37,13 +38,13 @@ func run(t: TestRunner) -> void:
 			EventCatalogue.use_charger_timing(ChargerTiming.of(warning, reach))
 			for def in _waiting_chargers():
 				var said: Array[String] = []
-				for walk: String in ["back", "late", "stand", "bait", "on"]:
+				for walk: String in ["back", "late", "late run", "stand", "bait", "on"]:
 					var r := _walk(t, def, walk)
 					var verdict := "caught" if r["caught"] else ("charged, got away" if r["charged"]
 							else "never charged")
 					if r["charged"]:
 						verdict += ", closest %.0fpx" % r["closest"]
-					elif walk in ["back", "late"]:
+					elif walk in ["back", "late", "late run"]:
 						var early := def.pursuit().warns_for() - float(r["out_after"])
 						verdict += ", out %.2fs early" % early
 					said.append("%s: %s" % [walk, verdict])
@@ -80,19 +81,19 @@ static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(0.0, def.notice_within() + 20.0)
-	if walk == "late":
+	if walk in ["late", "late run"]:
 		her = Vector2(0.0, PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()) + 4.0)
 	# Positive is away from him, along +y.
-	var speed := -Tuning.WALK_SPEED
+	var speed := -(Tuning.RUN_SPEED if walk == "late run" else Tuning.WALK_SPEED)
 	var warned_at := INF
 	var charged_at := INF
 	var elapsed := 0.0
 	var result := {"charged": false, "caught": false, "closest": INF, "out_after": INF}
 	while elapsed < 20.0 and not instance.is_on_its_way_out() and not instance.has_given_up():
-		var wanted := -Tuning.WALK_SPEED
+		var wanted := speed if walk == "late run" and warned_at == INF else -Tuning.WALK_SPEED
 		if warned_at != INF:
 			match walk:
-				"back", "late":
+				"back", "late", "late run":
 					if elapsed - warned_at >= REACTION:
 						wanted = Tuning.RUN_SPEED
 				"stand":
@@ -117,10 +118,10 @@ static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 		if instance.is_lethal_at(her):
 			result["caught"] = true
 			break
-		if walk in ["back", "late"] and warned_at != INF and instance.is_waiting() \
+		if walk in ["back", "late", "late run"] and warned_at != INF and instance.is_waiting() \
 				and float(result["out_after"]) == INF:
 			result["out_after"] = elapsed - warned_at
-		if walk in ["back", "late"] and warned_at != INF and instance.is_waiting() \
+		if walk in ["back", "late", "late run"] and warned_at != INF and instance.is_waiting() \
 				and her.distance_to(instance.global_position) > def.notice_within() + 60.0:
 			break
 	instance.free()

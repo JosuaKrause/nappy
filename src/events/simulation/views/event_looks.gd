@@ -46,5 +46,6 @@ static func for_row(event: EventInstance, look: LookSpec, body: BodySpec,
 			return FireLook.new(event, look, body, drawer, skip_draw, drawn_view)
 		EventDef.Look.CHECKPOINT_HUT, EventDef.Look.CHECKPOINT_GATE, EventDef.Look.CHECKPOINT_POST:
 			return CheckpointLook.new(event, look, body, drawer, skip_draw, drawn_view)
-	# `NONE`, and `BURNT_SHELL`, drawn on the building it stands against.
+	# `NONE`; `BURNT_SHELL`, drawn on the building it stands against; and a look drawn only in its
+	# badge (`LookSpec.drawn_only_in_its_badge()`, `EXPLOSION`).
 	return EventLook.new(event, look, body, drawer, skip_draw, drawn_view)

@@ -860,14 +860,14 @@ const WARNING_ALONE_MAX := 1.0
 ## (`EventInstance.notice_her_at()`), which no row's contract states.
 ##
 ## **Two other kinds of pursuer are owed something else.** A sent robber or guard has no approach:
-## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside her
-## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
-## is owed is the indicator that it is about to, for at least the off-screen charger's
-## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own: his warning came
-## before he was set on her, a hut's guard's raised hand from her crossing for
-## `ChargerTiming.warning()`
-## (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her warns on its own clock
-## inside its one radius (`PursuitSpec.warns_for()`), so this floor bounds nothing it does.
+## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside
+## her (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what
+## she is owed is the indicator that it is about to, for at least the off-screen charger's
+## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own:
+## his warning came before he was set on her, a hut's guard's raised hand from her crossing for
+## `ChargerTiming.warning()` (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her
+## warns on its own clock inside its one radius (`PursuitSpec.warns_for()`), so this floor bounds
+## nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she has to be **running** before it gives up, in seconds.

@@ -61,9 +61,8 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> 
 ## to a chosen spot as "used" sends an unseen mark she walks away from to some other alley still in
 ## reach instead, rather than to `Vector2.INF`. She stands outside the mouth of a mark tile that is
 ## her nearest with nothing used — a mark moves onto it then (`_relocate_round()`,
-## `_outside_the_alley_at()`) —
-## and has another such tile within `NOTICE_RADIUS` of it, more than `NOTICE_RADIUS` from the day's
-## mark, and the tick that follows moves the mark off her tile.
+## `_outside_the_alley_at()`) — and has another such tile within `NOTICE_RADIUS` of it, more than
+## `NOTICE_RADIUS` from the day's mark, and the tick that follows moves the mark off her tile.
 func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var scout := _director(t)

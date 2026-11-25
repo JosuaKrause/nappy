@@ -49,6 +49,11 @@ func set_act(_act: int) -> void:
 func set_daylight(_fraction: float) -> void:
 	pass
 
+## **How bright the sky over the city is lit by a blast, 0 for not at all**, over the day's own
+## light (`City.light_the_sky()`; `BlastLight`).
+func light_the_sky(_level: float) -> void:
+	pass
+
 ## The street trees shown or taken away by what today's plan took their pits for, once the day's
 ## seals are planned (`City.refresh_street_trees()`).
 func refresh_street_trees() -> void:

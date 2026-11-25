@@ -353,7 +353,8 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 			continue
 		var widening := def.redraft()
 		widening.field(def.field().reaching(def.heard_within() * 1.5))
-		widening.route(_route_at_another_speed(def.route(), def.speed() * 1.5))
+		if def.moves():
+			widening.route(_route_at_another_speed(def.route(), def.speed() * 1.5))
 		var wider := widening.build()
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
@@ -707,11 +708,16 @@ func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 ## any more — a row that forgets to choose one is invisible, which is the quietest way for an
 ## event to stop working.
 func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
-	# Three rows are legitimately invisible: something else already draws the ground they stand
-	# on, a mast's own picture carries its curfew announcement too (`EventCatalogue.
-	# _curfew_announce()`), or — the finale's explosion — the whole of the row is that it happens
-	# somewhere she cannot see, and what it leaves behind is a different row.
-	var invisible := ["playground", "curfew_announce", "finale_explosion"]
+	# Two rows are legitimately invisible: something else already draws the ground they stand
+	# on, or a mast's own picture carries its curfew announcement too (`EventCatalogue.
+	# _curfew_announce()`). The finale's explosion has a picture of its own and draws it only in its
+	# screen-edge badge: the whole of the row is that it happens somewhere she cannot see, and what
+	# it leaves behind is a different row.
+	var invisible := ["playground", "curfew_announce"]
+	var explosion := EventCatalogue.by_id("finale_explosion")
+	t.check(explosion.picture() == EventDef.Look.EXPLOSION
+			and not explosion.look().is_drawn_in_the_world(),
+			"'finale_explosion' is drawn only in its badge, nothing of it in the world")
 	var owner_of := {}
 	for def in CatalogueRows.every():
 		if def.picture() == EventDef.Look.NONE:

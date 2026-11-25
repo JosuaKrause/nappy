@@ -134,9 +134,8 @@ func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 	t.check(base.seed_override() == 3 and base.day_override() == 2,
 			"and the config it was put on is unchanged")
 
-## **How a run plays every charger** (`RunConfig.charger_timing()`): a debug build's
-## `--chargers`, or a
-## release page's `?chargers=` once it asked `?debug=1`, which then counts as having used the
+## **How a run plays every charger** (`RunConfig.charger_timing()`): a debug build's `--chargers`,
+## or a release page's `?chargers=` once it asked `?debug=1`, which then counts as having used the
 ## bundle; anywhere else the shipped timing, the one the catalogue is built from unless told
 ## otherwise (minty-dolphin #834).
 func _test_the_charger_timing_is_the_flags_or_the_shipped_one(t: TestRunner) -> void:

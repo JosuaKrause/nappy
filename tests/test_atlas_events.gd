@@ -98,7 +98,10 @@ func _collect_paths(value: Variant, found: Dictionary) -> void:
 func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) -> void:
 	var looks: Dictionary = {}
 	for def in CatalogueRows.every():
-		looks[def.picture()] = def.id()
+		# A look drawn only in its badge (the explosion's) has nothing in the world to list; its
+		# badge picture is checked with every badge's below.
+		if def.look().is_drawn_in_the_world():
+			looks[def.picture()] = def.id()
 	var checked := 0
 	for look: EventDef.Look in looks.keys():
 		if look == EventDef.Look.NONE:

@@ -1222,7 +1222,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 				"in one lane of the main road")
 		t.check(truck.walks()[0].distance_to(her) >= minf(lead, edge) - 1.0,
 				"far enough up the road (%.0fpx)" % truck.walks()[0].distance_to(her))
-		t.check(truck.leaves_behind() == "", "and leaves nothing behind it")
+		t.check(truck.row().leaves_behind() == "", "and leaves nothing behind it")
 		t.check(is_equal_approx(truck.walks()[1].y, top) or is_equal_approx(truck.walks()[1].y, bottom),
 				"driving on to the end of the road (%.0f)" % truck.walks()[1].y)
 	# **Where the front truck is created and how long after the badge it can reach her, on the

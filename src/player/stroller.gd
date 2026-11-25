@@ -385,6 +385,10 @@ var _alert_source := &""
 ## cleared by `release_camera_focus()`. Read by `_update_camera()`, the only place any of this
 ## group is used.
 var _camera_focused := false
+## The shake of her view an explosion close by gives (`shake_the_view()`), and how much of the
+## camera's offset is that shake this tick, taken off before the next tick's follow.
+var _shake := ViewShake.new()
+var _shaken_by := Vector2.ZERO
 var _camera_focus_point := Vector2.ZERO
 ## Where the current ease started and how long it has been running — smooth-stepped over
 ## `CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
@@ -710,6 +714,7 @@ func focus_camera_on(point: Vector2) -> void:
 	_camera.position_smoothing_enabled = false
 	_camera.top_level = true
 	_camera.offset = Vector2.ZERO
+	_shaken_by = Vector2.ZERO
 	_camera.global_position = drawn_from
 	# Stops a one-tick slide from the old place: `top_level` just changed how this position is
 	# computed, and without this the first interpolated frame draws from wherever the camera's
@@ -956,7 +961,18 @@ func _update_camera(delta: float) -> void:
 			_camera.reset_smoothing()
 		return
 	var lead := Vector2(_facing.x, _facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
-	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
+	# The shake rides on the look-ahead and is taken off again before the next lerp, so it never
+	# drags the follow.
+	var shake := _shake.step(delta)
+	var follow := (_camera.offset - _shaken_by).lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
+	_camera.offset = follow + shake
+	_shaken_by = shake
+
+## **Shakes her view a little for an explosion landing `share` of its full strength on her** (0
+## to 1; `ViewShake`): eased, small, and on the walking follow only, so a focus on a hut is never
+## shaken. Told by the light of the bombs (`BlastLight`).
+func shake_the_view(share: float) -> void:
+	_shake.start(share)
 
 ## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
@@ -979,6 +995,8 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_reset_interpolation_if_shown()
 	_camera_focused = false
 	_camera_easing_back = false
+	_shake = ViewShake.new()
+	_shaken_by = Vector2.ZERO
 	if _camera:
 		_camera.top_level = false
 		_camera.position = Vector2.ZERO

@@ -182,15 +182,14 @@ static func _readout_from_query(query: String) -> bool:
 			return true
 	return false
 
-## The gate for the release-safe bundle: the flags that choose where a run starts or how it is
-## drawn (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`,
-## `start_escape()`, `meters_override()`, `charger_timing_override()`, `day_length_override()`,
-## `ending_override()`, `blackout_requested()`, `ground_mode()`, `frame_record_requested()`, and
-## `WebDisplay`'s `?dpr=`)
+## The gate for the release-safe bundle: the flags that choose where a run starts or how it is drawn
+## (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`, `start_escape()`,
+## `meters_override()`, `charger_timing_override()`, `day_length_override()`, `ending_override()`,
+## `blackout_requested()`, `ground_mode()`, `frame_record_requested()`, and `WebDisplay`'s `?dpr=`)
 ## — never the input-driving or picture-taking half, and no file but the frame record's, which
-## leaves only through the browser's download when the player taps its page button. Open on a
-## debug build whatever the page says, and on a release page once `readout_requested()` holds,
-## so a release page nobody asked `?debug=1` of reads exactly as an ordinary one.
+## leaves only through the browser's download when the player taps its page button. Open on a debug
+## build whatever the page says, and on a release page once `readout_requested()` holds, so a
+## release page nobody asked `?debug=1` of reads exactly as an ordinary one.
 func live_debug_requested() -> bool:
 	return _live_debug_requested(enabled(), readout_requested())
 
@@ -439,10 +438,10 @@ static func _charger_timing_from_query(query: String) -> Vector2:
 	return Vector2(-1.0, -1.0)
 
 ## The bare parsing of a warning and a radius factor. A warning under
-## `Tuning.OFFSCREEN_WARNING_MIN`,
-## the heads-up every charger's warning is held to (`EventDef.validate()`), or a factor outside
-## `ChargerTiming.LEAST_REACH` to `MOST_REACH` refuses the whole flag with `push_warning`, rather
-## than being clamped: a run played at numbers nobody asked for would be judged as the asked ones.
+## `Tuning.OFFSCREEN_WARNING_MIN`, the heads-up every charger's warning is held to
+## (`EventDef.validate()`), or a factor outside `ChargerTiming.LEAST_REACH` to `MOST_REACH` refuses
+## the whole flag with `push_warning`, rather than being clamped: a run played at numbers nobody
+## asked for would be judged as the asked ones.
 static func _parse_charger_timing(warning: String, reach: String) -> Vector2:
 	if warning.is_valid_float() and reach.is_valid_float() \
 			and float(warning) >= Tuning.OFFSCREEN_WARNING_MIN \

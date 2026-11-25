@@ -27,8 +27,7 @@ extends RefCounted
 ##   to `EventDef.notice_within()` plus it), with a clear line to its body;
 ## - **near it**: with a clear line to it, outside the band but within
 ##   `ResistanceDirector.task_guard_farthest()`, the farther out-of-view spot a move takes when
-##   every
-##   spot of the band is in her view;
+##   every spot of the band is in her view;
 ## - **elsewhere**: anywhere else, with his distance from the arrow's.
 ## A guard who noticed her is not ticked in this rig, so none is.
 ##
