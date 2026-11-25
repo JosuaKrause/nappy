@@ -2211,9 +2211,13 @@ their share of a cell goes to the rows a unit still draws. Then one probe run
 than a tenth off the seed's had each of its cells scaled by its own ratio, at most fifty (a bag at
 least half empty, so a refused street musician does not hand a park to the rows rare there), and
 a row whose share of a ground's events, read against every row the seed counts, was off by more
-than a factor of two had its weight there scaled once. Nothing is fitted after that run; what is
-still off is listed for the end remeasure. The procedure, the runs and the scripts are
-`docs/evidence/polite-tapir-declared-table-2026-11-16/`. The moments are a number an act
+than a factor of two had its weight there scaled once. Nothing is fitted after that run. The end
+remeasure read what the table places since (the records minty-quail-striped-squirrel and
+minty-quail-bouncy-bison), and the record silver-ferret judges the later acts on it, on how many
+events a day places and what those events cost: what reads off there is a set of options for the
+player, and a cell moves only by declaration, on the player's word, with playtest deciding which
+deviations need fixing (inbox #1278 in olive-ferret). The procedure, the runs and the scripts of the
+seeding are `docs/evidence/polite-tapir-declared-table-2026-11-16/`. The moments are a number an act
 (`PlacementDensity.MOMENTS_PER_ACT`), the moments a day of the act owed her on the same tree.
 
 **No daily cap bounds a row the units draw**: a cap binds whoever draws last, so it would make what
