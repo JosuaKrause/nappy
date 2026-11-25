@@ -171,6 +171,12 @@ var _ways_cache := {}
 ## The same, for `_ways_including_the_spine` — the trunk's own fallback search.
 var _kerb_only_cache := {}
 
+## The day's tutorial route (`for_day()`), or null.
+var _tutorial: TutorialRoute = null
+## Node id -> `true` for every node of the tutorial route's kept ground
+## (`TutorialRoute.kept_ground()`): out of every probe's graph once the route's own branch is grown.
+var _kept := {}
+
 ## Segment key -> `true`, lazily derived from `_colours` the first time anything asks a
 ## segment-level question. A `ReachabilityGrid` node is a handful of tiles and a tree touches many
 ## of them, so this is worth computing once rather than once per candidate `_shuffled_candidates`
@@ -216,7 +222,7 @@ const REFERENCE_DAY := 0
 ## Named against `for_day` rather than `reference`, which is a method on `RefCounted` and would
 ## have been an override that the engine never calls.
 static func for_the_run(map: CityMap) -> RouteTree:
-	return for_day(map, REFERENCE_DAY)
+	return for_day(map, REFERENCE_DAY, null)
 
 ## **It is grown on the permanent lattice, and today's closures are not in it.**
 ## That reads backwards until the order the day is planned in is in view: the corridor comes
@@ -236,10 +242,18 @@ static func for_the_run(map: CityMap) -> RouteTree:
 ## tree already uses (`RegionPlanner.plan_day`), and a park with a playground is a calm area the
 ## tree already grows a branch to. Keyed on the day and never on the run, so a day plans the same
 ## whether or not this run will be offered the last night's task.
-static func for_day(map: CityMap, day: int) -> RouteTree:
+##
+## **`tutorial` is the day's tutorial route, or null on a day that does not walk one**
+## (`DaySpec.walks_the_tutorial()`, `DayStreets.tutorial_route()`). Required rather than defaulted,
+## so a caller that forgets it fails at the parse rather than on a different tree. Where it is
+## handed, the tutorial park's branch is the route itself, grown first, and no other branch may use
+## the route's ground past its first block or the park (`_grow_the_tutorial()`).
+static func for_day(map: CityMap, day: int, tutorial: TutorialRoute) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.city_seed(), day])
-	var tree := grow(map, ClosurePlanner.home_street(map), _growable_areas(map),
+	var tree := RouteTree.new()
+	tree._tutorial = tutorial
+	_grow_into(tree, map, ClosurePlanner.home_street(map), _growable_areas(map),
 			map.blocked_segments(), _lattice_grid(map), rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
 		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door_tiles()))
@@ -291,8 +305,10 @@ static func _grow_into(tree: RouteTree, map: CityMap, home: StreetNetwork.Segmen
 	# The order decides which area's probe gets home first and therefore which one the trunk
 	# belongs to, so it is rolled rather than left as `calm_blocks_now()`' generation order — otherwise
 	# the same area anchors the tree on every day of the run.
+	var taught := tree._grow_the_tutorial(map, areas)
 	for area in tree._in_a_rolled_order(areas, rng):
-		tree._grow_a_branch(map, area, rng)
+		if area.block != taught:
+			tree._grow_a_branch(map, area, rng)
 	tree._grow_the_trunk()
 	return tree
 
@@ -367,6 +383,64 @@ func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
 	for node: int in found:
 		result.append(node)
 	return result
+
+## **The tutorial park's branch is the tutorial route**, adopted before any other branch grows,
+## and the route's kept ground is then out of every later probe's graph (`_kept`). So no other
+## branch merges into the route past its first block, runs down a side street off it, or reaches
+## the park another way, and every side street past the first block is off the tree and sealed by
+## construction (`SealPlanner`). The route is the shortest way on the growth's own graph from the
+## park to the doorstep's street through the route's walked ground, which runs down the lesson
+## streets in order because they are the only ground it may take.
+##
+## Returns the park's block, or `(-1, -1)` where there is no route, its park is not one of today's
+## growable areas, or no way along it is found; the park is then grown like any area.
+func _grow_the_tutorial(map: CityMap, areas: Array[ClosurePlanner.CalmArea]) -> Vector2i:
+	var none := Vector2i(-1, -1)
+	if not _tutorial:
+		return none
+	var park: ClosurePlanner.CalmArea = null
+	for area in areas:
+		if area.block == _tutorial.park_block():
+			park = area
+	if not park:
+		return none
+	var walked := _tutorial.walked_ground()
+	var previous := {}
+	var queue: Array[int] = []
+	for node in _access_nodes(map, park):
+		if walked.has(_grid.any_tile_of(node)):
+			previous[node] = -1
+			queue.append(node)
+	var head := 0
+	var path: Array[int] = []
+	while head < queue.size() and path.is_empty():
+		var node: int = queue[head]
+		head += 1
+		for edge: Array in _ways(node):
+			var next: int = edge[0]
+			if previous.has(next):
+				continue
+			if _home.has(next):
+				path = _unwind(previous, node)
+				path.append(next)
+				break
+			if not walked.has(_grid.any_tile_of(next)):
+				continue
+			previous[next] = node
+			queue.append(next)
+	if path.is_empty():
+		return none
+	var branch := Branch.new()
+	branch.area = park.block
+	branch.routes.append(_adopt(path, _branches.size()))
+	_branches.append(branch)
+	for tile: Vector2i in _tutorial.kept_ground():
+		var node := _grid.node_at(tile)
+		if node >= 0:
+			_kept[node] = true
+	_ways_cache.clear()
+	_kerb_only_cache.clear()
+	return park.block
 
 # --------------------------------------------------------------------- probes ---
 
@@ -487,7 +561,7 @@ func _ways(node: int) -> Array:
 func _ways_uncached(node: int) -> Array:
 	var found: Array = []
 	for edge: Array in _grid.neighbours(node):
-		if not _is_off_the_growths_graph(edge[2], true):
+		if not _kept.has(edge[0]) and not _is_off_the_growths_graph(edge[2], true):
 			found.append(edge)
 	return found
 
@@ -507,7 +581,7 @@ func _ways_including_the_spine(node: int) -> Array:
 		return cached
 	var found: Array = []
 	for edge: Array in _grid.neighbours(node):
-		if not _is_off_the_growths_graph(edge[2], false):
+		if not _kept.has(edge[0]) and not _is_off_the_growths_graph(edge[2], false):
 			found.append(edge)
 	_kerb_only_cache[node] = found
 	return found

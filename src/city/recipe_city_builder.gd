@@ -283,7 +283,9 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
-	var tree := RouteTree.for_day(map, day)
+	# A recipe's city walks no tutorial: an authored scene is not day 1's tutorial unless its recipe
+	# says so, and none does.
+	var tree := RouteTree.for_day(map, day, null)
 	var regions := RegionPlanner.plan_day(map, spec, tree)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map.city_seed()

@@ -856,7 +856,10 @@ func _make_player() -> Stroller:
 ## reads. `dark_from_the_start` is the escape's city (`DaySpec.is_dark_from_the_start()`).
 func _build_the_city(dark_from_the_start := false) -> void:
 	_city = _new_city()
-	_city.build(_city_map())
+	var map := _city_map()
+	# Day 1's tutorial route, worked out once for the run's city and handed down in the city.
+	_city.use_tutorial_route(TutorialRoute.for_city(map))
+	_city.build(map)
 	_city_simulation = _simulation_builder().in_the_city(_city, _city.map(), _city.navigator(),
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
