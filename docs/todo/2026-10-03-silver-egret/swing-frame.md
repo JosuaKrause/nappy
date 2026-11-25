@@ -1,19 +1,17 @@
-**The swing frame's shadow is one oval under each A-frame leg, as the cars' are one per wheel pair**
-(minty-hedgehog 1: "for most objects the oval spans the entire visual bounding box. this does not
-read as shadow."). Today the swing frame's capsule (`GroundShape`, `shadow_outline()`) casts a
-shadow as tall as the frame under all of it, the worst of the tall props; the trees' ovals already
-lie at the trunk's foot and are left.
+**Whether day 12's touch spot at the swing frame gets a mark of its own is the player's to
+answer**, since the swing frame's shadow no longer shows the spot. The swing frame casts one oval
+under each A-frame (the record silver-egret-sunny-magpie), and day 12's touch spot is kept at its
+size and place, the ellipse at the frame's base, 28 by 17px (`Prop.swing_frame_base()`), both ovals
+inside it. The orchestrator's pick on the board (swing-frame-shadow) also drew the chalk task's usual
+mark there, and that part is not built: a red-arrow task's destination draws no chalk mark (the
+record snowy-kestrel; azure-koala 6: "red arrow tasks show a chalk mark at their destination", which
+the player called wrong), and day 12's swing is one of the destinations that record took the mark
+off.
 
-**Built on the orchestrator's pick on the board, swing-frame-shadow, which is open to the player**:
-ovals under the frame's legs, and **day 12's touch spot kept at today's size and place**, the
-ellipse at the frame's base, 28 by 17px (`ResistanceDirector._swing_base()`), with its **own
-chalk-task mark there**. Today `docs/NARRATIVE.md` calls that ellipse "the extent of the shadow it
-casts there", which comes from quiet-yak's "Place an ellipse at its base", so the shadow no longer
-being the touch zone changes what that sentence describes: the mark is what shows the spot once the
-shadow does not, and `docs/NARRATIVE.md` and the task's own text are rewritten with it. The other
-answer on the board, changing the touch zone with the shadow, replaces this item if the player picks
-it.
-
-Check the frame from every side it can be seen, and the task's mark on day 12 against the shadow's
-new ovals, with a sheet before and after as the vehicles' has
-(`docs/evidence/silver-egret-shadows-2026-11-25/`, `tests/probes/silver_egret_shadow_sheet.gd`).
+**The question for the player**, through the orchestrator on the board: does day 12's spot get the
+chalk mark back, overturning snowy-kestrel for this one destination, or does it stay as built, shown
+by the two ovals inside it and the red arrow ending on the frame's base? A yes is a change to
+`ContactPoint.draws_a_mark()` (true for the swing's contact too) with `docs/GRAPHICS.md` and
+`tests/test_destination_drawing.gd`, which holds that a destination draws nothing, following; a no
+deletes this item and, with it, the entry. The other answer on the board, changing the touch zone
+with the shadow, replaces the spot itself.

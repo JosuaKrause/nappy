@@ -44,9 +44,10 @@ func scale_factor() -> float:
 	return _scale_factor
 
 ## This prop's own ground shape — a point for a tree, a street tree, the bollard, a sack or a
-## sack pile, sized off the same texture fraction the shadow always used; a capsule for the swing
-## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point the prop has
-## been dressed (`dress()`), and read by `_draw()` for the shadow and through `shape()`. **No prop has a
+## sack pile, sized off the same texture fraction the shadow always used; a segment for the swing
+## frame, from one A-frame to the other (`_playground_frame_shape()`). Computed once `_ready()`
+## fires, by which point the prop has been dressed (`dress()`), and read for the shadow
+## (`shadow_outlines()`). **No prop has a
 ## body** except the bollard (`_add_bollard_body()`). A tree on a pavement is walked past exactly
 ## like a tree in a park *(2026-09-12, the
 ## player, PLAYTEST-58.md: "trees shouldn't have a hitbox at all. trees in parks don't why should
@@ -54,10 +55,6 @@ func scale_factor() -> float:
 ## ground under it stays exactly as walkable as the pavement or alley it stands on. Decoration
 ## only — see `GarbageSacks`' own class doc for why a pile is not yet an obstruction.
 var _shape: GroundShape
-
-## This prop's own ground shape, null until `_ready()` has computed it.
-func shape() -> GroundShape:
-	return _shape
 
 ## The post's body, once `_ready()` has made it; null for every other prop.
 var _body: StaticBody2D
@@ -118,7 +115,8 @@ func _draw() -> void:
 		Kind.TREE:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
-			_shape.draw_shadow(self, Vector2.ZERO)
+			for outline in shadow_outlines(Vector2.ZERO):
+				draw_colored_polygon(outline, Palette.SHADOW)
 			Sprites.draw_standing(self, atlas.region(SWING_FRAME), Vector2.ZERO)
 		Kind.BOLLARD:
 			_shape.draw_shadow(self, Vector2.ZERO)
@@ -132,14 +130,44 @@ func _draw() -> void:
 		Kind.STREET_TREE:
 			_draw_street_tree()
 
-## The swing frame's own shadow shape — a capsule along its width, read off the region table the
-## same way `CrowdAgent`'s car reads its two: `radius` from the frame's depth (its picture's own
-## height), `half_length` from what is left of half its width once the rounded ends are accounted
-## for.
+## The ground this prop's shadow covers standing at `at`, what `_draw()` fills and the debug view's
+## shadow layer (`DebugLayers`, `--layers 2`) traces: one oval under each A-frame of the swing
+## frame (`GroundShape.paired_shadow_outlines()`, the cars' one oval per wheel pair, on the bottom
+## row of its picture), since a shadow lies where a thing meets the ground and not across its whole
+## picture (minty-hedgehog 1); the ground shape's own outline for every other prop, a tree's oval
+## already lying at its trunk's foot. Empty for a shape too small to cast one
+## (`GroundShape.casts_a_shadow()`).
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = []
+	if _shape == null or not _shape.casts_a_shadow():
+		return outlines
+	if _kind == Kind.PLAYGROUND_FRAME:
+		return _shape.paired_shadow_outlines(at, Vector2.RIGHT, 0.0)
+	outlines.append(_shape.shadow_outline(at))
+	return outlines
+
+## How far each A-frame's feet stand from the swing frame's middle, as a share of half its width:
+## `swing_frame.svg` stands each A-frame's two feet across one half of its 56px (6 to 21 and 35 to
+## 50), round the middle of that half.
+const SWING_A_FRAME_SHARE := 0.5
+
+## The swing frame's own ground shape — a segment from one A-frame to the other, read off the
+## region table the same way `CrowdAgent`'s car reads its two: its spine's ends under the two
+## A-frames' feet (`SWING_A_FRAME_SHARE` of half its width from the middle), and its rounding the
+## frame's depth, read as half its picture's own height, which is how far each A-frame's legs reach
+## before and behind its crossbar.
 static func _playground_frame_shape() -> GroundShape:
 	var size := Vector2(AtlasTable.baked().native_size(SWING_FRAME))
-	var radius := size.y * 0.5
-	return GroundShape.segment(size.x * 0.5 - radius, radius)
+	return GroundShape.segment(size.x * 0.5 * SWING_A_FRAME_SHARE, size.y * 0.5)
+
+## **The ground ellipse at the swing frame's base**, its semi-axes in px round the bottom centre the
+## frame stands on: half its picture's width across and half its height up and down, 28 by 17px for
+## `swing_frame.svg`'s 56 by 34 — the spot day 12's task is touched at
+## (`ResistanceDirector._shape_the_touch()`). Read off the region table rather than the shadow, so
+## the shadow lying under the frame's feet leaves the spot the size and the place it is: both ovals
+## of the shadow lie inside it.
+static func swing_frame_base() -> Vector2:
+	return Vector2(AtlasTable.baked().native_size(SWING_FRAME)) * 0.5
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:

@@ -36,8 +36,10 @@ segment shadows as capsules with circular ends along the ground axis, and buildi
 with vertical squash after rotation. A car or other vehicle casts one squashed oval per wheel
 pair instead (`GroundShape.paired_shadow_outlines()`, read by `CarLook` and `EventVehicleLook`),
 the nearer pair on the bottom of its picture, so its shadow lies under its tyres and never above
-its roof; the riot van and the moving van, whose ground shapes are the scene round them, keep the
-shadow of their whole body. The generic shadow SVG is absent; the car-accident scenes
+its roof; the riot van and the moving van, whose ground shapes are the scene round them, lay theirs
+under a body read off the length their side picture is drawn. The playground swing frame casts one
+oval under each of its two A-frames the same way (`Prop.shadow_outlines()`). The generic shadow SVG
+is absent; the car-accident scenes
 retain their authored ground-contact shadow textures. Unless a row below says otherwise, an actor
 or prop SVG is bottom-centre anchored by `draw_standing()`.
 
