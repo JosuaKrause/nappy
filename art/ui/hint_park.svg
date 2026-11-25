@@ -1,0 +1,13 @@
+<!-- The way to the park: a park's trees on a mound of grass. It points nowhere itself;
+     hint_arrow.svg beside it says which way.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <ellipse cx="12" cy="17" rx="11" ry="2.6" fill="#6d9159"/>
+  <rect x="3.8" y="11.5" width="1.6" height="5" fill="#6b4a35"/>
+  <circle cx="4.6" cy="10" r="3.3" fill="#6a9a55"/>
+  <rect x="10.9" y="10.5" width="2.4" height="6.5" fill="#6b4a35"/>
+  <circle cx="12" cy="7.2" r="6.3" fill="#5f8f4e"/>
+  <circle cx="10" cy="5.2" r="2.6" fill="#7aa865" stroke="none"/>
+  <circle cx="19.6" cy="14.6" r="2.7" fill="#5a8549"/>
+</svg>

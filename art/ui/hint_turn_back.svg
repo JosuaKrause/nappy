@@ -1,0 +1,14 @@
+<!-- Turn back: a street barrier across the way on, and a blue arrow that goes up to it and
+     turns round.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="3" y="2" width="1.6" height="7" fill="#c9c3b5"/>
+  <rect x="19.4" y="2" width="1.6" height="7" fill="#c9c3b5"/>
+  <rect x="1.5" y="2.2" width="21" height="3.6" fill="#f1ede2"/>
+  <path d="M4.6 2.2 L1.5 5.3 M9 2.2 L5.4 5.8 M13.4 2.2 L9.8 5.8 M17.8 2.2 L14.2 5.8 M22.2 2.2 L18.6 5.8" stroke="#e8822e" stroke-width="1.9" stroke-linecap="butt"/>
+  <rect x="1.5" y="2.2" width="21" height="3.6" fill="none"/>
+  <path d="M8 19 V13 Q8 9 12 9 Q16 9 16 13 V14" fill="none" stroke="#221f28" stroke-width="4"/>
+  <path d="M8 19 V13 Q8 9 12 9 Q16 9 16 13 V14" fill="none" stroke="#3d78b8" stroke-width="2.2"/>
+  <polygon points="12.8,13.6 19.2,13.6 16,18.6" fill="#3d78b8" stroke="#221f28" stroke-width="0.9"/>
+</svg>
