@@ -25,8 +25,9 @@ of those is an ending.
   saved beside the `"state"` snapshot like the escape section, so a save without it loads as none),
   and `SummaryModel.ending()` reads it off the run. An ending opened again through the resume
   gate shows both too: the player's "all end screens must show both" (curly-moose #803) covers it,
-  and the day it shows is the last one the save recorded as ended (the one left mid-walk
-  restarts from its dawn). It was first kept in a field of `main` and shown on that boot only;
+  and "The last day" there is the last day the saved run ended (the one left mid-walk
+  restarts from its dawn): for a hard run whose load spent the last nerve it is the previous
+  completed day, and on day 1 there is none, so the screen shows the total alone. It was first kept in a field of `main` and shown on that boot only;
   a review (ready at 780a8b442) asked for the saved form. It is a rider and not a field of
   `RunHeader` because a save missing a `STATE` key is refused, which would have refused every
   existing save. The `--ending` rig has no day behind it and shows the total alone.
