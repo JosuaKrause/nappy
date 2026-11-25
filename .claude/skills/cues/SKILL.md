@@ -37,8 +37,8 @@ A ring communicates a falloff radius, which is a number. A silhouette communicat
 The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary" — four cues, four sentences, and
 one language: **caret**, *stand here and this will cost you* (amber) or *end your day* (doubled
 red); **halo**, *this is costing you now, and this much*; **exclamation over the player**, *the
-clock on you has started*; **badge**, *something lethal or faster than a walk is coming, and this
-is what*. One number decides the caret and the halo — the points a source nets her. The red caret
+clock on you has started*; **badge**, *something lethal, faster than a walk or upon her all at once is
+coming, and this is what*. One number decides the caret and the halo — the points a source nets her. The red caret
 is measured with her held still, because *this ends your day* is a claim about the thing's own
 course; the badge measures nothing, since it is a warning put up before its thing exists.
 
@@ -46,8 +46,9 @@ course; the badge measures nothing, since it is a warning put up before its thin
 - a **caret above the entity** for anything projected to net her that much if both keep doing what
   they are doing — amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red when the source's own
   course, her position held fixed, reaches its lethal reach; flashing while it has not started yet
-- a **badge at the screen edge** for something lethal or faster than a walk that is warned of before
-  it exists: up for the whole of its warning, pointing at where it will come from, then carried on to
+- a **badge at the screen edge** for something lethal, faster than a walk, or standing where it
+  comes and so upon her all at once (the escape city's explosion; minty-lemur #785) that is warned
+  of before it exists: up for the whole of its warning, pointing at where it will come from, then carried on to
   the thing until any of it is in sight (`VisibleView`) or it is gone (minty-dolphin #852), carrying
   its own silhouette so it says *what* is coming rather than that something is; a charger already in
   the world whose charge begins out of her sight takes the same path, its start being its warning

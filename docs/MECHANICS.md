@@ -1812,6 +1812,26 @@ leaves stays drawn and stays shut across the road behind him. What takes the bab
 (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man on the stairs) — nothing about the
 barricade catches her. See `docs/EVENTS.md`, "The heat".
 
+**An explosion goes off out of her sight, under its badge, and leaves its crater as it does**
+*(minty-lemur #785: explosions off screen with a warning sign showing the explosion; craters already
+there when she walks toward them; a bright flash with each, matching the building's; random flashes
+for bombs further away; a little shake for a close one; nothing so short or quick it is dangerous
+for viewers)*. One the bag stood on a street is set off as she comes within its field's reach
+(`EventCatalogue.FINALE_EXPLOSION_HEARD_WITHIN`, 520px): its screen-edge badge, the mushroom cloud,
+points at it for a second, and then it goes off there, but only while it and the crater it leaves
+are wholly out of her sight, so neither a bang nor a crater ever appears in her view. The crater is
+laid the moment it goes off. As it goes off the city's light is lifted toward
+`Palette.ESCAPE_FLASH_LIGHT`, the light a hallway of the building lifts to while its windows flash,
+by `FlashRhythm.NEAR_PEAK`, rising in a twentieth of a second and dying away eased over
+`FlashRhythm.FALL_SECONDS`; between the bangs, fainter flashes (`FlashRhythm.DISTANT_PEAK`) come on the
+building's own waits, light with no noise. **No more than three flashes begin in any one second**,
+near and far together (`FlashRhythm.LEAST_GAP`), the usual guidance for photosensitive viewers; a
+bang's flash that comes sooner waits for the gap. The screen-edge badges, the HUD and the controls
+are drawn over the world and are never lit or moved. Her view shakes by the share of the explosion's
+strength that lands on her, at most `ViewShake.MOST_PX` and eased away over `ViewShake.SECONDS`; the
+game has no reduced-motion setting for it to honour. The building's own window flashes are not held
+to the three-a-second limit: their waits run down to a tenth of a second.
+
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge, which catches a straight walker along his street, some 260px past the band, and a walker who

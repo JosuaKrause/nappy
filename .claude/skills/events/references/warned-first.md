@@ -47,12 +47,16 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
 - **Where its ground has no place when the warning's time has run, the warning is withdrawn**; a
   withdrawn day-3 dog is owed again.
 - **A row a place sets off** (`EventDef.is_set_off_by_a_place()`: the masked man on the escape's
-  stairs) is warned of the moment she comes within its `sets_off_within()` of where it starts
-  (`SetOffWatch`; minty-dolphin #852), and created there rather than where a siting finds a place,
-  only while that place is out of her sight: with no time alone where she walks into the place
-  (`EventDef.as_set_off_at_once()`), so it comes exactly as near as its set-off distance, which
-  `EventDef.warning_time()` counts from, and with its row's own `warned_for()` where she is inside
-  it already.
+  stairs, the escape city's explosions) is warned of the moment she comes within its
+  `sets_off_within()` of where it starts (`SetOffWatch`; minty-dolphin #852), and created there
+  rather than where a siting finds a place, only while everything it puts on the screen there is
+  out of her sight, what it leaves where it goes off included (`EventFootprints.footprint_of()`,
+  the explosion's crater): with no time alone where she walks into the place and its set-off
+  distance alone is the warning it owes (`EventDef.may_be_set_off_at_once()`,
+  `as_set_off_at_once()`, the masked man), so it comes exactly as near as its set-off distance,
+  which `EventDef.warning_time()` counts from, and with its row's own `warned_for()` where she is
+  inside it already or the distance is not warning enough (the explosion, whose noise is on her
+  the moment it goes off).
 
 **Every screen-edge badge comes from this path** (minty-dolphin #852): a warning, then the thing it
 created keeping the badge until any of it is in sight (`EventInstance.was_warned_of()`,

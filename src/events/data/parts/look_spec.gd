@@ -24,7 +24,7 @@ enum WarningPicture {
 }
 
 ## The picture the row is drawn as, which is the silhouette its badge carries. Every visible row
-## states its own; `tests/test_events.gd` names the three that are legitimately invisible.
+## states its own; `tests/test_events_catalogue.gd` names the two that are legitimately invisible.
 var _picture := EventDef.Look.NONE
 
 ## The picture a row standing in its warning is drawn in.

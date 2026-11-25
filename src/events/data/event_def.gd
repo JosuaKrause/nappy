@@ -249,7 +249,7 @@ func is_of_kind(kind: GameEnums.EventKind) -> bool:
 ## shadow, whether it trails a lead, whether its hold hides all of it, whether a rider of it may be
 ## the pelican and the sides its guards stand on. Written by the draft (`EventDraft.look()`); asked
 ## through `look()` and the questions below. Every visible row states its own picture;
-## `tests/test_events.gd` names the three that are legitimately invisible.
+## `tests/test_events_catalogue.gd` names the two that are legitimately invisible.
 ## `LookSpec.none()` is a row with no picture.
 var _look: LookSpec
 
