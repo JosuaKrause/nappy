@@ -283,7 +283,7 @@ func _test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t: Te
 	for i in 20:
 		_step(model, [man])
 	t.check(not _up(model, "man"), "standing in the band: nothing yet")
-	man.position.x -= 112.0 / 30.0  # his first step after standing is a physics tick's
+	man.position.x -= 112.0 / 30.0  # his first step after standing is a physics tick's, as in play
 	man.charging = true
 	_step(model, [man])
 	t.check(_up(model, "man"), "the first frame he runs, from inside the band, his badge is up")
@@ -304,6 +304,7 @@ func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_vi
 		var frame := 0
 		man.charging = true
 		while not VIEW.has_point(man.position) and frame < 600:
+			# His first step after standing is a physics tick's, as in play.
 			man.position.x -= 112.0 / 30.0 if frame == 0 else 112.0 * STEP
 			_step(model, [man])
 			if not man.shown:
@@ -339,6 +340,7 @@ func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_
 	var frame := 0
 	var in_band_frames := 0
 	while frame < 1500:
+		# His first step after standing is a physics tick's, as in play.
 		man.position.x -= 112.0 / 30.0 if frame == 0 else 112.0 * STEP
 		here.x -= 92.0 * STEP
 		her["at"] = here
@@ -479,34 +481,52 @@ func _test_a_subject_no_longer_handed_over_is_forgotten(t: TestRunner) -> void:
 
 ## Events move on the 30 Hz physics tick while the edge is stepped on every drawn frame, so a
 ## mover's point jumps once per tick and holds between. The masked man's charge is met at his own
-## 110 px/s whatever the display draws at.
+## 110 px/s whatever the display draws at (under the tick rate and through a frame that hitches
+## included), and once he stops his approach decays to nothing, so a stopped danger raises no badge.
 func _test_the_closing_speed_is_the_things_own_at_any_frame_rate(t: TestRunner) -> void:
-	const OWN_SPEED := 110.0
+	for fps: int in [20, 30, 60, 144, 500, -60]:
+		var hitch := fps < 0
+		var rate := absi(fps)
+		var run := _run_a_charge_then_a_stop(rate, hitch)
+		var first: float = run[0]
+		var worst: float = run[1]
+		var last: float = run[2]
+		var label := "%d fps%s" % [rate, " with a 0.2s hitch" if hitch else ""]
+		t.check(first > 0.0 and absf(first - 110.0) < 0.15 * 110.0 and worst < 1.15 * 110.0,
+				"at %s his badge opens at %.0f and peaks at %.0f px/s, his own 110" % [label, first, worst])
+		t.check(last < BadgeModel.CLOSING_SPEED,
+				"at %s, stopped, his approach falls to %.1f px/s, under the badge's line" % [label, last])
+
+## A masked man whose point moves once per 30 Hz tick at 110 px/s for a second, then stands for
+## six, stepped at `rate` frames a second (one frame of 0.2s at the second's end when `hitch`).
+## Answers [the first approach his badge lists, the highest, the last].
+static func _run_a_charge_then_a_stop(rate: int, hitch: bool) -> Array[float]:
 	const TICK := 1.0 / 30.0
-	for fps: int in [30, 60, 144, 500]:
-		var model := BadgeModel.new()
-		var man := _vehicle(1, Vector2(VIEW.end.x + 200.0, 0.0), OWN_SPEED)
-		man.logged_name = "man"
-		var frame := 1.0 / float(fps)
-		var clock := 0.0
-		var ticked := 0.0
-		var charged_at := 1.0
-		var worst := 0.0
-		var first := -1.0
-		while clock < 2.0:
-			clock += frame
-			while ticked + TICK <= clock + 0.000001:
-				ticked += TICK
-				if ticked > charged_at:
-					man.charging = true
-					man.position.x -= OWN_SPEED * TICK
-			man.shown = VIEW.has_point(man.position)
-			model.step(frame, Vector2.ZERO, [man], _sees)
-			for badge: EdgeBadges.Badge in model.announcing():
-				worst = maxf(worst, badge.approach())
-				if first < 0.0:
-					first = badge.approach()
-		t.check(first > 0.0 and absf(first - OWN_SPEED) < 0.15 * OWN_SPEED
-				and worst < 1.15 * OWN_SPEED,
-				"at %d fps his badge opens at %.0f and peaks at %.0f px/s, his own %.0f"
-				% [fps, first, worst, OWN_SPEED])
+	var model := BadgeModel.new()
+	var man := _vehicle(1, Vector2(VIEW.end.x + 150.0, 0.0), 110.0)
+	man.logged_name = "man"
+	var clock := 0.0
+	var ticked := 0.0
+	var first := -1.0
+	var worst := 0.0
+	var last := -1.0
+	var hitched := false
+	while clock < 8.0:
+		var frame := 1.0 / float(rate)
+		if hitch and not hitched and clock >= 1.5:
+			frame = 0.2
+			hitched = true
+		clock += frame
+		while ticked + TICK <= clock + 0.000001:
+			ticked += TICK
+			if ticked > 1.0 and ticked <= 2.0:
+				man.charging = true
+				man.position.x -= 110.0 * TICK
+		man.shown = VIEW.has_point(man.position)
+		model.step(frame, Vector2.ZERO, [man], _sees)
+		for badge: EdgeBadges.Badge in model.announcing():
+			worst = maxf(worst, badge.approach())
+			last = badge.approach()
+			if first < 0.0:
+				first = badge.approach()
+	return [first, worst, last]

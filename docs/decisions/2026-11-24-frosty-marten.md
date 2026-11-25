@@ -7,7 +7,7 @@ few milliseconds: 113 px/s on one run, 1949 px/s on another, for the masked man'
 **Choice.** The measure, not the threshold. The model counts the seconds a point has held and reads a
 move over all of them; a frame whose point has not moved inside `HOLD_WINDOW` (0.1 s) leaves the
 measure as it was, and a stretch past it reads as standing (approach 0). A thing that has stood still
-reads its first step over one physics tick, the shortest time a point can take to change. Rejected:
+reads its first step over the physics ticks its frame carried (at least one, the shortest time a point can take to change; a display under 30 fps carries two). Rejected:
 raising `CLOSING_SPEED` or clamping the approach, which would hide the inflated number and leave
 the badge's arrival order wrong.
 

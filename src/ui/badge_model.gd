@@ -201,14 +201,15 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable) -> 
 	state["held"] += delta
 	var held: float = state["held"]
 	var moved := not at.is_equal_approx(state["was"])
+	if state["idle"] and moved:
+		# A thing that has stood still has no time of its own to read its first step over. The
+		# step is as many physics ticks' as the frame carried (a frame is at least one tick when
+		# the point moved, and a display under the tick rate carries several).
+		var tick := 1.0 / float(Engine.physics_ticks_per_second)
+		held = maxf(1.0, roundf(delta / tick)) * tick
 	var measured: bool = held > HOLD_WINDOW or moved
 	var raw := 0.0
 	var approach: float = state["approach"]
-	if state["idle"]:
-		# A thing that has stood still has no time of its own to read its first step over: the step
-		# is one physics tick's, the shortest time a point can take to change.
-		held = 1.0 / float(Engine.physics_ticks_per_second) if moved else 0.0
-		state["held"] = held
 	if measured:
 		# The event's own approach: how much closer *it* got to where she is standing now. Both
 		# distances are measured to the same point, so her own walking cancels out of it.
