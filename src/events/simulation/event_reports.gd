@@ -88,6 +88,10 @@ func tell_encounter_influenced(day: int, name: String, seen: bool) -> void:
 	if _bus:
 		_bus.encounter_influenced.emit(day, name, seen)
 
+func tell_encounter_passed(day: int, name: String) -> void:
+	if _bus:
+		_bus.encounter_passed.emit(day, name)
+
 func tell_run_bout_began(day: int) -> void:
 	if _bus:
 		_bus.run_bout_began.emit(day)

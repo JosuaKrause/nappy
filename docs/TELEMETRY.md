@@ -255,13 +255,17 @@ The events:
   tear's own `poster-torn`, the moment his warning goes up (`EventManager.send_a_pursuer()`): one
   per pursuer sent. A marble drawn while one is still on his way or after her sends nobody and
   nothing here, and nothing is sent during the escape.
-- `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` / `nappy-day-1-asleep` — day one's
-  milestones, so `tools/goatcounter.sh` shows where a new player stops: the first step onto a
+- `nappy-day-1-first-obstacle` / `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` /
+  `nappy-day-1-asleep` — day one's milestones, so `tools/goatcounter.sh` shows where a new player
+  stops: the first event she has left behind (`EventBus.encounter_passed`: an encounter she had
+  **seen**, above, that is over while the day goes on, because the instance has been out of sight
+  for `EncounterWatch.ENCOUNTER_GAP` or is gone; the day ending on it is not a pass, and she may
+  have turned back, so it reads "saw an event and moved on", not "got past it"), the first step onto a
   road or crossing (`EventBus.road_entered`), the first onto calm ground of any kind, park, forest,
   square, courtyard or alley (`EventBus.calm_ground_entered`), and the baby put to sleep
-  (`EventBus.return_phase_started`). `DayController.tick()` emits the first two as she steps onto
-  the ground. Each is sent **once per attempt at day 1** — a fresh day 1, a retry after a lost day
-  and a return to checkpoint day 1 each begin one (`day_started`) — and on no other day. The last
+  (`EventBus.return_phase_started`). `DayController.tick()` emits the two ground ones as she
+  steps onto the ground. Each is sent **once per attempt at day 1** — a fresh day 1, a retry after a lost day
+  and a return to checkpoint day 1 each begin one (the run flow's `day_started`) — and on no other day. The last
   milestone, home, is the existing `nappy-day-1-won`. *(striped-marten, the player: "agree with the
   goat measuring", curly-moose #819.)*
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
@@ -295,7 +299,7 @@ Every signal named above that exists purely for this page — `event_sighted`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `run_mode_chosen`,
 `went_back_to_a_checkpoint`, `pelican_spawned`,
 `pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
-`encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
+`encounter_influenced`, `encounter_passed`, `road_entered`, `calm_ground_entered`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so. The day's and
 the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
 called inline. A walk begins on the run flow (`RunFlow`), the same way for a day, an authored

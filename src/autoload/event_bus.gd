@@ -148,6 +148,11 @@ signal encounter_seen(day: int, name: String)
 ## that encounter: a meaningful encounter is held until it is seen, and sent with `seen` false only
 ## once it is over without having been.
 signal encounter_influenced(day: int, name: String, seen: bool)
+## An encounter she had seen is over while the day goes on: its instance has been out of sight for
+## `EncounterWatch.ENCOUNTER_GAP` or is gone, so she has left it behind — once per encounter. An
+## encounter the day's end closes is not passed. Listen-only, for `VisitCounter` — see
+## docs/TELEMETRY.md, "The page counts visits".
+signal encounter_passed(day: int, name: String)
 ## She began running after at least `EncounterWatch.RUN_BOUT_GAP` of not running, or for the first time in
 ## the day.
 signal run_bout_began(day: int)
