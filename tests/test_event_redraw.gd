@@ -21,11 +21,13 @@ extends RefCounted
 ## **The gate is asked of a look made round a fake event** (`FakeEvent.look_for()`): the suite
 ## writes what the event would answer after each tick (its age, its clock, the ground it has
 ## covered, and the stride that ground makes, `WALK`) and reads whether the gate asks for a
-## draw, so a live event, its row's behaviours and its street are no part of what is tested. Two
+## draw, so a live event, its row's behaviours and its street are no part of what is tested. Three
 ## cases ask a real event over real frames, because what they hold is what the game's own frames
 ## do: `_test_the_gate_stores_the_key_it_compared` (after a settled draw the frames after it
-## draw nothing) and `_test_the_normal_dogs_opposite_step_is_another_picture` (which pictures a
-## real dog is told to stand in the two halves of its stride).
+## draw nothing), `_test_the_normal_dogs_opposite_step_is_another_picture` (which pictures a
+## real dog is told to stand in the two halves of its stride) and
+## `_test_a_firefights_flashes_move_without_its_gunmen` (which of a firefight's canvases its frames
+## draw again).
 
 const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")
@@ -67,6 +69,7 @@ func run(t: TestRunner) -> void:
 	_test_a_masts_lamp_and_its_silence_move_its_key(t)
 	_test_a_leaving_event_moves_its_key(t)
 	_test_the_flock_and_the_drawn_flames_are_never_gated(t)
+	await _test_a_firefights_flashes_move_without_its_gunmen(t)
 	_test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t)
 	_test_the_key_is_stable_within_a_tick(t)
 
@@ -451,8 +454,9 @@ func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 
 # --------------------------------------------------- what is never gated at all ---
 
-## Four pictures are continuous functions of the clock rather than a frame chosen from a set, and
-## the gate steps aside for all four rather than pretending a key could name them.
+## Three pictures are continuous functions of the clock rather than a frame chosen from a set, and
+## the gate steps aside for all three rather than pretending a key could name them. A firefight's
+## muzzle flashes are one too, and are drawn on canvases of their own, so its picture is gated.
 func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void:
 	var flock := FakeEvent.new()
 	flock.flock.append(EventFlock.Bird.new())
@@ -469,14 +473,75 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void
 
 	var firefight := FakeEvent.new()
 	firefight.map = WorldMap.open_ground()
-	t.check(_never_settles(firefight.look_for(EventCatalogue.by_id("firefight"))),
-			"a firefight's muzzle flashes are never gated")
+	t.check(not _never_settles(firefight.look_for(EventCatalogue.by_id("firefight"))),
+			"a firefight's gunmen are gated: its muzzle flashes are drawn apart from them")
 	firefight.free()
 
 	var stall := FakeEvent.new()
 	t.check(not _never_settles(stall.look_for(EventCatalogue.by_id("market_stall"))),
 			"and a market stall is gated like any other scenery")
 	stall.free()
+
+## A firefight's gunmen and their shadow stand still behind their cover, and only the muzzle
+## flashes move, sized off its clock (`RankLook._draw_muzzle_flash()`). So each gunman's slice is
+## gated like any other picture, and his flash is drawn on the slice's front, asked again on every
+## frame the event is drawn. Asked of a real firefight over real frames, because what is held is
+## which canvases the game's own frames draw again: over a second of its clock past its telegraph,
+## the fronts are drawn on every frame, and the slices and the event's own canvas on none.
+func _test_a_firefights_flashes_move_without_its_gunmen(t: TestRunner) -> void:
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	var holder := Node2D.new()
+	holder.name = "Holder"
+	t.add_child(holder)
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("firefight"), Vector2.ZERO, PackedVector2Array(),
+			Vector2.RIGHT, EventSurroundings.new().on(WorldMap.open_ground()) \
+				.drawn_from(atlas) \
+				.drawing_through(EventDrawer.new(atlas)))
+	instance.set_physics_process(false)
+	holder.add_child(instance)
+	# Its slices go into the world on the idle frame after it is made.
+	for i in 3:
+		await t.get_tree().process_frame
+	instance.step(instance.telegraphs_for() + 0.01)
+	for i in 2:
+		await t.get_tree().process_frame
+	var slices: Array[CanvasItem] = []
+	var fronts: Array[CanvasItem] = []
+	for child in holder.get_children():
+		if child is SpreadLook.Slice:
+			slices.append(child as CanvasItem)
+			var front := child.get_node_or_null("Front") as CanvasItem
+			if front != null:
+				fronts.append(front)
+	t.check(slices.size() == 2 and fronts.size() == 2,
+			"a firefight stands a slice and a front for each gunman (%d, %d)"
+					% [slices.size(), fronts.size()])
+	var watched: Array[CanvasItem] = [instance]
+	watched.append_array(slices)
+	watched.append_array(fronts)
+	var drawn := {}
+	for canvas in watched:
+		drawn[canvas] = 0
+		canvas.draw.connect(func() -> void: drawn[canvas] += 1)
+	var frames := 60
+	for i in frames:
+		instance.step(STEP)
+		await t.get_tree().process_frame
+	var still := int(drawn[instance])
+	for slice in slices:
+		still += int(drawn[slice])
+	var flashed := not fronts.is_empty()
+	for front in fronts:
+		flashed = flashed and int(drawn[front]) >= frames - 1
+	t.check(flashed, "its muzzle flashes are drawn on every frame (%s)"
+			% str(fronts.map(func(front: CanvasItem) -> int: return drawn[front])))
+	t.check(still == 0, "and its gunmen, their shadow and its own canvas on none (%d)" % still)
+	instance.free()
+	holder.free()
+	await t.get_tree().process_frame
+	atlas.release(&"events")
 
 ## The van's victim slides to the van over `AbductionSpec.taken_over()` seconds, so it is never gated while
 ## the take runs — and the *end* of the take is a change the key itself has to carry, or the last

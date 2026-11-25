@@ -86,7 +86,7 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, which is why the key
 ## below names every time-varying thing `draw()` and `draw_body()` read rather than a plausible
-## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
+## subset, and why `_picture_never_settles()` stands beside it for the three cases whose picture is
 ## a continuous function of the clock and could not be named by a key at all.
 ##
 ## The key is stored on every drawn frame whether or not it asked for a draw, so the *transition out of*
@@ -164,19 +164,20 @@ const SWELL_STEPS := 128.0
 ## Whether this row's picture keeps moving between one tick and the next whatever the key says, so
 ## that gating it on the key at all would freeze an animation.
 ##
-## Four, and each is a continuous function of the clock rather than a frame chosen from a set: a
+## Three, and each is a continuous function of the clock rather than a frame chosen from a set: a
 ## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a **burning
-## building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age × k)` and
-## are drawn rather than authored; and an **abduction mid-take**, whose victim slides from her
-## standing offset to the van over `AbductionSpec.taken_over()` seconds. Every one of them is a
-## handful of instances on a day at most, and none of them was ever going to be gated.
+## building**, whose every flame is sized off `sin(age × k)` and is drawn rather than authored, so
+## no part of a street fire's picture holds still but its smoke; and an **abduction mid-take**, whose
+## victim slides from her standing offset to the van over `AbductionSpec.taken_over()` seconds.
+## Every one of them is a handful of instances on a day at most. A **firefight** is not one: its
+## gunmen and their shadow stand still, and only the muzzle flashes, drawn on its slices' fronts,
+## are redrawn on every drawn frame (`RankLook._update_scenery()`).
 func _picture_never_settles() -> bool:
 	if not event.birds().is_empty():
 		return true
 	if event.is_taking_a_victim():
 		return true
-	return _look.picture() == EventDef.Look.BURNING_BUILDING \
-			or _look.picture() == EventDef.Look.FIREFIGHT
+	return _look.picture() == EventDef.Look.BURNING_BUILDING
 
 ## Which of its two idle frames the event's own picture shows right now, for the key: false for a
 ## look whose own canvas draws no idle frame. **Only the looks that actually read an idle timer

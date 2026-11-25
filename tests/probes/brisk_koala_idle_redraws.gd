@@ -2,7 +2,11 @@ extends RefCounted
 ## Counts the redraw work a figure whose idle frame moves part of it asks for over ten seconds of its
 ## own clock (brisk-koala, the evidence in docs/evidence/brisk-koala-figure-parts-2026-11-25/): the
 ## busker strumming, a poster crew pasting at the wall it faces and in a view with no second frame,
-## and a café frontage on either street. Per case it prints one `IDLE_REDRAWS` line of JSON: the
+## a café frontage on either street, and the three pictures whose motion is drawn rather than
+## authored: a firefight's muzzle flashes, a burning building's flames and smoke (on open ground, so
+## the five flames of a fire with no facade to burn along) and a loudspeaker mast's lamp, the mast
+## over one whole broadcast cycle of its own (`pulses_every()`) rather than ten seconds, since its
+## lamp changes twice a cycle. Per case it prints one `IDLE_REDRAWS` line of JSON: the
 ## `_draw()` calls of every canvas the event stands (the event, its slices and their fronts, the
 ## layers of its partly animated picture), counted off each canvas's `draw` signal, and the
 ## pictures and textures those calls laid, counted by the drawers the event is handed. Written to
@@ -14,7 +18,7 @@ extends RefCounted
 
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 
-const FRAMES := 600
+const SECONDS := 10.0
 const STEP := 1.0 / 60.0
 
 ## An event drawer that counts the pictures a look lays through it, and hands the scenery it builds
@@ -62,6 +66,9 @@ func run(t: TestRunner) -> void:
 		["poster_crew", Vector2.DOWN, false],
 		["cafe_tables", Vector2.RIGHT, false],
 		["cafe_tables", Vector2.RIGHT, true],
+		["firefight", Vector2.RIGHT, false],
+		["burning_building", Vector2.RIGHT, false],
+		["loudspeaker", Vector2.RIGHT, false],
 	]
 	for case: Array in cases:
 		var id: String = case[0]
@@ -78,6 +85,8 @@ func run(t: TestRunner) -> void:
 					.drawing_through(drawer))
 		instance.set_physics_process(false)
 		holder.add_child(instance)
+		var seconds := instance.pulses_every() if id == "loudspeaker" else SECONDS
+		var frames := roundi(seconds / STEP)
 		for i in 3:
 			await t.get_tree().process_frame
 		instance.step(instance.telegraphs_for() + 0.01)
@@ -92,11 +101,11 @@ func run(t: TestRunner) -> void:
 			node.draw.connect(func() -> void: calls[kind].draws += 1)
 		drawer.pictures = 0
 		drawer.layered.textures = 0
-		for i in FRAMES:
+		for i in frames:
 			instance.step(STEP)
 			await t.get_tree().process_frame
 		var line := {"id": id, "heading": [heading.x, heading.y], "vertical": vertical,
-			"seconds": FRAMES * STEP, "calls": calls, "pictures": drawer.pictures,
+			"seconds": frames * STEP, "calls": calls, "pictures": drawer.pictures,
 			"layer_textures": drawer.layered.textures}
 		print("IDLE_REDRAWS " + JSON.stringify(line))
 		t.check(not calls.is_empty(), "%s stood canvases to count" % id)

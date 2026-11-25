@@ -191,8 +191,9 @@ func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 ## the freed event, alive until the slice goes, and the slice would draw from it.
 ##
 ## What it holds is drawn over what it draws itself, in the order it was put in: the scenery of a
-## crash or a burst main stands behind it instead (`show_behind_parent`), and a café's slice holds
-## its sitter's layers and then its table (`add_front()`), which goes over the sitter.
+## crash or a burst main stands behind it instead (`show_behind_parent`), a café's slice holds
+## its sitter's layers and then its table (`add_front()`), which goes over the sitter, and a
+## firefight's slice holds its gunman's muzzle flash the same way.
 class Slice extends Node2D:
 	var _look: WeakRef
 	## Which slice of the picture it is, far end first. Set once, by its constructor.
@@ -220,12 +221,18 @@ class Slice extends Node2D:
 	## Draws the slice again, its front with it: what a change of the picture asks of it.
 	func redraw() -> void:
 		queue_redraw()
+		redraw_front()
+
+	## Draws the front again and not the slice: what a front that moves on its own clock asks of
+	## it (a firefight's muzzle flash, `RankLook._update_scenery()`).
+	func redraw_front() -> void:
 		if _front != null:
 			_front.queue_redraw()
 
 ## **What of one slice is drawn over what the slice holds**: a node at the slice's own origin, drawing
 ## through the look that made it (`draw_the_slice_front()`), redrawn with the slice
-## (`Slice.redraw()`). It holds its look weakly, for the slice's reason.
+## (`Slice.redraw()`), and on its own where it moves while the slice does not
+## (`Slice.redraw_front()`). It holds its look weakly, for the slice's reason.
 class Front extends Node2D:
 	var _look: WeakRef
 	var _index: int

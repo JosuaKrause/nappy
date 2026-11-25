@@ -180,29 +180,42 @@ func _protest_feet(picture: String) -> PackedVector2Array:
 ## thing to time a run past, and `can_be_timed()` already says so.
 ##
 ## **On the screen each half is a slice of its own** (`_slice_plan()`), standing at the middle of
-## its share of the run, and slice `only` draws its own gunman and flash from `origin`, the first
-## also the shadow. On any other canvas, or with `only` below zero, both are drawn.
+## its share of the run, and slice `only` draws its own gunman from `origin`, the first also the
+## shadow. **The gunmen and the shadow stand still and the flashes do not**, so a slice is redrawn
+## only when the picture's key moves, and its flash is drawn on the slice's front
+## (`draw_the_slice_front()`), redrawn on every frame the event is drawn (`_update_scenery()`):
+## the player's guarantee that a sprite with only partial motion keeps its stationary pixels in a
+## static drawing (sunny-lynx). On any other canvas, or with `only` below zero, both gunmen are
+## drawn, each with its flash.
 func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 	if only < 0 and _drawn_by_its_slices(canvas):
 		return
-	var half := _half_run()
 	if only <= 0:
 		_draw_body_shadow(canvas, origin)
-	var strength := _share_of_its_peak_now()
 	for index in 2:
 		if only >= 0 and index != only:
 			continue
-		var side := -1.0 if index == 0 else 1.0
-		var at := origin + Vector2(side * half * 0.62, 0.0)
-		_drawer.stand(canvas, EventPictures.GUNMAN, at, Vector2.ZERO,
-				side > 0.0)
-		# Sized off the current emission and jittered per side, so the two are never in step.
-		var flare := strength * (0.6 + 0.4 * sin(event.age() * 17.0 + side * 2.1))
-		if flare <= 0.25:
-			continue
-		var muzzle := at + Vector2(side * 15.0, -12.0)
-		canvas.draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
-		canvas.draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
+		_drawer.stand(canvas, EventPictures.GUNMAN, _gunman_feet(index, origin), Vector2.ZERO,
+				index == 1)
+		if only < 0:
+			_draw_muzzle_flash(canvas, index, origin)
+
+## Where gunman `index` stands from `origin`: the first at the west end of the cover, the second,
+## mirrored, at the east.
+func _gunman_feet(index: int, origin: Vector2) -> Vector2:
+	var side := -1.0 if index == 0 else 1.0
+	return origin + Vector2(side * _half_run() * 0.62, 0.0)
+
+## Gunman `index`'s muzzle flash, from `origin`, or nothing between its beats.
+func _draw_muzzle_flash(canvas: CanvasItem, index: int, origin: Vector2) -> void:
+	var side := -1.0 if index == 0 else 1.0
+	# Sized off the current emission and jittered per side, so the two are never in step.
+	var flare := _share_of_its_peak_now() * (0.6 + 0.4 * sin(event.age() * 17.0 + side * 2.1))
+	if flare <= 0.25:
+		return
+	var muzzle := _gunman_feet(index, origin) + Vector2(side * 15.0, -12.0)
+	canvas.draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
+	canvas.draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
 
 ## A muzzle flash is a *light*, and it must not borrow the amber the danger vocabulary uses for its
 ## marks. Two things that mean different things must not share a constant, or a rebalance of one
@@ -234,10 +247,14 @@ func draw_the_slice(canvas: CanvasItem, index: int) -> void:
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(canvas, index, origin)
 
-## A café table, over the sitter its slice holds (`_draw_cafe()`).
+## A café table, over the sitter its slice holds (`_draw_cafe()`), or a gunman's muzzle flash over
+## him (`_draw_firefight()`).
 ##
 ## Overrides SpreadLook.draw_the_slice_front.
 func draw_the_slice_front(canvas: CanvasItem, index: int) -> void:
+	if _look.picture() == EventDef.Look.FIREFIGHT:
+		_draw_muzzle_flash(canvas, index, -_slice_feet[index])
+		return
 	if _look.picture() != EventDef.Look.CAFE:
 		return
 	var half := _half_run()
@@ -245,11 +262,14 @@ func draw_the_slice_front(canvas: CanvasItem, index: int) -> void:
 
 ## A café slice's sitter, standing in the slice as retained layers (`EventScenery`): its lap and
 ## chair-side spans stay drawn while the lean swaps only the upper body's, on the sitter's own
-## mirror about its feet. Then the front, so the table goes over the sitter. Nothing for any other
-## rank.
+## mirror about its feet. Then the front, so the table goes over the sitter. A firefight's slice
+## holds only its front, which draws the gunman's flash. Nothing for any other rank.
 ##
 ## Overrides SpreadLook._build_the_scenery_of.
 func _build_the_scenery_of(slice: Slice, index: int) -> void:
+	if _look.picture() == EventDef.Look.FIREFIGHT:
+		slice.add_front()
+		return
 	if _look.picture() != EventDef.Look.CAFE:
 		return
 	var half := _half_run()
@@ -272,3 +292,15 @@ func _scenery_period() -> float:
 	if _look.picture() == EventDef.Look.CAFE:
 		return EventPictures.SITTER_IDLE_PERIOD
 	return super()
+
+## A firefight's muzzle flashes, on its slices' fronts, drawn again on every frame the event is in
+## the box: they are a continuous function of its clock (`_draw_muzzle_flash()`), while the gunmen
+## under them wait for the picture's key.
+##
+## Overrides SpreadLook._update_scenery.
+func _update_scenery() -> void:
+	super()
+	if _look.picture() != EventDef.Look.FIREFIGHT:
+		return
+	for slice in _slices:
+		slice.redraw_front()
