@@ -1087,10 +1087,36 @@ func _test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t: TestRunner) -
 				moving.body().drawn_width()).x
 		var outlines := look.shadow_outlines(Vector2.ZERO)
 		var width := _outlines_bounds(outlines).size.x
+		if not side_on:
+			_check_the_end_on_van_stands_on_its_tyres(t, outlines, picture)
 		t.check(outlines.size() == 2 and width <= drawn,
 				"the moving van %s casts two ovals no wider than its %.0fpx picture (%d, %.1fpx)"
 				% ["side on" if side_on else "end on", drawn, outlines.size(), width])
 		instance.free()
+
+## The moving van end on is stood on its picture's bottom row, the ramp's foot, `picture`'s height
+## below its node, and its rear tyres end rows above it: the nearer oval's middle lies on the row
+## its tyres' feet stand on, read off the picture's own source (the lowest edge of its dark tyre
+## rectangles), and not the ramp's foot below it.
+func _check_the_end_on_van_stands_on_its_tyres(t: TestRunner, outlines: Array[PackedVector2Array],
+		picture: String) -> void:
+	var source := FileAccess.get_file_as_string("res://art/events/moving_van_vertical.svg")
+	var tyre_feet: Array[float] = []
+	var tyre := RegEx.create_from_string(
+			"<rect x=\"[0-9.]+\" y=\"([0-9.]+)\" width=\"[0-9.]+\" height=\"([0-9.]+)\" fill=\"#221f28\"")
+	for found in tyre.search_all(source):
+		tyre_feet.append(float(found.get_string(1)) + float(found.get_string(2)))
+	t.check(tyre_feet.size() == 2, "the end-on moving van's source draws two rear tyres (%d)" % tyre_feet.size())
+	if tyre_feet.size() != 2:
+		return
+	var picture_height := EventPictures.native_size(picture).y
+	var tyre_line: float = float(tyre_feet.max()) - picture_height
+	var nearer := -INF
+	for outline in outlines:
+		nearer = maxf(nearer, _outlines_bounds([outline]).get_center().y)
+	t.check(absf(nearer - tyre_line) < 1.0,
+			"the end-on moving van's nearer oval lies on the line its tyres stand on (%.1f against %.1f; the ramp's foot is at 0)"
+			% [nearer, tyre_line])
 
 ## The box round every point of `outlines`.
 func _outlines_bounds(outlines: Array[PackedVector2Array]) -> Rect2:

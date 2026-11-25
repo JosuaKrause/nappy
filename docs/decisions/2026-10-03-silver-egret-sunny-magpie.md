@@ -20,8 +20,9 @@ The ovals are laid as every vehicle's (`GroundShape.paired_shadow_outlines()`). 
 takes its wheel axis from the way it stands, as the burnt-out car does: side on along an east-west
 street, end on along a north-south one, the one rule for both stationary vehicles. The ground
 shapes are untouched, so what the scenes block and where the officers stand does not move.
-**Rejected**: putting a shadow shape for the two looks in their catalogue rows, which would have
-been the plainest data, since the catalogue is another branch's file now (M199); and a table of
+**Deferred**: putting a shadow shape for the two looks in their catalogue rows, which would be the
+plainest data and is the place for it once the catalogue is free to change (it is another branch's
+file now, M199); the look derives the body from the picture until then. **Rejected**: a table of
 each picture's wheel positions, more code for three of the moving van's tyres where two ovals read.
 
 **The swing frame.** Its ground shape is now a segment from one A-frame to the other
@@ -35,7 +36,7 @@ the prop draws and what the debug view's shadow layer traces, so the two agree; 
 had the debug layer as its one game reader and is gone, its suite reading the shadow instead.
 
 **Day 12's touch spot is the size and place it was.** It is read off the frame's picture
-(`Prop.swing_frame_base()`: half its width across and half its height deep, 28 by 17px), not off
+(`Prop.swing_frame_base()`: semi-axes of half its width and half its height, 28 by 17px, so the spot spans its whole 56 by 34 picture), not off
 the shadow, centred on `CityMap.swing_position()` as before. Both ovals lie inside it, so
 stepping onto the shadow still completes the task. `tests/test_resistance_arrow.gd` holds the
 spot to the picture, from eight bearings a pixel inside and two pixels clear of it, and the

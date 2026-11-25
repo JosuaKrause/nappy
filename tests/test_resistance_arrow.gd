@@ -589,7 +589,8 @@ func _test_the_contact_draws_from_the_library_its_director_is_handed(t: TestRunn
 
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,
-## half the frame's picture wide and half its height deep, read off the region table and not off
+## whose semi-axes are half the frame's picture's width and half its height (so it spans the
+## picture), read off the region table and not off
 ## the frame's shadow, so the shadow lying under the frame's feet leaves day 12 no harder: the
 ## contact the director offers on day 12 carries that ellipse as its `touch_ellipse`, and from
 ## eight bearings, standing with her edge a pixel inside the ellipse's outline completes it, at each

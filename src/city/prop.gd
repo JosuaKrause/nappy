@@ -115,20 +115,25 @@ func _draw() -> void:
 		Kind.TREE:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
-			for outline in shadow_outlines(Vector2.ZERO):
-				draw_colored_polygon(outline, Palette.SHADOW)
+			_draw_shadow()
 			Sprites.draw_standing(self, atlas.region(SWING_FRAME), Vector2.ZERO)
 		Kind.BOLLARD:
-			_shape.draw_shadow(self, Vector2.ZERO)
+			_draw_shadow()
 			Sprites.draw_standing(self, atlas.region(BOLLARD), Vector2.ZERO)
 		Kind.SACK:
-			_shape.draw_shadow(self, Vector2.ZERO)
+			_draw_shadow()
 			Sprites.draw_standing(self, atlas.region(SACK), Vector2.ZERO)
 		Kind.SACK_PILE:
-			_shape.draw_shadow(self, Vector2.ZERO)
+			_draw_shadow()
 			Sprites.draw_standing(self, atlas.region(SACK_PILE), Vector2.ZERO)
 		Kind.STREET_TREE:
 			_draw_street_tree()
+
+## Fills this prop's shadow where it stands: the one place every kind of prop draws its shadow
+## through, so the drawing and the debug view's trace (`shadow_outlines()`) read one thing.
+func _draw_shadow() -> void:
+	for outline in shadow_outlines(Vector2.ZERO):
+		draw_colored_polygon(outline, Palette.SHADOW)
 
 ## The ground this prop's shadow covers standing at `at`, what `_draw()` fills and the debug view's
 ## shadow layer (`DebugLayers`, `--layers 2`) traces: one oval under each A-frame of the swing
@@ -161,8 +166,8 @@ static func _playground_frame_shape() -> GroundShape:
 	return GroundShape.segment(size.x * 0.5 * SWING_A_FRAME_SHARE, size.y * 0.5)
 
 ## **The ground ellipse at the swing frame's base**, its semi-axes in px round the bottom centre the
-## frame stands on: half its picture's width across and half its height up and down, 28 by 17px for
-## `swing_frame.svg`'s 56 by 34 — the spot day 12's task is touched at
+## frame stands on: half its picture's width and half its height (the ellipse's semi-axes, so it
+## spans the whole picture, 56 by 34px), 28 by 17px for `swing_frame.svg`'s 56 by 34 — the spot day 12's task is touched at
 ## (`ResistanceDirector._shape_the_touch()`). Read off the region table rather than the shadow, so
 ## the shadow lying under the frame's feet leaves the spot the size and the place it is: both ovals
 ## of the shadow lie inside it.
@@ -182,6 +187,6 @@ func _draw_street_tree() -> void:
 ## A tree picture drawn `size` large, with its shadow. The size is read off the region table rather
 ## than off the drawn texture: a region reports its source's own size.
 func _draw_tree_at(size: Vector2) -> void:
-	_shape.draw_shadow(self, Vector2.ZERO)
+	_draw_shadow()
 	Sprites.draw_standing(self, atlas.region(TreePictures.region(_variant)), Vector2.ZERO, size,
 			absi(_variant) % 4 < 2)

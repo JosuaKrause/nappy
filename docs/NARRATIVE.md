@@ -211,8 +211,8 @@ front of the station's two-tile door short of their two far outer corners (57.7p
 "the acceptance radius centered at the door should have a large enough radius for half the
 sidewalk to be covered"; the player, on the station's corners: "for now let's just use my word on
 the radii"), the
-ellipse at the swing frame's base, half the frame's picture wide and half its height deep
-(`Prop.swing_frame_base()`, 28 by 17px), with the oval of shadow under each of its A-frames inside
+ellipse at the swing frame's base, whose semi-axes are half the frame's picture's width and half
+its height, so it spans the picture (`Prop.swing_frame_base()`, 28 by 17px, 56 by 34px across), with the oval of shadow under each of its A-frames inside
 it, her body has to touch, and day 9's crossing, which is done by going through the door and never by standing near
 it. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #484, #487, #489 and #492: "the red arrows should point to the actual item -- however, the radius of
 acceptance should be big enough to be possible to do" · "No! Never besides the item!" · "Should

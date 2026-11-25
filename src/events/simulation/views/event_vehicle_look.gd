@@ -123,6 +123,24 @@ func _side_length() -> float:
 		return EventPictures.stationary_vehicle_extent(side, true, _body.drawn_width()).x
 	return EventPictures.native_size(EventPictures.RIOT_VAN_BY_VIEW["side"]).x
 
+## The row of `moving_van_vertical.svg` (its 38 by 56 end-on picture) its rear tyres stand on: they
+## fill rows 30 to 43, and the ramp runs on to the picture's bottom row 13px below them. The nearer
+## pair's ovals lie on this row (`_ground_line()`), not on the picture's bottom row, which is the
+## ramp's foot.
+const MOVING_VAN_END_TYRE_FOOT_ROW := 43.0
+
+## How far below its node the nearer wheel pair stands: the picture's bottom row for every vehicle
+## (`EventLook._ground_line()`), except the moving van seen end on, whose bottom row is the ramp's
+## foot and whose tyres stand `MOVING_VAN_END_TYRE_FOOT_ROW` down its picture, that many rows
+## above the bottom row it is stood on.
+##
+## Overrides EventLook._ground_line.
+func _ground_line() -> float:
+	if _look.picture() == EventDef.Look.MOVING_VAN and not event.stands_side_on():
+		var picture := EventPictures.stationary_vehicle_texture(_look.picture(), false)
+		return MOVING_VAN_END_TYRE_FOOT_ROW - EventPictures.native_size(picture).y
+	return super()
+
 ## The axis its wheel pairs lie along: the way its picture faces. A stationary vehicle — the
 ## burnt-out car, the moving van — shows its side along an east-west street and its end along a
 ## north-south one (`EventInstance.stands_side_on()`, `_draw_stationary_vehicle()`); every other
