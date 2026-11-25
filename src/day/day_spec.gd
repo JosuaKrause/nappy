@@ -77,7 +77,8 @@ enum Goal {
 	## covered the screen (`InteriorScene.exit_requested`), and `DayController.reach_the_exit()` is
 	## what that reaches.
 	SERVICE_EXIT,
-	## The tunnel mouth or the bridge deck (`exit_points()`), reached however the baby is.
+	## The threshold of the tunnel or the bridge (`exit_points()`): her centre on the spine's last
+	## row, reached however the baby is. Her own control ends there and the game walks her in.
 	CITY_EDGE,
 }
 
@@ -99,7 +100,8 @@ var _section := Section.NONE
 var _world := World.CITY
 var goal := Goal.HOME
 ## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityExit.Kind` -> position, the
-## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
+## middle of the carriageway on the spine's last row at each end, the threshold, rather than
+## where the portal's picture is anchored.
 ## Handed in by the start once the world it stands in is stood (`DayWorld.exits()`, through
 ## `use_exits()`); empty for any other goal. Read through `exit_points()`.
 var _exits := {}

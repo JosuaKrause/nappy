@@ -361,18 +361,98 @@ func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2
 ## Draws this shape's shadow at `at`, in `canvas`'s own coordinates — the filled polygon
 ## `shadow_outline()` traces, so the layer and the shadow cannot disagree about what shape it is.
 ##
-## A shadow narrower than a pixel is not drawn at all. A radius that has shrunk toward zero — a
+## A shadow narrower than a pixel is not drawn at all (`casts_a_shadow()`).
+func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
+	if not casts_a_shadow():
+		return
+	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
+
+## Whether this shape's shadow covers a pixel at all. A radius that has shrunk toward zero — a
 ## bird's contact shadow fading as it climbs to `BIRD_SHADOW_CEILING`, anything else that scales a
 ## shadow away — collapses every sample of the outline onto one point, and the renderer refuses
 ## the polygon with "Invalid polygon data, triangulation failed" once a frame for as long as it
 ## lasts. Nothing is lost by skipping it: it would have covered no pixel.
-func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
-	if _radius < MIN_DRAWN_SHADOW_RADIUS:
-		return
-	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
+func casts_a_shadow() -> bool:
+	return _radius >= MIN_DRAWN_SHADOW_RADIUS
 
 ## Half a pixel: below this every sample of the outline rounds onto the same point.
 const MIN_DRAWN_SHADOW_RADIUS := 0.5
+
+# ------------------------------------------------------- the shadow of what it stands on ---
+# A thing standing on wheels or legs casts its shadow where they meet the ground, never across its
+# whole picture (minty-hedgehog 1; azure-koala 10): one oval per pair of wheels or legs, each lying
+# across the thing at its axle or its A-frame, rather than the one oval or capsule
+# `shadow_outline()` gives everything else.
+
+## How far a point-shaped vehicle's two wheel pairs stand from its centre, and how far each reaches
+## to either side, as a share of its radius. A point has no spine to put an axle at either end of,
+## and its radius is its reach every way at once, longer than the vehicle is wide: 0.6 puts the
+## parked delivery van's two pairs (22px radius) 13px either side of its centre, where its side
+## view draws its tyres, and the army truck's (26px) 16px either side, between its front axle and
+## its rear pair.
+const POINT_WHEEL_SHARE := 0.6
+
+## How far each wheel pair's oval reaches along the vehicle, as a share of the smaller of how far
+## the pair stands from the vehicle's centre and how far it reaches to either side: under one, so
+## the two ovals never meet and read as two patches of ground under two pairs of tyres rather than
+## one slab under the body — the crowd car's reach 6.6px either side of its axle, a little more
+## than its tyres' 5px radius.
+const WHEEL_OVAL_SHARE := 0.6
+
+## How far behind the nearer wheel pair the other is drawn, as a share of how far behind it the
+## ground puts it. The vehicle pictures foreshorten what lies behind: a diagonal view draws its far
+## tyre about 0.6 of the ground's distance above its near one (the crowd car's 8px where the ground
+## has 15.6px, the parked van's 10px where it has 18.6px), and a far pair laid at its full distance
+## stands clear of the body beside the roof. End on, the far pair is under the body either way.
+const WHEEL_DEPTH := 0.6
+
+## The ovals a vehicle's shadow fills, one per wheel pair (the looks' `shadow_outlines()` fill
+## them), for a vehicle centred on `at` and lying along `axis`, whose picture stands `ground_line` below `at` — the drop from its centre to the
+## bottom row of its picture: zero for one drawn standing on its own node, the southern reach of its
+## body for a car drawn over its body (`CarLook.ground_line()`, `EventLook.body_anchor()`).
+##
+## A segment's two wheel pairs are its spine's two ends and reach its rounding to either side; a
+## point's stand `POINT_WHEEL_SHARE` of its radius from its centre and reach as far to either side.
+## **The nearer pair is set down on the picture's ground line and the other behind it, its depth
+## foreshortened by `WHEEL_DEPTH`** as the pictures draw it: side on, both pairs stand on the ground
+## line under the two tyres the picture draws; end on, the near pair lies along the bottom of the
+## picture and the far one behind it, under the body; on a diagonal the far pair lies under the far
+## tyre the picture draws.
+##
+## **Each oval lies flat and level on the screen, as every point shadow does**: as wide as the pair
+## looks from where the picture is drawn (its reach to either side times `|across.x|`, plus its own
+## reach along the vehicle times `|along.x|`), so a pair seen side on is a tyre's width and one seen
+## end on the vehicle's width, and as deep as the point shadow of something the vehicle's width
+## (`SHADOW_SQUASH` of its reach to either side) in every view, centred on the pair, so it reaches a
+## little below the tyres the way every standing thing's shadow reaches a little below its feet. A
+## rectangle has no wheels and gives its ordinary outline.
+func paired_shadow_outlines(at: Vector2, axis: Vector2, ground_line: float
+		) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = []
+	if _kind == Kind.RECT:
+		outlines.append(shadow_outline(at, axis))
+		return outlines
+	var along := axis.normalized() if not axis.is_zero_approx() else Vector2.RIGHT
+	var across := Vector2(-along.y, along.x)
+	var from_centre := _half_length if _kind == Kind.SEGMENT else _radius * POINT_WHEEL_SHARE
+	var to_either_side := _radius if _kind == Kind.SEGMENT else _radius * POINT_WHEEL_SHARE
+	var along_the_pair := minf(from_centre, to_either_side) * WHEEL_OVAL_SHARE
+	var half := Vector2(absf(across.x) * to_either_side + absf(along.x) * along_the_pair,
+			to_either_side * SHADOW_SQUASH)
+	var nearer := absf(along.y) * from_centre
+	for end: float in [-1.0, 1.0]:
+		var axle := along * from_centre * end
+		var behind := (axle.y - nearer) * WHEEL_DEPTH
+		outlines.append(_wheel_oval(at + Vector2(axle.x, behind + ground_line), half))
+	return outlines
+
+## One wheel pair's oval round `centre`: a level ellipse `half.x` wide and `half.y` deep to either side.
+func _wheel_oval(centre: Vector2, half: Vector2) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in _ELLIPSE_SAMPLES:
+		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
+		points.append(centre + Vector2(cos(angle) * half.x, sin(angle) * half.y))
+	return points
 
 func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()

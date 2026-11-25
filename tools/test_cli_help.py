@@ -69,7 +69,6 @@ ENTRY_POINTS = (
     "check_field_reads.py",
     "field_answers.py",
     "field_to_method.py",
-    "typing_census.py",
     "compare-placement-rows.py",
     "dead_code.py",
 )

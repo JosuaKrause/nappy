@@ -1539,10 +1539,17 @@ func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
 func field_shape() -> GroundShape:
 	return _def.datum()
 
-## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture: the
-## outline its shadow is drawn over (`DebugLayers`).
+## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture.
 func ground_shape() -> GroundShape:
 	return _def.ground_shape()
+
+## The ground its body shadow covers with its node at `origin` (`EventLook.shadow_outlines()`), none
+## before its look is built: what the debug view's shadow layer traces (`DebugLayers`).
+func shadow_outlines(origin: Vector2) -> Array[PackedVector2Array]:
+	if _look == null:
+		var none: Array[PackedVector2Array] = []
+		return none
+	return _look.shadow_outlines(origin)
 
 ## Everything the row can put on the screen about its feet, caret included
 ## (`EventFootprints.footprint_of()`). Asked by the look, which merges the run its street gives a

@@ -27,7 +27,25 @@ func run(t: TestRunner) -> void:
 	await _test_the_pram_has_its_own_trailing_body(t)
 	await _test_her_family_comes_from_its_baked_pages(t)
 	await _test_the_view_centre_is_her_camera_or_a_bodys_position(t)
+	_test_a_walk_the_game_leads_her_on_always_gives_her_walls_back(t)
 	_test_the_pram_is_the_size_the_rules_think_it_is(t)
+
+## **The game's hand on her gives her walls back whatever heading it led her by.** `lead()` puts her
+## collision mask away so she can be walked through the map's boundary wall, and `release()` puts it
+## back: a zero heading is a led standing still, not a way to be led without a release restoring
+## the mask. Asked twice, the mask put back is the one she had, not the zero the first ask left.
+func _test_a_walk_the_game_leads_her_on_always_gives_her_walls_back(t: TestRunner) -> void:
+	for heading: Vector2 in [Vector2.UP, Vector2.ZERO]:
+		var rig := _rig(t)
+		rig.collision_mask = 5
+		rig.lead(heading, Tuning.RUN_SPEED)
+		rig.lead(heading, Tuning.RUN_SPEED)
+		t.check(rig.collision_mask == 0, "led by %s, she walks through walls" % heading)
+		rig.release()
+		t.check(rig.collision_mask == 5, "released from %s, she has her walls back" % heading)
+		rig.release()
+		t.check(rig.collision_mask == 5, "and a second release changes nothing")
+		rig.free()
 
 func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()

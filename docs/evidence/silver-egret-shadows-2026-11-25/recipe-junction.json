@@ -1,0 +1,102 @@
+{
+ "version": 1,
+ "name": "silver-egret shadows: vehicles at a junction",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    3600,
+    600
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 13,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "south"
+  },
+  "background": {
+   "crowd": false
+  },
+  "events": [
+   {
+    "name": "patrol",
+    "row": "police_patrol",
+    "at": [
+     3664,
+     432
+    ]
+   },
+   {
+    "name": "van",
+    "row": "delivery_van",
+    "at": [
+     3536,
+     592
+    ]
+   },
+   {
+    "name": "convoy",
+    "row": "military_convoy",
+    "at": [
+     3440,
+     560
+    ]
+   }
+  ],
+  "actors": [
+   {
+    "name": "car_e",
+    "kind": "car",
+    "at": [
+     3560,
+     560
+    ],
+    "direction": "east",
+    "speed": 130
+   },
+   {
+    "name": "car_n",
+    "kind": "car",
+    "at": [
+     3696,
+     680
+    ],
+    "direction": "north",
+    "speed": 130
+   },
+   {
+    "name": "car_w",
+    "kind": "car",
+    "at": [
+     3380,
+     528
+    ],
+    "direction": "west",
+    "speed": 130
+   }
+  ]
+ },
+ "playback": {
+  "duration": 2,
+  "capture_at": 1,
+  "camera": {
+   "zoom": 1.6,
+   "fixed": true,
+   "fixed_offset": [
+    60,
+    -60
+   ]
+  },
+  "observations": []
+ }
+}

@@ -436,6 +436,10 @@ src/
 	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
 	                      spec: her front door, the building's service exit or the city's two
 	                      ways out is its goal; ticked by `main` on the walk's physics tick
+	escape_walk_in.gd     the escape's last steps: once the city section is won at the threshold of
+	                      the tunnel or the bridge, leads her on by herself into the tunnel's
+	                      opening or across the deck and says when she is in; `main` freezes the
+	                      world for it and raises the ending after
 	loss_cause.gd         what ended a hard-fail or crying day: pure rules over plain values, no
 	                      nodes and no globals; `DayDirector` reads the world and hands them in
 	day_world_source.gd   where the day director gets the world a spec is walked in: stands it and

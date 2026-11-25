@@ -69,6 +69,37 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
 					_body.drawn_width(), canvas)
 
+## A vehicle's shadow lies where its wheels meet the ground (minty-hedgehog 1; azure-koala 10): one
+## oval per wheel pair of its own ground shape (`GroundShape.paired_shadow_outlines()`), laid along
+## the way its picture faces (`_wheel_axis()`), the nearer pair on the picture's own ground line —
+## the bottom of its body for a car drawn over its body (`_ground_line()`), its node for every other
+## vehicle — so no shadow shows above a roof or behind a body with nothing under its tyres.
+##
+## Overrides EventLook.shadow_outlines.
+func shadow_outlines(origin := Vector2.ZERO) -> Array[PackedVector2Array]:
+	var shape := event.ground_shape()
+	if _look.picture() in SCENE_SHAPED:
+		return super(origin)
+	if not _look.casts_a_shadow() or shape == null or not shape.casts_a_shadow():
+		var none: Array[PackedVector2Array] = []
+		return none
+	return shape.paired_shadow_outlines(origin, _wheel_axis(), _ground_line())
+
+## The two vehicle looks whose ground shape is the scene round the vehicle rather than its own
+## body, so it says nothing about where its wheels are, and which keep the shadow of their whole
+## body: the night raid's riot van, whose 44px disc holds the officers round it, and the moving
+## van, whose band runs along the street under its ramp and its boxes.
+const SCENE_SHAPED: Array[EventDef.Look] = [EventDef.Look.RIOT_VAN, EventDef.Look.MOVING_VAN]
+
+## The axis its wheel pairs lie along: the way its picture faces. A burnt-out car shows its side
+## along an east-west street and its end along a north-south one
+## (`EventInstance.stands_side_on()`); every other vehicle is drawn facing `facing_now()`, the
+## heading of one that drives and the side a parked one was sited showing.
+func _wheel_axis() -> Vector2:
+	if _look.picture() == EventDef.Look.BURNT_OUT_CAR:
+		return Vector2.RIGHT if event.stands_side_on() else Vector2.DOWN
+	return event.facing_now()
+
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
 ## Its shadow is `def.ground_shape()` — a point for `burnt_out_car`, a capsule along the street for

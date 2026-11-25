@@ -171,9 +171,24 @@ func palette() -> Array:
 ## cardinal, so this is an exact value there. Because it is read off the heading, the redraw gate
 ## reads the heading too (`heading_key()`).
 static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
-	var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
+	return Vector2(0.0, ground_line(forward) + float(CANVAS_BOTTOM_MARGIN[view_name]))
+
+## How far below the car's centre its picture meets the ground, heading along `forward`: the
+## southern reach of its body, `26·|heading.y| + 14·|heading.x|` (`body_anchor()` says why that is
+## the line every view stands on). Where its wheels touch the road, so where its shadow lies
+## (`shadow_outlines()`).
+static func ground_line(forward: Vector2) -> float:
+	return Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
 			+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(forward.x)
-	return Vector2(0.0, south_reach + float(CANVAS_BOTTOM_MARGIN[view_name]))
+
+## A car's shadow: one oval per wheel pair (`GroundShape.paired_shadow_outlines()`), the pairs at the
+## two ends of its capsule along the live heading, the nearer one on its picture's ground line
+## (`ground_line()`), so the shadow lies under its tyres and never above its roof.
+##
+## Overrides AgentLook.shadow_outlines.
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	var forward := _agent.heading()
+	return _agent.shape().paired_shadow_outlines(at, forward, ground_line(forward))
 
 ## Draws the body, trim and wheels onto `canvas`. **Both callers have already lifted the canvas by
 ## `bob()`**, so what stays on the ground, a car's wheels and its shadow, is drawn back down by the
@@ -188,7 +203,7 @@ func draw_body(canvas: CanvasItem) -> void:
 	var flip := drawn.y == 1
 	var forward := _agent.heading()
 	var grounded := Vector2(0.0, -bob())
-	_agent.draw_shadow(canvas, grounded, forward)
+	_agent.draw_shadow(canvas, grounded)
 	var view_name: String = VIEW_BY_SECTOR[drawn.x]
 	# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 	# picture cannot register against a car that is not there.

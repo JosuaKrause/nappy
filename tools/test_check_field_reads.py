@@ -96,19 +96,15 @@ class ReadTests(unittest.TestCase):
             found(reader(body)), {("Thing", "src/reader.gd", "count"), ("SubThing", "src/reader.gd", "extra")}
         )
 
-    def test_an_untyped_receiver_is_skipped_in_a_file_with_the_line_and_unknown_without_it(self) -> None:
+    def test_an_untyped_receiver_is_unknown(self) -> None:
         body = (
             "func a(x, items: Array) -> int:\n\tvar y = items[0]\n\tfor z in items:\n\t\tprint(z.count)\n"
             "\treturn x.count + y.count\n"
         )
-        opted = reader(body, LINE + "class_name Reader\nextends Node\n")
-        self.assertEqual(found(opted), set())
-        got = reads.reads_of(reads.Tree(opted, {}))
-        self.assertEqual((got.skipped, got.unknown), (3, []))
         self.assertEqual(found(reader(body)), set())
         self.assertEqual(unknown(reader(body)), [(6, "z.count"), (7, "x.count"), (7, "y.count")])
 
-    def test_what_the_engine_cannot_type_is_unknown_in_a_converted_file(self) -> None:
+    def test_what_the_engine_cannot_type_is_unknown(self) -> None:
         body = (
             "func a(items: Array, d: Dictionary, v: Variant) -> void:\n\tprint(items[0].count)\n"
             "\tprint(items.back().count)\n\tprint(d.get(1).count)\n\tprint(v.count)\n\tprint(d.key.count)\n"
@@ -281,10 +277,9 @@ class MethodReferenceTests(unittest.TestCase):
     def kinds(self, src: dict[str, str]) -> list[tuple[int, str, str]]:
         return [(u.line, u.expression, u.kind) for u in reads.reads_of(reads.Tree(src, {})).unknown]
 
-    def test_a_method_of_an_unknown_receiver_read_without_parentheses_fails_in_a_converted_file(self) -> None:
+    def test_a_method_of_an_unknown_receiver_read_without_parentheses_fails(self) -> None:
         body = "func a(items: Array) -> bool:\n\treturn items[0].make\n"
         self.assertEqual(self.kinds(reader(body)), [(4, "items[0].make", reads.UNKNOWN_METHOD)])
-        self.assertEqual(self.kinds(reader(body, LINE + "class_name Reader\nextends Node\n")), [])
         failure = reads.failures_of(reads.reads_of(reads.Tree(reader(body), {})), [])[0]
         self.assertIn("a reference to the function, always true", failure)
         self.assertIn("where the name is a dictionary's key, subscript it", failure)
@@ -494,29 +489,23 @@ class TypedMethodReferenceTests(unittest.TestCase):
         self.assertEqual(self.refs(src), [(5, "t.make"), (7, "t.go")])
 
 
-class OptOutTests(unittest.TestCase):
-    def test_the_line_is_read_from_the_first_line_only(self) -> None:
-        line = reads.opt_out_of(LINE + "extends Node\n")
-        self.assertEqual(line, reads.OptOut(("untyped_declaration", "unsafe_method_access")))
-        self.assertIsNone(reads.opt_out_of("extends Node\n" + LINE))
-
-    def test_a_malformed_line_fails_and_so_does_an_ignore_below_the_first_line(self) -> None:
-        files = {
-            "src/a.gd": '@warning_ignore_start("unused_variable")\n',
-            "src/b.gd": '@warning_ignore_start("untyped_declaration", "untyped_declaration")\n',
-            "src/c.gd": "@warning_ignore_start(NAME)\n",
-            "src/d.gd": "@warning_ignore_start()\n",
-            "src/e.gd": 'extends Node\nfunc f() -> void:\n\t@warning_ignore("unsafe_method_access")\n\tpass\n',
-            "src/f.gd": 'extends Node\n@warning_ignore_start("unsafe_property_access")\n',
-            "tests/g.gd": LINE + 'func f() -> void:\n\t@warning_ignore("unused_variable")\n\tpass\n',
-        }
-        failing = reads.line_failures(files)
-        self.assertEqual(
-            [f.split(":", 2)[0] + ":" + f.split(":", 2)[1] for f in failing],
-            ["src/a.gd:1", "src/b.gd:1", "src/c.gd:1", "src/d.gd:1", "src/e.gd:3", "src/f.gd:2"],
+class IgnoreTests(unittest.TestCase):
+    def test_a_file_that_carries_the_former_opt_out_line_fails(self) -> None:
+        failing = reads.line_failures({"src/a.gd": LINE + "extends Node\n"})
+        self.assertEqual(len(failing), 1)
+        self.assertTrue(
+            failing[0].startswith("src/a.gd:1: ignores untyped_declaration, unsafe_method_access, and no file opts out")
         )
 
-    def test_every_form_of_ignore_the_engine_honours_is_read_and_fails_outside_the_one_form(self) -> None:
+    def test_an_ignore_of_another_warning_stands(self) -> None:
+        files = {
+            "src/a.gd": '@warning_ignore_start("unused_variable")\n',
+            "src/b.gd": "@warning_ignore_start()\n",
+            "tests/g.gd": 'func f() -> void:\n\t@warning_ignore("unused_variable")\n\tpass\n',
+        }
+        self.assertEqual(reads.line_failures(files), [])
+
+    def test_every_form_of_ignore_the_engine_honours_is_read_and_fails(self) -> None:
         files = {
             "src/a.gd": '@warning_ignore_start("untyped_declaration") # later\nvar t = 3\n',
             "src/b.gd": '@warning_ignore_start ("untyped_declaration")\nvar t = 3\n',
@@ -532,6 +521,7 @@ class OptOutTests(unittest.TestCase):
             "src/j.gd": (
                 'extends Node\nfunc f() -> void:\n\t@warning_ignore_start \\\n\t("untyped_declaration")\n\tvar x = 3\n'
             ),
+            "src/k.gd": 'extends Node\n@warning_ignore_start("unsafe_property_access")\n',
             "src/ok.gd": (
                 '# @warning_ignore("untyped_declaration")\nextends Node\n'
                 'var s := "@warning_ignore(\\"untyped_declaration\\")"\n@warning_ignore("unused_variable")\n'
@@ -551,49 +541,21 @@ class OptOutTests(unittest.TestCase):
                 "src/h.gd:2",
                 "src/i.gd:1",
                 "src/j.gd:3",
+                "src/k.gd:2",
             ],
         )
-        self.assertIn('`@warning_ignore_start("untyped_declaration")`', failing[0])
-        self.assertIn("out of the order", failing[5])
         self.assertIn("cannot read", failing[6])
-        self.assertIsNone(reads.opt_out_of(files["src/a.gd"]))
 
-    def test_an_opt_out_line_naming_nothing_is_told_to_go(self) -> None:
-        self.assertEqual(
-            reads.line_failures({"src/d.gd": "@warning_ignore_start()\n"}),
-            ["src/d.gd:1: the opt-out line names no warning; delete it"],
-        )
-
-    def test_a_file_that_gains_the_line_is_told_what_to_write_instead(self) -> None:
-        now: dict[str, tuple[str, ...]] = {
-            "tests/test_new.gd": ("untyped_declaration",),
-            "src/new.gd": ("untyped_declaration",),
-        }
-        failing = reads.base_line_failures(now, {}, {}, False)
-        self.assertIn("type the declaration, or read the value through a typed name", failing[0])
-        self.assertNotIn("TestRunner", failing[0])
+    def test_a_file_that_fails_is_told_what_to_write_instead(self) -> None:
+        failing = reads.line_failures({"tests/test_new.gd": LINE, "src/new.gd": LINE})
         self.assertIn("`func run(t: TestRunner) -> void:`", failing[1])
         self.assertIn('"A suite is typed, and opens with the typed runner header"', failing[1])
+        self.assertIn("type the declaration, or read the value through a typed name", failing[0])
+        self.assertNotIn("TestRunner", failing[0])
 
-    def test_against_the_base_a_file_gaining_the_line_or_a_warning_fails(self) -> None:
-        base = {"src/a.gd": ("untyped_declaration",), "src/old.gd": ("untyped_declaration",), "src/gone.gd": ()}
-        now = {
-            "src/a.gd": ("untyped_declaration", "unsafe_method_access"),
-            "src/new.gd": ("untyped_declaration",),
-            "tests/fresh.gd": ("untyped_declaration",),
-        }
-        failing = reads.base_line_failures(now, base, {"src/old.gd": "src/new.gd"}, False)
-        self.assertEqual(len(failing), 2)
-        self.assertIn("src/a.gd:1: the opt-out line gains unsafe_method_access", failing[0])
-        self.assertIn("tests/fresh.gd:1: gains the opt-out line", failing[1])
-        self.assertEqual(reads.base_line_failures(now, base, {}, True), [])
-        self.assertEqual(reads.base_line_failures({"src/a.gd": ()}, base, {}, False), [])
-
-    def test_summary_counts_the_files_carrying_the_line_and_the_uses_skipped(self) -> None:
-        got = reads.reads_of(reads.Tree(reader("func a(x) -> int:\n\treturn x.count\n", LINE + "extends Node\n"), {}))
-        text = "\n".join(reads.summary(got, {"src/reader.gd": ("untyped_declaration",), "tests/t.gd": ()}))
-        self.assertIn("2 file(s) still carry the opt-out line:\n  src        1\n  tests      1\n", text)
-        self.assertIn("1 use(s) skipped", text)
+    def test_summary_names_the_failures_that_stand(self) -> None:
+        got = reads.reads_of(reads.Tree(reader("func a(x) -> int:\n\treturn x.count\n"), {}))
+        self.assertIn("1 use(s) through a receiver of no told class, each a failure", "\n".join(reads.summary(got)))
 
 
 class ListTests(unittest.TestCase):
@@ -984,7 +946,7 @@ class EndToEndTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("src/moved.gd count is added under [Thing]", out)
 
-    def test_an_unknown_receiver_in_a_converted_file_fails_naming_the_line_and_expression(self) -> None:
+    def test_an_unknown_receiver_fails_naming_the_line_and_expression(self) -> None:
         self.run_main("--write")
         (self.root / "src/reader.gd").write_text(
             (self.root / "src/reader.gd").read_text() + "func g(items: Array) -> int:\n\treturn items[0].count\n"
@@ -994,29 +956,20 @@ class EndToEndTests(unittest.TestCase):
         self.assertIn("FAILED: src/reader.gd:7: cannot tell the class of the receiver in `items[0].count`", out)
         (self.root / "src/reader.gd").write_text(LINE + (self.root / "src/reader.gd").read_text())
         code, out = self.run_main()
-        self.assertEqual(code, 0, out)
-        self.assertIn("1 file(s) still carry the opt-out line", out)
-
-    def test_base_fails_a_file_that_gains_the_line_and_passes_one_that_drops_it(self) -> None:
-        self.git("init", "-q", "-b", "main")
-        self.git("config", "user.email", "t@example.com")
-        self.git("config", "user.name", "t")
-        self.git("config", "commit.gpgsign", "false")
-        (self.root / "tests").mkdir()
-        (self.root / "tests/test_a.gd").write_text(LINE + "extends Node\n")
-        self.run_main("--write")
-        self.git("add", "-A")
-        self.git("commit", "-q", "-m", "base")
-        (self.root / "tests/test_a.gd").write_text("extends Node\n")
-        self.assertEqual(self.run_main("--base", "HEAD")[0], 0)
-        (self.root / "tests/test_b.gd").write_text(LINE + "extends Node\n")
-        code, out = self.run_main("--base", "HEAD")
         self.assertEqual(code, 1)
-        self.assertIn("FAILED: tests/test_b.gd:1: gains the opt-out line", out)
+        self.assertIn("FAILED: src/reader.gd:1: ignores", out)
+
+    def test_a_file_with_an_ignore_fails_outside_docs_and_not_inside_it(self) -> None:
+        (self.root / "tests").mkdir()
+        (self.root / "tests/test_b.gd").write_text(LINE + "extends Node\n")
+        self.run_main("--write")
+        code, out = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("FAILED: tests/test_b.gd:1: ignores", out)
         (self.root / "docs").mkdir()
         (self.root / "tests/test_b.gd").unlink()
         (self.root / "docs/probe.gd").write_text(LINE + "extends Node\n")
-        self.assertEqual(self.run_main("--base", "HEAD")[0], 0)
+        self.assertEqual(self.run_main()[0], 0)
 
     def test_unknown_flags_are_rejected(self) -> None:
         with redirect_stderr(io.StringIO()):

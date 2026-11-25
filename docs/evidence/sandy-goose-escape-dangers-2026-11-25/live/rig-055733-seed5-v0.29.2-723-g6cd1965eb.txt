@@ -1,0 +1,26 @@
+# 5 tunnel
+   0.0  plan     every unit drawn before she sets off: 29 units, 19 rows
+   0.0  plan     finale: tunnel via 3 calm, 115 cells | bridge via 3 calm, 127 cells | 29 open streets, 641 placements
+   0.0  start    entered the city at (75,80), facing 180°
+   0.0  near     finale_explosion (telegraph) at (72,67), 427px, exc 0, in 0.0/s (crowd 0.0, events 6.0), sleep 100
+   0.0  near     finale_explosion (telegraph) at (73,80), 64px, exc 0, in 0.0/s (crowd 0.0, events 6.0), sleep 100
+   2.3  near     finale_explosion (telegraph) at (72,67), 233px, exc 0, in 4.0/s (crowd 0.0, events 7.2), sleep 100
+   3.9  near     impact_crater (telegraph) at (72,67), 119px, exc 24, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   9.7  route    day 16: re-planned to 'tunnel' (9.8s, 144 waypoints)
+  10.2  near     military_convoy at (66,44), 370px, exc 0, in 0.0/s (crowd 0.0, events 0.3), sleep 100
+  11.3  near     military_convoy at (70,44), 203px, exc 1, in 10.1/s (crowd 0.0, events 18.6), sleep 100
+  12.0  near     military_convoy at (72,44), 106px, exc 5, in 12.1/s (crowd 0.0, events 22.0), sleep 100
+  18.6  near     abduction at (49,43), 249px, exc 0, in 0.1/s (crowd 0.0, events 0.2), sleep 100
+  20.1  near     abduction at (49,43), 137px, exc 1, in 9.0/s (crowd 0.0, events 16.4), sleep 100
+  28.0  near     burnt_out_car at (33,38), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  28.1  near     burnt_out_car at (31,38), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  28.6  near     burnt_out_car at (30,38), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  29.1  near     burnt_out_car at (28,38), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  29.6  near     burnt_out_car at (30,38), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  30.2  near     burnt_out_car at (28,38), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  32.4  near     barricade at (24,32), 145px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  33.1  near     barricade at (24,29), 145px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  51.2  near     collapsed_frontage at (73,24), 129px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  56.2  near     impact_crater at (73,13), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  57.1  near     impact_crater at (73,13), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  67.1  route    day 16: day won at 67.1s (day time), still walking to 'tunnel'
