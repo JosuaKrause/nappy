@@ -9,7 +9,8 @@ extends RefCounted
 ## `ESCAPE_WINNABLE_SEEDS` (comma-separated run seeds) and `ESCAPE_WINNABLE_MIX` (see `MIXES`)
 ## replace the seeds and the mixes; `ESCAPE_WINNABLE_WALK` set to `0` leaves the walking out and
 ## prints the plans alone; `ESCAPE_WINNABLE_PARALLEL` sets how many walks run at once
-## (`PARALLEL`).
+## (`PARALLEL`); `ESCAPE_WINNABLE_BAG` names the bag (`DaySpec.ESCAPE_BAGS`) the plans and the walks
+## use, the game's default when it is unset.
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
 ## (`--start-escape city`: `RunState.start_run(seed)`, the city built from the run seed, the plan
@@ -262,7 +263,7 @@ func _walk_batch(batch: Array[Dictionary]) -> Array[Dictionary]:
 	for walk in batch:
 		var args: PackedStringArray = ["--headless", "--path", project, "--",
 				"--start-escape", "city", "--seed", str(walk["seed"]), "--route", walk["exit"],
-				"--no-save", "--no-title"]
+				"--escape-bag", _bag(), "--no-save", "--no-title"]
 		walk["pid"] = OS.create_process(godot, args, false)
 	var waited := 0.0
 	while waited < TIMEOUT_SECONDS and batch.any(
@@ -445,4 +446,9 @@ func _print_walks(rows: Array[Dictionary]) -> void:
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:
-	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS, "", _bag())
+
+## `ESCAPE_WINNABLE_BAG`, or the bag the game plays when it is unset.
+static func _bag() -> String:
+	var given := OS.get_environment("ESCAPE_WINNABLE_BAG")
+	return given if given != "" else DaySpec.DEFAULT_ESCAPE_BAG

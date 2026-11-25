@@ -95,6 +95,8 @@ var _forced_row := ""
 var _forced_interval := 0.0
 var _pelican := false
 var _blackout_requested := false
+## `--escape-bag`: the bag the escape's city is drawn from (`DaySpec.ESCAPE_BAGS`).
+var _escape_bag := DaySpec.DEFAULT_ESCAPE_BAG
 
 # ------------------------------------------------------------ how it is drawn ---
 
@@ -196,6 +198,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config._forced_interval = flags.forced_interval()
 	config._pelican = flags.pelican()
 	config._blackout_requested = flags.blackout_requested()
+	config._escape_bag = flags.escape_bag()
 
 	var skip := flags.skip_words()
 	config._skip_words = skip
@@ -381,6 +384,11 @@ func leaves_out_the_shadows() -> bool:
 ## Whether `--skip motion` leaves the crowd standing still.
 func leaves_out_the_motion() -> bool:
 	return _skip_motion
+
+## The bag `--escape-bag` names for the escape's city, `DaySpec.DEFAULT_ESCAPE_BAG` when none is
+## given: a name `DaySpec.for_section()` takes.
+func escape_bag() -> String:
+	return _escape_bag
 
 ## The city's ground mode `--ground-mode` names (`DevFlags.GROUND_MODE_DEFAULT` when none is given),
 ## as the number `SceneryGround.Mode` takes.

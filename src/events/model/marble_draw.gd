@@ -33,9 +33,10 @@ extends RefCounted
 ## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a
 ##   park's or a square's cells, every row the size of one.
 ##
-## - **Where the walk stands one event a unit** (`one_marble_a_unit`,
-##   `DaySpec.stands_one_event_a_street()`), the unit draws one marble: a row's stands alone in
-##   it and an empty one leaves it with nothing. A row the bag's `accepts` refuses stays in the bag and
+## - **Where the walk draws a set number of marbles a unit** (`marbles_a_unit`,
+##   `DaySpec.marbles_a_street()`), the unit draws that many and stops: with one, a row's stands
+##   alone in it and an empty one leaves it with nothing; with two, a row and another, or two empty
+##   ones. A row the bag's `accepts` refuses stays in the bag and
 ##   the bag offers the next marble inside the same draw, so a unit whose first row is refused
 ##   draws again among the marbles left.
 ##
@@ -57,7 +58,7 @@ const SIZE_ORDER := {
 var _locations: DayLocations
 var _rows: Dictionary
 var _ground: LocationGround
-var _one_marble_a_unit := false
+var _marbles_a_unit := 0
 ## `(row: EventDef) -> bool`: whether a drawn row is the director's to send ahead of her.
 var _hands_to_the_director := Callable()
 
@@ -89,15 +90,15 @@ class _Placing extends RefCounted:
 		return _plan
 
 ## `locations` records each draw (`DayLocations.record()`); `rows` the rows the bag's marbles
-## name (`id -> EventDef`); `ground` the judge; `one_marble_a_unit`, the unit draws one marble
-## and stops (the class comment); `hands_to_the_director`, `(row: EventDef) -> bool`, says which
+## name (`id -> EventDef`); `ground` the judge; `marbles_a_unit`, how many marbles the unit
+## draws before it stops, zero for as many as its room holds (the class comment); `hands_to_the_director`, `(row: EventDef) -> bool`, says which
 ## drawn rows the director sends (`DaySpec.hands_the_director()`), none by default.
 func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
-		one_marble_a_unit := false, hands_to_the_director := Callable()) -> void:
+		marbles_a_unit := 0, hands_to_the_director := Callable()) -> void:
 	_locations = locations
 	_rows = rows
 	_ground = ground
-	_one_marble_a_unit = one_marble_a_unit
+	_marbles_a_unit = marbles_a_unit
 	_hands_to_the_director = hands_to_the_director
 
 ## **Draws `unit`'s marbles from `bag` and lays its rows out**, judged among `among`: answers the
@@ -126,6 +127,7 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 	var weight := func(id: String) -> float:
 		var def: EventDef = _rows.get(id)
 		return _weight(def, unit, open, scales) if def else 0.0
+	var made := 0
 	while room.is_open():
 		var marble := bag.draw(accepts, weight)
 		if marble == ViewBag.EMPTY:
@@ -136,7 +138,8 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 			var trial: Array[_Placing] = trials[marble]
 			laid.assign(trial)
 			room.take(_share_of(def, street))
-		if _one_marble_a_unit:
+		made += 1
+		if _marbles_a_unit > 0 and made >= _marbles_a_unit:
 			break
 	for placing in laid:
 		_locations.record(placing.location(), placing.plan())

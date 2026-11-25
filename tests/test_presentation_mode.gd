@@ -53,6 +53,8 @@ func run(t: TestRunner) -> void:
 	_test_day_length_from_query(t)
 	_test_ending_from_query(t)
 	_test_blackout_from_query(t)
+	_test_escape_bag_reads_the_command_line_and_the_open_page(t)
+	_test_escape_bag_refuses_anything_but_a_named_bag(t)
 	_test_ground_mode_reads_the_command_line_and_the_open_page(t)
 	_test_ground_mode_is_ignored_on_a_release_page_without_debug(t)
 	_test_ground_mode_refuses_anything_but_its_three_numbers(t)
@@ -225,7 +227,7 @@ func _test_day_from_query_is_not_given_when_absent(t: TestRunner) -> void:
 ## share with a real player.
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t: TestRunner) -> void:
 	for key: String in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
-			"ending", "blackout", "groundmode", "framerecord"]:
+			"ending", "blackout", "escapebag", "groundmode", "framerecord"]:
 		t.check(_page("?debug=1&%s=1" % key).used_a_web_debug_flag(),
 			"'%s' is one of the bundle's own parameters" % key)
 
@@ -314,6 +316,27 @@ func _test_blackout_from_query(t: TestRunner) -> void:
 	t.check(_page("?debug=1&blackout=1").asks_for_the_blackout(), "?blackout=1 forces the blackout")
 	t.check(not _page("?debug=1&blackout=0").asks_for_the_blackout(), "blackout=0 forces nothing")
 	t.check(not _page("?debug=1").asks_for_the_blackout(), "an absent parameter forces nothing")
+
+## `--escape-bag`/`?escapebag=`: the command line, the page under the bundle's gate (a release page
+## nobody asked `?debug=1` of answers the default), and the default when neither names a bag.
+func _test_escape_bag_reads_the_command_line_and_the_open_page(t: TestRunner) -> void:
+	t.check(_debug_build(["--escape-bag", "B"]).escape_bag() == "B", "the command line names the bag")
+	t.check(_debug_build(["--escape-bag", "c"]).escape_bag() == "C", "in either case")
+	t.check(_debug_build(["--seed", "4", "--escape-bag", "A"], "?debug=1&escapebag=B")
+			.escape_bag() == "A", "the command line wins over the page")
+	t.check(_debug_build([], "?debug=1&escapebag=B").escape_bag() == "B",
+			"an open page names the bag among other parameters")
+	t.check(_page("?escapebag=B").escape_bag() == DaySpec.DEFAULT_ESCAPE_BAG
+			and _page("?debug=1&escapebag=B").escape_bag() == "B",
+			"a release page reads the parameter only behind ?debug=1")
+	t.check(_debug_build([], "?debug=1").escape_bag() == DaySpec.DEFAULT_ESCAPE_BAG
+			and _debug_build(["--seed", "4"]).escape_bag() == DaySpec.DEFAULT_ESCAPE_BAG,
+			"naming no bag plays the default one")
+
+func _test_escape_bag_refuses_anything_but_a_named_bag(t: TestRunner) -> void:
+	for raw: String in ["E", "AB", "1", ""]:
+		t.check(_debug_build(["--escape-bag", raw]).escape_bag() == DaySpec.DEFAULT_ESCAPE_BAG,
+				"'%s' refuses the flag rather than choosing a bag" % raw)
 
 ## `--ground-mode`/`?groundmode=`: the command line, the page under the bundle's gate, and the
 ## default of `2` when neither names one.

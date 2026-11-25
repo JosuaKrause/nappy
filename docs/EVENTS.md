@@ -2430,11 +2430,14 @@ mix"; "frequency order is trucks > explosions > vans > barriers > empty". Of how
 holds, inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if any segment or location in the
 street has an event".)* Every open street of the walk is a unit of the day's draw (`UnitDraw`), and the city section's
 spec sets three things about it: the whole walk draws from one bag (`DaySpec.walk_bag()`), a
-street draws one marble and stands one event at most (`stands_one_event_a_street()`), and every
+street draws a set number of marbles, one in every bag but `C`, and so stands that many events at most (`marbles_a_street()`), and every
 street is drawn before she sets off, in the order the walk names its streets, each judged among
-everything drawn before it (`draws_before_she_sets_off()`). The bag holds
-`DaySpec.FINALE_BAG_TRUCKS` army trucks, `FINALE_BAG_EXPLOSIONS` explosions, `FINALE_BAG_VANS`
-vans, `FINALE_BAG_ROADBLOCKS` roadblocks and `FINALE_BAG_EMPTY` empty marbles. **A truck's marble is
+everything drawn before it (`draws_before_she_sets_off()`). The bag is one of `DaySpec.ESCAPE_BAGS`,
+`DaySpec.DEFAULT_ESCAPE_BAG` unless `--escape-bag` names another: 14 army trucks, 12 explosions, 3
+vans, 2 roadblocks and 1 empty marble, the orchestrator's pick among four measured bags and open to
+the player (bag `A` is the 10, 8, 3, 2 and 9 the escape shipped with, `B` the player's order with
+the freed marbles spread over the other rows, `C` the bag of `A` drawn twice a street, whose walk
+ground keeps the plans of its trial layouts standing, so it stays sound and leaves less room). **A truck's marble is
 the director's to send**: the street that draws it stands nothing, the plan keeps the truck with no
 place (`DaySpec.hands_the_director()`, `MarbleDraw`), and the event director, handed
 `DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`, owes her one truck for each, sent ahead of her as she

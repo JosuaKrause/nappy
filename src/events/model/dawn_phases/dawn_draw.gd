@@ -54,7 +54,7 @@ func run(context: DawnContext) -> void:
 					context.ground_she_starts_on()),
 			context.rules(), ground, false, ROUTES_STAY_ON_THE_RUN and not whole)
 	var draw := UnitDraw.new(units,
-			MarbleDraw.new(context.locations(), rows, judged, spec.stands_one_event_a_street(),
+			MarbleDraw.new(context.locations(), rows, judged, spec.marbles_a_street(),
 					spec.hands_the_director),
 			_bags_of(context, rows), events.placements())
 	context.hold_the_draw(draw)
