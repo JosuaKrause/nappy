@@ -84,6 +84,8 @@ signal save_deletion_settled(operation: int, kept: bool)
 # and the model may not name the simulation's class. A listener that reads the event casts it.
 
 signal event_telegraphed(instance: Node2D)
+## A live event's telegraph is over and it is at full strength, on the tick it is: what the escape
+## city's sky lights up for, for one that flashes as it goes off (`BlastLight`, connected by `main`).
 signal event_activated(instance: Node2D)
 signal hard_fail_triggered(reason: String)
 ## `EventSpawner.summon_what_has_been_sighted()`'s own first frame an `aftermath.calls_in()` row (only

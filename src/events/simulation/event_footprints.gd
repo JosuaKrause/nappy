@@ -19,12 +19,22 @@ const LOOSE_LEAD_REACH := 26.0
 
 ## The box a row's own picture fills standing on its feet at the origin — `drawn_box_of()` before an
 ## instance exists, and without the run a spread covers, which only an instance's own street decides.
-## Empty for a row that draws nothing of its own.
+## Empty for a row that draws nothing of its own in the world (`LookSpec.is_drawn_in_the_world()`:
+## no picture, or the explosion's, drawn only in its badge).
 static func box_of(row: EventDef) -> Rect2:
+	if not row.look().is_drawn_in_the_world():
+		return Rect2()
 	var icon := EventPictures.icon_for(row.picture())
 	if icon.is_empty():
 		return Rect2()
-	var size := EventPictures.native_size(icon)
+	return _standing_box(row.picture(), EventPictures.native_size(icon))
+
+## The box a picture of `look` of `size` fills at the origin: on its feet, bottom-centre, or
+## round its middle for a look whose picture is registered there (the crater, a hole rather than a
+## thing standing; `EventPictures.is_registered_on_its_middle()`, the picture table's own fact).
+static func _standing_box(look: EventDef.Look, size: Vector2) -> Rect2:
+	if EventPictures.is_registered_on_its_middle(look):
+		return Rect2(-size * 0.5, size)
 	return Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 
 ## The box, in an instance's own space, that what a row draws roughly fills: its own picture
@@ -59,16 +69,32 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## wholly outside the camera's view by (`SpawnSiting.just_out_of_sight()`), so nothing of it
 ## shows on the frame it exists (inbox #598 in olive-hedgehog). And for a row that can be marked —
 ## anything with a field or a lethal reach — the danger caret above its feet at its tallest
-## (`EventPictures.largest_mark_rect()`), which stands well above the picture.
-## Empty for a row that draws nothing of its own.
+## (`EventPictures.largest_mark_rect()`), which stands well above the picture. **And what it leaves
+## where it goes off** (`EventDef.leaves_behind()`, the escape's explosion's crater), which comes
+## the moment it goes off, so a thing created out of her sight leaves nothing in her view either.
+## Empty for a row with no picture that leaves nothing. A row whose picture is drawn only in its
+## badge (the explosion) has that picture counted as though it stood at its feet, which only makes
+## a check that it is out of sight stricter.
 static func footprint_of(row: EventDef) -> Rect2:
+	var box := _own_footprint_of(row)
+	if row.leaves_behind() == "":
+		return box
+	var left := EventCatalogue.by_id(row.leaves_behind())
+	if left == null:
+		return box
+	var its := _own_footprint_of(left)
+	return its if not box.has_area() else box.merge(its)
+
+## `footprint_of()` without what the row leaves behind: everything its own look can put on the
+## screen.
+static func _own_footprint_of(row: EventDef) -> Rect2:
 	var box := Rect2()
 	var any := false
 	for picture in EventPictures.family_sources(row.picture()):
 		var size := EventPictures.native_size(picture)
 		if size.x <= 0.0 or size.y <= 0.0:
 			continue
-		var one := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+		var one := _standing_box(row.picture(), size)
 		box = one if not any else box.merge(one)
 		any = true
 	if not any:

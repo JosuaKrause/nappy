@@ -108,8 +108,9 @@ func _shape_agrees(def: EventDef) -> bool:
 func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in CatalogueRows.every():
-		if def.picture() != EventDef.Look.NONE:
-			t.check(def.ground_shape() != null, "'%s' has a look and carries a shape" % def.id())
+		if def.look().is_drawn_in_the_world():
+			t.check(def.ground_shape() != null,
+					"'%s' is drawn in the world and carries a shape" % def.id())
 		if def.obstructs_within() > 0.0:
 			checked += 1
 			t.check(_shape_agrees(def),
@@ -124,9 +125,9 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			checked += 1
-			if hot.picture() != EventDef.Look.NONE:
+			if hot.look().is_drawn_in_the_world():
 				t.check(hot.ground_shape() != null,
-						"'%s' at heat %d has a look and carries a shape" % [def.id(), level])
+						"'%s' at heat %d is drawn in the world and carries a shape" % [def.id(), level])
 			t.check(_shape_agrees(hot),
 					"'%s' at heat %d: obstructs %.1fpx, shape reaches %.1fpx"
 					% [def.id(), level, hot.obstructs_within(),

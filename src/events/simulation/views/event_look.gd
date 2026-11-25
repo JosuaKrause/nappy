@@ -585,7 +585,8 @@ func draw_body(canvas: CanvasItem) -> void:
 	_draw_figure(canvas)
 
 ## What this family draws for its row, on `canvas`. Nothing here: a row with no picture of its own
-## (`NONE`, and `BURNT_SHELL`, which is drawn on the building it stands against).
+## in the world (`NONE`; `BURNT_SHELL`, which is drawn on the building it stands against; and
+## `EXPLOSION`, drawn only in its badge).
 func _draw_figure(_canvas: CanvasItem) -> void:
 	pass
 

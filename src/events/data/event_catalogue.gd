@@ -65,6 +65,27 @@ const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## `EventDirector.AHEAD_INTERVAL` band: eight of them over a 180s clock flash the hallway windows
 ## more than once without the basement becoming a drum.
 const FINALE_EXPLOSION_INTERVAL := 22.0
+## **How far the escape city's explosion is heard**, in px: its field's outer radius
+## (`_finale_explosion()`).
+const FINALE_EXPLOSION_HEARD_WITHIN := 520.0
+## **How long the escape city's explosion's bang lasts**, in seconds: a sharp spike is a short
+## `duration` at high peak, since there is no `impulse` field (`CLAUDE.md`, "Things deliberately
+## not done"). What `FINALE_EXPLOSION_SET_OFF_WITHIN` is set against.
+const FINALE_EXPLOSION_SECONDS := 1.2
+## **How near she comes to an escape city's explosion before its place sets it off**, in px
+## (`_finale_explosion()`, `SetOffWatch`): its field's reach and as far again as she runs while
+## its badge is up (`Tuning.WARNING_ALONE_MAX`) and its bang lasts (`FINALE_EXPLOSION_SECONDS`),
+## about 890px. **Heading straight at one, at a walk or a run, she hears none of its bang**, and so
+## a runner is still out of its sight when its badge runs out (the view reaches about 400px ahead
+## of her), and the badge never comes down without its bang. Its bang reaches her only where she
+## comes at it from the side or turns toward it while it bangs.
+const FINALE_EXPLOSION_SET_OFF_WITHIN := FINALE_EXPLOSION_HEARD_WITHIN \
+		+ (Tuning.WARNING_ALONE_MAX + FINALE_EXPLOSION_SECONDS) * Tuning.RUN_SPEED
+## **How far the escape city's explosion is felt as a shake of her view**, in px: half as far again as
+## it is set off (`FINALE_EXPLOSION_SET_OFF_WITHIN`, about 1335px), so that one going off out of her
+## sight shakes the view, a third of the full shake where it goes off furthest, without its noise
+## reaching her (`FINALE_EXPLOSION_HEARD_WITHIN`). Open to the player (minty-lemur #785).
+const FINALE_EXPLOSION_FELT_WITHIN := FINALE_EXPLOSION_SET_OFF_WITHIN * 1.5
 ## How long after the masked man has finished his run before another one comes up the same shaft,
 ## in seconds: he respawns, forcing her to switch sides again.
 ##
@@ -254,6 +275,11 @@ static func explosion_outside() -> EventDef:
 		var bang := without_its_aftermath(by_id("finale_explosion"))
 		var draft := bang.redraft()
 		draft.field(bang.field().through_walls())
+		# Placed where she stands each time it comes, with its notice over, rather than set off by a
+		# place under a badge as it is on the escape's streets: the windows say it has happened. Its
+		# telegraph is never seen, and is the default's, which holds the contract for its band.
+		draft.warning(WarningSpec.lasting(WarningSpec.DEFAULT_SECONDS))
+		draft.set_off_within(0.0)
 		draft.comes_again(FINALE_EXPLOSION_INTERVAL, bang.comes_again_after())
 		_explosion_outside = draft.build()
 	return _explosion_outside
@@ -2626,23 +2652,34 @@ static func _door_guard() -> EventDef:
 ## The bang she hears and does not see: explosions happen off screen (but loud enough to cause
 ## excitement), leaving craters on the street.
 ##
-## **It draws nothing at all**: there is no burst on the street, only the noise and the hole
-## afterwards. `Look.NONE`, the fourth row in the catalogue with no picture, alongside the
-## playground and the two loudspeaker sources, so it needs no shape either, and
-## `tests/test_events.gd` names all four by id.
+## **Off screen, announced by its badge** *(minty-lemur #785: explosions have to happen off-screen
+## with a warning sign showing the explosion; craters already there when she walks towards them)*.
+## A place sets it off (`EventDraft.set_off_within()`, `SetOffWatch`): the plan the escape's bag put
+## on the road is not in the world until she comes within `FINALE_EXPLOSION_SET_OFF_WITHIN` of it,
+## far enough out that heading straight at it, walking or running, she hears none of its bang. Then its screen-edge badge goes up, the mushroom cloud
+## (`EventDef.Look.EXPLOSION`, drawn only in the badge, `LookSpec.drawn_only_in_its_badge()`),
+## pointing at the place, for `Tuning.WARNING_ALONE_MAX`; and once that has run it goes off there,
+## its telegraph spent, only while everything it puts on the screen there is out of her sight, the
+## crater it leaves included (`EventFootprints.footprint_of()`), so no bang and no crater is ever
+## in her view. It comes all at once (`EventDef.comes_all_at_once()`): walking into the place does
+## not set it off at once (`EventDef.may_be_set_off_at_once()`), since the badge is the whole of
+## its notice, and the badge goes up only where it cannot come down without its bang
+## (`SetOffWatch`). The badge stays on it until it is over (`BadgeModel`).
 ##
-## **Off screen is bought with the streaming radius rather than with a rule.** A `MAP` placement
-## comes into the world at `Tuning.EVENT_STREAM_RADIUS` (900px), where the camera at zoom 2 sees
-## 640×360, so an explosion begins its telegraph roughly two and a half screens away, spends
-## its telegraph (`telegraphs_for()`) + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
-## while it is still well outside the view.
+## **The crater comes as it goes off** (`Aftermath.then()`, `EventStreaming.set_off()`), at its
+## place on the tick its out-of-sight check passed, so a crater she walks toward is standing before
+## she can see it.
 ##
-## **The radii are sized against that distance and not against taste.** outer radius 520 reaches
+## **The sky lights up as it goes off** (`LookSpec.flashing_as_it_goes_off()`, `BlastLight`), and
+## the screen shakes a little by how loud it lands where she is.
+##
+## **The radii are sized against the screen and not against taste.** Outer radius 520 reaches
 ## a screen and a half; inner radius 300 puts the near half of that band at close to full
 ## strength, so a burst just beyond the screen edge (about 360px on the long axis) still lands
 ## roughly 22 of its 24 points per second on her. A narrower band would be an explosion she could
-## be next to and not hear. Its telegraph (`telegraphs_for()`) is the contract's own minimum for that band,
-## `(520 − 300) / WALK_SPEED` = 2.39s, with the ordinary margin on top.
+## be next to and not hear. Its fairness is its badge's (`EventDef.warning_time()`): the flat
+## second a warning first owes (`Tuning.OFFSCREEN_WARNING_MIN`), since it stands still and is heard
+## where it goes off.
 ##
 ## **Not lethal, and that is the tone rule rather than an omission** (`docs/NARRATIVE.md`: *the
 ## danger is always noise*). The thing that ends a section is being taken; an explosion wakes the
@@ -2650,14 +2687,14 @@ static func _door_guard() -> EventDef:
 static func _finale_explosion() -> EventDef:
 	var row := EventDraft.new("finale_explosion")
 	row.scripted_on(0, 4)
-	row.look(LookSpec.none())
+	row.look(LookSpec.of(EventDef.Look.EXPLOSION).drawn_only_in_its_badge().casting_no_shadow()
+			.flashing_as_it_goes_off())
 	row.body(BodySpec.none().unmet().parked())
 	row.ground([GameEnums.TileType.ROAD])
-	row.field(FieldSpec.of(24.0, 300.0, 520.0))
-	row.warning(WarningSpec.lasting(2.5))
-	# Short and over: a sharp spike is a short `duration` at high peak, since there is no
-	# `impulse` field (`CLAUDE.md`, "Things deliberately not done").
-	row.lasts(1.2)
+	row.field(FieldSpec.of(24.0, 300.0, FINALE_EXPLOSION_HEARD_WITHIN))
+	row.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
+	row.set_off_within(FINALE_EXPLOSION_SET_OFF_WITHIN)
+	row.lasts(FINALE_EXPLOSION_SECONDS)
 	row.aftermath(Aftermath.none().then("impact_crater"))
 	return row.build()
 
