@@ -1561,7 +1561,8 @@ closures, off the same tree, and counted apart from the day's events: a seal is 
 where she may walk, not a piece of the catalogue's variety.
 
 **Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A
-**hard** seal — `barricade`, from act IV — stands several bodies across the street's whole width,
+**hard** seal (the barricade, the fallen tree, the burst water main, the car accident and the later
+acts' wreckage) stands as many bodies as its width needs across the street's whole width,
 sidewalk to sidewalk, so nothing gets past, the outer two flush with the street's edges so none
 reaches over the buildings either side (`SealPlanner.positions_across()`). A **soft** seal takes both pavements (`construction`,
 `cafe_tables`, `market_stall` or `delivery_van`, one on each side) and leaves the carriageway open:
@@ -1569,10 +1570,12 @@ the road is always still there, so a soft seal always costs time, never the day.
 job is to stand in the way costs route and nothing else** — `construction`, `delivery_van` and
 `barricade` carry no field at all, so they cost only the detour; `cafe_tables` and `market_stall`
 are genuine sources as well as bodies and still charge the meter, tightly, to whoever actually
-stands at the tables or the stall. Every day from day 1 has a working soft pair; the hard one only
-from act IV, since `barricade` is the only row today drawn as a citywide wall rather than a street
-event — the milestone that draws more pictures for both strengths costs nothing here but longer
-candidate lists.
+stands at the tables or the stall. Every day from day 1 has pictures of both strengths: the soft
+pairs, and the hard seals whose rows are scripted for act I (the fallen tree, on a street with
+trees of its own, and the burst water main), each picture offered from the first day its rows are
+(`EventDef.own_first_day()`). The car accident is an act-I row too and seals no street before
+day 2, its picture's own first day (`SealPlanner.Candidate`), so day 1 stays light
+(minty-dolphin #834). A picture added to the candidate list costs nothing here but a longer list.
 
 **The doorstep is exempt, for the same reason a closure never stands there**: the home is a notch
 with one exit, and a seal on its own street would seal her in on the first frame. **The join
