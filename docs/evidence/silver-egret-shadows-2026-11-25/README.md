@@ -36,7 +36,7 @@ seed and route; the police car's diagonal and both ride frames are shown on the 
 no recipe here catches it mid-turn. The halo round the cars charging her is the game's own.
 
 **How they were made**: the "before" captures from `main` at c60129fad, the "after" ones and the
-sheets from the branch's commit dc76a0be2129b5018dd074e5a4b4e261c65a5938 (`feature-silver-egret-shadows`):
+sheets from the branch's commit dc76a0be2129b5018dd074e5a4b4e261c65a5938 (`feature-silver-egret-shadows`), the riot van and moving van rows (and the vans sheet that holds them) from e1ae405d1b65547eadccc3933c03336212465b46, whose probe added them:
 
 - the sheets: `tools/test.sh probes/silver_egret_shadow_sheet.gd` writes one PNG per row under the
   game's `user://silver-egret-shadow-sheet/`, and `python3 -I compose_sheet.py <that folder>
