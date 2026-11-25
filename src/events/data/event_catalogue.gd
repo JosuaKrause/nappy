@@ -149,12 +149,44 @@ const ROADBLOCK_REACH := (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH) * Tuning.
 ## cannot walk through it; the field, not the pole, is what a route goes round.
 const MAST_BODY := 6.0
 
+## **How this run plays every charger's warning and notice** (`ChargerTiming`): the shipped timing
+## unless the run asked for another (`use_charger_timing()`). Every row the catalogue builds reads
+## it, so the rows below are built from it.
+static var _chargers: ChargerTiming = ChargerTiming.of(CHARGER_WARNING, 1.0)
+
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
 ## The building's two derived rows, built once. See `building_fire()` and `explosion_outside()`.
 static var _building_fire: EventDef = null
 static var _explosion_outside: EventDef = null
+
+## **The charger timing the game ships**: every charger warns for `CHARGER_WARNING` and notices her
+## within the radius its row is written with.
+static func shipped_charger_timing() -> ChargerTiming:
+	return ChargerTiming.of(CHARGER_WARNING, 1.0)
+
+## **How this run plays every charger's warning and notice**: what the rows are built from, and what
+## a door's crossing warns for (`EventManager` hands `CheckpointController` its `warning()`).
+static func charger_timing() -> ChargerTiming:
+	return _chargers
+
+## **Builds every row from `timing` from now on**: the composition root hands it the run's own at
+## boot (`main.configure()`, `RunConfig.charger_timing()`), before anything is built from a row.
+## A timing that plays every charger as the one in use changes nothing; another forgets every row
+## and derived copy built so far, so the next ask builds and validates them again from it.
+static func use_charger_timing(timing: ChargerTiming) -> void:
+	if timing.same_as(_chargers):
+		return
+	_chargers = timing
+	_all = []
+	_hot = {}
+	_building_fire = null
+	_explosion_outside = null
+	_lesson_dog = null
+	_task_guard = null
+	_task_guard_sent = null
+	_out_of_the_car = {}
 
 ## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a task completed past the
 ## goal adds nothing, because full heat is the qualification rather than the last errand. A
@@ -197,7 +229,7 @@ static func heated(def: EventDef, level: int) -> EventDef:
 		return def
 	var key := "%s|%d" % [def.id(), level]
 	if not _hot.has(key):
-		_hot[key] = def.at_heat(level)
+		_hot[key] = def.at_heat(level, _chargers)
 	return _hot[key]
 
 ## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
@@ -1503,13 +1535,14 @@ static func _charging_dog() -> EventDef:
 	# From the day after the lesson it is a place on the map that waits for her inside its one
 	# radius, 130px, inside its 150px field (inbox #788 in minty-lemur). `EventDef.for_day()` hands
 	# a placement past the switch a copy carrying it.
-	row.switching_after(Tuning.RUN_TAUGHT_DAY, EventDef.SpawnMode.MAP, NoticeSpec.at(130.0))
+	row.switching_after(Tuning.RUN_TAUGHT_DAY, EventDef.SpawnMode.MAP,
+			NoticeSpec.at(_chargers.notice(130.0)))
 	# Wider than the stand-off, a constraint rather than a taste: a pursuer holds its stand-off
 	# through its whole telegraph, so a field narrower than that is a field it is never inside; the
 	# dog would spend the entire warning emitting nothing at her, the `!` over her head would never
 	# go up, and the trace would attribute the mark to "nothing in reach". `validate_pursuit`
 	# refuses the arrangement.
-	row.field(FieldSpec.of(12.0, 26.0, 150.0))
+	row.field(FieldSpec.of(12.0, 26.0, _chargers.field_reach(150.0, 130.0)))
 	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
 	# a walk can outlast. Running is what ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate.
 	row.lasts(Tuning.PURSUIT_TIME)
@@ -1523,7 +1556,7 @@ static func _charging_dog() -> EventDef:
 	# From day 4, once it notices her, it warns on the clock every charger that waits for her keeps
 	# and stands in its alert pose rather than closing (woolly-penguin #748); the day-3 dog has no
 	# wait, so its approach is still its telegraph (`EventInstance.is_standing_for_its_notice()`).
-	row.pursuit(PursuitSpec.at(130.0).warning_for(CHARGER_WARNING).standing())
+	row.pursuit(PursuitSpec.at(130.0).warning_for(_chargers.warning()).standing())
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
 	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, and the reason it is
 	# half a second is on `WarningSpec`'s badge notice (`_badge_notice`).
@@ -1803,7 +1836,7 @@ static func _roadblock() -> EventDef:
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
 	var chase := PursuitSpec.at(0.0).standing() \
-			.warning_for(CHARGER_WARNING).leaving_its_body().over_the_street().round_buildings()
+			.warning_for(_chargers.warning()).leaving_its_body().over_the_street().round_buildings()
 	row.hunt(HuntSpec.pursuing(chase, LethalSpec.within(MASKED_MAN_REACH)))
 	row.spanning_the_street()
 	row.drawn(2.0, 6)
@@ -1903,7 +1936,7 @@ static func _alley_robbery() -> EventDef:
 	# the only thing that says a stranger in an alley is worth crossing the road for. The twenty
 	# pixels between this and his notice are the row's first sentence, **on sight**, with
 	# somewhere to happen, and his slow walk is its second.
-	row.field(FieldSpec.of(16.0, 26.0, 200.0))
+	row.field(FieldSpec.of(16.0, 26.0, _chargers.field_reach(200.0, 180.0)))
 	# Read only by the pursuit contract's notice clause (`Tuning.validate_pursuit()`): no robber's
 	# notice runs on it. One who notices her by sight warns for his `PursuitSpec.warns_for()`
 	# (`EventInstance.warns_by_radius()`), and day 13's guard set on her by the task has the task's
@@ -1923,7 +1956,7 @@ static func _alley_robbery() -> EventDef:
 			# **He charges once his warning has run with her still inside his radius**, on the
 			# clock every charger that waits for her keeps (inbox #788 in minty-lemur), walking at
 			# her and holding at his stand-off while he warns.
-			.warning_for(CHARGER_WARNING))
+			.warning_for(_chargers.warning()))
 	# Outside his stand-off (116px) and inside his field, which leaves room for both halves of the
 	# row: far enough out that his notice walk is seen, near enough that she has felt him before he
 	# decides anything about her (inbox #761 in minty-lemur). 64px past his stand-off at the slow
@@ -1937,7 +1970,7 @@ static func _alley_robbery() -> EventDef:
 	# pursuit that loses interest the instant it starts, and she can stroll away from him every
 	# time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a rate instead, so no trigger distance can
 	# reproduce it.
-	row.notice(NoticeSpec.at(180.0))
+	row.notice(NoticeSpec.at(_chargers.notice(180.0)))
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	row.leaves_at(100.0)
 	row.lethal(LethalSpec.at_its_core())
@@ -2599,7 +2632,7 @@ static func _checkpoint_post() -> EventDef:
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was set
 ## on her. From the frame she crosses the door's line, the guard at the hut across the road from her
 ## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's
-## guard; back across before `CheckpointController.CROSSING_WARNING` has run, nobody comes, and still across once it has, this
+## guard; back across before his warning (`ChargerTiming.warning()`) has run, nobody comes, and still across once it has, this
 ## man steps out of that hut or post and charges from his first frame (inbox #788 in minty-lemur).
 ## The answer is the warning, go back or go on running, which `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:

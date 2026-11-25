@@ -110,7 +110,8 @@ func _init(surroundings: EventSurroundings = null) -> void:
 	_ahead = EventsAhead.new(world, _streaming, _spawner, _warnings, _walk_events)
 	_ahead.use_sitings(SitingMaker.new(world, _walk_events))
 	_set_off = SetOffWatch.new(world, _streaming, _warnings, _walk_events)
-	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard())
+	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard(),
+			EventCatalogue.charger_timing().warning())
 	_encounters = EncounterWatch.new(world.reports())
 	_sources = EventSources.new(world, _checkpoints)
 	_checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:

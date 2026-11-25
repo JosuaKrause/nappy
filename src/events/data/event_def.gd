@@ -982,13 +982,13 @@ var _act_tag: int
 ## **A derived copy, never a mutation.** The catalogue's rows are shared by every day of the run and
 ## validated once at boot. `EventCatalogue.at_heat()` caches these, so a level costs one copy
 ## per row per run rather than one per placement.
-func at_heat(level: int) -> EventDef:
+func at_heat(level: int, chargers: ChargerTiming) -> EventDef:
 	if not answers_to_heat() or level <= 0:
 		return self
 	var through := clampf(float(level) / float(Tuning.RESISTANCE_GOAL), 0.0, 1.0)
 	var hot := redraft()
 	var hunts_from := HEAT_HUNTS_LEVEL
-	var notices_within := HEAT_HUNTS_WITHIN
+	var notices_within := chargers.notice(HEAT_HUNTS_WITHIN)
 	if _hunts.presses():
 		# More of them, and more expensive to be near. Population is the axis that changes the
 		# *route*, and intensity is what makes one of them worth planning around. Below its own
@@ -1001,7 +1001,7 @@ func at_heat(level: int) -> EventDef:
 		hot.drawn(_weight * lerpf(1.0, HEAT_PRESSES_POPULATION, through), most)
 		hot.field(_field.at_peak(peak() * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)))
 		hunts_from = HEAT_INVESTIGATES_LEVEL
-		notices_within = HEAT_INVESTIGATE_WITHIN
+		notices_within = chargers.notice(HEAT_INVESTIGATE_WITHIN)
 	if level < hunts_from:
 		return hot.build()
 	# **At its rung's threshold the copy takes the row's hunt** (`_hunts`, `HuntSpec`) and

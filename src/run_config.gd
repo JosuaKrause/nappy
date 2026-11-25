@@ -91,6 +91,8 @@ var _web_preview := false
 
 var _spawn_target := ""
 var _meters_override := Vector2(-1.0, -1.0)
+## `--chargers`' warning and radius factor, or `(-1, -1)`; see `charger_timing()`.
+var _charger_timing_override := Vector2(-1.0, -1.0)
 var _forced_row := ""
 var _forced_interval := 0.0
 var _pelican := false
@@ -192,6 +194,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 
 	config._spawn_target = flags.spawn_target()
 	config._meters_override = flags.meters_override()
+	config._charger_timing_override = flags.charger_timing_override()
 	config._forced_row = flags.forced_row()
 	config._forced_interval = flags.forced_interval()
 	config._pelican = flags.pelican()
@@ -343,6 +346,14 @@ func spawn_target() -> String:
 ## The baby's bars `--meters` sets once the day runs (sleepiness, excitement), or `(-1, -1)`.
 func meters_override() -> Vector2:
 	return _meters_override
+
+## **How this run plays every charger's warning and notice**: `--chargers`' (or `?chargers=`'s), or
+## the shipped timing (`EventCatalogue.shipped_charger_timing()`). `main` hands it to the catalogue
+## at boot (`EventCatalogue.use_charger_timing()`).
+func charger_timing() -> ChargerTiming:
+	if _charger_timing_override.x < 0.0:
+		return EventCatalogue.shipped_charger_timing()
+	return ChargerTiming.of(_charger_timing_override.x, _charger_timing_override.y)
 
 ## The row `--force` sends, or `""`.
 func forced_row() -> String:
