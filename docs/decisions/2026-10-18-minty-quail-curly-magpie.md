@@ -83,7 +83,8 @@ building and walked out of it: `--seed` only reaches the run's start, which worl
 A run on another tree (the v0.29.2 worktree) or a command that lost `--start-escape` would
 explain the sighting. No entry is filed.
 
-**Defects.** Two, both reported to the orchestrator and filed as `bug` entries, neither fixed here.
+**Defects.** Two, both reported to the orchestrator and neither fixed here: the first is a `bug` entry, the
+second a `later` one (it breaks no player decision).
 The screen-edge badge's closing speed grows with the frame rate (the entry "The screen-edge badge's
 closing speed grows with the frame rate"): the masked man's badge logs `closing 1949px/s` in
 `raw/masked-and-mouse-run.log-lines.txt` against about 110 documented, because the badge measures

@@ -11,8 +11,10 @@ minty-quail-curly-magpie ("Not taken") and `docs/evidence/minty-quail-end-pictur
 They are owed here, as GoatCounter's counts are owed in minty-quail's README. No playtest note is behind
 it; the band, `later`, and the `after:` line are the filer's proposal.
 
-**Read as:** each picture needs either a harness or a field on a scene recipe that does not exist yet;
-building it is new code, so the item says what each would add.
+**Read as:** most pictures need either a harness or a field on a scene recipe that does not exist yet;
+building it is new code, so the item says what each would add. Two kinds need none: the two
+stairwell pictures (minty-quail-7) need only a longer or retimed burst of the same route run, and
+the 30 Hz cases (minty-quail-21, -26) may need only a `tools/record.sh` recording.
 
 **Items**, one file each:
 
