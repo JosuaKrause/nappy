@@ -55,6 +55,7 @@ and scripts that make them, and the commands that make them again.
 | the ramp | `tools/test.sh probes/ramp_cities.gd` | `raw/ramp_cities.log` |
 | the route walk | `tools/test.sh probes/later_days_route_walk.gd` (the copy `probes/later_days_route_walk.gd`) | `raw/later_days_route_walk.log` |
 | her route's cells | `tools/test.sh probes/placement_cells.gd` | `raw/placement_cells.log` |
+| the one cell set | `tools/test.sh probes/placement_cells.gd`, the tree with `raw/placement_cells_act4_street23.patch` applied | `raw/placement_cells_act4_street23.log` |
 
 - `probes/later_days_rows.gd` is `tests/probes/placement_rows.gd` with two kinds of line
   added: `RM day row count` (the moments the dawn owes her, by row) and `FLAGS` for every
@@ -64,11 +65,22 @@ and scripts that make them, and the commands that make them again.
   distinct events whose field reached her as built, and of those the ones whose row ends the day
   or pursues her.
 - The readings are made by three scripts in `probes/`, read with `python3 -I`:
-  `weigh_days.py docs/COSTS.md raw/later_days_rows.log` (the mix, the price and the share; with
-  `--without abduction` for the reading without that row, `raw/weigh_days.txt` and
-  `raw/weigh_days_without_abduction.txt`), `route_cells.py raw/placement_cells.log` (her
-  route's draw locations, `raw/route_cells.txt`) and `route_walk.py raw/later_days_route_walk.log`
+  `weigh_days.py docs/COSTS.md raw/later_days_rows.log` (the mix, the price and the share,
+  `raw/weigh_days.txt`; the reading without the abduction, `raw/weigh_days_without_abduction.txt`,
+  is `weigh_days.py --without abduction docs/COSTS.md raw/later_days_rows.log`, the flag before
+  the paths), `route_cells.py raw/placement_cells.log` (her route's draw locations,
+  `raw/route_cells.txt`; for the run with the one cell set,
+  `route_cells.py --cell 0 0 4 23 raw/placement_cells_act4_street23.log`, which prints that cell
+  as the run had it, `raw/route_cells_act4_street23.txt`) and `route_walk.py raw/later_days_route_walk.log`
   (`raw/route_walk.txt`).
+
+- **The one cell set** is the record's board option: her route's street cell in act IV
+  (`PlacementDensity.EVENTS_PER_HUNDRED[0][0][3]`) 16 to 23 and nothing else. Since a `const`
+  cannot be set from a probe, `src/events/data/placement_density.gd` was edited in the worktree,
+  uncommitted, for that one run (`raw/placement_cells_act4_street23.patch`; the edited file's
+  SHA-256 `56a29fb656b7477799949a0c2678010074685fc27f4e44dd0c38efc126147d1d`), and restored with
+  `git checkout` after it; the tree is otherwise the measured one. Its lines for days 1 to 11 and
+  every `CL` line equal `raw/placement_cells.log` as a set.
 
 To run again: check out the tree in a fresh worktree, `./tools/check.sh`, copy each probe copy
 into its `tests/probes/`, run the commands above into a new scratch directory, and read them
@@ -120,6 +132,13 @@ points and 60% and 63% of the rows that end the day (the `TOPACT` lines).
 | II (4-7) | 566.3 | 38.62 | 6.82 | 6.32 / 11.0 | 13.02 / 36.0 | 3.34 / 50.0 |
 | III (8-11) | 442.6 | 26.18 | 5.92 | 5.69 / 14.0 | 9.59 / 35.0 | 3.23 / 50.0 |
 | IV (12-14) | 345.7 | 18.39 | 5.32 | 5.64 / 16.0 | 4.78 / 46.0 | 4.19 / 50.0 |
+
+With the one cell set (`raw/route_cells_act4_street23.txt`), act IV on her route reads 345.7 draw
+locations, 24.26 events a city-day and 7.02 for every hundred; its street 7.81 for every hundred
+against the cell of 23, its junction box 4.66 against 46, its park or square unchanged. The other
+two views and acts I to III are unchanged. By day, what the units place on her route goes from
+20.7, 17.3 and 17.1 a city on days 12 to 14 to 26.7, 23.1 and 23.0, and the whole city from 96.6,
+94.9 and 99.9 to 102.6, 100.6 and 105.8.
 
 The units' count here (`placement_cells.gd`, the rows the units drew, one handed to her walk
 among them) is a little above the mix's (`placement_rows.gd`, what the dawn placed); the 1174
@@ -178,6 +197,6 @@ ten cities: 4242 1.51 (89 to 134), 77 1.34, 1301 1.17, 90210 1.05, 90241 0.99, 9
 
 ## Footprint
 
-22 files, about 150 KB: the four runs' whole output with their load and time files (the runs
-print little beyond their figures, so nothing is cut), the two probe copies, the three scripts
-and their four readings. `check.sh`'s boot output is left out (exit 0).
+27 files, about 190 KB: the five runs' whole output with their load and time files (the runs
+print little beyond their figures, so nothing is cut), the one-line patch of the cell run, the two
+probe copies, the three scripts and their five readings. `check.sh`'s boot output is left out (exit 0).

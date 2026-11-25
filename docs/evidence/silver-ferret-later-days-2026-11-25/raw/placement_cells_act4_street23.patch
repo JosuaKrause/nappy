@@ -1,0 +1,13 @@
+diff --git i/src/events/data/placement_density.gd w/src/events/data/placement_density.gd
+index 618f93e7d..0bcab8cd3 100644
+--- i/src/events/data/placement_density.gd
++++ w/src/events/data/placement_density.gd
+@@ -19,7 +19,7 @@ extends RefCounted
+ ## (`docs/EVENTS.md`, "The density, and why it is a declared table").
+ const EVENTS_PER_HUNDRED := [
+ 	[
+-		[7.5, 11.0, 14.0, 16.0],
++		[7.5, 11.0, 14.0, 23.0],
+ 		[24.0, 36.0, 35.0, 46.0],
+ 		[0.0, 0.0, 0.0, 0.0],
+ 		[46.0, 50.0, 50.0, 50.0],

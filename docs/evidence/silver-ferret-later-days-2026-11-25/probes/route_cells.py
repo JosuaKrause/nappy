@@ -5,7 +5,10 @@ kind of ground and act, the draw locations a city-day, the events the units plac
 city-day and the events for every hundred draw locations, beside the declared table's cell
 (`PlacementDensity.EVENTS_PER_HUNDRED` as the measured tree has it, copied below).
 
-    python3 -I route_cells.py <placement_cells.log> [seeds]
+    python3 -I route_cells.py [--cell VIEW GROUND ACT VALUE] <placement_cells.log> [seeds]
+
+`--cell` prints one cell as a run with that cell changed had it (view and ground by index, the
+act 1 to 4), so the cell column stays true for such a run.
 """
 
 import sys
@@ -30,11 +33,16 @@ def act_of(day: int) -> int:
 
 
 def main() -> None:
-    seeds = int(sys.argv[2]) if len(sys.argv) > 2 else 18
+    args = sys.argv[1:]
+    if args[:1] == ["--cell"]:
+        view, ground, act, value = args[1:5]
+        CELLS[int(view)][int(ground)][int(act) - 1] = float(value)
+        args = args[5:]
+    seeds = int(args[1]) if len(args) > 1 else 18
     room: dict[tuple[int, int, str], int] = defaultdict(int)
     events: dict[tuple[int, int, str], int] = defaultdict(int)
     days_in: dict[int, set[int]] = defaultdict(set)
-    for line in open(sys.argv[1], encoding="utf-8"):
+    for line in open(args[0], encoding="utf-8"):
         p = line.split()
         if len(p) == 6 and p[0] == "CL":
             act = act_of(int(p[1]))
