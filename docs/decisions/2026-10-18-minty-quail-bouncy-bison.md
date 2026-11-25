@@ -18,7 +18,8 @@ plan asked for.
 
 ## What the remeasure filed
 
-- azure-yak, the pictures the end remeasure could not stage (`later`).
+- azure-yak, the pictures the end remeasure could not stage (`later`), the overlapping badges of
+  minty-quail-15 among them.
 - frosty-marten, the screen-edge badge's closing speed grows with the frame rate (`bug`).
 - brisk-quail, a roadblock catch in the escape city shows the fallback loss text (`later`).
 - frosty-raven, the crowd tick costs 29 percent more than before the refactor (`later`).
@@ -35,16 +36,28 @@ plan asked for.
 The other entries' `after:` lines naming minty-quail stay as they are: this record makes the wait
 count as over.
 
+- silky-magpie, the field-read check's help and the typing census say what is true with no opt-out
+  line left (`now`, the filer's proposal): found by this pull request's review, a tools change a
+  docs-only pull request does not carry.
+
 ## Not filed
 
-- **The overlapping-badge picture** (minty-quail-15) needs a harness that does not exist; building
-  one is new code, so it stays listed as not taken in the pictures' record and is not filed alone.
 - **A sweep of comments in files no refactor pull request touched** (minty-quail-quiet-ferret: about
   140 candidate lines, many ordinary English) is outside the closed item's ask and is the
   orchestrator's call.
 - **The police patrol "fitted at the end-of-refactor remeasure"** (minty-quail-downy-toad and
   -jolly-toad) is not fitted: the declared table (polite-tapir-coral-owl, "fitted to nothing") and
   inbox #1278 in olive-ferret (playtest decides) supersede it.
+
+## What became of the README's standing readings
+
+- **"No legacy shape is kept" (minty-dolphin #852)** is a standing design rule, the orchestrator's
+  ruling, and is carried into designing-classes ("Code is designed by layer"), with its reading
+  beyond the player's general words listed under "Proposed, not asked for".
+- **"The parts end up independent; sequential now is fine" (minty-dolphin #845)** was this refactor's
+  and is done: its parts are independent, and it ends here as history.
+- **"Nothing else is worked on until the refactor is done" (inbox #1210 in gentle-owl)** lifts with
+  this close, and the draft pull requests other entries held while it stood resume.
 
 ## The skill change
 
@@ -67,7 +80,14 @@ count as over.
   API'" states the check's mechanism in the present tense (it fails any new read of another class's
   field, a file never gains the opt-out line, and it fails a read through a receiver whose class it
   cannot tell in every file under `src/`); the "Proposed" bullets say the same.
+- *Also:* "No legacy shape is kept" (minty-dolphin #852) is stated in the section; the "Proposed" bullet
+  on the unknown-receiver check is gone, since that behavior is the approved design's; and
+  orchestrating's two sentences about the fence that keeps other work waiting "until the refactor is
+  done" now speak of a refactor entry in general.
 - *Showed at:* this closing pull request, the moment the entry's README said it would.
 
-**godot "Types", writing-tests, verify and using-tools** carried sentences about a file that carries
-the opt-out line, which no file does; they now say no file does and that CI fails one that gains it.
+**godot "Types" and its rare-traps reference, writing-tests, verify and using-tools** carried
+sentences about a file that carries the opt-out line, which no file does; they now say no file does
+and that CI fails one that gains it. godot's two "Proposed" bullets that described files carrying
+the line are gone or cut to what holds, and the typing census's row says it has nothing to keep in
+step.

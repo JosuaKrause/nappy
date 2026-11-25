@@ -84,16 +84,15 @@ a nested collection (`Array[Array[Thing]]` is itself a parse error, so the inner
 below. **writing-tests** says what that asks of a suite and its fakes.
 
 **So a file is typed from its first line, and no file opts out.** The one form of opt-out line the
-check still reads is the file's very first, `@warning_ignore_start("untyped_declaration",
+check accepts is the file's very first, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
 nothing else, and it silences them to the end of the file. It has one form: the whole first line,
 the names in double quotes separated by `, `, each once and in the order of the list above, and
-nothing after the closing parenthesis. No file carries it, and CI fails a file that gains it or
-a warning on it. No other ignore of the three is written anywhere:
-`tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
-`@warning_ignore_restore` that names one of them, or whose argument it cannot read, anywhere but
-that line in its one form, in every `.gd` file outside `docs/`, and in CI a file that gains the
-line or a warning on it.
+nothing after the closing parenthesis. No file carries it, and in CI a file that gains it fails. No
+other ignore of the three is written anywhere: `tools/check_field_reads.py` fails an
+`@warning_ignore`, `@warning_ignore_start` or `@warning_ignore_restore` that names one of them, or
+whose argument it cannot read, anywhere but that line in its one form, in every `.gd` file outside
+`docs/`.
 
 **The engine warns of nothing on a property read off a Variant.** An element of an untyped
 `Array` or `Dictionary`, the inner level of a nested one, what `back()` or `get()` returns, a name
@@ -287,12 +286,6 @@ is the only part that governs the code in front of them.
 - **What the `## Overrides` line names and where it is asked for** — the nearest declaring
   ancestor, no line for an engine virtual no project class declares, and `src/` and `tests/` as the
   scope — is the filer's proposal, open to the player's correction (inbox #1154 in gray-dolphin).
-- **An opt-out line gains no warning** is the builder's choice (minty-quail-busy-heron), open to
-  the player's correction. The player's words ask that the field-read check be made to work and
-  approve the design review's way to do it (inbox #1268 in olive-ferret): the three warnings as errors, the one
-  line at the top of a file not yet converted, and the files carrying it as a list that only
-  shrinks; and they say code is typed wherever it can be (inbox #1280 in olive-ferret), which a new file carrying
-  the line would not be.
 - **A method's name read through a receiver the check cannot tell fails, with the check's
   exclusions** ("Types"; the names its `--help` gives), the builder's choice
   (minty-quail-busy-heron), open to the player's correction: the player's words ask that the
@@ -300,8 +293,7 @@ is the only part that governs the code in front of them.
   without its parentheses.
 - **A method a class under `src/` declares, named without its parentheses on a receiver the check
   types as that class or one extending it, fails unless the reference hands the Callable on, in
-  every file under `src/`, the opt-out line or not** ("Types"), the orchestrator's proposal, and its reach to a file carrying the opt-out
-  line the builder's choice, open to the player's correction: the player's words on the
+  every file under `src/`** ("Types"), the orchestrator's proposal, open to the player's correction: the player's words on the
   field-read check (inbox #1268 in olive-ferret) say nothing of it. The plainer alternative is to
   leave it unreported, as the engine leaves it in a condition.
 - **Which values the language cannot type** ("Types": the inner level of a nested collection, what

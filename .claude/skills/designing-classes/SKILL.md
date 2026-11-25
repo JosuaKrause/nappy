@@ -29,8 +29,9 @@ fetching it from an autoload, a group or a static, so a test hands it fakes. A m
 included, is a configuration of the shared code, never a parallel copy of it (minty-lemur #785).
 
 **The layers, lowest first, are the ones `tools/layer_map.py` lists**, the file that says which
-folder and file is in which layer; `tools/check_layers.py` holds the code to it in CI, and no break of
-it stands:
+folder and file is in which layer; `tools/check_layers.py` holds the code to it in CI, and where this
+list and the file differ, the file is what CI enforces and the list is corrected. No break of it
+stands:
 
 1. **data**: data and configuration. The catalogue, the balance numbers, the run's configuration,
    the specs, the on-screen texts, the art's pages and the value types the rows are written in.
@@ -59,11 +60,13 @@ request that fixes one deletes it from both. The declaration here is held by the
 
 **The map lookup stays with the city maps in the model** (inbox #904 in freckled-moose), and a
 record the map holds is placed on the map's layer as it appears. Each thing's own drawing is on the
-layer of the thing it draws. Where this list and `tools/layer_map.py` differ, the file is what CI
-enforces and the list is corrected. A fix lands in the shared mechanism rather than a branch keyed
+layer of the thing it draws. A fix lands in the shared mechanism rather than a branch keyed
 on one row's id or picture; new code follows these layers; a brief names the layer its work belongs
-to. This section has no exception: a minimal fix ordered ahead of a larger change keeps to it like
-any other (minty-lemur #799).
+to.
+
+**No legacy shape is kept** (minty-dolphin #852). A clean design is not held back by an old one: an
+old path, a forwarder kept for an old name so callers or tests need not change, or a rule that holds
+only "in practice" is replaced, not kept beside the new design.
 
 **Code that nothing reaches is deleted, not kept, and so is code that only serves a feature the game
 no longer has** (inbox #1180 in gray-dolphin). It costs maintenance, and it misleads whoever reads it, an agent
@@ -117,12 +120,12 @@ name makes the compiler find such a read; a field of another kind keeps its name
 behind is the silent function reference above, which the field-read check reports only in the
 cases the paragraph above names.
 
-**One check holds "Fields are not API", and it has no list of reads to shrink.**
-`tools/check_field_reads.py` (CI's `gates` job) fails a change that adds a read of another class's
-field. `tools/field_reads.txt` lists no read (its header alone remains), so a read that only moved
-passes only as the check's own rules say (inbox #1350 in grassy-trout): its reader file renamed, code
-moved into a new file with no more uses of that class's field, or an inner class lifted into a file
-of its own, whose reads the list then gains as lines; the check cannot count those, so review reads a
+**One check holds "Fields are not API".** `tools/check_field_reads.py` (CI's `gates` job) fails a
+change that adds a read of another class's field. The list of reads that may stand,
+`tools/field_reads.txt`, is empty and only shrinks; a read that only moved passes as the check's own
+rules say (inbox #1350 in grassy-trout): its reader file renamed, code moved into a new file with no
+more uses of that class's field, or an inner class lifted into a file of its own, whose reads the
+list then gains as lines; the check cannot count those, so review reads a
 lifting diff for a reader that is new. `project.godot` makes the engine fail an access it cannot
 type: the warnings `untyped_declaration`, `unsafe_property_access` and `unsafe_method_access` are
 errors. No file under `src/` carries the `@warning_ignore_start(...)` opt-out line, and a file never
@@ -207,6 +210,9 @@ that proposes it, and says so where the player's words name nothing on the point
   draws**, proposed by the layer map's builder (minty-quail-35). The player's words on the layers
   (inbox #904 in freckled-moose) decide the siblings and the map lookup, and name neither of
   these.
+- **"No legacy shape is kept" covers an old path, a forwarder kept for an old name and a rule that
+  holds only "in practice"**, the refactor entry's reading of minty-dolphin #852, whose words are
+  general: not to let legacy implementations prevent a clean design.
 - **A member a test holds on purpose is not deleted as unreached**, a reading of inbox #1180 in
   gray-dolphin.
 - **One interface and composition for anything many classes use, not only events**, a reading of
@@ -226,10 +232,6 @@ that proposes it, and says so where the player's words name nothing on the point
   cannot do.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
-- **The check fails a read through a receiver whose class it cannot tell, in every file under
-  `src/`**, the builder's choice (minty-quail-busy-heron). The player's words ask that the check be
-  made to work and approve the design review's way to do it (inbox #1268 in olive-ferret), and that
-  design has the check fail an unknown receiver once no file carries the opt-out line, which holds.
 - **Which moves count as a read that only moved** (a reader file renamed, a new file with no more
   uses, an inner class lifted out), the planning agent's proposal (minty-quail-breezy-bison). That
   such a read passes the field-read check and the list gains its lines is the player's
