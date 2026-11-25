@@ -83,16 +83,10 @@ a nested collection (`Array[Array[Thing]]` is itself a parse error, so the inner
 `Array`s) or what `back()` or `get()` returns, and it is then read through a typed name, as
 below. **writing-tests** says what that asks of a suite and its fakes.
 
-**So a file is typed from its first line, and no file opts out.** The one form of opt-out line the
-check accepts is the file's very first, `@warning_ignore_start("untyped_declaration",
-"unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
-nothing else, and it silences them to the end of the file. It has one form: the whole first line,
-the names in double quotes separated by `, `, each once and in the order of the list above, and
-nothing after the closing parenthesis. No file carries it, and in CI a file that gains it fails. No
-other ignore of the three is written anywhere: `tools/check_field_reads.py` fails an
-`@warning_ignore`, `@warning_ignore_start` or `@warning_ignore_restore` that names one of them, or
-whose argument it cannot read, anywhere but that line in its one form, in every `.gd` file outside
-`docs/`.
+**So a file is typed from its first line, and no file opts out.** No ignore of the three is written
+anywhere: `tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
+`@warning_ignore_restore` that names one of them, or whose argument it cannot read, in every `.gd` file
+outside `docs/`, whatever its form and wherever it stands.
 
 **The engine warns of nothing on a property read off a Variant.** An element of an untyped
 `Array` or `Dictionary`, the inner level of a nested one, what `back()` or `get()` returns, a name

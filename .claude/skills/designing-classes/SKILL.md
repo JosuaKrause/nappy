@@ -127,9 +127,8 @@ more uses of that class's field, or an inner class lifted into a file of its own
 list then gains as lines; the check cannot count those, so review reads a
 lifting diff for a reader that is new. `project.godot` makes the engine fail an access it cannot
 type: the warnings `untyped_declaration`, `unsafe_property_access` and `unsafe_method_access` are
-errors. No file under `src/` carries the `@warning_ignore_start(...)` opt-out line, and a file never
-gains it, since code is typed wherever the language can type it (inbox #1280 in olive-ferret): CI's
-run of the check fails a file that does (**godot**, "Types", owns that rule and says what the errors
+errors. No file carries an `@warning_ignore` of them, since code is typed wherever the language can
+type it (inbox #1280 in olive-ferret): CI's run of the check fails a file that does (**godot**, "Types", owns that rule and says what the errors
 are and how a value is typed). In every file under `src/` the check fails a field's or a method's
 name read through a receiver whose class it cannot tell, since the engine warns of nothing on a
 property read off a Variant. In no file does it see a further read of a field its reader file is

@@ -42,16 +42,14 @@ Each step after the head is a field's declared type (an inner class's field incl
 `back()` and the like, the element type on a typed array or dictionary). A type that names no class under `src/` and
 is not `Variant` is told as not one: the receiver is known, and no read.
 
-**The opt-out line, and a converted file.** `project.godot` makes the engine fail an access it cannot type
-(`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access` are errors), and a `.gd` file not yet
-typed opts out with one line at its top naming the warnings it still trips. The files carrying that line are the
-list of files not yet converted, which only shrinks; nothing else records it. The engine cannot see two kinds of
-access. A property read on a value it types as `Variant` (an element of an untyped array or dictionary, a call that
-returns a Variant, a name declared `: Variant`) warns of nothing, and neither does a method named without its
-parentheses, on any receiver, in a condition, an argument or an assignment (alone on a line it is a statement that
-does nothing, `standalone_expression`, which `project.godot` also makes an error): `thing.hard_fail` is a reference
-to the function, always true. So in a file under `src/` **without** the line this check fails, naming the file, the
-line and the expression:
+**No file opts out.** `project.godot` makes the engine fail an access it cannot type (`untyped_declaration`,
+`unsafe_property_access`, `unsafe_method_access` are errors), and no `.gd` file carries an `@warning_ignore` of
+them: the check fails one that does (below). The engine cannot see two kinds of access. A property read on a value
+it types as `Variant` (an element of an untyped array or dictionary, a call that returns a Variant, a name declared
+`: Variant`) warns of nothing, and neither does a method named without its parentheses, on any receiver, in a
+condition, an argument or an assignment (alone on a line it is a statement that does nothing,
+`standalone_expression`, which `project.godot` also makes an error): `thing.hard_fail` is a reference to the
+function, always true. So in a file under `src/` this check fails, naming the file, the line and the expression:
 
 - a `.name` use with no `(` after it, whose receiver's class it cannot tell, whether or not the use hands a Callable
   on, where the name is a var as above, or a method a file or an inner class under `src/` declares
@@ -64,14 +62,11 @@ line and the expression:
   a var, or one declared as a signal, does not excuse a method's name. The fix is a typed name to read through, or,
   for a dictionary's key, a subscript.
 
-In a file **with** the line such a use is skipped, never listed and never failed, and `--summary` counts the
-skipped uses of a var's name.
-
-**A typed receiver's own method named without its parentheses.** In every file under `src/`, with the line or
-without it, a `.name` with no `(` after it fails where the check tells the receiver's class, a class under `src/` (an
-inner class included), and that class or one under `src/` it extends declares `name` as a method: a reference to the
-function, always true in a condition, and a statement that does nothing on a line of its own (`crowd.clear` for
-`crowd.clear()`). It passes where the reference hands the Callable on, in one of these forms and no other:
+**A typed receiver's own method named without its parentheses.** In every file under `src/`, a `.name` with no `(`
+after it fails where the check tells the receiver's class, a class under `src/` (an inner class included), and that
+class or one under `src/` it extends declares `name` as a method: a reference to the function, always true in a
+condition, and a statement that does nothing on a line of its own (`crowd.clear` for `crowd.clear()`).
+It passes where the reference hands the Callable on, in one of these forms and no other:
 
 1. a step follows it: `t.go.bind(1)`, `t.go.call()`, `t.go.unbind(1)`;
 2. it is an argument of a call, alone or among others, on the call's line or a line of its own inside the call's
@@ -93,17 +88,13 @@ would, and so does a ternary in parentheses. Anything else fails: a condition (`
 its own. A form found in the tree that hands a Callable on and is not among these is added here with a unit case of
 its own; this list is the one text of them.
 
-**The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
-"unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
-order, nothing after it. The engine honours other forms (a trailing comment, a space or a backslash line
-continuation before the parenthesis, a line break or a comment inside it, single quotes, the annotation lower in the
-file), so every `@warning_ignore`, `@warning_ignore_start` and `@warning_ignore_restore` in a file's code is read
-whole, and any but that line that names one of the three, or has an argument the check cannot read (a constant),
-fails with the line in its one form: an ignore the check cannot see would let the list grow unnoticed, and a
-converted file would hide an untyped access behind it. A failure for a file that would need the line says what to
-write instead: a suite the typed runner header, `func run(t: TestRunner) -> void:`, anything else a typed
-declaration or a typed name. Every `.gd` file outside `docs/` is read for the line (`src/`, `tests/`, `tools/`: the
-setting reaches every script the engine parses in this project); only `src/` is read for reads.
+**Every ignore is read.** The engine honours many forms of an ignore (a trailing comment, a space or a backslash line
+continuation before the parenthesis, a line break or a comment inside it, single quotes, the annotation anywhere in
+the file), so every `@warning_ignore`, `@warning_ignore_start` and `@warning_ignore_restore` in a file's code is read
+whole, and any that names one of the three, or has an argument the check cannot read (a constant), fails, in every
+`.gd` file outside `docs/` (`src/`, `tests/`, `tools/`: the setting reaches every script the engine parses in this
+project); only `src/` is read for reads. The failure says what to write instead: a suite the typed runner header,
+`func run(t: TestRunner) -> void:`, anything else a typed declaration or a typed name.
 
 **Blind spots, stated.** A chain through an engine property typed `Variant` (`JSON.data`), or from `self` inside an
 inner class, is told as an engine value, so a read behind it is not seen; a read of another file's inner class's
@@ -122,18 +113,12 @@ line, so a change that adds one to a listed reader file and field passes `--base
 Tests are not read for reads here: a test reads what it tests only through methods
 (writing-tests), and the reads in the tests are found by running this check over a scratch copy of
 the tree with `tests/` moved under `src/` (`--root` names the copy, `--list` prints every read).
-Whether a line still names only warnings its file trips is the engine's to show, not this check's: deleting a name
-the file still trips fails the boot, and a stale name left on an opt-out line is found by
-`tools/typing_census.py --check`.
-
 **The list.** A header comment `# [ClassName] path` opens a class's group; a line under it is `<reader file> <field>`.
 A read not listed **fails**. A listed line with no read now **fails** as a `REMOVE` line, so the pull request that
 converts a read deletes its line. The list is generated: `--write` rewrites it from the tree, sorted, so a merge
 of `main` that conflicts in it is resolved by taking either side and running `--write` (no merge tool of its own is
 needed, since the lines carry no reasons to replay). With `--base REV`, a line `REV`'s list did not hold fails unless
-its read only moved, and so does a file that gains the opt-out line, or a warning on it, since `REV` (a file new
-since `REV` that carries it included; one git reports as renamed keeps its base's line): both lists only shrink,
-unless the same diff changes this checker (a better checker sees reads the old one could not).
+its read only moved, unless the same diff changes this checker (a better checker sees reads the old one could not).
 
 **A read that only moved passes, in three cases and no other.** An added line passes when
 
@@ -165,7 +150,7 @@ import argparse
 import re
 import sys
 from collections import Counter
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -191,20 +176,17 @@ LIST_HEADER = """\
 # conflicts here takes either side and runs --write.
 """
 
-# The warnings project.godot makes errors, which the opt-out line may name, in the order the line names them.
+# The warnings project.godot makes errors, which no ignore may name.
 WARNINGS = ("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
-# The opt-out line's one form: the whole first line, double-quoted names separated by ", ", nothing after it.
-OPT_OUT = re.compile(r'^@warning_ignore_start\(((?:"\w+")(?:, "\w+")*)?\)$')
 # Every warning annotation the engine reads, found in code with its comments and strings blanked.
 ANY_IGNORE = re.compile(r"@warning_ignore(?:_start|_restore)?\b")
 # A string literal as an annotation's argument: double or single quotes, a StringName's `&` or a raw string's `r`.
 NAME_LITERAL = re.compile(r"""^[&r]?(?:"([^"\\\n]*)"|'([^'\\\n]*)')$""")
-EXAMPLE_LINE = '@warning_ignore_start("untyped_declaration", "unsafe_method_access")'
-# What a builder writes instead of the opt-out line: a suite's typed header, or a typed name.
+# What a builder writes instead of an ignore: a suite's typed header, or a typed name.
 SUITE_HEADER = "func run(t: TestRunner) -> void:"
 SUITE_SECTION = 'writing-tests, "A suite is typed, and opens with the typed runner header"'
 TYPED_NAME = "`var x: Class = ...`, `for x: Class in`, `as Class`"
-# Folders not read for the line: the frozen evidence under docs/ is rerun from the revision it names.
+# Folders not read for ignores: the frozen evidence under docs/ is rerun from the revision it names.
 LINE_SKIPPED = ("docs",)
 
 # A receiver's kind: a class file under src/ (its path), an inner class (its file's path, INNER, its name), UNTRACKED
@@ -489,7 +471,7 @@ REFERENCE = "reference"
 
 @dataclass(frozen=True)
 class Unknown:
-    """A `.name` use that fails: in a file without the opt-out line, a receiver whose class cannot be told, where
+    """A `.name` use that fails: a receiver whose class cannot be told, where
     `name` is a var (UNKNOWN_VAR) or a method (UNKNOWN_METHOD) as `reads_of` counts them; in any file under `src/`,
     a typed receiver's own method named without its parentheses where the Callable is not handed on (REFERENCE)."""
 
@@ -502,7 +484,6 @@ class Unknown:
 @dataclass(frozen=True)
 class Found:
     reads: list[Read]
-    skipped: int
     unknown: list[Unknown] = field(default_factory=list)
 
 
@@ -518,41 +499,6 @@ class Entry:
     @property
     def key(self) -> tuple[str, str, str]:
         return (self.klass, self.path, self.name)
-
-
-@dataclass(frozen=True)
-class OptOut:
-    """A file's opt-out line: the warnings it names, or the reason it is malformed."""
-
-    warnings: tuple[str, ...]
-    problem: str = ""
-
-
-def opt_out_of(text: str) -> OptOut | None:
-    """The opt-out line at the top of a file, or None where its first line is not one in the line's one form."""
-    first = text.split("\n", 1)[0].rstrip("\r")
-    match = OPT_OUT.match(first)
-    if not match:
-        return None
-    names: list[str] = []
-    body = match.group(1)
-    for word in body.split(", ") if body else []:
-        name = word[1:-1]
-        if name not in WARNINGS:
-            return OptOut(tuple(names), f'"{name}" is not one of {", ".join(WARNINGS)}')
-        if name in names:
-            return OptOut(tuple(names), f'"{name}" is named twice')
-        names.append(name)
-    if names != sorted(names, key=WARNINGS.index):
-        return OptOut(tuple(names), f"it names its warnings out of the order {', '.join(WARNINGS)}")
-    return OptOut(tuple(names))
-
-
-def canonical_line(names: Iterable[str]) -> str:
-    """The opt-out line naming `names`, in its one form; the example line where it names none of the three."""
-    wanted = set(names)
-    ordered = [w for w in WARNINGS if w in wanted]
-    return "@warning_ignore_start(" + ", ".join(f'"{w}"' for w in ordered) + ")" if ordered else EXAMPLE_LINE
 
 
 @dataclass(frozen=True)
@@ -879,7 +825,6 @@ class Tree:
         self.src = src
         self.bare = {path: check_layers.blank(text).bare for path, text in src.items()}
         self.autoloads = autoloads
-        self.opted_out = {path for path, text in src.items() if opt_out_of(text) is not None}
         self.by_name: dict[str, str] = {}
         for path, bare in self.bare.items():
             named = check_layers.CLASS_NAME.search(bare)
@@ -1390,7 +1335,6 @@ def hands_on(bare: str, start: int, end: int) -> bool:
 def reads_of(tree: Tree) -> Found:
     reads: dict[tuple[str, str, str, str], Read] = {}
     unknown: list[Unknown] = []
-    skipped = 0
     declared_names = var_names_of(tree)
     method_names = method_names_of(tree)
     # Every name a file or an inner class under src/ declares as a method, which a typed receiver's class may declare.
@@ -1401,7 +1345,6 @@ def reads_of(tree: Tree) -> Found:
         lines = bare.split("\n")
         owner_block = block_index(bare)
         inner = inner_lines(bare)
-        converted = path not in tree.opted_out
         offset = 0
         for index, line in enumerate(lines):
             line_offset, offset = offset, offset + len(line) + 1
@@ -1410,7 +1353,7 @@ def reads_of(tree: Tree) -> Found:
             for match in USE.finditer(line):
                 name, call = match.group(1), match.group(2)
                 is_var = name in declared_names
-                untold = is_var or (converted and name in method_names)
+                untold = is_var or name in method_names
                 if call or not (untold or name in any_method):
                     continue
                 declared = Scope(tree, path, owner_block[index], index)
@@ -1420,10 +1363,7 @@ def reads_of(tree: Tree) -> Found:
                 if klass is None:
                     if not untold:
                         continue
-                    if not converted:
-                        skipped += 1
-                    else:
-                        unknown.append(Unknown(path, index + 1, expression, UNKNOWN_VAR if is_var else UNKNOWN_METHOD))
+                    unknown.append(Unknown(path, index + 1, expression, UNKNOWN_VAR if is_var else UNKNOWN_METHOD))
                     continue
                 if (
                     klass in tree.files
@@ -1450,7 +1390,7 @@ def reads_of(tree: Tree) -> Found:
                     name,
                     (found.count if found else 0) + 1,
                 )
-    return Found(sorted(reads.values(), key=lambda r: (r.klass, r.reader, r.name)), skipped, unknown)
+    return Found(sorted(reads.values(), key=lambda r: (r.klass, r.reader, r.name)), unknown)
 
 
 def render(tree: Tree, found: Found) -> str:
@@ -1496,8 +1436,7 @@ def entries_of(text: str) -> list[Entry]:
 
 
 def failures_of(found: Found, entries: list[Entry]) -> list[str]:
-    """A read not listed fails; a listed line with no read is a REMOVE line; an unknown receiver in a file without
-    the opt-out line fails."""
+    """A read not listed fails; a listed line with no read is a REMOVE line; an unknown receiver fails."""
     listed = {e.key for e in entries}
     present = {(r.klass, r.reader, r.name) for r in found.reads}
     failures = [
@@ -1516,7 +1455,7 @@ def failures_of(found: Found, entries: list[Entry]) -> list[str]:
 
 
 def unknown_failure(u: Unknown) -> str:
-    """The failure line for a use `reads_of` could not let stand in a file without the opt-out line."""
+    """The failure line for a use `reads_of` could not let stand."""
     where = f"{u.reader}:{u.line}"
     if u.kind == REFERENCE:
         return (
@@ -1526,7 +1465,7 @@ def unknown_failure(u: Unknown) -> str:
         )
     if u.kind == UNKNOWN_METHOD:
         return (
-            f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line,"
+            f"{where}: cannot tell the class of the receiver in `{u.expression}`,"
             " and a class under src/ declares that name as a method: a method read without its parentheses is a"
             " reference to the function, always true; call it with `()`, or read the receiver through a typed name"
             f' ({TYPED_NAME}); where the name is a dictionary\'s key, subscript it (`station["blocks"]`), or read'
@@ -1534,81 +1473,26 @@ def unknown_failure(u: Unknown) -> str:
             " included"
         )
     return (
-        f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line;"
+        f"{where}: cannot tell the class of the receiver in `{u.expression}`;"
         f" type the declaration, or read the value through a typed name ({TYPED_NAME})"
     )
 
 
 def line_failures(files: dict[str, str]) -> list[str]:
-    """A malformed opt-out line, and any other warning annotation that names, or may name, one of its warnings: the
-    line has one form, so every ignore the engine honours is one the check reads."""
+    """Every warning annotation that names, or may name, one of the three warnings: no file opts out of them."""
     out: list[str] = []
     for path in sorted(files):
-        text = files[path]
-        opt_out = opt_out_of(text)
-        if opt_out is not None and opt_out.problem:
-            out.append(
-                f"{path}:1: the opt-out line is malformed: {opt_out.problem}; its one form is"
-                f" `{canonical_line(opt_out.warnings)}`"
-            )
-        elif opt_out is not None and not opt_out.warnings:
-            out.append(f"{path}:1: the opt-out line names no warning; delete it")
-        for ignore in ignores_of(text):
-            if ignore.offset == 0 and opt_out is not None:
-                continue
+        for ignore in ignores_of(files[path]):
             named = [w for w in WARNINGS if w in ignore.names]
             if not named and not ignore.unreadable:
                 continue
             what = ", ".join(named) if named else f"an argument the check cannot read (possibly {WARNINGS[0]}, ...)"
-            if ignore.line == 1:
-                out.append(
-                    f"{path}:1: ignores {what} in a form other than the opt-out line's one form; write the whole"
-                    f" first line as `{canonical_line(named)}`, in double quotes with nothing after it"
-                )
-            else:
-                out.append(
-                    f"{path}:{ignore.line}: ignores {what} below the first line; the only ignore of"
-                    f" {', '.join(WARNINGS)} is the opt-out line, a file's whole first line in one form"
-                    f" (`{canonical_line(named)}`), on a file not yet typed"
-                )
-    return out
-
-
-def lines_of(files: dict[str, str]) -> dict[str, tuple[str, ...]]:
-    """The files carrying the opt-out line, each with the warnings it names."""
-    out: dict[str, tuple[str, ...]] = {}
-    for path, text in files.items():
-        opt_out = opt_out_of(text)
-        if opt_out is not None:
-            out[path] = opt_out.warnings
-    return out
-
-
-def base_line_failures(
-    now: dict[str, tuple[str, ...]], base: dict[str, tuple[str, ...]], renames: dict[str, str], checker_changed: bool
-) -> list[str]:
-    """Against the base, a file that gains the opt-out line, or a warning on it, fails: that list only shrinks."""
-    if checker_changed:
-        return []
-    moved_from = {new: old for old, new in renames.items()}
-    out: list[str] = []
-    for path in sorted(now):
-        before = base.get(moved_from.get(path, path))
-        if before is None:
-            out.append(
-                f"{path}:1: gains the opt-out line, and the files carrying it only shrink; {what_to_write(path)}"
-            )
-            continue
-        added = [w for w in now[path] if w not in before]
-        if added:
-            out.append(
-                f"{path}:1: the opt-out line gains {', '.join(added)}, and it only shrinks; {what_to_write(path)}"
-            )
+            out.append(f"{path}:{ignore.line}: ignores {what}, and no file opts out of them; {what_to_write(path)}")
     return out
 
 
 def what_to_write(path: str) -> str:
-    """What a file that would need the opt-out line is given instead: a suite its typed header, anything else a
+    """What a file that would need an ignore is given instead: a suite its typed header, anything else a
     typed declaration or a typed name to read through."""
     typed = f"type the declaration, or read the value through a typed name ({TYPED_NAME})"
     if path.startswith("tests/"):
@@ -1710,9 +1594,9 @@ def base_failures(
     ]
 
 
-def summary(found: Found, carrying: dict[str, tuple[str, ...]] | None = None) -> list[str]:
+def summary(found: Found) -> list[str]:
     """Lines per reader layer and per class read, over the list's lines (one per reader file and field), then the
-    files still carrying the opt-out line, per top-level folder, and the uses skipped in them."""
+    failures that stand."""
     lines_of_list = {(r.klass, r.reader, r.name) for r in found.reads}
     per_layer = Counter(check_layers.layer_of(reader) or "no layer" for _, reader, _ in lines_of_list)
     per_class = Counter(klass for klass, _, _ in lines_of_list)
@@ -1721,19 +1605,9 @@ def summary(found: Found, carrying: dict[str, tuple[str, ...]] | None = None) ->
     out.extend(f"  {layer:10} {count}" for layer, count in per_layer.most_common())
     out.append("the ten classes whose fields are read most:")
     out.extend(f"  {klass:28} {count}" for klass, count in per_class.most_common(10))
-    if carrying is not None:
-        per_folder = Counter(path.split("/", 1)[0] for path in carrying)
-        out.append(f"{len(carrying)} file(s) still carry the opt-out line:")
-        out.extend(f"  {folder:10} {count}" for folder, count in sorted(per_folder.items()))
-        per_warning = Counter(w for names in carrying.values() for w in names)
-        out.extend(f"  naming {warning:24} {per_warning[warning]}" for warning in WARNINGS)
-    out.append(
-        f"{found.skipped} use(s) skipped for an unknown receiver of a name some class declares as a var, in files"
-        " carrying the opt-out line"
-    )
     untold = [u for u in found.unknown if u.kind != REFERENCE]
     if untold:
-        out.append(f"{len(untold)} such use(s) in files without it, each a failure")
+        out.append(f"{len(untold)} use(s) through a receiver of no told class, each a failure")
     references = len(found.unknown) - len(untold)
     if references:
         out.append(
@@ -1747,7 +1621,7 @@ def autoloads_of(project: str) -> dict[str, str]:
 
 
 def line_scope(path: str) -> bool:
-    """Whether `path` is read for the opt-out line: a `.gd` file outside docs/ and outside any hidden folder."""
+    """Whether `path` is read for ignores: a `.gd` file outside docs/ and outside any hidden folder."""
     parts = path.split("/")
     return path.endswith(".gd") and parts[0] not in LINE_SKIPPED and not any(p.startswith(".") for p in parts)
 
@@ -1764,7 +1638,7 @@ def read_checkout(root: Path) -> tuple[dict[str, str], dict[str, str], str]:
 
 
 def read_scripts_checkout(root: Path) -> dict[str, str]:
-    """Every `.gd` file the opt-out line is read in, from the checkout."""
+    """Every `.gd` file ignores are read in, from the checkout."""
     out: dict[str, str] = {}
     for top in sorted(root.iterdir()):
         if not top.is_dir() or not line_scope(f"{top.name}/x.gd"):
@@ -1779,7 +1653,7 @@ def read_scripts_checkout(root: Path) -> dict[str, str]:
 
 
 def read_scripts_rev(rev: str, root: Path) -> dict[str, str]:
-    """Every `.gd` file the opt-out line is read in, from the tree of `rev`."""
+    """Every `.gd` file ignores are read in, from the tree of `rev`."""
     listing = check_layers.git("ls-tree", "-r", "-z", rev, cwd=root).decode()
     blobs: dict[str, str] = {}
     for record in listing.split("\0"):
@@ -1844,10 +1718,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         default=None,
         metavar="REV",
         help=(
-            "also fail a line added since REV's list unless its read only moved (see the rule above), and a .gd file"
-            " that gains the opt-out line or a warning on it"
-            " since REV (one new since REV included, one git reports as renamed keeping its base's line); CI passes"
-            " the pull request's base commit, and on main the previous one; neither fails when the diff also"
+            "also fail a line added since REV's list unless its read only moved (see the rule above); CI passes"
+            " the pull request's base commit, and on main the previous one; it does not fail when the diff also"
             " changes this checker; a REV with no list yet compares no list lines"
         ),
     )
@@ -1856,7 +1728,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
         "--list",
         action="store_true",
         help=(
-            "print every read found, listed or not, every unknown receiver in a converted file, and every typed"
+            "print every read found, listed or not, every unknown receiver, and every typed"
             " receiver's method named without parentheses and not handed on, without failing"
         ),
     )
@@ -1864,8 +1736,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         "--summary",
         action="store_true",
         help=(
-            "print the lines per reader layer and per class read, how many files still carry the opt-out line"
-            " (per top-level folder and per warning), and how many uses are still skipped in them"
+            "print the lines per reader layer and per class read, and how many uses fail for a receiver of no told"
+            " class or a method named without parentheses"
         ),
     )
     mode.add_argument(
@@ -1908,14 +1780,11 @@ def main(argv: list[str]) -> int:
                     return Tree(base_src, base_autoloads)
 
                 failures.extend(base_failures(entries, base, renames, changed, tree, before_tree))
-            failures.extend(
-                base_line_failures(lines_of(scripts), lines_of(read_scripts_rev(args.base, root)), renames, changed)
-            )
     except (check_layers.LayerError, FieldReadsError, OSError) as error:
         print(f"tools/check_field_reads.py: {error}", file=sys.stderr)
         return 1
     if args.summary:
-        print("\n".join(summary(found, lines_of(scripts))))
+        print("\n".join(summary(found)))
         return 0
     if args.list:
         listed = {e.key for e in entries}
@@ -1934,11 +1803,7 @@ def main(argv: list[str]) -> int:
     if failures:
         print(f"tools/check_field_reads.py: {len(failures)} failure(s)")
         return 1
-    carrying = lines_of(scripts)
-    print(
-        f"OK: no new read of another class's field; {len(entries)} listed line(s) still stand;"
-        f" {len(carrying)} file(s) still carry the opt-out line"
-    )
+    print(f"OK: no new read of another class's field; {len(entries)} listed line(s) still stand")
     return 0
 
 
