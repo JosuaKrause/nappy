@@ -5,8 +5,8 @@ extends Node2D
 ## `GroundTiles.stands_in_water()`) shows it through the transparent part of its picture. Each
 ## cell is drawn from the south water's one live tile (`SouthWaterTile`), from the place in the
 ## tile the cell covers in the world, so the surfaces the ground streams in chunk by chunk meet
-## without a seam and move as one. The tile carries the motion and its clock, so a surface draws its cells once and is never
-## drawn again for the water to move.
+## without a seam and move as one. The tile carries the motion and its clock, so a surface draws
+## its cells once and is never drawn again for the water to move.
 
 var cells: Array[Vector2i] = []
 ## The tile the cells are drawn from, handed in by `use_tile()` (the ground does, before the

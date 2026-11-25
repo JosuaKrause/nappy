@@ -8,8 +8,8 @@ extends SubViewport
 ## a flat fill on the desktop, which a phone's renderer, already bound by the pixels it fills,
 ## cannot be trusted to pay (the record amber-puffin).
 ##
-## The tile is drawn a texel a world pixel, so its pattern repeats every `CELL_SIZE * CELLS` world pixels and
-## its outlines are magnified on screen as the ground is. It is drawn again on every frame while
+## The tile is drawn a texel a world pixel, so its pattern repeats every `CELL_SIZE * CELLS`
+## world pixels and its outlines are magnified on screen as the ground is. It is drawn again on every frame while
 ## `keep_drawing()` is on, and not at all while it is off; its clock is the ground's
 ## (`set_clock()`), so it holds still while gameplay is paused.
 
