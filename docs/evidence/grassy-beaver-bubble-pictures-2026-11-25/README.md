@@ -15,8 +15,9 @@ over her ground point (the exclamation mark's is 54px, `Stroller.ALERT_HEIGHT`),
 turned to an example direction (the runtime turns it toward the way to go), and the arrow sits in
 the bubble's right half beside the icon, which is the place the frame's own comment proposes.
 
-**Source revision.** The pictures as committed in `0d203f681d2ee0f25cc2ad4523af2873527e63f9` on the branch
-`feature-grassy-beaver-bubble-pictures`; the sheet was rendered from that tree.
+**Source revision.** The pictures as committed in `0d203f681d2ee0f25cc2ad4523af2873527e63f9`; the sheet was rendered from
+that tree. After the pull request is squashed, `git fetch origin refs/pull/1764/head` makes the
+commit reachable.
 
 **How to make it again.** Godot 4.7.2 and Pillow. From a checkout, with a fresh scratch directory
 and any Godot project to run the script under (it uses no autoload):
