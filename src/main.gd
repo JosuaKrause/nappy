@@ -94,10 +94,6 @@ var _city: City
 ## `_run` and hands it, typed `RunState`, to `GameSave` and to every reader it builds. Null
 ## until a sitting is taken.
 var _run: RunState
-## How long the day that ended last lasted, in seconds (`DayEnd.lasted_seconds()`), for the
-## ending screen to show beside the run's total; negative until a day ends in this boot, as when
-## a saved ending is opened again.
-var _last_day_seconds := -1.0
 ## The parts of the run's state this node reads and writes most, taken off the run once and held.
 var _spend: AttemptSpendState
 var _facts: RunFacts
@@ -1983,7 +1979,7 @@ func _write_dawn_for_a_resumed_run() -> void:
 ## nothing should be different.")*
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var end := _new_director().finish_day(result)
-	_last_day_seconds = end.lasted_seconds()
+	_facts.set_last_day_seconds(end.lasted_seconds())
 	if end.ends_a_section():
 		_finish_the_section(end)
 		return
@@ -2135,8 +2131,7 @@ func _on_summary_continued(raised_in: int) -> void:
 			# this is already the moment she is playing the next day, and the write says so at once.
 			_save_now(true)
 		RunFlow.Step.SHOW_ENDING:
-			_summary.show_summary(SummaryModel.ending(_run, _run.header().ending(),
-					_last_day_seconds), _flow.mode())
+			_summary.show_summary(SummaryModel.ending(_run, _run.header().ending()), _flow.mode())
 		RunFlow.Step.RESTART_RUN:
 			# A run that is over goes back to where a run begins, which is the title screen: an
 			# ending is not a dead end the player has to quit out of.

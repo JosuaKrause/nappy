@@ -20,10 +20,16 @@ of those is an ending.
 - **The epilogue shows both**: `Out in: <the escape's clock>` and `Time played: <the total>`
   (`Texts.FINALE_OUT_IN`); `SummaryModel.epilogue()` takes the run for the total.
 - **The ending shows both**: `Time played: <the total>`, then `The last day: <its clock>`
-  (`Texts.ENDING_LAST_DAY`), then the day reached on `GAME OVER`. `main` keeps the clock of the day
-  that ended last (`_last_day_seconds`, set in `_on_day_finished()`) and hands it to
-  `SummaryModel.ending()`. An ending opened again from a saved run (the resume gate) and the
-  `--ending` rig have no such day in this boot, so they show the total alone.
+  (`Texts.ENDING_LAST_DAY`), then the day reached on `GAME OVER`. The clock of the day that ended
+  last is kept with the run (`RunFacts.last_day_seconds()`, set by `main._on_day_finished()` and
+  saved beside the `"state"` snapshot like the escape section, so a save without it loads as none),
+  and `SummaryModel.ending()` reads it off the run. An ending opened again through the resume
+  gate shows both too: the player's "all end screens must show both" (curly-moose #803) covers it,
+  and the day it shows is the last one the save recorded as ended (the one left mid-walk
+  restarts from its dawn). It was first kept in a field of `main` and shown on that boot only;
+  a review (ready at 780a8b442) asked for the saved form. It is a rider and not a field of
+  `RunHeader` because a save missing a `STATE` key is refused, which would have refused every
+  existing save. The `--ending` rig has no day behind it and shows the total alone.
 - Both lines are plain body text in the screens' existing label; nothing new is drawn.
 
 **What is open.** coral-squirrel (in the queue) marks a resumed run's times as inaccurate; the total

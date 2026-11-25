@@ -87,7 +87,8 @@ func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t: TestRunner) -
 	t.check(bad.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
 			RunState.format_clock(run.header().play_seconds()), "", Texts.ENDING_DAY_REACHED % 9],
 			"and its body the paragraph, the time played and the day")
-	var with_day := SummaryModel.ending(run, GameEnums.Ending.BAD, 84.5)
+	run.facts().set_last_day_seconds(84.5)
+	var with_day := SummaryModel.ending(run, GameEnums.Ending.BAD)
 	t.check(with_day.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
 			RunState.format_clock(run.header().play_seconds()),
 			Texts.ENDING_LAST_DAY % RunState.format_clock(84.5), Texts.ENDING_DAY_REACHED % 9],
