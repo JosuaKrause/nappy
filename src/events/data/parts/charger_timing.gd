@@ -11,20 +11,22 @@ extends RefCounted
 ## `warning()` (`PursuitSpec.warns_for()`: the waiting dog, the alley robber and every man drawn
 ## as him, the hunting roadblock's guard), a door's crossing warns for it
 ## (`CheckpointController`), and every notice radius a charger is set off by is drawn at
-## `notice()` of its written one (`EventDef.notice_within()`: those three, and the hunting and
-## investigating copies whose vehicle lets its men out, `EventDef.at_heat()`). **What it does not**:
-## the masked man on the escape's stairs, whom a place sets off, the exception to the regular
-## warning (curly-moose #803); and the heads-up of a man who gets out beside her or is sent at her,
-## `Tuning.WARNING_ALONE_MAX`, already at the floor `Tuning.OFFSCREEN_WARNING_MIN` every charger's
-## warning is held to.
+## `notice()` of its written one (`EventDef.notice_within()`: those three, and the hunting vans
+## that let their men out, `EventDef.at_heat()`). **What it does not**: the masked man on the
+## escape's stairs, whom a place sets off, the exception to the regular warning (curly-moose #803);
+## the heads-up of a man who gets out beside her or is sent at her, `Tuning.WARNING_ALONE_MAX`,
+## already at the floor `Tuning.OFFSCREEN_WARNING_MIN` every charger's warning is held to; and the
+## investigating patrol car's notice, which a car standing for her keeps within its own lead
+## (`EventDef.HEAT_INVESTIGATE_WITHIN`).
 
 ## The least and the most a run may draw the notice radii at against their written ones
-## (`DevFlags` refuses a factor outside them). Below the least, the waiting dog's radius falls
-## inside its own stand-off and the catalogue's pursuit contract refuses it
-## (`Tuning.validate_pursuit()`); past the most, a radius reaches further than her view is tall
-## twice over, where a charger's notice (only with his warning in her view) can no longer follow it.
+## (`DevFlags` refuses a factor outside them). Near the least, the waiting dog's radius comes down
+## to its own stand-off, which the catalogue's pursuit contract refuses
+## (`Tuning.validate_pursuit()`); at the most, the alley robber's reaches half the view's width
+## (`Tuning.VIEW_HALF_EXTENT`), and a charger notices her only with his warning in her view, so a
+## radius past it would never be met.
 const LEAST_REACH := 0.7
-const MOST_REACH := 2.0
+const MOST_REACH := 1.4
 
 ## Seconds a charger warns before it charges; see `warning()`.
 var _warning := 0.0

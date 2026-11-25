@@ -43,7 +43,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | cyclist              |      none |      18.0 |              — |           — |         33.0 |         90.0 |            — |            — |     165.0 |              16.0 |
 | ice_cream_van        |      wall |      13.0 |              — |           — |         48.0 |        240.0 |         11.0 |          3.2 |         — |              18.4 |
 | reversing_lorry      |      wall |      16.0 |              — |           — |         46.0 |        175.0 |          1.6 |          4.0 |         — |              23.1 |
-| charging_dog         |      none |      12.0 |              — |           — |         26.0 |        150.0 |            — |            — |     130.0 |               8.8 |
+| charging_dog         |      none |      12.0 |              — |           — |         26.0 |        182.5 |            — |            — |     130.0 |              10.2 |
 | chatting_mother      |  friction |       4.5 |              — |           — |         56.0 |         70.0 |            — |            — |      26.0 |              -2.7 |
 | police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |            — |            — |      74.0 |               5.9 |
 | poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |            — |            — |         — |              -5.3 |
@@ -56,7 +56,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |            — |            — |         — |              -4.7 |
 | door_guard           |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
 | abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |            — |            — |         — |              47.7 |
-| alley_robbery        |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| alley_robbery        |      wall |      16.0 |              — |           — |         26.0 |        245.0 |            — |            — |     130.0 |              27.9 |
 | night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |          6.0 |          6.0 |         — |              83.9 |
 | military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |            — |            — |     120.0 |              68.6 |
 | barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
@@ -71,10 +71,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
 | collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
 | neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |            — |            — |      46.0 |              -5.2 |
-| robber_giving_chase  |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| robber_giving_chase  |      wall |      16.0 |              — |           — |         26.0 |        245.0 |            — |            — |     130.0 |              27.9 |
 | van_guard_giving_chase |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
-| policeman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
-| guardsman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        200.0 |            — |            — |     130.0 |              23.3 |
+| policeman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        245.0 |            — |            — |     130.0 |              27.9 |
+| guardsman_giving_chase |      wall |      16.0 |              — |           — |         26.0 |        245.0 |            — |            — |     130.0 |              27.9 |
 | finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |            — |            — |         — |             165.2 |
 | impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |            — |            — |         — |             -15.7 |
 | masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |            — |            — |     130.0 |              19.3 |
@@ -103,7 +103,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | cyclist              |      12.0 |      12.0 |      10.4 |       2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | ice_cream_van        |       2.1 |       2.1 |       2.1 |       2.0 |       1.5 |      -0.2 |      -3.0 |      -6.0 |      -6.0 |      -6.0 |
 | reversing_lorry      |       4.0 |       4.0 |       4.0 |       3.5 |       2.2 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| charging_dog         |       6.0 |       6.0 |       5.6 |       4.1 |       1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| charging_dog         |       6.0 |       6.0 |       5.7 |       4.8 |       3.3 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | chatting_mother      |      -1.5 |      -1.5 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | police_patrol        |       4.0 |       4.0 |       4.0 |       3.5 |       2.4 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -116,7 +116,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | checkpoint_post      |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | door_guard           |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |      14.0 |      14.0 |      14.0 |      13.8 |      12.9 |       9.2 |       2.9 |      -6.0 |      -6.0 |      -6.0 |
-| alley_robbery        |      10.0 |      10.0 |       9.7 |       8.7 |       7.1 |       1.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| alley_robbery        |      10.0 |      10.0 |       9.8 |       9.2 |       8.2 |       4.9 |      -0.1 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       9.0 |       9.0 |       9.0 |       9.0 |       8.8 |       7.6 |       5.2 |      -2.7 |      -6.0 |      -6.0 |
 | military_convoy      |      16.0 |      16.0 |      16.0 |      16.0 |      15.7 |      13.6 |       9.3 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -131,10 +131,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | collapsed_frontage   |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | neighbor             |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| robber_giving_chase  |      10.0 |      10.0 |       9.7 |       8.7 |       7.1 |       1.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| robber_giving_chase  |      10.0 |      10.0 |       9.8 |       9.2 |       8.2 |       4.9 |      -0.1 |      -6.0 |      -6.0 |      -6.0 |
 | van_guard_giving_chase |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| policeman_giving_chase |      10.0 |      10.0 |       9.7 |       8.7 |       7.1 |       1.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| guardsman_giving_chase |      10.0 |      10.0 |       9.7 |       8.7 |       7.1 |       1.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| policeman_giving_chase |      10.0 |      10.0 |       9.8 |       9.2 |       8.2 |       4.9 |      -0.1 |      -6.0 |      -6.0 |      -6.0 |
+| guardsman_giving_chase |      10.0 |      10.0 |       9.8 |       9.2 |       8.2 |       4.9 |      -0.1 |      -6.0 |      -6.0 |      -6.0 |
 | finale_explosion     |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      13.0 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -163,7 +163,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | cyclist              |       3.9 |       3.9 |       3.0 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | ice_cream_van        |      -1.5 |      -1.5 |      -1.5 |      -1.6 |      -1.9 |      -2.8 |      -4.3 |      -6.0 |      -6.0 |      -6.0 |
 | reversing_lorry      |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.5 |      -4.1 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| charging_dog         |       0.6 |       0.6 |       0.4 |      -0.4 |      -1.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| charging_dog         |       0.6 |       0.6 |       0.4 |      -0.0 |      -0.9 |      -3.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | chatting_mother      |      -3.5 |      -3.5 |      -3.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | police_patrol        |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.4 |      -3.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -176,7 +176,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | checkpoint_post      |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | door_guard           |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |       5.0 |       5.0 |       5.0 |       4.9 |       4.4 |       2.4 |      -1.1 |      -6.0 |      -6.0 |      -6.0 |
-| alley_robbery        |       2.8 |       2.8 |       2.6 |       2.1 |       1.2 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| alley_robbery        |       2.8 |       2.8 |       2.7 |       2.4 |       1.8 |      -0.0 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       2.2 |       2.2 |       2.2 |       2.2 |       2.1 |       1.5 |       0.2 |      -4.2 |      -6.0 |      -6.0 |
 | military_convoy      |       6.1 |       6.1 |       6.1 |       6.1 |       6.0 |       4.8 |       2.4 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -191,10 +191,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | collapsed_frontage   |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | neighbor             |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| robber_giving_chase  |       2.8 |       2.8 |       2.6 |       2.1 |       1.2 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| robber_giving_chase  |       2.8 |       2.8 |       2.7 |       2.4 |       1.8 |      -0.0 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |
 | van_guard_giving_chase |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| policeman_giving_chase |       2.8 |       2.8 |       2.6 |       2.1 |       1.2 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| guardsman_giving_chase |       2.8 |       2.8 |       2.6 |       2.1 |       1.2 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| policeman_giving_chase |       2.8 |       2.8 |       2.7 |       2.4 |       1.8 |      -0.0 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |
+| guardsman_giving_chase |       2.8 |       2.8 |       2.7 |       2.4 |       1.8 |      -0.0 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |
 | finale_explosion     |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       4.5 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |

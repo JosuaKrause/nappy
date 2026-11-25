@@ -27,7 +27,7 @@ const STEP := 1.0 / 60.0
 const REACTION := 0.3
 ## The candidate warnings, in seconds, and factors on the written notice radii.
 const WARNINGS: Array[float] = [1.0, 1.25, 1.5, 1.75, 2.0]
-const REACHES: Array[float] = [1.0, 1.15, 1.25, 1.35, 1.5]
+const REACHES: Array[float] = [0.8, 0.9, 1.0, 1.1, 1.2]
 
 func run(t: TestRunner) -> void:
 	var was := EventCatalogue.charger_timing()

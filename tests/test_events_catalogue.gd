@@ -22,6 +22,7 @@ func run(t: TestRunner) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
+	_test_every_charger_is_built_from_the_runs_charger_timing(t)
 	_test_a_one_shot_is_sited_on_her_way(t)
 	_test_a_row_is_weighed_only_on_ground_it_stands_on(t)
 	_test_every_copy_of_a_row_keeps_its_ground_weights(t)
@@ -41,6 +42,64 @@ func run(t: TestRunner) -> void:
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t)
+
+## **Every charger is built from the run's charger timing** (`EventCatalogue.use_charger_timing()`,
+## what `--chargers` hands the catalogue at boot; minty-dolphin #834): handed another, the catalogue
+## builds every row again from it and validates every fairness contract on the way, and each charger
+## that waits for her warns for its warning, notices her within its factor of the radius it is
+## written with, and keeps as much field past its notice as it had, so she still feels it before it
+## notices her. A hunting van's notice for the men it lets out is drawn at the same factor and
+## never past its own field. Handed back the one it had, the catalogue builds the rows as they were.
+func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) -> void:
+	var was := EventCatalogue.charger_timing()
+	var shipped := _chargers_now()
+	var timing := ChargerTiming.of(1.25, 1.2)
+	EventCatalogue.use_charger_timing(timing)
+	var played := _chargers_now()
+	for id: String in shipped:
+		var before: Array = shipped[id]
+		var after: Array = played[id]
+		var waits: bool = before[0]
+		var written: float = before[1]
+		var notice_before: float = before[2]
+		var field_before: float = before[3]
+		var warns_after: float = after[4]
+		var notice_after: float = after[2]
+		var field_after: float = after[3]
+		var expected_notice := minf(timing.notice(written), field_after)
+		t.check(is_equal_approx(notice_after, expected_notice),
+				"%s notices her within %.1fpx, %.1f times its written %.1fpx, never past its field (%.1fpx)"
+				% [id, expected_notice, timing.notice(1.0), written, notice_after])
+		if waits:
+			t.check(is_equal_approx(warns_after, timing.warning()),
+					"%s warns for the timing's %.2fs (%.2fs)" % [id, timing.warning(), warns_after])
+			t.check(is_equal_approx(field_after - notice_after, field_before - notice_before),
+					"%s keeps %.1fpx of field past its notice (%.1fpx)" % [id,
+					field_before - notice_before, field_after - notice_after])
+	EventCatalogue.use_charger_timing(was)
+	var again := _chargers_now()
+	for id: String in shipped:
+		t.check(again[id] == shipped[id], "%s is built as it was once the timing is handed back" % id)
+
+## Each charger's `[waits for her, written notice, notice_within, heard_within, warns_for]` as the
+## catalogue builds it now: the three that wait for her, and a hunting van that lets its men out
+## once it notices her.
+static func _chargers_now() -> Dictionary:
+	var dog := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
+	var robber := EventCatalogue.by_id("alley_robbery")
+	var guard := EventCatalogue.escape_roadblock()
+	var hot := Tuning.RESISTANCE_GOAL
+	var raid := EventCatalogue.heated(EventCatalogue.by_id("abduction"), hot)
+	var found := {}
+	for row: EventDef in [dog, robber, guard, raid]:
+		# A charger's notice is never cut short, so its written radius is its notice at the factor
+		# played now; a vehicle's may stop at its field, and is written as its rung's trigger.
+		var radius := row.notice_within() / EventCatalogue.charger_timing().notice(1.0)
+		if row == raid:
+			radius = EventDef.HEAT_HUNTS_WITHIN
+		var warns := row.pursuit().warns_for() if row.pursues() else 0.0
+		found[row.id()] = [row.pursues(), radius, row.notice_within(), row.heard_within(), warns]
+	return found
 
 ## The rows whose picture is drawn on the building they stand against rather than on the sidewalk
 ## they are sited on: the fire on its facade (`FireLook._draw_fire()`), and the burnt building
@@ -719,7 +778,8 @@ func _test_every_copy_of_a_row_keeps_its_ground_weights(t: TestRunner) -> void:
 	pressing_draft.hunt(HuntSpec.pressing())
 	pressing_draft.weighed_on(PlacementGround.Kind.STREET, 0.25)
 	var pressing := pressing_draft.build()
-	for pair: Array in [[dog, dog.for_day(4)], [pressing, pressing.at_heat(Tuning.RESISTANCE_GOAL)]]:
+	for pair: Array in [[dog, dog.for_day(4)], [pressing, pressing.at_heat(Tuning.RESISTANCE_GOAL,
+			EventCatalogue.charger_timing())]]:
 		var row: EventDef = pair[0]
 		var copy: EventDef = pair[1]
 		var set_under_one := false
