@@ -516,6 +516,7 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 	closed.calendar().choose_mode(true)
 	closed.header().set_day(5)
 	closed.header().set_nerves(1)
+	closed.facts().set_last_day_seconds(84.5)
 	closed.calendar().begin_day()
 	t.check(_saved(closed, true), "the hard run's save, closed with its day under way, is on disk")
 	var run := RunState.new()
@@ -534,6 +535,10 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 			== SummaryModel.ending(run, run.header().ending()).title_text(),
 			"the ending is shown rather than the day brief, so there is no day brief for a later"
 			+ " continue to engage")
+	var body := (summary.get_node("Root/Center/Lines/Body") as Label).text
+	t.check(body.contains(Texts.ENDING_LAST_DAY % RunState.format_clock(84.5))
+			and body.contains("Time played"),
+			"and it shows the last day's clock the save kept beside the total ('%s')" % body)
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "a run that has ended writes nothing, on this path either")
 
 	_shut(t, main)

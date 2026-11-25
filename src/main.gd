@@ -1979,6 +1979,7 @@ func _write_dawn_for_a_resumed_run() -> void:
 ## nothing should be different.")*
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var end := _new_director().finish_day(result)
+	_facts.set_last_day_seconds(end.lasted_seconds())
 	if end.ends_a_section():
 		_finish_the_section(end)
 		return
@@ -2072,7 +2073,7 @@ func _finish_the_section(end: DayEnd) -> void:
 ## (`_unhandled_input()`, `_pause_on_focus_lost()`).
 func _walk_out_of_the_city(end: DayEnd) -> void:
 	if not is_inside_tree() or end.exit_taken() < 0:
-		_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+		_summary.show_summary(SummaryModel.epilogue(_run, end), _flow.mode())
 		return
 	_edge_layer.visible = false
 	get_tree().paused = true
@@ -2087,7 +2088,7 @@ func _walk_out_of_the_city(end: DayEnd) -> void:
 func _on_walked_in(end: DayEnd) -> void:
 	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_baby.process_mode = Node.PROCESS_MODE_INHERIT
-	_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+	_summary.show_summary(SummaryModel.epilogue(_run, end), _flow.mode())
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
 ## says: the screen decides it by the mode it was raised in (`raised_in`, a `RunFlow.Mode` sent with

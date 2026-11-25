@@ -292,8 +292,11 @@ const ENDING_BODY := {
 }
 ## The bad ending's extra line; `%d` is the last day played.
 const ENDING_DAY_REACHED := "\nYou made it to day %d."
-## `%s` the body, `%s` the run's length as a clock, `%s` the line above or "".
-const ENDING_PLAYED := "%s\n\nTime played: %s%s"
+## `%s` the body, `%s` the run's total length as a clock, `%s` the last day's own length
+## (`ENDING_LAST_DAY`) or "", `%s` the line above or "".
+const ENDING_PLAYED := "%s\n\nTime played: %s%s%s"
+## The last day's own clock, beside the total on a run's ending; `%s` is its clock.
+const ENDING_LAST_DAY := "\nThe last day: %s"
 
 # ---------------------------------------------------------------------- escape ---
 # The escape's own last screen, and the line each section of it opens on.
@@ -314,8 +317,8 @@ const FINALE_BODY := {
 		+ "She does not wake.",
 	CityExit.Kind.BRIDGE: FINALE_BODY_DEFAULT,
 }
-## `%s` the body, `%s` the time the escape took as a clock.
-const FINALE_OUT_IN := "%s\n\nOut in: %s"
+## `%s` the body, `%s` the time the escape took as a clock, `%s` the whole run's time as a clock.
+const FINALE_OUT_IN := "%s\n\nOut in: %s\nTime played: %s"
 const ESCAPE_BUILDING := "Escape the building"
 const ESCAPE_CITY := "Escape the city"
 

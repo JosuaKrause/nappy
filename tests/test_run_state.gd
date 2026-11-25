@@ -75,11 +75,21 @@ func _written_for(run: RunState, day_under_way: bool) -> Dictionary:
 		written[0] = JSON.parse_string(FileAccess.get_file_as_string(_SCRATCH_PATH)))
 	return written[0]
 
-## Everything the file holds but the build that wrote it.
+## Everything the file holds but the build that wrote it and `last_day_seconds`, a key the
+## fixture's older format lacks (the header loads a save without it as none, which
+## `test_save.gd` holds), so the comparison is narrowed to the keys the fixture holds.
 func _without_build(file: Dictionary) -> Dictionary:
 	var kept := file.duplicate(true)
 	kept.erase("build")
+	_erase_key(kept, "last_day_seconds")
 	return kept
+
+## `key` erased from `data` and every dictionary inside it.
+func _erase_key(data: Dictionary, key: String) -> void:
+	data.erase(key)
+	for value: Variant in data.values():
+		if value is Dictionary:
+			_erase_key(value as Dictionary, key)
 
 func _test_the_scenario_writes_what_main_wrote(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(1)
