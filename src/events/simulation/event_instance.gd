@@ -2158,11 +2158,6 @@ func row() -> EventDef:
 func row_id() -> String:
 	return _def.id()
 
-## The id of the row it leaves where it goes off (`EventDef.leaves_behind()`), or "" for a row that
-## leaves nothing.
-func leaves_behind() -> String:
-	return _def.leaves_behind()
-
 ## **The id of the row it leaves, handed over once, as it goes off**: on the first ask with its
 ## telegraph over, "" on every other ask and for a row that leaves nothing. The escape's explosion
 ## leaves its crater the moment it bangs, so the crater stands where nothing of it could be seen

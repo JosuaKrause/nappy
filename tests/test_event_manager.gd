@@ -377,7 +377,7 @@ func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
 	for instance in _stage.events().instances():
-		if instance.leaves_behind() == "" and _run_to_its_end(instance):
+		if instance.row().leaves_behind() == "" and _run_to_its_end(instance):
 			victim = instance
 			break
 	t.check(victim != null, "there is an event that leaves nothing behind and runs out")
