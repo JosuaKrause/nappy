@@ -66,12 +66,20 @@ is queued explicitly, so these four cases do not claim that every partial animat
 
 ### City ground and buildings
 
-South water uses the existing `tiles/water` atlas region on a separate `SceneryWater` canvas.
-It is absent from the static ground TileSet and composed sheet. A shader shifts the sample within
-each tile by less than a pixel, while the bulkhead, bridge and other ground stay still; its local
-clock pauses with gameplay. Roof rotors and the pipe/smoke parts likewise have separate retained
+South water is a blue base crossed by the white outlines of the Voronoi regions of randomly placed
+centroids, each centroid's intensity oscillating so the outlines drift (amber-puffin).
+`assets/shaders/south_water.gdshader` draws them into one live square tile of eight cells
+(`SouthWaterTile`, a texel a world pixel), redrawn every frame while a water surface stands and
+not at all otherwise. Each `SceneryWater` surface, on its own canvas absent from the static ground
+TileSet and composed sheet, repeats that tile over its cells in world coordinates, so the chunks the
+ground streams in meet without a seam; only the tile runs the shader, which keeps its cost near what
+the atlas water cost. Every other water, the burst water main's spray included, keeps its own
+drawing. The bulkhead, bridge and other ground stay still, and the bulkhead's own picture still
+carries a strip of the atlas water at its foot. The tile's clock is the city clock, which pauses
+with gameplay. Roof rotors and the pipe/smoke parts likewise have separate retained
 canvases, with their pixels absent from the static layers. [Runtime bursts](evidence/m159-scenery-animation-2026-09-26/README.md)
-show all four cases and the approved water motion.
+show all four cases; [the south water in play](evidence/amber-puffin-in-the-game-2026-11-25/README.md)
+shows the current water beside the earlier one.
 
 | Assets | Runtime binding and behaviour |
 |---|---|
@@ -374,8 +382,8 @@ have a separate owner until all quadrants are complete, pause outside the loadin
 retain their allocation until the wider unloading boundary; live ground edits and repaints
 discard that unfinished state, and its water uses separate quadrant surfaces. In every mode the
 safety guard, camera relocation and day destination preparation finish a region synchronously
-before it enters view, so no half-built region is drawn, and all water shares one pausable city
-clock. Returning buildings reconstruct
+before it enters view, so no half-built region is drawn, and all water draws from one tile on
+one pausable city clock. Returning buildings reconstruct
 their fixed seeded artwork and current day, condition, posters and power state, with moving
 roof detail kept separate from stationary surfaces.
 

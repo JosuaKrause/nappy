@@ -66,7 +66,7 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 # ------------------------------------------------------------------ the build ---
 
 ## Duplicates `authored` and gives every static source its picture from the baked page.
-## Water stays atlas-only, drawn by SceneryWater outside this composed static sheet.
+## Water is not in this composed static sheet: SceneryWater draws it from the south water's tile.
 ##
 ## **In a default bake a composed source's picture is its composition or nothing.** The page of a
 ## default bake carries the layers and only those whole tiles the recipe composes nothing for
