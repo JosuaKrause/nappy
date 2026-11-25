@@ -1,0 +1,197 @@
+nappy rig log  2026-11-24T21:02:44  version v0.29.2-714-gf98443b5b-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.4 ms, 392 x 392
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 3.2 ms, 570 x 394
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.9 ms, 436 x 260
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.4 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 1.1 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 12.5 ms, 801 x 1100
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.2 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 23.6 ms
+
+day 9  act 3  run seed 90303  city seed 90303  length 180.0s  invincible
+   0.0  arc      block (2,6) forest -> requisitioned (scheduled)
+   0.0  arc      block (9,9) park -> requisitioned (scheduled)
+   0.0  arc      block (2,4) forest -> requisitioned (scheduled)
+   0.0  arc      block (1,9) quiet_square -> requisitioned (scheduled)
+   0.0  arc      block (2,3) commercial -> boarded_up (scheduled)
+   0.0  arc      block (4,5) commercial -> boarded_up (scheduled)
+   0.0  arc      block (3,0) commercial -> boarded_up (scheduled)
+   0.0  arc      block (1,8) commercial -> boarded_up (scheduled)
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.5 ms
+   0.0  plan     regions: 34 boundary, 24 wall, 10 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, west along her street
+   0.0  contact  step 7 on offer at (35,122)
+   0.0  roll     chalk mark guarded (two-thirds in): robber 155px away
+   0.0  plan     closed: cordoned off h(7,9), cordoned off v(10,10)
+   0.0  plan     calm: 1 park, 1 quiet_square, 4 courtyard
+   0.0  plan     events: abduction x4, alley_mouse, alley_robbery x2, burnt_out_car x28, burst_water_main x11, busker x2, cafe_tables x16, car_accident x12, cat_dash x2, charging_dog x2, chatting_mother x2, checkpoint_gate x10, checkpoint_hut x20, collapsed_frontage x8, construction x15, cyclist x4, delivery_van x14, dog_walker x13, fallen_tree, homeless_yeller x3, ice_cream_van x2, leaf_blower x4, loose_dog x7, loudspeaker x6, market_stall x16, moving_van x16, pigeon_flock x2, playground, police_patrol x3, poster_crew x2, reversing_lorry, roadblock x77, scaffolding x7, skip x7
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  contact  step 7 moved to (77,94): never seen at (35,122)
+   0.0  roll     chalk mark guarded (two-thirds in): robber 155px away
+   0.0  frame    fps 1, worst frame 284.1ms, draws 0, objects 0, primitives 0, process 3.75ms, physics 5.09ms
+   0.0  frame    fps 118, worst frame 26.6ms, draws 0, objects 0, primitives 0, process 4.18ms, physics 148.51ms
+   0.0  near     neighbor at (75,84), 38px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   0.0  path     onto the corridor at (75,85), after 0.0s off it
+   0.0  path     off the corridor at (75,86), after 0.0s on it
+   0.0  cross    stepped into the road at (75,86), at a zebra
+   0.0  crowd    a car sounded its horn at her in the road at (75,86) | exc 0, in 0.0/s (crowd 1.5, events 0.0), sleep 1
+   0.0  frame    fps 145, worst frame 19.1ms, draws 0, objects 0, primitives 0, process 10.10ms, physics 8.93ms
+   0.0  cue      the mark over her head: soon for 0.0s (0.5s of it on the road) | a car, and she is in the road
+   0.0  near     homeless_yeller at (70,94), 218px, exc 0, in 0.0/s (crowd 0.3, events 0.2), sleep 1
+   0.0  path     onto the corridor at (75,90), after 0.0s off it
+   0.0  frame    fps 144, worst frame 47.3ms, draws 0, objects 0, primitives 0, process 4.55ms, physics 6.60ms
+   0.0  contact  walked within 128px of the chalk mark at (77,94)
+   0.0  frame    fps 122, worst frame 32.4ms, draws 0, objects 0, primitives 0, process 47.27ms, physics 20.19ms
+   0.0  contact  step 7 seen at (77,94) after 1.0s within 150px
+   0.0  path     off the corridor at (76,94), after 0.0s on it
+   0.0  near     alley_robbery at (82,94), 198px, exc 0, in 0.0/s (crowd 0.0, events 1.3), sleep 2
+   0.0  contact  step 7 completed
+   0.0  contact  step 8 on offer at (90,89)
+   0.0  contact  step 8 stands 452px from the mark it was read at
+   0.0  route    day 9: reached 'mark' at 5.8s (day time), 339px walked
+   0.0  near     homeless_yeller at (70,91), 205px, exc 0, in 0.0/s (crowd 0.0, events 1.5), sleep 2
+   0.0  frame    fps 144, worst frame 35.5ms, draws 0, objects 0, primitives 0, process 10.78ms, physics 7.86ms
+   0.0  path     onto the corridor at (75,94), after 0.0s off it
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | alley_robbery 198px
+   0.0  turn     doubled back 0°
+   0.0  frame    fps 139, worst frame 10.3ms, draws 0, objects 0, primitives 0, process 3.76ms, physics 32.19ms
+   0.0  path     off the corridor at (75,89), after 0.0s on it
+   0.0  frame    fps 145, worst frame 9.0ms, draws 0, objects 0, primitives 0, process 5.44ms, physics 6.48ms
+   0.0  frame    fps 145, worst frame 10.3ms, draws 0, objects 0, primitives 0, process 3.51ms, physics 6.22ms
+   0.0  near     alley_robbery at (82,94), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 3
+   0.0  frame    fps 145, worst frame 10.2ms, draws 0, objects 0, primitives 0, process 3.33ms, physics 7.35ms
+   0.0  path     onto the corridor at (84,89), after 0.0s off it
+   0.0  frame    fps 144, worst frame 14.5ms, draws 0, objects 0, primitives 0, process 7.88ms, physics 10.03ms
+   0.0  cross    stepped into the road at (86,89), at a zebra
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 7.21ms, physics 6.10ms
+   0.0  cue      the mark over her head: soon for 0.0s (0.4s of it on the road) | alley_robbery 199px
+   0.0  near     checkpoint_hut at (90,89), 96px, exc 0, in 0.0/s (crowd 0.0, events 1.3), sleep 4
+   0.0  near     checkpoint_gate at (90,87), 119px, exc 0, in 0.0/s (crowd 0.0, events 3.4), sleep 4
+   0.0  chat     checkpoint_hut at (90,89), 2.0s, baby awake, meter +25
+   0.0  frame    fps 144, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 11.17ms, physics 5.83ms
+   0.0  frame    fps 143, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 3.48ms, physics 11.73ms
+   0.0  contact  step 8: she crossed the district door at (90,87), let through after the inspection
+   0.0  contact  step 8 completed
+   0.0  checkpoint checkpoint_hut at (90,89), 2.0s, released on the east side
+   0.0  route    day 9: reached 'task' at 14.4s (day time), 544px walked
+   0.0  cue      edge badge: robber_giving_chase at 212px, closing 130px/s
+   0.0  route    day 9: re-planned to 'calm' (14.5s, 26 waypoints)
+   0.0  roll     task handed over: a robber sent after her from (93,83), 196px off (a clear run at her)
+   0.0  near     robber_giving_chase at (93,83), 192px, exc 0, in 0.0/s (crowd 0.0, events 8.9), sleep 3
+   0.0  chase    robber_giving_chase came for her at (93,83) | exc 0, in 0.0/s (crowd 0.0, events 8.9), sleep 3
+   0.0  cue      edge badge gone: robber_giving_chase after 0.0s, now 179px away
+   0.0  frame    fps 145, worst frame 41.4ms, draws 0, objects 0, primitives 0, process 3.06ms, physics 47.76ms
+   0.0  near     construction at (99,94), 204px, exc 0, in 0.0/s (crowd 3.8, events 12.3), sleep 3
+   0.0  crowd    walked into somebody at (95,89) | exc 0, in 0.0/s (crowd 22.2, events 13.2), sleep 3
+   0.0  near     robber_giving_chase at (94,86), 105px, exc 0, in 0.0/s (crowd 7.9, events 14.6), sleep 3
+   0.0  frame    fps 135, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 6.61ms, physics 13.93ms
+   0.0  path     off the corridor at (98,89), after 0.0s on it
+   0.0  near     robber_giving_chase at (96,88), 57px, exc 0, in 0.0/s (crowd 0.0, events 15.9), sleep 3
+   0.0  near     construction at (103,94), 204px, exc 0, in 0.0/s (crowd 0.0, events 16.0), sleep 3
+   0.0  cross    stepped into the road at (100,89), at a zebra
+   0.0  near     robber_giving_chase at (99,89), 32px, exc 0, in 0.0/s (crowd 1.2, events 16.0), sleep 3
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.55ms, physics 6.51ms
+   0.0  near     robber_giving_chase at (100,89), 16px, exc 0, in 0.0/s (crowd 3.6, events 16.0), sleep 4
+   0.0  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.30ms, physics 5.95ms
+   0.0  path     onto the corridor at (104,89), after 0.0s off it
+   0.0  frame    fps 142, worst frame 34.5ms, draws 0, objects 0, primitives 0, process 8.00ms, physics 21.36ms
+   0.0  frame    fps 142, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 7.22ms, physics 16.89ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.12ms, physics 5.75ms
+   0.0  path     off the corridor at (112,89), after 0.0s on it
+   0.0  cross    stepped into the road at (114,89), at a zebra
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.45ms, physics 5.86ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.85ms, physics 5.35ms
+   0.0  path     away from the corridor at (118,89), after 0.0s off it
+   0.0  calm     entered residential (7,6), sleep 6
+   0.0  route    day 9: reached 'calm' at 23.4s (day time), 814px walked
+   0.0  ahead    loose_dog comes at her from 351px in front of her at (118,89), unannounced
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.22ms, physics 5.70ms
+   0.0  turn     doubled back 270°
+   0.0  near     loose_dog at (112,89), 189px, exc 0, in 0.0/s (crowd 2.8, events 16.7), sleep 21
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.58ms, physics 3.25ms
+   0.0  near     loose_dog at (115,89), 101px, exc 0, in 0.0/s (crowd 0.0, events 24.2), sleep 27
+   0.0  near     loose_dog at (116,89), 52px, exc 0, in 0.0/s (crowd 0.0, events 29.6), sleep 29
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.76ms, physics 3.93ms
+   0.0  near     loose_dog at (118,89), 25px, exc 0, in 0.0/s (crowd 0.0, events 46.3), sleep 33
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.12ms, physics 4.65ms
+   0.0  turn     doubled back 90°
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.00ms, physics 2.75ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.00ms, physics 2.90ms
+   0.0  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.57ms, physics 2.67ms
+   0.0  turn     doubled back 270°
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.48ms, physics 2.96ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.54ms, physics 2.51ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.49ms, physics 2.64ms
+   0.0  turn     doubled back 90°
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.65ms, physics 2.60ms
+   0.0  calm     settled in the calm block (8,5); tomorrow will know
+   0.0  asleep   asleep after 0.0s, exc 0, in 0.0/s (crowd 0.0, events 16.0), sleep 100
+   0.0  route    day 9: baby settled at 'calm', 34.8s (day time)
+   0.0  frame    fps 145, worst frame 41.4ms, draws 0, objects 0, primitives 0, process 4.43ms, physics 3.00ms
+   0.0  route    day 9: re-planned to 'home' (35.4s, 42 waypoints)
+   0.0  frame    fps 137, worst frame 40.9ms, draws 0, objects 0, primitives 0, process 2.89ms, physics 39.01ms
+   0.0  path     off the corridor at (117,84), after 0.0s away it
+   0.0  left     left residential (7,5), sleep 100
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.60ms, physics 6.15ms
+   0.0  path     onto the corridor at (115,84), after 0.0s off it
+   0.0  cross    stepped into the road at (115,84), at a zebra
+   0.0  frame    fps 145, worst frame 27.6ms, draws 0, objects 0, primitives 0, process 2.77ms, physics 6.57ms
+   0.0  frame    fps 141, worst frame 8.3ms, draws 0, objects 0, primitives 0, process 10.20ms, physics 22.29ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 4.55ms, physics 6.34ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.57ms, physics 6.35ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.98ms, physics 5.88ms
+   0.0  cross    stepped into the road at (101,84), at a zebra
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.52ms, physics 6.19ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.04ms, physics 5.86ms
+   0.0  chase    robber_giving_chase stopped chasing after 0.0s — closest 0px, she ran 1.3s of it | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  frame    fps 145, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 4.06ms, physics 6.60ms
+   0.0  near     checkpoint_hut at (90,85), 95px, exc 0, in 0.0/s (crowd 0.0, events 1.4), sleep 100
+   0.0  near     checkpoint_gate at (90,87), 119px, exc 0, in 0.0/s (crowd 0.0, events 3.5), sleep 100
+   0.0  chat     checkpoint_hut at (90,85), 2.0s, baby asleep, meter +0 (asleep)
+   0.0  cue      the mark over her head: now for 0.0s (2.8s of it on the road) | robber_giving_chase 63px
+   0.0  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 6.11ms, physics 11.58ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.33ms, physics 5.98ms
+   0.0  checkpoint checkpoint_hut at (90,85), 2.0s, released on the west side
+   0.0  route    day 9: re-planned to 'home' (47.7s, 14 waypoints)
+   0.0  near     robber_giving_chase at (86,84), 59px, exc 0, in 0.0/s (crowd 0.0, events 4.0), sleep 100
+   0.0  path     off the corridor at (88,83), after 0.0s on it
+   0.0  route    day 9: re-planned to 'home' (48.2s, 29 waypoints)
+   0.0  frame    fps 145, worst frame 27.6ms, draws 0, objects 0, primitives 0, process 2.33ms, physics 3.24ms
+   0.0  chat     checkpoint_hut at (90,85), 2.0s, baby asleep, meter +0 (asleep)
+   0.0  frame    fps 139, worst frame 13.8ms, draws 0, objects 0, primitives 0, process 3.48ms, physics 32.90ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.22ms, physics 3.13ms
+   0.0  checkpoint checkpoint_hut at (90,85), 2.0s, released on the east side
+   0.0  route    day 9: re-planned to 'home' (50.5s, 35 waypoints)
+   0.0  near     checkpoint_gate at (90,87), 119px, exc 0, in 0.0/s (crowd 0.0, events 4.0), sleep 100
+   0.0  path     onto the corridor at (92,84), after 0.0s off it
+   0.0  turn     doubled back 181°
+   0.0  frame    fps 145, worst frame 27.6ms, draws 0, objects 0, primitives 0, process 2.27ms, physics 3.88ms
+   0.0  ahead    poster_crew is sited 1588px ahead of her at (69,42), east of where she is at (94,85)
+   0.0  frame    fps 141, worst frame 20.7ms, draws 0, objects 0, primitives 0, process 4.15ms, physics 33.08ms
+   0.0  frame    fps 143, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.46ms, physics 23.06ms
+   0.0  path     off the corridor at (98,86), after 0.0s on it
+   0.0  cross    stepped into the road at (98,86), at a zebra
+   0.0  near     construction at (99,94), 200px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 2.97ms, physics 6.56ms
+   0.0  path     onto the corridor at (97,88), after 0.0s off it
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.19ms, physics 7.05ms
+   0.0  near     checkpoint_gate at (90,87), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  near     checkpoint_hut at (90,89), 95px, exc 0, in 0.0/s (crowd 0.0, events 1.4), sleep 100
+   0.0  chat     checkpoint_hut at (90,89), 2.0s, baby asleep, meter +0 (asleep)
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.27ms, physics 8.49ms
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.88ms, physics 6.35ms
+   0.0  checkpoint checkpoint_hut at (90,89), 2.0s, released on the west side
+   0.0  route    day 9: re-planned to 'home' (58.2s, 14 waypoints)
+   0.0  cross    stepped into the road at (87,88), at a zebra
+   0.0  frame    fps 145, worst frame 27.6ms, draws 0, objects 0, primitives 0, process 2.56ms, physics 3.25ms
+   0.0  frame    fps 142, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.54ms, physics 32.51ms
+   0.0  path     off the corridor at (85,87), after 0.0s on it
+   0.0  cross    stepped into the road at (85,87), at a zebra
+   0.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 3.47ms, physics 5.73ms
+   0.0  frame    fps 145, worst frame 20.7ms, draws 0, objects 0, primitives 0, process 3.10ms, physics 5.70ms
+   0.0  frame    fps 144, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 5.76ms, physics 15.98ms
+   0.0  path     0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
+   0.0  home     WON, 180.0s to spare
+   0.0  route    day 9: day won at 62.4s (day time), still walking to 'home'

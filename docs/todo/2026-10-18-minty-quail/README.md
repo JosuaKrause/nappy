@@ -89,8 +89,9 @@ early to injected fakes and public APIs (**writing-tests**, "A test reaches the 
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
-   table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
-   one from before the refactor, and pictures of every behavior a step changed on purpose. Each
+   table, GoatCounter's counts against `docs/stats/` (read after a release, since the live site counts
+   released builds only; owed as an entry of its own, filed when this entry closes) and pictures of every behavior a step
+   changed on purpose. Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured
    about 4.5% slower once the walker and the car share a mover base the crowd member extends
    (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
@@ -110,7 +111,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`
    (the record minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
    fourth after the events' field-read conversion (the record polite-tapir-crisp-heron). Nothing is judged in the
-   readings: a number that moved is listed here for this remeasure, and no step waits on one. Four
+   readings: a number that moved is listed here for this remeasure, and no step waits on one. Three
    lists of numbers are left for it:
 
    - **What moved after the events' field-read conversion** (the fourth column against the third, the record
@@ -121,11 +122,6 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      profiled and 7.5 to 6.3 with the profiler off; `test_acts`'s checks 349 to 45 (its sweep holds scripted rows
      only) and `test_finale`'s 9,464 to 9,463; the unmodified frame-profile launcher's six runs all rejected by
      the analyzer (an 8.3 ms callback interval), not looked into.
-   - **The escape's mix and walks** (placement by construction's switch of the escape city's walk to the unit draw, the record
-     polite-tapir-coral-badger;
-     `tests/probes/escape_winnable.gd`, 24 seeds): main before the switch planned 0.66 dangers a street and 34%
-     of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44), and walked out to the tunnel on 13
-     walks and to the bridge on 10; after it, 0.66 and 34% (181, 178, 89, 46), 12 and 10.
    - **Streaming's loop over every plan**: `EventStreaming.stream_around()`, which row 3b's design asked to be
      measured and which was not (the record minty-quail-gray-koala; the paragraph above says what this step
      measures of it).

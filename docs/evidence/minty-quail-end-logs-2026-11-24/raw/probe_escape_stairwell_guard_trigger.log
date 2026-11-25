@@ -1,0 +1,22 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+TRIGGER seed 4242 turn-10 walk charged at (7.32, 11.28) 421px from him, caught at 4.23s, 2.60s after he ran, closest 22.0px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-10 run charged at (8.24, 11.25) 421px from him, through the door at 3.13s, 2.30s after he ran, closest 57.9px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-10 walk-run charged at (7.32, 11.28) 421px from him, through the door at 3.63s, 2.00s after he ran, closest 99.0px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-11 walk charged at (8.5, 11.19) 423px from him, caught at 4.23s, 2.93s after he ran, closest 22.5px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-11 run charged at (8.5, 11.33) 418px from him, through the door at 3.30s, 2.50s after he ran, closest 33.1px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-11 walk-run charged at (8.5, 11.19) 423px from him, through the door at 3.87s, 2.57s after he ran, closest 24.6px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-9 walk charged at (6.81, 11.35) 421px from him, caught at 4.27s, 2.67s after he ran, closest 22.7px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-9 run charged at (7.17, 11.31) 421px from him, through the door at 2.80s, 1.90s after he ran, closest 111.8px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-9 walk-run charged at (6.81, 11.35) 421px from him, through the door at 3.37s, 1.77s after he ran, closest 127.5px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-9-left walk charged at (6.65, 11.34) 422px from him, through the door at 4.27s, 2.53s after he ran, closest 38.0px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-9-left run charged at (6.75, 11.36) 421px from him, through the door at 2.77s, 1.73s after he ran, closest 133.1px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 turn-9-left walk-run charged at (6.65, 11.34) 422px from him, through the door at 3.43s, 1.70s after he ran, closest 135.8px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 door walk charged at (1.5, 18.33) 294px from him, through the door at 2.10s, 1.10s after he ran, closest 212.5px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 door run charged at (1.5, 19.56) 270px from him, through the door at 2.07s, 1.07s after he ran, closest 215.8px on a tick (the catch is 23.5px)
+TRIGGER seed 4242 door walk-run charged at (1.5, 18.33) 294px from him, through the door at 1.77s, 0.77s after he ran, closest 256.7px on a tick (the catch is 23.5px)
+-- escape_stairwell_guard_trigger.gd       4561 ms
+
+0 checks, 0 failures
+PARTIAL RUN — only suites matching probes/escape_stairwell_guard_trigger.gd. Not a green build.
