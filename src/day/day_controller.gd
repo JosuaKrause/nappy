@@ -11,13 +11,13 @@ extends Node
 ## building's service exit and the city's two ways out are goals of this clock exactly as her front
 ## door is, and a lost section ends here through the same three losing paths a day does.
 
-## How far from an exit's point (`DaySpec.exit_points()`, the middle of the carriageway on the
-## spine's last row, the portal's own threshold) her centre may lie along the spine and still be
-## in the tunnel or on the bridge: half a tile, so only the last row counts. Her body
-## (`Tuning.PLAYER_BODY_RADIUS`, 14px) cannot take her centre past the map's edge, so standing
-## anywhere on the last row is as far in as the ground goes, and the tile before it, the border
-## junction's crossing, is the street she is still on. The reach across the spine is the
-## carriageway's own half width (`_reached_an_exit()`).
+## How far from an exit's threshold (`DaySpec.exit_points()`, the middle of the carriageway on the
+## spine's last row) her centre may lie along the spine and still be on that last row: half a tile,
+## so only the last row counts. Her body (`Tuning.PLAYER_BODY_RADIUS`, 14px) cannot take her centre
+## past the map's edge, so the row is as far as her own control goes; the tile before it, the
+## border junction's crossing, is the street she is still on. The reach across the spine is the
+## carriageway's own half width (`_reached_an_exit()`). Reaching the row wins the section; the
+## game then walks her into the tunnel or across the bridge (`EscapeWalkIn`).
 const FINALE_EXIT_DEPTH := Tuning.TILE_SIZE * 0.5
 
 signal day_finished(result: GameEnums.DayResult)
@@ -213,10 +213,10 @@ func _reached_the_goal() -> bool:
 			return _reached_an_exit()
 	return false
 
-## Whether she is in the tunnel or on the bridge — her centre on the last row of the spine, across
-## the carriageway, at either end (`_spec.exit_points()`, `FINALE_EXIT_DEPTH`) — and which, kept in
-## `_exit_reached`. The street before it, the border junction's crossing, is not: she walks it on the
-## way in, and the run ends when she steps past it into the portal.
+## Whether she is at the threshold of the tunnel or the bridge — her centre on the last row of the
+## spine, across the carriageway, at either end (`_spec.exit_points()`, `FINALE_EXIT_DEPTH`) — and
+## which, kept in `_exit_reached`. The street before it, the border junction's crossing, is not. The
+## win is decided here; she is walked in afterwards.
 func _reached_an_exit() -> bool:
 	if not _player:
 		return false

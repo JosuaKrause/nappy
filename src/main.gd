@@ -119,6 +119,9 @@ var _building_seed := 0
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
+## The escape's last steps, the game walking her into the tunnel or across the bridge once the
+## city section is won (`_walk_out_of_the_city()`). Built with the day.
+var _walk_in: EscapeWalkIn
 var _resistance: ResistanceDirector
 ## The run log's owner for this boot — see `RunSession`. Built first in `_ready()`; null for a
 ## script-only `main` a test drives with no boot behind it.
@@ -494,6 +497,11 @@ func _ready() -> void:
 	_pauses_with_the_game(_day)
 	_day.setup(_run)
 	_day.day_finished.connect(_on_day_finished)
+	# Deliberately **not** `_pauses_with_the_game()`: the walk-in runs while the tree is paused, the
+	# world frozen around her (`_walk_out_of_the_city()`).
+	_walk_in = EscapeWalkIn.new()
+	_walk_in.name = "WalkIn"
+	add_child(_walk_in)
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
@@ -1105,22 +1113,24 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	# — see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
 
-## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the middle of the carriageway on
-## the spine's last row (`FinalePlanner.exit_tile()`'s row, the spine's centre line) rather than
-## the points `CityEdge` draws its pictures at. The portal's own face is anchored on the map edge,
-## past the last ground she can stand on, so the last row is the portal's threshold, which is
-## where being in the tunnel or on the bridge happens.
+## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the thresholds, the middle of the
+## carriageway on the spine's last row (`FinalePlanner.exit_tile()`'s row, the spine's centre line)
+## rather than the points `CityEdge` draws its pictures at. The portal's own face is anchored on the
+## map edge, past the last ground she can stand on, so the last row is where her control ends and
+## the game walks her in (`EscapeWalkIn`).
 func _the_city_exits() -> Dictionary:
 	return {
 		CityExit.Kind.TUNNEL: _exit_point(CityExit.Kind.TUNNEL),
 		CityExit.Kind.BRIDGE: _exit_point(CityExit.Kind.BRIDGE),
 	}
 
-## One way out's point: the spine's centre line (`City.tunnel_world_position()`'s column) on the
-## centre of the last walkable row.
+## One way out's threshold: the spine's centre line at that end (the tunnel's or the bridge's own
+## column) on the centre of the last walkable row.
 func _exit_point(exit_kind: int) -> Vector2:
 	var row := _city.map().tile_to_world(FinalePlanner.exit_tile(_city.map(), exit_kind))
-	return Vector2(_city.tunnel_world_position().x, row.y)
+	var spine := _city.tunnel_world_position() if exit_kind == CityExit.Kind.TUNNEL \
+			else _city.bridge_world_position()
+	return Vector2(spine.x, row.y)
 
 ## `--start-escape`'s raw word (`config.start_escape_at()`), mapped onto a building part's waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -2042,7 +2052,7 @@ func _finish_the_section(end: DayEnd) -> void:
 		# walk has nothing after its epilogue but walking it again.
 		_flow.escape_won()
 		_hud.visible = false
-		_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+		_walk_out_of_the_city(end)
 		return
 	# The end-of-section write, as a lost day's is, so closing the game on this screen cannot take a
 	# hard run's spent nerve back. Skipped when the run just ended, whose save
@@ -2050,6 +2060,31 @@ func _finish_the_section(end: DayEnd) -> void:
 	if not run_over:
 		_save_now(false)
 	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title()), _flow.mode())
+
+## **The game walks her in** once the section is won at the threshold of the tunnel or the bridge:
+## her own control ends there and she walks on by herself into the tunnel's dark or across the
+## whole deck (`EscapeWalkIn`), the camera following her past the map's edge, and the epilogue comes
+## up when she is in. **Nothing can catch her on the way**: the day is already won (no loss path is
+## listening), and the tree is paused with only her (and her camera) and the walk-in left running,
+## so no car, walker or event moves. The map's walkable set is untouched; she is led through the
+## boundary wall over what `CityEdge` draws. Esc and a lost focus open nothing meanwhile
+## (`_unhandled_input()`, `_pause_on_focus_lost()`).
+func _walk_out_of_the_city(end: DayEnd) -> void:
+	if not is_inside_tree() or end.exit_taken() < 0:
+		_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+		return
+	_edge_layer.visible = false
+	get_tree().paused = true
+	_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	var threshold: Vector2 = _day.spec().exit_points()[end.exit_taken()]
+	_walk_in.arrived.connect(_on_walked_in.bind(end), CONNECT_ONE_SHOT)
+	_walk_in.begin(_player, end.exit_taken(), threshold)
+
+## She is in the tunnel or across the bridge: the world is handed back to the pause and the
+## epilogue comes up over it.
+func _on_walked_in(end: DayEnd) -> void:
+	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
 ## says: the screen decides it by the mode it was raised in (`raised_in`, a `RunFlow.Mode` sent with
@@ -2394,7 +2429,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# a test drives straight through this function without also calling `_ready()` may not have.
 	if not _pause:
 		return
-	if _pause.is_open() or _title.is_open():
+	if _pause.is_open() or _title.is_open() or _walk_in.is_walking():
 		return
 	# The escape's own guard — see this function's own doc, "The escape's brief and its epilogue
 	# are the one exception": a section's brief up, whichever way it came, or the epilogue.
@@ -2434,7 +2469,8 @@ func _pause_on_focus_lost() -> void:
 	# `_summary.is_showing()` already excludes every screen the escape raises (a section's brief,
 	# a lost section's outcome screen and the epilogue) on exactly the same terms it excludes a
 	# day's own summary and ending — nothing escape-specific to add here, unlike Esc.
-	if _pause.is_open() or _title.is_open() or (_summary and _summary.is_showing()):
+	if _pause.is_open() or _title.is_open() or _walk_in.is_walking() \
+			or (_summary and _summary.is_showing()):
 		return
 	_pause.open()
 

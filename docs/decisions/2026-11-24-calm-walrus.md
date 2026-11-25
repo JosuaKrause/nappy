@@ -1,4 +1,4 @@
-# calm-walrus — The escape ends in the tunnel or on the bridge · 2026-11-25
+# calm-walrus — The escape ends in the tunnel or across the bridge · 2026-11-25
 
 The player: the escape should end when she actually enters the tunnel or crosses the bridge, not
 when she reaches that intersection (inbox #1733 in spry-ferret).
@@ -7,19 +7,33 @@ when she reaches that intersection (inbox #1733 in spry-ferret).
 (`FINALE_EXIT_REACH`) of the centre of the spine's last walkable tile, so it fired as she crossed
 the border junction's crossing, a tile or two before the portal.
 
-**What is built.** The exit points are the middle of the carriageway on the spine's last row
-(`FinalePlanner.exit_point()`), and the walk ends when her centre is on that row, across the
-carriageway (`DayController.FINALE_EXIT_DEPTH`, half a tile along the spine, and the carriageway's
-half width across). The last row is as far as she can go: the tile beyond the map is not ground
-(`CityEdge` keeps every walkable tile where it was), and the portal's opening and the bridge deck
-are drawn past it. The crossing before it stays part of the route.
+**What is built.** *The game walks her in.* The section is won, and its clock stops, when her centre
+is on the spine's last row at either end, across the carriageway (`DayController.FINALE_EXIT_DEPTH`,
+half a tile along the spine; `Main._exit_point()` builds the point from `FinalePlanner.exit_tile()`'s
+row and the tunnel's or the bridge's own column). Her control ends there: `Main._walk_out_of_the_city()`
+hands her to `EscapeWalkIn`, which leads her on (`Stroller.lead()`, at a run, through the boundary
+wall) into the tunnel's dark as deep as its opening (`CityEdge.TUNNEL_DEPTH_TILES` rows past the
+edge) or across the whole deck (`CityEdge.BRIDGE_DECK_PX` past the edge), the camera following, and
+the ending screen comes when she is in (`EscapeWalkIn.arrived`). The portal and the deck are drawn
+past the map's edge, so the last row is as far as her own steps go.
 
-**Open point settled by the builder.** Which point of the tunnel and the bridge counts: the last
-row, the portal's threshold, because walking into the opening itself would move the walkable set,
-which `CityEdge` and `tests/test_blocks.gd` hold still tile for tile. Stills of both ends are in
-`docs/evidence/calm-walrus-escape-end-2026-11-25/`.
+**Nothing can catch her on the walk.** The section is already won when it begins (the day has ended,
+so no loss path is listening), and `Main` pauses the tree with only her and the walk-in running, so
+no car, walker or event moves. Esc and a lost focus open nothing meanwhile. No walkable ground is
+added: the map's walkable set is what it was, as M204's record has it (the landscape outside the map
+adds no walkable tile, collision or road).
 
-**Measured.** `tests/probes/escape_winnable.gd` on seeds 4242, 1, 77 and 9001 (the game's own
-bag, one walk per exit): before and after, the same walks are lost and the same two are out
-(seed 4242 bridge, seed 9001 tunnel); the out times moved by 0.4 s at most (40.5 to 40.8 s, 61.6 to
-62.0 s), the cost of the walk's last tile or so.
+**The point is the orchestrator's pick, open to the player's overturn** (on the board as
+escape-end-past-the-edge), not the builder's and not settled by the player. The alternatives: walkable
+ground along the spine past the edge, which touches M204's record and the reachability floods; or the
+end at the threshold with no walk (the first version of this entry, which the review refused because
+the last row is still a crossing tile and the bridge's deck is never set foot on). Two choices inside
+the pick are the fixer's, for the player to read: the clock stops at the threshold, not at the end
+of the walk (the walk is the game's, and the bridge's is far longer than the tunnel's, so a clock to
+the far end would add a distance to every time), and the walk is at a run (the deck is
+`BRIDGE_DECK_PX` long, which is a long way at a walk).
+
+**Measured.** `tests/probes/escape_winnable.gd` on seeds 4242, 1, 77 and 9001 (the game's own bag,
+one walk per exit): the same walks are lost and the same two are out as before (seed 4242 bridge at
+40.8 s, seed 9001 tunnel at 62.0 s). The probe's rig quits at the win, so it does not see the walk-in;
+the walk-in is held by `tests/test_escape_walk_in.gd` and the booted case in `tests/finale_rig.gd`.
