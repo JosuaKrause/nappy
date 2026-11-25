@@ -303,3 +303,233 @@ RM_MARK seed 13 mark (123, 77) | swapped | 494px
 RM_MARK seed 13 mark (152, 80) | found@576 | 262px
 RM_MARK seed 13 mark (147, 81) | found@576 | 240px
 RM_MARK seed 13 mark (136, 91) | found@576 | 661px
+RM_MARK seed 13 mark (54, 93) | found@576 | 394px
+RM_MARK seed 13 mark (82, 106) | found@576 | 410px
+RM_MARK seed 13 mark (77, 107) | found@576 | 572px
+RM_MARK seed 13 mark (119, 109) | found@576 | 144px
+RM_MARK seed 13 mark (119, 120) | found@576 | 208px
+RM_MARK seed 13 mark (31, 124) | found@576 | 400px
+RM_MARK seed 13 mark (150, 147) | found@576 | 229px
+RM_MARK seed 13 mark (7, 149) | swapped | 768px
+RM_MARK seed 13 mark (35, 151) | found@896 | 906px
+RM_SEED seed 13 | 90 legal marks, 24 read | 16 roadblocks the day placed | { "found": 22, "swapped": 2 }
+[RunState] run started, seed=2
+RM_MARK seed 21 mark (38, 7) | found@576 | 494px
+RM_MARK seed 21 mark (53, 7) | found@576 | 420px
+RM_MARK seed 21 mark (39, 12) | found@576 | 375px
+RM_MARK seed 21 mark (93, 12) | found@576 | 422px
+RM_MARK seed 21 mark (35, 24) | found@576 | 148px
+RM_MARK seed 21 mark (94, 26) | found@576 | 218px
+RM_MARK seed 21 mark (133, 50) | found@576 | 338px
+RM_MARK seed 21 mark (49, 51) | found@576 | 288px
+RM_MARK seed 21 mark (147, 51) | found@576 | 129px
+RM_MARK seed 21 mark (105, 52) | found@576 | 272px
+RM_MARK seed 21 mark (105, 53) | found@576 | 274px
+RM_MARK seed 21 mark (105, 64) | found@576 | 471px
+RM_MARK seed 21 mark (105, 65) | found@576 | 497px
+RM_MARK seed 21 mark (121, 77) | found@576 | 316px
+RM_MARK seed 21 mark (96, 94) | found@576 | 355px
+RM_MARK seed 21 mark (110, 106) | found@576 | 301px
+RM_MARK seed 21 mark (109, 119) | found@576 | 375px
+RM_MARK seed 21 mark (109, 124) | found@576 | 508px
+RM_MARK seed 21 mark (53, 133) | found@576 | 258px
+RM_MARK seed 21 mark (10, 147) | found@576 | 288px
+RM_MARK seed 21 mark (91, 148) | found@576 | 574px
+RM_MARK seed 21 mark (91, 149) | found@576 | 568px
+RM_MARK seed 21 mark (49, 150) | found@576 | 462px
+RM_MARK seed 21 mark (49, 151) | found@576 | 493px
+RM_SEED seed 21 | 94 legal marks, 24 read | 19 roadblocks the day placed | { "found": 24 }
+[RunState] run started, seed=2
+RM_MARK seed 34 mark (50, 7) | found@576 | 144px
+RM_MARK seed 34 mark (49, 22) | found@576 | 493px
+RM_MARK seed 34 mark (133, 24) | swapped | 1650px
+RM_MARK seed 34 mark (64, 35) | found@896 | 803px
+RM_MISS seed 34 at (7, 39)
+RM_MARK seed 34 mark (7, 39) | missed | -
+RM_MARK seed 34 mark (26, 49) | found@1024 | 1010px
+RM_MARK seed 34 mark (110, 50) | swapped | 907px
+RM_MARK seed 34 mark (110, 51) | swapped | 913px
+RM_MARK seed 34 mark (107, 68) | swapped | 845px
+RM_MARK seed 34 mark (121, 82) | swapped | 627px
+RM_MARK seed 34 mark (40, 94) | found@576 | 208px
+RM_MARK seed 34 mark (137, 96) | found@576 | 511px
+RM_MARK seed 34 mark (68, 106) | found@576 | 422px
+RM_MARK seed 34 mark (68, 107) | found@576 | 452px
+RM_MARK seed 34 mark (138, 107) | found@576 | 471px
+RM_MARK seed 34 mark (49, 120) | found@896 | 738px
+RM_MARK seed 34 mark (124, 120) | found@576 | 179px
+RM_MARK seed 34 mark (110, 121) | found@576 | 422px
+RM_MARK seed 34 mark (40, 122) | found@576 | 608px
+RM_MARK seed 34 mark (10, 124) | found@896 | 918px
+RM_MARK seed 34 mark (149, 133) | found@576 | 431px
+RM_MARK seed 34 mark (138, 136) | found@576 | 218px
+RM_MARK seed 34 mark (149, 138) | found@576 | 497px
+RM_MARK seed 34 mark (68, 149) | swapped | 1441px
+RM_SEED seed 34 | 99 legal marks, 24 read | 14 roadblocks the day placed | { "found": 17, "swapped": 6, "missed": 1 }
+[RunState] run started, seed=2
+RM_MARK seed 55 mark (135, 26) | found@576 | 524px
+RM_MARK seed 55 mark (137, 35) | found@576 | 262px
+RM_MARK seed 55 mark (137, 40) | found@576 | 208px
+RM_MARK seed 55 mark (138, 52) | found@576 | 422px
+RM_MARK seed 55 mark (138, 53) | found@576 | 452px
+RM_MARK seed 55 mark (105, 65) | found@576 | 369px
+RM_MARK seed 55 mark (78, 91) | found@576 | 208px
+RM_MARK seed 55 mark (136, 91) | found@576 | 208px
+RM_MARK seed 55 mark (119, 92) | found@576 | 338px
+RM_MARK seed 55 mark (119, 93) | found@576 | 342px
+RM_MARK seed 55 mark (79, 96) | found@576 | 288px
+RM_MARK seed 55 mark (137, 96) | found@576 | 288px
+RM_MARK seed 55 mark (26, 106) | found@576 | 144px
+RM_MARK seed 55 mark (68, 106) | found@576 | 493px
+RM_MARK seed 55 mark (26, 107) | found@576 | 176px
+RM_MARK seed 55 mark (10, 119) | found@896 | 759px
+RM_MARK seed 55 mark (10, 124) | found@896 | 883px
+RM_MARK seed 55 mark (122, 133) | found@576 | 508px
+RM_MARK seed 55 mark (63, 134) | found@576 | 360px
+RM_MARK seed 55 mark (63, 135) | found@576 | 349px
+RM_MARK seed 55 mark (123, 138) | found@576 | 355px
+RM_MARK seed 55 mark (151, 147) | found@896 | 688px
+RM_MARK seed 55 mark (68, 150) | found@576 | 422px
+RM_MARK seed 55 mark (68, 151) | found@576 | 452px
+RM_SEED seed 55 | 53 legal marks, 24 read | 12 roadblocks the day placed | { "found": 24 }
+[RunState] run started, seed=2
+RM_MARK seed 89 mark (50, 7) | found@1024 | 1017px
+RM_MARK seed 89 mark (138, 8) | found@576 | 637px
+RM_MARK seed 89 mark (51, 12) | found@896 | 945px
+RM_MARK seed 89 mark (137, 26) | found@576 | 208px
+RM_MARK seed 89 mark (8, 40) | swapped | 1052px
+RM_MARK seed 89 mark (64, 54) | found@576 | 344px
+RM_MARK seed 89 mark (49, 64) | found@576 | 493px
+RM_MARK seed 89 mark (91, 66) | found@576 | 262px
+RM_MARK seed 89 mark (122, 68) | found@576 | 553px
+RM_MARK seed 89 mark (106, 77) | found@896 | 856px
+RM_MARK seed 89 mark (147, 79) | found@896 | 695px
+RM_MARK seed 89 mark (21, 81) | found@576 | 262px
+RM_MARK seed 89 mark (106, 82) | found@1024 | 1007px
+RM_MARK seed 89 mark (10, 96) | found@576 | 176px
+RM_MARK seed 89 mark (120, 105) | found@896 | 758px
+RM_MARK seed 89 mark (21, 107) | found@576 | 148px
+RM_MARK seed 89 mark (120, 110) | found@896 | 755px
+RM_MARK seed 89 mark (147, 120) | found@576 | 400px
+RM_MARK seed 89 mark (80, 124) | swapped | 1100px
+RM_MARK seed 89 mark (91, 134) | swapped | 1452px
+RM_MARK seed 89 mark (91, 135) | swapped | 1469px
+RM_MARK seed 89 mark (122, 138) | swapped | 928px
+RM_MARK seed 89 mark (108, 147) | swapped | 1369px
+RM_MARK seed 89 mark (108, 152) | swapped | 1510px
+RM_SEED seed 89 | 95 legal marks, 24 read | 25 roadblocks the day placed | { "found": 17, "swapped": 7 }
+[RunState] run started, seed=2
+RM_MARK seed 144 mark (7, 8) | found@896 | 967px
+RM_MARK seed 144 mark (77, 8) | found@896 | 698px
+RM_MARK seed 144 mark (12, 9) | found@896 | 848px
+RM_MARK seed 144 mark (106, 49) | found@576 | 645px
+RM_MARK seed 144 mark (96, 52) | found@896 | 656px
+RM_MARK seed 144 mark (106, 54) | found@896 | 788px
+RM_MARK seed 144 mark (95, 63) | found@896 | 920px
+RM_MARK seed 144 mark (63, 67) | found@576 | 116px
+RM_MARK seed 144 mark (95, 68) | found@896 | 765px
+RM_MARK seed 144 mark (95, 77) | found@576 | 494px
+RM_MARK seed 144 mark (119, 87) | found@576 | 574px
+RM_MARK seed 144 mark (12, 92) | swapped | 592px
+RM_MARK seed 144 mark (7, 93) | swapped | 624px
+RM_MARK seed 144 mark (82, 93) | found@576 | 627px
+RM_MARK seed 144 mark (133, 109) | found@576 | 360px
+RM_MARK seed 144 mark (54, 122) | found@576 | 218px
+RM_MARK seed 144 mark (108, 125) | found@576 | 532px
+RM_MARK seed 144 mark (24, 133) | found@576 | 508px
+RM_MARK seed 144 mark (64, 133) | found@576 | 116px
+RM_MARK seed 144 mark (152, 134) | found@576 | 680px
+RM_MARK seed 144 mark (24, 138) | found@576 | 654px
+RM_MARK seed 144 mark (65, 138) | found@576 | 279px
+RM_MARK seed 144 mark (63, 148) | found@576 | 563px
+RM_MARK seed 144 mark (26, 149) | found@576 | 627px
+RM_SEED seed 144 | 69 legal marks, 24 read | 25 roadblocks the day placed | { "found": 22, "swapped": 2 }
+[RunState] run started, seed=2
+RM_MARK seed 233 mark (136, 7) | found@576 | 487px
+RM_MARK seed 233 mark (21, 10) | found@576 | 560px
+RM_MARK seed 233 mark (26, 11) | found@576 | 452px
+RM_MARK seed 233 mark (36, 21) | found@576 | 173px
+RM_MARK seed 233 mark (36, 26) | found@576 | 158px
+RM_MARK seed 233 mark (9, 49) | found@576 | 493px
+RM_MARK seed 233 mark (8, 54) | found@576 | 580px
+RM_MARK seed 233 mark (95, 54) | found@896 | 701px
+RM_MARK seed 233 mark (7, 67) | found@896 | 877px
+RM_MARK seed 233 mark (147, 78) | found@576 | 675px
+RM_MARK seed 233 mark (152, 79) | found@896 | 738px
+RM_MARK seed 233 mark (120, 91) | found@896 | 738px
+RM_MARK seed 233 mark (152, 92) | found@576 | 344px
+RM_MARK seed 233 mark (49, 94) | found@576 | 487px
+RM_MARK seed 233 mark (54, 95) | found@576 | 365px
+RM_MARK seed 233 mark (120, 96) | found@896 | 733px
+RM_MARK seed 233 mark (96, 108) | found@576 | 453px
+RM_MARK seed 233 mark (78, 119) | found@896 | 742px
+RM_MARK seed 233 mark (105, 122) | found@576 | 229px
+RM_MARK seed 233 mark (110, 123) | found@576 | 248px
+RM_MARK seed 233 mark (77, 136) | found@576 | 288px
+RM_MARK seed 233 mark (82, 137) | found@576 | 208px
+RM_MARK seed 233 mark (147, 150) | swapped | 679px
+RM_MARK seed 233 mark (152, 151) | swapped | 821px
+RM_SEED seed 233 | 71 legal marks, 24 read | 15 roadblocks the day placed | { "found": 22, "swapped": 2 }
+[RunState] run started, seed=2
+RM_MARK seed 377 mark (106, 7) | found@576 | 612px
+RM_MARK seed 377 mark (150, 7) | found@576 | 148px
+RM_MARK seed 377 mark (21, 9) | swapped | 840px
+RM_MARK seed 377 mark (122, 12) | found@576 | 176px
+RM_MARK seed 377 mark (50, 21) | found@576 | 338px
+RM_MARK seed 377 mark (133, 21) | found@576 | 369px
+RM_MARK seed 377 mark (12, 25) | swapped | 365px
+RM_MARK seed 377 mark (93, 26) | found@576 | 116px
+RM_MARK seed 377 mark (91, 37) | found@576 | 258px
+RM_MARK seed 377 mark (80, 49) | found@576 | 487px
+RM_MARK seed 377 mark (147, 51) | found@576 | 272px
+RM_MARK seed 377 mark (49, 64) | found@576 | 173px
+RM_MARK seed 377 mark (108, 77) | found@576 | 129px
+RM_MARK seed 377 mark (108, 82) | found@576 | 279px
+RM_MARK seed 377 mark (24, 91) | found@576 | 229px
+RM_MARK seed 377 mark (105, 93) | found@576 | 396px
+RM_MARK seed 377 mark (82, 108) | found@576 | 494px
+RM_MARK seed 377 mark (39, 119) | found@576 | 431px
+RM_MARK seed 377 mark (39, 124) | found@576 | 453px
+RM_MARK seed 377 mark (80, 133) | found@576 | 229px
+RM_MARK seed 377 mark (136, 133) | found@576 | 445px
+RM_MARK seed 377 mark (121, 138) | found@576 | 179px
+RM_MARK seed 377 mark (124, 149) | found@576 | 187px
+RM_MARK seed 377 mark (138, 150) | found@576 | 176px
+RM_SEED seed 377 | 99 legal marks, 24 read | 25 roadblocks the day placed | { "found": 22, "swapped": 2 }
+[RunState] run started, seed=2
+RM_MARK seed 610 mark (49, 10) | found@1024 | 1013px
+RM_MARK seed 610 mark (54, 11) | found@896 | 920px
+RM_MARK seed 610 mark (7, 24) | found@576 | 639px
+RM_MARK seed 610 mark (24, 35) | found@896 | 787px
+RM_MARK seed 610 mark (82, 36) | found@576 | 592px
+RM_MARK seed 610 mark (77, 37) | found@896 | 644px
+RM_MARK seed 610 mark (24, 40) | found@576 | 627px
+RM_MARK seed 610 mark (12, 50) | found@576 | 541px
+RM_MARK seed 610 mark (49, 52) | found@576 | 336px
+RM_MARK seed 610 mark (54, 53) | found@576 | 179px
+RM_MARK seed 610 mark (91, 64) | found@576 | 643px
+RM_MARK seed 610 mark (96, 65) | found@576 | 508px
+RM_MARK seed 610 mark (149, 77) | found@576 | 338px
+RM_MARK seed 610 mark (105, 81) | found@576 | 431px
+RM_MARK seed 610 mark (149, 82) | found@576 | 481px
+RM_MARK seed 610 mark (152, 95) | found@576 | 179px
+RM_MARK seed 610 mark (21, 108) | found@576 | 229px
+RM_MARK seed 610 mark (68, 108) | found@576 | 242px
+RM_MARK seed 610 mark (68, 109) | found@576 | 210px
+RM_MARK seed 610 mark (105, 122) | found@576 | 369px
+RM_MARK seed 610 mark (110, 123) | found@576 | 420px
+RM_MARK seed 610 mark (120, 138) | found@576 | 613px
+RM_MARK seed 610 mark (23, 147) | found@576 | 568px
+RM_MARK seed 610 mark (35, 151) | found@576 | 360px
+RM_SEED seed 610 | 80 legal marks, 24 read | 25 roadblocks the day placed | { "found": 24 }
+RM_TOTAL 480 marks over 20 seeds | { "found@576": 329, "found@1024": 9, "swapped": 58, "found@896": 83, "missed": 1 }
+RM_DIST found | n 421 | min 116 median 422 max 1118 px
+RM_DIST swapped | n 58 | min 365 median 1092 max 2122 px
+RM_MISSES 1
+RM_TIME found | n 421 | median 48.8 max 384.1 ms
+RM_TIME swapped | n 58 | median 96.1 max 180.8 ms
+RM_TIME the whole-city walk | n 58 | median 36.4 max 48.8 ms
+-- minty_quail_day13_real_marks.gd      1556718 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/minty_quail_day13_real_marks.gd. Not a green build.
