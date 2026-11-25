@@ -47,6 +47,11 @@ const SMOOTHING := 6.0
 ## margin is 0 from the frame it runs, and a warned arrival's until it has been seen once, so each is
 ## raised from outside the view proper.
 const SCREEN_MARGIN := 130.0
+## How long a danger may stand at the same point before the badge reads it as standing still, in
+## seconds. Events move on the 30 Hz physics tick while the edge is stepped on every drawn frame, so
+## a mover's position holds for a tick (0.033 s) at a time; a still frame inside this window is a
+## frame between ticks and says nothing about its speed, and a still stretch past it is a stop.
+const HOLD_WINDOW := 0.1
 
 ## One thing the badge may have to say something about, as plain data. The event source's adapter
 ## fills the fields it has; a warning with nothing in the world yet is a `Subject` with `pending`
@@ -182,13 +187,37 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable) -> 
 		# for the frames before it comes into view. So it starts closing at its own speed (a
 		# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
 		# seen once.
-		state = {"was": at, "approach": subject.approach_speed if subject.warned else 0.0,
+		state = {"was": at, "held": 0.0, "idle": false,
+				"approach": subject.approach_speed if subject.warned else 0.0,
 				"up": subject.warned, "seen": not subject.warned}
 		_watch[subject.key] = state
-	# The event's own approach: how much closer *it* got to where she is standing now. Both
-	# distances are measured to the same point, so her own walking cancels out of it.
-	var raw := _approach_speed(state["was"], at, here, delta)
-	var approach: float = lerpf(state["approach"], raw, clampf(delta * SMOOTHING, 0.0, 1.0))
+	# **The approach is measured over the time its position took to change, not over the drawn
+	# frame.** Events move once per physics tick, so on most drawn frames the point has not moved
+	# and on one frame in several it has moved a whole tick's step; that step divided by one
+	# frame's delta reads many times the thing's own speed, more the faster the display draws. The
+	# model counts the seconds the point has held (`held`) and reads a move over all of them; a
+	# point that has not moved and is within `HOLD_WINDOW` is a frame between ticks, and leaves
+	# the measure as it was.
+	state["held"] += delta
+	var held: float = state["held"]
+	var moved := not at.is_equal_approx(state["was"])
+	if state["idle"] and moved:
+		# A thing that has stood still has no time of its own to read its first step over. The
+		# step is as many physics ticks' as the frame carried (a frame is at least one tick when
+		# the point moved, and a display under the tick rate carries several).
+		var tick := 1.0 / float(Engine.physics_ticks_per_second)
+		held = maxf(1.0, roundf(delta / tick)) * tick
+	var measured: bool = held > HOLD_WINDOW or moved
+	var raw := 0.0
+	var approach: float = state["approach"]
+	if measured:
+		# The event's own approach: how much closer *it* got to where she is standing now. Both
+		# distances are measured to the same point, so her own walking cancels out of it.
+		raw = _approach_speed(state["was"], at, here, held)
+		approach = lerpf(approach, raw, clampf(held * SMOOTHING, 0.0, 1.0))
+		state["was"] = at
+		state["held"] = 0.0
+		state["idle"] = not moved
 	# **A charge is met at its true approach on its first moving frame** *(inbox #788 in minty-lemur,
 	# the player, of the stairwell's masked man, whose only heads-up is this badge once he runs:
 	# "Let's show that at least")*. The smoothing is there for a thing hovering near the threshold;
@@ -218,7 +247,6 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable) -> 
 	elif subject.announces and _announces(approach, gap) \
 			and not sees.call(at, SCREEN_MARGIN if state["seen"] else 0.0):
 		state["up"] = true
-	state["was"] = at
 	state["approach"] = approach
 	state["generation"] = _generation
 	if state["up"]:
