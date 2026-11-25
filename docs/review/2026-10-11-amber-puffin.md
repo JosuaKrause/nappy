@@ -2,7 +2,7 @@
 
 ### voronoi-water-look
 
-- **Question:** amber-puffin, judge the Voronoi water: curved or straight outlines for the south water? (blocks into-the-game, bringing the water into the game)
+- **Question:** amber-puffin, judge the Voronoi water: curved or straight outlines for the south water? (built on my pick)
 - **Context:**
   - **What was asked:** a blue base with white lines that are the outlines of the regions round randomly placed centroids, each centroid's intensity oscillating so the outlines move "in a way water looks" (mossy-ferret #708), tried in a standalone experiment first.
   - **What to open:** `curved.gif` and `straight.gif` in [the evidence folder](../evidence/amber-puffin-voronoi-water-2026-11-25/README.md), each a quarter of the game's view at the desktop's scale, 6 s; `curved-full-view.png` is the whole view.
@@ -10,7 +10,7 @@
   - **Curved:** the intensity is taken off the distance to each centroid, so the outlines bend and sway. Where a region shrinks to nothing it leaves a short hook ending in open water.
   - **Straight:** the intensity is taken off the squared distance, so the outlines stay straight and the cells read as panes that slide; a shrinking region closes as a small triangle.
   - **Cost:** the same for both (3.1 and 3.2 ms a pass on the desktop at 1920x1080, see the drawing question).
-  - **Why it blocks:** the experiment exists so the look is judged before it is built; changing it later is one shader setting.
+  - **Changing course later:** one shader setting; both looks are what was asked for.
   - **My pick:** curved, since its outlines sway the way caustics on water do, where the straight one reads as cracked glass.
   - **You:** 
   - **Me:** 
