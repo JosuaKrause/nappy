@@ -246,10 +246,17 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 	city.tick(0.016)
 	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
 			+ "from its two ways out (%s)" % [results])
-	_her.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
+	# The street before the bridge, one tile short of its last row, is where the walk is still on.
+	_her.global_position = Vector2(-1000.0, -float(Tuning.TILE_SIZE))
+	city.tick(0.016)
+	t.check(results.is_empty(),
+			"a tile short of the bridge's last row she is still in the city (%s)" % [results])
+	# On the last row, at the carriageway's far side, she is on the bridge.
+	_her.global_position = Vector2(-1000.0 + Tuning.carriageway_width() * 0.5 - 1.0,
+			float(Tuning.TILE_SIZE) * 0.5 - 1.0)
 	city.tick(0.016)
 	t.check(results == [GameEnums.DayResult.WON] and city.exit_taken() == CityExit.Kind.BRIDGE,
-			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
+			"on the bridge's last row, awake, the city section is won by the bridge (%s, %d)"
 			% [results, city.exit_taken()])
 	city.free()
 

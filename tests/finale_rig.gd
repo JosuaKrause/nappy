@@ -87,6 +87,7 @@ const CASES: Array[String] = [
 	"_test_a_handover_does_not_open_on_the_title",
 	"_test_the_held_restart_from_the_escape_clears_the_section",
 	"_test_a_posted_guard_follows_her_round_the_corner",
+	"_test_the_game_walks_her_in_and_the_ending_waits_for_it",
 ]
 
 ## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
@@ -184,16 +185,29 @@ func _test_each_chain_reaches_its_own_edge(t: TestRunner) -> void:
 			t.check(from_the_edge <= CityEdge.TUNNEL_DEPTH_TILES,
 					"seed %d: and within the portal's own depth of the map edge (%d rows)"
 					% [seed_value, from_the_edge])
-			# Standing on that tile is out of the city, and the street before it is not — the two
-			# halves of what `DayController.FINALE_EXIT_REACH` has to be worth.
-			var at := map.tile_to_world(exit)
-			t.check(DayController.FINALE_EXIT_REACH > Tuning.PLAYER_BODY_RADIUS,
-					"the exit's reach covers her whole body on the tile")
-			t.check(at.distance_to(map.tile_to_world(exit + Vector2i(0, 2))) \
-					> DayController.FINALE_EXIT_REACH,
-					"and stops short of the tile two back from it")
 		t.check(plan.chains[0].exit_kind != plan.chains[1].exit_kind,
 				"seed %d: the two chains leave by different ways" % seed_value)
+	_check_the_threshold_covers_the_last_row_and_not_the_tile_before(t)
+
+## The threshold (`DayController.FINALE_EXIT_DEPTH` either side of the last row's centre) holds her
+## centre pressed against the map's edge (her body's radius short of it) on both ways out, and
+## stops short of the row before it, the border junction's crossing she is still on. Read off the
+## map's own exit rows, once: the figure does not depend on the seed.
+func _check_the_threshold_covers_the_last_row_and_not_the_tile_before(t: TestRunner) -> void:
+	var map := MapCache.of(SEEDS[0])
+	var edge_south := map.world_size().y
+	for exit_kind: int in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
+		var tunnel := exit_kind == CityExit.Kind.TUNNEL
+		var row := map.tile_to_world(FinalePlanner.exit_tile(map, exit_kind)).y
+		var pressed := Tuning.PLAYER_BODY_RADIUS if tunnel else edge_south - Tuning.PLAYER_BODY_RADIUS
+		var name := "tunnel" if tunnel else "bridge"
+		t.check(absf(pressed - row) <= DayController.FINALE_EXIT_DEPTH,
+				"her centre pressed to the edge is inside the %s's threshold" % name)
+		var before := row + (float(Tuning.TILE_SIZE) if tunnel else -float(Tuning.TILE_SIZE))
+		t.check(absf(before - row) > DayController.FINALE_EXIT_DEPTH,
+				"the row before it, a whole tile back, is outside the %s's threshold" % name)
+	t.check(DayController.FINALE_EXIT_DEPTH <= Tuning.TILE_SIZE * 0.5,
+			"the threshold never reaches into the tile before the last row")
 
 # ----------------------------------------------------------------- the walls ---
 
@@ -2303,6 +2317,10 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	for _frame in 3:
 		await t.get_tree().physics_frame
+	t.get_viewport().push_input(_action("pause"))
+	t.check(not pause.is_open() and not summary.is_showing(),
+			"Esc opens nothing while she is walked into the tunnel")
+	await _until_the_epilogue(t, main)
 	t.check(summary.is_showing() and title.text == Texts.FINALE_TITLE,
 			"out of the city, the epilogue is up")
 	t.get_viewport().push_input(_action("pause"))
@@ -2310,6 +2328,73 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not pause.is_open(), "and neither does losing focus")
 	_free_the_escape(t, escape)
+
+## Physics frames until the epilogue is up, at most a bridge's walk and then some.
+func _until_the_epilogue(t: TestRunner, main: Node) -> void:
+	for _frame in 1500:
+		if Boot.summary(main).is_showing():
+			return
+		await t.get_tree().physics_frame
+
+## **The threshold is the game's own, and the ending waits for the walk-in.** Booted for real on the
+## city section, for each way out: the point `Main` builds is the spine's own centre line (the
+## tunnel's and the bridge's own column) on the centre of `FinalePlanner.exit_tile()`'s row; a tile
+## short of it she is still in the city; on it the section is won and her control ends (she is led,
+## the world is frozen, no summary yet); the epilogue comes only once she is inside the tunnel's
+## opening, or across the whole deck `CityEdge` draws; and nothing of her own input steers her on
+## the way.
+func _test_the_game_walks_her_in_and_the_ending_waits_for_it(t: TestRunner) -> void:
+	for exit_kind: int in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
+		var tunnel := exit_kind == CityExit.Kind.TUNNEL
+		var name := "tunnel" if tunnel else "bridge"
+		var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
+		var main := escape.main
+		await Boot.press_continue(t, main)
+		var city := Boot.city(main)
+		var her := Boot.player(main)
+		var summary := Boot.summary(main)
+		var baby := Boot.baby(main)
+		baby.seed_meters(100.0, 10.0)
+		var spine_x := city.tunnel_world_position().x if tunnel else city.bridge_world_position().x
+		var row_y := city.map().tile_to_world(FinalePlanner.exit_tile(city.map(), exit_kind)).y
+		var threshold := Vector2(spine_x, row_y)
+		var point: Vector2 = Boot.day(main).spec().exit_points()[exit_kind]
+		t.check(point.is_equal_approx(threshold),
+				"the %s's threshold is the spine's centre line on its last row (%s, %s)"
+				% [name, point, threshold])
+
+		her.global_position = threshold + Vector2(0.0, float(Tuning.TILE_SIZE)) \
+				* (1.0 if tunnel else -1.0)
+		for _frame in 3:
+			await t.get_tree().physics_frame
+		t.check(Boot.day(main).is_running() and her.steering_direction() == Vector2.ZERO,
+				"a tile short of the %s's last row she is still in the city" % name)
+
+		her.global_position = threshold
+		for _frame in 3:
+			await t.get_tree().physics_frame
+		t.check(not Boot.day(main).is_running() and her.steering_direction() != Vector2.ZERO
+				and not summary.is_showing()
+				and t.get_tree().paused,
+				"on the %s's last row the section is won, her control ends and no summary is up yet"
+				% name)
+		var excitement := baby.excitement_level()
+		var sleepiness := baby.sleepiness_level()
+		var state := baby.condition()
+		await _until_the_epilogue(t, main)
+		var inside := her.global_position.y <= -CityEdge.TUNNEL_DEPTH_TILES * float(Tuning.TILE_SIZE) \
+				if tunnel else her.global_position.y >= city.map().world_size().y \
+						+ CityEdge.BRIDGE_DECK_PX
+		t.check(summary.is_showing() and inside,
+				"the epilogue comes once she is %s (%s)"
+				% ["inside the tunnel's opening" if tunnel else "across the whole deck",
+				her.global_position])
+		t.check(baby.excitement_level() == excitement and baby.sleepiness_level() == sleepiness
+				and baby.condition() == state,
+				("the baby's meters and state stand still for the walk, as they were at the %s's "
+				+ "last row (excitement %.1f then, %.1f at the epilogue)")
+				% [name, excitement, baby.excitement_level()])
+		_free_the_escape(t, escape)
 
 # ------------------------------------------------------ a resumed escape, and a handover ---
 

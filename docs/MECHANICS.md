@@ -1612,9 +1612,11 @@ not time the city has lost: the service door is the building's goal, which ends 
 city's begins with a whole clock. The countdown, the three losing paths, the
 `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
 a day's and none of them change; **the goal is the section's own**: the building's service exit,
-reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
-`DayController.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
-the baby is.
+reached once its fade has covered the screen, and the city's tunnel or bridge, won when her centre
+is on the spine's last row at either end, across the carriageway
+(`DayController.FINALE_EXIT_DEPTH`), reached however the baby is. The border junction's crossing
+before that row is still the city. The last row is the threshold: her own control ends there, and
+the game walks her on by herself into the tunnel or across the bridge (`EscapeWalkIn`).
 
 **The clock reads to the hundredth** — `%d:%02d.%02d` through `RunState.format_clock_hundredths()`,
 in place of a day's `%d:%02d` — and the day's clock tells the HUD on every frame while a section's
@@ -1845,9 +1847,15 @@ street either chain runs through. *(Inbox #747: "yes, of course the yellow tint.
 game establishing that why would it be different in the last section?")* A street a chain only
 turns at is sealed and plain.
 
-**It ends on the tunnel or the bridge**, within `DayController.FINALE_EXIT_REACH` of the exit `CityEdge`
-draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
-she took, to the millisecond, which is the only number that screen carries.
+**It ends in the tunnel or across the bridge.** The section is won, and the clock stops, when she
+stands on the last row of the spine, where the tunnel's portal `CityEdge` draws begins (the bridge
+has no portal: its deck begins at the map's edge). Her control ends there. The game walks her on by
+herself, at a walk as deep as the tunnel's opening (she darkens step by step in its dark ramp) or
+at a run along the whole length of the deck, the camera
+following her past the map's edge, and **the summary screen comes up when she is in**, with the way
+out behind her and nothing triumphant on it — and the clock she took, to the millisecond, which is
+the only number that screen carries. Nothing can catch her on the way: the section is already won
+and the world stands still around her, the baby's meters with it. No walkable ground is added.
 
 ## Nerves
 
