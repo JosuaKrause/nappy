@@ -12,12 +12,11 @@ ways and chose neither: "either we keep the oval for shadows and adjust their nu
 what makes them look reasonable or we draw a custom shadow for each object that resembles what we
 would expect a shadow of that object to look like".
 
-**Built, in [silver-egret](../../decisions/2026-10-03-silver-egret.md)'s record: the vehicles.** A car's
-shadow, and every other vehicle's bar two, now lies under its wheels, one oval per wheel pair, the first of the player's two ways
-(minty-hedgehog 1; the police car of azure-koala 10). The two ways are still the player's to choose
-between (tiny-lark 18-19); the record says what was built and why it overturns nothing.
+**Every vehicle but the two below casts one oval per wheel pair** (`GroundShape.paired_shadow_outlines()`),
+the first of the player's two ways (the police car of azure-koala 10 among them), which stay the
+player's to choose between (tiny-lark 18-19).
 
-**What is left, two items:**
+**Two items are open:**
 
 - `swing-frame.md`: the swing frame's shadow, built on the orchestrator's pick on the board
   (swing-frame-shadow, open to the player).
