@@ -119,7 +119,7 @@ off to make a contract pass**: whether it telegraphs is the rule's question, not
 holds. **The warning time is the row's own number** (PLAYTEST-145 1): nothing about where a thing is
 created is derived from its telegraph. **No pursuer gives up on a walker** (olive-hedgehog #598).
 The design is `docs/EVENTS.md`, "Everything arrives from off screen"; the contract such a row is
-held to, what is created with its telegraph spent, and the two things that are not warned first are
+held to, what is created with its telegraph spent, and the one thing that is not warned first is
 `references/warned-first.md`.
 
 ## The contract is per event and the player experiences the sum

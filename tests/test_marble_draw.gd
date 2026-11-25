@@ -34,6 +34,7 @@ func run(t: TestRunner) -> void:
 	_test_one_of_a_row_in_a_unit(t)
 	_test_a_rows_weight_is_the_largest_of_its_locations(t)
 	_test_a_row_handed_to_her_walk_is_recorded_unplaced(t)
+	_test_a_row_handed_to_the_director_is_recorded_unplaced(t)
 	_test_a_row_that_travels_a_sidewalk_takes_one_location(t)
 	_test_every_open_location_ends_drawn(t)
 	_test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once_given_back(t)
@@ -347,6 +348,23 @@ func _test_a_row_handed_to_her_walk_is_recorded_unplaced(t: TestRunner) -> void:
 		for plan: EventPlan in ask[2]:
 			without = without and not (plan.row_id() == "poster_crew" and plan.is_placed())
 	t.check(without, "the cafe is judged among no placed crew (%d asks)" % asks.size())
+
+## **A row the walk hands the director** (`DaySpec.hands_the_director()`, the escape's truck) is
+## recorded with no position like the crew, and a draw handed no such rule places the same row.
+func _test_a_row_handed_to_the_director_is_recorded_unplaced(t: TestRunner) -> void:
+	var rows := _rows(["military_convoy"] as Array[String])
+	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	var locations := _Locations.new()
+	var handed := MarbleDraw.new(locations, rows, _Ground.new(), true, escape.hands_the_director) \
+			.draw(_street(), _Bag.new(["military_convoy"] as Array[String]), [])
+	t.check(handed.size() == 1 and not handed[0].is_placed(),
+			"a truck the walk hands the director is answered with no position")
+	t.check(handed.size() == 1 and locations.recorded.values().has(handed[0]),
+			"and it is what its location records, so its street stands nothing else")
+	var kept := MarbleDraw.new(_Locations.new(), rows, _Ground.new(), true) \
+			.draw(_street(), _Bag.new(["military_convoy"] as Array[String]), [])
+	t.check(kept.size() == 1 and kept[0].is_placed(),
+			"the same truck on a walk that hands the director none is placed on its street")
 
 ## A chatting mother, a row that paces its sidewalk, takes one sidewalk location and no more: drawn
 ## first, it leaves the street five more, so five more rows are placed beside it, each on a
