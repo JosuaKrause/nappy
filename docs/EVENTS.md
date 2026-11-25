@@ -550,10 +550,17 @@ sets what the warning is:
    her less time to cross more of his radius: walked over every warning from 1s to 2s and radii from
    0.85 to 1.4 times these, a pair either keeps every walk above or leaves the roadblock's guard or
    the robber charging her as she runs back out from a late sighting (she still gets away running).
-   The shipped warning keeps every walk at these radii with at least 0.17s to spare, the robber's
-   late sighting being the tightest; 1.5s keeps the dog's and the guard's, the guard's by 0.07s,
-   and the robber at 225px needs 1.75s. `--chargers` (or a release page's `?debug=1&chargers=W,R`) plays any other
-   pair (`ChargerTiming`; the player chooses after playing, minty-dolphin #834).
+   The shipped warning keeps every walk above at these radii with at least 0.17s to spare, the
+   robber's late sighting being the tightest; 1.5s keeps the dog's and the guard's, the guard's by
+   0.07s, and the robber at 225px needs 1.75s.
+
+   **A runner seen late is charged, and outruns it.** The same late sighting made running in, her
+   run kept through her 0.3s reaction before she turns, is charged by the guard and the robber at
+   the shipped pair; she gets away, her closest 177px from the guard and 205px from the robber
+   against their 28px and 26px catch. The dog never charges her at the shipped pair. No pair in
+   the range catches her in either late walk. `--chargers` (or a release page's
+   `?debug=1&chargers=W,R`) plays any other pair (`ChargerTiming`; the player chooses after
+   playing, minty-dolphin #834).
 
    **It warns only once its warning would stand in her view** (`EventInstance._would_stand_in_her_view()`):
    it notices her inside its radius along a clear line and only with the whole of its warning

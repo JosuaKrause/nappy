@@ -18,7 +18,8 @@ extends RefCounted
 ##   alley's mouth, from behind a wall), walking in, turns `REACTION` later and runs back out. Fair
 ##   if he never charges; the margin is how long before his warning ran she was out.
 ## - **late run**: as **late**, but she runs in at `Tuning.RUN_SPEED` when first seen, turns
-##   `REACTION` later and runs back out. Fair if he never charges.
+##   `REACTION` later and runs back out, keeping her run through her reaction until she turns. Fair
+##   if he never catches her; a charge she outruns prints her closest.
 ## - **stand**: she stops and stands where she is. Fair if he charges and catches her.
 ## - **bait**: she stops, stands until he charges, and runs back `REACTION` after his charge. Fair
 ##   if she gets away (his closest is printed against his catch).
@@ -84,13 +85,15 @@ static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 	if walk in ["late", "late run"]:
 		her = Vector2(0.0, PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()) + 4.0)
 	# Positive is away from him, along +y.
-	var speed := -(Tuning.RUN_SPEED if walk == "late run" else Tuning.WALK_SPEED)
+	# The speed she comes in at, and keeps until she reacts to his warning.
+	var coming_in := -(Tuning.RUN_SPEED if walk == "late run" else Tuning.WALK_SPEED)
+	var speed := coming_in
 	var warned_at := INF
 	var charged_at := INF
 	var elapsed := 0.0
 	var result := {"charged": false, "caught": false, "closest": INF, "out_after": INF}
 	while elapsed < 20.0 and not instance.is_on_its_way_out() and not instance.has_given_up():
-		var wanted := speed if walk == "late run" and warned_at == INF else -Tuning.WALK_SPEED
+		var wanted := coming_in
 		if warned_at != INF:
 			match walk:
 				"back", "late", "late run":

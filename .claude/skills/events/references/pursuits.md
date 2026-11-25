@@ -42,8 +42,8 @@ on, and verifying escape with the actual Baby meter.
   a warning or a notice radius of its own; the stairwell masked man is the one exception. **Running while it warns counts for nothing**: `EventPursuit` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
-  clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
-  leave. It notices her only with its warning picture in the camera's view
+  clears. A late notice, at an alley mouth, is answered by the warning: a walker has its whole length to
+  leave, and a runner coming in deep may be charged and outruns it. It notices her only with its warning picture in the camera's view
   (`EventInstance._would_stand_in_her_view()`, the view `EventManager` tells it in
   `WhereSheIs.view()`); an instance stepped directly with no view told to it gets the radius
   alone, so a test of the view tells it one (`WhereSheIs.tell()`; `tests/escape_roadblock_rig.gd`,
