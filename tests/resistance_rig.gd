@@ -389,6 +389,13 @@ static func _outside_its_mouth(map: CityMap, tile: Vector2i) -> Vector2:
 			return map.tile_to_world(tile + step * 4)
 	return map.tile_to_world(tile)
 
+## **Where she stands to have a mark moved to the mark tile at `world`**: outside its alley's mouth
+## (`_outside_its_mouth()`), where that tile is the nearest a move may take and the guard its alley
+## would stand, two-thirds through, is out of his notice of her, which a move into an alley refuses
+## (brisk-wombat). On the tile itself he would stand within it, and the move goes elsewhere.
+func _outside_the_alley_at(world: Vector2) -> Vector2:
+	return _outside_its_mouth(_city.map(), _city.map().world_to_tile(world))
+
 ## Where she stands to have a mark relocated onto `tile` with her on it: its own centre.
 static func _on_the_tile(map: CityMap, tile: Vector2i) -> Vector2:
 	return map.tile_to_world(tile)

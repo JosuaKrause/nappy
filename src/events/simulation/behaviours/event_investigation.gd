@@ -93,11 +93,11 @@ func _investigate() -> void:
 		return
 	_investigated = true
 	_officers.clear()
-	# A car that stood for its men has stood, so it pulls away only once she is out of its way —
-	# never into her.
+	# A car that stood for its men has stood, so it pulls away only once she is out of its way
+	# within the radius it stopped for her at — never into her.
 	var car: EventCarDriving = _car.get_ref() if _car != null else null
 	if car != null:
-		car.stand()
+		car.stand_for_her(_row.notice_within())
 
 ## **A car that stood for its man is quiet until it has left her: the man is the encounter**
 ## (inbox #669 in coral-lark). From the frame it stops for her, through his notice, chase, stop and

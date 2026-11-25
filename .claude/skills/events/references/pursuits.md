@@ -35,7 +35,11 @@ on, and verifying escape with the actual Baby meter.
   alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for()` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
-  the private `_notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `EventPursuit` adds to
+  the private `_notice_time()`; inbox #788 in minty-lemur). **Every charger's warning and notice
+  radius come from one `ChargerTiming`** (curly-moose #803; minty-dolphin #834): the catalogue
+  builds its rows from the run's (`EventCatalogue.use_charger_timing()`, `--chargers`), a row
+  writes its radius and the run draws it at `ChargerTiming.notice()`, so a charger is never given
+  a warning or a notice radius of its own; the stairwell masked man is the one exception. **Running while it warns counts for nothing**: `EventPursuit` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
@@ -53,8 +57,8 @@ on, and verifying escape with the actual Baby meter.
   in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
-  door's line, the hut's guard across the road (or the post's) raises his hand for
-  `CheckpointController.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
+  door's line, the hut's guard across the road (or the post's) raises his hand for every
+  charger's warning (`ChargerTiming.warning()`); back across first, it is called off — and once it has run with her
   still across he charges from that hut or post, inside his own stand-off
   (`PursuitSpec.Start.CHARGES_AT_ONCE`: no notice of his own, telegraph 0). So his charge is not met at the
   stand-off: the answer is the warning — go back, or go on running — which

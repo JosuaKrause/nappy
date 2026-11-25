@@ -275,6 +275,9 @@ class Worlds extends DayWorldSource:
 ## recipe's boot hands it the same run with the recipe on top.
 func configure(run_config: RunConfig) -> void:
 	config = run_config
+	# Before anything is built from a catalogue row: every charger's warning and notice as this
+	# run plays them.
+	EventCatalogue.use_charger_timing(config.charger_timing())
 	_escape_scene_requested = config.starts_in_the_escape()
 	_no_focus_pause = config.skips_the_focus_pause()
 	_touch_available = TouchInput.available(config)

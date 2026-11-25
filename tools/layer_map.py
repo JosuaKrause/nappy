@@ -224,4 +224,36 @@ class Exception_:
     more: tuple[tuple[str, int], ...] = ()
 
 
-EXCEPTIONS: tuple[Exception_, ...] = ()
+EXCEPTIONS: tuple[Exception_, ...] = (
+    Exception_(
+        rule="static",
+        name="EventCatalogue",
+        reason=(
+            "run configuration: the run's charger timing (EventCatalogue._chargers), written once at boot by "
+            "main.configure() and read through the static catalogue's rows, until the run's rows are handed "
+            "from main (queue entry curly-finch); declared in designing-classes"
+        ),
+        files=(
+            "src/crowd/crowd.gd",
+            "src/events/simulation/day_planner.gd",
+            "src/events/simulation/event_director.gd",
+            "src/events/simulation/event_footprints.gd",
+            "src/events/simulation/event_manager.gd",
+            "src/events/simulation/event_spawner.gd",
+            "src/events/simulation/events_ahead.gd",
+            "src/resistance/happenings.gd",
+            "src/resistance/park_cordon.gd",
+            "src/resistance/resistance_director.gd",
+        ),
+        more=(
+            ("src/events/simulation/day_planner.gd", 2),
+            ("src/events/simulation/event_director.gd", 8),
+            ("src/events/simulation/event_manager.gd", 2),
+            ("src/events/simulation/event_spawner.gd", 2),
+            ("src/events/simulation/events_ahead.gd", 4),
+            ("src/resistance/happenings.gd", 5),
+            ("src/resistance/park_cordon.gd", 2),
+            ("src/resistance/resistance_director.gd", 18),
+        ),
+    ),
+)

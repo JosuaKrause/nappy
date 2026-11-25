@@ -236,7 +236,8 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> vo
 	var spawn := func(def: EventDef, at: Vector2) -> EventInstance:
 		made.append([def, at])
 		return null
-	var doors := CheckpointController.new(parts.world, spawn, EventCatalogue.door_guard())
+	var doors := CheckpointController.new(parts.world, spawn, EventCatalogue.door_guard(),
+			EventCatalogue.charger_timing().warning())
 	# A post is a plan the day's streaming brings in once she is near (`EventStreaming.add()`).
 	var post_at := Vector2(3000.0, 3000.0)
 	var post_plan := EventPlan.new(EventCatalogue.by_id("checkpoint_post"), post_at)

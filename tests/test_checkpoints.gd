@@ -2181,7 +2181,8 @@ func _stand_for(t: TestRunner, rig: Dictionary, seconds: float) -> void:
 ## player goes back no charge happens but if they stay crossed the charge will start. Warning
 ## starts when the player is crossing".)* Walking up to the raised boom, nobody raises his hand. The
 ## frame she crosses, the guard at the hut across the road from her raises his
-## (`EventInstance.is_its_guard_warning()`), counted once on the page; for `CheckpointController.CROSSING_WARNING` nobody comes; back across the line
+## (`EventInstance.is_its_guard_warning()`), counted once on the page; for
+## `ChargerTiming.warning()` nobody comes; back across the line
 ## before it runs, it is called off and nobody comes after it either. Staying across, once it has
 ## run a `door_guard` steps out of the wall of that hut, on her side of the line, charging from his
 ## first frame, while the hut's own guard stays at his post; a second walk under while he is after
@@ -2213,17 +2214,17 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	EventBus.pursuit_warned.connect(on_warned)
 	# Across, and back before the warning runs: called off.
 	await _step_her_to(t, rig, lane + axis * 20.0)
-	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING * 0.5)
+	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() * 0.5)
 	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"the frame she crosses, the guard across the road raises his hand")
 	t.check(_door_guard_after_her(RunCity.events(city)) == null, "and nobody is after her yet")
 	await _step_her_to(t, rig, lane - axis * 20.0)
-	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING * 2.0)
+	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() * 2.0)
 	t.check(_door_guard_after_her(RunCity.events(city)) == null and not far_hut.is_its_guard_warning(),
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	await _step_her_to(t, rig, lane + axis * 20.0)
-	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING - 0.1)
+	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() - 0.1)
 	t.check(_door_guard_after_her(RunCity.events(city)) == null, "staying across, nobody comes before it runs")
 	await _stand_for(t, rig, 0.2)
 	EventBus.pursuit_warned.disconnect(on_warned)
@@ -2246,7 +2247,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 				"while the hut and its own guard stay where they are")
 	var walks := _walks_under(walks_told)
 	await _step_her_to(t, rig, lane - axis * 20.0)
-	await _stand_for(t, rig, CheckpointController.CROSSING_WARNING + 0.2)
+	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() + 0.2)
 	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(RunCity.events(city)) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
@@ -2286,7 +2287,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	# Until the guard is set on her, so that he is read where he steps out, before his first step.
 	await _ticks_until(t,
 			func() -> bool: return _door_guard_after_her(RunCity.events(city)) != null,
-			int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
+			int(ceil(EventCatalogue.charger_timing().warning() * 2.0 / STEP)))
 	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
 			<= far_hut.row().obstructs_within() + 0.5,
@@ -2298,7 +2299,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	_free_street_door_rig(rig)
 
 ## **The answer to a crossing, walked at the door's own geometry**, a street door's and an alley
-## door's. Once she has crossed, `CheckpointController.CROSSING_WARNING` runs (the hand across the road, or the
+## door's. Once she has crossed, `ChargerTiming.warning()` runs (the hand across the road, or the
 ## post's, raised) and then the guard steps out of that hut or post and charges at once; going back
 ## within it is the answer that brings nobody (`_test_walking_under_the_boom_sets_a_guard_on_her`).
 ## Staying across, what she does through the warning decides it: walking on is caught, standing is
@@ -2317,22 +2318,22 @@ func _test_the_guard_leaves_room_to_answer(t: TestRunner) -> void:
 		var her_at := Vector2(1.0, 0.0)
 		var where := "from %s" % guard_at
 		var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0,
-				CheckpointController.CROSSING_WARNING)
+				EventCatalogue.charger_timing().warning())
 		t.check(walked["caught"], "%s: walking on along the street is caught (at %.2fs)"
 				% [where, walked["ended_at"]])
 		var stood := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, 0.0, 0.0,
-				CheckpointController.CROSSING_WARNING)
+				EventCatalogue.charger_timing().warning())
 		t.check(stood["caught"], "%s: and so is standing there (at %.2fs)" % [where, stood["ended_at"]])
 		for heading: Vector2 in [Vector2.RIGHT, Vector2(1.0, -1.0).normalized(), Vector2.UP]:
 			var ran := _guard_rig(def, guard_at, her_at, heading, Tuning.RUN_SPEED, 0.0,
-					CheckpointController.CROSSING_WARNING)
+					EventCatalogue.charger_timing().warning())
 			t.check(not ran["caught"] and ran["gave_up"],
 					"%s: going on at a run toward %s outpaces him and he gives up (%.1fs)"
 					% [where, heading, ran["ended_at"]])
 		lines.append("%s: walking on caught at %.2fs, standing at %.2fs" % [where,
 				walked["ended_at"], stood["ended_at"]])
 	print("[test_checkpoints] door_guard after the %.1fs crossing warning: %s"
-			% [CheckpointController.CROSSING_WARNING, "; ".join(lines)])
+			% [EventCatalogue.charger_timing().warning(), "; ".join(lines)])
 
 ## Walks her from `her_at` along `heading`, walking until `reaction` seconds and at `speed`
 ## (accelerating as she really does) after it, against a `door_guard` set off at `guard_at` once
@@ -2385,7 +2386,7 @@ static func _door_guard_after_her(manager: EventManager) -> EventInstance:
 
 ## A `_door_rig()` (two huts and a gate on an east-west street) with a `door_guard` already after
 ## her, set on her the way the game sets him: she walks across the gate's line in the southern lane
-## and stays across while the crossing's warning runs (`CheckpointController.CROSSING_WARNING`), and
+## and stays across while the crossing's warning runs (`ChargerTiming.warning()`), and
 ## the guard steps out of the northern hut, `doors[0]`, the one across the road, on the east side
 ## she crossed to — the shape every test below starts from.
 func _guard_after_her_rig(t: TestRunner) -> Dictionary:
@@ -2399,7 +2400,7 @@ func _guard_after_her_rig(t: TestRunner) -> Dictionary:
 	stroller.teleport_to(lane - axis * 20.0)
 	await _ticks(t, 1)
 	stroller.global_position = lane + axis * 20.0
-	await _ticks(t, int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 2)
+	await _ticks(t, int(ceil(EventCatalogue.charger_timing().warning() / STEP)) + 2)
 	var guard := _door_guard_after_her(manager)
 	assert(guard != null, "the crossing's guard is in the world")
 	rig["doors"] = doors

@@ -34,6 +34,7 @@ extends RefCounted
 ##   --day           1
 ##   --day-length    1
 ##   --meters        2
+##   --chargers      2
 ##   --spawn         1
 ##   --follow        1
 ##   --route         1
@@ -181,14 +182,14 @@ static func _readout_from_query(query: String) -> bool:
 			return true
 	return false
 
-## The gate for the release-safe bundle: the flags that choose where a run starts or how it is
-## drawn (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`,
-## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
+## The gate for the release-safe bundle: the flags that choose where a run starts or how it is drawn
+## (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`, `start_escape()`,
+## `meters_override()`, `charger_timing_override()`, `day_length_override()`, `ending_override()`,
 ## `blackout_requested()`, `ground_mode()`, `frame_record_requested()`, and `WebDisplay`'s `?dpr=`)
 ## — never the input-driving or picture-taking half, and no file but the frame record's, which
-## leaves only through the browser's download when the player taps its page button. Open on a
-## debug build whatever the page says, and on a release page once `readout_requested()` holds,
-## so a release page nobody asked `?debug=1` of reads exactly as an ordinary one.
+## leaves only through the browser's download when the player taps its page button. Open on a debug
+## build whatever the page says, and on a release page once `readout_requested()` holds, so a
+## release page nobody asked `?debug=1` of reads exactly as an ordinary one.
 func live_debug_requested() -> bool:
 	return _live_debug_requested(enabled(), readout_requested())
 
@@ -202,8 +203,8 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## these never touches the save a real player's page shares, as against `?debug=1` alone, which
 ## opens the bundle without using any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
-	"day", "invincible", "layers", "controls", "escape", "meters", "daylength", "ending",
-	"blackout", "groundmode", "framerecord",
+	"day", "invincible", "layers", "controls", "escape", "meters", "chargers", "daylength",
+	"ending", "blackout", "groundmode", "framerecord",
 ]
 
 ## Whether the page's query named one of `live_debug_requested()`'s parameters while the bundle is
@@ -405,6 +406,51 @@ static func _meters_from_query(query: String) -> Vector2:
 					clampf(float(words[1]), 0.0, Tuning.METER_MAX))
 		push_warning("?meters: '%s' is not two comma-separated numbers, ignoring" % pair[1])
 		return Vector2(-1.0, -1.0)
+	return Vector2(-1.0, -1.0)
+
+## `--chargers <warning> <reach>` (or `?chargers=warning,reach` in the open bundle): every charger
+## warns for `warning` seconds and notices her within `reach` times the radius its row is written
+## with, in place of the shipped timing (`ChargerTiming`,
+## `EventCatalogue.shipped_charger_timing()`),
+## so other numbers can be played on the released page without a rebuild (minty-dolphin #834).
+## `(-1, -1)` for "not given".
+func charger_timing_override() -> Vector2:
+	var args := active_args()
+	var index := args.find("--chargers")
+	if index != -1 and index + 2 < args.size():
+		return _parse_charger_timing(args[index + 1], args[index + 2])
+	if live_debug_requested():
+		return _charger_timing_from_query(_query)
+	return Vector2(-1.0, -1.0)
+
+## The bare parsing of `?chargers=`: anything but two comma-separated words refuses the whole value
+## with `push_warning`, and the two are read as `--chargers`' are.
+static func _charger_timing_from_query(query: String) -> Vector2:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() != 2 or pair[0] != "chargers":
+			continue
+		var words := pair[1].split(",")
+		if words.size() == 2:
+			return _parse_charger_timing(words[0], words[1])
+		push_warning("?chargers: '%s' is not two comma-separated numbers, ignoring" % pair[1])
+		return Vector2(-1.0, -1.0)
+	return Vector2(-1.0, -1.0)
+
+## The bare parsing of a warning and a radius factor. A warning under
+## `Tuning.OFFSCREEN_WARNING_MIN`, the heads-up every charger's warning is held to
+## (`EventDef.validate()`), or a factor outside `ChargerTiming.LEAST_REACH` to `MOST_REACH` refuses
+## the whole flag with `push_warning`, rather than being clamped: a run played at numbers nobody
+## asked for would be judged as the asked ones.
+static func _parse_charger_timing(warning: String, reach: String) -> Vector2:
+	if warning.is_valid_float() and reach.is_valid_float() \
+			and float(warning) >= Tuning.OFFSCREEN_WARNING_MIN \
+			and float(reach) >= ChargerTiming.LEAST_REACH \
+			and float(reach) <= ChargerTiming.MOST_REACH:
+		return Vector2(float(warning), float(reach))
+	push_warning(("--chargers: '%s %s' is not a warning of %.1fs or more and a radius factor from "
+			% [warning, reach, Tuning.OFFSCREEN_WARNING_MIN]) + "%.2f to %.2f, ignoring the flag"
+			% [ChargerTiming.LEAST_REACH, ChargerTiming.MOST_REACH])
 	return Vector2(-1.0, -1.0)
 
 ## `--overview` frames the whole city at once.

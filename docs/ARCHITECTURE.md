@@ -189,6 +189,7 @@ src/
 	    notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
 	    pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
 	    hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
+	    charger_timing.gd     how a run plays every charger's warning and notice radius (`--chargers`)
 	    day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	    on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
 	    sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
@@ -823,7 +824,7 @@ onto a building part's name, with the command line taken out of it; the real `ma
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `RunConfig.is_live_debug()` — a debug
 build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
-`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`,
+`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?chargers=`, `?daylength=`,
 `?ending=`/`?blackout=1`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
