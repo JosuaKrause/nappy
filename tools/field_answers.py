@@ -64,12 +64,6 @@ handed on) is not counted, so `(0 calls)` with nothing untold is a method no cal
 **A receiver whose class cannot be told** is printed on a line of its own, with the file, the line and the
 expression, where the name is a `var` some class under `src/` declares. Nothing is guessed for it.
 
-**A file that still ignores `unsafe_property_access`** (its opt-out line names that warning) is named on a line of
-its own. The engine lets such a file read a property off a receiver it types as an engine class (`child.step` on a
-`Node` from `get_children()`), and this list takes a receiver typed as an engine class for the engine's own, so
-such a read is not seen. The list is whole only for a file that no longer ignores that warning: type the file, then
-run this.
-
 **How the receiver's class is told.** By the reader of `tools/check_field_reads.py` (its `--help` says how), over
 every `.gd` file outside `docs/`, and further where a test needs it and that check does not: a script with no
 `class_name` is the class its file declares where a `const` preloads it or an `extends "res://..."` line names it;
@@ -127,7 +121,6 @@ BRIEF_FILES = re.compile(r"\*\*Your files[^\n]*(?:\n(?!\s*\n)[^\n]*)*")
 BRIEF_PATH = re.compile(r"`([^`\s]+\.gd)`")
 NESTED_CLASS = re.compile(r"^[ \t]+class[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
 NESTED_HERE = re.compile(r"^class[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
-UNSAFE_PROPERTY = "unsafe_property_access"
 RETURN = "return "
 # A lowercase name at the head of a chain: not a member's name after a dot, not a node's after `$` (`$label`), not
 # the tail of a number (`1e5`).
@@ -887,14 +880,12 @@ class Entry:
 
 @dataclass(frozen=True)
 class Report:
-    """What the files read and write, every entry answered and every answering method's calls counted; and which
-    of the files still ignore `unsafe_property_access`, where a read can stand that this list does not see."""
+    """What the files read and write, every entry answered and every answering method's calls counted."""
 
     files: list[str]
     entries: list[Entry]
     unknown: list[Unknown]
     calls: dict[tuple[str, str], Calls]
-    untyped: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -1111,15 +1102,7 @@ def report_of(tree: Scripts, files: list[str]) -> Report:
         entry.sites.sort()
     wanted = {(a.klass, a.method) for e in entries for a in (*e.answers, *e.apart())}
     unknown = sorted(collector.unknown.values(), key=lambda u: (u.file, u.line, u.expression))
-    untyped = [path for path in files if ignores_unsafe_property(tree.src[path])]
-    return Report(files, entries, unknown, call_sites(tree, wanted), untyped)
-
-
-def ignores_unsafe_property(text: str) -> bool:
-    """Whether a file's opt-out line still names `unsafe_property_access`: the engine then lets a property be read
-    off a receiver typed as an engine class, which this list takes for the engine's own."""
-    opt_out = reads.opt_out_of(text)
-    return opt_out is not None and UNSAFE_PROPERTY in opt_out.warnings
+    return Report(files, entries, unknown, call_sites(tree, wanted))
 
 
 def sites_text(sites: list[tuple[str, int]], counts: bool) -> str:
@@ -1177,14 +1160,9 @@ def through_text(tree: Scripts, entry: Entry) -> str:
 def markdown(tree: Scripts, report: Report, counts: bool = False) -> str:
     """The list as a builder pastes it: a line of what it is, one line per class, one per receiver not told."""
     named = ", ".join(f"`{path}`" for path in report.files)
-    untyped = [
-        f"- `{path}` still ignores `{UNSAFE_PROPERTY}`: a read through a receiver it types as an engine class is not"
-        " seen here, so this list is whole only once the file is typed"
-        for path in report.untyped
-    ]
     if not report.entries and not report.unknown:
         nothing = f"No field of a class under `src/` is read or written through a receiver of that class in {named}."
-        return "\n".join([nothing, *([""] if untyped else []), *untyped]) + "\n"
+        return nothing + "\n"
     out = [
         f"Fields of classes under `src/` that {named} read or write through a receiver of that class, each with the"
         " method of the class that answers it (`tools/field_answers.py`). `(N calls)` counts a method's calls under"
@@ -1203,7 +1181,7 @@ def markdown(tree: Scripts, report: Report, counts: bool = False) -> str:
         ]
         out.append(f"- `{tree.display(klass)}`: {'; '.join(parts)}")
     out.extend(f"- Receiver's class not told: `{u.file}:{u.line}` `{u.expression}`" for u in report.unknown)
-    return "\n".join([*out, *untyped]) + "\n"
+    return "\n".join(out) + "\n"
 
 
 def as_json(tree: Scripts, report: Report) -> str:
@@ -1246,7 +1224,6 @@ def as_json(tree: Scripts, report: Report) -> str:
         "files": report.files,
         "classes": [group for group, _ in classes.values()],
         "unknown": unknown,
-        "ignoring_unsafe_property_access": report.untyped,
     }
     return json.dumps(whole, indent=2, ensure_ascii=False) + "\n"
 

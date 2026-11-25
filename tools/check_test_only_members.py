@@ -66,43 +66,41 @@ class (`Rig.Fake.new()`), `await` hands on the value it waits for, a line's inde
 included. A receiver typed as the member's class, a class it extends or a class that extends it reaches it (a call
 dispatches on the object, so a reader typed as the base reaches the override). One typed as another class, or as a
 value of no class under `src/` (an engine class, a builtin, an array: `Rect2(...)`, a `Rect2` a method returns),
-does not, except in a file whose opt-out line names the engine's warning for that access (`unsafe_method_access` for
-a call, `unsafe_property_access` for a read), where an engine-typed value may still hold a game object. One the
-typing cannot tell (an untyped parameter, a Variant) reaches every class with the name, in the game's files and the
-tests' alike, and in a test so does one the typing gave up on (a lowercase name the file never declares, a member
-its class does not declare, a class it cannot find), so a read through a fake it could not type still counts; in the
-game's files such a receiver reaches nothing. A static function is reached only through its class
-(`RouteTree.grow()`, a preloaded script), never through a value, since the engine warns on a static function called
-on a value and no warning it prints is left standing (woolly-finch 19). A plain word in another file reads a member
-only where the line's class extends the member's class and does not define the name again, and no local of the name
-is declared on the line or in scope there: an inherited member used bare. In an ancestor's file that defines the
-name too, a plain use is a call the override answers (a template method). A `[kept]` line stands while every use of
-its member elsewhere is a `.name` on a receiver the typing cannot tell (the check cannot tell whose it is, and the
-line says it is not the game's), and is a `REMOVE` line once a told reader reads it.
+does not. One the typing cannot tell (an untyped parameter, a Variant) reaches every class with the name, in the
+game's files and the tests' alike, and in a test so does one the typing gave up on (a lowercase name the file never
+declares, a member its class does not declare, a class it cannot find), so a read through a fake it could not type
+still counts; in the game's files such a receiver reaches nothing. A static function is reached only through its
+class (`RouteTree.grow()`, a preloaded script), never through a value, since the engine warns on a static function
+called on a value and no warning it prints is left standing (woolly-finch 19). A plain word in another file reads a
+member only where the line's class extends the member's class and does not define the name again, and no local of
+the name is declared on the line or in scope there: an inherited member used bare. In an ancestor's file that
+defines the name too, a plain use is a call the override answers (a template method). A `[kept]` line stands while
+every use of its member elsewhere is a `.name` on a receiver the typing cannot tell (the check cannot tell whose it
+is, and the line says it is not the game's), and is a `REMOVE` line once a told reader reads it.
 
 **What it can miss and where it can accuse falsely.** It can *miss* a test-only member when a game reader the typing
-cannot tell uses a word of its name (a namesake reached through an untyped value or a Variant), when a file's opt-out
-line lets an engine-typed value count, when its name is one of `ENGINE_MEMBERS`, when a function is passed as a
-callable (`.name`) rather than called, and it does not see members of an inner class. A base class's plain call of the
-name reads a subclass's override, so an override whose subclass also overrides the base method that makes the call,
-without calling `super`, is read by that plain call although the game never reaches it. Because the own-file count is a
-word count, a call `.name(` on a namesake is not an own use either, so a member only that call and a test use lands in
-`[no reader]` although its own class does call it (a call on another instance of the file's own class,
-`other.name()`); the remedy is then the underscore of inbox #1098 (it is not dead code), not deleting it. It can
-*accuse falsely* in four ways: a test calling `.name` on its own fake (an inner class of the test with a method of that
-name) reads as a test reading the member; a test reading an engine member of the same name on a receiver the typing
-cannot tell, a name `ENGINE_MEMBERS` does not list, does too, and a function is told apart only by the call
-parenthesis; a game reader that goes through a string (`call("name")`, `has_method("name")`, `Callable(self, "name")`,
-a scene's `.tscn`) is blanked out and not seen; and a reader the typing tells wrongly is not seen: a name a block never
-declares is taken for an engine property of the file's own class, as `check_field_reads` takes it, a chain from
-`self` inside an inner class (`self.a.name`) for an engine value, and a static function called on a value (a warning
-left standing) for no read. On such a false failure the builder adds the line to a kept group with the reason as a
-comment (a member name an engine class carries, which a test reads on an engine node it holds, is the only reason to
-add to `ENGINE_MEMBERS`; never a way to exempt a game member).
-`shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped
+cannot tell uses a word of its name (a namesake reached through an untyped value or a Variant), when its name is one
+of `ENGINE_MEMBERS`, when a function is passed as a callable (`.name`) rather than called, and it does not see
+members of an inner class. A base class's plain call of the name reads a subclass's override, so an override whose
+subclass also overrides the base method that makes the call, without calling `super`, is read by that plain call
+although the game never reaches it. Because the own-file count is a word count, a call `.name(` on a namesake is not
+an own use either, so a member only that call and a test use lands in `[no reader]` although its own class does call
+it (a call on another instance of the file's own class, `other.name()`); the remedy is then the underscore of inbox
+#1098 (it is not dead code), not deleting it. It can *accuse falsely* in four ways: a test calling `.name` on its
+own fake (an inner class of the test with a method of that name) reads as a test reading the member; a test reading
+an engine member of the same name on a receiver the typing cannot tell, a name `ENGINE_MEMBERS` does not list, does
+too, and a function is told apart only by the call parenthesis; a game reader that goes through a string
+(`call("name")`, `has_method("name")`, `Callable(self, "name")`, a scene's `.tscn`) is blanked out and not seen; and
+a reader the typing tells wrongly is not seen: a name a block never declares is taken for an engine property of the
+file's own class, as `check_field_reads` takes it, a chain from `self` inside an inner class (`self.a.name`) for an
+engine value, and a static function called on a value (a warning left standing) for no read. On such a false failure
+the builder adds the line to a kept group with the reason as a comment (a member name an engine class carries, which
+a test reads on an engine node it holds, is the only reason to add to `ENGINE_MEMBERS`; never a way to exempt a game
+member). `shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped
 them. `--rev` and `--root` read the tree of that commit or checkout, and the list file of that same tree. A local
-`--base` run on a branch that is behind a checker change on main sees that change reversed (the diff to the base shows
-it reversed, which counts as a change of the checker, so additions to the shrinking groups pass); merge main first.
+`--base` run on a branch that is behind a checker change on main sees that change reversed (the diff to the base
+shows it reversed, which counts as a change of the checker, so additions to the shrinking groups pass); merge main
+first.
 """
 
 from __future__ import annotations
@@ -469,8 +467,6 @@ def found_in(path: str, world: World, names: frozenset[str]) -> Found:
     bare = tree.bare[path]
     blocks = check_field_reads.block_index(bare)
     inner = check_field_reads.inner_lines(bare)
-    opt_out = check_field_reads.opt_out_of(tree.src[path])
-    ignored = opt_out.warnings if opt_out else ()
     classes = set(tree.by_name) | set(tree.preloads.get(path, {}))
     uses: list[tuple[str, Use]] = []
     plain: Counter[tuple[str, str]] = Counter()
@@ -495,11 +491,6 @@ def found_in(path: str, world: World, names: frozenset[str]) -> Found:
                 kind = owner
             else:
                 kind = tree.chain_class(receiver, path, scope, inner[index])
-            # A value of no class here, which in a file whose opt-out line silences the engine's warning for the access
-            # (`var _hud: CanvasLayer`, then `_hud.configure()`) may still hold a game object.
-            silenced = ("unsafe_method_access" if call else "unsafe_property_access") in ignored
-            if kind is not None and kind not in tree.files and silenced:
-                kind = None
             if kind == GAVE_UP and path.startswith(f"{TESTS}/"):
                 kind = None
             reference = CLASS_REFERENCE.fullmatch(receiver.strip()) if receiver else None
@@ -836,9 +827,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
             " src/ reaches, unless tools/test_only_members.txt lists it, and fails on a listed line that has gone"
             " stale (the member has a reader in another file, no test reads it, or it is gone). A caller in the"
             " member's own file is not a reader; a reader is told by its receiver's type where it is known (another"
-            " class, a local, an engine value or a static function called on a value is no reader, except an engine"
-            " value in a file whose opt-out line silences that access's warning, unsafe_method_access for a call or"
-            " unsafe_property_access for a read; in a test, a receiver the typing gave up on still reads); constants"
+            " class, a local, an engine value or a static function called on a value is no reader; in a test, a"
+            " receiver the typing gave up on still reads); constants"
             " are exempt unless used nowhere."
             " A caller under src/dev counts as a reader; a function is read only as a call, not passed as a"
             " callable; a short set of engine member names (ENGINE_MEMBERS) is never taken as a read. The list's"

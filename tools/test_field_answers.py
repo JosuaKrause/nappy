@@ -661,23 +661,6 @@ class OutputTests(unittest.TestCase):
         text = answers.markdown(self.tree, self.report, counts=True)
         self.assertIn(f"`def` read (`{SUITE}` on 1 line): `row()`", text)
 
-    def test_a_file_that_still_ignores_unsafe_property_access_is_named(self) -> None:
-        line = '@warning_ignore_start("untyped_declaration", "unsafe_property_access")\n'
-        other = '@warning_ignore_start("untyped_declaration", "unsafe_method_access")\n'
-        body = "func f(node: Node2D, row: Row) -> void:\n\tprint(node.loud, row.id)\n"
-        files = {**SRC, SUITE: line + HEAD + body, "tests/test_other.gd": other + HEAD + body}
-        tree = answers.Scripts(files, {})
-        made = answers.report_of(tree, [SUITE, "tests/test_other.gd"])
-        self.assertEqual(made.untyped, [SUITE])
-        self.assertEqual(
-            answers.markdown(tree, made).splitlines()[-1],
-            f"- `{SUITE}` still ignores `unsafe_property_access`: a read through a receiver it types as an engine"
-            " class is not seen here, so this list is whole only once the file is typed",
-        )
-        self.assertEqual(json.loads(answers.as_json(tree, made))["ignoring_unsafe_property_access"], [SUITE])
-        empty = answers.Scripts({**SRC, SUITE: line + HEAD}, {})
-        self.assertIn("still ignores", answers.markdown(empty, answers.report_of(empty, [SUITE])))
-
     def test_nothing_read_says_so(self) -> None:
         tree = answers.Scripts({**SRC, SUITE: HEAD}, {})
         text = answers.markdown(tree, answers.report_of(tree, [SUITE]))
