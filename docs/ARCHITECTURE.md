@@ -126,6 +126,8 @@ src/
 	route_source.gd       the walk placement is stated against, as the questions it asks of it —
 	                      a day's route tree and the escape's two chains both answer them
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
+	tutorial_route.gd     day 1's tutorial route, worked out once from the city: its lesson
+	                      streets, the side streets and alley mouths off it, the ground it keeps
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep;
 	                      and the view a whole street is in: on the route, route-adjacent, off it
 	seal_planner.gd       seals every street off the day's route tree (a share of them from the
