@@ -7,7 +7,7 @@ const SOURCES: Array[String] = [
 	"art/ui/hint_arrow.svg",
 	"art/ui/hint_park.svg",
 	"art/ui/hint_back_to_route.svg",
-	"art/ui/hint_zebra.svg",
+	"art/ui/hint_crosswalk.svg",
 	"art/ui/hint_cross_street.svg",
 	"art/ui/hint_turn_back.svg",
 	"art/ui/hint_noise.svg",

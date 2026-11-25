@@ -1,5 +1,6 @@
-<!-- The chalk mark: an alley between two brick walls, and the resistance's chalk mark on its
-     floor, the circle crossed by two strokes it is drawn as (chalk_mark.svg).
+<!-- The chalk mark: an alley between two brick walls with the resistance's chalk mark on
+     its floor, faint as the game draws it (chalk_mark.svg), and a blue arrow walking in up the
+     alley to it.
      A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
      (thought_bubble.svg). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
@@ -8,8 +9,11 @@
   <rect x="16.5" y="0.5" width="7" height="19" fill="#6c4a40"/>
   <path d="M0.5 4.5 H7.5 M0.5 8.5 H7.5 M0.5 12.5 H7.5 M0.5 16.5 H7.5 M16.5 4.5 H23.5 M16.5 8.5 H23.5 M16.5 12.5 H23.5 M16.5 16.5 H23.5" stroke="#5a3d35" stroke-width="0.7"/>
   <path d="M4 0.5 V4.5 M2 4.5 V8.5 M5.5 4.5 V8.5 M4 8.5 V12.5 M2 12.5 V16.5 M5.5 12.5 V16.5 M4 16.5 V19.5 M20 0.5 V4.5 M18 4.5 V8.5 M21.5 4.5 V8.5 M20 8.5 V12.5 M18 12.5 V16.5 M21.5 12.5 V16.5 M20 16.5 V19.5" stroke="#5a3d35" stroke-width="0.6"/>
-  <g fill="none" stroke="#eaeae0" stroke-width="1.2">
-    <circle cx="12" cy="10.5" r="3.4"/>
-    <path d="M9.8 11.9 L14.2 9.1 M10.2 9 L12.8 12.9"/>
+  <g fill="none" stroke="#eaeae0" stroke-opacity="0.78" stroke-width="1">
+    <circle cx="12" cy="4.6" r="2.7"/>
+    <path d="M10.3 5.7 L13.7 3.5 M10.6 3.4 L12.6 6.4"/>
   </g>
+  <path d="M12 19 V12.6" fill="none" stroke="#221f28" stroke-width="4"/>
+  <path d="M12 19 V12.6" fill="none" stroke="#3d78b8" stroke-width="2.2"/>
+  <polygon points="9.2,12.8 14.8,12.8 12,9" fill="#3d78b8" stroke="#221f28" stroke-width="0.9"/>
 </svg>

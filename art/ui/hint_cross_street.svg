@@ -1,21 +1,17 @@
-<!-- Cross the street: a street from above, the near sidewalk shut by a barrier and a line
-     of steps going over to the open far one. hint_arrow.svg beside it points at the nearest
-     zebra crossing.
+<!-- Cross the street: a street from above, the near (left) sidewalk shut by a barrier and a
+     crosswalk further up, drawn as the crosswalk icon draws it, where the way over is.
+     hint_arrow.svg beside it points at the nearest crosswalk.
      A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
      (thought_bubble.svg). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="0.5" y="0.5" width="23" height="4" fill="#a59d8e"/>
-  <rect x="0.5" y="4.5" width="23" height="11" fill="#46464f"/>
-  <rect x="0.5" y="15.5" width="23" height="4" fill="#a59d8e"/>
-  <path d="M1.5 10 H4.5 M15 10 H18 M21 10 H23" stroke="#d9d4c4" stroke-width="1"/>
-  <g fill="#f7f3e8" stroke="none">
-    <circle cx="8.2" cy="16.4" r="1"/>
-    <circle cx="8.6" cy="13" r="1"/>
-    <circle cx="9" cy="9.8" r="1"/>
-    <circle cx="9.4" cy="6.6" r="1"/>
-    <circle cx="9.8" cy="2.6" r="1"/>
+  <rect x="0.5" y="0.5" width="6.5" height="19" fill="#a59d8e"/>
+  <rect x="7" y="0.5" width="10" height="19" fill="#46464f"/>
+  <rect x="17" y="0.5" width="6.5" height="19" fill="#a59d8e"/>
+  <g fill="#cfc7ae" stroke="none">
+    <rect x="8.3" y="1.5" width="2.6" height="5.5"/>
+    <rect x="13.1" y="1.5" width="2.6" height="5.5"/>
   </g>
-  <rect x="14" y="14.4" width="9" height="2.8" fill="#f1ede2"/>
-  <path d="M15.6 14.4 L14 16 M18.6 14.4 L16 17 M21.6 14.4 L19 17 M23 15.6 L21.6 17" stroke="#e8822e" stroke-width="1.5"/>
-  <rect x="14" y="14.4" width="9" height="2.8" fill="none"/>
+  <rect x="0.5" y="11.2" width="6.5" height="2.8" fill="#f1ede2"/>
+  <path d="M2.1 11.2 L0.5 12.8 M5.1 11.2 L2.5 13.8 M7 12.3 L5.3 14" stroke="#e8822e" stroke-width="1.5"/>
+  <rect x="0.5" y="11.2" width="6.5" height="2.8" fill="none"/>
 </svg>

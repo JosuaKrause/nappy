@@ -12,17 +12,17 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 R = sys.argv[1]
 out = sys.argv[2]
-icons = ['hint_park', 'hint_back_to_route', 'hint_zebra', 'hint_cross_street',
+icons = ['hint_park', 'hint_back_to_route', 'hint_crosswalk', 'hint_cross_street',
          'hint_turn_back', 'hint_noise', 'hint_chalk', 'hint_hut']
-pointing = {'hint_park': True, 'hint_back_to_route': True, 'hint_zebra': True,
+pointing = {'hint_park': True, 'hint_back_to_route': True, 'hint_crosswalk': True,
             'hint_cross_street': True}
 labels = {'hint_park': 'the way to the park (arrow along the route)',
           'hint_back_to_route': 'back to the route (arrow to nearest route tile)',
-          'hint_zebra': 'use the zebra (arrow to nearest zebra)',
-          'hint_cross_street': 'cross the street (arrow to nearest zebra)',
+          'hint_crosswalk': 'use the crosswalk (arrow to nearest crosswalk)',
+          'hint_cross_street': 'cross the street (arrow to nearest crosswalk)',
           'hint_turn_back': 'turn back', 'hint_noise': 'walk wide of the noise',
           'hint_chalk': 'the chalk mark in its alley', 'hint_hut': 'walk through the hut'}
-angles = {'hint_park': 90, 'hint_back_to_route': 180, 'hint_zebra': 0, 'hint_cross_street': -45}
+angles = {'hint_park': 90, 'hint_back_to_route': 180, 'hint_crosswalk': 0, 'hint_cross_street': -45}
 LIFT = 52
 def img(n,s): return Image.open(f"{R}/{n}@{s}x.png").convert('RGBA')
 def bubble(icon,s,angle=0):
