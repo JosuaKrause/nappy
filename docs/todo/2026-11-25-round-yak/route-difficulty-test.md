@@ -1,0 +1,5 @@
+# The scheduler's suite tests difficulty on her route
+
+`tests/test_events_scheduler.gd` holds `_test_a_day_has_enough_in_it_to_meet`, whose second half checks that day 14 places more than a fifth over day 1 (`late * 5 > early * 6`) on city 4242. That is a bar on the count of events, and the record silver-ferret measured it holding on 4 of 10 cities. The check is replaced with two claims about the events on her route, the streets of every route of the day's route tree: day 14's events there cost more to pass than day 1's (priced by the cost table in `docs/COSTS.md`, one pass at walking pace), and a larger share of them end the day or chase her than on day 1.
+
+The first half of the check (days 1, 3, 7 and 14 each place about one event a block) stays; it is a different claim. The new test reaches the route and the cost table through the game's own seams (**writing-tests**), and its bars are measured over several cities before they are set, never derived (**balance**). A bar the cities do not meet is reported to the orchestrating session, which asks the player on the board; it is never loosened to pass. The code PR deletes this item and files its record.
