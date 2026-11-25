@@ -1093,6 +1093,8 @@ func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) ->
 	var crossing_point: Variant = null
 	if next.is_warned_in_its_lane():
 		path = _in_the_lane_beside_her(at, heading, next, view)
+		if path.is_empty() or not clear_to_send(path, next):
+			path = _down_the_street_she_comes_to(at, heading, next, view)
 	elif next.comes_toward_her():
 		path = _toward_her_on_the_road(at, heading, next, view) \
 				if next.keeps_to_the_carriageway() \
@@ -1423,7 +1425,8 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ##
 ## Empty where there is nothing to run it down: she is not beside a plain sidewalk edge, the
 ## street there has no leg a car may drive and go on from (`leg_in_the_lane()`), or the end ahead of
-## her has no place out of sight. The caller waits and asks again.
+## her has no place out of sight. The caller then asks the street she comes to
+## (`_down_the_street_she_comes_to()`).
 func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
@@ -1437,6 +1440,45 @@ func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 	var component := heading.dot(along)
 	var going := -along * signf(component) if not is_zero_approx(component) else along
 	return _down_the_lane(at, going, index, def, view)
+
+## **Where a row warned of first in its lane is sited when the lane beside her has no room for it**
+## (`_in_the_lane_beside_her()` empty, or its leg not clear to send): down the street that crosses
+## hers at the next junction box ahead of her, from either end, driving toward the box. Its place is
+## level with her across that street, which is the box she is walking to, and just out of sight up
+## it (`PendingWarning.in_its_lane()`), and its first leg runs through the box to its far edge
+## (`leg_in_the_lane()`), so it crosses her way ahead of her, warned of first and from where its badge
+## points, as the convoy in the lane beside her comes past her. It is held to everything the lane
+## beside her is held to (`_down_the_lane()`, `clear_to_send()`).
+##
+## Empty where she is not beside a plain sidewalk edge, is not walking along the street, or neither
+## end of the street ahead has a leg a car may drive and go on from out of sight.
+func _down_the_street_she_comes_to(at: Vector2, heading: Vector2, def: EventDef,
+		view: VisibleView) -> PackedVector2Array:
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return PackedVector2Array()
+	var vertical := inward.x != 0
+	var along := Vector2(inward.y, inward.x)
+	var component := heading.dot(along)
+	if is_zero_approx(component):
+		return PackedVector2Array()
+	var ahead := along * signf(component)
+	var forward := (ahead.y if vertical else ahead.x) > 0.0
+	var period := float(CityMap.period() * Tuning.TILE_SIZE)
+	var box := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	var her_along := at.y if vertical else at.x
+	var behind := floorf(her_along / period)
+	if not forward and her_along - behind * period <= box:
+		behind -= 1.0
+	var middle := (behind + (1.0 if forward else 0.0)) * period + box * 0.5
+	var index := CrowdLanes.corridor_at(middle)
+	if index < 0:
+		return PackedVector2Array()
+	for going: Vector2 in [Vector2(inward), -Vector2(inward)]:
+		var leg := _down_the_lane(at, going, index, def, view)
+		if not leg.is_empty() and clear_to_send(leg, def):
+			return leg
+	return PackedVector2Array()
 
 ## The first leg of `def` in the lane of corridor `index` driving `going` (a unit along the street),
 ## from its place just out of sight up the lane (`PendingWarning.in_its_lane()`, against `view`, the
