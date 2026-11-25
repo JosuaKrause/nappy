@@ -8,11 +8,11 @@ extends RefCounted
 ## input at a time (an event's row and its heading, and a crowd body's axis, `_direction`,
 ## turn-back hold and jolt fields, some through a name held in a variable), reads the event's
 ## `_where` (where she hears it) to hand it back, and overrides `_sample_expected_landed()` to
-## count the samplings really run. No game path changes one input of a source alone, and a cache over the projection
-## has to notice exactly that, so the writes are what the suite proves; a suite that reached
-## only what the game reaches would never test the cache's key. The reference
-## (`tests/fixtures/prediction_reference.gd`) works out its reach from the tuning and what the
-## body answers publicly, so a wrong reach in the source fails the parity.
+## count the samplings really run. No game path changes one input of a source alone, and a
+## cache over the projection has to notice exactly that, so the writes are what the suite
+## proves; a suite that reached only what the game reaches would never test the cache's key.
+## The reference (`tests/fixtures/prediction_reference.gd`) works out its reach from the tuning
+## and what the body answers publicly, so a wrong reach in the source fails the parity.
 
 const Reference = preload("res://tests/fixtures/prediction_reference.gd")
 const HaloRig = preload("res://tests/halo_rig.gd")
@@ -523,7 +523,7 @@ func _test_a_body_heading_towards_her_is_projected_out_to_its_grown_reach(t: Tes
 ## A startled body is projected out to its jolt's outer radius where that reaches further than its
 ## kind's: it stands still and she walks towards it, her end point at four fifths of a jolt whose
 ## outer radius is three times the kind's. A source reach without the jolt term falls short by
-## `0.8 * 3 * outer - outer * scale` (37 px for a walker, 250 px for a car, at the least).
+## `0.8 * 3 * outer - outer * scale` (37 px for a walker, 84.5 px for a car).
 func _test_a_startled_body_is_projected_out_to_its_jolt_reach(t: TestRunner) -> void:
 	for kind: LaneMover.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var car := kind == CrowdAgent.Kind.CAR

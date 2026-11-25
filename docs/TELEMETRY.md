@@ -302,7 +302,8 @@ flow's `day_started` alone.
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (the engine's `OS.get_name() == "Web"`, given
 through `GoatCounterPlatform.is_on_the_web()`), it is not a debug build
-(`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), the page was not asked for `?debug=1`
+(`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), the
+page was not asked for `?debug=1`
 (`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at
 boot — nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already

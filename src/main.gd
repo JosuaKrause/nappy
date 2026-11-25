@@ -174,7 +174,8 @@ var _save: GameSave
 ## owns. Taken or made beside the save in `_ready()`, and handed to `RunSession`, which opens it.
 var _run_log: Telemetry
 ## What the page counts (`VisitCounter`): the one under the sitting, made and handed the game's bus,
-## the page's outbox and the engine's platform answers on the sitting's first boot, so its count of the run outlives every reload.
+## the page's outbox and the engine's platform answers on the sitting's first boot, so its count
+## of the run outlives every reload.
 var _visit_counter: VisitCounter
 ## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
 ## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`
@@ -2219,7 +2220,8 @@ func _new_run_log() -> Telemetry:
 	return run_log
 
 ## The sitting's page counter, made on its first boot and handed the game's bus, the page's
-## outbox and the engine's platform answers, under the sitting so its count of the run outlives every reload.
+## outbox and the engine's platform answers, under the sitting so its count of the run outlives
+## every reload.
 func _new_visit_counter() -> VisitCounter:
 	var counter := VisitCounter.new()
 	counter.name = VisitCounter.NODE_NAME
