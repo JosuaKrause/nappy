@@ -215,7 +215,8 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## **`sends` is the walk's own setting of what the director may send her**
 ## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends none
 ## of an ordinary day's rows (`DaySpec.DirectorSends.NOTHING`) has no route bag, owes nothing
-## from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is. There is no
+## from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is; one that sends
+## its own trucks (`ITS_OWN_TRUCKS`) owes only the sent-ahead rows its plan left unplaced. There is no
 ## default: a caller says what its walk sends.
 func start_day(day: int, plans: Array[EventPlan],
 		rng: RandomNumberGenerator, sends: DaySpec.DirectorSends,
@@ -231,6 +232,8 @@ func start_day(day: int, plans: Array[EventPlan],
 	_return_patrols_left = 0
 	_patrol_bag_left = 0
 	_sends_the_days_rows = sends == DaySpec.DirectorSends.THE_DAYS_ROWS
+	var its_trucks := sends == DaySpec.DirectorSends.ITS_OWN_TRUCKS
+	var trucks: Array[EventDef] = []
 	_fill_the_route_bag(day, heat, rng)
 	_return_owed = false
 	_return_pacing = false
@@ -255,6 +258,8 @@ func start_day(day: int, plans: Array[EventPlan],
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_on_her_way.append(plan)
 		if not _sends_the_days_rows:
+			if its_trucks and plan.is_sent_ahead() and not plan.is_placed():
+				trucks.append(plan.row())
 			continue
 		var mode := plan.spawn_mode_on(day)
 		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
@@ -267,6 +272,7 @@ func start_day(day: int, plans: Array[EventPlan],
 			_owed.append(null if _route_rows.has(plan.row_id()) else plan.row())
 	if _sends_the_days_rows:
 		_owe_the_sprinkled_dog(day)
+	_owe_its_trucks(trucks, heat)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
@@ -275,6 +281,20 @@ func start_day(day: int, plans: Array[EventPlan],
 		return
 	_teach_the_run(day, lesson)
 	_rig_day_one(day, heat)
+
+## **The trucks a walk's own plan left for the director** (`DaySpec.hands_the_director()`): each is
+## a marble of a route bag that holds them alone, and a slot owed, so she meets as many as the plan
+## handed over, one at the director's usual pace, each sited ahead of her as a day's convoy is
+## (`_routed()`). A truck is no row of the ordinary bag, so `max_per_day` caps none of them.
+func _owe_its_trucks(trucks: Array[EventDef], heat: int) -> void:
+	if trucks.is_empty():
+		return
+	var marbles := []
+	for def in trucks:
+		_route_rows[def.id()] = _routed(def, heat)
+		marbles.append(def.id())
+		_owed.append(null)
+	_route = MarbleBag.new([], marbles, hash("%d:route-bag" % _rng.seed))
 
 ## Whether today's route is the ordinary day's rows (`start_day()`'s `sends`). When it is not, the
 ## director has no route bag and owes nothing from the plan.

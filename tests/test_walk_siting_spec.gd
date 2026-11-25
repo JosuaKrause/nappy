@@ -209,8 +209,8 @@ func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 ## **Both starts of a walk hand the director what its spec lets it send**
 ## (`DaySpec.director_sends()`), not the day's number: a recording director is handed what
 ## `EventsAhead.start_day()` (a day's) and `start_a_given_walk()` (a walk placed whole) pass it.
-## The escape city's spec hands `NOTHING` on day 1 (the direct boot's day) and day 14 (a run's), and
-## a day's hands the ordinary rows. What the director does with the value is
+## The escape city's spec hands `ITS_OWN_TRUCKS` on day 1 (the direct boot's day) and day 14 (a
+## run's), and a day's hands the ordinary rows. What the director does with the value is
 ## `test_event_director.gd`'s.
 func _test_a_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
@@ -235,9 +235,9 @@ func _test_a_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -
 	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
 		ahead.start_a_given_walk(day)
 		ahead.start_day(day, null)
-	t.check(director.handed == [DaySpec.DirectorSends.NOTHING, DaySpec.DirectorSends.NOTHING,
-			DaySpec.DirectorSends.NOTHING, DaySpec.DirectorSends.NOTHING],
-			"the escape city's walk hands nothing on day 1 and day 14, by either start (%s)"
+	var trucks := DaySpec.DirectorSends.ITS_OWN_TRUCKS
+	t.check(director.handed == [trucks, trucks, trucks, trucks],
+			"the escape city's walk hands its own trucks on day 1 and day 14, by either start (%s)"
 			% [director.handed])
 
 ## A director that records the `sends` each `start_day()` is handed and does nothing else.

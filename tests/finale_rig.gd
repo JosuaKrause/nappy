@@ -57,6 +57,7 @@ const CASES: Array[String] = [
 	"_test_an_escape_guard_warns_on_the_screen_and_on_top",
 	"_test_the_players_seed_is_winnable_past_its_roadblocks",
 	"_test_the_escape_stands_its_rows_on_the_days_own_ground",
+	"_test_the_escape_leaves_its_trucks_to_the_director",
 	"_test_an_alley_mouth_wall_fits_the_mouth",
 	"_test_nothing_the_escape_stands_reaches_over_a_building",
 	"_test_a_restart_plans_the_same_escape",
@@ -1258,7 +1259,8 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t: TestRunner) -> v
 		var placements: Array[EventPlan] = built["placements"]
 		var offered := {}
 		for placement in placements:
-			if not ESCAPE_ROWS.has(placement.row_id()):
+			# A truck is the director's to send ahead of her, left with no place of its own.
+			if not ESCAPE_ROWS.has(placement.row_id()) or not placement.is_placed():
 				continue
 			asked += 1
 			var key := placement.row().get_instance_id()
@@ -1272,6 +1274,21 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t: TestRunner) -> v
 			t.check(tiles_offered.has(at), "seed %d: the %s at %s stands on ground a day offers it"
 					% [seed_value, placement.row_id(), at])
 	t.check(asked > 0, "there were escape rows to ask about (%d)" % asked)
+
+## **The escape's trucks are the director's, not the dawn's**: each marble of the bag that draws the
+## army truck is a plan left with no place (the director sends it ahead of her as she walks), so no
+## truck stands on a street at dawn, and there are as many left for the director as the bag drew.
+## The barrier trucks that seal the streets off her walk are another row and stay placed.
+func _test_the_escape_leaves_its_trucks_to_the_director(t: TestRunner) -> void:
+	var owed := 0
+	for seed_value: int in SEEDS:
+		var placements: Array[EventPlan] = _plan_for(seed_value)["placements"]
+		for placement in placements:
+			if placement.row_id() == "military_convoy":
+				owed += 1
+				t.check(not placement.is_placed(),
+						"seed %d: an army truck of the bag is not placed at dawn" % seed_value)
+	t.check(owed > 0, "the bag drew trucks for the director to send (%d)" % owed)
 
 ## The escape stands no mast: the game hands its dawn no mast site (`DayPlanner.plan_the_escape_city()`).
 const _NO_MASTS: Array[MastSites.Site] = []

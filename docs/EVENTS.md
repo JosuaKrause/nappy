@@ -339,8 +339,8 @@ the three on an ordinary day**: each is sent ahead of her (`EventDraft.sent_ahea
 the world just ahead of her on the street she is walking, as the copy the director sends
 (`EventDef.as_sent_ahead()`). An encounter is guaranteed the way a cyclist's is: it is created on her
 own street, coming her way, on a route that runs past where she is. The catalogue rows stay `MAP`,
-for what else places them: the escape's bag lays its trucks before she sets off, day 13's column
-and the raid make their own, and a scene recipe lays a dog walker at a tile.
+for what else places them: day 13's column and the raid make their own, and a scene recipe lays a
+dog walker at a tile.
 
 - **The dog walker** is sent down her own sidewalk toward her, created at once just out of sight
   with no badge (`telegraphs_its_coming()` false on the copy: 32px/s is slower than a walk and it never ends the
@@ -757,10 +757,10 @@ exists so a pursuer stuck against a wall lets go in the end.
   (slower than a walk, never lethal at any heat — its strike is a car's, in front of it on the
   carriageway, and warned as a car warns, "Solid things are solid"). It does not telegraph its
   coming ("What telegraphs"), and its in-world approach still meets the telegraph contract.
-- **A `MAP` mover** — the escape's `military_convoy` trucks — **is a place the escape planned before
-  she comes near it** and streams in at `Tuning.EVENT_STREAM_RADIUS`, telegraphing in the
-  world (4.43s) with a badge because 120px/s is faster than a walk, and the fairness contract checks
-  it like every row. It telegraphs: 120px/s down the road she is on, about 30 points in a pass.
+- **A `MAP` mover** — the escape's `military_convoy` trucks — **is sent ahead of her by the
+  director like a day's convoy** (the escape's section below), so it is warned of first and created
+  just out of sight, and the fairness contract checks it like every row. It telegraphs: 120px/s
+  down the road she is on, about 30 points in a pass.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
 `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a
@@ -2303,7 +2303,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `military_convoy` | RECURRING, sent ahead of her | 13 | Leaves nothing: nothing a convoy does during the walk closes a street. **A convoy on a day is sent ahead of her by the director**, warned of first in the lane beside her, toward her, and drives down the lane past her to the far edge of the next junction box, then on from box to box while she can see it (see "The dog walker, the patrol and the convoy are sent ahead of her"). **The escape's trucks** are this row too, drawn by `DawnDraw` over the whole walk, which does not cut a route to its street's run, so each keeps the full 50-tile route, as far as the first tile that stops a truck. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
+| `military_convoy` | RECURRING, sent ahead of her | 13 | Leaves nothing: nothing a convoy does during the walk closes a street. **A convoy on a day is sent ahead of her by the director**, warned of first in the lane beside her, toward her, and drives down the lane past her to the far edge of the next junction box, then on from box to box while she can see it (see "The dog walker, the patrol and the convoy are sent ahead of her"). **The escape's trucks** are this row too: the bag's marbles for it are the director's, sent ahead of her as a day's convoy is (the escape's section). From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
 | `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. It is placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_within()` 62 repeated across the street's whole width so nothing gets past it, the outer two flush with the street's edges so no cart stands over the buildings either side) — see docs/CITY.md, "Sealing the tree". |
 | `protest` | RECURRING | 12 | swell 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own inner radius on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `EventScheduler.role_for()` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, lethal, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
@@ -2410,7 +2410,13 @@ street draws one marble and stands one event at most (`stands_one_event_a_street
 street is drawn before she sets off, in the order the walk names its streets, each judged among
 everything drawn before it (`draws_before_she_sets_off()`). The bag holds
 `DaySpec.FINALE_BAG_TRUCKS` army trucks, `FINALE_BAG_EXPLOSIONS` explosions, `FINALE_BAG_VANS`
-vans, `FINALE_BAG_ROADBLOCKS` roadblocks and `FINALE_BAG_EMPTY` empty marbles. A row's marble
+vans, `FINALE_BAG_ROADBLOCKS` roadblocks and `FINALE_BAG_EMPTY` empty marbles. **A truck's marble is
+the director's to send**: the street that draws it stands nothing, the plan keeps the truck with no
+place (`DaySpec.hands_the_director()`, `MarbleDraw`), and the event director, handed
+`DirectorSends.ITS_OWN_TRUCKS`, owes her one truck for each, sent ahead of her as she walks as a
+day's convoy is, on its usual pacing; it sends nothing else of an ordinary day's rows. Every street
+of the plan is on her walk, so each truck is on her route; the barrier trucks that seal the
+streets off her walk are the seals and stay placed. Any other row's marble
 stands on the location of the street that takes it, under every placement rule below, the rest
 of the street empty; an empty marble leaves the street with nothing. **A marble the street's
 rules refuse stays in the bag**, and the street draws again among the marbles left

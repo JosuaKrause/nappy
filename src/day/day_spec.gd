@@ -41,14 +41,17 @@ const FINALE_BAG_ROADBLOCKS := 2
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_VANS := 3
 
-## What the event director may send her while she walks (`director_sends()`). A walk that sends
-## something of its own (the escape's army trucks on her route) adds a value here.
+## What the event director may send her while she walks (`director_sends()`).
 enum DirectorSends {
 	## The rows the calendar's day sends, by the day's number: the route's bag of cats, cyclists, dog
 	## walkers, patrols and the rest, with the day-one rig and the sprinkled charging dog.
 	THE_DAYS_ROWS,
 	## Nothing: no route bag, nothing owed from the plan, no rig and no sprinkled dog.
 	NOTHING,
+	## **The trucks the walk's own bag hands it** (`hands_the_director()`): a route bag of the rows
+	## the walk's plan leaves unplaced for the director, one marble each, and nothing else: no row
+	## of an ordinary day, no rig and no sprinkled dog. The escape city's.
+	ITS_OWN_TRUCKS,
 }
 
 ## Where the walk is: the city, or the building the escape starts in.
@@ -326,6 +329,7 @@ static func for_section(which: int, section_length: float, section_title := "") 
 		spec.goal = Goal.CITY_EDGE
 		spec._start = Start.SERVICE_EXIT
 		spec._events_stream = "finale"
+		spec._director_sends = DirectorSends.ITS_OWN_TRUCKS
 		_place_the_escape_city(spec)
 	return spec
 
@@ -481,10 +485,19 @@ func owes_her_a_return() -> bool:
 	return _owes_a_return
 
 ## What the event director may send her while she walks this walk (`DirectorSends`): an ordinary
-## day's rows on a day, nothing on either of the escape's sections, whose every danger is placed
-## before she sets off. The day's number decides none of it.
+## day's rows on a day, the trucks of its own bag on the escape's city, nothing in its building.
+## The day's number decides none of it.
 func director_sends() -> DirectorSends:
 	return _director_sends
+
+## **Whether a marble of the walk's bag that stands `row` is the director's to send ahead of her**
+## rather than a place on the street that drew it (`DirectorSends.ITS_OWN_TRUCKS`): a row the
+## director sends ahead of her on a day (`EventDef.is_sent_ahead()`), the army truck. The street
+## that draws one stands nothing, as for the poster crew's marble, and the director is owed the
+## truck (`EventDirector.start_day()`); the barrier trucks that seal the streets off her walk stay
+## placed (`SealPlanner`).
+func hands_the_director(row: EventDef) -> bool:
+	return _director_sends == DirectorSends.ITS_OWN_TRUCKS and row.is_sent_ahead()
 
 ## Whether a torn poster sends a pursuer on foot at her on this walk (`_poster_pursuits`): every
 ## day's does, the escape's never.

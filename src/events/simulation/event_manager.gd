@@ -242,7 +242,7 @@ func _owe_the_return() -> void:
 ## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
 ## the crowd; a walk planned whole before she sets off owes the director no plan of the dawn's
 ## and hands it the walk's own setting of what it may send her (`EventsAhead.start_a_given_walk()`,
-## `DaySpec.director_sends()`: none, for the escape's city), and a plan of it that comes again
+## `DaySpec.director_sends()`: its own trucks, for the escape's city), and a plan of it that comes again
 ## (`EventPlan.repeats()`) comes on its own clock
 ## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
 ## detentions and the hard fails are the same for all three: an explosion leaves its crater through

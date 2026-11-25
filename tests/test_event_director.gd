@@ -85,6 +85,7 @@ func run(t: TestRunner) -> void:
 	_test_nothing_is_rigged_under_force(t)
 	_test_the_copy_on_her_route_shares_its_rows_body(t)
 	_test_a_rigged_route_is_owed_its_count_and_pre_bag(t)
+	_test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unplaced(t)
 	_test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
@@ -606,6 +607,45 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 	director.start_recipe_route(["cyclist", "cyclist"], ["cat_dash"], 3, 2.0, 0)
 	t.check(director.owed() == 3, "the route is owed what the recipe says")
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
+
+## **A walk that sends its own trucks** (`DaySpec.DirectorSends.ITS_OWN_TRUCKS`, the escape city's)
+## is owed one marble for each sent-ahead row its plan left unplaced, and none for a truck its
+## plan placed or for a row it does not send: what she meets is the plan's trucks sent just ahead
+## of her, and nothing else, whatever the day's number. The walk that sends nothing is owed none
+## of the same plans, so the count is the setting's and not the plans'.
+func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unplaced(
+		t: TestRunner) -> void:
+	var truck := EventCatalogue.by_id("military_convoy")
+	var plans: Array[EventPlan] = [EventPlan.new(truck, Vector2.INF),
+			EventPlan.new(truck, Vector2.INF), EventPlan.new(truck, _her() + Vector2.UP * 900.0),
+			EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF)]
+	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
+		var sends := _started(day, plans, DaySpec.DirectorSends.ITS_OWN_TRUCKS)
+		t.check(sends.owed() == 2,
+				"day %d: she is owed the two trucks left unplaced (%d)" % [day, sends.owed()])
+		var handed: Array[String] = []
+		for _tick in 12:
+			var due := sends.due(10.0, _her(), Vector2.UP * Tuning.WALK_SPEED)
+			if not due.is_empty():
+				var def: EventDef = due[0]
+				handed.append(def.id())
+		var expected: Array[String] = ["military_convoy", "military_convoy"]
+		t.check(handed == expected,
+				"day %d: what is sent ahead of her is those trucks and nothing else (%s)"
+				% [day, handed])
+		var nothing := _started(day, plans, DaySpec.DirectorSends.NOTHING)
+		t.check(nothing.owed() == 0, "day %d: a walk that sends nothing is owed none of them" % day)
+
+## A director on the street over `plans`, its day `day` started on a stream of its own as
+## `sends` says what it may send.
+static func _started(day: int, plans: Array[EventPlan],
+		sends: DaySpec.DirectorSends) -> EventDirector:
+	var director := EventDirector.new(_street())
+	director.use_way_on(FakeWayOn.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	director.start_day(day, plans, rng, sends)
+	return director
 
 ## **A walk whose spec sends nothing** (`DaySpec.director_sends()`, the escape city's) hands the
 ## director no route bag, owes nothing, rigs nothing and rolls no sprinkled dog, **whatever its day
