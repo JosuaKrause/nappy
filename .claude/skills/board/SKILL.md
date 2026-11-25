@@ -13,6 +13,9 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 - **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). A question, about a note or an issue the player opened included, goes on the board (inbox #1639 in gentle-penguin).
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
+- **A question that needs the player to run the game goes on the Review tab, never the Main tab**
+  (inbox #1765 in gray-plover, inbox #1766 in gray-plover): comparing settings, playing a build, looking at a
+  picture in play. The Main tab holds only questions answerable without running the game.
 - **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.
 - **The player's words on the board are never rewritten**, and are captured into the inbox before they are acted on.
 - **A conclusion is written on its inbox note in the turn it is reached**, and into its queue item at the next queue update.
@@ -56,7 +59,8 @@ can recover from. The player usually asks for the current state before looking a
 whenever the orchestrator next writes the board for the player: a question, an answer, the player
 asking for the state, or a recurring read, which brings the tables current with what merged and
 finished since the last batch. **Both tabs are read**, since the
-player answers review items on the Review tab and design questions on the Main tab.
+player answers review items and every question that needs a run of the game on the Review tab,
+and design questions answerable without one on the Main tab.
 
 ## The layout
 
@@ -92,14 +96,38 @@ and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A re
 `docs/review/` is a sign-off check that needs a set-up run or a device and is answered one at a
 time, while the Main tab's questions are design decisions about work in flight and are answered in
 a batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
-shows it. The answer goes to a playtest file as before, which closes the item's file
-(**playtest-feedback**). The tab holds
+shows it. **A question the player can answer only by running the game or comparing settings in it**
+(which bag fills the escape right, which charger timing feels right) **is a Review-tab item too,
+with no file when no sign-off waits on it** (inbox #1765 in gray-plover, inbox #1766 in gray-plover); it
+is never put on the Main tab, whatever work it decides. **The two kinds are answered differently**:
+the answer to an item with a file goes to a playtest file as before, which closes the item's file
+(**playtest-feedback**); the answer to a question with no file is given on the tab and recorded
+where the work it decides records it (**Blocking, and no dialogs**, "A conclusion is written down
+in the turn it is reached"). The tab holds
 a title and one line saying what it is for, `## Waiting on you` with the items ready to answer (or
 the one line "Nothing is ready for you right now."), and below it a section for items held until
 something happens, such as `## Waiting for a release`, where the item's file says what it waits
 for; each item is a question in the layout below with its review item's name in its Question line
-and the steps in its Context; and an item added, held or closed in the repository is added, moved
-or removed on the tab in the same turn.
+(a question with no file, its own name) and the steps in its Context; and an item with a file,
+added, held or closed in the repository, is added, moved or removed on the tab in the same turn,
+so the tab is kept in step with `docs/review/`, and a question with no file is added when it is
+asked and leaves when answered.
+
+**What a Review-tab question that needs a run owes**, so the player can answer it from the tab
+without opening anything else:
+
+- **How to play each setting**: the exact command (`tools/run.sh --chargers 1.75 1.25`) or URL for
+  every setting compared, one list item each, naming what it is and which one is built by default.
+- **What to look at** in the run, in a line.
+- **The question a run answers**, asked once and plainly.
+- **Each setting's measured cost**, where there is a measurement (a share of streets filled, a
+  count of hits), beside the setting it belongs to.
+- **My pick and what is built**: the setting the work builds meanwhile, so nothing waits on the
+  run, and the line says when it ships.
+- The You and Me stubs, as for every question.
+
+The shape: a line on what it is, then what to do with the commands as a list, where to look, the
+question a run answers, and the You and Me stubs.
 
 **A question is a level-3 heading with a stable kebab-case name and one bullet list under it**,
 nested exactly like this, the layout the player set on the board:
@@ -276,6 +304,9 @@ the player corrects them. The citation is the player's word each one extends:
   an agent's own choice staying in its report (inbox #850 in minty-dolphin).
 - **What the Review tab holds** ("The layout"): its sections, each item as a question, the
   same-turn update (inbox #948 in bouncy-marten).
+- **What a Review-tab question that needs a run owes** ("The layout"): the player's words say
+  where such a question goes (inbox #1765 in gray-plover, inbox #1766 in gray-plover); the list of what it carries, and
+  that it has no file when no sign-off waits on it, are the filer's reading.
 - **A bold lead word on a Context item, and which pictures are meant** ("The layout";
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";

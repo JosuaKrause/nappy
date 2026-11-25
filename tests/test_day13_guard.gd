@@ -125,7 +125,8 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 	# The case needs a roadblock whose ground all round, out to where its guard may stand, lies
 	# clear of the guard where he stands now (the square the view below is set to): one that close
 	# to the task's own would put him in that view before he moved.
-	var everywhere := Vector2.ONE * (ResistanceDirector.TASK_GUARD_FARTHEST + 64.0)
+	var everywhere := Vector2.ONE * (ResistanceDirector.task_guard_farthest(
+			ContactPoint.body_reach(director.rider())) + 64.0)
 	var clear_of_him := func(roadblock: EventInstance) -> bool:
 		var square := Rect2(roadblock.body_position() - everywhere, everywhere * 2.0)
 		return not square.intersects(Rect2(where + Vector2(-14.0, -48.0), Vector2(28.0, 52.0)))
@@ -177,7 +178,8 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 	var ring_at := ringed.global_position if ringed else Vector2.INF
 	t.check(ringed != null and ringed == first and not first.is_gone()
 			and ring_at.distance_to(around) > band_edge
-			and ring_at.distance_to(around) <= ResistanceDirector.TASK_GUARD_FARTHEST
+			and ring_at.distance_to(around)
+					<= ResistanceDirector.task_guard_farthest(ContactPoint.body_reach(other))
 			and not _guard_in_view(ring_at) and _a_clear_line(city.map(), ring_at, around),
 			("while its band is in her view he goes past it, %.0fpx from its body, out of her view, " +
 			"with a clear line to it") % ring_at.distance_to(around))
@@ -1182,24 +1184,26 @@ static func _on_one_street_line(map: CityMap, a: Vector2, b: Vector2) -> bool:
 	return first.a.y == second.a.y if first.horizontal else first.a.x == second.a.x
 
 ## Whether the street through a roadblock at `centre` runs on in `direction` to ground a guard may
-## stand on past its band, out to `ResistanceDirector.TASK_GUARD_FARTHEST`, with a clear line back to
-## it: a far side with room for him on the ring a move takes while the band is in her view. Asked of
-## the city's siting (`SpawnSiting.CONTACT_GROUND`), the ground a guard's spot is asked of, and of
-## the line his notice takes (`CityMap.clear_line()`, which anything standing between hides).
+## stand on past its band, out to `ResistanceDirector.task_guard_farthest()`, with a clear line back
+## to it: a far side with room for him on the ring a move takes while the band is in her view. Asked
+## of the city's siting (`SpawnSiting.CONTACT_GROUND`), the ground a guard's spot is asked of, and
+## of the line his notice takes (`CityMap.clear_line()`, which anything standing between hides).
 func _a_street_beyond(map: CityMap, centre: Vector2i, direction: Vector2i) -> bool:
 	var siting: SpawnSiting = RunCity.spawn_siting(_city)
 	var ground := siting.ask_of_ground(ResistanceDirector.GUARD_BOX)
 	var body := map.tile_to_world(centre)
 	var across := Vector2i(direction.y, direction.x)
 	# Past the view a move's band test sets (the band's edge and 48px) and the guard's own half-width.
+	var reach := ContactPoint.REACH + 110.0
 	var nearest := ceili((EventCatalogue.by_id("alley_robbery").notice_within()
-			+ ContactPoint.REACH + 110.0 + 48.0 + 14.0) / Tuning.TILE_SIZE) + 1
-	var farthest := floori(ResistanceDirector.TASK_GUARD_FARTHEST / Tuning.TILE_SIZE)
+			+ reach + 48.0 + 14.0) / Tuning.TILE_SIZE) + 1
+	var reaches := ResistanceDirector.task_guard_farthest(reach)
+	var farthest := floori(reaches / Tuning.TILE_SIZE)
 	for k in range(nearest, farthest + 1):
 		for side in range(-3, 4):
 			var tile := centre + direction * k + across * side
 			var spot := map.tile_to_world(tile)
-			if map.in_bounds(tile) and spot.distance_to(body) <= ResistanceDirector.TASK_GUARD_FARTHEST \
+			if map.in_bounds(tile) and spot.distance_to(body) <= reaches \
 					and siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot) \
 					and map.clear_line(body, spot, Mover.on_foot()):
 				return true

@@ -896,7 +896,6 @@ func _stand_her_at(t: TestRunner, manager: EventManager, at: Vector2) -> Strolle
 ## over more seeds.
 func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> void:
 	var crossings := 0
-	var turned := 0
 	for seed_value: int in [4242, 77]:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
@@ -920,7 +919,6 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 				var posted := RoadblockRig.walk(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
 				_check_a_posted_walk_is_caught(t, where, posted)
-				turned += 1 if int(posted["turned"]) > 0 else 0
 				var lured := RoadblockRig.lure(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
 				var after: Dictionary = lured["after"]
@@ -934,19 +932,16 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 						"%s: and the band charges her nothing on the way (%.1f/s at most, %.1f points)"
 						% [where, after["strongest"], after["cost"]])
 	t.check(crossings > 0, "there were roadblock crossings to walk (%d)" % crossings)
-	# Seed 77's street (7,0,1) ends 209px past its band, inside the 400px or so his charge takes to
-	# reach a straight walker, so walking it forward turns the corner with him behind her.
-	t.check(turned > 0, "a walk straight past a posted guard turned the corner where its street ended (%d)"
-			% turned)
 
 ## **Every walk straight past a posted guard is caught**, on every crossing: the walk is the control
-## that shows the lure walk beside it is not walking past nothing, and the player's rule is that luring
-## the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock while she
-## walks on, so the charge starts with her already past him, and it closes the gap at 38px/s more
-## than her walk: on every street the rig walks her along the sidewalk to where the ground ends, and
-## a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has caught her, **round the
-## corner where her street ends sooner**, since he follows her round buildings (`ChaseWay`) and
-## turning the next corner is no way past him (inbox #1534 in velvet-alpaca).
+## that shows the lure walk beside it is not walking past nothing, and the player's rule is that
+## luring the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock
+## while she walks on, so the charge starts with her about level with the band, and it closes the
+## gap at 38px/s more than her walk: on every street the rig walks her along the sidewalk to where
+## the ground ends, and a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has
+## caught her, **round the corner where her street ends sooner**, since he follows her round
+## buildings (`ChaseWay`) and turning the next corner is no way past him (inbox #1534 in
+## velvet-alpaca).
 static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted: Dictionary) -> void:
 	t.check(posted["caught"] and posted["charged"] > 0,
 			"%s: walking straight past a posted guard is caught (%d charged)" % [where, posted["charged"]])
@@ -961,15 +956,18 @@ static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted:
 ## face, and on round it (`RoadblockRig.walk()`). A chase straight at her slides along the face she
 ## is round, keeping only the sliver of its step that runs along it, and loses her; his way round
 ## (`PursuitSpec.walks_round_buildings()`, `ChaseWay`) brings him round the corner after her. With the
-## band 112, 144 and 176px short of the cross street, all inside the 400px or so his charge takes to
-## reach a straight walker.
+## band 48, 80 and 112px short of the cross street. A straight walker on a planned street is caught
+## some 20 to 60px past the band (`tests/probes/escape_roadblock_cost.gd` prints it), but on this
+## hand-drawn street her lane runs along its far edge and his way to it runs round his own band's
+## end, so he reaches her later, after she has turned the corner; the walk below checks both on
+## each band (she turned it, and he caught her).
 func _test_a_posted_guard_follows_her_round_the_corner(t: TestRunner) -> void:
 	var map := _a_street_that_ends_at_a_corner()
 	var def := EventCatalogue.escape_roadblock()
 	var lane := map.tile_to_world(Vector2i(_CORNER_STREET.end.x - 1, 0)).x
 	var corner := float(_CORNER_STREET.position.y * Tuning.TILE_SIZE)
-	for post_row: int in [_CORNER_STREET.position.y + 3, _CORNER_STREET.position.y + 4,
-			_CORNER_STREET.position.y + 5]:
+	for post_row: int in [_CORNER_STREET.position.y + 1, _CORNER_STREET.position.y + 2,
+			_CORNER_STREET.position.y + 3]:
 		var post := map.tile_to_world(Vector2i(_CORNER_STREET.position.x + 1, post_row))
 		var group: Array[EventPlan] = [EventPlan.new(def, post)]
 		# She starts out of his notice, twice its radius short of the band.

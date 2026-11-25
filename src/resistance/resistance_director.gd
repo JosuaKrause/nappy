@@ -903,7 +903,7 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ##
 ## **His spot is looked for on ground whose units have drawn**, with no draw of its own. A guard
 ## is set for a mark or a roadblock she is sent to, and stands inside the alley of a mark and at
-## most `TASK_GUARD_FARTHEST` from a roadblock. **A place fixed beyond the ground drawn round
+## most `task_guard_farthest()` from a roadblock. **A place fixed beyond the ground drawn round
 ## her** has the units round it drawn as it is confirmed, out to `Tuning.EVENT_DRAW_AHEAD`
 ## (`_she_can_be_sent_to()`), and a roadblock swapped in has its section's surroundings drawn
 ## (`EventManager.swap_in_a_section()`). **A place fixed inside the ground drawn round her** is a
@@ -1007,11 +1007,11 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## would be on screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
-## `TASK_GUARD_FARTHEST`, nearest ring first, on the same terms: the band can be wholly in her view
-## when she stands beside the roadblock, and the street through it runs on past the view's edge.
-## *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want. If we
-## need to move multiple times so be it".)* On the ring no touch is within his notice; the task sets
-## him on her when she has done it, wherever he stands (`_set_the_task_guard_on_her()`).
+## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her
+## view when she stands beside the roadblock, and the street through it runs on past the view's
+## edge. *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want.
+## If we need to move multiple times so be it".)* On the ring no touch is within his notice; the
+## task sets him on her when she has done it, wherever he stands (`_set_the_task_guard_on_her()`).
 ##
 ## **Where the far side has no spot at all**, `near_side_too` decides: true, for the guard placed
 ## with the task, the near side is drawn from the same way, and the run log says so; false, for a
@@ -1028,13 +1028,14 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 	var pools: Array = [[], [], [], []]
 	var beyond := [{}, {}]
 	var centre := _map.world_to_tile(body)
-	var span := ceili(TASK_GUARD_FARTHEST / Tuning.TILE_SIZE)
+	var farthest := task_guard_farthest(reach)
+	var span := ceili(farthest / Tuning.TILE_SIZE)
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre + Vector2i(dx, dy)
 			var spot := _map.tile_to_world(tile)
 			var distance := spot.distance_to(body)
-			if distance < nearest or distance > TASK_GUARD_FARTHEST:
+			if distance < nearest or distance > farthest:
 				continue
 			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot):
 				continue
@@ -1088,10 +1089,24 @@ static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 		items[i] = items[j]
 		items[j] = kept
 
-## How far from a roadblock's body its guard may stand when its band is all refused
-## (`_roadblock_guard_spot()`): past the camera's half-width and its lead along the street from a
+## The least a roadblock's guard may stand from its body when its band is all refused
+## (`task_guard_farthest()`): past the camera's half-width and its lead along the street from a
 ## pram beside the roadblock — 320 + 46px, and his own half-width, 14px — with a tile to spare.
-const TASK_GUARD_FARTHEST := 14.0 * Tuning.TILE_SIZE
+const TASK_GUARD_FARTHEST_LEAST := 14.0 * Tuning.TILE_SIZE
+## How many whole tiles past his band's edge a roadblock's guard may stand when its band is all
+## refused (`task_guard_farthest()`): the ring a move takes while the band is in her view.
+const TASK_GUARD_RING_TILES := 3
+
+## **How far from a roadblock's body its guard may stand when its band is all refused**
+## (`_roadblock_guard_spot()`), for a roadblock touched from within `reach` of its body:
+## `TASK_GUARD_FARTHEST_LEAST`, or `TASK_GUARD_RING_TILES` past his band's edge rounded up to a
+## whole tile where that is farther. The band's edge is his notice as the run draws it
+## (`EventDef.notice_within()`, `ChargerTiming`) and the reach, so a wider notice keeps the ring
+## past the band rather than closing it (curly-moose #803).
+static func task_guard_farthest(reach: float) -> float:
+	var band_edge := EventCatalogue.task_guard().notice_within() + reach
+	var ring := (ceilf(band_edge / Tuning.TILE_SIZE) + TASK_GUARD_RING_TILES) * Tuning.TILE_SIZE
+	return maxf(TASK_GUARD_FARTHEST_LEAST, ring)
 
 ## Whether a guard standing at `feet` guards `roadblock` where he stands: in its band
 ## (`_roadblock_guard_spot()`), with a clear line to its body.
@@ -1348,7 +1363,7 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## `at` (`THROUGH_THE_ALLEY`) plus the tile the mark stands in from its mouth
 ## (`_depth_of_the_mark()`), so he is inside the alley rather than at its edge, the player's own
 ## reason, and as far from the mark as when it stood on the mouth. Where that point is
-## `notice_within() + ContactPoint.REACH` (216px) or more from the mark, a touch of the mark
+## `notice_within() + ContactPoint.REACH` (261px) or more from the mark, a touch of the mark
 ## from its own end never wakes him; in an alley too short for both — every one-block alley: a
 ## mark stands one tile in from its end tile (`_marks()`), 48px in, so he stands about
 ## 155px from it — he still stands two-thirds in, and reading the mark may wake him:
@@ -3303,9 +3318,14 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## wherever she is standing or just beside it, which is on screen more often than not. The mark's
 ## picture is asked with its own size (`MARK_BOX`), and the spot in its alley where
 ## `_move_the_mark()` would stand the guard (`_guard_spot()`), with his (`GUARD_BOX`), so a
-## relocation never lands where its guard could only be placed in view or not at all. Both are
-## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
-## frame.
+## relocation never lands where its guard could only be placed in view or not at all. **Nor one
+## whose guard would stand within his notice of her** (`EventDef.notice_within()`, as the run's
+## charger timing draws it): no guard is placed within it (brisk-wombat, `_guard_position()`), so
+## a move there would leave the mark unguarded, and refusing the move keeps both. At the shipped
+## 225px a move from about one standing place in forty that would otherwise move the mark finds no
+## alley and leaves it where it is (`tests/probes/m213_far_end.gd`); at a notice under the view's
+## own half-height the view refuses those alleys first. All are asked only of a tile nearer than the
+## best found so far, which keeps this cheap enough for every frame.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	return _nearest_alley_among(_marks(), here)
 
@@ -3314,6 +3334,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
 	var used := _run.facts().completed_resistance_alley_tiles()
+	var notice := EventCatalogue.mark_guard().notice_within()
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
@@ -3329,9 +3350,11 @@ func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2
 		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 				or not _reachable_from_home(tile):
 			continue
+		var guard_at := _guard_spot(world)
 		if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _mark_drawn, world) \
 				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
-						_guard_spot(world)):
+						guard_at) \
+				or guard_at.distance_to(here) <= notice:
 			continue
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance

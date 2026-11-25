@@ -47,7 +47,9 @@ extends EventBehaviour
 ##   standing behind a car driving away from her into one standing in front of it, struck with none
 ##   of the warning she is owed (minty-hedgehog).
 ## - **A car that has stood drives on only once she is out of its way**: on its route it goes on
-##   standing while she is in its lane within its warning, so it never pulls away into her.
+##   standing while she is in its lane within its warning, so it never pulls away into her; one that
+##   stood for its men goes on standing while she is in its lane within the radius it stopped for
+##   her at, which can reach past its warning (`stand_for_her()`).
 ## - **It gives way where the crowd's cars do** (`_room_to_its_line()`): short of a zebra she is
 ##   waiting at on a street whose traffic gives way, and at a red light. A step past that line is
 ##   refused and the car stands, so the zebra stays the safe way over and the light the main road's
@@ -94,6 +96,9 @@ var _warning := 0.0
 var _known := false
 var _ahead_before := false
 var _was_leaving := false
+## How far past the touch, in px, a car that stood for its men goes on standing while she is in its
+## lane ahead (`stand_for_her()`); zero for every other car, and again once it drives.
+var _stands_for_her_within := 0.0
 
 ## Its row: its body's ground shape and whether it pursues.
 var _row: EventDef
@@ -132,10 +137,14 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, cours
 	_move = move
 	_lights = lights
 
-## Stands it for her: a car that stood for its men, say (`EventInvestigation`), pulls away only
-## once she is out of its way.
-func stand() -> void:
+## **Stands it for her while she is in its lane within `within` px ahead**: a car that stood for its
+## men (`EventInvestigation`), which pulls away only once she is out of its way. `within` is the
+## radius it stopped for her at, so stopped further out than its warning reaches — the investigating
+## patrol at a wider notice — it still never pulls away into her, where it would close on her
+## standing in its lane and strike her once its horn had run.
+func stand_for_her(within: float) -> void:
 	_standing = true
+	_stands_for_her_within = within
 
 ## Notes, as its event's step is proposed at the pose it stands at (`MoveProposal.stands_at()`),
 ## what the step will be checked against.
@@ -170,7 +179,8 @@ func check(ends_its_route: bool) -> bool:
 	var on_its_route := drives_its_route() and not ends_its_route
 	var now := gap_to_her(to, departing)
 	var into_her := now < DRIVEN_CLEARANCE and now < _was - 0.001
-	var in_its_way := _standing and on_its_route and _ahead_before
+	var in_its_way := _standing and on_its_route \
+			and (_ahead_before or _stood_for_her_ahead(at))
 	var turns_onto_her := on_its_route and _known and not _ahead_before \
 			and not departing.is_equal_approx(_heading_was) \
 			and meets_her(to, departing, _where.at(), _warning)
@@ -178,6 +188,7 @@ func check(ends_its_route: bool) -> bool:
 			and (to - at).dot(_heading_was) > maxf(_line, 0.0) + 0.001
 	if not (into_her or in_its_way or turns_onto_her or past_its_line):
 		_standing = false
+		_stands_for_her_within = 0.0
 		return true
 	_move.step_to(at)
 	var facing := _heading_was
@@ -193,6 +204,15 @@ func check(ends_its_route: bool) -> bool:
 					short_of_its_stop(PATROL_STRIKE_LEAD, _left))
 	_standing = not strikes_her
 	return false
+
+## Whether she is in its lane ahead of it at `at`, within the radius it stopped for her at, when it
+## stood for its men (`stand_for_her()`): asked as the step is checked, since the stop for her can
+## begin in the very tick that is checked.
+func _stood_for_her_ahead(at: Vector2) -> bool:
+	if not _known or _stands_for_her_within <= 0.0 or _course.speed() <= 0.0:
+		return false
+	return meets_her(at, _heading_was, _where.at(),
+			short_of_its_stop(_stands_for_her_within / _course.speed(), _left))
 
 ## **Whether it strikes her at `her` now**: driving, with her in front of its nose on the carriageway
 ## within `PATROL_STRIKE_LEAD` of its travel past the touch, short of the end of a route it

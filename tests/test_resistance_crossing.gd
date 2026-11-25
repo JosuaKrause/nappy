@@ -138,7 +138,7 @@ func _test_standing_at_the_door_completes_nothing(t: TestRunner) -> void:
 
 ## Review 4 of PR #781, day 9: **a walked crossing counts only once it stands.** Under the named
 ## door's raised boom the crossing starts its warning
-## (`CheckpointController._start_the_crossing_warning()`, `CheckpointController.CROSSING_WARNING`); she steps
+## (`CheckpointController._start_the_crossing_warning()`, `ChargerTiming.warning()`); she steps
 ## back across the line halfway through it, so the crossing is called off and no guard comes,
 ## and the task is not done either, however long she then waits: `door_crossed` is sent only
 ## when the warning has run with her still across. Walked through and staying across, the same
@@ -159,13 +159,13 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t: TestRunner) -> void:
 		_step_to(player, at + axis * 40.0 * direction)
 		t.check(_a_guard_warns_her(events),
 				"walking under the named boom starts its warning")
-		_ticks(int(round(CheckpointController.CROSSING_WARNING * 0.5 / STEP)))
+		_ticks(int(round(EventCatalogue.charger_timing().warning() * 0.5 / STEP)))
 		t.check(not director.contact().is_finished(),
 				"halfway through the crossing's warning the task is not done yet")
 		_step_to(player, at - axis * 40.0 * direction)
 		t.check(not _a_guard_warns_her(events),
 				"stepping back across calls the crossing off")
-		_ticks(int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
+		_ticks(int(ceil(EventCatalogue.charger_timing().warning() * 2.0 / STEP)))
 		var guard_before := _guard_after_her(events)
 		t.check(not director.contact().is_finished() and not _a_guard_is_after_her(events),
 				"a crossing taken back does not do the task, and sets no guard on her")
@@ -225,7 +225,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 			if not a_stays:
 				_step_to(player, a_at + a_axis * 40.0 * a_dir, true)
 				_step_to(player, a_at - a_axis * 40.0 * a_dir)
-			_ticks(int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)))
+			_ticks(int(ceil(EventCatalogue.charger_timing().warning() * 2.0 / STEP)))
 			var chased := _a_guard_is_after_her(events)
 			var done_expected := a_stays and b_walk == "stays"
 			t.check(chased == a_stays and director.contact().is_finished() == done_expected,
@@ -532,9 +532,9 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float,
 		player: Stroller) -> void:
 	_step_to(player, at - axis * 40.0 * direction, true)
 	_step_to(player, at + axis * 40.0 * direction)
-	# And stays across while the crossing's warning runs (`CheckpointController.CROSSING_WARNING`), so a crossing
+	# And stays across while the crossing's warning runs (`ChargerTiming.warning()`), so a crossing
 	# that sets a guard on her has set him by the time this returns.
-	_ticks(int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 1)
+	_ticks(int(ceil(EventCatalogue.charger_timing().warning() / STEP)) + 1)
 
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are
 # reached from such ground — `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from

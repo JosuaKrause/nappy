@@ -490,7 +490,7 @@ func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
 
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
 ## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
-## investigating copy that stops for her from `EventDef.HEAT_INVESTIGATE_WITHIN`, the shape a played
+## investigating copy that stops for her from the catalogue's heated notice, the shape a played
 ## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `install()`
 ## against a real city in a run of its own, and read off the plans the scene's events were started
 ## on (`EventManager.plans()`), so a field the runtime read and then ignored would fail here.
@@ -527,12 +527,14 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		runtime.free()
 	var cold: EventDef = installed.get(null)
 	var hot: EventDef = installed.get(EventDef.HEAT_INVESTIGATES_LEVEL)
+	var stops_within := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"),
+			EventDef.HEAT_INVESTIGATES_LEVEL).notice_within()
 	t.check(cold != null and not cold.investigates() and is_zero_approx(cold.notice_within()),
 			"with no heat the recipe installs the cold patrol, no trigger")
 	t.check(hot != null and hot.investigates()
-			and is_equal_approx(hot.notice_within(), EventDef.HEAT_INVESTIGATE_WITHIN),
+			and stops_within > 0.0 and is_equal_approx(hot.notice_within(), stops_within),
 			"at the investigating level it installs the copy that stops for her from %.0fpx"
-			% EventDef.HEAT_INVESTIGATE_WITHIN)
+			% stops_within)
 	player.free()
 	city.free()
 
