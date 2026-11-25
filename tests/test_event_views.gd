@@ -225,19 +225,18 @@ func _test_cafe_sitters_face_their_own_tables(t: TestRunner) -> void:
 				spread_vertical)
 		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
 		var axis := Vector2.DOWN if spread_vertical else Vector2.RIGHT
-		# Each table's slice draws its own sitter and table; the first two tables are a pair, the
-		# second the mirrored chair.
+		# Each table's slice holds its sitter's own layers (`EventScenery`) and, over them, its
+		# table on its front; the first two tables are a pair, the second the mirrored chair.
+		var sitter_in := {}
+		for entry in drawer.draws:
+			if entry.kind == &"scenery" and sitters.has(entry.picture) \
+					and is_instance_valid(entry.canvas):
+				sitter_in[(entry.canvas as Node).get_parent()] = entry
 		var tables: Array = []
 		for canvas in drawer.canvases():
-			var sitter := {}
-			var table := {}
 			for entry in drawer.shown_on(canvas):
-				if sitters.has(entry.picture):
-					sitter = entry
-				elif entry.picture == EventPictures.CAFE_TABLE:
-					table = entry
-			if not sitter.is_empty() and not table.is_empty():
-				tables.append([sitter, table])
+				if entry.picture == EventPictures.CAFE_TABLE and sitter_in.has(canvas.get_parent()):
+					tables.append([sitter_in[canvas.get_parent()], entry])
 		tables.sort_custom(func(a: Array, b: Array) -> bool:
 			return RecordingEventDrawer.foot_about(a[1], instance).dot(axis) \
 					< RecordingEventDrawer.foot_about(b[1], instance).dot(axis))
@@ -480,9 +479,12 @@ func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 	await DrawnEvent.frames(t)
 	for sector in range(8):
 		var instance := sited[sector]
+		# He stands as layers of his own on the event (`EventScenery`), built for his view's first
+		# frame and mirrored as the view is, so his strum swaps one arm and nothing else.
 		var drawn_as := {}
-		for entry in DrawnEvent.shown(instance):
-			if entry.canvas == instance and entry.kind == &"stand":
+		for entry in DrawnEvent.drawer_of(instance).draws:
+			if entry.kind == &"scenery" and is_instance_valid(entry.canvas) \
+					and (entry.canvas as Node).get_parent() == instance:
 				drawn_as = entry
 		var view := EXPECTED_VIEW[sector]
 		t.check(not drawn_as.is_empty()

@@ -6,7 +6,7 @@ extends RefCounted
 ## unmarked, walking toward one earns a caret, the caret follows the pulse and agrees with the halo
 ## past its horizon, two sources share the decay the way the halo does, a cat dashing at her is
 ## unmarked, a cyclist or a thing telegraphing on course is the doubled red and one passing wide is
-## not, and the mark still breathes. The danger vocabulary's other half (the crowd's marks, the cue
+## not, the mark still breathes, and a figure drawn as layers of its own carries it over them. The danger vocabulary's other half (the crowd's marks, the cue
 ## over the player, the screen edge and the pram) is `test_danger.gd`'s.
 ##
 ## Each event is a real `EventInstance` of its row, set up with no manager and no map and handed a
@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
 	await _test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
 	await _test_the_mark_still_breathes(t)
+	await _test_a_figure_in_parts_carries_its_caret_over_them(t)
 	_atlas.release(&"events")
 
 # ------------------------------------------------------------------- the mark ---
@@ -402,6 +403,44 @@ func _test_the_mark_still_breathes(t: TestRunner) -> void:
 			"and never overstates what the event is emitting")
 	instance.free()
 
+## **A figure drawn as layers of its own carries its caret over them** (`FigureLook`): the
+## busker's layers are children of his event and are painted after its own canvas, so a caret
+## drawn there would be under his head as the chevron shrinks between beats. Walked toward until
+## he earns a caret, sited facing east and facing west (the mirrored view): every chevron is drawn
+## on a child of the event that comes after his layers in the tree, the order the engine paints
+## siblings in, and none on the event's own canvas.
+func _test_a_figure_in_parts_carries_its_caret_over_them(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("busker")
+	for heading: Vector2 in [Vector2.RIGHT, Vector2.LEFT]:
+		var where := WhereSheIs.nowhere()
+		var instance := _instance(def, PackedVector2Array(), where, heading)
+		_advance(instance, def.telegraphs_for() + 0.1)
+		var approach := Vector2(-def.heard_within() - 30.0, 0.0)
+		var carets: Array[Dictionary] = []
+		for i in int(round(def.pulses_every() / STEP)):
+			instance.step(STEP)
+			where.tell(approach)
+			instance.source().set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+			carets = await _carets(t, instance)
+			if not carets.is_empty():
+				break
+		var parts_at := -1
+		for child in instance.get_children():
+			if child is EventScenery:
+				parts_at = child.get_index()
+		t.check(parts_at >= 0 and not carets.is_empty(),
+				"the busker facing %s stands as layers and earns a caret walked toward" % heading)
+		var over := carets.all(func(entry: Dictionary) -> bool:
+				var canvas := entry["canvas"] as Node
+				return canvas != instance and canvas.get_parent() == instance \
+						and canvas.get_index() > parts_at)
+		var on_the_event := DrawnEvent.drawer_of(instance).shown_on(instance) \
+				.filter(func(entry: Dictionary) -> bool: return entry["kind"] == &"caret")
+		t.check(over and on_the_event.is_empty(),
+				"and its caret is drawn over his layers, never under them on the event (%d over, %d under)"
+						% [carets.size() if over else 0, on_the_event.size()])
+		instance.free()
+
 ## The danger carets `instance` asks its drawer for, drawn in a real frame: it is put in the tree,
 ## asked to redraw, and what the recording drawer it was handed before `setup()` (`_instance()`)
 ## holds for that draw is read back. One entry for a costly mark, two stacked for a lethal one
@@ -428,13 +467,13 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 ## word on where she is it hears, which the manager tells in the game: a test that puts her
 ## somewhere tells it.
 func _instance(def: EventDef, route := PackedVector2Array(),
-		where: WhereSheIs = null) -> EventInstance:
+		where: WhereSheIs = null, heading := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
 	var surroundings := EventSurroundings.new().drawn_from(_atlas) \
 			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas)))
 	if where != null:
 		surroundings.hearing(where)
-	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT, surroundings)
+	instance.setup(def, Vector2.ZERO, route, heading, surroundings)
 	return instance
 
 func _advance(instance: EventInstance, seconds: float) -> void:

@@ -198,6 +198,7 @@ STATIC_CACHES: dict[str, str] = {
     "EventFootprints._warning_sizes": "sizes read off the baked pictures, the same on every read",
     "EventFootprints._warning_guard": "a size read off the baked pictures, the same on every read",
     "EntityHalo._shared_material": "one shader material every halo shares",
+    "EventCatalogue._chargers": "the run's charger timing, handed in once at boot, the same all run",
     "EventCatalogue._all": "the catalogue's rows, built once from constants",
     "EventCatalogue._hot": "derived rows, each built once from the catalogue",
     "EventCatalogue._building_fire": "a derived row, built once from the catalogue",

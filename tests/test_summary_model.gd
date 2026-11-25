@@ -85,20 +85,35 @@ func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t: TestRunner) -
 			"an ending has its heading and no continue")
 	t.check(bad.body_sentence() == Texts.ENDING_BODY[GameEnums.Ending.BAD], "its prose is its paragraph")
 	t.check(bad.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
-			RunState.format_clock(run.header().play_seconds()), Texts.ENDING_DAY_REACHED % 9],
+			RunState.format_clock(run.header().play_seconds()), "", Texts.ENDING_DAY_REACHED % 9],
 			"and its body the paragraph, the time played and the day")
+	run.facts().set_last_day_seconds(84.5)
+	var with_day := SummaryModel.ending(run, GameEnums.Ending.BAD)
+	t.check(with_day.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
+			RunState.format_clock(run.header().play_seconds()),
+			Texts.ENDING_LAST_DAY % RunState.format_clock(84.5), Texts.ENDING_DAY_REACHED % 9],
+			"given the day that ended it, an ending shows that day's time beside the total")
+	t.check(with_day.body("").contains(RunState.format_clock(run.header().play_seconds()))
+			and with_day.body("").contains(RunState.format_clock(84.5)),
+			"and both clocks are on the screen")
 	var good := SummaryModel.ending(run, GameEnums.Ending.GOOD)
 	t.check(not good.body("").contains("made it to day"), "the good ending names no day")
 
 func _test_the_epilogue_names_the_way_out_and_its_clock(t: TestRunner) -> void:
 	var end := DayEnd.new(GameEnums.DayResult.WON, "", 42.5, CityExit.Kind.TUNNEL)
-	var model := SummaryModel.epilogue(end)
+	var run := _run_on(14, 3)
+	run.header().set_play_ticks(22620)
+	var model := SummaryModel.epilogue(run, end)
 	t.check(model.offers_continue() and model.heading_text() == Texts.FINALE_HEADING
 			and model.title_text() == Texts.FINALE_TITLE,
 			"the epilogue has its heading and title, and a continue back to the title")
 	t.check(model.body_sentence() == Texts.FINALE_BODY[CityExit.Kind.TUNNEL]
-			and model.body("P") == Texts.FINALE_OUT_IN % ["P", RunState.format_clock(42.5)],
-			"its body is the way she took and the clock she took it on")
+			and model.body("P") == Texts.FINALE_OUT_IN % ["P", RunState.format_clock(42.5),
+			RunState.format_clock(run.header().play_seconds())],
+			"its body is the way she took, the clock she took it on and the whole run's time")
+	t.check(model.body("").contains(RunState.format_clock(42.5))
+			and model.body("").contains(RunState.format_clock(run.header().play_seconds())),
+			"both the escape's and the run's clock are on the epilogue")
 
 ## The tally is the last line of a day summary once she has joined the resistance, read off the
 ## summary a won day's end builds.

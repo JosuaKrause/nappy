@@ -28,6 +28,10 @@ var _completed_resistance_alley_tiles: Array[Vector2i] = []
 var _fenced_park := Vector2i(-1, -1)
 ## The act that chose `_fenced_park`.
 var _fenced_park_act := 0
+## How long the day that ended last lasted, in seconds (`DayEnd.lasted_seconds()`): the segment
+## the ending screen shows beside the run's total, kept with the run so a saved ending opened again
+## shows it too. `-1.0` until a day has ended, and for a save that never wrote it.
+var _last_day_seconds := -1.0
 
 ## Which section of the escape the run is in, a `DaySpec.Section` as an `int` (`_escape_section`).
 func escape_section() -> int:
@@ -50,6 +54,14 @@ func fenced_park() -> Vector2i:
 func fenced_park_act() -> int:
 	return _fenced_park_act
 
+## The length of the day that ended last in seconds, negative for none (`_last_day_seconds`).
+func last_day_seconds() -> float:
+	return _last_day_seconds
+
+## Records the day that just ended: `main._on_day_finished()` is the one caller.
+func set_last_day_seconds(seconds: float) -> void:
+	_last_day_seconds = seconds
+
 ## Overrides RunSubState.slot.
 func slot() -> Slot:
 	return Slot.RIDER
@@ -60,6 +72,7 @@ func reset() -> void:
 	_completed_resistance_alley_tiles.clear()
 	_fenced_park = Vector2i(-1, -1)
 	_fenced_park_act = 0
+	_last_day_seconds = -1.0
 
 ## Records a tile a pickup's mark stood at when its step completed, ignoring one already recorded.
 ## `ResistanceDirector._on_contact_completed()` is the one caller.
@@ -82,6 +95,7 @@ func to_data() -> Dictionary:
 		"completed_resistance_alley_tiles": alley_tiles,
 		"fenced_park": {"x": _fenced_park.x, "y": _fenced_park.y},
 		"fenced_park_act": _fenced_park_act,
+		"last_day_seconds": _last_day_seconds,
 	}
 
 ## Overrides RunSubState.restore.
@@ -97,3 +111,4 @@ func restore(data: Dictionary) -> void:
 	else:
 		_fenced_park = Vector2i(-1, -1)
 	_fenced_park_act = int(data.get("fenced_park_act", 0))
+	_last_day_seconds = float(data.get("last_day_seconds", -1.0))

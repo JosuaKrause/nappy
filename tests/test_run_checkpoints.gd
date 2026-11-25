@@ -203,6 +203,7 @@ func _change_everything(run: RunState) -> void:
 	run.resistance().set_progress(run.resistance().progress() + 3)
 	run.header().set_ending(GameEnums.Ending.NEUTRAL)
 	run.header().set_play_ticks(run.header().play_ticks() + 15000)
+	run.facts().set_last_day_seconds(run.facts().last_day_seconds() + 321.0)
 	run.attempt_spend().consumed_one_shots().append("spent_after_the_checkpoint")
 	run.resistance().complete(99, false)
 	run.resistance().fail(98)
@@ -473,6 +474,8 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t: TestRunner) 
 	t.check(run.header().ending() == GameEnums.Ending.BAD and summary.is_showing(),
 			"it is the bad ending")
 	t.check(heading.visible and heading.text == "GAME OVER", "on the GAME OVER screen")
+	t.check(body.text.contains("The last day:") and body.text.contains("Time played"),
+			"which shows the total and the last day's own time ('%s')" % body.text)
 	t.check(not UI.control(summary, "ContinueColumn").visible, "which has no continue button")
 
 	booted.free_all()

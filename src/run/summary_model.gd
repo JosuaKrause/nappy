@@ -127,10 +127,12 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 	model._brief = Texts.DAY_BRIEF.get(day, "") if section_title == "" else ""
 	return model
 
-## The last screen of a run: its heading, its title, its paragraph and the run's length to the
-## millisecond — the one place `run.header().play_seconds()` is ever shown. `which` is the run's ending;
-## a rig (`--ending`) names one of its own. The day is shown on the `BAD` ending alone, the only one
-## that can end mid-day, and it is the last day played, never advanced past the day a run ends on.
+## The last screen of a run: its heading, its title, its paragraph and the run's total length to the
+## millisecond (`run.header().play_seconds()`), beside the clock of the last day when the run holds
+## one (`run.facts().last_day_seconds()`, the day that ended the run, which the save keeps, so a
+## saved ending opened again shows it too). `which` is the run's ending; a rig (`--ending`) names
+## one of its own. The day reached is shown on the `BAD` ending alone, the only one that can end
+## mid-day, and it is the last day played, never advanced past the day a run ends on.
 static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	var model := SummaryModel.new()
 	model._heading = Texts.ENDING_HEADING.get(which, Texts.ENDING_HEADING_DEFAULT)
@@ -139,21 +141,26 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	var day_reached := Texts.ENDING_DAY_REACHED % run.header().day() \
 			if which == GameEnums.Ending.BAD else ""
 	model._body_shape = Texts.ENDING_PLAYED
-	model._body_fill = [RunState.format_clock(run.header().play_seconds()), day_reached]
+	var last_day_seconds := run.facts().last_day_seconds()
+	var last_day := Texts.ENDING_LAST_DAY % RunState.format_clock(last_day_seconds) \
+			if last_day_seconds >= 0.0 else ""
+	model._body_fill = [RunState.format_clock(run.header().play_seconds()), last_day, day_reached]
 	model.shows_continue = false
 	return model
 
 ## The escape's own last screen: the tunnel or the bridge behind her (`end.exit_taken()`, a
-## `CityExit.Kind`), and the clock she took it on to the millisecond — and nothing triumphant
-## (`docs/NARRATIVE.md`, "No triumphalism"). Not a fourth ending: an ending is a run's outcome, and
-## this is the last screen of the sequence the run hands over to.
-static func epilogue(end: DayEnd) -> SummaryModel:
+## `CityExit.Kind`), the clock she took it on to the millisecond and the whole run's time
+## (`run.header().play_seconds()`) beside it — and nothing triumphant (`docs/NARRATIVE.md`, "No
+## triumphalism"). Not a fourth ending: an ending is a run's outcome, and this is the last screen of
+## the sequence the run hands over to.
+static func epilogue(run: RunState, end: DayEnd) -> SummaryModel:
 	var model := SummaryModel.new()
 	model._heading = Texts.FINALE_HEADING
 	model._title = Texts.FINALE_TITLE
 	model.body_prose = Texts.FINALE_BODY.get(end.exit_taken(), Texts.FINALE_BODY_DEFAULT)
 	model._body_shape = Texts.FINALE_OUT_IN
-	model._body_fill = [RunState.format_clock(end.lasted_seconds())]
+	model._body_fill = [RunState.format_clock(end.lasted_seconds()),
+			RunState.format_clock(run.header().play_seconds())]
 	return model
 
 # ---------------------------------------------------------- the lines, once ---

@@ -1,0 +1,200 @@
+{
+  "busker_back": {
+    "alpha_at": [
+      21,
+      4
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 89,
+    "premultiplied_max": 0.00784315168857574
+  },
+  "busker_back_b": {
+    "alpha_at": [
+      21,
+      4
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 84,
+    "premultiplied_max": 0.00784315168857574
+  },
+  "busker_back_diagonal": {
+    "alpha_at": [
+      11,
+      12
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 71,
+    "premultiplied_max": 0.00784315168857574
+  },
+  "busker_back_diagonal_b": {
+    "alpha_at": [
+      11,
+      12
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 69,
+    "premultiplied_max": 0.00784313678741455
+  },
+  "busker_front": {
+    "alpha_at": [
+      21,
+      4
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 80,
+    "premultiplied_max": 0.00847366349117795
+  },
+  "busker_front_b": {
+    "alpha_at": [
+      21,
+      4
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 79,
+    "premultiplied_max": 0.00847366349117795
+  },
+  "busker_front_diagonal": {
+    "alpha_at": [
+      11,
+      12
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 79,
+    "premultiplied_max": 0.00784313678741455
+  },
+  "busker_front_diagonal_b": {
+    "alpha_at": [
+      11,
+      12
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 75,
+    "premultiplied_max": 0.00784313678741455
+  },
+  "busker_side": {
+    "alpha_at": [
+      12,
+      12
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 74,
+    "premultiplied_max": 0.0088119949202774
+  },
+  "busker_side_b": {
+    "alpha_at": [
+      12,
+      12
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 70,
+    "premultiplied_max": 0.0088119949202774
+  },
+  "cafe_sitter_back": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0,
+    "changed_pixels": 17,
+    "premultiplied_max": 0.00392156839370728
+  },
+  "cafe_sitter_back_b": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0,
+    "changed_pixels": 15,
+    "premultiplied_max": 0.00392156839370728
+  },
+  "cafe_sitter_back_diagonal": {
+    "alpha_at": [
+      2,
+      23
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 33,
+    "premultiplied_max": 0.00784313678741455
+  },
+  "cafe_sitter_back_diagonal_b": {
+    "alpha_at": [
+      13,
+      22
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 26,
+    "premultiplied_max": 0.0087812523072337
+  },
+  "cafe_sitter_front": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0,
+    "changed_pixels": 14,
+    "premultiplied_max": 0.00392156839370728
+  },
+  "cafe_sitter_front_b": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0,
+    "changed_pixels": 13,
+    "premultiplied_max": 0.00392156839370728
+  },
+  "cafe_sitter_front_diagonal": {
+    "alpha_at": [
+      2,
+      23
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 33,
+    "premultiplied_max": 0.00784313678741455
+  },
+  "cafe_sitter_front_diagonal_b": {
+    "alpha_at": [
+      13,
+      22
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 28,
+    "premultiplied_max": 0.00876587360856718
+  },
+  "cafe_sitter_side": {
+    "alpha_at": [
+      13,
+      21
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 22,
+    "premultiplied_max": 0.00464436728946982
+  },
+  "cafe_sitter_side_b": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0,
+    "changed_pixels": 24,
+    "premultiplied_max": 0.00765859240341626
+  },
+  "poster_crew_back": {
+    "alpha_at": [
+      20,
+      4
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 93,
+    "premultiplied_max": 0.00784313678741455
+  },
+  "poster_crew_back_b": {
+    "alpha_at": [
+      20,
+      4
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 73,
+    "premultiplied_max": 0.00784313678741455
+  }
+}

@@ -14,8 +14,7 @@ screens *not* day/scene completion screens (those keep their segment's time)"; t
 roadblock guard notices her within 180px and warns for 2.0s, "yes 180px is way too small and 2s is
 too long -- *in general*" (curly-moose #803).
 
-**Items, after minty-quail (one engine):** `fuller-escape.md`, `charger-timing.md`,
-`total-time.md`.
+**Items, after minty-quail (one engine):** `fuller-escape.md`.
 
 **A minor release follows.** The player: "After the refactor and the fixes from the last playtest
 let's cut a minor release" (curly-moose #803). Asked on the board which fixes the release waits for

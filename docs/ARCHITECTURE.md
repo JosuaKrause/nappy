@@ -719,7 +719,8 @@ tools/
   pycheck.sh              ruff, mypy and the unit tests for the Python here
   check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and the
                           place a break that has to stand is listed
-  split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
+  split-scenes.py         regenerate or check the static and moving SVG spans of the pipe and
+                          crash scenes and the busker, café-sitter and poster-crew figures,
                           runtime registration and atlas membership; evidence metadata is an
                           explicit output rather than an ordinary regeneration side effect
   run.sh                  play; rebuilds the import cache first when a pull left it stale
