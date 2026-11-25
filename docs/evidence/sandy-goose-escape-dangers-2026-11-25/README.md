@@ -18,8 +18,9 @@ play; the live count is twelve walks of the game's plain walker, which avoids no
   bridge) of the game's own walker, headless:
   `Godot --headless --path <worktree> -- --start-escape city --seed <S> --route <tunnel|bridge> --no-save --no-title`.
   Each file keeps the run log's `near`, `lost`, `route`, `plan` and `start` lines (the rest, mostly `frame` and
-  `texture`, is routine). Two runs of a seed and exit gave the same lines, so one of each is kept; up to four
-  walks ran side by side at one point, which changes no line kept here.
+  `texture`, is routine). Several seeds and exits were run twice; only one log of each is kept. The two runs were seen to give the
+  same lines at the time, which can no longer be checked here. Up to four walks ran side by side at one
+  point.
 
 ## How it is counted
 
