@@ -1,0 +1,14 @@
+{
+  "revision": "47e4654388004cb1ee9bc0f52a676f4d8b2e0013",
+  "tracked_tree": "679f729da893fb06d291888de08f050be2d2f11b",
+  "working_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+  "project_settings_sha256": "9a9b3214fb42036fb65e0abe33c3239fe5444d7ff5c3205f7e26280e950ccb25",
+  "label": "recording",
+  "fps": 60,
+  "width": 1280,
+  "height": 720,
+  "capture": "Godot PNG movie writer",
+  "claim_scope": "same recipe, revision, assets, engine and settings"
+}

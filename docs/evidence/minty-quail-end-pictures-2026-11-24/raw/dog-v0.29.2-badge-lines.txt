@@ -1,0 +1,15 @@
+v0.29.2 (rig-224820-seed4242-v0.29.2)
+day 5  act 2  run seed 4242  city seed 4242  length 210.0s  invincible
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  cue      edge badge: charging_dog at 375px, closing 0px/s
+   0.0  chase    charging_dog came for her at (99,87) | exc 0, in 0.0/s (crowd 5.4, events 0.0), sleep 1
+   0.0  cue      edge badge gone: charging_dog after 0.0s, now 363px away
+   0.0  cue      edge badge: charging_dog at 375px, closing 0px/s
+   0.0  chase    charging_dog came for her at (107,86) | exc 0, in 0.0/s (crowd 0.0, events 12.0), sleep 3
+   0.0  cue      edge badge gone: charging_dog after 0.0s, now 0px away
+   0.0  cue      edge badge: charging_dog at 378px, closing 0px/s
+   0.0  cue      edge badge gone: charging_dog after 0.0s, now 0px away
+   0.0  chase    charging_dog came for her at (116,86) | exc 0, in 0.0/s (crowd 0.0, events 24.0), sleep 4
+   0.0  cue      edge badge: charging_dog at 375px, closing 0px/s
+   0.0  chase    charging_dog came for her at (125,86) | exc 0, in 0.0/s (crowd 13.0, events 36.0), sleep 5
+   0.0  cue      edge badge gone: charging_dog after 0.0s, now 2px away

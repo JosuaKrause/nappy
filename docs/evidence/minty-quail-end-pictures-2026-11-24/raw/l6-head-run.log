@@ -1,0 +1,58 @@
+nappy rig log  2026-11-24T22:59:46  version v0.29.2-716-g47e465438
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.0 ms, 392 x 392
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 3.1 ms, 570 x 394
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.6 ms, 436 x 260
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.5 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.7 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.6 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 15.2 ms, 801 x 1100
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.3 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 28.1 ms
+
+day 6  act 2  run seed 11  city seed 1917501  length 180.0s
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 27.9 ms
+   0.0  contact  step 1 on offer at (92,68)
+   0.0  roll     chalk mark guarded (two-thirds in): robber 155px away
+   0.0  cross    stepped into the road at (87,70), at a zebra
+   0.6  contact  walked within 128px of the chalk mark at (92,68)
+   1.0  frame    fps 18, worst frame 16.7ms, draws 64, objects 456, primitives 1063, process 4.93ms, physics 1.13ms
+   1.3  contact  step 1 seen at (92,68) after 1.0s within 150px
+   1.8  run      ran 1.7s, exc 0 -> 0, nearest when it started: alley_robbery 266px (out of range)
+   2.0  frame    fps 20, worst frame 16.7ms, draws 64, objects 456, primitives 1063, process 2.31ms, physics 0.99ms
+   2.0  near     alley_robbery at (92,63), 197px, exc 0, in 3.5/s (crowd 0.0, events 0.5), sleep 0
+   2.1  contact  step 1 completed
+   2.1  contact  step 2 on offer at (84,52)
+   2.1  contact  step 2 stands 572px from the mark it was read at
+   2.1  roll     the next 2 on her route are drawn from a rigged bag: homeless_yeller, cat_dash
+   2.8  turn     doubled back 229°
+   3.0  cue      the mark over her head: soon for 0.9s (0.0s of it on the road) | alley_robbery 197px
+   3.0  frame    fps 19, worst frame 16.7ms, draws 74, objects 719, primitives 1619, process 5.15ms, physics 11.74ms
+   4.0  frame    fps 19, worst frame 16.7ms, draws 74, objects 719, primitives 1619, process 1.97ms, physics 0.94ms
+   4.4  cross    stepped into the road at (87,70), at a zebra
+   4.6  crowd    a car sounded its horn at her in the road at (87,70) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   5.0  frame    fps 19, worst frame 16.7ms, draws 74, objects 718, primitives 1578, process 3.72ms, physics 1.13ms
+   5.1  cue      the mark over her head: soon for 0.4s (0.4s of it on the road) | a car, and she is in the road
+   6.0  frame    fps 19, worst frame 16.7ms, draws 106, objects 651, primitives 1486, process 4.33ms, physics 1.19ms
+   6.2  ahead    cat_dash crosses 332px in front of her at (85,67)
+   7.0  frame    fps 17, worst frame 16.7ms, draws 94, objects 622, primitives 1452, process 2.26ms, physics 0.98ms
+   8.0  frame    fps 18, worst frame 16.7ms, draws 92, objects 619, primitives 1443, process 2.12ms, physics 0.95ms
+   9.0  cross    stepped into the road at (85,59), at a zebra
+   9.0  frame    fps 19, worst frame 16.7ms, draws 108, objects 898, primitives 2049, process 2.36ms, physics 1.03ms
+   9.3  near     cat_dash at (89,57), 147px, exc 0, in 0.0/s (crowd 0.0, events 11.4), sleep 3
+   9.3  near     homeless_yeller at (84,52), 209px, exc 0, in 12.9/s (crowd 0.0, events 13.6), sleep 3
+   9.5  near     cat_dash at (87,57), 79px, exc 3, in 20.8/s (crowd 0.0, events 21.1), sleep 3
+   9.7  near     cat_dash at (86,57), 36px, exc 6, in 24.6/s (crowd 0.0, events 24.6), sleep 3
+   9.8  near     cat_dash at (85,57), 19px, exc 7, in 25.7/s (crowd 0.0, events 25.6), sleep 3
+  10.0  frame    fps 20, worst frame 16.7ms, draws 86, objects 774, primitives 1826, process 5.59ms, physics 1.26ms
+  10.4  near     homeless_yeller at (84,52), 112px, exc 15, in 14.2/s (crowd 0.0, events 14.0), sleep 4
+  11.0  near     homeless_yeller at (84,52), 59px, exc 20, in 15.8/s (crowd 4.2, events 11.3), sleep 4
+  11.0  frame    fps 20, worst frame 16.7ms, draws 82, objects 555, primitives 1340, process 2.30ms, physics 1.36ms
+  11.2  contact  step 2 completed
+  11.2  contact  he took it; keeps shouting for 2.5s before he leaves
+  11.2  cue      edge badge: robber_giving_chase at 217px, closing 130px/s
+  11.7  roll     task handed over: a robber sent after her from (85,46), 228px off (a clear run at her)
+  11.7  near     robber_giving_chase at (85,46), 224px, exc 25, in 7.9/s (crowd 2.2, events 11.6), sleep 3
+  11.7  chase    robber_giving_chase came for her at (85,46) | exc 25, in 7.9/s (crowd 2.2, events 11.6), sleep 3
+  11.8  cue      edge badge gone: robber_giving_chase after 0.6s, now 211px away
+  12.0  frame    fps 20, worst frame 16.7ms, draws 108, objects 549, primitives 1379, process 47.01ms, physics 1.39ms

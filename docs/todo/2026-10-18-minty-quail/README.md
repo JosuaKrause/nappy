@@ -89,8 +89,8 @@ early to injected fakes and public APIs (**writing-tests**, "A test reaches the 
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. **Remeasuring**, once, after the last item: GoatCounter's counts against `docs/stats/` (read after a release, since the live site counts
-   released builds only; owed as an entry of its own, filed when this entry closes) and pictures of every behavior a step
-   changed on purpose. Each
+   released builds only; owed as an entry of its own, filed when this entry closes), and pictures of every behavior a step
+   changed on purpose, those the remeasure could not stage being owed in the entry azure-yak, "The pictures the end remeasure could not stage". Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured
    about 4.5% slower once the walker and the car share a mover base the crowd member extends
    (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
