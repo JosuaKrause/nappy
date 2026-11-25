@@ -3,22 +3,22 @@
 A test reaches the game through what the game itself offers and lets real frames pass; it does not
 read a private member or call a frame function by hand. Two commands count the breaches. The first
 counts a suite's lines that read a private member, including one named in a string:
-`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests/*.gd`. The
-second counts its lines that call a frame function or emit the frame signal by hand:
-`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`.
-Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
-well as the suites), and neither sees access through a variable holding the name, so
-`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
-nothing, and a test or helper that makes them print anything is a breach.
+`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests -g '*.gd' -g '!tests/probes/**'`.
+The second counts its lines that call a frame function or emit the frame signal by hand:
+`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests -g '*.gd' -g '!tests/probes/**'`.
+Both skip comment lines, count every file under `tests/` but the measurement probes (the rigs, the
+fixtures and the helpers the suites share as well as the suites), and neither sees access through
+a variable holding the name, so `tests-unseen-reads.md` covers what they cannot see. Outside the
+two files below they print nothing, and a test or helper that makes them print anything is a
+breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
-- `tests/test_prediction_reuse.gd` stays: it changes the event's heading, notice, spread axis and
-  vehicle side and a crowd body's axis by writing them (the body's `_direction`, `_turn_back_hold`
-  and `_jolt` fields through a name held in a variable); its pace, yield and door hold go through the
-  calls the game's strategy makes,
-  overrides `_sample_expected_landed`, and reads its reference fixture's `_event` and `_agent`,
-  since no game path changes one input alone and that is what it proves the cache notices.
+- `tests/test_prediction_reuse.gd` stays: it writes the event's row and heading and a crowd body's
+  axis (the body's `_direction`, `_turn_back_hold` and `_jolt` fields through a name held in a
+  variable), reads the event's `_where` to hand it back, and overrides `_sample_expected_landed`;
+  its pace, yield and door hold go through the calls the game's strategy makes. No game path
+  changes one input alone, and that is what it proves the cache notices.
 
 **Build:** where a test needs something of a class, that class gets public seams and
 injected dependencies, and the test moves to them, with fakes handed in instead of statics patched;
@@ -79,8 +79,6 @@ ticks give, and is kept with its reason:
 
 - **`RouteLines.routes()`** is kept in `tools/test_only_members.txt` as the only handle on the drawn
   polylines, as `EventRouteLines.routes()` is.
-- **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
-  `test_observers.gd`: the counter's gate reads the platform, which a headless run cannot fake.
 - **The scene recipe suites leave untested:** the director's own use of the arrow ground (it wants a
   task scene of several targets on a stretch), free play past its whole duration (it wants a clock
   the scene is handed), the runtime suite's boundary probe writing the runtime's named world (it

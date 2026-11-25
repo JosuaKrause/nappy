@@ -300,19 +300,25 @@ hears the flow's `world_stood` and `day_planned` and the bus's `day_ended`. The 
 flow's `day_started` alone.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
-things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
-(`RunConfig.is_debug_build()`), the page was not asked for `?debug=1`
+things holds: the build is running on the web (the engine's `OS.get_name() == "Web"`, given
+through `GoatCounterPlatform.is_on_the_web()`), it is not a debug build
+(`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), the
+page was not asked for `?debug=1`
 (`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at
 boot — nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. `GoatCounterOutbox.may_ever_send()` decides the three that never change, and
+independent switch. The counter asks the first, the second and the fourth of the machine through
+the `GoatCounterPlatform` it is handed (`main` hands `GoatCounterPlatform.of_the_engine()`, the
+engine's own answers; a suite hands a released web page's), and the third of the configuration.
+`GoatCounterOutbox.may_ever_send()` decides the three that never change, and
 `GoatCounterOutbox.send()` takes the fourth as its `present` argument, and
 `tests/test_visit_counter.gd` drives the truth table through both. The same `GoatCounterOutbox` holds
 the events asked for before `count.js` has loaded and counts them in order once it has, and is
-handed the evaluator of the page's script; the counter is handed its outbox with `send_through()`
-(its `_ready()` hands it the page's), so a test hands one with a recorder and reads the script each
-event sends, or that a refused event never reached it. A missing or failing
+handed the evaluator of the page's script; the counter is handed its outbox and its platform with
+`send_through()` (`main` hands it the page's), so a test hands an outbox with a recorder and the
+platform of the page it stands for, and reads the script each event sends, or that a refused event
+never reached it. A missing or failing
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and
 the call itself sits inside the page's own `try`/`catch`.
 

@@ -173,8 +173,9 @@ var _save: GameSave
 ## that frees this node as the save does, or the one `use_run_log()` handed in, which its caller
 ## owns. Taken or made beside the save in `_ready()`, and handed to `RunSession`, which opens it.
 var _run_log: Telemetry
-## What the page counts (`VisitCounter`): the one under the sitting, made and handed the game's bus
-## and the page's outbox on the sitting's first boot, so its count of the run outlives every reload.
+## What the page counts (`VisitCounter`): the one under the sitting, made and handed the game's bus,
+## the page's outbox and the engine's platform answers on the sitting's first boot, so its count
+## of the run outlives every reload.
 var _visit_counter: VisitCounter
 ## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
 ## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`
@@ -2218,15 +2219,17 @@ func _new_run_log() -> Telemetry:
 	run_log.use_bursts(BurstRecorder.new(screen, BurstRecorder.Clock.new(run_log), run_log.note))
 	return run_log
 
-## The sitting's page counter, made on its first boot and handed the game's bus and the page's
-## outbox, under the sitting so its count of the run outlives every reload.
+## The sitting's page counter, made on its first boot and handed the game's bus, the page's
+## outbox and the engine's platform answers, under the sitting so its count of the run outlives
+## every reload.
 func _new_visit_counter() -> VisitCounter:
 	var counter := VisitCounter.new()
 	counter.name = VisitCounter.NODE_NAME
 	_sitting.add_child(counter)
 	counter.listen(EventBus)
 	counter.send_through(GoatCounterOutbox.new(
-			func(script: String) -> void: JavaScriptBridge.eval(script)))
+			func(script: String) -> void: JavaScriptBridge.eval(script)),
+			GoatCounterPlatform.of_the_engine())
 	return counter
 
 ## Takes the run this boot plays off its sitting (`Sitting.take_the_run()`): the one a held
