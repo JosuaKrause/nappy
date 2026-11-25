@@ -1,8 +1,9 @@
 extends RefCounted
 ## The water a city paints off its map's southern edge, and which ground surface owns it: the shore
 ## the ground keeps resident is water on every cell outside the map and clear of the bridge's
-## columns, each cell owned by one animated surface and none by the static tile layer, and a repaint
-## (the escape's route tint) keeps the shoreline and the bridge gap.
+## columns, each open-water cell drawn by one animated surface and none by the static tile layer,
+## each cell of the bulkhead row by the static layer's sea wall over a surface's water drawn behind
+## it, and a repaint (the escape's route tint) keeps the shoreline and the bridge gap.
 ##
 ## **This is a direct test of the city's painting** (`City.scenery_ground_source()` decides each
 ## cell, the ground lays what it says): the real city is built, from a cached map
@@ -38,31 +39,41 @@ func _test_water_ownership(t: TestRunner) -> void:
 				surfaces.append(child)
 	t.check(not surfaces.is_empty(), "the resident shoreline supplies water surfaces")
 	var water := surfaces[0]
-	t.check(not city.scenery_ground.tile_set().has_source(GroundTiles.WATER),
-			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
 	var expected: Dictionary[Vector2i, bool] = {}
 	var bridge_left := city.map().main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
 	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
 	# carries its road on for as far as any view asks, so its columns are never water.
+	# The bulkhead row, the first row past the map, stands in the water too.
+	var bulkhead_row := city.map().size_in_tiles().y
 	for key: Vector2i in city.scenery_ground.chunks():
 		var start := key * SceneryGround.CHUNK_TILES
-		var shore := city.map().size_in_tiles().y + 1
-		for y in range(maxi(start.y, shore), start.y + SceneryGround.CHUNK_TILES):
+		for y in range(maxi(start.y, bulkhead_row), start.y + SceneryGround.CHUNK_TILES):
 			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
 				if x < bridge_left or x >= bridge_right:
 					expected[Vector2i(x, y)] = true
 	var actual: Dictionary[Vector2i, bool] = {}
 	var count := 0
+	var sea_wall_cells := 0
 	for surface in surfaces:
+		t.check(surface.show_behind_parent,
+				"a water surface draws behind its chunk's tiles, so the sea wall stands over it")
 		for tile in surface.cells:
 			actual[tile] = true
 			count += 1
-			t.check(GroundCells.source_id(city.scenery_ground, tile) == -1,
-					"animated water has no duplicate pixel owner in the static TileMap")
+			var static_source := GroundCells.source_id(city.scenery_ground, tile)
+			if tile.y == bulkhead_row:
+				sea_wall_cells += 1
+				t.check(static_source == GroundTiles.BULKHEAD,
+						"the water under the bulkhead row lies beneath the static layer's sea wall")
+			else:
+				t.check(static_source == -1,
+						"open water has no duplicate pixel owner in the static TileMap")
+	t.check(sea_wall_cells > 0, "the resident shore holds bulkhead cells (%d)" % sea_wall_cells)
 	t.check(actual == expected and actual.size() == count,
-			"resident water has one owner per cell and excludes the bridge columns at every depth")
+			"resident water has one owner per cell, the bulkhead row included, and excludes the "
+			+ "bridge columns at every depth")
 	var size := city.map().size_in_tiles()
 	for y in range(size.y + 1, size.y + CityMap.OUTSIDE_DEPTH_TILES):
 		for x in range(-CityMap.OUTSIDE_DEPTH_TILES, size.x + CityMap.OUTSIDE_DEPTH_TILES):

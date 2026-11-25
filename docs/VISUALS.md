@@ -177,13 +177,13 @@ arrangements selected by city seed and tile coordinates. Daily repaints start fr
 resource, keeping composition stable.
 
 **A default bake's page carries what it composes from and nothing it composes.** The layers are
-on it, and the twelve whole tiles whose source the recipe composes nothing for — `bulkhead`,
+on it, and the eleven whole tiles whose source the recipe composes nothing for — `bulkhead`,
 `courtyard`, `fence`, `mountain`, `plaza`, `precinct`, `quiet_square`, `sand`, `scree`,
-`spoiled`, `stoop`, `water` — and no whole picture of the 46 sources it does compose, so no SVG
+`spoiled`, `stoop` — and no whole picture of the 46 sources it does compose, so no SVG
 raster of a ground tile reaches the game. **A composed source's picture is therefore its
 composition or nothing**: a recipe that cannot be carried out — a missing base, component,
 damage pool or grass feature — is a `push_error` naming the source and what was missing, and the
-test gate is red for it. A `tools/bake-atlases.sh --svg` page is the reverse: all 58 whole tiles,
+test gate is red for it. A `tools/bake-atlases.sh --svg` page is the reverse: all 57 whole tiles,
 no layer, and nothing composed but the route-kerb tint, which it finds by matching the
 curbstone's own fill colour. Source IDs and gameplay geometry stay fixed in both.
 

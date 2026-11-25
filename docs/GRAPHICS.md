@@ -72,11 +72,13 @@ centroids, each centroid's intensity oscillating so the outlines drift (amber-pu
 (`SouthWaterTile`, a texel a world pixel), redrawn every frame while a water surface stands and
 not at all otherwise. Each `SceneryWater` surface, on its own canvas absent from the static ground
 TileSet and composed sheet, repeats that tile over its cells in world coordinates, so the chunks the
-ground streams in meet without a seam; only the tile runs the shader, which keeps its cost near what
-the atlas water cost. Every other water, the burst water main's spray included, keeps its own
-drawing. The bulkhead, bridge and other ground stay still, and the bulkhead's own picture still
-carries a strip of the atlas water at its foot. The tile's clock is the city clock, which pauses
-with gameplay. Roof rotors and the pipe/smoke parts likewise have separate retained
+ground streams in meet without a seam; only the tile runs the shader, so the water costs one
+textured draw per surface plus the shader over the tile's 384×384 texels each frame, whatever the
+screen size. Every other water, the burst water main's spray included, keeps its own drawing. The
+bulkhead, bridge and other ground stay still. `art/tiles/bulkhead.svg` and its transfer are
+transparent below the stone but for a one-pixel contact shadow, and the surfaces draw the water
+under the whole bulkhead row, behind the chunk's tiles, so the sea wall stands in the water itself.
+The tile's clock is the city clock, which pauses with gameplay. Roof rotors and the pipe/smoke parts likewise have separate retained
 canvases, with their pixels absent from the static layers. [Runtime bursts](evidence/m159-scenery-animation-2026-09-26/README.md)
 show all four cases; [the south water in play](evidence/amber-puffin-in-the-game-2026-11-25/README.md)
 shows the current water beside the earlier one.

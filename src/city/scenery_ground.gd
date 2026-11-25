@@ -138,13 +138,7 @@ func _prepare_whole(key: Vector2i) -> void:
 	var water_cells: Array[Vector2i] = []
 	for y in range(key.y * CHUNK_TILES, (key.y + 1) * CHUNK_TILES):
 		for x in range(key.x * CHUNK_TILES, (key.x + 1) * CHUNK_TILES):
-			var tile := Vector2i(x, y)
-			var source: int = _source_of.call(tile)
-			if source == GroundTiles.WATER:
-				water_cells.append(tile)
-			elif source >= 0:
-				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
+			_lay(layer, Vector2i(x, y), water_cells)
 	_stand_water(layer, water_cells)
 
 ## One bounded quadrant, including TileMap renderer command preparation, for STEPPED alone. The
@@ -169,13 +163,7 @@ func prepare_step(key: Vector2i) -> bool:
 	var water_cells: Array[Vector2i] = []
 	for y in range(origin.y, origin.y + STEP_TILES):
 		for x in range(origin.x, origin.x + STEP_TILES):
-			var tile := Vector2i(x, y)
-			var source: int = _source_of.call(tile)
-			if source == GroundTiles.WATER:
-				water_cells.append(tile)
-			elif source >= 0:
-				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
+			_lay(layer, Vector2i(x, y), water_cells)
 	_stand_water(layer, water_cells)
 	# set_cell defers engine work. Flush this quadrant now so the timer includes that work,
 	# and the last frame cannot inherit creation of all the preceding quadrants.
@@ -187,6 +175,16 @@ func prepare_step(key: Vector2i) -> bool:
 		_pending.erase(key)
 	worst_step_usec = maxi(worst_step_usec, Time.get_ticks_usec() - started)
 	return complete
+
+## Lays one cell: its source on `layer`, and the cell in `water_cells` where the south water is
+## drawn on it, alone for open water and beneath the tile for a source that stands in the water.
+func _lay(layer: TileMapLayer, tile: Vector2i, water_cells: Array[Vector2i]) -> void:
+	var source: int = _source_of.call(tile)
+	if source == GroundTiles.WATER or GroundTiles.stands_in_water(source):
+		water_cells.append(tile)
+	if source >= 0 and source != GroundTiles.WATER:
+		layer.set_cell(tile, source,
+				GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
 
 ## Stands a water surface for `water_cells` on `layer`, if there are any, drawn from the south
 ## water's tile, which starts drawing in the same frame so the surface never shows it empty.

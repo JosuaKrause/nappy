@@ -96,10 +96,6 @@ static func build_tile_set(authored: TileSet, recipe: GroundRecipe, atlas: Atlas
 				% GroundRecipe.PATH + "no whole tile to draw instead, so the ground cannot be composed")
 		return null
 	var result := authored.duplicate(true) as TileSet
-	# Water belongs to its animated surface. Keep its baked region available to that owner,
-	# but do not copy its pixels or source into the static ground's composed sheet.
-	if result.has_source(GroundTiles.WATER):
-		result.remove_source(GroundTiles.WATER)
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	# Built once and shared by both grass sources, exactly as the authored TileSet shares one
 	# picture between two source ids — `_upload_one_sheet` places a shared image once. An `--svg`
