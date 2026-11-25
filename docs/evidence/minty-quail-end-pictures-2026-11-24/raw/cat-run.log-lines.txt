@@ -1,0 +1,16 @@
+day 1  act 1  run seed 4242  city seed 4242  length 210.0s  invincible
+   0.0  plan     events: burst_water_main x17, cafe_tables x49, car_accident x19, cat_dash x5, chatting_mother, delivery_van x51, dog_walker x15, fallen_tree x2, homeless_yeller x6, leaf_blower x6, loose_dog x6, market_stall x59, moving_van x53, pigeon_flock x2, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  ahead    cat_dash crosses 332px in front of her at (88,87)
+   0.0  near     cat_dash at (99,81), 196px, exc 0, in 0.0/s (crowd 1.9, events 3.8), sleep 3
+   0.0  shot     burst started: asked for an animation burst at (97,87) | exc 0, sleep 3 | playing | asked/burst-11266785-001
+   0.0  near     cat_dash at (99,84), 94px, exc 0, in 0.0/s (crowd 21.0, events 15.9), sleep 3
+   0.0  near     cat_dash at (99,85), 51px, exc 0, in 0.0/s (crowd 16.6, events 17.0), sleep 3
+   0.0  near     cat_dash at (99,86), 25px, exc 0, in 0.0/s (crowd 12.7, events 17.0), sleep 3
+   0.0  ahead    cat_dash crosses 332px in front of her at (103,87)
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  near     cat_dash at (114,81), 199px, exc 0, in 0.0/s (crowd 0.0, events 3.5), sleep 5
+   0.0  near     cat_dash at (114,84), 104px, exc 0, in 0.0/s (crowd 0.0, events 15.3), sleep 5
+   0.0  near     cat_dash at (114,85), 53px, exc 0, in 0.0/s (crowd 0.0, events 17.0), sleep 5
+   0.0  near     cat_dash at (114,86), 27px, exc 0, in 0.0/s (crowd 0.0, events 17.0), sleep 5
+   0.0  near     cat_dash at (114,86), 11px, exc 0, in 0.0/s (crowd 0.0, events 17.0), sleep 5
