@@ -119,9 +119,12 @@ only as far as its ancestors under `src/` declare them, so it has no list of the
 the file's own class with no receiver (`if is_ready:`); nor where the receiver ends on a line before its dot, a chain
 broken over lines. A second read of a field a file already reads is not a new
 line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
-Tests are not read for reads (that is `tests-one-module.md`'s item). Whether a line still names only warnings its
-file trips is the engine's to show, not this check's: deleting a name the file still trips fails the boot, and a
-stale name left on an opt-out line is found by `tools/typing_census.py --check`.
+Tests are not read for reads here: a test reads what it tests only through methods
+(writing-tests), and the reads in the tests are found by running this check over a scratch copy of
+the tree with `tests/` moved under `src/` (`--root` names the copy, `--list` prints every read).
+Whether a line still names only warnings its file trips is the engine's to show, not this check's: deleting a name
+the file still trips fails the boot, and a stale name left on an opt-out line is found by
+`tools/typing_census.py --check`.
 
 **The list.** A header comment `# [ClassName] path` opens a class's group; a line under it is `<reader file> <field>`.
 A read not listed **fails**. A listed line with no read now **fails** as a `REMOVE` line, so the pull request that

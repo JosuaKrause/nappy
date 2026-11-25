@@ -58,7 +58,7 @@ var exit_direction := 1.0
 var junction := Vector2i(-1, -1)
 
 ## How far along the arc the car has come, in px. The one piece of state here that moves.
-var travelled := 0.0
+var _travelled := 0.0
 
 ## The quarter turn out of one corridor into an arm of the junction ahead.
 ##
@@ -168,11 +168,11 @@ func junction_box() -> Vector2i:
 
 ## How far along the arc the car has gone.
 func distance_travelled() -> float:
-	return travelled
+	return _travelled
 
 ## Takes the car on `by` further along the arc.
 func travel_on(by: float) -> void:
-	travelled += by
+	_travelled += by
 
 func is_about_face() -> bool:
 	return exit_vertical == entry_vertical

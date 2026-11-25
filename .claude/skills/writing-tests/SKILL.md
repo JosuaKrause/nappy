@@ -12,6 +12,7 @@ description: How a test is written — a suite tests the one module it is named 
 - **A test holds nothing when** the game cannot reach its setup, it asserts back what it just set, it would pass with the code deleted, or another suite already holds the behavior.
 - **A public member only tests read is deleted, or made internal when its own file uses it.** `tools/check_test_only_members.py` fails a new one; fix the member, never list it.
 - **A suite, a rig, a fake and a probe are typed like the code they test**: a new suite opens with the typed runner header and carries no opt-out line.
+- **A test reads what it tests only through methods**, never another object's field.
 - **A hand-drawn map for one specific interaction; a generated map for a realistic walk or a measurement.**
 - **The suite exits clean**: a leak warning at shutdown is a real retain bug.
 
@@ -56,6 +57,11 @@ behaviour is what matters, and those are examples, not the only reasons
   requires.
 - **A suite a pull request touches for another reason is converted only as far as the pull
   request's change reaches** (inbox #1159 in gray-dolphin).
+- **A test reads what it tests only through methods** (inbox #1182 in gray-dolphin): a field becomes
+  the method the game asks, or a realistic mock made in two steps, and a member only a test then
+  reads goes internal or is kept with its reason (below). `tools/check_field_reads.py` does not
+  read `tests/`; its header says how a suite's reads are found (a run over a scratch copy of the
+  tree with `tests/` moved under `src/`).
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159 in gray-dolphin), such as a guarantee
 that spans modules or the game's composition. The reason
@@ -194,6 +200,9 @@ words, and hold until the player corrects them. The citation is the player's wor
 - **A check whose subject is another object's answers moves to that object's suite** ("A suite
   tests the one module it is named for"), a reading of "only mock what you do not want to test"
   (inbox #1159 in gray-dolphin).
+- **The rule that a test reads only through methods covers the suites, not the probes under
+  `tests/probes/`**: a probe is a measurement script run by name that no suite runs, a reading of
+  inbox #1182 in gray-dolphin, open to the player's correction.
 - **The reason for a combined suite, or for a real city, is stated in the suite's `##` header
   comment** (inbox #1159 in gray-dolphin).
 - **The test-only rule also reaches a var, a signal or a constant with no use anywhere under

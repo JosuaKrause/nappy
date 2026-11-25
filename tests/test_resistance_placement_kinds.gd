@@ -1128,13 +1128,22 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	t.check(_boarded_among(state, candidates) == gone, "and the market is gone once")
 
 ## The column's trucks in the day's events, front first: the `military_convoy` events not in
-## `before` (the day's events taken once its city is set up, before the column can come) and not
-## over. The day has a real plan, which may place convoys of its own from day 13, so only the
-## trucks the happenings sent after `before` count.
+## `before` (the day's events taken once its city is set up, before the column can come), not
+## over and not a plan's own. The day has a real plan, which may place convoys of its own from
+## day 13 and streams one in as she moves, so only the trucks the happenings sent count: a
+## plan's event is the one the day's plan names (`EventManager.event_of()`), a sent truck
+## belongs to no plan.
 func _the_column(before: Array[EventInstance]) -> Array[EventInstance]:
+	var of_the_plan: Array[EventInstance] = []
+	for plan in RunCity.events(_city).plans():
+		var live := RunCity.events(_city).event_of(plan)
+		if live:
+			of_the_plan.append(live)
 	var trucks: Array[EventInstance] = []
 	for event in RunCity.events(_city).instances():
-		if not before.has(event) and not event.is_gone() and event.row_id() == "military_convoy":
+		if before.has(event) or of_the_plan.has(event) or event.is_gone():
+			continue
+		if event.row_id() == "military_convoy":
 			trucks.append(event)
 	return trucks
 

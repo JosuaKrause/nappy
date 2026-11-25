@@ -14,8 +14,9 @@ nothing, and a test or helper that makes them print anything is a breach.
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
 - `tests/test_prediction_reuse.gd` stays: it changes the event's heading, notice, spread axis and
-  vehicle side and a crowd body's speed, axis, yield and door hold by writing them (some through a
-  name held in a variable: `_speed`, `_direction`, `_turn_back_hold`, the `_jolt` fields),
+  vehicle side and a crowd body's axis by writing them (the body's `_direction`, `_turn_back_hold`
+  and `_jolt` fields through a name held in a variable); its pace, yield and door hold go through the
+  calls the game's strategy makes,
   overrides `_sample_expected_landed`, and reads its reference fixture's `_event` and `_agent`,
   since no game path changes one input alone and that is what it proves the cache notices.
 

@@ -106,7 +106,7 @@ var _player_sensitivity := 1.0
 ## The sum of `expected_gross_at()` over every source `ExcitementHalo` runs this frame, told once a
 ## frame through `set_expected_total_gross()`. `-1.0`, the default, means nobody has, and
 ## `expected_impact_at()` nets the whole projected decay against this source alone.
-var player_expected_total_gross := -1.0
+var _player_expected_total_gross := -1.0
 
 ## This frame's player velocity, decay rate and sensitivity, told once a frame to every candidate by
 ## `ExcitementHalo`, picked or not, since a source below the halo's floor can still be worth a
@@ -121,7 +121,7 @@ func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 ## asked at the same position: the total has to be gathered before any one source's share of the
 ## decay can be known.
 func set_expected_total_gross(total: float) -> void:
-	player_expected_total_gross = total
+	_player_expected_total_gross = total
 
 # ------------------------------------------------------------- what has landed ---
 
@@ -347,8 +347,8 @@ func expected_impact_at(player_position: Vector2) -> float:
 	if gross <= 0.0:
 		return 0.0
 	var decay := player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	if player_expected_total_gross >= 0.0:
-		return net_landed(gross, player_expected_total_gross, decay)
+	if _player_expected_total_gross >= 0.0:
+		return net_landed(gross, _player_expected_total_gross, decay)
 	return maxf(gross - decay, 0.0)
 
 ## Whether this source projects anything at all right now.

@@ -597,6 +597,8 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
 		var map := CityGenerator.generate(seed_value)
 		var doorstep := map.doorstep_world_position()
+		# The run's mast sites, worked out once on the city as built, as the game does.
+		var sites := MastSites.compute(map)
 		var consumed: Array[String] = []
 		for day in range(4, 15):
 			var state := CityState.new()
@@ -605,8 +607,8 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-			for plan in GameDawn.of(DaySpec.for_day(day), events_rng, map).spent(consumed).on(tree) \
-					.plan().placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), events_rng, map).masts(sites) \
+					.spent(consumed).on(tree).plan().placements():
 				if plan.row_id() != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1

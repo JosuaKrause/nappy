@@ -203,9 +203,10 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 ## only thing under test is the sharing.
 ##
 ## **The unshared sum is the regression this replaces.** `expected_impact_at()` with neither
-## instance told the frame's total (`player_expected_total_gross` at its `-1.0` default) still nets
-## the whole projected decay against each source alone; summing the two double-counts the decay the
-## bar can only actually take once, which is exactly the "reads low" the player named.
+## instance told the frame's total (`set_expected_total_gross()` never called, its `-1.0`
+## default) still nets the whole projected decay against each source alone; summing the two
+## double-counts the decay the bar can only actually take once, which is exactly the "reads
+## low" the player named.
 ##
 ## **The shared sum is checked directly against what the two actually land.** `expected_gross_at()`
 ## gathered over both sources first, told back with `set_expected_total_gross()`, is the same

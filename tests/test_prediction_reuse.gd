@@ -11,10 +11,17 @@ const HaloRig = preload("res://tests/halo_rig.gd")
 const ROUTE_LENGTH := 600.0
 
 ## An event's source that keeps the motion the halo last told it (`set_her_motion()`), which the
-## frozen reference projects and scales by as the source does.
+## frozen reference projects and scales by as the source does, and the total it last told
+## (`set_expected_total_gross()`), which the halo's own parity is held against.
 class ToldEventSource extends EventExcitement:
 	var told_velocity := Vector2.ZERO
 	var told_sensitivity := 1.0
+	var told_total := -1.0
+
+	## Overrides ExcitementSource.set_expected_total_gross.
+	func set_expected_total_gross(total: float) -> void:
+		told_total = total
+		super(total)
 
 	## Overrides ExcitementSource.set_her_motion.
 	func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
@@ -399,12 +406,16 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 func _test_crowd_mutations(t: TestRunner) -> void:
 	for kind: LaneMover.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var source := CountedCrowd.new(kind)
-		source._speed = 60.0
+		# The mover's own pace, set the way its strategy sets it: eased to the wanted one in
+		# one step.
+		source.lane().ease_speed_toward(60.0, 1000.0)
 		var at := Vector2(-160.0, 12.0)
 		_crowd_parity(t, source, at, "crowd before player")
 		source.mood().set_her_motion(Vector2(92.0, 0.0))
 		_crowd_parity(t, source, at, "crowd player")
-		for field: String in ["_speed", "_direction", "_turn_back_hold"]:
+		source.lane().ease_speed_toward(source.speed() + 1.25, 1000.0)
+		_crowd_parity(t, source, at, "crowd pace")
+		for field: String in ["_direction", "_turn_back_hold"]:
 			source.set(field, float(source.get(field)) + 1.25)
 			_crowd_parity(t, source, at, "crowd external " + field)
 		for field: String in ["_jolt", "_jolt_for", "_jolt_intensity", "_jolt_inner", "_jolt_outer"]:
@@ -413,8 +424,11 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		# A yield and a door hold are a walker's, kept by its strategy; a car has neither.
 		var walking := kind == CrowdAgent.Kind.WALKER
 		if walking:
-			(source.lane().strategy() as WalkerStrategy)._yield_left += 1.25
-			_crowd_parity(t, source, at, "crowd external _yield_left")
+			# Somebody walks into it against its own way, so it waits for a moment.
+			var along := (Vector2.DOWN if source.lane().is_vertical() else Vector2.RIGHT) \
+					* -source.lane().direction()
+			source.lane().strategy().step_aside(along, 0.0, 1.25)
+			_crowd_parity(t, source, at, "crowd yield")
 		source.mood().startle(80.0, 2.0, 30.0, 170.0)
 		_crowd_parity(t, source, at, "crowd new horn/bump")
 		source.position += Vector2(33.0, 8.0)
@@ -422,18 +436,26 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source._vertical = not source._vertical
 		_crowd_parity(t, source, at, "crowd heading")
 		if walking:
-			var walker := source.lane().strategy() as WalkerStrategy
-			walker._yield_left = 0.0
-			walker._door_state = WalkerStrategy.DoorState.INSPECTION
+			# The yield ends where the walker forgets what it was dodging; the door is entered
+			# the way the crowd's tick walks it in: seen ahead, joined and waited at.
+			var walker := source.lane().strategy()
+			walker.forget_the_detour()
+			var hut := WalkerDoorHold.new()
+			hut.stand_at(source.position)
+			source.lane().see_a_door_ahead(hut, 0.0)
+			walker.advance_the_door_hold(0.0)
 			_crowd_parity(t, source, at, "crowd door hold")
-			walker._door_state = WalkerStrategy.DoorState.WALKING
+			# The hut is let go of where the walker waits (the way the game does when the hut is
+			# no longer ahead), so the release moves nothing but the door's state.
+			source.lane().clear_the_door_ahead()
+			walker.advance_the_door_hold(0.0)
 			_crowd_parity(t, source, at, "crowd door release")
 		# An about-face, the half turn of 16px radius between the two lanes of one carriageway.
 		var turn := CarTurn.about_face(false, 1.0, 0, CrowdLanes.road_lane(false, 1.0), 0.0, 0.0,
 				CrowdLanes.road_lane(false, -1.0), Vector2i(-1, -1))
 		source.take_the_turn(turn, 0.0)
 		for distance: float in [0.0, 3.0, 9.0, 15.0]:
-			turn.travelled = distance
+			turn.travel_on(distance - turn.distance_travelled())
 			_crowd_parity(t, source, at, "crowd changing turn tangent")
 		source.drop_the_turn()
 		source.mood().set_her_motion(Vector2(0.0, 92.0))
@@ -447,7 +469,7 @@ func _test_live_net_and_skipped_work(t: TestRunner) -> void:
 	var event := CountedEvent.new()
 	event.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
 	var crowd := CountedCrowd.new()
-	crowd._speed = 0.0
+	crowd.lane().ease_speed_toward(0.0, 1000.0)
 	var at := Vector2(-170.0, 0.0)
 	_check_live_net_and_skipped_work(t, event.source(), func() -> int: return event.sampling_runs, at)
 	_check_live_net_and_skipped_work(t, crowd.mood(), func() -> int: return crowd.sampling_runs, at)
@@ -488,7 +510,7 @@ func _test_consumer_order(t: TestRunner) -> void:
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(reference_where))
 	for source: CrowdAgent in [car, reference_car]:
-		source._speed = 80.0
+		source.lane().ease_speed_toward(80.0, 1000.0)
 	var sources: Array[ExcitementSource] = [cached.source(), reference.source(), car.mood(),
 			reference_car.mood()]
 	# Same source callback -> halo gross/total -> drawing order as production. The reference
@@ -576,8 +598,9 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 			await t.get_tree().process_frame
 			if rims[0].told > told and rims[1].told == rims[0].told:
 				break
-		t.check(_same_bits(sources[0].source().player_expected_total_gross,
-				sources[1].source().player_expected_total_gross), "real halo publishes identical totals")
+		t.check(_same_bits((sources[0].source() as ToldEventSource).told_total,
+				(sources[1].source() as ToldEventSource).told_total),
+				"real halo publishes identical totals")
 		t.check(rims[0].is_held() == rims[1].is_held(),
 				"real halo builds a rim for both sources or for neither")
 		t.check(_rim_target(rims[0])[0] == _rim_target(rims[1])[0],

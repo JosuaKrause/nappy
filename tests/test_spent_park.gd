@@ -24,9 +24,18 @@ const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd
 
 var _maps: Array[CityMap] = []
 
+## The run's mast sites on each city as it was built, worked out once and kept for the run as
+## the game does (`EventWorld.work_out_mast_sites()`), by the city's seed.
+var _mast_sites := {}
+
+func _masts_of(map: CityMap) -> Array[MastSites.Site]:
+	var sites: Array[MastSites.Site] = _mast_sites[map.city_seed()]
+	return sites
+
 func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 37))
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(_maps[i])
 	_test_a_used_area_is_taken_off_the_tree_and_stays_open(t)
 	_test_the_one_fence_is_remembered_after_its_act(t)
 	_test_the_fenced_park_closes_every_entrance(t)
@@ -473,8 +482,8 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> v
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var calm := CalmAreas.of(map, used)
-			var events := GameDawn.of(DaySpec.for_day(day), rng, map).calm(calm).spent(no_one_shots) \
-					.scars(no_scars).on(tree).plan()
+			var events := GameDawn.of(DaySpec.for_day(day), rng, map).masts(_masts_of(map)) \
+					.calm(calm).spent(no_one_shots).scars(no_scars).on(tree).plan()
 			var planned := events.placements()
 			if map.fenced_park_block().x >= 0:
 				var fenced_tiles := {}
@@ -569,8 +578,8 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 			if not calm.unused_ground().is_empty():
 				continue
 			asked += 1
-			var events := GameDawn.of(DaySpec.for_day(day), rng, map).calm(calm).spent(no_one_shots) \
-					.scars(no_scars).on(tree).plan()
+			var events := GameDawn.of(DaySpec.for_day(day), rng, map).masts(_masts_of(map)) \
+					.calm(calm).spent(no_one_shots).scars(no_scars).on(tree).plan()
 			var clean := 0
 			for block in calm.blocks():
 				if block != calm.besides() and not events.is_spoiled(block):
