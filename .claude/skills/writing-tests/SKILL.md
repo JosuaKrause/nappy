@@ -94,8 +94,8 @@ fixtures and the helpers the suites share as well as the suites). It prints noth
 files that state their exception in their `##` header: `tests/shared_state.gd` (the runner's table
 of statics it leaves out of its comparison, read by name, since comparing every static is its job)
 and `tests/test_prediction_reuse.gd` (it changes one input of an event or a crowd body at a time,
-which no game path does, to prove the cache notices). A line it prints anywhere else is fixed or
-gets its exception stated in the suite's header. **What it does not see** is a private name held in
+which no game path does, to prove the cache notices). A line it prints anywhere else is looked at
+again: the read is fixed, or its exception is stated in the suite's header. **What it does not see** is a private name held in
 a variable, an override of a private method, a game collection edited by hand, and a public member
 only tests call (`tools/check_test_only_members.py`, below, holds that last one).
 
@@ -201,9 +201,11 @@ the real build nor the step that read it off survives into the pull request.
   group of the list. The rule also reaches vars and signals, and not constants, since a test
   reading a constant to assert a relationship is what this policy wants; a constant is flagged only
   when nothing under `src/` uses it, its own file included.
-- **A hand-in**, a `use_*` setter that hands the object what it depends on (a clock with a wall-clock default included, as the mode button, the return window, the title screen and the touch controls take), stays public and sits in
-  a kept group with that reason, since the game uses its default and a test hands in a fake
-  (dependency injection, minty-lemur #794; mocking, inbox #1095 in curly-rabbit).
+- **A hand-in**, a `use_*` setter that hands the object what it depends on (a clock with a
+  wall-clock default included, as the mode button, the return window, the title screen and the
+  touch controls take), stays public and sits in a kept group with that reason, since the game
+  uses its default and a test hands in a fake (dependency injection, minty-lemur #794; mocking,
+  inbox #1095 in curly-rabbit).
 - **`tools/check_test_only_members.py` (CI's `gates` job) holds the two rules above**: it fails a
   test that reads a public member nothing else under `src/` reads, unless
   `tools/test_only_members.txt` lists it. Its `--help` and the header of that list say what it
@@ -252,7 +254,7 @@ words, and hold until the player corrects them. The citation is the player's wor
   roof art and the event pictures it was first applied to among them: the player asked for it as a
   general statement on designing unit tests, and the filer reads it that way (inbox #1018 in
   brisk-ferret).
-- **A scene-level test lets real frames pass and calls no frame function by hand, and a line either
+- **A scene-level test lets real frames pass and calls no frame function by hand, and a line the frame
   count prints is a breach, not a sign to look again**: the refactor ticket's own rule (the
   records minty-quail, on the runner letting frames pass, and minty-quail-47), which the player's
   words do not hold. `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests -g '*.gd' -g '!tests/probes/**'` counts the lines that call a frame function or emit the frame

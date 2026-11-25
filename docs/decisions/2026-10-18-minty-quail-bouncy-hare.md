@@ -15,9 +15,9 @@ seam) is the dependency-injection ask (minty-lemur #794) read with the zero-read
 APIs" is inbox #813 in curly-moose. The no-hand-called-frames rule is the refactor ticket's own,
 in the records minty-quail (the runner lets frames pass) and minty-quail-47, and the player's words
 do not hold it. Inbox #1018 in brisk-ferret made the private-read part guidance, a sign to look
-again, not a hard rule. The two count commands came from that ticket. The commands' glob was `tests/*.gd` until minty-quail-spry-koala found it skipped
-`tests/fixtures/`; `tools/check_test_only_members.py` and `tools/check_field_reads.py` hold the
-rest.
+again, not a hard rule. The two count commands came from that ticket. The commands' glob was
+`tests/*.gd` until minty-quail-spry-koala found it skipped `tests/fixtures/`;
+`tools/check_test_only_members.py` and `tools/check_field_reads.py` hold the rest.
 
 **Four readings of the seam rule**, as the unseen-reads item recorded them. The first, which rests
 on the rule's wording, the filer's: a caller under `src/dev` counts as a game caller, because the
