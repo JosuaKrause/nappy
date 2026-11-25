@@ -439,18 +439,28 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng,
-			RouteTree.for_day(map, day, null))
+			RouteTree.for_day(map, day, _tutorial_for(map, day)))
 
 ## Today's city, and then today's corridor grown on it — the order `City.start_day` uses.
 ## Memoized for the same reason `_plan` is: several functions below ask for the same seed's same
 ## day.
 var _tree_cache := {}
+var _tutorial_cache := {}
+
+## The run's tutorial route on a day whose spec walks it, null on every other day, as `City`
+## hands it to the day's tree: day 1's closures are planned off the tree that carries it.
+func _tutorial_for(map: CityMap, day: int) -> TutorialRoute:
+	if not DaySpec.for_day(day).walks_the_tutorial():
+		return null
+	if not _tutorial_cache.has(map.city_seed()):
+		_tutorial_cache[map.city_seed()] = TutorialRoute.for_city(map)
+	return _tutorial_cache[map.city_seed()]
 
 func _todays_tree(map: CityMap, day: int) -> RouteTree:
 	_repaint_for(map, day)
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _tree_cache.has(key):
-		_tree_cache[key] = RouteTree.for_day(map, day, null)
+		_tree_cache[key] = RouteTree.for_day(map, day, _tutorial_for(map, day))
 	return _tree_cache[key]
 
 func _closed_set(closures: Array[RoadClosure]) -> Dictionary:

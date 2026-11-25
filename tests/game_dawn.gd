@@ -128,6 +128,8 @@ func roadblock(row: EventDef) -> GameDawn:
 ## one pass of the dawn.
 func context() -> DawnContext:
 	var dawn := _Dawn.new(_spec, _rng.seed, _map,
+			# A dawn handed no walk is not about the tutorial route: day 1 here grows the
+			# ordinary tree, deliberately (test_seals holds the tutorial's).
 			_walk if _walk else RouteTree.for_day(_map, _spec.day_number(), null),
 			_calm if _calm else CalmAreas.of(_map), GamePlanBuilder.over(_map),
 			EventScheduler.row_ground, _rows)

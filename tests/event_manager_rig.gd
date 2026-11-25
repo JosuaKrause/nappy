@@ -189,6 +189,8 @@ static func nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 ## it, and one grown for the day otherwise, as the manager chooses it.
 static func longest_route_out(stage: Stage, day: int) -> PackedVector2Array:
 	var grown := stage.streets().route_tree()
+	# Not about the tutorial route: day 1 here grows the ordinary tree, deliberately
+	# (test_seals holds the tutorial's).
 	var tree := grown if grown else RouteTree.for_day(stage.map(), day, null)
 	var best: Array = []
 	for branch in tree.branches():
