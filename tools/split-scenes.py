@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the separated static and moving event-scene SVG spans."""
+"""Regenerate the separated static and moving SVG spans of the partly animated event pictures."""
 
 from __future__ import annotations
 
@@ -34,7 +34,20 @@ class CropMetadata(TypedDict):
     layers: dict[str, list[list[str | int | bool]]]
 
 
-STEMS = ("burst_water_main", "burst_water_main_vertical", "car_accident", "car_accident_vertical")
+VIEWS = ("front", "back", "side", "front_diagonal", "back_diagonal")
+# Every picture whose two frames are split, with the number of painter-order spans its two sources
+# are expected to differ in: a source edit that changes the structure stops the extraction rather
+# than silently registering another layout. The wide scenes are drawn in slices; the figures stand
+# on their feet, and only the poster crew's back view has a second frame of its own.
+EXPECTED_SPANS = {
+    "burst_water_main": 7,
+    "burst_water_main_vertical": 7,
+    "car_accident": 3,
+    "car_accident_vertical": 3,
+    **{f"busker_{view}": 3 for view in VIEWS},
+    **{f"cafe_sitter_{view}": 2 for view in VIEWS},
+    "poster_crew_back": 5,
+}
 TOOLS = Path(__file__).resolve().parent
 PROJECT_ROOT = TOOLS.parent
 CROP_HELPER = TOOLS / "split-scenes-crop.gd"
@@ -67,7 +80,7 @@ def build_payload() -> SplitPayload:
     ET.register_namespace("", "http://www.w3.org/2000/svg")
     sources: dict[str, str] = {}
     layers: dict[str, list[DraftLayer]] = {}
-    for stem in STEMS:
+    for stem, expected_spans in EXPECTED_SPANS.items():
         paths = [PROJECT_ROOT / "art/events" / f"{stem}{suffix}.svg" for suffix in ("", "_b")]
         scenes = [ET.parse(path).getroot() for path in paths]
         sources.update(
@@ -78,7 +91,6 @@ def build_payload() -> SplitPayload:
                 element.tail = None
         keys = [[ET.tostring(element) for element in scene] for scene in scenes]
         spans = difflib.SequenceMatcher(a=keys[0], b=keys[1], autojunk=False).get_opcodes()
-        expected_spans = 7 if stem.startswith("burst") else 3
         if len(spans) != expected_spans:
             raise RuntimeError(f"{stem}: expected {expected_spans} painter-order spans, got {spans!r}")
         result: list[DraftLayer] = []

@@ -1,0 +1,9 @@
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":40},"other":{"canvases":2,"draws":0}},"heading":[1.0,0.0],"id":"busker","layer_textures":0,"pictures":40,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":40},"other":{"canvases":2,"draws":0}},"heading":[0.0,-1.0],"id":"busker","layer_textures":0,"pictures":40,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":25},"other":{"canvases":2,"draws":0}},"heading":[0.0,-1.0],"id":"poster_crew","layer_textures":0,"pictures":25,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":25},"other":{"canvases":2,"draws":0}},"heading":[0.0,1.0],"id":"poster_crew","layer_textures":0,"pictures":25,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":6},"other":{"canvases":2,"draws":0},"slice":{"canvases":2,"draws":12}},"heading":[1.0,0.0],"id":"cafe_tables","layer_textures":0,"pictures":24,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":6},"other":{"canvases":2,"draws":0},"slice":{"canvases":2,"draws":12}},"heading":[1.0,0.0],"id":"cafe_tables","layer_textures":0,"pictures":24,"seconds":10.0,"vertical":true}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":600},"other":{"canvases":2,"draws":0},"slice":{"canvases":2,"draws":1200}},"heading":[1.0,0.0],"id":"firefight","layer_textures":0,"pictures":1200,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":600}},"heading":[1.0,0.0],"id":"burning_building","layer_textures":0,"pictures":3600,"seconds":10.0,"vertical":false}
+IDLE_REDRAWS {"calls":{"event":{"canvases":1,"draws":2},"other":{"canvases":2,"draws":0}},"heading":[1.0,0.0],"id":"loudspeaker","layer_textures":0,"pictures":5,"seconds":22.0,"vertical":false}
