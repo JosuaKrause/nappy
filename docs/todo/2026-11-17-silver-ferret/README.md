@@ -24,7 +24,7 @@ remeasure at the end (inbox #813 in curly-moose). The record polite-tapir-coral-
 table replaces the six fitted ones) holds the measurement: the ramp is flatter, day 14 at 1.14 times
 day 1, and days 9 to 11 place fewer events than day 1.
 
-**Item:** `later-days-hard-enough.md`. It waits for the remeasure, step 3 of minty-quail's
+**Item:** `later-days-hard-enough.md`. It waits for the remeasure of minty-quail's
 `README.md`, which comes after the last item of minty-quail.
 
 The band `now` is the filer's proposal; the note carried no band label. Whether the release v0.30.0

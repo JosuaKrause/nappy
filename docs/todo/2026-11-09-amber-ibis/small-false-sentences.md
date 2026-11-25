@@ -13,5 +13,5 @@ Found while the skills were checked against the code:
 - `docs/TELEMETRY.md` says `draw_kind()` where the method is `FrameRecorder._draw_kind()`.
 
 **Build:** each sentence says what is true. The refactor's own rule brings the comments of a file
-it touches to the present tense (`docs/todo/2026-10-18-minty-quail/comments.md`), so whichever
+it touches to the present tense (**godot**, "Comments are written in the present tense"), so whichever
 reaches a file first fixes its sentence, and this item closes with what is left.
