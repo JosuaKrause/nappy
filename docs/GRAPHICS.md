@@ -33,7 +33,11 @@ and rejected archive. They do not count as accepted catalogue conversions.
 about that point, while `draw_shadow()` draws the contact-shadow ellipse every point-shaped object
 casts. `GroundShape` (`src/ground_shape.gd`) draws point shadows as vertically squashed circles,
 segment shadows as capsules with circular ends along the ground axis, and building rectangles
-with vertical squash after rotation. The generic shadow SVG is absent; the car-accident scenes
+with vertical squash after rotation. A car or other vehicle casts one squashed oval per wheel
+pair instead (`GroundShape.paired_shadow_outlines()`, read by `CarLook` and `EventVehicleLook`),
+the nearer pair on the bottom of its picture, so its shadow lies under its tyres and never above
+its roof; the riot van and the moving van, whose ground shapes are the scene round them, keep the
+shadow of their whole body. The generic shadow SVG is absent; the car-accident scenes
 retain their authored ground-contact shadow textures. Unless a row below says otherwise, an actor
 or prop SVG is bottom-centre anchored by `draw_standing()`.
 

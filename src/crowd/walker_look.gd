@@ -138,7 +138,7 @@ func palette() -> Array:
 func draw_body(canvas: CanvasItem) -> void:
 	var drawn := picture(_agent.velocity())
 	var flip := drawn.y == 1
-	_agent.draw_shadow(canvas, Vector2.ZERO, Vector2.RIGHT)
+	_agent.draw_shadow(canvas, Vector2.ZERO)
 	var view_name: String = VIEW_BY_SECTOR[drawn.x]
 	# One lookup decides both layers, so the coat and the legs can never show two different
 	# instants of the same stride.

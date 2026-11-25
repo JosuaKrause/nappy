@@ -417,11 +417,11 @@ func _draw_shadows() -> void:
 	for instance in _live():
 		if instance.is_gone():
 			continue
-		_draw_shadow_outline(instance.ground_shape(), instance.global_position,
-				instance.solid_axis())
+		for outline in instance.shadow_outlines(instance.global_position):
+			_draw_closed_polyline(outline, SHADOW_COLOUR)
 	for agent in _agents():
-		var axis := agent.heading() if agent.is_car() else Vector2.RIGHT
-		_draw_shadow_outline(agent.shape(), agent.global_position, axis)
+		for outline in agent.shadow_outlines(agent.global_position):
+			_draw_closed_polyline(outline, SHADOW_COLOUR)
 	for prop in _current_props():
 		if prop is Prop:
 			_draw_shadow_outline((prop as Prop).shape(), prop.global_position, Vector2.RIGHT)
