@@ -47,6 +47,8 @@ hard seal, since a seal need not be a soft one where a soft pair cannot close th
 - **The car accident from day 2** (minty-dolphin #834): its seal candidate carries a first day of
   its own, `SealPlanner.Candidate.first_day`, which `_eligible()` reads, since the row is scripted
   for act I and a scripted row's first day is its act's. No edit to the catalogue.
+- **A still of the mouth seals** at the second junction of seed 72172's route is
+  `docs/evidence/grassy-beaver-day-one-mouth-seals-2026-11-25/`.
 - **Docs**: `docs/CITY.md`, "How the corridor is built" and "Sealing the tree", the latter's stale
   "hard one only from act IV" sentence corrected in its own commit; `docs/EVENTS.md`'s
   car-accident row says day 2.
