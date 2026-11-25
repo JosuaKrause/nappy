@@ -8,7 +8,9 @@ we defined it. this sounds like what is implemented is pretty far off from what 
 earlier words on the escape: "there should be no dog walkers in escape it's not a calm night where
 people walk their dogs" (inbox #1733 in spry-ferret); "the escape is just like a normal day with
 some special settings", "there really should be no separate code for escape" and "all should be
-implemented through the regular game engine's means" (inbox #785 in minty-lemur).
+implemented through the regular game engine's means" (inbox #785 in minty-lemur). And of the
+escape's army trucks: "no, trucks get placed ahead of her if they're on route" (inbox #1740 in
+minty-hare).
 
 **The band `bug` is the one a refactor step's own defect takes** (inbox #1519 in breezy-magpie): the
 refactor made the escape a day spec (minty-quail), and the escape's spec does not reach the event
@@ -38,5 +40,6 @@ main at 47e465438; the ordinary day follows the player's rules, the escape's daw
 **What the context of inbox #1737 in minty-hare and the item no-dog-walkers of calm-walrus said**
 (main's escape sends nothing; its route bag is "never drawn from") **is wrong on the direct boot.**
 
-**Item:** `director-follows-the-spec.md`. The escape's other gap against the player's words, the
+**Item:** `director-follows-the-spec.md`, which also holds that the escape's trucks on her route are
+sent ahead of her by the director (inbox #1740 in minty-hare). The escape's other gap against the player's words, the
 empty marbles' count, is lilac-marten's (a fuller escape); the explosions are snowy-goose's.
