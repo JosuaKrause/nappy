@@ -2168,8 +2168,9 @@ an invisible wall.
   water, no buildings; east and west a fence, then grass going into forest; north scree and then
   mountainside. It is the land rather than a ring of frontages dressing the edge.
   `City._paint_outside_the_map` is the whole of it — ground rather than objects, outside the map,
-  where no tile, route or event can reach. Water has its own animated surface, absent from the
-  static ground sheet and TileMap; the bulkhead and bridge remain in the static ground.
+  where no tile, route or event can reach. Water has its own surfaces, drawn from one live tile of drifting
+  lines and absent from the static ground sheet and TileMap; the bulkhead and bridge remain in the
+  static ground, and the water is drawn beneath the bulkhead row too, behind its sea wall.
 - **A band runs the full width of the map, and there is nothing at a corner.** North and south own
   the corners outright, so the mountain and the water run the whole way across and the fence, grass
   and forest are what is left in between. **Giving a corner to whichever side it is further out of

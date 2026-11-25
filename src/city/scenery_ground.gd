@@ -29,23 +29,39 @@ var _map: CityMap
 ## Which source each tile is painted from, asked of the city that owns the answer
 ## (`City.scenery_ground_source()`), handed in by `configure()`.
 var _source_of := Callable()
-## The city's library (`AtlasLibrary`), handed in by `use_atlas()` before the city configures the
-## ground, and handed on to every water surface a chunk stands up.
-var _atlas: AtlasLibrary
 ## Whole-region prepare() time: every preparation in ALL and ONE, the guard's alone in STEPPED,
 ## whose ordinary quadrant steps use worst_step_usec.
 var worst_prepare_usec := 0
 var worst_step_usec := 0
-## One pausable city clock keeps adjacent water chunks in phase, including newly entered ones
+## One pausable city clock, which the south water's tile and the buildings' vents follow
 ## (`elapsed()`).
 var _elapsed := 0.0
+## The south water's one live tile, which every water surface a chunk stands up draws from: made
+## with the first surface (`_water_tile()`), kept drawing while any surface stands.
+var _tile: SouthWaterTile = null
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	if _tile == null:
+		return
+	_tile.set_clock(_elapsed)
+	_tile.keep_drawing(_water_stands())
+
+## Whether a laid or half-laid region stands a water surface now.
+func _water_stands() -> bool:
 	for layer: TileMapLayer in _chunks.values() + _pending_layers():
 		for child: Node in layer.get_children():
 			if child is SceneryWater:
-				(child as SceneryWater).set_clock(_elapsed)
+				return true
+	return false
+
+## The south water's tile, made and added on first use, on the city clock.
+func _water_tile() -> SouthWaterTile:
+	if _tile == null:
+		_tile = SouthWaterTile.new()
+		_tile.set_clock(_elapsed)
+		add_child(_tile)
+	return _tile
 
 func configure(map: CityMap, source_of: Callable, composed: TileSet) -> void:
 	clear()
@@ -57,12 +73,7 @@ func configure(map: CityMap, source_of: Callable, composed: TileSet) -> void:
 func tile_set() -> TileSet:
 	return _tile_set
 
-## Hands in the city's library (`AtlasLibrary`), before the ground lays anything: every water surface
-## it stands up draws from it.
-func use_atlas(library: AtlasLibrary) -> void:
-	_atlas = library
-
-## The city's clock in seconds, which every water surface's ripples and the buildings' vents follow.
+## The city's clock in seconds, which the south water's outlines and the buildings' vents follow.
 func elapsed() -> float:
 	return _elapsed
 
@@ -127,20 +138,8 @@ func _prepare_whole(key: Vector2i) -> void:
 	var water_cells: Array[Vector2i] = []
 	for y in range(key.y * CHUNK_TILES, (key.y + 1) * CHUNK_TILES):
 		for x in range(key.x * CHUNK_TILES, (key.x + 1) * CHUNK_TILES):
-			var tile := Vector2i(x, y)
-			var source: int = _source_of.call(tile)
-			if source == GroundTiles.WATER:
-				water_cells.append(tile)
-			elif source >= 0:
-				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
-	if not water_cells.is_empty():
-		var water := SceneryWater.new()
-		water.use_atlas(_atlas)
-		water.set_clock(_elapsed)
-		layer.add_child(water)
-		water.configure(water_cells)
-		water.set_process(false)
+			_lay(layer, Vector2i(x, y), water_cells)
+	_stand_water(layer, water_cells)
 
 ## One bounded quadrant, including TileMap renderer command preparation, for STEPPED alone. The
 ## residency owner advances each region once per process frame; prepare() drains it for the
@@ -164,20 +163,8 @@ func prepare_step(key: Vector2i) -> bool:
 	var water_cells: Array[Vector2i] = []
 	for y in range(origin.y, origin.y + STEP_TILES):
 		for x in range(origin.x, origin.x + STEP_TILES):
-			var tile := Vector2i(x, y)
-			var source: int = _source_of.call(tile)
-			if source == GroundTiles.WATER:
-				water_cells.append(tile)
-			elif source >= 0:
-				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
-	if not water_cells.is_empty():
-		var water := SceneryWater.new()
-		water.use_atlas(_atlas)
-		water.set_clock(_elapsed)
-		layer.add_child(water)
-		water.configure(water_cells)
-		water.set_process(false)
+			_lay(layer, Vector2i(x, y), water_cells)
+	_stand_water(layer, water_cells)
 	# set_cell defers engine work. Flush this quadrant now so the timer includes that work,
 	# and the last frame cannot inherit creation of all the preceding quadrants.
 	layer.update_internals()
@@ -188,6 +175,27 @@ func prepare_step(key: Vector2i) -> bool:
 		_pending.erase(key)
 	worst_step_usec = maxi(worst_step_usec, Time.get_ticks_usec() - started)
 	return complete
+
+## Lays one cell: its source on `layer`, and the cell in `water_cells` where the south water is
+## drawn on it, alone for open water and beneath the tile for a source that stands in the water.
+func _lay(layer: TileMapLayer, tile: Vector2i, water_cells: Array[Vector2i]) -> void:
+	var source: int = _source_of.call(tile)
+	if source == GroundTiles.WATER or GroundTiles.stands_in_water(source):
+		water_cells.append(tile)
+	if source >= 0 and source != GroundTiles.WATER:
+		layer.set_cell(tile, source,
+				GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
+
+## Stands a water surface for `water_cells` on `layer`, if there are any, drawn from the south
+## water's tile, which starts drawing in the same frame so the surface never shows it empty.
+func _stand_water(layer: TileMapLayer, water_cells: Array[Vector2i]) -> void:
+	if water_cells.is_empty():
+		return
+	var water := SceneryWater.new()
+	water.use_tile(_water_tile())
+	layer.add_child(water)
+	water.configure(water_cells)
+	_tile.keep_drawing(true)
 
 func _pending_layers() -> Array:
 	return _pending.values().map(func(job: Dictionary) -> TileMapLayer: return job.layer)

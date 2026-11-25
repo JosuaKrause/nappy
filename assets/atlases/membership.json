@@ -652,8 +652,7 @@
         "art/tiles/sand.svg",
         "art/tiles/scree.svg",
         "art/tiles/spoiled.svg",
-        "art/tiles/stoop.svg",
-        "art/tiles/water.svg"
+        "art/tiles/stoop.svg"
       ],
       "members_png": [
         "art/tiles/layers/alley_base.svg",

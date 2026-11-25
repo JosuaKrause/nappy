@@ -229,10 +229,6 @@ func _test_the_recipe_is_read_from_disk_once(t: TestRunner) -> void:
 	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	t.check(first != null and second != null, "both ground builds produced a TileSet")
-	t.check(not first.has_source(GroundTiles.WATER) and not second.has_source(GroundTiles.WATER),
-			"water is absent from both static compositions, including a daily repaint")
-	t.check(AtlasTable.baked().has_region(&"tiles/water"),
-			"the independent water surface still has its original baked picture")
 	t.check(is_same(fresh_recipe.manifest(), held),
 			"two ground builds leave the recipe the one read the first ask made, not read again")
 

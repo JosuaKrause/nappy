@@ -13,8 +13,9 @@ extends RefCounted
 ## built**: the residency is handed its parts as `City.build()` hands them (`Scene`: the map, a
 ## ground configured from a callable that answers each tile's source, and shadows and decals that
 ## draw nothing), every building is registered with it, and the suite reads the parts it made. What
-## each consumer does with its own residency (a roof's units, a water surface's clock) is its own
-## suite's (`tests/test_scenery_animation.gd`, `tests/test_ground_floor.gd`); what the city does
+## each consumer does with its own residency (a roof's units, where a water surface's cells take
+## their picture from) is its own suite's (`tests/test_scenery_animation.gd`,
+## `tests/test_south_water_tile.gd`, `tests/test_ground_floor.gd`); what the city does
 ## with a dawn is `tests/test_city_buildings.gd`'s.
 ##
 ## **Its maps come from the cache of generated cities** (`tests/city_map_cache.gd`): each seed's
@@ -119,7 +120,6 @@ func _scene_for(t: TestRunner, seed_value: int) -> Scene:
 	scene.scenery.setup(scene.world, scene.map, scene.ground, scene.shadows, scene.decals)
 	scene.world.add_child(scene.scenery)
 	scene.ground.use_mode(SceneryGround.Mode.ONE)
-	scene.ground.use_atlas(scene.atlas)
 	scene.ground.configure(scene.map, scene.source_at,
 			GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), scene.atlas))
 	for key in scene.ground.keys_in(scene.home_view().grow(SceneryResidency.LOAD_MARGIN)):
@@ -262,7 +262,8 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"relocation does not replace persistent building collision")
 	await _check_what_the_front_is_told_survives_eviction(t, scene, far)
-	# Clock belongs to the city, so a newly entered shoreline resumes its neighbors' phase.
+	# Clock belongs to the city, so a newly entered shoreline resumes its neighbors' phase: every
+	# water chunk draws from the ground's one tile, which runs on the city clock.
 	await _run_the_city_clock(t, scene, 3.75)
 	var shore := _view(Vector2(map.world_size().x * 0.5, map.world_size().y + 100))
 	scene.scenery.update(shore, true)
@@ -270,14 +271,26 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	for chunk: TileMapLayer in scene.ground.chunks().values():
 		for child in chunk.get_children():
 			if child is SceneryWater:
-				var water: SceneryWater = child
 				water_count += 1
-				var ripples := water.material as ShaderMaterial
-				t.check(ripples != null
-						and float(ripples.get_shader_parameter("elapsed")) == scene.ground.elapsed()
-						and not water.is_processing(),
-						"new water chunks share one pausable city phase")
+				t.check(not (child as SceneryWater).is_processing(),
+						"a water surface runs no clock of its own")
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
+	var tiles: Array[SouthWaterTile] = []
+	for child in scene.ground.get_children():
+		if child is SouthWaterTile:
+			tiles.append(child)
+	t.check(tiles.size() == 1, "the ground stands one water tile for every chunk (%d)" % tiles.size())
+	var tile := tiles[0]
+	var lines := (tile.get_child(0) as CanvasItem).material as ShaderMaterial
+	t.check(float(lines.get_shader_parameter("elapsed")) == scene.ground.elapsed()
+			and tile.render_target_update_mode == SubViewport.UPDATE_ALWAYS,
+			"the water tile runs on the pausable city clock and draws while water stands")
+	# Far to the north the shore is released, and with no water standing the tile stops drawing.
+	scene.scenery.update(_view(Vector2(map.world_size().x * 0.5, 0.0)), true)
+	await t.get_tree().process_frame
+	t.check(GroundCells.used_cells(scene.ground).size() > 0
+			and tile.render_target_update_mode == SubViewport.UPDATE_DISABLED,
+			"with the shore released the water tile draws nothing")
 	_free(scene)
 
 func _test_roof_phase(t: TestRunner, seed_value: int) -> void:

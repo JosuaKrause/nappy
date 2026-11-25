@@ -99,7 +99,8 @@ src/
 	                      ground it covers, and the switch; a building, the home door and
 	                      every scenery sprite are each composed of one
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands
-	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
+	scenery_water.gd      separate south-water surface: its cells drawn from the one water tile
+	south_water_tile.gd   the south water's one live tile of drifting Voronoi lines, on the city clock
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
@@ -681,7 +682,7 @@ art/                      the authoring pictures, behind a .gdignore: the engine
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 assets/                   what the engine still reads at runtime, and only that
-  shaders/                the excitement halo's silhouette rim and the shared south-water ripple;
+  shaders/                the excitement halo's silhouette rim and the south water's Voronoi lines;
                           both boot paths issue real transparent canvas draws before play because
                           Compatibility has no shader-precompile call
   atlases/membership.json which picture belongs on which atlas page, with each group's
@@ -1313,8 +1314,9 @@ one figure a slice, a wide scene one
   internals each step, its incomplete regions separately owned until complete and paused
   between the load and retention boundaries. State edits and leaving retention cancel them.
   In every mode the safety guard completes a region synchronously. The camera's transformed viewport determines coverage, including rotation
-  and overview; lifecycle relocations prepare their destination before play. A city clock keeps
-  resident water surfaces in phase and restores returning roof animation phases.
+  and overview; lifecycle relocations prepare their destination before play. A city clock drives
+  the south water's one tile, which every resident water surface draws from, and restores
+  returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `Building.height()` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she

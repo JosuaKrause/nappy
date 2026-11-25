@@ -1628,8 +1628,9 @@ func _exit_tree() -> void:
 ## pipeline cache is a Forward+/Mobile (RenderingDevice) feature, and the engine's own proposal
 ## tracker still carries "Add shader precompilation to the Compatibility rendering method" as an
 ## open request — so the only lever left is a real draw call. Two throwaway `Node2D`s draw the
-## halo material and the actual water atlas region through `SceneryWater.material_for()`, then are
-## freed after the frame reaches the renderer. Their shader outputs are transparent, so the boot
+## halo material and the south water's lines (`SouthWaterTile.lines_material()`, the material its
+## tile draws with), then are freed after the frame reaches the renderer. Their shader outputs are
+## transparent (the water's draws a transparent colour its shader multiplies in), so the boot
 ## cannot flash either probe even though both sit inside the visible canvas.
 ##
 ## **At `ground`, not off in the distance.** A canvas item outside the camera's visible rect is
@@ -1657,14 +1658,12 @@ func _warm_the_canvas_shaders(ground: Vector2) -> void:
 	_pauses_with_the_game(halo_probe)
 	halo_probe.queue_redraw()
 
-	var water_texture := _sitting.atlas().region(&"tiles/water") as AtlasTexture
 	var water_probe := Node2D.new()
 	water_probe.name = "WaterWarm"
 	water_probe.global_position = ground
-	water_probe.material = SceneryWater.material_for(water_texture)
+	water_probe.material = SouthWaterTile.lines_material()
 	water_probe.draw.connect(func() -> void:
-		water_probe.draw_texture_rect(water_texture,
-				Rect2(Vector2.ZERO, water_texture.get_size()), false, Color.TRANSPARENT))
+		water_probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.TRANSPARENT))
 	add_child(water_probe)
 	_pauses_with_the_game(water_probe)
 	water_probe.queue_redraw()
