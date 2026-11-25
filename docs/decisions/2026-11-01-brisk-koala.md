@@ -27,6 +27,11 @@ with the arm that holds it), and only its back view has a second frame at all.
   `EventLook._picture_never_settles()`: its gunmen and shadow now wait for the key. The flashes
   are drawn by the same calls in the same order as before.
 - The halo and badge still use the complete pictures.
+- **The danger caret over a busker or a crew is drawn on a node of the look's own, put in after the
+  figure's layers** (`FigureLook`), as a café's table stands over its sitter. Drawn on the event's
+  own canvas it was under them, and between the busker's beats (his field pulses every 7 s) the
+  shrunken chevron's tip reached about 3 px into his head. It now stands over the figure as it
+  did over the whole picture on `main`; `tests/test_event_carets.gd` holds the order.
 
 **Measured.** `tests/probes/brisk_koala_idle_redraws.gd`, run on `main` (`c051a7de8`) and the
 branch, counts the `_draw()` calls of every canvas an event stands. Over ten seconds of its clock:
@@ -50,7 +55,17 @@ counts rather than in frame time.
 - **The loudspeaker mast's lamp**: the mast redraws twice a broadcast cycle (two redraws, five
   pictures in 22 seconds). Nothing to remove.
 
-**Open, the builder's choices for the reviewer and the player.** A café table is three canvas
-items instead of one (slice, sitter layers, front), a little renderer cost per item against not
-rebuilding the table on every lean. The danger caret over a busker or a crew is now drawn under
-their layers; the two meet at no more than a sub-pixel edge.
+**Looked at in the game.** Stills on `main` and the branch at the same seed and spot (`ingame/` in
+the evidence folder) of a busker on a square, a café on an east–west street and one on a
+north–south street show the same picture: the parts on the figure's feet, each sitter under its
+table, the shadow under the figure. Not in a game still: a busker facing west, which the game never
+sites (he stands on a park or a square, which has no sidewalk side to turn him, so
+`PlanBuilder.build()` leaves him facing east), whose mirror the suites hold; and a poster crew seen
+from behind, sited from her walk (`WalkSiting`), which neither `--spawn event:poster_crew`, a scene
+recipe nor the seed-67 walk on day 4 put on screen.
+
+**Open, the builder's choice for the reviewer and the player.** A café table is five canvas items
+instead of one (its slice, the sitter's scenery node, that node's static and moving layers, and
+the front), a busker five more than before (the scenery node, three layers and the caret's node)
+and a crew seen from behind seven: a little renderer cost per item against not rebuilding the
+table or the figure on every swap. The renderer's draw calls stayed within two.

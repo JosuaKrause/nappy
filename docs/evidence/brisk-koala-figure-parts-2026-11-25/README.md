@@ -6,11 +6,32 @@ gunmen and shadow and every static span are not drawn again for a swap or a flas
 unchanged within raster rounding. Whole-frame time on days 1 and 4 is unchanged within the noise
 of the runs, so the work removed is measured on its own, by counting redraws.
 
-**Limits.** The parity sheets cover the eleven split pictures; the firefight's flashes are drawn
+**Limits.** The parity sheets cover the eleven split pictures, and three game stills cover the busker and the café (`ingame/`, below); the firefight's flashes are drawn
 by the same calls in the same order as before (each now on its gunman's slice front, a child drawn
 straight after the slice) and have no still of their own, since day 13 is the one day it is sited.
 The frame-record runs are days 1 and 4 on one seed and one walk, and measure the figure split at
 `161195c1d`, before the firefight's flashes moved: no firefight is sited on either day.
+
+## In the game
+
+`ingame/`: stills of the running game on `main` (`c051a7de8`, left) and on the branch (right) at the
+same seed, day and spawn, each cropped about the event and doubled with no smoothing. Each is
+`tools/shot.sh <out> 3 --seed <s> --day 2 --spawn event:<row> --invincible --no-save`, 1280x720,
+three seconds in; the branch at the commit that adds this folder.
+
+- `busker-square-east.png`: seed 1, `event:busker`, a busker on a square facing east.
+- `cafe-ew-street.png`: seed 1, `event:cafe_tables`, a café on an east–west street.
+- `cafe-ns-street.png`: seed 2, `event:cafe_tables`, a café on a north–south street.
+
+Each pair is the same picture but for which idle frame the still landed on: the parts stand on the
+figure's feet, each sitter is under its table, and the shadow is under the figure. A still shows
+neither the swap nor its timing; the counts below do. **Not in a game still:** a busker facing
+west, which the game never sites (he stands on a park or a square, which has no sidewalk side to
+turn him, so `PlanBuilder.build()` leaves him facing east), and a poster crew seen from behind,
+sited from her walk (`WalkSiting`), which neither `--spawn event:poster_crew` (it refuses a row sited
+from her walk), a scene recipe (its placement takes no poster crew) nor the seed-67 walk on day 4
+put on screen. The mirror and the back view are held by `tests/test_scenery_animation.gd` and the
+parity sheets.
 
 ## Files
 

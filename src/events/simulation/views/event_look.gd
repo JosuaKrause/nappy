@@ -275,16 +275,11 @@ func _picture_key() -> Vector4i:
 			roundi(current_bob() * BOB_STEPS_PER_PX),
 			roundi(swell * SWELL_STEPS))
 
-## The whole frame on the event's own canvas: the body, lifted by its bob, and the caret over it.
+## The whole frame on the event's own canvas: the body, lifted by its bob, and the caret over it,
+## unless a node of the look's own carries the caret over what stands on the event
+## (`_mark_has_its_own_node()`).
 func draw() -> void:
-	# `--skip events` returns before anything below is asked for, so a frame under the flag differs
-	# from an ordinary one by drawing alone — the excitement field, the telegraph and everything
-	# else `EventInstance` does keep running.
-	if _skip_draw:
-		return
-	if event.is_gone():
-		return
-	if EventFootprints.hidden_by_its_hold(event):
+	if _draws_nothing_now():
 		return
 	var bob := current_bob()
 	# Told to `Sprites` as well as to the canvas, for the reason `Sprites.BASE_TRANSFORM_META` gives:
@@ -297,7 +292,21 @@ func draw() -> void:
 	draw_body(event)
 	Sprites.set_base_transform(event, Transform2D.IDENTITY)
 	event.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_mark()
+	if not _mark_has_its_own_node():
+		_draw_mark(event)
+
+## Whether nothing of the event is drawn this frame: under `--skip events`, once it is gone, and
+## while its hold hides it. `--skip events` answers before anything else is asked, so a frame
+## under the flag differs from an ordinary one by drawing alone — the excitement field, the
+## telegraph and everything else `EventInstance` does keep running.
+func _draws_nothing_now() -> bool:
+	return _skip_draw or event.is_gone() or EventFootprints.hidden_by_its_hold(event)
+
+## Whether the caret is drawn on a node of the look's own rather than on the event's canvas: a
+## figure whose parts stand as children of the event would otherwise paint over it
+## (`FigureLook`). None here.
+func _mark_has_its_own_node() -> bool:
+	return false
 
 ## **A moving event has to look like it is moving.** Without a gait a dog walker at 32px/s — a
 ## tile a second, against the player's three — slides along without a leg moving and reads as
@@ -484,10 +493,11 @@ func _mark_is_flashed_off() -> bool:
 func _mark_colour() -> Color:
 	return Palette.MARK_LETHAL if event.source().caret_strength() == 2 else Palette.MARK_COSTLY
 
-## A caret over anything worth looking at, breathing with what it is currently emitting.
+## A caret over anything worth looking at, breathing with what it is currently emitting, on
+## `canvas`: the event's own, or the node that carries it over a figure's parts.
 ##
 ## What is deliberately *not* here: any drawing of where the danger reaches. Nothing draws a field.
-func _draw_mark() -> void:
+func _draw_mark(canvas: CanvasItem) -> void:
 	if not _wants_a_mark():
 		return
 	# **The flash is the phase**, and the only channel that can carry it: it flashes while
@@ -502,10 +512,10 @@ func _draw_mark() -> void:
 	# pulsing event would read as flickering in and out of existence.
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
-	_drawer.caret(event, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
+	_drawer.caret(canvas, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
 	if event.source().caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
-		_drawer.caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
+		_drawer.caret(canvas, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
 				EventPictures.MARK_WIDTH * scale, _mark_colour())
 
 ## The rectangle, in the event's own space, the caret `_draw_mark()` would draw this frame — its one
@@ -535,7 +545,8 @@ func mark_rect() -> Rect2:
 ## **Public though no game class calls it, because nothing else can say what the first frame
 ## covers.** The suites that read it confirm that a thing that arrives is wholly off the screen on
 ## the frame it exists, and the extent they need is the union of the pictures, the shadow, the
-## caret and the halo margin: the caret is drawn straight onto the event (`Sprites.draw_caret()`)
+## caret and the halo margin: the caret is drawn straight onto the event, or onto a node of the look's
+## own over a figure drawn in parts (`Sprites.draw_caret()`),
 ## and a headless run draws no pixels, so no recording drawer holds it, and the pictures a drawer
 ## does hold are the ones named by the look's view for that heading rather than the worst case a
 ## thing that turns can reach. The look is what knows all of it, which the game asks only in

@@ -215,7 +215,10 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 # layers of its own (`EventScenery`), over the shadow the event draws, and a swap redraws the
 # moving span's layer and nothing else. A view whose two frames are one picture (every poster crew
 # view but the back) has no layers and no swap at all. Any other canvas, a rim tracing the figure,
-# gets the whole picture of the frame it is on.
+# gets the whole picture of the frame it is on. **The danger caret stands over the layers**, on a
+# node of its own put in after them (`Mark`), as a café's table stands over its sitter: drawn on the
+# event's own canvas it would be under them, and the head covers the chevron as it shrinks between
+# beats.
 
 ## The figure's layers on the event's own canvas, or null for a view with no moving part.
 var _parts: EventScenery = null
@@ -224,6 +227,25 @@ var _parts: EventScenery = null
 ## builds them again.
 var _parts_picture := ""
 var _parts_mirrored := false
+
+## The node the caret is drawn on while the figure stands as layers, after them in the event's
+## children so it is painted over them; null while `_parts` is.
+var _mark: Mark = null
+
+## **The caret over a figure drawn in parts**: a node at the event's own origin, drawing through
+## the look that made it (`draw_the_mark()`), redrawn whenever the event's picture is
+## (`move_nodes()`). It holds its look weakly, as a café's slice does, so a freed look draws
+## nothing.
+class Mark extends Node2D:
+	var _look: WeakRef
+
+	func _init(look: FigureLook) -> void:
+		_look = weakref(look)
+
+	func _draw() -> void:
+		var look := _look.get_ref() as FigureLook
+		if look != null:
+			look.draw_the_mark(self)
 
 ## The first frame of the view the figure stands in now and whether it is mirrored, for a figure whose
 ## two idle frames differ in that view; `["", false]` for any other.
@@ -259,6 +281,8 @@ func _stand_the_parts() -> void:
 	if _parts != null:
 		_parts.queue_free()
 		_parts = null
+		_mark.queue_free()
+		_mark = null
 	_parts_picture = picture
 	_parts_mirrored = mirrored
 	if picture.is_empty():
@@ -267,7 +291,20 @@ func _stand_the_parts() -> void:
 			Rect2(), mirrored)
 	_parts.name = "Parts"
 	event.add_child(_parts)
+	_mark = Mark.new(self)
+	_mark.name = "Mark"
+	event.add_child(_mark)
 	_update_scenery()
+
+## The caret on `canvas`, the node over the figure's layers (`Mark`), as `draw()` would have put it
+## on the event's own canvas, and nothing on a frame that draws nothing of the event.
+func draw_the_mark(canvas: CanvasItem) -> void:
+	if not _draws_nothing_now():
+		_draw_mark(canvas)
+
+## Overrides EventLook._mark_has_its_own_node.
+func _mark_has_its_own_node() -> bool:
+	return _mark != null
 
 ## Whether the figure on `canvas` is left to its layers: on the event's own canvas, once they stand.
 func _drawn_by_its_parts(canvas: CanvasItem) -> bool:
@@ -282,7 +319,8 @@ func _parts_period() -> float:
 func build_nodes() -> void:
 	_stand_the_parts()
 
-## Stands the layers again when the picture changed, and shows them while the event is. They stay
+## Stands the layers again when the picture changed, draws the caret over them again with it, and
+## shows both while the event is. They stay
 ## the event's child while it is out of the tree and build their own pictures again as they come
 ## back with it (`EventScenery`), so entering and leaving the tree ask nothing of this look.
 ##
@@ -292,12 +330,16 @@ func move_nodes(redraw := false) -> void:
 		_stand_the_parts()
 	if _parts != null:
 		_parts.visible = _shows_anything()
+		_mark.visible = _parts.visible
+		if redraw:
+			_mark.queue_redraw()
 
 ## Overrides EventLook._update_scenery.
 func _update_scenery() -> void:
 	if _parts == null:
 		return
 	_parts.visible = _shows_anything()
+	_mark.visible = _parts.visible
 	_parts.set_frame(idle_is_stepping(_parts_period()))
 
 ## The steam's billow, which is the whole cloud. The busker's strum and a poster crew's brush are

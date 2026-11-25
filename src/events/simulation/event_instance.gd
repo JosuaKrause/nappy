@@ -474,10 +474,12 @@ func _build_halo() -> EntityHalo:
 	var holder := _rim_holder()
 	holder.add_child(halo)
 	halo.position = global_position - holder.global_position
-	# **First child, so first of the behind-parent drawers.** The rim and the visible scene's layers
-	# (`EventScenery`) both opt into `show_behind_parent`, and siblings that do are painted in
-	# tree order, so a rim after the scenery, which `_ready()` builds long before any pick, would
-	# paint over the pictures it is meant to outline.
+	# **First child, so first of the behind-parent drawers.** The rim opts into
+	# `show_behind_parent`, and so does the scenery a crash's or a burst main's slice holds
+	# (`SpreadLook`); siblings that do are painted in tree order, so a rim after that scenery, which
+	# `_ready()` builds long before any pick, would paint over the pictures it is meant to outline.
+	# A figure's layers and a café sitter's stand in front of their holder, so the rim is behind them
+	# in any order.
 	holder.move_child(halo, 0)
 	return halo
 
