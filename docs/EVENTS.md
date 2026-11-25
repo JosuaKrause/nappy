@@ -1537,7 +1537,8 @@ Each item quotes the code on this branch.
    (item 1): a row is left out of the draw where what it takes of the street does not fit the room
    left (`UnitRoom`) or where the unit's rows cannot be laid out with it (`MarbleDraw`). And by one
    rule the design does not name: **at most one of a row in a unit**, in place of daily caps, since
-   a cap binds whoever draws last (`MarbleDraw.draw()`). *Read as* (the
+   a cap binds whoever draws last (`MarbleDraw.draw()`). *Proposed, not asked for: the player never
+   set it.* *Read as* (the
    step's designer's, open to overturn): one per junction box, alley, park or square as well as one
    per street, so a square holds one street musician. Nothing asks the spacing between two of a row
    (`EVENT_SPACING_SAME`) of a drawn row; two of a row may stand in two touching units as near as
@@ -1573,7 +1574,8 @@ EventScheduler.build_day(context):
     8. prepare the draw of every open location, a unit at a time, and draw none: each street,
        junction box, alley, park or square draws as she comes near it (EventsAhead), on its own
        stream, from one fresh bag of its most permissive view, a marble drawn before it is placed
-       and the unit's rows laid out together, at most one of a row in it, after every touching
+       and the unit's rows laid out together, at most one of a row in it (the designer's proposal, not
+       asked for), after every touching
        unit of lower rank, so the day is what drawing every unit in rank order gives whatever her
        path (DawnDraw, which holds the day's UnitDraw in the context; the walk carries it, and it
        runs MarbleDraw)
@@ -2216,7 +2218,8 @@ still off is listed for the end remeasure. The procedure, the runs and the scrip
 
 **No daily cap bounds a row the units draw**: a cap binds whoever draws last, so it would make what
 a unit draws depend on the order the units are drawn in, and so on her path. In its place a unit
-holds at most one of a row (`MarbleDraw`), and the day places what its cells and weights give.
+holds at most one of a row (`MarbleDraw`; the designer's proposal, not asked for by the player,
+open to overturn), and the day places what its cells and weights give.
 Repeats are fine — the same event several times over is what a street is — so density needs no new
 catalogue rows. `max_per_day` still bounds what no unit draws: the moments she is owed
 (`DawnMoments`), the director's marbles and the rows of a scene
@@ -2229,7 +2232,7 @@ Two things a low cap did quietly, and who has them now:
 
 - **Separation.** `EVENT_SPACING_ANY` (64px) between any two events at all is a rule of the day's
   ground (`RuledLocationGround.offer()`) and never bends. Between two of a kind, a drawn row has the
-  one of a row per unit; the rows placed by a phase of their own (the scripted rows, the roadblock
+  one of a row per unit (the designer's proposal, not asked for); the rows placed by a phase of their own (the scripted rows, the roadblock
   phase) keep `EVENT_SPACING_SAME` (256px, a block), which bends to the roomiest
   tile of a location.
 - **Keeping a lethal field uncluttered.** See the telegraph contract below.

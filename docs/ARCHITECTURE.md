@@ -287,6 +287,7 @@ src/
 	  marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
 	                        out again largest first as each is added, what the room left or the
 	                        layout cannot hold left out, at most one of a row in the unit
+	                        (the designer's proposal, not asked for)
 	  location_ground.gd    what the dawn draw and her walk's siting ask of the day: a row's event at a
 	                        location if valid among the plans it is handed (on a tile of the draw's
 	                        choosing or a tile the siting brings), the location's own weight; the
