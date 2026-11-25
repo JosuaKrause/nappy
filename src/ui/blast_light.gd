@@ -2,8 +2,8 @@ class_name BlastLight
 extends Node
 ## **The light of the bombs on the escape city's streets**: the sky over the city lit by a flash as
 ## each explosion goes off, fainter ones between for bombs further away (`FlashRhythm`), and her
-## view shaken a little by an explosion near enough to be loud where she stands
-## (`Stroller.shake_the_view()`) *(minty-lemur #785)*. Built by `main` for the escape city alone;
+## view shaken a little by an explosion near enough to be felt, further than it is heard
+## (`EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN`; `Stroller.shake_the_view()`) *(minty-lemur #785)*. Built by `main` for the escape city alone;
 ## the building shows its bangs in its windows (`InteriorScene`).
 ##
 ## **It lights the world, never the screen's furniture**: it lifts the city's own light toward the
@@ -32,16 +32,17 @@ func start_the_night(seed: int) -> void:
 	_rhythm.start_the_night(seed)
 
 ## **Something went off** (`EventBus.event_activated`): an event the sky lights up for flashes, and
-## shakes her view by the share of its full strength its field lands on her, nothing beyond its
-## reach (`EventInstance.field_at()`).
+## shakes her view by how near it goes off (`ViewShake.share_at()`), nothing beyond
+## `EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN`: felt where it is too far to be heard.
 func see_it_go_off(event: Node2D) -> void:
 	var instance := event as EventInstance
 	if instance == null or not instance.flashes_as_it_goes_off():
 		return
 	_rhythm.flash_for_a_bang()
-	if _player != null and instance.peak() > 0.0:
-		var heard := instance.field_at(_player.global_position, -1.0, Vector2.INF)
-		_player.shake_the_view(heard / instance.peak())
+	if _player != null:
+		var distance := _player.global_position.distance_to(instance.global_position)
+		_player.shake_the_view(
+				ViewShake.share_at(distance, EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN))
 
 ## Counted on the physics tick, as everything that keeps the game's time does, so it freezes
 ## behind a pause screen.

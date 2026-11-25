@@ -64,8 +64,8 @@ src/
 	summary_model.gd      what a summary screen says, pure; the run's standing and the tally, once
   player/
 	stroller.gd           movement, input, speed state
-	view_shake.gd         the small eased shake of her view an explosion close by gives, which the
-	                      stroller adds to its camera's follow
+	view_shake.gd         the small eased shake of her view an explosion near gives (full on top of
+	                      it, none at its reach), which the stroller adds to its camera's follow
 	baby.gd               the two meters + baby state machine
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
@@ -509,8 +509,6 @@ src/
 	draw_layer.gd         the one list of draw layers both worlds share, the only place a
 	                      z_index is written, and a long footprint's feet-anchored slices
 	world_layers.gd       the node one world draws each of its layers in
-	flash_gap.gd          the least time between two flashes of the night outside, the building's
-	                      windows and the escape city's sky alike: no second holds more than three
 	mover.gd              who is asking whether ground can be walked: the layers that stop it
 	                      (the ground, the posts, the day's closures, soft seals and bodies) and
 	                      how wide it is
@@ -610,8 +608,8 @@ src/
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
 	blast_light.gd        the light of the bombs over the escape city: the city's light lifted by
 	                      each explosion's flash and the far ones between, her view shaken by a near one
-	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, spaced by
-	                      `FlashGap`
+	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, no second
+	                      holding more than three flashes
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on

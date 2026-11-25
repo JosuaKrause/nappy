@@ -8,6 +8,7 @@ func run(t: TestRunner) -> void:
 	_test_a_full_shake_stays_small_and_dies_away(t)
 	_test_a_weaker_shake_does_not_cut_a_stronger_short(t)
 	_test_nothing_heard_shakes_nothing(t)
+	_test_the_share_falls_with_distance(t)
 
 ## A shake at full strength never swings the view further than `ViewShake.MOST_PX` on either axis,
 ## does swing it, grows no wider as it goes, and is still once `ViewShake.SECONDS` have passed.
@@ -57,3 +58,10 @@ func _test_nothing_heard_shakes_nothing(t: TestRunner) -> void:
 	var shake := ViewShake.new()
 	shake.start(0.0)
 	t.check(shake.step(TICK) == Vector2.ZERO, "a bang she cannot hear does not shake her view")
+
+## The share is full on top of the explosion, falls in a straight line and is none at the reach and beyond.
+func _test_the_share_falls_with_distance(t: TestRunner) -> void:
+	t.check(ViewShake.share_at(0.0, 1000.0) == 1.0, "on top of it, the full share")
+	t.check(is_equal_approx(ViewShake.share_at(250.0, 1000.0), 0.75), "a quarter of the way out, three quarters")
+	t.check(ViewShake.share_at(1000.0, 1000.0) == 0.0 and ViewShake.share_at(1500.0, 1000.0) == 0.0,
+			"none at its reach and beyond")

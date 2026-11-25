@@ -3,8 +3,8 @@ extends RefCounted
 ## that each note what they are asked (the sky's level, the shake of her view), and told of an event
 ## going off the way `main` tells it (`see_it_go_off()`, connected to `EventBus.event_activated`).
 ## The event is a fake answering only what the light asks of one: whether the sky lights up for it,
-## its peak and what its field lands on her, so the case checks that the shake is the share of the
-## peak it hears, and how a field falls off stays `EventInstance`'s own suite's. Real physics ticks
+## and where it stands, so the case checks that the shake follows how near it is; how the share falls
+## off with distance is `ViewShake`'s own suite's. Real physics ticks
 ## pass for the light; when the sky lights and how brightly is `FlashRhythm`'s own suite.
 
 ## The sky over a city: notes every level it is lit to.
@@ -23,55 +23,46 @@ class NotedStroller extends Stroller:
 	func shake_the_view(share: float) -> void:
 		shakes.append(share)
 
-## An event going off: whether the sky lights for it, its peak, and the field it lands on her,
-## each as the case sets them.
+## An event going off: whether the sky lights for it, as the case sets it.
 class FakeBang extends EventInstance:
 	var _lights_the_sky: bool
-	var _full: float
-	var _lands: float
 
-	func _init(flashes: bool, peak_rate: float, heard: float) -> void:
+	func _init(flashes: bool) -> void:
 		_lights_the_sky = flashes
-		_full = peak_rate
-		_lands = heard
 
 	## Overrides EventInstance.flashes_as_it_goes_off.
 	func flashes_as_it_goes_off() -> bool:
 		return _lights_the_sky
 
-	## Overrides EventInstance.peak.
-	func peak() -> float:
-		return _full
-
-	## Overrides EventInstance.field_at.
-	func field_at(_world_position: Vector2, _intensity_override: float,
-			_velocity_override: Vector2) -> float:
-		return _lands
-
 func run(t: TestRunner) -> void:
-	await _test_an_explosion_lights_the_sky_and_shakes_her_by_how_loud_it_is(t)
+	await _test_an_explosion_lights_the_sky_and_shakes_her_by_how_near_it_is(t)
 	_test_what_does_not_light_the_sky_does_nothing(t)
 
-## An explosion whose whole peak lands on her shakes her view at full strength; one landing a
-## quarter of it, by a quarter; one landing nothing, not at all. And the sky is lit once ticks pass.
-func _test_an_explosion_lights_the_sky_and_shakes_her_by_how_loud_it_is(t: TestRunner) -> void:
+## An explosion on top of her shakes her view at full strength; one at the distance explosions are
+## set off at (`EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN`), further than its noise reaches,
+## still shakes it, less; one beyond the shake's reach, not at all. And the sky is lit once ticks pass.
+func _test_an_explosion_lights_the_sky_and_shakes_her_by_how_near_it_is(t: TestRunner) -> void:
 	var sky := NotedSky.new()
 	var her := NotedStroller.new()
 	var light := BlastLight.new()
 	light.use_the_sky(sky)
 	light.use_player(her)
 	t.add_child(light)
-	for heard: float in [24.0, 6.0, 0.0]:
-		var bang := FakeBang.new(true, 24.0, heard)
+	var distances: Array[float] = [0.0, EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN,
+			EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN + 1.0]
+	for distance in distances:
+		var bang := FakeBang.new(true)
+		bang.global_position = her.global_position + Vector2(distance, 0.0)
 		light.see_it_go_off(bang)
 		bang.free()
 	t.check(her.shakes.size() == 3, "each explosion asks for a shake (%d)" % her.shakes.size())
 	if her.shakes.size() == 3:
-		t.check(is_equal_approx(her.shakes[0], 1.0), "its whole peak, a full shake (%.2f)"
+		t.check(is_equal_approx(her.shakes[0], 1.0), "on top of her, a full shake (%.2f)"
 				% her.shakes[0])
-		t.check(is_equal_approx(her.shakes[1], 0.25), "a quarter of it, a quarter (%.2f)"
-				% her.shakes[1])
-		t.check(her.shakes[2] == 0.0, "none of it, none (%.2f)" % her.shakes[2])
+		t.check(EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN > EventCatalogue.FINALE_EXPLOSION_HEARD_WITHIN
+				and her.shakes[1] > 0.0 and her.shakes[1] < her.shakes[0],
+				"set off beyond its noise, it still shakes her view, less (%.2f)" % her.shakes[1])
+		t.check(her.shakes[2] == 0.0, "beyond the shake's reach, none (%.2f)" % her.shakes[2])
 	await PhysicsTicks.pass_ticks(t, 3)
 	var brightest := 0.0
 	for level in sky.levels:
@@ -86,7 +77,7 @@ func _test_what_does_not_light_the_sky_does_nothing(t: TestRunner) -> void:
 	var her := NotedStroller.new()
 	var light := BlastLight.new()
 	light.use_player(her)
-	var rider := FakeBang.new(false, 24.0, 24.0)
+	var rider := FakeBang.new(false)
 	light.see_it_go_off(rider)
 	t.check(her.shakes.is_empty(), "it shakes nothing")
 	rider.free()

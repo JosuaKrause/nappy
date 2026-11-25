@@ -67,21 +67,23 @@ from about 64 to 86-89, the distant flashes to 70-79. The burst was taken while 
 still set off at 520 px, so its badge reads about 24 m where one now reads more; the badge, the
 flash, the shake and the crater look the same.
 
-**The shake.** At most 3 px in world space (6 screen pixels), fading over 0.45 s, scaled by how loud
-the explosion is where she stands (`ViewShake`). The burst shows up to 4 px of vertical jitter in
+**The shake.** At most 3 px in world space (6 screen pixels), fading over 0.45 s, scaled by how near
+the explosion goes off (`ViewShake.share_at()`): full on top of her, falling in a straight line to
+nothing at `EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN`, half as far again as it is set off (about
+1335 px), so that a third of the full shake, 1 px, is still felt where an explosion goes off
+furthest. **The shake's reach is its own, not the noise's**: scaled by the noise's 520 px it never
+fired once explosions went off about 890 px out, since a straight approach never brings her within
+520 px of one; now a near explosion out of her sight shakes the view without its noise reaching her,
+and a test holds that a bang at the set-off distance shakes it. The burst shows up to 4 px of vertical jitter in
 the 0.2 s after the bang. The game has no reduced-motion setting, so the shake has none to honour.
 
-**Safe for viewers: no flash within 0.4 s of the one before, in the city and the building.** No
-flash starts within 0.4 s of the last one's start (`FlashGap.LEAST_GAP`), so no second holds more
-than three; a test holds it over ten minutes of random bangs in the city. The building held its own
-timing at first, the player's own curve (waits of 0.1 s to 5 s, mean 1.3 s, PLAYTEST-96 5, plus a
-bang every 22 s), and 20,000 simulated building walks showed 6.3% with at least one second holding
-four flashes, rarely five. It now keeps the same limit, the orchestrator's pick on the Nappy board
-(building-flash-limit, open to the player): one `FlashGap` in the building (`InteriorScene`) as
-in the city (`FlashRhythm`), the waits drawn from the player's curve as before, a wait shorter than
-the gap lasting the gap, and a bang's flash that comes sooner waiting for it and going before a
-distant one. `tests/test_interior.gd` holds that no flash starts within the gap over a minute of
-the building's night, and the ticks the flashes fall on follow the seeded stream with the gap.
+**Safe for viewers: no flash within 0.4 s of the one before, in the city.** The escape city starts no
+flash within 0.4 s of the last one's start (`FlashRhythm.LEAST_GAP`), so no second holds more than
+three; a test holds it over ten minutes of random bangs. **The building keeps the player's own
+timing** (waits of 0.1 s to 5 s, mean 1.3 s, a double flash wanted, PLAYTEST-96 5, plus a bang every
+22 s): 20,000 simulated building walks show 6.3% with at least one second holding four flashes,
+rarely five. Holding it to the city's limit would narrow the player's own spec, so it is not built
+until they answer the question on the Nappy board (building-flash-limit).
 
 **Choices left open to the player** (the review item asks them with the stills):
 
@@ -90,7 +92,10 @@ the building's night, and the ticks the flashes fall on follow the seeded stream
   proposed.
 - The set-off distance (about 890 px) and the 1 s badge, and with them that an explosion now costs
   her less than on main (the table above).
-- The building's flash limit, built on the orchestrator's pick on the board (building-flash-limit).
+- The shake's reach (about 1335 px, a third of the shake at the furthest set-off), the builder's
+  first number.
+- The building's flash limit waits on the player's answer on the board (building-flash-limit); the
+  building's flashes keep their own curve until then.
 - No extra craters at the section's start: the escape's seals already stand some there.
 - A badge for something that is neither lethal nor faster than a walk: the cues skill keeps its rule
   (lethal or faster than a walk) and names the explosion as the player's explicit ask

@@ -1828,13 +1828,14 @@ off. As it goes off the city's light is lifted toward
 by `FlashRhythm.NEAR_PEAK`, rising in a twentieth of a second and dying away eased over
 `FlashRhythm.FALL_SECONDS`; between the bangs, fainter flashes (`FlashRhythm.DISTANT_PEAK`) come on the
 building's own waits, light with no noise. **No more than three flashes begin in any one second**,
-near and far together (`FlashGap.LEAST_GAP`), the usual guidance for photosensitive viewers; a
+near and far together (`FlashRhythm.LEAST_GAP`), the usual guidance for photosensitive viewers; a
 bang's flash that comes sooner waits for the gap. The screen-edge badges, the HUD and the controls
-are drawn over the world and are never lit or moved. Her view shakes by the share of the explosion's
-strength that lands on her, at most `ViewShake.MOST_PX` and eased away over `ViewShake.SECONDS`; the
-game has no reduced-motion setting for it to honour. **The building's window flashes keep the same
-limit** (`FlashGap`): their waits are the player's own curve, down to a tenth of a second, and a
-wait shorter than the gap lasts the gap.
+are drawn over the world and are never lit or moved. Her view shakes by how near the explosion goes off
+(`ViewShake.share_at()`: full on top of her, none at `EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN`,
+further than the bang is heard), at most `ViewShake.MOST_PX` and eased away over `ViewShake.SECONDS`;
+the game has no reduced-motion setting for it to honour. **The building's window flashes keep the
+player's own curve**, down to a tenth of a second and a double flash; whether they take the city's
+limit waits on the player's answer on the board.
 
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his

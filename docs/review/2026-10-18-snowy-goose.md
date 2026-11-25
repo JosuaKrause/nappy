@@ -10,7 +10,8 @@ bang; the flash as it goes off (the city lit, the HUD not); the shake right afte
 distant flashes between explosions; the crater standing where she walks.
 
 **The question a run answers.** Are these right, or does one need changing: the flash brightness (0.6
-for an explosion, 0.2 for a distant flash), the shake (3 px over 0.45 s), the distance at which an
+for an explosion, 0.2 for a distant flash), the shake (3 px over 0.45 s, felt out to about 1335 px, so an explosion that goes off out of her sight
+still shakes the view, a third as much at the furthest), the distance at which an
 explosion is set off (about 890 px, so that heading straight at one she hears none of its bang) and
 its 1 s badge? An explosion now costs her less than on main: over the probe's three seeds and both
 exits, no bang and no telegraph of one reached her, walking or running, where on main one bang and
@@ -18,5 +19,4 @@ four telegraphs reached a walker and four bangs and seven telegraphs a runner (t
 table). Is that cost right, or should explosions reach her more often? Should some craters stand
 from the start of the section (the escape's seals already put some there)? And is a badge for an
 explosion, which is neither lethal nor moving, fine for the badge vocabulary ("the explosion badge
-design", inbox #1026 in brisk-ferret, said it is liked)? Whether the building's window flashes keep
-the city's limit of three a second is asked on the Nappy board (building-flash-limit), not here.
+design", inbox #1026 in brisk-ferret, said it is liked)?

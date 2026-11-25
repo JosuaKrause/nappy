@@ -9,14 +9,15 @@ extends RefCounted
 ##
 ## **The far flashes keep the building's rhythm**: their waits are `InteriorScene.distant_flash_wait()`,
 ## the same short-biased curve between a tenth of a second and five seconds, drawn from a stream of
-## their own, seeded per walk, so a seed replays the same night, and held to the same gap as the
-## building's (`FlashGap`), so a wait shorter than `FlashGap.LEAST_GAP` lasts that long. Light
-## without noise, as in the building: no event, no field, nothing on the meter.
+## their own, seeded per walk, so a seed replays the same night. Light without noise, as in the
+## building: no event, no field, nothing on the meter.
 ##
-## **Safe for viewers: never more than three flashes in any one second** (`FlashGap`): no flash
-## begins within `FlashGap.LEAST_GAP` of the last one's start, a bang's included, which then lights
-## at most that long after its noise and goes before a far flash that is due. And no flash is a
-## hard strobe: each rises over `RISE_SECONDS` and dies away eased over `FALL_SECONDS`.
+## **Safe for viewers: never more than three flashes in any one second.** The usual guidance for
+## photosensitive viewers is at most three flashes a second, so no flash begins within
+## `LEAST_GAP` of the last one's start; with three gaps of that length longer than a second, no
+## second can hold a fourth. A flash that comes sooner waits for the gap, a bang's included, which
+## then lights at most `LEAST_GAP` after its noise. And no flash is a hard strobe: each rises over
+## `RISE_SECONDS` and dies away eased over `FALL_SECONDS`.
 
 ## How far an explosion's flash lifts the light of the night toward the blast's
 ## (`Palette.ESCAPE_FLASH_LIGHT`), at its brightest. A first number, shown to the player before it
@@ -28,10 +29,14 @@ const DISTANT_PEAK := 0.2
 const RISE_SECONDS := 0.05
 ## Seconds a flash takes to die away from its brightest, eased.
 const FALL_SECONDS := 0.4
+## The least time between two flashes' starts, in seconds: over a third of a second, so no second
+## ever holds more than three.
+const LEAST_GAP := 0.4
+
 ## Seconds since the night began: every flash's start is stated on it.
 var _clock := 0.0
-## The gap no flash begins inside of after the last.
-var _gap := FlashGap.new()
+## When the last flash began, on `_clock`.
+var _last_start := -INF
 ## The flashes still lit: each one's start on `_clock` (`x`) and its brightest (`y`).
 var _lit: Array[Vector2] = []
 ## A bang's flash waiting for the gap after the last one.
@@ -63,7 +68,6 @@ func flash_for_a_bang() -> void:
 ## gap allows, and a flash that has died away is let go.
 func step(delta: float) -> void:
 	_clock += delta
-	_gap.step(delta)
 	if _night_running:
 		_until_the_next_far -= delta
 	if _bang_waiting and _may_begin():
@@ -88,10 +92,10 @@ func light() -> float:
 
 ## Whether a flash may begin now: the gap since the last one's start has run.
 func _may_begin() -> bool:
-	return _gap.may_begin()
+	return _clock - _last_start >= LEAST_GAP
 
 func _begin(peak: float) -> void:
-	_gap.begin()
+	_last_start = _clock
 	_lit.append(Vector2(_clock, peak))
 
 ## A flash's brightness `age` seconds after it began, as a share of its brightest.

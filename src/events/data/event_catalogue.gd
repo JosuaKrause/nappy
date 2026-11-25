@@ -81,6 +81,11 @@ const FINALE_EXPLOSION_SECONDS := 1.2
 ## comes at it from the side or turns toward it while it bangs.
 const FINALE_EXPLOSION_SET_OFF_WITHIN := FINALE_EXPLOSION_HEARD_WITHIN \
 		+ (Tuning.WARNING_ALONE_MAX + FINALE_EXPLOSION_SECONDS) * Tuning.RUN_SPEED
+## **How far the escape city's explosion is felt as a shake of her view**, in px: half as far again as
+## it is set off (`FINALE_EXPLOSION_SET_OFF_WITHIN`, about 1335px), so that one going off out of her
+## sight shakes the view, a third of the full shake where it goes off furthest, without its noise
+## reaching her (`FINALE_EXPLOSION_HEARD_WITHIN`). Open to the player (minty-lemur #785).
+const FINALE_EXPLOSION_FELT_WITHIN := FINALE_EXPLOSION_SET_OFF_WITHIN * 1.5
 ## How long after the masked man has finished his run before another one comes up the same shaft,
 ## in seconds: he respawns, forcing her to switch sides again.
 ##

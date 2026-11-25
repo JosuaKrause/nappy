@@ -15,6 +15,15 @@ extends RefCounted
 const MOST_PX := 3.0
 ## How long a shake lasts, in seconds, from its jolt to still.
 const SECONDS := 0.45
+## **How strong a shake is at `distance` from the explosion**, as a share of `MOST_PX` (0 to 1) for an
+## explosion whose shake is felt out to `reach`: the full share on top of it, falling in a straight
+## line to nothing at `reach`. The shake reaches further than the explosion's noise does, so a near
+## explosion out of her sight shakes the view without its bang reaching her.
+static func share_at(distance: float, reach: float) -> float:
+	if reach <= 0.0:
+		return 0.0
+	return clampf(1.0 - distance / reach, 0.0, 1.0)
+
 ## The two rates the view swings at, in swings per second, across and down.
 const ACROSS_HZ := 7.0
 const DOWN_HZ := 5.5
