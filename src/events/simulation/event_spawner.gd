@@ -4,7 +4,7 @@ extends RefCounted
 ## body's footprint and the bang outside can never be missed by whichever path made the event: a
 ## plan streamed in (`EventStreaming`), a row placed while she walks (`EventsAhead`), a row warned
 ## of first (`spawn_warned()`), a door's guard (`CheckpointController`), the resistance's own rows
-## (`EventManager.spawn_extra()`), and what a finished row leaves behind (`successor_of()`). It also
+## (`EventManager.spawn_extra()`), and what a row leaves where it goes off (`successor_of()`). It also
 ## keeps what a creation depends on across the day: the rows summoned on sight and the run's pelican
 ## bag.
 ##
@@ -432,15 +432,16 @@ func show_the_bang(def: EventDef) -> void:
 	if def.passes_walls() and drawn_in:
 		drawn_in.bang_outside()
 
-## An event that leaves something behind where it stopped — how a fire engine ends its run
-## at a fire. The successor is placed at the finishing position, not at a planned tile, so
-## the two are always consistent.
+## **What an event leaves where it goes off**, created the one tick it does
+## (`EventInstance.take_what_it_leaves()`), or null on every other: the escape's explosion's
+## crater. Placed at the event's own position rather than at a planned tile, so the two are always
+## consistent.
 func successor_of(instance: EventInstance) -> EventInstance:
-	if instance.leaves_behind() == "":
+	var id := instance.take_what_it_leaves()
+	if id == "":
 		return null
-	var def := EventCatalogue.by_id(instance.leaves_behind())
+	var def := EventCatalogue.by_id(id)
 	if not def:
-		push_error("event '%s' spawns unknown '%s'"
-				% [instance.row_id(), instance.leaves_behind()])
+		push_error("event '%s' spawns unknown '%s'" % [instance.row_id(), id])
 		return null
 	return create(def, instance.global_position)

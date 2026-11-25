@@ -401,14 +401,17 @@ func planned_count() -> int:
 			total += 1
 	return total
 
+## **Takes every finished instance out of the world, and puts in what one leaves as it goes off**
+## (`EventInstance.take_what_it_leaves()`, `EventSpawner.successor_of()`): the escape's explosion's
+## crater, at its place, on the tick it bangs. Run every tick.
 func retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
 	var successors: Array[EventInstance] = []
 	for instance in world.instances():
+		var successor := _spawner.successor_of(instance)
+		if successor:
+			successors.append(successor)
 		if instance.is_gone():
-			var successor := _spawner.successor_of(instance)
-			if successor:
-				successors.append(successor)
 			_mark_plan_spent(instance)
 			# The body is gone from the street, so the ground under it is open again. Its plan gives
 			# back its own copy in `_mark_plan_spent()`; this is the instance's.

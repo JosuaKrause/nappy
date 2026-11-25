@@ -135,6 +135,9 @@ var _hud: HudScript
 ## warned about; the layer around it is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
 var _edge_layer: CanvasLayer
+## The light of the bombs over the escape city (`BlastLight`), built with the escape's city alone and
+## kept so each start of its walk starts its night again (`_the_world_of()`).
+var _blast_light: BlastLight
 ## What is currently charging the meter, drawn under the world rather than over it — see
 ## `_add_excitement_halo()`.
 var _halo: ExcitementHalo
@@ -959,6 +962,10 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 		_building_simulation.events().stand_down()
 	if _interior:
 		_interior.stop_the_night()
+	if _blast_light:
+		# The same seed on every start of the city's walk, so a retry is the same night.
+		_blast_light.start_the_night(
+				_run.calendar().day_rng(_run.header().day(), "finale-city-night").randi())
 	var home_map: CityMap = _city.map() if spec.goal_kind() == DaySpec.Goal.HOME else null
 	var exits: Dictionary = _the_city_exits() if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
 	var start_at := _city.map().doorstep_world_position()
@@ -1105,6 +1112,7 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	# Built here for a boot straight onto the street, and pointed at the street here when she has
 	# walked out of the building, which built them first — see `_add_danger_edge()`.
 	_add_danger_edge()
+	_add_blast_light()
 	_add_excitement_halo()
 	_add_debug_layers()
 	_add_route_lines()
@@ -1112,6 +1120,20 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	# so the rotation is applied again rather than left for the next time the window changes shape
 	# — see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
+
+## **The light of the bombs over the escape city** (`BlastLight`): handed the city whose sky it
+## lights and her, told of every event that goes off, and paused with the game. Once, with the
+## escape's city.
+func _add_blast_light() -> void:
+	if _blast_light:
+		return
+	_blast_light = BlastLight.new()
+	_blast_light.name = "BlastLight"
+	_blast_light.use_the_sky(_city)
+	_blast_light.use_player(_player)
+	EventBus.event_activated.connect(_blast_light.see_it_go_off)
+	_pauses_with_the_game(_blast_light)
+	add_child(_blast_light)
 
 ## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the thresholds, the middle of the
 ## carriageway on the spine's last row (`FinalePlanner.exit_tile()`'s row, the spine's centre line)

@@ -140,6 +140,11 @@ enum Look {
 	                        ## checkpoint guard's own drawing, standing then lunging as
 	                        ## `DOOR_GUARD` is drawn, badged by the lunge's front diagonal, the
 	                        ## one picture of the guard no other look already stands for.
+	# ---- the escape city's explosion, drawn only in its badge ----
+	EXPLOSION,        ## A burst on the ground and its mushroom of smoke: the screen-edge badge of
+	                  ## an explosion about to go off out of her sight. Nothing of it is drawn on
+	                  ## the street, where it is only ever heard (and lit); what it leaves there is
+	                  ## the crater, a row of its own.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -449,9 +454,10 @@ func is_sent_ahead() -> bool:
 	return _sent_ahead != null
 
 ## **How near she comes to where the row starts before it is set off**, in px, or 0 for a row no
-## place sets off (`EventDraft.set_off_within()`): the masked man on the escape's stairs. A plan of
-## such a row is not in the world until she comes within this of where it starts (`SetOffWatch`),
-## and then comes under its warning, its badge pointing at that place, with its telegraph spent.
+## place sets off (`EventDraft.set_off_within()`): the masked man on the escape's stairs and the
+## escape city's explosions. A plan of such a row is not in the world until she comes within this
+## of where it starts (`SetOffWatch`), and then comes under its warning, its badge pointing at that
+## place, with its telegraph spent.
 var _set_off_within := 0.0
 
 ## Whether a place sets it off (`_set_off_within`): not in the world until she comes near where it
@@ -464,10 +470,24 @@ func is_set_off_by_a_place() -> bool:
 func sets_off_within() -> float:
 	return _set_off_within
 
+## **Whether walking into its place may set it off at once** (`as_set_off_at_once()`): where its
+## set-off distance alone, with no badge up first, keeps it as far from her as its warning owes
+## (`minimum_telegraph()`), as the masked man's 426px does against his catch. One whose field
+## already covers her where it is set off (the escape city's explosion, heard within 520px of a
+## place that sets it off at 520px) is warned for its own `warned_for()` whichever way she came in.
+func may_be_set_off_at_once() -> bool:
+	if not is_set_off_by_a_place():
+		return false
+	var reach := lethal_reach() if ends_the_day() else field_reach()
+	var created_at := maxf(Offscreen.min_boundary(), _set_off_within)
+	var closing := _route.speed() + Tuning.WALK_SPEED
+	return maxf(0.0, created_at - reach) / closing + 0.001 >= minimum_telegraph()
+
 ## **The copy a place sets off at once**: its badge up alone for no time, for her walking into its
-## place, so it comes on the tick she reaches it, as near as its set-off distance. The row itself is
-## warned for its own `warned_for()` first, for her already inside its place when it may come, or
-## arriving inside it through a door (`SetOffWatch`). Validated as it is made.
+## place, so it comes on the tick she reaches it, as near as its set-off distance; asked only of a
+## row that `may_be_set_off_at_once()`. The row itself is warned for its own `warned_for()` first,
+## for her already inside its place when it may come, or arriving inside it through a door
+## (`SetOffWatch`). Validated as it is made.
 func as_set_off_at_once() -> EventDef:
 	var draft := redraft()
 	draft.warning(_warning.cut_to(0.0))
@@ -1076,7 +1096,7 @@ func validate() -> bool:
 	# **The body is the shape.** A row that draws something has a shape to draw it from. A solid
 	# body's reach is its shape's (`BodySpec.obstructs_within()`), so the two cannot disagree and
 	# the body and the picture cannot disagree about where she can walk.
-	if _look.picture() != Look.NONE and ground_shape() == null:
+	if _look.is_drawn_in_the_world() and ground_shape() == null:
 		push_error("event '%s' has a look but no shape to draw its shadow and body from" % _id)
 		return false
 	if _body.is_solid_with_no_shape():
@@ -1329,12 +1349,12 @@ func validate() -> bool:
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
 				% [_id, _pursuit.lunge_reach(), lethal_reach()])
 		return false
-	# **A row a place sets off comes running its line under a warning first**: a mobile `MAP` row,
-	# warned of before it exists, that neither waits for her nor pursues her, since its place is
-	# its notice and its line is its run.
-	if is_set_off_by_a_place() and (not _warning.is_warned_first() or not _route.moves() \
+	# **A row a place sets off comes under a warning first**: a `MAP` row, warned of before it
+	# exists, that neither waits for her nor pursues her, since its place is its notice: the masked
+	# man then runs his line, and the escape city's explosion goes off where it stands.
+	if is_set_off_by_a_place() and (not _warning.is_warned_first() \
 			or _spawn_mode != SpawnMode.MAP or _notice or _pursuit):
-		push_error("event '%s' is set off by a place but is not a mobile MAP row warned of first "
+		push_error("event '%s' is set off by a place but is not a MAP row warned of first "
 				% _id + "that neither waits for her nor pursues her")
 		return false
 	if starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and _notice:
@@ -1808,12 +1828,17 @@ func reach_above(rate: float) -> float:
 
 ## **Whether its coming gets a badge at the screen edge**, for her walking at `walk_speed`: lethal
 ## always, and otherwise only what she cannot outwalk (a thing slower than a walk is one she can
-## turn round and leave). A thing that does not telegraph its coming (`telegraphs_its_coming()`) is outside the
-## badge.
+## turn round and leave). **A thing warned of before it exists that stands where it comes** is
+## one she cannot outwalk either: it comes all at once, its noise on her the moment it is there, so
+## its badge is the only notice of it she gets — the escape city's explosion *(minty-lemur #785:
+## explosions off screen with a warning sign showing the explosion)*. A thing that does not
+## telegraph its coming (`telegraphs_its_coming()`) is outside the badge.
 func announces_its_coming(walk_speed: float) -> bool:
 	if not telegraphs_its_coming():
 		return false
 	if ends_the_day():
+		return true
+	if _warning.is_warned_first() and not _route.moves():
 		return true
 	return _route.moves() and _route.speed() > walk_speed
 

@@ -2,7 +2,7 @@ class_name Aftermath
 extends RefCounted
 ## **The rows an event brings after it** (a row's own, asked through `EventDef.scar_id()`,
 ## `EventDef.leaves_behind()` and `EventDef.calls_in()`): the scar it leaves on the run, the
-## row it leaves where it ends, and the row it calls in once she has seen it. One resource because
+## row it leaves where it goes off, and the row it calls in once she has seen it. One resource because
 ## they are one thing to take away: the escape's rows and the seals' are made without them
 ## (`EventCatalogue.without_its_aftermath()`, `SealPlanner`), where the run has no mornings left
 ## for those marks to mean anything.
@@ -11,16 +11,18 @@ extends RefCounted
 ## burnt-out shell; the shell is still there on day 12.
 var _scar := ""
 
-## Event id to spawn where this one ends. How the escape's explosion leaves its crater in the road.
+## Event id to spawn where this one goes off, the moment its telegraph is over
+## (`EventInstance.take_what_it_leaves()`). How the escape's explosion leaves its crater in the road
+## as it bangs, so the crater stands wherever the bang could not be seen.
 var _on_finish := ""
 
 ## Event id to spawn the moment this one is first seen: what arrives once she has found it, where
-## `on_finish` names what it leaves behind when it is done. How the burning building calls in the
+## `on_finish` names what it leaves behind where it goes off. How the burning building calls in the
 ## fire engine — `EventManager` owns the trigger, since it already owns the successor mechanism and
 ## her position; see `EventSpawner.summon_what_has_been_sighted()`.
 var _on_sight := ""
 
-## **No aftermath**: no scar, nothing left where it ends, nothing called in.
+## **No aftermath**: no scar, nothing left where it goes off, nothing called in.
 static func none() -> Aftermath:
 	return Aftermath.new()
 
@@ -30,7 +32,7 @@ func scarring(id: String) -> Aftermath:
 	after._scar = id
 	return after
 
-## The same aftermath spawning row `id` where this one ends.
+## The same aftermath spawning row `id` where this one goes off.
 func then(id: String) -> Aftermath:
 	var after := _copy()
 	after._on_finish = id
@@ -42,7 +44,7 @@ func calling_in(id: String) -> Aftermath:
 	after._on_sight = id
 	return after
 
-## The id of the row it leaves where it ends (`then()`), or "" for none.
+## The id of the row it leaves where it goes off (`then()`), or "" for none.
 func leaves_behind() -> String:
 	return _on_finish
 

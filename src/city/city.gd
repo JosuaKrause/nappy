@@ -189,6 +189,10 @@ var _timing := FrameTiming.new()
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
 var _signals: TrafficSignals
 var _daylight: CanvasModulate
+## The light of the day (`set_daylight()`) and how far a blast lifts it (`light_the_sky()`), which
+## the daylight's colour is made of (`_show_the_light()`).
+var _light_of_the_day := Color.WHITE
+var _sky_lit := 0.0
 var _act := 1
 ## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
 ## `Tuning.degradation_for(_day)`. 1 (no degradation) until `start_day()` sets it, which happens
@@ -412,7 +416,23 @@ func set_daylight(fraction: float) -> void:
 		return
 	var light := Palette.LIGHT_MIDDAY.lerp(Palette.LIGHT_DUSK, 1.0 - fraction)
 	var tint := Palette.act_tint(_act)
-	_daylight.color = Color(light.r * tint.r, light.g * tint.g, light.b * tint.b)
+	_light_of_the_day = Color(light.r * tint.r, light.g * tint.g, light.b * tint.b)
+	_show_the_light()
+
+## **The sky lit by a blast**, `level` of the way from the day's own light to
+## `Palette.ESCAPE_FLASH_LIGHT`, the light a hallway of the escape's building lifts to while its
+## windows flash, so a blast lights the street as it lights the corridor (`BlastLight`). 0 is the
+## day's light alone.
+##
+## Overrides CityDressing.light_the_sky.
+func light_the_sky(level: float) -> void:
+	_sky_lit = clampf(level, 0.0, 1.0)
+	_show_the_light()
+
+## The day's light, lifted toward the blast's by how lit the sky is.
+func _show_the_light() -> void:
+	if _daylight:
+		_daylight.color = _light_of_the_day.lerp(Palette.ESCAPE_FLASH_LIGHT, _sky_lit)
 
 # ------------------------------------------------------------ WorldContext ---
 

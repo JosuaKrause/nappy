@@ -69,6 +69,11 @@ var _may_be_a_pelican := false
 ## far guard walks off from, which posts still have a man).
 var _guard_sides: Array[int] = [-1, 1]
 
+## **Whether the sky lights up as it goes off**: the escape city's explosion, a bright flash over the
+## whole screen the moment its telegraph is over, wherever it is (`BlastLight`; minty-lemur #785).
+## The light is all it changes: the field, the cost and the crater are the row's own either way.
+var _flashes := false
+
 ## A row with no picture of its own: nothing is drawn for it.
 static func none() -> LookSpec:
 	return LookSpec.new()
@@ -117,6 +122,12 @@ func maybe_a_pelican() -> LookSpec:
 	spec._may_be_a_pelican = true
 	return spec
 
+## The same look, the sky lighting up as it goes off.
+func flashing_as_it_goes_off() -> LookSpec:
+	var spec := _copy()
+	spec._flashes = true
+	return spec
+
 ## The same look posting a guard on `sides` of its band (`-1`/`+1`), and on none for an empty list.
 func guarded_on(sides: Array[int]) -> LookSpec:
 	var spec := _copy()
@@ -127,6 +138,13 @@ func guarded_on(sides: Array[int]) -> LookSpec:
 ## (`EventPictures.icon_for()`).
 func picture() -> EventDef.Look:
 	return _picture
+
+## **Whether anything of it is drawn in the world**: not for a row with no picture
+## (`EventDef.Look.NONE`), nor for the explosion, whose picture is drawn only in its screen-edge
+## badge (`EventDef.Look.EXPLOSION`). What a row puts on the street is measured only where this
+## holds (`EventFootprints.box_of()`), so a badge's picture is never taken for a thing standing there.
+func is_drawn_in_the_world() -> bool:
+	return _picture != EventDef.Look.NONE and _picture != EventDef.Look.EXPLOSION
 
 ## The picture it stands in while it warns, whose largest decides whether its warning would stand
 ## in her view.
@@ -150,6 +168,10 @@ func vanishes_into_its_hold() -> bool:
 func may_be_drawn_as_a_pelican() -> bool:
 	return _may_be_a_pelican
 
+## Whether the sky lights up as it goes off: the escape city's explosion.
+func flashes_as_it_goes_off() -> bool:
+	return _flashes
+
 ## The sides of its band a guard stands on, `-1`/`+1` (a copy: nothing changes the look's own).
 func guard_sides() -> Array[int]:
 	return _guard_sides.duplicate()
@@ -163,4 +185,5 @@ func _copy() -> LookSpec:
 	spec._vanishes_into_its_hold = _vanishes_into_its_hold
 	spec._may_be_a_pelican = _may_be_a_pelican
 	spec._guard_sides = _guard_sides.duplicate()
+	spec._flashes = _flashes
 	return spec

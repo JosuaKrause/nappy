@@ -35,6 +35,7 @@ func run(t: TestRunner) -> void:
 		_test_the_summary_names_what_the_day_planned,
 		_test_finished_instances_are_dropped,
 		_test_successor_replaces_its_parent,
+		_test_a_burst_leaves_its_crater_as_it_goes_off,
 		_test_excitement_sums_over_instances,
 		_test_an_event_waits_until_she_is_near_it,
 		_test_an_event_that_has_run_does_not_run_again,
@@ -400,9 +401,9 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
 ## node in the array while never tracking the successor at all.
 ##
-## `finale_explosion`/`impact_crater`, the one row `aftermath.leaves_behind()` governs: a burst that has
-## run its course leaves its crater where it went off. Spawned directly, since the escape's rows are
-## not a day's.
+## `finale_explosion`/`impact_crater`, the one row `aftermath.leaves_behind()` governs: a burst
+## stepped past its bang and its end before a tick has looked leaves its crater on the tick it is
+## taken out, one for one. Spawned directly, since the escape's rows are not a day's.
 func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	# A bystander standing on, so a swap that kept only the successors would change the count and
 	# leave the list without it.
@@ -428,6 +429,33 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	if crater:
 		t.close_to(crater.global_position.distance_to(where), 0.0,
 				"the crater starts where the burst went off", 1.0)
+
+## **The crater comes as the burst goes off, not when it is over** (`EventInstance.take_what_it_leaves()`):
+## a crater she walks toward has stood since the bang, which only goes off out of her sight. Once
+## its telegraph has run the next tick puts the crater in while the burst still bangs, and only one.
+func _test_a_burst_leaves_its_crater_as_it_goes_off(t: TestRunner) -> void:
+	var here := CrowdLanes.arterial_pavement(_stage.map())
+	_stage.events().start_recipe([] as Array[EventPlan], DaySpec.for_day(1), 1, here)
+	var burst := _stage.events().spawn_extra(EventCatalogue.by_id("finale_explosion"),
+			here + Vector2(0.0, 600.0))
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(_craters() == 0, "no crater while the burst's telegraph runs")
+	burst.step(burst.telegraphs_for())
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(is_instance_valid(burst) and not burst.is_gone() and not burst.is_telegraphing(),
+			"the burst is going off")
+	t.check(_craters() == 1, "and its crater is already in the road (%d)" % _craters())
+	t.check(_run_to_its_end(burst), "the burst runs out on its own")
+	await PhysicsTicks.pass_ticks(t, 2)
+	t.check(_craters() == 1, "and it leaves no second crater as it ends (%d)" % _craters())
+
+## How many craters stand in the world.
+func _craters() -> int:
+	var found := 0
+	for instance in _stage.events().instances():
+		if is_instance_valid(instance) and instance.row_id() == "impact_crater":
+			found += 1
+	return found
 
 func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 	var here := CrowdLanes.arterial_pavement(_stage.map())

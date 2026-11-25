@@ -838,6 +838,10 @@ const IMPACT_CRATER := "props/impact_crater_2x2"
 ## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
 ## canvas, and `EventCatalogue._impact_crater()`'s own 32px body is half of the same width.
 const CRATER_ANCHOR := Vector2(32.0, 32.0)
+## The screen-edge badge of the escape city's explosion, a burst and its mushroom of smoke. Drawn
+## only in the badge (`LookSpec.is_drawn_in_the_world()`): the explosion goes off out of her sight, and what
+## she meets on the street afterwards is the crater, `IMPACT_CRATER`.
+const EXPLOSION := "events/explosion"
 ## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
 ## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
 ## pixels short of the canvas's own bottom edge. See `EventLook._draw_at_anchor`.
@@ -918,6 +922,7 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.CHECKPOINT_GATE: return BOOM_GATE_NS_LOWERED
 		EventDef.Look.CHECKPOINT_POST: return GUARD_STANDING
 		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
+		EventDef.Look.EXPLOSION: return EXPLOSION
 		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
@@ -938,6 +943,11 @@ static func icon_for(look: EventDef.Look) -> String:
 		# a torn poster sends from day 9 is badged by its front diagonal.
 		EventDef.Look.GUARDSMAN_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["front_diagonal"])
 		_: return ""
+
+## **Whether `look`'s picture is registered on its middle rather than on its feet**: the crater, a
+## hole in the road (`CRATER_ANCHOR`), drawn round the point it stands on.
+static func is_registered_on_its_middle(look: EventDef.Look) -> bool:
+	return look == EventDef.Look.IMPACT_CRATER
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
 ## picture. A vehicle that rolls on wheels of its own (`WHEELS_BY_LOOK`) has its side view split
