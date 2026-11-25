@@ -48,7 +48,7 @@ const FINALE_BAG_VANS := 3
 ## over half her walks. The filer's proposal, set by measurement
 ## (`tests/probes/escape_winnable.gd`, twelve seeds and both exits) so that the trucks she meets a
 ## minute and the walks that meet none are no worse than with the trucks placed; open to the player.
-const ESCAPE_HANDOUT_WAIT_SHARE := 0.5
+const ESCAPE_HANDOUT_WAIT_SHARE := 0.25
 
 ## What the event director may send her while she walks (`director_sends()`).
 enum DirectorSends {
