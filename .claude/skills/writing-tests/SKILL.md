@@ -1,6 +1,6 @@
 ---
 name: writing-tests
-description: How a test is written — a suite tests the one module it is named for and mocks every other real object, a realistic mock is made in two steps, which suites combine modules and why, and what a test holds and what holds nothing. Load this BEFORE writing or changing a test.
+description: How a test is written — a suite tests the one module it is named for and mocks every other real object, a test reaches the game the way the game does (methods and seams the game uses, no private member, no frame function called by hand, game state through the game's writers, drawn art through an injected drawer), a realistic mock is made in two steps, which suites combine modules and why, and what a test holds and what holds nothing. Load this BEFORE writing or changing a test.
 ---
 
 # Writing tests
@@ -13,6 +13,7 @@ description: How a test is written — a suite tests the one module it is named 
 - **A public member only tests read is deleted, or made internal when its own file uses it.** `tools/check_test_only_members.py` fails a new one; fix the member, never list it.
 - **A suite, a rig, a fake and a probe are typed like the code they test**: a new suite opens with the typed runner header and carries no opt-out line.
 - **A test reads what it tests only through methods**, never another object's field.
+- **A test reaches the game the way the game does**: through methods and seams the game itself uses, never a private member or a frame function called by hand.
 - **A hand-drawn map for one specific interaction; a generated map for a realistic walk or a measurement.**
 - **The suite exits clean**: a leak warning at shutdown is a real retain bug.
 
@@ -78,6 +79,54 @@ each for the reason its header states:
   game's composition is what they test. Keep it that way: a version that only *plans* each day
   leaves the mobile one-shots unfinished and the whole successor-and-scar chain untested while the
   test passes.
+
+## A test reaches the game the way the game does
+
+**A test reaches the game through what the game itself offers, methods and seams its own code
+uses, and never through a private member or a frame function called by hand; a scene-level test
+lets real frames pass** (minty-lemur #794; inbox #1018 in brisk-ferret). The test runner lets
+frames pass, so a scene-level test steps real ones. Reading only through methods (above) is the
+first half; two commands count the rest, each printing a line count per file:
+
+- **Private members:** `rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests -g '*.gd' -g '!tests/probes/**'` counts the lines that read a private member, one named in a
+  string included.
+- **Frame functions:** `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests -g '*.gd' -g '!tests/probes/**'` counts the lines that call a frame function or emit the frame
+  signal by hand.
+
+Both skip comment lines, read every file under `tests/` but the measurement probes (the rigs, the
+fixtures and the helpers the suites share as well as the suites), and print nothing but for the two
+files that state their exception in their `##` header: `tests/shared_state.gd` (the runner's
+table of statics it leaves out of its comparison, read by name, since comparing every static is
+its job) and `tests/test_prediction_reuse.gd` (it changes one input of an event or a crowd body at
+a time, which no game path does, to prove the cache notices). A test, rig, fixture or helper that
+makes either command print anything else is a breach; the exception is the suite's to state, not
+the command's to skip. **What neither command sees** is a private name held in a variable, an
+override of a private method, a game collection edited by hand, and a public member only tests
+call (`tools/check_test_only_members.py`, above, holds that last one).
+
+- **A seam is one the game itself uses** (minty-lemur #794; inbox #1095 in curly-rabbit). A member
+  made public, or added, has a caller among the game's own classes or is a dependency the game's
+  own code hands in (a hand-in, above). A public member only a test reads is not a seam, however
+  it is named. Where the game has no reader, the test goes through what the game exposes: what is
+  drawn, a signal, real input and frames. A step that touches a test may convert it as it goes,
+  "as long as the final result is the same" (inbox #813 in curly-moose).
+- **A suite drives a step of the tick by hand only where the step is the tick's own**: the tick
+  calls exactly that step, so the two cannot drift. The real ticks must have been measured as
+  slower, or as running what no case asks about, and the measurement goes on the member's `[kept]`
+  line in `tools/test_only_members.txt`.
+- **A test writes game state through the game's own writer** (`RunState.add_scar()`,
+  `close_streets()`, an `EventPlan` handed to `EventStreaming.add()`, and the like). State no
+  game writer reaches alone is written through the game's accessors or the save's round trip
+  (`to_data()`, `restore()`), and a suite says why it needs that state. This extends "A test whose
+  setup the game cannot reach holds nothing" (below; inbox #1097 in curly-rabbit).
+- **A holder of drawn art (a building's roof, an event's picture) is tested with an injected mock
+  drawer that confirms every element is drawn** (inbox #1018 in brisk-ferret). Where the elements
+  stand is tested apart, through the random draws as a function of the seed, and the general
+  drawing code is not retested ("The real logic is checked once", above).
+- **A clock a component is handed is a hand-in**: a wall-clock default that only tests replace
+  (`use_clock()` on the mode button, the return window, the title screen and the touch controls)
+  stays public in a kept group like any hand-in, and a test hands in a clock, never waits in real
+  time (minty-lemur #794).
 
 ## A suite is typed, and opens with the typed runner header
 
@@ -203,6 +252,18 @@ words, and hold until the player corrects them. The citation is the player's wor
 - **The rule that a test reads only through methods covers the suites, not the probes under
   `tests/probes/`**: a probe is a measurement script run by name that no suite runs, a reading of
   inbox #1182 in gray-dolphin, open to the player's correction.
+- **A caller under `src/dev` counts as a game caller** ("A test reaches the game the way the game
+  does"): a reading of the seam rule. The rigs and the scene-recipe runtime are the composition
+  root in `tools/layer_map.py`'s layering, which makes them the game's own classes, and
+  `tools/check_test_only_members.py` applies it (minty-lemur #794; inbox #1095 in curly-rabbit).
+- **Driving the tick's own step by hand, with its measured reason**: the orchestrator's reading of
+  the speed the player wanted from the suites (inbox #1159 in gray-dolphin).
+- **The drawn-art answer applies to the roof art and the event pictures**: the suites that read
+  what a look draws with nothing in the game reading it back, which the answer's mock drawer
+  replaces; a reading of its words (inbox #1018 in brisk-ferret).
+- **A clock hand-in with a wall-clock default is a seam, open to the player's overturn**: read
+  strictly, the seam rule would rule those setters out and replace them with real time and short
+  waits (minty-lemur #794).
 - **The reason for a combined suite, or for a real city, is stated in the suite's `##` header
   comment** (inbox #1159 in gray-dolphin).
 - **The test-only rule also reaches a var, a signal or a constant with no use anywhere under

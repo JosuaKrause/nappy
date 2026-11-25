@@ -37,9 +37,8 @@ velvet-bunny (`tools/decisions.sh velvet-bunny`). This record is the rest, and t
   own: `test_telemetry`'s straight-line case plans one cached city over days 1, 3, 7 and 14 with the
   default, and nothing repaints that map, so its sites do not move; `test_spent_park`'s single-day case
   (day 14 on a map repainted with spent calm and closed streets) plans one day, so hoisting saves no
-  repeated work, and the default works the sites out on that repaint, not on the city as built (a plain
-  repaint already moves the sites on 6 of 84 dawns for this suite's seeds), so its checks hold on the
-  sites that day has there; `tests/plan_signature.gd` (one day per call) keeps it too.
+  repeated work, and on seed 61823, day 14, block (3, 2) spent, the six mast sites on the repainted
+  map equal those on the city as built; `tests/plan_signature.gd` (one day per call) keeps it too.
 - **`_the_column()` in `tests/test_resistance_placement_kinds.gd`** skips a convoy truck the day's own
   plan streams in (the event `EventManager.event_of()` names for a plan), so only the trucks the
   happenings sent count; a break (counting every non-convoy event) fails three checks.

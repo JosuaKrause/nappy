@@ -10,7 +10,7 @@ deal with. Only if the later days still read as too easy with both counted are t
 of `PlacementDensity` raised, by declaration, as that table is meant to be edited.
 
 **What the remeasure already has:** the event count per day, from the baseline readings on `v0.29.0`
-(minty-quail's `README.md`, step 4) and from the record polite-tapir-coral-owl, which also
+(minty-quail's `README.md`, step 3) and from the record polite-tapir-coral-owl, which also
 leaves open whether `test_events_costs`'s bar (day 14 a fifth over day 1) or the table is wrong, under
 the **balance** skill's rule that a test pushing back asks which of the two is.
 

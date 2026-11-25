@@ -26,7 +26,7 @@ already has stays open as a draft and resumes after the refactor closes.
 
 **The design review's items are closed.** The player had the refactor's design reviewed ("have a fable
 agent review the design of the refactor", inbox #1265 in olive-ferret); its records are the ones named
-polite-tapir (`tools/decisions.sh polite-tapir`), and this entry's remeasure (step 4 below) comes after the last
+polite-tapir (`tools/decisions.sh polite-tapir`), and this entry's remeasure (step 3 below) comes after the last
 item here.
 
 ## The review this entry files
@@ -85,15 +85,11 @@ independent run in parallel.
 
 Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
 parity**: every existing test passes, changed only as far as the code it reaches moved, or converted
-early to injected fakes and public APIs (`tests-public-seams.md`); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
+early to injected fakes and public APIs (**writing-tests**, "A test reaches the game the way the game does"); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. `comments.md`: in whichever PR touches the code.
-2. `tests-public-seams.md`: the rule the tests are written under (dependency injection, public
-   APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md`
-   for what its count cannot see. The members only their own class and the tests use are
-   internal, and `tools/test_only_members.txt` holds each one left public with its reason.
-3. **The rest goes module by module, in
+2. **The rest goes module by module, in
    tracks that run in parallel** (inbox #1268 in olive-ferret). The design review found that the
    order converted the tests before the event code they read, so the largest group of suites
    would be mocked against fields and redone; shown its suggestion to go module by module, the
@@ -104,7 +100,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    approved going module by module in parallel; the tracks are the design review's worked-out
    detail:
    - **The design review's tracks are closed**, their records the ones named polite-tapir; the
-     baseline readings are listed under step 4.
+     baseline readings are listed under step 3.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed and
      no read of another class's field is listed under it**: `tools/check_field_reads.py` fails a
@@ -114,7 +110,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      rest are parts an event has, and every caller asks through methods (`docs/EVENTS.md`
      describes it; its records are listed by `tools/decisions.sh minty-quail`). What is left of
      its track is `system-map.md`, once the redesign is complete.
-4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+3. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured
@@ -176,8 +172,8 @@ player: "also good points". *Read as, the orchestrator's, open to the player's c
 entry is done when the items in this folder are gone and the remeasure is taken, which comes after
 the design review's items too; a defect found in a pull request of this entry is fixed in that pull request,
 and anything else found from here on is filed as an entry of its own after this one, never as a new
-item here. `tests-public-seams.md`'s open list holds test gaps, which add tests and
-refactor nothing and move to such an entry when this one closes.
+item here. The scene recipes' test gaps, which add tests and
+refactor nothing, are the entry snowy-plover (the scene recipes' untested corners), which waits for this one.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer",
 whose layering paragraph and closing list of proposals refer to this entry, **rewrites its
