@@ -2226,7 +2226,8 @@ func _new_visit_counter() -> VisitCounter:
 	_sitting.add_child(counter)
 	counter.listen(EventBus)
 	counter.send_through(GoatCounterOutbox.new(
-			func(script: String) -> void: JavaScriptBridge.eval(script)))
+			func(script: String) -> void: JavaScriptBridge.eval(script)),
+			GoatCounterPlatform.of_the_engine())
 	return counter
 
 ## Takes the run this boot plays off its sitting (`Sitting.take_the_run()`): the one a held

@@ -468,6 +468,8 @@ src/
 	                      and a section's start and end off the bus, holds the observer
 	goatcounter_outbox.gd the gate, the queue for events asked before `count.js` has loaded and the
 	                      page call that counts one (the VisitCounter hands its events to it)
+	goatcounter_platform.gd the answers the gate asks the machine: the web, a debug build and
+	                      whether the page's `count.js` is there (`main` hands the engine's)
 	telemetry_shots.gd    the day's shot allowance, the spacing and the run-wide picture counter
 	                      that Telemetry asks before it photographs
 	telemetry_page.gd     whether a page's query is read, and whether it asks for the log
@@ -1156,7 +1158,7 @@ it each boot's flow, `listen_to_the_flow()`) or an `EventBus` signal — `run_be
 with `?debug=1` unasked and `window.goatcounter.count` actually present — `GoatCounterOutbox.may_ever_send()` and `send()`'s `present` are the gate, and
 `tests/test_visit_counter.gd` drives its truth table through them and the event names through a bus
 the counter is handed with `listen(bus)`, and what reaches the page through the outbox it is handed
-with `send_through(outbox)`.
+with `send_through(outbox, platform)`.
 
 ## WorldMap
 

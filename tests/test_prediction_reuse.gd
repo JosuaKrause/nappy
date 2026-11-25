@@ -3,6 +3,16 @@ extends RefCounted
 ##
 ## The sources are real events, not fakes, so that the suite stands on the event's own field: the
 ## projection is that field reprojected, which no fake can answer without logic of its own.
+##
+## **The suite writes private members of the event and the crowd body it projects from**, one
+## input at a time (an event's row and where she hears it, its heading and a crowd body's axis,
+## turn-back hold and jolt fields, some through a name held in a variable), reads its reference
+## sources' own event and body, and overrides `_sample_expected_landed()` to count the samplings
+## really run. No game path changes one input of a source alone, and a cache over the projection
+## has to notice exactly that, so the writes are what the suite proves; a suite that reached
+## only what the game reaches would never test the cache's key. The reference
+## (`tests/fixtures/prediction_reference.gd`) works out its reach from the tuning and what the
+## body answers publicly, so a wrong reach in the source fails the parity.
 
 const Reference = preload("res://tests/fixtures/prediction_reference.gd")
 const HaloRig = preload("res://tests/halo_rig.gd")
@@ -113,6 +123,7 @@ func run(t: TestRunner) -> void:
 	_test_catalogue_and_mutations(t)
 	_test_a_cored_row(t)
 	_test_crowd_mutations(t)
+	_test_a_crowd_body_is_projected_out_to_the_reach_its_kind_has(t)
 	_test_live_net_and_skipped_work(t)
 	_test_consumer_order(t)
 	await _test_halo_and_removal(t)
@@ -441,6 +452,25 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source.mood().set_her_motion(Vector2(0.0, 92.0), 0.0, 0.22)
 		_crowd_parity(t, source, at, "crowd sensitivity")
 		_crowd_parity(t, source, at + Vector2(20.0, 0.0), "crowd query position")
+		source.free()
+
+## A crowd body's source projects out to the reach its kind has, worked out by the reference from
+## the tuning and the body's public answers rather than asked of the source: her far enough away
+## that only the end of the horizon brings her into the body's field (four fifths of its outer
+## radius), where a source with a shorter reach skips a projection the reference makes.
+func _test_a_crowd_body_is_projected_out_to_the_reach_its_kind_has(t: TestRunner) -> void:
+	for kind: LaneMover.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+		var source := CountedCrowd.new(kind)
+		var her := Vector2(92.0, 0.0)
+		source.mood().set_her_motion(her)
+		var outer := Tuning.CAR_OUTER_RADIUS if kind == CrowdAgent.Kind.CAR \
+				else Tuning.PEDESTRIAN_OUTER_RADIUS
+		var closing := (her - source.velocity()).length()
+		var at := Vector2(-(closing * Tuning.EXPECTED_IMPACT_HORIZON + outer * 0.8), 0.0)
+		var told := source.mood() as ToldCrowdSource
+		t.check(Reference.crowd_gross(source, at, told.told_velocity, told.told_sensitivity) > 0.0,
+			"the end of the horizon brings her into the field of kind %d" % kind)
+		_crowd_parity(t, source, at, "crowd near the end of its reach, kind %d" % kind)
 		source.free()
 
 func _test_live_net_and_skipped_work(t: TestRunner) -> void:

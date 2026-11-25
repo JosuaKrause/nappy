@@ -163,38 +163,32 @@ func configure(config: RunConfig, run: RunState) -> void:
 	_config = config
 	_run = run
 
-## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
-## without ever asking `JavaScriptBridge`, the same guard `DevFlags.page_query()` makes before its
-## own `JavaScriptBridge.eval()`. **`bool(...)`, never `present is bool`**: a JS boolean crosses
-## `JavaScriptBridge.eval()` as a GDScript `int` (`1`/`0`), not a `bool` — confirmed against a real
-## export, where `present is bool` silently refused every event, gate closed, no error anywhere to
-## say why. `bool()` reads true off that `int` the same as it would a native bool.
-static func _goatcounter_present() -> bool:
-	if OS.get_name() != "Web":
-		return false
-	var present: Variant = JavaScriptBridge.eval(
-			"(typeof window.goatcounter !== 'undefined' " +
-			"&& typeof window.goatcounter.count === 'function')")
-	return bool(present)
-
 ## Where the events go: the queue for the ones asked for before `count.js` has loaded, and the
 ## call that counts one. `null` until `send_through()` hands one in, and nothing is sent before.
 var _outbox: GoatCounterOutbox
 
+## What the gate asks about the machine: the web, a debug build, and the page's `count.js`. `null`
+## until `send_through()` hands one in, and nothing is sent before.
+var _platform: GoatCounterPlatform
+
 ## The name `main` gives it under the sitting, and what the next boot looks for there.
 const NODE_NAME := "VisitCounter"
 
-## Hands the counter the outbox its events go to. `main` hands it one that evaluates its script
-## through the page's own `JavaScriptBridge`; a test hands one with a recorder, so what reaches the
-## outbox, queued or counted, is what the recorder sees once the outbox flushes.
-func send_through(outbox: GoatCounterOutbox) -> void:
+## Hands the counter the outbox its events go to and the platform that answers its gate. `main`
+## hands it an outbox that evaluates its script through the page's own `JavaScriptBridge` and the
+## engine's own answers (`GoatCounterPlatform.of_the_engine()`); a test hands an outbox with a
+## recorder and the answers of the page it stands for, so what reaches the outbox, queued or
+## counted, is what the recorder sees once the outbox flushes.
+func send_through(outbox: GoatCounterOutbox, platform: GoatCounterPlatform) -> void:
 	_outbox = outbox
+	_platform = platform
 
 func _send_event(name: String) -> void:
-	if _config == null or _outbox == null or not GoatCounterOutbox.may_ever_send(
-			OS.get_name() == "Web", _config.is_debug_build(), _config.asks_for_the_readout()):
+	if _config == null or _outbox == null or _platform == null \
+			or not GoatCounterOutbox.may_ever_send(_platform.is_on_the_web(),
+			_platform.is_a_debug_build(), _config.asks_for_the_readout()):
 		return
-	_outbox.send(name, _goatcounter_present())
+	_outbox.send(name, _platform.has_the_counter())
 
 # --------------------------------------------------------------- event names ---
 # Pure functions, each testable without a web page, a save or a run behind it.

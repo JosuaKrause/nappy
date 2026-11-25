@@ -34,6 +34,7 @@ const Boot := preload("res://tests/booted_main.gd")
 const Main := preload("res://src/main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
+const RecordingPage := preload("res://tests/recording_page.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_observers_scratch.json"
 ## What the script below handed the run log on the build this was recorded on, one line per line in
@@ -42,21 +43,22 @@ const _SCRATCH_SAVE := "user://test_observers_scratch.json"
 const BASELINE := "res://tests/fixtures/observed_run_log.txt"
 const SCENARIO_BREAK := "=== the escape"
 const SEED := 4242
-## `VisitCounter` with `_send_event()` recording the name rather than reaching for a page — the same
-## stand-in `tests/test_visit_counter.gd` uses — so what each event would send can be read back.
+## A `VisitCounter` handed the outbox of a recording page and the platform of a released web
+## page, the same stand-in `tests/test_visit_counter.gd` uses, so the names its events are
+## counted under, through the real gate and send path, can be read back.
 class RecordingCounter extends VisitCounter:
-	var sent: Array[String] = []
+	## The page it sends to.
+	var page := RecordingPage.new()
+	## The names it counted its events under, in order: the page's own list.
+	var sent: Array[String] = page.names()
 
 	## Counts `run` and listens to the game's bus, as `main` hands the real counter the run it plays
 	## and the bus; seated in a boot's sitting (`_seat()`), it is the counter that boot takes, and is
 	## handed the boot's run flow as the real one is.
 	func _init(run: RunState) -> void:
-		configure(null, run)
+		configure(RunConfig.parse(PackedStringArray(), "", false), run)
+		send_through(page.outbox(), RecordingPage.platform())
 		listen(EventBus)
-
-	## Overrides VisitCounter._send_event.
-	func _send_event(name: String) -> void:
-		sent.append(name)
 
 ## Seats `counter` in the sitting `home` parks, under the name the boot looks for it by
 ## (`VisitCounter.NODE_NAME`), so the boot takes it as the sitting's page counter and hands it its

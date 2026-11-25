@@ -11,11 +11,16 @@ extends RefCounted
 ## A bus of the game's own kind with nobody listening to it: a counter handed one hears what a test
 ## emits on it and nothing the live singletons answer to.
 const EVENT_BUS_SCRIPT = preload("res://src/autoload/event_bus.gd")
+const RecordingPage := preload("res://tests/recording_page.gd")
 
-## `VisitCounter` with `_send_event()` recording the name instead of reaching for a page, so a test
-## can read what each signal would send. Everything else is the real counter's own code.
+## A `VisitCounter` handed the outbox of a recording page and the platform of a released web
+## page (`RecordingPage`), so a test reads what each signal sends. Everything, the gate and the
+## send included, is the real counter's own code.
 class RecordingCounter extends VisitCounter:
-	var sent: Array[String] = []
+	## The page it sends to.
+	var page := RecordingPage.new()
+	## The names it counted its events under, in order: the page's own list.
+	var sent: Array[String] = page.names()
 
 	## The bus of its own this counter listens to.
 	var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
@@ -29,7 +34,8 @@ class RecordingCounter extends VisitCounter:
 	## Counts a run of its own, as `main` hands the real counter the run it plays.
 	func _init() -> void:
 		run.start_run(1)
-		configure(null, run)
+		configure(RunConfig.parse(PackedStringArray(), "", false), run)
+		send_through(page.outbox(), RecordingPage.platform())
 		listen(bus)
 		listen_to_the_flow(flow)
 
@@ -45,10 +51,6 @@ class RecordingCounter extends VisitCounter:
 		if day == DaySpec.CITY_DAY:
 			return DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 		return DaySpec.for_day(day, 210.0)
-
-	## Overrides VisitCounter._send_event.
-	func _send_event(name: String) -> void:
-		sent.append(name)
 
 func run(t: TestRunner) -> void:
 	_test_should_send_truth_table(t)
@@ -111,20 +113,30 @@ func _test_should_send_truth_table(t: TestRunner) -> void:
 	t.check(scripts.is_empty(), "a missing or blocked window.goatcounter sends nothing")
 	t.check(not GoatCounterOutbox.may_ever_send(false, true, true),
 		"every reason to refuse at once still refuses")
-	# The composition `VisitCounter._send_event()` makes, over all sixteen inputs: counted only
-	# when the three fixed inputs allow it and the page has goatcounter.
+	# The real counter's own gate over all sixteen inputs, handed each platform and page query:
+	# counted only when the three fixed inputs allow it and the page has goatcounter.
 	for bits in 16:
 		var web := bits & 1 != 0
 		var debug_build := bits & 2 != 0
 		var debug_requested := bits & 4 != 0
 		var present := bits & 8 != 0
-		scripts.clear()
-		var fresh := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
-		if GoatCounterOutbox.may_ever_send(web, debug_build, debug_requested):
-			fresh.send("composed", present)
-		t.check((scripts.size() == 1) == (web and not debug_build and not debug_requested and present),
+		var page := RecordingPage.new()
+		var counter := VisitCounter.new()
+		var run := RunState.new()
+		run.start_run(1)
+		counter.configure(RunConfig.parse(PackedStringArray(),
+				"?debug=1" if debug_requested else "", false), run)
+		counter.send_through(page.outbox(), GoatCounterPlatform.new(web, debug_build,
+				func() -> bool: return present))
+		var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
+		counter.listen(bus)
+		bus.controls_chosen.emit(true, false)
+		var counted := web and not debug_build and not debug_requested and present
+		t.check((page.names().size() == 1) == counted,
 			"web %s, debug build %s, ?debug=1 %s, present %s counts only when all four allow it"
 			% [web, debug_build, debug_requested, present])
+		bus.free()
+		counter.free()
 
 ## A day-scoped name is `nappy-day-<day>-<suffix>`, joined the way PLAYTEST-132's own example does.
 func _test_day_event_name(t: TestRunner) -> void:
@@ -295,11 +307,11 @@ func _test_is_pickup_step(t: TestRunner) -> void:
 	_done(counter)
 
 ## Drives every signal handler the counter connects to and checks that none of it moved anything
-## the run it counts owns. This process is never on the web (`OS.get_name() != "Web"`), so
-## `_send_event()` refuses every one of these and never reaches
-## `JavaScriptBridge` at all — the point of the check is that the *listening* itself is inert, the
-## same "telemetry must not touch gameplay" invariant `tests/test_telemetry.gd` pins for the run
-## log, adapted for a listener with no per-frame watch of its own.
+## the run it counts owns. The counter is handed the platform of a desktop run (not the web), so
+## its gate refuses every one of these and no page is reached at all — the point of the check is
+## that the *listening* itself is inert, the same "telemetry must not touch gameplay" invariant
+## `tests/test_telemetry.gd` pins for the run log, adapted for a listener with no per-frame
+## watch of its own.
 func _test_listening_touches_no_gameplay_state(t: TestRunner) -> void:
 	var counter := VisitCounter.new()
 	var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
@@ -307,7 +319,9 @@ func _test_listening_touches_no_gameplay_state(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(1)
 	var scripts: Array[String] = []
-	counter.send_through(GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script)))
+	counter.send_through(
+			GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script)),
+			GoatCounterPlatform.new(false, false, func() -> bool: return false))
 	counter.listen(bus)
 	counter.listen_to_the_flow(flow)
 	flow.day_started.emit(RecordingCounter.spec_of(1))
@@ -431,8 +445,7 @@ func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t: TestRunne
 ## retry alike: every event opts out of the site's sessions so that a count is every time a thing
 ## happened
 ## (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
-## day"). Read off `RecordingCounter`, which keeps what `_send_event()` was asked for, since the
-## real one is silent in this process.
+## day"). Read off `RecordingCounter`, which keeps the names its page was asked to count.
 func _test_every_tear_and_every_hold_is_sent(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header().day()
@@ -546,9 +559,8 @@ func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t: T
 ## Review finding: `count.js` loads asynchronously, so an event asked for before it has finished
 ## loading — the earliest events of a cold, first-ever visit, above all — must not be dropped
 ## silently the way a debug build's events are. `GoatCounterOutbox.send()` takes `present` as a
-## parameter rather than asking the page (which is hard-wired absent off the web), so the queueing
-## logic is testable here without a real page: the outbox evaluates what it is handed a recorder
-## for.
+## parameter rather than asking the page, so the queueing logic is testable here without a real
+## page: the outbox evaluates what it is handed a recorder for.
 func _test_pending_events_queue_until_present_and_flush_in_order(t: TestRunner) -> void:
 	var scripts: Array[String] = []
 	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
@@ -570,11 +582,12 @@ func _test_pending_events_queue_until_present_and_flush_in_order(t: TestRunner) 
 
 ## The other half of the fix: a reason that can never change — off the web, a debug build, or
 ## `?debug=1` — must never populate the queue at all, the same "still send nothing under debug"
-## the gate itself already promised. This process is never on the web, so the real counter, handed
-## a bus, a release build's configuration and an outbox with a recorder (as `main` hands it the
-## page's), refuses every event before its outbox is touched. Nothing it was handed is queued: the
-## outbox's next counted event, a probe sent with `count.js` present, flushes whatever the outbox
-## holds ahead of itself, and the recorder sees the probe alone.
+## the gate itself already promised. The real counter, handed a bus, a release build's
+## configuration, an outbox with a recorder (as `main` hands it the page's) and the platform of a
+## desktop run whose page has no `count.js`, refuses every event before its outbox is touched.
+## Nothing it was handed is queued: the outbox's next counted event, a probe sent with `count.js`
+## present, flushes whatever the outbox holds ahead of itself, and the recorder sees the probe
+## alone.
 func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void:
 	var counter := VisitCounter.new()
 	var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
@@ -583,7 +596,8 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 	var run := RunState.new()
 	run.start_run(1)
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), run)
-	counter.send_through(outbox)
+	counter.send_through(outbox,
+			GoatCounterPlatform.new(false, false, func() -> bool: return false))
 	counter.listen(bus)
 	var flow := RunFlow.new()
 	counter.listen_to_the_flow(flow)
@@ -998,7 +1012,8 @@ func _test_encounters_and_runs_are_named_by_their_day_and_row(t: TestRunner) -> 
 ## every time on a site whose sessions stay on for the page visit ("okay, I can turn session back
 ## on and you opt out for everything except /nappy.josuakrause.com/"). Every handler is driven
 ## through `RecordingCounter`, and each name it sent is checked in the options
-## `GoatCounterOutbox.send()` hands `count()` and in the script line itself, parsed back rather than searched as text.
+## `GoatCounterOutbox.send()` hands `count()` and in the script line itself, parsed back rather
+## than searched as text.
 func _test_every_event_opts_out_of_sessions(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(1, false)
@@ -1036,22 +1051,12 @@ func _test_every_event_opts_out_of_sessions(t: TestRunner) -> void:
 	counter.bus.controls_chosen.emit(true, false)
 	t.check(counter.sent.size() >= 20,
 		"there were events to check (%d)" % counter.sent.size())
-	var prefix := "try { window.goatcounter.count("
-	var suffix := "); } catch (e) {}"
-	var scripts: Array[String] = []
-	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
-	for name: String in counter.sent:
-		outbox.send(name, true)
+	var scripts := counter.page.scripts()
 	t.check(scripts.size() == counter.sent.size(), "each event is one script line")
 	for i in counter.sent.size():
 		var name := counter.sent[i]
-		var call := scripts[i]
-		var parsed: Variant = null
-		if call.begins_with(prefix) and call.ends_with(suffix):
-			parsed = JSON.parse_string(call.substr(prefix.length(),
-					call.length() - prefix.length() - suffix.length()))
-		var options: Dictionary = parsed if parsed is Dictionary else {}
-		var is_options := parsed is Dictionary
+		var options := RecordingPage.options_of(scripts[i])
+		var is_options := not options.is_empty()
 		t.check(is_options and options.get("no_session") == true
 				and options.get("event") == true and options.get("path") == name,
 			"%s is an event under its own path that opts out of sessions" % name)

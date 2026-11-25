@@ -25,7 +25,7 @@ func _init(evaluate: Callable) -> void:
 ## `RunConfig.asks_for_the_readout()`, the same flag that keeps `count.js` itself off the page,
 ## see `export_presets.cfg`'s `html/head_include`) that can never change their answer for the
 ## rest of this page's life once asked — the build is not going to stop being a debug build, and
-## `?debug=1` does not disappear from a page nobody reloads. `goatcounter_present` is the one
+## `?debug=1` does not disappear from a page nobody reloads. `present` is the one
 ## input that legitimately answers differently a moment later, because `count.js` loads
 ## asynchronously (`export_presets.cfg`'s own `counter.async = true`) — so the counter asks this
 ## once, up front, to decide *whether an event is ever worth queuing at all* before it asks the

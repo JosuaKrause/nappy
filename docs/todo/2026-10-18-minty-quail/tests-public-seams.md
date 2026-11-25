@@ -3,12 +3,12 @@
 A test reaches the game through what the game itself offers and lets real frames pass; it does not
 read a private member or call a frame function by hand. Two commands count the breaches. The first
 counts a suite's lines that read a private member, including one named in a string:
-`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests/*.gd`. The
-second counts its lines that call a frame function or emit the frame signal by hand:
-`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`.
-Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
-well as the suites), and neither sees access through a variable holding the name, so
-`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
+`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests -g '*.gd' -g '!tests/probes/**'`.
+The second counts its lines that call a frame function or emit the frame signal by hand:
+`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests -g '*.gd' -g '!tests/probes/**'`.
+Both skip comment lines, count every file under `tests/` but the measurement probes (the rigs, the
+fixtures and the helpers the suites share as well as the suites), and neither sees access through
+a variable holding the name, so `tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
 nothing, and a test or helper that makes them print anything is a breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
@@ -78,8 +78,6 @@ ticks give, and is kept with its reason:
 
 - **`RouteLines.routes()`** is kept in `tools/test_only_members.txt` as the only handle on the drawn
   polylines, as `EventRouteLines.routes()` is.
-- **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
-  `test_observers.gd`: the counter's gate reads the platform, which a headless run cannot fake.
 - **The scene recipe suites leave untested:** the director's own use of the arrow ground (it wants a
   task scene of several targets on a stretch), free play past its whole duration (it wants a clock
   the scene is handed), the runtime suite's boundary probe writing the runtime's named world (it
