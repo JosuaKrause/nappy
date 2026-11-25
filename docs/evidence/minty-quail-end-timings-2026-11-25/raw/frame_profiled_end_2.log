@@ -1,0 +1,137 @@
+{
+  "prefix": "/Users/krause/workspace/nappy-claude/.claude/worktrees/mq-r3/docs/evidence/minty-quail-end-timings-2026-11-25/raw/fp_v029/profiled_end_2",
+  "accepted": true,
+  "rejections": [],
+  "frames": 712,
+  "profile_frames": 1293,
+  "profiler_enabled": true,
+  "physics_alignment_mismatches": [],
+  "unique_function_signatures": 3879,
+  "missing_profile_frames": [],
+  "population": {
+    "walkers": {
+      "median": 200.0,
+      "p95": 200,
+      "p99": 200,
+      "max": 200,
+      "mean": 200
+    },
+    "cars": {
+      "median": 34.0,
+      "p95": 34,
+      "p99": 34,
+      "max": 34,
+      "mean": 34
+    },
+    "visible_walkers": {
+      "median": 18.0,
+      "p95": 21,
+      "p99": 24,
+      "max": 24,
+      "mean": 17.198033707865168
+    },
+    "visible_cars": {
+      "median": 7.0,
+      "p95": 8,
+      "p99": 8,
+      "max": 8,
+      "mean": 6.036516853932584
+    },
+    "events": {
+      "median": 45.0,
+      "p95": 47,
+      "p99": 48,
+      "max": 48,
+      "mean": 43.93398876404494
+    },
+    "visible_events": {
+      "median": 4.0,
+      "p95": 6,
+      "p99": 6,
+      "max": 6,
+      "mean": 4.582865168539326
+    }
+  },
+  "player_path_pixels": 553.6953746750911,
+  "northward_net_pixels": 546.92126464844,
+  "north_input_held": true,
+  "draws_per_process_frame": {
+    "0": 712
+  },
+  "moving_cars_per_frame": {
+    "median": 0.0,
+    "p95": 30,
+    "p99": 31,
+    "max": 32,
+    "mean": 7.273876404494382
+  },
+  "ticks_per_frame": {
+    "0": 532,
+    "1": 180
+  },
+  "callback_interval_ms": {
+    "median": 4.522,
+    "p95": 20.587,
+    "p99": 22.109,
+    "max": 37.115,
+    "mean": 8.428967696629213
+  },
+  "observer_ms": {
+    "median": 0.193,
+    "p95": 0.207,
+    "p99": 0.222,
+    "max": 0.277,
+    "mean": 0.19450842696629214
+  },
+  "compiler_warnings": 376,
+  "errors": [],
+  "native_ms": {
+    "frame_main_loop_wall": {
+      "median": 2.6465,
+      "p95": 14.243,
+      "p99": 15.970999999999998,
+      "max": 31.695,
+      "mean": 5.43578511235955
+    },
+    "process_and_render_submit": {
+      "median": 2.646,
+      "p95": 4.766,
+      "p99": 5.125,
+      "max": 7.131,
+      "mean": 3.0263525280898875
+    },
+    "worst_physics_tick_in_frame": {
+      "median": 0.0,
+      "p95": 9.812,
+      "p99": 10.584,
+      "max": 26.700000000000003,
+      "mean": 2.4090337078651687
+    },
+    "script_self_sum": {
+      "median": 1.385,
+      "p95": 7.368,
+      "p99": 8.325000000000001,
+      "max": 14.928,
+      "mean": 2.817245786516854
+    }
+  },
+  "emitted_functions_per_frame": {
+    "median": 351.0,
+    "p95": 906,
+    "p99": 1065,
+    "max": 1149,
+    "mean": 483.77106741573033
+  }
+}
+res://src/crowd/walker_strategy.gd::638::WalkerStrategy.give_way_on_the_step self {'median': 0.0, 'p95': 0.755, 'p99': 0.805, 'max': 0.816, 'mean': 0.18150842696629213} calls {'median': 0.0, 'p95': 200, 'p99': 200, 'max': 200, 'mean': 50.561797752808985}
+res://src/ui/excitement_halo.gd::212::ExcitementHalo._pick_and_predict self {'median': 0.152, 'p95': 0.17, 'p99': 0.176, 'max': 0.194, 'mean': 0.1525308988764045} calls {'median': 1.0, 'p95': 1, 'p99': 1, 'max': 1, 'mean': 1}
+res://tests/probes/entity_frame_profile_observer.gd::41::_sample self {'median': 0.093, 'p95': 0.106, 'p99': 0.11, 'max': 0.11299999999999999, 'mean': 0.09257022471910112} calls {'median': 1.0, 'p95': 1, 'p99': 1, 'max': 1, 'mean': 1}
+res://src/world/excitement_source.gd::291::ExcitementSource.expected_gross_at self {'median': 0.08600000000000001, 'p95': 0.11900000000000001, 'p99': 0.128, 'max': 0.147, 'mean': 0.0886376404494382} calls {'median': 280.0, 'p95': 300, 'p99': 302, 'max': 302, 'mean': 283.0407303370786}
+res://src/world/excitement_source.gd::320::ExcitementSource._sample_expected_landed self {'median': 0.0, 'p95': 0.323, 'p99': 0.34900000000000003, 'max': 0.371, 'mean': 0.07477949438202247} calls {'median': 0.0, 'p95': 127, 'p99': 131, 'max': 134, 'mean': 29.120786516853933}
+res://src/world/separation_pass.gd::126::SeparationPass.clear_of_the_keepers self {'median': 0.0, 'p95': 0.292, 'p99': 0.324, 'max': 0.333, 'mean': 0.058377808988764046} calls {'median': 0.0, 'p95': 47, 'p99': 52, 'max': 53, 'mean': 9.804775280898877}
+res://src/ui/danger_edge.gd::200::DangerEdge.subject_for_def self {'median': 0.053, 'p95': 0.066, 'p99': 0.07200000000000001, 'max': 0.215, 'mean': 0.053963483146067415} calls {'median': 45.0, 'p95': 47, 'p99': 48, 'max': 48, 'mean': 43.92837078651685}
+res://src/crowd/crowd_excitement.gd::204::CrowdExcitement._field self {'median': 0.05, 'p95': 0.060000000000000005, 'p99': 0.068, 'max': 0.092, 'mean': 0.05001825842696629} calls {'median': 327.0, 'p95': 345, 'p99': 350, 'max': 353, 'mean': 328.5575842696629}
+res://src/world/blocked_layer.gd::82::BlockedLayer.blocks self {'median': 0.0, 'p95': 0.202, 'p99': 0.245, 'max': 0.29100000000000004, 'mean': 0.04051685393258427} calls {'median': 0.0, 'p95': 1230, 'p99': 1464, 'max': 1816, 'mean': 251.08426966292134}
+res://src/ui/excitement_halo.gd::71::ExcitementHalo._select_sources self {'median': 0.039, 'p95': 0.047, 'p99': 0.052, 'max': 0.06499999999999999, 'mean': 0.03958005617977528} calls {'median': 1.0, 'p95': 1, 'p99': 1, 'max': 1, 'mean': 1}
+res://src/world/excitement_source.gd::205::ExcitementSource.contribution_at self {'median': 0.037, 'p95': 0.049, 'p99': 0.054, 'max': 0.057, 'mean': 0.03762359550561798} calls {'median': 388.0, 'p95': 421, 'p99': 425, 'max': 427, 'mean': 390.36516853932585}
+res://src/crowd/lane_mover.gd::764::LaneMover.step self {'median': 0.0, 'p95': 0.15100000000000002, 'p99': 0.161, 'max': 0.185, 'mean': 0.03531039325842696} calls {'median': 0.0, 'p95': 234, 'p99': 234, 'max': 234, 'mean': 59.157303370786515}

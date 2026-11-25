@@ -91,45 +91,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 1. **Remeasuring**, once, after the last item: GoatCounter's counts against `docs/stats/` (read after a release, since the live site counts
    released builds only; owed as an entry of its own, filed when this entry closes), and pictures of every behavior a step
    changed on purpose, those the remeasure could not stage being owed in the entry azure-yak, "The pictures the end remeasure could not stage". Each
-   step's record lists what its change needs remeasured. That includes the crowd tick, measured
-   about 4.5% slower once the walker and the car share a mover base the crowd member extends
-   (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
-   later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
-   worth an entry of its own. It measures streaming's tick (`EventStreaming.stream_around()`, the events' loop with
-   the most turns) again too: row 3a's plan questions cost it about 60 µs a tick (record minty-quail-cozy-stork) and
-   streaming's own table of state per plan about 25 to 50 µs more (#1598's measurement, on its pull request), and the
-   step says whether a cheaper lookup is worth an entry of its own.
-   The "before" the remeasure compares with is the design review's baseline readings in
-   `docs/evidence/minty-quail-baseline-2026-11-09/`: a first column of `v0.29.0` beside a mid-refactor `main`
-   (the record minty-quail-mossy-raven), a third column with placement closed (the record polite-tapir-velvet-heron), and a
-   fourth after the events' field-read conversion (the record polite-tapir-crisp-heron). Nothing is judged in the
-   readings: a number that moved is listed here for this remeasure, and no step waits on one. Three
-   lists of numbers are left for it:
-
-   - **What moved after the events' field-read conversion** (the fourth column against the third, the record
-     polite-tapir-crisp-heron): dawn planning (a copy of today's `placement_rows.gd` with the third column's
-     timers, set against the third column's own copy) inside `build_day()` 51.6 s to 44.1 s, inside
-     `draw_every_unit()` 345.6 to 334.3, the whole probe 568.6 to 505.2; the crowd tick's mean whole-mode
-     median about 2,466 µs to 2,351 µs; the frame profile's callback interval with `--invincible` 4.9 ms to 4.0
-     profiled and 7.5 to 6.3 with the profiler off; the unmodified frame-profile launcher's six runs all rejected by
-     the analyzer (an 8.3 ms callback interval), not looked into.
-   - **Streaming's loop over every plan**: `EventStreaming.stream_around()`, which row 3b's design asked to be
-     measured and which was not (the record minty-quail-gray-koala; the paragraph above says what this step
-     measures of it).
-   - **The events' interface's timing readings**: the design asked each of 2a's and 2b's pull
-     requests to time five probes, main and the branch side by side in two worktrees run at the
-     same time, the totals over a probe's configurations compared, since one configuration alone
-     moves between rounds (the record minty-quail-brisk-lark):
-     `tests/probes/m159_tick_sweep_events_cost.gd` (the baby's sweep and the events' physics
-     step), `excitement_fingerprint.gd` (its `XF_COST` line, the halo's frame),
-     `calm_pelican_fields_layer_cost.gd`, `m159_crowd_tick_cost.gd` (the control) and
-     `look_fingerprint.gd` (its `LK_COST` line). Four of 2a's seven pull requests hold theirs in
-     their records (minty-quail-velvet-owl, -olive-finch, -tiny-alpaca and -tawny-swan); 2a's last
-     three (-striped-hawk, -striped-magpie and -silver-marmot) and 2b's six took none. Owed is one
-     reading of the probes from the merge of -tawny-swan to the merge of -calm-egret, and of
-     `LK_COST` from the merge of -polite-newt, the probe's own, to -calm-egret. It holds other
-     tracks' merges too, so what it shows is listed and judged by no step (the player: "get the
-     clean design first no matter the cost", inbox #1278 in olive-ferret).
+   step's record lists what its change needs remeasured. Nothing is judged in the readings: a number that
+   moved is listed for this remeasure, and no step waits on one.
 
 **The entry's list is frozen** (inbox #1268 in olive-ferret). The design review found that items had been added
 to this entry through three weeks with no stated end; shown "The entry has no stated end", the

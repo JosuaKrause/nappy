@@ -1,0 +1,88 @@
+{
+  "prefix": "/Users/krause/workspace/nappy-claude/.claude/worktrees/mq-r3/docs/evidence/minty-quail-end-timings-2026-11-25/raw/fp_v029/disabled_end_2",
+  "accepted": true,
+  "rejections": [],
+  "frames": 718,
+  "profile_frames": 0,
+  "profiler_enabled": false,
+  "physics_alignment_mismatches": [],
+  "unique_function_signatures": 0,
+  "missing_profile_frames": [],
+  "population": {
+    "walkers": {
+      "median": 200.0,
+      "p95": 200,
+      "p99": 200,
+      "max": 200,
+      "mean": 200
+    },
+    "cars": {
+      "median": 34.0,
+      "p95": 34,
+      "p99": 34,
+      "max": 34,
+      "mean": 34
+    },
+    "visible_walkers": {
+      "median": 18.0,
+      "p95": 21,
+      "p99": 24,
+      "max": 24,
+      "mean": 17.22284122562674
+    },
+    "visible_cars": {
+      "median": 7.0,
+      "p95": 8,
+      "p99": 8,
+      "max": 8,
+      "mean": 6.018105849582173
+    },
+    "events": {
+      "median": 45.0,
+      "p95": 47,
+      "p99": 48,
+      "max": 48,
+      "mean": 43.949860724233986
+    },
+    "visible_events": {
+      "median": 4.0,
+      "p95": 6,
+      "p99": 6,
+      "max": 6,
+      "mean": 4.5835654596100275
+    }
+  },
+  "player_path_pixels": 550.6287242844711,
+  "northward_net_pixels": 543.85461425782,
+  "north_input_held": true,
+  "draws_per_process_frame": {
+    "0": 718
+  },
+  "moving_cars_per_frame": {
+    "median": 0.0,
+    "p95": 30,
+    "p99": 31,
+    "max": 32,
+    "mean": 7.215877437325905
+  },
+  "ticks_per_frame": {
+    "1": 180,
+    "0": 538
+  },
+  "callback_interval_ms": {
+    "median": 7.149,
+    "p95": 18.208,
+    "p99": 20.201,
+    "max": 29.039,
+    "mean": 8.357363509749304
+  },
+  "observer_ms": {
+    "median": 0.161,
+    "p95": 0.172,
+    "p99": 0.181,
+    "max": 0.193,
+    "mean": 0.16159052924791087
+  },
+  "compiler_warnings": 376,
+  "errors": []
+}
