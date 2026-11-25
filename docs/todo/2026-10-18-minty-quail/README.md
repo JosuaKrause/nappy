@@ -26,7 +26,7 @@ already has stays open as a draft and resumes after the refactor closes.
 
 **The design review's items are closed.** The player had the refactor's design reviewed ("have a fable
 agent review the design of the refactor", inbox #1265 in olive-ferret); its records are the ones named
-polite-tapir (`tools/decisions.sh polite-tapir`), and this entry's remeasure (step 3 below) comes after the last
+polite-tapir (`tools/decisions.sh polite-tapir`), and this entry's remeasure (step 1 below) comes after the last
 item here.
 
 ## The review this entry files
@@ -88,29 +88,7 @@ parity**: every existing test passes, changed only as far as the code it reaches
 early to injected fakes and public APIs (**writing-tests**, "A test reaches the game the way the game does"); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
-1. `comments.md`: in whichever PR touches the code.
-2. **The rest goes module by module, in
-   tracks that run in parallel** (inbox #1268 in olive-ferret). The design review found that the
-   order converted the tests before the event code they read, so the largest group of suites
-   would be mocked against fields and redone; shown its suggestion to go module by module, the
-   player: "yeah module by module makes sense and can be parallelized". Within a module: its
-   dead code (deleted as the pass finds it, **designing-classes**' rule), its interface and field
-   reads, its receivers typed with them (`tools/check_field_reads.py` holds both, its list
-   `tools/field_reads.txt` empty), then its suites, one module each and all typed. The player
-   approved going module by module in parallel; the tracks are the design review's worked-out
-   detail:
-   - **The design review's tracks are closed**, their records the ones named polite-tapir; the
-     baseline readings are listed under step 3.
-   - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
-     crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed and
-     no read of another class's field is listed under it**: `tools/check_field_reads.py` fails a
-     new read, and `tools/field_reads.txt` is empty. What the check cannot see is stated in its
-     `--help`.
-   - **The events' interface is built**: a body, a hold on her, a lethal field, a pursuit and the
-     rest are parts an event has, and every caller asks through methods (`docs/EVENTS.md`
-     describes it; its records are listed by `tools/decisions.sh minty-quail`). What is left of
-     its track is `system-map.md`, once the redesign is complete.
-3. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+1. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured
