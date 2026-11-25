@@ -84,8 +84,8 @@ func start_day(day: int, tree: RouteTree) -> void:
 	for plan in _walk.plans():
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
-	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"), _siting,
-			world.run().resistance().progress(), _spec.director_sends())
+	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"),
+			_spec.director_sends(), _siting, world.run().resistance().progress())
 
 ## **The day's placement context for a row left for her walk to site** (`plan`), made the first
 ## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
@@ -129,7 +129,7 @@ func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
 	_day_tree = tree
 	if _director:
 		_director.start_day(day, _walk.plans(),
-				world.run().calendar().day_rng(day, "finale-ahead"), null, 0,
+				world.run().calendar().day_rng(day, "finale-ahead"),
 				_spec.director_sends())
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to

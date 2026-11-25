@@ -214,11 +214,12 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ##
 ## **`sends` is the walk's own setting of what the director may send her**
 ## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends none
-## of an ordinary day's rows (`DaySpec.DirectorSends.NONE`) has no route bag, owes nothing from the
-## plan and rolls no sprinkled dog and no day-one rig, whatever `day` is.
+## of an ordinary day's rows (`DaySpec.DirectorSends.NOTHING`) has no route bag, owes nothing
+## from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is. There is no
+## default: a caller says what its walk sends.
 func start_day(day: int, plans: Array[EventPlan],
-		rng: RandomNumberGenerator, siting: WalkSiting = null,
-		heat: int = 0, sends := DaySpec.DirectorSends.THE_DAYS_ROWS) -> void:
+		rng: RandomNumberGenerator, sends: DaySpec.DirectorSends,
+		siting: WalkSiting = null, heat: int = 0) -> void:
 	_owed.clear()
 	_lesson = null
 	_rng = rng

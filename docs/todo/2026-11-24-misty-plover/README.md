@@ -17,8 +17,9 @@ off-route blockades. The board pick, to keep them placed, is overturned by this 
 **Band and order, the filer's proposal:** `now`, the band of a note from playing, after minty-quail
 (the refactor rule: nothing else is built until it closes, inbox #1210 in gentle-owl). The trucks
 are sent through the hand-off of the escape's spec to the director (`DaySpec.director_sends()`,
-which is `DirectorSends.NOTHING` for the escape's city): a value that names the trucks' bag joins
-it, and the hand-off is not reshaped. A filer never proposes `bug`
+which is `DirectorSends.NOTHING` for both of the escape's sections). The hand-off is a spec value
+the builder of this entry may extend or reshape to carry the trucks (a value, or the marbles the
+spec hands the director); the design is left to that builder. A filer never proposes `bug`
 (**playtest-feedback**).
 
 **Item:** `trucks-ahead-of-her.md`.

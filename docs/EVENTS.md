@@ -2430,8 +2430,8 @@ rows find none for a walk with a bag of its own (`DawnContext.catalogue_rows()`)
 `DawnDraw` draws the walk's streets (`DayLocations.along()`, `DayUnits`, `MarbleDraw`) with
 every candidate asked of the same rules a day's is (`StreetInvalidation`). **The event director,
 which sites the rows of a day's route bag ahead of her as she walks, is started for the walk like
-any day's and sends what the spec lets it** (`DaySpec.director_sends()`): the city section's is
-`DirectorSends.NOTHING`, so it has no route bag, owes nothing from the plan and rolls neither the
+any day's and sends what the spec lets it** (`DaySpec.director_sends()`): both of the escape's sections'
+are `DirectorSends.NOTHING`, so it has no route bag, owes nothing from the plan and rolls neither the
 day-one dog walkers nor the sprinkled charging dog, on day 1 (a direct boot) and on day 14 (a run's
 escape) alike, since the day's number decides none of it. Every danger the escape holds is placed
 before she sets off; a later setting of the spec can give the director a bag of its own to send.

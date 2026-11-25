@@ -304,6 +304,7 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec._a_win_gives_a_nerve_back = false
 	spec._saved_as_under_way = false
 	spec._owes_a_return = false
+	spec._director_sends = DirectorSends.NOTHING
 	spec._poster_pursuits = false
 	spec.crowd_density = 0.0
 	spec.pastes_posters = false
@@ -350,7 +351,6 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
-	spec._director_sends = DirectorSends.NOTHING
 	spec._keeps_unused_calm_clear = false
 	spec._holds_the_home_streets = false
 	spec._one_event_a_street = true
@@ -481,8 +481,8 @@ func owes_her_a_return() -> bool:
 	return _owes_a_return
 
 ## What the event director may send her while she walks this walk (`DirectorSends`): an ordinary
-## day's rows on a day, nothing on the escape's city, whose every danger is placed before she sets
-## off. The day's number decides none of it.
+## day's rows on a day, nothing on either of the escape's sections, whose every danger is placed
+## before she sets off. The day's number decides none of it.
 func director_sends() -> DirectorSends:
 	return _director_sends
 

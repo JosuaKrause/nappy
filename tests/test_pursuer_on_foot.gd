@@ -101,7 +101,7 @@ func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var no_plans: Array[EventPlan] = []
-	director.start_day(8, no_plans, rng)
+	director.start_day(8, no_plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	var routes: Array[PackedVector2Array] = []
 	var size := map.size_in_tiles()
 	for y in range(3, size.y, PATROL_SPOT_STRIDE):

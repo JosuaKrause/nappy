@@ -99,7 +99,7 @@ func _fire_day_plans() -> Array[EventPlan]:
 ## `tests/test_event_manager_fire.gd`'s, on a real city.
 func _fire_director(day: int, plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
 	var director := EventDirector.new(StreetMap.full())
-	director.start_day(day, plans, _rng(day), siting)
+	director.start_day(day, plans, _rng(day), DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 	return director
 
 func _rng(day: int) -> RandomNumberGenerator:
@@ -144,7 +144,7 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
 	]
 	# Day 2: day one's first handouts are rigged to hold its dog walkers (`EventDirector`).
-	director.start_day(2, plans, rng)
+	director.start_day(2, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	t.check(director.owed() == 2, "the day's budget is what the director gets to spend")
 	# The dawn decides how many she is owed and the route's bag decides which row each one is, so
 	# the cat this test is about is put in front of the bag on purpose rather than left to its draw.
@@ -350,7 +350,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
 		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
-		director.start_day(def.own_first_day(), plans, rng)
+		director.start_day(def.own_first_day(), plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 
 		# Somewhere on a street, walking north — the same rig `_test_the_director_puts_it_in_front_
 		# of_her` walks, so a real street is guaranteed long enough for this.

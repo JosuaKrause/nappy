@@ -131,7 +131,7 @@ static func _director(map: CityMap, row: String, plans: Array[EventPlan],
 	director.force(row, 1.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	director.start_day(DAY, plans, rng)
+	director.start_day(DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
 ## What the director hands out once its wait has passed, with her at her tile walking along the
@@ -382,7 +382,7 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	director.start_day(DAY, plans, rng)
+	director.start_day(DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	var patrols: Array[String] = ["police_patrol", "police_patrol"]
 	director.rig_her_route(patrols, 2)
 	var step := 0.1
@@ -442,7 +442,7 @@ static func _director_with_a_siting(plans: Array[EventPlan], siting: FakeWalkSit
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	director.start_day(DAY, plans, rng, siting)
+	director.start_day(DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 	return director
 
 ## **A look asks each plan owed once**, between one `begin_look()` and one `end_look()`, and no oftener
@@ -562,7 +562,7 @@ func _test_nothing_is_rigged_under_force(t: TestRunner) -> void:
 	director.force("dog_walker", 1.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	director.start_day(DAY, _no_plans(), rng, siting)
+	director.start_day(DAY, _no_plans(), rng, DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 	var rigged := director.rig_her_route(["homeless_yeller"] as Array[String], 1, 0, siting, true)
 	t.check(rigged.is_empty(), "a forced day rigs no marbles (%s)" % [rigged])
 	for _tick in int((EventDirector.ON_HER_WAY_AFTER + 2.0 * EventDirector.AHEAD_INTERVAL.y) / 0.1):
@@ -581,7 +581,7 @@ func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	director.start_day(DAY, _no_plans(), rng)
+	director.start_day(DAY, _no_plans(), rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	var ids: Array[String] = [EventCatalogue.mast().id(), "car_accident"]
 	director.rig_her_route(ids, 2)
 	for id in ids:
@@ -602,7 +602,7 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	director.start_day(7, _no_plans(), rng)
+	director.start_day(7, _no_plans(), rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	director.start_recipe_route(["cyclist", "cyclist"], ["cat_dash"], 3, 2.0, 0)
 	t.check(director.owed() == 3, "the route is owed what the recipe says")
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
@@ -614,12 +614,13 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 ## handed the ordinary setting do owe, so the check is not vacuous.
 func _test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t: TestRunner) -> void:
 	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var ordinary_owed := 0
+	var ordinary_owed := {}
 	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
+		ordinary_owed[day] = 0
 		for seed_value in 12:
 			var ordinary := _walked_director(day, seed_value, DaySpec.for_day(day))
 			var sends_nothing := _walked_director(day, seed_value, escape)
-			ordinary_owed += 1 if ordinary.owed() > 0 else 0
+			ordinary_owed[day] += 1 if ordinary.owed() > 0 else 0
 			t.check(sends_nothing.owed() == 0,
 					"the escape city owes the director nothing on day %d (seed %d)" % [day, seed_value])
 			t.check(sends_nothing.rig_her_route(["dog_walker"] as Array[String], 3).is_empty(),
@@ -630,7 +631,10 @@ func _test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t: TestRunner) -> v
 						Vector2.UP * Tuning.WALK_SPEED))
 			t.check(handed.is_empty(),
 					"and sends nothing in a long walk on day %d (seed %d)" % [day, seed_value])
-	t.check(ordinary_owed > 0, "an ordinary day 1 and day 14 owe her something (%d)" % ordinary_owed)
+	for day: int in ordinary_owed:
+		t.check(int(ordinary_owed[day]) > 0,
+				"an ordinary day %d owes her something on some seed, so there was one to refuse (%d)"
+				% [day, ordinary_owed[day]])
 
 ## A director on the street with no plans, its day `day` started on a stream of `seed_value`, as
 ## `spec` says what it may send.
@@ -639,7 +643,7 @@ static func _walked_director(day: int, seed_value: int, spec: DaySpec) -> EventD
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	director.start_day(day, _no_plans(), rng, null, 0, spec.director_sends())
+	director.start_day(day, _no_plans(), rng, spec.director_sends())
 	return director
 
 ## Walks her on the street past `ON_HER_WAY_AFTER`, rigs the man shouting as the next marble on her

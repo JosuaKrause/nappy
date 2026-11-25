@@ -79,7 +79,7 @@ func _measure_caps() -> void:
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("m99:ahead:%d:%d" % [map.city_seed(), day])
-			director.start_day(day, planned, director_rng)
+			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 
 			var y_min := 0.0
 			var y_max: float = map.world_size().y

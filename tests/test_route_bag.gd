@@ -263,7 +263,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
-		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var expected := {}
 		for marble: String in EventDirector.ordinary_route_marbles(day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
@@ -325,7 +326,8 @@ func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:day-one:ahead:%d" % seed_value)
-		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var handed: Array[String] = []
 		var at := CrowdLanes.arterial_pavement(map)
 		at.y = map.world_size().y * 0.5
@@ -360,7 +362,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
-		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng)
+		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
+				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var bag := director.route_bag()
 		t.check(bag.bag_in_front() == ["charging_dog"],
 				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s)"
@@ -431,7 +434,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
 	# The day's own moments play no part: the return's patrols and the mast are owed below.
-	director.start_day(day, [] as Array[EventPlan], rng, siting)
+	director.start_day(day, [] as Array[EventPlan], rng,
+			DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 	director.owe_the_return(day, 0)
 	var mast: Array[String] = ["loudspeaker"]
 	director.rig_her_route(mast, 1, 0, siting)

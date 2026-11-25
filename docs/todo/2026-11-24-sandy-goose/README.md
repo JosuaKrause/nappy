@@ -16,8 +16,8 @@ vans and roadblocks do not show up on a build with minty-quail's escape work, th
 regression from the work that made the escape a day spec. It may also be lilac-marten's "basically
 empty" (curly-moose #803), which was said of v0.29.1's bag, and then it is already queued.
 
-**The dog walkers are explained, and so is the build.** The player (inbox #1741 in tawny-raven): "I
-was watching your measurement runs". The escape they saw was the end remeasure's picture captures,
+**The dog walkers are explained.** The player (inbox #1741 in tawny-raven): "I was watching your
+measurement runs". **Read as, the filer's:** the escape they saw was the end remeasure's picture captures,
 windowed `--start-escape` runs on main, a direct boot on day 1, where the event director's day-one
 rig sent two dog walkers among her first three encounters; the event director now sends nothing of
 an ordinary day's rows in the escape (`DaySpec.director_sends()`), so those encounters are gone.

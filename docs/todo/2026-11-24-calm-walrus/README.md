@@ -14,7 +14,8 @@ answered by the board skill's layout, which says a You line follows the section'
 player's "I guess the escape overhaul is not done yet. but just a note" says they expect the
 escape work to be queued still.
 
-**Read as:** two escape changes, each an item. This entry is separate from lilac-marten (a fuller
+**Read as:** two escape changes; the dog walkers are answered by calm-hare (the event director sends
+the escape nothing of an ordinary day's rows), and one is left, the end at the tunnel or the bridge. This entry is separate from lilac-marten (a fuller
 escape, shorter charger warnings, total time) and snowy-goose (explosions in the escape city), and
 changes neither.
 
