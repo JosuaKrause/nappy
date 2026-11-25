@@ -32,7 +32,11 @@ of four pictures. **Left with their whole body's shadow**: the riot van and the 
 (`EventVehicleLook.SCENE_SHAPED`), whose ground shapes are the scene round them (the night raid's
 44px disc holding its officers, the moving van's band along the street under its ramp), so they say
 nothing about where the wheels are; drawn from those shapes the ovals were two discs wider than the
-van.
+van. **They keep what the player's note complains of, an oval across, and wider than, the whole
+van, so they are left queued by name, not dropped**: the entry stays open with the item
+`riot-and-moving-van.md`, which asks for a shadow shape of their own (the picture's drawn width,
+say, as `_draw_stationary_vehicle()` already reads for the moving van). Their rows are on the vans
+sheet as they look now.
 
 **One derivation of what a shadow covers.** A look now says what its shadow covers
 (`AgentLook.shadow_outlines()`, `EventLook.shadow_outlines()`, reached through
@@ -47,8 +51,10 @@ swing frame's capsule casts a shadow as tall as the frame under all of it, the w
 and was built as one oval under each A-frame and reverted: day 12's task is touched at the ellipse
 at the swing frame's base, 28 by 17px (`ResistanceDirector._swing_base()`), which
 `docs/NARRATIVE.md` calls the extent of the shadow it casts there, so the shadow is the task's
-visible target and changing it changes that task. It is a question for the player, in the review
-item.
+visible target and changing it changes that task. It is a question for the player, asked on the board as
+swing-frame-shadow with the orchestrator's pick (ovals under the frame's legs, day 12's touch spot
+kept at today's size and place with its own chalk-task mark), and the entry stays open with the item
+`swing-frame.md` built on that pick; the review item holds only what a run answers.
 
 **Measured.** The M139 record's desktop walk (`tools/shot.sh out.png 20 --seed 3265820891 --day 1
 --walk 3s17e`, the mean of the run log's `frame` entries from two seconds in, one run each): before
@@ -67,6 +73,10 @@ vehicle at every sector drawn by `tests/probes/silver_egret_shadow_sheet.gd`, th
 second ride frame among them, and two in-game before-and-after stills.
 
 **Open to overturn.** The reading of the first way and every number in it (`POINT_WHEEL_SHARE`,
-`WHEEL_OVAL_SHARE`, `WHEEL_DEPTH`) are the builder's, chosen by eye on the sheets. The velvet-marten
-note #700, in the plaid-chipmunk entry, says the ellipse shadows do not work well and that better
-shadows are wanted, which leans toward the second way; the review item asks.
+`WHEEL_OVAL_SHARE`, `WHEEL_DEPTH`) are the builder's, chosen by eye on the sheets. **The reading of velvet-marten #700**, in the
+plaid-chipmunk entry: it answered an optimisation candidate of M159's frame-record investigation,
+drawing shadows as pictures on an atlas page for cost, and says yes to that; its "the ellipse ones
+don't work well" repeats minty-hedgehog 1's complaint and does not choose between its two ways. On
+2026-11-01 (tiny-lark 18-19) the player kept this entry with the choice between the two ways
+described as unmade, so building the first way overturns nothing, and the review item names the
+second way as the alternative if the ovals still read wrong.

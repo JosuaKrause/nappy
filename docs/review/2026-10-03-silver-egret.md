@@ -10,15 +10,17 @@ truck go by.
 oval under each pair of wheels, sitting on the line its tyres stand on, where before one oval or
 capsule lay behind its whole picture and showed above the roof of a car coming at you or driving
 away. The sheets in `docs/evidence/silver-egret-shadows-2026-11-25/` show every car and van in all
-eight directions, before and after.
+eight directions, before and after. **Two vans keep their old oval across the whole van**, the riot
+van of the night raid and the moving van, and are left for the entry's follow-up
+(`riot-and-moving-van.md`); the vans sheet shows both as they look now.
 
-**The question a run answers.** Does a car's shadow now read as where it meets the ground, only
-where its wheels would be (minty-hedgehog 1), and does the police car still look like it floats
-(azure-koala 10)? If the ovals still read wrong, the other way you named is a picture of its own
-for each object's shadow, drawn to look like that object's shadow rather than built from ovals
-(minty-hedgehog 1); the shadows-from-pictures entry (plaid-chipmunk) is where such pictures would be
-drawn, and your note there that the ellipse shadows do not work well (velvet-marten #700) leans that
-way. **And one question about the swing frame**: its shadow is the large dark capsule under the
-whole frame, the worst of the tall props, and it is also the ellipse day 12's task asks you to touch
-at the swing's base. Should its shadow become one oval under each A-frame like the cars' (the touch
-zone then no longer looks like the shadow, unless it is changed with it), or stay as it is?
+**Questions a run answers**, one each:
+
+- **Do the cars and vans read as standing on their wheels?** Each oval under a pair of tyres, none
+  showing above a roof or behind a body with nothing under it (minty-hedgehog 1).
+- **Does the police car still look like it floats?** Check it side on, on its diagonals and as it
+  turns, where it floated before (azure-koala 10).
+- **If the ovals still read wrong, is the other way you named wanted instead?** A picture of its own
+  for each object's shadow, drawn to look like that object's shadow rather than built from ovals
+  (minty-hedgehog 1); the shadows-from-pictures entry (plaid-chipmunk) is where such pictures
+  would be drawn. The swing frame is not asked here: it is a question on the board.

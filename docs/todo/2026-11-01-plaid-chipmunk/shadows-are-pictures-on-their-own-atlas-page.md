@@ -12,14 +12,14 @@ about forty draw calls and a little of `draw`; on the phone the saving is not ye
 **What it keeps and what it replaces.** The M61 record ("One shape per object · the shape, the
 shadow and the body") draws every shadow from the object's `GroundShape`; the shape stays the
 source, and the bake draws it once into a picture on a shadow page that the object then draws as a
-sprite, tilted and squashed by its transform as now. A car's or a van's shadow is one oval
-per wheel pair (`GroundShape.paired_shadow_outlines()`), two polygons where every other object
+sprite, tilted and squashed by its transform as now. A vehicle's shadow, bar the riot van's and the moving van's, which keep one whole-body
+oval, is one oval per wheel pair (`GroundShape.paired_shadow_outlines()`), two polygons where every other object
 fills one, and each oval gets its picture. **It is not M139's shadow pass**
 ([M139](../../decisions/2026-09-14-M139-one-atlas-for-the-crowd-built-the-shadow-pass-measured-and-rejected.md)):
 that drew every agent's shadow from one canvas item spanning the field, which defeated the
 per-agent culling and was measured slower and reverted; here each object still draws its own
 shadow, as now, from a picture instead of a polygon. **It follows [silver-egret](../../decisions/2026-10-03-silver-egret.md), a shadow is where the
-object meets the ground**, which changed the vehicles' shapes and kept them ovals: this item does
+object meets the ground**, which changed the shadow a vehicle draws from its shape and kept it ovals: this item does
 not redesign any shadow, and if the player picks a picture of its own for each object's shadow
 instead (silver-egret's review item), the page is where those pictures land.
 

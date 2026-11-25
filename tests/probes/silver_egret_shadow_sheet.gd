@@ -4,7 +4,8 @@ extends RefCounted
 ## it cast before (its ground shape's own `GroundShape.shadow_outline()`, the one oval or capsule)
 ## and over the one it casts now (`EventLook.shadow_outlines()`, `AgentLook.shadow_outlines()`, one
 ## oval per wheel pair). The riot van and the moving van keep their shadow
-## (`EventVehicleLook.SCENE_SHAPED`) and are left out. The shadows come from the game's own calls: a fake event's look and a crowd
+## (`EventVehicleLook.SCENE_SHAPED`), so their two rows are the same shadow twice: they are drawn so the
+## player sees what stays. The shadows come from the game's own calls: a fake event's look and a crowd
 ## car the game placed are asked for them, the same calls the draw and the debug view's shadow layer
 ## make. The pictures are re-rasterised from their authored SVGs, as
 ## `tests/probes/m108_event_vehicles_sheet.gd` does, and stood where the game stands them: on the
@@ -41,7 +42,9 @@ func run(t: TestRunner) -> void:
 	_event_rows("ice-cream-van", "ice_cream_van", EventPictures.ICE_CREAM_VAN_BY_VIEW, false)
 	_event_rows("lorry", "reversing_lorry", EventPictures.LORRY_BY_VIEW, false)
 	_event_rows("unmarked-van", "abduction", EventPictures.UNMARKED_VAN_BY_VIEW, true)
+	_event_rows("riot-van", "night_raid", EventPictures.RIOT_VAN_BY_VIEW, true)
 	_stationary_rows("burnt-out-car", "burnt_out_car", EventDef.Look.BURNT_OUT_CAR)
+	_stationary_rows("moving-van", "moving_van", EventDef.Look.MOVING_VAN)
 	print("silver_egret_shadow_sheet: rows written under %s"
 			% ProjectSettings.globalize_path(OUT_DIR))
 	t.check(true, "silver_egret_shadow_sheet probe ran")
@@ -116,6 +119,8 @@ func _event_rows(name: String, def_id: String, by_view: Dictionary, side_faces_w
 		instance.solid_direction = instance.heading if def.drives() else Vector2.RIGHT
 		instance.shape = def.ground_shape()
 		var look := instance.look_for(def)
+		if not def.drives():
+			look.stand_as(BodyStance.new(def, Vector2.ZERO, false, false, instance.heading))
 		var view := look.select_view(instance.heading)
 		var mirror := look.is_mirrored()
 		if view == "side" and side_faces_west:
@@ -149,6 +154,7 @@ func _stationary_rows(name: String, def_id: String, look_id: EventDef.Look) -> v
 		instance.solid_direction = Vector2.RIGHT if side_on else Vector2.DOWN
 		instance.shape = def.ground_shape()
 		var look := instance.look_for(def)
+		look.stand_as(BodyStance.new(def, Vector2.ZERO, false, side_on, instance.heading))
 		var region := EventPictures.stationary_vehicle_texture(look_id, side_on)
 		var extent := EventPictures.stationary_vehicle_extent(region, side_on,
 				def.body().drawn_width())

@@ -5,7 +5,8 @@ one squashed oval per wheel pair (`GroundShape.paired_shadow_outlines()`), the n
 bottom of its picture, where before it was its ground shape's one oval or capsule, which on the cars
 drawn over their bodies (the crowd cars, the police car, the fire engine) spread behind the whole
 picture and past the roof of the end-on views. The riot van and the moving van keep their whole
-body's shadow. Props are unchanged.
+body's oval, wider than the van, and are shown as they look now so it can be judged; they are left
+to the entry's follow-up (`docs/todo/2026-10-03-silver-egret/`). Props are unchanged.
 
 **What each file shows.**
 
@@ -13,7 +14,11 @@ body's shadow. Props are unchanged.
   first and then clockwise, each row before and after; the police car a third time with its body
   riding up `WheelBob.HEIGHT` (1px) over its wheels and shadow, its second ride frame.
 - `vans-sheet.png`: the delivery van, the army truck, the ice-cream van, the reversing lorry and the
-  unmarked van at all eight sectors, and the burnt-out car side on and end on, before and after.
+  unmarked van at all eight sectors, and the burnt-out car side on and end on, before and after; then
+  the two vans this change leaves alone, the riot van at all eight sectors and the moving van side
+  on and end on, one row each since their shadow is the same before and after (`riot-van-after`,
+  `moving-van-after`): an oval across, and wider than, the whole van, which the riot van's row shows
+  spilling into its neighbours' cells.
   Most of these are only ever seen side on in play (`docs/decisions/2026-09-11-M108-eight-direction-entity-graphics-the-event-vehicles-and-the-police-car.md`);
   every sector is drawn so a view the game may reach later is judged too.
 - `ingame-junction.png`: the game, before (left) and after (right), at a T junction on the

@@ -406,8 +406,8 @@ const WHEEL_OVAL_SHARE := 0.6
 ## stands clear of the body beside the roof. End on, the far pair is under the body either way.
 const WHEEL_DEPTH := 0.6
 
-## The ovals `draw_paired_shadow()` fills, one per wheel pair, for a vehicle centred on `at` and lying
-## along `axis`, whose picture stands `ground_line` below `at` — the drop from its centre to the
+## The ovals a vehicle's shadow fills, one per wheel pair (the looks' `shadow_outlines()` fill
+## them), for a vehicle centred on `at` and lying along `axis`, whose picture stands `ground_line` below `at` — the drop from its centre to the
 ## bottom row of its picture: zero for one drawn standing on its own node, the southern reach of its
 ## body for a car drawn over its body (`CarLook.ground_line()`, `EventLook.body_anchor()`).
 ##
@@ -445,14 +445,6 @@ func paired_shadow_outlines(at: Vector2, axis: Vector2, ground_line: float
 		var behind := (axle.y - nearer) * WHEEL_DEPTH
 		outlines.append(_wheel_oval(at + Vector2(axle.x, behind + ground_line), half))
 	return outlines
-
-## Draws `paired_shadow_outlines()`, each oval its own filled polygon, so the layer that traces them
-## and the shadow cannot disagree about where a vehicle meets the ground.
-func draw_paired_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2, ground_line: float) -> void:
-	if not casts_a_shadow():
-		return
-	for outline in paired_shadow_outlines(at, axis, ground_line):
-		canvas.draw_colored_polygon(outline, Palette.SHADOW)
 
 ## One wheel pair's oval round `centre`: a level ellipse `half.x` wide and `half.y` deep to either side.
 func _wheel_oval(centre: Vector2, half: Vector2) -> PackedVector2Array:
