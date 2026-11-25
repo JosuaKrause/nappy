@@ -198,7 +198,6 @@ STATIC_CACHES: dict[str, str] = {
     "EventFootprints._warning_sizes": "sizes read off the baked pictures, the same on every read",
     "EventFootprints._warning_guard": "a size read off the baked pictures, the same on every read",
     "EntityHalo._shared_material": "one shader material every halo shares",
-    "EventCatalogue._chargers": "the run's charger timing, handed in once at boot, the same all run",
     "EventCatalogue._all": "the catalogue's rows, built once from constants",
     "EventCatalogue._hot": "derived rows, each built once from the catalogue",
     "EventCatalogue._building_fire": "a derived row, built once from the catalogue",
@@ -225,4 +224,35 @@ class Exception_:
     more: tuple[tuple[str, int], ...] = ()
 
 
-EXCEPTIONS: tuple[Exception_, ...] = ()
+EXCEPTIONS: tuple[Exception_, ...] = (
+    Exception_(
+        rule="static",
+        name="EventCatalogue",
+        reason=(
+            "run configuration: the run's charger timing (EventCatalogue._chargers), written once at boot by "
+            "main.configure() and read through the static catalogue's rows, until the run's rows are handed "
+            "from main (queue entry curly-finch); declared in designing-classes"
+        ),
+        files=(
+            "src/crowd/crowd.gd",
+            "src/events/simulation/day_planner.gd",
+            "src/events/simulation/event_director.gd",
+            "src/events/simulation/event_manager.gd",
+            "src/events/simulation/event_spawner.gd",
+            "src/events/simulation/events_ahead.gd",
+            "src/resistance/happenings.gd",
+            "src/resistance/park_cordon.gd",
+            "src/resistance/resistance_director.gd",
+        ),
+        more=(
+            ("src/events/simulation/day_planner.gd", 2),
+            ("src/events/simulation/event_director.gd", 8),
+            ("src/events/simulation/event_manager.gd", 2),
+            ("src/events/simulation/event_spawner.gd", 2),
+            ("src/events/simulation/events_ahead.gd", 4),
+            ("src/resistance/happenings.gd", 5),
+            ("src/resistance/park_cordon.gd", 2),
+            ("src/resistance/resistance_director.gd", 18),
+        ),
+    ),
+)

@@ -53,5 +53,12 @@ its roadblock 240px from her start, inside the guard's wider notice, which the r
 refuses; it stands 272px off, and she sets off 0.05s later, so he is still within 180px of her
 through the shot.
 
+**The timing in a static.** The catalogue keeps the run's timing in `EventCatalogue._chargers`,
+written once at boot by `main.configure()`. The first build listed it among the layer map's
+stateless caches, which hid it from the layer check. It is declared instead as the map's one
+exception, in `tools/layer_map.py` and **designing-classes**, the orchestrator's ruling. Handing the
+run's rows from `main` (47 files under `src/`, 183 under `tests/` and `tools/`) is filed as
+curly-finch.
+
 **Open to the player:** the pair itself; a charger's field growing with its notice; a vehicle's
 notice capped at its field; a mark that does not move where its guard would notice her.
