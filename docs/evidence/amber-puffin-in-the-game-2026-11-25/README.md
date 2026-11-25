@@ -61,7 +61,7 @@ walks, which these runs do not attribute.
 From a fresh clone, one engine at a time, with a display:
 
 ```sh
-git fetch origin refs/pull/<PR>/head   # the pull request that adds this folder
+git fetch origin refs/pull/1755/head   # the pull request that adds this folder
 before=342ceef4a                        # main the branch started from
 after=438159b3f                         # the branch's source as measured
 for rev in "$before" "$after"; do
