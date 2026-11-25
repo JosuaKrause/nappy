@@ -347,7 +347,6 @@ func build(city_map: CityMap) -> void:
 	scenery.setup(self, _map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
 	scenery_ground.use_mode(_ground_mode)
-	scenery_ground.use_atlas(_atlas)
 	_decals.use_atlas(_atlas)
 	_decals.draw_through(_scenery_drawer)
 	_decals.stream_in_chunks()

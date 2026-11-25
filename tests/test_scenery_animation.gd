@@ -11,7 +11,6 @@ func run(t: TestRunner) -> void:
 	await _test_roof_rotors(t)
 	_test_both_rotor_phases_share_one_registration(t)
 	await _test_event_parts(t)
-	await _test_water_surfaces(t)
 
 ## A roof that is told what to stand through a recording drawer (`tests/recording_roof_drawer.gd`,
 ## standing each unit for real so a vent has its rotor), handed in as the city hands its own
@@ -345,64 +344,3 @@ func _body_of(instance: EventInstance) -> StaticBody2D:
 		if child is StaticBody2D:
 			return child
 	return null
-
-## One water surface, alone: the real `SceneryWater` on a parent node with a library handed in
-## where the ground hands its own, and cells of the test's own. What decides which cells of a city
-## are water is the city's painting (`tests/test_city_ground_water.gd`); this is what a surface does
-## with the cells it is given.
-func _test_water_surfaces(t: TestRunner) -> void:
-	var parent := Node2D.new()
-	t.add_child(parent)
-	var cells: Array[Vector2i] = []
-	for x in 4:
-		cells.append(Vector2i(x, 0))
-	var water := SceneryWater.new()
-	water.cells = cells
-	parent.add_child(water)
-	var ripples := water.material as ShaderMaterial
-	t.check(ripples != null and ripples.shader == SceneryWater.RIPPLE_SHADER,
-			"a surface with cells has the shared ripple shader")
-	var before := _ripple_clock(water)
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
-	t.check(_ripple_clock(water) > before and water.cells == cells,
-			"ripple time advances without repainting any ground cell")
-	water.configure(cells)
-	t.check(water.material != ripples
-			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
-			"repeated configure keeps the shared shader while refreshing instance uniforms")
-	# A surface handed no library made one when it entered the tree: the ripples above were baked from
-	# its page.
-	# A surface of its own on a library of the test's own, watched from here, so the only lines
-	# about the `ground` page are the ones that library writes.
-	var own := AtlasLibrary.new()
-	var pages := PageLog.new(own)
-	var other := SceneryWater.new()
-	other.use_atlas(own)
-	parent.add_child(other)
-	other.configure(cells.slice(0, 1))
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
-	t.check(other.material != water.material
-			and (other.material as ShaderMaterial).shader
-			== (water.material as ShaderMaterial).shader,
-			"two water surfaces share the shader but keep independent materials")
-	t.check(_ripple_clock(other) > 0.0 and _ripple_clock(other) < _ripple_clock(water),
-			"two water surfaces keep independent animation clocks")
-	t.check(pages.held(&"ground"), "a surface holds the ground page while it stands")
-	var kept := _ripple_clock(other)
-	parent.remove_child(other)
-	t.check(other.material == null and not pages.held(&"ground"),
-			"detaching water releases its atlas region and shader material")
-	parent.add_child(other)
-	t.check(pages.held(&"ground") and _ripple_clock(other) >= kept
-			and (other.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
-			"reentry rebinds the region and shared shader without resetting its clock")
-	other.free()
-	pages.stop()
-	parent.free()
-
-## Where `water`'s ripples are in their animation: the clock its shader is drawing with, what the
-## surface shows.
-func _ripple_clock(water: SceneryWater) -> float:
-	return float((water.material as ShaderMaterial).get_shader_parameter("elapsed"))

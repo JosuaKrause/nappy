@@ -6,8 +6,8 @@ extends RefCounted
 ##
 ## **This is a direct test of the city's painting** (`City.scenery_ground_source()` decides each
 ## cell, the ground lays what it says): the real city is built, from a cached map
-## (`tests/city_map_cache.gd`). What one water surface does with its cells is
-## `tests/test_scenery_animation.gd`'s.
+## (`tests/city_map_cache.gd`). Where in the water's tile a surface draws each cell from is
+## `tests/test_south_water_tile.gd`'s.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const GroundCells := preload("res://tests/ground_cells.gd")
@@ -71,7 +71,7 @@ func _test_water_ownership(t: TestRunner) -> void:
 						"water fills the complete requested shore, south-west and south-east corners included")
 	# The escape's route tint repaints every resident chunk, shore included, as the game does.
 	city.tint_the_route(null)
-	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
+	t.check(not is_instance_valid(water), "repaint releases the prior water surfaces")
 	for tile: Vector2i in expected:
 		t.check(GroundWater.at(city.scenery_ground, tile), "repaint preserves the shoreline and bridge gap")
 	city.free()

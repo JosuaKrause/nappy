@@ -77,6 +77,10 @@ func _run() -> void:
 func _comparison(mode: String, warmup: bool) -> Dictionary:
 	var owner := Node2D.new()
 	add_child(owner)
+	# The south water's tile, on a fixed clock, as the ground stands it for its water surfaces.
+	var water_tile := SouthWaterTile.new()
+	owner.add_child(water_tile)
+	water_tile.keep_drawing(true)
 	var layers: Array[TileMapLayer] = []
 	var preparation: Array[int] = []
 	var submission: Array[int] = []
@@ -125,9 +129,9 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 					cells += int(source >= 0)
 			if not water.is_empty():
 				var surface := SceneryWater.new()
+				surface.use_tile(water_tile)
 				layer.add_child(surface)
 				surface.configure(water)
-				surface.set_process(false)
 				water_surfaces += 1
 			var submitted := Time.get_ticks_usec()
 			layer.update_internals()
@@ -280,6 +284,7 @@ func _distribution(values: Array[int]) -> Dictionary:
 func _hashes() -> Dictionary:
 	var hashes := {}
 	for path: String in ["src/city/scenery_ground.gd", "src/city/scenery_residency.gd",
-			"src/city/city.gd", "src/city/scenery_water.gd", "tests/probes/ground_frames.gd"]:
+			"src/city/city.gd", "src/city/scenery_water.gd", "src/city/south_water_tile.gd",
+			"tests/probes/ground_frames.gd"]:
 		hashes[path] = FileAccess.get_sha256("res://" + path)
 	return hashes
