@@ -12,7 +12,8 @@ extends RefCounted
 ## - **first junction open**: the junction where the route leaves the doorstep's street may stand
 ##   on the main road, since it is first-block ground she may turn off at anyway;
 ## - **precinct side streets sealed hard**: that, and a precinct side street allowed, which a soft
-##   pair cannot close (a precinct is paved frontage to frontage) and a hard seal would.
+##   pair cannot close (a precinct is paved frontage to frontage) and a hard seal would;
+## - **as built**: `TutorialRoute.for_city()` itself (`_measure_built()`).
 ##
 ## Not a suite: it prints rather than asserts.
 ## Run by name:
@@ -52,7 +53,30 @@ func run(t: TestRunner) -> void:
 	_measure("first junction open", maps)
 	_precinct_side_streets_sealed = true
 	_measure("precinct side streets sealed hard", maps)
+	_measure_built(maps)
 	t.check(true, "a probe asserts nothing")
+
+## **As built**: `TutorialRoute.for_city()` itself, which holds the third reading and, on top of
+## it, a side street's mouth half (where its seal stands) opening onto nothing but buildings, and
+## its kept ground out of the second calm area's reach.
+func _measure_built(maps: Array[CityMap]) -> void:
+	var six := 0
+	var seven := 0
+	var none := 0
+	for map in maps:
+		var route := TutorialRoute.for_city(map)
+		var streets := route.lesson_streets().size() + 1 if route else 0
+		match streets:
+			6:
+				six += 1
+			7:
+				seven += 1
+			_:
+				none += 1
+		if streets != 6:
+			print("TUTORIAL_ROUTE as built | seed %d | %d streets" % [map.city_seed(), streets])
+	print("TUTORIAL_ROUTE as built | total %d seeds | six streets %d | seven streets %d | none %d"
+			% [maps.size(), six, seven, none])
 
 func _measure(reading: String, maps: Array[CityMap]) -> void:
 	_pruned = {}

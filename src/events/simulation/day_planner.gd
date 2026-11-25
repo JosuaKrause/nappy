@@ -190,7 +190,8 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# offers a candidate row that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a
 	# fully blocked street").
 	var seals := SealPlanner.plan_day(city_map, spec, tree,
-			world.run().calendar().day_rng(day, "seals"), boundary, city_map.held_streets())
+			world.run().calendar().day_rng(day, "seals"), boundary, city_map.held_streets(),
+			streets.tutorial_route())
 	# Each says it is a seal, one of the city's fixed parts (`EventPlan.is_a_fixed_part()`), which day
 	# 13's swap never takes.
 	for seal in seals:

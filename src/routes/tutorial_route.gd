@@ -26,8 +26,10 @@ extends RefCounted
 ## - **border the home block**: the home-street rule keeps every row off its four streets;
 ##
 ## and keeps, of the rest, one whose tutorial park is a park or a calm zone where one fits, a square
-## or a courtyard otherwise, and from whose first block a second calm area stays reachable. A
-## through-alley with a mouth on a lesson street refuses nothing: the seals wall that mouth.
+## or a courtyard otherwise, whose side streets past the first block open onto no open ground
+## between the route and their seal (the park aside, at the last street's ends), and from
+## whose first block a second calm area stays reachable. A through-alley with a mouth on a lesson
+## street or a side street's mouth half refuses nothing: the seals wall that mouth.
 
 ## The doorstep's street: the first block, which the route starts in and nothing seals.
 var _home: StreetNetwork.Segment
@@ -77,13 +79,31 @@ func walked_ground() -> Dictionary:
 	return found
 
 ## The ground no other branch of the day's tree may use: the lesson streets, every junction box
-## past the first, and the tutorial park. So no other branch merges into the route past its first
-## block, runs down a side street off it, or reaches the park another way.
+## past the first, the half of each side street past the first block nearest the route (its
+## mouth, where `SealPlanner` stands its seal), and the tutorial park. So no other branch merges
+## into the route past its first block, reaches the park another way, or runs over a side street's
+## mouth: a calm area that opens onto a side street is reached along the far half, so the seal at
+## the mouth never stands on a branch and never leaves the side street open for one.
 func kept_ground() -> Dictionary:
 	var found := _ground_past_the_first_block()
 	for tile in _map.rect_tiles(_park_rect):
 		found[tile] = true
+	for mouth in side_street_mouths():
+		var segment: StreetNetwork.Segment = mouth[0]
+		for tile in _map.rect_tiles(_mouth_half(segment, bool(mouth[1]))):
+			found[tile] = true
 	return found
+
+## The half of `segment` nearest its `at_a` end: the ground a seal at that mouth stands on.
+static func _mouth_half(segment: StreetNetwork.Segment, at_a: bool) -> Rect2i:
+	var rect := segment.tile_rect()
+	if segment.horizontal:
+		var half := rect.size.x / 2
+		return Rect2i(Vector2i(rect.position.x if at_a else rect.end.x - half, rect.position.y),
+				Vector2i(half, rect.size.y))
+	var tall := rect.size.y / 2
+	return Rect2i(Vector2i(rect.position.x, rect.position.y if at_a else rect.end.y - tall),
+			Vector2i(rect.size.x, tall))
 
 ## The side streets past the first block, each with the end of it that opens onto the route
 ## (`true` for its `a` end), one entry per mouth: every real street meeting the route at a junction
@@ -101,13 +121,18 @@ func side_street_mouths() -> Array[Array]:
 			found.append([arm, arm.a == junction])
 	return found
 
-## The through-alleys with a mouth on a lesson street, each with which mouth (`true` for the one at
-## its rect's start), one entry per such mouth.
+## The through-alleys with a mouth on a lesson street or on a side street's mouth half past the
+## first block (the stub between the route's junction box and the side street's seal), each with
+## which mouth (`true` for the one at its rect's start), one entry per such mouth.
 func alley_mouths() -> Array[Array]:
 	var found: Array[Array] = []
 	var lesson := {}
 	for segment in _streets:
 		for tile in _map.rect_tiles(segment.tile_rect()):
+			lesson[tile] = true
+	for mouth in side_street_mouths():
+		var segment: StreetNetwork.Segment = mouth[0]
+		for tile in _map.rect_tiles(_mouth_half(segment, bool(mouth[1]))):
 			lesson[tile] = true
 	for rect in _map.alley_lots():
 		if _map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
@@ -160,9 +185,12 @@ class _Chooser extends RefCounted:
 	var _streets := {}
 	var _boxes := {}
 	var _paths: Array[Array] = []
+	## The street trees' footprint, which a seal at a side street's mouth steps past.
+	var _trees := {}
 
 	func _init(map: CityMap) -> void:
 		_map = map
+		_trees = StreetTrees.footprint_tiles(map)
 		_areas = ClosurePlanner.calm_areas(map)
 		for index in _areas.size():
 			for tile in map.rect_tiles(_areas[index].rect):
@@ -295,9 +323,31 @@ class _Chooser extends RefCounted:
 			return null
 		var route := TutorialRoute.new(_map, _home, streets, junctions, _areas[park].block,
 				_areas[park].rect)
+		if not _mouths_keep(route, park, junctions.slice(junctions.size() - 2)):
+			return null
 		if not _second_area_reached(route, park):
 			return null
 		return route
+
+	## Whether every side street's stub past the first block, between the route's junction box and
+	## the row its seal stands on (`SealPlanner.tutorial_mouth_stub()`), opens onto no open ground:
+	## the stub is a way off the route if a park, a square or a courtyard opens onto it. A
+	## through-alley refuses nothing, since the seals wall its mouth there (`alley_mouths()`). The tutorial park
+	## may open onto a side street at either end of the last lesson street (`last`): the park
+	## borders that street from its first junction on, so she is at the park there anyway.
+	func _mouths_keep(route: TutorialRoute, park: int, last: Array[Vector2i]) -> bool:
+		for mouth in route.side_street_mouths():
+			var segment: StreetNetwork.Segment = mouth[0]
+			var at_a: bool = mouth[1]
+			var border := _border_of(SealPlanner.tutorial_mouth_stub(_map, segment, at_a, _trees))
+			if bool(border["open"]):
+				return false
+			var areas: Dictionary = border["areas"]
+			var junction := segment.a if at_a else segment.b
+			if areas.is_empty() or (last.has(junction) and areas.size() == 1 and areas.has(park)):
+				continue
+			return false
+		return true
 
 	func _is_a_park(area: ClosurePlanner.CalmArea) -> bool:
 		if _map.calm_lot_blocks(area.block) > 1:

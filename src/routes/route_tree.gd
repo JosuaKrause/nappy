@@ -386,9 +386,9 @@ func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
 
 ## **The tutorial park's branch is the tutorial route**, adopted before any other branch grows,
 ## and the route's kept ground is then out of every later probe's graph (`_kept`). So no other
-## branch merges into the route past its first block, runs down a side street off it, or reaches
-## the park another way, and every side street past the first block is off the tree and sealed by
-## construction (`SealPlanner`). The route is the shortest way on the growth's own graph from the
+## branch merges into the route past its first block, crosses a side street's mouth (the half of it
+## nearest the route) or reaches the park another way, so the seal at each mouth past the first
+## block stands off the tree by construction (`SealPlanner`). The route is the shortest way on the growth's own graph from the
 ## park to the doorstep's street through the route's walked ground, which runs down the lesson
 ## streets in order because they are the only ground it may take.
 ##
