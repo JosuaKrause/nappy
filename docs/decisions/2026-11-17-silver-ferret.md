@@ -127,7 +127,7 @@ here is raised. Two questions for the orchestrator to put to the player, the bar
     goes from 18.4 to 24.3 a city-day, within 2% of act I's 24.8. All of it is on her route's
     streets (15.4 to 21.3). What lands there for every hundred draw locations goes from 5.6 to 7.8,
     the same third of the cell as before (0.35 and 0.34). Her route's junction boxes go from 2.20
-    to 2.15. The other two views and acts I to III are unchanged line for line. The city places
+    to 2.15. The other two views and acts I to III are unchanged in their counts. The city places
     about 6% more in act IV (97.1 to 103.0 a city-day). The mix's own count on her route (14.2,
     `placement_rows.gd`) was not run again with the cell. Act IV's route stays a third shorter than
     act I's, with more on each stretch of it.

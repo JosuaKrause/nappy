@@ -136,9 +136,10 @@ points and 60% and 63% of the rows that end the day (the `TOPACT` lines).
 With the one cell set (`raw/route_cells_act4_street23.txt`), act IV on her route reads 345.7 draw
 locations, 24.26 events a city-day and 7.02 for every hundred; its street 7.81 for every hundred
 against the cell of 23, its junction box 4.66 against 46, its park or square unchanged. The other
-two views and acts I to III are unchanged. By day, what the units place on her route goes from
-20.7, 17.3 and 17.1 a city on days 12 to 14 to 26.7, 23.1 and 23.0, and the whole city from 96.6,
-94.9 and 99.9 to 102.6, 100.6 and 105.8.
+two views and acts I to III are unchanged in their counts (on day 13 one event beside her route
+draws a leaf blower in place of an ice-cream van). By day, what the units place on her route goes
+from 20.7, 17.3 and 17.1 a city on days 12 to 14 to 26.7, 23.1 and 23.0, and the whole city from
+96.6, 94.9 and 99.9 to 102.6, 100.6 and 105.8.
 
 The units' count here (`placement_cells.gd`, the rows the units drew, one handed to her walk
 among them) is a little above the mix's (`placement_rows.gd`, what the dawn placed); the 1174
