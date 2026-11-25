@@ -3,7 +3,8 @@ extends RefCounted
 ## (`ResistanceDirector._place_the_roadblock_near()`) does when she reads the mark where a mark
 ## actually stands, one tile into an alley from its mouth (`ResistanceDirector._marks()`), rather
 ## than on a route tile. Every mark tile the day's draw could pick is read (`_pick_reachable()`'s
-## two tests: legal ground, and open to it and reachable from home under the day's plan), or an
+## tests: legal ground, open to it and reachable from home under the day's plan, and a way from
+## home confirmed at dawn, `_she_can_be_sent_to()`), or an
 ## evenly spaced `PER_SEED` of them where a city has more. Not a suite: it prints rather than
 ## asserts.
 ##
@@ -37,6 +38,7 @@ func run(t: TestRunner) -> void:
 	var totals := {}
 	var distances := {}
 	var asked := 0
+	var unpickable := 0
 	for seed_value in SEEDS:
 		var run := RunCity.started_run(RUN_SEED)
 		var city := RunCity.new_city(CITY_SCENE)
@@ -61,6 +63,10 @@ func run(t: TestRunner) -> void:
 		for index in chosen.size():
 			if index > 0:
 				_restart_the_day(city, run, director, seed_value)
+			if not _the_day_would_pick(city, director, chosen[index]):
+				unpickable += 1
+				print("RM_UNPICKABLE seed %d mark %s" % [seed_value, chosen[index]])
+				continue
 			var at := city.map().tile_to_world(chosen[index])
 			var outcome := _read_the_mark_at(city, director, player, at, seed_value)
 			var kind: String = outcome[0]
@@ -79,7 +85,8 @@ func run(t: TestRunner) -> void:
 		player.free()
 		director.free()
 		city.free()
-	print("RM_TOTAL %d marks over %d seeds | %s" % [asked, SEEDS.size(), totals])
+	print("RM_TOTAL %d marks over %d seeds, %d the day would not pick | %s" % [asked, SEEDS.size(),
+			unpickable, totals])
 	for key: String in distances:
 		var list: Array = distances[key]
 		list.sort()
@@ -96,6 +103,18 @@ func run(t: TestRunner) -> void:
 	t.check(asked > 0, "there were marks to read (%d)" % asked)
 
 var _misses := 0
+
+## Whether the dawn's draw can pick the mark at `tile`: `_pick_reachable()`'s last test, asked as
+## the dawn asks it with her nowhere yet (`Vector2.INF`), a way from home confirmed with the units
+## along it and round the place drawn first. A tile whose way no confirmation can stand is never a
+## mark, however open it reads before those units draw.
+func _the_day_would_pick(city: City, director: ResistanceDirector, tile: Vector2i) -> bool:
+	var siting: SpawnSiting = RunCity.spawn_siting(city)
+	var ground := siting.ask_of_ground()
+	var free := func(at: Vector2i) -> bool:
+		return siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, city.map().tile_to_world(at))
+	return director._she_can_be_sent_to(tile, Vector2.INF, free)
+
 ## What -> the milliseconds each `_place_the_roadblock_near()` call took (`RM_TIME`).
 var _times := {}
 
