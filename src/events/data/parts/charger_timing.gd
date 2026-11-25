@@ -24,7 +24,7 @@ extends RefCounted
 ## (`Tuning.validate_pursuit()`); at the most, the alley robber's reaches half the view's width
 ## (`Tuning.VIEW_HALF_EXTENT`), and a charger notices her only with his warning in her view, so a
 ## radius past it would never be met.
-const LEAST_REACH := 0.7
+const LEAST_REACH := 0.85
 const MOST_REACH := 1.4
 
 ## Seconds a charger warns before it charges; see `warning()`.

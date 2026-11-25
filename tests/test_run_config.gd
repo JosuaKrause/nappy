@@ -37,6 +37,7 @@ func run(t: TestRunner) -> void:
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)
 	_test_a_resolved_config_cannot_change(t)
 	_test_a_recipe_stands_in_for_the_run_flags(t)
+	_test_the_charger_timing_is_the_flags_or_the_shipped_one(t)
 	_test_the_day_and_the_section_lengths(t)
 	_test_every_rig_flag_makes_a_rig(t)
 	_test_the_title_is_skipped_by_a_rig_or_a_recipe(t)

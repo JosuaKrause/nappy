@@ -34,8 +34,16 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t: TestRunner) -> void:
 	_reachability(t)
-	_on_screen(t)
-	_task_guards(t)
+	# Measured at the notice radii as written and as shipped (`EventCatalogue.CHARGER_REACH`), at
+	# the shipped warning, so what a wider notice does to the guards is read side by side.
+	var was := EventCatalogue.charger_timing()
+	for reach: float in [1.0, EventCatalogue.CHARGER_REACH]:
+		EventCatalogue.use_charger_timing(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
+		print("== robber notice %.0fpx (reach %.2f) ==" % [EventCatalogue.mark_guard().notice_within(),
+				reach])
+		_on_screen(t)
+		_task_guards(t)
+	EventCatalogue.use_charger_timing(was)
 
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.

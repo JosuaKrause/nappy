@@ -1279,7 +1279,7 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 
 | she | outcome |
 | --- | --- |
-| walks up and stops | charged once his 2.0s warning has run, and caught |
+| walks up and stops | charged once his 1.75s warning has run, and caught |
 | walks on in | caught |
 | walks or runs away as he warns, out of his radius | never charged: he stops and waits again |
 | runs inside his radius as he warns, then stands | charged once his warning has run, and caught: running shakes him off only once he has charged |
@@ -1467,9 +1467,10 @@ skipping an alley a completed step's mark already stood at as long as some other
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
 nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
 distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
-courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `EventDef.notice_within()` of her or in view when he is placed — so where that spot is 216px or
-more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
+courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never in view
+when he is placed (at dawn, never within his own `EventDef.notice_within()` of the doorstep
+instead) — so where that spot is 261px or more from the mark (his notice, 225px as shipped, and her
+36px reach), entering the alley from the mark's own end, reading it and leaving the same way
 never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
 is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
 once read, the mark never moves and its guard stays until the day ends. The guard a task stands at
