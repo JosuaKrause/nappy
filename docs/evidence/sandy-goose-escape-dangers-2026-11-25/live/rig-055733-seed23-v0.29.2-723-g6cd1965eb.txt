@@ -1,0 +1,20 @@
+# 23 tunnel
+   0.0  plan     every unit drawn before she sets off: 33 units, 21 rows
+   0.0  plan     finale: tunnel via 3 calm, 104 cells | bridge via 3 calm, 148 cells | 33 open streets, 571 placements
+   0.0  start    entered the city at (75,80), facing 180°
+   4.6  near     military_convoy at (72,55), 385px, exc 0, in 0.2/s (crowd 0.0, events 0.9), sleep 100
+   5.5  near     military_convoy at (72,59), 205px, exc 1, in 10.2/s (crowd 0.0, events 18.8), sleep 100
+   6.1  near     military_convoy at (72,61), 110px, exc 4, in 12.0/s (crowd 0.0, events 21.8), sleep 100
+   7.3  route    day 16: re-planned to 'tunnel' (7.3s, 127 waypoints)
+   8.4  near     impact_crater at (79,55), 119px, exc 3, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  10.8  near     impact_crater at (79,48), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  15.9  near     abduction at (76,33), 249px, exc 0, in 0.1/s (crowd 0.0, events 0.2), sleep 100
+  20.1  near     abduction at (76,33), 136px, exc 6, in 9.1/s (crowd 0.0, events 16.5), sleep 100
+  25.1  near     abduction at (92,29), 249px, exc 3, in 0.1/s (crowd 0.0, events 0.1), sleep 100
+  26.6  near     abduction at (92,29), 137px, exc 3, in 9.0/s (crowd 0.0, events 16.4), sleep 100
+  34.0  near     impact_crater at (110,30), 118px, exc 11, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  35.0  near     impact_crater at (110,30), 65px, exc 6, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  37.3  near     collapsed_frontage at (115,24), 128px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  43.0  near     impact_crater at (115,11), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  44.0  near     impact_crater at (115,11), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  53.2  route    day 16: day won at 53.2s (day time), still walking to 'tunnel'

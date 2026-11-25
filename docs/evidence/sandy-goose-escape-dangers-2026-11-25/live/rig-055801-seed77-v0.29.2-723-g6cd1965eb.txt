@@ -1,0 +1,14 @@
+# 77 tunnel
+   0.0  plan     every unit drawn before she sets off: 35 units, 24 rows
+   0.0  plan     finale: tunnel via 3 calm, 161 cells | bridge via 3 calm, 154 cells | 35 open streets, 608 placements
+   0.0  start    entered the city at (84,80), facing 180°
+   0.0  near     finale_explosion (telegraph) at (87,91), 365px, exc 0, in 0.0/s (crowd 0.0, events 3.3), sleep 100
+   0.9  near     roadblock at (80,88), 209px, exc 0, in 2.0/s (crowd 0.0, events 3.6), sleep 100
+   2.4  near     roadblock (telegraph) at (81,88), 114px, exc 0, in 2.0/s (crowd 0.0, events 3.6), sleep 100
+   3.6  near     abduction (telegraph) at (71,82), 248px, exc 7, in 12.1/s (crowd 0.0, events 21.9), sleep 100
+   5.0  near     roadblock at (76,84), 62px, exc 8, in 8.5/s (crowd 0.0, events 15.5), sleep 100
+   5.6  near     military_convoy at (69,72), 342px, exc 13, in 8.6/s (crowd 0.0, events 15.9), sleep 100
+   5.8  near     roadblock at (75,81), 34px, exc 15, in 10.7/s (crowd 0.0, events 19.6), sleep 100
+   5.8  route    day 16: re-planned to 'tunnel' (5.9s, 275 waypoints)
+   5.9  lost     lost_hard_fail in the city after 6.0s to roadblock — It went wrong. | exc 17, in 12.2/s (crowd 0.0, events 22.4), sleep 100 | near: roadblock 28px
+   5.9  route    day 16: day ended (LOST_HARD_FAIL) before reaching 'tunnel', 6.0s (day time)
