@@ -7,7 +7,8 @@ extends Node
 ## **Nothing can catch her on the way.** The section is already won when this begins
 ## (`DayController` has ended the day, so no loss path is listening), and whoever starts the walk
 ## freezes the world around her for it (`main` pauses the tree and leaves only her and this node
-## running), so no car, walker or event moves. **No walkable ground is added**: she is led through
+## running, her baby paused with the world so her meters stand still), so no car, walker or event
+## moves. **No walkable ground is added**: she is led through
 ## the map's boundary wall (`Stroller.lead()`), over what `CityEdge` draws past the edge.
 ##
 ## Each way out is configured by what `CityEdge` draws, never by a number of its own: the tunnel is
@@ -17,12 +18,16 @@ extends Node
 
 signal arrived
 
-## How fast the game walks her. A run: the deck is a long way over open water.
-const SPEED := Tuning.RUN_SPEED
+## How fast the game walks her in, by way out: into the tunnel at a walk, so that the dark ramp
+## inside its opening (`CityEdge.TUNNEL_DARK`) takes her a step at a time over most of a second
+## rather than in a blink; across the deck at a run, since it is a long way over open water.
+static func speed_for(exit_kind: int) -> float:
+	return Tuning.WALK_SPEED if exit_kind == CityExit.Kind.TUNNEL else Tuning.RUN_SPEED
 
 var _player: Stroller = null
 var _heading := Vector2.ZERO
 var _target := Vector2.ZERO
+var _speed := 0.0
 
 func _ready() -> void:
 	set_physics_process(false)
@@ -40,6 +45,7 @@ static func _target_for(exit_kind: int, threshold: Vector2) -> Vector2:
 func begin(player: Stroller, exit_kind: int, threshold: Vector2) -> void:
 	_player = player
 	_target = _target_for(exit_kind, threshold)
+	_speed = speed_for(exit_kind)
 	_heading = Vector2.UP if exit_kind == CityExit.Kind.TUNNEL else Vector2.DOWN
 	set_physics_process(true)
 	_steer()
@@ -63,4 +69,4 @@ func _physics_process(_delta: float) -> void:
 ## Along the way out, bending toward the spine's centre line as she goes.
 func _steer() -> void:
 	var left := _target - _player.global_position
-	_player.lead(Vector2(left.x * 0.05, left.y) if absf(left.y) > 1.0 else _heading, SPEED)
+	_player.lead(Vector2(left.x * 0.05, left.y) if absf(left.y) > 1.0 else _heading, _speed)

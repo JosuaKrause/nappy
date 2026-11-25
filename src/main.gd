@@ -2066,7 +2066,9 @@ func _finish_the_section(end: DayEnd) -> void:
 ## whole deck (`EscapeWalkIn`), the camera following her past the map's edge, and the epilogue comes
 ## up when she is in. **Nothing can catch her on the way**: the day is already won (no loss path is
 ## listening), and the tree is paused with only her (and her camera) and the walk-in left running,
-## so no car, walker or event moves. The map's walkable set is untouched; she is led through the
+## so no car, walker or event moves, and **the baby stays with the paused world**: she is a child
+## of hers and would inherit her exemption, so her meters would climb at a run's rate on the deck
+## and wake her after the win, which the epilogue then denies. The map's walkable set is untouched; she is led through the
 ## boundary wall over what `CityEdge` draws. Esc and a lost focus open nothing meanwhile
 ## (`_unhandled_input()`, `_pause_on_focus_lost()`).
 func _walk_out_of_the_city(end: DayEnd) -> void:
@@ -2076,6 +2078,7 @@ func _walk_out_of_the_city(end: DayEnd) -> void:
 	_edge_layer.visible = false
 	get_tree().paused = true
 	_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	_baby.process_mode = Node.PROCESS_MODE_PAUSABLE
 	var threshold: Vector2 = _day.spec().exit_points()[end.exit_taken()]
 	_walk_in.arrived.connect(_on_walked_in.bind(end), CONNECT_ONE_SHOT)
 	_walk_in.begin(_player, end.exit_taken(), threshold)
@@ -2084,6 +2087,7 @@ func _walk_out_of_the_city(end: DayEnd) -> void:
 ## epilogue comes up over it.
 func _on_walked_in(end: DayEnd) -> void:
 	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_baby.process_mode = Node.PROCESS_MODE_INHERIT
 	_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`

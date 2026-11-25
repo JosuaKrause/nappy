@@ -32,12 +32,15 @@ func _test_she_is_led_on_until_she_is_in_and_only_then_it_arrives(t: TestRunner)
 		for _frame in 10:
 			await t.get_tree().physics_frame
 		t.check(arrivals[0] == 0 and her.is_led(), "ten ticks in, the %s walk is still going" % name)
+		var speed := Tuning.WALK_SPEED if tunnel else Tuning.RUN_SPEED
+		t.check(is_equal_approx(her.led_speed(), speed),
+				"and she is led at %s (%s)" % ["a walk" if tunnel else "a run", her.led_speed()])
 		var frames := 0
 		while arrivals[0] == 0 and frames < 3000:
 			await t.get_tree().physics_frame
 			frames += 1
 		t.check(arrivals[0] == 1, "the %s walk arrives, once (%d)" % [name, arrivals[0]])
-		var step := EscapeWalkIn.SPEED / float(Engine.physics_ticks_per_second)
+		var step := speed / float(Engine.physics_ticks_per_second)
 		t.check(absf(her.global_position.y - target.y) <= step * 2.0,
 				"and only when she is %s (%s, wanted %s)"
 				% ["inside" if tunnel else "across", her.global_position, target])

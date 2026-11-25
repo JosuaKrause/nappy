@@ -2353,6 +2353,8 @@ func _test_the_game_walks_her_in_and_the_ending_waits_for_it(t: TestRunner) -> v
 		var city := Boot.city(main)
 		var her := Boot.player(main)
 		var summary := Boot.summary(main)
+		var baby := Boot.baby(main)
+		baby.seed_meters(100.0, 10.0)
 		var spine_x := city.tunnel_world_position().x if tunnel else city.bridge_world_position().x
 		var row_y := city.map().tile_to_world(FinalePlanner.exit_tile(city.map(), exit_kind)).y
 		var threshold := Vector2(spine_x, row_y)
@@ -2376,6 +2378,9 @@ func _test_the_game_walks_her_in_and_the_ending_waits_for_it(t: TestRunner) -> v
 				and t.get_tree().paused,
 				"on the %s's last row the section is won, her control ends and no summary is up yet"
 				% name)
+		var excitement := baby.excitement_level()
+		var sleepiness := baby.sleepiness_level()
+		var state := baby.condition()
 		await _until_the_epilogue(t, main)
 		var inside := her.global_position.y <= -CityEdge.TUNNEL_DEPTH_TILES * float(Tuning.TILE_SIZE) \
 				if tunnel else her.global_position.y >= city.map().world_size().y \
@@ -2384,6 +2389,11 @@ func _test_the_game_walks_her_in_and_the_ending_waits_for_it(t: TestRunner) -> v
 				"the epilogue comes once she is %s (%s)"
 				% ["inside the tunnel's opening" if tunnel else "across the whole deck",
 				her.global_position])
+		t.check(baby.excitement_level() == excitement and baby.sleepiness_level() == sleepiness
+				and baby.condition() == state,
+				("the baby's meters and state stand still for the walk, as they were at the %s's "
+				+ "last row (excitement %.1f then, %.1f at the epilogue)")
+				% [name, excitement, baby.excitement_level()])
 		_free_the_escape(t, escape)
 
 # ------------------------------------------------------ a resumed escape, and a handover ---

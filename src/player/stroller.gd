@@ -361,6 +361,9 @@ var _walk_phase := 0.0
 var _detained_for := 0.0
 ## The heading and speed the game walks her by (`lead()`); a zero heading while her own input steers.
 var _led_heading := Vector2.ZERO
+## Whether the game has her by the hand, kept apart from the heading so that no heading can read as
+## *not led* while her collision mask is away.
+var _led := false
 var _led_speed := 0.0
 ## The collision mask she had before `lead()` took it away.
 var _mask_before_the_lead := 0
@@ -560,16 +563,17 @@ func is_detained() -> bool:
 
 ## Whether the game has her by the hand (`lead()`).
 func _is_led() -> bool:
-	return _led_heading != Vector2.ZERO
+	return _led
 
 ## **The game walks her on by herself**: she goes `heading` at `speed` whatever is held, through
 ## anything that would stop her, the map's boundary walls included, since the escape's end walks her
 ## past the map's edge into the tunnel or across the bridge (`EscapeWalkIn`). Her body, her gait,
 ## her view and her camera are the ordinary ones; only the steering and the ground are not hers.
 ## Asked every tick the walk goes on; `release()` gives her back. Her collision mask is put away
-## for it and restored there.
+## for it and restored there, whatever the heading (a zero one stands her still, led).
 func lead(heading: Vector2, speed: float) -> void:
 	if not _is_led():
+		_led = true
 		_mask_before_the_lead = collision_mask
 		collision_mask = 0
 	_led_heading = heading.normalized()
@@ -580,6 +584,7 @@ func release() -> void:
 	if not _is_led():
 		return
 	collision_mask = _mask_before_the_lead
+	_led = false
 	_led_heading = Vector2.ZERO
 	velocity = Vector2.ZERO
 
