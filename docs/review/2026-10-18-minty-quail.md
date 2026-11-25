@@ -12,7 +12,7 @@ saves it after the game's scene has reloaded. For the restart, the title or day 
 on and whether the run you restarted from is the one the save holds.
 
 **The question a run answers.** Does the frame record's save button, whose callback the recorder
-now holds across a scene reload, still hand the browser a file after a reload, and does a restart
-held while the save's flush is pending lose or keep the run, with the save node the sitting now
+holds across a scene reload, still hand the browser a file after a reload, and does a restart
+held while the save's flush is pending lose or keep the run, with the save node the sitting
 keeps? Both were read off the code when they were built (minty-quail-fluffy-lark and
 -striped-quail) and not run in a browser.

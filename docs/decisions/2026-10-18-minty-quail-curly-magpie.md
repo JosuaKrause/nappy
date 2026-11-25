@@ -30,21 +30,23 @@ is judged: a picture is listed with what it shows and what it cannot.
   is no old burst.
 - **The badges** (minty-quail-15, head and v0.29.2, burst): a charging dog's badge over his
   arrival on both trees; the run logs carry the difference the stills cannot, the badge raised
-  with `closing 130px/s` on head against `0px/s` on v0.29.2.
+  with `closing 130px/s` on head against `0px/s` on v0.29.2 (minty-quail-velvet-yak's change, PR
+  #1478: a pending warning's badge is listed at the row's approach speed).
 - **A roadblock with the debug layers** (minty-quail-calm-marmot, head alone, still): the fields
   and bounding boxes round one. Neither layer draws the plan's blocking disc, whose pictures are
   the probe's in `docs/evidence/minty-quail-blocking-reach-2026-11-23/`.
 - **A recorded recipe's log** (minty-quail-3, head and v0.29.2 through `tools/record.sh`; the
   video kept nowhere): the same picture filename on both (the attempt suffix is on both), the
-  day header only on head, head's lines timed where every line of v0.29.2's carries 0.0, the same
+  day header only on head, head's lines timed where every line of v0.29.2's carries 0.0 (the
+  recorded expected difference of minty-quail-3: a recipe day now has a header and the day's clock), the same
   kinds of line in the same order apart from head's added `run` line, and a different hash for
   every frame.
 
-**Not taken, with the reason.** Overlapping badges (minty-quail-15): no flag or recipe puts several
-dangers off one edge, so the still needs a harness that does not exist; building one is new code,
-an entry of its own if wanted. A departure round a building, the neighbor at a barricade and a
-walk-back round a body (minty-quail-5): no flag puts a solid in a mover's way and a recipe cannot
-site a body on a mover's route; read against the flags, not tried. The halo over the buildings and
+**Not taken, with the reason.** Overlapping badges (minty-quail-15): a recipe's `setup.events` takes
+several pinned rows with a `charging` flag; what stops a second charging dog off one edge is ordinary
+placement (`EventScheduler.recipe_placement()`) and the per-day cap, read and not tried. A departure round a building, the neighbor at a barricade and a
+walk-back round a body (minty-quail-5): no flag puts a solid in a mover's way and a recipe places events
+at production sites, not a body on a mover's route; read against the flags, not tried. The halo over the buildings and
 the debug view over the tunnel's dark and the warning guard in the escape's city (minty-quail-6):
 a raised meter showed no halo, and `--spawn` is ignored on the escape city's boot. A taper
 stepping into the park's edge row and an escort beside the busker (minty-quail-9): the swing
@@ -53,10 +55,12 @@ wrote no picture; the step's own pictures stand in
 `docs/evidence/minty-quail-cordon-busker-2026-10-31/`. The walking bob at 60 fps (minty-quail-21)
 and the arrow field's sweep and the cordon officers' stride (minty-quail-26): the window draws at
 140 to 570 frames a second here and a burst's frames are about 83 ms apart, so no burst can show
-stepping between drawn frames. The escape city's sealed home door (minty-quail-8): the sealed
+stepping between drawn frames; `tools/record.sh` writes 60 frames a second but turns physics
+interpolation off, so it shows the tick and not the interpolated drawing, and was not tried. The escape city's sealed home door (minty-quail-8): the sealed
 picture needs day 10's raid to have left its scar, which no flag sets. The epilogue
 (minty-quail-4): the route rig ends the run as she arrives and no flag walks her to the exit
-with a screenshot rig; three runs by the route rig, bursts timed to its end, caught no epilogue.
+with a screenshot rig; the route rig quits at any day ending, and three runs, bursts timed to its end,
+caught no epilogue.
 
 **Behaviors with no picture to take.** minty-quail-10, -13, -14, -20 and -23 changed behaviors
 the records read off the code or hold with a suite (a notice and a streamed-out event's state
@@ -70,14 +74,26 @@ web page's frame-record save button and a held restart with a flush pending on a
 (minty-quail-fluffy-lark and -striped-quail) are a person's checks on the published page, and
 `docs/review/` holds their review item.
 
-**Found, listed and not investigated** (for the orchestrator, neither fixed here). On head,
-`--seed 4242 --start-escape --route tunnel --frame-record --after 38` boots on "Day 1 of 14" and
-a day-1 brief for the whole run, where the same flags without `--seed` boot on the escape and the
-route rig walks it. And two later route runs reached the exit and then sat on that same day-1
-brief where the bursts before had shown the walk. Both may be intended (a seeded run is a fresh
-run that jumps to the escape, as the README says of the flag's escape); no entry is filed here.
+**Seen once, not reproduced at head.** While the pictures were taken, `--seed 4242 --start-escape
+--route tunnel --frame-record --after 38` once booted on "Day 1 of 14" and a day-1 brief for the
+whole run, and two later route runs seemed to sit on that brief after the exit. The review reran
+that command three times at this head (twice headless, once windowed) and every run opened the
+building and walked out of it: `--seed` only reaches the run's start, which world opens is
+`--start-escape`'s alone, and the route rig quits at any day ending so it cannot sit on a brief.
+A run on another tree (the v0.29.2 worktree) or a command that lost `--start-escape` would
+explain the sighting. No entry is filed.
 
-**Defects.** None found in a captured behavior.
+**Defects.** Two, both reported to the orchestrator and filed as `bug` entries, neither fixed here.
+The screen-edge badge's closing speed grows with the frame rate (the entry "The screen-edge badge's
+closing speed grows with the frame rate"): the masked man's badge logs `closing 1949px/s` in
+`raw/masked-and-mouse-run.log-lines.txt` against about 110 documented, because the badge measures
+every drawn frame while positions move only on the 30 Hz tick and the first-moving-frame rule keeps
+the spike. And a catch by the escape city's roadblock shows the fallback loss text "It went wrong."
+(the entry "A roadblock catch in the escape city shows the fallback loss text"), which v0.29.2
+shows too.
+
+**Owed.** The pictures not taken are an entry of their own, "The pictures the end remeasure could
+not stage", with what would stage each.
 
 **Footprint.** The evidence folder holds one README, 16 pictures and 15 files under `raw/`: 32
 files, 3.5 MB.

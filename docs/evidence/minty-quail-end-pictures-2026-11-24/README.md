@@ -45,7 +45,14 @@ timeout's reason, "Dusk. You are still out.", under the section's own words.
 - `4-lost-city-section.png`: `--start-escape city --day-length 4 --press ui_accept 1.5`.
 - `4-hard-run-last-nerve-outcome.png`: the same city loss with `--hard --nerves 1`; the
   outcome screen reads "Nerves left: -".
-- `4-hard-run-game-over.png`: the same run after a second `--press ui_accept 8`: GAME OVER.
+- `4-hard-run-game-over.png`: the same run after a second `--press ui_accept 8`: GAME OVER. Its
+  "You made it to day 1." and "Time played: 0:04.033" come from the flag run, not from the game's
+  text for the escape: `--start-escape` is "a fresh run of its own, on day 1"
+  (`main._start_the_flags_run()`) and `--day-length 4` ends the section in four seconds. A played run's
+  game over in the escape says its own day and play time.
+
+**Not taken: the epilogue.** `RouteRig` quits the game at any day ending, so a route run never shows
+it (three route runs, bursts timed to their end, caught none).
 
 ### minty-quail-5: a cat crossing (burst, head alone)
 
@@ -55,8 +62,8 @@ yellow outline) comes down the sidewalk, crosses the road beside her and carries
 does not show:** the cat is cut at a solid and goes round one; this crossing meets none. The
 other three pictures the record asks for (a departure round a building, the neighbor at a
 barricade, a walk-back round a body) are not taken: no flag puts a solid in a mover's way, and a
-recipe places events and seals by name at production sites, not a body on a mover's route. They
-were read against the flags and the recipe fields, not attempted by trial.
+recipe places events at production sites, not a body on a mover's route. They were read against
+the flags and the recipe fields, not attempted by trial.
 
 ### minty-quail-6: draw order (stills, head alone)
 
@@ -71,7 +78,8 @@ beside the event's nearest end.
   day 12).
 - `6-wide-scenes.png`: the burst water main on an east-west street (seed 11) and on a
   north-south one (seed 4242), day 12; `6-wide-scene-band-joins-3x.png` is a 3x crop of the first
-  where its bands meet: no seam is visible to the eye in that crop. The seed 4242 still is the
+  where its bands meet: no seam is visible to the eye in the part of that crop below the HUD's clock ("3:00"), which is
+  drawn over the top third of the water main. The seed 4242 still is the
   band running across a north-south street, which the record's wording does not ask for; it is
   kept as it was taken.
 - `6-escape-city-section.png`: the escape's city section on its own (`--start-escape city
@@ -93,7 +101,10 @@ on the flat's floor), so there is no pre-refactor burst of these.
 
 - `7-masked-man-stairwell.png`: frames 24 to 36 of one burst in the stairwell. The edge badge
   stands over the masked man (the circle with an arrow and a distance) before he is in view; he
-  comes up the lower flight and is in view, outlined, at frames 35 and 36. The record's "leaving
+  is a dim figure on the lower flight from frame 30 (frames 30, 32 and 34) and outlined at
+  frames 35 and 36; frame 28 shows neither the badge nor him. The crop is not the whole screen,
+  so the sheet cannot show whether the badge stayed up until he was in sight (minty-quail-15's
+  behavior). The record's "leaving
   round the walls at the top of the shaft" is not in this burst.
 - `7-basement-mouse-dash.png`: frames 14 to 24 of one burst in the basement. The mouse comes out of
   a grate beside her at frame 18 and crosses the passage in frames 19 to 24; the distance wall to
@@ -110,12 +121,15 @@ on the flat's floor), so there is no pre-refactor burst of these.
 purpose), so the surroundings differ; the dog comes down the road in both and both show a badge
 over his arrival. What the run log adds, in `raw/dog-head-badge-lines.txt` and
 `raw/dog-v0.29.2-badge-lines.txt`: head raises each charger's badge with `closing 130px/s` (his
-own speed, from the frame he runs); v0.29.2 raises the same badges with `closing 0px/s`, and in
+own speed, from the frame he runs); v0.29.2 raises the same badges with `closing 0px/s` (that difference is
+minty-quail-velvet-yak's, PR #1478: a pending warning's badge is listed at the row's
+`approach_speed()` where the plain `speed` gave 0), and in
 one cycle drops the badge before the chase line where head drops it after. The still cannot show
-the timing, only the badge's presence. **Not taken:** overlapping badges. `tools/shot.sh` cannot put
-several dangers off one edge with its flags or a recipe (`--force` hands out one row; a recipe
-cannot site a second charging dog or fire engines at chosen tiles), so the still needs a harness
-that does not exist. Building one is new code, an entry of its own if wanted.
+the timing, only the badge's presence. **Not taken:** overlapping badges. `--force` hands out one row, but a recipe's `setup.events`
+takes several pinned rows, each with a world `at` and a `charging` flag. What stops a second
+charging dog or a fire engine off one edge is that every pinned row must pass ordinary placement
+(`EventScheduler.recipe_placement()`, the director's siting for a non-map row) and the per-day cap.
+Read, not tried. The picture is owed in the entry "The pictures the end remeasure could not stage".
 
 ### minty-quail-9, -21 and -26: not taken
 
@@ -128,9 +142,12 @@ that does not exist. Building one is new code, an entry of its own if wanted.
   stands in the scene.
 - **-21** (the walking bob stepping every other drawn frame at 60 fps): the capture window draws at
   140 to 570 frames a second here (the run logs' frame lines), not at 60, and a burst's frames are
-  about 83 ms apart, so a burst cannot show stepping between drawn frames. Not claimed.
-- **-26** (an arrow field's sweep at 60 fps; the cordon officers' stride at 30 Hz): the same
-  spacing applies, and the cordon is not reached (above). Not taken.
+  about 83 ms apart, so a burst cannot show stepping between drawn frames. `tools/record.sh` writes
+  exactly 60 frames a second (`raw/l6-recording-settings.json`), but `main._ready()` turns physics
+  interpolation off while recording, so a recording shows the 30 Hz tick and not the interpolated
+  drawing -21 is about; it was not tried. Not claimed.
+- **-26** (an arrow field's sweep at 60 fps; the cordon officers' stride at 30 Hz): a recording
+  could show the tick's stepping and was not tried; the cordon is not reached (above). Not taken.
 
 ### minty-quail-8: the escape city's home door (not taken)
 
@@ -159,13 +176,15 @@ the recording settings.
 - **The day header:** head's log opens `day 6  act 2  run seed 11  city seed 1917501  length
   180.0s`; v0.29.2's has no header (the recorded expected difference).
 - **Timestamps:** head's lines carry the run's times (0.6, 1.0, 1.3 s ...); every line of v0.29.2's
-  carries 0.0.
+  carries 0.0. That is minty-quail-3's recorded expected difference, the same change as the header:
+  "an authored recipe day now gets a day header, so its lines carry the day's clock rather than
+  `0.0`". The `cue` lines' "soon for" times follow from the same clock.
 - **Lines:** with the texture and frame lines left out, v0.29.2's log has 33 lines and head's 36.
   Head adds the header and a `run` line ("ran 1.7s ... nearest when it started: alley_robbery
   266px"); the `cue` lines' "soon for" times differ (head 0.9 and 0.4 s, v0.29.2 0.0 and 0.0 s);
   the `near` lines' distances and meter figures differ (a cat 147 px and 79 px away on head
   against 117 and 62 on v0.29.2); and the edge-badge line for the robber's chase reads `closing
-  130px/s` on head against `0px/s` on v0.29.2 (the minty-quail-15 change).
+  130px/s` on head against `0px/s` on v0.29.2 (minty-quail-velvet-yak's change, PR #1478).
   `raw/l6-diff-v0.29.2-to-head.txt` is the whole diff.
 - **Frames:** every one of the 720 frames of the two recordings has a different hash.
 
@@ -185,7 +204,7 @@ The phone's draw buckets (minty-quail-silky-penguin, -silky-stork) need a publis
 frame record, which merry-lynx already asks the player for. The web page's frame-record save
 button in a real browser (minty-quail-fluffy-lark) and a held restart while a flush is pending
 on a web export (minty-quail-striped-quail) are a person's checks on the published page: the
-review item `docs/review/minty-quail-*.md` of this pull request asks for them.
+review item `docs/review/2026-10-18-minty-quail.md` of this pull request asks for them.
 
 ## Retained, and what is left out
 
