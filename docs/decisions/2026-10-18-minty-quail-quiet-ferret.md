@@ -20,5 +20,5 @@ inbox #1167 in gray-dolphin) be drawn again from the code once the redesign is c
 
 Both files are deleted. The sentence of amber-ibis's "Five sentences that say something the code does not
 do" that pointed at `comments.md` points at **godot**'s rule; the entry's README names only the remeasure
-(its step 1) and the pull request that closes the entry, and silver-ferret's pointer at the remeasure's
+(its step 1; the module-by-module step is removed because every module is done) and the pull request that closes the entry, and silver-ferret's pointer at the remeasure's
 step says "the remeasure". Nothing was measured.
