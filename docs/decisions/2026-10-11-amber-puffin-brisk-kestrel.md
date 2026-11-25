@@ -19,6 +19,17 @@ transparent draw colour the shader multiplies in. Every other water, the burst w
 included, keeps its drawing; the bulkhead, the bridge and the rest of the ground stay in the static
 layer.
 
+**The sea wall stands in the water.** The bulkhead's picture painted a strip of the old water at
+its foot, which sat as a dark band with a hard edge above the new water along the whole waterfront;
+the review found it a blocker. The strip is now transparent in `art/tiles/bulkhead.svg` and in its
+transfer, but for a one-pixel contact shadow (black at 40%, the darkening the transfer's own
+waterline gave its painted water), and the ground draws the water beneath the bulkhead row too,
+still laying the sea wall on its TileMap, with `SceneryWater` shown behind its chunk.
+`GroundTiles.stands_in_water()` says which source's picture leaves its foot to the water.
+Rejected: the surface drawing the strip's rows over each bulkhead cell, smaller but writing the
+strip's height into code beside a picture that can change. The transfer's edit is a script in the
+evidence folder (`bulkhead-foot.py`), which checks its input's hash.
+
 **What went.** The atlas water's ripple shader (`assets/shaders/scenery_water.gdshader`), which
 nothing else drew, and with it each surface's own material, clock, `_process()` and its hold on
 the `ground` atlas page; `SceneryGround.use_atlas()`, which only handed the library on to the
@@ -26,7 +37,10 @@ surfaces, and the city's call of it. The experiment's scene and script (`tests/p
 since the game's shader replaces its own and the measurement it made is recorded; the record
 amber-puffin's evidence names the revision that reproduces it. The suite case that checked a
 surface's ripple material and its page (`tests/test_scenery_animation.gd`), since a surface has
-neither. The tall-llama item on nearby scenery loading lost its bullet asking for the water's docs
+neither. The atlas water picture (`art/tiles/water.svg`, its transfer, its membership line and
+source 31 of the ground tile set, with `GroundLayers`' branch that removed that source from the
+composed sheet), which nothing drew any more, and the two suite checks that only asserted its
+region exists; `GroundTiles.WATER` stays as the id the city paints a water cell with. The tall-llama item on nearby scenery loading lost its bullet asking for the water's docs
 and `SceneryWater`'s header to be rewritten, since this change rewrites all three.
 
 **The filter.** The tile is drawn with linear filtering, as the experiment's live tile was; the
@@ -50,9 +64,4 @@ and clips are in [the evidence folder](../evidence/amber-puffin-in-the-game-2026
 straight with the shader's `metric` at 1), the settings (each a uniform of the shader, the cell
 size and the eight cells a side constants of `SouthWaterTile`), and the way of drawing (the live
 tile, or the shader over every water pixel, or a baked loop, each a change to how the surfaces draw
-the same shader). The strip of atlas water the bulkhead's own picture carries at its foot, which
-now sits above water drawn differently; making that strip transparent and drawing the water under
-the bulkhead row is a change to the bulkhead's art and the ground's layering, not made here. The
-atlas water picture (`art/tiles/water.svg` and its transfer, its source in the ground tile set
-that the composed sheet removes) is drawn by nothing in the game now; deleting it touches the
-atlas membership and is not made here.
+the same shader).

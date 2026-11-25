@@ -12,10 +12,23 @@ tile's shader draws; every other water keeps its drawing.
   windowed run on main and on the branch: seed 4242, day 1, standing on the south shore beside the
   bridge, the debug readout on (the right-hand column). `waterfront-before.gif` and
   `waterfront-after.gif` are a 3 s burst of each (35 to 36 frames at 12 fps, timed by the game's
-  own burst), cropped to the 960x320 screen pixels from the bulkhead down and left of the readout.
-  They show the drawing and its motion at the desktop's scale; they are not timing evidence.
-- **The bulkhead's own picture carries a strip of the atlas water at its foot**, which the stills
-  show above the new water: the bulkhead stays in the static ground, as the entry asks.
+  own burst), cropped to the 960x320 screen pixels from the bulkhead's foot down and left of the
+  readout. They show the drawing and its motion at the desktop's scale; they are not timing
+  evidence.
+- **The sea wall stands in the water.** On main the bulkhead's picture paints its own strip of
+  water at its foot. On the branch that strip is transparent but for a one-pixel contact shadow,
+  and the water surfaces draw the south water beneath the bulkhead row, so `waterfront-after.png`
+  shows the stone meeting the Voronoi water directly, with no band between them. The branch's
+  first stills, taken before that change, showed the old strip as a dark band above the new water;
+  they are in the pull request's history at `4265836c5`, superseded by these.
+- **The bulkhead's transfer.** `bulkhead-foot.py` is the edit made to
+  `art/illustrated/svg-transfer/tiles/bulkhead.png`: rows 18 to 31 (the painted water) fully
+  transparent, row 17 (the painted waterline) black at alpha 102, rows 0 to 16 (the stone)
+  untouched. It refuses any input but the transfer it was made for (sha-256 `ea0a6f8cacb48194`…);
+  its output is sha-256 `8fc2aca3dd3e914e`…, the file committed. Run as
+  `uv run python -I bulkhead-foot.py <the transfer at 342ceef4a> <output>`. The SVG, the source,
+  was edited by hand to match: its water rect and ripples removed and a one-pixel black row at 40%
+  opacity added at the foot of the stone.
 - **The cost.** The game's `frame` entries (once a second: fps, worst frame, draw calls,
   primitives, the engine's worst process interval) from windowed `tools/shot.sh` runs on an Apple
   M2 under the Compatibility renderer, the first two seconds of each run left out. The frame's
@@ -35,6 +48,7 @@ tile's shader draws; every other water keeps its drawing.
 | `waterfront-before.png`, `waterfront-after.png` | the shore's last frame, main and the branch |
 | `waterfront-before.gif`, `waterfront-after.gif` | a 3 s burst of the shore, main and the branch, cropped |
 | `frames.tsv` | every measured run of both sets: walk, code, samples, mean fps, frame ms, mean worst frame, draws, primitives, process |
+| `bulkhead-foot.py` | the edit that clears the water from the foot of the bulkhead's transfer |
 
 The raw burst frames, the run logs and the full-size shots stay in scratch space: the GIFs are made
 from the frames by the commands below, and `frames.tsv` holds every run's figures.
@@ -63,7 +77,8 @@ From a fresh clone, one engine at a time, with a display:
 ```sh
 git fetch origin refs/pull/1755/head   # the pull request that adds this folder
 before=342ceef4a                        # main the branch started from
-after=438159b3f                         # the branch's source as measured
+after=438159b3f                         # the branch's source as measured (the cost)
+# the after still and burst: 5ae6eff99, the branch with the sea wall standing in the water
 for rev in "$before" "$after"; do
   dir="$(mktemp -d)/nappy"; git worktree add --detach "$dir" "$rev"
   (cd "$dir" && GODOT=/path/to/Godot ./tools/check.sh &&
@@ -88,6 +103,13 @@ ffmpeg -framerate 12 -i <burst>/frame-%04d.png -vf \
   changed, at that commit: `src/city/south_water_tile.gd` 2cc920031d52f4b4,
   `src/city/scenery_water.gd` 37c351fff86ec984, `src/city/scenery_ground.gd` e503e8b188fdc6a2,
   `assets/shaders/south_water.gdshader` 2c3231793c4cfc7f.
+- The after still and burst: the working tree that became `5ae6eff99`, committed after the runs
+  with no change to its sources; sha-256 prefixes at that commit: `src/city/scenery_ground.gd`
+  6455dd810a6a7fa1, `src/city/scenery_water.gd` 99df304f159063b0, `src/city/ground_tiles.gd`
+  6cd4382574aa5c24, `src/city/south_water_tile.gd` 479aabf7d5dd13b6, `art/tiles/bulkhead.svg`
+  7546f947fb1acca1, `art/illustrated/svg-transfer/tiles/bulkhead.png` 8fc2aca3dd3e914e. The cost
+  was not measured again: the change draws the water under one more row of cells per chunk, inside
+  the same textured draw.
 - Godot 4.7.2.stable.official.ed1daf0bf, Compatibility renderer, Apple M2, macOS 27.2.1, the window
   1280x720 at a scale of 2.
-- Footprint: five files and this README, about 1.5 MB, most of it the two GIFs.
+- Footprint: six files and this README, about 1.6 MB, most of it the two GIFs.
