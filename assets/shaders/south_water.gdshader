@@ -9,7 +9,7 @@ shader_type canvas_item;
 // jitter of at most 0.8 of a cell and an intensity of at most 0.3 of one keep the true nearest
 // and second-nearest centroids inside those nine.
 
-// The average colour of the atlas water tile the south water was drawn with before.
+// The water's blue, #215979, under the outlines.
 uniform vec4 base_color : source_color = vec4(0.129, 0.349, 0.475, 1.0);
 uniform vec4 line_color : source_color = vec4(1.0, 1.0, 1.0, 0.85);
 // Pixels between neighbouring centroids, on average. The tile is drawn a texel a world pixel.

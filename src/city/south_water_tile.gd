@@ -3,10 +3,10 @@ extends SubViewport
 ## The south water's one live tile (amber-puffin): a seamless square of the drifting Voronoi
 ## lines (`assets/shaders/south_water.gdshader`), which every south-water surface
 ## (`SceneryWater`) repeats over its cells. Only the tile runs the shader, so the water costs a
-## frame about what the atlas water did plus the tile's own pixels, whatever the screen's size;
-## the shader run over every water pixel instead costs ten to twenty times the atlas water on the
-## desktop, which a phone's renderer, already bound by the pixels it fills, cannot be trusted to
-## pay (the record amber-puffin).
+## frame one textured draw per surface plus the shader over the tile's 384×384 texels, whatever
+## the screen's size; the shader run over every water pixel instead costs about twenty-five times
+## a flat fill on the desktop, which a phone's renderer, already bound by the pixels it fills,
+## cannot be trusted to pay (the record amber-puffin).
 ##
 ## The tile is drawn a texel a world pixel, so its pattern repeats every `CELL_SIZE * CELLS` world pixels and
 ## its outlines are magnified on screen as the ground is. It is drawn again on every frame while
@@ -23,7 +23,6 @@ var _lines: ShaderMaterial
 
 func _init() -> void:
 	name = "SouthWaterTile"
-	disable_3d = true
 	gui_disable_input = true
 	render_target_update_mode = SubViewport.UPDATE_DISABLED
 	size = Vector2i(_side(), _side())
