@@ -113,6 +113,7 @@ line, so a change that adds one to a listed reader file and field passes `--base
 Tests are not read for reads here: a test reads what it tests only through methods
 (writing-tests), and the reads in the tests are found by running this check over a scratch copy of
 the tree with `tests/` moved under `src/` (`--root` names the copy, `--list` prints every read).
+
 **The list.** A header comment `# [ClassName] path` opens a class's group; a line under it is `<reader file> <field>`.
 A read not listed **fails**. A listed line with no read now **fails** as a `REMOVE` line, so the pull request that
 converts a read deletes its line. The list is generated: `--write` rewrites it from the tree, sorted, so a merge

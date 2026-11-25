@@ -85,8 +85,8 @@ below. **writing-tests** says what that asks of a suite and its fakes.
 
 **So a file is typed from its first line, and no file opts out.** No ignore of the three is written
 anywhere: `tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
-`@warning_ignore_restore` that names one of them, or whose argument it cannot read, in every `.gd` file
-outside `docs/`, whatever its form and wherever it stands.
+`@warning_ignore_restore` that names one of them, or whose argument it cannot read, in every `.gd`
+file outside `docs/`, whatever its form and wherever it stands.
 
 **The engine warns of nothing on a property read off a Variant.** An element of an untyped
 `Array` or `Dictionary`, the inner level of a nested one, what `back()` or `get()` returns, a name
