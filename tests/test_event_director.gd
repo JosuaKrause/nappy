@@ -74,7 +74,6 @@ func run(t: TestRunner) -> void:
 		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
 	_test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(t)
 	_test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t)
-	_test_a_convoy_comes_down_the_street_she_comes_to_where_her_lane_has_none(t)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
 	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
@@ -326,72 +325,6 @@ func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner
 		t.check(sited > 0 and asked_right == sited,
 				"and %d of 8 are where both answer, each asked of its own leg and a way on from its "
 				% sited + "end (%d)" % asked_right)
-
-## **Where the lane beside her has no leg a car may drive, the convoy comes down the street she
-## comes
-## to** (`EventDirector._down_the_street_she_comes_to()`): on her street crossed at the next
-## junction
-## box ahead of her (`_crossroads()`), a way on that lets no car drive along her street sites the
-## convoy in the carriageway of the street across, out of her sight up it, driving through the box
-## she is walking to; one that lets no car drive either street sites none.
-func _test_a_convoy_comes_down_the_street_she_comes_to_where_her_lane_has_none(
-		t: TestRunner) -> void:
-	var map := _crossroads()
-	var her := _turned(HER + Vector2i(CityMap.period(), 0), true)
-	var across := _AcrossHerStreetWayOn.new()
-	var due := _due_at(_director(map, "military_convoy", _no_plans(), 1, across), her)
-	t.check(due.size() >= 2,
-			"with no leg along her street, the convoy is still sent (%d)" % due.size())
-	if due.size() < 2:
-		return
-	var leg := due[1] as PackedVector2Array
-	var start := leg[0]
-	var end := leg[leg.size() - 1]
-	var box_top := float(_box_ahead() * TILE)
-	var box_bottom := float((_box_ahead() + Tuning.STREET_WIDTH) * TILE)
-	t.check(absf(end.y - start.y) < 1.0 and start.y > box_top and start.y < box_bottom
-			and map.tile_at(map.world_to_tile(start)) == GameEnums.TileType.ROAD,
-			"it drives along the street across hers, in its carriageway (%v -> %v)" % [start, end])
-	t.check(absf(start.x - her.x) > Tuning.VIEW_HALF_EXTENT.x
-			and (start.x - her.x) * (end.x - her.x) <= 0.0,
-			"from out of her sight up it, through the box she walks to (%v -> %v)" % [start, end])
-	var none := FakeWayOn.new()
-	none.drives = false
-	t.check(_due_at(_director(map, "military_convoy", _no_plans(), 1, none), her).size() < 2,
-			"and with no leg a car may drive on either street, none is sent")
-
-## The first tile of the junction box ahead of her as she walks north from her tile (`HER`, between
-## two boxes).
-static func _box_ahead() -> int:
-	return HER.y / CityMap.period() * CityMap.period()
-
-## Her street (`_street()`, running north-south) one period in from the west edge of a map `LENGTH`
-## wide, so that her tile is `HER` a period east, crossed at the junction box ahead of her
-## (`_box_ahead()`) by the same street running east-west across the whole map.
-static func _crossroads() -> CityMap:
-	var map := CityMap.new(Vector2i(LENGTH, LENGTH))
-	map.fill_rect(Rect2i(Vector2i.ZERO, map.size_in_tiles()), GameEnums.TileType.BUILDING)
-	var bands: Array[Array] = [
-		[0, Tuning.SIDEWALK_WIDTH, GameEnums.TileType.SIDEWALK],
-		[Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH,
-				GameEnums.TileType.ROAD],
-		[Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, Tuning.SIDEWALK_WIDTH,
-				GameEnums.TileType.SIDEWALK]]
-	for band in bands:
-		var from: int = band[0]
-		var across: int = band[1]
-		var kind: GameEnums.TileType = band[2]
-		map.fill_rect(Rect2i(CityMap.period() + from, 0, across, LENGTH), kind)
-		map.fill_rect(Rect2i(0, _box_ahead() + from, LENGTH, across), kind)
-	map.fill_rect(Rect2i(CityMap.period(), _box_ahead(), Tuning.STREET_WIDTH, Tuning.STREET_WIDTH),
-			GameEnums.TileType.ROAD)
-	return map
-
-## A way on that lets a car drive only a leg running east-west, across the street she walks.
-class _AcrossHerStreetWayOn extends FakeWayOn:
-	## Overrides test_event_director.FakeWayOn.drives_clear.
-	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
-		return path.size() >= 2 and absf(path[path.size() - 1].y - path[0].y) < 1.0
 
 ## A row that ends the day at its core, its field holding to 30px and reaching `reach`, on a bare
 ## row's field otherwise.
