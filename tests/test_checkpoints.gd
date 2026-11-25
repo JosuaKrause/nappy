@@ -39,6 +39,14 @@ const TOLL_TOLERANCE := 1.5
 
 var _maps: Array[CityMap] = []
 
+## The run's mast sites on each city as it was built, worked out once and kept for the run as
+## the game does (`EventWorld.work_out_mast_sites()`), by the city's seed.
+var _mast_sites := {}
+
+func _masts_of(map: CityMap) -> Array[MastSites.Site]:
+	var sites: Array[MastSites.Site] = _mast_sites[map.city_seed()]
+	return sites
+
 ## A stroller that records where the door puts her down: the manager carries
 ## `CheckpointController.lets_her_out` out as `Stroller.teleport_to()`.
 class RecordingStroller extends Stroller:
@@ -57,6 +65,7 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(_maps[i])
 	_test_every_door_has_its_three_bodies(t)
 	_test_door_bodies_stand_on_their_own_ground(t)
 	await _test_the_boom_bars_the_carriageway(t)
@@ -428,7 +437,8 @@ func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("checkpoints:%d:%d" % [map.city_seed(), day])
 		var consumed: Array[String] = []
-		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements():
+		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(_masts_of(map)) \
+				.spent(consumed).plan().placements():
 			scheduled += 1
 			if plan.row_id().begins_with("checkpoint_"):
 				rolled += 1
@@ -571,8 +581,9 @@ func _planned_day(map: CityMap, day: int, tree: RouteTree,
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []
-	return GameDawn.of(DaySpec.for_day(day), rng, map).calm(CalmAreas.of(map, used_calm)) \
-			.spent(consumed).scars(scars).on(tree).doors(doors).plan().placements()
+	return GameDawn.of(DaySpec.for_day(day), rng, map).masts(_masts_of(map)) \
+			.calm(CalmAreas.of(map, used_calm)).spent(consumed).scars(scars).on(tree) \
+			.doors(doors).plan().placements()
 
 func _placed_count(plans: Array[EventPlan]) -> int:
 	var total := 0

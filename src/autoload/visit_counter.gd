@@ -83,7 +83,8 @@ extends Node
 
 ## **One per sitting, made by `main` and handed what it listens to and sends through.** `main`
 ## makes it under the sitting on the sitting's first boot (`Sitting`), hands it the game's
-## `EventBus` (`listen()`) and the page's outbox (`send_through()`), and finds it there after, so
+## `EventBus` (`listen()`), the page's outbox and the engine's platform answers
+## (`send_through()`), and finds it there after, so
 ## its count of the run (the day, the open tasks, whether the run's beginning was reported) outlives
 ## the scene reloads a run makes, the held restart included, exactly as long as the page's
 ## process does. Every boot hands it that boot's run flow as well (`listen_to_the_flow()`), whose

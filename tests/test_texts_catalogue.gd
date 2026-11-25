@@ -22,12 +22,11 @@ extends RefCounted
 ## the list shrinks when a file stops needing it.
 const _ALLOWED_FILES := {
 	"res://src/dev/": "developer tooling: rigs, recipes, previews and the dev flags' own messages",
-	"res://src/telemetry/": "the run log's own lines",
+	"res://src/telemetry/": "the run log's own lines and the page-count probe's script",
 	"res://src/events/model/dawn_phases/": "the dawn's phases write run-log lines through the context, as the scheduler does",
 	"res://src/autoload/telemetry.gd": "the run log's own lines",
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
 	"res://src/run/run_calendar.gd": "log notes about nerves and resistance work",
-	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
 	"res://src/city/building.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/city_generator.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/recipe_city_builder.gd": "map validation errors and recipe checks, reported to a developer",

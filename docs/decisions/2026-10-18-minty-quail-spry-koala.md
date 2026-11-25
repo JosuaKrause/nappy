@@ -53,9 +53,12 @@ game path changes one input alone and that is what the cache's key has to notice
 `tests/*.gd`, which skips `tests/fixtures/`; they now read `tests -g '*.gd' -g '!tests/probes/**'`
 and print only `tests/shared_state.gd` and `tests/test_prediction_reuse.gd`.
 
-**The twenty kept reasons are re-pointed** in `tools/test_only_members.txt`: sixteen hand-ins,
-three steps by hand and `RouteTree.grow` name writing-tests' section "A test reaches the game the
-way the game does" instead of the two items.
+**The twenty kept reasons are re-pointed** in `tools/test_only_members.txt`: the sixteen hand-ins
+cite writing-tests' "What a test holds" (a hand-in stays public in a kept group), and the three
+steps by hand and `RouteTree.grow` name writing-tests bare, their measurement being on the line.
 
-Open: that section is written by the pull request that closes the two items; until then a reader
-finds the rule in the items.
+**The reach is held term by term.** Two cases beside the near-the-end one: a body heading towards
+her at its kind's top speed (her midway between the outer radius and the grown one past the closing
+distance, a margin of 2.6 px for a walker and 30.5 px for a car) fails without the forward growth,
+and a startled stationary body with a jolt three times the kind's outer radius (her at four fifths
+of it) fails without the jolt term.

@@ -8,16 +8,17 @@ The second counts its lines that call a frame function or emit the frame signal 
 `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests -g '*.gd' -g '!tests/probes/**'`.
 Both skip comment lines, count every file under `tests/` but the measurement probes (the rigs, the
 fixtures and the helpers the suites share as well as the suites), and neither sees access through
-a variable holding the name, so `tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
-nothing, and a test or helper that makes them print anything is a breach.
+a variable holding the name, so `tests-unseen-reads.md` covers what they cannot see. Outside the
+two files below they print nothing, and a test or helper that makes them print anything is a
+breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
-- `tests/test_prediction_reuse.gd` stays: it changes the event's heading, notice, spread axis and
-  vehicle side and a crowd body's speed, axis, yield and door hold by writing them (some through a
-  name held in a variable: `_speed`, `_direction`, `_turn_back_hold`, the `_jolt` fields),
-  overrides `_sample_expected_landed`, and reads its reference fixture's `_event` and `_agent`,
-  since no game path changes one input alone and that is what it proves the cache notices.
+- `tests/test_prediction_reuse.gd` stays: it writes the event's row and heading and a crowd body's
+  axis (the body's `_direction`, `_turn_back_hold` and `_jolt` fields through a name held in a
+  variable), reads the event's `_where` to hand it back, and overrides `_sample_expected_landed`;
+  its pace, yield and door hold go through the calls the game's strategy makes. No game path
+  changes one input alone, and that is what it proves the cache notices.
 
 **Build:** where a test needs something of a class, that class gets public seams and
 injected dependencies, and the test moves to them, with fakes handed in instead of statics patched;
