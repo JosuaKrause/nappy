@@ -138,9 +138,10 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 	scene.free()
 
 ## **She has to run to the door** *(inbox #764 in minty-lemur, the player: "player should have to run to the
-## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He warns while she is in the
-## stairwell and runs his line once she is within the masked man's `NoticeSpec.runs_within()` of him
-## (`EventNoticeRun`). Stepped at the game's own rhythm: the game's physics
+## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He is not in the
+## world until she walks within the masked man's `EventDef.sets_off_within()` of the foot of his
+## shaft, and then comes there on the same tick, running his line (`SetOffWatch`). Stepped at the
+## game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
 ## carrying body moves with the real stair steering and collision, then the building's
 ## `EventManager._physics_process()` tells him where she is, steps him, and checks the catch. She comes in at his shaft's second-floor door and down the
@@ -174,15 +175,13 @@ func _test_she_has_to_run_to_the_first_floor_door(t: TestRunner) -> void:
 
 ## **The screen-edge badge points at the masked man from the frame he starts running** *(inbox
 ## #788 in minty-lemur, the player, told that his only heads-up is the badge once he runs: "Let's show that at
-## least")*. On every way down onto the second flight and at each pace, with her real camera and a
-## real `DangerEdge` (`_meeting.meet()` with `badge`): on every drawn frame from his run until
-## he comes into her view, or she is through the door or caught, the badge for him is up. The badge
-## is drawn at his own position (`DangerEdge._draw_arrow()`), so up is pointing at him.
-##
-## **The one pin that does not hold with frames lengthened** (`--frame-delay`): `BadgeModel` reads
-## how fast he closes as his step over the frame's own delta, so on a frame several ticks long the
-## first running frame's closing speed is under the badge's threshold and the badge comes up a
-## frame late. The run is therefore taken at the engine's own rate from just before he runs.
+## least"; minty-dolphin #852: "Anyway a badge shouldn't disappear before the entity is visible")*.
+## His badge is his warning's, put up as she reaches his place, and kept by the man the warning
+## created until she can see him (`BadgeModel`). On every way down onto the second flight and at
+## each pace, with her real camera and a real `DangerEdge` (`_meeting.meet()` with `badge`): on
+## every drawn frame from his run until he comes into her view, or she is through the door or caught,
+## the badge for him is up. The badge is drawn at his own position (`DangerEdge._draw_arrow()`), so
+## up is pointing at him.
 func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: TestRunner) -> void:
 	for walk: Array in MaskedManMeeting.TURNS:
 		for pace: String in ["walk", "run", "walk-run"]:
@@ -196,21 +195,21 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: TestRunner) -
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##
-## Driven by the building's `EventManager` on real physics ticks, with her standing on the lobby's door at the shaft's
-## foot for the whole run — off his line, clear of his reach, and inside
-## the masked man's `NoticeSpec.runs_within()` of where each man appears, so every man that appears
-## notices her, warns her and runs rather than waiting at the bottom for ever.
+## Driven by the building's `EventManager` on real physics ticks, with her standing on the first
+## floor's door of his shaft for the whole run — off his line, clear of his reach, out of sight of
+## the foot of the shaft and inside the masked man's `EventDef.sets_off_within()` of it, so every
+## man that may come is set off with her already inside his place.
 ##
 ## Three contracts, and the second is what keeps the first fair:
 ##
 ## - **More than one of him over a section**, or "switch the side again" has nothing behind it.
-## - **Every one of them warns her standing still before he runs.** Appearing with her already
-##   inside his charge distance, he warns for `Tuning.WARNING_ALONE_MAX` first
-##   (`EventNoticeRun`); a respawned pursuer that inherited an old instance's
-##   state would arrive at speed, which is the exact thing `holds_still()` exists to
-##   prevent, and no screenshot could ever catch it.
-## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
-##   appearing at the foot, rather than read off the constant.
+## - **Every one of them is warned of before he exists**: with her inside his place already when he
+##   may come, his badge is up alone for his row's warning (`EventDef.warned_for()`,
+##   `Tuning.WARNING_ALONE_MAX`) before he is in the world, and he never comes while his warning
+##   is not up (`SetOffWatch`). Nor does he come at a walk's pace or later in his run: each takes
+##   his first step from the foot of the shaft.
+## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one's
+##   warning going up, rather than read off the constant.
 func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	const STEP := 1.0 / 30.0
 	var scene := InteriorScene.new()
@@ -220,88 +219,79 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var part := "stairwell_%s" % ("right" if BuildingPlan.BURNING_SIDE == "left" else "left")
 	var plan := InteriorMap.build()
-	var her := scene.map().tile_to_world((plan.door("%s:landing_lobby" % part) as InteriorMapPlan.Door).tile)
+	var her := scene.map().tile_to_world((plan.door("%s:landing_first" % part) as InteriorMapPlan.Door).tile)
 	# A stand-in for her: the manager is handed where she stands and tells every instance each tick.
 	var player := Node2D.new()
 	player.add_to_group("player")
 	t.add_child(player)
 	player.global_position = her
 	events.use_player(player)
+	var foot := scene.map().tile_to_world(plan.stairwell_walk(part)[0])
+	t.check(foot.distance_to(her) <= EventCatalogue.by_id("masked_pursuer").sets_off_within(),
+			"the first floor's door is inside his place (%.0fpx from the foot)" % foot.distance_to(her))
 
+	var warned: Array[float] = []
 	var appeared: Array[float] = []
 	var left: Array[float] = []
 	var known := {}
-	var moved_while_telegraphing := 0
-	var first_step_age: Array[float] = []
-	# The age each man stopped waiting at: his warning's own start, since his notice clock is held.
-	var warned_at: Array[float] = []
-	# After each real tick of the manager (the game's 30Hz, taken eight times as often as the
-	# engine would): where each stood going in is where it stood when the last tick ended.
-	var stood := {}
+	var came_unwarned := 0
+	var first_steps_off_the_foot := 0
+	var state := {"warning": false}
 	var was_leaving_by_id := {}
 	var after_the_tick := func(ticks: int) -> bool:
 		var at := (ticks - 1) * STEP
+		var warning_up := false
+		for warning in events.pending_warnings():
+			warning_up = warning_up or warning.row().id() == "masked_pursuer"
+		if warning_up and not state["warning"]:
+			warned.append(at)
+		state["warning"] = warning_up
 		for instance in events.instances():
 			if instance.row_id() != "masked_pursuer":
 				continue
 			var id := instance.get_instance_id()
 			if not known.has(id):
-				known[id] = appeared.size()
+				known[id] = true
 				appeared.append(at)
-				first_step_age.append(-1.0)
-				warned_at.append(INF)
-			# One his row's repeat made on this tick, ahead of the step, has taken his first step
-			# from the foot of his line.
-			var before: Vector2 = stood.get(id, instance.walks()[0])
+				# The warning that brought him went up on an earlier tick and ran out on this one.
+				if warned.size() < appeared.size():
+					came_unwarned += 1
+				# On the tick he comes he has taken one step of his line from the foot.
+				if instance.global_position.distance_to(foot) > EventCatalogue.by_id(
+						"masked_pursuer").speed() * STEP + 1.0:
+					first_steps_off_the_foot += 1
 			var was_leaving: bool = was_leaving_by_id.get(id, false)
-			var which: int = known[id]
-			if warned_at[which] == INF and not instance.is_waiting():
-				warned_at[which] = instance.age()
-			if not before.is_equal_approx(instance.global_position):
-				if instance.is_telegraphing():
-					moved_while_telegraphing += 1
-				if first_step_age[which] < 0.0:
-					first_step_age[which] = instance.age() - warned_at[which]
 			if instance.is_on_its_way_out() and not was_leaving:
 				left.append(at)
-		stood.clear()
 		was_leaving_by_id.clear()
 		for instance in events.instances():
-			stood[instance.get_instance_id()] = instance.global_position
 			was_leaving_by_id[instance.get_instance_id()] = instance.is_on_its_way_out()
 		# Ends once the run has shown what the checks below ask for with room to spare (they need
-		# three men, two who ran and one gap): five men come, four have left the top and four have
-		# taken their first step. The whole section holds thirteen, and a longer watch only repeats
-		# the same men over again.
-		var ran := 0
-		for age in first_step_age:
-			if age >= 0.0:
-				ran += 1
-		return appeared.size() >= 5 and left.size() >= 4 and ran >= 4
+		# three men and one gap): four men come and three have left the top. The whole section holds
+		# more, and a longer watch only repeats the same men over again.
+		return appeared.size() >= 4 and left.size() >= 3
 	await PhysicsTicks.pass_ticks_faster(t, ceili(RunConfig.FINALE_LENGTH_SECONDS / STEP), 8,
 			after_the_tick)
 	player.free()
 	t.check(appeared.size() >= 3,
 			"more than one masked man comes up the shaft over a section (%d)" % appeared.size())
-	t.check(moved_while_telegraphing == 0,
-			"and none of them moves while he is giving notice (%d frames)" % moved_while_telegraphing)
-	var notices := 0
-	for i in first_step_age.size():
-		if first_step_age[i] < 0.0:
-			continue
-		notices += 1
-		t.check(first_step_age[i] >= Tuning.WARNING_ALONE_MAX - STEP,
-				"man %d took his first step %.2fs into his warning, after the second it owes"
-				% [i, first_step_age[i]])
-	t.check(notices >= 2, "at least two of them actually ran (%d)" % notices)
+	t.check(came_unwarned == 0 and first_steps_off_the_foot == 0,
+			"and every one is warned of before he exists and comes at the foot of the shaft "
+			+ "(%d unwarned, %d elsewhere)" % [came_unwarned, first_steps_off_the_foot])
+	for i in appeared.size():
+		if i >= warned.size():
+			break
+		var alone: float = appeared[i] - warned[i]
+		t.check(alone >= Tuning.WARNING_ALONE_MAX - STEP,
+				"man %d comes %.2fs after his warning went up, after the second it owes" % [i, alone])
 	var gaps := 0
-	for i in range(1, appeared.size()):
+	for i in range(1, warned.size()):
 		if i - 1 >= left.size():
 			break
 		gaps += 1
-		var gap: float = appeared[i] - left[i - 1]
+		var gap: float = warned[i] - left[i - 1]
 		t.check(absf(gap - EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS) <= STEP * 3.0,
-				"the next man comes %.2fs after the last one ran out of the top, against %.2fs"
+				"the next man's warning goes up %.2fs after the last one ran out of the top, against %.2fs"
 				% [gap, EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS])
 	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
 	print("The masked man came %d times before the watch ended; gaps measured: %d"
@@ -328,11 +318,8 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var grid := scene.map()
 
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.row_id() == "masked_pursuer":
-			man = instance
-	t.check(man != null, "the masked man is on the stairs")
+	var man := BuildingEvents.masked_man(events)
+	t.check(man != null, "the masked man is planned on the stairs")
 	if man:
 		man.restore(EventSave.new(man.telegraphs_for(), 0.0, INF))
 		var shaft: Array[Vector2] = []

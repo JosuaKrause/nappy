@@ -69,9 +69,9 @@ const FINALE_EXPLOSION_INTERVAL := 22.0
 ## in seconds: he respawns, forcing her to switch sides again.
 ##
 ## **Stated against what one run costs her.** A shaft is three floors of eight tiles (768px) and he
-## runs it at `Tuning.HEAT_HUNTS_SPEED` (130px/s), so a run is about six seconds, and before it he
-## stands at the foot with his hand raised until she comes within the masked man's
-## `NoticeSpec.runs_within()` of him. Six seconds of nothing between runs is long enough that
+## runs it at `Tuning.HEAT_HUNTS_SPEED` (130px/s), so a run is about six seconds, and the next is not
+## in the world until she is within the masked man's `EventDef.sets_off_within()` of the foot of
+## the shaft again. Six seconds of nothing between runs is long enough that
 ## stepping out of a door and straight back in is a real answer, short enough that waiting one
 ## out and strolling down is not. A first number, and the one to move if the shaft reads as
 ## either a corridor with a man in it or a corridor with a man near it.
@@ -2696,12 +2696,16 @@ static func _impact_crater() -> EventDef:
 ## letting him go past. It is `loose_dog`'s contract indoors: a thing coming down the corridor
 ## you are in, answered by leaving the corridor.
 ##
-## **Faster than a walk, so it cannot be out-walked**, which makes stepping aside the answer rather
-## than a preference, and makes the telegraph contract ask for a long one: at 130px/s it prices the
-## escape as the field's whole forward reach rather than its falloff band, so outer radius 120 at
-## `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and its telegraph (`telegraphs_for()`) carries a little over it. That
-## number is read only by the contract: he warns while she is in the stairwell and runs on a
-## distance, with no clock (below).
+## **Placed when he should appear, warned first** *(minty-dolphin #852: "Stair guard could as well
+## be placed when it should appear instead of when entering"; "The stair guard can become a charger
+## that is triggered by a location if necessary")*: a place on the stairwell sets him off
+## (`EventDraft.set_off_within()`), and until she reaches it he is not in the world. Walking into
+## it, she sets him off at once (`EventDef.as_set_off_at_once()`): his badge goes up, pointing at
+## the foot of the shaft he comes from, and he comes into the world there on the same tick, running
+## (`SetOffWatch`). Already inside it when he may come, or arriving in it through a door, his badge
+## is up alone for his own warning first, `Tuning.WARNING_ALONE_MAX`, so he never runs at her with
+## no warning at all (inbox #788 in minty-lemur). Faster than a walk, so it cannot be out-walked,
+## which makes stepping aside the answer rather than a preference.
 ##
 ## **No body**, like every other mobile row: a moving wall on a stairwell one tile wide would pin her
 ## against the shaft. What stops her walking into him is that it ends the section.
@@ -2711,45 +2715,33 @@ static func _masked_pursuer() -> EventDef:
 	row.look(LookSpec.of(EventDef.Look.MASKED_PURSUER))
 	row.body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	row.field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
-	row.warning(WarningSpec.lasting(3.6).holding_still())
+	row.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
 	row.route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
-	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
-	# moment the section begins and being gone before she has come down a floor.
-	# A row that waits for her but does not pursue (`EventDef.waits_for_her()`,
-	# `EventDef.pursues()`) stands unclocked until she is in range and then runs its ordinary
-	# path, which is `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own
-	# height (three floors of eight tiles is 768px) with room over it, so he notices her the
-	# moment she is anywhere in the same stairwell and never from the hallway two parts away.
-	row.notice(NoticeSpec.at(900.0)
-			# And the warning is spent standing, not approaching: a man already running when he first
-			# becomes visible has given no notice at all.
-			# **He warns while she is in the stairwell, and runs the moment she is within this of him, with
-			# no warning clock**: the one waiting charger outside the one-radius rule (inbox #788 in
-			# minty-lemur: no delay), since his warning is off screen and a delay only lets a walker reach
-			# the door. She has to run to the first floor's door (inbox #764 in minty-lemur) rather than walk
-			# down to it and out to the other shaft without meeting him (inbox #782 in minty-lemur: a bigger
-			# radius, and him not moved). No clock, so his telegraph (`telegraphs_for()`) above is read only by the
-			# telegraph contract. 426px is measured on the escape as built
-			# (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, a 30Hz physics
-			# tick that moves her, then steps him and checks the catch): coming down from the second floor's
-			# door she meets it at the head of the second flight, and making for the first floor's door from
-			# there a runner gets through on every line onto the flight, while a walker is caught holding
-			# plain left from the row level with the flight's head tread or the row below it, or down-left
-			# from the landing tile between the two flights. **A walker holding plain left from that landing
-			# tile gets through**, and the margins are thin against his 23.5px catch
-			# (`MASKED_PURSUER_CATCH`): a runner who walks until he runs, then runs, turning plain left at
-			# row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px in the
-			# hand-stepped probe, and clears it on the real body, which slides along walls, in
-			# `tests/test_interior_masked_man.gd`; the walker down-left from the landing tile comes within
-			# 22.7px, 0.8px inside; a runner who runs the whole way is 33px from him at the closest. In the
-			# stairwell his warning is off screen, since the view reaches 180px from her and he starts about
-			# 400px below; only the edge badge shows his charge, from the frame he runs (`DangerEdge`). The
-			# player accepted both (inbox #782 in minty-lemur).
-			.running_within(426.0))
+	# **He comes the moment she is within this of the foot of his shaft**, rather than running his
+	# line the moment the section begins and being gone before she has come down a floor. She has
+	# to run to the first floor's door (inbox #764 in minty-lemur) rather than walk down to it and
+	# out to the other shaft without meeting him (inbox #782 in minty-lemur: a bigger radius, and
+	# him not moved). 426px is measured on the escape as built
+	# (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, a 30Hz physics
+	# tick that moves her, then steps him and checks the catch): coming down from the second floor's
+	# door she reaches it at the head of the second flight, and making for the first floor's door
+	# from there a runner gets through on every line onto the flight, while a walker is caught
+	# holding plain left from the row level with the flight's head tread or the row below it, or
+	# down-left from the landing tile between the two flights. **A walker holding plain left from
+	# that landing tile gets through**, and the margins are thin against his 23.5px catch
+	# (`MASKED_PURSUER_CATCH`): a runner who walks until he runs, then runs, turning plain left at
+	# row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px in the
+	# hand-stepped probe, and clears it on the real body, which slides along walls, in
+	# `tests/test_interior_masked_man.gd`; the walker down-left from the landing tile comes within
+	# 22.7px, 0.8px inside; a runner who runs the whole way is 33px from him at the closest. In the
+	# stairwell the foot of his shaft is off screen, since the view reaches 180px from her and the
+	# foot is 426px below; his badge is what shows him coming, from the tick he is set off
+	# (`DangerEdge`). The player accepted both (inbox #782 in minty-lemur).
+	row.set_off_within(426.0)
 	row.lethal(LethalSpec.within(MASKED_PURSUER_CATCH))
-	# **One of him at a time, and there is always another**: a fresh one comes up the shaft this long
-	# after the last has run out of the top of it, so every run waits, warns and runs exactly as the
-	# first did (`EventManager`'s repeats).
+	# **One of him at a time, and there is always another**: a fresh one may come up the shaft this
+	# long after the last has run out of the top of it, set off by the same place as the first
+	# (`EventManager`'s repeats).
 	row.comes_again(0.0, FINALE_PURSUER_RESPAWN_SECONDS)
 	return row.build()
 

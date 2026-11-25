@@ -11,8 +11,9 @@ extends RefCounted
 ## carries on itself (its caret and the projection behind it) is `tests/test_event_carets.gd`'s.
 ##
 ## **Nothing here stands a real `EventManager`.** The screen edge is handed the manager and reads
-## its live events, so the three badge cases that put a fire engine or a cat on the street hand it
-## a `FakeEventManager` holding what they spawn. The real manager's street, read by a real
+## its live events, so the two badge cases that put a fire engine or a cat on the street, each
+## created under its warning (`spawn_warned()`), hand it a `FakeEventManager` holding what they
+## spawn. The real manager's street, read by a real
 ## `DangerEdge`, is `tests/test_event_manager.gd`'s. Which live events raise which level of the cue
 ## over her head is the warning board's rule, held in `tests/test_event_parts.gd`.
 ##
@@ -28,7 +29,6 @@ func run(t: TestRunner) -> void:
 	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
-	await _test_the_badge_measures_the_things_own_speed(t)
 	await _test_the_edge_badges_only_what_the_row_announces(t)
 	await _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t)
 	await _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
@@ -178,67 +178,20 @@ func _test_a_car_sounding_its_horn_carries_its_own_mark(t: TestRunner) -> void:
 
 # ------------------------------------------------------------- the screen edge ---
 
-## `MARGIN` and `SCREEN_MARGIN` are screen px, which is only a fair unit if every player's screen
-## shows the same slice of world. `"expand"` would let a wide monitor see more city than a laptop
-## before the same margin fires, buying it more warning for nothing the player did — `"keep"` holds
-## the viewport at a fixed 1280×720 and bars the rest, so this is the setting the badge's whole
-## unit of measurement depends on.
+## The edge's `MARGIN` is screen px, and a badge stays up until its thing is in sight, which is
+## only a fair rule if every player's screen shows the same slice of world. `"expand"` would let a
+## wide monitor see a coming thing sooner than a laptop does, taking its badge down earlier for
+## nothing the player did — `"keep"` holds the viewport at a fixed 1280×720 and bars the rest, so
+## what is out of sight is the same world for everyone.
 func _test_the_screen_edge_is_the_same_size_for_everyone(t: TestRunner) -> void:
 	t.check(ProjectSettings.get_setting("display/window/stretch/aspect") == "keep",
 			"the window letterboxes instead of showing more or less city on a different screen")
 
-## **The badge measures the event's speed, not the gap's.** *(Playtest 06, finding 1: "they show
-## events far away, and if you walk towards them they sometimes disappear; also they flicker a
-## lot.")* All three symptoms are one line: the rate the gap was shrinking is her speed plus its
-## speed, and she walks at 92 against a threshold of 20, so walking towards anything lethal
-## raised its badge whether or not it was coming.
-##
-## The arithmetic of the window (a time to arrive, not a distance) is `tests/test_badge_model.gd`'s;
-## this runs the plumbing, what the edge hands the model, on real frames.
-func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
-	# The edge runs its own frames, and each thing moves by hand at its own speed over the frame's
-	# own length: a stationary fire engine with her walking at it, then the same one driving at her.
-	var manager := FakeEventManager.new()
-	var standing := Node2D.new()
-	t.add_child(standing)
-	var edge := DangerEdge.new()
-	edge.use_atlas(_atlas)
-	edge.setup(manager, standing)
-	t.add_child(edge)
-
-	var def := EventCatalogue.by_id("fire_truck")
-	var engine := manager.spawn_extra(def, Vector2(700.0, 0.0))
-
-	# A second of her walking straight at a stopped fire engine.
-	var announced_while_walking := false
-	var walked := 0.0
-	while walked < 1.0:
-		var delta: float = t.get_process_delta_time()
-		standing.global_position += Vector2(Tuning.WALK_SPEED * delta, 0.0)
-		walked += delta
-		await t.get_tree().process_frame
-		announced_while_walking = announced_while_walking or not edge.badges().announcing().is_empty()
-	t.check(not announced_while_walking,
-			"walking towards something lethal does not announce it at the edge of the screen")
-
-	# And a second of it driving at her while she stands still.
-	var driven := 0.0
-	while driven < 1.0:
-		var delta: float = t.get_process_delta_time()
-		engine.global_position -= Vector2(def.speed() * delta, 0.0)
-		driven += delta
-		await t.get_tree().process_frame
-	t.check(edge.badges().announcing().size() == 1, "a fire engine actually coming down the street does")
-
-	edge.free()
-	standing.free()
-	manager.free()
-
 ## **The edge badges what the row announces, and nothing else that comes fast.** Whether a row's
 ## coming is worth an arrow is the row's own answer (`EventDef.announces_its_coming()`); this is
-## that the edge asks it. The crossing cat comes at 240px/s, fast enough to be badged on its speed
-## alone, and its row does not announce it (it does not telegraph its coming, PLAYTEST-145 20), so
-## a second of it running at her from off screen puts nothing on the edge.
+## that the edge asks it. The crossing cat comes at 240px/s, faster than a walk, and its row does not
+## announce it (it does not telegraph its coming, PLAYTEST-145 20), so even created as a warned thing
+## is (`spawn_warned()`), a second of it running at her from off screen puts nothing on the edge.
 func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 	var manager := FakeEventManager.new()
 	var standing := Node2D.new()
@@ -251,7 +204,7 @@ func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	t.check(not def.announces_its_coming(Tuning.WALK_SPEED),
 			"the cat's row does not announce its coming, so the check below is about the edge")
-	var cat := manager.spawn_extra(def, Vector2(700.0, 0.0))
+	var cat := manager.spawn_warned(def, PackedVector2Array([Vector2(700.0, 0.0), Vector2.ZERO]))
 	var ran := 0.0
 	var announced := false
 	while ran < 1.0:
@@ -266,8 +219,9 @@ func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 	standing.free()
 	manager.free()
 
-## An instance still around keeps its badge frame to frame, and one `_events.instances()` stopped
-## carrying loses it rather than leaving it up forever.
+## An instance created under its warning (`spawn_warned()`) and still around keeps its badge frame
+## to frame, and one `_events.instances()` stopped carrying loses it rather than leaving it up
+## forever.
 func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner) -> void:
 	var manager := FakeEventManager.new()
 	var standing := Node2D.new()
@@ -278,7 +232,7 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
-	var engine := manager.spawn_extra(def, Vector2(700.0, 0.0))
+	var engine := manager.spawn_warned(def, PackedVector2Array([Vector2(700.0, 0.0), Vector2.ZERO]))
 	var driven := 0.0
 	while driven < 1.0:
 		var delta: float = t.get_process_delta_time()

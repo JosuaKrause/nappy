@@ -754,8 +754,9 @@ const HUT_EAST := "checkpoints/hut_east"
 const HUT_WEST := "checkpoints/hut_west"
 ## The stationary picture beside a hut (`checkpoint_hut`) or alone (`checkpoint_post`) — a guard
 ## who never turns, since neither row ever moves. The guard who does — a heated `roadblock`'s
-## escort and `masked_pursuer` — reads `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below
-## instead, through `EventLook._draw_eight_view()`.
+## escort, and `masked_pursuer`, who is only ever drawn lunging — reads
+## `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below instead, through
+## `EventLook._draw_eight_view()`.
 const GUARD_STANDING := "checkpoints/guard_standing"
 const GUARD_LUNGING := "checkpoints/guard_lunging"
 ## Bound through `EventLook._draw_eight_view()` for the two rows whose guard actually turns as he
@@ -781,8 +782,8 @@ const GUARD_LUNGING_BY_VIEW := {
 }
 ## **A guard who has noticed her stands square-on with one hand raised, palm out** (inbox #748 in
 ## woolly-penguin), held still for his notice: the hunting roadblock's guard at his post, the
-## guardsman a vehicle lets out beside its door, the masked man at the foot of the shaft
-## (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
+## guardsman a vehicle lets out beside its door (`PursuerLook._masked_pursuer_pictures()`), and — the
+## front view — a checkpoint hut's or post's
 ## guard while her crossing of its door's line warns her (`EventInstance.is_its_guard_warning()`).
 ## Never the van's guard a task sends or the guardsman a torn poster sends: both arrive already charging. 22×44
 ## front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
@@ -1209,9 +1210,12 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.VAN_GUARD_GIVING_CHASE:
 			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.GUARDSMAN_GIVING_CHASE:
-			# The masked man's notice at the foot of the shaft, and the guardsman's out of a
-			# vehicle.
+		EventDef.Look.MASKED_PURSUER:
+			# Drawn lunging from the tick he comes: he gives no notice and makes no stop, so his
+			# footprint (`EventFootprints.footprint_of()`) is measured over these views alone.
+			_collect_views(sources, [GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.GUARDSMAN_GIVING_CHASE:
+			# His notice out of a vehicle, and his stop.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.POLICEMAN_GIVING_CHASE:

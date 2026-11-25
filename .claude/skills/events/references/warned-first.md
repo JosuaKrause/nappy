@@ -1,7 +1,7 @@
 # Rows warned of before they exist
 
 Read this before touching `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`,
-`EventManager.warn_first()` or a pursuer sent from out of her sight. The design, row by row, is
+`EventManager.warn_first()`, `SetOffWatch` or a pursuer sent from out of her sight. The design, row by row, is
 `docs/EVENTS.md`, "Everything arrives from off screen"; this file holds what the fairness contract
 asks of such a row and the traps in the code.
 
@@ -46,6 +46,20 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
   robber and guard, and a torn poster's pursuer on foot (olive-hedgehog #598).
 - **Where its ground has no place when the warning's time has run, the warning is withdrawn**; a
   withdrawn day-3 dog is owed again.
+- **A row a place sets off** (`EventDef.is_set_off_by_a_place()`: the masked man on the escape's
+  stairs) is warned of the moment she comes within its `sets_off_within()` of where it starts
+  (`SetOffWatch`; minty-dolphin #852), and created there rather than where a siting finds a place,
+  only while that place is out of her sight: with no time alone where she walks into the place
+  (`EventDef.as_set_off_at_once()`), so it comes exactly as near as its set-off distance, which
+  `EventDef.warning_time()` counts from, and with its row's own `warned_for()` where she is inside
+  it already.
+
+**Every screen-edge badge comes from this path** (minty-dolphin #852): a warning, then the thing it
+created keeping the badge until any of it is in sight (`EventInstance.was_warned_of()`,
+`BadgeModel`). **A charger already in the world whose charge begins out of her sight takes the
+same path**: that start is its warning, and it carries the badge from then until she can see it
+(`EventInstance._begin_the_charge()`), a rule asked of every charger and never keyed on a row. Any
+other danger in the world carries none, so nothing in the world is measured for one.
 
 **The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
 created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its

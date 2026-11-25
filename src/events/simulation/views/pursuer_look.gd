@@ -76,17 +76,14 @@ func _policeman_pictures() -> Dictionary:
 	return EventPictures.POLICEMAN_LUNGING_BY_VIEW_B if gait_is_stepping() \
 			else EventPictures.POLICEMAN_LUNGING_BY_VIEW
 
-## Whether a man on foot is drawn standing rather than lunging: while he waits for her to come
-## near (`is_waiting()`, which `is_telegraphing()` is false for, the masked man at the foot of the
-## shaft being the one who does), through his notice, and through a stop he has made of his catch
-## (`has_stopped_her()`) until he turns to walk back.
+## Whether a man on foot is drawn standing rather than lunging: through his notice, and through a
+## stop he has made of his catch (`has_stopped_her()`) until he turns to walk back.
 func _stands_still_now() -> bool:
-	return event.is_waiting() or event.is_telegraphing() or (event.has_stopped_her()
-			and not event.is_on_its_way_out())
+	return event.is_telegraphing() or (event.has_stopped_her() and not event.is_on_its_way_out())
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
-## the `guard_standing_*` family while he waits for her and through a stop (`_stands_still_now()`),
+## the `guard_standing_*` family through a stop (`_stands_still_now()`),
 ## `guard_alert_*` for any notice he gives (`_masked_pursuer_pictures()`), as a heated roadblock's
 ## guard does at his post, and `guard_lunging_*` once he is actually on her line. Read from his own
 ## travel heading through `_draw_eight_view()`, the same helper every other moving family uses, so
@@ -99,17 +96,15 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 
 ## The guard-drawn pursuer's picture for this frame. **The alert, hand raised, is every notice one
 ## of them gives**: the guardsman a vehicle lets out, standing for his notice
-## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands_for_its_notice()`), and the masked man standing at
-## the foot of the shaft through his notice (`is_telegraphing()` after his wait: his row waits
-## for her, `EventDef.waits_for_her()`, as no other guard-drawn row does). *(Inbox #764 in
-## minty-lemur, the player: an event that does not spawn already charging always needs a
+## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands_for_its_notice()`). *(Inbox #764
+## in minty-lemur, the player: an event that does not spawn already charging always needs a
 ## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging
 ## and never give one, nor does the door guard, whose warning was the hut's or the post's
-## guard's from her crossing (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*`
-## while `_stands_still_now()` — the masked man's wait, a stop — and `guard_lunging_*` after.
+## guard's from her crossing (`PursuitSpec.Start.CHARGES_AT_ONCE`), nor the masked man, whose
+## warning was his badge before he existed (`EventDef.is_set_off_by_a_place()`). Otherwise
+## `guard_standing_*` while `_stands_still_now()` — a stop — and `guard_lunging_*` after.
 func _masked_pursuer_pictures() -> Dictionary:
-	if event.is_standing_for_its_notice() or (event.notice_within() > 0.0
-			and event.is_telegraphing()):
+	if event.is_standing_for_its_notice():
 		return EventPictures.GUARD_ALERT_BY_VIEW
 	return EventPictures.GUARD_STANDING_BY_VIEW if _stands_still_now() \
 			else EventPictures.GUARD_LUNGING_BY_VIEW

@@ -1047,11 +1047,8 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 		t.check(elsewhere == 0, "and reaches nothing in the %s shaft, which stays walkable" % other)
 		# The other egress is where the masked man is, which is the whole reason the fire is worth
 		# having: the way past a fire is the other stairwell, and somebody is coming up it.
-		var man: EventInstance = null
-		for instance in events.instances():
-			if instance.row_id() == "masked_pursuer":
-				man = instance
-		t.check(man != null, "a masked man is on the stairs")
+		var man := BuildingEvents.masked_man(events)
+		t.check(man != null, "a masked man is planned on the stairs")
 		if man:
 			t.check(_shaft_tiles(scene, "stairwell_%s" % other).has(
 					scene.map().world_to_tile(man.global_position)),
@@ -1162,11 +1159,8 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunne
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.row_id() == "masked_pursuer":
-			man = instance
-	t.check(man != null, "a masked man is on the stairs")
+	var man := BuildingEvents.masked_man(events)
+	t.check(man != null, "a masked man is planned on the stairs")
 	if man:
 		var side := "right" if BuildingPlan.BURNING_SIDE == "left" else "left"
 		var part := "stairwell_%s" % side
@@ -1233,8 +1227,8 @@ func _test_his_catch_ends_the_section_with_what_struck_her(t: TestRunner) -> voi
 	rng.seed = 4242
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var man := BuildingEvents.live(events, "masked_pursuer")
-	t.check(man != null, "a masked man is on the stairs")
+	var man := BuildingEvents.masked_man(events)
+	t.check(man != null, "a masked man is planned on the stairs")
 	if not man:
 		events.free()
 		scene.free()
@@ -1274,8 +1268,8 @@ func _test_his_run_stops_at_the_building_walls(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
-	var man := BuildingEvents.live(events, "masked_pursuer")
-	t.check(man != null, "a masked man is on the stairs")
+	var man := BuildingEvents.masked_man(events)
+	t.check(man != null, "a masked man is planned on the stairs")
 	if not man:
 		events.free()
 		scene.free()
@@ -2128,7 +2122,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 ## the excitement halo and the debug view read the building's events the way they read a day's —
 ## the building's are the day's own `EventManager` — and none of them needs
 ## a crowd. Each is driven here against the real building rather than a stand-in, so what is
-## checked is that the masked man coming up a stairwell raises a badge, the fire she is standing
+## checked is that the masked man coming up a stairwell keeps his warning's badge, the fire she is standing
 ## beside wears a rim, and the building's walls are bodies the bounding-box layer traces.
 func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
@@ -2140,13 +2134,8 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	# Standing still: the instances stay where the checks put them, and the frames below are the
 	# views' own.
 	events.set_physics_process(false)
-	var fire: EventInstance = null
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.row_id() == "burning_building":
-			fire = instance
-		elif instance.row_id() == "masked_pursuer":
-			man = instance
+	var fire := BuildingEvents.live(events, "burning_building")
+	var man := BuildingEvents.masked_man(events)
 	t.check(fire != null and man != null, "the building has its fire and its masked man")
 	if not fire or not man:
 		events.free()
@@ -2175,8 +2164,9 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	t.check(not man.source().rim().is_held(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
-	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that
-	# can raise it is his own approach — the same test a fire engine coming down a street meets.
+	# **The badge.** A masked man created where his warning pointed, far off any screen, as a place
+	# that set him off creates him (`EventManager.spawn_warned()`): he keeps his warning's badge until
+	# she can see him, the same badge a fire engine sent down a street keeps.
 	var edge := DangerEdge.new()
 	t.add_child(edge)
 	edge.size = ScreenOrientation.DESIGN_SIZE
@@ -2185,15 +2175,15 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	edge.setup(events, player)
 	var far := Vector2(-40000.0, -40000.0)
 	player.global_position = far
-	man.global_position = far + Vector2(man.row().heard_within() + 400.0, 0.0)
-	await _frames(t, 3)
-	man.global_position -= Vector2(30.0, 0.0)
+	var from := far + Vector2(man.row().heard_within() + 400.0, 0.0)
+	events.spawn_warned(man.row(), PackedVector2Array([from, far]))
 	await _frames(t, 3)
 	var announced: Array[String] = []
 	for badge in edge.badges().announcing():
 		announced.append(badge.logged_name())
 	t.check(announced.has("masked_pursuer"),
-			"the masked man closing on her from off screen raises a badge (%s)" % str(announced))
+			"the masked man coming at her from off screen under his warning has a badge (%s)"
+			% str(announced))
 
 	# **The debug view.** The world is the building, so the bounding-box layer walks its walls and
 	# the fire's body; no crowd, no props, and nothing about either is a crash.

@@ -74,8 +74,8 @@ func in_tick_order() -> Array[EventBehaviour]:
 ## composed of), and the whole list in tick order.
 ##
 ## **The order is load-bearing**: a flock's birds move before its flush can put them up, a
-## pursuer's chase runs before its man's stop is looked for, and a row that runs nothing else walks
-## its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
+## pursuer's chase runs before its man's stop is looked for, a row a place set off runs its line,
+## and a row that runs nothing else walks its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
 static func compose(row: EventDef, where: WhereSheIs, figure: EventInstance.Figure,
 		map: WorldMap, navigator: Navigator, mover: Mover, trace: RunTrace, lights: TrafficSignals,
 		move: MoveProposal) -> EventBehaviours:
@@ -134,7 +134,9 @@ static func compose(row: EventDef, where: WhereSheIs, figure: EventInstance.Figu
 		made._notice_run = EventNoticeRun.new(
 				figure, where, row.route(), row.flock(), row.notice(), route)
 		out.append(made._notice_run)
-	if row.moves() and not row.investigates() and not row.pursues() and not row.waits_for_her():
+	if row.is_set_off_by_a_place():
+		out.append(EventSetOffRun.new(figure, route))
+	elif row.moves() and not row.investigates() and not row.pursues() and not row.waits_for_her():
 		out.append(route)
 	if row.detains_her():
 		made._hold = EventHold.new(figure, row.hold())

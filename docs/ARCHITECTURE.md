@@ -408,6 +408,8 @@ src/
 	                         and the pelican's first landing on her
 	  warning_board.gd      the screen-edge badges up for something not in the world yet, and the
 	                         mark over her head
+	  set_off_watch.gd      the places that set a row off, the masked man's on the escape's stairs:
+	                         his warning put up as she reaches his place, and him brought in after it
 	  events_ahead.gd       what the director puts in front of her while she walks: sited on her
 	                         way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
 	                         a task's mast placed after dawn and day 13's roadblock put across a

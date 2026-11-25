@@ -49,6 +49,19 @@ static func vents(events: EventManager) -> Array[EventPlan]:
 			found.append(plan)
 	return found
 
+## **The masked man in the world, for a case about his line, his catch or his field**, where how he
+## came does not matter: made by the manager on his plan's own line from the foot of his shaft
+## (`EventManager.spawn_extra()`), his telegraph spent as a place that set him off spends it
+## (`EventSpawner.age_when_warned()`). How a place sets him off is `test_interior_masked_man.gd`'s.
+## Null where the building plans none.
+static func masked_man(events: EventManager) -> EventInstance:
+	for plan in events.plans():
+		if plan.row_id() == "masked_pursuer":
+			var man := events.spawn_extra(plan.row(), plan.placed_at(), plan.walks())
+			man.restore(EventSave.aged(EventSpawner.age_when_warned(plan.row())))
+			return man
+	return null
+
 ## The live instance of the row `id`, or null.
 static func live(events: EventManager, id: String) -> EventInstance:
 	for instance in events.instances():

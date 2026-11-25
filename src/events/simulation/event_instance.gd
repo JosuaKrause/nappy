@@ -26,6 +26,10 @@ var _age := 0.0
 ## (`was_warned_of()`) to carry the warning's badge on to the thing itself until it comes into
 ## view, and `restore()` reads it to tell a fresh instance from one streamed back in.
 var _came_under_a_warning := false
+## Whether its charge began with none of it in her sight (`_begin_the_charge()`): that start is
+## its warning, so it carries the screen-edge badge from then until she can see it
+## (`was_warned_of()`).
+var _charged_out_of_sight := false
 
 ## **Tells it that it was created where a warning pointed**, once that warning was over
 ## (`EventManager.spawn_warned()`), before `restore()` reads it: a restore otherwise restores an
@@ -86,8 +90,8 @@ enum Phase {
 ## (`is_telegraphing()`, `is_waiting()`, `is_on_its_way_out()`, `has_parked()`, `is_gone()`,
 ## `is_only_its_barrier()`) answer from it.
 var _phase := Phase.WARNING
-## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge, a
-## flush or the masked man's run. A row that left, parked or stopped before that is still within
+## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge or
+## a flush. A row that left, parked or stopped before that is still within
 ## its telegraph's clock (`is_telegraphing()`).
 var _telegraph_ended := false
 
@@ -158,16 +162,6 @@ var _drawn_box_known := false
 ## chase as an influence.
 func is_chasing() -> bool:
 	return _def.pursues() and _charge.has_begun() and not is_gone() \
-			and not is_on_its_way_out() and not is_waiting()
-
-## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
-## it (a pursuer's charge, the masked man's run up his shaft) and it has neither left, finished nor
-## had its charge end; true for the whole charge. Read by `DangerEdge` and handed to `BadgeModel` as
-## `Subject.charging`; on a charger's first moving frame the model meets the charge at its true
-## approach rather than its smoothed one and raises its badge from outside the view proper, so it is
-## up from the frame he runs.
-func has_charged() -> bool:
-	return _charge.has_begun() and not _charge.has_ended() and not is_gone() \
 			and not is_on_its_way_out() and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
@@ -778,11 +772,11 @@ var _charge: ChargeRecord
 ## (`CheckpointLook._draw_checkpoint_hut()`, asking `is_its_guard_warning()`).
 var _guard_warns_her := false
 
-## **Whether this instance has a charging counter**: every pursuer, and a row that waits for her
-## and runs its own line at her once she is near (`NoticeSpec.runs_within()`, the masked man in the
-## escape's stairwell). Telemetry only.
+## **Whether this instance has a charging counter**: every pursuer, and a row a place sets off to
+## run its line at her (`EventDef.is_set_off_by_a_place()`, the masked man in the escape's
+## stairwell). Telemetry only.
 func counts_a_charge() -> bool:
-	return _def.pursues() or _def.runs_its_own_line()
+	return _def.pursues() or _def.is_set_off_by_a_place()
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
 ## `pursuit_ended`): the row's `EventDef.charges_counted_as()` where it sets one (the task guard
@@ -978,8 +972,9 @@ func path_travelled() -> float:
 func travel_velocity() -> Vector2:
 	if is_gone() or is_on_its_way_out():
 		return Vector2.ZERO
-	# **A parked row is not travelling, whatever its speed says.** The screen-edge badge reads this
-	# as a closing speed, and an engine standing at a kerb is not closing on anybody.
+	# **A parked row is not travelling, whatever its speed says.** The exclamation mark over her
+	# reads this as a closing speed (`WarningBoard`), and an engine standing at a kerb is not closing
+	# on anybody.
 	if has_parked():
 		return Vector2.ZERO
 	if _def.pursues():
@@ -1324,7 +1319,7 @@ func is_waiting() -> bool:
 ##
 ## It is the notice's own clock (`_notice`, a `Warning` read against `age`), less whatever held it:
 ## a held lunge with her inside its stand-off, a waiting charger behind a wall at its warning's last
-## moment, the masked man's wait. Zero for a row that waits and has not noticed her.
+## moment. Zero for a row that waits and has not noticed her.
 func _chase_age() -> float:
 	return _notice.elapsed(_age)
 
@@ -1343,7 +1338,7 @@ func _chase_age() -> float:
 ## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
 ## sets off beside her, whose notice is a clock by construction.
 func warns_by_radius() -> bool:
-	return _def.waits_for_her() and (_def.pursues() or _def.runs_its_own_line()) \
+	return _def.waits_for_her() and _def.pursues() \
 			and not _def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and not _set_on_her
 
 ## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
@@ -1360,15 +1355,10 @@ func _charge_radius() -> float:
 ## (`_notice_time()`), held only: while a held lunge has her inside its stand-off
 ## (`EventPursuit.pause_a_held_notice()`); at a waiting charger's last moment while a wall stands
 ## between them, since **his charge needs a clear line** (inbox #650 in mossy-beaver), so he goes
-## on warning until the line clears or she leaves his radius; and for every tick of a row that runs
-## its own line (`EventNoticeRun`, the masked man), whose run comes only from her coming
-## within `NoticeSpec.runs_within()`. A held clock is what a stream-out carries (`save()`),
+## on warning until the line clears or she leaves his radius. A held clock is what a stream-out carries (`save()`),
 ## so it comes back exactly as far run.
 func _hold_the_notice_clock(delta: float) -> void:
 	if _telegraph_ended or is_waiting():
-		return
-	if _def.runs_its_own_line() and _chase_age() - delta < _def.telegraphs_for():
-		_notice.hold(delta)
 		return
 	var her := _where.at()
 	if warns_by_radius() and _def.pursues() and her != Vector2.INF \
@@ -1575,10 +1565,6 @@ func peak() -> float:
 ## (`EventDef.pulses_every()`).
 func pulses_every() -> float:
 	return _def.pulses_every()
-
-## Its notice radius, or 0 for a row with no wait (`EventDef.notice_within()`).
-func notice_within() -> float:
-	return _def.notice_within()
 
 ## A flock is its birds, summed.
 ##
@@ -1964,8 +1950,8 @@ class Figure:
 	func is_telegraphing_still() -> bool:
 		return _of.is_telegraphing_still()
 
-	## Whether its telegraph or notice ended into `Phase.ACTIVE`: run out, or cut short by a lunge,
-	## a flush or the masked man's run.
+	## Whether its telegraph or notice ended into `Phase.ACTIVE`: run out, or cut short by a lunge
+	## or a flush.
 	func notice_has_run() -> bool:
 		return _of._telegraph_ended
 
@@ -2086,9 +2072,10 @@ class Figure:
 	func warning_went_up() -> void:
 		_of._report_the_warning()
 
-	## Its charge began, for its counter (`EventBus.pursuit_began`), said once however often told.
+	## Its charge began, for its counter (`EventBus.pursuit_began`), said once however often told;
+	## begun out of her sight, it carries the screen-edge badge (`EventInstance._begin_the_charge()`).
 	func charge_began() -> void:
-		_of._charge.begin()
+		_of._begin_the_charge()
 
 	## Its charge, and the warning before it, were said and ended before it streamed out: none of it
 	## is said again (`ChargeRecord.count_as_over()`).
@@ -2191,10 +2178,34 @@ func is_on_its_way_out() -> bool:
 func has_parked() -> bool:
 	return _phase == Phase.PARKED
 
-## Whether it was created where a warning pointed, once that warning was over
-## (`arrive_from_its_warning()`): the badge it had carries on until it comes into view.
+## **Whether its coming was put on the screen-edge badge**, which it carries until it comes into
+## view (`BadgeModel`): it was created where a warning pointed, once that warning was over
+## (`arrive_from_its_warning()`), or its charge began out of her sight (`_begin_the_charge()`).
 func was_warned_of() -> bool:
-	return _came_under_a_warning
+	return _came_under_a_warning or _charged_out_of_sight
+
+## **Its charge begins**, said once however often told (`ChargeRecord.begin()`). **A charge that
+## begins with none of it in her sight puts its badge up as it starts** (`_charged_out_of_sight`),
+## pointing where it comes from and kept until she can see it, through the one path every badge
+## takes (`was_warned_of()`, `BadgeModel`): a charger that waited for her and ran from just
+## outside the view, or a man let out of a vehicle whose raised hand she walked away from. A rule
+## about every charger, never one row: it asks only where the charger is when its charge begins.
+## One that began in her sight carries none, since she saw it coming.
+func _begin_the_charge() -> void:
+	if not _charge.has_begun() and not _is_in_her_sight():
+		_charged_out_of_sight = true
+	_charge.begin()
+
+## Whether any of it is in her sight this tick: the point it stands at or any of what it draws
+## (`drawn_box()`) inside the camera's view (`WhereSheIs.view()`), the test the badge comes down
+## by (`DangerEdge`). In sight for an instance nobody has handed a view (a rig that steps it
+## directly), so no badge goes up on a guess.
+func _is_in_her_sight() -> bool:
+	var view := _where.view()
+	if not view.has_area() or view.has_point(global_position):
+		return true
+	var box := drawn_box()
+	return box.has_area() and view.intersects(Rect2(global_position + box.position, box.size))
 
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:
