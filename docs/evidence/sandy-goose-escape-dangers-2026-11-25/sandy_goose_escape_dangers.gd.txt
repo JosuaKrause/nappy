@@ -1,0 +1,98 @@
+extends RefCounted
+## Measurement probe for sandy-goose: do the escape city's own trucks, explosions, vans and
+## roadblocks stand on her way? Not a suite: it prints rather than asserts. Run by name:
+##
+##     tools/test.sh probes/sandy_goose_escape_dangers.gd      (prints ESCAPE_DANGERS lines)
+##
+## The plan is the escape's (`DayPlanner.plan_the_escape_city()`), built the way
+## `tests/probes/escape_density.gd` builds it, on the seeds below, once per exit. Her way is the
+## exit's chain (`FinalePlanner.Plan.chains`): its two-tile cells, each taken at its centre. A row
+## is **on the path** when it stands inside a cell of the chain grown by a pixel, **on her street**
+## when it stands inside a street segment (`FinalePlanner.Plan.open_streets`) that holds a cell of
+## the chain, and **in sight**
+## when, for some cell centre of the chain, it lies inside the screen box
+## (`Tuning.VIEW_HALF_EXTENT` either side of that point): she is at that point at some moment of
+## the walk and the row is on her screen. "Off" is in sight and not on her street.
+
+const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808, 11, 13, 17, 19, 29, 31,
+		37, 41, 43, 47, 53, 59, 61, 4216201080]
+const ROWS: Array[String] = ["military_convoy", "finale_explosion", "abduction", "roadblock"]
+const KEYS: Array[String] = ["placed", "path", "street", "sight", "off"]
+const RUN_SEED := 2
+
+func run(t: TestRunner) -> void:
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
+	var totals := {}
+	for seed_value in SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var plan := FinalePlanner.route(map)
+		var placements := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(),
+				GamePlanBuilder.over(map))
+		for chain in plan.chains:
+			var exit := "tunnel" if chain.exit_kind == CityExit.Kind.TUNNEL else "bridge"
+			var centres: Array[Vector2] = []
+			var rects: Array[Rect2] = []
+			for cell: Vector2i in chain.cells:
+				var rect := map.tile_rect_to_world(Rect2i(cell * ReachabilityGrid.CELL,
+						Vector2i(ReachabilityGrid.CELL, ReachabilityGrid.CELL))).grow(1.0)
+				rects.append(rect)
+				centres.append(rect.get_center())
+			var streets: Array[Rect2] = []
+			for segment in plan.open_streets:
+				var street := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
+				if centres.any(func(c: Vector2) -> bool: return street.has_point(c)):
+					streets.append(street)
+			var counts := {}
+			for placement in placements:
+				var id := placement.row_id()
+				if not ROWS.has(id):
+					continue
+				var at := placement.placed_at()
+				var is_path := rects.any(func(r: Rect2) -> bool: return r.has_point(at))
+				var is_on := streets.any(func(r: Rect2) -> bool: return r.has_point(at))
+				var is_seen := centres.any(func(c: Vector2) -> bool:
+						return absf(c.x - at.x) <= Tuning.VIEW_HALF_EXTENT.x \
+						and absf(c.y - at.y) <= Tuning.VIEW_HALF_EXTENT.y)
+				_bump(counts, id, "placed")
+				if is_path:
+					_bump(counts, id, "path")
+				if is_on:
+					_bump(counts, id, "street")
+				if is_seen:
+					_bump(counts, id, "sight")
+					if not is_on:
+						_bump(counts, id, "off")
+			var parts: Array[String] = []
+			var any_seen := false
+			for id in ROWS:
+				parts.append("%s path %d street %d sight %d (off %d) of %d" % [id, _got(counts, id, "path"),
+						_got(counts, id, "street"),
+						_got(counts, id, "sight"), _got(counts, id, "off"),
+						_got(counts, id, "placed")])
+				any_seen = any_seen or _got(counts, id, "sight") > 0
+				for key in KEYS:
+					_bump(totals, "%s %s" % [exit, id], key, _got(counts, id, key))
+			print("ESCAPE_DANGERS seed %10d %s | %d cells | %s%s" % [seed_value, exit,
+					chain.cells.size(), " | ".join(parts), "" if any_seen else " | NONE IN SIGHT"])
+	for exit: String in ["tunnel", "bridge"]:
+		for id in ROWS:
+			var name := "%s %s" % [exit, id]
+			print("ESCAPE_DANGERS | %d seeds | %s | placed %d, on the path %d, on her street %d, in sight %d (off %d)"
+					% [SEEDS.size(), name, _got(totals, name, "placed"), _got(totals, name, "path"),
+					_got(totals, name, "street"),
+					_got(totals, name, "sight"), _got(totals, name, "off")])
+	t.check(true, "a probe asserts nothing")
+
+static func _bump(counts: Dictionary, id: String, key: String, by := 1) -> void:
+	counts["%s|%s" % [id, key]] = int(counts.get("%s|%s" % [id, key], 0)) + by
+
+static func _got(counts: Dictionary, id: String, key: String) -> int:
+	return int(counts.get("%s|%s" % [id, key], 0))
+
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
