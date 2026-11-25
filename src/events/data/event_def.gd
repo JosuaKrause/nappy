@@ -11,13 +11,14 @@ extends RefCounted
 ## different moments and each reads as its own step. `Tuning.RESISTANCE_GOAL - 1` is one task's worth
 ## of progress left before the goal.
 const HEAT_HUNTS_LEVEL := Tuning.RESISTANCE_GOAL - 1
-## How close she has to come before it takes an interest, in px: the hunting roadblock's guard's one
-## radius, and the hunting vans' before they let their men out, past the 180px the player found way
-## too small for a charger to notice her within (curly-moose #803). Strictly between
-## `PursuitSpec.standoff(Tuning.HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
-## 250px field: under the stand-off the whole notice is spent standing still, over the field it
-## decides about her before she can feel it. Drawn at `ChargerTiming.notice()` of this.
-const HEAT_HUNTS_WITHIN := 225.0
+## How close she has to come before it takes an interest, in px, as written: the hunting roadblock's
+## guard's one radius, and the hunting vans' before they let their men out. Drawn at the run's
+## `ChargerTiming.notice()` of this, 225px as shipped, since the player found 180px way too small
+## for a charger to notice her within (curly-moose #803). Over
+## `PursuitSpec.standoff(Tuning.HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius),
+## since under the stand-off the whole notice is spent standing still; a van never notices her past
+## its 250px field (`at_heat()`), where it would decide about her before she can feel it.
+const HEAT_HUNTS_WITHIN := 180.0
 ## The progress at which a pressing row stops merely running its route and starts investigating:
 ## stopping near her and letting a pursuer on foot out (`EventDef.investigates()`, read off its
 ## `HuntSpec`). As close to half way through `Tuning.RESISTANCE_GOAL` as a whole task lets it land
@@ -25,13 +26,14 @@ const HEAT_HUNTS_WITHIN := 225.0
 ## being interested.
 const HEAT_INVESTIGATES_LEVEL := 3
 ## How close she has to come, along a clear line, before an investigating car stops and its
-## policeman gets out, in px. **Inside the patrol's own 185px outer radius**, so it decides about her
-## only once she can feel it, and wider than the man's stand-off (116px), so he usually gets out with
-## room to hold his ground and give the notice he owes her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`
-## covers him when she is nearer). **Not drawn at `ChargerTiming.notice()`**, unlike every other
-## charger's: the car stands for her once its man is back only while she is within its strike and
-## horn lead ahead (`EventCarDriving`), so stopped further out it pulls away into her and strikes
-## her (`tests/test_police_car.gd`, `_test_a_car_leaving_turns_away_and_never_vanishes_beside_her`).
+## policeman gets out, in px, as written. Drawn at the run's `ChargerTiming.notice()` of this, as
+## every charger's notice is (curly-moose #803), and **never past the patrol's own 185px outer
+## radius** (`at_heat()`), so it decides about her only once she can feel it: 185px as shipped.
+## Wider than the man's stand-off (116px), so he usually gets out with room to hold his ground and
+## give the notice he owes her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER` covers him when she is
+## nearer). Once he is back in, the car stands for her while she is in its lane within the radius
+## it stopped at (`EventCarDriving.stand_for_her()`), so stopped however far out, it never pulls
+## away into her.
 const HEAT_INVESTIGATE_WITHIN := 150.0
 ## What the intensity of a pressing row is multiplied by at full heat: the patrol's 10/s at the
 ## centre becomes 13.5/s. The smaller of the two multipliers, since an intensity rise is the one the
@@ -1006,8 +1008,7 @@ func at_heat(level: int, chargers: ChargerTiming) -> EventDef:
 		hot.drawn(_weight * lerpf(1.0, HEAT_PRESSES_POPULATION, through), most)
 		hot.field(_field.at_peak(peak() * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)))
 		hunts_from = HEAT_INVESTIGATES_LEVEL
-		# The patrol's notice is not the charger timing's: see `HEAT_INVESTIGATE_WITHIN`.
-		notices_within = HEAT_INVESTIGATE_WITHIN
+		notices_within = chargers.notice(HEAT_INVESTIGATE_WITHIN)
 	if level < hunts_from:
 		return hot.build()
 	# **At its rung's threshold the copy takes the row's hunt** (`_hunts`, `HuntSpec`) and

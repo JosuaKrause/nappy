@@ -51,6 +51,16 @@ const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
 ## inside his radius; one who stands in it is caught. The run plays it through `ChargerTiming`, so
 ## `--chargers` can try another.
 const CHARGER_WARNING := 1.75
+## **How far every charger notices her against the radius its row is written with**: a factor on
+## every written notice radius (`ChargerTiming.notice()`), the waiting dog's 130px, the alley
+## robber's 180px (and every man drawn as him), the hunting roadblock's guard's and the hunting
+## vans' `EventDef.HEAT_HUNTS_WITHIN` and the investigating patrol's
+## `EventDef.HEAT_INVESTIGATE_WITHIN`, since the player found 180px way too small for a charger to
+## notice her within, in general (curly-moose #803). Played with `CHARGER_WARNING`, and as wide as
+## that warning lets it be: the warning still runs out with her out of his radius in every walk
+## `tests/probes/charger_warning.gd` takes. The run plays it through `ChargerTiming`, so
+## `--chargers` can try another.
+const CHARGER_REACH := 1.25
 ## How far past a door body's own solid edge the inspection starts (PLAYTEST-57).
 ##
 ## **Stated over the hut, never over her.** Her centre is stopped `obstructs_within() +
@@ -156,7 +166,7 @@ const MAST_BODY := 6.0
 ## **How this run plays every charger's warning and notice** (`ChargerTiming`): the shipped timing
 ## unless the run asked for another (`use_charger_timing()`). Every row the catalogue builds reads
 ## it, so the rows below are built from it.
-static var _chargers: ChargerTiming = ChargerTiming.of(CHARGER_WARNING, 1.0)
+static var _chargers: ChargerTiming = ChargerTiming.of(CHARGER_WARNING, CHARGER_REACH)
 
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
@@ -166,9 +176,9 @@ static var _building_fire: EventDef = null
 static var _explosion_outside: EventDef = null
 
 ## **The charger timing the game ships**: every charger warns for `CHARGER_WARNING` and notices her
-## within the radius its row is written with.
+## within `CHARGER_REACH` times the radius its row is written with.
 static func shipped_charger_timing() -> ChargerTiming:
-	return ChargerTiming.of(CHARGER_WARNING, 1.0)
+	return ChargerTiming.of(CHARGER_WARNING, CHARGER_REACH)
 
 ## **How this run plays every charger's warning and notice**: what the rows are built from, and what
 ## a door's crossing warns for (`EventManager` hands `CheckpointController` its `warning()`).
@@ -1537,18 +1547,18 @@ static func _charging_dog() -> EventDef:
 	# field that lets one row answer two days without ever mutating the shared resource.
 	row.sited(EventDef.SpawnMode.AHEAD_OF_PLAYER)
 	# From the day after the lesson it is a place on the map that waits for her inside its one
-	# radius, 162.5px, inside its 182.5px field (inbox #788 in minty-lemur), as wide as the
-	# shorter warning lets it be (curly-moose #803; `tests/probes/charger_warning.gd`).
+	# radius, written 130px and drawn at the run's charger reach (`ChargerTiming.notice()`, 162.5px
+	# as shipped), inside its field (inbox #788 in minty-lemur; curly-moose #803).
 	# `EventDef.for_day()` hands a placement past the switch a copy carrying it.
 	row.switching_after(Tuning.RUN_TAUGHT_DAY, EventDef.SpawnMode.MAP,
-			NoticeSpec.at(_chargers.notice(162.5)))
+			NoticeSpec.at(_chargers.notice(130.0)))
 	# Wider than the stand-off, a constraint rather than a taste: a pursuer holds its stand-off
 	# through its whole telegraph, so a field narrower than that is a field it is never inside; the
 	# dog would spend the entire warning emitting nothing at her, the `!` over her head would never
 	# go up, and the trace would attribute the mark to "nothing in reach". `validate_pursuit`
 	# refuses the arrangement. Twenty pixels past its notice, so the meter says it is there before it
-	# has noticed her, growing with the notice (`ChargerTiming.field_reach()`).
-	row.field(FieldSpec.of(12.0, 26.0, _chargers.field_reach(182.5, 162.5)))
+	# has noticed her, growing with the notice (`ChargerTiming.field_reach()`: 182.5px as shipped).
+	row.field(FieldSpec.of(12.0, 26.0, _chargers.field_reach(150.0, 130.0)))
 	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
 	# a walk can outlast. Running is what ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate.
 	row.lasts(Tuning.PURSUIT_TIME)
@@ -1818,10 +1828,11 @@ static func _curfew_announce() -> EventDef:
 ## structures. The band adds nothing to that sum and keeps the flag so the boundary kit stays one
 ## source by one rule; see `FieldSpec.as_one_barrier()`.
 ##
-## **The 179px cold field sits under the shared 225px trigger.** `EventDef.at_heat()` widens only
-## the hunting copy's outer radius to `maxf(heard_within(), EventDef.HEAT_HUNTS_WITHIN)`, the
-## smallest fix that holds for every `HUNTS` row, so the cold field is what it was and only the
-## moment the guard starts hunting reaches 225px. `tests/test_heat.gd`'s generic loop
+## **The 179px cold field sits under the shared hunting trigger**, `EventDef.HEAT_HUNTS_WITHIN` at
+## the run's charger reach (225px as shipped). `EventDef.at_heat()` widens only the hunting copy's
+## outer radius to `maxf(heard_within(), notice_within())`, the smallest fix that holds for every
+## `HUNTS` row, so the cold field is what it was and only the moment the guard starts hunting
+## reaches the trigger. `tests/test_heat.gd`'s generic loop
 ## (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) catches a row whose field sits under the
 ## trigger; this one is the row that found it.
 static func _roadblock() -> EventDef:
@@ -1906,13 +1917,14 @@ static func _abduction() -> EventDef:
 ##
 ## Three numbers for three sentences, in order:
 ##
-## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
-##   meter is what tells you he is there, before he has noticed her at all.
+## - **On sight.** 16 over a field twenty pixels past his notice (245px as shipped), so the far end
+##   of an alley is already expensive and the meter is what tells you he is there, before he has
+##   noticed her at all.
 ## - **Getting close is day ending.** Ending the day inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `EventDef.notice_within()` 180, his one radius:
-##   inside that he
+## - **Get close and he comes at you.** `EventDef.notice_within()`, his one radius, 180px at the
+##   run's charger reach (225px as shipped): inside that he
 ##   stands up, turns to face her and walks at her slowly, at 40px/s (`PursuitSpec.walk_speed()`),
 ##   holding at his 116px stand-off, for his warning (`CHARGER_WARNING`, `PursuitSpec.warns_for()`;
 ##   inbox #788 in minty-lemur), and if she is still inside his radius once it has run he lunges, and chases at
@@ -1966,19 +1978,15 @@ static func _alley_robbery() -> EventDef:
 			.warning_for(_chargers.warning()))
 	# Outside his stand-off (116px) and inside his field, which leaves room for both halves of the
 	# row: far enough out that his notice walk is seen, near enough that she has felt him before he
-	# decides anything about her (inbox #761 in minty-lemur). 64px past his stand-off at the slow
-	# walk below is about half a second of him walking for a walker coming in (64 / (40 + 92)) and
-	# 1.6s for one who stops at the edge, and 180px is half the view's height; he notices her only
-	# once his warning would stand in her view (`EventInstance._would_stand_in_her_view()`). 180px is
-	# his one radius: he charges if she is still inside it once his warning has run
-	# (`PursuitSpec.warns_for()`, below). **It stays 180px while every other charger's notice is
-	# wider than that** (curly-moose #803): a chalk mark's guard and day 13's task guard are this
-	# row, and the resistance stands neither within his notice of her
-	# (`ResistanceDirector._guard_position()`), so at 225px a mark moved into the alley she has
-	# come near is left unguarded where two-thirds of its alley lies within it
-	# (`tests/test_resistance_alley_siting.gd`), and day 13's guard follows her to the roadblock she
-	# approaches less often (`tests/test_day13_guard.gd`). Which gives way is the player's to say;
-	# `--chargers` plays him wider meanwhile.
+	# decides anything about her (inbox #761 in minty-lemur). Written 180px and drawn at the run's
+	# charger reach (`ChargerTiming.notice()`, 225px as shipped), as every charger's is
+	# (curly-moose #803): 109px past his stand-off at the slow walk below is under a second of him
+	# walking for a walker coming in (109 / (40 + 92)) and 2.7s for one who stops at the edge; he
+	# notices her only once his warning would stand in her view
+	# (`EventInstance._would_stand_in_her_view()`). That is his one radius: he charges if she is
+	# still inside it once his warning has run (`PursuitSpec.warns_for()`, below). The resistance
+	# sites a chalk mark's guard and day 13's task guard, who are this row, from the radius drawn
+	# (`ResistanceDirector._guard_position()`).
 	#
 	# The trap: with a chase that ends at a *distance*, a trigger at or past that distance is a
 	# pursuit that loses interest the instant it starts, and she can stroll away from him every
@@ -2203,8 +2211,9 @@ static var _task_guard_sent: EventDef = null
 ## **The `HUNTS` rung `abduction` climbs, but it hunts on foot**
 ## (`HuntSpec.letting_out()`). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
 ## block and nothing more. At and above it, the derived copy `investigates`: the van stays where it
-## stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (225px) of it along a clear
-## line it lets two men out at its door on her side, who pursue her under the pursuit contract
+## stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (at the run's charger reach,
+## 225px as shipped) of it along a clear line it lets two men out at its door on her side, who
+## pursue her under the pursuit contract
 ## (`EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10) and whose catch ends
 ## the day (inbox #669 in coral-lark). Men who give up or run out their chase walk back to the van,
 ## which stands over its block for the rest of the day. The van itself never ends the day, cold

@@ -48,8 +48,8 @@ func run(t: TestRunner) -> void:
 ## builds every row again from it and validates every fairness contract on the way, and each charger
 ## that waits for her warns for its warning, notices her within its factor of the radius it is
 ## written with, and keeps as much field past its notice as it had, so she still feels it before it
-## notices her. A hunting van's notice for the men it lets out is drawn at the same factor and
-## never past its own field. Handed back the one it had, the catalogue builds the rows as they were.
+## notices her. A hunting van's notice for the men it lets out, and the investigating patrol car's
+## for its policeman, are drawn at the same factor and never past their own field. Handed back the one it had, the catalogue builds the rows as they were.
 func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) -> void:
 	var was := EventCatalogue.charger_timing()
 	var shipped := _chargers_now()
@@ -82,21 +82,24 @@ func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) ->
 		t.check(again[id] == shipped[id], "%s is built as it was once the timing is handed back" % id)
 
 ## Each charger's `[waits for her, written notice, notice_within, heard_within, warns_for]` as the
-## catalogue builds it now: the three that wait for her, and a hunting van that lets its men out
-## once it notices her.
+## catalogue builds it now: the three that wait for her, a hunting van that lets its men out once it
+## notices her, and an investigating patrol car that lets its policeman out.
 static func _chargers_now() -> Dictionary:
 	var dog := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var robber := EventCatalogue.by_id("alley_robbery")
 	var guard := EventCatalogue.escape_roadblock()
 	var hot := Tuning.RESISTANCE_GOAL
 	var raid := EventCatalogue.heated(EventCatalogue.by_id("abduction"), hot)
+	var patrol := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), hot)
 	var found := {}
-	for row: EventDef in [dog, robber, guard, raid]:
+	for row: EventDef in [dog, robber, guard, raid, patrol]:
 		# A charger's notice is never cut short, so its written radius is its notice at the factor
 		# played now; a vehicle's may stop at its field, and is written as its rung's trigger.
 		var radius := row.notice_within() / EventCatalogue.charger_timing().notice(1.0)
 		if row == raid:
 			radius = EventDef.HEAT_HUNTS_WITHIN
+		elif row == patrol:
+			radius = EventDef.HEAT_INVESTIGATE_WITHIN
 		var warns := row.pursuit().warns_for() if row.pursues() else 0.0
 		found[row.id()] = [row.pursues(), radius, row.notice_within(), row.heard_within(), warns]
 	return found

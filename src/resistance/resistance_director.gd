@@ -903,7 +903,7 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ##
 ## **His spot is looked for on ground whose units have drawn**, with no draw of its own. A guard
 ## is set for a mark or a roadblock she is sent to, and stands inside the alley of a mark and at
-## most `TASK_GUARD_FARTHEST` from a roadblock. **A place fixed beyond the ground drawn round
+## most `task_guard_farthest()` from a roadblock. **A place fixed beyond the ground drawn round
 ## her** has the units round it drawn as it is confirmed, out to `Tuning.EVENT_DRAW_AHEAD`
 ## (`_she_can_be_sent_to()`), and a roadblock swapped in has its section's surroundings drawn
 ## (`EventManager.swap_in_a_section()`). **A place fixed inside the ground drawn round her** is a
@@ -956,10 +956,10 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## `_maybe_set_a_trap()`). A mark stands only on a mark tile (`_marks()`; a recipe's pin off one is
 ## refused, `_the_pinned_mark()`), and every mark tile is in a through-alley or past a courtyard's
 ## passage, so a point on neither has no guard, as `_guard_spot()` answers off an alley. Every
-## candidate is refused within his `EventDef.notice_within()` of `her` and, with
-## `on_screen_matters`, where he would be drawn in her view (brisk-wombat, "a robber also
-## appeared out of nowhere and instakilled me"): his spot is worked out from the contact
-## alone, so those refusals are what keep him off her. `Vector2.INF` when no candidate
+## candidate is refused, with `on_screen_matters`, where he would be drawn in her view, and
+## otherwise within his `EventDef.notice_within()` of `her` (`_refused_round_her()`;
+## brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): his spot is worked
+## out from the contact alone, so those refusals are what keep him off her. `Vector2.INF` when no candidate
 ## qualifies. Split out so a move of the roadblock's guard
 ## (`_move_the_task_guard_to_her_target()`) can ask where he would stand without spawning him.
 ## `approach` and `near_side_too` are the roadblock's alone (`_roadblock_guard_spot()`): the
@@ -974,7 +974,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 	var robbery := EventCatalogue.mark_guard()
 	var min_distance := robbery.core_within() + reach
 	var max_distance := robbery.notice_within() + reach
-	var her_refuse_within := robbery.notice_within() if her != Vector2.INF else 0.0
+	var her_refuse_within := _refused_round_her(robbery, her, on_screen_matters)
 	var span := _through_alley_span(at)
 	if not span.is_empty():
 		return _guard_two_thirds_through(at, span, min_distance, her, her_refuse_within,
@@ -984,6 +984,23 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 		return _draw_guard_position_near_far_mouth(rng, at, far, min_distance, max_distance,
 				her, her_refuse_within, on_screen_matters)
 	return Vector2.INF
+
+## **How near `her` no guard of `robbery`'s row is placed**, in px: his notice
+## (`EventDef.notice_within()`, as the run's charger timing draws it, `ChargerTiming`), so he never
+## stands where he would decide about her as he is placed, or nothing where nobody is there.
+## **Where he is kept out of her view as well (`on_screen_matters`), the view is the refusal and
+## his notice is not**: he notices her only with his warning in her view
+## (`EventInstance._would_stand_in_her_view()`), so placed out of it he decides nothing about her
+## until she has brought him into it, and then warns for his whole warning, which is measured to be
+## fair however deep in his notice she first sees him
+## (`tests/probes/charger_warning.gd`, its late sighting). A notice under the view's own vertical
+## half-extent is refused by the view anyway; one past it (curly-moose #803) would otherwise refuse
+## every spot of an alley she has come near, where a moved mark is placed
+## (`_move_the_mark()`), and leave the mark unguarded.
+func _refused_round_her(robbery: EventDef, her: Vector2, on_screen_matters: bool) -> float:
+	if her == Vector2.INF or on_screen_matters:
+		return 0.0
+	return robbery.notice_within()
 
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
@@ -1002,12 +1019,13 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## from `rng`.
 ##
 ## Refused, as every guard's ground is, where he may not stand (`SpawnSiting.CONTACT_GROUND`: not
-## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — within
-## `EventDef.notice_within()` of `her`, and, when `on_screen_matters`, anywhere any part of him
-## would be on screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
+## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — when
+## `on_screen_matters`, anywhere any part of him would be on screen
+## (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`), and otherwise within
+## `EventDef.notice_within()` of `her` (`_refused_round_her()`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
-## `TASK_GUARD_FARTHEST`, nearest ring first, on the same terms: the band can be wholly in her view
+## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her view
 ## when she stands beside the roadblock, and the street through it runs on past the view's edge.
 ## *(inbox #651 in lilac-marmot: "We can move the guard around offscreen as much as we want. If we
 ## need to move multiple times so be it".)* On the ring no touch is within his notice; the task sets
@@ -1028,17 +1046,18 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 	var pools: Array = [[], [], [], []]
 	var beyond := [{}, {}]
 	var centre := _map.world_to_tile(body)
-	var span := ceili(TASK_GUARD_FARTHEST / Tuning.TILE_SIZE)
+	var farthest := task_guard_farthest(reach)
+	var span := ceili(farthest / Tuning.TILE_SIZE)
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre + Vector2i(dx, dy)
 			var spot := _map.tile_to_world(tile)
 			var distance := spot.distance_to(body)
-			if distance < nearest or distance > TASK_GUARD_FARTHEST:
+			if distance < nearest or distance > farthest:
 				continue
 			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot):
 				continue
-			if her != Vector2.INF and spot.distance_to(her) <= robbery.notice_within():
+			if spot.distance_to(her) <= _refused_round_her(robbery, her, on_screen_matters):
 				continue
 			if on_screen_matters and not _spawn_siting.allows(
 					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, spot):
@@ -1088,10 +1107,24 @@ static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 		items[i] = items[j]
 		items[j] = kept
 
-## How far from a roadblock's body its guard may stand when its band is all refused
-## (`_roadblock_guard_spot()`): past the camera's half-width and its lead along the street from a
+## The least a roadblock's guard may stand from its body when its band is all refused
+## (`task_guard_farthest()`): past the camera's half-width and its lead along the street from a
 ## pram beside the roadblock — 320 + 46px, and his own half-width, 14px — with a tile to spare.
-const TASK_GUARD_FARTHEST := 14.0 * Tuning.TILE_SIZE
+const TASK_GUARD_FARTHEST_LEAST := 14.0 * Tuning.TILE_SIZE
+## How many whole tiles past his band's edge a roadblock's guard may stand when its band is all
+## refused (`task_guard_farthest()`): the ring a move takes while the band is in her view.
+const TASK_GUARD_RING_TILES := 3
+
+## **How far from a roadblock's body its guard may stand when its band is all refused**
+## (`_roadblock_guard_spot()`), for a roadblock touched from within `reach` of its body:
+## `TASK_GUARD_FARTHEST_LEAST`, or `TASK_GUARD_RING_TILES` past his band's edge rounded up to a
+## whole tile where that is farther. The band's edge is his notice as the run draws it
+## (`EventDef.notice_within()`, `ChargerTiming`) and the reach, so a wider notice keeps the ring
+## past the band rather than closing it (curly-moose #803).
+static func task_guard_farthest(reach: float) -> float:
+	var band_edge := EventCatalogue.task_guard().notice_within() + reach
+	var ring := (ceilf(band_edge / Tuning.TILE_SIZE) + TASK_GUARD_RING_TILES) * Tuning.TILE_SIZE
+	return maxf(TASK_GUARD_FARTHEST_LEAST, ring)
 
 ## Whether a guard standing at `feet` guards `roadblock` where he stands: in its band
 ## (`_roadblock_guard_spot()`), with a clear line to its body.
