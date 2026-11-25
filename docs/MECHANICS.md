@@ -1612,9 +1612,10 @@ not time the city has lost: the service door is the building's goal, which ends 
 city's begins with a whole clock. The countdown, the three losing paths, the
 `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
 a day's and none of them change; **the goal is the section's own**: the building's service exit,
-reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
-`DayController.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
-the baby is.
+reached once its fade has covered the screen, and the city's tunnel or bridge, entered when her
+centre is on the spine's last row at either end, across the carriageway
+(`DayController.FINALE_EXIT_DEPTH`), reached however the baby is. The border junction's crossing
+before that row is still the city.
 
 **The clock reads to the hundredth** — `%d:%02d.%02d` through `RunState.format_clock_hundredths()`,
 in place of a day's `%d:%02d` — and the day's clock tells the HUD on every frame while a section's
@@ -1845,8 +1846,8 @@ street either chain runs through. *(Inbox #747: "yes, of course the yellow tint.
 game establishing that why would it be different in the last section?")* A street a chain only
 turns at is sealed and plain.
 
-**It ends on the tunnel or the bridge**, within `DayController.FINALE_EXIT_REACH` of the exit `CityEdge`
-draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
+**It ends in the tunnel or on the bridge**, when she stands on the last row of the spine under the
+portal `CityEdge` draws (the last ground there is), on a summary screen with the way out behind her and nothing triumphant on it — and the clock
 she took, to the millisecond, which is the only number that screen carries.
 
 ## Nerves

@@ -287,7 +287,8 @@ static func service_exit_world_position(map: CityMap) -> Vector2:
 	return map.tile_to_world(_service_exit_tile(map))
 
 ## The last walkable tile of the spine at one end of the map — the carriageway under the tunnel's
-## portal, or the one running out onto the bridge deck. `City.tunnel_world_position()` draws the
+## portal, or the one running out onto the bridge deck, which is as far into it as she can stand
+## (`Main._the_city_exits()` ends the walk on its row). `City.tunnel_world_position()` draws the
 ## picture at the same place; this is the tile the chain has to reach to be standing in it.
 static func exit_tile(map: CityMap, exit_kind: int) -> Vector2i:
 	var column := map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH

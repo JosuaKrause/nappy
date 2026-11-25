@@ -184,14 +184,10 @@ func _test_each_chain_reaches_its_own_edge(t: TestRunner) -> void:
 			t.check(from_the_edge <= CityEdge.TUNNEL_DEPTH_TILES,
 					"seed %d: and within the portal's own depth of the map edge (%d rows)"
 					% [seed_value, from_the_edge])
-			# Standing on that tile is out of the city, and the street before it is not — the two
-			# halves of what `DayController.FINALE_EXIT_REACH` has to be worth.
-			var at := map.tile_to_world(exit)
-			t.check(DayController.FINALE_EXIT_REACH > Tuning.PLAYER_BODY_RADIUS,
-					"the exit's reach covers her whole body on the tile")
-			t.check(at.distance_to(map.tile_to_world(exit + Vector2i(0, 2))) \
-					> DayController.FINALE_EXIT_REACH,
-					"and stops short of the tile two back from it")
+			# The walk ends on that last row, across the carriageway, and the tile before it, the
+			# border junction's crossing, is the street she is still on.
+			t.check(float(Tuning.TILE_SIZE) > DayController.FINALE_EXIT_DEPTH,
+					"the exit's depth stops short of the tile before the last row")
 		t.check(plan.chains[0].exit_kind != plan.chains[1].exit_kind,
 				"seed %d: the two chains leave by different ways" % seed_value)
 

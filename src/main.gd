@@ -1105,19 +1105,22 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	# — see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
 
-## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the **tiles** the chains end on
-## rather than the points `CityEdge` draws its pictures at. The portal's own face is anchored on
-## the map edge, past the last ground she can stand on, so a reach measured from it would have to
-## be wide enough to cover the difference and would then also cover the street before it.
-## `FinalePlanner.exit_tile()` is the carriageway under the portal, which is where being out of the
-## city actually happens.
+## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the middle of the carriageway on
+## the spine's last row (`FinalePlanner.exit_tile()`'s row, the spine's centre line) rather than
+## the points `CityEdge` draws its pictures at. The portal's own face is anchored on the map edge,
+## past the last ground she can stand on, so the last row is the portal's threshold, which is
+## where being in the tunnel or on the bridge happens.
 func _the_city_exits() -> Dictionary:
 	return {
-		CityExit.Kind.TUNNEL: _city.map().tile_to_world(
-				FinalePlanner.exit_tile(_city.map(), CityExit.Kind.TUNNEL)),
-		CityExit.Kind.BRIDGE: _city.map().tile_to_world(
-				FinalePlanner.exit_tile(_city.map(), CityExit.Kind.BRIDGE)),
+		CityExit.Kind.TUNNEL: _exit_point(CityExit.Kind.TUNNEL),
+		CityExit.Kind.BRIDGE: _exit_point(CityExit.Kind.BRIDGE),
 	}
+
+## One way out's point: the spine's centre line (`City.tunnel_world_position()`'s column) on the
+## centre of the last walkable row.
+func _exit_point(exit_kind: int) -> Vector2:
+	var row := _city.map().tile_to_world(FinalePlanner.exit_tile(_city.map(), exit_kind))
+	return Vector2(_city.tunnel_world_position().x, row.y)
 
 ## `--start-escape`'s raw word (`config.start_escape_at()`), mapped onto a building part's waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
