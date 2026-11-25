@@ -3,8 +3,8 @@
 **What it shows.** Every picture the thought bubbles draw, as the source SVGs render through the
 engine's own SVG parser: the frame (`art/ui/thought_bubble.svg`) holding each of the eight hint
 icons (`art/ui/hint_*.svg`), with the pointing arrow (`art/ui/hint_arrow.svg`) beside the four
-hints that point. Each bubble stands over the mother and the pram at the game's camera zoom (one
-world pixel is two screen pixels) on the sidewalk, the asphalt and the grass, with a 4x enlargement
+hints that point. Each bubble stands over the mother and the pram at the game's camera zoom
+(one world pixel is two screen pixels) on the sidewalk, the asphalt and the grass, with a 4x enlargement
 beside the three, and a strip at the foot shows every bubble at native size beside the
 exclamation mark (`art/props/alert.svg`), the one mark already drawn over her head.
 

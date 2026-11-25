@@ -1,7 +1,7 @@
 # grassy-beaver — Judge the thought bubbles' pictures · 2026-11-25
 
-**What to do.** Open the review sheet, `docs/evidence/grassy-beaver-bubble-pictures-2026-11-25/review-sheet.png`
-(embedded in the pull request that drew it). It shows the thought bubble, the paper-white cloud
+**What to do.** Open the review sheet,
+`docs/evidence/grassy-beaver-bubble-pictures-2026-11-25/review-sheet.png` (embedded in the pull request that drew it). It shows the thought bubble, the paper-white cloud
 that will float over the mother with a hint in it and no words, holding each of its eight icons,
 over the mother and the pram at the game's zoom on the sidewalk, the asphalt and the grass, each
 also enlarged four times, and a strip of all of them at native size beside the exclamation mark.
