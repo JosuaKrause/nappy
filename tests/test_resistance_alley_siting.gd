@@ -59,8 +59,9 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> 
 
 ## The relocation rule applies the same avoidance, with the same fallback: marking the nearest alley
 ## to a chosen spot as "used" sends an unseen mark she walks away from to some other alley still in
-## reach instead, rather than to `Vector2.INF`. She stands on a mark tile that is its own nearest
-## with nothing used — a mark she walks onto with nothing used moves onto it (`_relocate_round()`) —
+## reach instead, rather than to `Vector2.INF`. She stands outside the mouth of a mark tile that is
+## her nearest with nothing used — a mark moves onto it then (`_relocate_round()`,
+## `_outside_the_alley_at()`) —
 ## and has another such tile within `NOTICE_RADIUS` of it, more than `NOTICE_RADIUS` from the day's
 ## mark, and the tick that follows moves the mark off her tile.
 func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> void:
@@ -78,7 +79,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t: TestRunner)
 	var eligible: Array[Vector2i] = []
 	for tile in _mark_tiles():
 		var at := _city.map().tile_to_world(tile)
-		if _relocate_round(scout, scout_player, at, away).distance_to(at) <= 0.5:
+		if _relocate_round(scout, scout_player, _outside_the_alley_at(at), away).distance_to(at) <= 0.5:
 			eligible.append(tile)
 	var candidates: Array[Vector2i] = []
 	for tile in eligible:
@@ -94,7 +95,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t: TestRunner)
 
 	var tried := 0
 	for nearer_tile in candidates:
-		var player_at := _city.map().tile_to_world(nearer_tile)
+		var player_at := _outside_the_alley_at(_city.map().tile_to_world(nearer_tile))
 		GivenRun.alley_tiles(run, [nearer_tile])
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -128,7 +129,7 @@ func _test_the_guard_moves_with_the_mark_into_its_new_alley(t: TestRunner) -> vo
 	var old_guard: EventInstance = old_guards[0] if old_guards.size() == 1 else null
 
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
-	var player := _rig_player(t, far_alley)
+	var player := _rig_player(t, _outside_the_alley_at(far_alley))
 	director.use_player(player)
 
 	director.tick(STEP)
@@ -169,7 +170,8 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 	if guard == null:
 		director.free()
 		return
-	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
+	var far_alley := _outside_the_alley_at(
+			_alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at))
 	var player := _rig_player(t, far_alley)
 	director.use_player(player)
 

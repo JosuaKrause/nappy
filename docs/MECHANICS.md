@@ -1467,10 +1467,12 @@ skipping an alley a completed step's mark already stood at as long as some other
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
 nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
 distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
-courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never in view
-when he is placed (at dawn, never within his own `EventDef.notice_within()` of the doorstep
-instead) — so where that spot is 261px or more from the mark (his notice, 225px as shipped, and her
-36px reach), entering the alley from the mark's own end, reading it and leaving the same way
+courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
+his own `EventDef.notice_within()` of her or in view when he is placed. A move never lands where
+that spot would be within his notice of her, as it never lands where he would be in view, so a
+moved mark always has its guard — so where that spot is 261px or more from the mark (his notice,
+225px as shipped, and her 36px reach), entering the alley from the mark's own end, reading it and
+leaving the same way
 never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
 is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
 once read, the mark never moves and its guard stays until the day ends. The guard a task stands at

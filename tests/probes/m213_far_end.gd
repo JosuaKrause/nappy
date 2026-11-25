@@ -26,6 +26,9 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
+## `_moves_from_everywhere()`'s cities: `SEEDS` and fourteen more.
+const MOVE_SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555, 77, 11, 2024,
+		31337, 8675309, 1917501, 123456, 99, 7, 42, 1001, 65537, 424242, 3761459859]
 const TOUCH_SHORT := 34.0
 ## The seed each run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
@@ -44,6 +47,7 @@ func run(t: TestRunner) -> void:
 		var notice := EventCatalogue.mark_guard().notice_within()
 		print("== robber notice %.0fpx (reach %.2f) ==" % [notice, reach])
 		_on_screen(t)
+		_moves_from_everywhere(t)
 		_task_guards(t)
 	EventCatalogue.use_charger_timing(was)
 
@@ -211,6 +215,51 @@ func _on_screen(t: TestRunner) -> void:
 		director.free()
 	print("[m213] relocations %d: mark picture on screen %d, guard centre on screen %d, guard body on screen %d, unguarded %d"
 			% [relocations, marks_seen, guards_centre_seen, guards_seen, unguarded])
+	t.check(true, "probe ran")
+
+## **A moved mark from wherever she stands**: `MOVE_SEEDS`' cities, her on every walkable tile of
+## every other row and column, her screen round her as in `_on_screen()`. Counted: where the mark
+## moves at all (`_nearest_alley_within()`), how far from her it lands, and how often the guard
+## `_maybe_set_a_trap()` would stand for it finds no spot, his notice of her and her view both
+## refused (brisk-wombat).
+func _moves_from_everywhere(t: TestRunner) -> void:
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
+	var view := VisibleView.new()
+	var asked := 0
+	var moved := 0
+	var unguarded := 0
+	var landed := 0.0
+	for seed_value in MOVE_SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		var director := ResistanceDirector.new()
+		director.setup(map, own_run, null, null, null, null, null,
+				SpawnSiting.new(map, Navigator.new(map), func() -> VisibleView: return view))
+		director._day = 6
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("m213-everywhere:%d" % seed_value)
+		director._rng = rng
+		var size := map.size_in_tiles()
+		for y in range(0, size.y, 2):
+			for x in range(0, size.x, 2):
+				var tile := Vector2i(x, y)
+				if not map.is_walkable(tile):
+					continue
+				var her := map.tile_to_world(tile)
+				view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
+				director.set_sight(view.sees)
+				asked += 1
+				var mark := director._nearest_alley_within(her)
+				if mark == Vector2.INF:
+					continue
+				moved += 1
+				landed += mark.distance_to(her)
+				if director._guard_position(rng, mark, true, her, true) == Vector2.INF:
+					unguarded += 1
+		director.free()
+	print("[m213] from everywhere, %d cities: asked %d, moved %d, unguarded %d (%.1f%%), mean %.0fpx away"
+			% [MOVE_SEEDS.size(), asked, moved, unguarded, 100.0 * unguarded / maxf(moved, 1.0),
+			landed / maxf(moved, 1.0)])
 	t.check(true, "probe ran")
 
 ## Whether a box `half_w` by `half_h` around `at` overlaps the unrotated screen around `her`.

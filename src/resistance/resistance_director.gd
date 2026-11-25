@@ -956,11 +956,10 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## `_maybe_set_a_trap()`). A mark stands only on a mark tile (`_marks()`; a recipe's pin off one is
 ## refused, `_the_pinned_mark()`), and every mark tile is in a through-alley or past a courtyard's
 ## passage, so a point on neither has no guard, as `_guard_spot()` answers off an alley. Every
-## candidate is refused, with `on_screen_matters`, where he would be drawn in her view, and
-## otherwise within his `EventDef.notice_within()` of `her` (`_refused_round_her()`;
-## brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): his spot is worked
-## out from the contact alone, so those refusals are what keep him off her. `Vector2.INF` when
-## no candidate
+## candidate is refused within his `EventDef.notice_within()` of `her` and, with
+## `on_screen_matters`, where he would be drawn in her view (brisk-wombat, "a robber also
+## appeared out of nowhere and instakilled me"): his spot is worked out from the contact
+## alone, so those refusals are what keep him off her. `Vector2.INF` when no candidate
 ## qualifies. Split out so a move of the roadblock's guard
 ## (`_move_the_task_guard_to_her_target()`) can ask where he would stand without spawning him.
 ## `approach` and `near_side_too` are the roadblock's alone (`_roadblock_guard_spot()`): the
@@ -975,7 +974,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 	var robbery := EventCatalogue.mark_guard()
 	var min_distance := robbery.core_within() + reach
 	var max_distance := robbery.notice_within() + reach
-	var her_refuse_within := _refused_round_her(robbery, her, on_screen_matters)
+	var her_refuse_within := robbery.notice_within() if her != Vector2.INF else 0.0
 	var span := _through_alley_span(at)
 	if not span.is_empty():
 		return _guard_two_thirds_through(at, span, min_distance, her, her_refuse_within,
@@ -985,23 +984,6 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 		return _draw_guard_position_near_far_mouth(rng, at, far, min_distance, max_distance,
 				her, her_refuse_within, on_screen_matters)
 	return Vector2.INF
-
-## **How near `her` no guard of `robbery`'s row is placed**, in px: his notice
-## (`EventDef.notice_within()`, as the run's charger timing draws it, `ChargerTiming`), so he never
-## stands where he would decide about her as he is placed, or nothing where nobody is there.
-## **Where he is kept out of her view as well (`on_screen_matters`), the view is the refusal and
-## his notice is not**: he notices her only with his warning in her view
-## (`EventInstance._would_stand_in_her_view()`), so placed out of it he decides nothing about her
-## until she has brought him into it, and then warns for his whole warning, which is measured to be
-## fair however deep in his notice she first sees him
-## (`tests/probes/charger_warning.gd`, its late sighting). A notice under the view's own vertical
-## half-extent is refused by the view anyway; one past it (curly-moose #803) would otherwise refuse
-## every spot of an alley she has come near, where a moved mark is placed
-## (`_move_the_mark()`), and leave the mark unguarded.
-func _refused_round_her(robbery: EventDef, her: Vector2, on_screen_matters: bool) -> float:
-	if her == Vector2.INF or on_screen_matters:
-		return 0.0
-	return robbery.notice_within()
 
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
@@ -1020,10 +1002,9 @@ func _refused_round_her(robbery: EventDef, her: Vector2, on_screen_matters: bool
 ## from `rng`.
 ##
 ## Refused, as every guard's ground is, where he may not stand (`SpawnSiting.CONTACT_GROUND`: not
-## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — when
-## `on_screen_matters`, anywhere any part of him would be on screen
-## (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`), and otherwise within
-## `EventDef.notice_within()` of `her` (`_refused_round_her()`).
+## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — within
+## `EventDef.notice_within()` of `her`, and, when `on_screen_matters`, anywhere any part of him
+## would be on screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
 ## `task_guard_farthest()`, nearest ring first, on the same terms: the band can be wholly in her
@@ -1059,7 +1040,7 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 				continue
 			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot):
 				continue
-			if spot.distance_to(her) <= _refused_round_her(robbery, her, on_screen_matters):
+			if her != Vector2.INF and spot.distance_to(her) <= robbery.notice_within():
 				continue
 			if on_screen_matters and not _spawn_siting.allows(
 					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, spot):
@@ -3338,9 +3319,14 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## wherever she is standing or just beside it, which is on screen more often than not. The mark's
 ## picture is asked with its own size (`MARK_BOX`), and the spot in its alley where
 ## `_move_the_mark()` would stand the guard (`_guard_spot()`), with his (`GUARD_BOX`), so a
-## relocation never lands where its guard could only be placed in view or not at all. Both are
-## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
-## frame.
+## relocation never lands where its guard could only be placed in view or not at all. **Nor one
+## whose guard would stand within his notice of her** (`EventDef.notice_within()`, as the run's
+## charger timing draws it): no guard is placed within it (brisk-wombat, `_guard_position()`), so
+## a move there would leave the mark unguarded, and refusing the move keeps both. At the shipped
+## 225px a move from about one standing place in forty that would otherwise move the mark finds no
+## alley and leaves it where it is (`tests/probes/m213_far_end.gd`); at a notice under the view's
+## own half-height the view refuses those alleys first. All are asked only of a tile nearer than the
+## best found so far, which keeps this cheap enough for every frame.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	return _nearest_alley_among(_marks(), here)
 
@@ -3349,6 +3335,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
 	var used := _run.facts().completed_resistance_alley_tiles()
+	var notice := EventCatalogue.mark_guard().notice_within()
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
@@ -3364,9 +3351,11 @@ func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2
 		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 				or not _reachable_from_home(tile):
 			continue
+		var guard_at := _guard_spot(world)
 		if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _mark_drawn, world) \
 				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
-						_guard_spot(world)):
+						guard_at) \
+				or guard_at.distance_to(here) <= notice:
 			continue
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance

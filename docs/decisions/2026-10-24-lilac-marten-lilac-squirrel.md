@@ -23,16 +23,22 @@ written, 200px (`EventCatalogue._robber_field()`).
 0.85 to 1.4 factors plays the shipped pair; the released page's DEBUG MODE ON note names the timing
 played, so nobody judges a refused pair by playing the shipped one.
 
-**The alley robber at 225px.** Placed in the day out of her view, a guard no longer also refuses his
-notice round her (`ResistanceDirector._refused_round_her()`): out of view he notices nothing until
-she brings him into it. With the notice refusal kept, a mark moved into an alley she has come near
-was left unguarded wherever all of the alley lay within 225px of her (`test_resistance_alley_siting`).
-Measured with `tests/probes/m213_far_end.gd` over its six cities, 717 relocations and 6 guarded
-tasks: unguarded 0 at 180px and 0 at 225px with the rule as built, and 0 at both with the old
-refusal too, since the probe's relocation walk does not reach the failing case; the unguarded share
-of the old rule at 225px is not measured. Rejected: refusing a relocation into an alley whose guard
-would stand within his notice of her, which stopped the mark moving onto the alley she stands in
-(the relocation's own design). The roadblock guard's farthest spot follows his band
+**The alley robber at 225px.** No guard is placed within his notice of her (brisk-wombat, built for
+olive-koala 7), and at 225px that left a mark moved into an alley she had come near unguarded
+wherever the alley's guard spot, two-thirds through, lay within 225px of her
+(`test_resistance_alley_siting`). The first build swapped the notice refusal for the view alone
+whenever the guard is kept out of view, which overturned brisk-wombat (`test_resistance_replacement`
+failed 613 checks in CI) and was reverted. What is built keeps both: a move never lands in an alley
+whose guard would stand within his notice of her (`ResistanceDirector._nearest_alley_among()`),
+as it never lands where he would show. Measured with `tests/probes/m213_far_end.gd`, her on every
+walkable tile of every other row and column of twenty cities, her screen round her (93760
+places): with brisk-wombat alone the mark moved from 23574 of them, landing 327px from her on
+average, and went unguarded 46 times at 225px (0.2%) and never at 180px. With the move refused it
+moves from 22952 (2.6% fewer, the mark staying where it was), lands 326px off on average and is
+never unguarded at 225px; at 180px nothing changes, the view refusing those alleys first. The
+probe's older walk, her on every alley tile of six cities (717 moves), never reached the failing
+case. The suites that stood her on a mark tile with no screen stand her outside its mouth, since on
+the tile its guard would stand within his notice. The roadblock guard's farthest spot follows his band
 (`ResistanceDirector.task_guard_farthest()`), since a 225px band left no ring past it inside the
 fixed 448px (`test_day13_guard`).
 
@@ -48,4 +54,4 @@ refuses; it stands 272px off, and she sets off 0.05s later, so he is still withi
 through the shot.
 
 **Open to the player:** the pair itself; a charger's field growing with its notice; a vehicle's
-notice capped at its field; the view standing in for the notice refusal in the day.
+notice capped at its field; a mark that does not move where its guard would notice her.
