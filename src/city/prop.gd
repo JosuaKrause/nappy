@@ -167,10 +167,10 @@ static func _playground_frame_shape() -> GroundShape:
 
 ## **The ground ellipse at the swing frame's base**, its semi-axes in px round the bottom centre the
 ## frame stands on: half its picture's width and half its height (the ellipse's semi-axes, so it
-## spans the whole picture, 56 by 34px), 28 by 17px for `swing_frame.svg`'s 56 by 34 — the spot day 12's task is touched at
-## (`ResistanceDirector._shape_the_touch()`). Read off the region table rather than the shadow, so
-## the shadow lying under the frame's feet leaves the spot the size and the place it is: both ovals
-## of the shadow lie inside it.
+## spans the whole picture, 56 by 34px), 28 by 17px for `swing_frame.svg`'s 56 by 34 — the spot
+## day 12's task is touched at (`ResistanceDirector._shape_the_touch()`). Read off the region table
+## rather than the shadow, so the shadow lying under the frame's feet leaves the spot the size and
+## the place it is: both ovals of the shadow lie inside it.
 static func swing_frame_base() -> Vector2:
 	return Vector2(AtlasTable.baked().native_size(SWING_FRAME)) * 0.5
 

@@ -12,6 +12,9 @@ it. The spot has no mark of its own: it is found by its red arrow, as every red-
 
 - `vans-sheet.png`: the riot van at all eight sectors, east first and then clockwise, and the
   moving van side on and end on, each row before and after.
+- `moving-van-end-on.png`: the end-on moving van's cell at full scale, before (left) and after
+  (right): the oval lies at the rear tyres' feet, mostly behind the tyres and the ramp, where the
+  old one lay under the whole picture.
 - `swing-sheet.png`: the swing frame before (the capsule), after (the two ovals), and after with
   day 12's touch spot traced round its base in red, a line the game does not draw.
 - `ingame-swing.png`: the game, before (left) and after (right), at day 12's swing on the task's
@@ -30,7 +33,8 @@ on day 12 with no task offered (the red arrow is not drawn). No in-game still sh
 sheet does.
 
 **How they were made**, the "before" stills with `src/` at `main` 342ceef4a and the "after" ones
-and the sheets from this branch:
+and the sheets from this branch at `7968d7ed3` (the in-game stills at `fa0a000e5`, which draw no
+van and whose shadow polygons the later commit did not change):
 
 - the sheets: `tools/test.sh probes/silver_egret_shadow_sheet.gd` writes one PNG per row under the
   game's `user://silver-egret-shadow-sheet/`, and
@@ -38,6 +42,8 @@ and the sheets from this branch:
   riot-van-before riot-van-after moving-van-before moving-van-after` (and `swing-sheet.png 1.0
   swing-frame-before swing-frame-after swing-frame-touch-spot`) labels and stacks them, quantised to
   256 colours;
+- `moving-van-end-on.png`: columns 300 to 460 and rows 0 to 175 of the probe's own
+  `moving-van-before.png` and `moving-van-after.png` (504 by 252 each), set side by side;
 - the in-game stills: `tools/scene-recipes.sh --recipe recipe-swing.json --screenshots` and the
   same with `recipe-swing-city.json` (seed 11, construction city 1917501, day 12, a fixed camera at
   zoom 2.5), once on `main` and once on the branch, each `recipe-swing*.png` cropped to the

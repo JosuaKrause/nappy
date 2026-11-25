@@ -696,8 +696,8 @@ static func _body_touch_reach(instance: EventInstance) -> float:
 ##   + 36 = 56px from the foot), so she completes it from any side before she is stopped by it;
 ## - **day 12's swing** by her body overlapping the ellipse at its base (`Prop.swing_frame_base()`,
 ##   centred on `CityMap.swing_position()`, the bottom centre the frame is drawn standing on, its
-##   semi-axes half the frame's picture's width and half its height, so it spans the picture): *"Not the drawn swing. Place an ellipse at
-##   its base. That's the area to touch"*;
+##   semi-axes half the frame's picture's width and half its height, so it spans the picture):
+##   *"Not the drawn swing. Place an ellipse at its base. That's the area to touch"*;
 ## - **the last night's station door** within `DOOR_REACH` of the door point on the facade, the rule
 ##   every door takes (sandy-egret: "the acceptance radius centered at the door should have a large
 ##   enough radius for half the sidewalk to be covered"; merry-koala).
