@@ -37,8 +37,7 @@ func arrive_from_its_warning() -> void:
 ## further leg while she could be watching it (`EventRouteWalk`), and once it is over it leaves by legs
 ## of the same, held to her sight (`EventDeparture`). Told by whoever sends it ahead of her, after
 ## `setup()` (`EventsAhead`), and never keyed on its row: every copy of a row the director sends carries
-## `EventDef.is_sent_ahead()`, day 13's column and the escape's trucks among them, and those end their
-## routes where they end.
+## `EventDef.is_sent_ahead()`, day 13's column among them, and that one ends its route where it ends.
 func go_on_by(way_on: WayOn) -> void:
 	if _composed.route() != null:
 		_composed.route().go_on_by(way_on)

@@ -400,8 +400,8 @@ tables. **Where it has no further leg, or she is out of sight, it ends its route
 legs of the same, held to her sight ("Going away"); one she has left behind is past
 `Tuning.OUT_OF_SIGHT` and gone on the first tick of its departure. **Only a row the director sends
 goes on**: going on is told to the instance by whoever sends it (`EventInstance.go_on_by()`), never
-read off its row, since day 13's column, the escape's trucks and a scene recipe's dog walker are
-copies of the same rows and end their routes where they end.
+read off its row, since day 13's column and a scene recipe's dog walker are copies of the same
+rows and end their routes where they end.
 
 **A sent row has no room**, and is not put in the world, where there is no ground for it (no
 sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square, or no
@@ -2413,9 +2413,12 @@ everything drawn before it (`draws_before_she_sets_off()`). The bag holds
 vans, `FINALE_BAG_ROADBLOCKS` roadblocks and `FINALE_BAG_EMPTY` empty marbles. **A truck's marble is
 the director's to send**: the street that draws it stands nothing, the plan keeps the truck with no
 place (`DaySpec.hands_the_director()`, `MarbleDraw`), and the event director, handed
-`DirectorSends.ITS_OWN_TRUCKS`, owes her one truck for each, sent ahead of her as she walks as a
-day's convoy is, on its usual pacing; it sends nothing else of an ordinary day's rows. Every street
-of the plan is on her walk, so each truck is on her route; the barrier trucks that seal the
+`DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`, owes her one truck for each, sent ahead of her as she
+walks as a day's convoy is, at the escape's own pace (below); it sends nothing else of an ordinary
+day's rows. The plan names
+only the streets its two chains run along, so every truck's marble is on a street of her routes (her
+two ways out together; once she takes one exit the other chain's streets are off her walk, where
+nothing stands and nothing vanishes); the barrier trucks that seal the
 streets off her walk are the seals and stay placed. Any other row's marble
 stands on the location of the street that takes it, under every placement rule below, the rest
 of the street empty; an empty marble leaves the street with nothing. **A marble the street's
@@ -2436,11 +2439,15 @@ rows find none for a walk with a bag of its own (`DawnContext.catalogue_rows()`)
 `DawnDraw` draws the walk's streets (`DayLocations.along()`, `DayUnits`, `MarbleDraw`) with
 every candidate asked of the same rules a day's is (`StreetInvalidation`). **The event director,
 which sites the rows of a day's route bag ahead of her as she walks, is started for the walk like
-any day's and sends what the spec lets it** (`DaySpec.director_sends()`): both of the escape's sections'
-are `DirectorSends.NOTHING`, so it has no route bag, owes nothing from the plan and rolls neither the
-day-one dog walkers nor the sprinkled charging dog, on day 1 (a direct boot) and on day 14 (a run's
-escape) alike, since the day's number decides none of it. Every danger the escape holds is placed
-before she sets off; a later setting of the spec can give the director a bag of its own to send.
+any day's and sends what the spec lets it** (`DaySpec.director_sends()`): the building's section is
+`DirectorSends.NOTHING`, so it has no route bag and owes nothing from the plan; the city's is
+`DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`, so its route bag holds the army trucks its plan left
+unplaced and nothing else, owed one marble each. Neither section rolls the day-one dog walkers or the
+sprinkled charging dog, on day 1 (a direct boot) and on day 14 (a run's escape) alike, since the day's
+number decides none of it. **The city hands the director its handouts at its own pace**
+(`DaySpec.handout_wait_share()`, `DaySpec.ESCAPE_HANDOUT_WAIT_SHARE` of `EventDirector.AHEAD_INTERVAL`'s
+wait): the ten trucks are owed to one walk of about a minute, which a day's pace would leave mostly
+unmet. Every other danger the escape holds is placed before she sets off.
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds

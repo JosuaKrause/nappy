@@ -209,9 +209,9 @@ func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 ## **Both starts of a walk hand the director what its spec lets it send**
 ## (`DaySpec.director_sends()`), not the day's number: a recording director is handed what
 ## `EventsAhead.start_day()` (a day's) and `start_a_given_walk()` (a walk placed whole) pass it.
-## The escape city's spec hands `ITS_OWN_TRUCKS` on day 1 (the direct boot's day) and day 14 (a
-## run's), and a day's hands the ordinary rows. What the director does with the value is
-## `test_event_director.gd`'s.
+## The escape city's spec hands `SENT_AHEAD_ROWS_OF_ITS_PLAN` on day 1 (the direct boot's day) and
+## day 14 (a run's) with the share of the wait it names, and a day's hands the ordinary rows with
+## all of it. What the director does with the values is `test_event_director.gd`'s.
 func _test_a_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
 	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
@@ -235,19 +235,26 @@ func _test_a_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -
 	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
 		ahead.start_a_given_walk(day)
 		ahead.start_day(day, null)
-	var trucks := DaySpec.DirectorSends.ITS_OWN_TRUCKS
+	var trucks := DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN
 	t.check(director.handed == [trucks, trucks, trucks, trucks],
-			"the escape city's walk hands its own trucks on day 1 and day 14, by either start (%s)"
-			% [director.handed])
+			"the escape city's walk hands the rows of its own plan on day 1 and day 14, by either "
+			+ "start (%s)" % [director.handed])
+	var share := escape.handout_wait_share()
+	t.check(director.shares == [1.0, 1.0, share, share, share, share],
+			"and each start hands the director the share of the wait its spec names (%s)"
+			% [director.shares])
 
 ## A director that records the `sends` each `start_day()` is handed and does nothing else.
 class _RecordingDirector extends EventDirector:
 	var handed: Array[DaySpec.DirectorSends] = []
+	var shares: Array[float] = []
 
 	## Overrides EventDirector.start_day.
 	func start_day(_day: int, _plans: Array[EventPlan], _rng: RandomNumberGenerator,
-			sends: DaySpec.DirectorSends, _siting: WalkSiting = null, _heat: int = 0) -> void:
+			sends: DaySpec.DirectorSends, _siting: WalkSiting = null, _heat: int = 0,
+			wait_share := 1.0) -> void:
 		handed.append(sends)
+		shares.append(wait_share)
 
 ## A walk's spec that holds the home's streets (a day's), or one that does not (the escape's).
 func _spec_that(holds: bool) -> DaySpec:

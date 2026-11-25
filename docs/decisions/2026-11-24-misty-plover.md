@@ -5,13 +5,13 @@ barriers? if so then, sure they're off route blokades" (inbox #1740 in minty-har
 convoy, "just spawn in the car just ahead of the player" (silky-lemur #1460).
 
 **What was built.** The escape city's army trucks are sent ahead of her by the event director as a
-day's convoy is. `DaySpec.DirectorSends` has a third value, `ITS_OWN_TRUCKS`, which the city section's
+day's convoy is. `DaySpec.DirectorSends` has a third value, `SENT_AHEAD_ROWS_OF_ITS_PLAN`, which the city section's
 spec sets (the building stays `NOTHING`). `DaySpec.hands_the_director(row)` says which marbles of the
 walk's bag are the director's: a row the director sends ahead of her on a day
 (`EventDef.is_sent_ahead()`), here `military_convoy`. `DawnDraw` hands `MarbleDraw` that question; a
 drawn truck is laid out and judged like any row, then kept with no position as the poster crew is
 (`EventScheduler.owed_to_her_walk()`), so its street stands nothing and the rows laid after it are
-judged without it. `EventDirector.start_day()` under `ITS_OWN_TRUCKS` owes one slot and one marble for
+judged without it. `EventDirector.start_day()` under `SENT_AHEAD_ROWS_OF_ITS_PLAN` owes one slot and one marble for
 each unplaced sent-ahead plan of the walk, in a route bag of those trucks alone, and nothing else: no
 row of an ordinary day, no rig, no sprinkled dog, no cap by `max_per_day` (the trucks are not rows of
 the ordinary bag).

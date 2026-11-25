@@ -1381,9 +1381,9 @@ escape_distance = outer − inner     for anything at or below walking pace
 ```
 
 The split matters for a row that is in the world while it telegraphs, not a row without a badge of
-its own — the escape's `military_convoy` trucks, the one convoy placed on the map, have a badge that
-rises as they come and still keep this split, because they exist and telegraph in the world rather
-than being warned first. A stationary
+its own — the escape's `military_convoy` trucks, sent ahead of her as a day's convoy is, have a badge
+that rises as they come and keep this split once they exist, because they telegraph in the world
+after being warned first. A stationary
 event, or one slower than the player (a dog walker at 32 px/s), only has to be walked away from, so
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough

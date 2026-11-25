@@ -57,7 +57,6 @@ const CASES: Array[String] = [
 	"_test_an_escape_guard_warns_on_the_screen_and_on_top",
 	"_test_the_players_seed_is_winnable_past_its_roadblocks",
 	"_test_the_escape_stands_its_rows_on_the_days_own_ground",
-	"_test_the_escape_leaves_its_trucks_to_the_director",
 	"_test_an_alley_mouth_wall_fits_the_mouth",
 	"_test_nothing_the_escape_stands_reaches_over_a_building",
 	"_test_a_restart_plans_the_same_escape",
@@ -88,6 +87,7 @@ const CASES: Array[String] = [
 	"_test_a_handover_does_not_open_on_the_title",
 	"_test_the_held_restart_from_the_escape_clears_the_section",
 	"_test_a_posted_guard_follows_her_round_the_corner",
+	"_test_the_escape_leaves_its_trucks_to_the_director",
 ]
 
 ## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
@@ -1259,8 +1259,10 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t: TestRunner) -> v
 		var placements: Array[EventPlan] = built["placements"]
 		var offered := {}
 		for placement in placements:
-			# A truck is the director's to send ahead of her, left with no place of its own.
-			if not ESCAPE_ROWS.has(placement.row_id()) or not placement.is_placed():
+			# An army truck is the director's to send ahead of her, left with no place of its own;
+			# any other row left unplaced fails the check below.
+			if not ESCAPE_ROWS.has(placement.row_id()) \
+					or (placement.row_id() == "military_convoy" and not placement.is_placed()):
 				continue
 			asked += 1
 			var key := placement.row().get_instance_id()

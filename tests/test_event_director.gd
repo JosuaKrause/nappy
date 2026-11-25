@@ -72,6 +72,7 @@ func run(t: TestRunner) -> void:
 	for vertical: bool in [true, false]:
 		_test_the_patrol_comes_down_the_lane_that_drives_toward_her(t, vertical)
 		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
+	_test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(t)
 	_test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
 	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
@@ -86,6 +87,7 @@ func run(t: TestRunner) -> void:
 	_test_the_copy_on_her_route_shares_its_rows_body(t)
 	_test_a_rigged_route_is_owed_its_count_and_pre_bag(t)
 	_test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unplaced(t)
+	_test_a_walk_lets_the_share_of_the_wait_it_names_pass_between_handouts(t)
 	_test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
@@ -242,6 +244,44 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 				"" if wrong.is_empty() else ": " + "; ".join(wrong)))
 	t.check(with_her == 0 and at_her > 0,
 			"and it comes toward her (%d toward her, %d from behind her)" % [at_her, with_her])
+
+## **A convoy is sited only where it could be created from wherever the camera is once its badge has
+## been up** (`EventDirector._holds_while_its_badge_is_up()`): its badge is up alone for
+## `warned_for()` and the thing is created just out of sight of the camera then, a place that has
+## moved along the road with her, so a start that is ground now and a break in the carriageway a
+## second of her running on would take the badge down with nothing behind it. A way on that lets a car
+## start only up to a cutoff down the road sites the convoy when the cutoff is further than she can
+## run in that time and refuses it when it is nearer.
+func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
+		t: TestRunner) -> void:
+	var map := _street()
+	var plain := _due(_director(map, "military_convoy", _no_plans()))
+	if plain.size() < 2:
+		t.check(false, "the convoy is sited on the plain street")
+		return
+	var wanted := (plain[1] as PackedVector2Array)[0]
+	var def := plain[0] as EventDef
+	var reach := Tuning.RUN_SPEED * def.warned_for() + TILE
+	for margin: float in [-TILE * 0.25, TILE * 0.5]:
+		var way := _StartsAboveWayOn.new(wanted.y + reach + margin)
+		var sited := _due(_director(map, "military_convoy", _no_plans(), 1, way)).size() >= 2
+		t.check(sited == (margin > 0.0),
+				"with ground to set off from %.0fpx %s than she runs in the badge's time, the convoy is %s"
+				% [absf(margin), "further" if margin > 0.0 else "nearer",
+				"sited" if margin > 0.0 else "refused"])
+
+## A way on that lets a car start only at or north of `cutoff` (up the road, away from her) and
+## drive from there, as on a plain street.
+class _StartsAboveWayOn extends FakeWayOn:
+	var _cutoff := 0.0
+
+	func _init(cutoff: float) -> void:
+		super()
+		_cutoff = cutoff
+
+	## Overrides FakeWayOn.drives_clear.
+	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
+		return path.size() >= 2 and path[0].y <= _cutoff
 
 ## **A car's first leg is sent only where the day's way on says a car may drive it and go on from its
 ## end** (`EventDirector.leg_in_the_lane()`): for the patrol and the convoy, a way on that refuses
@@ -608,7 +648,7 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 	t.check(director.owed() == 3, "the route is owed what the recipe says")
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
 
-## **A walk that sends its own trucks** (`DaySpec.DirectorSends.ITS_OWN_TRUCKS`, the escape city's)
+## **A walk that sends its own trucks** (`DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`, the escape city's)
 ## is owed one marble for each sent-ahead row its plan left unplaced, and none for a truck its
 ## plan placed or for a row it does not send: what she meets is the plan's trucks sent just ahead
 ## of her, and nothing else, whatever the day's number. The walk that sends nothing is owed none
@@ -620,7 +660,7 @@ func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unpla
 			EventPlan.new(truck, Vector2.INF), EventPlan.new(truck, _her() + Vector2.UP * 900.0),
 			EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF)]
 	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
-		var sends := _started(day, plans, DaySpec.DirectorSends.ITS_OWN_TRUCKS)
+		var sends := _started(day, plans, DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN)
 		t.check(sends.owed() == 2,
 				"day %d: she is owed the two trucks left unplaced (%d)" % [day, sends.owed()])
 		var handed: Array[String] = []
@@ -638,14 +678,34 @@ func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unpla
 
 ## A director on the street over `plans`, its day `day` started on a stream of its own as
 ## `sends` says what it may send.
-static func _started(day: int, plans: Array[EventPlan],
-		sends: DaySpec.DirectorSends) -> EventDirector:
+static func _started(day: int, plans: Array[EventPlan], sends: DaySpec.DirectorSends,
+		share := 1.0) -> EventDirector:
 	var director := EventDirector.new(_street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	director.start_day(day, plans, rng, sends)
+	director.start_day(day, plans, rng, sends, null, 0, share)
 	return director
+
+## **The share of the usual wait a walk names is the share of it that passes before the first
+## handout** (`DaySpec.handout_wait_share()`, `EventDirector.start_day()`): on one stream, the wait a
+## director is handed half of is half the wait of one handed all of it, to a tick.
+func _test_a_walk_lets_the_share_of_the_wait_it_names_pass_between_handouts(t: TestRunner) -> void:
+	var truck := EventCatalogue.by_id("military_convoy")
+	var plans: Array[EventPlan] = [EventPlan.new(truck, Vector2.INF)]
+	var waits: Array[float] = []
+	for share: float in [1.0, 0.5]:
+		var director := _started(DAY, plans, DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN,
+				share)
+		var waited := 0.0
+		while waited < EventDirector.AHEAD_INTERVAL.y + 1.0 \
+				and director.due(0.25, _her(), Vector2.UP * Tuning.WALK_SPEED).is_empty():
+			waited += 0.25
+		waits.append(waited)
+	t.check(waits[0] >= EventDirector.AHEAD_INTERVAL.x - 0.25,
+			"with all of the usual wait the first handout waits it out (%.2fs)" % waits[0])
+	t.check(absf(waits[1] - waits[0] * 0.5) <= 0.5,
+			"and with half of it half as long (%.2fs against %.2fs)" % [waits[1], waits[0]])
 
 ## **A walk whose spec sends nothing** (`DaySpec.director_sends()`, the escape city's) hands the
 ## director no route bag, owes nothing, rigs nothing and rolls no sprinkled dog, **whatever its day
