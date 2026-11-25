@@ -31,6 +31,7 @@ the water's clock still pauses with gameplay. The phone's renderer is bound by t
 the effect's cost per frame; if it costs too much, it is prerendered into tiles, as the player
 offered.
 
-The work is [a-standalone-experiment.md](a-standalone-experiment.md), then bringing it into the game.
+The work left is [into-the-game.md](into-the-game.md), which waits on the player's choice of look and
+of the way it is drawn (the review item amber-puffin).
 
 **Band `now`, after the refactor.** [tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930: "actually I'm interested in trying that on the side after the refactor; let's move to now".
