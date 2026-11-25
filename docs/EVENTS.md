@@ -594,7 +594,11 @@ no heads-up she can see, and with `tests/probes/escape_stairwell_guard_trigger.g
 down onto the flight any delay lets a walker reach the first floor's door on more of them (caught on
 three of the five with none, on one at 0.5s and 1.0s, on none from 1.5s). With her already inside
 the place when he may come — the next of him, or her coming in through the first floor's door — his
-badge is up alone for `Tuning.WARNING_ALONE_MAX` first.
+badge is up alone for `Tuning.WARNING_ALONE_MAX` first. The fairness contract counts the copy set
+off at once from its 426px set-off distance, and the row's own from just out of sight with its
+second's badge added (`EventDef.warning_time()`); coming in through the first floor's door, he is
+created 270 to 294px from her once that second has run
+(`tests/probes/escape_stairwell_guard_trigger.gd`).
 **At a door the crossing is the warning's start** *(inbox #788 in minty-lemur)*: going back across within 2.0s is
 the answer that brings nobody. Staying across, what she does through it decides it: the guard steps
 out of the hut across the road, about 80px across from the near lane, or out of an alley's post,
@@ -3139,7 +3143,7 @@ source lands on the meter and the five seconds either side of now, carry all of 
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventLook._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. A car with no jolt running holds full size, having no pulse of its own to breathe with. | `EventLook._share_of_its_peak_now()`, `CrowdAgent._draw_mark()` |
 | **Entity halo** | *This is costing you now, and this much — and the bar is rising because of it.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius, and re-traced every frame so a turning car or a flying flock wears the rim of the body it is drawing now — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over its own **net** — what it delivered to her in the last five seconds less its own share of the decay the bar took in that same five seconds, shared between every source in proportion to what each delivered, never below zero (`ExcitementSource.net_landed()`) — so the halos of every source live at once sum to the bar's own rise over the window, and a rim reads red only while the bar is actually climbing because of it. **Transparency** is the same net on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
-| **Edge badge** | *Something lethal or faster than a walk is coming, and this is what.* Warned of before it exists, for the whole of that warning, then carried on to the thing the warning created until she can see it: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at where it will come from (or at it) and the distance. Says *what* is coming, not that something is. **Once up, a badge stays up until its danger is in sight or has left the world** (no timer, and neither turning away nor slowing ends it), and a thing she has seen carries none again; nothing in the world that was not warned of first carries one, so nothing in the world is measured. There is no cap: every badge is drawn, and where two overlap on an edge the soonest arrival lies on top. | `BadgeModel` decides, `DangerEdge` draws |
+| **Edge badge** | *Something lethal or faster than a walk is coming, and this is what.* Warned of before it exists, for the whole of that warning, then carried on to the thing the warning created until she can see it: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at where it will come from (or at it) and the distance. Says *what* is coming, not that something is. **Once up, a badge stays up until its danger is in sight or has left the world** (no timer, and neither turning away nor slowing ends it), and a thing she has seen carries none again. A charger already in the world whose charge begins out of her sight is warned of by that start and carries one from then until she can see it; nothing else in the world carries one, so nothing in the world is measured. There is no cap: every badge is drawn, and where two overlap on an edge the soonest arrival lies on top. | `BadgeModel` decides, `DangerEdge` draws |
 | **Exclamation over the player** | *The clock on you has started.* A lethal event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *The clock on you has started, and it is nearly out.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is about seven times the area that can hurt her (90px against a 33px lethal reach) and stays true while the bike rides away. | `WarningBoard.warn_about_the_ground_she_is_on()` |
 | **zzz over the pram** | *The baby is asleep* — the return phase, and the state with the most consequence and the least presence on screen. Flashing instead of breathing: *she is stirring*, and waking costs half the sleepiness bar. | `Stroller._draw_baby_cue()` |
@@ -3253,8 +3257,8 @@ Three rules underneath the table, in the order they matter:
    - **Measure the thing, not the gap.** A cue that tests how fast the *distance* is shrinking is
      measuring her 92px/s plus its speed, so walking towards anything lethal raises it. The red
      caret projects the source's own course with her held still (`ExcitementSource.will_be_lethal()`),
-     and the badge measures nothing at all: it is a warning put up before its danger exists and
-     carried on to the thing until she can see it, so her own walking neither raises one nor makes
+     and the badge measures nothing at all: it is a warning put up before its danger exists, or as a
+     charger's charge begins out of her sight, and carried on to the thing until she can see it, so her own walking neither raises one nor makes
      one flicker on the screen's edge.
 
 6. **And row one is a rule, not an aspiration: one picture per row.** A look is the name of one
@@ -3319,11 +3323,21 @@ stays until its danger is in sight or gone.
 
 Two things it does **not** announce, each for its own reason:
 
-- **Anything that was not warned of before it exists.** Every badge is a warning put up before its
-  danger is placed *(minty-dolphin #852, the player: "Don't let legacy implementations prevent you
-  from establishing a clean design")*, so nothing in the world is measured. A stationary abduction
-  two streets away is a place, and finding out it is there is what walking a street is for; her own
-  footsteps are not news.
+- **Anything that was not warned of, before it exists or as its charge begins.** Every badge is a
+  warning put up before its danger is placed *(minty-dolphin #852, the player: "Don't let legacy
+  implementations prevent you from establishing a clean design")*, so nothing in the world is
+  measured. **A charger already in the world whose charge begins out of her sight is warned of by
+  that start** (`EventInstance.was_warned_of()`): its badge goes up as it starts, pointing at it,
+  and stays until she can see it, the path every badge takes. It is a rule about every charger,
+  asked only where the charger is when its charge begins. The chargers that are not warned of
+  first all show their warning in her view: the waiting robber, the hunting roadblock's guard and
+  the dog that waits past day 3 notice her only with their warning picture inside the camera's view;
+  day 13's guard set on her in her view raises his hand there; the men a vehicle lets out are put
+  down where she can see them, hand raised; and the checkpoint guard's warning is the hut guard's
+  raised hand. So the badge is for the one that runs from just outside the view, or whose raised
+  hand she walked away from. A chaser whose charge began in her sight and who falls behind out of
+  it carries none when it closes again. A stationary abduction two streets away is a place, and
+  finding out it is there is what walking a street is for; her own footsteps are not news.
 - **Anything that does not telegraph its coming** (`EventDef.telegraphs_its_coming()`, "What telegraphs"). The
   crossing cat comes faster than a walk, and it gets no badge because it does not telegraph: it
   crosses her line rather than coming at her, and costs her about nothing (the player's own

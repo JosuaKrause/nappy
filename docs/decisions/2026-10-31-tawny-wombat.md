@@ -42,7 +42,9 @@ of his shaft:
 
 **teal-trout-2 changes with it.** He has no standing wait any more: the waiting picture
 (`guard_standing_*`) and the hand-raised notice (`guard_alert_*`) that teal-trout-2 put right are
-gone, and `_test_masked_man_is_drawn_standing_until_he_goes` in `tests/test_event_views.gd` is
+gone (`EventPictures.family_sources()` lists only `guard_lunging_*` for him, so his footprint, and
+the out-of-sight test `SetOffWatch` makes over it, is measured over what he draws; the other two
+families stay on the atlas for the guardsman), and `_test_masked_man_is_drawn_standing_until_he_goes` in `tests/test_event_views.gd` is
 replaced by `_test_masked_man_is_drawn_lunging_from_the_tick_he_comes`. That is the orchestrator's
 reading of "a charger that is triggered by a location", open to the player's overturn: the entry
 left open whether he still waited once placed.
@@ -55,7 +57,36 @@ again. Nothing in the world is measured. Deleted with the measuring: `_measure_d
 `Subject.charging`, `EventInstance.has_charged()` and `notice_within()`, the `margin` of
 `VisibleView.sees()` and `EventManager.sees()`, `DangerEdge.world_per_screen_px()`,
 `NoticeSpec.runs_within()` and `running_within()`, `EventDef.runs_its_own_line()`, and
-`EventNoticeRun`'s masked man line warning.
+`EventNoticeRun`'s masked man line warning. The closing-speed reading frosty-marten (#1745) tuned
+goes with it, and so does the question coral-swan asked of it (whether a slow frame brings the
+masked man's badge up late), closed in this change with its own record, since nothing is measured
+for a frame to delay.
+
+**A charger whose charge begins out of her sight puts its badge up** (`EventInstance._begin_the_charge()`,
+`was_warned_of()`), the orchestrator's pick on the board (badge-for-chargers-off-screen), open to
+the player: deleting the measuring took away the badge every charger not warned first had when it
+closed on her from out of her sight. Its start is its warning, so it takes the one path: the badge
+goes up as the charge begins with none of the charger in the camera's view, points at it, and stays
+until she can see it. A general rule, asked of every charger at the moment its charge begins and
+never keyed on a row; one whose charge began in her sight carries none. `tests/test_events_pursuit.gd`'s
+`_test_a_charge_begun_out_of_her_sight_carries_the_badge` holds both halves on the man a vehicle
+lets out. How each charger not warned first is warned now:
+
+- **the waiting robber** (`alley_robbery`), **the hunting roadblock's guard** (`roadblock` at the
+  heat that hunts) and **the dog that waits past day 3** (`charging_dog`): each notices her only with
+  its warning picture inside the camera's view and warns on its clock there; a charge it then
+  starts out of her sight, from just outside the view, puts its badge up;
+- **day 13's guard set on her in her view** (`task_guard`): his raised hand in her view; the same
+  rule if his charge begins out of it;
+- **the men a vehicle lets out** (`EventsAhead.let_the_officers_out()`): put down where she can see
+  them, hand raised; walked away from out of her sight before the hand comes down, the charge puts
+  the badge up;
+- **the checkpoint guard who steps out of the hut** (`door_guard`): the hut guard's raised hand
+  across the road is his warning, and the same rule holds for his charge.
+
+**Still without a badge:** a chaser whose charge began in her sight, who falls behind out of it (she
+runs from the dog) and closes again. That start was in her sight, so it carries none; main badged it
+by its closing speed.
 
 **Tests.** The badge cases create their dangers under a warning (`spawn_warned()`, or
 `arrive_from_its_warning()` on a stand-in): `tests/test_danger.gd`, `test_danger_edge.gd`,
@@ -65,6 +96,15 @@ are deleted: `test_danger`'s `_test_the_badge_measures_the_things_own_speed` and
 `test_danger_edge`'s `_test_nothing_in_the_margin_is_raised_a_badge_fresh`. `test_badge_model.gd`
 is rewritten for the one path; `tests/test_interior_masked_man.gd` sets him off as the game does,
 and `BuildingEvents.masked_man()` puts him in the world for the cases about his line or catch.
+Also deleted, each testing only the deleted measuring: `test_visible_view`'s
+`_test_the_margin_counts_past_the_edge_and_into_a_corner` (the margin of `VisibleView.sees()`),
+`test_event_behaviours`' two cases of the masked man's line warning, `test_event_phase`'s
+`Warning.tick` case, and `test_badge_model`'s measuring cases. `tests/test_set_off_watch.gd` is new:
+`SetOffWatch` with its world, streaming and board faked, holding the tile-step test that tells a
+door entry from a walk (walked in gives the copy set off at once, a jump of more than a tile the
+row's own badge time) and that nothing comes while the foot of the shaft is in her sight (no
+warning goes up, and one run out with the foot in sight is withdrawn and put up again); each case
+fails with its rule removed.
 
 **Probes**, each fixed, none deleted: `m207_warning_lead.gd` (a row not warned first is warned by
 sight alone; the suites `test_event_manager.gd` and `test_events_pursuit.gd` walk it),
@@ -100,7 +140,10 @@ them.
 - with her inside his place already when he may come again (or entering it through a door), he
   comes after a one-second badge, keeping the rule that he never runs at her unwarned;
 - while the foot of the shaft is in her sight, he does not come;
-- his fairness check (`EventDef.warning_time()`) assumes he is created 426px from her; coming in
-  through the first floor's door puts her about 340px from the foot, still above the one-second
-  floor (about 1.4 s, the same exposure as before);
-- once she has seen a warned thing, its badge never comes back.
+- his fairness check (`EventDef.warning_time()`) counts the copy set off at once from its 426px
+  set-off distance, and the row's own, which a door entry gets, from just out of sight with its
+  one-second badge added; coming in through the first floor's door, he is created 270 to 294px from
+  her once that badge has run (the probe);
+- once she has seen a warned thing, its badge never comes back;
+- a charger not warned first gets a badge only where its charge begins out of her sight (the list
+  above), and a chaser that falls behind out of her sight and closes again gets none.

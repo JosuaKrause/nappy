@@ -39,7 +39,9 @@ extends Control
 ## offscreen"; calm-kestrel, inbox #559: "place the object immediately off screen so it will
 ## immediately start coming on the screen turning off the warning".)* Nothing about it is measured:
 ## the warning is the claim that it is coming. Then the thing exists just out of sight and keeps the
-## badge (`EventInstance.was_warned_of()`) until she can see it (`BadgeModel`).
+## badge (`EventInstance.was_warned_of()`) until she can see it (`BadgeModel`). A charger already in
+## the world whose charge begins out of her sight takes the same path: its start is its warning, and
+## it carries the badge from then until she can see it.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and

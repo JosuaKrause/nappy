@@ -56,8 +56,10 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
 
 **Every screen-edge badge comes from this path** (minty-dolphin #852): a warning, then the thing it
 created keeping the badge until any of it is in sight (`EventInstance.was_warned_of()`,
-`BadgeModel`). A danger in the world that was not warned of first carries none, so nothing in the
-world is measured for one.
+`BadgeModel`). **A charger already in the world whose charge begins out of her sight takes the
+same path**: that start is its warning, and it carries the badge from then until she can see it
+(`EventInstance._begin_the_charge()`), a rule asked of every charger and never keyed on a row. Any
+other danger in the world carries none, so nothing in the world is measured for one.
 
 **The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
 created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its

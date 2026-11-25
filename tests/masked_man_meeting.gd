@@ -133,10 +133,11 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 		# On the first floor's landing, up into its door.
 		if met["ran"] and tile.x == origin.x + 1 and tile.y - origin.y >= 16:
 			_hold_keys(["move_up"], state["running"])
-		# **The badge is measured on frames of the game's own length.** Its model reads how fast he
-		# closes from his step over the frame's delta, which `Engine.time_scale` stretches, so the
-		# walk up to his warning is taken fast and the run itself at the engine's own rate, where a
-		# frame is shorter than a tick. It ends when his badge has done its job.
+		# **His badge is watched on frames of the game's own length.** The edge looks once a frame,
+		# and `Engine.time_scale` puts several ticks between two of its looks, in which he could come
+		# into sight unwatched; so the walk up to his warning is taken fast and his run at the
+		# engine's own rate, where a frame is shorter than a tick. It ends when his badge has done its
+		# job.
 		if badge and state["fast"] and (met["ran"] or foot.distance_to(her)
 				<= sets_off + BADGE_LEAD):
 			state["fast"] = false
@@ -181,7 +182,7 @@ func _count_the_badge(edge: DangerEdge, then: Dictionary, log: Dictionary) -> vo
 		return
 	if then["shown"]:
 		# His badge has done its job the first time he is in sight after it went up; if he leaves
-		# sight again it is raised anew, past the margin band, and that is not this check.
+		# sight again it does not come back (`BadgeModel`), and that is not this check.
 		if int(log["first"]) >= 0:
 			log["done"] = true
 		return

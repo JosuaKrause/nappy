@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_a_pursuer_can_wait(t)
 	_test_every_waiting_charger_warns_by_radius(t)
 	_test_a_warning_is_not_counted_as_a_chase(t)
+	_test_a_charge_begun_out_of_her_sight_carries_the_badge(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
@@ -736,6 +737,38 @@ func _test_a_warning_is_not_counted_as_a_chase(t: TestRunner) -> void:
 			"it begins one at its charge, once its warning has run (%s)" % str(began))
 	EventBus.pursuit_began.disconnect(listen)
 	dog.free()
+
+## **A charge that begins out of her sight puts its screen-edge badge up** (`EventInstance.was_warned_of()`,
+## which `DangerEdge` hands `BadgeModel`), and one that begins in her sight does not. The man a
+## vehicle lets out (`EventCatalogue.out_of_the_car()`) stands with his hand raised for his notice
+## and then charges from where he stood: she stands 150px off, past his stand-off, the camera's view
+## about her, until half his notice has run, and then either stays there or has walked off 420px, which puts all he
+## draws past the side of the view (`Tuning.VIEW_HALF_EXTENT`), before it runs out.
+func _test_a_charge_begun_out_of_her_sight_carries_the_badge(t: TestRunner) -> void:
+	var def := EventCatalogue.out_of_the_car(DaySpec.for_day(1))
+	for walks_off: bool in [false, true]:
+		var man_where := WhereSheIs.nowhere()
+		var man := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, man_where)
+		var her := Vector2(150.0, 0.0)
+		man_where.tell(her, Vector2.INF, Rect2(her - Tuning.VIEW_HALF_EXTENT,
+				Tuning.VIEW_HALF_EXTENT * 2.0))
+		_advance(man, 0.5)
+		t.check(man.is_telegraphing() and not man.is_chasing(),
+				"he stands for his notice with her beside him (walks off %s)" % walks_off)
+		if walks_off:
+			her = Vector2(420.0, 0.0)
+			man_where.tell(her, Vector2.INF, Rect2(her - Tuning.VIEW_HALF_EXTENT,
+					Tuning.VIEW_HALF_EXTENT * 2.0))
+		var waited := 0.0
+		while man.is_telegraphing() and waited < 10.0:
+			man.step(STEP)
+			waited += STEP
+		man.step(STEP)
+		t.check(man.is_chasing(), "his notice run, he charges (walks off %s)" % walks_off)
+		t.check(man.was_warned_of() == walks_off,
+				"his badge is up only where his charge began out of her sight (walks off %s: %s)"
+				% [walks_off, man.was_warned_of()])
+		man.free()
 
 ## **She leaves while he warns and comes back** (review 4 of PR #781): she stands 10px inside his
 ## radius until three quarters of his warning has run, steps 20px outside it (measured from where he

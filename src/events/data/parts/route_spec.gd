@@ -64,7 +64,7 @@ var _paces := false
 ## Three things in `EventInstance` read it: `_be_done()` neither finishes nor leaves such a row,
 ## `EventRouteWalk.advance()` stops adding to the distance it has covered (a gait is driven by
 ## distance, so a parked engine would bob for ever), and `travel_velocity()` answers zero (the
-## screen-edge badge reads that as a closing speed).
+## exclamation mark over her reads that as a closing speed).
 var _parks := false
 
 ## A row that stays where it is placed.

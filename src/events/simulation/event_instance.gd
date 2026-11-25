@@ -26,6 +26,10 @@ var _age := 0.0
 ## (`was_warned_of()`) to carry the warning's badge on to the thing itself until it comes into
 ## view, and `restore()` reads it to tell a fresh instance from one streamed back in.
 var _came_under_a_warning := false
+## Whether its charge began with none of it in her sight (`_begin_the_charge()`): that start is
+## its warning, so it carries the screen-edge badge from then until she can see it
+## (`was_warned_of()`).
+var _charged_out_of_sight := false
 
 ## **Tells it that it was created where a warning pointed**, once that warning was over
 ## (`EventManager.spawn_warned()`), before `restore()` reads it: a restore otherwise restores an
@@ -968,8 +972,9 @@ func path_travelled() -> float:
 func travel_velocity() -> Vector2:
 	if is_gone() or is_on_its_way_out():
 		return Vector2.ZERO
-	# **A parked row is not travelling, whatever its speed says.** The screen-edge badge reads this
-	# as a closing speed, and an engine standing at a kerb is not closing on anybody.
+	# **A parked row is not travelling, whatever its speed says.** The exclamation mark over her
+	# reads this as a closing speed (`WarningBoard`), and an engine standing at a kerb is not closing
+	# on anybody.
 	if has_parked():
 		return Vector2.ZERO
 	if _def.pursues():
@@ -2067,9 +2072,10 @@ class Figure:
 	func warning_went_up() -> void:
 		_of._report_the_warning()
 
-	## Its charge began, for its counter (`EventBus.pursuit_began`), said once however often told.
+	## Its charge began, for its counter (`EventBus.pursuit_began`), said once however often told;
+	## begun out of her sight, it carries the screen-edge badge (`EventInstance._begin_the_charge()`).
 	func charge_began() -> void:
-		_of._charge.begin()
+		_of._begin_the_charge()
 
 	## Its charge, and the warning before it, were said and ended before it streamed out: none of it
 	## is said again (`ChargeRecord.count_as_over()`).
@@ -2172,10 +2178,34 @@ func is_on_its_way_out() -> bool:
 func has_parked() -> bool:
 	return _phase == Phase.PARKED
 
-## Whether it was created where a warning pointed, once that warning was over
-## (`arrive_from_its_warning()`): the badge it had carries on until it comes into view.
+## **Whether its coming was put on the screen-edge badge**, which it carries until it comes into
+## view (`BadgeModel`): it was created where a warning pointed, once that warning was over
+## (`arrive_from_its_warning()`), or its charge began out of her sight (`_begin_the_charge()`).
 func was_warned_of() -> bool:
-	return _came_under_a_warning
+	return _came_under_a_warning or _charged_out_of_sight
+
+## **Its charge begins**, said once however often told (`ChargeRecord.begin()`). **A charge that
+## begins with none of it in her sight puts its badge up as it starts** (`_charged_out_of_sight`),
+## pointing where it comes from and kept until she can see it, through the one path every badge
+## takes (`was_warned_of()`, `BadgeModel`): a charger that waited for her and ran from just
+## outside the view, or a man let out of a vehicle whose raised hand she walked away from. A rule
+## about every charger, never one row: it asks only where the charger is when its charge begins.
+## One that began in her sight carries none, since she saw it coming.
+func _begin_the_charge() -> void:
+	if not _charge.has_begun() and not _is_in_her_sight():
+		_charged_out_of_sight = true
+	_charge.begin()
+
+## Whether any of it is in her sight this tick: the point it stands at or any of what it draws
+## (`drawn_box()`) inside the camera's view (`WhereSheIs.view()`), the test the badge comes down
+## by (`DangerEdge`). In sight for an instance nobody has handed a view (a rig that steps it
+## directly), so no badge goes up on a guess.
+func _is_in_her_sight() -> bool:
+	var view := _where.view()
+	if not view.has_area() or view.has_point(global_position):
+		return true
+	var box := drawn_box()
+	return box.has_area() and view.intersects(Rect2(global_position + box.position, box.size))
 
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:
