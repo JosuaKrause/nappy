@@ -1081,9 +1081,9 @@ outer edge. Two consequences worth knowing before touching it again:
 
 Running is deliberately the wrong move against every event you route **around**. The numbers above
 are why: `EXCITEMENT_FROM_RUNNING` (14/s) plus the collapsed decay outweighs the shorter exposure
-for every row in the catalogue, and `tests/test_events.gd` asserts it row by row. That is not an
-accident to be tuned away — an event that merely emits is a *place*, and the answer to a place is
-a route.
+for every row in the catalogue, and `tests/test_events_costs.gd` asserts it row by row. That is
+not an accident to be tuned away — an event that merely emits is a *place*, and the answer to a
+place is a route.
 
 The exception is the one kind of thing a route cannot answer: something that **follows**.
 Such a row says so (`EventDef.pursues()`), and three properties make walking and running give *opposite
@@ -1196,8 +1196,9 @@ close while she walks:
 - **Running away always ends one**, in `PURSUIT_SHAKEN_OFF` seconds plus the about-turn, and no
   slower for a large pursuer than for a small one.
 
-The measured encounter, on a rig that **accelerates** (`tests/test_events.gd`, `_answer_rig`) — a
-constant-speed rig cannot see any of this, because nobody can turn round in nought seconds:
+The measured encounter, on a rig that **accelerates** (`tests/test_events_pursuit.gd`,
+`_answer_rig`) — a constant-speed rig cannot see any of this, because nobody can turn round in
+nought seconds:
 
 | she | outcome | cost |
 | --- | --- | ---: |
@@ -1393,8 +1394,8 @@ the badge, and its badge alone is at most `Tuning.WARNING_ALONE_MAX` (a second).
 warned first this way, is created just out of sight with its field already on her when she is on its
 street, so its one-second badge is the whole of its warning.
 
-`Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
-the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
+`Tuning.validate_event()` asserts this on load, and `tests/test_events_catalogue.gd` checks it
+over the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
 
 **Coming warnings and in-world telegraphs have distinct contracts.** A thing telegraphs its coming only if it goes
 fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard

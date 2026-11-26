@@ -355,9 +355,9 @@ func _test_a_won_day_gives_a_nerve_back(t: TestRunner) -> void:
 	run.calendar().regain_a_nerve_for_a_won_day()
 	t.check(run.header().nerves() == 4, "while a normal run's wrapper call still gives one")
 
-## The recording half of M24. The scheduler's half is tested in `test_events.gd`; this is the
-## half that decides *what* it gets told, and it is easy to get subtly wrong in two ways —
-## recording a pavement she happened to fall asleep on, or recording nothing because the rule
+## The recording half of M24. The scheduler's half is tested in `test_events_scheduler.gd`; this
+## is the half that decides *what* it gets told, and it is easy to get subtly wrong in two ways
+## — recording a pavement she happened to fall asleep on, or recording nothing because the rule
 ## was put somewhere that does not know where she is standing.
 ##
 ## It lives in `DayController` rather than in `Baby` because of the invariant: the baby's whole

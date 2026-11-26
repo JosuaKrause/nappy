@@ -150,10 +150,11 @@ func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 	t.check(checked >= 6, "and the seal candidate list was actually walked (%d checks)" % checked)
 
 # --------------------------------------------------------- the pavement guarantee ---
-# The same rows `tests/test_events.gd`'s `_test_a_spread_body_fits_the_ground_it_stands_on` checks
-# against a whole tile, checked here against the narrower question this slice changes: a capsule's
-# rounding (`rounding_radius()`) is its own half-thickness, which is what a pavement actually has to
-# clear now that the body is not a disc.
+# The same rows `tests/test_events_catalogue.gd`'s
+# `_test_a_spread_body_fits_the_ground_it_stands_on` checks against a whole tile, checked here
+# against the narrower question this slice changes: a capsule's rounding (`rounding_radius()`)
+# is its own half-thickness, which is what a pavement actually has to clear now that the body is
+# not a disc.
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,

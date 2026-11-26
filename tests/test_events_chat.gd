@@ -12,8 +12,6 @@ extends RefCounted
 ## (docs/TODO.md, M56) -- drawing and telemetry only, so a data-level rig can drive the whole scene
 ## by hand -- and a `HuntSpec` on the `HUNTS` rung, which turns the same row into a pursuer past
 ## `EventDef.HEAT_HUNTS_LEVEL` (docs/EVENTS.md, "The heat"), stated against the fully heated copy.
-##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again".
 
 const STEP := 1.0 / 60.0
 ## The seed of the run each test hands its manager.

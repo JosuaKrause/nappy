@@ -18,7 +18,7 @@ extends RefCounted
 ##
 ## The second half prints the cost table in `docs/EVENTS.md`, "What an event actually costs", from
 ## `EventDef.walk_through_cost()` — the same function the game asks for the danger caret and the
-## same one `tests/test_events.gd` integrates, so the table cannot drift from either. Regenerate
+## same one `tests/test_events_costs.gd` asks, so the table cannot drift from either. Regenerate
 ## it from here whenever a rate in `Tuning` moves.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -274,7 +274,7 @@ func _cost_table() -> void:
 				% [row["id"], row["emission"], row["intensity"], row["outer"], row["walk"]])
 
 ## The same integral at running pace, with the running penalty in place of the walking decay —
-## `tests/test_events.gd._cost_to_run_through`, which is where the assertion lives.
+## `tests/test_events_costs.gd._cost_to_run_through`, which is where the assertion lives.
 func _run_through_cost(def: EventDef) -> float:
 	var seconds := def.heard_within() * 2.0 / Tuning.RUN_SPEED
 	return (_mean_emission(def) - Baby.EXCITEMENT_DECAY_RUNNING

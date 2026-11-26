@@ -148,8 +148,8 @@ of the test run itself) is being written, its versions are compared locally and 
 succession, since CI's cycle is too slow for that, and the proof that it works is CI's timings,
 which are more reliable than a local machine's; a builder reads them from the shard logs of the
 pull request's run (`gh run view <run id> --log`), where the runner prints one
-`-- test_x.gd  N ms` line per suite. A measurement of the game (a probe of the dawn's time, the
-crowd tick, a frame profile) is outside the rule and is measured as its brief says.
+`-- test_<suite>.gd  N ms` line per suite. A measurement of the game (a probe of the dawn's
+time, the crowd tick, a frame profile) is outside the rule and is measured as its brief says.
 
 **Proposed:** a check of how fast something ran asserts its bound only where `CI=true` (GitHub
 Actions sets it) and prints the time as an information line otherwise (see "Proposed, not asked

@@ -1186,8 +1186,8 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 ##   player walks on **tiles** — so a street with a park down one side of it is a street you walk
 ##   into and then step sideways out of, whatever the graph says. It is the absorbed-street rule
 ##   read backwards: an absorbed street is calm ground rather than a closure, so calm ground beside
-##   a dead end makes the dead end a doorway. `tests/test_routes.gd` states it as *"the way in is a
-##   real street"*.
+##   a dead end makes the dead end a doorway. `tests/test_routes_lattice.gd` states it as *"the
+##   way in is a real street"*.
 static func _dead_end_candidates(map: CityMap, home: StreetNetwork.Segment, reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var pool: Array[StreetNetwork.Segment] = []
@@ -1507,7 +1507,7 @@ static func _big_building_candidates(map: CityMap, purposes: Dictionary,
 ## the ground really is solid, and what a big building beside a zone would do is take one of the
 ## zone's ways in **away**, frontage and all. That is legitimate city and it is also a narrowing of
 ## the route guarantee, so it is not something to acquire by accident while placing landmarks.
-## `tests/test_routes.gd` says so out loud: *"the way in is a real street."*
+## `tests/test_routes_lattice.gd` says so out loud: *"the way in is a real street."*
 static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 		home: StreetNetwork.Segment, reference: RouteTree, calm: Dictionary) -> bool:
 	if pair.end.x > Tuning.CITY_BLOCKS.x - 1 or pair.end.y > Tuning.CITY_BLOCKS.y - 1:

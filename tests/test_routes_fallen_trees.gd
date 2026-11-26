@@ -4,10 +4,9 @@ extends RefCounted
 ## exactly one pit of that street empties, and a day with no tree-lined street to hand still closes
 ## its full quota from what it does have.
 ##
-## Split from `tests/test_routes.gd` under M125, "the test suite is slow again"; split out of
-## `tests/routes_closures_rig.gd` on its own because `_test_a_fallen_tree_only_falls_where_a_tree_stood`
-## re-plans a seed's whole fourteen days **uncached** -- the one place in the suite where that
-## happens -- which the eleven invariant tests in `tests/routes_closures_rig.gd` never pay for.
+## A suite of its own, apart from `tests/routes_closures_rig.gd`, because
+## `_test_a_fallen_tree_only_falls_where_a_tree_stood` re-plans a seed's whole fourteen days
+## **uncached**, which no case in `tests/routes_closures_rig.gd` pays for.
 
 const SEEDS := 12
 const BASE_SEED := 5150

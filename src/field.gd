@@ -53,7 +53,7 @@ static func scale(e: float) -> float:
 ## **The contract is untouched and this is why.** `required_telegraph_time` is stated over
 ## *distance* — how far she has to walk to be outside the radius — and neither radius moved. What
 ## changed is what she pays while she is inside one, which the contract has never had an opinion
-## about. `tests/test_events.gd` re-checks the whole catalogue either way.
+## about. `tests/test_events_catalogue.gd` re-checks the whole catalogue either way.
 ##
 ## See docs/MECHANICS.md.
 static func falloff(d: float, intensity: float, inner_radius: float, outer_radius: float) -> float:

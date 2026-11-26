@@ -1,8 +1,7 @@
 extends RefCounted
-## The shared "one city, one day's plan" cache several `test_events_*.gd` suites need after M125's
-## split by subject. Copied out of the original `test_events.gd` rather than composed, so a suite
-## extends this script and keeps calling `_map()`/`_rng()`/`_planned()` completely unqualified,
-## exactly as the tests already did before the split -- no call site below had to change.
+## The shared "one city, one day's plan" cache several `test_events_*.gd` suites need. A suite
+## extends this script rather than composing it, so it calls `_map()`/`_rng()`/`_planned()`
+## unqualified.
 ##
 ## **The cache is not shared *across* suites.** `run_tests.gd` calls `.new()` once per `test_*.gd`
 ## file, so `test_events_fire.gd`, `test_events_scheduler.gd`, `test_events_solid.gd`,

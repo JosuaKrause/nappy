@@ -105,9 +105,8 @@ func _row(id: String) -> void:
 ## the moment `homeless_yeller`'s own outer radius changed and made this probe compare the old
 ## intensity against the new reach instead of the old one. `loose_dog` and `dog_walker` never
 ## changed, so their "historical" and "current" columns are the same def; kept as two lookups
-## rather than one so a future change to either only has to touch the live catalogue. Static and
-## public (`M174Pass.historical_def()`) so `tests/test_events.gd` shares this rather than keeping
-## a second copy that could drift from it.
+## rather than one so a future change to either only has to touch the live catalogue. This
+## probe's own `_row()` is its one caller.
 static func historical_def(id: String) -> EventDef:
 	var current := EventCatalogue.by_id(id)
 	var d := current.redraft()
@@ -120,8 +119,9 @@ static func historical_def(id: String) -> EventDef:
 	return d.build()
 
 ## The pass, averaged over `PHASE_SAMPLES` points in the row's own pulse — see the class doc.
-## Static and public so the relationship test in `tests/test_events.gd` runs the identical
-## simulation this probe prints, rather than a second copy of it that could silently disagree.
+## Static and public so the relationship tests in `tests/test_event_phase.gd` and
+## `tests/test_events_scenery.gd`, and `tools/cost_table.gd`, run the identical simulation this
+## probe prints, rather than a second copy of it that could silently disagree.
 static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensitivity: float) -> float:
 	if sited_toward_her(def):
 		# No free pulse phase: the row is created when it is owed, so where it is in its own beat

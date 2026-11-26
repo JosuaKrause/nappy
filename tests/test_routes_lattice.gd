@@ -5,8 +5,7 @@ extends RefCounted
 ## already reach everywhere calm, no access segment is ever absent, no single street cuts off all
 ## the calm, and a doorway is never counted as a route.
 ##
-## Split from `tests/test_routes.gd` under M125, "the test suite is slow again" -- this half is the
-## lattice's own shape, checked over the twelve generated seeds without ever asking
+## This is the lattice's own shape, checked over the twelve generated seeds without ever asking
 ## `ClosurePlanner` to plan a day.
 
 ## Enough seeds to catch a layout that only goes wrong in one arrangement. See

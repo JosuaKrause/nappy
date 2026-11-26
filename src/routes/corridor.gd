@@ -70,9 +70,8 @@ var _network: StreetNetwork
 ## Node id -> how many grid steps off the tree it is, `DEEP` where the grid never reached it from
 ## the tree at all. A `PackedByteArray` indexed by node id rather than a `Dictionary`: node ids are
 ## dense over `0 ..< grid.node_count()`, and `EventScheduler` asks `depth()` of every sidewalk in
-## the city once per role — a `Dictionary` lookup doubled `tests/test_events.gd`'s own run time the
-## last time this class asked one per tile instead of indexing an array. Used for a tile with no
-## street of its own; see the class doc for why a street tile is answered a different way.
+## the city once per role, so the lookup per tile is an array index rather than a `Dictionary`'s
+## hash; no suite measures the difference. Used for a tile with no street of its own; see the class doc for why a street tile is answered a different way.
 var _node_depth := PackedByteArray()
 ## Segment key -> how many turnings off the corridor that whole street is. See
 ## `RouteTree.segment_depths()`.
