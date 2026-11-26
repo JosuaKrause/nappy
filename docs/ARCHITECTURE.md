@@ -178,6 +178,8 @@ src/
 	car_turn.gd           the arc a car follows out of one lane and into another
 	car_strike.gd         the box in front of a driving car that kills, from its centre forward
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
+	car_entry_hold.gd     whether new cars are held: a held car is parked, not re-entered
+	car_free_start.gd     day 1's car-free start: holds the cars, lets them in at the crossing with cars
   events/
 	data/                 what a row is written in: the catalogue, the row, the draft, the declared density
 	                      table and the settings of a row's parts
