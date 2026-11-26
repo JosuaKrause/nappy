@@ -1007,11 +1007,6 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 	_shut(t, main)
 	home.free()
 
-## **A session on one booted game, in the order a session meets the screens.** The title opens once
-## per boot, so the checks that start from it share one boot: what the boot builds, the title with
-## the tree running behind it, a run started by a key, a played day (the walk's tick), the focus
-## notifications over each screen, day 14's hand-over, and the ending's restart and quit wiring.
-## The run is fresh and seeded, so the same city is played on every run of the suite.
 ## **A window that loses focus while day 1's opening shot runs gets its pause when the shot ends.**
 ## The shot takes any key as its skip, so no pause opens over it (`main._pause_on_focus_lost()`); the
 ## loss is remembered, and once play begins the pause is up and the tree stopped, as it is for any
@@ -1038,6 +1033,11 @@ func _test_focus_lost_during_the_opening_shot_opens_the_pause_when_it_ends(t: Te
 		booted.free_all()
 		seat.end()
 
+## **A session on one booted game, in the order a session meets the screens.** The title opens once
+## per boot, so the checks that start from it share one boot: what the boot builds, the title with
+## the tree running behind it, a run started by a key, a played day (the walk's tick), the focus
+## notifications over each screen, day 14's hand-over, and the ending's restart and quit wiring.
+## The run is fresh and seeded, so the same city is played on every run of the suite.
 func _test_a_session_on_one_booted_game(t: TestRunner) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	# Day 14's hand-over parks the sitting in the seat's home rather than at the tree's root.
