@@ -606,7 +606,7 @@ func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, lane, going, ends.x, ends.y, world.visible_view())
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		var path := _director.leg_in_the_lane(def, place, at, going)
+		var path := _director.leg_in_the_lane(def, place, at, going, her)
 		if path.is_empty() or not _director.clear_to_send(path, def):
 			return false
 		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())

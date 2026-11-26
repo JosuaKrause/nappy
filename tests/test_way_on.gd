@@ -1,8 +1,9 @@
 extends RefCounted
 ## `WayOn`: the next leg of a route worked out as it goes. A row of the road drives from junction box
 ## to junction box, straight on where the street beyond the next box is a through road and otherwise
-## round the corner in that box, away from her first; a row on foot walks straight on; and one check
-## says whether a car may drive a stretch (`drives_clear()`).
+## round the corner in that box, away from her first, or by a way out it is asked for
+## (`leg_out_by()`); a row on foot walks straight on; and one check says whether a car may drive a
+## stretch (`drives_clear()`).
 ##
 ## On a hand-drawn lattice of three by three junction boxes, laid as every city's streets are
 ## (`StreetLayout.lay()`), with a real `ThroughRoads` and the map's own navigator: both are pure
@@ -19,6 +20,7 @@ var _walker := EventCatalogue.by_id("dog_walker").as_sent_ahead()
 func run(t: TestRunner) -> void:
 	_test_straight_on_to_the_far_edge_of_the_next_box(t)
 	_test_a_turn_in_the_next_box_away_from_her(t)
+	_test_a_leg_out_of_the_next_box_by_a_given_way(t)
 	_test_a_closed_street_has_no_leg_and_a_stub_goes_on(t)
 	_test_a_body_straight_on_takes_the_turn(t)
 	_test_the_days_rule_asks_a_live_leg_and_not_a_leaving_one(t)
@@ -108,6 +110,27 @@ func _test_a_turn_in_the_next_box_away_from_her(t: TestRunner) -> void:
 				% [heading, case[2], ends, leg])
 		t.check(_on_carriageway(map, leg) and way_on.drives_clear(_patrol, leg),
 				"and the turn stays on carriageway")
+
+## **A leg out of the next box by a given way** (`leg_out_by()`): southbound down the middle street on
+## the open lattice, where `next_leg()` goes straight on, the leg asked out by the east turns east and
+## the one asked out by the west turns west, each to the box's edge in its lane; asked out by a way
+## that is closed, it has none.
+func _test_a_leg_out_of_the_next_box_by_a_given_way(t: TestRunner) -> void:
+	var open := _way_on(_lattice())
+	var southbound := Vector2(_lane(1, Vector2i.DOWN), 9.5 * TILE)
+	var her := Vector2(17.0, 30.0) * TILE
+	var straight := open.next_leg(_patrol, southbound, Vector2.DOWN, her)
+	var east := open.leg_out_by(_patrol, southbound, Vector2.DOWN, Vector2.RIGHT, her)
+	var west := open.leg_out_by(_patrol, southbound, Vector2.DOWN, Vector2.LEFT, her)
+	t.check(straight.size() == 2 and east.size() > 3 and west.size() > 3
+			and east[east.size() - 1].is_equal_approx(Vector2(20.0 * TILE, _lane(1, Vector2i.RIGHT)))
+			and west[west.size() - 1].is_equal_approx(Vector2(14.0 * TILE, _lane(1, Vector2i.LEFT))),
+			"where the next leg goes straight on, the leg out by the east turns east and by the west "
+			+ "turns west (%s, %s)" % [east, west])
+	var east_closed := _lattice()
+	_close(east_closed, Vector2i(1, 1), Vector2i.RIGHT)
+	t.check(_way_on(east_closed).leg_out_by(_patrol, southbound, Vector2.DOWN, Vector2.RIGHT,
+			her).is_empty(), "and out by a closed way it has none")
 
 ## On the closed stretch itself, short of the closure, a car cannot drive to the next box and has no
 ## leg. On a stub that drives into the through roads (the north-west box's street south closed, so

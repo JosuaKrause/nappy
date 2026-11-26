@@ -59,6 +59,16 @@ func next_leg(row: EventDef, at: Vector2, heading: Vector2, her: Vector2) -> Pac
 		return _down_the_road(row, at, heading, her, _may_take)
 	return _on_foot(row, at, heading, _may_take)
 
+## **The leg for `row` standing at `at` and going `heading` that leaves the next junction box it
+## comes to by `out`** (a unit: straight on, or one of the two turns), with her at `her`: as
+## `next_leg()` for a row of the road, with the way out of the box given rather than taken in order,
+## so the director can send its convoy round a corner toward her
+## (`EventDirector._round_the_corner_toward()`); empty where the box is not left that way.
+func leg_out_by(row: EventDef, at: Vector2, heading: Vector2, out: Vector2,
+		her: Vector2) -> PackedVector2Array:
+	return _down_the_road(row, at, heading, her, _may_take,
+			Vector2i(roundi(out.x), roundi(out.y)))
+
 ## **The leg a row that is leaving goes on by**: as `next_leg()`, with nothing asked of the day, since
 ## a row that is leaving is over and emits nothing.
 func leg_to_leave_by(row: EventDef, at: Vector2, heading: Vector2,
@@ -87,7 +97,8 @@ func drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
 			and kept[kept.size() - 1].is_equal_approx(path[path.size() - 1])
 
 ## The leg of a row of the road: from `at` to where it leaves the next junction box it comes to,
-## straight through it or round the corner in it.
+## straight through it or round the corner in it, or only by `only` where that is given
+## (`leg_out_by()`).
 ##
 ## Along its street, the box at or behind it is `floori(along / period)`. A car inside a box drives
 ## straight out of it, so the stretch it is on or entering runs from box `from` the way it drives:
@@ -98,7 +109,7 @@ func drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
 ## taken one never runs out of road, and asking that the stretch it is on be one too would only
 ## refuse a car driving off a stub into the through roads.
 func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
-		her: Vector2, may_take: Callable) -> PackedVector2Array:
+		her: Vector2, may_take: Callable, only := Vector2i.ZERO) -> PackedVector2Array:
 	var vertical := absf(heading.y) > absf(heading.x)
 	var way := Vector2i(0, 1 if heading.y > 0.0 else -1) if vertical \
 			else Vector2i(1 if heading.x > 0.0 else -1, 0)
@@ -122,6 +133,8 @@ func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
 		if Vector2(turns[0]).dot(her - centre) > Vector2(turns[1]).dot(her - centre):
 			turns.reverse()
 	outs.append_array(turns)
+	if only != Vector2i.ZERO:
+		outs = [only]
 	for out in outs:
 		if not _roads.goes_on(box, out):
 			continue
