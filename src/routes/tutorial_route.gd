@@ -86,15 +86,6 @@ func turning_junction() -> Vector2i:
 func lesson_streets() -> Array[StreetNetwork.Segment]:
 	return _streets.duplicate()
 
-## Every tile of the route past the doorstep's street, as a set: the junction it leaves that street
-## at, the lesson streets, and the junction boxes between and after them. `RouteTree` grows the
-## park's branch on this ground alone.
-func walked_ground() -> Dictionary:
-	var found := _ground_past_the_first_block()
-	for tile in _map.rect_tiles(_box(_junctions[0])):
-		found[tile] = true
-	return found
-
 ## The ground no other branch of the day's tree may use: the lesson streets, every junction box
 ## past the first, the half of each side street past the first block nearest the route (its
 ## mouth, where `SealPlanner` stands its seal), and the tutorial park. So no other branch merges
@@ -183,7 +174,8 @@ static func _box(junction: Vector2i) -> Rect2i:
 ## (1) get to the park is the walk itself, then (2) a noise source she can pass wide, (3) one with
 ## less room, (4) crossing the road with no cars about, (5) crossing the road with cars, and (6)
 ## timing the yeller. Four stand on a lesson street of their own (`lesson_street()`); the two
-## crossings are junctions (`crossing_with_no_cars()`, `crossing_with_cars()`).
+## crossings are junctions: (4)'s at the start of its street (`crossing_with_no_cars()`), and (5)'s
+## the far end of that street, where the line crosses a carriageway again (`_lay_the_line()`).
 enum Lesson { NOISE_PASSED_WIDE = 2, NOISE_WITH_LESS_ROOM = 3, CROSSING_WITH_NO_CARS = 4,
 		CROSSING_WITH_CARS = 5, TIMING_THE_YELLER = 6 }
 
@@ -194,7 +186,7 @@ const NO_JUNCTION := Vector2i(-1, -1)
 ## The streets count back from the last, the park's, which carries no lesson: a field on it would
 ## reach the park she has not used yet, which no row may (`UnusedCalmRule`). So the yeller is on
 ## the street before the park's, the crossing with no cars at the start of the street before his,
-## the dog walker's street before that and the leaf blower's before that, and a route of six lesson
+## the dog walker's street before that and the market stall's before that, and a route of six lesson
 ## streets leaves its first one empty. *Proposed, not asked for:* the street each lesson takes is
 ## the builder's reading of the progression on a route whose last street runs along the park.
 func lesson_street(lesson: Lesson) -> StreetNetwork.Segment:
@@ -218,7 +210,7 @@ func line_sidewalk(segment: StreetNetwork.Segment) -> Rect2i:
 	return Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)[_line()[index]]
 
 ## **The sidewalk across the carriageway from the line on `segment`**, a lesson street: where the
-## leaf blower stands, and the one the delivery van shuts. An empty rect for a street the route
+## market stall stands, and the one the delivery van shuts. An empty rect for a street the route
 ## does not run down.
 func far_sidewalk(segment: StreetNetwork.Segment) -> Rect2i:
 	var index := _streets.find(segment)
@@ -239,24 +231,19 @@ func arrives_at(segment: StreetNetwork.Segment) -> Vector2i:
 	var index := _streets.find(segment)
 	return _junctions[index] if index >= 0 else NO_JUNCTION
 
-## **The junction where lesson (5) is crossed**: the far end of lesson (4)'s street, the first box
-## past it, where the line crosses a carriageway again (the line is laid so it does where any
-## line can). `NO_JUNCTION` where no line crosses one there, or on a route too short for it.
-func crossing_with_cars() -> Vector2i:
-	var index := _index_of(Lesson.CROSSING_WITH_NO_CARS)
-	if index < 0:
-		return NO_JUNCTION
-	var line := _line()
-	var at := index + 1
-	if _crossings(_junctions[at], _corner(_streets[index], line[index], _junctions[at]),
-			_corner(_streets[at], line[at], _junctions[at])) == 0:
-		return NO_JUNCTION
-	return _junctions[at]
-
 ## **Whether `tile` is on the route**: the doorstep's street, a lesson street, either of its
-## sidewalks or its carriageway, or one of the junction boxes along it (`walked_ground()`).
+## sidewalks or its carriageway, or one of the junction boxes along it. The director asks it on
+## each of her steps on day 1, so it reads the rects rather than building the route's tiles.
 func runs_over(tile: Vector2i) -> bool:
-	return _home.tile_rect().has_point(tile) or walked_ground().has(tile)
+	if _home.tile_rect().has_point(tile):
+		return true
+	for segment in _streets:
+		if segment.tile_rect().has_point(tile):
+			return true
+	for junction in _junctions:
+		if _box(junction).has_point(tile):
+			return true
+	return false
 
 ## **Whether `tile` is in the tutorial park**: its own ground.
 func has_in_its_park(tile: Vector2i) -> bool:

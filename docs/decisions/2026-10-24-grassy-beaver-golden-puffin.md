@@ -22,8 +22,9 @@ last, minty-dolphin #834).
   `TutorialRoute.line_ground()`, the line's sidewalks and the junction boxes, where it took the
   route's whole streets). So the sidewalk the tree walks, which no body may take
   (`RouteSidewalkRule`), is the line's, and the far sidewalk is where a lesson's row may stand.
-  `walked_ground()` keeps its meaning (the whole route past the first block), which the seal
-  guarantee floods.
+  `walked_ground()`, the whole route past the first block as a set, goes: nothing in the game read
+  it once the tree grew on the line, and `runs_over()`, which the director asks on each of her
+  steps on day 1, reads the route's rects instead of building that set every time.
 - **`DawnTutorial`** (`src/events/model/dawn_phases/`, model), after the fixed parts and day 13's
   roadblocks, before the scripted rows: each lesson's row offered its slot tile by tile on its own
   ground for the day (`RowGround.offers_for()`) and judged by the day's rules

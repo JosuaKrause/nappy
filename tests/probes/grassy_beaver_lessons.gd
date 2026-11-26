@@ -2,8 +2,7 @@ extends RefCounted
 ## Measurement probe for grassy-beaver's lessons on the route (a day one that teaches): over the
 ## city suites' seeds and seeds 1 to 120, day 1 planned as `DayPlanner` plans it (the home's
 ## streets held, the seals standing, the tree grown with the tutorial route), and for each lesson
-## whether its row stands on its slot (`DawnTutorial`), and whether the line crosses a carriageway
-## at lesson (5)'s junction (`TutorialRoute.crossing_with_cars()`). It also counts what the dawn
+## whether its row stands on the route's units (`DawnTutorial`). It also counts what the dawn
 ## draw left on the route's units past the first block, which should be nothing but the lessons.
 ##
 ## Not a suite: it prints rather than asserts. Run by name:
@@ -22,10 +21,30 @@ static func _seeds() -> Array[int]:
 		found.append(i)
 	return found
 
+## The lesson rows the route has a street for, as a set.
+static func _lessons(route: TutorialRoute) -> Dictionary:
+	var found := {}
+	if route.lesson_street(TutorialRoute.Lesson.NOISE_PASSED_WIDE):
+		found[DawnTutorial.NOISE_PASSED_WIDE] = true
+	if route.lesson_street(TutorialRoute.Lesson.CROSSING_WITH_NO_CARS):
+		found[DawnTutorial.SHUTS_HER_SIDEWALK] = true
+	if route.lesson_street(TutorialRoute.Lesson.TIMING_THE_YELLER):
+		found[DawnTutorial.PACES_HER_SIDEWALK] = true
+	return found
+
+## The rects of the route's units past the first block, as `Location.part_of()` names them: each
+## lesson street's and the junction box at each of its ends.
+static func _route_units(route: TutorialRoute) -> Dictionary:
+	var units := {}
+	for segment in route.lesson_streets():
+		units[segment.tile_rect()] = true
+		for junction: Vector2i in [segment.a, segment.b]:
+			units[Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)] = true
+	return units
+
 func run(t: TestRunner) -> void:
 	var stood := {}
 	var routes := 0
-	var cars := 0
 	var strays := 0
 	var missing: Array[String] = []
 	for seed_value in _seeds():
@@ -49,7 +68,7 @@ func run(t: TestRunner) -> void:
 		var seals := SealPlanner.plan_day(map, spec, tree, rng, {}, map.held_streets(), route,
 				null)
 		var dawn := GameDawn.of(spec, rng, map).on(tree).standing(seals).tutorial(route).planned()
-		var units := DawnTutorial.route_units(route)
+		var units := _route_units(route)
 		var on_units := {}
 		for plan in dawn.events().placements():
 			if not plan.is_placed():
@@ -58,19 +77,17 @@ func run(t: TestRunner) -> void:
 			var location := dawn.locations().holding(tile, map.tile_at(tile))
 			if location and units.has(location.part_of()):
 				on_units[plan.row_id()] = int(on_units.get(plan.row_id(), 0)) + 1
-		for row_id: String in DawnTutorial.lesson_slots(route):
+		var lessons := _lessons(route)
+		for row_id: String in lessons:
 			if on_units.has(row_id):
 				stood[row_id] = int(stood.get(row_id, 0)) + 1
 			else:
 				missing.append("%d: %s" % [seed_value, row_id])
 		for row_id: String in on_units:
-			if not DawnTutorial.lesson_slots(route).has(row_id):
+			if not lessons.has(row_id):
 				strays += 1
 				missing.append("%d: stray %s" % [seed_value, row_id])
-		if route.crossing_with_cars() != TutorialRoute.NO_JUNCTION:
-			cars += 1
-	print("LESSONS routes=%d stood=%s crossing_with_cars=%d strays=%d" % [routes, stood, cars,
-			strays])
+	print("LESSONS routes=%d stood=%s strays=%d" % [routes, stood, strays])
 	for line in missing:
 		print("LESSONS missing ", line)
 	t.check(true, "a probe asserts nothing")

@@ -70,7 +70,7 @@ func _test_the_kept_ground(t: TestRunner, map: CityMap, route: TutorialRoute) ->
 	t.check(_all_in(map, _box(FAR), kept) and _all_in(map, _box(TURN), kept),
 			"the junction boxes past the first are kept")
 	t.check(_none_in(map, _box(FIRST), kept), "the first junction box is not kept")
-	t.check(route.walked_ground().has(_box(FIRST).position),
+	t.check(route.runs_over(_box(FIRST).position),
 			"the route walks the first junction box all the same")
 	t.check(_all_in(map, _park(), kept), "the park is kept")
 	for mouth in route.side_street_mouths():
@@ -150,7 +150,7 @@ static func _side(segment: StreetNetwork.Segment, band: Rect2i) -> int:
 
 ## **The lessons count back from the park's street**, which carries none: the yeller the street
 ## before it, the crossing with no cars at the start of the street before his, the dog walker's and
-## the stall's before that; the crossing with cars at the far end of the crossing's street.
+## the stall's before that.
 func _test_the_lessons_count_back_from_the_parks_street(t: TestRunner, map: CityMap) -> void:
 	var route := _lesson_route(map)
 	var streets := route.lesson_streets()
@@ -163,9 +163,6 @@ func _test_the_lessons_count_back_from_the_parks_street(t: TestRunner, map: City
 			"the crossing with cars is a junction, not a street")
 	t.check(route.crossing_with_no_cars() == Vector2i(3, 3),
 			"lesson (4) is crossed at the start of its street (%s)" % route.crossing_with_no_cars())
-	t.check(route.crossing_with_cars() == Vector2i(4, 3),
-			"lesson (5) is crossed at the far end of lesson (4)'s street (%s)"
-			% route.crossing_with_cars())
 	t.check(route.is_on_lesson(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM,
 			streets[1].tile_rect().get_center())
 			and not route.is_on_lesson(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM,
@@ -176,7 +173,8 @@ func _test_the_lessons_count_back_from_the_parks_street(t: TestRunner, map: City
 			"a route too short for the first lessons has none of them")
 
 ## **The line changes side across lesson (4)'s street at its start**, so the sidewalk she arrives
-## toward is the far one, which the van shuts, **and keeps to the park's side on the last street**,
+## toward is the far one, which the van shuts, **crosses a carriageway again at that street's far
+## end** for lesson (5), **and keeps to the park's side on the last street**,
 ## where the tree's branch reaches the park; the line's ground holds the line's sidewalks and not
 ## the far ones.
 func _test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t: TestRunner,
@@ -186,6 +184,11 @@ func _test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t: TestR
 	t.check(_side(streets[2], route.far_sidewalk(streets[2]))
 			== _side(streets[1], route.line_sidewalk(streets[1])),
 			"lesson (4)'s far sidewalk is on the side she arrives on from lesson (3)'s street")
+	# Lesson (4)'s street runs east into (4, 3) and the next leaves it south: the line goes round
+	# the box without a crossing only from that street's south sidewalk onto the next's west one.
+	t.check(not (_side(streets[2], route.line_sidewalk(streets[2])) == 1
+			and _side(streets[3], route.line_sidewalk(streets[3])) == 0),
+			"lesson (5): the line crosses a carriageway at the far end of lesson (4)'s street")
 	t.check(_side(streets[4], route.line_sidewalk(streets[4])) == 1,
 			"the line keeps to the park's side of the last street")
 	var ground := route.line_ground()

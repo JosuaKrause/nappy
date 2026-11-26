@@ -1,11 +1,12 @@
 class_name DawnTutorial
 extends DawnPhase
 ## **Day 1's lessons, stood on the tutorial route at dawn** (`TutorialRoute`, handed in on the day
-## whose spec walks it, `DawnContext.tutorial_route()`): the leaf blower on the sidewalk across from
+## whose spec walks it, `DawnContext.tutorial_route()`): the market stall on the sidewalk across from
 ## the line for (2), a noise she can pass wide; the delivery van shutting the line's sidewalk just
 ## past the box where the line crosses for (4); the yeller pacing the line's sidewalk for (6), the
 ## street before the park's. (3)'s dog walker is sent toward her by the director, never placed
-## (`EventDirector`), and (5) is the crossing where the cars start (`TutorialRoute.crossing_with_cars()`).
+## (`EventDirector`), and (5) is the crossing where the cars start, the far end of (4)'s street,
+## where the line crosses a carriageway again (`TutorialRoute`).
 ## Every other location of the route's units past the first block, its lesson streets and their
 ## junction boxes, is drawn empty, so nothing else stands between the lessons, and every unit off
 ## the route draws from its view's bag as on any other day. *(gentle-owl #1253: on day 1 the
@@ -48,14 +49,14 @@ func run(context: DawnContext) -> void:
 	var judged := RuledLocationGround.new(day, context.day_seed(), map, events.standing(),
 			context.corridor(), LocationFit.new(day, map, context.builder(), ground),
 			context.rules(), ground, true, true)
-	var slots := lesson_slots(route)
+	var slots := _lesson_slots(route)
 	for row_id: String in slots:
 		var def := EventCatalogue.heated(EventCatalogue.by_id(row_id), context.heat()).for_day(day)
 		var plan := _stand(def, slots[row_id], map, ground, locations, judged, events)
 		context.note("plan", "day %d's tutorial: %s %s" % [day, row_id,
 				("at " + RunTrace.tile(map.world_to_tile(plan.placed_at()))) if plan
 				else "has no tile of its slot the day's rules allow"])
-	var units := route_units(route)
+	var units := _route_units(route)
 	for location in locations.open_locations():
 		if units.has(location.part_of()):
 			locations.record(location, null)
@@ -65,7 +66,7 @@ func run(context: DawnContext) -> void:
 ## (4)'s street from the box where the line crosses it, and the yeller along the line's sidewalk of
 ## (6)'s street from the end she arrives at, away from the park. A lesson the route is too short
 ## for has none.
-static func lesson_slots(route: TutorialRoute) -> Dictionary:
+static func _lesson_slots(route: TutorialRoute) -> Dictionary:
 	var slots := {}
 	var wide := route.lesson_street(TutorialRoute.Lesson.NOISE_PASSED_WIDE)
 	if wide:
@@ -83,7 +84,7 @@ static func lesson_slots(route: TutorialRoute) -> Dictionary:
 
 ## **The rects of the units the route runs through past the first block**, as `Location.part_of()`
 ## names them, as a set: each lesson street's, and each junction box along the route.
-static func route_units(route: TutorialRoute) -> Dictionary:
+static func _route_units(route: TutorialRoute) -> Dictionary:
 	var units := {}
 	for segment in route.lesson_streets():
 		units[segment.tile_rect()] = true
