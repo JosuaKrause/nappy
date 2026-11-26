@@ -27,6 +27,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const MAIN_SCRIPT := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.started_run()`).
 const RUN_SEED := 2
@@ -378,6 +379,7 @@ func _press_tap(t: TestRunner, main: MAIN_SCRIPT) -> void:
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, "Tap")), true))
 	await UI.frames(t)
+	Boot.skip_the_opening_shot(main)
 
 ## The one node under `root` whose script's class or file is named `type_name`, or null.
 func _one(root: Node, type_name: String) -> Node:

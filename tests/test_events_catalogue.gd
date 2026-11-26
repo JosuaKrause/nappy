@@ -42,6 +42,7 @@ func run(t: TestRunner) -> void:
 	_test_every_other_row_is_one_body(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
+	_test_the_explosions_crater_leaves_the_other_lane(t)
 	_test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t)
 
 ## **Every charger is built from the run's charger timing** (`EventCatalogue.use_charger_timing()`,
@@ -777,6 +778,17 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 				"'%s' is still one of the invisible ones" % id)
 	t.check(owner_of.size() >= 25,
 			"and the catalogue draws %d different things" % owner_of.size())
+
+## **The crater an explosion leaves takes one lane of its street and leaves the other**
+## (`EventCatalogue._lane_crater()`; minty-lemur #785, trucks first among what she meets): a
+## burst goes off on a road tile, the middle of one lane, and the body it leaves there covers the
+## middle of that tile alone (`GroundShape.tiles_under()`, the tiles a car is stopped on), so the
+## lane a tile across, and the tiles before and after it along its own lane, stay a car's.
+func _test_the_explosions_crater_leaves_the_other_lane(t: TestRunner) -> void:
+	var crater := EventCatalogue.by_id(EventCatalogue.by_id("finale_explosion").leaves_behind())
+	var tiles := crater.ground_shape().tiles_under(Vector2(10.5, 7.5) * Tuning.TILE_SIZE)
+	t.check(crater.has_a_body() and tiles.size() == 1 and tiles[0] == Vector2i(10, 7),
+			"the crater '%s' covers its own lane's tile and no other: %s" % [crater.id(), tiles])
 
 ## And no two of those pictures are the same texture.
 ##

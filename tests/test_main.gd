@@ -435,6 +435,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t)
 	await _test_the_title_choice_survives_the_handover_to_the_escape(t)
 	await _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t)
+	await _test_focus_lost_during_the_opening_shot_opens_the_pause_when_it_ends(t)
 	await _test_a_session_on_one_booted_game(t)
 	_test_the_unclamped_view_at_every_corner_is_painted(t)
 	_test_the_overview_is_landscape_to_every_edge(t)
@@ -529,12 +530,14 @@ func _press_on_the_title(t: TestRunner, main: Boot.MainScript, button_name: Stri
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, button_name)), true))
 	await UI.frames(t)
+	Boot.skip_the_opening_shot(main)
 
 ## What a player's keys on the title end up as: a run started by a key, in tap mode.
 func _start_by_key(t: TestRunner, main: Boot.MainScript) -> void:
 	(_one(main, "TitleScreen") as TitleScreen).start_requested.emit(
 			ControlsMode.Mode.TAP, true, ControlsMode.Side.LEFT)
 	await UI.frames(t)
+	Boot.skip_the_opening_shot(main)
 
 func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 	var event := InputEventKey.new()
@@ -1003,6 +1006,32 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 	t.check(run.header().day() == Tuning.RUN_LENGTH_DAYS, "on day 14 still")
 	_shut(t, main)
 	home.free()
+
+## **A window that loses focus while day 1's opening shot runs gets its pause when the shot ends.**
+## The shot takes any key as its skip, so no pause opens over it (`main._pause_on_focus_lost()`); the
+## loss is remembered, and once play begins the pause is up and the tree stopped, as it is for any
+## day whose window is left. A window that kept its focus gets none.
+func _test_focus_lost_during_the_opening_shot_opens_the_pause_when_it_ends(t: TestRunner) -> void:
+	for lost_focus: bool in [true, false]:
+		var seat := Seat.new(t)
+		var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], null, false, MapCache.source())
+		var main := booted.main
+		var pause := _one(main, "PauseScreen") as PauseScreen
+		await Boot.press_title(t, main, "Tap", true)
+		var shot_runs := false
+		for found: Node in main.find_children("*", "OpeningShot", false, false):
+			shot_runs = (found as OpeningShot).is_running()
+		t.check(shot_runs, "the title's press starts the opening shot")
+		if lost_focus:
+			main.get_node("ReturnWindow").notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		t.check(not pause.is_open(), "no pause opens over the shot")
+		Boot.skip_the_opening_shot(main)
+		await Boot.UI.frames(t)
+		t.check(pause.is_open() == lost_focus,
+				"when the shot ends the pause is %s (focus lost: %s)"
+				% ["up" if lost_focus else "not up", lost_focus])
+		booted.free_all()
+		seat.end()
 
 ## **A session on one booted game, in the order a session meets the screens.** The title opens once
 ## per boot, so the checks that start from it share one boot: what the boot builds, the title with

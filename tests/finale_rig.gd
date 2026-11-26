@@ -1803,8 +1803,8 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 ## half of the picture it draws — *anything that stands still is solid at the width it is drawn*.
 func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> void:
 	var burst := EventCatalogue.by_id("finale_explosion")
-	var crater := EventCatalogue.by_id("impact_crater")
-	t.check(burst != null and crater != null, "both finale rows are in the catalogue")
+	var crater: EventDef = EventCatalogue.by_id(burst.leaves_behind()) if burst != null else null
+	t.check(burst != null and crater != null, "the burst names a crater row the catalogue holds")
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasTable.baked().native_size()` answers the
 	# source picture's own size with nothing acquired.

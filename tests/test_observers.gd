@@ -111,8 +111,10 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 	# that is not up cannot be pressed, and a second answer has no title to come from.
 	var title := Boot.title(main)
 	title.start_requested.emit(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.LEFT)
+	Boot.skip_the_opening_shot(main)
 	t.get_tree().paused = true
 	title.start_requested.emit(ControlsMode.Mode.TAP, true, ControlsMode.Side.LEFT)
+	Boot.skip_the_opening_shot(main)
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("car_strike")
 	Boot.skip_the_loss_beat(main)

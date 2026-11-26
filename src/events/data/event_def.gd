@@ -156,6 +156,10 @@ enum Look {
 	CLOSING_ROADBLOCK, ## A lower barrier than `ROADBLOCK`'s, wall to wall, with a coil of razor
 	                   ## wire along its top and square red and cream blocks on its face: a
 	                   ## street shut, nobody past. Badged by one block under the wire.
+	# ---- the escape's explosion's crater ----
+	LANE_CRATER, ## The hole an off-screen burst leaves in the road, one lane wide: `IMPACT_CRATER`'s
+	             ## ground drawn a tile across, flat, centred and unshadowed like it, so a car
+	             ## comes past it in the street's other lane.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

@@ -2,11 +2,12 @@ extends RefCounted
 ## `EventDirector`'s siting of the rows it sends ahead of her (`EventDef.is_sent_ahead()`; inbox
 ## #1460 in silky-lemur): the dog walker down her own sidewalk toward her, the patrol down the
 ## carriageway lane that drives toward her, and the convoy in the lane beside her coming toward
-## her, its first leg running past her to the far edge of the next junction box, on a street
-## running north-south and on one running east-west; a car's first leg sent only where the day's
-## way on says a car may drive it and go on from its end; a sent row refused, and asked again,
-## where its first leg starts within `EventScheduler.EVENT_SPACING_ANY` of a placed plan or runs
-## through a field a plan keeps clear; and a marble of her route sent ahead of her that has no
+## her, its first leg running past her and on by the way on's leg, on a street running
+## north-south and on one running east-west, or, where that lane has no room, down the crossing
+## street at the next box ahead of her, and for her standing in a junction box; a car's first leg
+## sent only where the day's way on says a car may drive it and go on from its end; a sent row
+## refused, and asked again, where its first leg starts within `EventScheduler.EVENT_SPACING_ANY`
+## of a placed plan or runs through a field a plan keeps clear; and a marble of her route sent ahead of her that has no
 ## room, which waits for room and lets the marbles behind it through (calm-pelican-6); and its
 ## looks at what her walk lays (`site_what_is_on_her_way()`), handed a stand-in for the day's
 ## siting (`FakeWalkSiting`): a look asks each plan owed once, between one `begin_look()` and
@@ -23,9 +24,9 @@ extends RefCounted
 ## it, and an ordinary day 1 is not held.
 ##
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
-## the same map turned), with plans made by hand: plans and rows are data, built as they are, and
-## the director is handed the map alone and moves by the map's navigator, as
-## `tests/test_world_passability.gd` hands it. It is handed a fake way on (`FakeWayOn`), whose
+## the same map turned; `_crossroads()` adds a street crossing it at the box ahead of her), with
+## plans made by hand: plans and rows are data, built as they are, and the director is handed the
+## map alone and moves by the map's navigator, as `tests/test_world_passability.gd` hands it. It is handed a fake way on (`FakeWayOn`), whose
 ## answers the test sets: on one street no stretch is a through road, and whether a car may drive a
 ## leg and go on from it is `WayOn`'s own suite's, `tests/test_way_on.gd`. Each siting check owes its row through `force()` (the
 ## `--force` flag, which `start_day()` takes up and which forces a sent row as the director sends
@@ -43,11 +44,12 @@ const HER := Vector2i(4, 36)
 const DAY := 13
 
 ## **A way on whose answers the test sets** (`WayOn`): whether a car may drive a leg
-## (`drives_clear()`) and whether it has a next leg from where it stands (`next_leg()`), recording
+## (`driven()`, the leg as it is handed in or none) and whether it has a next leg from where it stands (`next_leg()`), recording
 ## what it was asked and the day's rule it was told (`use_the_days_rule()`).
 class FakeWayOn extends WayOn:
 	var drives := true
 	var goes_on := true
+	var turns := false
 	var asked_to_drive: Array[PackedVector2Array] = []
 	var asked_on_from: Array[Array] = []
 	var told_rule := Callable()
@@ -59,10 +61,10 @@ class FakeWayOn extends WayOn:
 	func use_the_days_rule(may_take: Callable) -> void:
 		told_rule = may_take
 
-	## Overrides WayOn.drives_clear.
-	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
+	## Overrides WayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
 		asked_to_drive.append(path)
-		return drives
+		return path if drives else PackedVector2Array()
 
 	## Overrides WayOn.next_leg.
 	func next_leg(_row: EventDef, at: Vector2, heading: Vector2,
@@ -70,12 +72,26 @@ class FakeWayOn extends WayOn:
 		asked_on_from.append([at, heading])
 		return PackedVector2Array([at, at + heading * TILE]) if goes_on else PackedVector2Array()
 
+	## Overrides WayOn.leg_out_by.
+	func leg_out_by(_row: EventDef, at: Vector2, heading: Vector2, out: Vector2,
+			_her: Vector2) -> PackedVector2Array:
+		if not goes_on or not turns:
+			return PackedVector2Array()
+		return PackedVector2Array([at, at + heading * TILE, at + heading * TILE + out * TILE])
+
 func run(t: TestRunner) -> void:
 	_test_the_dog_walker_comes_down_her_sidewalk_toward_her(t)
 	for vertical: bool in [true, false]:
 		_test_the_patrol_comes_down_the_lane_that_drives_toward_her(t, vertical)
 		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
 	_test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(t)
+	_test_the_convoys_leg_crosses_the_box_behind_her_from_short_of_it(t)
+	_test_the_convoy_sets_off_further_up_its_lane_where_its_place_cannot_be_driven(t)
+	_test_the_convoy_comes_down_the_crossing_street_where_her_lane_has_no_room(t)
+	_test_the_convoy_turns_round_the_corner_toward_her(t)
+	_test_the_convoy_never_comes_down_the_crossing_street_behind_her(t)
+	_test_a_crossing_convoy_holds_while_she_crosses_her_street_under_its_badge(t)
+	_test_the_convoy_comes_for_her_standing_in_a_box(t)
 	_test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
 	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
@@ -208,8 +224,9 @@ func _test_the_patrol_comes_down_the_lane_that_drives_toward_her(t: TestRunner,
 			+ "out of sight up the road (%d of %d)" % [toward, sited])
 
 ## The convoy is warned of first in the lane beside her: its place is up the road out of sight,
-## level with the lane its way drives in; its first leg runs past her to the far edge of the next
-## junction box; and over the director's streams it always comes toward her, never from behind
+## level with the lane its way drives in; its first leg runs down the lane to the point level with
+## her and on by the way on's leg from there (`WayOn.next_leg()`, which carries it through the next
+## junction box); and over the director's streams it always comes toward her, never from behind
 ## ("just ahead of the player", inbox #1460 in silky-lemur).
 func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 		vertical: bool) -> void:
@@ -234,12 +251,12 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 		var across := path[0].x if vertical else path[0].y
 		var up_the_road := (path[0] - _her(vertical)).dot(going)
 		var past_her := (last - _her(vertical)).dot(going)
-		var end_tile := int(roundf((last.y if vertical else last.x) / TILE))
-		var forward := (going.y if vertical else going.x) > 0.0
-		var box_edge := Tuning.STREET_WIDTH if forward else 0
+		var level := Vector2(path[0].x, _her(vertical).y) if vertical \
+				else Vector2(_her(vertical).x, path[0].y)
 		var fine := def.is_warned_in_its_lane() and def.warns_before_it_exists() \
 				and is_equal_approx(across, lane) and up_the_road < -half and past_her > 0.0 \
-				and posmod(end_tile, CityMap.period()) == box_edge
+				and path.size() == 3 and path[1].is_equal_approx(level) \
+				and last.is_equal_approx(level + going * TILE)
 		if not fine:
 			wrong.append("seed %d: %s" % [seed_value, path])
 		if going.dot(_walking(vertical)) > 0.0:
@@ -247,7 +264,7 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 		else:
 			at_her += 1
 	t.check(wrong.is_empty(), "on a street running %s, every convoy is warned of in its lane up "
-			% name + "the road, out of sight, its leg past her to the far edge of the next box%s" % (
+			% name + "the road, out of sight, its leg to level with her and on by the way on's leg%s" % (
 				"" if wrong.is_empty() else ": " + "; ".join(wrong)))
 	t.check(with_her == 0 and at_her > 0,
 			"and it comes toward her (%d toward her, %d from behind her)" % [at_her, with_her])
@@ -256,9 +273,11 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 ## has been up** (`EventDirector._holds_while_its_badge_is_up()`): its badge is up alone for
 ## `warned_for()` and the thing is created just out of sight of the camera then, a place that
 ## has moved along the road with her, so a start that is ground now and a break in the
-## carriageway a second of her running on would take the badge down with nothing behind it. A
+## carriageway a second of her running on would take the badge down with nothing behind it. It
+## may set off up to `EventDirector.SETS_OFF_BACK` tiles further up its lane than that place. A
 ## way on that lets a car start only up to a cutoff down the road sites the convoy when the
-## cutoff is further than she can run in that time and refuses it when it is nearer.
+## cutoff is further than she can run in that time, less those tiles, and refuses it when it is
+## nearer.
 func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 		t: TestRunner) -> void:
 	var map := _street()
@@ -269,14 +288,70 @@ func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 	var wanted := (plain[1] as PackedVector2Array)[0]
 	var def := plain[0] as EventDef
 	var reach := Tuning.RUN_SPEED * def.warned_for() + TILE
+	var back := float(EventDirector.SETS_OFF_BACK * TILE)
 	for margin: float in [-TILE * 0.25, TILE * 0.5]:
-		var way := _StartsAboveWayOn.new(wanted.y + reach + margin)
+		var way := _StartsAboveWayOn.new(wanted.y + reach + margin - back)
 		var sited := _due(_director(map, "military_convoy", _no_plans(), 1, way)).size() >= 2
 		t.check(sited == (margin > 0.0),
 				("with ground to set off from %.0fpx %s than she runs in the badge's time, "
-				+ "the convoy is %s")
+				+ "less the tiles it may set off further up, the convoy is %s")
 				% [absf(margin), "further" if margin > 0.0 else "nearer",
 				"sited" if margin > 0.0 else "refused"])
+
+## **The convoy's leg past her crosses the box behind her from short of it** where the point level
+## with her lies in that box or past it (`EventDirector.leg_in_the_lane()`): she may have walked back
+## that far while its badge was up, and a walk that turned at that box has nothing straight on past
+## it but a sealed street, so the way on is asked for the leg out of that box from just short of it,
+## where it may turn, rather than from inside it or past it, where it can only drive straight on.
+## With her where she was sited, the leg is asked from the point level with her.
+func _test_the_convoys_leg_crosses_the_box_behind_her_from_short_of_it(t: TestRunner) -> void:
+	var map := _street()
+	var plain := _due(_director(map, "military_convoy", _no_plans()))
+	if plain.size() < 2:
+		t.check(false, "the convoy is sited on the plain street")
+		return
+	var def := plain[0] as EventDef
+	var place := (plain[1] as PackedVector2Array)[0]
+	var entry := float(3 * CityMap.period() * TILE)
+	for case: Array in [[HER.y, _her().y], [3 * CityMap.period() + 2, entry - 1.0],
+			[3 * CityMap.period() + Tuning.STREET_WIDTH + 2, entry - 1.0]]:
+		var way := FakeWayOn.new()
+		var director := _director(map, "military_convoy", _no_plans(), 1, way)
+		var her := _turned(Vector2i(HER.x, int(case[0])), true)
+		way.asked_on_from.clear()
+		var leg := director.leg_in_the_lane(def, place, her, Vector2.DOWN, _her())
+		var from: Vector2 = way.asked_on_from[0][0] if not way.asked_on_from.is_empty() \
+				else Vector2.INF
+		t.check(not leg.is_empty() and from.is_equal_approx(Vector2(place.x, float(case[1]))),
+				"with her on tile row %d, the leg out of the box is asked from y %.0f (%s)"
+				% [int(case[0]), float(case[1]), from])
+
+## **The convoy sets off further up its lane where its leg from its place cannot be driven**
+## (`EventDirector.leg_in_the_lane()`): an explosion's crater at the place, or within a tile of
+## it, leaves a truck no room to pull out round it, so its leg starts a tile further up, or two
+## (`EventDirector.SETS_OFF_BACK`), still in her street driving at her; with nothing to drive
+## from even there, it has no leg.
+func _test_the_convoy_sets_off_further_up_its_lane_where_its_place_cannot_be_driven(
+		t: TestRunner) -> void:
+	var map := _street()
+	var plain := _due(_director(map, "military_convoy", _no_plans()))
+	if plain.size() < 2:
+		t.check(false, "the convoy is sited on the plain street")
+		return
+	var def := plain[0] as EventDef
+	var place := (plain[1] as PackedVector2Array)[0]
+	for tiles: int in [1, EventDirector.SETS_OFF_BACK, EventDirector.SETS_OFF_BACK + 1]:
+		var way := _StartsAboveWayOn.new(place.y - float(tiles * TILE))
+		var director := _director(map, "military_convoy", _no_plans(), 1, way)
+		var leg := director.leg_in_the_lane(def, place, _her(), Vector2.DOWN, _her())
+		if tiles > EventDirector.SETS_OFF_BACK:
+			t.check(leg.is_empty(), "with no ground to set off from within %d tiles up its lane, "
+					% EventDirector.SETS_OFF_BACK + "the convoy has no leg")
+			continue
+		t.check(not leg.is_empty()
+				and leg[0].is_equal_approx(place + Vector2.UP * float(tiles * TILE)),
+				"with ground to set off from only %d tile(s) up its lane, its leg starts there (%s)"
+				% [tiles, leg[0] if not leg.is_empty() else "none"])
 
 ## A way on that lets a car start only at or north of `cutoff` (up the road, away from her) and
 ## drive from there, as on a plain street.
@@ -287,13 +362,240 @@ class _StartsAboveWayOn extends FakeWayOn:
 		super()
 		_cutoff = cutoff
 
-	## Overrides test_event_director.FakeWayOn.drives_clear.
-	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
-		return path.size() >= 2 and path[0].y <= _cutoff
+	## Overrides test_event_director.FakeWayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+		return path if path.size() >= 2 and path[0].y <= _cutoff else PackedVector2Array()
+
+## **Where the lane beside her has no room, the convoy comes down the crossing street at the next
+## junction box ahead of her** (`EventDirector._across_the_next_box()`): on a street running
+## north-south and its crossing street at the box north of her (`_crossroads()`), a way on that
+## refuses every leg setting off in her own street (a crater or a seal there) sites it in the
+## crossing street's lane out of sight up it, its leg driving to the edge of the box ahead of her,
+## where the way on is asked for the leg out of it; with the box ahead further than her view reaches
+## along her street none is sited, and none where the way on lets it leave that box by no turn
+## toward her (a truck down the crossing street only turns the corner toward her,
+## `EventDirector.leg_in_the_lane()`).
+func _test_the_convoy_comes_down_the_crossing_street_where_her_lane_has_no_room(
+		t: TestRunner) -> void:
+	var map := _crossroads()
+	var turning := _OffHerStreetWayOn.new()
+	turning.turns = true
+	var due := _due(_director(map, "military_convoy", _no_plans(), 1, turning))
+	t.check(due.size() >= 2, "with her street refused, the convoy is sited (%d)" % due.size())
+	if due.size() >= 2:
+		var path := due[1] as PackedVector2Array
+		var going := (path[1] - path[0]).normalized()
+		var lane := CrowdLanes.lane_centre(CROSSING, CrowdLanes.road_lane(false, going.x))
+		var out_of_sight := absf(path[0].x - _her().x) > Tuning.VIEW_HALF_EXTENT.x
+		var box_edge := float(Tuning.STREET_WIDTH * TILE) + 1.0 if going.x < 0.0 else -1.0
+		t.check(is_equal_approx(absf(going.x), 1.0) and is_equal_approx(path[0].y, lane) and out_of_sight
+				and path[1].is_equal_approx(Vector2(box_edge, lane)),
+				"down the crossing street's lane from out of sight, its leg crossing her street in "
+				+ "the box ahead of her (%s)" % path)
+	var far := _turned(Vector2i(HER.x, HER.y + 4), true)
+	var far_way := _OffHerStreetWayOn.new()
+	far_way.turns = true
+	var refused := _due_at(_director(map, "military_convoy", _no_plans(), 1, far_way), far)
+	t.check(refused.is_empty(),
+			"and none where the box ahead lies further than her view along her street")
+	var straight := _due(_director(map, "military_convoy", _no_plans(), 1,
+			_OffHerStreetWayOn.new()))
+	t.check(straight.is_empty(),
+			"and none where the way on lets it turn toward her nowhere at that box")
+
+## **Down the crossing street, it turns at the box ahead of her into her street, toward her**
+## (`EventDirector._round_the_corner_toward()`), where the way on lets it leave the box that way
+## (`WayOn.leg_out_by()`): its leg runs down the crossing street's lane to just short of the box, is
+## the way on's leg out of the box turning toward her, and goes on south down her street toward her
+## by the way on's next leg. It is how a truck comes at her where her walk turns into that street.
+func _test_the_convoy_turns_round_the_corner_toward_her(t: TestRunner) -> void:
+	var way := _OffHerStreetWayOn.new()
+	way.turns = true
+	var due := _due(_director(_crossroads(), "military_convoy", _no_plans(), 1, way))
+	t.check(due.size() >= 2, "with turns allowed, the convoy is sited (%d)" % due.size())
+	if due.size() < 2:
+		return
+	var path := due[1] as PackedVector2Array
+	var going := (path[1] - path[0]).normalized()
+	var lane := CrowdLanes.lane_centre(CROSSING, CrowdLanes.road_lane(false, going.x))
+	var box_edge := float(Tuning.STREET_WIDTH * TILE) + 1.0
+	var last := path.size() - 1
+	t.check(path.size() == 5 and is_equal_approx(path[0].y, lane)
+			and path[1].is_equal_approx(Vector2(box_edge, lane))
+			and (path[last] - path[last - 1]).normalized().is_equal_approx(Vector2.DOWN),
+			"down the crossing street's lane to the box, round the corner, and on toward her (%s)"
+			% path)
+
+## **A truck down the crossing street never comes up behind her** (inbox #1460 in silky-lemur):
+## her on the street running east-west of `_crossroads()`, walking west toward the box where the
+## street running north-south crosses it, her own street refused (`_OffTheCrossingWayOn`).
+## Standing in that box, no convoy is sited down the street running north-south: one crossing the
+## box would go on down its far arm, where she may have stepped by the time it exists, and come up
+## it behind her. Short of the box with the way on letting it turn nowhere toward her, none is
+## sited either, since the leg straight across the box is the same leg. With turns allowed it is
+## sited, and with her stepped into the box and on into the far arm at creation, its leg
+## (`EventDirector.leg_in_the_lane()`, from its place level with her then,
+## `PendingWarning.in_its_lane()`) turns out of that street toward where she was sited and never
+## goes down the far arm.
+func _test_the_convoy_never_comes_down_the_crossing_street_behind_her(t: TestRunner) -> void:
+	var map := _crossroads()
+	var in_box := _turned(Vector2i(Tuning.STREET_WIDTH - 3, CROSSING * CityMap.period()
+			+ Tuning.STREET_WIDTH - 2), true)
+	var boxed := _due_west(_director(map, "military_convoy", _no_plans(), 1,
+			_OffTheCrossingWayOn.new()), in_box)
+	t.check(boxed.is_empty(), "with her standing in the box, no convoy is sited down the crossing "
+			+ "street (%s)" % [boxed])
+	var straight := _due_west(_director(map, "military_convoy", _no_plans(), 1,
+			_OffTheCrossingWayOn.new()), _short_of_the_box())
+	t.check(straight.is_empty(), "short of the box with no turn toward her, none is sited (%s)"
+			% [straight])
+	var way := _OffTheCrossingWayOn.new()
+	way.turns = true
+	var director := _director(map, "military_convoy", _no_plans(), 1, way)
+	var sited := _due_west(director, _short_of_the_box())
+	t.check(sited.size() >= 2, "with turns allowed, it is sited (%d)" % sited.size())
+	if sited.size() < 2:
+		return
+	var def := sited[0] as EventDef
+	var path := sited[1] as PackedVector2Array
+	var going := (path[1] - path[0]).normalized()
+	var far_edge := JunctionBoxes.exit(CROSSING, going.y > 0.0)
+	var ends := PendingWarning.lane_ends(map, going)
+	for her: Vector2 in [in_box, Vector2(in_box.x, far_edge + going.y * TILE * 2.0)]:
+		var place := PendingWarning.in_its_lane(def, her, path[0], going, ends.x, ends.y)
+		var leg := director.leg_in_the_lane(def, place, her, going, _short_of_the_box())
+		var down_the_far_arm := false
+		for point in leg:
+			down_the_far_arm = down_the_far_arm or (point.y - far_edge) * going.y > 0.0
+		var last := leg.size() - 1
+		t.check(not leg.is_empty() and not down_the_far_arm
+				and (leg[last] - leg[last - 1]).normalized().is_equal_approx(Vector2.RIGHT),
+				"with her at %s as it is created, its leg turns east out of the crossing street "
+				% [her] + "and never goes down its far arm (%s)" % [leg])
+
+## **A convoy down the crossing street is sited only where it holds wherever she crosses her own
+## street while its badge is up** (`EventDirector._holds_while_its_badge_is_up()`): its place is
+## level with her along its lane, so as she crosses her street toward it, or walks up its street, the
+## place moves up the lane with her. A way on that lets a car set off only up to a cutoff up the
+## crossing street sites the convoy where the cutoff is further than she can run in the badge's time
+## and refuses it where it is nearer. With her on the far side of her street the place just out of
+## sight lies in the box, and the truck sets off a tile short of it (`_round_the_corner_toward()`).
+func _test_a_crossing_convoy_holds_while_she_crosses_her_street_under_its_badge(
+		t: TestRunner) -> void:
+	var map := _crossroads()
+	var plain_way := _OffTheCrossingWayOn.new()
+	plain_way.turns = true
+	var plain := _due_west(_director(map, "military_convoy", _no_plans(), 1, plain_way),
+			_short_of_the_box())
+	if plain.size() < 2:
+		t.check(false, "the convoy is sited down the crossing street")
+		return
+	var def := plain[0] as EventDef
+	var path := plain[1] as PackedVector2Array
+	var going := (path[1] - path[0]).normalized()
+	var reach := Tuning.RUN_SPEED * def.warned_for() + TILE
+	for margin: float in [-TILE * 0.25, TILE * 0.5]:
+		var way := _OffTheCrossingWayOn.new()
+		way.turns = true
+		way.up_to = path[0].dot(going) - reach - margin
+		way.going = going
+		var sited := _due_west(_director(map, "military_convoy", _no_plans(), 1, way),
+				_short_of_the_box()).size() >= 2
+		t.check(sited == (margin > 0.0),
+				("with ground to set off from %.0fpx %s up the crossing street than she runs in "
+				+ "the badge's time, the convoy is %s")
+				% [absf(margin), "further" if margin > 0.0 else "nearer",
+				"sited" if margin > 0.0 else "refused"])
+	var director := _director(map, "military_convoy", _no_plans(), 1, plain_way)
+	var short := JunctionBoxes.short_of(CROSSING, going.y > 0.0)
+	var into_the_box := Vector2(path[0].x, short + going.y * TILE)
+	var leg := director.leg_in_the_lane(def, into_the_box, _short_of_the_box() + going * reach,
+			going, _short_of_the_box())
+	t.check(not leg.is_empty() and leg[0].is_equal_approx(Vector2(path[0].x, short - going.y * TILE)),
+			"and with its place in the box, it sets off a tile short of the box (%s)" % [leg])
+
+## Her tile on the street running east-west of `_crossroads()`, on its south sidewalk east of the
+## box where the street running north-south crosses it, a few tiles short of that box.
+static func _short_of_the_box() -> Vector2:
+	return _turned(Vector2i(CROSSING * CityMap.period() + Tuning.STREET_WIDTH - 2,
+			Tuning.STREET_WIDTH + 2), false)
+
+## What the director hands out once its wait has passed, with her at `her` walking west.
+static func _due_west(director: EventDirector, her: Vector2) -> Array:
+	return director.due(10.0, her, Vector2.LEFT * Tuning.WALK_SPEED)
+
+## A way on that refuses every leg setting off in the street running east-west of `_crossroads()`,
+## as a crater or a seal in her street refuses it there, and, where `going` is set, every leg
+## setting off further up the street running north-south than `up_to` along `going` and every leg
+## setting off in its other arm, past the box that way.
+class _OffTheCrossingWayOn extends FakeWayOn:
+	var up_to := -INF
+	var going := Vector2.ZERO
+
+	## Overrides test_event_director.FakeWayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+		if path.size() < 2 or path[0].dot(going) < up_to:
+			return PackedVector2Array()
+		if going != Vector2.ZERO and path[0].dot(going) \
+				> JunctionBoxes.exit(CROSSING, going.y > 0.0) * going.y:
+			return PackedVector2Array()
+		var across := path[0].y - float(CROSSING * CityMap.period() * TILE)
+		var in_it := across >= 0.0 and across < float(Tuning.STREET_WIDTH * TILE)
+		return PackedVector2Array() if in_it else path
+
+## **A convoy is sited for her standing in a junction box** (`EventDirector._stands_in_a_box()`), on
+## a sidewalk corner of it where no single kerb says which street she is beside: in the lane of the
+## street along her heading, coming toward her.
+func _test_the_convoy_comes_for_her_standing_in_a_box(t: TestRunner) -> void:
+	var map := _crossroads()
+	var corner := _turned(Vector2i(Tuning.STREET_WIDTH - 1,
+			CROSSING * CityMap.period() + Tuning.STREET_WIDTH - 1), true)
+	var due := _due_at(_director(map, "military_convoy", _no_plans()), corner)
+	t.check(due.size() >= 2, "with her on a box's corner, the convoy is sited (%d)" % due.size())
+	if due.size() < 2:
+		return
+	var path := due[1] as PackedVector2Array
+	var lane := CrowdLanes.lane_centre(0, CrowdLanes.road_lane(true, 1.0))
+	t.check(is_equal_approx(path[0].x, lane) and path[0].y < corner.y - Tuning.VIEW_HALF_EXTENT.y,
+			"in her street's lane driving south toward her, from out of sight up it (%s)" % path)
+
+## The crossing street's corridor on `_crossroads()`: the box at its crossing is the next one north
+## of her tile.
+const CROSSING := 2
+
+## The street of `_street()` running north-south on a square map, and a street the same width
+## crossing it east-west at corridor `CROSSING`, its box the next one north of her.
+static func _crossroads() -> CityMap:
+	var map := CityMap.new(Vector2i(LENGTH, LENGTH))
+	map.fill_rect(Rect2i(Vector2i.ZERO, map.size_in_tiles()), GameEnums.TileType.BUILDING)
+	var from := CROSSING * CityMap.period()
+	for vertical: bool in [true, false]:
+		var start := 0 if vertical else from
+		var bands: Array[Array] = [
+			[0, Tuning.SIDEWALK_WIDTH, GameEnums.TileType.SIDEWALK],
+			[Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH,
+					GameEnums.TileType.ROAD],
+			[Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, Tuning.SIDEWALK_WIDTH,
+					GameEnums.TileType.SIDEWALK]]
+		for band in bands:
+			var offset: int = band[0]
+			var across: int = band[1]
+			var kind: GameEnums.TileType = band[2]
+			map.fill_rect(Rect2i(start + offset, 0, across, LENGTH) if vertical
+					else Rect2i(0, start + offset, LENGTH, across), kind)
+	return map
+
+## A way on that refuses every leg setting off in the street running north-south, as a crater or a
+## seal in her street refuses it, and lets a car drive and go on from anywhere else.
+class _OffHerStreetWayOn extends FakeWayOn:
+	## Overrides test_event_director.FakeWayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+		return path if path.size() >= 2 and path[0].x >= Tuning.STREET_WIDTH * TILE \
+				else PackedVector2Array()
 
 ## **A car's first leg is sent only where the day's way on says a car may drive it and go on from its
 ## end** (`EventDirector.leg_in_the_lane()`): for the patrol and the convoy, a way on that refuses
-## every leg (`drives_clear()` false) sites none, one with no next leg from any leg's end
+## every leg (`driven()` empty) sites none, one with no next leg from any leg's end
 ## (`next_leg()` empty) sites none, and one that answers both sites one; and what it was asked is the
 ## leg handed out, and a next leg from that leg's end, going the way the leg goes.
 func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner) -> void:
