@@ -117,6 +117,10 @@ touches (the path table in `CLAUDE.md`). Look for:
   proposal (plush-kestrel), a fix keyed on one row's id or
   picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
   the player's rule;
+- a "question for the player" in the description or a report that is relayed as written, or a
+  choice put to the player that their recorded words already answer (`tools/decisions.sh --in all
+  <noun>`): the reviewer searches the nouns and raises it as a finding, with the closest words
+  (**board**, "Before a question goes up");
 - an answer to the architecture questions (`references/architecture-questions.md`, under the
   description's `## Architecture questions`) that does not match the change: the reviewer checks
   each answer against the diff and `tools/check_layers.py --list` on the head, and an answer either

@@ -331,7 +331,11 @@ before spawning:
 - **The merge order** when agents run in parallel — overlapping areas run sequentially instead;
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
-  player through the orchestrator, in the entry where the next reader will look for it.
+  player through the orchestrator, in the entry where the next reader will look for it. **An
+  agent's "questions for the player" are never relayed as written**: each is searched against the
+  player's recorded words and classed, and only a genuinely open one is posted (**board**,
+  "Before a question goes up"). A brief tells the agent to put such choices in its report as
+  candidates with the closest recorded words it found, not as questions to relay.
 - **A defect a refactor step finds is filed to be fixed, never only noted** (silky-lemur #1450). When a
   step of a refactor finds that code it carries over unchanged does something the player's decisions
   say it should not, the defect is filed at once as an entry of its own, never left only as a line in
