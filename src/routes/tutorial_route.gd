@@ -75,6 +75,11 @@ func has_its_park_among(blocks: Array[Vector2i]) -> bool:
 func doorstep_street() -> StreetNetwork.Segment:
 	return _home
 
+## The junctions the route passes, in the order she walks them: the one it leaves the doorstep's
+## street at, then the far end of each lesson street, one more than `lesson_streets()`.
+func junctions() -> Array[Vector2i]:
+	return _junctions.duplicate()
+
 ## The junction where the route leaves the doorstep's street.
 func turning_junction() -> Vector2i:
 	return _junctions[0]
