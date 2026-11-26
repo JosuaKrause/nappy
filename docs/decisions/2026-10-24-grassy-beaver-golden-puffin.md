@@ -79,24 +79,46 @@ last, minty-dolphin #834).
 
 | Lesson's row | Stands (24 suite seeds) | Stands (144 seeds) |
 |---|---|---|
-| market stall (2) | 24 | not yet re-measured over 144 |
-| delivery van (4) | 23 | 139 |
+| market stall (2) | 24 | 142 |
+| delivery van (4) | 23 | 138 |
 | yeller (6) | 18 | 117 |
 | leaf blower (the design's (2), before the switch) | — | 0, refused by `RouteLineRule` on every slot |
 
-A line crossing a carriageway at lesson (5)'s junction: 144 of 144 routes. Nothing but the lessons
-stood on the route's units past the first block on any seed.
+A line crossing a carriageway at lesson (5)'s junction: 144 of 144 routes, counted by the probe
+before `crossing_with_cars()` went (the line's laying has not changed since; `test_tutorial_route`
+holds the crossing on a hand-laid route). Nothing but the lessons stood on the route's units past
+the first block on any seed.
+
+`tests/probes/grassy_beaver_dog_walkers.gd` walks day 1 on the 24 suite seeds from the doorstep
+along the day's branch to the tutorial park, into it, and back to the doorstep at walking speed,
+running the manager's tick for her walk and the encounters (no crowd, no meter), and counts a dog
+walker met when it is in the camera's view round her:
+
+| | Seeds |
+|---|---|
+| walked (she stood in the park on every one) | 24 |
+| lesson (3)'s dog walker met on its street on the way out | 12 |
+| a dog walker met on the walk home, before her door | 8 |
+| no dog walker met at all | 4 |
+| two dog walkers met | 0 |
+
+No seed met two dog walkers. Where lesson (3)'s was met on its street, nothing was handed out on
+the walk home (the director's clock stood at about 13s at the park against a walk
+home of 20 to 27s, and the first dog walker was still in the world); where it was not, the one
+met, on 8 seeds, was on the walk home, and on 4 none was met. **The second dog walker is not met before her door on 16 of 24 seeds**
+(4431, 4462, 4493, 4524, 5176, 5215, 5228, 5254, 5267, 5280, 71717, 71808, 71899, 71990, 72081,
+72172), which the design sends to the board.
 
 The yeller's misses are the calm rule (his 223px field reaches the park from the street before it,
 or another calm area) and, now and then, the line rule; the van's are a slot with no tile of its own
 ground (a street tree, a built-over end). A lesson that cannot stand is not placed, and the run log
 says so.
 
+Each lesson's row in the game on seed 4431, and lesson (3)'s dog walker meeting her on its street,
+is in `docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/`.
+
 ## Not done here
 
-- **A walking rig over the seeds** for the dog walkers (lesson (3)'s met on its street, the second
-  met before her door): the director's suite holds both sends on a hand-laid route; how often each is
-  met in a real walk is not measured.
 - **How often a car is at lesson (5)'s zebra** waits for the car-free start, which holds the cars
   until she is past lesson (4)'s zebra.
 
