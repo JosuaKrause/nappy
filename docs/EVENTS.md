@@ -2538,8 +2538,8 @@ her, past an explosion's crater by the street's other lane, since the crater is 
 (`lane_crater`), and through the box behind her by the way out that goes on, never into a sealed
 street. **So under the default bag her walk meets more trucks than explosions heard**, the
 player's frequency order of what she meets in the escape: trucks, then explosions, then vans, then
-barriers (minty-lemur #785); under another bag still on the Review tab the two can come about
-level on a walk (the record frosty-marmot measures each bag).
+barriers (minty-lemur #785). Under bag B, still on the Review tab, they come only level with the
+explosions heard or a little short of them (the record frosty-marmot measures each bag).
 The trucks' noise is what that order costs: with more trucks a walk is louder, more walks end in
 crying and fewer get out (the record frosty-marmot measures it). Every other danger the escape
 holds is placed before she sets off.
