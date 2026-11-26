@@ -18,7 +18,7 @@ streets), only seven (one lesson street left empty), or none:
 | literal: no lesson-street junction on the main road, no precinct as a lesson or side street | 127 | 11 | 6 |
 | the junction where the route leaves the doorstep's street may stand on the main road | 133 | 9 | 2 |
 | that, plus a precinct side street allowed and sealed hard | 138 | 6 | 0 |
-| as built (`TutorialRoute.for_city()`, the third reading and the stub rule below) | 137 | 7 | 0 |
+| as built (`TutorialRoute.for_city()`, the third reading, the stub rule and the absent-street rule below) | 136 | 8 | 0 |
 
 The third reading is built. The guarantee is "past the first block", so the first junction off the
 doorstep's street is first-block ground she may turn off at anyway, and it may stand on the main
@@ -71,9 +71,29 @@ hard seal, since a seal need not be a soft one where a soft pair cannot close th
   mouth half left almost no route, since the park's block always touches the side street at the
   start of the last lesson street; walling the alleys instead and measuring only the stub kept the
   count at the third reading's but for one seed moving from six streets to seven.
-- **A pavement dead end.** A street the city does not have (`CityMap.has_street()` false) can keep
-  a walkable stub of pavement off a junction box; the guarantee's flood allows such pavement and
-  still asks everything past it.
+- **A pavement dead end, and the leak through it.** A street the city does not have
+  (`CityMap.has_street()` false) can keep a walkable stub of pavement off a junction box; the
+  guarantee's flood allows such pavement and still asks everything past it. The review of #1767
+  found that on 6 of 144 seeds (5280, 37, 53, 63, 112, 113) a through-alley opened onto such a stub
+  at a route junction past the first block and led out (on seed 63 the flood reached 9742 tiles):
+  no seal stands on an absent arm, `_border_of()` passed over every street tile, and the alley walls
+  reach only alleys on a lesson street or a side street's mouth half. test_seals swept six seeds,
+  none with the case, so it passed. `for_city()` now takes that pavement as part of the box
+  (`_box_border()`) and refuses a route whose box opens past it onto anything walkable, a
+  through-alley included; walling the stub was the alternative, and refusing keeps the rule one of
+  the route's. One seed moved from a six-street route to a seven-street one, and none was left
+  without a route.
+- **A guarantee test that could not see a missing seal.** It allowed each side street's whole mouth
+  half, so with a seal taken away the flood often stayed on allowed ground (65 single-street
+  removals over 144 seeds went unseen, mostly side streets with both ends on the route, whose two
+  halves are the whole street). It now allows only each stub short of its seal
+  (`SealPlanner.tutorial_mouth_stub()`) and takes each mouth seal away in turn, asserting the flood
+  leaks. Two things had to go with a seal for that to hold: a day-1 closure across the same street,
+  which seals it as well (seeds 6, 13, 41 and others), and on a short side street with both ends on
+  the route, the other mouth's seal where one reaches over both stubs (seed 49's precinct street,
+  two burst mains each covering it). Over the 144 seeds, swept once with a throwaway copy, nothing
+  leaks and every removal shows; the suite holds the city suites' 24 seeds, about 21 s, where the
+  144 cost about 130 s.
 - **The route line rule joined the home street's two sidewalks.** With the tutorial route on day 1's
   tree, seed 72172's route crosses junction (5, 6), where the home street meets it, from the north
   street's east sidewalk to the south street's. The homeless yeller (the man pacing a stretch of
@@ -103,12 +123,20 @@ delivery van, out of the junction box; every alley mouth on a lesson street wall
 the full walkable tile graph (soft-sealed sidewalks, closures, body discs and every carriageway
 between junction boxes closed, the doorstep's street and its boxes taken out: a flood from the
 lesson streets reaches only the route's kept ground, dead-end pavement and the park, and a second
-calm area is reachable from the first block); and no car accident on day 1 with one on day 2 or 3.
+calm area is reachable from the first block) over the city suites' 24 seeds, with each mouth seal
+taken away in turn to show the flood sees it missing; and no car accident on day 1 with one on day
+2 or 3. `tests/test_events_scheduler.gd` plans day 1's events on the tree grown along the tutorial
+route and holds nothing that can end the day, the tutorial park reachable past every body and a
+second calm area too. `tests/test_observers.gd`'s run-log baseline moved with day 1's tree (the
+day's one closure and the plan line, the car accident gone from day 1).
 `tests/test_tutorial_route.gd` holds the route's questions on a hand-laid map.
 `tests/routes_closures_rig.gd` plans day 1's closures off the tree with the route. The shared rigs
 that grow a tree without a dawn (`rig_streets`, `game_dawn`, `event_manager_rig`,
-`scene_world`) hand null and say why; the other callers, about forty suites and probes not about
-the tutorial, hand null.
+`scene_world`) hand null and say why. The other callers, about forty suites and probes, hand null
+too, the dawn suites' day-1 sweeps (`test_events_scheduler`, `test_events_placement`,
+`test_regions`) among them, each saying in its header that what it asks is a rule over any day's
+tree; the full-run rigs build their city through `RunCity.new_city()` and so play an ordinary
+day 1.
 
 ## Left open
 

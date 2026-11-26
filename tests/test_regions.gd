@@ -24,6 +24,11 @@ const SEEDS := 6
 ## the *layout*, so a seed here is a repeat of the same question rather than a new one the way a
 ## `test_generator.gd` seed is. Three still spans the acts every day already does and keeps more
 ## than one map from being the whole evidence.
+##
+## **Day 1 here grows the ordinary tree**, deliberately: these sweeps hand `RouteTree.for_day()` no
+## tutorial route, since what each asks is a rule over any day's tree; the tree day 1 grows in
+## the game, along the tutorial route, is held by `tests/test_seals.gd` and
+## `tests/test_events_scheduler.gd`'s day-1 case (`_test_day_one_on_the_tutorial_tree`).
 const RULE_SEEDS := 3
 const BASE_SEED := 260917
 

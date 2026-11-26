@@ -44,6 +44,11 @@ extends "res://tests/events_shared_city.gd"
 ## read them too), the taught day of each seed (`_the_taught_day()`) and the act walk
 ## (`_the_act_walk()`), which the calm-left-alone case and the city's memory case both read. The
 ## dawn writes nothing a later dawn reads, so no case needs a plan of its own for a run's later day.
+##
+## **Day 1 grows the ordinary tree in every case but one**, deliberately: `GameDawn` handed no walk
+## grows the tree with no tutorial route, and what those cases ask holds of any day's tree. The
+## one, `_test_day_one_on_the_tutorial_tree`, hands day 1 the tree the game grows it, along the
+## tutorial route, and holds what the real day 1 promises there.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
@@ -86,6 +91,7 @@ func run(t: TestRunner) -> void:
 	_test_a_roadblock_leaves_no_section_within_its_spacing_offered(t)
 	_test_scars_outlive_the_day_that_made_them(t)
 	_test_a_park_stays_reachable_every_day(t)
+	_test_day_one_on_the_tutorial_tree(t)
 	_test_a_day_has_enough_in_it_to_meet(t)
 	_test_danger_arrives_before_act_three(t)
 	_test_the_named_decisions_arrive(t)
@@ -1221,6 +1227,44 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 				blockers.append(plan)
 		t.check(_a_park_is_reachable(grid, blockers),
 				"day %d leaves a walkable route from home to a park" % day)
+
+## **Day 1 on the tree the game grows it**: the dawn handed day 1's route tree grown along the
+## tutorial route (`TutorialRoute.for_city()`, which `main._build_the_city()` hands the city),
+## holding what the real day 1 promises on it: nothing that can end the day, the tutorial park
+## reachable from home past every body the day stands, and a second calm area too
+## (`ClosurePlanner.MIN_CALM_AREAS_REACHABLE`), so the day is winnable with somewhere else to go.
+## The seals are `tests/test_seals.gd`'s; this plans the dawn's events on the same tree.
+func _test_day_one_on_the_tutorial_tree(t: TestRunner) -> void:
+	var map := _map()
+	var tutorial := TutorialRoute.for_city(map)
+	t.check(tutorial != null, "the shared city has a tutorial route")
+	if not tutorial:
+		return
+	var placed := GameDawn.of(DaySpec.for_day(1), _rng(1), map).masts(_sites()) \
+			.on(RouteTree.for_day(map, 1, tutorial)).plan().placements()
+	var lethal := 0
+	var blockers: Array[EventPlan] = []
+	for plan in placed:
+		if plan.ends_the_day():
+			lethal += 1
+		if plan.obstructs():
+			blockers.append(plan)
+	t.check(not placed.is_empty(), "day 1 on the tutorial tree places events (%d)" % placed.size())
+	t.check(lethal == 0, "day 1 on the tutorial tree has nothing that can end the day (%d)" % lethal)
+	var grid := ReachabilityGrid.build(map)
+	var blocked := EventScheduler.blocked_by(map, blockers)
+	var reached := grid.flood([map.home_tile_rect().position], blocked)
+	var areas := {}
+	for area in ClosurePlanner.calm_areas(map):
+		for tile in map.rect_tiles(area.rect):
+			if Tile.is_calm(map.tile_at(tile)) and grid.reaches(tile, blocked, reached):
+				areas[area.block] = true
+				break
+	t.check(areas.has(tutorial.park_block()),
+			"the tutorial park is reachable from home past every body on day 1")
+	t.check(areas.size() >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
+			"day 1 on the tutorial tree leaves %d calm areas reachable past every body, need %d"
+			% [areas.size(), ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 
 ## Whether the grid still finds a way from the home to some calm tile with today's closures and
 ## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`): what the

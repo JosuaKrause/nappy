@@ -33,6 +33,11 @@ extends "res://tests/events_shared_city.gd"
 ## (`_planned_on_the_route()`), and the flock case and the corner-refusal case read the shared
 ## city's days (`_planned()`), which the planning of a day leaves as it was (it spends nothing).
 ##
+## **Day 1 here grows the ordinary tree**, deliberately: these sweeps hand `RouteTree.for_day()` no
+## tutorial route, since what each asks is a rule over any day's tree; the tree day 1 grows in
+## the game, along the tutorial route, is held by `tests/test_seals.gd` and
+## `tests/test_events_scheduler.gd`'s day-1 case (`_test_day_one_on_the_tutorial_tree`).
+##
 ## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
 ## day. The dawn's group handed each dawn the city's mast sites and shared one plan between the cases
