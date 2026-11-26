@@ -45,6 +45,7 @@ extends RefCounted
 ##   --start-escape  0w?
 ##   --blackout      0
 ##   --escape-bag    1
+##   --building-flash-gap 1
 ##   --ground-mode   1
 ##   --ending        1
 ##   --controls      1
@@ -186,7 +187,7 @@ static func _readout_from_query(query: String) -> bool:
 ## The gate for the release-safe bundle: the flags that choose where a run starts or how it is drawn
 ## (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`, `start_escape()`,
 ## `meters_override()`, `charger_timing_override()`, `day_length_override()`, `ending_override()`,
-## `blackout_requested()`, `escape_bag()`, `ground_mode()`, `frame_record_requested()`, and
+## `blackout_requested()`, `escape_bag()`, `building_flash_gap()`, `ground_mode()`, `frame_record_requested()`, and
 ## `WebDisplay`'s `?dpr=`)
 ## — never the input-driving or picture-taking half, and no file but the frame record's, which
 ## leaves only through the browser's download when the player taps its page button. Open on a debug
@@ -206,7 +207,7 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## opens the bundle without using any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
 	"day", "invincible", "layers", "controls", "escape", "meters", "chargers", "daylength",
-	"ending", "blackout", "escapebag", "groundmode", "framerecord",
+	"ending", "blackout", "escapebag", "buildingflashgap", "groundmode", "framerecord",
 ]
 
 ## Whether the page's query named one of `live_debug_requested()`'s parameters while the bundle is
@@ -506,6 +507,37 @@ static func _parse_escape_bag(raw: String) -> String:
 	push_warning("--escape-bag: '%s' is not one of %s, ignoring the flag"
 			% [raw, ", ".join(DaySpec.ESCAPE_BAGS.keys())])
 	return DaySpec.DEFAULT_ESCAPE_BAG
+
+## `--building-flash-gap S` (or `?buildingflashgap=S` in the open bundle): the least gap in seconds
+## between two flashes of the escape building's windows, `0` (the default, and what a value that
+## is not a number of at least zero answers) for none, the building's own timing. `0.4` is the
+## gap the city's flashes keep (`FlashRhythm.LEAST_GAP`), so the two can be played side by side.
+func building_flash_gap() -> float:
+	return _building_flash_gap_for(active_args(), _query, live_debug_requested())
+
+## `building_flash_gap()`'s own decision, pure in its three inputs: the command line wins, the page
+## is read only while the bundle is open, and no gap answers everything else.
+static func _building_flash_gap_for(args: PackedStringArray, query: String, flags_open: bool) -> float:
+	var index := args.find("--building-flash-gap")
+	if index != -1 and index + 1 < args.size():
+		return _parse_building_flash_gap(args[index + 1])
+	if not flags_open:
+		return 0.0
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "buildingflashgap":
+			return _parse_building_flash_gap(pair[1])
+	return 0.0
+
+## The bare parsing of a `--building-flash-gap`/`?buildingflashgap=` value: a number of seconds, zero
+## or more. Anything else refuses the whole flag with `push_warning` and answers no gap: a
+## comparison played with a gap nobody asked for would say nothing about the one that was.
+static func _parse_building_flash_gap(raw: String) -> float:
+	if raw.is_valid_float() and float(raw) >= 0.0:
+		return float(raw)
+	push_warning("--building-flash-gap: '%s' is not a number of seconds, zero or more, ignoring the flag"
+			% raw)
+	return 0.0
 
 ## `--ground-mode 1|2|3` (or `?groundmode=` in the open bundle): how a needed nearby ground region
 ## is scheduled, as `SceneryGround.Mode` numbers it — `1` every needed region whole in its frame

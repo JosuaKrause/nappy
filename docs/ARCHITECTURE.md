@@ -827,7 +827,7 @@ flags": "on the published site behind debug=1 we'd want some of the debug flags 
 invincible, etc.) so debugging the live build is easier".)* `RunConfig.is_live_debug()` — a debug
 build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
 `?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?chargers=`, `?daylength=`,
-`?ending=`/`?blackout=1`, `?escapebag=`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
+`?ending=`/`?blackout=1`, `?escapebag=`, `?buildingflashgap=`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind

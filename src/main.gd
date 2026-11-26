@@ -1060,6 +1060,7 @@ func _world_drawn() -> WorldContext:
 func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
 	_interior.use_atlas(_sitting.atlas())
+	_interior.use_flash_gap(config.building_flash_gap())
 	_interior.name = "Interior"
 	add_child(_interior)
 	_pauses_with_the_game(_interior)
