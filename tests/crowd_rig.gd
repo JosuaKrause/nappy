@@ -71,6 +71,8 @@ const PARTS := {
 		"_test_cars_do_not_drive_through_each_other",
 		"_test_the_morning_is_unpacked_before_the_first_frame",
 		"_test_the_morning_is_indexed_before_the_first_frame",
+		"_test_held_cars_are_parked_and_let_back_in",
+		"_test_a_morning_started_held_has_its_cars_parked",
 		"_test_a_car_can_honour_the_headway_it_keeps",
 		"_test_a_car_looks_before_it_turns",
 		"_test_a_body_finds_what_stands_across_a_bucket_edge",
@@ -1550,6 +1552,55 @@ func _test_the_morning_is_unpacked_before_the_first_frame(t: TestRunner) -> void
 	t.check(worst <= a_frames_travel,
 			"the first frame of a day moves no car further than it could drive in one (worst "
 			+ "%.1fpx on day %d, against %.1fpx)" % [worst, worst_day, a_frames_travel])
+
+func _cars_on_the_road() -> int:
+	var cars := 0
+	for agent in RunCity.crowd(_city).agents():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
+			cars += 1
+	return cars
+
+## **While new cars are held none comes in, and every car that leaves the box is parked rather than
+## re-entered**: the cars on the road never grow and the cars parked make up the ones that left.
+## Let in, the parked cars all re-enter, over `Crowd.LET_IN_OVER` seconds, and the crowd is the
+## size it was.
+func _test_held_cars_are_parked_and_let_back_in(t: TestRunner) -> void:
+	var crowd := RunCity.crowd(_city)
+	crowd.use_focus(null)
+	crowd.let_cars_in()
+	crowd.start_day(1, _rng(1))
+	var all := _cars_on_the_road()
+	t.check(all > 0, "day 1 puts cars on the road to hold (%d)" % all)
+	crowd.hold_new_cars()
+	var most := _cars_on_the_road()
+	var grew := false
+	for second in 45:
+		_advance(1.0)
+		grew = grew or _cars_on_the_road() > most
+	t.check(not grew, "no car comes in while new cars are held")
+	t.check(_cars_on_the_road() < all, "45 seconds of driving takes cars out of the box (%d of %d)"
+			% [_cars_on_the_road(), all])
+	crowd.let_cars_in()
+	_advance(Crowd.LET_IN_OVER + 2.0)
+	t.check(_cars_on_the_road() == all,
+			"let in, every parked car is back on the road (%d of %d)" % [_cars_on_the_road(), all])
+
+## **A morning started held has its cars parked**, none standing near her door, and the next
+## morning, started after the cars are let in, is full again.
+func _test_a_morning_started_held_has_its_cars_parked(t: TestRunner) -> void:
+	var crowd := RunCity.crowd(_city)
+	crowd.use_focus(null)
+	crowd.let_cars_in()
+	crowd.start_day(1, _rng(1))
+	var all := _cars_on_the_road()
+	crowd.hold_new_cars()
+	crowd.start_day(1, _rng(1))
+	t.check(all > 0 and _cars_on_the_road() == 0,
+			"a held morning parks its cars (%d on the road, of %d)" % [_cars_on_the_road(), all])
+	crowd.let_cars_in()
+	crowd.start_day(1, _rng(1))
+	t.check(_cars_on_the_road() == all,
+			"a morning started after the cars are let in is full again")
 
 ## **The first frame's look sees the morning's crowd.** A car that turns or recycles asks
 ## `TrafficIndex` whether the road it is about to take is free, and on the day's first frame nothing
