@@ -1342,10 +1342,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day, null)
-			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+			var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+			var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 
@@ -1371,10 +1371,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
+			var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 			var unheld_rng := RandomNumberGenerator.new()
 			unheld_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-			var seals_unheld := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, unheld_rng, boundary)
+			var seals_unheld := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, unheld_rng, boundary)
 			t.check(seals.size() == seals_unheld.size(),
 					"seed %d day %d: holding the hard seals' ground plans the same seals (%d vs %d)"
 					% [map.city_seed(), day, seals.size(), seals_unheld.size()])
@@ -1458,10 +1458,10 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day, null)
-			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+			var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+			var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 
@@ -1486,7 +1486,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
+			var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 
 			var bodies: Array = []
 			var consumed: Array[String] = []

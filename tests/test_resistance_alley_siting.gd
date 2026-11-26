@@ -545,7 +545,7 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
 	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(robber_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(robber_where))
 	var woke := false
 	var froms: Array[Vector2] = [near, mark]
 	var tos: Array[Vector2] = [mark, near]
@@ -599,7 +599,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var doorstep := map.doorstep_world_position()
 		# The run's mast sites, worked out once on the city as built, as the game does.
-		var sites := MastSites.compute(map)
+		var sites := MastSites.compute(EventCatalogue.shipped(), map)
 		var consumed: Array[String] = []
 		for day in range(4, 15):
 			var state := CityState.new()
@@ -724,7 +724,7 @@ func _test_a_walled_alley_escapes_no_other_check(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(seed_value)
 	var tree := RouteTree.for_day(map, day, null)
-	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 	t.check(not region_plan.walled_alleys().is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
 			% [seed_value, day])

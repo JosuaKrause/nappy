@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var route := FinalePlanner.route(map)
-		var placements := DayPlanner.plan_the_escape_city(map, route, rng,
+		var placements := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, route, rng,
 				DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 				GamePlanBuilder.over(map))
 		_sweep(map, placements, "E", seed_value, totals)
@@ -91,16 +91,16 @@ func _sweep(map: CityMap, plans: Array[EventPlan], label: String, seed_value: in
 			"\n".join(walk).hash(), "\n".join(record).hash(), "\n".join(rigs).hash()])
 
 func _plan(map: CityMap, day: int, i: int) -> Array[EventPlan]:
-	var sites := MastSites.compute(map)
+	var sites := MastSites.compute(EventCatalogue.shipped(), map)
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day, null)
 	var spec := DaySpec.for_day(day)
-	var region_plan := RegionPlanner.plan_day(map, spec, tree)
+	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
-	var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+	var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, closure_rng, tree, region_plan)
 	map.close_streets(closures)
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
@@ -123,7 +123,7 @@ func _plan(map: CityMap, day: int, i: int) -> Array[EventPlan]:
 		boundary[rect.position] = true
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
-	var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary, map.held_streets())
+	var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, seal_rng, boundary, map.held_streets())
 	for seal in seals:
 		seal.stand_as_a_seal()
 	var doors := PackedVector2Array()

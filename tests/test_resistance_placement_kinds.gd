@@ -378,7 +378,7 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+	director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
 			_city, null, RunCity.spawn_siting(_city))
 	director.watched = _city
 	var seen := {}
@@ -851,7 +851,7 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 				if not is_near and (away < 224.0 or away > 288.0):
 					continue
 				if map.is_closed(site) or map.is_held_at(site) or map.is_on_home_block(site) \
-						or not MastSites.is_eligible(at, map):
+						or not MastSites.is_eligible(EventCatalogue.shipped(), at, map):
 					continue
 				if is_near:
 					near.append(site)
@@ -1064,7 +1064,7 @@ func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+	happenings.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
 			_city, _library, null, RunCity.spawn_siting(_city))
 	happenings.start_day(day)
 	return happenings

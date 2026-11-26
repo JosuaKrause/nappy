@@ -74,7 +74,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 	if path.is_empty() and row.moves() and not row.pursues():
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	instance.arrive_from_its_warning()
 	if not row.pursues() or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.restore(EventSave.new(EventSpawner.age_when_warned(row), 0.0))
@@ -226,7 +226,7 @@ func _test_the_patrol_sent_down_the_road(t: TestRunner) -> void:
 	var none: Array[EventPlan] = []
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(EventCatalogue.shipped(), map)
 		director.force("police_patrol", 1.0)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
@@ -294,7 +294,7 @@ static func _created_at_once(row: EventDef, path: PackedVector2Array, her: Vecto
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(row, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	instance_where.tell(her)
 	return instance
 

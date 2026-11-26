@@ -5,7 +5,7 @@ extends RefCounted
 func run(_t: TestRunner) -> void:
 	var data := {"version": 1, "name": "sites", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}}
-	var built := RecipeCityBuilder.build(data)
+	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
 	var map: CityMap = built.map
 	print("HOME ", map.doorstep_world_position())
 	print("MAIN_ROAD ", map.main_road_corridor(), " north lane=", CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, -1)))
@@ -17,7 +17,7 @@ func run(_t: TestRunner) -> void:
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day, null)
-		var regions := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+		var regions := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 		var corridor := Corridor.of(tree)
 		var doors := PackedVector2Array()
 		var calm := CalmAreas.of(map)
@@ -50,7 +50,7 @@ func run(_t: TestRunner) -> void:
 	state.begin_day(map.plans_by_block(), 14)
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
-	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),
+	DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),
 			GamePlanBuilder.over(map))
 	var guards := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))

@@ -372,8 +372,8 @@ func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 ## the region's wall and doors, the closures, the held ground, the seals, the catalogue's own fill,
 ## and the wall's and doors' bodies.
 func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]:
-	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
+	var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 
@@ -398,7 +398,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 	for rect in region_plan.door_alleys():
 		boundary[rect.position] = true
 
-	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_streets())
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []

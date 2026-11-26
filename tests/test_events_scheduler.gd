@@ -107,7 +107,7 @@ func _signature(planned: Array[EventPlan]) -> String:
 func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -354,7 +354,7 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.shipped().by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 	var path := instance.walks()
 	instance.free()
 	return path
@@ -388,7 +388,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
@@ -554,7 +554,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 		var arrive := func(place: Vector2, _at: Vector2) -> bool:
 			var instance := EventInstance.new()
 			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT,
-					EventSurroundings.new().hearing(her_where))
+					EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(her_where))
 			instance.restore(EventSave.new(truck.telegraphs_for(), 0.0))
 			created.append(instance)
 			return true
@@ -1233,7 +1233,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 ## The seals are `tests/test_seals.gd`'s; this plans the dawn's events on the same tree.
 func _test_day_one_on_the_tutorial_tree(t: TestRunner) -> void:
 	var map := _map()
-	var tutorial := TutorialRoute.for_city(map)
+	var tutorial := TutorialRoute.for_city(EventCatalogue.shipped(), map)
 	t.check(tutorial != null, "the shared city has a tutorial route")
 	if not tutorial:
 		return

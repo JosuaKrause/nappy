@@ -88,7 +88,7 @@ func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int)
 	director.set_process(false)
 	_lines.clear()
 	director.use_trace(RecordingTrace.new(_lines))
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).visible_view())

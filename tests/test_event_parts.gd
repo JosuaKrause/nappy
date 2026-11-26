@@ -38,7 +38,7 @@ class _Parts:
 
 	func _init(t: TestRunner, on: CityMap = null) -> void:
 		t.add_child(holder)
-		world = EventWorld.new(EventSurroundings.new().on(on if on else CityMap.new())
+		world = EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(on if on else CityMap.new())
 				.drawn_in(holder))
 		world.use_run(RunState.new())
 		board = WarningBoard.new(world)
@@ -218,7 +218,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	parts.free_all()
 
 func _test_the_pelican_bag_is_the_handed_runs(t: TestRunner) -> void:
-	var world := EventWorld.new()
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	var run := RunState.new()
 	run.header().use_seed(4242)
 	world.use_run(run)
@@ -278,7 +278,7 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	t.add_child(holder)
 	var map := CityMap.new()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)
 	var def := EventCatalogue.shipped().by_id("alley_robbery")
@@ -348,14 +348,14 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 	# An empty city map: the director owes its retry the same way with nothing on the ground.
 	var map := CityMap.new()
 	var told: Array[String] = []
-	var world := EventWorld.new(EventSurroundings.new().in_the_city(map)
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()).in_the_city(map)
 			.tracing_to(RecordingTrace.new(told)))
 	var walk := WalkEvents.new()
 	var board := _CountingBoard.new(world)
 	var spawner := EventSpawner.new(world, WarningBoard.new(world))
 	var streaming := EventStreaming.new(world, spawner, walk)
 	var lesson := EventsAhead.new(world, streaming, spawner, board, walk)
-	var director := _RetryDirector.new(map)
+	var director := _RetryDirector.new(EventCatalogue.shipped(), map)
 	lesson.use_director(director, null)
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
@@ -388,7 +388,7 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> void:
 	# The board is handed the world it asks for the player and the live events: no manager is
 	# asked anything.
-	var world := EventWorld.new()
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	var board := WarningBoard.new(world)
 	var rig := _her(t)
 	world.use_player(rig)

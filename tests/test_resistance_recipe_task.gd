@@ -89,7 +89,7 @@ func run(t: TestRunner) -> void:
 ## `SceneRecipeRuntime._select_structures()` leaves the day's plan when it selects no gate or barrier.
 ## `Stand.free_all()` frees the director, the events and the world.
 func _day(t: TestRunner, day: int) -> Stand:
-	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": RECIPE_SEED,
+	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), {"version": 1, "name": "task", "seed": RECIPE_SEED,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var errors: Array[String] = built.errors
 	t.check(errors.is_empty(), "the context city builds: %s" % [errors])
@@ -115,7 +115,7 @@ func _day(t: TestRunner, day: int) -> Stand:
 	stand.director = ResistanceDirector.new()
 	t.add_child(stand.director)
 	stand.director.set_process(false)
-	stand.director.setup(stand.map, stand.run, stand.events, streets, null, stand.world)
+	stand.director.setup(EventCatalogue.shipped(), stand.map, stand.run, stand.events, streets, null, stand.world)
 	return stand
 
 func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t: TestRunner) -> void:

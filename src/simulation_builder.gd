@@ -19,8 +19,8 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 
 ## Where every part writes its own account for the run log; silent until handed one.
 var _trace := RunTrace.new()
-## The run's catalogue (`use_rows()`).
-var _rows: EventCatalogue = null
+## The run's catalogue, handed to the constructor.
+var _rows: EventCatalogue
 ## The baked atlas pages every part draws from; a part handed none makes its own.
 var _atlas: AtlasLibrary = null
 ## Where the events charge their time to the frame record; none until handed, and until then the
@@ -54,6 +54,11 @@ var _blackout_forced := false
 ## bubble that hints at the mark; none until then.
 var _the_mark := func() -> Vector2: return Vector2.INF
 
+## A builder of the run's catalogue `rows` (`EventCatalogue`), what every world's events and crowd
+## read their rows from: the composition root's own, built once at boot (`main.configure()`).
+func _init(rows: EventCatalogue) -> void:
+	_rows = rows
+
 ## Hands the builder what every part is equipped with: the trace it writes to, the atlas pages it
 ## draws from and the frame record's sink the events charge their time to.
 func equip(trace: RunTrace, atlas: AtlasLibrary, timing: FrameTiming) -> void:
@@ -63,11 +68,6 @@ func equip(trace: RunTrace, atlas: AtlasLibrary, timing: FrameTiming) -> void:
 
 ## Hands the builder where today's chalk mark is (`where`: takes nothing, answers a `Vector2`, or
 ## `Vector2.INF` for none), for the thought bubble that hints at the mark in every city it stands.
-## Hands the builder the run's catalogue (`EventCatalogue`), what every world's events and crowd
-## read their rows from: the composition root's own, built once at boot (`main.configure()`).
-func use_rows(rows: EventCatalogue) -> void:
-	_rows = rows
-
 func use_the_mark(where: Callable) -> void:
 	_the_mark = where
 

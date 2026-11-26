@@ -41,7 +41,7 @@ var _plans: Array[EventPlan] = []
 ## A director over `map` on day 1 with nothing planned, its day stream seeded 17, handed the forced
 ## row `forced` first when one is given (`--force`, which `start_day()` takes up).
 func _director(map: CityMap, forced := "") -> EventDirector:
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 17
 	if forced != "":
@@ -62,7 +62,7 @@ func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 		_plans = GameDawn.of(DaySpec.for_day(RETURN_DAY), plan_rng, map) \
 				.on(RouteTree.for_day(map, RETURN_DAY, null)).plan().placements()
 	var plans := _plans
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	director.start_day(RETURN_DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

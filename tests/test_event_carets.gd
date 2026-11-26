@@ -469,7 +469,7 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 func _instance(def: EventDef, route := PackedVector2Array(),
 		where: WhereSheIs = null, heading := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new().drawn_from(_atlas) \
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).drawn_from(_atlas) \
 			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas)))
 	if where != null:
 		surroundings.hearing(where)

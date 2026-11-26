@@ -311,7 +311,7 @@ func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	# Nowhere near her own trigger radius, so nothing here is about noticing.
@@ -338,7 +338,7 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> vo
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
@@ -363,7 +363,7 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, -40.0)
@@ -377,7 +377,7 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(6))
 	officer.setup(out, instance.where_its_officer_may_get_out(out, 0, 1)[0], PackedVector2Array(),
 			Vector2.RIGHT,
-			EventSurroundings.new().hearing(officer_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(officer_where))
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
 		instance_where.tell(her)
@@ -532,7 +532,7 @@ func _test_a_van_lets_no_man_out_under_a_covered_corner(t: TestRunner) -> void:
 func _parked_van(t: TestRunner, hot: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	instance.lets_out_as(EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(10), false))
@@ -548,7 +548,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(first_where))
+	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
@@ -588,7 +588,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(first_where))
+	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, 0.0)
@@ -607,7 +607,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
 	second.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(second_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(second_where))
 	t.add_child(second)
 	second.restore(EventSave.new(age, travelled, noticed_at))
 	t.check(not second.is_waiting(),
@@ -635,7 +635,7 @@ func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(first_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(def.notice_within() - 10.0, 0.0)

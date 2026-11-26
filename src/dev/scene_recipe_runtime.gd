@@ -32,6 +32,9 @@ var _tick := 0
 ## The run's configuration with this recipe on top, handed in by `configure()`: where the manifest
 ## and a draft go, whether to validate and quit, a screenshot's tick and a day's length.
 var _config: RunConfig
+## The run's catalogue (`EventCatalogue`), the one every row the scene stands is read from: the
+## composition root's own, handed in by `configure()`.
+var _rows: EventCatalogue
 ## The run the scene is staged in — its day, its streams, its resistance and its walls — handed in
 ## by `configure()`.
 var _run: RunState
@@ -81,7 +84,10 @@ var _draft: SceneRecipeDraft
 ## plays (`SceneRecipeDraft.base_of()`).
 var _written: Dictionary = {}
 
-static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
+## The recipe at `path` loaded, validated against the run's catalogue `rows` and built
+## (`RecipeCityBuilder.build()`), or its errors.
+static func load_recipe(rows: EventCatalogue, path: String,
+		args: PackedStringArray) -> Dictionary:
 	var loaded := SceneRecipe.load_file(path, "--recipe-draft" in args)
 	var load_errors: Array = loaded.errors
 	if not load_errors.is_empty():
@@ -90,7 +96,7 @@ static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 	var written := recipe
 	if "--recipe-draft" in args:
 		recipe = SceneRecipeDraft.base_of(recipe)
-	var errors := _validate_runtime(recipe)
+	var errors := _validate_runtime(rows, recipe)
 	for flag: String in OWNED_FLAGS:
 		if flag in args:
 			errors.append("arguments: %s conflicts with recipe-owned setup/playback" % flag)
@@ -108,12 +114,12 @@ static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 		errors.append("--recipe-draft walks the recipe's own route, so it needs --recipe-mode scripted")
 	if not errors.is_empty():
 		return {"data": recipe, "errors": errors}
-	var result := RecipeCityBuilder.build(recipe)
+	var result := RecipeCityBuilder.build(rows, recipe)
 	result.data = recipe
 	result.written = written
 	return result
 
-static func _validate_runtime(recipe: Dictionary) -> Array[String]:
+static func _validate_runtime(rows: EventCatalogue, recipe: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
 	var setup: Dictionary = recipe.get("setup", {})
 	var playback: Dictionary = recipe.get("playback", {})
@@ -155,7 +161,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	if _object(recipe, "extent").get("scope", "") in ["bounded", "stretch"] and (
 			background.get("crowd", false)):
 		errors.append("bounded and stretch scenes require authored actors/events; random background activity needs full extent")
-	_validate_route_bag(recipe, errors)
+	_validate_route_bag(rows, recipe, errors)
 	var progression: Dictionary = setup.get("progression", {})
 	_keys(progression, ["blackout", "escape_part"], "setup.progression", errors)
 	if not progression.get("blackout", false) is bool:
@@ -282,7 +288,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				names[label] = true
 			_position(entry.get("at"), where + ".at", errors)
 			if collection == "events":
-				if not entry.get("row") is String or not _rows.by_id(str(entry.get("row", ""))):
+				if not entry.get("row") is String or not rows.by_id(str(entry.get("row", ""))):
 					errors.append(where + ".row is an unknown catalogue identifier")
 				if entry.has("mast_id"):
 					# A mast's identity is what the day's task and its arrow answer to, so two
@@ -373,7 +379,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 			var subject: Variant = check.get("subject")
 			if not names.has(subject) and not (subject is String
 					and str(subject).begins_with(ROW_SUBJECT)
-					and _rows.by_id(str(subject).trim_prefix(ROW_SUBJECT))):
+					and rows.by_id(str(subject).trim_prefix(ROW_SUBJECT))):
 				errors.append("observation.subject is not a named actor or row:<catalogue id>")
 			if not check.get("condition") in CONDITIONS:
 				errors.append("observation.condition is unsupported")
@@ -459,7 +465,8 @@ static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[
 ## first, `owed` is how many events the route is owed (both bags' marbles by default), and
 ## `first_after` the seconds of walking before the first is due (the ordinary roll by default).
 ## Every marble names a row the director sites on the scene's day.
-static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> void:
+static func _validate_route_bag(rows: EventCatalogue, recipe: Dictionary,
+		errors: Array[String]) -> void:
 	var setup: Dictionary = recipe.get("setup", {})
 	if not setup.has("route_bag"):
 		return
@@ -474,7 +481,7 @@ static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> vo
 			errors.append("setup.route_bag.%s must be an array of catalogue ids" % field)
 			continue
 		for id: Variant in bag.get(field, []):
-			var def := _rows.by_id(str(id)) if id is String else null
+			var def := rows.by_id(str(id)) if id is String else null
 			var mode := def.spawn_mode_on(day) if def else EventDef.SpawnMode.MAP
 			if not def or not def.available_on(day) or not (def.is_sent_ahead() or mode in [
 					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]):
@@ -521,19 +528,12 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 
 ## The trace the army column's lines go to (`ResistanceHappenings.use_trace()`): the run's own, as
 ## `main` hands the city's.
-## Hands the scene the run's catalogue (`EventCatalogue`), the one its rows are read from: the
-## composition root's own (`main`).
-func use_rows(rows: EventCatalogue) -> void:
-	_rows = rows
-
-## The run's catalogue (`use_rows()`).
-var _rows: EventCatalogue = null
-
 func use_trace(trace: RunTrace) -> void:
 	_trace = trace
 
-func configure(result: Dictionary, config: RunConfig, run: RunState,
+func configure(rows: EventCatalogue, result: Dictionary, config: RunConfig, run: RunState,
 		end_game := Callable()) -> void:
+	_rows = rows
 	_config = config
 	_run = run
 	_end_game = end_game
@@ -541,7 +541,7 @@ func configure(result: Dictionary, config: RunConfig, run: RunState,
 	_written = result.get("written", result.data)
 	_built = result
 	if config.recipe_draft_path() != "":
-		_draft = SceneRecipeDraft.new()
+		_draft = SceneRecipeDraft.new(rows)
 	var built_manifest: Dictionary = result.manifest
 	_manifest = built_manifest.duplicate(true)
 	_scripted = config.plays_the_recipe_scripted()
@@ -839,7 +839,7 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var going := -1.0 if column.direction == "north" else 1.0
 	var happening := ResistanceHappenings.new()
 	happening.use_trace(_trace)
-	happening.setup(map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
+	happening.setup(_rows, map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
 			null, null, _world.events().spawn_siting())
 	if not happening.column_fits_at(at, going):
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")

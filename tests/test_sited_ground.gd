@@ -45,7 +45,7 @@ func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [crew.id(), EventDef.Pavement.AT_THE_FRONT]] = _set_of(lane)
 	var fronts := {Vector2i(11, 10): true, Vector2i(13, 10): true, Vector2i(40, 40): true}
-	var sited := SitedGround.new(null, ground, fronts)
+	var sited := SitedGround.new(EventCatalogue.shipped(), null, ground, fronts)
 	var offered := sited.tiles_of(crew)
 	t.check(crew.stands_at_a_front() and offered.size() == 2 and offered.has(Vector2i(11, 10))
 			and offered.has(Vector2i(13, 10)),
@@ -54,7 +54,7 @@ func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
 			"a tile of the lane that is no front is refused, a front accepted")
 	t.check(not sited.takes(crew, Vector2i(40, 40)),
 			"and a front outside the lane is no tile of its ground")
-	var none := SitedGround.new(null, ground, {})
+	var none := SitedGround.new(EventCatalogue.shipped(), null, ground, {})
 	t.check(none.tiles_of(crew).is_empty(), "with no fronts handed over a crew is offered nowhere")
 
 ## A mast is offered a tile of its ground only where `MastSites.is_eligible()` says a mast site may
@@ -70,13 +70,13 @@ func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void
 			sidewalks.append(tile)
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [mast.id(), -1]] = _set_of(sidewalks)
-	var sited := SitedGround.new(map, ground, {})
+	var sited := SitedGround.new(EventCatalogue.shipped(), map, ground, {})
 	var doors := MastSites.possible_door_points(map)
 	var accepted := 0
 	var refused := 0
 	var disagreed := 0
 	for tile in sidewalks:
-		var may := MastSites.is_eligible(map.tile_to_world(tile), map, doors)
+		var may := MastSites.is_eligible(EventCatalogue.shipped(), map.tile_to_world(tile), map, doors)
 		if sited.takes(mast, tile) != may:
 			disagreed += 1
 		if may:
@@ -93,7 +93,7 @@ func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> voi
 	var tables := EventCatalogue.shipped().by_id("cafe_tables")
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4), Vector2i(5, 6)] as Array[Vector2i])
-	var sited := SitedGround.new(null, ground, {Vector2i(3, 4): true})
+	var sited := SitedGround.new(EventCatalogue.shipped(), null, ground, {Vector2i(3, 4): true})
 	t.check(sited.takes(tables, Vector2i(3, 4)) and sited.takes(tables, Vector2i(5, 6))
 			and not sited.takes(tables, Vector2i(7, 7)),
 			"a row that is neither a crew nor a mast takes exactly what its ground offers, fronts or no")
@@ -104,7 +104,7 @@ func _test_prepare_asks_the_ground_once_and_a_later_ask_asks_no_more(t: TestRunn
 	var tables := EventCatalogue.shipped().by_id("cafe_tables")
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4)] as Array[Vector2i])
-	var sited := SitedGround.new(null, ground, {})
+	var sited := SitedGround.new(EventCatalogue.shipped(), null, ground, {})
 	sited.prepare(tables)
 	var after_prepare := ground.asks
 	sited.takes(tables, Vector2i(3, 4))

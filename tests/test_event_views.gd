@@ -560,7 +560,7 @@ func _test_masked_man_is_drawn_lunging_from_the_tick_he_comes(t: TestRunner) -> 
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)]),
-			Vector2.RIGHT, EventSurroundings.new().hearing(instance_where) \
+			Vector2.RIGHT, EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where) \
 				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
 	instance.arrive_from_its_warning()
 	instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
@@ -692,7 +692,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where) \
 				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
 	_hold(instance, instance_where, Vector2(def.notice_within() + 40.0, 0.0), 0.5)
 	t.check(instance.is_waiting() and await _drawn_from(t, instance, [EventPictures.ROBBER_WAITING_BY_VIEW]),
@@ -733,7 +733,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	var walker_where := WhereSheIs.nowhere()
 	var walker := EventInstance.new()
 	walker.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(walker_where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(walker_where) \
 				.drawing_through(DrawnEvent.recording(walker, RecordingEventDrawer.new())))
 	_hold(walker, walker_where, her, 0.5)
 	var stopped_at := walker.global_position
@@ -754,7 +754,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	var sent := EventInstance.new()
 	sent.setup(EventCatalogue.shipped().by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT,
-			EventSurroundings.new().hearing(sent_where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(sent_where) \
 				.drawing_through(DrawnEvent.recording(sent, RecordingEventDrawer.new())))
 	_hold(sent, sent_where, Vector2(300.0, 0.0), STEP)
 	t.check(not await _drawn_from(t, sent, [EventPictures.ROBBER_ALERT_BY_VIEW]),
@@ -803,7 +803,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(def, Vector2(32.0, 80.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(guard_where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(guard_where) \
 				.drawing_through(DrawnEvent.recording(guard, RecordingEventDrawer.new())))
 	_hold(guard, guard_where, Vector2(1.0, 0.0), STEP)
 	t.check(not guard.is_telegraphing() and not guard.is_standing_for_its_notice()
@@ -844,7 +844,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 			var man_where := WhereSheIs.nowhere()
 			var man := EventInstance.new()
 			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().hearing(man_where) \
+					EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where) \
 						.drawing_through(DrawnEvent.recording(man, RecordingEventDrawer.new())))
 			var her := Vector2(0.0, 0.0)
 			var still := true
@@ -891,7 +891,7 @@ func _test_no_guard_who_arrives_charging_takes_the_alert(t: TestRunner) -> void:
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().hearing(instance_where) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where) \
 					.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
 		var alert := false
 		for i in int(round(3.0 / STEP)):

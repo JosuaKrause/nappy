@@ -96,7 +96,7 @@ func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	if _routes.has(seed_value):
 		return _routes[seed_value]
 	var map := _the_map_of_day_8(seed_value)
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	director.force("police_patrol", 0.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -413,7 +413,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: T
 			var pursuer := EventInstance.new()
 			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0),
 					PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().hearing(pursuer_where))
+					EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(pursuer_where))
 			pursuer.arrive_from_its_warning()
 			pursuer.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 			var at := Vector2.ZERO
@@ -476,7 +476,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
 		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().hearing(man_where))
+				EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
 		var stopped := INF
 		var struck := false
 		var elapsed := 0.0
@@ -516,7 +516,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
 		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().hearing(man_where))
+				EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
 		var her := Vector2.ZERO
 		var landed := 0.0
 		var after := 0.0
@@ -549,7 +549,7 @@ func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new()
 	man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(man_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
 	var her := Vector2.ZERO
 	var elapsed := 0.0
 	man_where.tell(man_where.at(), Vector2.INF, null, false, true, true)
@@ -838,7 +838,7 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(hot, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.hearing(car_where))
 	t.add_child(car)
 	car.set_process(false)
@@ -924,7 +924,7 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	var van_where := WhereSheIs.nowhere()
 	var van := EventInstance.new()
 	van.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(van_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(van_where))
 	t.add_child(van)
 	van.set_process(false)
 	var far := Vector2(hot.notice_within() - 10.0, 0.0)
@@ -946,7 +946,7 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	t.check(not van.is_gone() and not van.is_on_its_way_out(),
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
 			% [elapsed, hot.telegraphs_for() + hot.lasts_for()])
-	var events := EventManager.new()
+	var events := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	events.retire(men[0])
 	van.step(STEP)
 	t.check(not van.is_gone() and not van.is_on_its_way_out(), "with one man still out it still stands")
@@ -1026,7 +1026,7 @@ func _test_the_car_does_not_notice_her_through_a_building(t: TestRunner) -> void
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(hot, lane, PackedVector2Array([lane, lane + Vector2(4000.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.hearing(car_where))
 	t.add_child(car)
 	car.set_process(false)

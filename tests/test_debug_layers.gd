@@ -181,11 +181,11 @@ func _test_the_escapes_second_world_hands_the_event_routes_its_events(t: TestRun
 	var rig := Rig.new(t, _config([], true))
 	var route_a := PackedVector2Array([Vector2.ZERO, Vector2(50.0, 0.0)])
 	var route_b := PackedVector2Array([Vector2(10.0, 10.0), Vector2(10.0, 90.0)])
-	var building := StandInEvents.new()
+	var building := StandInEvents.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	var instance_a := EventInstance.new()
 	instance_a.setup(EventCatalogue.shipped().by_id("police_patrol"), route_a[0], route_a)
 	building.live = [instance_a]
-	var city := StandInEvents.new()
+	var city := StandInEvents.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	var instance_b := EventInstance.new()
 	instance_b.setup(EventCatalogue.shipped().by_id("police_patrol"), route_b[0], route_b)
 	city.live = [instance_b]
@@ -492,7 +492,7 @@ func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
 func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 	instance.restore(EventSave.aged(def.telegraphs_for() + 1.0))
 	return instance
 

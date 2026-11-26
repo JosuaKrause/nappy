@@ -97,7 +97,7 @@ func _fire_day_plans() -> Array[EventPlan]:
 ## decides; that the fire stands on the tree, ahead on her branch and past the streaming band is
 ## `tests/test_event_manager_fire.gd`'s, on a real city.
 func _fire_director(day: int, plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
-	var director := EventDirector.new(StreetMap.full())
+	var director := EventDirector.new(EventCatalogue.shipped(), StreetMap.full())
 	director.start_day(day, plans, _rng(day), DaySpec.DirectorSends.THE_DAYS_ROWS, siting)
 	return director
 
@@ -135,7 +135,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## meter recover comes back to the pavement owing four cats.
 func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	var map: CityMap = StreetMap.full()
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
 	var plans: Array[EventPlan] = [
@@ -346,7 +346,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 	for id: String in ["cat_dash", "cyclist", "loose_dog"]:
 		var def := EventCatalogue.shipped().by_id(id)
 		var map: CityMap = StreetMap.full()
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(EventCatalogue.shipped(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
 		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
@@ -383,7 +383,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path, Vector2.RIGHT,
-				EventSurroundings.new().hearing(instance_where))
+				EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 		if def.comes_down_her_line():
 			instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		t.add_child(instance)

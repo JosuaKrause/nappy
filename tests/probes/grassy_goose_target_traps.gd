@@ -90,7 +90,7 @@ func run(t: TestRunner) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map(), run, RunCity.events(city), city.streets(),
+			director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(),
 					city.fronts(), city, null,
 					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -196,7 +196,7 @@ func _chase(t: TestRunner, city: City, def: EventDef, start: Vector2, her_at: Ve
 	var chaser_where := WhereSheIs.nowhere()
 	var chaser := EventInstance.new()
 	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(city.map()) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(city.map()) \
 				.hearing(chaser_where))
 	t.add_child(chaser)
 	chaser.set_process(false)

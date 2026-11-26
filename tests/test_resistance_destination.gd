@@ -48,7 +48,7 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map(), run, RunCity.events(_city), _city.streets(), _city.fronts(),
+		director.setup(EventCatalogue.shipped(), _city.map(), run, RunCity.events(_city), _city.streets(), _city.fronts(),
 				_city, null, RunCity.spawn_siting(_city))
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()

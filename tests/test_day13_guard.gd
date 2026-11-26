@@ -126,7 +126,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 	# The case needs a roadblock whose ground all round, out to where its guard may stand, lies
 	# clear of the guard where he stands now (the square the view below is set to): one that close
 	# to the task's own would put him in that view before he moved.
-	var everywhere := Vector2.ONE * (ResistanceDirector.task_guard_farthest(
+	var everywhere := Vector2.ONE * (ResistanceDirector.task_guard_farthest(EventCatalogue.shipped(),
 			ContactPoint.body_reach(director.rider())) + 64.0)
 	var clear_of_him := func(roadblock: EventInstance) -> bool:
 		var square := Rect2(roadblock.body_position() - everywhere, everywhere * 2.0)
@@ -180,7 +180,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 	t.check(ringed != null and ringed == first and not first.is_gone()
 			and ring_at.distance_to(around) > band_edge
 			and ring_at.distance_to(around)
-					<= ResistanceDirector.task_guard_farthest(ContactPoint.body_reach(other))
+					<= ResistanceDirector.task_guard_farthest(EventCatalogue.shipped(), ContactPoint.body_reach(other))
 			and not _guard_in_view(ring_at) and _a_clear_line(city.map(), ring_at, around),
 			("while its band is in her view he goes past it, %.0fpx from its body, out of her view, " +
 			"with a clear line to it") % ring_at.distance_to(around))
@@ -504,7 +504,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(robbery, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(guard_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(guard_where))
 	t.add_child(guard)
 	guard.set_process(false)
 	var standoff := PursuitSpec.standoff(robbery.chase_speed(), robbery.standoff_reach())
@@ -1276,7 +1276,7 @@ func _a_street_beyond(map: CityMap, centre: Vector2i, direction: Vector2i) -> bo
 	var reach := ContactPoint.REACH + 110.0
 	var nearest := ceili((EventCatalogue.shipped().by_id("alley_robbery").notice_within()
 			+ reach + 48.0 + 14.0) / Tuning.TILE_SIZE) + 1
-	var reaches := ResistanceDirector.task_guard_farthest(reach)
+	var reaches := ResistanceDirector.task_guard_farthest(EventCatalogue.shipped(), reach)
 	var farthest := floori(reaches / Tuning.TILE_SIZE)
 	for k in range(nearest, farthest + 1):
 		for side in range(-3, 4):
@@ -1332,7 +1332,7 @@ func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDir
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
 			city, null,
 			RunCity.spawn_siting(city))
 	_seen_through = RunCity.events(city).visible_view()

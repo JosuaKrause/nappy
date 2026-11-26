@@ -120,7 +120,7 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]),
 			Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	for _i in int(ceil(def.telegraphs_for() / 0.1)) + 1:
 		instance.step(0.1)
 	# Nobody has said where she is yet, so the caret is asked of `Vector2.INF`: an answer cached
@@ -213,7 +213,7 @@ func _test_the_caret_strength_follows_her_place_and_motion(t: TestRunner) -> voi
 	var her := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(her))
 	var here := instance.global_position
 	var states := [
 		[Vector2(400.0, 0.0), Vector2.ZERO, 0],

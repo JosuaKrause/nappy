@@ -516,7 +516,7 @@ class _SlowView extends DrawnView:
 func _event(t: TestRunner, def: EventDef, view: DrawnView,
 		timing: FrameTiming = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	var surroundings := EventSurroundings.new().shown_by(view) \
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).shown_by(view) \
 			.drawing_through(RecordingEventDrawer.new())
 	if timing != null:
 		surroundings.timed_by(timing)

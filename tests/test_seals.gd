@@ -45,7 +45,7 @@ func _masts_of(map: CityMap) -> Array[MastSites.Site]:
 func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 91))
-		_mast_sites[_maps[i].city_seed()] = MastSites.compute(_maps[i])
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(EventCatalogue.shipped(), _maps[i])
 	_test_off_tree_streets_are_sealed(t)
 	_test_the_tree_and_the_doorstep_are_never_sealed(t)
 	_test_the_main_road_is_never_sealed(t)
@@ -114,7 +114,7 @@ func _tutorial_for(map: CityMap, day: int) -> TutorialRoute:
 	if not DaySpec.for_day(day).walks_the_tutorial():
 		return null
 	if not _tutorial_cache.has(map.city_seed()):
-		_tutorial_cache[map.city_seed()] = TutorialRoute.for_city(map)
+		_tutorial_cache[map.city_seed()] = TutorialRoute.for_city(EventCatalogue.shipped(), map)
 	return _tutorial_cache[map.city_seed()]
 
 func _tree_for(map: CityMap, day: int) -> RouteTree:
@@ -128,7 +128,7 @@ func _seals_for(map: CityMap, day: int) -> Array[EventPlan]:
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _seal_cache.has(key):
 		var tree := _tree_for(map, day)
-		_seal_cache[key] = SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day),
+		_seal_cache[key] = SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _seal_rng(map, day),
 				{}, null, _tutorial_for(map, day))
 	return _seal_cache[key]
 
@@ -266,7 +266,7 @@ func _test_the_tree_itself_is_untouched(t: TestRunner) -> void:
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day, null)
 		var before := tree.cells()
-		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
+		SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var after := tree.cells()
 		t.check(before.size() == after.size(),
 				"seed %d: sealing does not add or remove tree cells (%d before, %d after)"
@@ -334,9 +334,9 @@ func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) 
 func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day), closure_rng, tree)
+	var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), closure_rng, tree)
 	map.close_streets(closures)
-	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
+	var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	var blocked := map.closed_tile_set().duplicate()
 	for plan in seals:
 		_add_circle(map, blocked, plan.placed_at(), plan.obstructs_within())
@@ -527,7 +527,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		# Sealing (and its thinning pass) is run for its side effect on
 		# `map.closed_tile_set()`/RNG consumption alone; the guarantee below is asked of the
 		# tree, which sealing never edits.
-		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
+		SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false
 		for junction: Vector2i in [home.a, home.b]:
 			for segment in map.street_network().at_junction(junction):
@@ -650,7 +650,7 @@ func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) 
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
 		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map))
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 		# Past its own telegraph, so the field is the rate the row states rather than the damped one
 		# a telegraph holds it to. Never added to the tree: `contribution_at()` is a pure query.
 		instance.restore(EventSave.aged(10.0))
@@ -776,7 +776,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day, _tutorial_for(map, day))
-			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day),
+			var planned := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _seal_rng(map, day),
 					{}, null, _tutorial_for(map, day))
 			var felled := {}
 			for plan in planned:
@@ -860,10 +860,10 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 		for day: int in [1, 5, 9, 13]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day, _tutorial_for(map, day))
-			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+			var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+			var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 			map.clear_day_holds()
@@ -884,7 +884,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 				boundary[rect.position] = true
 			for rect in region_plan.door_alleys():
 				boundary[rect.position] = true
-			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
+			var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
 					map.held_streets(), _tutorial_for(map, day))
 			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
@@ -1024,11 +1024,11 @@ func _plan_day_one(map: CityMap, tutorial: TutorialRoute) -> Array[EventPlan]:
 	_repaint_for(map, 1)
 	var spec := DaySpec.for_day(1)
 	var tree := RouteTree.for_day(map, 1, tutorial)
-	var region_plan := RegionPlanner.plan_day(map, spec, tree)
+	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), 1])
-	map.close_streets(ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan))
-	return SealPlanner.plan_day(map, spec, tree, _seal_rng(map, 1), {}, null, tutorial)
+	map.close_streets(ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, closure_rng, tree, region_plan))
+	return SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, _seal_rng(map, 1), {}, null, tutorial)
 
 ## Where along its street a tile stands, on the street's own along axis.
 func _along(segment: StreetNetwork.Segment, tile: Vector2i) -> int:
@@ -1265,7 +1265,7 @@ func _allowed_on_day_one(map: CityMap, tutorial: TutorialRoute, park: Rect2i) ->
 	var trees := StreetTrees.footprint_tiles(map)
 	for mouth in tutorial.side_street_mouths():
 		var segment: StreetNetwork.Segment = mouth[0]
-		for tile in map.rect_tiles(SealPlanner.tutorial_mouth_stub(map, segment, bool(mouth[1]),
+		for tile in map.rect_tiles(SealPlanner.tutorial_mouth_stub(EventCatalogue.shipped(), map, segment, bool(mouth[1]),
 				trees)):
 			allowed[tile] = true
 	for segment in map.street_network().segments():
@@ -1380,7 +1380,7 @@ func _test_day_two_leaves_day_ones_walk_open(t: TestRunner) -> void:
 			walk[segment.key()] = true
 			if not tree.is_on_the_tree(segment.key()):
 				opened += 1
-		var sealed := _sealed_segments(map, SealPlanner.plan_day(map, DaySpec.for_day(day), tree,
+		var sealed := _sealed_segments(map, SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree,
 				_seal_rng(map, day), {}, null, null, route))
 		var on_the_walk := 0
 		for key: Vector3i in walk:

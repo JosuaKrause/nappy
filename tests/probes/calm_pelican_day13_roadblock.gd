@@ -134,7 +134,7 @@ func _start_the_day(t: TestRunner, city: City, run: RunState, director: Resistan
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map().doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()

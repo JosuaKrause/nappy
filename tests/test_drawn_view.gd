@@ -407,7 +407,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	var run := RunState.new()
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
 	manager.add_child(holder)
 	manager.setup(run)
 	t.add_child(manager)

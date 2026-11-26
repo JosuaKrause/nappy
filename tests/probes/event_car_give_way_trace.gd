@@ -200,7 +200,7 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(def, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().on(map).hearing(car_where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).hearing(car_where) \
 				.stopping_at(signals if rig.has("junction") else null))
 	t.add_child(car)
 	car.set_process(false)

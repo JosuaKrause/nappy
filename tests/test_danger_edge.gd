@@ -47,7 +47,7 @@ func _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t: TestRunner) ->
 ## The edge watching the stand-in source, with her standing at the origin and the convoy, created
 ## under its warning, at `at`.
 func _rig(t: TestRunner, at: Vector2) -> Dictionary:
-	var source := StandIns.Source.new()
+	var source := StandIns.Source.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	source.visible_view().look_from(Vector2.ZERO)
 	t.add_child(source)
 	var her := Node2D.new()

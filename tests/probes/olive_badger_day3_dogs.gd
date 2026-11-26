@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 				bought_a_dog = true
 		if not bought_a_dog:
 			no_dog_bought += 1
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(EventCatalogue.shipped(), map)
 		var director_rng := RandomNumberGenerator.new()
 		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 		director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

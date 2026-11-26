@@ -1665,7 +1665,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: TestRunner) -> void:
 	# Set up before it joins the tree, the order `EventSpawner.create()` uses: `_ready()` reads the
 	# def.
 	blow.setup(steam, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(blow_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(blow_where))
 	t.add_child(blow)
 	var cost := 0.0
 	var elapsed := 0.0

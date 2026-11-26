@@ -164,7 +164,7 @@ func _restart_the_day(city: City, run: RunState, director: ResistanceDirector, s
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+		director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
 				city, null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 

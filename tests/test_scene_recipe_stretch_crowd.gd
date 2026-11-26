@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 ## authored street. The end in view is what dropping the in-view ends keeps out, and the near lanes
 ## are what checking the final placement keeps out.
 func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: String) -> void:
-	var loaded := SceneRecipeRuntime.load_recipe(path, PackedStringArray())
+	var loaded := SceneRecipeRuntime.load_recipe(EventCatalogue.shipped(), path, PackedStringArray())
 	var errors: Array[String] = loaded.errors
 	if not errors.is_empty():
 		t.check(false, "%s loads for forced crowd entries" % label)

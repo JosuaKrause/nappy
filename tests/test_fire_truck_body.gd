@@ -39,7 +39,7 @@ func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs,
 		drawer: EventDrawer = null) -> EventInstance:
 	var def := _truck()
 	var engine := EventInstance.new()
-	var surroundings := EventSurroundings.new().hearing(where)
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where)
 	if drawer != null:
 		surroundings.drawing_through(drawer)
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), surroundings)

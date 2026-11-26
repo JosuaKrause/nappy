@@ -58,7 +58,7 @@ func run(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), 1)
 		map.repaint(state)
-		var route := TutorialRoute.for_city(map)
+		var route := TutorialRoute.for_city(EventCatalogue.shipped(), map)
 		if not route:
 			missing.append("%d: no route" % seed_value)
 			continue
@@ -71,7 +71,7 @@ func run(t: TestRunner) -> void:
 		var tree := RouteTree.for_day(map, 1, route)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var seals := SealPlanner.plan_day(map, spec, tree, rng, {}, map.held_streets(), route,
+		var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, rng, {}, map.held_streets(), route,
 				null)
 		var dawn := GameDawn.of(spec, rng, map).on(tree).standing(seals).tutorial(route).planned()
 		var units := {}

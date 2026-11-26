@@ -60,7 +60,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	resistance.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	resistance.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var player := Stroller.new()

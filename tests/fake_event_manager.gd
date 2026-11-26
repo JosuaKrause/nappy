@@ -33,6 +33,11 @@ extends EventManager
 ## Every instance `spawn_extra()` made, freed with the manager: none is in a world either.
 var _made: Array[EventInstance] = []
 
+## A manager over the shipped catalogue's rows, the surroundings' only part the real manager's
+## own parts read as they are made (the checkpoint's door guard and its warning).
+func _init() -> void:
+	super(EventSurroundings.new().reading(EventCatalogue.shipped()))
+
 ## How many masts `silence_all_masts()` answers it stopped, what the real manager counts off the day's
 ## plans (`tests/test_masts.gd` holds that count): the blackout's suite sets it to the masts a day
 ## carries and reads `silenced_all` for what it was asked.

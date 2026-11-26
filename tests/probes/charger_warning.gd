@@ -3,7 +3,7 @@ extends RefCounted
 ## charger that waits for her, warns while she is inside its one radius and charges once its warning
 ## has run with her still inside. For each candidate timing (`ChargerTiming`: a warning, and a
 ## factor on every written notice radius, the pairs `--chargers` plays), the catalogue is built from
-## it (`EventCatalogue.use_charger_timing()`, which validates every row's fairness contracts on the
+## it (`EventCatalogue.new()`, which validates every row's fairness contracts on the
 ## way) and every waiting charger is walked five ways on the real `EventInstance` at 60Hz on open
 ## ground, her speed changing at `Tuning.ACCELERATION` as hers does. Not a suite: it prints rather
 ## than asserts. Run by name:
@@ -33,11 +33,10 @@ const WARNINGS: Array[float] = [1.0, 1.25, 1.5, 1.75, 2.0]
 const REACHES: Array[float] = [0.85, 1.0, 1.15, 1.25, 1.4]
 
 func run(t: TestRunner) -> void:
-	var was := EventCatalogue.shipped().charger_timing()
 	for reach in REACHES:
 		for warning in WARNINGS:
-			EventCatalogue.use_charger_timing(ChargerTiming.of(warning, reach))
-			for def in _waiting_chargers():
+			var rows := EventCatalogue.new(ChargerTiming.of(warning, reach))
+			for def in _waiting_chargers(rows):
 				var said: Array[String] = []
 				for walk: String in ["back", "late", "late run", "stand", "bait", "on"]:
 					var r := _walk(t, def, walk)
@@ -53,16 +52,16 @@ func run(t: TestRunner) -> void:
 						% [def.id(), reach, warning, def.notice_within(), def.heard_within()])
 						+ "%.0fpx, catch %.0fpx) | %s" % [PursuitSpec.standoff(def.chase_speed(),
 						def.standoff_reach()), def.lethal_reach(), " | ".join(said)])
-	EventCatalogue.use_charger_timing(was)
 
-## Every row that waits for her, warns by its one radius and pursues her, once each.
-static func _waiting_chargers() -> Array[EventDef]:
+## Every row of `catalogue` that waits for her, warns by its one radius and pursues her, once
+## each.
+static func _waiting_chargers(catalogue: EventCatalogue) -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	var seen := {}
-	for row in CatalogueRows.every():
+	for row in CatalogueRows.of(catalogue):
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-				var def := EventCatalogue.shipped().heated(row, level).for_day(day)
+				var def := catalogue.heated(row, level).for_day(day)
 				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 					continue
@@ -78,7 +77,7 @@ static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(0.0, def.notice_within() + 20.0)

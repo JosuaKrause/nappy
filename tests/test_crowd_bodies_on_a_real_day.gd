@@ -114,7 +114,7 @@ func _car_bodies(map: CityMap, events: EventManager) -> Array:
 		# pieces are laid out are what it decides when it is set up.
 		var sited := EventInstance.new()
 		sited.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
-				EventSurroundings.new().on(map))
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 		var placed := sited.position
 		var vertical := sited.runs_vertically()
 		sited.free()

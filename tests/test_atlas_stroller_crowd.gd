@@ -83,7 +83,7 @@ func _crowd(t: TestRunner, atlas: AtlasLibrary) -> Crowd:
 	crowd.equip(null, CrowdTiming.new(), atlas)
 	var world := WorldContext.new()
 	t.add_child(world)
-	crowd.setup(world, StreetMap.full(), null, null)
+	crowd.setup(EventCatalogue.shipped(), world, StreetMap.full(), null, null)
 	world.add_child(crowd)
 	return crowd
 

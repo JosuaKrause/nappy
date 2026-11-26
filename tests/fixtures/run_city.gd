@@ -42,13 +42,14 @@ static func started_run(run_seed: int) -> RunState:
 ## A builder as a suite configures one before `build()`: handed the game's bus, as `main` hands
 ## it (`main._simulation_builder()`), and nothing else yet.
 static func new_builder() -> SimulationBuilder:
-	var made := SimulationBuilder.new()
+	var made := SimulationBuilder.new(EventCatalogue.shipped())
 	made.use_bus(EventBus)
 	return made
 
 ## Builds `city` on `map` (`City.build()`), then stands its simulation in it with `builder`
 ## (`SimulationBuilder.in_the_city()`), or with a builder of the game's defaults where the suite
-## hands none: what a suite calls in place of `city.build(map)`. `run` is the one the suite
+## hands none: what a suite calls in place of `city.build(rows, map)`, the rows the shipped
+## catalogue's (`EventCatalogue.shipped()`). `run` is the one the suite
 ## made by `started_run()`, which `build()` hands the city and the simulation alike.
 ## `dark_from_the_start` is the escape's city, dark from its first frame. `library` is the one the
 ## city and its parts draw from, a new one where the suite hands none.
@@ -59,7 +60,7 @@ static func build(city: City, run: RunState, map: CityMap, builder: SimulationBu
 	var timing := FrameTiming.new()
 	var pictures := library if library else AtlasLibrary.new()
 	city.equip(trace, pictures, timing)
-	city.build(map)
+	city.build(EventCatalogue.shipped(), map)
 	var stands := builder if builder else new_builder()
 	stands.equip(trace, pictures, timing)
 	stands.in_the_city(city, city.map(), city.navigator(), city.streets(), city.traffic_signals(),

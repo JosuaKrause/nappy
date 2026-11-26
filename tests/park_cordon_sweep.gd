@@ -164,7 +164,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var result := {}
@@ -178,7 +178,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
+		happenings.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
 				city, library, null, RunCity.spawn_siting(city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
@@ -224,7 +224,7 @@ func _measure_the_day(city: City, library: AtlasLibrary, director: ResistanceDir
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	cordon.clear()
-	var again := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
+	var again := ParkCordon.new(EventCatalogue.shipped(), city.map(), city.navigator(), RunCity.events(city), city,
 			library, park, RunCity.spawn_siting(city),
 			ResistanceReads.day_reachability(city)[1])
 	again.use_bus(EventBus)
@@ -256,7 +256,7 @@ func _walk_a_person_out(city: City, library: AtlasLibrary, director: ResistanceD
 	var busker := RunCity.events(city).spawn_extra(EventCatalogue.shipped().by_id("busker"), spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
-	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
+	var cordon := ParkCordon.new(EventCatalogue.shipped(), city.map(), city.navigator(), RunCity.events(city), city,
 			library, park, RunCity.spawn_siting(city),
 			ResistanceReads.day_reachability(city)[1])
 	cordon.use_bus(EventBus)

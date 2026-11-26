@@ -78,6 +78,7 @@ func run(t: TestRunner) -> void:
 		for line in _dump(row):
 			print("RF %s %s" % [row.id(), line])
 	var count := rows.size()
+	var director := EventDirector.new(EventCatalogue.shipped(), null)
 	for row in rows:
 		for level in range(1, EventCatalogue.heat_levels()):
 			_variant("%s@heat%d" % [row.id(), level], EventCatalogue.shipped().heated(row, level))
@@ -87,7 +88,7 @@ func run(t: TestRunner) -> void:
 			# The copy the director hands out at this heat: the heated row, sent ahead or given ground.
 			# `EventDirector._routed()` is private and has no public road to it; a probe is not a suite,
 			# so it makes the call itself rather than copy the director's choice.
-			_variant("%s@routed%d" % [row.id(), level], EventDirector._routed(row, level))
+			_variant("%s@routed%d" % [row.id(), level], director._routed(row, level))
 		if row.is_sent_ahead():
 			_variant("%s@sent" % row.id(), row.as_sent_ahead())
 		if row.id() in WARNED_FIRST:
@@ -117,13 +118,13 @@ func run(t: TestRunner) -> void:
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day, null)
 			var spec := DaySpec.for_day(day)
-			var region := RegionPlanner.plan_day(map, spec, tree)
+			var region := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
 			var stood: Array[EventPlan] = []
 			stood.append_array(region.door_plans())
 			stood.append_array(region.wall_plans())
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("row_fingerprint seals:%d:%d" % [seed_value, day])
-			stood.append_array(SealPlanner.plan_day(map, spec, tree, rng))
+			stood.append_array(SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, rng))
 			var seen := {}
 			for plan in stood:
 				var text := "\n".join(_dump(plan.row()))

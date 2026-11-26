@@ -277,8 +277,8 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## `EventScheduler.role_for()` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
-	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
+	var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 
@@ -303,7 +303,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for rect: Rect2i in region_plan.door_alleys():
 		boundary[rect.position] = true
 
-	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_streets())
 
 	var dawn := GameDawn.of(DaySpec.for_day(day), _rng(map, day, "events"), map) \

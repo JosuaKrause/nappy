@@ -57,7 +57,7 @@ func _prepare(tag: String, parent: Node) -> void:
 	parent.add_child(city)
 	RunCity.build(city, RunCity.started_run(RUN_SEED), map)
 	# The run's mast sites, worked out once on the city as built, as the game does.
-	_sites = MastSites.compute(map)
+	_sites = MastSites.compute(EventCatalogue.shipped(), map)
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), _day)
 	map.repaint(state)
@@ -66,10 +66,10 @@ func _prepare(tag: String, parent: Node) -> void:
 	# The day's own closures, holds, region wall and seals, planned as the game plans them
 	# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
 	# stand as the day's standing and hold their locations.
-	var region_plan := RegionPlanner.plan_day(map, _spec, _tree)
+	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, _spec, _tree)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%s closures:%d:%d" % [tag, _i, _day])
-	var closures := ClosurePlanner.plan_day(map, _spec, closure_rng, _tree, region_plan)
+	var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, _spec, closure_rng, _tree, region_plan)
 	map.close_streets(closures)
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
@@ -92,7 +92,7 @@ func _prepare(tag: String, parent: Node) -> void:
 		boundary[rect.position] = true
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("%s seals:%d:%d" % [tag, _i, _day])
-	_seals = SealPlanner.plan_day(map, _spec, _tree, seal_rng, boundary, map.held_streets())
+	_seals = SealPlanner.plan_day(EventCatalogue.shipped(), map, _spec, _tree, seal_rng, boundary, map.held_streets())
 	for seal in _seals:
 		seal.stand_as_a_seal()
 	for body in region_plan.door_plans():

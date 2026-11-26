@@ -60,7 +60,7 @@ func _city(t: TestRunner, builder: SimulationBuilder = null, bus: _BUS = null,
 	var streets := DayStreets.new()
 	var signals := TrafficSignals.new(map)
 	if builder == null:
-		builder = SimulationBuilder.new()
+		builder = SimulationBuilder.new(EventCatalogue.shipped())
 		builder.use_bus(bus)
 	var simulation := builder.in_the_city(world, map, Navigator.new(map), streets, signals, buildings,
 			run, dark_from_the_start)
@@ -151,7 +151,7 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	var navigator := Navigator.new(map)
-	var simulation := SimulationBuilder.new().in_the_building(world, map, navigator, run)
+	var simulation := SimulationBuilder.new(EventCatalogue.shipped()).in_the_building(world, map, navigator, run)
 	var events_alone: Array[String] = ["Events"]
 	t.check(simulation.get_parent() == world and _children_of(simulation) == events_alone
 			and simulation.events() == simulation.get_child(0),
@@ -231,7 +231,7 @@ func _test_a_dark_city_says_so_on_the_bus_it_was_handed(t: TestRunner) -> void:
 ## the building's events telling nobody.
 func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> void:
 	var bus := RecordingBus.new()
-	var builder := SimulationBuilder.new()
+	var builder := SimulationBuilder.new(EventCatalogue.shipped())
 	builder.use_bus(bus)
 	var made := _city(t, builder)
 	var map: CityMap = made["map"]
@@ -274,7 +274,7 @@ func _test_the_dressed_day_pastes_the_walls(t: TestRunner) -> void:
 ## asked.
 func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	var pictures := CrowdPictureCount.new()
-	var plain := SimulationBuilder.new()
+	var plain := SimulationBuilder.new(EventCatalogue.shipped())
 	plain.equip(RunTrace.new(), pictures, FrameTiming.new())
 	var ordinary := _city(t, plain)
 	var events := _simulation(ordinary).events()
@@ -296,7 +296,7 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 			+ "(%d agents, %d moved, %d pictures)"
 			% [walking["agents"], walking["moved"], pictures.asked])
 	_free(ordinary)
-	var builder := SimulationBuilder.new()
+	var builder := SimulationBuilder.new(EventCatalogue.shipped())
 	builder.leave_out(true, true, true)
 	builder.make_every_cyclist_a_pelican()
 	var drawn := DrawnView.new()
@@ -325,7 +325,7 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	_free(made)
 	var watched := WatchedView.new()
 	var timed := WatchedTiming.new()
-	var screened := SimulationBuilder.new()
+	var screened := SimulationBuilder.new(EventCatalogue.shipped())
 	screened.use_the_crowds_screen(watched, timed)
 	made = _city(t, screened)
 	await _the_crowd_runs(t, made)
@@ -401,7 +401,7 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 	var face := map.tile_rect_to_world(Rect2i(front, Vector2i.ONE)).position
 	building.position = Vector2(face.x + 3.0 * Building.TILE, face.y)
 	var bus := RecordingBus.new()
-	var builder := SimulationBuilder.new()
+	var builder := SimulationBuilder.new(EventCatalogue.shipped())
 	builder.use_bus(bus)
 	builder.force_the_blackout()
 	var buildings: Array[Building] = [building]

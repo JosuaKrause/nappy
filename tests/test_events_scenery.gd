@@ -19,7 +19,7 @@ func run(t: TestRunner) -> void:
 func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)

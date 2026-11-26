@@ -453,7 +453,7 @@ func _plan(map: CityMap, day: int) -> Day:
 	# off the corridor, so a corridor grown before the barriers went up is still walkable after.
 	planned.tree = RouteTree.for_day(map, day, null)
 	planned.again = RouteTree.for_day(map, day, null)
-	planned.closures = ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng, planned.tree)
+	planned.closures = ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), rng, planned.tree)
 	var closed := {}
 	for closure in planned.closures:
 		closed[closure.street_key()] = true

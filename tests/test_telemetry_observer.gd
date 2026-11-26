@@ -700,7 +700,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	var where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(EventCatalogue.shipped().by_id("police_patrol"), route[0], route, along,
-			EventSurroundings.new().on(day.map).hearing(where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(day.map).hearing(where) \
 			.drawing_through(RecordingEventDrawer.new()))
 	t.add_child(car)
 	car.set_process(false)

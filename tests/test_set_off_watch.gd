@@ -33,7 +33,7 @@ class FakeStreaming extends EventStreaming:
 	var _came: Array[EventPlan] = []
 
 	func _init() -> void:
-		super(EventWorld.new(), null, null)
+		super(EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped())), null, null)
 
 	## Overrides EventStreaming.may_set_off.
 	func may_set_off(_plan: EventPlan) -> bool:
@@ -57,7 +57,7 @@ class FakeBoard extends WarningBoard:
 	var _up: Array[PendingWarning] = []
 
 	func _init() -> void:
-		super(EventWorld.new())
+		super(EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped())))
 
 	## Overrides WarningBoard.warn_first.
 	func warn_first(def: EventDef, her: Vector2, where: Callable,

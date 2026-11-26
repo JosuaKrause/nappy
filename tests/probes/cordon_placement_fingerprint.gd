@@ -50,7 +50,7 @@ func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()

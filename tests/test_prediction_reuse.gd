@@ -198,7 +198,7 @@ func _swept_event(t: TestRunner, definition: EventDef, where: WhereSheIs) -> Cou
 	var event := CountedEvent.new()
 	event.setup(_copy_definition(definition), Vector2.ZERO,
 		PackedVector2Array([Vector2.ZERO, Vector2(ROUTE_LENGTH, 0.0)]), Vector2.RIGHT,
-		EventSurroundings.new().on(SplitStreets.new()).hearing(where))
+		EventSurroundings.new().reading(EventCatalogue.shipped()).on(SplitStreets.new()).hearing(where))
 	if event.row().is_a_flock():
 		t.add_child(event)
 		event.set_process(false)
@@ -255,7 +255,7 @@ func _test_a_cored_row(t: TestRunner) -> void:
 	var source := CountedEvent.new()
 	source.setup(_copy_definition(row), Vector2.ZERO,
 		PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
-		EventSurroundings.new().hearing(where))
+		EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where))
 	source.restore(EventSave.aged(0.0))
 	# Barely moving, so the answer is the price of the point and its surroundings, not an average over
 	# a whole pass (a still baby is projected as zero).
@@ -280,7 +280,7 @@ func _test_a_cored_row(t: TestRunner) -> void:
 
 func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	# What retires an instance from outside its tick (`EventManager.retire()`).
-	var retiring := EventManager.new()
+	var retiring := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	var sampled := 0
 	var positive := 0
 	var flock_queries := 0
@@ -581,10 +581,10 @@ func _test_consumer_order(t: TestRunner) -> void:
 	var reference_car := ReferenceCrowd.new(CrowdAgent.Kind.CAR)
 	cached.setup(_copy_definition(EventCatalogue.shipped().by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(cached_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(cached_where))
 	reference.setup(_copy_definition(EventCatalogue.shipped().by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(reference_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(reference_where))
 	for source: CrowdAgent in [car, reference_car]:
 		source.lane().ease_speed_toward(80.0, 1000.0)
 	var sources: Array[ExcitementSource] = [cached.source(), reference.source(), car.mood(),
@@ -644,14 +644,14 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 	player.velocity = Vector2(92.0, 0.0)
 	var baby := Baby.new()
 	for cached: bool in [true, false]:
-		var manager := EventManager.new()
+		var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 		t.add_child(manager)
 		# After it enters the tree: entering turns on the tick of a node that defines one.
 		manager.set_physics_process(false)
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
 		source.setup(_copy_definition(EventCatalogue.shipped().by_id("cafe_tables")), Vector2.ZERO,
-				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new().drawn_from(atlas))
+				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new().reading(EventCatalogue.shipped()).drawn_from(atlas))
 		source.restore(EventSave.aged(3.0))
 		manager.add_child(source)
 		source.set_process(false)

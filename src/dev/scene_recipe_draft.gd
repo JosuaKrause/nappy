@@ -43,6 +43,12 @@ var _walked := {}
 ## closing behind the swing — since the stretch lists the ground the scene starts on.
 var _dawn_tiles := PackedByteArray()
 var _context := {}
+## The run's catalogue, whose route rows a drafted route bag is drawn from.
+var _rows: EventCatalogue
+
+## A draft of the run's catalogue `rows` (`EventCatalogue`), which the scene's runtime hands on.
+func _init(rows: EventCatalogue) -> void:
+	_rows = rows
 
 ## A recipe as the draft plays it: the whole witness, with nothing the draft writes. Its stretch,
 ## starting population, posters and route bag are what the draft is about to write again.
@@ -140,7 +146,8 @@ func compose(recipe: Dictionary, run: RunState, world: DayWorld, start: Vector2,
 	# A route bag the author has already rigged is theirs: it is about what she meets, not about
 	# where the stretch runs, so drafting the stretch again keeps it.
 	if not setup.has("route_bag"):
-		var marbles := EventDirector.ordinary_route_marbles(day, run.resistance().progress())
+		var marbles := EventDirector.ordinary_route_marbles(_rows, day,
+				run.resistance().progress())
 		setup["route_bag"] = {"marbles": marbles, "owed": marbles.size()}
 	var background: Dictionary = setup.get("background", {})
 	background.erase("crowd")

@@ -771,7 +771,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
 	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: the blackout the
 	# city watches for silences the masts of the day's real plans.
-	var site := MastSites.compute(_city.map())[0]
+	var site := MastSites.compute(EventCatalogue.shipped(), _city.map())[0]
 	# The real day order, `City.start_day()` first: it is what holds today's region plan and
 	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
 	# without it the station's front door — and everything else outside the home's region — is

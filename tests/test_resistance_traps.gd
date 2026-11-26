@@ -681,7 +681,7 @@ func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector
 		director.use_bus(EventBus)
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(),
+		director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(),
 				_city.fronts(), _city)
 	var label := "the city's siting" if city_siting else "no siting handed"
 	director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -800,7 +800,7 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
 	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(robber_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(robber_where))
 	robber.arrive_from_its_warning()
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))

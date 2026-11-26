@@ -509,7 +509,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		# vans' feet and the patrol car's beat (`EventInstance.walks()`), which are put in the
 		# street and then taken out again before the raid this test waits for.
 		var scout := ResistanceHappenings.new()
-		scout.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+		scout.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
 				_city, _library, null, RunCity.spawn_siting(_city))
 		scout.start_day(day)
 		events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
@@ -525,7 +525,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 				vans.append(arrived.global_position)
 			events.retire(arrived)
 		var happenings := ResistanceHappenings.new()
-		happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(),
+		happenings.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(),
 				_city.fronts(), _city, _library, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day)
 		t.check(beat.size() == 2 and vans.size() == 2,

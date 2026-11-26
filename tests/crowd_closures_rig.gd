@@ -1147,7 +1147,7 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> vo
 	var tree := RouteTree.for_day(_city.map(), day, null)
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
-	SealPlanner.plan_day(_city.map(), DaySpec.for_day(day), tree, seal_rng)
+	SealPlanner.plan_day(EventCatalogue.shipped(), _city.map(), DaySpec.for_day(day), tree, seal_rng)
 	t.check(not _city.map().soft_sealed_tiles().is_empty(),
 			"today's tree leaves at least one street soft-sealed (%d tiles)"
 			% _city.map().soft_sealed_tiles().size())

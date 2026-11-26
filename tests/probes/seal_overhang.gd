@@ -31,14 +31,14 @@ func run(t: TestRunner) -> void:
 			map.repaint(state)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day),
+			for plan in SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 					RouteTree.for_day(map, day, null), rng):
 				_count(day_rows, map, ground, plan)
 		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
 		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for plan in DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+		for plan in DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, FinalePlanner.route(map), rng,
 				_city_spec(), GamePlanBuilder.over(map)):
 			_count(escape_rows, map, ground, plan)
 	_print("day", day_rows)

@@ -64,7 +64,7 @@ func _site_the_dog(director: EventDirector, at: Vector2, heading: Vector2) -> Ar
 ## nothing about its siting has changed.
 func _test_day_3_is_still_sited_on_her_heading(t: TestRunner) -> void:
 	var map := _map()
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var def := EventCatalogue.shipped().by_id("charging_dog")
@@ -96,14 +96,14 @@ func _test_day_4_is_never_owed_to_the_director(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.shipped().by_id("charging_dog")
 	for seed: int in [3, 17, 29, 41, 53]:
-		var with_plan := EventDirector.new(map)
+		var with_plan := EventDirector.new(EventCatalogue.shipped(), map)
 		var rng_a := RandomNumberGenerator.new()
 		rng_a.seed = seed
 		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
 		with_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, plans, rng_a,
 				DaySpec.DirectorSends.THE_DAYS_ROWS)
 
-		var without_plan := EventDirector.new(map)
+		var without_plan := EventDirector.new(EventCatalogue.shipped(), map)
 		var rng_b := RandomNumberGenerator.new()
 		rng_b.seed = seed
 		without_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng_b,
@@ -147,7 +147,7 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 	var her := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(her))
 	# Inside the field (outer radius) but outside the trigger (`EventDef.notice_within()`) — the
 	# "on sight" band alley_robbery's own shape leaves room for.
 	her.tell(Vector2((hot.heard_within() + hot.notice_within()) * 0.5, 0.0))
@@ -173,7 +173,7 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t: TestRunner) -> vo
 	var her := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(her))
 	her.tell(Vector2(1000.0, 1000.0))
 	dog.step(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
@@ -193,7 +193,7 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t: TestRunner) ->
 	var offered := 0
 	var not_offered := 0
 	for seed in range(200):
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(EventCatalogue.shipped(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
 		director.start_day(day, [], rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -221,7 +221,7 @@ func _test_the_sprinkle_never_runs_on_the_teaching_day(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.shipped().by_id("charging_dog")
 	for seed in range(50):
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(EventCatalogue.shipped(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
 		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
@@ -259,7 +259,7 @@ func _handed_out_rows(director: EventDirector, at: Vector2, heading: Vector2,
 func _test_only_the_teaching_days_first_dog_is_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var dog := EventCatalogue.shipped().by_id("charging_dog")
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var plans: Array[EventPlan] = [EventPlan.new(dog, Vector2.INF)]
@@ -290,7 +290,7 @@ func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	t.check(dog.spawn_mode_on(day) == EventDef.SpawnMode.AHEAD_OF_PLAYER,
 			"the copy is director-sited on day %d, as day 3's dog is" % day)
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var plans: Array[EventPlan] = [EventPlan.new(dog, Vector2.INF)]
@@ -309,7 +309,7 @@ func _test_a_sprinkled_dog_is_never_the_lesson(t: TestRunner) -> void:
 	at.y = map.world_size().y * 0.5
 	var sprinkled := 0
 	for seed in range(200):
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(EventCatalogue.shipped(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
 		director.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng,

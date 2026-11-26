@@ -102,7 +102,7 @@ static func _planned_day_one(seed_value: int) -> Array:
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), 1)
 	map.repaint(state)
-	var route := TutorialRoute.for_city(map)
+	var route := TutorialRoute.for_city(EventCatalogue.shipped(), map)
 	var spec := DaySpec.for_day(1)
 	map.clear_day_holds()
 	for segment in map.street_network().around_blocks(
@@ -111,7 +111,7 @@ static func _planned_day_one(seed_value: int) -> Array:
 	var tree := RouteTree.for_day(map, 1, route)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var seals := SealPlanner.plan_day(map, spec, tree, rng, {}, map.held_streets(), route, null)
+	var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, rng, {}, map.held_streets(), route, null)
 	var dawn := GameDawn.of(spec, rng, map).on(tree).standing(seals).tutorial(route).planned()
 	var units := {}
 	for unit in route.units_past_the_first_block():

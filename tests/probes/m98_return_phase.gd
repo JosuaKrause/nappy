@@ -97,7 +97,7 @@ func _measure_return_phase() -> void:
 
 			# "Before": the queue exactly as `tests/probes/m98_return_phase.gd` always drove it —
 			# no call to `owe_the_return()` at all.
-			var before := EventDirector.new(map)
+			var before := EventDirector.new(EventCatalogue.shipped(), map)
 			var before_rng := RandomNumberGenerator.new()
 			before_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
 			before.start_day(day, planned, before_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -111,7 +111,7 @@ func _measure_return_phase() -> void:
 			# the two are the same day up to the one call this milestone adds — then told the
 			# return has started, the same call `EventManager._owe_the_return()` makes, before its
 			# own return leg walks.
-			var after := EventDirector.new(map)
+			var after := EventDirector.new(EventCatalogue.shipped(), map)
 			var after_rng := RandomNumberGenerator.new()
 			after_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
 			after.start_day(day, planned, after_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

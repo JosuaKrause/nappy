@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 	var data: Dictionary = loaded_data.duplicate(true)
 	var setup := {"day": 13, "player": {"at": [16, 16]}}
 	data.setup = setup
-	var built := RecipeCityBuilder.build(data)
+	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
 	built.data = data
 	var own_run := _run_on(13)
 	var base: CityMap = built.map
@@ -66,7 +66,7 @@ func _stand(built: Dictionary, data: Dictionary, own_run: RunState) -> Array:
 	for_this_map.map = on
 	for_this_map.data = data
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(for_this_map,
+	runtime.configure(EventCatalogue.shipped(), for_this_map,
 			RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), own_run)
 	return [made, runtime]
 
@@ -136,7 +136,7 @@ func _test_a_bounded_scene_rejects_what_leaves_its_extent(t: TestRunner, data: D
 	var setup: Dictionary = bounded_data.setup
 	bounded_data.anchors = {"start": {"tile": [8, 8]}}
 	setup.player = {"at": [8, 8]}
-	var bounded := RecipeCityBuilder.build(bounded_data)
+	var bounded := RecipeCityBuilder.build(EventCatalogue.shipped(), bounded_data)
 	var build_errors: Array = bounded.errors
 	t.check(build_errors.is_empty(), "the bounded recipe builds: %s" % [build_errors])
 	if not build_errors.is_empty():
@@ -166,7 +166,7 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, built: Dictionary,
 	var stood := _stand(built, data, own_run)
 	var made: SceneWorld = stood[0]
 	var runtime: SceneRecipeRuntime = stood[1]
-	var days := RegionPlanner.plan_day(made.map, DaySpec.for_day(own_run.header().day()),
+	var days := RegionPlanner.plan_day(EventCatalogue.shipped(), made.map, DaySpec.for_day(own_run.header().day()),
 			made.streets.route_tree())
 	t.check(not days.door_segments().is_empty(), "the day has a street door to author")
 	if not days.door_segments().is_empty():
@@ -214,7 +214,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, built: Dictio
 			break
 	t.check(cafe != null and street != null, "the day has a street a café pair may seal")
 	if cafe != null and street != null:
-		var expected := SealPlanner.seal_street(map, street, cafe, made.streets.route_tree(),
+		var expected := SealPlanner.seal_street(EventCatalogue.shipped(), map, street, cafe, made.streets.route_tree(),
 				StreetTrees.footprint_tiles(map), [] as Array[Vector2i])
 		var key := street.key()
 		var setup: Dictionary = data.setup
@@ -378,7 +378,7 @@ func _test_an_oversized_uniform_population_is_refused(t: TestRunner) -> void:
 	var oversized: Dictionary = recipe.duplicate(true)
 	oversized.setup = {"day": 1, "background": {"crowd": true, "crowd_scope": "city",
 			"uniform_walkers": true, "walker_multiplier": 4}}
-	var built := RecipeCityBuilder.build(oversized)
+	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), oversized)
 	var build_errors: Array = built.errors
 	t.check(build_errors.is_empty(), "the recipe builds: %s" % [build_errors])
 	if not build_errors.is_empty():
@@ -399,7 +399,7 @@ func _test_an_oversized_uniform_population_is_refused(t: TestRunner) -> void:
 ## day's doors. Each site is installed as a recipe installs it (`install()`), with her at the alley
 ## mouth, and read off what the install says: a refused site is an install error naming the mast.
 func _test_an_authored_mast_stands_only_where_the_days_masts_may(t: TestRunner) -> void:
-	var context := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": RECIPE_SEED,
+	var context := RecipeCityBuilder.build(EventCatalogue.shipped(), {"version": 1, "name": "task", "seed": RECIPE_SEED,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var context_errors: Array = context.errors
 	t.check(context_errors.is_empty(), "the context city builds: %s" % [context_errors])
@@ -438,7 +438,7 @@ func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
 						or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 					continue
 				var at := map.tile_to_world(tile)
-				if MastSites.is_eligible(at, map, nowhere) and not MastSites.is_eligible(at, map):
+				if MastSites.is_eligible(EventCatalogue.shipped(), at, map, nowhere) and not MastSites.is_eligible(EventCatalogue.shipped(), at, map):
 					return at
 	return Vector2.INF
 

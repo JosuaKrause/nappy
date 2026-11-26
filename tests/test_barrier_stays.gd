@@ -529,7 +529,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	# Drawn through a drawer that records what it is told instead of painting it, since this rig
 	# holds no atlas, handed before `setup()` as its manager's spawner hands the real one.
 	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(band_where) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(band_where) \
 				.drawing_through(DrawnEvent.recording(band, RecordingEventDrawer.new())))
 	t.add_child(band)
 	band_where.tell(post + Vector2(cold.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0))
@@ -550,7 +550,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(guard_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(guard_where))
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
@@ -628,7 +628,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> v
 			# End-on, he stands on an east-west street, which his band reads its axis off as it
 			# does in a city; broadside, on open ground.
 			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().on(EastWestStreet.new() if vertical else null) \
+					EventSurroundings.new().reading(EventCatalogue.shipped()).on(EastWestStreet.new() if vertical else null) \
 						.hearing(guard_where))
 			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
 					"down the screen" if vertical else "across it"])

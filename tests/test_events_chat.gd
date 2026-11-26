@@ -40,7 +40,7 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null,
 		trace: RunTrace = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
 	if where != null:
 		surroundings.hearing(where)
 	if trace:
@@ -67,7 +67,7 @@ func _chat_manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)
 	return manager

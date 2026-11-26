@@ -253,7 +253,7 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 	var route := PackedVector2Array()
 	if row.speed() > 0.0:
 		route = PackedVector2Array([AT, AT + Vector2(900.0, 0.0)])
-	var surroundings := EventSurroundings.new().on(map).hearing(where).drawn_from(atlas) \
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).hearing(where).drawn_from(atlas) \
 			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(atlas)))
 	if drive == "boom":
 		rig.gate = GateState.new()

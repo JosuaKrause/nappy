@@ -47,7 +47,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	resistance.use_bus(EventBus)
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	resistance.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her

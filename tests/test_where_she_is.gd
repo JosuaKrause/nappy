@@ -76,7 +76,7 @@ func _test_an_event_made_after_the_tick_word_knows_where_she_is_at_once(t: TestR
 func _instance(def: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where))
 	return instance
 
 ## **An event's word on where she is changes only through the tick.** A man set on a point

@@ -48,7 +48,7 @@ func _a_row_on_a_map(t: TestRunner, id: String,
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.shipped().by_id(id), Vector2(100.0, 100.0), route,
 			Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.drawing_nothing())
 	t.add_child(instance)
 	var listed := map.listed_moves().keeping_their_course()
@@ -154,7 +154,7 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var run := RunState.new()
 	run.start_run(SEED)
 	var map := CityMap.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(world))
 	manager.setup(run)
 	t.add_child(manager)
 	var plan := EventPlan.new(EventCatalogue.shipped().by_id("alley_robbery"), at)

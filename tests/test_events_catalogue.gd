@@ -45,20 +45,19 @@ func run(t: TestRunner) -> void:
 	_test_the_explosions_crater_leaves_the_other_lane(t)
 	_test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t)
 
-## **Every charger is built from the run's charger timing** (`EventCatalogue.use_charger_timing()`,
-## what `--chargers` hands the catalogue at boot; minty-dolphin #834): handed another, the catalogue
-## builds every row again from it and validates every fairness contract on the way, and each charger
-## that waits for her warns for its warning, notices her within its factor of the radius it is
-## written with, and keeps as much field past its notice as it had, so she still feels it before it
-## notices her. A hunting van's notice for the men it lets out, and the investigating patrol car's
-## for its policeman, are drawn at the same factor and never past their own field. Handed back the
-## one it had, the catalogue builds the rows as they were.
+## **Every charger is built from the run's charger timing** (`EventCatalogue.new()`, what the
+## run's catalogue is made from at boot, `--chargers` among it; minty-dolphin #834): made at
+## another, the catalogue builds every row from it and validates every fairness contract on the
+## way, and each charger that waits for her warns for its warning, notices her within its factor
+## of the radius it is written with, and keeps as much field past its notice as it had, so she
+## still feels it before it notices her. A hunting van's notice for the men it lets out, and the
+## investigating patrol car's for its policeman, are drawn at the same factor and never past
+## their own field. Made at the shipped timing, a catalogue builds the rows as the shipped one
+## does.
 func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) -> void:
-	var was := EventCatalogue.shipped().charger_timing()
-	var shipped := _chargers_now()
+	var shipped := _chargers_of(EventCatalogue.shipped())
 	var timing := ChargerTiming.of(1.25, 1.2)
-	EventCatalogue.use_charger_timing(timing)
-	var played := _chargers_now()
+	var played := _chargers_of(EventCatalogue.new(timing))
 	for id: String in shipped:
 		var before: Array = shipped[id]
 		var after: Array = played[id]
@@ -79,11 +78,10 @@ func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) ->
 			t.check(is_equal_approx(field_after - notice_after, field_before - notice_before),
 					"%s keeps %.1fpx of field past its notice (%.1fpx)" % [id,
 					field_before - notice_before, field_after - notice_after])
-	EventCatalogue.use_charger_timing(was)
-	var again := _chargers_now()
+	var again := _chargers_of(EventCatalogue.new(EventCatalogue.shipped_charger_timing()))
 	for id: String in shipped:
 		t.check(again[id] == shipped[id],
-				"%s is built as it was once the timing is handed back" % id)
+				"%s is built as shipped by a catalogue made at the shipped timing" % id)
 
 ## **Every timing the flag accepts keeps every row fair**: `--chargers` (`DevFlags`) refuses a
 ## warning under `Tuning.OFFSCREEN_WARNING_MIN` and a radius factor outside
@@ -91,18 +89,17 @@ func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) ->
 ## copies, the day-4 dog and the escape's roadblock pass `EventDef.validate()` anywhere inside. The
 ## corners are walked, at the least warning and at 2s.
 func _test_every_timing_the_flag_accepts_keeps_every_row_fair(t: TestRunner) -> void:
-	var was := EventCatalogue.shipped().charger_timing()
 	for warning: float in [Tuning.OFFSCREEN_WARNING_MIN, 2.0]:
 		for reach: float in [ChargerTiming.LEAST_REACH, ChargerTiming.MOST_REACH]:
-			EventCatalogue.use_charger_timing(ChargerTiming.of(warning, reach))
+			var catalogue := EventCatalogue.new(ChargerTiming.of(warning, reach))
 			var rows: Array[EventDef] = []
-			for def in CatalogueRows.every():
+			for def in CatalogueRows.of(catalogue):
 				for level: int in EventCatalogue.heat_levels():
-					var row := EventCatalogue.shipped().heated(def, level)
+					var row := catalogue.heated(def, level)
 					if not rows.has(row):
 						rows.append(row)
-			rows.append(EventCatalogue.shipped().by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1))
-			rows.append(EventCatalogue.shipped().escape_roadblock())
+			rows.append(catalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1))
+			rows.append(catalogue.escape_roadblock())
 			var unfair: Array[String] = []
 			for row in rows:
 				if not row.validate():
@@ -110,23 +107,22 @@ func _test_every_timing_the_flag_accepts_keeps_every_row_fair(t: TestRunner) -> 
 			t.check(rows.size() > 2 and unfair.is_empty(),
 					"at a %.2fs warning and x%.2f every one of %d rows is fair (unfair: %s)"
 					% [warning, reach, rows.size(), ", ".join(unfair)])
-	EventCatalogue.use_charger_timing(was)
 
 ## Each charger's `[waits for her, written notice, notice_within, heard_within, warns_for]` as the
-## catalogue builds it now: the three that wait for her, a hunting van that lets its men out once it
+## catalogue `rows` builds it: the three that wait for her, a hunting van that lets its men out once it
 ## notices her, and an investigating patrol car that lets its policeman out.
-static func _chargers_now() -> Dictionary:
-	var dog := EventCatalogue.shipped().by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
-	var robber := EventCatalogue.shipped().by_id("alley_robbery")
-	var guard := EventCatalogue.shipped().escape_roadblock()
+static func _chargers_of(rows: EventCatalogue) -> Dictionary:
+	var dog := rows.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
+	var robber := rows.by_id("alley_robbery")
+	var guard := rows.escape_roadblock()
 	var hot := Tuning.RESISTANCE_GOAL
-	var raid := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("abduction"), hot)
-	var patrol := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"), hot)
+	var raid := rows.heated(rows.by_id("abduction"), hot)
+	var patrol := rows.heated(rows.by_id("police_patrol"), hot)
 	var found := {}
 	for row: EventDef in [dog, robber, guard, raid, patrol]:
 		# A charger's notice is never cut short, so its written radius is its notice at the factor
-		# played now; a vehicle's may stop at its field, and is written as its rung's trigger.
-		var radius := row.notice_within() / EventCatalogue.shipped().charger_timing().notice(1.0)
+		# played; a vehicle's may stop at its field, and is written as its rung's trigger.
+		var radius := row.notice_within() / rows.charger_timing().notice(1.0)
 		if row == raid:
 			radius = EventDef.HEAT_HUNTS_WITHIN
 		elif row == patrol:

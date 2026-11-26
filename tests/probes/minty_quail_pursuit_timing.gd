@@ -104,7 +104,7 @@ func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, see
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).visible_view())
@@ -225,7 +225,7 @@ func _the_cordon(city: City, library: AtlasLibrary, director: ResistanceDirector
 	var before := RunCity.events(city).instances().duplicate()
 	var busker := RunCity.events(city).spawn_extra(EventCatalogue.shipped().by_id("busker"),
 			area.position + area.size * Vector2(0.25, 0.3))
-	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
+	var cordon := ParkCordon.new(EventCatalogue.shipped(), city.map(), city.navigator(), RunCity.events(city), city,
 			library, park, RunCity.spawn_siting(city),
 			RunCity.events(city).walk_events().reach().shut())
 	var run := Run.new(before)

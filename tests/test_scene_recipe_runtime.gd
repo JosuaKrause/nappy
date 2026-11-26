@@ -339,7 +339,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	var at := her + Vector2.DOWN * lead
 	player.global_position = her
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": {"setup": {"day": 3, "events": [{"name": "dog", "row": "charging_dog",
+	runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": 3, "events": [{"name": "dog", "row": "charging_dog",
 			"at": [at.x, at.y], "hold": true}], "player": {"at": [her.x, her.y]}}},
 			"manifest": {}, "anchors": {}, "map": city.map()}, _recipe_config(false), own_run)
 	t.add_child(runtime)
@@ -476,7 +476,7 @@ func _test_schema(t: TestRunner) -> void:
 func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var manifest_path := RecipeManifest.scratch_path("no_city")
-	runtime.configure({"data": {"setup": {}}, "manifest": {}, "anchors": {}, "map": null},
+	runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {}}, "manifest": {}, "anchors": {}, "map": null},
 			_recipe_config(false, manifest_path), RunState.new())
 	var building := DayWorld.in_the_building(WorldMap.open_ground(), null, null, null, Vector2.ZERO,
 			Vector2.UP, null)
@@ -515,7 +515,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		if heat != null:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": [entry],
+		runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": own_run.header().day(), "events": [entry],
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map()},
 				_recipe_config(false), own_run)
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
@@ -575,7 +575,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 		t.check(entries.size() == int(case[1]), "%d places for %s are found (%d)"
 				% [int(case[1]), def.id(), entries.size()])
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": entries,
+		runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": own_run.header().day(), "events": entries,
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
 				"map": city.map()}, _recipe_config(false), own_run)
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
@@ -708,7 +708,7 @@ const NEAR_HOME := Vector2i(62, 84)
 ## `setup.task`: a day-7 mark at the alley's mark tile, or (`"neighbor": true`) a day-10 mark with the
 ## neighbor pinned near home. `errors` are what `install()` returned. `_free_task_scene()` frees it.
 func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
-	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
+	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), {"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var map: CityMap = built.map
 	var own_run := RunState.new()
@@ -725,7 +725,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(map, own_run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), map, own_run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
@@ -740,7 +740,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var start := map.tile_to_world(MOUTH)
 	var runtime := SceneRecipeRuntime.new()
 	var manifest_path := RecipeManifest.scratch_path("task_%d" % day)
-	runtime.configure({"data": {"setup": {"day": day, "task": pinned,
+	runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": day, "task": pinned,
 			"player": {"at": [start.x, start.y]}}}, "manifest": {}, "anchors": {}, "map": map},
 			_recipe_config(false, manifest_path), own_run)
 	t.add_child(runtime)
@@ -783,7 +783,7 @@ func _test_arguments(t: TestRunner) -> void:
 		PackedStringArray(["--screenshot", "out.png"]),
 		PackedStringArray(["--recipe-mode", "free", "--after", "1"]),
 	]:
-		var loaded := SceneRecipeRuntime.load_recipe(EXAMPLE, args)
+		var loaded := SceneRecipeRuntime.load_recipe(EventCatalogue.shipped(), EXAMPLE, args)
 		var errors: Array[String] = loaded.errors
 		t.check(not errors.is_empty(), "conflicting or unknown recipe arguments fail: %s" % [args])
 	var output: Array = []
@@ -801,7 +801,7 @@ func _test_arguments(t: TestRunner) -> void:
 func _test_inputs(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
+	runtime.configure(EventCatalogue.shipped(), {"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
 			"anchors": {}, "manifest": {}}, _recipe_config(true), own_run)
 	t.add_child(runtime)
 	var scale := Engine.time_scale
@@ -880,7 +880,7 @@ func _test_real_argv_and_failure(t: TestRunner) -> void:
 ## stale `Tuning.VIEW_HALF_EXTENT` constant, 320px, would have counted it); one inside it passes
 ## at the default zoom and zoomed out.
 func _test_appeared_requires_sight(t: TestRunner) -> void:
-	var context: CityMap = RecipeCityBuilder.build({"version": 1, "name": "sight", "seed": 1,
+	var context: CityMap = RecipeCityBuilder.build(EventCatalogue.shipped(), {"version": 1, "name": "sight", "seed": 1,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}}).map
 	var seen := await _sight(t, context, 1.0, 2)
 	t.check(seen == [0],
@@ -945,7 +945,7 @@ func _sight(t: TestRunner, context: CityMap, zoom: float, tiles: int) -> Array[i
 	camera.make_current()
 	var ended: Array[int] = []
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": {"name": "sight", "setup": {"day": 3, "player": {"at": [her.x,
+	runtime.configure(EventCatalogue.shipped(), {"data": {"name": "sight", "setup": {"day": 3, "player": {"at": [her.x,
 			her.y]},
 			"actors": [{"name": "actor", "kind": "walker", "at": [there.x, there.y],
 			"direction": "east"}]},

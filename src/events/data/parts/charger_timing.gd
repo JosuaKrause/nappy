@@ -1,9 +1,9 @@
 class_name ChargerTiming
 extends RefCounted
-## **How every charger's warning and notice are played in a run**: how long a charger warns before
-## it charges, and how far its notice reaches against the radius its row is written with. The
-## catalogue builds its rows from one of these (`EventCatalogue.use_charger_timing()`): the shipped
-## one (`EventCatalogue.shipped_charger_timing()`), or the one a run asks for with `--chargers` or
+## **How every charger's warning and notice are played in a run**: how long a charger warns
+## before it charges, and how far its notice reaches against the radius its row is written with.
+## The catalogue builds its rows from one of these (`EventCatalogue.new()`): the shipped one
+## (`EventCatalogue.shipped_charger_timing()`), or the one a run asks for with `--chargers` or
 ## `?chargers=` (`RunConfig.charger_timing()`), so other numbers can be played on the released
 ## page without a rebuild (minty-dolphin #834).
 ##

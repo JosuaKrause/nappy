@@ -236,7 +236,7 @@ func _new_run(run_seed: int) -> void:
 ## A spawner of the suite's own over the suite's run, its surroundings rigged as `rig` says: the
 ## bag is the spawner's, and no manager is asked for it.
 func _spawner_over(rig := EventSpawner.PelicanRig.BAG) -> EventSpawner:
-	var world := EventWorld.new(EventSurroundings.new().rigging_the_pelican(rig))
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()).rigging_the_pelican(rig))
 	world.use_run(_run)
 	return EventSpawner.new(world, WarningBoard.new(world))
 

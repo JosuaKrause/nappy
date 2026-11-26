@@ -91,7 +91,7 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	t.check(instance.is_waiting(), "a row that waits starts waiting")
 	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
@@ -120,7 +120,7 @@ func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]),
 			Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	instance_where.tell(Vector2(0.0, 2000.0))
 	var frames := 0
 	while not instance.is_on_its_way_out() and frames < 400:
@@ -147,7 +147,7 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(dog_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(dog_where))
 	var her := Vector2(400.0, 0.0)
 	var clock := 0.0
 	while not dog.is_on_its_way_out() and clock < def.telegraphs_for():
@@ -188,7 +188,7 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(first_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(first_where))
 	var her := Vector2(60.0, 0.0)
 	t.check(her.length() < PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()),
 			"she stands inside the robber's stand-off")
@@ -425,7 +425,7 @@ func _test_a_live_crash_registers_a_collision_shape_per_car(t: TestRunner) -> vo
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
 		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 					.drawn_from(atlas))
 		t.add_child(instance)
 		instance.set_process(false)
@@ -445,7 +445,7 @@ func _test_a_live_crash_registers_a_collision_shape_per_car(t: TestRunner) -> vo
 func _emission_instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -740,14 +740,14 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 	across_a_horizontal.setup(barrier,
 			map.tile_to_world(horizontal.position + horizontal.size / 2), PackedVector2Array(),
 			Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 	t.check(across_a_horizontal.runs_vertically(),
 			"a horizontal alley gets a vertical barrier spread across its mouth")
 	across_a_horizontal.free()
 	var across_a_vertical := EventInstance.new()
 	across_a_vertical.setup(barrier, map.tile_to_world(vertical.position + vertical.size / 2),
 			PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 	t.check(not across_a_vertical.runs_vertically(),
 			"a vertical alley keeps a horizontal barrier spread across its mouth")
 	across_a_vertical.free()
@@ -779,7 +779,7 @@ func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
 func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 	instance.restore(EventSave.aged(def.telegraphs_for() + 1.0))
 	return instance
 

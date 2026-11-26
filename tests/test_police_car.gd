@@ -43,7 +43,7 @@ func _car(t: TestRunner, def: EventDef, route: PackedVector2Array, map: CityMap,
 		where: WhereSheIs, lights: TrafficSignals = null,
 		drawer: EventDrawer = null) -> EventInstance:
 	var car := EventInstance.new()
-	var surroundings := EventSurroundings.new().on(map).hearing(where).stopping_at(lights)
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).hearing(where).stopping_at(lights)
 	if drawer != null:
 		surroundings.drawing_through(drawer)
 	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), surroundings)
@@ -661,7 +661,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 			var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(6))
 			officer.setup(out, car.where_its_officer_may_get_out(out, 0, 1)[0],
 					PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().hearing(officer_where))
+					EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(officer_where))
 			t.add_child(officer)
 			officer.set_process(false)
 			car.let_out(officer)

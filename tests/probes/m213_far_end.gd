@@ -35,21 +35,22 @@ const RUN_SEED := 2
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
+## The catalogue the probe measures at, handed to everything it builds: the shipped one until
+## `run()` makes one at each reach.
+var _rows := EventCatalogue.shipped()
+
 func run(t: TestRunner) -> void:
 	_reachability(t)
 	# Measured at the notice radii as written and as shipped (`EventCatalogue.CHARGER_REACH`), at
-	# the shipped warning, so what a wider notice does to the guards is read side by side. The
-	# shipped reach first: a timing that plays as the one in use leaves the one held, so handing
-	# `was` back after another puts the very object back.
-	var was := EventCatalogue.shipped().charger_timing()
+	# the shipped warning, so what a wider notice does to the guards is read side by side: each a
+	# catalogue of its own (`EventCatalogue.for_run()`), handed to everything the probe builds.
 	for reach: float in [EventCatalogue.CHARGER_REACH, 1.0]:
-		EventCatalogue.use_charger_timing(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
-		var notice := EventCatalogue.shipped().mark_guard().notice_within()
+		_rows = EventCatalogue.for_run(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
+		var notice := _rows.mark_guard().notice_within()
 		print("== robber notice %.0fpx (reach %.2f) ==" % [notice, reach])
 		_on_screen(t)
 		_moves_from_everywhere(t)
 		_task_guards(t)
-	EventCatalogue.use_charger_timing(was)
 
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
@@ -61,7 +62,9 @@ func _task_guards(t: TestRunner) -> void:
 		var run := RunCity.started_run(RUN_SEED)
 		var city: City = RunCity.new_city(CITY_SCENE)
 		t.add_child(city)
-		RunCity.build(city, run, CityGenerator.generate(seed_value))
+		var builder := SimulationBuilder.new(_rows)
+		builder.use_bus(EventBus)
+		RunCity.build(city, run, CityGenerator.generate(seed_value), builder)
 		for day: int in [13]:
 			GivenRun.alley_tiles(run, [])
 			var done: Array[int] = []
@@ -76,7 +79,7 @@ func _task_guards(t: TestRunner) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map(), run, RunCity.events(city), city.streets(),
+			director.setup(_rows, city.map(), run, RunCity.events(city), city.streets(),
 					city.fronts(), city, null,
 					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -120,7 +123,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 func _reachability(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := _rows.by_id("alley_robbery")
 	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var names: Array[String] = ["far end"]
@@ -131,7 +134,7 @@ func _reachability(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(map, own_run, null, null, null, null)
+		director.setup(_rows, map, own_run, null, null, null, null)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-probe:%d:2" % seed_value)
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
@@ -184,13 +187,13 @@ func _on_screen(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(map, own_run, null, null, null, null, null,
+		director.setup(_rows, map, own_run, null, null, null, null, null,
 				SpawnSiting.new(map, Navigator.new(map), func() -> VisibleView: return view))
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)
 		director._rng = rng
-		var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+		var robbery := _rows.by_id("alley_robbery")
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
 			view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
@@ -233,7 +236,7 @@ func _moves_from_everywhere(t: TestRunner) -> void:
 	for seed_value in MOVE_SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(map, own_run, null, null, null, null, null,
+		director.setup(_rows, map, own_run, null, null, null, null, null,
 				SpawnSiting.new(map, Navigator.new(map), func() -> VisibleView: return view))
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
@@ -277,7 +280,7 @@ func _stays_asleep(robbery: EventDef, guard_at: Vector2, legs: Array[Vector2]) -
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
 	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(robber_where))
+			EventSurroundings.new().reading(_rows).hearing(robber_where))
 	var woke := false
 	for leg in legs.size() - 1:
 		var from: Vector2 = legs[leg]

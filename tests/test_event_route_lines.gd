@@ -30,7 +30,7 @@ func _event(row: String, at: Vector2, route: PackedVector2Array) -> EventInstanc
 func _test_a_live_event_with_a_route_is_drawn_start_to_end(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(100.0, 100.0), Vector2(200.0, 100.0),
 			Vector2(200.0, 300.0)])
-	var events := StandInEvents.new()
+	var events := StandInEvents.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	events.live = [_event("police_patrol", route[0], route)]
 	var layer := EventRouteLines.new()
 	layer.setup(events)
@@ -43,7 +43,7 @@ func _test_a_live_event_with_a_route_is_drawn_start_to_end(t: TestRunner) -> voi
 
 func _test_an_event_that_stands_has_no_route_to_draw(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(0.0, 0.0), Vector2(50.0, 0.0)])
-	var events := StandInEvents.new()
+	var events := StandInEvents.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	events.live = [
 		_event("alley_robbery", Vector2(400.0, 400.0), PackedVector2Array()),
 		_event("police_patrol", route[0], route),
@@ -61,7 +61,7 @@ func _test_a_gone_event_is_not_drawn(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(0.0, 0.0), Vector2(50.0, 0.0)])
 	var instance := _event("police_patrol", route[0], route)
 	instance.end_now()
-	var events := StandInEvents.new()
+	var events := StandInEvents.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	events.live = [instance]
 	var layer := EventRouteLines.new()
 	layer.setup(events)

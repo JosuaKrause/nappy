@@ -682,7 +682,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	var placed_where := WhereSheIs.nowhere()
 	var placed := EventInstance.new(ToldEvents.on(EventBus))
 	placed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(placed_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(placed_where))
 	t.add_child(placed)
 	placed.set_process(false)
 	for i in int(ceil((def.telegraphs_for() + 0.5) / step)):
@@ -698,7 +698,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	var streamed_where := WhereSheIs.nowhere()
 	var streamed := EventInstance.new(ToldEvents.on(EventBus))
 	streamed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(streamed_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(streamed_where))
 	t.add_child(streamed)
 	streamed.set_process(false)
 	streamed.restore(EventSave.new(age, travelled))
@@ -711,7 +711,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	var warned_where := WhereSheIs.nowhere()
 	var warned := EventInstance.new(ToldEvents.on(EventBus))
 	warned.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(warned_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(warned_where))
 	t.add_child(warned)
 	warned.set_process(false)
 	warned.arrive_from_its_warning()
@@ -918,7 +918,7 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new(ToldEvents.on(EventBus))
 	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(man_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
 	man.arrive_from_its_warning()
 	man.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(man)
@@ -939,7 +939,7 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var caught_where := WhereSheIs.nowhere()
 	var caught := EventInstance.new(ToldEvents.on(EventBus))
 	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(caught_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(caught_where))
 	caught.arrive_from_its_warning()
 	caught.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(caught)
@@ -983,7 +983,7 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t: TestRunner) -> void
 func _charger(t: Node, def: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

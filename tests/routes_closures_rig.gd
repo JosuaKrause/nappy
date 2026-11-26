@@ -437,7 +437,7 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng,
+	return ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), rng,
 			RouteTree.for_day(map, day, _tutorial_for(map, day)))
 
 ## Today's city, and then today's corridor grown on it — the order `City.start_day` uses.
@@ -452,7 +452,7 @@ func _tutorial_for(map: CityMap, day: int) -> TutorialRoute:
 	if not DaySpec.for_day(day).walks_the_tutorial():
 		return null
 	if not _tutorial_cache.has(map.city_seed()):
-		_tutorial_cache[map.city_seed()] = TutorialRoute.for_city(map)
+		_tutorial_cache[map.city_seed()] = TutorialRoute.for_city(EventCatalogue.shipped(), map)
 	return _tutorial_cache[map.city_seed()]
 
 func _todays_tree(map: CityMap, day: int) -> RouteTree:
@@ -495,10 +495,10 @@ func case_the_walk_left_open_is_never_closed(t: TestRunner) -> void:
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day, null)
 		for stream in _STREAMS_TO_TRY:
-			if not _closes_any(ClosurePlanner.plan_day(map, spec, _stream(map, stream), tree), walk):
+			if not _closes_any(ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, _stream(map, stream), tree), walk):
 				continue
 			asked += 1
-			var left_open := ClosurePlanner.plan_day(map, spec, _stream(map, stream), tree, null,
+			var left_open := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, _stream(map, stream), tree, null,
 					null, route)
 			t.check(not _closes_any(left_open, walk),
 					"seed %d stream %d: no closure stands on day 1's walk left open"

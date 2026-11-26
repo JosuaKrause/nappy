@@ -496,7 +496,7 @@ func _test_a_firefights_flashes_move_without_its_gunmen(t: TestRunner) -> void:
 	t.add_child(holder)
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.shipped().by_id("firefight"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, EventSurroundings.new().on(WorldMap.open_ground()) \
+			Vector2.RIGHT, EventSurroundings.new().reading(EventCatalogue.shipped()).on(WorldMap.open_ground()) \
 				.drawn_from(atlas) \
 				.drawing_through(EventDrawer.new(atlas)))
 	instance.set_physics_process(false)

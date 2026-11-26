@@ -174,7 +174,7 @@ func _director_on_the_least(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(_least_map, _least_run, _least_events, null, null, _least_world)
+	director.setup(EventCatalogue.shipped(), _least_map, _least_run, _least_events, null, null, _least_world)
 	return director
 
 ## Day 6's mark read on the least's director, with step 2 (the yeller perform) active, as
@@ -192,7 +192,7 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+	director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
 			_city, null, RunCity.spawn_siting(_city))
 	return director
 

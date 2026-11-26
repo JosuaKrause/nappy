@@ -76,7 +76,7 @@ func _measure_caps() -> void:
 				if plan.row_id() in budgeted:
 					budgeted[plan.row_id()] += 1
 
-			var director := EventDirector.new(map)
+			var director := EventDirector.new(EventCatalogue.shipped(), map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("m99:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

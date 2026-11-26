@@ -115,7 +115,7 @@ func _task_on_offer(t: TestRunner, city: City, run: RunState) -> ResistanceDirec
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
+	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()

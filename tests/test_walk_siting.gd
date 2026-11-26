@@ -103,7 +103,7 @@ class _Ground extends SitedGround:
 	var asked: Array[Vector2i] = []
 
 	func _init() -> void:
-		super(null, null, {})
+		super(EventCatalogue.shipped(), null, null, {})
 
 	## Overrides SitedGround.takes.
 	func takes(_def: EventDef, tile: Vector2i) -> bool:

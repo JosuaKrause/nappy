@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
-		_mast_sites[_maps[i].city_seed()] = MastSites.compute(_maps[i])
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(EventCatalogue.shipped(), _maps[i])
 	_test_every_door_has_its_three_bodies(t)
 	_test_door_bodies_stand_on_their_own_ground(t)
 	await _test_the_boom_bars_the_carriageway(t)
@@ -136,7 +136,7 @@ func _plan_for(map: CityMap, day: int) -> RegionPlan:
 	if not _plan_cache.has(key):
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day, null)
-		_plan_cache[key] = RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+		_plan_cache[key] = RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 	return _plan_cache[key]
 
 ## The streets of `day` on `map`: the day's region plan and no closure, the tree being data the
@@ -384,7 +384,7 @@ func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 	var drawer := RecordingEventDrawer.new(atlas)
 	var instance := EventInstance.new()
 	instance.setup(gate.row(), Vector2.ZERO, PackedVector2Array(), gate.faces(),
-			EventSurroundings.new().on(WorldMap.open_ground()) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(WorldMap.open_ground()) \
 				.drawn_from(atlas) \
 				.drawing_through(drawer))
 	t.add_child(instance)
@@ -538,7 +538,7 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day, null)
 			var doors := PackedVector2Array()
-			for body in RegionPlanner.plan_day(map, DaySpec.for_day(day), tree).door_plans():
+			for body in RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree).door_plans():
 				doors.append(body.placed_at())
 			if doors.is_empty():
 				continue
@@ -617,7 +617,7 @@ func _manager(t: TestRunner) -> EventManager:
 	# hands it), so a plan put in by `_door_instance()` stays in however far a test walks her.
 	var world := WorldContext.new()
 	var map := WorldMap.open_ground()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(world))
 	manager.setup(run)
 	manager.stream_within(INF)
 	manager.add_child(world)
@@ -1398,7 +1398,7 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 		for day in days:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day, null)
-			var region := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+			var region := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
 			if region.door_plans().is_empty():
 				continue
 			var doors := PackedVector2Array()
@@ -2066,7 +2066,7 @@ func _street_door_rig(t: TestRunner, along := Vector2.ZERO) -> Dictionary:
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	_repaint_for(map, day)
-	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day),
+	var plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
 			RouteTree.for_day(map, day, null))
 	t.check(not plan.gate_states().is_empty(),
 			"day %d on seed %d has a street door" % [day, BASE_SEED])
@@ -2440,7 +2440,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(def, guard_at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(guard_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(guard_where))
 	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
 	while elapsed < 12.0 + head_start and not guard.is_gone() and not guard.is_on_its_way_out():
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)

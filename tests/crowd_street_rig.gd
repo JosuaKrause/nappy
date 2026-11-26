@@ -63,7 +63,7 @@ func a_crowd(t: TestRunner, map: CityMap) -> Crowd:
 	var crowd := Crowd.new()
 	crowd.name = "Crowd"
 	world.add_child(crowd)
-	crowd.setup(world, map, TrafficSignals.new(map), DayStreets.new())
+	crowd.setup(EventCatalogue.shipped(), world, map, TrafficSignals.new(map), DayStreets.new())
 	return crowd
 
 ## Frees the world `a_crowd()` made, and the crowd and every agent in it with it.

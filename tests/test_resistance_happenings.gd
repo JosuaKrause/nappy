@@ -40,7 +40,7 @@ func _test_the_raid_seals_her_street_door(t: TestRunner) -> void:
 	var events := FakeEventManager.new()
 	var fronts := FakeCityFronts.new()
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(map, run_state, events, DayStreets.new(), fronts, null, null)
+	happenings.setup(EventCatalogue.shipped(), map, run_state, events, DayStreets.new(), fronts, null, null)
 	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY)
 	t.check(fronts.seals() == 0, "the door is ordinary at day 10's start")
 	var door := map.doorstep_world_position()
@@ -94,7 +94,7 @@ func _test_the_market_goes_where_the_route_tree_says_she_is_heading(t: TestRunne
 	streets.begin_day(tree, null, no_closures)
 	var events := FakeEventManager.new()
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(map, run_state, events, streets, FakeCityFronts.new(), null, null)
+	happenings.setup(EventCatalogue.shipped(), map, run_state, events, streets, FakeCityFronts.new(), null, null)
 	happenings.start_day(ResistanceHappenings.MARKET_DAY)
 	happenings.tick(EventDirector.ON_HER_WAY_AFTER, door, Vector2.RIGHT * Tuning.WALK_SPEED)
 	t.check(state.purpose_of(map.plans_by_block(), further) == GameEnums.BlockPurpose.BOARDED_UP,
@@ -196,7 +196,7 @@ func _raid_happenings(map: CityMap, events: FakeEventManager, siting: SpawnSitin
 	run_state.start_run(RUN_SEED)
 	run_state.header().set_day(ResistanceSteps.NEIGHBOR_DAY)
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(map, run_state, events, DayStreets.new(), FakeCityFronts.new(), null, null, null,
+	happenings.setup(EventCatalogue.shipped(), map, run_state, events, DayStreets.new(), FakeCityFronts.new(), null, null, null,
 			siting)
 	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY)
 	return happenings
@@ -253,7 +253,7 @@ func _test_the_market_waits_while_she_can_see_it(t: TestRunner) -> void:
 		streets.begin_day(tree, null, no_closures)
 		var events := FakeEventManager.new()
 		var happenings := ResistanceHappenings.new()
-		happenings.setup(map, run_state, events, streets, FakeCityFronts.new(), null, null)
+		happenings.setup(EventCatalogue.shipped(), map, run_state, events, streets, FakeCityFronts.new(), null, null)
 		happenings.start_day(ResistanceHappenings.MARKET_DAY)
 		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
 		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
@@ -274,7 +274,7 @@ func _test_the_neighbors_window_is_boarded_from_day_eleven(t: TestRunner) -> voi
 	var fronts := FakeCityFronts.new()
 	var happenings := ResistanceHappenings.new()
 	var events := FakeEventManager.new()
-	happenings.setup(map, run_state, events, DayStreets.new(), fronts, null, null)
+	happenings.setup(EventCatalogue.shipped(), map, run_state, events, DayStreets.new(), fronts, null, null)
 	happenings.start_day(ResistanceHappenings.MARKET_DAY - 1)
 	t.check(fronts.boardings() == 0, "unboarded the day before")
 	happenings.start_day(ResistanceHappenings.MARKET_DAY)

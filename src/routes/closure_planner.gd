@@ -100,9 +100,9 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## walks one, which a tree grown here could not know.
 ##
 ## `region_plan` is likewise the caller's own, or grown fresh the same way — `RegionPlanner.
-## plan_day` is a pure function of the map, the day and the tree. Its walls and doors are refused
-## as closure candidates: a closure on a region boundary would be two things standing in the same
-## spot, one placed by this pass and one by the region's own wall or door.
+## plan_day` is a pure function of the run's rows, the map, the day and the tree. Its walls and
+## doors are refused as closure candidates: a closure on a region boundary would be two things
+## standing in the same spot, one placed by this pass and one by the region's own wall or door.
 ##
 ## **`CityMap.fenced_park_block()`'s fence comes back with the streets** (one `ParkClosure` per fenced run
 ## of its edge), after them and outside the day's quota: it is what `City` stands barriers at, the
@@ -115,18 +115,18 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## (`DayStreets.tutorial_walk_left_open()`, handed by `City`), null on every other day: its lesson
 ## streets are refused as candidates, so the same walk still leads to the park she used. Refusing a
 ## candidate only leaves a street open, so every guarantee the invariant keeps stays kept.
-static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
-		tree: RouteTree, region_plan: RegionPlan = null,
+static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec,
+		rng: RandomNumberGenerator, tree: RouteTree, region_plan: RegionPlan = null,
 		trace: RunTrace = null, left_open: TutorialRoute = null) -> Array[RoadClosure]:
-	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace, left_open)
+	var chosen := _close_streets(rows, map, spec, rng, tree, region_plan, trace, left_open)
 	var fenced := map.fenced_park_block()
 	if fenced.x >= 0:
 		for fence in ParkClosure.fence(map, fenced):
 			chosen.append(fence)
 	return chosen
 
-static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
-		tree: RouteTree, region_plan: RegionPlan,
+static func _close_streets(rows: EventCatalogue, map: CityMap, spec: DaySpec,
+		rng: RandomNumberGenerator, tree: RouteTree, region_plan: RegionPlan,
 		trace: RunTrace = null, left_open: TutorialRoute = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	var day := spec.day_number()
@@ -146,7 +146,8 @@ static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerat
 
 	var kinds := RoadClosure.kinds_on(day)
 	var corridor := tree
-	var regions := region_plan if region_plan else RegionPlanner.plan_day(map, spec, corridor)
+	var regions := region_plan if region_plan else RegionPlanner.plan_day(rows, map, spec,
+			corridor)
 	# Built once and asked many times: the grid is the day's tiles, which do not move while
 	# candidates are tried — only the barrier tiles a candidate would add do.
 	var grid := ReachabilityGrid.build(map)

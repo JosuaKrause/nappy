@@ -52,7 +52,7 @@ func run(t: TestRunner) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map(), own_run, RunCity.events(city), city.streets(),
+			director.setup(EventCatalogue.shipped(), city.map(), own_run, RunCity.events(city), city.streets(),
 					city.fronts(), city, null, RunCity.spawn_siting(city))
 			var step: ResistanceSteps.Step = _step_for(day)
 			var candidates := _candidates(city, day)

@@ -45,7 +45,7 @@ class _Dawn extends DawnContext:
 
 	func _init(spec: DaySpec, seed_value: int, map: CityMap, walk: RouteSource, calm: CalmAreas,
 			builder: PlanBuilder, ground_of: Callable, handed: Array[EventDef]) -> void:
-		super(spec, seed_value, map, walk, calm, builder, ground_of)
+		super(EventCatalogue.shipped(), spec, seed_value, map, walk, calm, builder, ground_of)
 		_handed = handed
 
 	## Overrides DawnContext.catalogue_rows.
@@ -150,7 +150,7 @@ func context() -> DawnContext:
 	dawn.use_the_run(_spent, _scars, _heat)
 	dawn.use_the_doors(_doors)
 	dawn.use_what_stands(_standing)
-	dawn.use_mast_sites(_masts if _masts_are_said else MastSites.compute(_map))
+	dawn.use_mast_sites(_masts if _masts_are_said else MastSites.compute(EventCatalogue.shipped(), _map))
 	dawn.use_trace(_trace)
 	dawn.use_the_roadblock_row(_roadblock)
 	dawn.use_the_walk_left_open(_walk_left_open)

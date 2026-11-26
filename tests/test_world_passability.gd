@@ -332,7 +332,7 @@ func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 		var car_where := WhereSheIs.nowhere()
 		var car := EventInstance.new()
 		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 					.hearing(car_where) \
 					.drawing_nothing())
 		t.add_child(car)
@@ -354,7 +354,7 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 		var instance := EventInstance.new()
 		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])
 		instance.setup(cat, path[0], path, Vector2.RIGHT,
-				EventSurroundings.new().drawing_nothing())
+				EventSurroundings.new().reading(EventCatalogue.shipped()).drawing_nothing())
 		t.add_child(instance)
 		instance.set_process(false)
 		instance.hold_still_longer(cat.crouch_for_a_run(run))
@@ -371,7 +371,7 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 ## A director over `map` alone, handed no navigator, owing nothing but the cat every five seconds
 ## (`force()`, taken up by `start_day()`, as the manager hands the flag in).
 func _a_director_owing_the_cat(map: CityMap) -> EventDirector:
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	director.force("cat_dash", 5.0)
 	var no_plans: Array[EventPlan] = []
 	director.start_day(1, no_plans, _rng("director"), DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -468,7 +468,7 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 				plan.faces()))
 		var instance := EventInstance.new()
 		instance.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
-				EventSurroundings.new().on(map) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 					.drawing_nothing())
 		var tiles: Array[Vector2i] = []
 		for piece in instance.standing_pieces():

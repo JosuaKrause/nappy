@@ -185,7 +185,7 @@ func _test_event_parts(t: TestRunner) -> void:
 			pictures.scenery_drawer = laid
 			instance.setup(EventCatalogue.shipped().by_id(id), Vector2.ZERO, PackedVector2Array(),
 					Vector2.RIGHT,
-					EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+					EventSurroundings.new().reading(EventCatalogue.shipped()).on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 						.drawn_from(atlas) \
 						.drawing_through(pictures))
 			t.add_child(instance)
@@ -312,7 +312,7 @@ func _test_figure_parts(t: TestRunner) -> void:
 		var pictures := RecordingEventDrawer.new(atlas)
 		pictures.scenery_drawer = laid
 		instance.setup(EventCatalogue.shipped().by_id(id), Vector2.ZERO, PackedVector2Array(), heading,
-				EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 					.drawn_from(atlas) \
 					.drawing_through(pictures))
 		t.add_child(instance)

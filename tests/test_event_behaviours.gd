@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 func _instance(_t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -40,7 +40,7 @@ func _instance(_t: TestRunner, def: EventDef, at := Vector2.ZERO,
 ## The behaviours a row's event is composed of, composed as `EventInstance.setup()` composes
 ## them over open ground and handed the figure of `host`, the event they would move.
 func _composed_of(def: EventDef, host: EventInstance) -> EventBehaviours:
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
 	return EventBehaviours.compose(def, WhereSheIs.nowhere(), EventInstance.Figure.new(host),
 			surroundings.map(), surroundings.navigator(), EventInstance.mover_for(def),
 			surroundings.trace(), surroundings.lights(), MoveProposal.new())
@@ -295,7 +295,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
 	first.setup(def, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.hearing(first_where))
 	first_where.tell(Vector2(0.0, 400.0))
 	_advance(first, 1.5)
@@ -308,7 +308,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
 	second.setup(def, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.hearing(second_where))
 	second_where.tell(first_where.at())
 	second.restore(state)
@@ -330,7 +330,7 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	t.add_child(world)
 	var map := WorldMap.open_ground()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(world))
 	manager.setup(run)
 	t.add_child(manager)
 	var plan := EventPlan.new(def, at)
@@ -423,7 +423,7 @@ func _test_a_robber_out_of_his_radius_keeps_waiting(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	t.check(instance.is_waiting(), "nobody has come near him yet")
 	for sector in range(8):
 		instance_where.tell(Vector2.from_angle(deg_to_rad(sector * 45.0))
@@ -439,7 +439,7 @@ func _test_a_robber_who_notices_her_turns_to_face_her_exactly(t: TestRunner) -> 
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
 	# Southeast of him and inside `EventDef.notice_within()`, so one `EventPursuit` step notices
 	# her and turns to face her.
 	var her := Vector2.from_angle(deg_to_rad(45.0)) * (def.notice_within() - 10.0)

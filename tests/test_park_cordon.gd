@@ -108,7 +108,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
+	director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
 			_city, null, RunCity.spawn_siting(_city))
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -130,7 +130,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	else:
 		happenings = ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(_city.map(), _run, RunCity.events(_city), _city.streets(),
+		happenings.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(),
 				_city.fronts(), _city, _library, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
@@ -227,7 +227,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT * scale,
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
 		var siting := SpawnSiting.new(map, navigator, func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(map, navigator, null, world, null, park, siting)
+		var cordon := ParkCordon.new(EventCatalogue.shipped(), map, navigator, null, world, null, park, siting)
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
 		var drawn := siting.ask_of_drawing(box)
@@ -262,7 +262,7 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 	var view := VisibleView.new()
 	var siting := SpawnSiting.new(map, navigator, func() -> VisibleView: return view)
 	var recording := RecordingAtlas.new()
-	var cordon := ParkCordon.new(map, navigator, null, world, recording, park, siting)
+	var cordon := ParkCordon.new(EventCatalogue.shipped(), map, navigator, null, world, recording, park, siting)
 	var waited := 0.0
 	while waited < PATIENCE and (CordonInTheWorld.tapes(world).is_empty() or CordonInTheWorld.posts(world).is_empty()):
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
@@ -650,7 +650,7 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map(), _city.navigator(), RunCity.events(_city),
+			var cordon := ParkCordon.new(EventCatalogue.shipped(), _city.map(), _city.navigator(), RunCity.events(_city),
 					_city, _library, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0

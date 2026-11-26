@@ -121,7 +121,7 @@ func _manager(t: TestRunner) -> EventManager:
 	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
 	manager.add_child(holder)
 	manager.setup(run)
 	t.add_child(manager)
@@ -144,7 +144,7 @@ func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 func _rig_instance(t: TestRunner, def: EventDef, at: Vector2,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new().drawn_from(_atlas)
+	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).drawn_from(_atlas)
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, surroundings)
@@ -637,7 +637,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 	t.check(instance.source().contribution_at(nearby) > 0.0,
 			"a live source reaches a point inside its own field, which the cache now holds")
 
-	var manager := EventManager.new()
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
 	manager.retire(instance)
 	t.check(instance.is_gone(), "retired by its manager, the way the director retires one")
 	t.close_to(instance.source().contribution_at(nearby), 0.0,

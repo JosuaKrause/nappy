@@ -31,7 +31,7 @@ func errors_of(t: TestRunner, recipe: Dictionary) -> Array:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(full))
 	file.close()
-	var loaded := SceneRecipeRuntime.load_recipe(path, PackedStringArray())
+	var loaded := SceneRecipeRuntime.load_recipe(EventCatalogue.shipped(), path, PackedStringArray())
 	DirAccess.remove_absolute(path)
 	return loaded.errors
 

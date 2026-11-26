@@ -76,7 +76,7 @@ func _manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
 	# The game's bus, which this suite listens on, as whoever stands a manager hands it.
 	manager.use_bus(EventBus)
 	manager.setup(run)
@@ -429,7 +429,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	var guard := EventInstance.new()
 	guard.setup(EventCatalogue.shipped().by_id("alley_robbery"), Vector2(122.0, 134.0),
 			PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 				.moving_by(Navigator.new(map)))
 	t.add_child(guard)
 	guard.set_process(false)
@@ -577,7 +577,7 @@ func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2(200.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(dog_where))
+			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(dog_where))
 	t.add_child(dog)
 	dog.set_process(false)
 	dog.arrive_from_its_warning()

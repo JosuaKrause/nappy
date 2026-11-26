@@ -64,7 +64,7 @@ func _measure_built(maps: Array[CityMap]) -> void:
 	var seven := 0
 	var none := 0
 	for map in maps:
-		var route := TutorialRoute.for_city(map)
+		var route := TutorialRoute.for_city(EventCatalogue.shipped(), map)
 		# The route's streets: its lesson streets and the doorstep's.
 		var streets := route.lesson_streets().size() + 1 if route else 0
 		match streets:

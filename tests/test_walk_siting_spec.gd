@@ -40,7 +40,7 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
 	t.check(holds_it != leaves_it,
 			"the two rules differ on this city's ground (there was a rule to keep)")
-	var manager := EventManager.new(EventSurroundings.new().in_the_city(map))
+	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).in_the_city(map))
 	manager.setup(RunState.new())
 	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
 	manager.use_sitings(maker)
@@ -69,7 +69,7 @@ func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
 	var asked := 0
 	var pursuers := {}
 	for spec: DaySpec in [DaySpec.for_day(DAY), building]:
-		var manager := EventManager.new(EventSurroundings.new().in_the_city(map))
+		var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).in_the_city(map))
 		manager.setup(RunState.new())
 		var maker := FakeSitingMaker.new(FakeWalkSiting.new())
 		manager.use_sitings(maker)
@@ -111,7 +111,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
 	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
 	t.check(holds_it != leaves_it, "the two rules differ on this city's ground (there was a rule to keep)")
-	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()).in_the_city(map))
 	world.use_run(RunState.new())
 	var board := WarningBoard.new(world)
 	var spawner := EventSpawner.new(world, board)
@@ -124,7 +124,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	var siting := FakeWalkSiting.new()
 	var maker := FakeSitingMaker.new(siting)
 	var ahead := EventsAhead.new(world, streaming, spawner, board, walk)
-	ahead.use_director(EventDirector.new(map, world.navigator()), null)
+	ahead.use_director(EventDirector.new(EventCatalogue.shipped(), map, world.navigator()), null)
 	ahead.use_sitings(maker)
 	ahead.use_the_walk_of(_spec_that(true))
 	ahead.start_day(DAY, tree)
@@ -165,7 +165,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	var carried_asks := FakeSitingMaker.new(siting)
 	var on_a_carried_walk := EventsAhead.new(world, streaming, spawner, board, carrying)
 	on_a_carried_walk.use_sitings(carried_asks)
-	on_a_carried_walk.use_director(EventDirector.new(map, world.navigator()), null)
+	on_a_carried_walk.use_director(EventDirector.new(EventCatalogue.shipped(), map, world.navigator()), null)
 	on_a_carried_walk.use_the_walk_of(_spec_that(false))
 	on_a_carried_walk.queue_a_mast(offered)
 	t.check(carried_asks.made.size() == 1 and carried_asks.made[0][2] == carried,
@@ -184,14 +184,14 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 ## a walk before it.
 func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
-	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()).in_the_city(map))
 	world.use_run(RunState.new())
 	var board := WarningBoard.new(world)
 	var spawner := EventSpawner.new(world, board)
 	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
 	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
 	var ahead := EventsAhead.new(world, streaming, spawner, board, FakeWalkEvents.new())
-	ahead.use_director(EventDirector.new(map, world.navigator()), null)
+	ahead.use_director(EventDirector.new(EventCatalogue.shipped(), map, world.navigator()), null)
 	ahead.use_sitings(maker)
 	ahead.use_the_walk_of(_spec_that(true))
 	var tree := FakeRouteTree.new(map)
@@ -215,13 +215,13 @@ func _test_a_given_walk_sites_over_the_tree_it_is_handed(t: TestRunner) -> void:
 func _test_a_walk_hands_the_director_what_its_spec_lets_it_send(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
 	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+	var world := EventWorld.new(EventSurroundings.new().reading(EventCatalogue.shipped()).in_the_city(map))
 	world.use_run(RunState.new())
 	var board := WarningBoard.new(world)
 	var spawner := EventSpawner.new(world, board)
 	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
 	var ahead := EventsAhead.new(world, streaming, spawner, board, FakeWalkEvents.new())
-	var director := _RecordingDirector.new(map, world.navigator())
+	var director := _RecordingDirector.new(EventCatalogue.shipped(), map, world.navigator())
 	ahead.use_director(director, null)
 	ahead.use_sitings(FakeSitingMaker.new(FakeWalkSiting.new()))
 	ahead.use_the_walk_of(DaySpec.for_day(1))

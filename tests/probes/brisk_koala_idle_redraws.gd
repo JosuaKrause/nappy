@@ -80,7 +80,7 @@ func run(t: TestRunner) -> void:
 		var drawer := CountingDrawer.new(atlas)
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.shipped().by_id(id), Vector2.ZERO, PackedVector2Array(), heading,
-				EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 					.drawn_from(atlas) \
 					.drawing_through(drawer))
 		instance.set_physics_process(false)

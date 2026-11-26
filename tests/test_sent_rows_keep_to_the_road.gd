@@ -208,10 +208,10 @@ func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 		var map := MapCache.of(SEEDS[index])
 		var spec := DaySpec.for_day(DAY)
 		var tree := RouteTree.for_day(map, DAY, null)
-		var region := RegionPlanner.plan_day(map, spec, tree)
+		var region := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[index]
-		var closures := ClosurePlanner.plan_day(map, spec, rng, tree, region)
+		var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, rng, tree, region)
 		map.close_streets(closures)
 		var run := RunState.new()
 		run.start_run(RUN_SEEDS[index])

@@ -10,11 +10,17 @@ extends RefCounted
 ## (first availability, then catalogue order within a day), not the catalogue's. A helper, not a
 ## suite: the runner loads only `test_*.gd`.
 
-## Each row that is available on some day, once.
+## Each row of the shipped catalogue (`EventCatalogue.shipped()`) that is available on some day,
+## once.
 static func every() -> Array[EventDef]:
+	return of(EventCatalogue.shipped())
+
+## Each row of the catalogue `rows` that is available on some day, once: what a suite walks at a
+## charger timing of its own (`EventCatalogue.new()`).
+static func of(rows: EventCatalogue) -> Array[EventDef]:
 	var found: Array[EventDef] = []
 	for day: int in range(0, Tuning.RUN_LENGTH_DAYS + 1):
-		for def in EventCatalogue.shipped().available_on(day):
+		for def in rows.available_on(day):
 			if not found.has(def):
 				found.append(def)
 	return found

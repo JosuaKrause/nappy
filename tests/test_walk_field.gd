@@ -17,7 +17,7 @@ func _diagnostics(result: Dictionary) -> Array[String]:
 
 func run(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
-	var built := RecipeCityBuilder.build(data)
+	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
 	t.check(_diagnostics(built).is_empty(),
 			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _diagnostics(built).is_empty():

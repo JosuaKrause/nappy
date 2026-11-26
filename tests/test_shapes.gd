@@ -242,7 +242,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, positions[0], PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map) \
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
 					.drawn_from(atlas))
 		t.add_child(instance)
 

@@ -514,7 +514,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 		# stationary, unpinned body on the middle of its pavement band when it is set up.
 		var sited := EventInstance.new()
 		sited.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map))
+				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
 		var placed := sited.position
 		sited.free()
 		var axis := BodyStance.of(map, def, at, Vector2.RIGHT).pieces()[0].axis()

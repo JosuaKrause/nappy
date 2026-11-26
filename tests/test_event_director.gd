@@ -152,7 +152,7 @@ static func _walking(vertical := true) -> Vector2:
 ## `seed_value`, handed `way_on` (a fake that lets every leg go on unless one is handed).
 static func _director(map: CityMap, row: String, plans: Array[EventPlan],
 		seed_value := 1, way_on: WayOn = null) -> EventDirector:
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	director.use_way_on(way_on if way_on else FakeWayOn.new())
 	director.force(row, 1.0)
 	var rng := RandomNumberGenerator.new()
@@ -729,7 +729,7 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	var plans: Array[EventPlan] = [blocking]
 	for _i in 12:
 		plans.append(EventPlan.new(EventCatalogue.shipped().by_id("cat_dash"), Vector2.INF))
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
@@ -789,7 +789,7 @@ static func _walk_for(director: EventDirector, seconds: float) -> Array[EventPla
 
 ## A director over the street owing `plans` to her walk, handed `siting`.
 static func _director_with_a_siting(plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
-	var director := EventDirector.new(_street())
+	var director := EventDirector.new(EventCatalogue.shipped(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
@@ -908,7 +908,7 @@ func _test_a_place_rigged_without_the_setting_is_laid_past_the_band(t: TestRunne
 ## marbles and her walk is handed no place to lay.
 func _test_nothing_is_rigged_under_force(t: TestRunner) -> void:
 	var siting := FakeWalkSiting.new().set_place("homeless_yeller", _her() + Vector2.UP * 500.0)
-	var director := EventDirector.new(_street())
+	var director := EventDirector.new(EventCatalogue.shipped(), _street())
 	director.use_way_on(FakeWayOn.new())
 	director.force("dog_walker", 1.0)
 	var rng := RandomNumberGenerator.new()
@@ -928,7 +928,7 @@ func _test_nothing_is_rigged_under_force(t: TestRunner) -> void:
 ## copy does, `BodySpec` holding a `GroundShape` no resource can store) has no shape. Rigged on a route here: the loudspeaker mast, whose row names no
 ## ground, and the car accident.
 func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
-	var director := EventDirector.new(_street())
+	var director := EventDirector.new(EventCatalogue.shipped(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
@@ -949,7 +949,7 @@ func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
 ## does): she is owed the count the scene gives, whatever the bag holds, and the marble the
 ## scene put in the pre-bag is the first one drawn, before the ordinary marbles.
 func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
-	var director := EventDirector.new(_street())
+	var director := EventDirector.new(EventCatalogue.shipped(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
@@ -991,7 +991,7 @@ func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unpla
 ## `sends` says what it may send.
 static func _started(day: int, plans: Array[EventPlan], sends: DaySpec.DirectorSends,
 		share := 1.0) -> EventDirector:
-	var director := EventDirector.new(_street())
+	var director := EventDirector.new(EventCatalogue.shipped(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
@@ -1050,7 +1050,7 @@ func _test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t: TestRunner) -> v
 ## A director on the street with no plans, its day `day` started on a stream of `seed_value`, as
 ## `spec` says what it may send.
 static func _walked_director(day: int, seed_value: int, spec: DaySpec) -> EventDirector:
-	var director := EventDirector.new(_street())
+	var director := EventDirector.new(EventCatalogue.shipped(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -1124,7 +1124,7 @@ const LESSON_ROWS := Vector2i(30, 40)
 ## A director on day 1 owing three moments from her route's bag, handed `route` (none for an
 ## ordinary day 1) before its day starts, as `EventsAhead.start_day()` hands it.
 static func _day_one(map: CityMap, route: TutorialRoute) -> EventDirector:
-	var director := EventDirector.new(map)
+	var director := EventDirector.new(EventCatalogue.shipped(), map)
 	director.use_way_on(FakeWayOn.new())
 	director.use_tutorial_route(route)
 	var plans: Array[EventPlan] = []

@@ -13,4 +13,4 @@ static func begin(streets: DayStreets, map: CityMap, spec: DaySpec) -> void:
 	# A rig that starts a day without its dawn is not about the tutorial route: day 1 here
 	# grows the ordinary tree, deliberately (test_seals holds the tutorial's).
 	var tree := RouteTree.for_day(map, spec.day_number(), null)
-	streets.begin_day(tree, RegionPlanner.plan_day(map, spec, tree), [] as Array[RoadClosure])
+	streets.begin_day(tree, RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree), [] as Array[RoadClosure])
