@@ -41,6 +41,10 @@ func _ready() -> void:
 ## The shot's route for `route`, in world pixels: the park, the junctions the route passes from its
 ## far end back to the one it leaves the doorstep's street at, and `doorstep`. A straight line
 ## between two points, so it runs down the middle of each street.
+##
+## **A known duplicate**: the junctions are worked out here from `TutorialRoute`'s public questions
+## because `tutorial_route.gd` belongs to the lessons' pull request (#1803); a
+## `TutorialRoute.junctions()` accessor that this reads instead follows once it has merged.
 static func line_for(route: TutorialRoute, doorstep: Vector2) -> Array[Vector2]:
 	var junctions: Array[Vector2i] = [route.turning_junction()]
 	for street in route.lesson_streets():
@@ -83,6 +87,11 @@ func begin(drawing: Camera2D, line: Array[Vector2]) -> void:
 	_running = true
 	set_physics_process(true)
 	set_process_unhandled_input(true)
+
+## The shot's camera, current from `begin()` to the end; null otherwise. Asked for the world rect it
+## shows, so the scenery is prepared before the first frame draws.
+func camera() -> Camera2D:
+	return _camera
 
 ## Where the crowd's box stands for the shot's length: the camera's own view.
 func focus() -> CameraFocus:

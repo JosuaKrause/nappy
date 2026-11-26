@@ -8,4 +8,5 @@ once with the tap at once. The question a run answers: is the shot kept. Does th
 is going, does the way back teach the route, is a second on the park and five along the way the right
 length, and is the street at her door free of cars when the view arrives (a car that drove in the crowd's
 box the whole way is still there; it was none in the one burst). A retry of day 1, and a resumed save,
-start on her with no shot. The shot is one class and its wiring in `main`, so dropping it is cheap.
+start on her with no shot. Two choices beyond what was asked are open to overturn too: the walking line
+waits for the shot's end, and a window that loses focus during the shot gets its pause when the shot ends. The shot is one class and its wiring in `main`, so dropping it is cheap.

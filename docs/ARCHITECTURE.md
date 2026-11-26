@@ -570,6 +570,8 @@ src/
 	                      once a process frame, the one box every off-screen redraw gate asks,
 	                      made once by `main` and handed to the events' looks and the crowd's view
 	                      (`DrawnView`); the covered corners count, unlike `VisibleView`
+	camera_view.gd        the world rect a camera shows, turned and clamped as it is, worked out in one
+	                      place for whoever prepares the scenery a view is about to draw
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,

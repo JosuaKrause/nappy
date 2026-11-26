@@ -163,6 +163,8 @@ var _loss_hold: LossHold
 ## Day 1's opening shot (`OpeningShot`) while it runs, between the title's dismissal and the first
 ## step; null otherwise. Focus loss asks it (`_pause_on_focus_lost()`).
 var _opening_shot: OpeningShot
+## Whether the window lost focus while the opening shot ran, so the pause opens when it ends.
+var _focus_lost_in_the_shot := false
 var _title: TitleScreen
 ## The small corner symbol a change in the save state shows — see `SaveIndicator`'s own doc. Raised
 ## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
@@ -1432,16 +1434,15 @@ func _the_opening_shot_route() -> TutorialRoute:
 func _play_the_opening_shot(route: TutorialRoute) -> void:
 	var line := OpeningShot.line_for(route, _city.map().doorstep_world_position())
 	var crowd := _crowd_now()
-	# The park's ground and buildings are prepared before the cut, so its first frame draws a whole
-	# street, as the day's start does round her.
-	var view := get_viewport_rect().size / _player.camera().zoom
-	_city.prepare_scenery_in(Rect2(line[0] - view * 0.5, view))
 	var shot := OpeningShot.new()
 	shot.name = "OpeningShot"
 	_opening_shot = shot
 	add_child(shot)
 	shot.finished.connect(_on_opening_shot_finished.bind(shot))
 	shot.begin(_player.camera(), line)
+	# The park's ground and buildings are prepared before its first frame draws, over what the
+	# shot's camera shows (turned and clamped as it is), as the day's start does round her.
+	_city.prepare_scenery_in(CameraView.shown_by(shot.camera(), get_viewport_rect().size))
 	if crowd:
 		# Held once the box is on the park: the cars left at her door are then out of sight, and
 		# park at once rather than driving on, unseen, in a box that has left them.
@@ -1457,6 +1458,11 @@ func _on_opening_shot_finished(shot: OpeningShot) -> void:
 	_player.camera().reset_smoothing()
 	_engage_the_day()
 	_hud.say_the_walking_line()
+	# The window lost focus while the shot ran: the pause it would have opened opens now that play
+	# has begun, as it does for a day whose window is left.
+	if _focus_lost_in_the_shot:
+		_focus_lost_in_the_shot = false
+		_pause_on_focus_lost()
 
 ## What pressing start on the title leads to when a save was resumed — the day brief showing what
 ## the load already paid for, or the ending directly when the load itself spent the run's last
@@ -2603,8 +2609,11 @@ func _pause_on_focus_lost() -> void:
 	# for the pause.
 	if _loss_hold and _loss_hold.is_running():
 		return
-	# Nor over the opening shot, which takes any key as its skip.
+	# Nor over the opening shot, which takes any key as its skip: the loss is remembered, and the
+	# pause opens when the shot ends and play begins (`_on_opening_shot_finished()`). **An
+	# experiment's choice, open to the player's overturn.**
 	if _opening_shot and _opening_shot.is_running():
+		_focus_lost_in_the_shot = true
 		return
 	_pause.open()
 

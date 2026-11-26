@@ -932,6 +932,9 @@ class, `CameraFocus` and `Main._play_the_opening_shot()`, with no flag).
 - **The day does not run during it.** She is handed to the day when the shot ends, so the clock, the
   save and the walking line wait for it: the HUD holds day 1's walking line from the title's choice
   (`HUD.hold_the_walking_line()`) and says it when the shot ends (`HUD.say_the_walking_line()`).
+- **The window losing focus during it opens no pause over it** (the shot takes any key as its skip);
+  the loss is remembered and the pause opens when the shot ends and play begins. Like the walking
+  line's wait for the end, this goes beyond the player's words and is open to overturn.
 - **The boot's first frame and the title stay on the doorstep**: only the cut after the title's press
   moves the view.
 

@@ -435,6 +435,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t)
 	await _test_the_title_choice_survives_the_handover_to_the_escape(t)
 	await _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t)
+	await _test_focus_lost_during_the_opening_shot_opens_the_pause_when_it_ends(t)
 	await _test_a_session_on_one_booted_game(t)
 	_test_the_unclamped_view_at_every_corner_is_painted(t)
 	_test_the_overview_is_landscape_to_every_edge(t)
@@ -1011,6 +1012,32 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 ## the tree running behind it, a run started by a key, a played day (the walk's tick), the focus
 ## notifications over each screen, day 14's hand-over, and the ending's restart and quit wiring.
 ## The run is fresh and seeded, so the same city is played on every run of the suite.
+## **A window that loses focus while day 1's opening shot runs gets its pause when the shot ends.**
+## The shot takes any key as its skip, so no pause opens over it (`main._pause_on_focus_lost()`); the
+## loss is remembered, and once play begins the pause is up and the tree stopped, as it is for any
+## day whose window is left. A window that kept its focus gets none.
+func _test_focus_lost_during_the_opening_shot_opens_the_pause_when_it_ends(t: TestRunner) -> void:
+	for lost_focus: bool in [true, false]:
+		var seat := Seat.new(t)
+		var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], null, false, MapCache.source())
+		var main := booted.main
+		var pause := _one(main, "PauseScreen") as PauseScreen
+		await Boot.press_title(t, main, "Tap", true)
+		var shot_runs := false
+		for found: Node in main.find_children("*", "OpeningShot", false, false):
+			shot_runs = (found as OpeningShot).is_running()
+		t.check(shot_runs, "the title's press starts the opening shot")
+		if lost_focus:
+			main.get_node("ReturnWindow").notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		t.check(not pause.is_open(), "no pause opens over the shot")
+		Boot.skip_the_opening_shot(main)
+		await Boot.UI.frames(t)
+		t.check(pause.is_open() == lost_focus,
+				"when the shot ends the pause is %s (focus lost: %s)"
+				% ["up" if lost_focus else "not up", lost_focus])
+		booted.free_all()
+		seat.end()
+
 func _test_a_session_on_one_booted_game(t: TestRunner) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	# Day 14's hand-over parks the sitting in the seat's home rather than at the tree's root.

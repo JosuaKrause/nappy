@@ -210,8 +210,9 @@ static func press_title(t: TestRunner, main: Node, button_name := "Tap",
 		skip_the_opening_shot(main)
 
 ## **Skips day 1's opening shot** the way a player does, with a key pushed through the viewport, when
-## one is running under `main`; does nothing otherwise. The shot ignores a press before its first
-## frame, so this is called a frame or two after the title's press.
+## one is running under `main`; does nothing otherwise. A press before the shot has begun does
+## nothing, and the title starts the run two frames after its own press, so this is called a frame
+## or two after the title's press.
 static func skip_the_opening_shot(main: Node) -> void:
 	for found: Node in main.find_children("*", "OpeningShot", false, false):
 		var shot := found as OpeningShot
