@@ -157,6 +157,9 @@ var _touch_controls: TouchControls
 var _touch_layer: CanvasLayer
 var _summary: DaySummaryScript
 var _pause: PauseScreen
+## The beat a lost day holds on its cause before the summary (`_show_the_day_over()`), while it
+## runs; null otherwise. Focus loss asks it (`_pause_on_focus_lost()`).
+var _loss_hold: LossHold
 var _title: TitleScreen
 ## The small corner symbol a change in the save state shows — see `SaveIndicator`'s own doc. Raised
 ## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
@@ -2025,7 +2028,28 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# other loss, already standing at that dawn.
 	if not end.ends_the_run():
 		_save_now(false)
-	_summary.show_summary(SummaryModel.day_over(_run, end), _flow.mode())
+	_show_the_day_over(end)
+
+## **Raises a day's outcome screen**, after the beat a loss holds on what caused it when it has one
+## (`DayEnd.shows_its_cause()`): the world stops on the frame of the loss, the camera frames her and
+## the one thing that caused it (`LossHold`), and the screen comes up when the beat ends. Written
+## and saved before it (the caller's), so closing the game inside the beat takes nothing back.
+## `section_title` is a section's own words where the day's number stands.
+func _show_the_day_over(end: DayEnd, section_title := "") -> void:
+	if end.shows_its_cause() and is_inside_tree() and _player:
+		var hold := LossHold.new()
+		hold.name = "LossHold"
+		_loss_hold = hold
+		add_child(hold)
+		if end.has_a_cause_in_view():
+			hold.begin(_player.camera(), _player.global_position, end.cause_stands_at(),
+					get_viewport_rect().size)
+		else:
+			hold.hold_on_her()
+		await hold.finished
+		_loss_hold = null
+		hold.queue_free()
+	_summary.show_summary(SummaryModel.day_over(_run, end, section_title), _flow.mode())
 
 ## What a section of the escape ending leads to, once `_on_day_finished()` has ended it as it ends
 ## any day — the section's `DaySpec` says the rest.
@@ -2089,7 +2113,7 @@ func _finish_the_section(end: DayEnd) -> void:
 	# the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`) has already cleared.
 	if not run_over:
 		_save_now(false)
-	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title()), _flow.mode())
+	_show_the_day_over(end, spec.title())
 
 ## **The game walks her in** once the section is won at the threshold of the tunnel or the bridge:
 ## her own control ends there and she walks on by herself into the tunnel's dark or across the
@@ -2483,7 +2507,9 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Esc is a choice the player made to open a second screen over the one already up, and focus loss
 ## is not a choice at all, so opening over a screen already asking for the player's attention would
 ## read as the game answering a question nobody asked. The title screen and an already-open pause
-## are excluded for the same reason `_unhandled_input()` excludes them.
+## are excluded for the same reason `_unhandled_input()` excludes them. **Nor does it open over the
+## beat a lost day holds on its cause** (`LossHold`), which asks for the same attention as the
+## summary it leads to; Esc in the beat skips it, since the beat takes any key as its skip.
 ##
 ## **Getting focus back does not resume the day.** The pause screen stays up until the player
 ## continues, the way it does after Esc: somebody coming back to the window has not yet looked at
@@ -2505,6 +2531,12 @@ func _pause_on_focus_lost() -> void:
 	# day's own summary and ending — nothing escape-specific to add here, unlike Esc.
 	if _pause.is_open() or _title.is_open() or _walk_in.is_walking() \
 			or (_summary and _summary.is_showing()):
+		return
+	# The beat a lost day holds on its cause asks for her attention as the summary after it does,
+	# and runs on its own clock under `Main`: a pause opened over it would hide the beat while it
+	# ran out behind the pause, and the beat, the newest child, would take the first press meant
+	# for the pause.
+	if _loss_hold and _loss_hold.is_running():
 		return
 	_pause.open()
 

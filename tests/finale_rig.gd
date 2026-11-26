@@ -1760,6 +1760,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 			"wiping the tint leaves every kerb of the walk plain")
 	await Boot.press_continue(t, main)
 	EventBus.hard_fail_triggered.emit("abduction")
+	Boot.skip_the_loss_beat(main)
 	await Boot.press_continue(t, main)
 	t.check(Boot.summary(main).is_showing(), "the loss's continue is the section again, behind its brief")
 	t.check(_escape_tint(city, day, on_the_walk, corridor).z == 0,
@@ -1935,6 +1936,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 
 		Boot.day(main).tick(30.0)
 		EventBus.hard_fail_triggered.emit("abduction")
+		Boot.skip_the_loss_beat(main)
 		t.check(summary.is_showing() and title.text != words,
 				"section %d: being taken comes up on the day's outcome screen" % section)
 		t.check(title.text.replace("\n", " ").contains(Texts.HARD_FAIL_TEXT["abduction"]),
@@ -2352,6 +2354,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 
 	await Boot.press_continue(t, main)
 	EventBus.hard_fail_triggered.emit("abduction")
+	Boot.skip_the_loss_beat(main)
 	t.check(summary.is_showing() and title.text != words, "a lost section's outcome screen is up")
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not pause.is_open(), "losing focus does not open the pause over it")

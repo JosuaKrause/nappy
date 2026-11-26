@@ -374,6 +374,12 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 		_events.light_what_she_never_met(_player.global_position)
 	# What ended the day, read once in the frame it ended (see `_landed_by_group()`).
 	var cause := _loss_cause(result)
+	# Where it stands, in the same frame, before the charges below end and the calendar moves.
+	if result == GameEnums.DayResult.LOST_HARD_FAIL or result == GameEnums.DayResult.LOST_CRYING:
+		end.mark_to_show_its_cause()
+		var behind := _thing_behind(cause)
+		if behind:
+			end.mark_caused_at(behind.global_position)
 	# Every charge still running ends for the page's charging counter, cut short by the day, on the
 	# day it was charged — a section she walks out of or loses as much as a day.
 	if _events:
@@ -413,6 +419,16 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 		return false
 	return result == GameEnums.DayResult.WON and calendar.is_final_day() \
 			and calendar.earned_good_ending()
+
+## The one thing in the world that caused a lost day, `cause` being what `LossCause` named it: the
+## car that struck her, or the event instance behind it (`EventManager.the_instance_behind()`). Null
+## when no one thing did (`LossCause.names_one_thing()`) or none still stands.
+func _thing_behind(cause: String) -> Node2D:
+	if not LossCause.names_one_thing(cause):
+		return null
+	if cause == "car":
+		return _crowd.car_that_struck_her() if _in_a_city else null
+	return _events.the_instance_behind(cause) if _events else null
 
 ## What ended a crying or hard-fail day, or "" for a win or a timeout. Reads the world only for the
 ## result that needs it; the rules are `LossCause`'s.

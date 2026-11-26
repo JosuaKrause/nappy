@@ -234,6 +234,9 @@ var _atlas: AtlasLibrary = null
 var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
+## The car that struck her, while the day it ended is the one being shown; null until one does
+## (`car_that_struck_her()`).
+var _striker: CrowdAgent = null
 ## `--skip motion`, handed in by `leave_out()`. `_physics_process` returns before the
 ## agents step while it is set, so nothing the crowd ticks (every agent's motion, the signals, the
 ## pockets, the traffic spacing, the index, the junctions, the gates, the doors, the player's own
@@ -343,6 +346,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 		_atlas.acquire(ATLAS_GROUP)
 		_atlas_held = true
 	_struck = false
+	_striker = null
 	# The lights go back to the top of their cycle with the traffic. They are a property of the
 	# city rather than of the day, so leaving them running reads as the right thing — and it
 	# breaks the invariant everything else here is built on: two attempts at the same day from the
@@ -1372,9 +1376,16 @@ func _strike(agent: CrowdAgent, here: Vector2) -> bool:
 	if _struck or not CarStrike.hits(agent.global_position, agent.heading(), agent.speed(), here):
 		return false
 	_struck = true
+	# Before the hard fail goes out: whoever ends the day reads it in that same call.
+	_striker = agent
 	if _bus:
 		_bus.hard_fail_triggered.emit("car_strike")
 	return true
+
+## The car whose strike ended the day, or null while none has struck her. Asked in the frame the
+## day ends, by whoever shows what caused the loss (`DayDirector.finish_day()`).
+func car_that_struck_her() -> CrowdAgent:
+	return _striker if is_instance_valid(_striker) else null
 
 ## The horn, sounded at somebody standing in the lane this car is about to occupy. Returns
 ## true while the car is closing, which is what puts the mark over the player's head. Only ever

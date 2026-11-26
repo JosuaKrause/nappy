@@ -287,6 +287,7 @@ func _test_shut_in_with_the_baby_asleep(t: TestRunner, seed_value: int) -> void:
 	var results: Array = []
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
 	_wait_for_the_close(main, shows)
+	Boot.skip_the_loss_beat(main)
 	t.check(results == [GameEnums.DayResult.LOST_HARD_FAIL]
 			and Boot.day(main).hard_fail_reason() == ParkCordon.TRAPPED,
 			"%s: shut in, the day is lost to the cordon (%s)" % [label, results])

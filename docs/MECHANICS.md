@@ -1550,6 +1550,32 @@ today again (a loss with nerves left retries the same day) — never off the day
 The day brief a resumed run opens on (`SummaryModel.brief_for()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
 
+## A lost day shows what caused it
+
+A day lost to the baby crying or to a hard fail is not followed at once by its summary: the world
+stops on the frame of the loss, and for about two seconds the camera shows the cause, with no text
+(`LossHold`, `Main._show_the_day_over()`). The game never draws a mark for it: the camera eases
+(0.7 s) from her view to a framing of her and the cause together, zooming out to fit them and never
+past half of her own zoom, then holds (1.5 s) before the summary comes up. A tap or a key skips the
+beat. Both numbers are constants on `LossHold`.
+
+What the cause is, one thing or none, is read in the frame the day ends (`DayDirector.finish_day()`,
+handed on in `DayEnd`), from the name the loss already carries (`LossCause`):
+
+- **A car strike**: the car that struck her (`Crowd.car_that_struck_her()`).
+- **A hard fail by an event**: the instance whose reach struck her, remembered when it struck
+  (`EventManager.check_hard_fails()`), and nothing once it is gone.
+- **A crying day lost to a catalogue row**: the live instance of that row with the largest landed
+  share of its own, the share the cause's group is summed from, so the camera goes to the one that
+  did the most and never to the nearest, which may have done little
+  (`EventManager.the_instance_behind()`).
+- **A crying day lost to the crowd, the traffic as a whole, or herself**, and a cause that no longer
+  stands in the world: no one thing, so the beat holds on her where she is.
+
+A lost day by the clock and a won day have no beat. The escape's sections lose the same way. The
+window losing focus inside the beat opens no pause over it, as it opens none over the summary the
+beat leads to (`Main._pause_on_focus_lost()`); Esc in the beat skips it, as any key does.
+
 ## The run clock
 
 `run.header().play_ticks()` is a second clock, over the whole run rather than one day: the
@@ -2063,9 +2089,12 @@ started. **A fresh run writes nothing at boot at all** — merely opening the ga
 title is not playing it, and there is no earlier charge on disk to protect — so the first write a
 fresh run or a held restart's next run ever makes is the `true` one, the instant its own title is
 actually dismissed; a save never appears just from looking at the title screen. When the charge
-ends the run the save is deleted and nothing is written. The end-of-day message writes the same
-`false` that a charged opening does, at the moment it comes up rather than at a dawn nothing
-stands behind. Nothing else writes: losing focus, a phone sending the game to the background,
+ends the run the save is deleted and nothing is written. The end of a day writes the same
+`false` that a charged opening does, at the moment the day ends rather than at a dawn nothing
+stands behind: as its end-of-day message comes up on a won day or a day run out by its clock, and
+in the frame of the loss on a day lost to the baby crying or to a hard fail, before the beat that
+shows its cause (see "A lost day shows what caused it"), so closing the game inside that beat
+takes nothing back. Nothing else writes: losing focus, a phone sending the game to the background,
 closing the window and quitting all still do what they always have — the game still pauses on focus
 loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
 the run and the day, never the moment inside one (PLAYTEST-82).
@@ -2133,8 +2162,10 @@ starting over is what it has always meant — no new control is drawn for cleari
 below like any other change in the save state.
 
 A small symbol appears in a corner at each change in the save state, on whatever screen is up —
-twice in an ordinary day: once when it starts, once when the day brief or the end-of-day message
-comes up for the next one. It names no key and is not a danger cue; it is the only thing that ever
+twice in an ordinary day: once when it starts, once when the day ends, which is as the day brief or
+the end-of-day message comes up for the next one, or, on a day lost to the baby crying or to a
+hard fail, as the beat that shows the loss's cause begins, the symbol showing over the frozen
+frame. It names no key and is not a danger cue; it is the only thing that ever
 tells the player a save changed at all, since saving itself is otherwise silent. **Every change
 shows it from the moment the change starts, fully shown for at least one second, counted from when
 it appears, and for as long as any change is still unanswered; it then fades over 1.5s, with no

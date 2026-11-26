@@ -61,6 +61,7 @@ const PARTS := {
 		"_test_a_bump_costs_and_one_of_them_is_survivable",
 		"_test_walking_into_somebody_displaces_and_startles_them",
 		"_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else",
+		"_test_the_car_that_struck_her_is_known_in_the_call_that_ends_the_day",
 		"_test_traffic_gives_way_at_a_crossing",
 	],
 	"field": [
@@ -912,6 +913,52 @@ func _test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t: TestRunner) 
 	# A car halted at a zebra is scenery. Walking into one must never end the day, or giving
 	# way would be a trap rather than a courtesy.
 	t.check(not CarStrike.hits(at, forward, 0.0, at), "a car that has stopped cannot run anybody over")
+
+## The strike ends the day in one synchronous call (`hard_fail_triggered`), and whoever ends the day
+## asks the crowd which car it was in that call (`Crowd.car_that_struck_her()`), so a car is
+## named before the signal goes out and none before a strike. Run on the crowd's own frames, with a
+## real `Stroller` handed in as `main` hands her, standing where a driving car's centre is.
+func _test_the_car_that_struck_her_is_known_in_the_call_that_ends_the_day(t: TestRunner) -> void:
+	var crowd := RunCity.crowd(_city)
+	crowd.use_focus(null)
+	crowd.start_day(1, _rng(1))
+	t.check(crowd.car_that_struck_her() == null, "no car has struck her at the start of a day")
+	var car := _first_of(CrowdAgent.Kind.CAR)
+	t.check(car != null, "there is traffic on the roads")
+	if not car:
+		return
+	crowd.use_focus(FakeCrowdFocus.new(car.global_position))
+	var her := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	her.add_child(camera)
+	_city.add_child(her)
+	her.global_position = car.global_position
+	her.set_physics_process(false)
+	var told := {}
+	var on_fail := func(reason: String) -> void:
+		if told.is_empty():
+			told["reason"] = reason
+			told["striker"] = crowd.car_that_struck_her()
+	EventBus.hard_fail_triggered.connect(on_fail)
+	RunCity.simulation(_city).meet_her(her)
+	crowd.use_bus(EventBus)
+	var frames := 0
+	while told.is_empty() and frames < 120:
+		await _city.get_tree().physics_frame
+		frames += 1
+	EventBus.hard_fail_triggered.disconnect(on_fail)
+	RunCity.simulation(_city).meet_her(null)
+	t.check(not told.is_empty() and told["reason"] == "car_strike", "standing in a car ends the day")
+	if not told.is_empty():
+		var striker: CrowdAgent = told["striker"]
+		t.check(striker != null and striker.lane().kind() == CrowdAgent.Kind.CAR,
+				"and the car that did it is already named when the day ends")
+		t.check(crowd.car_that_struck_her() == striker, "and stays named after it")
+	crowd.start_day(1, _rng(1))
+	t.check(crowd.car_that_struck_her() == null, "a new day names none")
+	her.free()
 
 ## Finding 3: *"cars should stop at crossings when I am close."* A zebra is only the safe way
 ## over if the traffic honours it — otherwise it is paint, and the choice between crossing here

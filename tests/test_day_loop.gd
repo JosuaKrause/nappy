@@ -419,6 +419,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t: TestRu
 	await Boot.press_title(t, main, "Tap")
 	var day := Boot.day(main)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
+	Boot.skip_the_loss_beat(main)
 	t.check(day.loss_reason() != "",
 			"the rig actually lost the day before asking the summary for anything")
 

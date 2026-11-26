@@ -22,6 +22,11 @@ static func of(result: GameEnums.DayResult, hard_fail_reason := "", struck_by :=
 			return _crying_suffix(landed_by_group)
 	return ""
 
+## Whether `cause`, as `of()` names it, is one thing in the world that can be shown: a car or a
+## catalogue row's instance. `crowd`, `traffic` (no one car), `self` and no cause at all are not.
+static func names_one_thing(cause: String) -> bool:
+	return cause != "" and not (cause in ["crowd", "traffic", "self"])
+
 ## What ended a hard-fail day: `car` for the one hard fail that is not a catalogue row
 ## (`EventBus.hard_fail_triggered("car_strike")`, `Crowd._strike()`), otherwise the id off whatever
 ## row actually struck her (`EventBus.hard_fail_triggered(instance.row_id())`,

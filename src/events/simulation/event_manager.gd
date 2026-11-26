@@ -268,6 +268,7 @@ func _begin(spec: DaySpec) -> void:
 	set_physics_process(true)
 	_hard_failed = false
 	_struck_by = ""
+	_striker = null
 	use_the_spec(spec)
 
 ## **The second half, which every walk shares** (a day, a section of the escape, a scene's recipe):
@@ -462,6 +463,33 @@ func what_struck_her() -> String:
 	return _struck_by
 
 var _struck_by := ""
+## The instance whose reach ended today, remembered beside `_struck_by` by `check_hard_fails()`
+## and reset with it, so the one that struck her is known without asking any instance again: one
+## that drives may no longer reach her a frame later, or a catch may already have changed its state.
+var _striker: EventInstance = null
+
+## **The live instance behind a lost day's cause**, `cause` being what `LossCause` named it (an
+## instance's logged name, hyphenated), or null when none stands in the world. On a day an event's
+## reach ended, the instance that struck her (`check_hard_fails()` remembers it), or null once it
+## is gone, never another of its row. Otherwise, a crying day, the one of that name that landed the
+## most on the baby over the window (`ExcitementSource.landed()`, the share
+## `DayDirector._landed_by_group()` sums), so a crying loss goes to the instance that did the most
+## and never the nearest, which may have done little. Asked in the frame the day ends.
+func the_instance_behind(cause: String) -> EventInstance:
+	if _hard_failed:
+		if is_instance_valid(_striker) and not _striker.is_gone():
+			return _striker
+		return null
+	var behind: EventInstance = null
+	var most := -1.0
+	for instance in world.instances():
+		if instance.is_gone() or instance.logged_name().replace("_", "-") != cause:
+			continue
+		var landed := instance.source().landed()
+		if landed > most:
+			behind = instance
+			most = landed
+	return behind
 
 ## She has crossed a district door — `CheckpointController.door_crossed`, forwarded, so a listener
 ## asks the day's events rather than the controller behind them (`ResistanceDirector`).
@@ -653,6 +681,7 @@ func check_hard_fails() -> void:
 		if instance.is_lethal_at(world.player().global_position):
 			_hard_failed = true
 			_struck_by = instance.logged_name()
+			_striker = instance
 			_tell_the_watch_of_the_catch(instance)
 			# The charge's own catch, counted whatever the day does (`EventInstance.report_the_catch()`).
 			instance.report_the_catch()

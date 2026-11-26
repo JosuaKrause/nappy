@@ -8,6 +8,7 @@ func run(t: TestRunner) -> void:
 	_test_crying_cause_suffix(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_the_cause_by_result(t)
+	_test_only_a_car_or_a_row_is_one_thing_to_show(t)
 
 ## What `LossCause.of()` names a hard-fail day that `reason` ended, `struck_by` the instance whose reach did.
 func _hard_fail(reason: String, struck_by := "") -> String:
@@ -78,3 +79,11 @@ func _test_the_cause_by_result(t: TestRunner) -> void:
 			"a crying day reads only the landed shares")
 	t.check(LossCause.of(GameEnums.DayResult.LOST_CRYING) == "self",
 			"and with nothing landed it was her own")
+
+## The camera goes to a cause only when one thing in the world is it: a car or a row's instance.
+## The groups that are many things at once, and a day with no cause, keep it on her.
+func _test_only_a_car_or_a_row_is_one_thing_to_show(t: TestRunner) -> void:
+	for named: String in ["car", "pelican", "charging-dog", "night-raid"]:
+		t.check(LossCause.names_one_thing(named), "%s is one thing in the world" % named)
+	for named: String in ["crowd", "traffic", "self", ""]:
+		t.check(not LossCause.names_one_thing(named), "'%s' is not one thing" % named)

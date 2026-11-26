@@ -1024,6 +1024,7 @@ func _test_a_session_on_one_booted_game(t: TestRunner) -> void:
 	await _check_the_title_then_a_key_starts_in_tap(t, main, run)
 	await _check_play_seconds_only_advance_while_the_world_moves(t, main, run)
 	await _check_focus_loss(t, main, run)
+	await _check_a_lost_day_holds_its_beat_before_the_summary(t, main)
 	await _check_a_won_day_fourteen_hands_over(t, main, calls, run)
 	await _check_the_summary_and_pause_restart_signals_are_both_connected(t, main, calls, run)
 	_shut(t, main)
@@ -1251,6 +1252,64 @@ func _check_focus_loss(t: TestRunner, main: Boot.MainScript, run: RunState) -> v
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not pause.is_open(), "focus loss does not open a second screen over the ending")
 	_reset_the_screens(t, main)
+
+## The beat a lost day holds on its cause, running under `main` (`LossHold`), or null when none runs.
+static func _running_beat(main: Node) -> LossHold:
+	for found: Node in main.find_children("*", "LossHold", false, false):
+		var hold := found as LossHold
+		if hold != null and hold.is_running():
+			return hold
+	return null
+
+## The summary's continue pressed through the viewport, as a finger presses it, and the frames its
+## acknowledgement takes.
+func _continue_the_summary(t: TestRunner, main: Node) -> void:
+	var summary := _one(main, "DaySummary") as DaySummaryScript
+	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
+	await UI.frames(t)
+
+## **A lost day raises its summary only once the beat on its cause has ended, and a win or a timeout
+## raises it at once** (`main._show_the_day_over()`). A day lost to a car: the world stops, the beat
+## runs and the summary is not up; the window losing focus inside the beat opens no pause, since the
+## beat asks for her attention as the summary does (`main._pause_on_focus_lost()`); the beat runs out
+## on real frames and the summary comes up, still with no pause over it. Then a day run out by its
+## clock and a won day: each raises the summary in the call that ends it, with no beat.
+func _check_a_lost_day_holds_its_beat_before_the_summary(t: TestRunner, main: Boot.MainScript) -> void:
+	var tree: SceneTree = t.get_tree()
+	var window := main.get_node("ReturnWindow") as ReturnWindow
+	var pause := _one(main, "PauseScreen") as PauseScreen
+	var summary := _one(main, "DaySummary") as DaySummaryScript
+	var day := _one(main, "DayController") as DayController
+	t.check(day.is_running() and not summary.is_showing(), "a day is being walked")
+	EventBus.hard_fail_triggered.emit("car_strike")
+	var hold := _running_beat(main)
+	t.check(hold != null and tree.paused and not summary.is_showing(),
+			"a lost day stops the world on a beat, with no summary yet")
+	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not pause.is_open(), "losing focus inside the beat opens no pause over it")
+	var limit := ceili((LossHold.EASE_SECONDS + LossHold.HOLD_SECONDS) * Engine.physics_ticks_per_second
+			* 2.0)
+	var frames := 0
+	while not summary.is_showing() and frames < limit:
+		await tree.physics_frame
+		frames += 1
+	t.check(summary.is_showing() and _running_beat(main) == null,
+			"the beat runs out on its own and the summary comes up (%d frames)" % frames)
+	t.check(not pause.is_open(), "with no pause over it")
+	t.get_viewport().set_disable_input(false)
+	await _continue_the_summary(t, main)
+	day = _one(main, "DayController") as DayController
+	t.check(day.is_running() and not summary.is_showing(), "its continue walks the day again")
+
+	day.tick(day.seconds_left())
+	t.check(summary.is_showing() and _running_beat(main) == null,
+			"a day run out by its clock raises its summary at once, with no beat")
+	await _continue_the_summary(t, main)
+	day = _one(main, "DayController") as DayController
+	day.day_finished.emit(GameEnums.DayResult.WON)
+	t.check(summary.is_showing() and _running_beat(main) == null,
+			"and so does a won day")
+	await _continue_the_summary(t, main)
 
 ## The day begun, its day 14 set up as `kept_the_last_night` and `hard` say, and the day's end
 ## announced by the day itself: the day's signal, as its clock or its goal would send it.

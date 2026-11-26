@@ -115,10 +115,13 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 	title.start_requested.emit(ControlsMode.Mode.TAP, true, ControlsMode.Side.LEFT)
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("car_strike")
+	Boot.skip_the_loss_beat(main)
 	await _continue_while_paused(t, main)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
+	Boot.skip_the_loss_beat(main)
 	await _continue_while_paused(t, main)
 	EventBus.hard_fail_triggered.emit("homeless_yeller")
+	Boot.skip_the_loss_beat(main)
 	await _continue_while_paused(t, main)
 	# Dusk: the day's own clock run out, through the one tick that notices it.
 	var day := Boot.day(main)
@@ -257,6 +260,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	_check_the_observer_runs_after(t, main, [Boot.day(main), _edge_of(main), Boot.interior(main),
 			main.get_node_or_null("Interior/Simulation/Events")], "the escape")
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
+	Boot.skip_the_loss_beat(main)
 	t.check(summary.is_showing() and _words_on(summary).contains("He caught you on the stairs"),
 			"a lost section comes up on the day's outcome screen, with the reason it was lost")
 	await _continue_while_paused(t, main)
