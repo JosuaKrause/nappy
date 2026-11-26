@@ -39,6 +39,9 @@ var _posters: PosterState = _run_parts.register(PosterState.new())
 ## and given back with the rest of what an attempt spends, and a top-level save key of its own like
 ## the posters, so a save written before it loads at 0.
 var _pelican: PelicanState = _run_parts.register(PelicanState.new())
+## How many times each thought-bubble hint has shown, photographed and given back with a lost
+## attempt, and a top-level save key of its own so an older save loads with none shown.
+var _hints: HintLedger = _run_parts.register(HintLedger.new())
 ## The run's calendar over those parts: the day and act, a day's attempt begun and ended, the mode
 ## and the checkpoint, the day's random streams (`RunCalendar`). Whoever walks the days is handed
 ## this rather than the whole run.
@@ -63,6 +66,10 @@ func resistance() -> ResistanceRunState:
 ## What an attempt spends and a lost day gives back: the one-shots, the scars, the block arcs.
 func attempt_spend() -> AttemptSpendState:
 	return _attempt_spend
+
+## How many times each thought-bubble hint has shown this run.
+func hints() -> HintLedger:
+	return _hints
 
 ## The facts that ride beside the save's snapshot: the escape's section, the alley tiles, the park.
 func facts() -> RunFacts:

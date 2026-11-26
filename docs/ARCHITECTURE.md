@@ -54,6 +54,7 @@ src/
 	attempt_spend_state.gd   one-shots, scars, block arcs; given back by a lost day
 	settled_state.gd      the calm block she settled in each day
 	run_facts.gd          escape section, used alleys, fenced park: riders beside the snapshot
+	hint_ledger.gd        how many times each thought-bubble hint has shown; given back by a lost day
 	day_director.gd       the one start every walk goes through, a day, an authored scene's day or
 	                      a section of the escape, in its one order, and the one end; handed where
 	                      each walk's world comes from and the run's calendar
@@ -67,6 +68,18 @@ src/
 	view_shake.gd         the small eased shake of her view an explosion near gives (full on top of
 	                      it, none at its reach), which the stroller adds to its camera's follow
 	baby.gd               the two meters + baby state machine
+	hints/                the thought bubbles over her, one hint per watcher
+	  hint_watch.gd         asks the watchers each tick, puts the winner in the bubble, owns the bubble;
+	                        a higher hint replaces a lower one that is up
+	  hint_watcher.gd       one hint's question: does it apply now, which way does it point
+	  hint_frame.gd         what a watcher is asked against, one tick: where she is, which way she faces
+	  hint_kind.gd          the eight hints, their ids and the picture each holds
+	  thought_bubble.gd     the bubble over her head holding one picture, drawn through the scenery drawer
+	  back_to_route_watcher.gd, use_zebra_watcher.gd, turn_back_watcher.gd, cross_street_watcher.gd,
+	  walk_wide_watcher.gd, way_to_park_watcher.gd, chalk_mark_watcher.gd,
+	  walk_through_hut_watcher.gd   the eight watchers, in the order they win in
+	  nearest_crossing.gd   the way to the nearest zebra crossing, shared by the two hints that point at one
+	  route_waypoints.gd    where day 1's tutorial route turns, in order, for the way to the park
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
 	city_generator.gd     seeded generation
@@ -1044,7 +1057,7 @@ of them and no part can be missed in one; within a part, each field is written i
 and `tests/test_run_state.gd` checks that every field reaches its data and that a lost day gives back
 what was photographed. The parts are `RunHeader` (the seed, the day, the nerves, the
 ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shots, scars, block
-arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
+arcs), `SettledState`, `RunFacts`, `HintLedger` (the thought-bubble shows), and `PosterState` and `PelicanState`. A part says where the
 save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
 beside it with a default for absence, or under a key of its own. Readers take the part that owns a
 fact through the run's method and ask the part through its own (`run.header().day()`,

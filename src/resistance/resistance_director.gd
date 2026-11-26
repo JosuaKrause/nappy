@@ -3579,6 +3579,15 @@ func contact() -> ContactPoint:
 func read_mark() -> ContactPoint:
 	return _read_mark
 
+## **Where today's chalk mark stands while it is on offer**, or `Vector2.INF`: no step today,
+## today's step is a task, or she has read the mark. The narrow reader `main` hands the thought
+## bubble that hints at the mark (`ChalkMarkWatcher`), so nothing else of the director is reached.
+func mark_on_offer() -> Vector2:
+	var step := current_step()
+	if step == null or not step.is_pickup or _contact.is_finished():
+		return Vector2.INF
+	return _contact.global_position
+
 func rider() -> EventInstance:
 	return _rider
 

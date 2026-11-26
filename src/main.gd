@@ -871,6 +871,12 @@ func _build_the_city(dark_from_the_start := false) -> void:
 	_city_simulation = _simulation_builder().in_the_city(_city, _city.map(), _city.navigator(),
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
+## Where today's chalk mark stands while it is on offer, or `Vector2.INF` for none, with no
+## resistance (the escape's boot): the reader the thought bubble about the mark is handed
+## (`ResistanceDirector.mark_on_offer()`).
+func _todays_mark() -> Vector2:
+	return _resistance.mark_on_offer() if _resistance else Vector2.INF
+
 ## **The boot's simulation builder**, made the first time a world needs one: equipped with this
 ## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the drawn view of
 ## the screen (one object, handed to the builder for the events and to the crowd's view), the
@@ -881,6 +887,9 @@ func _simulation_builder() -> SimulationBuilder:
 	_simulations = SimulationBuilder.new()
 	_simulations.equip(_the_trace(), _sitting.atlas(), _sitting.kept_frame_timing())
 	_simulations.use_bus(EventBus)
+	# The thought bubble that hints at the chalk mark asks the resistance where today's mark is, and
+	# the resistance stands after the city's simulation: a narrow reader, read when it is asked.
+	_simulations.use_the_mark(_todays_mark)
 	_simulations.use_poster_art(_poster_art)
 	var drawn := DrawnView.on(self)
 	_simulations.use_the_drawn_view(drawn)
@@ -986,9 +995,11 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
 		start_at = _finale_start_position()
 	# The city's parts, each on its own: a walk and an authored scene are handed the same world.
-	return DayWorld.in_the_city(_city, _city.map(), _city.streets(), _city_simulation.crowd(),
+	var world := DayWorld.in_the_city(_city, _city.map(), _city.streets(), _city_simulation.crowd(),
 			_city_simulation.poster_walls(), _city_simulation.events(), _player, _baby, start_at,
 			home_map, exits, Vector2.DOWN)
+	world.use_hints(_city_simulation.hints())
+	return world
 
 ## The first world a boot stands is where the run log's session is handed what it watches every
 ## walk with besides the walk's world — the day's clock, the resistance (none in the escape) and the

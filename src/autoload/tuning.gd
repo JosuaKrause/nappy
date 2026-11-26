@@ -803,6 +803,12 @@ const AHEAD_MIN_SPEED := 40.0
 ## the rules finally being explained.
 const RUN_TAUGHT_DAY := 3
 
+## **How many times a lesson's thought bubble shows in a run**, then never again: "only a few times
+## for each new lesson" (curly-moose #819). A lost attempt gives its shows back. The bubble that
+## points her back to day 1's tutorial route is the one exception and shows every time
+## (gentle-owl #1253). *Proposed, not asked for:* three.
+const HINT_SHOWS_PER_LESSON := 3
+
 ## How long a pursuer keeps coming once it turns lethal, before it gives up on her: **a long cap,
 ## not an end she can walk out of**. *(Amendment 8 of M226, the player: "pursuers should never (or a
 ## long time) stop pursuing if she walks -- that will make it impossible to walk away".)* Walking

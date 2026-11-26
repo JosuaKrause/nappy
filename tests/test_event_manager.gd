@@ -50,6 +50,7 @@ func run(t: TestRunner) -> void:
 		_test_a_recipes_bodies_are_in_its_way_on,
 		_test_a_recipes_walk_sites_on_the_ground_it_is_handed,
 		_test_a_recipes_walk_sites_over_the_tree_and_locations_it_is_handed,
+		_test_the_bubbles_are_answered_a_body_on_a_stretch_and_the_doors_in_sight,
 	]
 	for test in on_streets:
 		_stage = Rig.build_stage(t, null, StreetMap.full())
@@ -509,6 +510,31 @@ func _test_the_instance_behind_a_hard_fail_is_the_one_that_struck_her(t: TestRun
 	t.check(events.the_instance_behind("cyclist") == null,
 			"once it is gone nothing is behind it, never the other of its row")
 	events.retire(other)
+	events.use_player(null)
+	rig.free()
+
+## **What the thought bubbles ask of the events**: whether a solid body stands on a stretch of
+## sidewalk (`has_a_body_on()`, the cross-the-street bubble's) and which doors' bodies she may walk
+## through are in her view (`doors_in_sight()`, the hut bubble's): a checkpoint hut, not a cyclist.
+func _test_the_bubbles_are_answered_a_body_on_a_stretch_and_the_doors_in_sight(t: TestRunner) -> void:
+	var events := _stage.events()
+	var her := CrowdLanes.arterial_pavement(_stage.map())
+	var rig := Rig.walker(t, _stage, her)
+	var at := her + Vector2(96.0, 0.0)
+	var hut := events.spawn_extra(EventCatalogue.by_id("checkpoint_hut"), at)
+	var cyclist := events.spawn_extra(EventCatalogue.by_id("cyclist"), her + Vector2(0.0, 64.0))
+	t.check(hut.is_solid() and events.has_a_body_on(Rect2(at - Vector2(8.0, 8.0), Vector2(16.0, 16.0))),
+			"the hut's body stands on the stretch it is on")
+	t.check(not events.has_a_body_on(Rect2(her + Vector2(600.0, 0.0), Vector2(64.0, 64.0))),
+			"and on no stretch far from it")
+	events.visible_view().look(VisibleView.around(her, null).camera_view(), null)
+	var doors := events.doors_in_sight()
+	t.check(doors.size() == 1 and doors[0] == hut, "the hut in her view is a door she may walk through, "
+			+ "the cyclist is not (%s)" % [doors])
+	events.visible_view().look(VisibleView.around(her + Vector2(5000.0, 5000.0), null).camera_view(), null)
+	t.check(events.doors_in_sight().is_empty(), "and out of her view it is none")
+	events.retire(hut)
+	events.retire(cyclist)
 	events.use_player(null)
 	rig.free()
 
