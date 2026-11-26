@@ -1643,6 +1643,16 @@ trees of its own, and the burst water main), each picture offered from the first
 day 2, its picture's own first day (`SealPlanner.Candidate`), so day 1 stays light
 (minty-dolphin #834). A picture added to the candidate list costs nothing here but a longer list.
 
+**On a pedestrian street a seal closes the street frontage to frontage, and no soft seal stands
+there** (tiny-lark #931). A precinct is paved wall to wall and no car drives it, so a soft pair's
+open middle lanes would cost nothing to walk, and walkers would walk through them. A precinct is
+offered only the hard seals solid all across their shape (`SealPlanner._closes_a_precinct()`):
+the barricade, the fallen tree, the burst water main and the later acts' wreckage. The car
+accident is left out as well, since it is solid only at its two cars and its pavements are
+walkable; that is the reading of the player's answer, open to their overturn. A hard seal holds
+its street (`CityMap.held_streets()`), so a precinct off the tree carries no catalogue row
+either.
+
 **The doorstep is exempt, for the same reason a closure never stands there**: the home is a notch
 with one exit, and a seal on its own street would seal her in on the first frame. **The join
 between the home street and the rest of the tree is protected too, not merely the home street

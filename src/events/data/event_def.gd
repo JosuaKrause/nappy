@@ -316,6 +316,12 @@ func has_a_body() -> bool:
 func solid_reach() -> float:
 	return _body.solid_reach()
 
+## Whether its body is solid only in the pieces it declares (`BodySpec.declared_pieces()`), so
+## the ground between them inside its shape is open: the crash's two cars, with its debris and both
+## pavements walkable. False for a row solid all across its shape, or with no body.
+func is_solid_in_parts() -> bool:
+	return not _body.declared_pieces().is_empty()
+
 ## Whether it moves along a route of its own (`RouteSpec.moves()`).
 func moves() -> bool:
 	return _route.moves()

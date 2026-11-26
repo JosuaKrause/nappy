@@ -55,6 +55,11 @@ extends RefCounted
 ## for the day, and it is offered only on a street `StreetTrees` actually planted (see
 ## `FALLEN_TREE_SEAL_ID`).
 ##
+## **On a pedestrian street, only a seal that closes it.** A precinct is paved frontage to
+## frontage with no carriageway, so a soft seal's open middle, or a crash's walkable pavements,
+## would be a hole walkers walk through and she risks nothing in. A precinct is offered only the
+## hard seals solid all across (`_closes_a_precinct()`), and a seal there spans it wall to wall.
+##
 ## **The doorstep is exempt.** `ClosurePlanner.home_street(map)` is never sealed, for the same
 ## reason it is never closed: the home is a notch with one exit, so sealing it seals her in.
 ##
@@ -352,7 +357,8 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 			continue
 		if thinned and not _seals_this_street(rng):
 			continue
-		var candidate := _pick_candidate(pictures, day, rng, lined.has(key))
+		var candidate := _pick_candidate(pictures, day, rng, lined.has(key),
+				TutorialRoute.is_a_precinct(map, segment))
 		if not candidate:
 			continue
 		var sited := seal_street(map, segment, candidate, route, trees, emptied)
@@ -417,7 +423,7 @@ static func _seal_a_mouth(map: CityMap, segment: StreetNetwork.Segment, at_a: bo
 	var precinct := TutorialRoute.is_a_precinct(map, segment)
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if offers(candidate, day, false) and _seals_a_tutorial_mouth(candidate, precinct):
+		if offers(candidate, day, false, precinct) and _seals_a_tutorial_mouth(candidate, precinct):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
@@ -594,23 +600,51 @@ static func _seals_this_street(rng: RandomNumberGenerator) -> bool:
 const FALLEN_TREE_SEAL_ID := "fallen_tree_seal"
 
 static func _pick_candidate(pictures: Array[Candidate], day: int, rng: RandomNumberGenerator,
-		street_has_trees: bool) -> Candidate:
+		street_has_trees: bool, on_a_precinct: bool) -> Candidate:
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if offers(candidate, day, street_has_trees):
+		if offers(candidate, day, street_has_trees, on_a_precinct):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
 
 ## Whether `candidate` may seal a street on `day`: every row it names is available by then
-## (`EventDef.own_first_day()`), and a fallen tree only on a street with trees of its own
-## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`). What `plan_day()` draws a street's picture from, and
-## what a scene recipe's authored seal is held to (`SceneRecipeRuntime`).
-static func offers(candidate: Candidate, day: int, street_has_trees: bool) -> bool:
+## (`EventDef.own_first_day()`), a fallen tree only on a street with trees of its own
+## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`), and on a pedestrian street
+## (`on_a_precinct`, `TutorialRoute.is_a_precinct()`) only a picture that closes it
+## (`_closes_a_precinct()`). What `plan_day()` draws a street's picture from, and what a scene
+## recipe's authored seal is held to (`SceneRecipeRuntime`).
+static func offers(candidate: Candidate, day: int, street_has_trees: bool,
+		on_a_precinct: bool) -> bool:
 	if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
 		return false
+	if on_a_precinct and not _closes_a_precinct(candidate):
+		return false
 	return _eligible(candidate, day)
+
+## **Whether `candidate` closes a pedestrian street frontage to frontage**: a hard seal whose rows
+## are solid all across their shape. A precinct is paved frontage to frontage and has no
+## carriageway, so a seal there has nothing to leave open to be risked:
+##
+## - **no soft seal** *(tiny-lark #931, the player, asked what a soft seal should leave open on a
+##   pedestrian street, picked "(c)": never place one there)*. A soft pair takes both sidewalks and
+##   leaves the middle lanes open, which on a street with no traffic costs nothing to walk;
+## - **no hard seal solid in parts** (`EventDef.is_solid_in_parts()`), the car accident, whose
+##   pavements and debris are walkable and priced only by its field, so walkers walk through it.
+##   A hard seal spans the street and nothing gets past it, which the crash is not; and a crash of
+##   two cars on a street no car drives is no picture of anything. Left out by the reading of the
+##   player's answer rather than by their words, open to their overturn.
+##
+## Generic over the candidate list, so a new picture is offered on a precinct or not by its own rows.
+static func _closes_a_precinct(candidate: Candidate) -> bool:
+	if candidate.strength != Strength.HARD:
+		return false
+	for id in candidate.def_ids:
+		var def := EventCatalogue.by_id(id)
+		if def and def.is_solid_in_parts():
+			return false
+	return true
 
 static func _eligible(candidate: Candidate, day: int) -> bool:
 	if day < candidate.first_day:
