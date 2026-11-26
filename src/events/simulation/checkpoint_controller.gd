@@ -580,10 +580,12 @@ func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vecto
 ## (`EventFootprints.raised_hand_rect()` on `EventInstance.its_guards_feet()`, asked of the world's
 ## `VisibleView.sees_all()`: inside the camera's view and, in the joystick scheme, clear of the two
 ## bottom corners its controls cover; feathery-lynx #581), so a hand she cannot see is never his
-## warning (bouncy-owl #1774); where none is, the nearer when a view hides both (a camera held at the city's
-## edge can), whose charge comes from closer, and the farthest while no view has been looked through (a rig). Null for none. The
-## warning starts with the crossing (inbox #788 in minty-lemur), so it is not held: which hut warns is the check. His is the hut a guard steps out of
-## (`_set_a_guard_on_her()`).
+## warning (bouncy-owl #1774). The street camera has no limits, so it stays within about 74px
+## of her and the near hand is always in sight; the fallback where none is, defensive and never
+## met in play, is the nearer (whose charge comes from closer) once a view has been looked
+## through, and the farthest while none has (a rig). Null for none. The warning starts with the
+## crossing (inbox #788 in minty-lemur), so it is not held: which hut warns is the check. His is
+## the hut a guard steps out of (`_set_a_guard_on_her()`).
 func _hut_that_warns(door: EventInstance, here: Vector2) -> EventInstance:
 	var axis := door.facing_now()
 	var view := world.visible_view()

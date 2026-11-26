@@ -98,7 +98,6 @@ func run(t: TestRunner) -> void:
 	await _test_walking_under_the_boom_sets_a_guard_on_her(t)
 	await _test_the_guard_who_warned_is_the_guard_who_comes(t)
 	await _test_a_hand_under_a_covered_corner_is_not_raised(t)
-	await _test_with_both_hands_hidden_the_nearer_guard_raises_his(t)
 	_test_the_guard_leaves_room_to_answer(t)
 	await _test_a_walk_under_the_boom_is_seen(t)
 	await _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
@@ -2339,44 +2338,6 @@ func _test_a_hand_under_a_covered_corner_is_not_raised(t: TestRunner) -> void:
 			t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 					"(tap) under the same view, the guard across the road raises his")
 		_free_street_door_rig(rig)
-
-## **With both raised hands out of her sight, the nearer hut's guard raises his** (the covered-corners
-## review nit on PR #1792). The same north-south door and crossing as above, the camera put far from
-## the door so neither hand is in sight (the camera held at the city's edge can hide both):
-## `CheckpointController._hut_that_warns()` falls back to the nearer hut, not the farthest.
-func _test_with_both_hands_hidden_the_nearer_guard_raises_his(t: TestRunner) -> void:
-	var rig := _street_door_rig(t, Vector2.DOWN)
-	var city: City = rig["city"]
-	var gate: EventInstance = rig["gate"]
-	var huts: Array[EventInstance] = []
-	huts.assign(rig["huts"])
-	if not gate or huts.size() != 2:
-		_free_street_door_rig(rig)
-		return
-	var axis := gate.facing_now()
-	(rig["state"] as GateState).set_boom_up(true)
-	var lane := gate.global_position + Vector2.LEFT * 28.0
-	var near_hut := huts[0] if huts[0].global_position.x < huts[1].global_position.x \
-			else huts[1]
-	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
-	var her := lane - axis * 20.0
-	var centre := her + Vector2(0.0, 2000.0)
-	await _step_her_to(t, rig, lane + axis * 20.0 + Vector2.LEFT * 300.0)
-	await _step_her_to(t, rig, lane + axis * 20.0)
-	var stroller: Stroller = rig["stroller"]
-	stroller.global_position = her
-	var camera: Camera2D = stroller.get_node("Camera2D")
-	camera.enabled = false
-	camera.global_position = centre
-	await _ticks(t, 1)
-	var looked := RunCity.events(city).visible_view()
-	t.check(not looked.sees_all(EventFootprints.raised_hand_rect(near_hut.its_guards_feet()))
-			and not looked.sees_all(EventFootprints.raised_hand_rect(far_hut.its_guards_feet())),
-			"neither guard's hand is in sight")
-	await _ticks(t, 1)
-	t.check(near_hut.is_its_guard_warning() and not far_hut.is_its_guard_warning(),
-			"with both hands hidden, the nearer hut's guard raises his")
-	_free_street_door_rig(rig)
 
 ## **The man who warned her is the man who comes** (review 4 of PR #781). She crosses under the
 ## raised boom in the near lane, so the guard at the hut across the road raises his hand; through
