@@ -351,7 +351,10 @@ dog walker at a tile.
   day, so the rule in "What telegraphs" gives it none), as the loose dog is; its route runs back down
   her line and past her by the same distance. **It is created on the route the director sited it on**
   (`EventsAhead._send_down_her_line()`), against the camera's whole view, never sited a second time:
-  a handout the director has spent always exists. **It is created past its telegraph, at a point of its
+  a handout the director has spent always exists. With the camera leading her as in play, a second
+  siting, from where the camera has moved by then, finds no room for a share of them, most of all on
+  day 11, so the route it was sited on is what every sent one is created on (the record
+  grassy-beaver-golden-puffin has the counts). **It is created past its telegraph, at a point of its
   bark drawn on the director's stream** (`EventDirector.age_it_is_sent_at()`): it is the row she would
   come upon, put just ahead of her, so the point of its bark that reaches her is as free as it is for
   one she walks up to, and a pass costs the row's price in `docs/COSTS.md` (its pass averaged over the
@@ -1573,7 +1576,12 @@ crossing the road with cars, (6) timing the yeller, then the park (gentle-owl #1
   sidewalk. A noise whose cost reaches across the carriageway, as the leaf blower's does (165px),
   would take her line, which the day's rules refuse on any route (`RouteLineRule`). (4) is the
   delivery van, silent, so the lesson is the crossing. (6) is the yeller, his beat on her sidewalk,
-  for her to time her pass; whether timing it costs less than walking past untimed is not measured. (3)'s dog walker is sent by the director (below). *Proposed, not
+  for her to time her pass; whether timing it costs less than walking past untimed is not measured.
+  His slot starts at the junction she comes onto his street at, lesson (5)'s crossing with cars, so
+  wherever he stands his beat reaches that crossing; kept off it, his beat leaves the sidewalk only at
+  the far junction, where his field reaches the park she has not used, and he stands on almost no
+  day. Which of the two to give up is the player's choice (the record grassy-beaver-golden-puffin
+  counts each option measured). (3)'s dog walker is sent by the director (below). *Proposed, not
   asked for:* the rows and the streets (gentle-owl #1253, the orchestrator's sketch, which the
   player answered by lesson number).
 - **Judged as every phase's rows are.** Each row is offered its slot tile by tile on its own ground

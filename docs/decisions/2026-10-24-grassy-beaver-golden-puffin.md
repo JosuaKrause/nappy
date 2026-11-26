@@ -81,7 +81,7 @@ last, minty-dolphin #834).
 |---|---|---|
 | market stall (2) | 24 | 142 |
 | delivery van (4) | 23 | 138 |
-| yeller (6) | 18 | 117 |
+| yeller (6) | 18 | 117, his beat on lesson (5)'s junction box on all 117 |
 | leaf blower (the design's (2), before the switch) | — | 0, refused by `RouteLineRule` on every slot |
 
 A line crossing a carriageway at lesson (5)'s junction: 144 of 144 routes, counted by the probe
@@ -91,10 +91,26 @@ the first block on any seed.
 
 `tests/probes/grassy_beaver_dog_walkers.gd` walks day 1 (the walk is `tests/tutorial_walk_rig.gd`'s)
 from the doorstep along the day's branch to the tutorial park, into it, and back to the doorstep at
-walking speed, and counts a dog walker met where she was when it came nearest. Over 144 seeds (the
-city suites' 24 and seeds 1 to 120): lesson (3)'s dog walker came nearest on its street on 141, and
-a second dog walker was met on her walk home, before her door, on 144; on the 24 suite seeds both
-came within 5px of her on every seed, which `tests/test_tutorial_dog_walkers.gd` holds.
+walking speed, and counts a dog walker the director sent as met where she was when it came nearest,
+judged against the camera's view. The camera is walked as in play (`FollowCamera`: its lead eased
+toward `Stroller.CAMERA_LOOK_AHEAD` along her facing at the rate `Stroller._update_camera()` eases
+it, and the followed point smoothed at the speed her scene's camera sets, stepped at the physics
+rate), and then held a fixed distance ahead of her along her facing. Over 144 seeds (the city
+suites' 24 and seeds 1 to 120):
+
+| Camera | Lesson (3)'s dog walker met on its street | The second met on her walk home, before her door |
+|---|---|---|
+| as in play | 141 (on seeds 1, 10 and 48 it is met elsewhere on her way out) | 144 |
+| 23px ahead | 141 | 144 |
+| 31px ahead | 106 | 144 |
+| 46px ahead (the whole look-ahead, no lag) | 77 | 144 |
+
+On the 24 suite seeds, with the camera as in play, both came within 5px of her on every seed, which
+`tests/test_tutorial_dog_walkers.gd` holds. A camera held a fixed lead ahead turns with her facing
+the instant she turns, where the game's eases its lead round over about a second; that is the
+likely reason a fixed 31px, near play's lead on a straight walk, meets fewer than play does, read
+from the two walks and not traced. Where lesson (3)'s is missed, it comes later on her way or on
+her walk home, and a second still comes before her door.
 
 **Why the first build met two on no seed.** The director counted a dog walker sent and spent its
 marble when it sited one, and `EventsAhead._send_down_her_line()` then sited it again from another
@@ -106,6 +122,15 @@ line's sidewalk of the street from its far end where down her line has no room, 
 the corner. The second is sent the same way on that street on her walk home, and the hold lasts on
 the walk home until it has come (proposed, open to overturn). The probe itself told no view before:
 its camera, never moved by a frame, stood at the world's origin.
+
+**What the creation fix changes on every other day.** A dog walker the director sends on any day is
+now created on the path it was sited on, where the old second siting dropped it whenever it found no
+room. With the camera centred on her the two give the same days; with it leading her as in play they
+do not. The PR's second review walked the city suites' 24 seeds to the first branch's area and back
+on main and on the branch, with the camera 46px ahead of her: on day 11 the sent dog walkers met go
+from 73 to 80, the loose dog from 22 to 21, the cat from 25 to 24 and the patrol from 1 to 0; on day
+5 the loose dog goes from 37 to 38, the patrol from 43 to 45 and the cat from 33 to 31, and the dog
+walkers stay at 61. So on a day whose camera leads, the dog walkers the director spent now arrive.
 
 The refusals, counted by rule over the 144 seeds: the yeller's 27 misses are `UnusedCalmRule` on
 22 (his 223px field reaches a calm area she has not used from every tile of his slot) and
@@ -119,7 +144,38 @@ Each lesson's row in the game on seed 4431, lesson (3)'s dog walker meeting her 
 bursts of her walk from lesson (4)'s zebra over lesson (5)'s and past the yeller are in
 `docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/`. On that seed the yeller's beat
 reaches lesson (5)'s zebra, so she meets him on the crossing with cars, and in one of the runs a car
-sounds its horn at her there; how often the two lessons meet on one spot is not measured.
+sounds its horn at her there. It is so on every seed he stands on (below).
+
+## The yeller on lesson (5)'s crossing: the choice is the player's
+
+His slot starts at the junction she comes onto his street at, lesson (5)'s crossing with cars, and
+his beat runs up to eight tiles from there, so on every one of the 117 seeds he stands on, his beat
+reaches that junction's box (the lessons probe's YELLER line: no tile between the nearest end of his
+beat and the box, on all 117). She meets the two lessons on one spot, where the player made timing
+the yeller a lesson of its own after the crossing with cars (gentle-owl #1253), and the PR's second
+review called that a defect.
+
+Keeping him off the junction costs him almost every day. His beat leaves her no line along the
+sidewalk, so the day's rules take it only where it reaches a junction box or a side route
+(`StreetInvalidation`, a pacing beat that walls a sidewalk); off (5)'s box that is the far junction,
+toward the park's street, where his field reaches the park she has not used (`UnusedCalmRule`, which
+keeps every field off the calm ground of each area she has not settled in, so that one stays an
+area she can settle in). Each option was measured over the same 144 seeds with a throwaway probe,
+day 1 planned as `DayPlanner` plans it, every option on the same city:
+
+| Option | Yeller stands | His beat's nearest end from (5)'s box | The tutorial park's calm ground his field reaches | What it costs against the player's words |
+|---|---|---|---|---|
+| (d) the old slot, from (5)'s junction: **the build** | 117 of 144 | no tile, on all 117 | none | lessons (5) and (6) on one spot, where the player made them two (gentle-owl #1253) |
+| his slot past 4 tiles of (5)'s end of the street, the beat held to that stretch and the far box (the construction the third builder tried) | 0 | none stands | none | no yeller on day 1, so lesson (6) is lost |
+| (a) his beat 4 tiles long on day 1, his slot past 2 tiles of (5)'s end | 0 | none stands | none | the same, and his beat is no longer the eight tiles the progression describes |
+| (a) his beat 6 tiles long on day 1, past 2 tiles | 0 | none stands | none | the same |
+| (b) his field allowed into the tutorial park's outer 2 tiles of calm ground but not its middle, his slot past 4 tiles of (5)'s end (3 tiles of edge gives the same counts) | 18 of 144 | 4 to 5 tiles | up to 14 of the park's 64 calm tiles, about a seventh of it on average, its middle on no seed | the unused-calm rule bent for the one park she is sent to: the player asked that nothing be placed onto a calm area she has not used (the words `CalmAreas.unused_ground()` quotes); the park counts as spoiled in the day's plan, and she crosses a noisy edge to settle in its quiet middle; lesson (6) still lost on 126 |
+| (c) the route one street longer where he does not fit, a street with no lesson between his and the park's, his slot past 4 tiles | 40 of the 143 seeds that have such a route (1 has none) | 4 to 5 tiles | none | a sixth street that teaches nothing, about five seconds more walking to a park the orchestrator sized at five streets (gentle-owl #1253); a different route, on which the stall stands on 138 and the van on 140 (against 142 and 138); lesson (6) still lost on 103 |
+
+So settling in the tutorial park is untouched by every option but (b), where the field reaches its
+edge and never the ground more than two tiles in. The build keeps (d), the old slot, and
+`test_dawn_tutorial` holds it; which to give up, the yeller apart from the crossing or the yeller on
+most days, is the player's to choose, put to them on the board.
 
 ## Not done here
 

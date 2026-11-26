@@ -1112,10 +1112,11 @@ func _holds_the_tutorial_route(tile: Vector2i) -> bool:
 ## On the street it is sent down her line as any is (`_sited()`). Where that has no room, and from
 ## the street before it on, it comes down the line's sidewalk of lesson (3)'s street from its far end
 ## (`_down_the_lessons_street()`): a street a block long is shorter than the view is wide, so down
-## her line from the street is often past its far end, where a T or a calm zone has no sidewalk. So
-## both are met on lesson (3)'s street and before her door with the camera leading her as it does in
-## play, on every seed the record grassy-beaver-golden-puffin counts but the few it names
-## *(PLAYTEST-05 6: the dog-walker decision is made at least twice on day one)*. Nothing is spent
+## her line from the street is often past its far end, where a T or a calm zone has no sidewalk.
+## With the camera leading her as it does in play, the record grassy-beaver-golden-puffin counts
+## lesson (3)'s met on its street on all but a few of its seeds and the second before her door on
+## every one; a camera held a fixed lead ahead of her, as far as play's or further, meets lesson
+## (3)'s there on fewer *(PLAYTEST-05 6: the dog-walker decision is made at least twice on day one)*. Nothing is spent
 ## while held.
 func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
 		view: VisibleView) -> Array:

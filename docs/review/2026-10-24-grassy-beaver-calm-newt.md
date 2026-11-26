@@ -19,8 +19,13 @@ her on that same street, after which the day runs at its ordinary pace.
 The question a run answers: does each lesson read as one thing after another, does the stall teach
 passing a noise wide as the leaf blower was meant to, does the yeller still read as the last lesson
 one street short of the park, and does the empty route with nothing sent along it feel authored or
-merely empty. On seed 4431 the yeller paces onto the zebra of the fifth lesson, the crossing with
-cars, so she meets him on the crossing rather than after it (the bursts in
-`docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/`): whether the two still read as two
-lessons there is part of the same question. A choice that does not read is overturned to the plainer alternative the record
+merely empty. On every day the yeller stands, he paces onto the zebra of the fifth lesson, the
+crossing with cars, so she meets him on the crossing rather than after it (the bursts in
+`docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/` show it on seed 4431); kept off that
+crossing he stands on almost no day, and which to give up is the player's choice, put to them on the
+board with the record's counts. The run shows what the build does now, the yeller on the crossing.
+The fix that creates a dog walker on the path the director sent it on reaches every day, not only
+day 1: with the camera leading her as in play, dog walkers the director sends now arrive where they
+used to be dropped, more of them on day 11 (the record has the counts), which a run of a later day
+can watch for. A choice that does not read is overturned to the plainer alternative the record
 names, and that goes to the board as its own decision.
