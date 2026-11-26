@@ -105,19 +105,27 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 				"at heat %d the hunting roadblock beside the pole stands too: its guard's catch lies "
 				% level + "inside its band, so its band is the disc read")
 
-## The closing roadblock's band takes both sidewalks from the street's middle, so on a street of her
-## routes it is refused alone, at any lane; on a street beside the routes, where no sidewalk is
-## kept, it stands.
+## Every row that stands mid street, the closing roadblock among them, takes both sidewalks from the
+## street's middle, so on a street of her routes it is refused alone, at any lane: what
+## `EventDef.stands_off_the_route()` restates for the bag, held here in step with the rule. On a
+## street beside the routes, where no sidewalk is kept, it stands.
 func _test_a_closing_roadblock_stands_only_off_her_routes(t: TestRunner) -> void:
 	var rule := _rule()
-	for row: int in [44, 45]:
-		var at := Vector2i(51, row)
-		var closing := _standing("closing_roadblock", at)
-		t.check(closing.obstructs() and closing.row().stands_mid_street(),
-				"the closing roadblock is a body that closes its street")
-		t.check(not rule.allows(closing, at, NONE, NONE),
-				"a closing roadblock alone on her route's street (lane row %d) is refused: its band "
-				% row + "takes both sidewalks")
+	var asked := 0
+	for def in CatalogueRows.every():
+		if not def.stands_mid_street():
+			continue
+		asked += 1
+		t.check(def.stands_off_the_route(),
+				"%s stands mid street, so the route's bags hold no marble of it" % def.id())
+		for row: int in [44, 45]:
+			var at := Vector2i(51, row)
+			var closing := EventPlan.new(def, _map.tile_to_world(at))
+			t.check(closing.obstructs(), "%s is a body that closes its street" % def.id())
+			t.check(not rule.allows(closing, at, NONE, NONE),
+					"%s alone on her route's street (lane row %d) is refused: its band takes both "
+					% [def.id(), row] + "sidewalks")
+	t.check(asked > 0, "there were rows that stand mid street to ask (%d)" % asked)
 	var beside := _map.street_network().by_key(BESIDE)
 	var rect := beside.tile_rect()
 	var lane := rect.position + (Vector2i(3, Tuning.SIDEWALK_WIDTH) if beside.horizontal

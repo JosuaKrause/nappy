@@ -1727,7 +1727,10 @@ func stands_mid_street() -> bool:
 ## or it closes its whole street (`stands_mid_street()`, the closing roadblock), and every street
 ## of her routes keeps a sidewalk open (`OneSidewalkOpenRule`), so no unit there could stand it
 ## and a marble of it would only come back empty (inbox #1185 in gentle-owl: a view's bag holds
-## every event possible in that view).
+## every event possible in that view). **The rule leads and this follows**: the rule refuses from
+## the band's geometry, and this restates the refusal for the bag, so a band narrowed to leave a
+## sidewalk open is a change to both. `tests/test_one_sidewalk_open_rule.gd` keeps them in step:
+## every catalogue row that stands mid street is refused alone on a street of her routes.
 func stands_off_the_route() -> bool:
 	return stands_only_in_alleys() or stands_mid_street()
 
