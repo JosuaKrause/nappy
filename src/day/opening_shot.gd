@@ -41,14 +41,9 @@ func _ready() -> void:
 ## The shot's route for `route`, in world pixels: the park, the junctions the route passes from its
 ## far end back to the one it leaves the doorstep's street at, and `doorstep`. A straight line
 ## between two points, so it runs down the middle of each street.
-##
-## **A known duplicate**: the junctions are worked out here from `TutorialRoute`'s public questions
-## because `tutorial_route.gd` belongs to the lessons' pull request (#1803); a
-## `TutorialRoute.junctions()` accessor that this reads instead follows once it has merged.
+
 static func line_for(route: TutorialRoute, doorstep: Vector2) -> Array[Vector2]:
-	var junctions: Array[Vector2i] = [route.turning_junction()]
-	for street in route.lesson_streets():
-		junctions.append(street.other_end(junctions[junctions.size() - 1]))
+	var junctions := route.junctions()
 	var park := Rect2(CityMap.block_rect(route.park_block()))
 	var line: Array[Vector2] = [park.get_center() * Tuning.TILE_SIZE]
 	for i in range(junctions.size() - 1, -1, -1):
