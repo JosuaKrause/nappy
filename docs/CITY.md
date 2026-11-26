@@ -2247,6 +2247,44 @@ A collision stays possible because the commit rule is deliberate, and when it ha
 other body. It is not a catalogue row: an event nobody meets in a run is a silhouette and a
 fairness contract spent on decoration.
 
+## Park signs at junctions
+
+**A few park signs stand at junctions, placed where what they say stays true on every day of the
+run**: a sign says where a park is, never whether it is open today, so it never becomes a
+permanent marker pointing somewhere wrong, which is why the player asked for them used sparingly
+(curly-moose #819). A sign adds to the closures that point somewhere ("Diversions — the design"),
+never replaces them. It is city furniture fixed for the run like a signal head (`ParkSign`, drawn
+by `City._spawn_park_signs()` at `build()`): no body, no field, no part in the meter.
+
+`ParkSigns` works the placement out once from the city and day 1's tutorial route
+(`TutorialRoute`, "How the corridor is built"), so the signs and the tutorial never disagree:
+
+- **One sign at the junction where the tutorial route leaves the doorstep's street**, pointing down
+  the lesson street the route takes there, toward the tutorial park: where a new player stands
+  first, since landmarks at junctions are what cut navigation errors.
+- **One at the doorstep street's other end, pointing back along it**, only where the tutorial park
+  is the nearest calm area from that junction, no other as near, and a shortest way to it runs back
+  past the first sign, counted in streets over the ones the city has with every day's closures
+  aside. A sign pointing to the nearest calm area on its own terms could point a day-1 player off
+  the tutorial route, so none does.
+- **No sign at all in a run whose tutorial park does not stay calm** (`BlockPlan.stays_calm()`): a
+  park its arc may requisition would turn the sign false on the day it is; a spent or fenced park
+  is still a park, and leaves it true. A city handed no tutorial route, an authored scene's, and
+  the escape's stretch stand none.
+
+Each sign stands on the outer corner of its junction box's sidewalk, against the block's corner,
+off the carriageway and the kerb she crosses at: at the first junction the corner between the arm
+she arrives along and the one the sign points down, or for a sign pointing straight on, the home
+block's side of the arm ahead; at the other end the home block's side of the doorstep's street. A
+corner a calm zone took the sidewalk of gives way to the next. The plate faces the camera whichever
+way the sign points, so its printed arrow is the direction, one picture per way
+(`docs/GRAPHICS.md`).
+
+*Proposed, not asked for:* the count and the places (one sign, a second only on the condition
+above), and no sign in a run whose tutorial park may be requisitioned, are the design's picks for
+what "sparingly" leaves to the builder, open to the player's overturn.
+`tests/probes/grassy_beaver_park_signs.gd` counts how many runs stand none, one or two.
+
 ## The edge of the world
 
 The lattice ends in T-junctions: the outermost corridor on each side is a whole street, and every

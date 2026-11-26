@@ -1,6 +1,6 @@
 priority: now
 
-# merry-lynx — Ask the player for a phone frame record once the new version is published · filed 2026-11-01
+# merry-lynx — Ask the player for a phone frame record once the fix is published · filed 2026-11-01
 
 [tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #927: "close and open a new item to ask me for a frame record when the new version has been published".
 
@@ -8,4 +8,4 @@ priority: now
 
 **The optional list of the placement audit's unmeasured costs is not carried over.** The proposal in the queue review dropped it and the player's answer asked for the frame-record item alone; the audit stays in the record above.
 
-**Read as:** the ask goes to the player once the version carrying the fix is published, so the item waits on that release rather than on a build. *Proposed, not asked for:* the band `now`, the closed entry's own.
+**Read as:** the ask goes to the player once the version carrying the fix is published. v0.29.3 is published, so the ask is due now and waits on nothing. *Proposed, not asked for:* the band `now`, the closed entry's own.

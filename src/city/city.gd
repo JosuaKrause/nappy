@@ -398,6 +398,7 @@ func build(city_map: CityMap) -> void:
 		_spawn_the_edge_of_the_city()
 	_signals = TrafficSignals.new(_map)
 	_spawn_signal_heads()
+	_spawn_park_signs()
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
 	add_child(_daylight)
@@ -757,6 +758,23 @@ func _spawn_signal_heads() -> void:
 				light.position = at
 				add_entity(light)
 				scenery.register(light.residence())
+
+## **The run's park signs** (`ParkSigns`), from the tutorial route handed in before `build()`, each
+## on the corner of its junction pointing the way to the tutorial park. Fixed for the run, like the
+## signal heads: a sign says where a park is, never whether it is open today, so no day takes one
+## down. A city handed no tutorial route stands none.
+func _spawn_park_signs() -> void:
+	# One drawer for every sign: it holds nothing but the atlas the signs draw from.
+	var drawer := ParkSignDrawer.new(_atlas)
+	for placed in ParkSigns.for_route(_map, _tutorial).signs():
+		var at := _map.tile_to_world(placed.tile())
+		if not _recipe_contains(at):
+			continue
+		var sign := ParkSign.new()
+		sign.mount(_atlas, drawer, placed.points())
+		sign.position = at
+		add_entity(sign)
+		scenery.register(sign.residence())
 
 func _spawn_buildings() -> void:
 	# A stretch's buildings are measured against the city they were cut from — which of their

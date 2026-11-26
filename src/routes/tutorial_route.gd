@@ -71,9 +71,18 @@ func has_its_park_among(blocks: Array[Vector2i]) -> bool:
 			return true
 	return false
 
-## The lesson streets, in the order she walks them, the first leaving the doorstep's street: the
-## streets a day that leaves day 1's walk open keeps unsealed and unclosed (`SealPlanner`,
-## `ClosurePlanner`).
+## The doorstep's street: the first block, which the route starts in.
+func doorstep_street() -> StreetNetwork.Segment:
+	return _home
+
+## The junction where the route leaves the doorstep's street.
+func turning_junction() -> Vector2i:
+	return _junctions[0]
+
+## The lesson streets, in the order she walks them, the first leaving the doorstep's street at
+## `turning_junction()`: the one the first park sign points down (`ParkSigns`), and the streets a
+## day that leaves day 1's walk open keeps unsealed and unclosed (`SealPlanner`, `ClosurePlanner`)
+## and keeps a sidewalk of (`OneSidewalkOpenRule`).
 func lesson_streets() -> Array[StreetNetwork.Segment]:
 	return _streets.duplicate()
 
