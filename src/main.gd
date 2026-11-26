@@ -1925,9 +1925,16 @@ func _new_director() -> DayDirector:
 	director.use_the_flags(_spawn_start.bind(config.spawn_target()),
 			DevRig.apply_meter_override.bind(config.meters_override()))
 	director.use_first_day(_first_day)
+	director.use_a_title_in_front(_a_title_stands_in_front())
 	director.use_escape_follows(_flow.escape_follows())
 	director.use_the_spec(_flow.spec())
 	return director
+
+## Whether a title stands in front of the walk being started: the boot's first, unless the boot
+## carries a run on from its checkpoint or a rig skips the title (`_ready()`'s own two answers).
+func _a_title_stands_in_front() -> bool:
+	return _first_day and _flow.opening() != RunFlow.Opening.CARRIED_FROM_CHECKPOINT \
+			and not config.skips_the_title()
 
 ## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director
 ## on the boot's first walk from her doorstep and by the route rig for a `spawn:<name>` word.

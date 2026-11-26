@@ -164,6 +164,23 @@ func sources() -> CrowdSources:
 ## and skipping the other kind cost one pass each.
 var _cars: Array[CrowdAgent] = []
 var _walkers: Array[CrowdAgent] = []
+## Whether new cars are held (`hold_new_cars()`), shared with every agent this crowd makes.
+var _entry_hold := CarEntryHold.new()
+## The cars parked while new cars were held: out of the simulation and out of the tree, so not
+## stepped, not indexed, not drawn and holding no slot (the traffic index, the junction boxes and
+## the gates are rebuilt from `_cars` every tick), and given back to the street by
+## `let_cars_in()`.
+var _parked: Array[CrowdAgent] = []
+## Seconds until the next parked car re-enters, and the gap between two of them.
+var _let_in_clock := 0.0
+var _let_in_gap := 0.0
+## What says when new cars are held and let in (`CarFreeStart`), ticked with her position; null for
+## a day that has none.
+var _car_free_start: CarFreeStart = null
+
+## The seconds the parked cars take to re-enter once let in, so they do not all arrive at the box's
+## edge at once.
+const LET_IN_OVER := 6.0
 ## The world the crowd's walkers and cars are drawn in (`WorldContext`), handed in by `setup()`.
 var _world: WorldContext
 ## Today's streets as dawn left them (`DayStreets`), handed in by `setup()`: the region's doors and
@@ -391,6 +408,9 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 			_populate(CrowdAgent.Kind.WALKER, walkers, rng)
 		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale * car_multiplier),
 				rng)
+		# A morning started held has its cars parked, none of them near her door.
+		if _entry_hold.holds():
+			_park_every_car()
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start
 	# inside each other and the first `space_out_the_traffic()` pulls them apart — a correction of up
@@ -437,6 +457,7 @@ func _make_an_agent(kind: CrowdAgent.Kind) -> CrowdAgent:
 	agent.use_crowd_parts(_traffic, _pockets, _view, _timing)
 	agent.use_atlas(_atlas)
 	agent.mood().hear_in(_sources)
+	agent.use_entry_hold(_entry_hold)
 	return agent
 
 ## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
@@ -504,6 +525,7 @@ func recipe_coverage() -> Dictionary:
 func clear() -> void:
 	for agent in _agents:
 		agent.queue_free()
+	_free_the_parked()
 	_agents.clear()
 	_cars.clear()
 	_walkers.clear()
@@ -529,6 +551,7 @@ func clear() -> void:
 ## reference not given back here is held for the rest of the process rather than for the rest of a
 ## day.
 func _exit_tree() -> void:
+	_free_the_parked()
 	if _atlas_held:
 		_atlas.release(ATLAS_GROUP)
 		_atlas_held = false
@@ -617,6 +640,8 @@ func step(delta: float) -> void:
 func _step_the_agents(delta: float) -> void:
 	for agent in _agents:
 		agent.step(delta)
+	if _entry_hold.holds():
+		_park_the_held_cars()
 
 ## The tick's shared first half, whatever is driving it: the movers the crowd gives way to, the
 ## day's signal clock, the map's own pockets, the traffic queue and the walkers' doors, in that
@@ -636,6 +661,7 @@ func _advance_the_world(delta: float) -> void:
 	# the signal clock rather than inside `space_out_the_traffic()`, since it is a fact about the
 	# day's map that both kinds read and not part of resolving a queue.
 	_pockets.refresh(_map)
+	_tick_the_car_free_start(delta)
 	# Traffic has to queue whether or not anybody is watching: a car driving through another one
 	# at the far end of the street is still a car driving through another one, and a test rig has
 	# no player in it.
@@ -1439,6 +1465,72 @@ func recycle_cars_on(tiles: Array[Vector2i]) -> void:
 			if covered.has(under):
 				agent.leave_if_unseen()
 				break
+
+# ------------------------------------------------------------ car-free start ---
+
+## Hands the crowd what says when new cars are held and let in (`CarFreeStart`), ticked with her
+## position on every tick she is handed in; null takes it away.
+func use_car_free_start(start: CarFreeStart) -> void:
+	_car_free_start = start
+
+func _tick_the_car_free_start(delta: float) -> void:
+	if _car_free_start != null and _player != null:
+		_car_free_start.watch_her(_player.global_position)
+	_let_the_parked_in(delta)
+
+## **Holds new cars**: a car that would re-enter at the box's edge is parked instead, and every car
+## nobody can see is parked at once; one in her view keeps driving and is parked when it leaves
+## the box (nothing vanishes in view). The cars stay parked until `let_cars_in()`.
+func hold_new_cars() -> void:
+	_entry_hold.hold()
+	for agent: CrowdAgent in _agents.duplicate():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR and agent.is_out_of_sight():
+			_park(agent)
+
+## Lets cars in again, for good until the next hold: the parked cars re-enter through the ordinary
+## recycle, one after another over `LET_IN_OVER` seconds.
+func let_cars_in() -> void:
+	_entry_hold.release()
+	_let_in_gap = LET_IN_OVER / maxf(1.0, float(_parked.size()))
+	_let_in_clock = 0.0
+
+func _park_every_car() -> void:
+	for agent: CrowdAgent in _agents.duplicate():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
+			_park(agent)
+
+## Parks the cars that met the hold when they would have been recycled, after the agents' step.
+func _park_the_held_cars() -> void:
+	for agent: CrowdAgent in _agents.duplicate():
+		if agent.is_held_back():
+			_park(agent)
+
+## Takes a car out of the simulation and the tree. Nothing is released one by one: every slot a car
+## holds (its lane's place in `TrafficIndex`, its box, its gate) is rebuilt each tick from the cars
+## that are in `_agents`, so a parked car holds none.
+func _park(agent: CrowdAgent) -> void:
+	_agents.erase(agent)
+	_cars.erase(agent)
+	if agent.get_parent() != null:
+		agent.get_parent().remove_child(agent)
+	_parked.append(agent)
+
+func _let_the_parked_in(delta: float) -> void:
+	if _entry_hold.holds() or _parked.is_empty():
+		return
+	_let_in_clock -= delta
+	if _let_in_clock > 0.0:
+		return
+	_let_in_clock = _let_in_gap
+	var agent: CrowdAgent = _parked.pop_front()
+	_world.add_entity(agent)
+	_agents.append(agent)
+	agent.re_enter()
+
+func _free_the_parked() -> void:
+	for agent in _parked:
+		agent.free()
+	_parked.clear()
 
 func agent_count() -> int:
 	return _agents.size()

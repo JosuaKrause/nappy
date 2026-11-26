@@ -21,6 +21,7 @@ var _fake_made: Array[CrowdAgent] = []
 var _fake_started: Array[Dictionary] = []
 var _fake_gates: Array[GateState] = []
 var _fake_stretches := 0
+var _fake_car_free_start: CarFreeStart = null
 
 ## A crowd that notes its asks as lines of `asked`, the list a suite shares among its stand-ins.
 func _init(asked: Array[String] = []) -> void:
@@ -57,6 +58,23 @@ func start_day(day: int, _rng: RandomNumberGenerator, focus := Vector2.INF,
 			"uniform_walkers": uniform_walkers, "walker_multiplier": walker_multiplier,
 			"car_multiplier": car_multiplier})
 	_fake_asked.append("crowd start_day")
+
+## Overrides Crowd.hold_new_cars.
+func hold_new_cars() -> void:
+	_fake_asked.append("crowd hold_new_cars")
+
+## Overrides Crowd.let_cars_in.
+func let_cars_in() -> void:
+	_fake_asked.append("crowd let_cars_in")
+
+## Overrides Crowd.use_car_free_start.
+func use_car_free_start(start: CarFreeStart) -> void:
+	_fake_car_free_start = start
+	_fake_asked.append("crowd use_car_free_start %s" % ("set" if start else "none"))
+
+## What `use_car_free_start()` was last handed.
+func car_free_start() -> CarFreeStart:
+	return _fake_car_free_start
 
 ## Overrides Crowd.clear.
 func clear() -> void:

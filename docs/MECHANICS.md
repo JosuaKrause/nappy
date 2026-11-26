@@ -886,6 +886,25 @@ on whenever it would have carried its centre into a body, the sideways half give
 forward half so a walker crossing a pavement beside a stall keeps walking along it rather than
 wedging against it.
 
+### The car-free start
+
+Day 1 starts with no new cars (`CarFreeStart`, `src/crowd/car_free_start.gd`): the title keeps the
+traffic it drives today, and from the first tick of play a car that would re-enter the crowd's box
+is **parked** instead (`Crowd.hold_new_cars()`: out of the simulation and the tree, drawn nowhere,
+holding no slot, since the traffic index, the junction boxes and the gates are rebuilt each tick
+from the cars in the crowd). Every car nobody can see is parked at once; one in her view keeps
+driving and is parked when it leaves the box, so nothing vanishes where she is looking. A day 1
+started with no title in front of it (a retry, a checkpoint) populates its morning with the cars
+parked.
+
+The cars are let in once, for good (`Crowd.let_cars_in()`), at whichever comes first: she stands
+on the fourth street of the tutorial route (the first street past the crossing taught with no
+cars, which the lessons on the route lay) or she is one street's length (`CityMap.period()` tiles, a
+block and its road) from the tutorial route, wherever she left it. The parked cars re-enter through
+the ordinary recycle at the box's edge, one after another over `Crowd.LET_IN_OVER` seconds. Coming
+back to the route holds nothing again. Every other day lets the cars in before its morning is
+populated.
+
 ## The world near you
 
 Nothing is loaded upfront: the crowd and the events exist in the few blocks around the player and

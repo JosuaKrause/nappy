@@ -18,4 +18,12 @@ it is kept.
 and `tests/test_camera_start.gd`, which assert the first frame is on her; the shot changes that on
 day 1, so the record that builds it says so.
 
+**Owes the car-free start** (merged with its own item, record `grassy-beaver-woolly-goose`): the player
+also said, of the title and the shot, "when showing the park, turn off car spawning so when the camera
+comes back home no cars are around anymore" (minty-dolphin #867). The crowd's box is on her, so the
+shot **moves the crowd's box with its camera** for its whole length, and **the hold starts on the
+shot's first frame** (`Crowd.hold_new_cars()`, or the director's early hold), not when she is handed to
+the crowd at play's start: otherwise the cars at her door are still there when the camera comes back.
+The title keeps today's density.
+
 *Proposed, not asked for:* a retry of day 1 skips it.

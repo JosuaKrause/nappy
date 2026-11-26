@@ -40,6 +40,7 @@ func run(t: TestRunner) -> void:
 	_test_a_section_is_ended_but_not_settled(t)
 	_test_a_city_section_won_carries_the_way_out(t)
 	_test_a_day_starts_in_its_order(t)
+	_test_day_one_starts_car_free_on_the_tutorial_route(t)
 	_test_the_city_section_starts_on_its_settings(t)
 	_test_the_building_section_starts_with_no_city(t)
 	_test_an_authored_scene_installs_in_place_of_the_plan(t)
@@ -286,7 +287,8 @@ func _start(director: DayDirector, spec: DaySpec) -> Array[String]:
 ## says, as the main scene's answers it: at her front door on the city's map on a walk home, at the
 ## two ways out (`EXITS`) on a walk out of the city. `scene` is an authored scene to play, or null.
 ## Returns the director and the parts a check reads.
-func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: AuthoredScene = null) -> Dictionary:
+func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: AuthoredScene = null,
+		tutorial: TutorialRoute = null) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
 	_asked.clear()
@@ -314,7 +316,10 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 		posters = FakePosterWalls.new()
 		var home_map: CityMap = map if spec.goal_kind() == DaySpec.Goal.HOME else null
 		var exits: Dictionary = EXITS if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
-		world = DayWorld.in_the_city(city, map, DayStreets.new(), crowd, posters, events, player,
+		var streets := DayStreets.new()
+		var no_closures: Array[RoadClosure] = []
+		streets.begin_day(null, null, no_closures, tutorial)
+		world = DayWorld.in_the_city(city, map, streets, crowd, posters, events, player,
 				baby, Vector2(100.0, 200.0), home_map, exits, Vector2.DOWN)
 	var worlds := _FakeWorlds.new(world, _asked)
 	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
@@ -390,6 +395,55 @@ func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	var clock: DayController = rig["clock"]
 	t.check(clock.is_running() and is_equal_approx(clock.seconds_total(), 210.0)
 			and clock.spec() == spec, "the clock runs the day's own spec and length")
+	_put_the_start_away(rig)
+
+## **Day 1 on the tutorial route hands the crowd the car-free start**, every other day takes it away
+## and lets the cars in first. A start with no title in front of it holds the cars before the
+## morning is populated; the boot's first walk, which has the title, holds them on its first tick.
+func _test_day_one_starts_car_free_on_the_tutorial_route(t: TestRunner) -> void:
+	var home := StreetNetwork.Segment.new(Vector2i(0, 0), true)
+	var streets: Array[StreetNetwork.Segment] = [StreetNetwork.Segment.new(Vector2i(1, 0), true)]
+	var junctions: Array[Vector2i] = []
+	var route := TutorialRoute.new(null, home, streets, junctions, Vector2i.ZERO, Rect2i())
+	var spec := DaySpec.for_day(1, 210.0)
+	var rig := _start_rig(t, spec, false, null, route)
+	var director: DayDirector = rig["director"]
+	director.use_a_title_in_front(false)
+	_start(director, spec)
+	t.check(_asked_in_order(["crowd let_cars_in", "crowd use_car_free_start set",
+			"crowd hold_new_cars", "crowd start_day"]),
+			"a day 1 with no title lets yesterday's cars in, takes the start up, holds the cars, "
+			+ "and only then populates (%s)" % [_asked])
+	var world: DayWorld = rig["world"]
+	var crowd: FakeCrowd = world.crowd() as FakeCrowd
+	t.check(crowd.car_free_start() != null, "the crowd is handed the car-free start")
+	_put_the_start_away(rig)
+
+	rig = _start_rig(t, spec, false, null, route)
+	director = rig["director"]
+	director.use_first_day(true)
+	director.use_a_title_in_front(true)
+	_start(director, spec)
+	t.check(_asked.has("crowd use_car_free_start set") and not _asked.has("crowd hold_new_cars"),
+			"a walk with a title in front holds on its first tick, behind the title, not at the morning")
+	_put_the_start_away(rig)
+
+	# A day 1 carried on from the checkpoint is the boot's first walk with no title in front of it.
+	rig = _start_rig(t, spec, false, null, route)
+	director = rig["director"]
+	director.use_first_day(true)
+	director.use_a_title_in_front(false)
+	_start(director, spec)
+	t.check(_asked_in_order(["crowd use_car_free_start set", "crowd hold_new_cars", "crowd start_day"]),
+			"the boot's first walk with no title in front (a checkpoint's carry-on) holds before the morning")
+	_put_the_start_away(rig)
+
+	var day_two := DaySpec.for_day(2, 210.0)
+	rig = _start_rig(t, day_two, false, null, route)
+	_start(rig["director"], day_two)
+	t.check(_asked.has("crowd let_cars_in") and _asked.has("crowd use_car_free_start none")
+			and not _asked.has("crowd hold_new_cars"),
+			"day 2 has no car-free start and starts with its cars let in")
 	_put_the_start_away(rig)
 
 ## The escape's city starts on the city section's settings: no photograph, no resistance, nobody on

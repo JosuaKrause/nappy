@@ -62,7 +62,7 @@ with less room, "we can keep the original #3 between the new #2 and #3 -- I like
 progressions". **Read as**, the order: (1) get to the park (the opening shot and the direction
 bubble); (2) a noise source she can pass wide; (3) a noise source with less room; (4) crossing the
 road with no cars about, where her sidewalk is blocked next to a zebra crossing; (5) crossing the
-road with cars, at a zebra crossing, where the cars start (`car-free-start.md`); (6) timing the yeller; then the park. The crossing is taught
+road with cars, at a zebra crossing, where the cars start (the car-free start, `docs/MECHANICS.md`); (6) timing the yeller; then the park. The crossing is taught
 twice, first with no cars about. *Proposed, not asked for* (the
 orchestrator's sketch, which the player's words name only by number; each list as shown is quoted
 before the answer it drew, gentle-owl #1253): the market stall on the far

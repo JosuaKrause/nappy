@@ -71,6 +71,8 @@ const PARTS := {
 		"_test_cars_do_not_drive_through_each_other",
 		"_test_the_morning_is_unpacked_before_the_first_frame",
 		"_test_the_morning_is_indexed_before_the_first_frame",
+		"_test_held_cars_are_parked_and_let_back_in",
+		"_test_a_morning_started_held_has_its_cars_parked",
 		"_test_a_car_can_honour_the_headway_it_keeps",
 		"_test_a_car_looks_before_it_turns",
 		"_test_a_body_finds_what_stands_across_a_bucket_edge",
@@ -1550,6 +1552,78 @@ func _test_the_morning_is_unpacked_before_the_first_frame(t: TestRunner) -> void
 	t.check(worst <= a_frames_travel,
 			"the first frame of a day moves no car further than it could drive in one (worst "
 			+ "%.1fpx on day %d, against %.1fpx)" % [worst, worst_day, a_frames_travel])
+
+func _cars_on_the_road() -> int:
+	var cars := 0
+	for agent in RunCity.crowd(_city).agents():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR:
+			cars += 1
+	return cars
+
+## The cars of the crowd within `Tuning.OUT_OF_SIGHT` of `at`, the ones in her view at that point.
+func _cars_in_view_of(at: Vector2) -> Array[CrowdAgent]:
+	var in_view: Array[CrowdAgent] = []
+	for agent in RunCity.crowd(_city).agents():
+		if agent.lane().kind() == CrowdAgent.Kind.CAR \
+				and agent.position.distance_to(at) <= Tuning.OUT_OF_SIGHT:
+			in_view.append(agent)
+	return in_view
+
+## **Holding new cars parks the cars nobody can see and leaves every car in her view driving; a car
+## that leaves the box while they are held is parked, not recycled back in; let in, they all come
+## back.** A recycle keeps the number of cars the same, so the count falling below what the hold
+## left is the held recycle's own proof: without `LaneMover._recycle()`'s held branch or
+## `Crowd._park_the_held_cars()` the cars that drive out come back in and the count never falls, and
+## a `hold_new_cars()` that parked every car, or none, is not the cars in view.
+func _test_held_cars_are_parked_and_let_back_in(t: TestRunner) -> void:
+	var crowd := RunCity.crowd(_city)
+	var at := _city.map().world_size() * 0.5
+	crowd.use_focus(FakeCrowdFocus.new(at))
+	crowd.let_cars_in()
+	crowd.start_day(1, _rng(1), at)
+	var all := _cars_on_the_road()
+	var in_view := _cars_in_view_of(at)
+	t.check(in_view.size() >= 3 and in_view.size() < all,
+			"day 1 has cars in her view and cars out of it to hold (%d in view of %d)"
+			% [in_view.size(), all])
+	crowd.hold_new_cars()
+	var still_driving := true
+	for car in in_view:
+		still_driving = still_driving and crowd.agents().has(car)
+	t.check(still_driving, "holding parks no car in her view")
+	var most := _cars_on_the_road()
+	t.check(most == in_view.size(),
+			"holding parks every car out of her view, and only those (%d on the road, %d in view)"
+			% [most, in_view.size()])
+	var grew := false
+	for second in 45:
+		_advance(1.0)
+		grew = grew or _cars_on_the_road() > most
+	t.check(not grew, "no car comes in while new cars are held")
+	t.check(_cars_on_the_road() < most,
+			"cars in her view that drove out of the box were parked, not recycled back in (%d of %d)"
+			% [_cars_on_the_road(), most])
+	crowd.let_cars_in()
+	_advance(Crowd.LET_IN_OVER + 2.0)
+	t.check(_cars_on_the_road() == all,
+			"let in, every parked car is back on the road (%d of %d)" % [_cars_on_the_road(), all])
+
+## **A morning started held has its cars parked**, none standing near her door, and the next
+## morning, started after the cars are let in, is full again.
+func _test_a_morning_started_held_has_its_cars_parked(t: TestRunner) -> void:
+	var crowd := RunCity.crowd(_city)
+	crowd.use_focus(null)
+	crowd.let_cars_in()
+	crowd.start_day(1, _rng(1))
+	var all := _cars_on_the_road()
+	crowd.hold_new_cars()
+	crowd.start_day(1, _rng(1))
+	t.check(all > 0 and _cars_on_the_road() == 0,
+			"a held morning parks its cars (%d on the road, of %d)" % [_cars_on_the_road(), all])
+	crowd.let_cars_in()
+	crowd.start_day(1, _rng(1))
+	t.check(_cars_on_the_road() == all,
+			"a morning started after the cars are let in is full again")
 
 ## **The first frame's look sees the morning's crowd.** A car that turns or recycles asks
 ## `TrafficIndex` whether the road it is about to take is free, and on the day's first frame nothing
