@@ -16,7 +16,8 @@ extends RefCounted
 ## a whole day of continuous walking, across every act, and holds it next to the two numbers
 ## on the row.
 ##
-## Walked the same way `tests/test_events.gd`'s `_test_a_rig_meets_the_three_things_that_arrive`
+## Walked the same way `tests/test_events_fire.gd`'s
+## `_test_a_rig_meets_the_three_things_that_arrive`
 ## drives `EventDirector` — continuous motion on a real street
 ## (`CrowdLanes.arterial_pavement`) — bounced at the map's own edges so a whole day's walk never
 ## asks for ground off it. `due()`'s pacing is a property of elapsed walking time, not of which

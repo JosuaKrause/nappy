@@ -1819,8 +1819,8 @@ row carrying `AT_THE_KERB` or `AGAINST_THE_BUILDING` — which means a `placemen
 ground is listing ground the row can never be offered. `poster_crew_square` is the poster crew's
 answer to it: the same event on the ground the pinned row cannot take, standing at the free-standing
 advertising column a square has instead of a wall. *(2026-09-19: "we need a separate square poster
-crew entity for this".)* `tests/test_events.gd` holds the whole catalogue to it, so the next row
-given a pavement side cannot quietly lose a kind of ground the same way.
+crew entity for this".)* `tests/test_events_placement.gd` holds the whole catalogue to it, so the
+next row given a pavement side cannot quietly lose a kind of ground the same way.
 
 Both readings are read off the row's own numbers rather than a list of ids, and asked of *a*
 sidewalk rather than of the tile — the role is decided before a tile is chosen, so a row that may
@@ -2087,8 +2087,9 @@ car the player is never obliged to step in front of.
 
 **The escalation is a change of kind, not of count.** Day 2 places about one more event than day
 1, which no player could feel; what day 2 is, is *the day the streets acquire something that can
-take the day off you*, and that is legible immediately. `tests/test_events.gd` asserts exactly this
-pair — day 1 has nothing lethal on it, day 2 does — so a rebalance cannot quietly flatten it.
+take the day off you*, and that is legible immediately. `tests/test_events_scheduler.gd` asserts
+exactly this pair — day 1 has nothing lethal on it, day 2 does — so a rebalance cannot quietly
+flatten it.
 
 **A patrol is not act I's answer, and that is a standing decision.** Act I is a nice neighbourhood
 and a police patrol on day 2 tells act II's story three days early. So act I's danger is the
@@ -2783,7 +2784,7 @@ The instance hands it `current_intensity()` rather than the catalogued peak, so 
 the pulse damp the core by the same fraction they damp the field by** — a leaf blower between
 bursts is a quarter of a wall inside a quarter of a busker, not a full wall inside a quiet field.
 A row with no core comes back as `Field.falloff` on its own field and nothing else, bit for bit;
-`tests/test_events.gd` walks the whole catalogue at 16px steps and holds that.
+no suite walks the catalogue to hold that.
 
 **The field is the Minkowski sum of the body and a kernel.** `Field.falloff()` is still the one
 arithmetic home and still prices a plain distance `d` — what changed is what `d` means.
@@ -2845,7 +2846,7 @@ telegraphs_for() × WALK_SPEED >= outer − inner
 i.e. *a player walking at normal pace, standing at the edge of the danger zone the instant
 the event becomes visible, can get clear before it hurts.* lethal events get double
 that margin. This is asserted in `Tuning.validate_event()`; a violation is a bug, not a
-difficulty setting, and `tests/test_events.gd` checks the whole catalogue.
+difficulty setting, and `tests/test_events_catalogue.gd` checks the whole catalogue.
 
 **It governs in-world telegraphs even without a coming warning** (see "What telegraphs").
 The cat, the waiting mouse and flock, and the patrol retain their validation. The loose dog is
@@ -2911,7 +2912,12 @@ density breaks quietly, and which half of it is a problem is worth being exact a
 So the rule the scheduler enforces at placement is: **nothing else happens inside a lethal
 event's field.** A lethal event keeps its whole outer radius clear of every other event,
 and it is the one spacing rule with no fallback — an abduction that cannot find room is simply
-not placed. `tests/test_events.gd` asserts it across a whole run.
+not placed. `tests/test_masts.gd` holds one case of it (a queued mast is not generated inside a
+planned lethal field) and `tests/test_events_costs.gd` holds who is exempt. No suite walks a
+planned day for it, and a walk would find no field to ask: `EventScheduler.role_for()` gives a
+lethal row placed on a tile the `WALL` role unless the row is a one-shot, so a day's plan holds
+a field the rule keeps clear only when it places a lethal one-shot. The row that adds one adds
+the walk, in `tests/test_events_scheduler.gd`, which holds the planned days.
 
 Two cases are exempt, and both are about the field having no fixed place to keep clear of
 anything. **Off the day's corridor**, where the whole point of the ground is that she should not
@@ -2967,8 +2973,8 @@ the intensity is at the centre*:
 
 - **Its cost is computed from the birds**, not from one disc. Priced as a disc it reads roughly
   twice its true figure and breaks the running rule on a row that in fact keeps it, which is
-  exactly the kind of silent breakage that rule exists to catch. `tests/test_events.gd` models the
-  flock the same way, so the two cannot drift.
+  exactly the kind of silent breakage that rule exists to catch. `tests/test_events_costs.gd` reads
+  the flock's cost off the same `walk_through_cost()`, so the two cannot drift.
 - **The straight line through the middle is not the whole story for it.** Walked against the real
   instance it costs several times as much through the centre as eighty pixels off it, and nothing
   at all at the rim. Every other row falls away gently from the middle; a flock is a hot spot with
@@ -3010,9 +3016,9 @@ free on purpose, and the crews are one decision rather than two: the same field 
 ground. `chatting_mother`, `checkpoint_hut` and `checkpoint_post` are the
 **detainers**, whose price is not their field at all: coming close locks her movement and charges
 `Tuning.CHAT_EXCITEMENT` flat over the hold, so a disc sized to clear the walking decay as well
-would be charging the same body twice. `tests/test_events.gd` names both lists, and holds the
-detainers to charging their capture instead — an exemption that owes no check of its own is a way
-of not being tested.
+would be charging the same body twice. `tests/test_events_costs.gd` names both lists, and holds
+the detainers to charging their capture instead — an exemption that owes no check of its own is a
+way of not being tested.
 `construction`, `delivery_van` and `barricade` sit well below zero for a different reason: **a
 thing whose whole job is to stand in the way costs route and nothing else**, so a peak of `0.0` or less
 is its own blanket exemption — walking "through" a solid body was never a real choice to price, and
@@ -3310,10 +3316,11 @@ Three rules underneath the table, in the order they matter:
      one flicker on the screen's edge.
 
 6. **And row one is a rule, not an aspiration: one picture per row.** A look is the name of one
-   picture and there is no generic to reach for. `tests/test_events.gd` holds both halves: **no
-   two rows share a look**, and **no two looks share a silhouette**. `EventPictures.icon_for()` is
-   the single table, and it is also what the badge draws — a second table of which picture a look
-   means is how a badge ends up showing a delivery van for a fire engine.
+   picture and there is no generic to reach for. `tests/test_events_catalogue.gd` holds both
+   halves: **no two rows share a look**, and **no two looks share a silhouette**.
+   `EventPictures.icon_for()` is the single table, and it is also what the badge draws — a second
+   table of which picture a look means is how a badge ends up showing a delivery van for a fire
+   engine.
 
    **The trap is the category.** `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`, `FIRE` are all things
    you can always put one more row into, and rows collapse into them until a man shouting, a
@@ -3560,7 +3567,7 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    `EventPictures`, a `_draw_*` in the look that draws its family (`src/events/simulation/views/`, picked by
    `EventLooks.for_row()`), and a row in `EventPictures.icon_for()` so the screen-edge badge has a
    silhouette to show. There is no generic look to borrow — that is deliberate, and
-   `tests/test_events.gd` fails the build if two rows share a picture. See "The visual
+   `tests/test_events_catalogue.gd` fails the build if two rows share a picture. See "The visual
    vocabulary", point 6.
 6. Run the project. `EventDef.validate()` rejects unfair geometry, a body on something sited
    ahead of the player, and a lethal radius its own body would hide, all on load.

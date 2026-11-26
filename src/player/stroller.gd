@@ -315,9 +315,9 @@ func set_map(map: WorldMap) -> void:
 ## neither figure changes size. **Not the same datum as the scene's own collision body**: the
 ## `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one combined physics
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
-## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
-## here touches it. `_pram_shape`'s own 12px radius still sizes the pram's shadow, cue and field,
-## which all use the same presentation offset as its art; the pram's *collision* body is a
+## scene by `tests/test_stroller.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and
+## nothing here touches it. `_pram_shape`'s own 12px radius still sizes the pram's shadow, cue and
+## field, which all use the same presentation offset as its art; the pram's *collision* body is a
 ## separate, smaller datum — see `pram_body_shape` below.
 var _shape := GroundShape.point(9.0)
 var _pram_shape := GroundShape.point(12.0)
@@ -338,9 +338,8 @@ func pram_shape() -> GroundShape:
 ## of the player hitbox", "and don't make it too big")* — so the pram's far half overlaps whatever
 ## it meets and she can stand against a wall while the pram no longer clips through a corner whole.
 ## `scenes/player/stroller.tscn`'s own `CircleShape2D` on `PramCollisionShape2D` carries this same
-## number; `tests/test_stroller.gd` checks the scene against it directly, the same way
-## `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` already does for her
-## own body.
+## number; `tests/test_stroller.gd` checks the scene against it directly, the same way its
+## `_test_the_pram_is_the_size_the_rules_think_it_is` does for her own body.
 const PRAM_BODY_RADIUS := 8.0
 
 ## Where the pram is *drawn* relative to her this frame — `Vector2.ZERO` while she carries the baby,

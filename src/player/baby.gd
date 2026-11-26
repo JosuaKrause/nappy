@@ -36,8 +36,8 @@ const EXCITEMENT_FROM_ALLEY := 3.0
 ## It is sensitive to the shape of `Field.falloff` and not only to the radii. A fatter field makes
 ## time-in-field matter more, so a shoulder that is too generous makes running *out* of the widest
 ## rows cheaper than walking — which is not "running works" but "running is a coin flip", the worst
-## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
-## document, because that is how it can break silently.
+## of the two. `tests/test_events_costs.gd` asserts the ordering row by row rather than leaving it
+## in a document, because that is how it can break silently.
 const EXCITEMENT_FROM_RUNNING := 14.0
 ## The two the *pram* says out loud, stated as **states with an instruction attached** rather than
 ## as points on a gauge — which is the whole difference between a cue and the HUD moved over the

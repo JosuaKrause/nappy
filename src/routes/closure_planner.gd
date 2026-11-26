@@ -172,8 +172,9 @@ static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerat
 			# **A wall off the tree should never fail this**, so a failure is not a near miss to be
 			# skipped quietly — it means the corridor and the wall disagree about where she is
 			# going, which is the one bug this milestone can have that nothing else would show.
-			# `tests/test_routes.gd` asserts it never happens over a run's worth of days; the note
-			# is what would say so in a real run.
+			# `tests/test_routes_closures_c.gd` asserts it never happens over a sample of days (the
+			# case is in `tests/routes_closures_rig.gd`); the note is what would say so in a real
+			# run.
 			today_closed.erase(segment.key())
 			_note(trace, "plan", "day %d: closing %s off the corridor would have cut the calm"
 					% [day, RunTrace.tile(segment.a)])

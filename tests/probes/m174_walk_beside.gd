@@ -26,15 +26,15 @@ extends RefCounted
 ## placed (`SIDEWALK`/`SQUARE`, none of calm, alley, precinct or main road).
 ##
 ## **What is excluded**, and why none of it is "a place to stand beside": zero-intensity rows
-## (nothing to receive), the two free lists `tests/test_events.gd`
+## (nothing to receive), the two free lists `tests/test_events_costs.gd`
 ## already names (`_SCENERY`, priced at zero on purpose; the detainers, priced through their own
 ## capture rather than a field), anything `AHEAD_OF_PLAYER` (three seconds of cat, never a place),
 ## and anything that pursues or waits to (the encounter is a chase, not a walk beside a field).
 
 const PULSE_MEAN := 0.625
 
-## Ids priced at zero on purpose — `tests/test_events.gd`'s own list, so a row deliberately given
-## no field is not reported as a defect here.
+## Ids priced at zero on purpose — `tests/test_events_costs.gd`'s own list, so a row deliberately
+## given no field is not reported as a defect here.
 const _SCENERY: Array[String] = ["burnt_shell", "poster_crew", "poster_crew_square"]
 ## Ids priced through their own capture rather than a field — see the **balance** skill,
 ## "Two short lists hold every row that is allowed to be free."

@@ -6,8 +6,6 @@ extends RefCounted
 ## the rows alone: no city, no live event and no day planned is built. The placements the catalogue
 ## produces (a parked van at the kerb, nothing on ground a route holds) are
 ## `tests/test_events_placement.gd`'s.
-##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again".
 
 const STEP := 1.0 / 60.0
 

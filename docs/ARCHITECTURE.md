@@ -1372,9 +1372,26 @@ field with its value before and after (`tests/shared_state.gd`).
   never windows, except hers: fixtures per district plus a spread of generated cities, the
   `_build_windows()`/`_build_front()` RNG streams pinned unchanged, and `Building.
   blank_ground_floor_cells()`'s own contract (ground-floor, non-window, non-entrance).
-- `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
-  envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
-  one-shot consumption and the usable-park rule.
+- `test_events_catalogue.gd` — the catalogue's static contract, asked of the rows alone: the
+  telegraph fairness contract, a spread body fitting its ground, one picture and one badge
+  silhouette per row.
+- `test_events_solid.gd` — anything that stands still is solid, and a lethal thing can still be
+  reached.
+- `test_events_costs.gd` — what a row costs: running is the answer only to what follows her, and
+  nothing is cheaper to walk through than around.
+- `test_events_emission.gd` — a row's field: the pulse envelope and a two-part field's core.
+- `test_events_scheduler.gd` — the dawn's plan on a real city: determinism, placement, one-shot
+  consumption, the usable-park rule and what a planned day holds.
+- `test_events_placement.gd` — placement by role: walls off the routes, friction weighted onto
+  them, and a route's junctions and sidewalk left clear.
+- `test_events_fire.gd` — day 3's fire, sited by the director from her walk and fixed once it is
+  real.
+- `test_events_chat.gd` — a detainer's hold and what it charges by the baby's state, and the van's
+  scripted take.
+- `test_events_scenery.gd` — events that move on their own: a flock as birds, a mobile row on its
+  path, a crouching row that holds still until it bolts.
+- `test_events_pursuit.gd` — the chase walked on a rig that accelerates: room to answer, a pursuer
+  kept waiting, and one stopped by a wall.
 - `test_event_manager.gd` — the manager over drawn streets, with plans of the case's own:
   retirement, successors, summed excitement, streaming. Its header says which cases stand it on
   the generated map (a day started through it) or in a city (the city's own dawn), and why: an

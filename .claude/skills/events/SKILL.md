@@ -142,8 +142,12 @@ inherits this, not just the telegraph. **One case of it is held and the whole is
 `tests/test_masts.gd` holds a queued mast: offered only sidewalk inside a
 planned lethal field it is not generated, and offered sidewalk clear of it, it is.
 `tests/test_events_costs.gd` holds who is exempt (below). **No suite walks a planned day** from
-`EventScheduler.build_day()` to check that every lethal field was kept clear, so for every other
-row the rule is unenforced.
+`EventScheduler.build_day()` to check that every lethal field was kept clear, and a walk would
+find no field to ask: `EventScheduler.role_for()` gives a lethal row placed on a tile the `WALL`
+role unless it is a one-shot, and a wall is exempt. **A new lethal one-shot is the first row a
+day places that keeps a field clear, and it adds the walk** to `tests/test_events_scheduler.gd`,
+which holds the planned days: every placed row is asked against every field
+`EventPlan.keeps_its_field_clear()` names.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.

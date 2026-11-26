@@ -1132,8 +1132,9 @@ other events out of a lethal field) and is untouched.
 **What it costs is the wide rows' corridor ground**, and that is the intended trade rather than a
 side effect. Every corridor street has a route junction at each of its ends, so a row whose reach
 covers a whole crossing loses most of the corridor; a row narrower than a junction box's own half
-width loses none of it. `tests/test_events.gd` asserts both halves — the corridor's overall share of
-the friction and, separately, the undiminished share of the rows no crossing rule can refuse.
+width loses none of it. `tests/test_events_placement.gd` asserts the first half, the corridor's
+overall share of the friction, and that the days sampled place rows narrow enough to stand beside a
+crossing; no suite holds that those rows keep their share of the corridor.
 
 ### Nothing takes the sidewalk a route is walked along
 
@@ -1402,8 +1403,8 @@ lattice rather than something asked fresh of every candidate.
 Edge-disjointness — two routes sharing no street — is a **stand-in** for winnability: by Menger,
 two routes means no single street is a cut. The sentence it stands in for is asserted directly, and
 about the city rather than about each area: **no one street cuts off all the calm**
-(`tests/test_routes.gd`). The second route to any given area is an offer the day makes when the map
-allows one.
+(`tests/test_routes_lattice.gd`). The second route to any given area is an offer the day makes
+when the map allows one.
 
 **The count of areas is two**, because one of the reachable areas may be spoiled with events.
 A physically fenced area is excluded before this count. One reachable area is the unwinnable day
@@ -1528,8 +1529,9 @@ Two consequences, and the first is what makes the rest of the day's placement po
 - **The invariant is the second opinion rather than the guard.** A wall off the tree cannot cut the
   tree, so `_invariant_holds` should never refuse a candidate. It is still checked on every one —
   two independent mechanisms is the point — and a refusal writes a `plan` line saying the wall and
-  the corridor disagree about where she is going. `tests/test_routes.gd` asserts it never happens,
-  over every off-corridor street of a sample of days across several seeds.
+  the corridor disagree about where she is going. `tests/test_routes_closures_c.gd` asserts it
+  never happens (the case is in `tests/routes_closures_rig.gd`), over every off-corridor street of
+  a sample of days across several seeds.
 
 **And the rim is where a wall is worth anything**: a closure in the far corner of the map is not a
 decision, it is scenery. A closure at the mouth of a turning is read from the junction, which is

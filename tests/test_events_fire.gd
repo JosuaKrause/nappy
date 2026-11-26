@@ -8,12 +8,11 @@ extends RefCounted
 ## question and it is asked in `tests/test_event_manager.gd`, against a real manager and a real
 ## player. What is asked here is the rule.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again". **No case builds a
-## city or plans a day**: the director is handed a hand-drawn street map (`StreetMap.full()`), the fire
-## a plan of its own and the walk a staircase of straight runs at right angles laid out here, which
-## follows none of the map's streets and runs past its edge: the director asks the map only how far
-## she is from home (`EventDirector.ON_HER_WAY_BEYOND_HOME`), and a map with no home puts home at
-## its origin. What a planned day holds of
+## **No case builds a city or plans a day**: the director is handed a hand-drawn street map
+## (`StreetMap.full()`), the fire a plan of its own and the walk a staircase of straight runs at
+## right angles laid out here, which follows none of the map's streets and runs past its edge: the
+## director asks the map only how far she is from home (`EventDirector.ON_HER_WAY_BEYOND_HOME`),
+## and a map with no home puts home at its origin. What a planned day holds of
 ## them, that day 3's fire and the crews are the only rows owed her walk and that a crew is handed to
 ## it, is the dawn's, asked in `tests/test_events_scheduler.gd`.
 

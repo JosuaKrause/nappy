@@ -31,10 +31,10 @@ extends RefCounted
 ##   because a probe reading a different band could not tell whether the rule (or a gap in it) had
 ##   fired on the ground the player actually meant.
 ## - **The closing test.** `RouteSidewalkRule.closes_a_walked_sidewalk_band()` is the one place the
-##   tile-grained physical reading lives — the suite (`tests/test_events.gd`) asks the same
-##   function of the same kind of sample, so the probe's printed number and the suite's asserted
-##   one can never quietly disagree about what "closed" means. See its own doc for why the walk
-##   only has to connect the band's genuinely open ends rather than its raw tile-rect corners.
+##   tile-grained physical reading lives — the suite (`tests/test_events_placement.gd`) asks the
+##   same function of the same kind of sample, so the probe's printed number and the suite's
+##   asserted one can never quietly disagree about what "closed" means. See its own doc for why the
+##   walk only has to connect the band's genuinely open ends rather than its raw tile-rect corners.
 ## - **The day, planned the way the game plans it.** `RouteTree.for_day` grows the corridor,
 ##   `RegionPlanner.plan_day` decides the wall and doors, `ClosurePlanner.plan_day` closes streets,
 ##   `SealPlanner.plan_day` seals the tree, `EventScheduler.build_day`'s own phases fill the city —
@@ -52,8 +52,8 @@ extends RefCounted
 ## the direction of travel** — never beside it — so nothing about pushing it widens her sideways.
 ## `EventDef.reaches_the_far_lane()`'s own doc comment states the width a lane needs in those terms: *"a
 ## free tile is a line because a tile is wider than the 28px stroller (2 * PLAYER_BODY_RADIUS)"*, and
-## `tests/test_events.gd`'s `_walkable_lane_beside(...) >= 2.0 * Tuning.PLAYER_BODY_RADIUS` is the
-## same figure checked directly against a placed body. 46px is a different, narrower fact:
+## `tests/test_body_stance.gd`'s `_walkable_lane_beside(...) >= 2.0 * Tuning.PLAYER_BODY_RADIUS` is
+## the same figure checked directly against a placed body. 46px is a different, narrower fact:
 ## `CHECKPOINT_DETAIN_REACH`'s doc (`src/autoload/tuning.gd`) derives it as
 ## `obstructs_within() + PLAYER_BODY_RADIUS` for one specific door's 32px body (`32 + 14 = 46`), which
 ## does not generalise — a body's own `obstructs_within()` varies per row. The general form of that

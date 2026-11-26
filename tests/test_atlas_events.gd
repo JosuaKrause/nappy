@@ -1,11 +1,12 @@
 extends RefCounted
 ## The events draw from the one baked `events` page rather than from individually preloaded
 ## textures or a runtime-packed group per family. `tests/test_event_views.gd`,
-## `tests/test_event_strides.gd` and `tests/test_events.gd` pin the drawing selection itself —
-## which picture a look, a view, a stride frame or a checkpoint fixture reaches for; this suite
-## holds the two things the move onto the page adds, which none of those files has a natural home
-## for: **every picture any of them can reach is actually on that page**, and `EventManager` holds
-## it for its own life, read off the run log's lines for the page (`tests/atlas_page_log.gd`).
+## `tests/test_event_strides.gd` and `tests/test_events_catalogue.gd` pin the drawing selection
+## itself — which picture a look, a view, a stride frame or a checkpoint fixture reaches for; this
+## suite holds the two things the move onto the page adds, which none of those files has a natural
+## home for: **every picture any of them can reach is actually on that page**, and `EventManager`
+## holds it for its own life, read off the run log's lines for the page
+## (`tests/atlas_page_log.gd`).
 ##
 ## **Why the completeness sweep is over the script's constants rather than over
 ## `EventPictures.family_sources()`.** `family_sources()` is read off the looks' `_draw_figure()`

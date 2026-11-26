@@ -96,8 +96,8 @@ const WALL_DEEP_WEIGHT := 4
 ## game is made of, and a dog walker that is never on her route is that decision deleted. **And
 ## `leaf_blower` at 52.9 has to stay a wall**, because without it the non-lethal half of the range
 ## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
-## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them,
-## same as it always has — what moved is where the two rows themselves sit.
+## — `tests/test_events_placement.gd` samples five days and counts both kinds. The line goes
+## between them, same as it always has — what moved is where the two rows themselves sit.
 ##
 ## **It is in points of the meter, so it moves when the meter's own arithmetic does, and it moved
 ## again for a different reason than the walking decay this time.** *(2026-09-20: "restore fully
@@ -487,7 +487,7 @@ static func leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 ## is silent and its 22px `obstructs_within()` stays under the far-lane distance (`EventDef._THE_FAR_LANE`, one tile, 32px), so the cost clause
 ## reads it as friction — but pinned `AT_THE_KERB`, 16px in from the kerb edge, it leaves only
 ## `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) - 22 = 26px` to the frontage, narrower than the
-## 28px she needs, which `tests/test_events.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
+## 28px she needs, which `tests/test_events_catalogue.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
 ## already measures by hand for this one row. Read off `obstructs_within()` and `pavement_side` rather
 ## than off an id, so the next row this narrow is caught the same way without anybody adding it to a
 ## list — and a row whose reach already clears the far-lane distance (`EventDef.reaches_the_far_lane()`) never reaches this, so nothing already a wall

@@ -879,9 +879,10 @@ const BOOM_EW_ANCHOR := (BOOM_EW_NEAR_POST + BOOM_EW_FAR_POST) * 0.5
 ## It lives here rather than in `DangerEdge` for the same reason the caret lives in `Sprites`: a
 ## cue that belongs to the vocabulary does not belong to a class, and the screen-edge badge's whole
 ## job is to draw *the thing's own picture* — a second table of which picture that is, kept in the
-## UI, is how a badge ends up showing a generic van for a fire engine. `tests/test_events.gd`
-## asserts every visible row has one and that no two looks return the same picture, which is the
-## half of the one-picture-per-row rule that a `look` field cannot enforce by itself.
+## UI, is how a badge ends up showing a generic van for a fire engine.
+## `tests/test_events_catalogue.gd` asserts every visible row has one and that no two looks return
+## the same picture, which is the half of the one-picture-per-row rule that a `look` field cannot
+## enforce by itself.
 static func icon_for(look: EventDef.Look) -> String:
 	match look:
 		EventDef.Look.CAT: return CAT_RUNNING

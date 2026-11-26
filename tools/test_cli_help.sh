@@ -1129,6 +1129,8 @@ check_that "new-name.sh offline says so and draws from its own tree" \
 # purpose and pass; a second use of a pair of words, a checkbox in a queue file, and a link in
 # TODO.md to an entry folder that is not there are each a hit.
 cp "$root/tools/lint.sh" "$root/tools/check_citations.py" "$names_repo/tools/"
+# lint.sh runs check_test_paths.py whenever a doc that check reads is linted, docs/TODO.md among them.
+cp "$root/tools/check_test_paths.py" "$names_repo/tools/"
 lint_in_names_repo() {
     (cd "$names_repo" && ./tools/lint.sh "$@" >/dev/null 2>&1)
 }

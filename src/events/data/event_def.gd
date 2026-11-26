@@ -59,9 +59,9 @@ const HEAT_PRESSES_POPULATION := 1.6
 ## of the visual vocabulary, so a shared picture makes a complaint about one row indistinguishable
 ## from a complaint about another.
 ##
-## A look is the name of one picture, and `tests/test_events.gd` holds both halves of the rule:
-## **no two rows share a look**, and **no two looks share a silhouette**. There is no generic look
-## to reach for, so adding an event costs a drawing.
+## A look is the name of one picture, and `tests/test_events_catalogue.gd` holds both halves of
+## the rule: **no two rows share a look**, and **no two looks share a silhouette**. There is no
+## generic look to reach for, so adding an event costs a drawing.
 enum Look {
 	NONE,     ## Invisible — something else already draws it (a park's playground frame).
 	# ---- act I ----
@@ -1639,9 +1639,10 @@ func field_reach() -> float:
 
 # ------------------------------------------------------------ what a row costs ---
 # The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is
-# cheaper to walk through than around. **It lives here rather than in `tests/test_events.gd`,
-# because the game asks it too**: the danger caret is raised by what a row costs, and a second copy
-# of that number would be a second table of which picture a look means.
+# cheaper to walk through than around. **It lives here rather than in
+# `tests/test_events_costs.gd`, because the game asks it too**: the danger caret is raised by what
+# a row costs, and a second copy of that number would be a second table of which picture a look
+# means.
 
 ## What walking straight through the middle of one costs, in points of a hundred-point meter: the
 ## field integrated along the line, less the walking decay over the same time. Cached, because
@@ -1677,7 +1678,7 @@ func _mean_emission_along_the_line() -> float:
 ##
 ## **This is the def's own model and not the instance's**: this one is a line through a flock at
 ## full strength, and what an instance charges depends on when the birds left the ground.
-## `tests/test_events.gd` walks the instance for the part this cannot see.
+## `tests/test_events_scenery.gd` walks the instance for the part this cannot see.
 func emission_at(at: Vector2) -> float:
 	if not _flock.is_a_flock():
 		return emission_at_distance(at.length())

@@ -3,9 +3,8 @@ extends RefCounted
 ## sprite drawn often), a mobile row that follows its own path, and a crouching row that holds
 ## still until it bolts.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again". The suite stands on
-## bare `EventInstance`s it steps by hand (`_instance()`) and builds no city; what the scheduler plans
-## for a flock is asked in `tests/test_events_scheduler.gd`.
+## The suite stands on bare `EventInstance`s it steps by hand (`_instance()`) and builds no city;
+## what the scheduler plans for a flock is asked in `tests/test_events_scheduler.gd`.
 
 const STEP := 1.0 / 60.0
 

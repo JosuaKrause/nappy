@@ -1636,7 +1636,7 @@ func _test_is_rig_from_args(t: TestRunner) -> void:
 ## `rig_quit_seconds_from(after, day_length)` — the pure formula both `RigLock._process()`'s own
 ## timer and `tools/lib_dev_flags.sh`'s `rig_kill_after_seconds()` are built on (that one mirrors
 ## this exact arithmetic against the same `RIG_QUIT_SECONDS` marker block this file's constants
-## come from — see `tests/test_cli_help.sh` for the shell side).
+## come from — see `tools/test_cli_help.sh` for the shell side).
 func _test_rig_quit_seconds_from(t: TestRunner) -> void:
 	var margin := DevFlags.RIG_QUIT_MARGIN_SECONDS
 	var ceiling := DevFlags.RIG_QUIT_CEILING_SECONDS

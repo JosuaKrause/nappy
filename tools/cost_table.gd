@@ -210,8 +210,8 @@ func _distance_row(def: EventDef, sensitivity: float) -> Dictionary:
 	return row
 
 ## Net points from one real pass, `M174Pass.pass_net_averaged()` — the same simulation
-## `tests/test_events.gd` runs, moving a real instance the way the game moves it and averaging
-## over its own pulse phase. Offset 0 is dashed for a row with a solid, still body
+## `tests/test_event_phase.gd` runs, moving a real instance the way the game moves it and
+## averaging over its own pulse phase. Offset 0 is dashed for a row with a solid, still body
 ## (`obstructs_within() > 0.0`; anything mobile is exempt from that rule and so never sets one):
 ## her own body cannot occupy the same line as a thing she cannot walk through.
 func _pass_row(def: EventDef, sensitivity: float) -> Dictionary:
@@ -369,7 +369,7 @@ func _header_text() -> String:
 			"or held still), averaged over 8 samples of its own pulse phase except where the two " +
 			"paragraphs below say otherwise. `M174Pass." +
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
-			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
+			"than duplicated — `tests/test_event_phase.gd`'s own relationship tests run the identical " +
 			"code. Dashed for a row that pursues or waits (`EventDef.pursues()` or " +
 			"`EventDef.waits_for_her()`: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +

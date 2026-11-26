@@ -82,6 +82,8 @@ run uv run python tools/test_check_citations.py
 run uv run python tools/test_ci_checks.py
 run uv run python tools/test_check_layers.py
 run uv run python tools/test_check_overrides.py
+run uv run python tools/test_check_test_paths.py
+run uv run python tools/test_check_closure_writers.py
 run uv run python tools/test_check_test_only_members.py
 run uv run python tools/test_merge_test_only_members.py
 run uv run python tools/test_check_field_reads.py

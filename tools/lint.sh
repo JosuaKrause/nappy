@@ -19,8 +19,11 @@
 # which are history and primary sources and are allowed to say what was true then, and
 # docs/evidence/README.md, whose job is filenames that embed hashes.
 #
-# One check reads the code rather than a doc: every override of a project class carries its
-# `## Overrides Class.method.` line (tools/check_overrides.py).
+# Two checks read the code rather than a doc: every override of a project class carries its
+# `## Overrides Class.method.` line (tools/check_overrides.py), and nothing under src/ closes a
+# street, builds a closure or writes the map's closed ground off the closure planner's path
+# (tools/check_closure_writers.py). A third reads the docs and the comments of the code: none
+# names a file under tests/ that does not exist (tools/check_test_paths.py).
 #
 # Four checks are about the queue's layout rather than a sentence, and run on the history too:
 # a name (<date>-<word>-<word>) used for two different things across docs/todo, docs/decisions,
@@ -63,7 +66,12 @@ docs/TODO.md to an entry folder that does not exist, and every entry's band line
 tools/queue.sh --check), and the citations of the player's words in CLAUDE.md and every
 .claude/skills/**/*.md (tools/check_citations.py), and that every method of src/ and tests/ overriding a
 method of a project class carries its `## Overrides Class.method.` doc line and every such line is true
-(tools/check_overrides.py; run on a full lint and when a .gd file is named). Given file arguments, scans only those --
+(tools/check_overrides.py; run on a full lint and when a .gd file is named), that nothing under src/
+closes a street, builds a closure or writes the map's closed ground outside the sites the closure
+check allows (tools/check_closure_writers.py; run on a full lint and when a .gd file is named), and
+that no governed doc and no comment of a .gd file names a file under tests/ that does not exist
+(tools/check_test_paths.py; run on a full lint and when a .gd file or a doc it reads is named).
+Given file arguments, scans only those --
 how the PostToolUse hook calls it after an edit -- and runs the layout check each one belongs to.
 A named file that does not exist is an error, not a silent skip.
 
@@ -448,12 +456,79 @@ lint_overrides() {
     fi
 }
 
+# Runs a check that reads the whole tree under the host's python3, since CI runs this before it
+# installs uv, and counts each `path:line:` line it prints as a hit. The script's own closing line
+# (it starts with the script's path) is printed and not counted; a failure that names no line is
+# one hit, so a script that cannot run never reads as a pass.
+# $1 the script  $2 what it checks, for the message when python3 is missing
+run_tree_check() {
+    local script="$1" what="$2" out status line counted=0
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "tools/lint.sh: python3 is needed to check $what and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    out="$(python3 "$script" 2>&1)"
+    status=$?
+    [[ "$status" -eq 0 ]] && return
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        printf '%s\n' "$line"
+        if [[ "$line" != "$script":* ]]; then
+            hits=$((hits + 1))
+            counted=1
+        fi
+    done <<< "$out"
+    if [[ "$counted" -eq 0 ]]; then
+        echo "tools/lint.sh: $script failed without naming a line" >&2
+        hits=$((hits + 1))
+    fi
+}
+
+# No governed doc and no comment of a `.gd` file names a file under tests/ that does not exist
+# (tools/check_test_paths.py, whose --help says what it reads and what a name is). A suite renamed
+# or deleted breaks a sentence in any file, so it reads the whole tree and runs on a full lint and
+# when a `.gd` file or a doc it reads is among the arguments: CLAUDE.md, README.md, a skill's
+# file, or a direct child of docs/ (a `case` pattern's `*` matches "/" too, so the folders under
+# docs/ are sorted out first). A queue file, a record or a playtest among them cannot make a hit.
+lint_test_paths() {
+    local f run=0
+    [[ $# -eq 0 ]] && run=1
+    for f in "$@"; do
+        case "$f" in
+            *.gd|CLAUDE.md|README.md|.claude/skills/*.md) run=1 ;;
+            docs/*/*) ;;
+            docs/*.md) run=1 ;;
+        esac
+    done
+    [[ "$run" -eq 0 ]] && return
+    run_tree_check tools/check_test_paths.py "the tests/ files the docs and comments name"
+}
+
+# Every street closure comes from the closure planner: nothing under src/ calls
+# CityMap.close_streets(), builds a closure or writes the map's closed ground outside the sites
+# tools/check_closure_writers.py lists with their reasons. It reads the whole of src/, so it runs
+# on a full lint and when a `.gd` file is among the arguments. A checkout with no src/ has no
+# game code to hold to the rule, and the script fails there, since every site it allows is gone.
+lint_closure_writers() {
+    local f run=0
+    [[ $# -eq 0 ]] && run=1
+    for f in "$@"; do
+        [[ "$f" == *.gd ]] && run=1
+    done
+    [[ "$run" -eq 0 || ! -d src ]] && return
+    run_tree_check tools/check_closure_writers.py "where a street closure comes from"
+}
+
 lint_svgs "$@"
 lint_overrides "$@"
+lint_closure_writers "$@"
 if [[ $# -eq 0 ]]; then
     lint_citations
+    lint_test_paths
 else
     lint_citations "${files[@]}"
+    lint_test_paths "${files[@]}"
 fi
 if [[ $# -eq 0 || "$layout_names" -eq 1 ]]; then
     lint_duplicate_names
