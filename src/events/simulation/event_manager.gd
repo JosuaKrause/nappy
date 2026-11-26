@@ -463,6 +463,26 @@ func what_struck_her() -> String:
 
 var _struck_by := ""
 
+## **The live instance behind a lost day's cause**, `cause` being what `LossCause` named it (an
+## instance's logged name, hyphenated), or null when none stands in the world. The one whose reach
+## struck her when one did; otherwise the one of that name that landed the most on the baby over
+## the window (`ExcitementSource.landed()`, the share `DayDirector._landed_by_group()` sums), so a
+## crying loss goes to the instance that did the most and never the nearest, which may have done
+## little. Asked in the frame the day ends.
+func the_instance_behind(cause: String) -> EventInstance:
+	var behind: EventInstance = null
+	var most := -1.0
+	for instance in world.instances():
+		if instance.logged_name().replace("_", "-") != cause:
+			continue
+		if world.has_player() and instance.is_lethal_at(world.player().global_position):
+			return instance
+		var landed := instance.source().landed()
+		if landed > most:
+			behind = instance
+			most = landed
+	return behind
+
 ## She has crossed a district door — `CheckpointController.door_crossed`, forwarded, so a listener
 ## asks the day's events rather than the controller behind them (`ResistanceDirector`).
 signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)

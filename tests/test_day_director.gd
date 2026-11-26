@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_a_crying_day_is_named_by_what_landed_the_most(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_a_hard_fail_is_named_by_its_reason(t)
+	_test_a_loss_is_shown_with_what_caused_it(t)
 	_test_a_won_day_moves_the_calendar_on(t)
 	_test_a_won_last_day_with_every_task_done_hands_over(t)
 	_test_a_scene_recipe_never_hands_over(t)
@@ -151,6 +152,48 @@ func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:
 	director.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 	t.check(_cause_sent() == "charging-dog",
 			"a hard fail is named by the row that struck her")
+	_put_away(rig)
+
+## The end hands on whether the game shows the loss and where its one cause stands, read in the
+## frame it ended: a timeout and a win show nothing; a crying day lost to a row goes to the
+## instance of that row that landed the most, not the nearest; a day lost to the crowd, the traffic
+## or herself, or to a cause no longer in the world, shows the beat with nothing to frame.
+func _test_a_loss_is_shown_with_what_caused_it(t: TestRunner) -> void:
+	for result: GameEnums.DayResult in [GameEnums.DayResult.WON, GameEnums.DayResult.LOST_TIMEOUT]:
+		var rig := _rig(t)
+		var director: DayDirector = rig["director"]
+		var end := director.finish_day(result)
+		t.check(not end.shows_its_cause() and not end.has_a_cause_in_view(),
+				"a result of %d shows no cause" % result)
+		_put_away(rig)
+	var rig := _rig(t)
+	var director: DayDirector = rig["director"]
+	var events: EventManager = rig["events"]
+	var def := EventCatalogue.by_id("cyclist")
+	var near := events.spawn_extra(def, Vector2(100.0, 0.0))
+	var far := events.spawn_extra(def, Vector2(900.0, 0.0))
+	near.source().accumulate_landed(2.0)
+	far.source().accumulate_landed(6.0)
+	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(end.shows_its_cause() and end.has_a_cause_in_view(), "a crying day lost to a row shows it")
+	t.check(end.cause_stands_at().is_equal_approx(far.global_position),
+			"at the instance that landed the most (%s), not the nearest (%s): %s"
+			% [far.global_position, near.global_position, end.cause_stands_at()])
+	events.stand_down()
+	_put_away(rig)
+	rig = _rig(t)
+	director = rig["director"]
+	end = director.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(end.shows_its_cause() and not end.has_a_cause_in_view(),
+			"a crying day lost to herself shows the beat with nothing to frame")
+	_put_away(rig)
+	rig = _rig(t)
+	director = rig["director"]
+	var clock: EndedClock = rig["clock"]
+	clock.struck_by = "charging_dog"
+	end = director.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(end.shows_its_cause() and not end.has_a_cause_in_view(),
+			"a hard fail whose row no longer stands in the world has nothing to frame")
 	_put_away(rig)
 
 func _test_a_won_day_moves_the_calendar_on(t: TestRunner) -> void:

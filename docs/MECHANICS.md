@@ -1550,6 +1550,29 @@ today again (a loss with nerves left retries the same day) — never off the day
 The day brief a resumed run opens on (`SummaryModel.brief_for()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
 
+## A lost day shows what caused it
+
+A day lost to the baby crying or to a hard fail is not followed at once by its summary: the world
+stops on the frame of the loss, and for about two seconds the camera shows the cause, with no text
+(`LossHold`, `Main._show_the_day_over()`). The game never draws a mark for it: the camera eases
+(0.7 s) from her view to a framing of her and the cause together, zooming out to fit them and never
+past half of her own zoom, then holds (1.5 s) before the summary comes up. A tap or a key skips the
+beat. Both numbers are constants on `LossHold`.
+
+What the cause is, one thing or none, is read in the frame the day ends (`DayDirector.finish_day()`,
+handed on in `DayEnd`), from the name the loss already carries (`LossCause`):
+
+- **A car strike**: the car that struck her (`Crowd.car_that_struck_her()`).
+- **A hard fail by an event**: the instance whose reach struck her.
+- **A crying day lost to a catalogue row**: the live instance of that row with the largest landed
+  share of its own, the share the cause's group is summed from, so the camera goes to the one that
+  did the most and never to the nearest, which may have done little
+  (`EventManager.the_instance_behind()`).
+- **A crying day lost to the crowd, the traffic as a whole, or herself**, and a cause that no longer
+  stands in the world: no one thing, so the beat holds on her where she is.
+
+A lost day by the clock and a won day have no beat. The escape's sections lose the same way.
+
 ## The run clock
 
 `run.header().play_ticks()` is a second clock, over the whole run rather than one day: the

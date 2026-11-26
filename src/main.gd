@@ -2025,7 +2025,26 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# other loss, already standing at that dawn.
 	if not end.ends_the_run():
 		_save_now(false)
-	_summary.show_summary(SummaryModel.day_over(_run, end), _flow.mode())
+	_show_the_day_over(end)
+
+## **Raises a day's outcome screen**, after the beat a loss holds on what caused it when it has one
+## (`DayEnd.shows_its_cause()`): the world stops on the frame of the loss, the camera frames her and
+## the one thing that caused it (`LossHold`), and the screen comes up when the beat ends. Written
+## and saved before it (the caller's), so closing the game inside the beat takes nothing back.
+## `section_title` is a section's own words where the day's number stands.
+func _show_the_day_over(end: DayEnd, section_title := "") -> void:
+	if end.shows_its_cause() and is_inside_tree() and _player:
+		var hold := LossHold.new()
+		hold.name = "LossHold"
+		add_child(hold)
+		if end.has_a_cause_in_view():
+			hold.begin(_player.camera(), _player.global_position, end.cause_stands_at(),
+					get_viewport_rect().size)
+		else:
+			hold.hold_on_her()
+		await hold.finished
+		hold.queue_free()
+	_summary.show_summary(SummaryModel.day_over(_run, end, section_title), _flow.mode())
 
 ## What a section of the escape ending leads to, once `_on_day_finished()` has ended it as it ends
 ## any day — the section's `DaySpec` says the rest.
@@ -2089,7 +2108,7 @@ func _finish_the_section(end: DayEnd) -> void:
 	# the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`) has already cleared.
 	if not run_over:
 		_save_now(false)
-	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title()), _flow.mode())
+	_show_the_day_over(end, spec.title())
 
 ## **The game walks her in** once the section is won at the threshold of the tunnel or the bridge:
 ## her own control ends there and she walks on by herself into the tunnel's dark or across the

@@ -20,6 +20,11 @@ var _is_section := false
 var _hands_over_to_the_escape := false
 var _goes_back := false
 var _run_over := false
+## Whether the loss is shown before its summary (a hard fail or a crying day), and where what caused
+## it stands in the world when one thing did (`mark_caused_at()`).
+var _shows_its_cause := false
+var _cause_in_view := false
+var _cause_at := Vector2.ZERO
 
 ## What the day ended with: its result, the loss's own sentence (`""` for a win), the clock it ended
 ## on in seconds, and the way out of the city she took (-1 for none).
@@ -29,6 +34,16 @@ func _init(result := GameEnums.DayResult.WON, reason := "", elapsed_seconds := 0
 	_reason = reason
 	_elapsed_seconds = elapsed_seconds
 	_exit_reached = exit_reached
+
+## The loss is one the game shows before its summary: a hard fail or a crying day, each with a
+## cause. A timeout and a win are not.
+func mark_to_show_its_cause() -> void:
+	_shows_its_cause = true
+
+## One thing caused the loss, and it stands at `point` in the world, in the frame the day ended.
+func mark_caused_at(point: Vector2) -> void:
+	_cause_in_view = true
+	_cause_at = point
 
 ## An escape section: the director has ended the day (`day_ended` sent) and nothing more; the
 ## section's own cost and screen are `main`'s.
@@ -63,6 +78,19 @@ func lasted_seconds() -> float:
 ## Which way out of the city she took (`CityExit.Kind`, as an `int`), or -1 when she took none.
 func exit_taken() -> int:
 	return _exit_reached
+
+## Whether the game shows this loss before its summary (`mark_to_show_its_cause()`).
+func shows_its_cause() -> bool:
+	return _shows_its_cause
+
+## Whether one thing caused the loss, which stands where `cause_stands_at()` says.
+func has_a_cause_in_view() -> bool:
+	return _cause_in_view
+
+## Where the one thing that caused the loss stood in the frame the day ended; read only when
+## `has_a_cause_in_view()`.
+func cause_stands_at() -> Vector2:
+	return _cause_at
 
 ## Whether this was the end of an escape section, whose cost and screen are `main`'s.
 func ends_a_section() -> bool:
