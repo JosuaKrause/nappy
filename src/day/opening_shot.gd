@@ -41,7 +41,6 @@ func _ready() -> void:
 ## The shot's route for `route`, in world pixels: the park, the junctions the route passes from its
 ## far end back to the one it leaves the doorstep's street at, and `doorstep`. A straight line
 ## between two points, so it runs down the middle of each street.
-
 static func line_for(route: TutorialRoute, doorstep: Vector2) -> Array[Vector2]:
 	var junctions := route.junctions()
 	var park := Rect2(CityMap.block_rect(route.park_block()))
