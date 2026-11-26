@@ -96,7 +96,10 @@ func run(t: TestRunner) -> void:
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
 	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
-	_test_a_sent_row_with_no_room_lets_the_next_marbles_through(t)
+	for row: String in ["police_patrol", "cyclist"]:
+		_test_a_row_with_no_room_lets_the_next_marbles_through(t, row)
+	_test_a_cyclist_is_not_sent_where_a_placed_plan_stands_in_his_field(t)
+	_test_a_cyclist_is_not_sent_where_a_plan_would_stand_in_his_field_as_he_arrives(t)
 	_test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t)
 	_test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t)
 	_test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t)
@@ -712,17 +715,18 @@ func _test_a_sent_row_starts_clear_of_a_placed_plan(t: TestRunner) -> void:
 	t.check(not _due(_director(map, "dog_walker", far)).is_empty(),
 			"and one further off than the spacing does not")
 
-## **A marble of her route sent ahead of her that has no room does not hold the route**
+## **A marble of her route that waits for room and has none does not hold the route**
 ## (calm-pelican-6): with a lethal row's kept-clear field over the street round her, her bag rigged
-## so its next two marbles are patrols, the patrols wait and the marbles behind them are handed out;
-## once the lethal row is spent the waiting patrols come. **And what waited takes the clock's turn**
+## so its next two marbles are `row`, the two wait and the marbles behind them are handed out; once
+## the lethal row is spent the two that waited come. Asked of the patrol, a row sent ahead of her
+## that the lethal row's field refuses, and of the cyclist, whose own field the lethal row stands in. **And what waited takes the clock's turn**
 ## (board question sent-ahead-pace: in place of, at the same clock): nothing is handed out closer to
 ## the last than the clock's shortest wait (`EventDirector.AHEAD_INTERVAL`), before the lethal row is
-## spent or after. **And a patrol with no room does not spend the turn it was drawn on**: the turn is
-## asked again a second later (`EventDirector.SENT_RETRY`), so the first marble behind the two patrols
-## comes before three of the clock's shortest waits have passed, where three whole waits, the first and
-## one for each patrol, would come no sooner.
-func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) -> void:
+## spent or after. **And a marble with no room does not spend the turn it was drawn on**: the turn is
+## asked again a second later (`EventDirector.SENT_RETRY`), so the first marble behind the two comes
+## before three of the clock's shortest waits have passed, where three whole waits, the first and one
+## for each of the two, would come no sooner.
+func _test_a_row_with_no_room_lets_the_next_marbles_through(t: TestRunner, row: String) -> void:
 	var map := _street()
 	var lethal := _lethal_by_hand(600.0)
 	var blocking := EventPlan.new(lethal, _her() + Vector2(-1.5 * TILE, 0.0))
@@ -734,8 +738,8 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	director.start_day(DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
-	var patrols: Array[String] = ["police_patrol", "police_patrol"]
-	director.rig_her_route(patrols, 2)
+	var rigged: Array[String] = [row, row]
+	director.rig_her_route(rigged, 2)
 	var step := 0.1
 	var walked := 0.0
 	var last_at := -INF
@@ -751,19 +755,20 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 		first_at = minf(first_at, walked)
 		closest = minf(closest, walked - last_at)
 		last_at = walked
-		if (due[0] as EventDef).is_sent_ahead():
+		var sent := due[0] as EventDef
+		if sent.is_sent_ahead() or sent.id() == "cyclist":
 			sent_while_blocked += 1
 		else:
 			through += 1
 	t.check(through > 0 and sent_while_blocked == 0,
-			"with no room for the two patrols at the front of her bag, %d marbles behind them are "
-			% through + "handed out and no sent row (%d)" % sent_while_blocked)
+			"%s: with no room for the two at the front of her bag, %d marbles behind them are "
+			% [row, through] + "handed out and no sent row or cyclist (%d)" % sent_while_blocked)
 	t.check(first_at < 3.0 * EventDirector.AHEAD_INTERVAL.x,
 			"and the first of them comes %.1fs into her walk, before three of the clock's shortest "
-			% first_at + "waits (%.1fs): a patrol with no room does not spend its turn"
+			% first_at + "waits (%.1fs): a marble with no room does not spend its turn"
 			% (3.0 * EventDirector.AHEAD_INTERVAL.x))
 	blocking.spend()
-	var patrols_came := 0
+	var came := 0
 	for _step in 800:
 		walked += step
 		var due := director.due(step, _her(), Vector2.UP * Tuning.WALK_SPEED)
@@ -771,12 +776,58 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 			continue
 		closest = minf(closest, walked - last_at)
 		last_at = walked
-		if (due[0] as EventDef).id() == "police_patrol":
-			patrols_came += 1
-	t.check(patrols_came >= 2, "and once there is room the patrols that waited come (%d)" % patrols_came)
+		if (due[0] as EventDef).id() == row:
+			came += 1
+	t.check(came >= 2, "and once there is room the two that waited come (%d)" % came)
 	t.check(closest >= EventDirector.AHEAD_INTERVAL.x - step,
 			"and nothing is handed out closer to the last than the clock's shortest wait, %.1fs "
 			% EventDirector.AHEAD_INTERVAL.x + "(the closest two %.1fs apart)" % closest)
+
+## **A cyclist is sent only where no placed plan stands inside his field**
+## (`EventDirector.clear_to_send()`): nothing else happens inside a lethal event's field, and his is
+## the field of the one lethal row the director sends whose plan keeps it clear. A café on her
+## sidewalk a few tiles ahead of her, on his way down it, refuses him while it stands, and he is
+## handed out once it is spent.
+func _test_a_cyclist_is_not_sent_where_a_placed_plan_stands_in_his_field(t: TestRunner) -> void:
+	var map := _street()
+	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), _her() + Vector2(0.0, -3.0 * TILE))
+	var plans: Array[EventPlan] = [cafe]
+	var director := _director(map, "cyclist", plans)
+	t.check(_due(director).is_empty(), "a cyclist whose way runs past a café is refused")
+	cafe.spend()
+	var due := _due(director)
+	t.check(due.size() >= 2 and (due[0] as EventDef).id() == "cyclist",
+			"and handed out once the café is spent")
+
+## **Nor where a placed plan would stand inside his field as he arrives**: he is warned of first, and
+## created once his badge has been up on the route down her line from wherever she is then, so a café
+## past the end of the route he is sited on, clear of his field there, refuses him where she could
+## walk back toward it while the badge is up (`Tuning.RUN_SPEED` for his `warned_for()`, and a
+## tile) and bring his route over it; one beyond that does not. A badge is never raised for a thing
+## that cannot come (minty-dolphin #852).
+func _test_a_cyclist_is_not_sent_where_a_plan_would_stand_in_his_field_as_he_arrives(
+		t: TestRunner) -> void:
+	var map := _street()
+	var open := _due(_director(map, "cyclist", _no_plans()))
+	if open.size() < 2:
+		t.check(false, "the cyclist is handed out with nothing standing")
+		return
+	var cyclist := open[0] as EventDef
+	var path := open[1] as PackedVector2Array
+	var end := path[path.size() - 1]
+	var on := (end - path[0]).normalized()
+	var reach := cyclist.field_reach()
+	var walked_back := Tuning.RUN_SPEED * cyclist.warned_for() + TILE
+	var near: Array[EventPlan] = [EventPlan.new(EventCatalogue.by_id("cafe_tables"),
+			end + on * (reach + walked_back * 0.5))]
+	t.check(near[0].gap_to(EventPlan.new(cyclist, path[0], path)) >= reach,
+			"the near café is clear of the field of the route he is sited on")
+	t.check(_due(_director(map, "cyclist", near)).is_empty(),
+			"and refuses him, since the route he arrives on can bring his field over it")
+	var far: Array[EventPlan] = [EventPlan.new(EventCatalogue.by_id("cafe_tables"),
+			end + on * (reach + walked_back + 2.0 * TILE))]
+	t.check(not _due(_director(map, "cyclist", far)).is_empty(),
+			"and a café further off than she can walk while his badge is up does not")
 
 ## What `site_what_is_on_her_way()` hands the siting while she walks north from her tile for `seconds`
 ## of walking, one tenth of a second a tick; answers every plan it moved, in order.

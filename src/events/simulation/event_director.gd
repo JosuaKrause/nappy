@@ -97,8 +97,8 @@ const ROUTE_BAG_SHARE_OF := {"charging_dog": 2.0 / 16.0}
 ## of her in it (`EventDef.is_sent_ahead()`: the dog walker, the patrol and the convoy, the
 ## heaviest of its rows) a bag holds more than a whole day of walking at `AHEAD_INTERVAL`
 ## hands out (`tests/probes/olive_badger_route_mix.gd` counts both), so the mix is exact over
-## a bag, never over a day; and over a bag only where nothing waits for room, since a sent row
-## that waits comes after the marbles handed out meanwhile (`_sent_waiting`) and can fall past
+## a bag, never over a day; and over a bag only where nothing waits for room, since a row that
+## waits for it comes after the marbles handed out meanwhile (`_sent_waiting`) and can fall past
 ## its bag's end.
 const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 
@@ -130,7 +130,7 @@ var _day := 0
 ## should use the marble bag approach as well. that way we can control what the player sees on
 ## their route".)* Filled with each row the director sites today in proportion to its weight
 ## (`ROUTE_BAG_MARBLES_PER_WEIGHT`), so over any stretch the length of a bag in which nothing waits
-## for room the mix she meets is the rows' own rather than a roll's streaks; a sent row that waits
+## for room the mix she meets is the rows' own rather than a roll's streaks; a row that waits for it
 ## (`_sent_waiting`) comes after the marbles handed out meanwhile, which can carry it past its bag's
 ## end. The marbles are row ids, looked up in `_route_rows`. Its own stream, derived from the day's
 ## director stream rather than drawn from it, so the bag draws nothing from the director's stream;
@@ -168,7 +168,8 @@ var _return_owed := false
 var _return_pacing := false
 ## The walk's plans, as `start_day()` was handed them (the walk's own store, which a unit's draw
 ## adds to as she walks): what a row the director sends ahead of her is kept clear of
-## (`_clear_of_the_plans()`).
+## (`_clear_of_the_plans()`), and what may not stand inside the field a row it sends keeps clear
+## (`_keeps_its_own_field_clear()`, the cyclist's).
 var _plans: Array[EventPlan] = []
 ## Where today's region-door bodies stand — a hut, a boom or an alley post. Read off the day's own
 ## plan in `start_day()` below, so the director needs no second channel to the region plan, and
@@ -520,7 +521,7 @@ func _owe_the_sprinkled_dog(day: int) -> void:
 	if _rng.randf() < CHARGING_DOG_SPRINKLE_CHANCE:
 		_owed.push_front(dog)
 
-## How many events she is still owed today: the queue's, and the rows sent ahead of her whose
+## How many events she is still owed today: the queue's, and the rows that wait for room whose
 ## marbles were drawn while she had no room for them (`_sent_waiting`), which are still to come.
 func owed() -> int:
 	return _owed.size() + _sent_waiting.size()
@@ -1064,13 +1065,13 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 	var sited := _sited(next, at, heading, view)
 	var path: PackedVector2Array = sited[0]
 	if path.is_empty():
-		# **A marble of her route sent ahead of her that has no room never holds the route**: its
-		# slot and its marble are spent, and it waits for room (`_send_what_waited()`), as a place
-		# a marble names waits for its site. *(calm-pelican-6: a marble that cannot be sited never
+		# **A marble of her route that waits for room never holds the route**
+		# (`_waits_for_room()`): its slot and its marble are spent, and it waits for room
+		# (`_send_what_waited()`), as a place a marble names waits for its site. *(calm-pelican-6: a marble that cannot be sited never
 		# blocks the route.)* **Nor does it spend the turn**: nothing was sent, so the turn is asked
 		# again a second later, of the next marble, as a turn whose row found no room otherwise
 		# is. Rolled as a wait, every row that waited would cost her a thing met on her walk.
-		if from_the_bag and next.is_sent_ahead():
+		if from_the_bag and _waits_for_room(next):
 			_hand_out(next, true)
 			_sent_waiting.append(next)
 			_next_in = SENT_RETRY
@@ -1179,14 +1180,26 @@ static func _lesson_walker_reach() -> float:
 ## **How soon a turn of the clock that sent nothing is asked again**: a second of her walking, the
 ## cadence every siting that waits for ground is asked again on. A turn sends nothing where only rows
 ## waiting for room are owed (`_sent_waiting`) and none has any, or where the marble it drew is a row
-## sent ahead of her with no room, which then waits; the turn goes to the next marble a second later.
+## that waits for room (`_waits_for_room()`) and has none, which then waits; the turn goes to the
+## next marble a second later.
 const SENT_RETRY := 1.0
 
-## The rows sent ahead of her whose marbles were drawn while she had no room for them (no
-## carriageway beside her, no sidewalk ahead, a placed plan's room in the way), in the order they
-## were drawn: their slots and marbles spent, each sent on a later turn of the clock that finds it
-## room (`_send_what_waited()`). Emptied by `start_day()`.
+## The rows that wait for room (`_waits_for_room()`) whose marbles were drawn while she had no room
+## for them (no carriageway beside her, no sidewalk ahead, a placed plan's room in the way, a placed
+## plan inside the cyclist's field), in the order they were drawn: their slots and marbles spent,
+## each sent on a later turn of the clock that finds it room (`_send_what_waited()`). Emptied by
+## `start_day()`.
 var _sent_waiting: Array[EventDef] = []
+
+## **Whether a marble of `def` with no room waits for it** (`_sent_waiting`) rather than holding the
+## route: a row sent ahead of her (`EventDef.is_sent_ahead()`), and a row whose plan keeps its field
+## clear (`EventPlan.keeps_its_field_clear()`, the cyclist), the two a placed plan's room refuses
+## (`clear_to_send()`). Where the plans stand thick a cyclist has no room down a whole stretch of
+## her walk, and held at the head of the queue he would stop every cat and dog behind him for as
+## long, as a place marble did until it waited (calm-pelican-6, a marble that cannot be sited never
+## blocks the route). Any other row with no room holds the route, asked again a second later.
+static func _waits_for_room(def: EventDef) -> bool:
+	return def.is_sent_ahead() or EventPlan.new(def, Vector2.ZERO).keeps_its_field_clear()
 
 ## **What waited for room takes the clock's turn** (`due()`, once its wait is over): the first row of
 ## `_sent_waiting` that has room now, asked in the order they were drawn, answered as `due()` answers
@@ -1220,8 +1233,9 @@ func _send_what_waited(at: Vector2, heading: Vector2, view: VisibleView) -> Arra
 ## down her own line *through* a door's gap is exactly what this refuses, and a row whose lead
 ## happens to clear the gap while its run does not would slip past a check on the spawn point alone.
 ## Refused rather than nudged, so the allowance is not burnt and the row arrives once she is past
-## the door. **A row sent ahead of her keeps the spacing every placement keeps** too: nothing else
-## happens inside a lethal event's field.
+## the door. **A row sent ahead of her keeps the spacing every placement keeps** too, and **a cyclist
+## is sent only where no placed plan stands inside his field**: nothing else happens inside a lethal
+## event's field.
 func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) -> Array:
 	var path: PackedVector2Array
 	var crouch := 0.0
@@ -1237,9 +1251,41 @@ func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) ->
 		path = crossing[0]
 		crouch = crossing[1]
 		crossing_point = crossing[2]
-	if not path.is_empty() and not clear_to_send(path, next):
+	if not path.is_empty() and (not clear_to_send(path, next)
+			or not _its_field_holds_while_its_badge_is_up(next, path, at)):
 		path = PackedVector2Array()
 	return [path, crouch, crossing_point]
+
+## **Whether no placed plan comes inside the field of a row warned of first down her line while its
+## badge is up** (the cyclist; `_keeps_its_own_field_clear()`). Such a row is created once its
+## badge has been up, on the route down her line from wherever she is then, `path`'s own way
+## (`EventsAhead._warn_down_her_line()`), and that route is asked `clear_to_send()` again, a
+## refusal withdrawing the badge. So the route is worked out the way its creation works it out, for
+## her shifted along `path`'s line by up to `Tuning.RUN_SPEED` times `EventDef.warned_for()` and a
+## tile, either way and every half tile, and each route found is asked the field: a badge is never
+## raised for a thing that cannot come, "a badge shouldn't disappear before the entity is visible"
+## (minty-dolphin #852). A shift that finds no route down her line is not asked, since it is not
+## the field that refuses it. True for a row created at once, one warned of first in its lane, and
+## one whose plan keeps no field clear.
+func _its_field_holds_while_its_badge_is_up(def: EventDef, path: PackedVector2Array,
+		at: Vector2) -> bool:
+	if def.is_warned_in_its_lane() or not def.warns_before_it_exists() \
+			or not EventPlan.new(def, path[0], path).keeps_its_field_clear():
+		return true
+	var direction := (path[0] - path[1]).normalized()
+	var reach := Tuning.RUN_SPEED * def.warned_for() + Tuning.TILE_SIZE
+	var shift := -reach
+	while shift <= reach:
+		var her := at + direction * shift
+		var place := PendingWarning.down_her_line(_map, def, her, direction)
+		if place != Vector2.INF:
+			var route := _navigator.trim(PendingWarning.route_down_her_line(_map, place, her,
+					direction), EventInstance.mover_for(def))
+			if route.size() >= 2 and not _keeps_its_own_field_clear(
+					EventPlan.new(def, route[0], route)):
+				return false
+		shift += Tuning.TILE_SIZE * 0.5
+	return true
 
 ## Spends the event at the head of the queue on `next`: its slot, and its marble when it came from
 ## the bag (`from_the_bag`), with today's count of the row. Answers the row handed out — the
@@ -1440,31 +1486,55 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef,
 func age_it_is_sent_at(def: EventDef) -> float:
 	return def.age_at_a_point_of_its_beat(_rng.randf())
 
-## **Whether a row sent ahead of her on `path` stands clear of the walk's placed plans**: it starts
-## no nearer than `EventScheduler.EVENT_SPACING_ANY` to any of them, and no point of its route is
-## inside the field a plan keeps clear (`EventPlan.keeps_its_field_clear()`, measured as
-## `EventPlan.gap_to()` against the field's reach), the rule every dawn placement keeps
+## **Whether a row sent ahead of her, `sent` on its route, stands clear of the walk's placed
+## plans**: it starts no nearer than `EventScheduler.EVENT_SPACING_ANY` to any of them, and no point
+## of its route is inside the field a plan keeps clear (`EventPlan.keeps_its_field_clear()`,
+## measured as `EventPlan.gap_to()` against the field's reach), the rule every dawn placement keeps
 ## (`StreetInvalidation.room_around()`). A spent or unplaced plan is not asked.
-func _clear_of_the_plans(path: PackedVector2Array, def: EventDef) -> bool:
-	var sent := EventPlan.new(def, path[0], path)
+func _clear_of_the_plans(sent: EventPlan) -> bool:
 	for plan in _plans:
 		if plan.is_spent() or not plan.is_placed():
 			continue
-		if plan.distance_from(path[0]) < EventScheduler.EVENT_SPACING_ANY:
+		if plan.distance_from(sent.placed_at()) < EventScheduler.EVENT_SPACING_ANY:
 			return false
 		if plan.keeps_its_field_clear() and sent.gap_to(plan) < plan.field_reach():
 			return false
 	return true
 
+## **Whether no placed plan of the walk stands inside the field `sent` keeps clear**: true for a row
+## whose plan keeps no field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is not a
+## wall and does not pursue; of the rows the director sends, the cyclist), and for one that does,
+## true where every placed plan is at least the field's reach from its route
+## (`EventPlan.gap_to()`). It is the other direction of `_clear_of_the_plans()`'s field check, the
+## candidate's own field that `StreetInvalidation.room_around()` asks of every dawn placement:
+## **nothing else happens inside a lethal event's field**, so a cyclist is not sent down a stretch
+## where a café, a dog walker or a wall's row already stands in reach of his route. Every placed
+## plan is asked, a wall and a pursuer included, since what is exempt is a field kept clear, not a
+## thing standing in one. A spent or unplaced plan is not asked.
+func _keeps_its_own_field_clear(sent: EventPlan) -> bool:
+	if not sent.keeps_its_field_clear():
+		return true
+	for plan in _plans:
+		if plan.is_spent() or not plan.is_placed():
+			continue
+		if sent.gap_to(plan) < sent.field_reach():
+			return false
+	return true
+
 ## **Whether a route may be sent at her**: it stays out of the clear ground around today's region
-## doors, and, for a row sent ahead of her (`EventDef.is_sent_ahead()`), keeps the room every
-## placement keeps from the walk's placed plans (`_clear_of_the_plans()`). The refusal `due()` makes
-## of every siting, asked again by `EventsAhead` of a row's route when the row is created, since its
-## place has moved with her since it was sited.
+## doors, no placed plan stands inside the field the row sent on it keeps clear
+## (`_keeps_its_own_field_clear()`: the cyclist's), and, for a row sent ahead of her
+## (`EventDef.is_sent_ahead()`), it keeps the room every placement keeps from the walk's placed
+## plans (`_clear_of_the_plans()`). The refusal `due()` makes of every siting, asked again by
+## `EventsAhead` of a row's route when the row is created, since its place has moved with her since
+## it was sited. A refused row is not spent: `due()` asks again a second later.
 func clear_to_send(path: PackedVector2Array, def: EventDef) -> bool:
 	if not DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, def.field_reach()):
 		return false
-	return not def.is_sent_ahead() or _clear_of_the_plans(path, def)
+	var sent := EventPlan.new(def, path[0], path)
+	if not _keeps_its_own_field_clear(sent):
+		return false
+	return not def.is_sent_ahead() or _clear_of_the_plans(sent)
 
 ## **Whether a row sent ahead of her may take a further leg on `path`** (`WayOn.next_leg()`): it stays
 ## out of the clear ground around today's region doors and out of every field a placed plan keeps
