@@ -126,7 +126,7 @@ func _heading_for_sector(sector: int) -> Vector2:
 ## walked through `WALK`.
 func _test_moving_instance_alternates_gait_frames(t: TestRunner) -> void:
 	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.shipped().by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	t.check(not look.gait_is_stepping(), "starts on frame a before it has moved at all")
 	var saw_b := false
 	var saw_a_again := false
@@ -145,11 +145,11 @@ func _test_moving_instance_alternates_gait_frames(t: TestRunner) -> void:
 ## whatever `_gait_phase` happens to be sitting on, and a look asked on a stopped stride holds
 ## frame a however far through a step its phase is.
 func _test_waiting_robber_holds_frame_a(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	# Well outside `EventDef.notice_within()`, so he stays `is_waiting()` for the whole run.
 	instance_where.tell(Vector2(9999.0, 9999.0))
 	for i in 120:
@@ -173,7 +173,8 @@ func _test_waiting_robber_holds_frame_a(t: TestRunner) -> void:
 func _test_chatting_mother_freezes_gait_when_talking(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.shipped().by_id("chatting_mother"), Vector2.ZERO, route, Vector2.RIGHT)
+	instance.setup(Shipped.rows().by_id("chatting_mother"), Vector2.ZERO, route,
+			Vector2.RIGHT)
 	for i in 60:
 		instance.step(STEP)
 	t.check(instance.gait_is_moving(), "she is striding on her beat before the conversation")
@@ -193,7 +194,8 @@ func _test_chatting_mother_freezes_gait_when_talking(t: TestRunner) -> void:
 ## cat covers no ground under its manager's step, so no step the game takes puts its stride on a
 ## step, and the guard is for the state the game cannot reach.
 func _test_crouched_cat_never_reads_the_running_b_frame(t: TestRunner) -> void:
-	var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.shipped().by_id("cat_dash"), false)
+	var instance: EventInstance = await DrawnEvent.stand(t,
+			Shipped.rows().by_id("cat_dash"), false)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
 	instance.hold_by_hand()
 	var walked := 0
@@ -220,7 +222,7 @@ func _test_crouched_cat_never_reads_the_running_b_frame(t: TestRunner) -> void:
 ## `_draw_dog_walker()` reads, over a walk long enough to pass through every beat.
 func _test_dog_walker_and_dog_share_one_phase(t: TestRunner) -> void:
 	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.shipped().by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	var rest: String = EventPictures.dog_picture("side", false, false)
 	var agreed := true
 	for point: Vector2 in WALK.slice(1):
@@ -275,7 +277,7 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t: TestRunne
 	var beat := PI / 2.0 / EventInstance.GAIT_RATE
 	var cycle := ["events/dog", "events/dog_b", "events/dog_c", "events/dog_b"]
 	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.shipped().by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	var shown: Array[String] = []
 	for point: Vector2 in WALK.slice(1):
 		_walk_to(event, point)
@@ -293,7 +295,8 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t: TestRunne
 	event.free()
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(900.0, 0.0)])
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.shipped().by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
+	instance.setup(Shipped.rows().by_id("dog_walker"), Vector2.ZERO, route,
+			Vector2.RIGHT)
 	var beats: Array[int] = []
 	var changed_at: Array[float] = []
 	for i in 900:
@@ -321,7 +324,8 @@ func _test_a_standing_normal_dog_rests(t: TestRunner) -> void:
 			"front_diagonal": Vector2(1.0, 1.0).normalized(),
 			"back_diagonal": Vector2(1.0, -1.0).normalized()}
 	for view: String in headings:
-		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.shipped().by_id("dog_walker"),
+		var instance: EventInstance = await DrawnEvent.stand(t,
+				Shipped.rows().by_id("dog_walker"),
 				false, null, null, DrawnEvent.AT, headings[view])
 		instance.leave_for_a_completed_task()
 		var rest: String = EventPictures.dog_picture(view, false, false)
@@ -360,7 +364,7 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait
 ## has, over the fixed walk rather than an open-ended one.
 func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("abduction")
+	var def := Shipped.rows().by_id("abduction")
 	var event := FakeEvent.new()
 	# A third of the way into the walk, so a look that ignored whether a take is running would be
 	# stepping.
@@ -381,10 +385,10 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- the idle timer ---
 
-## Neither the café sitters nor the busker ever move — `EventCatalogue.shipped()._cafe_tables()` and
-## `_busker()` are both stationary rows — so their own alternation has to come from
-## `idle_is_stepping()`'s timer rather than any distance covered, and it does actually flip both ways
-## over a long enough run.
+## Neither the café sitters nor the busker ever move — `EventCatalogue._cafe_tables()`
+## and `_busker()` are both stationary rows — so their own alternation has to come from
+## `idle_is_stepping()`'s timer rather than any distance covered, and it does actually flip both
+## ways over a long enough run.
 func _test_idle_families_alternate_on_time_without_moving(t: TestRunner) -> void:
 	var periods := {
 		"cafe_tables": EventPictures.SITTER_IDLE_PERIOD,
@@ -394,14 +398,14 @@ func _test_idle_families_alternate_on_time_without_moving(t: TestRunner) -> void
 		var period: float = periods[def_id]
 		var ticks := int(period / STEP) * 3 + 10
 		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.shipped().by_id(def_id), Vector2.ZERO)
+		instance.setup(Shipped.rows().by_id(def_id), Vector2.ZERO)
 		var start := instance.global_position
 		for i in ticks:
 			instance.step(STEP)
 		t.check(instance.global_position == start, "%s never moves" % def_id)
 		instance.free()
 		var event := FakeEvent.new()
-		var look := event.look_for(EventCatalogue.shipped().by_id(def_id))
+		var look := event.look_for(Shipped.rows().by_id(def_id))
 		var saw_true := false
 		var saw_false := false
 		for i in ticks:
@@ -416,7 +420,7 @@ func _test_idle_families_alternate_on_time_without_moving(t: TestRunner) -> void
 ## "A per-instance phase offset from the instance's own RNG stream so a row of sitters does not
 ## lean in unison": two cafés sited at different positions must draw different offsets.
 func _test_idle_phase_offset_differs_by_siting(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("cafe_tables")
+	var def := Shipped.rows().by_id("cafe_tables")
 	var a := EventInstance.new()
 	a.setup(def, Vector2(0.0, 0.0))
 	var b := EventInstance.new()
@@ -432,11 +436,13 @@ func _test_idle_phase_offset_differs_by_siting(t: TestRunner) -> void:
 func _test_gait_and_idle_phase_reset_on_setup(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.shipped().by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
+	instance.setup(Shipped.rows().by_id("dog_walker"), Vector2.ZERO, route,
+			Vector2.RIGHT)
 	for i in 40:
 		instance.step(STEP)
 	t.check(instance.gait_phase() != 0.0, "the phase has moved on from its starting value")
-	instance.setup(EventCatalogue.shipped().by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
+	instance.setup(Shipped.rows().by_id("dog_walker"), Vector2.ZERO, route,
+			Vector2.RIGHT)
 	t.check(instance.gait_phase() == 0.0 and not instance.gait_is_moving(),
 			"a fresh setup() resets the phase rather than carrying it over")
 	instance.restore(EventSave.new(5.0, 30.0))
@@ -452,7 +458,7 @@ func _test_gait_and_idle_phase_reset_on_setup(t: TestRunner) -> void:
 ## walking entity's halo from showing a different frame than its own body.
 func _test_gait_query_is_stable_within_a_tick(t: TestRunner) -> void:
 	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.shipped().by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	_walk_to(event, WALK[5])
 	var first := look.gait_is_stepping()
 	for i in 5:

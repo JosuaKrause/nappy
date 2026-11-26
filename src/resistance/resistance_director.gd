@@ -321,8 +321,8 @@ func use_atlas(atlas: AtlasLibrary) -> void:
 ## The walk's events and the plan builder are the events' own, or none for a rig with no events.
 ## `rows` is the run's catalogue, every row it sends, guards a mark with or reads a reach off.
 func setup(rows: EventCatalogue, map: CityMap, run: RunState, events: EventManager,
-		streets: DayStreets, fronts: CityFronts, world: WorldContext, navigator: Navigator = null,
-		spawn_siting: SpawnSiting = null) -> void:
+		streets: DayStreets, fronts: CityFronts, world: WorldContext,
+		navigator: Navigator = null, spawn_siting: SpawnSiting = null) -> void:
 	_rows = rows
 	_map = map
 	_run = run
@@ -349,7 +349,8 @@ func setup(rows: EventCatalogue, map: CityMap, run: RunState, events: EventManag
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
 	_happenings.use_trace(_trace)
-	_happenings.setup(rows, map, _run, events, streets, fronts, world, _atlas, moves_by, _spawn_siting)
+	_happenings.setup(rows, map, _run, events, streets, fronts, world, _atlas, moves_by,
+			_spawn_siting)
 
 # -------------------------------------------------------------------- telling ---
 # What the director says on its bus, one place a signal: with no bus handed (`use_bus()`) it tells
@@ -2389,8 +2390,8 @@ func _ground_beside_a_mast(plan: EventPlan, ground: SpawnSiting.Ask) -> Array[Ve
 ## - passing every refusal a contact's ground passes (`SpawnSiting.CONTACT_GROUND`, no body on
 ##   it, reachable
 ##   from home);
-## - ground a site would be offered on (`MastSites.is_eligible(_rows, )`: off the home street, its field
-##   off a calm interior and off every place a region door could stand).
+## - ground a site would be offered on (`MastSites.is_eligible()`: off the home street,
+##   its field off a calm interior and off every place a region door could stand).
 func _add_a_mast_near(mark: Vector2) -> Array[Vector2i]:
 	var added: Array[Vector2i] = []
 	if not _events:
@@ -2405,7 +2406,8 @@ func _add_a_mast_near(mark: Vector2) -> Array[Vector2i]:
 					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
 				continue
 			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
-					or not _reachable_from_home(tile) or not MastSites.is_eligible(_rows, world, _map):
+					or not _reachable_from_home(tile) or not MastSites.is_eligible(_rows, world,
+					_map):
 				continue
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := tile + side

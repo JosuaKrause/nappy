@@ -96,7 +96,7 @@ func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	if _routes.has(seed_value):
 		return _routes[seed_value]
 	var map := _the_map_of_day_8(seed_value)
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+	var director := EventDirector.new(Shipped.rows(), map)
 	director.force("police_patrol", 0.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -168,9 +168,9 @@ func _ticks_in_a_second() -> int:
 ## 26px catch and 116px lunge, the dog's half-second badge, no telegraph, the 30s cap — and his
 ## catch that ends the day. Only the picture and the id are their own.
 func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t: TestRunner) -> void:
-	var robber := EventCatalogue.shipped().by_id("robber_giving_chase")
+	var robber := Shipped.rows().by_id("robber_giving_chase")
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		t.check(def != null, "the catalogue carries '%s'" % id)
 		if not def:
 			continue
@@ -198,7 +198,7 @@ func _test_neither_is_ever_the_schedulers(t: TestRunner) -> void:
 		var offered := false
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for heat in EventCatalogue.heat_levels():
-				for def in EventCatalogue.shipped().available_on(day, heat):
+				for def in Shipped.rows().available_on(day, heat):
 					offered = offered or def.id() == id
 		t.check(not offered, "no day of the run, at any heat, offers '%s' to the scheduler" % id)
 
@@ -209,7 +209,7 @@ func _test_neither_is_ever_the_schedulers(t: TestRunner) -> void:
 func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var expected := "guardsman_giving_chase" if day >= 9 else "policeman_giving_chase"
-		t.check(EventCatalogue.shipped().on_foot_on(DaySpec.for_day(day)).id() == expected,
+		t.check(Shipped.rows().on_foot_on(DaySpec.for_day(day)).id() == expected,
 				"day %d's pursuer on foot is %s" % [day, expected])
 	for day: int in [8, 9]:
 		var rig := _city_with_her(t, day)
@@ -407,13 +407,14 @@ func _what_the_walk_hands_her(t: TestRunner, city: City, her: CharacterBody2D,
 ## second. A bare instance, created as `EventManager.spawn_warned()` creates him.
 func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: TestRunner) -> void:
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		for running: bool in [false, true]:
 			var pursuer_where := WhereSheIs.nowhere()
 			var pursuer := EventInstance.new()
 			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0),
 					PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(pursuer_where))
+					EventSurroundings.new().reading(Shipped.rows()) \
+					.hearing(pursuer_where))
 			pursuer.arrive_from_its_warning()
 			pursuer.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 			var at := Vector2.ZERO
@@ -456,8 +457,8 @@ func _test_his_catch_ends_the_day_with_its_own_line(t: TestRunner) -> void:
 ## beside him she is reached only after his notice, and stopped rather than struck.
 func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> void:
 	for day: int in [8, 9]:
-		var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(day))
-		var own := EventCatalogue.shipped().on_foot_on(DaySpec.for_day(day))
+		var out := Shipped.rows().out_of_the_car(DaySpec.for_day(day))
+		var own := Shipped.rows().on_foot_on(DaySpec.for_day(day))
 		t.check(out.id() == own.id() and out.picture() == own.picture(),
 				"day %d: the man out of a patrol car is %s" % [day, own.id()])
 		t.check(not out.ends_the_day() and is_equal_approx(out.pursuit().stop_excitement(),
@@ -476,7 +477,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
 		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
+				EventSurroundings.new().reading(Shipped.rows()).hearing(man_where))
 		var stopped := INF
 		var struck := false
 		var elapsed := 0.0
@@ -511,12 +512,12 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 	t.check(stop < Tuning.METER_MAX, "and less than the whole meter, so a calm day survives it")
 	t.check(stop > Baby.EXCITEMENT_OVERFLOW_TO_CRY,
 			"but more than the push at the cap, so a meter already high can be ended by it")
-	var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(8))
+	var out := Shipped.rows().out_of_the_car(DaySpec.for_day(8))
 	for walks_away: bool in [false, true]:
 		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
 		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
+				EventSurroundings.new().reading(Shipped.rows()).hearing(man_where))
 		var her := Vector2.ZERO
 		var landed := 0.0
 		var after := 0.0
@@ -545,11 +546,11 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 ## there, so a stop would land nothing. Beside her through the whole hold he does not stop her; the
 ## frame she is let out, he does.
 func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
-	var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(8))
+	var out := Shipped.rows().out_of_the_car(DaySpec.for_day(8))
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new()
 	man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(man_where))
 	var her := Vector2.ZERO
 	var elapsed := 0.0
 	man_where.tell(man_where.at(), Vector2.INF, null, false, true, true)
@@ -608,7 +609,8 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 			return
 		var lane: Vector2 = spot[0]
 		her.global_position = spot[1]
-		var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"),
+		var hot := Shipped.rows().heated(Shipped.rows()
+				.by_id("police_patrol"),
 				Tuning.RESISTANCE_GOAL)
 		var route := PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)])
 		for end in route:
@@ -670,7 +672,8 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 		t.check(officer != null and is_instance_valid(officer) and officer.row_id() == expected,
 				"day %d: and %s got out" % [day, expected])
 		t.check(car_moved < 0.01, "day %d: the car stood while he was out" % day)
-		t.check(stopped_her_at < INF and stopped_her_at - out_at >= EventCatalogue.shipped().out_of_the_car(
+		t.check(stopped_her_at < INF and stopped_her_at - out_at >= Shipped.rows()
+				.out_of_the_car(
 				DaySpec.for_day(day)).telegraphs_for(), "day %d: standing still, she is reached after his notice "
 				% day + "(%.2fs) and stopped" % (stopped_her_at - out_at))
 		t.check(struck[0] == "", "day %d: and the day does not end (%s)" % [day, struck[0]])
@@ -697,7 +700,8 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 ## every encounter must cost more than his stop alone.
 func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> void:
 	t.check(is_zero_approx(Baby.EXCITEMENT_DECAY_IDLE), "standing still, nothing decays")
-	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("police_patrol"),
+			Tuning.RESISTANCE_GOAL)
 	var worst := 0.0
 	var least := INF
 	var encounters := 0
@@ -790,7 +794,8 @@ func _the_whole_encounter(t: TestRunner, city: City, her: Node2D, hot: EventDef,
 ## corridor with its zebras; and some of those cars saw her from inside a box and drove on out of
 ## it first, so the rule is exercised and not only never met.
 func _test_an_investigating_car_never_stops_in_a_junction_box(t: TestRunner) -> void:
-	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("police_patrol"),
+			Tuning.RESISTANCE_GOAL)
 	var stops := 0
 	var in_a_box := 0
 	var drove_out := 0
@@ -838,7 +843,7 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(hot, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
+			EventSurroundings.new().reading(Shipped.rows()).on(map) \
 				.hearing(car_where))
 	t.add_child(car)
 	car.set_process(false)
@@ -885,9 +890,9 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 ## let two men out, whose catch ends the day ("Ends the day (M56)"); cold each is what it always was.
 func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 	for id: String in ["night_raid", "abduction"]:
-		var cold := EventCatalogue.shipped().by_id(id)
+		var cold := Shipped.rows().by_id(id)
 		for level in EventCatalogue.heat_levels():
-			var hot := EventCatalogue.shipped().heated(cold, level)
+			var hot := Shipped.rows().heated(cold, level)
 			var hunts := level >= EventDef.HEAT_HUNTS_LEVEL
 			t.check(not hot.pursues() and hot.ends_the_day() == cold.ends_the_day(),
 					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
@@ -896,7 +901,7 @@ func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 					% [id, level])
 			t.check(hot.validate(), "'%s' heat %d: and it is fair" % [id, level])
 	for day: int in [8, 10]:
-		var man := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(day), false)
+		var man := Shipped.rows().out_of_the_car(DaySpec.for_day(day), false)
 		t.check(man.ends_the_day() and man.pursuit().stop_excitement() == 0.0 and man.validate(),
 				"day %d: a hunting van's man ends the day when he catches her" % day)
 
@@ -911,7 +916,7 @@ func _test_no_vehicle_pursues_her(t: TestRunner) -> void:
 			continue
 		vehicles += 1
 		for level in EventCatalogue.heat_levels():
-			t.check(not EventCatalogue.shipped().heated(def, level).pursues(),
+			t.check(not Shipped.rows().heated(def, level).pursues(),
 					"'%s' at heat %d never pursues her" % [def.id(), level])
 	t.check(vehicles >= 3, "checked %d vehicle rows" % vehicles)
 
@@ -919,12 +924,13 @@ func _test_no_vehicle_pursues_her(t: TestRunner) -> void:
 ## the kerb past `telegraphs_for()` + `duration` while a man it let out is still out; once he is back
 ## in, it leaves.
 func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
-	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("abduction"),
+			Tuning.RESISTANCE_GOAL)
 	t.check(hot.lasts_for() > 0.0, "the hunting van has a duration of its own (%.0fs)" % hot.lasts_for())
 	var van_where := WhereSheIs.nowhere()
 	var van := EventInstance.new()
 	van.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(van_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(van_where))
 	t.add_child(van)
 	van.set_process(false)
 	var far := Vector2(hot.notice_within() - 10.0, 0.0)
@@ -934,7 +940,8 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	var men: Array[EventInstance] = []
 	for i in 2:
 		var man := EventInstance.new()
-		man.setup(EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(10), false), Vector2(0.0, -60.0))
+		man.setup(Shipped.rows().out_of_the_car(DaySpec.for_day(10), false),
+				Vector2(0.0, -60.0))
 		van.let_out(man)
 		men.append(man)
 	var elapsed := 0.0
@@ -946,7 +953,7 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	t.check(not van.is_gone() and not van.is_on_its_way_out(),
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
 			% [elapsed, hot.telegraphs_for() + hot.lasts_for()])
-	var events := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()))
+	var events := EventManager.new(EventSurroundings.new().reading(Shipped.rows()))
 	events.retire(men[0])
 	van.step(STEP)
 	t.check(not van.is_gone() and not van.is_on_its_way_out(), "with one man still out it still stands")
@@ -983,7 +990,8 @@ func _test_a_hunting_van_stops_and_lets_men_out(t: TestRunner) -> void:
 		if van_tile == Vector2i(-1, -1):
 			_done(city, her)
 			return
-		var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id(id), Tuning.RESISTANCE_GOAL)
+		var hot := Shipped.rows().heated(Shipped.rows().by_id(id),
+				Tuning.RESISTANCE_GOAL)
 		var van := RunCity.events(city).spawn_extra(hot, map.tile_to_world(van_tile))
 		var where := van.global_position
 		var events := RunCity.events(city)
@@ -1016,7 +1024,8 @@ func _test_a_hunting_van_stops_and_lets_men_out(t: TestRunner) -> void:
 ## building between them, the car drives on rather than stopping.
 func _test_the_car_does_not_notice_her_through_a_building(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
-	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("police_patrol"),
+			Tuning.RESISTANCE_GOAL)
 	var found := _a_hidden_spot(map, hot.notice_within())
 	t.check(found.size() == 2, "found walkable ground in its reach behind a building")
 	if found.size() != 2:
@@ -1026,7 +1035,7 @@ func _test_the_car_does_not_notice_her_through_a_building(t: TestRunner) -> void
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(hot, lane, PackedVector2Array([lane, lane + Vector2(4000.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
+			EventSurroundings.new().reading(Shipped.rows()).on(map) \
 				.hearing(car_where))
 	t.add_child(car)
 	car.set_process(false)

@@ -55,7 +55,7 @@ func run(t: TestRunner) -> void:
 ## their own field. Made at the shipped timing, a catalogue builds the rows as the shipped one
 ## does.
 func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) -> void:
-	var shipped := _chargers_of(EventCatalogue.shipped())
+	var shipped := _chargers_of(Shipped.rows())
 	var timing := ChargerTiming.of(1.25, 1.2)
 	var played := _chargers_of(EventCatalogue.new(timing))
 	for id: String in shipped:
@@ -109,8 +109,8 @@ func _test_every_timing_the_flag_accepts_keeps_every_row_fair(t: TestRunner) -> 
 					% [warning, reach, rows.size(), ", ".join(unfair)])
 
 ## Each charger's `[waits for her, written notice, notice_within, heard_within, warns_for]` as the
-## catalogue `rows` builds it: the three that wait for her, a hunting van that lets its men out once it
-## notices her, and an investigating patrol car that lets its policeman out.
+## catalogue `rows` builds it: the three that wait for her, a hunting van that lets its men out
+## once it notices her, and an investigating patrol car that lets its policeman out.
 static func _chargers_of(rows: EventCatalogue) -> Dictionary:
 	var dog := rows.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var robber := rows.by_id("alley_robbery")
@@ -164,7 +164,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 		t.check(source.lies_as_a_spread() == expected,
 				"catalogue row '%s' says it is a spread exactly when its picture is one" % source.id())
 
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	var reshaped := cafe.redraft()
 	reshaped.body(cafe.body().reshaped(GroundShape.band(22.0)))
 	reshaped.field(cafe.field().holding_to(15.0).reaching(90.0))
@@ -181,7 +181,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 ## holds a `GroundShape`, a `RefCounted`, which a resource's deep copy cannot store) cannot be
 ## made of it; the last check, the source scan, holds that no game code deep-copies a resource.
 func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
-	var construction := EventCatalogue.shipped().by_id("construction")
+	var construction := Shipped.rows().by_id("construction")
 	t.check(construction.lies_as_a_spread(), "construction is a spread, so the copies below have an answer to keep")
 
 	var drafts: Array[EventDef] = []
@@ -190,12 +190,12 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 		drafts.append(source.as_sent_ahead())
 		drafts.append(source.for_day(1))
 		drafts.append(source.for_day(Tuning.RESISTANCE_GOAL))
-		drafts.append(EventCatalogue.shipped().heated(source, Tuning.RESISTANCE_GOAL))
+		drafts.append(Shipped.rows().heated(source, Tuning.RESISTANCE_GOAL))
 		drafts.append(SealPlanner.sealed_variant(source, true))
 		drafts.append(SealPlanner.sealed_variant(source, false))
 	var kept := 0
 	for copy in drafts:
-		if copy.body() == EventCatalogue.shipped().by_id(copy.id()).body():
+		if copy.body() == Shipped.rows().by_id(copy.id()).body():
 			kept += 1
 		else:
 			t.check(false, "a copy of '%s' shares its row's body" % copy.id())
@@ -214,7 +214,7 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 ## takes a shape a caller may hand as null. `EventDef.validate()` refuses it on this answer, but
 ## it reports a fault with an engine error, which fails the run, so the suite asks the body.
 func _test_a_solid_body_with_no_shape_is_refused(t: TestRunner) -> void:
-	var draft := EventCatalogue.shipped().by_id("cafe_tables").redraft()
+	var draft := Shipped.rows().by_id("cafe_tables").redraft()
 	draft.look(LookSpec.none())
 	var bare := draft.build()
 	t.check(bare.validate(), "the row the faulty one is made from is valid")
@@ -266,7 +266,7 @@ const _MIDDLE_SPREAD_CLEARANCE := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
 ## you something is that the row changed role, which is asked of the row's own cost and size
 ## (`EventScheduler.role_for()`), the role a day's placement gives it.
 func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("protest")
+	var def := Shipped.rows().by_id("protest")
 	var day := def.own_first_day()
 	var role := EventScheduler.role_for(def.for_day(day), day)
 	t.check(role == GameEnums.BlockerRole.FRICTION,
@@ -320,7 +320,7 @@ func _test_catalogue_is_fair(t: TestRunner) -> void:
 				"event '%s' has a falloff band to fade across" % def.id())
 
 	# Ambient events are exempt because they never "appear"; assert that is deliberate.
-	var playground := EventCatalogue.shipped().by_id("playground")
+	var playground := Shipped.rows().by_id("playground")
 	t.check(playground.is_ambient(),
 			"the playground is ambient, so its zero telegraph is intended")
 
@@ -339,10 +339,10 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 	for def in CatalogueRows.every():
 		if def.warns_before_it_exists():
 			warned.append(def)
-	var convoy := EventCatalogue.shipped().by_id("military_convoy")
+	var convoy := Shipped.rows().by_id("military_convoy")
 	var column := EventSpawner.as_warned(convoy)
 	warned.append(column)
-	warned.append(EventSpawner.as_warned(EventCatalogue.shipped().by_id("charging_dog")))
+	warned.append(EventSpawner.as_warned(Shipped.rows().by_id("charging_dog")))
 	var ids: Array[String] = []
 	for def in warned:
 		ids.append(def.id())
@@ -389,19 +389,19 @@ func _route_at_another_speed(route: RouteSpec, speed: float) -> RouteSpec:
 ## fire engine, which can hit her hard, keeps its badge and its warning first.
 func _test_the_loose_dog_and_the_cat_do_not_telegraph(t: TestRunner) -> void:
 	for id: String in ["loose_dog", "cat_dash"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		t.check(not def.telegraphs_its_coming() and not def.warns_before_it_exists(),
 				"'%s' does not telegraph: no warning first, and so no screen-edge badge" % id)
 		t.check(def.validate(), "and '%s' gives what the contract still asks of it" % id)
 	# The rows that stand until she walks in keep the contract for their in-world telegraph.
 	for id: String in ["cat_dash", "alley_mouse", "pigeon_flock", "police_patrol"]:
-		var row := EventCatalogue.shipped().by_id(id)
+		var row := Shipped.rows().by_id(id)
 		t.check(not row.telegraphs_its_coming() and row.warning_time() + 0.001 >= row.minimum_telegraph(),
 				"'%s' does not telegraph its coming, and its in-world telegraph (%.2fs) still clears "
 				% [id, row.warning_time()] + "the contract's %.2fs" % row.minimum_telegraph())
-	t.check(EventCatalogue.shipped().by_id("loose_dog").comes_down_her_line(),
+	t.check(Shipped.rows().by_id("loose_dog").comes_down_her_line(),
 			"the loose dog still comes down her own sidewalk, created at once just out of sight")
-	var truck := EventCatalogue.shipped().by_id("fire_truck")
+	var truck := Shipped.rows().by_id("fire_truck")
 	t.check(truck.telegraphs_its_coming() and truck.warns_before_it_exists(),
 			"the fire engine, a heavy penalty, keeps its badge and its warning first")
 
@@ -412,17 +412,17 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t: TestRunner) -> void:
 ## silhouette for the badge to carry.
 func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t: TestRunner) -> void:
 	var walk := Tuning.WALK_SPEED
-	var robber := EventCatalogue.shipped().by_id("alley_robbery")
+	var robber := Shipped.rows().by_id("alley_robbery")
 	t.check(robber.announces_its_coming(walk) and robber.announces_its_coming(walk * 10.0),
 			"a lethal row is announced however fast she walks")
-	var truck := EventCatalogue.shipped().by_id("fire_truck")
+	var truck := Shipped.rows().by_id("fire_truck")
 	t.check(not truck.ends_the_day() and truck.announces_its_coming(walk),
 			"a fire engine, which does not end the day, is announced: it is faster than her walk")
 	t.check(not truck.announces_its_coming(truck.approach_speed()),
 			"and not to somebody walking as fast as it comes")
-	t.check(not EventCatalogue.shipped().by_id("loose_dog").announces_its_coming(walk),
+	t.check(not Shipped.rows().by_id("loose_dog").announces_its_coming(walk),
 			"a row that does not telegraph its coming is not announced")
-	t.check(not EventCatalogue.shipped().by_id("dog_walker").announces_its_coming(walk),
+	t.check(not Shipped.rows().by_id("dog_walker").announces_its_coming(walk),
 			"nor a mover she can outwalk")
 	t.close_to(robber.approach_speed(), robber.chase_speed(), "a pursuer comes at its chase speed")
 	for row in CatalogueRows.every():
@@ -433,13 +433,14 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t: TestRunner
 			t.check(row.lethal_reach() > 0.0, "'%s' ends the day within a reach" % row.id())
 
 ## **`as_warned_first()` keeps the row's body pieces, as every other copy of a row does** (`at_heat()`,
-## `EventDef.for_day()`, `EventCatalogue.shipped().neighbor_heading_home()`, `SealPlanner`'s variants: each
-## shares the row's body part) — a copy that lost its pieces would quietly go back to one body
-## spanning its whole shape. `car_accident` is the row with more than one piece, so it stands in for
-## a multi-part row sent through a warning first; its own telegraph is too short to clear the flat
-## floor a warned-first row is held to, so the duplicate's telegraph is widened first.
+## `EventDef.for_day()`, `EventCatalogue.neighbor_heading_home()`, `SealPlanner`'s
+## variants: each shares the row's body part) — a copy that lost its pieces would quietly go
+## back to one body spanning its whole shape. `car_accident` is the row with more than one
+## piece, so it stands in for a multi-part row sent through a warning first; its own telegraph
+## is too short to clear the flat floor a warned-first row is held to, so the duplicate's
+## telegraph is widened first.
 func _test_as_warned_first_keeps_the_pieces_too(t: TestRunner) -> void:
-	var crash := EventCatalogue.shipped().by_id("car_accident")
+	var crash := Shipped.rows().by_id("car_accident")
 	t.check(crash.body().declared_pieces().size() >= 2,
 			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
 			% crash.body().declared_pieces().size())
@@ -460,7 +461,7 @@ func _test_as_warned_first_keeps_the_pieces_too(t: TestRunner) -> void:
 ## row the director does not send is its own copy.
 func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> void:
 	for id: String in ["dog_walker", "police_patrol", "military_convoy"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var drawn := false
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			drawn = drawn or def.is_drawn_by_units(day, "")
@@ -469,23 +470,23 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 		var sent := def.as_sent_ahead()
 		t.check(sent != def and sent.validate() and sent.is_sent_ahead(),
 				"and the copy the director sends of '%s' is its own and gives what it owes" % id)
-	var walker := EventCatalogue.shipped().by_id("dog_walker").as_sent_ahead()
+	var walker := Shipped.rows().by_id("dog_walker").as_sent_ahead()
 	t.check(walker.comes_down_her_line() and not walker.warns_before_it_exists()
 			and not walker.announces_its_coming(Tuning.WALK_SPEED)
 			and walker.heard_within() < SpawnSiting.least_distance(),
 			"the dog walker comes down her line created at once, with no badge, outside its own field")
-	var patrol := EventCatalogue.shipped().by_id("police_patrol").as_sent_ahead()
+	var patrol := Shipped.rows().by_id("police_patrol").as_sent_ahead()
 	t.check(patrol.spawn_mode_on(Tuning.RUN_LENGTH_DAYS) == EventDef.SpawnMode.TOWARD_PLAYER
 			and not patrol.comes_down_her_line() and not patrol.warns_before_it_exists(),
 			"the patrol comes down the road toward her, created at once")
-	var convoy := EventCatalogue.shipped().by_id("military_convoy").as_sent_ahead()
+	var convoy := Shipped.rows().by_id("military_convoy").as_sent_ahead()
 	t.check(convoy.is_warned_in_its_lane() and convoy.warns_before_it_exists()
 			and is_equal_approx(convoy.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 			and convoy.warned_for() <= Tuning.WARNING_ALONE_MAX + 0.001
 			and convoy.warning_time() + 0.001 >= convoy.minimum_telegraph(),
 			"the convoy is warned of first in its lane, its badge alone %.2fs and "
 			% convoy.warned_for() + "owed the flat %.2fs" % Tuning.OFFSCREEN_WARNING_MIN)
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	t.check(not cafe.is_sent_ahead() and cafe.as_sent_ahead() == cafe and cafe.is_drawn_by_units(1, ""),
 			"a row the director does not send is its own copy, and a unit draws it")
 
@@ -552,7 +553,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 			% [EventCatalogue.VEHICLE_BODY, frontage_gap]
 			+ "%.0fpx pram" % (Tuning.PLAYER_BODY_RADIUS * 2.0))
 
-	var barrier := EventCatalogue.shipped().by_id("construction")
+	var barrier := Shipped.rows().by_id("construction")
 	# And the payoff, stated as the arithmetic that decides it rather than as a distance: with
 	# `construction` centred on the band, no point on the pavement is far enough from it to clear
 	# `obstructs_within() + PLAYER_BODY_RADIUS` — the pram cannot pass on either lane, which is what
@@ -571,7 +572,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 ## the shape the row collides as. The map is real because the guarantee is the row's width and
 ## where the map stands it together: neither alone says where the band ends.
 func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> void:
-	var row := EventCatalogue.shipped().by_id("roadblock")
+	var row := Shipped.rows().by_id("roadblock")
 	var shape := row.ground_shape()
 	var map := CityMap.new()
 	var off_the_corridor := Tuning.STREET_WIDTH + 3
@@ -615,7 +616,7 @@ func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> vo
 ## a closing roadblock put on either carriageway lane stands on the street's middle and is solid
 ## from the frontage on one side to the frontage on the other, both sidewalks included.
 func _test_a_closing_roadblock_covers_all_of_its_street(t: TestRunner) -> void:
-	var row := EventCatalogue.shipped().by_id("closing_roadblock")
+	var row := Shipped.rows().by_id("closing_roadblock")
 	t.check(row != null and row.stands_mid_street()
 			and not row.stands_at_its_kerb(), "the catalogue carries a roadblock that closes its street")
 	if row == null:
@@ -668,7 +669,7 @@ func _test_stationary_vehicles_have_a_side_and_an_end_picture(t: TestRunner) -> 
 	]
 	for look in vehicle_looks:
 		var id := "moving_van" if look == EventDef.Look.MOVING_VAN else "burnt_out_car"
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var side := EventPictures.stationary_vehicle_texture(look, true)
 		var end := EventPictures.stationary_vehicle_texture(look, false)
 		var side_extent := EventPictures.stationary_vehicle_extent(
@@ -723,7 +724,7 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 ## her, is `tests/test_body_stance.gd`'s; that a live crash registers a collision shape per car is
 ## `tests/test_event_phase.gd`'s.
 func _test_a_crash_is_two_cars_solid_inside_the_street_it_closes(t: TestRunner) -> void:
-	var crash := EventCatalogue.shipped().by_id("car_accident")
+	var crash := Shipped.rows().by_id("car_accident")
 	t.check(crash.body().declared_pieces().size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_within(),
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
@@ -755,7 +756,7 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 	# screen-edge badge: the whole of the row is that it happens somewhere she cannot see, and what
 	# it leaves behind is a different row.
 	var invisible := ["playground", "curfew_announce"]
-	var explosion := EventCatalogue.shipped().by_id("finale_explosion")
+	var explosion := Shipped.rows().by_id("finale_explosion")
 	t.check(explosion.picture() == EventDef.Look.EXPLOSION
 			and not explosion.look().is_drawn_in_the_world(),
 			"'finale_explosion' is drawn only in its badge, nothing of it in the world")
@@ -769,19 +770,21 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 				% [def.id(), owner_of.get(def.picture(), "")])
 		owner_of[def.picture()] = def.id()
 	for id: String in invisible:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		t.check(def != null and def.picture() == EventDef.Look.NONE,
 				"'%s' is still one of the invisible ones" % id)
 	t.check(owner_of.size() >= 25,
 			"and the catalogue draws %d different things" % owner_of.size())
 
 ## **The crater an explosion leaves takes one lane of its street and leaves the other**
-## (`EventCatalogue.shipped()._lane_crater()`; minty-lemur #785, trucks first among what she meets): a
-## burst goes off on a road tile, the middle of one lane, and the body it leaves there covers the
-## middle of that tile alone (`GroundShape.tiles_under()`, the tiles a car is stopped on), so the
-## lane a tile across, and the tiles before and after it along its own lane, stay a car's.
+## (`EventCatalogue._lane_crater()`; minty-lemur #785, trucks first among what she
+## meets): a burst goes off on a road tile, the middle of one lane, and the body it leaves there
+## covers the middle of that tile alone (`GroundShape.tiles_under()`, the tiles a car is stopped
+## on), so the lane a tile across, and the tiles before and after it along its own lane, stay a
+## car's.
 func _test_the_explosions_crater_leaves_the_other_lane(t: TestRunner) -> void:
-	var crater := EventCatalogue.shipped().by_id(EventCatalogue.shipped().by_id("finale_explosion").leaves_behind())
+	var crater := Shipped.rows().by_id(Shipped.rows()
+			.by_id("finale_explosion").leaves_behind())
 	var tiles := crater.ground_shape().tiles_under(Vector2(10.5, 7.5) * Tuning.TILE_SIZE)
 	t.check(crater.has_a_body() and tiles.size() == 1 and tiles[0] == Vector2i(10, 7),
 			"the crater '%s' covers its own lane's tile and no other: %s" % [crater.id(), tiles])
@@ -814,7 +817,7 @@ func _test_every_look_carries_its_own_silhouette(t: TestRunner) -> void:
 ## building!"*).
 func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunner) -> void:
 	for id in _DRAWN_ON_A_BUILDING:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		t.check(def != null, "the catalogue carries '%s'" % id)
 		if not def:
 			continue
@@ -828,14 +831,14 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunne
 ## the rule; the same row with its `on_her_way` taken off breaks it; a recurring row with none keeps
 ## it, since the rule is about one-shots.
 func _test_a_one_shot_is_sited_on_her_way(t: TestRunner) -> void:
-	var fire := EventCatalogue.shipped().by_id("burning_building")
+	var fire := Shipped.rows().by_id("burning_building")
 	t.check(not fire.is_a_one_shot_off_her_way(), "day 3's fire, sited from her walk, keeps the rule")
 	var unsiting := fire.redraft()
 	unsiting.not_sited_from_her_walk()
 	var unsited := unsiting.build()
 	t.check(unsited.is_a_one_shot_off_her_way(),
 			"the same one-shot not sited from her walk is refused")
-	t.check(not EventCatalogue.shipped().by_id("delivery_van").is_a_one_shot_off_her_way(),
+	t.check(not Shipped.rows().by_id("delivery_van").is_a_one_shot_off_her_way(),
 			"a recurring row not sited from her walk keeps it")
 
 ## **A row is weighed only on ground it stands on**
@@ -863,14 +866,14 @@ func _test_a_row_is_weighed_only_on_ground_it_stands_on(t: TestRunner) -> void:
 func _test_every_copy_of_a_row_keeps_its_ground_weights(t: TestRunner) -> void:
 	var grounds: Array[PlacementGround.Kind] = [PlacementGround.Kind.STREET,
 			PlacementGround.Kind.JUNCTION, PlacementGround.Kind.ALLEY, PlacementGround.Kind.OPEN]
-	var dog := EventCatalogue.shipped().by_id("charging_dog")
+	var dog := Shipped.rows().by_id("charging_dog")
 	var pressing_draft := EventDraft.new("pressing")
 	pressing_draft.ground([GameEnums.TileType.SIDEWALK] as Array[int])
 	pressing_draft.hunt(HuntSpec.pressing())
 	pressing_draft.weighed_on(PlacementGround.Kind.STREET, 0.25)
 	var pressing := pressing_draft.build()
 	for pair: Array in [[dog, dog.for_day(4)], [pressing, pressing.at_heat(Tuning.RESISTANCE_GOAL,
-			EventCatalogue.shipped().charger_timing())]]:
+			Shipped.rows().charger_timing())]]:
 		var row: EventDef = pair[0]
 		var copy: EventDef = pair[1]
 		var set_under_one := false

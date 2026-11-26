@@ -105,7 +105,7 @@ static func _walkers_by_corridor(crowd: Crowd) -> Dictionary:
 ## busiest ordinary corridor than the uniform day's level.
 func _test_a_uniform_population_and_the_ordinary_day(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), recipe)
+	var built := RecipeCityBuilder.build(Shipped.rows(), recipe)
 	var build_errors: Array = built.errors
 	t.check(build_errors.is_empty(), "the recipe's map builds: %s" % [build_errors])
 	if not build_errors.is_empty():

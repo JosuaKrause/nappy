@@ -41,7 +41,7 @@ var _plans: Array[EventPlan] = []
 ## A director over `map` on day 1 with nothing planned, its day stream seeded 17, handed the forced
 ## row `forced` first when one is given (`--force`, which `start_day()` takes up).
 func _director(map: CityMap, forced := "") -> EventDirector:
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+	var director := EventDirector.new(Shipped.rows(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 17
 	if forced != "":
@@ -62,7 +62,7 @@ func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 		_plans = GameDawn.of(DaySpec.for_day(RETURN_DAY), plan_rng, map) \
 				.on(RouteTree.for_day(map, RETURN_DAY, null)).plan().placements()
 	var plans := _plans
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+	var director := EventDirector.new(Shipped.rows(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	director.start_day(RETURN_DAY, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -256,8 +256,9 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) -> void:
 	var map := _map()
 	var limited: EventDef = null
-	for id: String in EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), RETURN_DAY, 0):
-		var def := EventCatalogue.shipped().by_id(id)
+	for id: String in EventDirector.ordinary_route_marbles(Shipped.rows(), RETURN_DAY,
+			0):
+		var def := Shipped.rows().by_id(id)
 		if limited == null or def.most_in_a_day() < limited.most_in_a_day():
 			limited = def
 	var marbles := []

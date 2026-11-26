@@ -12,7 +12,8 @@ extends RefCounted
 ## holds them (a manager handed none makes its own on entering the tree).
 static func events_in(parent: Node, scene: InteriorScene,
 		rng: RandomNumberGenerator, run: RunState, atlas: AtlasLibrary = null) -> EventManager:
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).on(scene.map()).moving_by(scene.navigator()) \
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()) \
+			.on(scene.map()).moving_by(scene.navigator()) \
 			.drawn_in(scene)
 	if atlas != null:
 		surroundings.drawn_from(atlas)

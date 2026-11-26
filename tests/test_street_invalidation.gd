@@ -22,7 +22,7 @@ const NONE: Array[EventPlan] = []
 
 func run(t: TestRunner) -> void:
 	var map := CityMap.new()
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	var calm := Rect2(Vector2(1000, 1000), Vector2(256, 256))
 	var rules := StreetInvalidation.new(map, null, [calm] as Array[Rect2], PackedVector2Array(), null)
 	var in_the_calm := EventPlan.new(cafe, calm.get_center())
@@ -32,7 +32,7 @@ func run(t: TestRunner) -> void:
 	t.check(rules.room(clear, GameEnums.BlockerRole.FRICTION, Vector2i.ZERO, NONE, NONE) == INF,
 			"one no rule refuses, with nothing near, has all the room there is")
 	t.check(clear.role() == GameEnums.BlockerRole.FRICTION, "and keeps the role it was asked with")
-	var flock := EventCatalogue.shipped().by_id("pigeon_flock")
+	var flock := Shipped.rows().by_id("pigeon_flock")
 	var placed: Array[EventPlan] = [EventPlan.new(flock, Vector2(5000, 5000))]
 	var beside := EventPlan.new(flock, Vector2(5000 + flock.notice_within(), 5000))
 	var day := StreetInvalidation.new(map, null, [] as Array[Rect2], PackedVector2Array(), null)
@@ -61,10 +61,10 @@ func _test_a_day_and_the_escape_compose_their_rules(t: TestRunner) -> void:
 	var day := StreetInvalidation.new(map, corridor, none, PackedVector2Array(), null)
 	var escape := StreetInvalidation.new(map, corridor, none, PackedVector2Array(), null,
 			_OpenWalk.new(map))
-	var robbery := EventPlan.new(EventCatalogue.shipped().by_id("alley_robbery"),
+	var robbery := EventPlan.new(Shipped.rows().by_id("alley_robbery"),
 			map.tile_to_world(Vector2i(37, 47)))
 	var first: Array[EventPlan] = [robbery]
-	var across := EventPlan.new(EventCatalogue.shipped().by_id("market_stall"),
+	var across := EventPlan.new(Shipped.rows().by_id("market_stall"),
 			map.tile_to_world(Vector2i(37, 42)))
 	t.check(robbery.obstructs() and not robbery.counts_against_the_line(),
 			"the robbery is a body the line rules do not ask")
@@ -73,7 +73,7 @@ func _test_a_day_and_the_escape_compose_their_rules(t: TestRunner) -> void:
 			"a day refuses a stall across her route's street from a robbery, by the one-sidewalk rule")
 	t.check(escape.room(across, GameEnums.BlockerRole.WALL, Vector2i(37, 42), first, first) != -INF,
 			"a walk kept open by its own rule does not ask it")
-	var blower := EventPlan.new(EventCatalogue.shipped().by_id("leaf_blower"),
+	var blower := EventPlan.new(Shipped.rows().by_id("leaf_blower"),
 			map.tile_to_world(Vector2i(51, 46)))
 	t.check(day.room(blower, GameEnums.BlockerRole.WALL, Vector2i(51, 46), NONE, NONE) == -INF
 			and day.refusals().has("RouteLineRule"),

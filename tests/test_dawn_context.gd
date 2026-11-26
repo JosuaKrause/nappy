@@ -33,12 +33,14 @@ class _Walk extends RouteSource:
 		return begins
 
 static func _context(spec: DaySpec, heat := 0) -> DawnContext:
-	var context := DawnContext.new(EventCatalogue.shipped(), spec, 7, null, null, null, null, Callable())
+	var context := DawnContext.new(Shipped.rows(), spec, 7, null, null, null, null,
+			Callable())
 	context.use_the_run([], [], heat)
 	return context
 
 ## **The rows of a day at a heat are the catalogue's own**, the very objects the heat chose
-## (`EventCatalogue.shipped().of_kind()`): a context that dropped the heat answers the cold rows.
+## (`EventCatalogue.of_kind()`): a context that dropped the heat answers the cold
+## rows.
 func _test_a_day_is_handed_the_catalogues_rows_as_the_heat_puts_them(t: TestRunner) -> void:
 	var day := 8
 	var heat := Tuning.RESISTANCE_GOAL
@@ -46,7 +48,7 @@ func _test_a_day_is_handed_the_catalogues_rows_as_the_heat_puts_them(t: TestRunn
 	var heated := 0
 	for kind in KINDS:
 		var asked := context.catalogue_rows(kind)
-		var expected := EventCatalogue.shipped().of_kind(kind, day, heat)
+		var expected := Shipped.rows().of_kind(kind, day, heat)
 		t.check(asked == expected, "a day at heat %d is handed the catalogue's rows of kind %d"
 				% [heat, kind])
 		for def in expected:
@@ -60,7 +62,7 @@ func _test_a_walk_with_a_bag_of_its_own_is_handed_none(t: TestRunner) -> void:
 	t.check(not spec.walk_bag().is_empty(), "the escape city's spec has a bag of its own")
 	var rows := 0
 	for kind in KINDS:
-		rows += EventCatalogue.shipped().of_kind(kind, spec.day_number(), 0).size()
+		rows += Shipped.rows().of_kind(kind, spec.day_number(), 0).size()
 	t.check(rows > 0, "the catalogue has rows on the escape city's day (%d), so none is a choice"
 			% rows)
 	var context := _context(spec)
@@ -75,7 +77,8 @@ func _test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t: TestRunner) 
 	var lattice := map.street_segments()
 	var walk := _Walk.new()
 	walk.streets = [lattice[3], lattice[lattice.size() - 2]] as Array[StreetNetwork.Segment]
-	var context := DawnContext.new(EventCatalogue.shipped(), DaySpec.for_day(1), 7, map, walk, null, null, Callable())
+	var context := DawnContext.new(Shipped.rows(), DaySpec.for_day(1), 7, map, walk,
+			null, null, Callable())
 	var named := {walk.streets[0].key(): true, walk.streets[1].key(): true}
 	var found := context.locations().all()
 	var only_those := not found.is_empty()
@@ -96,8 +99,10 @@ func _test_the_ground_she_starts_on_is_kept_where_the_home_streets_are_not_held(
 	var walk := _Walk.new()
 	var held := DaySpec.for_day(1)
 	var not_held := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
-	var of_a_day := DawnContext.new(EventCatalogue.shipped(), held, 7, null, walk, null, null, Callable())
-	var of_the_escape := DawnContext.new(EventCatalogue.shipped(), not_held, 7, null, walk, null, null, Callable())
+	var of_a_day := DawnContext.new(Shipped.rows(), held, 7, null, walk, null, null,
+			Callable())
+	var of_the_escape := DawnContext.new(Shipped.rows(), not_held, 7, null, walk,
+			null, null, Callable())
 	t.check(of_a_day.ground_she_starts_on() == Vector2.INF,
 			"a walk that holds the home's streets keeps no ground clear for her start")
 	t.check(of_the_escape.ground_she_starts_on() == walk.begins,

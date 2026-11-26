@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, run, CityGenerator.generate(SEED))
 	var fronts := EventScheduler.row_ground(city.map()).tiles_for(
-			EventCatalogue.shipped().by_id("burning_building"))
+			Shipped.rows().by_id("burning_building"))
 	t.check(not fronts.is_empty(), "the city has fronts a fire can catch on")
 	var held_doors := 0
 	var from_the_side := 0
@@ -115,8 +115,8 @@ func _task_on_offer(t: TestRunner, city: City, run: RunState) -> ResistanceDirec
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()
 	return director

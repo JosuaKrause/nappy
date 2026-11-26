@@ -219,8 +219,8 @@ var _quit_override := Callable()
 ## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters` lookups
 ## against the live city need no instance and are called on `DevRig` itself.
 var _dev_rig := DevRig.new()
-## **The run's catalogue** (`EventCatalogue`), every row as this run plays its chargers: built once
-## by `configure()` and handed to everything that reads a row.
+## **The run's catalogue** (`EventCatalogue`), every row as this run plays its chargers: built
+## once by `configure()` and handed to everything that reads a row.
 var _rows: EventCatalogue = null
 ## `--route`'s own walker, `null` outside a debug build or with no `--route` given — see
 ## `src/dev/route_rig.gd`. Unlike `_dev_rig`, this owns a whole target queue that has to survive
@@ -286,8 +286,8 @@ class Worlds extends DayWorldSource:
 ## recipe's boot hands it the same run with the recipe on top.
 func configure(run_config: RunConfig) -> void:
 	config = run_config
-	# Before anything is built from a catalogue row: every row as this run plays its chargers, built
-	# once here and handed to every reader of a row.
+	# Before anything is built from a catalogue row: every row as this run plays its chargers,
+	# built once here and handed to every reader of a row.
 	_rows = EventCatalogue.for_run(config.charger_timing())
 	_escape_scene_requested = config.starts_in_the_escape()
 	_no_focus_pause = config.skips_the_focus_pause()

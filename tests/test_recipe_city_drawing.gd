@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 ## and not at the source's, and is the real street-tree prop.
 func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), recipe)
+	var built := RecipeCityBuilder.build(Shipped.rows(), recipe)
 	if not _errors(built).is_empty():
 		t.check(false, "opposite-curb tree recipe constructs: %s" % [built.errors])
 		return
@@ -65,7 +65,7 @@ func _test_the_props_stand_a_relocated_tree(t: TestRunner) -> void:
 ## shows every tree again once no pit is emptied: a fallen tree stands where the street tree stood.
 func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), recipe)
+	var built := RecipeCityBuilder.build(Shipped.rows(), recipe)
 	if not _errors(built).is_empty():
 		t.check(false, "street-tree recipe constructs: %s" % [built.errors])
 		return
@@ -104,7 +104,7 @@ func _test_a_street_tree_with_an_emptied_pit_is_hidden(t: TestRunner) -> void:
 func _test_the_bounded_context(t: TestRunner) -> void:
 	var input := _recipe()
 	input.extent = {"scope": "bounded", "bounds": [112, 0, 34, 56]}
-	var bounded := RecipeCityBuilder.build(EventCatalogue.shipped(), input)
+	var bounded := RecipeCityBuilder.build(Shipped.rows(), input)
 	t.check(_errors(bounded).is_empty(), "bounded context retains whole footprints: %s" % [bounded.errors])
 	if not _errors(bounded).is_empty():
 		return
@@ -133,7 +133,7 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 func _test_the_examples(t: TestRunner) -> void:
 	for side: String in ["hall", "yard"]:
 		var loaded := SceneRecipe.load_file("res://scene-recipes/power-station-%s.json" % side)
-		var built := RecipeCityBuilder.build(EventCatalogue.shipped(), loaded.data)
+		var built := RecipeCityBuilder.build(Shipped.rows(), loaded.data)
 		if not _errors(built).is_empty():
 			t.check(false, "%s example builds: %s" % [side, built.errors])
 			continue
@@ -166,7 +166,7 @@ func _test_the_examples(t: TestRunner) -> void:
 func _test_a_stretchs_city(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(
 			"res://scene-recipes/task-07-package.json").data
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
+	var built := RecipeCityBuilder.build(Shipped.rows(), data)
 	t.check(_errors(built).is_empty(),
 			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _errors(built).is_empty():
@@ -192,7 +192,7 @@ func _test_the_days_preparation_keeps_the_manual_ground(t: TestRunner,
 	var alley: Array = runs.alley
 	var cleared: Array = alley.pop_back()
 	(runs.sidewalk as Array).append(cleared)
-	var edited := RecipeCityBuilder.build(EventCatalogue.shipped(), drifted)
+	var edited := RecipeCityBuilder.build(Shipped.rows(), drifted)
 	t.check(_errors(edited).is_empty(), "manual tile edit loads: %s" % [edited.errors])
 	if not _errors(edited).is_empty():
 		return
@@ -223,7 +223,7 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner,
 	for spec: Dictionary in edited.stretch.buildings:
 		if SceneRecipe.rect(spec.lot) == back_lot:
 			spec.height = 4
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), edited)
+	var built := RecipeCityBuilder.build(Shipped.rows(), edited)
 	t.check(_errors(built).is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
 	if _errors(built).is_empty():
 		var run := RunCity.started_run(RUN_SEED)
@@ -266,7 +266,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 			spec.variant = authored_variant
 		elif lot == visible_sibling_lot:
 			sibling_variant = int(spec.variant)
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), edited)
+	var built := RecipeCityBuilder.build(Shipped.rows(), edited)
 	t.check(_errors(built).is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
 	if _errors(built).is_empty():
 		var run := RunCity.started_run(RUN_SEED)

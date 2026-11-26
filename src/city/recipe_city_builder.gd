@@ -3,8 +3,9 @@ extends RefCounted
 ## Loads authored stretches directly; constructs other scopes with exact choices and a global witness.
 ## Never searches whole-city seeds and never moves a requested placement after construction.
 
-## The map, anchors and manifest `data` builds, or its errors. `rows` is the run's catalogue, which
-## the region wall a pinned closure is judged against is planned with (`RegionPlanner.plan_day()`).
+## The map, anchors and manifest `data` builds, or its errors. `rows` is the run's catalogue,
+## which the region wall a pinned closure is judged against is planned with
+## (`RegionPlanner.plan_day()`).
 static func build(rows: EventCatalogue, data: Dictionary) -> Dictionary:
 	var errors := SceneRecipe.validate(data)
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}

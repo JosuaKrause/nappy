@@ -40,7 +40,7 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null,
 		trace: RunTrace = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
+	var surroundings := EventSurroundings.new().reading(Shipped.rows())
 	if where != null:
 		surroundings.hearing(where)
 	if trace:
@@ -67,7 +67,8 @@ func _chat_manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+			.on(map).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)
 	return manager
@@ -100,7 +101,7 @@ func _chat_stroller(t: TestRunner) -> Stroller:
 	return stroller
 
 func _test_a_conversation_locks_her_and_releases(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("chatting_mother")
+	var def := Shipped.rows().by_id("chatting_mother")
 	var at := Vector2(2000.0, 2000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var manager := _chat_manager(t)
@@ -139,7 +140,7 @@ func _test_a_conversation_locks_her_and_releases(t: TestRunner) -> void:
 	_free_the_cast(manager, mother, stroller)
 
 func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("chatting_mother")
+	var def := Shipped.rows().by_id("chatting_mother")
 	var at := Vector2(3000.0, 3000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 
@@ -211,7 +212,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 ## field reaches her there and only the conversation must not. She paces, so she carries no body
 ## and her reach is measured from her own centre.
 func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("chatting_mother")
+	var def := Shipped.rows().by_id("chatting_mother")
 	var at := Vector2(4000.0, 4000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 
@@ -249,7 +250,7 @@ func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> voi
 ## **A conversation happens once an instance**, and the page hears the one hold once, by its row,
 ## on the bus the manager was handed (`player_detained`, which `VisitCounter` counts as `chat`).
 func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("chatting_mother")
+	var def := Shipped.rows().by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var manager := _chat_manager(t)
@@ -291,7 +292,7 @@ func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
 ## recipe hands the day its plans (`EventManager.start_recipe()`), with her ticks streaming around
 ## her as a day's do.
 func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("chatting_mother")
+	var def := Shipped.rows().by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var manager := _chat_manager(t)
@@ -332,7 +333,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner
 ## The design's own sentence is that the take "only means anything where she can see it happen" —
 ## a van she never comes near takes nobody, and it begins the moment she does.
 func _test_the_take_begins_only_once_she_is_close(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("abduction")
+	var def := Shipped.rows().by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance_where.tell(Vector2(def.heard_within() + 40.0, 0.0))
@@ -347,7 +348,7 @@ func _test_the_take_begins_only_once_she_is_close(t: TestRunner) -> void:
 ## One telemetry entry, written once — not per frame, and not before the walk actually finishes.
 func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var lines: Array[String] = []
-	var def := EventCatalogue.shipped().by_id("abduction")
+	var def := Shipped.rows().by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
 			RecordingTrace.new(lines))
@@ -375,7 +376,8 @@ static func _takes(lines: Array[String]) -> int:
 # own pursuit tests are.
 
 func _hunting_abduction() -> EventDef:
-	return EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	return Shipped.rows().heated(Shipped.rows().by_id("abduction"),
+			Tuning.RESISTANCE_GOAL)
 
 ## A hunting van has other business: the moment it stops waiting, an in-progress take is
 ## abandoned rather than finished — no victim drawn again, taken or not, and nothing logged for a

@@ -206,7 +206,8 @@ func has_player() -> bool:
 func surroundings() -> EventSurroundings:
 	return _surroundings
 
-## The run's catalogue every part of the world looks its rows up in (`EventSurroundings.rows()`).
+## The run's catalogue every part of the world looks its rows up in
+## (`EventSurroundings.rows()`).
 func rows() -> EventCatalogue:
 	return _surroundings.rows()
 

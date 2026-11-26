@@ -60,7 +60,8 @@ func run(context: DawnContext) -> void:
 			context.rules(), ground, true, true)
 	var slots := _lesson_slots(route)
 	for row_id: String in slots:
-		var def := context.rows().heated(context.rows().by_id(row_id), context.heat()).for_day(day)
+		var def := context.rows().heated(context.rows().by_id(row_id),
+				context.heat()).for_day(day)
 		var plan := _stand(def, slots[row_id], map, ground, locations, judged, events)
 		context.note("plan", "day %d's tutorial: %s %s" % [day, row_id,
 				("at " + RunTrace.tile(map.world_to_tile(plan.placed_at()))) if plan

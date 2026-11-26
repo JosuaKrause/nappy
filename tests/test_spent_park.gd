@@ -35,7 +35,8 @@ func _masts_of(map: CityMap) -> Array[MastSites.Site]:
 func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 37))
-		_mast_sites[_maps[i].city_seed()] = MastSites.compute(EventCatalogue.shipped(), _maps[i])
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(Shipped.rows(),
+				_maps[i])
 	_test_a_used_area_is_taken_off_the_tree_and_stays_open(t)
 	_test_the_one_fence_is_remembered_after_its_act(t)
 	_test_the_fenced_park_closes_every_entrance(t)
@@ -249,7 +250,8 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 			var block := map.fenced_park_block()
 			var rect := ClosurePlanner.calm_area_rect(map, block)
 			var world := map.tile_rect_to_world(rect)
-			var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
+			var closures := ClosurePlanner.plan_day(Shipped.rows(), map,
+					DaySpec.for_day(day),
 					_closure_rng(map, day), RouteTree.for_day(map, day, null))
 			var boxes: Array[Rect2] = []
 			for closure in closures:
@@ -394,7 +396,8 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 					cut += 1
 			t.check(cut == 0, "seed %d day %d: fencing cuts nothing off but its own ground (%d tiles)"
 					% [map.city_seed(), day, cut])
-			var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
+			var closures := ClosurePlanner.plan_day(Shipped.rows(), map,
+					DaySpec.for_day(day),
 					_closure_rng(map, day), RouteTree.for_day(map, day, null))
 			map.close_streets(closures)
 			var barriers := map.closed_tile_set().duplicate()
@@ -474,8 +477,8 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> v
 			fenced = result[0]
 			fenced_act = result[1]
 			var tree := RouteTree.for_day(map, day, null)
-			var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
-					_closure_rng(map, day), tree)
+			var closures := ClosurePlanner.plan_day(Shipped.rows(), map,
+					DaySpec.for_day(day), _closure_rng(map, day), tree)
 			map.close_streets(closures)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
@@ -542,7 +545,8 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:
 	map.set_spent_calm(used)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day, null)
-	map.close_streets(ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), _closure_rng(map, day), tree))
+	map.close_streets(ClosurePlanner.plan_day(Shipped.rows(), map,
+			DaySpec.for_day(day), _closure_rng(map, day), tree))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 	var calm := CalmAreas.of(map, used)
@@ -568,8 +572,8 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 			var used := _calm_on(map, day)
 			_repaint(map, day, used)
 			var tree := RouteTree.for_day(map, day, null)
-			map.close_streets(ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
-					_closure_rng(map, day), tree))
+			map.close_streets(ClosurePlanner.plan_day(Shipped.rows(), map,
+					DaySpec.for_day(day), _closure_rng(map, day), tree))
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 			var no_one_shots: Array[String] = []

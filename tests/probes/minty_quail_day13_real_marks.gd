@@ -170,7 +170,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 	director.set_sight(RunCity.events(city).visible_view())
 	var step := _roadblock_step()
 	director._step = step
-	var def := EventCatalogue.shipped().by_id(step.task_event_id)
+	var def := Shipped.rows().by_id(step.task_event_id)
 	var reaches: Array[float] = [ResistanceDirector.NEAR_THE_MARK]
 	reaches.append_array(ResistanceDirector.ROADBLOCK_WIDER_REACH)
 	var paths := director._paths_reach_between(at, 0.0, reaches.back())
@@ -238,8 +238,8 @@ func _restart_the_day(city: City, run: RunState, director: ResistanceDirector, s
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
-				city, null, RunCity.spawn_siting(city))
+		director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+				city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

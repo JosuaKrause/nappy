@@ -12,9 +12,10 @@ extends RefCounted
 var _scar := ""
 
 ## The row to spawn where this one goes off, the moment its telegraph is over
-## (`EventInstance.take_what_it_leaves()`), or null for none. How the escape's explosion leaves its
-## crater in the road as it bangs, so the crater stands wherever the bang could not be seen. The row
-## itself, the catalogue's own, so what it leaves is known without a catalogue to look it up in.
+## (`EventInstance.take_what_it_leaves()`), or null for none. How the escape's explosion leaves
+## its crater in the road as it bangs, so the crater stands wherever the bang could not be seen.
+## The row itself, the catalogue's own, so what it leaves is known without a catalogue to look
+## it up in.
 var _on_finish: EventDef = null
 
 ## Event id to spawn the moment this one is first seen: what arrives once she has found it, where

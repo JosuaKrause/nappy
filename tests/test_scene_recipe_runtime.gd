@@ -286,17 +286,19 @@ func _test_a_stretch_recipes_runtime_refusals(t: TestRunner) -> void:
 ## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
 ## else, with a reason that fits the row.
 func _test_hold_is_for_a_straight_departure(t: TestRunner) -> void:
-	t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.shipped().by_id("charging_dog")) == "",
+	t.check(SceneRecipeRuntime.hold_refusal(Shipped.rows()
+			.by_id("charging_dog")) == "",
 			"a dog may be held")
 	for row: String in ["fire_truck", "delivery_van", "roadblock"]:
-		t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.shipped().by_id(row)) != "",
+		t.check(SceneRecipeRuntime.hold_refusal(Shipped.rows().by_id(row)) != "",
 				"%s is refused" % row)
 	var flock := ""
 	for def: EventDef in CatalogueRows.every():
 		if def.is_a_flock() and not def.pursues():
 			flock = SceneRecipeRuntime.hold_refusal(def)
 	t.check(flock.contains("does not pursue"), "a flock is refused for not pursuing: %s" % flock)
-	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.shipped().by_id("roadblock"))
+	var message := SceneRecipeRuntime.hold_refusal_message("post",
+			Shipped.rows().by_id("roadblock"))
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
 
@@ -326,7 +328,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	# Where the director would send the dog at her: the lead straight ahead of her, facing south, on
 	# ground the dog may stand on; she stands on the first sidewalk tile that gives one.
-	var row := EventCatalogue.shipped().by_id("charging_dog")
+	var row := Shipped.rows().by_id("charging_dog")
 	var lead := Offscreen.lead(Vector2.DOWN, row.chase_speed() + Tuning.WALK_SPEED, row.warned_for())
 	var her := Vector2.INF
 	for tile in city.map().tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -339,7 +341,8 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	var at := her + Vector2.DOWN * lead
 	player.global_position = her
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": 3, "events": [{"name": "dog", "row": "charging_dog",
+	runtime.configure(Shipped.rows(), {"data": {"setup": {"day": 3,
+			"events": [{"name": "dog", "row": "charging_dog",
 			"at": [at.x, at.y], "hold": true}], "player": {"at": [her.x, her.y]}}},
 			"manifest": {}, "anchors": {}, "map": city.map()}, _recipe_config(false), own_run)
 	t.add_child(runtime)
@@ -383,20 +386,24 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 ## no radius to skip and for one that sets off beside her on its own clock.
 func _test_charging_is_for_a_pursuer_that_waits(t: TestRunner) -> void:
 	t.check(SceneRecipeRuntime.charging_refusal(
-			EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)) == "",
-			"the hunting roadblock's guard may start charging")
-	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.shipped().by_id("roadblock")) != "",
+			Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			Tuning.RESISTANCE_GOAL)) == "", "the hunting roadblock's guard may start charging")
+	t.check(SceneRecipeRuntime.charging_refusal(Shipped.rows()
+			.by_id("roadblock")) != "",
 			"the cold roadblock has no radius to skip")
-	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.shipped().by_id("fire_truck")).contains("wait"),
+	t.check(SceneRecipeRuntime.charging_refusal(Shipped.rows().by_id("fire_truck"))
+			.contains("wait"),
 			"a row that does not wait is refused")
 	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
 
 ## `relentless` keeps a pursuer from giving up because she ran, so a row that does not pursue is refused.
 func _test_relentless_is_for_a_pursuer(t: TestRunner) -> void:
-	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.shipped().by_id("charging_dog")) == "",
+	t.check(SceneRecipeRuntime.relentless_refusal(Shipped.rows()
+			.by_id("charging_dog")) == "",
 			"a pursuer may be kept coming")
-	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.shipped().by_id("pigeon_flock")).contains("pursue"),
+	t.check(SceneRecipeRuntime.relentless_refusal(Shipped.rows()
+			.by_id("pigeon_flock")).contains("pursue"),
 			"a row that does not pursue is refused")
 	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "relentless": 1}]}}).size() > 0, "relentless must be a boolean")
@@ -476,8 +483,8 @@ func _test_schema(t: TestRunner) -> void:
 func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var manifest_path := RecipeManifest.scratch_path("no_city")
-	runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {}}, "manifest": {}, "anchors": {}, "map": null},
-			_recipe_config(false, manifest_path), RunState.new())
+	runtime.configure(Shipped.rows(), {"data": {"setup": {}}, "manifest": {},
+			"anchors": {}, "map": null}, _recipe_config(false, manifest_path), RunState.new())
 	var building := DayWorld.in_the_building(WorldMap.open_ground(), null, null, null, Vector2.ZERO,
 			Vector2.UP, null)
 	var errors := runtime.install(building, DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
@@ -491,9 +498,10 @@ func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
 ## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
 ## investigating copy that stops for her from the catalogue's heated notice, the shape a played
-## day's dawn gives it (`EventCatalogue.shipped().heated()`). Installed through the runtime's own `install()`
-## against a real city in a run of its own, and read off the plans the scene's events were started
-## on (`EventManager.plans()`), so a field the runtime read and then ignored would fail here.
+## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's
+## own `install()` against a real city in a run of its own, and read off the plans the scene's
+## events were started on (`EventManager.plans()`), so a field the runtime read and then ignored
+## would fail here.
 func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
 	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
@@ -515,7 +523,8 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		if heat != null:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": own_run.header().day(), "events": [entry],
+		runtime.configure(Shipped.rows(),
+				{"data": {"setup": {"day": own_run.header().day(), "events": [entry],
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map()},
 				_recipe_config(false), own_run)
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
@@ -527,7 +536,8 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		runtime.free()
 	var cold: EventDef = installed.get(null)
 	var hot: EventDef = installed.get(EventDef.HEAT_INVESTIGATES_LEVEL)
-	var stops_within := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"),
+	var stops_within := Shipped.rows().heated(Shipped.rows()
+			.by_id("police_patrol"),
 			EventDef.HEAT_INVESTIGATES_LEVEL).notice_within()
 	t.check(cold != null and not cold.investigates() and is_zero_approx(cold.notice_within()),
 			"with no heat the recipe installs the cold patrol, no trigger")
@@ -559,8 +569,8 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
 	var baby: Baby = player.get_node("Baby")
-	var drawn := EventCatalogue.shipped().by_id("chatting_mother")
-	var not_drawn := EventCatalogue.shipped().by_id("roadblock")
+	var drawn := Shipped.rows().by_id("chatting_mother")
+	var not_drawn := Shipped.rows().by_id("roadblock")
 	var cap := not_drawn.most_in_a_day()
 	t.check(drawn.is_drawn_by_units(13, "roadblock") and drawn.most_in_a_day() < 3
 			and not not_drawn.is_drawn_by_units(13, "roadblock"),
@@ -575,7 +585,8 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 		t.check(entries.size() == int(case[1]), "%d places for %s are found (%d)"
 				% [int(case[1]), def.id(), entries.size()])
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": own_run.header().day(), "events": entries,
+		runtime.configure(Shipped.rows(),
+				{"data": {"setup": {"day": own_run.header().day(), "events": entries,
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
 				"map": city.map()}, _recipe_config(false), own_run)
 		var errors := runtime.install(RunCity.world_of(city, player, baby),
@@ -708,7 +719,8 @@ const NEAR_HOME := Vector2i(62, 84)
 ## `setup.task`: a day-7 mark at the alley's mark tile, or (`"neighbor": true`) a day-10 mark with the
 ## neighbor pinned near home. `errors` are what `install()` returned. `_free_task_scene()` frees it.
 func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), {"version": 1, "name": "task", "seed": 11,
+	var built := RecipeCityBuilder.build(Shipped.rows(), {"version": 1,
+			"name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var map: CityMap = built.map
 	var own_run := RunState.new()
@@ -725,8 +737,8 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(EventCatalogue.shipped(), map, own_run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), map, own_run, RunCity.events(city), city.streets(),
+			city.fronts(), city, null, RunCity.spawn_siting(city))
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	t.add_child(player)
@@ -740,7 +752,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var start := map.tile_to_world(MOUTH)
 	var runtime := SceneRecipeRuntime.new()
 	var manifest_path := RecipeManifest.scratch_path("task_%d" % day)
-	runtime.configure(EventCatalogue.shipped(), {"data": {"setup": {"day": day, "task": pinned,
+	runtime.configure(Shipped.rows(), {"data": {"setup": {"day": day, "task": pinned,
 			"player": {"at": [start.x, start.y]}}}, "manifest": {}, "anchors": {}, "map": map},
 			_recipe_config(false, manifest_path), own_run)
 	t.add_child(runtime)
@@ -783,7 +795,7 @@ func _test_arguments(t: TestRunner) -> void:
 		PackedStringArray(["--screenshot", "out.png"]),
 		PackedStringArray(["--recipe-mode", "free", "--after", "1"]),
 	]:
-		var loaded := SceneRecipeRuntime.load_recipe(EventCatalogue.shipped(), EXAMPLE, args)
+		var loaded := SceneRecipeRuntime.load_recipe(Shipped.rows(), EXAMPLE, args)
 		var errors: Array[String] = loaded.errors
 		t.check(not errors.is_empty(), "conflicting or unknown recipe arguments fail: %s" % [args])
 	var output: Array = []
@@ -801,8 +813,8 @@ func _test_arguments(t: TestRunner) -> void:
 func _test_inputs(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(EventCatalogue.shipped(), {"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
-			"anchors": {}, "manifest": {}}, _recipe_config(true), own_run)
+	runtime.configure(Shipped.rows(), {"data": {"playback": {"duration": 3,
+			"walk": "1e1N1p"}}, "anchors": {}, "manifest": {}}, _recipe_config(true), own_run)
 	t.add_child(runtime)
 	var scale := Engine.time_scale
 	Engine.time_scale = 4.0
@@ -880,7 +892,8 @@ func _test_real_argv_and_failure(t: TestRunner) -> void:
 ## stale `Tuning.VIEW_HALF_EXTENT` constant, 320px, would have counted it); one inside it passes
 ## at the default zoom and zoomed out.
 func _test_appeared_requires_sight(t: TestRunner) -> void:
-	var context: CityMap = RecipeCityBuilder.build(EventCatalogue.shipped(), {"version": 1, "name": "sight", "seed": 1,
+	var context: CityMap = RecipeCityBuilder.build(Shipped.rows(), {"version": 1,
+			"name": "sight", "seed": 1,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}}).map
 	var seen := await _sight(t, context, 1.0, 2)
 	t.check(seen == [0],
@@ -945,8 +958,8 @@ func _sight(t: TestRunner, context: CityMap, zoom: float, tiles: int) -> Array[i
 	camera.make_current()
 	var ended: Array[int] = []
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(EventCatalogue.shipped(), {"data": {"name": "sight", "setup": {"day": 3, "player": {"at": [her.x,
-			her.y]},
+	runtime.configure(Shipped.rows(), {"data": {"name": "sight", "setup": {"day": 3,
+			"player": {"at": [her.x, her.y]},
 			"actors": [{"name": "actor", "kind": "walker", "at": [there.x, there.y],
 			"direction": "east"}]},
 			"playback": {"duration": 0.5, "settled_camera": true,

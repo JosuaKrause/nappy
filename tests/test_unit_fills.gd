@@ -65,7 +65,7 @@ static func _row(id: String, placement: Array[int], role := "scenery") -> EventD
 ## The rows a unit draws on `day`, as the dawn draw gathers them (`DawnDraw`), cold.
 static func _catalogue(day: int) -> Dictionary:
 	var rows := {}
-	for def in EventCatalogue.shipped().of_kind(GameEnums.EventKind.RECURRING, day, 0):
+	for def in Shipped.rows().of_kind(GameEnums.EventKind.RECURRING, day, 0):
 		if def.is_drawn_by_units(day, ""):
 			rows[def.id()] = def.for_day(day)
 	return rows
@@ -257,7 +257,7 @@ func _test_a_row_has_marbles_only_where_it_stands(t: TestRunner) -> void:
 			mouse_on.append(ground)
 	t.check(mouse_on == ([ALLEY] as Array[int]), "the alley mouse has marbles in an alley's fill only "
 			+ "(%s)" % [mouse_on])
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	t.check(cafe.weight_on(JUNCTION) == 0.0 and not fills.of(OFF, JUNCTION).has("cafe_tables")
 			and fills.of(OFF, STREET).has("cafe_tables"),
 			"a row weighed at nothing in a junction box has no marble there and some on a street")

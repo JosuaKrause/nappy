@@ -99,9 +99,9 @@ var _walk: RouteSource = null
 var _recipe_plan := false
 
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
-## `surroundings` is what its events are set up in, built where the world is (`SimulationBuilder`),
-## the run's catalogue among them (`EventSurroundings.reading()`), which the checkpoint reads its
-## door guard from as it is made.
+## `surroundings` is what its events are set up in, built where the world is
+## (`SimulationBuilder`), the run's catalogue among them (`EventSurroundings.reading()`), which
+## the checkpoint reads its door guard from as it is made.
 func _init(surroundings: EventSurroundings) -> void:
 	world = EventWorld.new(surroundings)
 	_warnings = WarningBoard.new(world)

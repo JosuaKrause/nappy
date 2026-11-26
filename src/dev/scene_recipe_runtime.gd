@@ -839,8 +839,8 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var going := -1.0 if column.direction == "north" else 1.0
 	var happening := ResistanceHappenings.new()
 	happening.use_trace(_trace)
-	happening.setup(_rows, map, _run, _world.events(), _world.streets(), _world.dressing().fronts(), null,
-			null, null, _world.events().spawn_siting())
+	happening.setup(_rows, map, _run, _world.events(), _world.streets(),
+			_world.dressing().fronts(), null, null, null, _world.events().spawn_siting())
 	if not happening.column_fits_at(at, going):
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
@@ -923,7 +923,8 @@ func _select_structures(errors: Array[String]) -> void:
 			continue
 		selected.add_wall(segment)
 		# The wall's bodies say so, as the day's do (`EventPlan.stand_in_the_wall()`).
-		var bodies := SealPlanner.place_hard_on(_rows, _world.city_map(), segment, "roadblock", entry.end == "a")
+		var bodies := SealPlanner.place_hard_on(_rows, _world.city_map(), segment, "roadblock",
+				entry.end == "a")
 		for body in bodies:
 			body.stand_in_the_wall()
 		selected.add_wall_plans(bodies)
@@ -962,7 +963,8 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 		if not SealPlanner.offers(_rows, candidate, _run.header().day(), lined.has(key)):
 			errors.append("setup.seals: candidate is unavailable on this day or street")
 			continue
-		var sited := SealPlanner.seal_street(_rows, map, segment, candidate, route, trees, emptied)
+		var sited := SealPlanner.seal_street(_rows, map, segment, candidate, route, trees,
+				emptied)
 		plans.append_array(sited.bodies())
 		sited.stand_whole(map)
 	map.set_seal_tree_pits(emptied)
@@ -1092,15 +1094,16 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 
 ## An authored mast stands where the day's masts may, by the checks `DawnMasts`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
-## sidewalk or square tile `MastSites.is_eligible(_rows, )` would offer (off the home street, its field
-## off a calm interior and off every place a region door could stand, which holds the doors this
-## scene stands: each is a street door of the day's plan, at a point `MastSites.possible_door_points()`
-## lists, measured at the reach of `EventCatalogue.mast()`, which is the authored row's own only while
-## `loudspeaker` is the one mast row and has no heat response: a later one needs the door rule back
-## here); it is not closed, not on a held street and not on the home block; and no body placed
-## before it is too near (`StreetInvalidation.room_around()`). It does not ask what
-## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
-## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
+## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street,
+## its field off a calm interior and off every place a region door could stand, which holds the
+## doors this scene stands: each is a street door of the day's plan, at a point
+## `MastSites.possible_door_points()` lists, measured at the reach of `EventCatalogue.mast()`,
+## which is the authored row's own only while `loudspeaker` is the one mast row and has no heat
+## response: a later one needs the door rule back here); it is not closed, not on a held street
+## and not on the home block; and no body placed before it is too near
+## (`StreetInvalidation.room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
+## `WalkSiting` asks beyond those: the calm she has not used. The loudspeaker is a scripted row
+## no catalogue roll places, so the ordinary placement refuses it.
 func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 		prior: Array[EventPlan]) -> EventPlan:
 	var map := _world.city_map()
@@ -1114,8 +1117,8 @@ func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 	return builder.place_at(def, tile, RandomNumberGenerator.new(), prior)
 
 ## The escape's exact actors use its own row variants (the walk's spec's
-## `DaySpec.walk_bag_rows(_rows)`), open streets, tree exclusion, spawn clearance and body spacing. No
-## ordinary-day corridor or offscreen director stands in for it.
+## `DaySpec.walk_bag_rows(_rows)`), open streets, tree exclusion, spawn clearance and body
+## spacing. No ordinary-day corridor or offscreen director stands in for it.
 func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventPlan],
 		route_seed: int) -> EventPlan:

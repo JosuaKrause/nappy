@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 
 func _clear_line_starts(seed_value: int) -> void:
 	var map := CityGenerator.generate(seed_value)
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var standoff := PursuitSpec.standoff(robbery.chase_speed(), robbery.standoff_reach())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -119,7 +119,7 @@ func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
 	var player: Stroller = suite._rig_player(t, director, director.contact_position())
 	var map := city.map()
-	var def := EventCatalogue.shipped().by_id("robber_giving_chase")
+	var def := Shipped.rows().by_id("robber_giving_chase")
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var open: Array[Vector2i] = []
 	for y in map.size_in_tiles().y:

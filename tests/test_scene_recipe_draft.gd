@@ -30,7 +30,8 @@ func _errors(result: Dictionary) -> Array[String]:
 func run(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	_test_the_json_reads_back_as_written(t, data)
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), SceneRecipeDraft.base_of(data))
+	var built := RecipeCityBuilder.build(Shipped.rows(),
+			SceneRecipeDraft.base_of(data))
 	t.check(_errors(built).is_empty(), "the draft's witness builds: %s" % [built.errors])
 	if not _errors(built).is_empty():
 		return
@@ -79,7 +80,7 @@ func _test_the_draft_takes_whole_streets(t: TestRunner, made: SceneWorld,
 ## points) composes for `data`'s recipe over `made`'s world, in a run of its own on `DAY`.
 func _drafted(made: SceneWorld, data: Dictionary, walked: Array[Vector2i],
 		pinned: Array[Vector2]) -> Dictionary:
-	var draft := SceneRecipeDraft.new(EventCatalogue.shipped())
+	var draft := SceneRecipeDraft.new(Shipped.rows())
 	var walker := Node2D.new()
 	for tile in walked:
 		walker.position = made.map.tile_to_world(tile)

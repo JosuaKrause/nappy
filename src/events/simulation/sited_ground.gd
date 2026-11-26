@@ -70,5 +70,6 @@ func _a_mast_may_stand(tile: Vector2i) -> bool:
 	if not _mast_may_stand.has(tile):
 		if _door_points.is_empty():
 			_door_points = MastSites.possible_door_points(_map)
-		_mast_may_stand[tile] = MastSites.is_eligible(_rows, _map.tile_to_world(tile), _map, _door_points)
+		_mast_may_stand[tile] = MastSites.is_eligible(_rows, _map.tile_to_world(tile), _map,
+				_door_points)
 	return _mast_may_stand[tile]

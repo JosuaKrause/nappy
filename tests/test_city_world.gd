@@ -51,7 +51,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 	var spot := Vector2.ZERO
 	t.check(city.excitement_sources_at(spot).is_empty(),
 			"before any event is live nothing charges her at the spot")
-	var def := EventCatalogue.shipped().by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, spot)
 	RunCity.events(city).world.take_in(instance)

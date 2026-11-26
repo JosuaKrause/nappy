@@ -49,7 +49,7 @@ func run(t: TestRunner) -> void:
 
 ## `id` standing at the middle of `tile`.
 func _standing(id: String, tile: Vector2i) -> EventPlan:
-	return EventPlan.new(EventCatalogue.shipped().by_id(id), _map.tile_to_world(tile))
+	return EventPlan.new(Shipped.rows().by_id(id), _map.tile_to_world(tile))
 
 func _rule() -> OneSidewalkOpenRule:
 	return OneSidewalkOpenRule.new(_map, _corridor)
@@ -85,7 +85,8 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 	t.check(not rule.allows(stall, NORTH_SIDE, standing, standing),
 			"a stall drawn after the roadblock, on the sidewalk it left open, is refused")
 	for level: int in [EventDef.HEAT_HUNTS_LEVEL, Tuning.RESISTANCE_GOAL]:
-		var hunting := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), level)
+		var hunting := Shipped.rows().heated(Shipped.rows()
+				.by_id("roadblock"), level)
 		var hot := EventPlan.new(hunting, _map.tile_to_world(at))
 		t.check(hunting.ends_the_day() and rule.allows(hot, at, NONE, NONE),
 				"at heat %d, where its guard hunts, a roadblock alone stands: its band is its body" % level)
@@ -99,7 +100,7 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 	# walkable and the roadblock stands; read 16px across at its lane, the same band takes the inner
 	# row's tile beside the crew and closes both sidewalks. An unpinned body there, such as a mast's
 	# pole, stands on its band's middle and takes the inner row itself.
-	var pole := EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"),
+	var pole := EventPlan.new(Shipped.rows().by_id("poster_crew"),
 			_map.tile_to_world(Vector2i(at.x, NORTH_SIDE.y)))
 	var with_the_pole: Array[EventPlan] = [pole]
 	t.check(pole.obstructs() and rule.allows(roadblock, at, with_the_pole, with_the_pole),
@@ -107,8 +108,8 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 			+ "its kerb, its band leaves the inner row open past the crew")
 	for level: int in [EventDef.HEAT_HUNTS_LEVEL, Tuning.RESISTANCE_GOAL]:
 		var hot := EventPlan.new(
-				EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), level),
-				_map.tile_to_world(at))
+				Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+				level), _map.tile_to_world(at))
 		t.check(rule.allows(hot, at, with_the_pole, with_the_pole),
 				"at heat %d the hunting roadblock beside the crew stands too: its guard's catch lies "
 				% level + "inside its band, so its band is the disc read")

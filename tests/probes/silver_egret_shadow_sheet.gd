@@ -113,7 +113,7 @@ func _crowd_car_picture(view: String, mirror: bool) -> Image:
 ## up by `WheelBob.HEIGHT`.
 func _event_rows(name: String, def_id: String, by_view: Dictionary, side_faces_west: bool,
 		riding := false) -> void:
-	var def := EventCatalogue.shipped().by_id(def_id)
+	var def := Shipped.rows().by_id(def_id)
 	var before: Array[Image] = []
 	var after: Array[Image] = []
 	var ridden: Array[Image] = []
@@ -148,7 +148,7 @@ func _event_rows(name: String, def_id: String, by_view: Dictionary, side_faces_w
 
 ## A stationary wreck, standing side on and end on, before and after.
 func _stationary_rows(name: String, def_id: String, look_id: EventDef.Look) -> void:
-	var def := EventCatalogue.shipped().by_id(def_id)
+	var def := Shipped.rows().by_id(def_id)
 	var before: Array[Image] = []
 	var after: Array[Image] = []
 	for side_on: bool in [true, false]:

@@ -254,7 +254,7 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 ## (`_CountingExcitement`). That the real source answers the doubled red to a cyclist on course for
 ## her is `tests/test_danger.gd`'s.
 func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
@@ -335,7 +335,7 @@ class LongFrontage extends WorldMap:
 ## be seen is what a fire of the same siting tells its drawer to stand (flames and smoke), on real
 ## frames, not the box the gate asks with.
 func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("burning_building")
+	var def := Shipped.rows().by_id("burning_building")
 	t.check(def != null and def.obstructs_within() <= 0.0, "burning_building is the street fire")
 	if not def:
 		return
@@ -407,7 +407,8 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	var run := RunState.new()
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+			.on(map).drawn_in(holder))
 	manager.add_child(holder)
 	manager.setup(run)
 	t.add_child(manager)
@@ -426,7 +427,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	await t.get_tree().process_frame
 	t.check(not await _redraws(t, edge, drawn), "nothing coming, nothing drawn: no redraw")
 
-	var def := EventCatalogue.shipped().by_id("fire_truck")
+	var def := Shipped.rows().by_id("fire_truck")
 	var engine := manager.spawn_warned(def, PackedVector2Array([Vector2(1200.0, 0.0), Vector2.ZERO]))
 	engine.set_process(false)
 	var asked_when_up := false

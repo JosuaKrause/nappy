@@ -76,7 +76,7 @@ func run(t: TestRunner) -> void:
 
 func _row(id: String) -> void:
 	var historical := historical_def(id)
-	var current := EventCatalogue.shipped().by_id(id)
+	var current := Shipped.rows().by_id(id)
 	print("\n== %s : the pass ==" % id)
 	print("  %6s | %20s %20s | %20s %20s"
 			% ["offset", "old 3.5/s (historical)", "today 6.0/s (historical)",
@@ -108,7 +108,7 @@ func _row(id: String) -> void:
 ## rather than one so a future change to either only has to touch the live catalogue. This
 ## probe's own `_row()` is its one caller.
 static func historical_def(id: String) -> EventDef:
-	var current := EventCatalogue.shipped().by_id(id)
+	var current := Shipped.rows().by_id(id)
 	var d := current.redraft()
 	if id == "homeless_yeller":
 		d.field(FieldSpec.of(14.0, 45.0, 210.0).pulsing_every(current.pulses_every()))

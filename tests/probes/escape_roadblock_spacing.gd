@@ -28,8 +28,8 @@ func run(t: TestRunner) -> void:
 		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var placements := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, FinalePlanner.route(map), rng,
-				_city_spec(), GamePlanBuilder.over(map))
+		var placements := DayPlanner.plan_the_escape_city(Shipped.rows(), map,
+				FinalePlanner.route(map), rng, _city_spec(), GamePlanBuilder.over(map))
 		var bands: Array[EventPlan] = []
 		for placement in placements:
 			if placement.row_id() == "roadblock":

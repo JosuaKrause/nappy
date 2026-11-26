@@ -8,8 +8,8 @@ extends RefCounted
 ## rows count nothing for, and an ordinary row with the same field still counts.
 
 func run(t: TestRunner) -> void:
-	var mast := EventCatalogue.shipped().by_id("loudspeaker")
-	var yeller := EventCatalogue.shipped().by_id("homeless_yeller")
+	var mast := Shipped.rows().by_id("loudspeaker")
+	var yeller := Shipped.rows().by_id("homeless_yeller")
 	var here := Vector2(100, 100)
 	var sited := EventPlan.new(mast, here)
 	t.check(not sited.counts_against_the_line(),
@@ -25,7 +25,7 @@ func run(t: TestRunner) -> void:
 	var shouting := EventPlan.new(yeller, here)
 	t.check(shouting.counts_against_the_line(),
 			"the man shouting, with the same field, still counts")
-	var announcing := EventPlan.new(EventCatalogue.shipped().by_id("curfew_announce"), here)
+	var announcing := EventPlan.new(Shipped.rows().by_id("curfew_announce"), here)
 	t.check(not announcing.row().is_a_mast() and announcing.counts_against_the_line(),
 			"the curfew announcement, a row of its own, counts when no mast carries it")
 	announcing.stand_as_a_mast("site-0")

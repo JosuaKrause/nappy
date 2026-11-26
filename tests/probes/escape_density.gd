@@ -26,8 +26,8 @@ func run(t: TestRunner) -> void:
 		rng.seed = seed_value
 		var started := Time.get_ticks_msec()
 		var plan := FinalePlanner.route(map)
-		var placements := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, plan, rng, _city_spec(),
-				GamePlanBuilder.over(map))
+		var placements := DayPlanner.plan_the_escape_city(Shipped.rows(), map, plan,
+				rng, _city_spec(), GamePlanBuilder.over(map))
 		var took := Time.get_ticks_msec() - started
 		var counts := {}
 		for placement in placements:
@@ -39,8 +39,8 @@ func run(t: TestRunner) -> void:
 		totals["streets"] = int(totals.get("streets", 0)) + plan.open_streets.size()
 		print("ESCAPE_DENSITY seed %5d | %d streets | %s | alley walls: %s | planned in %d ms"
 				% [seed_value, plan.open_streets.size(), ", ".join(parts),
-				SealPlanner._alley_mouth_def(EventCatalogue.shipped(), SealPlanner._escape_candidates(), DaySpec.CITY_DAY),
-				took])
+				SealPlanner._alley_mouth_def(Shipped.rows(),
+				SealPlanner._escape_candidates(), DaySpec.CITY_DAY), took])
 	var parts: Array[String] = []
 	for id in ROWS:
 		parts.append("%s %d" % [id, int(totals.get(id, 0))])

@@ -208,10 +208,11 @@ func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 		var map := MapCache.of(SEEDS[index])
 		var spec := DaySpec.for_day(DAY)
 		var tree := RouteTree.for_day(map, DAY, null)
-		var region := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
+		var region := RegionPlanner.plan_day(Shipped.rows(), map, spec, tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[index]
-		var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, rng, tree, region)
+		var closures := ClosurePlanner.plan_day(Shipped.rows(), map, spec, rng, tree,
+				region)
 		map.close_streets(closures)
 		var run := RunState.new()
 		run.start_run(RUN_SEEDS[index])
@@ -243,7 +244,8 @@ func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 			streets.begin_day(tree, region, closures)
 			var plans: Array[EventPlan] = []
 			if spot.lorry != Vector2.INF:
-				plans.append(EventPlan.new(EventCatalogue.shipped().by_id("reversing_lorry"), spot.lorry))
+				plans.append(EventPlan.new(Shipped.rows().by_id("reversing_lorry"),
+						spot.lorry))
 			var watched := await _watch(t, events, map, spec, row, spot, walk, plans)
 			_count(tally, watched, spot, row, walk, map, SEEDS[index])
 		events.free()

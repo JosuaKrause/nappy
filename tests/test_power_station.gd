@@ -173,14 +173,15 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		var door_street := map.power_station_door_street()
 		t.check(door_street != null and tree.is_on_the_tree(door_street.key()),
 				"seed %d day %d: the corridor reaches the door's street" % [map.city_seed(), day])
-		var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
+		var region_plan := RegionPlanner.plan_day(Shipped.rows(), map,
+				DaySpec.for_day(day), tree)
 		t.check(not (region_plan.door_segments().is_empty()
 				and region_plan.door_alleys().is_empty()),
 				"seed %d day %d: the wall has a door in it" % [map.city_seed(), day])
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-		var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day),
-				closure_rng, tree, region_plan)
+		var closures := ClosurePlanner.plan_day(Shipped.rows(), map,
+				DaySpec.for_day(day), closure_rng, tree, region_plan)
 		map.close_streets(closures)
 		var boundary := {}
 		for segment in region_plan.wall_segments():
@@ -193,7 +194,8 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 			boundary[rect.position] = true
 		var seal_rng := RandomNumberGenerator.new()
 		seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-		var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree, seal_rng, boundary)
+		var seals := SealPlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day),
+				tree, seal_rng, boundary)
 
 		var blocked := map.closed_tile_set().duplicate()
 		for item in seals:

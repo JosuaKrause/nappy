@@ -19,7 +19,7 @@ const DOG := "charging_dog"
 
 func run(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var cap := EventCatalogue.shipped().by_id(DOG).most_in_a_day()
+	var cap := Shipped.rows().by_id(DOG).most_in_a_day()
 	var dogs_sum := 0
 	var lessons := 0
 	var at_cap := 0
@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 				bought_a_dog = true
 		if not bought_a_dog:
 			no_dog_bought += 1
-		var director := EventDirector.new(EventCatalogue.shipped(), map)
+		var director := EventDirector.new(Shipped.rows(), map)
 		var director_rng := RandomNumberGenerator.new()
 		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 		director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

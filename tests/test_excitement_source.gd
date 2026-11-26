@@ -115,12 +115,12 @@ func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	instance.free()
 
 func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]),
 			Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	for _i in int(ceil(def.telegraphs_for() / 0.1)) + 1:
 		instance.step(0.1)
 	# Nobody has said where she is yet, so the caret is asked of `Vector2.INF`: an answer cached
@@ -209,11 +209,11 @@ func _total_at_the_origin(world: WorldContext) -> float:
 ## the day on contact (a copy of its row with lethal set) is amber when she is far off and
 ## closing on it, doubled red with her on it, and nothing with her away and still.
 func _test_the_caret_strength_follows_her_place_and_motion(t: TestRunner) -> void:
-	var def := _made_lethal(EventCatalogue.shipped().by_id("loose_dog"))
+	var def := _made_lethal(Shipped.rows().by_id("loose_dog"))
 	var her := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(her))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(her))
 	var here := instance.global_position
 	var states := [
 		[Vector2(400.0, 0.0), Vector2.ZERO, 0],

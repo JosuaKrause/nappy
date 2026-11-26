@@ -103,8 +103,8 @@ static func _eligible_candidates(rows: EventCatalogue, map: CityMap) -> Array[Ve
 		_consider(rows, found, seen, at, map, door_points)
 	return found
 
-static func _consider(rows: EventCatalogue, found: Array[Vector2], seen: Dictionary, at: Vector2, map: CityMap,
-		door_points: PackedVector2Array) -> void:
+static func _consider(rows: EventCatalogue, found: Array[Vector2], seen: Dictionary,
+		at: Vector2, map: CityMap, door_points: PackedVector2Array) -> void:
 	var key := Vector2i(roundi(at.x), roundi(at.y))
 	if seen.has(key):
 		return
@@ -246,7 +246,8 @@ static func _reaches_a_calm_interior(rows: EventCatalogue, at: Vector2, map: Cit
 ## for that and for anything this misses, exactly as it is for held ground.
 ## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
 ## door's 176px gap" — the gap this had never checked at all.)*
-static func _reaches_a_possible_door(rows: EventCatalogue, at: Vector2, door_points: PackedVector2Array) -> bool:
+static func _reaches_a_possible_door(rows: EventCatalogue, at: Vector2,
+		door_points: PackedVector2Array) -> bool:
 	var limit := Tuning.CHECKPOINT_EVENT_GAP + rows.mast().field_reach()
 	for position in door_points:
 		if at.distance_to(position) < limit:

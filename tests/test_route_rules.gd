@@ -59,7 +59,7 @@ func run(t: TestRunner) -> void:
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventPlan:
-	var plan := GamePlanBuilder.over(_map).build(EventCatalogue.shipped().by_id(id), tile,
+	var plan := GamePlanBuilder.over(_map).build(Shipped.rows().by_id(id), tile,
 			RandomNumberGenerator.new())
 	if plan:
 		plan.give_role(GameEnums.BlockerRole.WALL)
@@ -97,7 +97,8 @@ func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 	var allowed_without := 0
 	for entry: Array in _corridor.walked_sidewalks(_map):
 		var band: Rect2i = entry[1]
-		var man := GamePlanBuilder.over(_map).build(EventCatalogue.shipped().by_id("homeless_yeller"),
+		var man := GamePlanBuilder.over(_map).build(Shipped.rows()
+				.by_id("homeless_yeller"),
 				band.get_center(), RandomNumberGenerator.new())
 		if man == null or man.walks().size() < 2:
 			continue
@@ -182,7 +183,7 @@ static func _home_street(map: CityMap) -> Rect2i:
 
 ## `id`, standing at the middle of `tile`.
 static func _standing(map: CityMap, id: String, tile: Vector2i) -> EventPlan:
-	return EventPlan.new(EventCatalogue.shipped().by_id(id), map.tile_to_world(tile))
+	return EventPlan.new(Shipped.rows().by_id(id), map.tile_to_world(tile))
 
 func _test_a_body_on_a_routes_ground_off_the_streets_is_refused(t: TestRunner) -> void:
 	var map := _alley_map()
@@ -262,12 +263,13 @@ func _test_a_lens_over_a_routes_ground_off_the_streets_is_refused(t: TestRunner)
 
 ## A man shouting pacing from `from` to `to`.
 static func _pacing(map: CityMap, from: Vector2i, to: Vector2i) -> EventPlan:
-	return EventPlan.new(EventCatalogue.shipped().by_id("homeless_yeller"), map.tile_to_world(from),
+	return EventPlan.new(Shipped.rows().by_id("homeless_yeller"),
+			map.tile_to_world(from),
 			PackedVector2Array([map.tile_to_world(from), map.tile_to_world(to)]))
 
 func _test_the_home_street_is_part_of_her_line_in_the_real_corridor(t: TestRunner) -> void:
 	var rule := RouteLineRule.new(_map, _corridor)
-	var burst := EventCatalogue.shipped().by_id("burst_water_main")
+	var burst := Shipped.rows().by_id("burst_water_main")
 	var home := _tree.street_it_starts_in().tile_rect().get_center()
 	var far := _far_from_the_routes()
 	t.check(far != Vector2i(-1, -1), "there is a street far from every route")

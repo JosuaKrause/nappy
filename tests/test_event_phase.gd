@@ -70,7 +70,7 @@ func _is_warning(instance: EventInstance) -> bool:
 			and not instance.has_stopped_her()
 
 func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	t.check(_is_warning(instance),
@@ -87,11 +87,11 @@ func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t: TestRunner) -> 
 	instance.free()
 
 func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	t.check(instance.is_waiting(), "a row that waits starts waiting")
 	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
@@ -115,12 +115,12 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 	instance.free()
 
 func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("dog_walker")
+	var def := Shipped.rows().by_id("dog_walker")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]),
 			Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	instance_where.tell(Vector2(0.0, 2000.0))
 	var frames := 0
 	while not instance.is_on_its_way_out() and frames < 400:
@@ -143,11 +143,11 @@ func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 ## It goes on answering `is_telegraphing()` until its clock runs out, as everything that reads it —
 ## the alert over her head, `event_activated`, its pictures — has always seen it.
 func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("charging_dog")
+	var def := Shipped.rows().by_id("charging_dog")
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(dog_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(dog_where))
 	var her := Vector2(400.0, 0.0)
 	var clock := 0.0
 	while not dog.is_on_its_way_out() and clock < def.telegraphs_for():
@@ -184,11 +184,11 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 ## the second he waited is in the start the stream-out carries. A walk out of the stand-off cannot
 ## show the notice running afterwards, since he lunges the moment she is at the full stand-off.
 func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(first_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(first_where))
 	var her := Vector2(60.0, 0.0)
 	t.check(her.length() < PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()),
 			"she stands inside the robber's stand-off")
@@ -220,7 +220,7 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 ## A warning up before its thing exists points where the thing will come from, moving only with
 ## her, and counts down the row's own warning, on the clock above.
 func _test_a_badge_up_alone_points_and_counts_down(t: TestRunner) -> void:
-	var def := EventSpawner.as_warned(EventCatalogue.shipped().by_id("cyclist"))
+	var def := EventSpawner.as_warned(Shipped.rows().by_id("cyclist"))
 	var arrived := [0]
 	var where := func(her: Vector2) -> Vector2: return her + Vector2(600.0, 0.0)
 	var arrive := func(_at: Vector2, _her: Vector2) -> bool:
@@ -247,7 +247,7 @@ func _test_a_badge_up_alone_points_and_counts_down(t: TestRunner) -> void:
 ## lines ask (`field_reaches()`) agrees with the field the meter is charged from.
 func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 	for id: String in ["alley_robbery", "police_patrol", "cafe_tables", "cyclist"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
 		t.check(not instance.was_warned_of(), "'%s' made where it stands came under no warning" % id)
@@ -270,7 +270,7 @@ func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 ## cyclist, which moves, and a cafe's tables, which end nothing, answer none.
 func _test_a_live_event_shuts_the_ground_its_catch_shuts(t: TestRunner) -> void:
 	for id: String in ["alley_robbery", "abduction", "cyclist", "cafe_tables"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
 		t.close_to(instance.catch_shuts_within(), def.catch_shuts_within(),
@@ -279,7 +279,7 @@ func _test_a_live_event_shuts_the_ground_its_catch_shuts(t: TestRunner) -> void:
 				"'%s' shuts ground exactly when its row ends the day and holds its place" % id)
 		instance.free()
 	var robbery := EventInstance.new()
-	robbery.setup(EventCatalogue.shipped().by_id("alley_robbery"), Vector2.ZERO)
+	robbery.setup(Shipped.rows().by_id("alley_robbery"), Vector2.ZERO)
 	var shut_while_standing := robbery.catch_shuts_within()
 	robbery.end_now()
 	t.check(shut_while_standing > 0.0 and robbery.catch_shuts_within() == 0.0,
@@ -318,7 +318,7 @@ func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRun
 ## `outer radius / (1 + e)` behind, and exactly outer radius abeam, where a disc says
 ## outer radius every way. The cyclist is given a route so that it moves.
 func _test_a_mover_reaches_as_the_ellipse_its_field_is(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 	var velocity := instance.travel_velocity()
@@ -343,7 +343,7 @@ func _test_a_mover_reaches_as_the_ellipse_its_field_is(t: TestRunner) -> void:
 ## outer radius about the centre, so a point just inside that radius which no bird reaches is not
 ## reached, and the place a bird stands is.
 func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("pigeon_flock")
+	var def := Shipped.rows().by_id("pigeon_flock")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	# In the tree, where its flock is built as the game builds it.
@@ -367,7 +367,7 @@ func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
 ## outside it is not, and the disc goes with him when he has moved. The core is a disc and not the
 ## shape the field is priced in, so the points are tried in three directions about him.
 func _test_a_core_is_a_disc_about_where_the_man_shouting_stands_now(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("homeless_yeller")
+	var def := Shipped.rows().by_id("homeless_yeller")
 	var core := def.core_within()
 	t.check(core > ContactPoint.REACH,
 			"his core reaches past the contact's own touch, or the disc below proves nothing")
@@ -392,7 +392,7 @@ func _test_a_core_is_a_disc_about_where_the_man_shouting_stands_now(t: TestRunne
 ## finishing are the instance's, and neither changes what the row it was set up from says it is,
 ## whatever geometry the row was reshaped to.
 func _test_a_live_event_leaves_its_rows_spread_classification_alone(t: TestRunner) -> void:
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	var reshaped := cafe.redraft()
 	reshaped.body(cafe.body().reshaped(GroundShape.band(22.0)))
 	reshaped.field(cafe.field().holding_to(15.0).reaching(90.0))
@@ -417,7 +417,7 @@ func _test_a_live_event_leaves_its_rows_spread_classification_alone(t: TestRunne
 ## library of the fixture's own that every instance is handed.
 func _test_a_live_crash_registers_a_collision_shape_per_car(t: TestRunner) -> void:
 	var map := CityMap.new()
-	var crash := EventCatalogue.shipped().by_id("car_accident")
+	var crash := Shipped.rows().by_id("car_accident")
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	for vertical: bool in [false, true]:
@@ -425,7 +425,7 @@ func _test_a_live_crash_registers_a_collision_shape_per_car(t: TestRunner) -> vo
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
 		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
+				EventSurroundings.new().reading(Shipped.rows()).on(map) \
 					.drawn_from(atlas))
 		t.add_child(instance)
 		instance.set_process(false)
@@ -445,7 +445,7 @@ func _test_a_live_crash_registers_a_collision_shape_per_car(t: TestRunner) -> vo
 func _emission_instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
+	var surroundings := EventSurroundings.new().reading(Shipped.rows())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -459,7 +459,7 @@ func _emission_advance(instance: EventInstance, seconds: float) -> void:
 
 
 func _test_telegraph_damps_emission(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("cat_dash")
+	var def := Shipped.rows().by_id("cat_dash")
 	var instance := _emission_instance(t, def)
 
 	t.check(instance.is_telegraphing(), "an event starts in its telegraph phase")
@@ -481,7 +481,7 @@ func _test_telegraph_damps_emission(t: TestRunner) -> void:
 ## Stated as the fraction the phase put on the row's own peak, so it holds wherever in the telegraph
 ## and the pulse envelope this instance happens to be standing.
 func _test_a_phase_damps_both_parts_of_a_two_part_field(t: TestRunner) -> void:
-	var leaf := EventCatalogue.shipped().by_id("leaf_blower")
+	var leaf := Shipped.rows().by_id("leaf_blower")
 	var blower := _emission_instance(t, leaf)
 	var near := Vector2(32.0, 0.0)
 	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
@@ -497,7 +497,7 @@ func _test_a_phase_damps_both_parts_of_a_two_part_field(t: TestRunner) -> void:
 ## ceiling its row states. The row's own half of the swell (the peak it carries at each age) is
 ## `tests/test_acts.gd`'s.
 func _test_a_live_protest_swells_over_its_life(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("protest")
+	var def := Shipped.rows().by_id("protest")
 	var instance := _emission_instance(t, def)
 	_emission_advance(instance, def.telegraphs_for() + 0.05)
 
@@ -539,7 +539,7 @@ func _emission_peak_over(instance: EventInstance, seconds: float) -> float:
 ## own siting is decided rather than folded in here.
 func _test_the_rows_she_walks_up_to_pass_positively_awake(t: TestRunner) -> void:
 	for id: String in ["homeless_yeller", "dog_walker"]:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		for offset: float in [0.0, 20.0, 40.0]:
 			var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 			t.check(net > 0.0,
@@ -557,8 +557,8 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t: TestRunner) -> void
 ## and creation, on a real city: `tests/test_event_manager.gd`,
 ## `_test_a_row_warned_down_her_line_arrives_at_its_own_intensity`.
 func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t: TestRunner) -> void:
-	var dog := EventCatalogue.shipped().by_id("loose_dog")
-	var walker := EventCatalogue.shipped().by_id("dog_walker")
+	var dog := Shipped.rows().by_id("loose_dog")
+	var walker := Shipped.rows().by_id("dog_walker")
 	for offset: float in [0.0, 20.0, 40.0]:
 		var loose := M174Pass.pass_net_averaged(dog, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 		var leashed := M174Pass.pass_net_averaged(walker, offset, Tuning.EXCITEMENT_DECAY_WALKING,
@@ -569,7 +569,7 @@ func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t: TestRunner) -
 
 func _test_duration_and_finish(t: TestRunner) -> void:
 	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.
-	var def := EventCatalogue.shipped().by_id("abduction")
+	var def := Shipped.rows().by_id("abduction")
 	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
 	var instance := _emission_instance(t, def)
 	_emission_advance(instance, def.telegraphs_for() + def.lasts_for() + 0.1)
@@ -588,7 +588,7 @@ func _test_duration_and_finish(t: TestRunner) -> void:
 ## cat that has finished its run would trail its whole field behind it for as long as it took to get
 ## off screen, which is a worse bug than the one being fixed.
 func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("pigeon_flock")
+	var def := Shipped.rows().by_id("pigeon_flock")
 	t.check(def.departure_speed() > 0.0, "a flock has somewhere to go")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _emission_instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
@@ -665,7 +665,7 @@ func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 			rows.append(def)
 	for shape: GroundShape in [GroundShape.segment(500.0, 10.0),
 			GroundShape.rect(Vector2(400.0, 300.0))]:
-		var long_body := EventCatalogue.shipped().by_id("scaffolding").redraft()
+		var long_body := Shipped.rows().by_id("scaffolding").redraft()
 		long_body.field(FieldSpec.of(10.0, 20.0, 60.0))
 		long_body.body(BodySpec.solid(shape))
 		rows.append(long_body.build())
@@ -705,7 +705,7 @@ func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 ## (A roadblock's band, which a guard walking away leaves behind, has no field to hear.)
 func _test_flocks_are_not_skipped(t: TestRunner) -> void:
 	var flock := EventInstance.new()
-	flock.setup(EventCatalogue.shipped().by_id("pigeon_flock"), Vector2.ZERO)
+	flock.setup(Shipped.rows().by_id("pigeon_flock"), Vector2.ZERO)
 	t.add_child(flock)
 	flock.set_process(false)
 	var far_bird := Vector2(flock.row().silent_beyond() * 3.0, 0.0)
@@ -735,19 +735,19 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 			"the generated map has a horizontal and a vertical alley to put a barrier in")
 	if not (horizontal.has_area() and vertical.has_area()):
 		return
-	var barrier := EventCatalogue.shipped().by_id("construction")
+	var barrier := Shipped.rows().by_id("construction")
 	var across_a_horizontal := EventInstance.new()
 	across_a_horizontal.setup(barrier,
 			map.tile_to_world(horizontal.position + horizontal.size / 2), PackedVector2Array(),
 			Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
+			EventSurroundings.new().reading(Shipped.rows()).on(map))
 	t.check(across_a_horizontal.runs_vertically(),
 			"a horizontal alley gets a vertical barrier spread across its mouth")
 	across_a_horizontal.free()
 	var across_a_vertical := EventInstance.new()
 	across_a_vertical.setup(barrier, map.tile_to_world(vertical.position + vertical.size / 2),
 			PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
+			EventSurroundings.new().reading(Shipped.rows()).on(map))
 	t.check(not across_a_vertical.runs_vertically(),
 			"a vertical alley keeps a horizontal barrier spread across its mouth")
 	across_a_vertical.free()
@@ -779,14 +779,14 @@ func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
 func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
+			EventSurroundings.new().reading(Shipped.rows()).on(map))
 	instance.restore(EventSave.aged(def.telegraphs_for() + 1.0))
 	return instance
 
 ## A street musician with a building between them: nothing on the meter's sum, while the same
 ## musician on open ground reaches her. The wall's own geometry is `test_wall_shield.gd`'s.
 func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("busker")
+	var def := Shipped.rows().by_id("busker")
 	var her := Vector2(240.0, 176.0)
 	var at := Vector2(112.0, 176.0)
 	var walled := _walled_map(_rect_tiles(Rect2i(5, 0, 2, 12)))
@@ -806,7 +806,7 @@ func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
 ## point: her walking down a street with a long building between her and a musician expects nothing
 ## from him, and the same walk in the open does.
 func _test_an_event_expects_nothing_from_behind_a_wall(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("busker")
+	var def := Shipped.rows().by_id("busker")
 	var walled := _walled_map(_rect_tiles(Rect2i(0, 4, 24, 2)), 24, 12)
 	var open := _open_map(24, 12)
 	var at := Vector2(400.0, 80.0)

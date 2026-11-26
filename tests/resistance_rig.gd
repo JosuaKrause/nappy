@@ -174,7 +174,8 @@ func _director_on_the_least(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(EventCatalogue.shipped(), _least_map, _least_run, _least_events, null, null, _least_world)
+	director.setup(Shipped.rows(), _least_map, _least_run, _least_events, null, null,
+			_least_world)
 	return director
 
 ## Day 6's mark read on the least's director, with step 2 (the yeller perform) active, as
@@ -192,8 +193,8 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
-			_city, null, RunCity.spawn_siting(_city))
+	director.setup(Shipped.rows(), _city.map(), _run, RunCity.events(_city),
+			_city.streets(), _city.fronts(), _city, null, RunCity.spawn_siting(_city))
 	return director
 
 func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator:
@@ -344,10 +345,11 @@ func _relocate_round(director: ResistanceDirector, player: Stroller, here: Vecto
 	var after := director.contact_position()
 	return after if after.distance_to(before) > 0.5 else Vector2.INF
 
-## The feet of the chalk mark's guard as the street has him (the live `EventCatalogue.shipped().mark_guard()`
-## among the test city's instances), or `Vector2.INF` when none stands, or more than one.
+## The feet of the chalk mark's guard as the street has him (the live
+## `EventCatalogue.mark_guard()` among the test city's instances), or `Vector2.INF`
+## when none stands, or more than one.
 func _marks_guard_feet() -> Vector2:
-	var guards := _live(EventCatalogue.shipped().mark_guard().id())
+	var guards := _live(Shipped.rows().mark_guard().id())
 	return guards[0].global_position if guards.size() == 1 else Vector2.INF
 
 ## **Every mark tile of the city of `seed_value`, relocated to in turn** (`_relocate_round()`), on
@@ -429,7 +431,7 @@ func _mark_tiles() -> Array[Vector2i]:
 ## passage, `Vector2.INF` off an alley.
 static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 	var tile := map.world_to_tile(mark)
-	var robbery := EventCatalogue.shipped().mark_guard()
+	var robbery := Shipped.rows().mark_guard()
 	var spot := AlleyMarks.expected_guard_spot(map, tile, mark,
 			robbery.core_within() + ContactPoint.REACH)
 	if spot != Vector2.INF:

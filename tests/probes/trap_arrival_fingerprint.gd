@@ -80,8 +80,8 @@ func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int)
 	director.set_process(false)
 	_lines.clear()
 	director.use_trace(RecordingTrace.new(_lines))
-	director.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).visible_view())
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -112,7 +112,7 @@ func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int)
 		elif ResistanceDirector._sets_a_trap_on_her(task):
 			director._set_the_trap_on_her(task)
 		printed += _run_out(city, director, player, "%s own trap" % label, Vector2.ZERO)
-	var robber := EventCatalogue.shipped().by_id("robber_giving_chase")
+	var robber := Shipped.rows().by_id("robber_giving_chase")
 	for spot in _spots(city):
 		for front_door: bool in [false, true]:
 			_stand(city, player, spot)

@@ -5,7 +5,7 @@ extends RefCounted
 func run(_t: TestRunner) -> void:
 	var data := {"version": 1, "name": "sites", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}}
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
+	var built := RecipeCityBuilder.build(Shipped.rows(), data)
 	var map: CityMap = built.map
 	print("HOME ", map.doorstep_world_position())
 	print("MAIN_ROAD ", map.main_road_corridor(), " north lane=", CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, -1)))
@@ -17,7 +17,8 @@ func run(_t: TestRunner) -> void:
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day, null)
-		var regions := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
+		var regions := RegionPlanner.plan_day(Shipped.rows(), map,
+				DaySpec.for_day(day), tree)
 		var corridor := Corridor.of(tree)
 		var doors := PackedVector2Array()
 		var calm := CalmAreas.of(map)
@@ -25,7 +26,8 @@ func run(_t: TestRunner) -> void:
 			doors.append(body.placed_at())
 			if body.row_id() == "checkpoint_hut":
 				print("GATE ", body.placed_at())
-		var def := EventCatalogue.shipped().by_id("leaf_blower" if day == 1 else "military_convoy")
+		var def := Shipped.rows() \
+				.by_id("leaf_blower" if day == 1 else "military_convoy")
 		var tiles: Array[Vector2i] = []
 		var ground := EventScheduler.row_ground(map, corridor)
 		tiles.assign(ground.offers_for_role(def, EventScheduler.role_for(def, day)).keys())
@@ -50,9 +52,10 @@ func run(_t: TestRunner) -> void:
 	state.begin_day(map.plans_by_block(), 14)
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
-	DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),
-			GamePlanBuilder.over(map))
-	var guards := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	DayPlanner.plan_the_escape_city(Shipped.rows(), map, finale,
+			own_run.calendar().day_rng(14, "finale"), _city_spec(), GamePlanBuilder.over(map))
+	var guards := Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
 	var escape_ground := EventScheduler.row_ground(map, null, false)
@@ -65,7 +68,7 @@ func run(_t: TestRunner) -> void:
 		found += 1
 		if found >= 12:
 			break
-	var dog := EventCatalogue.shipped().by_id("charging_dog")
+	var dog := Shipped.rows().by_id("charging_dog")
 	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
 			dog.chase_speed() + Tuning.WALK_SPEED, dog.warned_for()))
 

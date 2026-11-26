@@ -211,7 +211,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 ## are also held off the doorstep's lethal reach, the spawn kill
 ## `_test_no_alley_robbery_stands_near_the_doorstep()` asks of the dawn, here over every mark tile.
 func _test_the_guard_never_lands_inside_a_building(t: TestRunner) -> void:
-	var robbery := EventCatalogue.shipped().mark_guard()
+	var robbery := Shipped.rows().mark_guard()
 	var doorstep_reach := 2.0 * robbery.core_within() + ContactPoint.REACH
 	var checked := 0
 	for seed_value in SWEEP_SEEDS:
@@ -291,7 +291,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t: TestRunner) -> vo
 	var moved := _relocate_round(director, player, _outside_its_mouth(map, target), away)
 	t.check(moved != Vector2.INF and map.world_to_tile(moved) == target,
 			"the mark moves onto %s, reached through its mouth" % target)
-	t.check(_live(EventCatalogue.shipped().mark_guard().id()).is_empty(),
+	t.check(_live(Shipped.rows().mark_guard().id()).is_empty(),
 			"with bodies on all the ground further in, no guard stands in the street")
 	var said := false
 	for line in lines:
@@ -370,7 +370,7 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t: TestRunner
 ## the floor for a point no mark stands on. Before, he stood at the far end tile or up to three
 ## tiles in from it, at least 176px from the mark where the alley allowed.
 func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t: TestRunner) -> void:
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var checked := 0
@@ -420,7 +420,7 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t: TestRunne
 ## within his catch of him. Whether he wakes on the way is counted and not held: in a one-block alley
 ## reading the mark may wake him, and that is the player's choice.
 func _test_reading_a_mark_never_lands_her_in_his_catch(t: TestRunner) -> void:
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var checked := 0
 	var asleep := 0
 	for seed_value in SWEEP_SEEDS:
@@ -465,7 +465,7 @@ func _test_reading_a_mark_never_lands_her_in_his_catch(t: TestRunner) -> void:
 ## too: with every through-alley mark tile used by a completed step, the day's mark is drawn in one,
 ## and its guard, stood at dawn with nothing about her refusing him, is at that courtyard's inner end.
 func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t: TestRunner) -> void:
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var passages := 0
 	var guarded := 0
 	var one_tile_passages := 0
@@ -499,14 +499,15 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t: TestRun
 		for tile in _mark_tiles():
 			if not AlleyMarks.through_ends(city_map, tile, city_map.tile_to_world(tile)).is_empty():
 				run.facts().record_completed_alley_tile(tile)
-		var guards_before := _live(EventCatalogue.shipped().mark_guard().id())
+		var guards_before := _live(Shipped.rows().mark_guard().id())
 		var director := _director(t)
 		director.start_day(7, _rng(7, "courtyard-dawn", seed_value), 300.0)
 		var at := director.contact_position()
 		var at_tile := city_map.world_to_tile(at)
 		if at != Vector2.INF and AlleyMarks.through_ends(city_map, at_tile, at).is_empty():
 			drawn_in_a_passage += 1
-			var dawn_robber := _new_one(EventCatalogue.shipped().mark_guard().id(), guards_before)
+			var dawn_robber := _new_one(Shipped.rows().mark_guard().id(),
+					guards_before)
 			var dawn_guard := dawn_robber.global_position if dawn_robber else Vector2.INF
 			t.check(dawn_guard != Vector2.INF, "seed %d: the dawn mark in the passage's %s is guarded"
 					% [seed_value, at_tile])
@@ -545,7 +546,7 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
 	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(robber_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(robber_where))
 	var woke := false
 	var froms: Array[Vector2] = [near, mark]
 	var tos: Array[Vector2] = [mark, near]
@@ -590,7 +591,7 @@ const GUARD_DOORSTEP_DAYS: Array[int] = [6, 8, 10, 12]
 ## city's shape — so it is a rule sweep, not a layout sweep, and its schedules keep the full day
 ## range (4..14, every day the catalogue's robbery can appear) while halving the seeds.
 func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var reach: float = robbery.core_within() + min_distance
 	var checked := 0
@@ -599,7 +600,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var doorstep := map.doorstep_world_position()
 		# The run's mast sites, worked out once on the city as built, as the game does.
-		var sites := MastSites.compute(EventCatalogue.shipped(), map)
+		var sites := MastSites.compute(Shipped.rows(), map)
 		var consumed: Array[String] = []
 		for day in range(4, 15):
 			var state := CityState.new()
@@ -622,7 +623,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 		var run := _build_city_in_a_new_run(t, seed_value)
 		for day: int in GUARD_DOORSTEP_DAYS:
 			GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
-			var guards_before := _live(EventCatalogue.shipped().mark_guard().id())
+			var guards_before := _live(Shipped.rows().mark_guard().id())
 			var director := _director(t)
 			director.start_day(day, _rng(day, "mark", seed_value), 300.0)
 			var mark_at := director.contact_position()
@@ -632,7 +633,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 				t.check(mark_at.distance_to(doorstep) > reach,
 						"seed %d day %d: the chalk mark is not within lethal reach of the doorstep"
 						% [seed_value, day])
-				var guard := _new_one(EventCatalogue.shipped().mark_guard().id(), guards_before)
+				var guard := _new_one(Shipped.rows().mark_guard().id(), guards_before)
 				if guard:
 					checked += 1
 					t.check(guard.global_position.distance_to(doorstep) > reach,
@@ -684,7 +685,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	director.use_player(player)
 	director.tick(STEP)
 
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var reach: float = robbery.core_within() + min_distance
 
@@ -724,7 +725,8 @@ func _test_a_walled_alley_escapes_no_other_check(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(seed_value)
 	var tree := RouteTree.for_day(map, day, null)
-	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), tree)
+	var region_plan := RegionPlanner.plan_day(Shipped.rows(), map,
+			DaySpec.for_day(day), tree)
 	t.check(not region_plan.walled_alleys().is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
 			% [seed_value, day])
@@ -773,14 +775,14 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t: TestRunner) 
 	var director := _director(t)
 	var placed := 0
 	for trial in 6:
-		var guards_before := _live(EventCatalogue.shipped().mark_guard().id())
+		var guards_before := _live(Shipped.rows().mark_guard().id())
 		director.start_day(day, _rng(day, "walled-mark:%d" % trial, seed_value), 300.0)
 		var at := director.contact_position()
 		if at == Vector2.INF or not director.current_step().is_pickup:
 			continue
 		placed += 1
 		_check_off_the_walled_alleys(t, map, walled_alleys, at,
-				_new_one(EventCatalogue.shipped().mark_guard().id(), guards_before),
+				_new_one(Shipped.rows().mark_guard().id(), guards_before),
 				"seed %d day %d trial %d" % [seed_value, day, trial])
 	t.check(placed > 0, "some dawn draw actually placed a mark to check (%d)" % placed)
 
@@ -792,13 +794,13 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t: TestRunner) 
 	var relocated := 0
 	for rect in walled_alleys:
 		for tile in map.rect_tiles(rect):
-			var guards_before := _live(EventCatalogue.shipped().mark_guard().id())
+			var guards_before := _live(Shipped.rows().mark_guard().id())
 			var to := _relocate_round(director, player, map.tile_to_world(tile), away)
 			if to == Vector2.INF:
 				continue
 			relocated += 1
 			_check_off_the_walled_alleys(t, map, walled_alleys, to,
-					_new_one(EventCatalogue.shipped().mark_guard().id(), guards_before),
+					_new_one(Shipped.rows().mark_guard().id(), guards_before),
 					"seed %d day %d, relocated from %s" % [seed_value, day, tile])
 	t.check(relocated > 0, "some relocation from a walled alley actually moved the mark (%d)"
 			% relocated)

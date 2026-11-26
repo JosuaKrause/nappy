@@ -440,7 +440,7 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t: TestRunner) -> void
 ## a time (`_one_drawn_frame()`).
 func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	var record := FrameRecord.new()
-	var def := EventCatalogue.shipped().by_id("protest")
+	var def := Shipped.rows().by_id("protest")
 	var untimed_view := _SlowView.new()
 	var untimed_event := _event(t, def, untimed_view)
 	var scratch := FrameLedger.new(4)
@@ -516,7 +516,8 @@ class _SlowView extends DrawnView:
 func _event(t: TestRunner, def: EventDef, view: DrawnView,
 		timing: FrameTiming = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).shown_by(view) \
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()) \
+			.shown_by(view) \
 			.drawing_through(RecordingEventDrawer.new())
 	if timing != null:
 		surroundings.timed_by(timing)

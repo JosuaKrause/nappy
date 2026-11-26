@@ -40,7 +40,7 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
-	return ClosurePlanner.plan_day(EventCatalogue.shipped(), map, DaySpec.for_day(day), rng,
+	return ClosurePlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day), rng,
 			RouteTree.for_day(map, day, null))
 
 ## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one

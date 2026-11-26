@@ -205,7 +205,8 @@ func _check_the_badges_reach_the_observer(t: TestRunner, main: Node, run_log: Re
 		return
 	var events: EventManager = managers[0]
 	var her := Boot.player(main).global_position
-	var warning: PendingWarning = events.warn_first(EventCatalogue.shipped().by_id("fire_truck"), her,
+	var warning: PendingWarning = events.warn_first(Shipped.rows()
+			.by_id("fire_truck"), her,
 			func(standing: Vector2) -> Vector2: return standing + Vector2(600.0, 0.0),
 			func(_place: Vector2, _standing: Vector2) -> bool: return true)
 	t.check(warning != null, "the engine's warning is put up on the day's event manager")

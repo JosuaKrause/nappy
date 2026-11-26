@@ -204,7 +204,8 @@ func _start_a_day(manager: EventManager, day: int) -> void:
 ## streets and a run: `EventSurroundings.on()`, then `setup()`) and the library handed in where the
 ## game hands its own, so no city is built around it.
 func _manager(t: TestRunner, atlas: AtlasLibrary) -> EventManager:
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).on(StreetMap.full()).drawn_from(atlas)
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()) \
+			.on(StreetMap.full()).drawn_from(atlas)
 	var manager := EventManager.new(surroundings)
 	manager.setup(RunState.new())
 	t.add_child(manager)

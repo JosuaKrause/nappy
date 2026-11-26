@@ -227,8 +227,8 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var guarded := ResistanceSteps.guarded_row_on(day)
 	var beside: EventDef = world.rows().heated(world.rows().by_id(guarded),
 			world.run().resistance().progress()) if guarded != "" else null
-	var dawn := DawnContext.new(world.rows(), spec, rng.seed, city_map, tree, calm, world.plan_builder(),
-			EventScheduler.row_ground)
+	var dawn := DawnContext.new(world.rows(), spec, rng.seed, city_map, tree, calm,
+			world.plan_builder(), EventScheduler.row_ground)
 	dawn.use_the_run(consumed, world.run().attempt_spend().scars(), world.run().resistance().progress())
 	dawn.use_the_doors(doors)
 	dawn.use_what_stands(standing)

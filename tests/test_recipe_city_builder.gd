@@ -18,7 +18,7 @@ func run(t: TestRunner) -> void:
 
 func _test_a_tree_moves_across_the_road_and_nothing_else(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), recipe)
+	var built := RecipeCityBuilder.build(Shipped.rows(), recipe)
 	t.check(_errors(built).is_empty(), "opposite-curb tree recipe constructs: %s" % [built.errors])
 	if not _errors(built).is_empty():
 		return
@@ -32,12 +32,12 @@ func _test_a_tree_moves_across_the_road_and_nothing_else(t: TestRunner) -> void:
 	for target: Array in [[50, 73], [51, 71]]:
 		var invalid: Dictionary = recipe.duplicate(true)
 		invalid.city.tree_moves[0].to = target
-		t.check(not _errors(RecipeCityBuilder.build(EventCatalogue.shipped(), invalid)).is_empty(),
-				"tree relocation refuses road or unrelated sidewalk")
+		t.check(not _errors(RecipeCityBuilder.build(Shipped.rows(),
+				invalid)).is_empty(), "tree relocation refuses road or unrelated sidewalk")
 
 func _test_the_titles_capture_stays_in_its_park(t: TestRunner) -> void:
 	var title: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-title.json").data
-	var park := RecipeCityBuilder.build(EventCatalogue.shipped(), title)
+	var park := RecipeCityBuilder.build(Shipped.rows(), title)
 	var park_map: CityMap = park.map
 	var anchors: Dictionary = park.anchors
 	var at: Vector2 = anchors.start
@@ -54,7 +54,7 @@ func _test_the_titles_capture_stays_in_its_park(t: TestRunner) -> void:
 func _test_a_stretch_is_built_as_its_recipe_lists_it(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(
 			"res://scene-recipes/task-07-package.json").data
-	var built := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
+	var built := RecipeCityBuilder.build(Shipped.rows(), data)
 	t.check(_errors(built).is_empty(),
 			"day 7's stretch loads explicit context: %s" % [built.errors])
 	if not _errors(built).is_empty():
@@ -64,7 +64,8 @@ func _test_a_stretch_is_built_as_its_recipe_lists_it(t: TestRunner) -> void:
 	_test_the_saved_layout_ignores_the_drafting_inputs(t, data)
 	_test_a_hand_edited_tile_survives_the_dawns_repaint(t, data)
 	_test_a_resized_lot_and_a_planted_tree_are_the_authors(t, data)
-	var twice := RecipeCityBuilder.build(EventCatalogue.shipped(), _with_a_tile_listed_twice(data))
+	var twice := RecipeCityBuilder.build(Shipped.rows(),
+			_with_a_tile_listed_twice(data))
 	t.check("\n".join(_errors(twice)).contains("listed twice"),
 			"a tile listed twice is refused")
 
@@ -85,7 +86,7 @@ func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap,
 	var moved: Array = road.pop_back()
 	(edited.stretch.tiles.sidewalk as Array).append(moved)
 	var tile := Vector2i(int(moved[1]), int(moved[0]))
-	var rebuilt := RecipeCityBuilder.build(EventCatalogue.shipped(), edited)
+	var rebuilt := RecipeCityBuilder.build(Shipped.rows(), edited)
 	t.check(_errors(rebuilt).is_empty() and context.tile_at(tile) == GameEnums.TileType.ROAD,
 			"the hand-edited copy builds, its edit at %s differing from the saved context: %s"
 			% [tile, rebuilt.errors])
@@ -140,11 +141,11 @@ func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: C
 ## restored.
 func _test_the_saved_layout_ignores_the_drafting_inputs(t: TestRunner,
 		data: Dictionary) -> void:
-	var original := RecipeCityBuilder.build(EventCatalogue.shipped(), data)
+	var original := RecipeCityBuilder.build(Shipped.rows(), data)
 	var changed_seed := data.duplicate(true)
 	changed_seed.city.context_seed = 1
 	changed_seed.city.layouts = []
-	var independent := RecipeCityBuilder.build(EventCatalogue.shipped(), changed_seed)
+	var independent := RecipeCityBuilder.build(Shipped.rows(), changed_seed)
 	var independent_map: CityMap = independent.map
 	var original_map: CityMap = original.map
 	t.check(_errors(independent).is_empty()
@@ -152,8 +153,8 @@ func _test_the_saved_layout_ignores_the_drafting_inputs(t: TestRunner,
 			"changing drafting inputs cannot regenerate or reject a saved layout")
 	var malformed := data.duplicate(true)
 	malformed.context.tiles[0] = [["sidewalk", -1]]
-	t.check(not _errors(RecipeCityBuilder.build(EventCatalogue.shipped(), malformed)).is_empty(),
-			"a malformed context fails before restoring its tile array")
+	t.check(not _errors(RecipeCityBuilder.build(Shipped.rows(),
+			malformed)).is_empty(), "a malformed context fails before restoring its tile array")
 
 ## **A hand edit of the stretch's ground survives the dawn's repaint**: one road run and one
 ## alley run listed as sidewalk, saved and read back as an author's file is, builds, and the
@@ -174,7 +175,7 @@ func _test_a_hand_edited_tile_survives_the_dawns_repaint(t: TestRunner,
 	# Round-trip through the JSON an author saves.
 	var parser := JSON.new()
 	t.check(parser.parse(JSON.stringify(drifted)) == OK, "manual edit serializes")
-	var edited := RecipeCityBuilder.build(EventCatalogue.shipped(), parser.data)
+	var edited := RecipeCityBuilder.build(Shipped.rows(), parser.data)
 	t.check(_errors(edited).is_empty(), "manual tile edit loads: %s" % [edited.errors])
 	if _errors(edited).is_empty():
 		var map: CityMap = edited.map
@@ -198,7 +199,7 @@ func _test_a_resized_lot_and_a_planted_tree_are_the_authors(t: TestRunner,
 	first.lot[1] = int(first.lot[1]) + 1
 	first.lot[3] = int(first.lot[3]) - 1
 	first.height = int(first.height) + 1
-	var rebuilt := RecipeCityBuilder.build(EventCatalogue.shipped(), building)
+	var rebuilt := RecipeCityBuilder.build(Shipped.rows(), building)
 	var rebuilt_map: CityMap = rebuilt.map
 	t.check(_errors(rebuilt).is_empty()
 			and rebuilt_map.building_lots().has(SceneRecipe.rect(first.lot)),
@@ -211,7 +212,7 @@ func _test_a_resized_lot_and_a_planted_tree_are_the_authors(t: TestRunner,
 	while not lattice.segment_containing(planted) and planted.x < int(run[2]):
 		planted.x += 1
 	tree.stretch.trees = [[planted.x, planted.y]]
-	var treed := RecipeCityBuilder.build(EventCatalogue.shipped(), tree)
+	var treed := RecipeCityBuilder.build(Shipped.rows(), tree)
 	t.check(_errors(treed).is_empty(), "manually planted tree loads: %s" % [treed.errors])
 	if _errors(treed).is_empty():
 		var treed_map: CityMap = treed.map

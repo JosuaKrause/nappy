@@ -78,7 +78,7 @@ func run(t: TestRunner) -> void:
 
 func _measure(seed_value: int, spec: DaySpec) -> void:
 	var map := CityGenerator.generate(seed_value)
-	var route := TutorialRoute.for_city(EventCatalogue.shipped(), map)
+	var route := TutorialRoute.for_city(Shipped.rows(), map)
 	if route == null:
 		_no_route += 1
 		return
@@ -97,19 +97,20 @@ func _measure(seed_value: int, spec: DaySpec) -> void:
 		if not tree.is_on_the_tree(segment.key()):
 			_opened += 1
 	# Without the walk handed in, for the counts it changes.
-	var unspared := _streets_of(map, SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, _rng(map, "seals"),
-			{}, null, null, null))
+	var unspared := _streets_of(map, SealPlanner.plan_day(Shipped.rows(), map, spec,
+			tree, _rng(map, "seals"), {}, null, null, null))
 	for key: Vector3i in walk:
 		if unspared.has(key):
 			_sealed_before += 1
-	for closure in ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, _rng(map, "closures"), tree):
+	for closure in ClosurePlanner.plan_day(Shipped.rows(), map, spec, _rng(map,
+			"closures"), tree):
 		if walk.has(closure.street_key()):
 			_closed_before += 1
 	# The day as the game plans it, the walk handed in (`City._close_streets()`,
 	# `DayPlanner._plan_a_day()`).
-	var region_plan := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
-	var closures := ClosurePlanner.plan_day(EventCatalogue.shipped(), map, spec, _rng(map, "closures"), tree, region_plan,
-			null, route)
+	var region_plan := RegionPlanner.plan_day(Shipped.rows(), map, spec, tree)
+	var closures := ClosurePlanner.plan_day(Shipped.rows(), map, spec, _rng(map,
+			"closures"), tree, region_plan, null, route)
 	for closure in closures:
 		if walk.has(closure.street_key()):
 			_left_on_the_walk += 1
@@ -121,8 +122,8 @@ func _measure(seed_value: int, spec: DaySpec) -> void:
 		for segment in map.street_network().around_blocks(
 				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
-	var seals := SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, _rng(map, "seals"), {}, map.held_streets(),
-			null, route)
+	var seals := SealPlanner.plan_day(Shipped.rows(), map, spec, tree, _rng(map,
+			"seals"), {}, map.held_streets(), null, route)
 	for seal in seals:
 		seal.stand_as_a_seal()
 	var sealed := _streets_of(map, seals)

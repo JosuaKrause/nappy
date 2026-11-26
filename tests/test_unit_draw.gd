@@ -92,7 +92,7 @@ class _Drawing extends MarbleDraw:
 	## dawn's], the marble it drew from the bag it was handed, the rows it was judged among]` per
 	## call.
 	var calls: Array = []
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	## Unit name -> true for a unit whose draw also hands a poster crew to her walk, with no place.
 	var hands_over := {}
 
@@ -114,7 +114,8 @@ class _Drawing extends MarbleDraw:
 		unit_of[plan.placed_at()] = name
 		var placed: Array[EventPlan] = [plan]
 		if hands_over.has(name):
-			placed.append(EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"), Vector2.INF))
+			placed.append(EventPlan.new(Shipped.rows().by_id("poster_crew"),
+					Vector2.INF))
 		return placed
 
 ## A unit of one junction location at `x` blocks along.
@@ -134,7 +135,7 @@ static func _ranked(units: Array[PlacementUnit]) -> Array[PlacementUnit]:
 	return sorted
 
 static func _dawn() -> Array[EventPlan]:
-	var dawn: Array[EventPlan] = [EventPlan.new(EventCatalogue.shipped().by_id("roadblock"),
+	var dawn: Array[EventPlan] = [EventPlan.new(Shipped.rows().by_id("roadblock"),
 			Vector2(-500, -500))]
 	return dawn
 
@@ -221,10 +222,12 @@ func _test_a_draw_is_judged_among_a_beat_stood_in_its_unit_or_a_touching_one(t: 
 	var units := _Units.new()
 	units.table = {low.name(): [mid], mid.name(): [low, far], far.name(): [mid]}
 	var dawn := _dawn()
-	var unsited := EventPlan.new(EventCatalogue.shipped().by_id("burning_building"), Vector2.INF)
+	var unsited := EventPlan.new(Shipped.rows().by_id("burning_building"),
+			Vector2.INF)
 	dawn.append(unsited)
 	var draw := UnitDraw.new(units, drawing, _fills(), dawn)
-	var beat := EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"), low.bounds().get_center())
+	var beat := EventPlan.new(Shipped.rows().by_id("poster_crew"),
+			low.bounds().get_center())
 	low.locations()[0].take_for_her_walk(beat)
 	var crew: EventPlan = null
 	for plan in draw.draw(low):

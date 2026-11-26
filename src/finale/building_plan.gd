@@ -48,7 +48,8 @@ const BURNING_SIDE := "left"
 const PURSUED_SIDE := "right"
 
 ## The building's plans, from `map` and `rng`, in the order they come into the world.
-static func plan(rows: EventCatalogue, map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[EventPlan]:
+static func plan(rows: EventCatalogue, map: InteriorMapPlan,
+		rng: RandomNumberGenerator) -> Array[EventPlan]:
 	var plans: Array[EventPlan] = []
 	_place_the_fire(rows, map, plans)
 	_place_the_masked_man(rows, map, plans)
@@ -69,7 +70,8 @@ static func plan(rows: EventCatalogue, map: InteriorMapPlan, rng: RandomNumberGe
 ## the way down it. One cell in it closes exactly the flight that approach leads onto, and every door
 ## in the shaft stays reachable: its reach is its own 30px body plus her 14px, and the door tile is
 ## 64px from the cell it stands on.
-static func _place_the_fire(rows: EventCatalogue, map: InteriorMapPlan, plans: Array[EventPlan]) -> void:
+static func _place_the_fire(rows: EventCatalogue, map: InteriorMapPlan,
+		plans: Array[EventPlan]) -> void:
 	var at := fire_tile(map)
 	if at == InteriorMapPlan.NOWHERE:
 		push_error("the second floor's approach in the %s shaft is not walkable" % BURNING_SIDE)
@@ -131,8 +133,8 @@ static func pursuer_ground_below_the_first_floor(map: InteriorMapPlan) -> Array[
 ## once on the first pass; after that their own periods do it. Between blows there is no instance at
 ## all, so a vent that is off costs nothing and stops nobody; its grate stays on the floor
 ## (`grates()`).
-static func _place_the_basement(rows: EventCatalogue, map: InteriorMapPlan, rng: RandomNumberGenerator,
-		plans: Array[EventPlan]) -> void:
+static func _place_the_basement(rows: EventCatalogue, map: InteriorMapPlan,
+		rng: RandomNumberGenerator, plans: Array[EventPlan]) -> void:
 	var walk := map.basement_walk()
 	if walk.size() < 4:
 		return
@@ -158,7 +160,8 @@ static func _place_the_basement(rows: EventCatalogue, map: InteriorMapPlan, rng:
 ## The explosions outside: every `EventCatalogue.FINALE_EXPLOSION_INTERVAL`, the first one interval in, the
 ## row's charge where she is with its notice over (`EventCatalogue.explosion_outside()`), and every
 ## window lit as it comes.
-static func _place_the_explosions_outside(rows: EventCatalogue, plans: Array[EventPlan]) -> void:
+static func _place_the_explosions_outside(rows: EventCatalogue,
+		plans: Array[EventPlan]) -> void:
 	var row := rows.explosion_outside()
 	var bang := EventPlan.new(row, Vector2.INF)
 	bang.come_where_she_stands()

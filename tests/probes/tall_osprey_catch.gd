@@ -38,7 +38,7 @@ func run(t: TestRunner) -> void:
 	t.check(true, "tall_osprey_catch probe ran")
 
 func _def(catch_radius: float, lunge: float) -> EventDef:
-	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var draft := robbery.redraft()
 	draft.field(robbery.field().holding_to(catch_radius))
 	draft.pursuit(robbery.pursuit().lunging_from(lunge))
@@ -70,7 +70,7 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	var her := Vector2(def.notice_within() + (60.0 if walking else -1.0), 0.0)
 	var noticed := -1.0
 	var elapsed := 0.0
@@ -94,7 +94,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	var her := Vector2(def.notice_within() + rng.randf_range(30.0, 90.0), 0.0)
 	var reaction := rng.randf_range(0.15, 0.75)
 	var speed := -Tuning.WALK_SPEED

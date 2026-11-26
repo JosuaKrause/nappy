@@ -154,26 +154,28 @@ func run(t: TestRunner) -> void:
 	t.check(seen.lines > 0, "there were pictures to print (%d)" % seen.lines)
 
 ## The rows the game stands, each with its name: the catalogue's, each one's full-heat copy
-## (`EventCatalogue.shipped().heated()`) and its copy on the last day (`EventDef.for_day()`) where either
-## differs from the row, and the derived rows a day makes (`out_of_the_car()`,
+## (`EventCatalogue.heated()`) and its copy on the last day (`EventDef.for_day()`)
+## where either differs from the row, and the derived rows a day makes (`out_of_the_car()`,
 ## `building_fire()`, `task_guard_sent()`).
 func _stand_the_rows() -> void:
 	var last_day := DaySpec.for_day(Tuning.RUN_LENGTH_DAYS)
 	for row in CatalogueRows.every():
 		_add_a_row(row, row.id())
-		var hot := EventCatalogue.shipped().heated(row, EventCatalogue.heat_levels() - 1)
+		var hot := Shipped.rows().heated(row, EventCatalogue.heat_levels() - 1)
 		if hot != row:
 			_add_a_row(hot, row.id() + "@heat")
 		var late := row.for_day(Tuning.RUN_LENGTH_DAYS)
 		if late != row:
 			_add_a_row(late, row.id() + "@late")
-	_add_a_row(EventCatalogue.shipped().out_of_the_car(last_day), "guardsman_out_of_the_car")
-	_add_a_row(EventCatalogue.shipped().out_of_the_car(last_day, false), "guardsman_out_of_the_car@hunts")
+	_add_a_row(Shipped.rows().out_of_the_car(last_day), "guardsman_out_of_the_car")
+	_add_a_row(Shipped.rows().out_of_the_car(last_day, false),
+			"guardsman_out_of_the_car@hunts")
 	var first_day := DaySpec.for_day(1)
-	_add_a_row(EventCatalogue.shipped().out_of_the_car(first_day), "policeman_out_of_the_car")
-	_add_a_row(EventCatalogue.shipped().out_of_the_car(first_day, false), "policeman_out_of_the_car@hunts")
-	_add_a_row(EventCatalogue.shipped().building_fire(), "building_fire")
-	_add_a_row(EventCatalogue.shipped().task_guard_sent(), "task_guard_sent")
+	_add_a_row(Shipped.rows().out_of_the_car(first_day), "policeman_out_of_the_car")
+	_add_a_row(Shipped.rows().out_of_the_car(first_day, false),
+			"policeman_out_of_the_car@hunts")
+	_add_a_row(Shipped.rows().building_fire(), "building_fire")
+	_add_a_row(Shipped.rows().task_guard_sent(), "task_guard_sent")
 
 func _add_a_row(row: EventDef, label: String) -> void:
 	_rows.append(row)
@@ -253,7 +255,8 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 	var route := PackedVector2Array()
 	if row.speed() > 0.0:
 		route = PackedVector2Array([AT, AT + Vector2(900.0, 0.0)])
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).hearing(where).drawn_from(atlas) \
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()).on(map) \
+			.hearing(where).drawn_from(atlas) \
 			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(atlas)))
 	if drive == "boom":
 		rig.gate = GateState.new()

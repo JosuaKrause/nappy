@@ -14,10 +14,10 @@ func run(t: TestRunner) -> void:
 	_test_a_car_comes_back_standing(t)
 
 func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> EventInstance:
-	var def := EventCatalogue.shipped().by_id("fire_truck")
+	var def := Shipped.rows().by_id("fire_truck")
 	var engine := EventInstance.new()
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	engine.restore(EventSave.new(def.telegraphs_for(), 0.0))
 	t.add_child(engine)
 	engine.set_process(false)

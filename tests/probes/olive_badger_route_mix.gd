@@ -65,7 +65,7 @@ func _measure() -> void:
 						or mode == EventDef.SpawnMode.TOWARD_PLAYER \
 						or (plan.is_sent_ahead() and not plan.is_placed()):
 					bought += 1
-			var director := EventDirector.new(EventCatalogue.shipped(), map)
+			var director := EventDirector.new(Shipped.rows(), map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -131,7 +131,7 @@ func _measure_the_return() -> void:
 			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
-			var director := EventDirector.new(EventCatalogue.shipped(), map)
+			var director := EventDirector.new(Shipped.rows(), map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -194,7 +194,7 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 func _intended_shares(day: int) -> Dictionary:
 	var shares := {}
 	var total := 0.0
-	for def in EventCatalogue.shipped().of_kind(GameEnums.EventKind.RECURRING, day):
+	for def in Shipped.rows().of_kind(GameEnums.EventKind.RECURRING, day):
 		var mode := def.spawn_mode_on(day)
 		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER \
 				and not def.is_sent_ahead():

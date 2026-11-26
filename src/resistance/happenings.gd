@@ -401,7 +401,8 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if cordon:
 		cordon.clear()
 	var siting := _spawn_siting if _spawn_siting else SpawnSiting.new(_map, _navigator)
-	cordon = ParkCordon.new(_rows, _map, _navigator, _events, _world, _atlas, park, siting, blocked)
+	cordon = ParkCordon.new(_rows, _map, _navigator, _events, _world, _atlas, park, siting,
+			blocked)
 	cordon.use_trace(trace)
 	cordon.use_bus(_bus)
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"

@@ -96,7 +96,7 @@ func _start_the_day(forced: bool) -> void:
 ## 700px, rather than just out of sight. She stands where the dog's line is clear (`_on_a_clear_line()`),
 ## since what is checked is the retiring of a dog she outruns, not one a body turns off its route.
 func _send_from_behind_far() -> EventInstance:
-	var def := EventCatalogue.shipped().by_id("loose_dog")
+	var def := Shipped.rows().by_id("loose_dog")
 	_rig.global_position = _on_a_clear_line(_rig.global_position)
 	var her := _rig.global_position
 	var place := her + Vector2.DOWN * 700.0

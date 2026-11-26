@@ -67,7 +67,7 @@ func run(t: TestRunner) -> void:
 	_test_what_it_takes_is_assigned_and_stood(t)
 
 func _row() -> EventDef:
-	return EventCatalogue.shipped().by_id("night_raid")
+	return Shipped.rows().by_id("night_raid")
 
 func _location(i: int) -> Location:
 	var tiles := Rect2i(Vector2i(i * 10, 0), Vector2i(4, 4))
@@ -146,7 +146,7 @@ func _test_what_it_takes_is_assigned_and_stood(t: TestRunner) -> void:
 	locations.open = [one, two]
 	var ground := _Ground.new()
 	var events := _Events.new()
-	var given := EventPlan.new(EventCatalogue.shipped().by_id("roadblock"), Vector2.ZERO)
+	var given := EventPlan.new(Shipped.rows().by_id("roadblock"), Vector2.ZERO)
 	events.add(given)
 	var phase := ScriptedPhase.new(locations, events, ground,
 			func(_def: EventDef, _location: Location) -> float: return 1.0)

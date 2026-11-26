@@ -37,13 +37,14 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 ## The catalogue the probe measures at, handed to everything it builds: the shipped one until
 ## `run()` makes one at each reach.
-var _rows := EventCatalogue.shipped()
+var _rows := Shipped.rows()
 
 func run(t: TestRunner) -> void:
 	_reachability(t)
 	# Measured at the notice radii as written and as shipped (`EventCatalogue.CHARGER_REACH`), at
-	# the shipped warning, so what a wider notice does to the guards is read side by side: each a
-	# catalogue of its own (`EventCatalogue.for_run()`), handed to everything the probe builds.
+	# the shipped warning, so what a wider notice does to the guards is read side by side: each
+	# a catalogue of its own (`EventCatalogue.for_run()`), handed to everything the probe
+	# builds.
 	for reach: float in [EventCatalogue.CHARGER_REACH, 1.0]:
 		_rows = EventCatalogue.for_run(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
 		var notice := _rows.mark_guard().notice_within()

@@ -107,7 +107,7 @@ func _signature(planned: Array[EventPlan]) -> String:
 func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new().reading(EventCatalogue.shipped())
+	var surroundings := EventSurroundings.new().reading(Shipped.rows())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -353,8 +353,8 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 ## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
 func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.shipped().by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
+	instance.setup(Shipped.rows().by_id("alley_mouse"), at, PackedVector2Array(),
+			Vector2.RIGHT, EventSurroundings.new().reading(Shipped.rows()).on(map))
 	var path := instance.walks()
 	instance.free()
 	return path
@@ -368,7 +368,7 @@ func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 ## generated alley, rather than only the crossing axis
 ## `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in isolation.
 func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("alley_mouse")
+	var def := Shipped.rows().by_id("alley_mouse")
 	t.check(def.notice_within() > 0.0 and not def.pursues(),
 			"alley_mouse waits like a pursuer without becoming one")
 
@@ -388,7 +388,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map) \
+			EventSurroundings.new().reading(Shipped.rows()).on(map) \
 				.hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
@@ -494,7 +494,7 @@ func _test_successors_resolve(t: TestRunner) -> void:
 	for def in CatalogueRows.every():
 		if def.leaves_behind() == "":
 			continue
-		t.check(EventCatalogue.shipped().by_id(def.leaves_behind()) != null,
+		t.check(Shipped.rows().by_id(def.leaves_behind()) != null,
 				"'%s' spawns '%s', which exists in the catalogue"
 				% [def.id(), def.leaves_behind()])
 
@@ -507,7 +507,7 @@ func _test_sighted_successors_resolve(t: TestRunner) -> void:
 		if def.calls_in() == "":
 			continue
 		checked += 1
-		t.check(EventCatalogue.shipped().by_id(def.calls_in()) != null,
+		t.check(Shipped.rows().by_id(def.calls_in()) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
 				% [def.id(), def.calls_in()])
 	t.check(checked > 0, "there is at least one row with an aftermath.calls_in() ('burning_building')")
@@ -515,7 +515,7 @@ func _test_sighted_successors_resolve(t: TestRunner) -> void:
 ## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
 ## put one in the world — see `EventDef.calls_in()` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t: TestRunner) -> void:
-	var truck := EventCatalogue.shipped().by_id("fire_truck")
+	var truck := Shipped.rows().by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(not truck.available_on(day),
@@ -535,7 +535,7 @@ func _test_fire_truck_is_never_scheduled(t: TestRunner) -> void:
 ## Its forward reach (548px) is deeper than the view is from her, so on its street she is inside its
 ## field from its first frame, and the warning before it exists is the whole of what she is owed.
 func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t: TestRunner) -> void:
-	var truck := EventCatalogue.shipped().by_id("fire_truck")
+	var truck := Shipped.rows().by_id("fire_truck")
 	var kerb := Vector2(2000.0, 4000.0)
 	# It comes down the street from the north to the kerb, so up its road is up the screen.
 	var travel := Vector2.DOWN
@@ -554,7 +554,8 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 		var arrive := func(place: Vector2, _at: Vector2) -> bool:
 			var instance := EventInstance.new()
 			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT,
-					EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(her_where))
+					EventSurroundings.new().reading(Shipped.rows()) \
+					.hearing(her_where))
 			instance.restore(EventSave.new(truck.telegraphs_for(), 0.0))
 			created.append(instance)
 			return true
@@ -699,7 +700,7 @@ static func _walls_of(plans: Array[EventPlan]) -> int:
 ## its carriageway and the other without the main road under it.
 func _test_nothing_beside_the_routes_stands_on_the_main_road(t: TestRunner) -> void:
 	var map := _map()
-	var def := EventCatalogue.shipped().by_id("roadblock").for_day(13)
+	var def := Shipped.rows().by_id("roadblock").for_day(13)
 	var main: Location = null
 	var side: Location = null
 	for segment in map.street_segments():
@@ -749,7 +750,8 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var told: Array[String] = []
 	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
 			.masts(sites).on(tree) \
-			.traced(RecordingTrace.new(told)).roadblock(EventCatalogue.shipped().by_id("roadblock")).plan()
+			.traced(RecordingTrace.new(told)).roadblock(Shipped.rows()
+			.by_id("roadblock")).plan()
 	var stood: Array[Vector2i] = []
 	var counted := ""
 	var tile_pattern := RegEx.create_from_string("\\((-?\\d+),(-?\\d+)\\)")
@@ -805,7 +807,7 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunne
 	var map := _map()
 	var day := 13
 	var corridor := Corridor.of(RouteTree.for_day(map, day, null))
-	var def := EventCatalogue.shipped().by_id("roadblock").for_day(day)
+	var def := Shipped.rows().by_id("roadblock").for_day(day)
 	var events := DayEvents.over(CalmAreas.of(map))
 	var judged := RuledRoadblockGround.new(def, day, map,
 			GamePlanBuilder.over(map), events, EventScheduler.row_ground(map, corridor), corridor,
@@ -914,7 +916,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	for key: Vector3i in clean_walk:
 		if cutting == null and not target_walk.has(key) and not spoiled_walk.has(key):
 			var street: StreetNetwork.Segment = clean_walk[key]
-			cutting = EventPlan.new(EventCatalogue.shipped().by_id(_CUTTING_BODY),
+			cutting = EventPlan.new(Shipped.rows().by_id(_CUTTING_BODY),
 					map.tile_rect_to_world(street.tile_rect()).get_center())
 	t.check(cutting != null, "the clean area has a street of its own to reach it by")
 	if cutting == null:
@@ -1015,7 +1017,7 @@ func _test_a_spoiler_on_a_route_stands_beside_it(t: TestRunner) -> void:
 		if not line.begins_with("roll ") or not line.contains("in the park she used"):
 			continue
 		for id in line.trim_prefix("roll ").get_slice(" in the park", 0).split(", "):
-			if EventCatalogue.shipped().by_id(id).obstructs_within() > 0.0:
+			if Shipped.rows().by_id(id).obstructs_within() > 0.0:
 				with_a_body += 1
 	t.check(with_a_body > 0,
 			"the used park's roll stands a spoiler with a body though every cell's first tile is the route's (%d)"
@@ -1138,9 +1140,10 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 		return
 	var wall_tile := spots[0].tiles().get_center()
 	var seal_tile := spots[1].tiles().get_center()
-	var wall := EventPlan.new(EventCatalogue.shipped().by_id("roadblock"), map.tile_to_world(wall_tile))
+	var wall := EventPlan.new(Shipped.rows().by_id("roadblock"),
+			map.tile_to_world(wall_tile))
 	wall.stand_in_the_wall()
-	var seal := EventPlan.new(EventCatalogue.shipped().by_id("construction"),
+	var seal := EventPlan.new(Shipped.rows().by_id("construction"),
 			map.tile_to_world(seal_tile))
 	seal.stand_as_a_seal()
 	var standing: Array[EventPlan] = [wall, seal]
@@ -1233,7 +1236,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 ## The seals are `tests/test_seals.gd`'s; this plans the dawn's events on the same tree.
 func _test_day_one_on_the_tutorial_tree(t: TestRunner) -> void:
 	var map := _map()
-	var tutorial := TutorialRoute.for_city(EventCatalogue.shipped(), map)
+	var tutorial := TutorialRoute.for_city(Shipped.rows(), map)
 	t.check(tutorial != null, "the shared city has a tutorial route")
 	if not tutorial:
 		return
@@ -1339,7 +1342,7 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 	# The catalogue half of the same claim, stated over the rows rather than over one seed's
 	# plan: something lethal has to be *available* in act I at all, which is what was wrong.
 	var early: Array[String] = []
-	for def in EventCatalogue.shipped().available_on(2):
+	for def in Shipped.rows().available_on(2):
 		if def.ends_the_day():
 			early.append(def.id())
 	t.check(not early.is_empty(),
@@ -1347,7 +1350,7 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 	# And they are fair, which for a lethal thing is the doubled margin. `validate()` covers the
 	# whole catalogue; this names the new ones so a rebalance cannot quietly break act I only.
 	for id in early:
-		var def := EventCatalogue.shipped().by_id(id)
+		var def := Shipped.rows().by_id(id)
 		t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
 				"'%s' warns for %.2fs before it can reach her against a required %.2fs"
 				% [id, def.warning_time(), def.minimum_telegraph()])
@@ -1740,7 +1743,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var sites := _sites_of(map)
-	var crew_draft := EventCatalogue.shipped().by_id("poster_crew").redraft()
+	var crew_draft := Shipped.rows().by_id("poster_crew").redraft()
 	crew_draft.not_sited_from_her_walk()
 	var crew := crew_draft.build()
 	for day: int in [4, 8, 12]:
@@ -1787,7 +1790,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 ##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
 ##   is inside `EventDef.notice_within()`, which is the telegraph contract paid in geometry.
 func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("pigeon_flock")
+	var def := Shipped.rows().by_id("pigeon_flock")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(def.spawn_mode_on(day) == EventDef.SpawnMode.MAP,
 				"day %d sites a flock on a tile rather than in front of her" % day)

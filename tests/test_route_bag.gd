@@ -260,13 +260,14 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 	var day := 2
 	for seed_value: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(seed_value)
-		var director := EventDirector.new(EventCatalogue.shipped(), map)
+		var director := EventDirector.new(Shipped.rows(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
 		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
 				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var expected := {}
-		for marble: String in EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0):
+		for marble: String in EventDirector.ordinary_route_marbles(Shipped.rows(),
+				day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
 		var length := 0
 		for id: String in expected:
@@ -304,9 +305,9 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) -> void:
 	var wrong: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var marbles := EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0)
+		var marbles := EventDirector.ordinary_route_marbles(Shipped.rows(), day, 0)
 		for id: String in ["dog_walker", "police_patrol", "military_convoy"]:
-			var def := EventCatalogue.shipped().by_id(id)
+			var def := Shipped.rows().by_id(id)
 			if def.is_sent_ahead() != true or marbles.has(id) != def.available_on(day):
 				wrong.append("%s on day %d" % [id, day])
 	t.check(wrong.is_empty(), "each of the three is sent ahead of her and a marble of her route on "
@@ -323,7 +324,7 @@ func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner
 	var seeds: Array[int] = [4242, 90210, 1234567, 77, 1301, 31337]
 	for seed_value in seeds:
 		var map := CityGenerator.generate(seed_value)
-		var director := EventDirector.new(EventCatalogue.shipped(), map)
+		var director := EventDirector.new(Shipped.rows(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:day-one:ahead:%d" % seed_value)
 		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
@@ -359,7 +360,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for seed_value: int in [4242, 90210]:
 		var map := CityGenerator.generate(seed_value)
-		var director := EventDirector.new(EventCatalogue.shipped(), map)
+		var director := EventDirector.new(Shipped.rows(), map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
 		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
@@ -391,7 +392,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
-		var dogs: int = EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0).count("charging_dog")
+		var dogs: int = EventDirector.ordinary_route_marbles(Shipped.rows(), day,
+				0).count("charging_dog")
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
@@ -402,7 +404,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 ## (`ordinary_route_marbles()`). *(inbox #566 in feathery-stork: two dogs in day 3's bag of 16.)*
 func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var marbles := EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0)
+	var marbles := EventDirector.ordinary_route_marbles(Shipped.rows(), day, 0)
 	var dogs := marbles.count("charging_dog")
 	var share: float = EventDirector.ROUTE_BAG_SHARE_OF["charging_dog"]
 	t.check(dogs > 0 and absf(float(dogs) - share * float(marbles.size())) <= 0.5,
@@ -430,7 +432,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	# A siting that refuses every place, as the real one does when she is off the day's routes or
 	# walking home inside the streaming band of the branch's end.
 	var siting := FakeWalkSiting.new()
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+	var director := EventDirector.new(Shipped.rows(), map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
 	# The day's own moments play no part: the return's patrols and the mast are owed below.
@@ -501,8 +503,8 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	resistance.use_trace(RecordingTrace.new(told))
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(EventCatalogue.shipped(), city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	resistance.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	var resistance_rng := RandomNumberGenerator.new()
 	resistance_rng.seed = hash("route-bag:%d:%d:resistance" % [SEED, day])
 	resistance.start_day(day, resistance_rng, 300.0)
@@ -588,7 +590,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		if row == "loudspeaker":
 			t.check(plan.mast_id() == DawnMasts.added_mast_id(plan.placed_at()),
 					"a mast put on her route is a mast the day can silence, named by its foot")
-			t.check(MastSites.is_eligible(EventCatalogue.shipped(), plan.placed_at(), map),
+			t.check(MastSites.is_eligible(Shipped.rows(), plan.placed_at(), map),
 					"a mast put on her route stands where a mast site may (off the home street)")
 		t.check(not plan.is_in_the_world(), "day %d: it is not in the world while she is far from it" % day)
 		RunCity.events(city).stream_around(plan.placed_at())

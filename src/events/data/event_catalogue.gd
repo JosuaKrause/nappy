@@ -200,31 +200,26 @@ var _hot: Dictionary[String, EventDef] = {}
 var _building_fire: EventDef = null
 var _explosion_outside: EventDef = null
 
-## The catalogue at the shipped timing, built once on first ask. See `shipped()`.
+## The catalogue at the shipped timing, built once from constants on first ask and never written.
+## See `for_run()`.
 static var _shipped: EventCatalogue = null
 
 ## **A catalogue whose every row is built from `chargers`**, each row built and validated on the
-## first ask. The composition root makes the run's once (`for_run()`) and hands it to every reader
-## of a row; a suite makes one at a timing of its own to ask what that timing builds.
+## first ask. The composition root makes the run's once (`for_run()`) and hands it to every
+## reader of a row; a suite makes one at a timing of its own to ask what that timing builds.
 func _init(chargers: ChargerTiming) -> void:
 	_chargers = chargers
 
 ## **The run's catalogue for `timing`**, which the composition root builds once at boot
-## (`main.configure()`, `RunConfig.charger_timing()`) and hands down: the shipped catalogue
-## (`shipped()`) when the run plays every charger as shipped, so a boot at the shipped timing
-## builds and validates no second copy of every row, and a catalogue of its own otherwise.
+## (`main.configure()`, `RunConfig.charger_timing()`) and hands to every reader of a row: the
+## one catalogue at the shipped timing, built once a process, when the run plays every charger as
+## shipped, so a second boot builds and validates no second copy of every row, and a catalogue of
+## its own otherwise. **Nothing under `src/` but `main.gd` calls it**: a reader of a row is handed
+## the run's catalogue, since a run can play its chargers at another timing (`--chargers`,
+## `?chargers=`), and a reader that made its own would play those rows at the wrong one.
 static func for_run(timing: ChargerTiming) -> EventCatalogue:
-	if timing.same_as(shipped_charger_timing()):
-		return shipped()
-	return EventCatalogue.new(timing)
-
-## **The catalogue at the shipped timing**, built once from constants and never written: what the
-## suites hand the pieces they build, what the tools under `tools/` read, and what `for_run()` hands
-## a run at the shipped timing. **No file under `src/` but this one and `main.gd` calls it**: a
-## reader of a row is handed the run's catalogue, since a run can play its chargers at another
-## timing (`--chargers`, `?chargers=`), and a reader that fetched this one would play those rows
-## as shipped instead.
-static func shipped() -> EventCatalogue:
+	if not timing.same_as(shipped_charger_timing()):
+		return EventCatalogue.new(timing)
 	if _shipped == null:
 		_shipped = EventCatalogue.new(shipped_charger_timing())
 	return _shipped
@@ -234,8 +229,8 @@ static func shipped() -> EventCatalogue:
 static func shipped_charger_timing() -> ChargerTiming:
 	return ChargerTiming.of(CHARGER_WARNING, CHARGER_REACH)
 
-## **How this catalogue plays every charger's warning and notice**: what its rows are built from,
-## and what a door's crossing warns for (`EventManager` hands `CheckpointController` its
+## **How this catalogue plays every charger's warning and notice**: what its rows are built
+## from, and what a door's crossing warns for (`EventManager` hands `CheckpointController` its
 ## `warning()`).
 func charger_timing() -> ChargerTiming:
 	return _chargers

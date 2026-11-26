@@ -169,8 +169,9 @@ var _streets := DayStreets.new()
 ## Day 1's tutorial route, worked out once for the run's city in the composition root and handed in
 ## before `build()` (`use_tutorial_route()`), or null for a city handed none.
 var _tutorial: TutorialRoute = null
-## The run's catalogue (`EventCatalogue`), handed to `build()`: the rows the region wall's doors and
-## the day's closures are planned with (`RegionPlanner.plan_day()`, `ClosurePlanner.plan_day()`).
+## The run's catalogue (`EventCatalogue`), handed to `build()`: the rows the region wall's doors
+## and the day's closures are planned with (`RegionPlanner.plan_day()`,
+## `ClosurePlanner.plan_day()`).
 var _rows: EventCatalogue = null
 ## Where the city and the day's closures write their own account for the run log — handed in by
 ## `equip()` before `build()`, which hands it on to the fronts; silent until then.

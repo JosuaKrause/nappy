@@ -555,7 +555,8 @@ static func home_region(map: CityMap) -> int:
 ## on the tree, never on which regions are calm-less. `tests/test_regions.gd` restates "the home
 ## region has a door, or every calm area the tree reaches is in the home region" as the
 ## unconditional sentence it always was rather than working around a rule that no longer exists.
-static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan:
+static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec,
+		tree: RouteTree) -> RegionPlan:
 	var plan := RegionPlan.new()
 	if not spec.region_wall_stands() or not tree:
 		return plan
@@ -619,8 +620,8 @@ static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec, tree: Ro
 ## body is replaced too, before `SealPlanner.alley_mouth_wall()` is handed the built row — with no
 ## change to `RoadblockLook._draw_roadblock()`, which already draws one guard per name in the array
 ## rather than assuming two.
-static func _alley_mouth_wall_body(rows: EventCatalogue, map: CityMap, rect: Rect2i, vertical: bool,
-		at_start: bool) -> EventPlan:
+static func _alley_mouth_wall_body(rows: EventCatalogue, map: CityMap, rect: Rect2i,
+		vertical: bool, at_start: bool) -> EventPlan:
 	var wall := rows.by_id(_WALL_DEF_ID)
 	var draft := SealPlanner.sealed_draft(wall, true)
 	draft.body(wall.body().reshaped(
@@ -655,7 +656,8 @@ static func _along_axis(horizontal: bool) -> Vector2:
 ## three bodies and its gate join the plan (`_add_door_bodies()`). The one entry `plan_day()` stands
 ## each of the day's street doors through, and a scene recipe's authored checkpoint
 ## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
-static func stand_door(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+static func stand_door(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment,
+		plan: RegionPlan) -> void:
 	plan.add_door(segment)
 	_add_door_bodies(rows, map, segment, plan)
 
@@ -667,7 +669,8 @@ static func stand_door(rows: EventCatalogue, map: CityMap, segment: StreetNetwor
 ## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
 ## re-deriving a position these three already sit exactly on — see that function's own doc on why a
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
-static func _add_door_bodies(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+static func _add_door_bodies(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment,
+		plan: RegionPlan) -> void:
 	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 	var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
@@ -691,7 +694,8 @@ static func _add_door_bodies(rows: EventCatalogue, map: CityMap, segment: Street
 ## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
 ## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_rect` a
 ## wall's own crossing-alley bodies use.
-static func _add_alley_door_bodies(rows: EventCatalogue, map: CityMap, rect: Rect2i, plan: RegionPlan) -> void:
+static func _add_alley_door_bodies(rows: EventCatalogue, map: CityMap, rect: Rect2i,
+		plan: RegionPlan) -> void:
 	var vertical := rect.size.x < rect.size.y
 	var axis := _along_axis(not vertical)
 	var def := SealPlanner.sealed_variant(rows.by_id("checkpoint_post"), true)

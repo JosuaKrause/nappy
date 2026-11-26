@@ -41,7 +41,8 @@ func _side_she_is_on(guard: EventInstance, her: Vector2) -> int:
 	return EventFootprints.guard_side_toward(guard.runs_vertically(), her - guard.body_position())
 
 func _hot_roadblock() -> EventDef:
-	return EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	return Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			Tuning.RESISTANCE_GOAL)
 
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
 ## radius and he warns, and she stays inside it until his warning has run and he charges
@@ -520,8 +521,8 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 ## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
 ##   radius would have fired from, ends nothing while the man is elsewhere.
 func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: TestRunner) -> void:
-	var reach: float = EventCatalogue.shipped().by_id("masked_pursuer").core_within()
-	var cold := EventCatalogue.shipped().by_id("roadblock")
+	var reach: float = Shipped.rows().by_id("masked_pursuer").core_within()
+	var cold := Shipped.rows().by_id("roadblock")
 	var post := Vector2(400.0, 0.0)
 
 	var band_where := WhereSheIs.nowhere()
@@ -529,7 +530,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	# Drawn through a drawer that records what it is told instead of painting it, since this rig
 	# holds no atlas, handed before `setup()` as its manager's spawner hands the real one.
 	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(band_where) \
+			EventSurroundings.new().reading(Shipped.rows()).hearing(band_where) \
 				.drawing_through(DrawnEvent.recording(band, RecordingEventDrawer.new())))
 	t.add_child(band)
 	band_where.tell(post + Vector2(cold.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0))
@@ -546,11 +547,11 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 			"and it takes nobody, at its own edge or standing in it")
 	band.free()
 
-	var hot := EventCatalogue.shipped().heated(cold, Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(cold, Tuning.RESISTANCE_GOAL)
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(guard_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(guard_where))
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
@@ -628,7 +629,8 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> v
 			# End-on, he stands on an east-west street, which his band reads its axis off as it
 			# does in a city; broadside, on open ground.
 			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-					EventSurroundings.new().reading(EventCatalogue.shipped()).on(EastWestStreet.new() if vertical else null) \
+					EventSurroundings.new().reading(Shipped.rows()) \
+					.on(EastWestStreet.new() if vertical else null) \
 						.hearing(guard_where))
 			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
 					"down the screen" if vertical else "across it"])

@@ -152,7 +152,7 @@ static func _walking(vertical := true) -> Vector2:
 ## `seed_value`, handed `way_on` (a fake that lets every leg go on unless one is handed).
 static func _director(map: CityMap, row: String, plans: Array[EventPlan],
 		seed_value := 1, way_on: WayOn = null) -> EventDirector:
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+	var director := EventDirector.new(Shipped.rows(), map)
 	director.use_way_on(way_on if way_on else FakeWayOn.new())
 	director.force(row, 1.0)
 	var rng := RandomNumberGenerator.new()
@@ -671,8 +671,10 @@ func _test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t: T
 	var north := func(tiles: float, across := 0.0) -> Vector2:
 		return _her() + Vector2(across, -tiles * TILE)
 	var field := EventPlan.new(lethal, north.call(20.0, TILE))
-	var cafe := EventPlan.new(EventCatalogue.shipped().by_id("cafe_tables"), north.call(31.0, TILE))
-	var door := EventPlan.new(EventCatalogue.shipped().by_id("checkpoint_hut"), north.call(-40.0, TILE))
+	var cafe := EventPlan.new(Shipped.rows().by_id("cafe_tables"), north.call(31.0,
+			TILE))
+	var door := EventPlan.new(Shipped.rows().by_id("checkpoint_hut"),
+			north.call(-40.0, TILE))
 	door.stand_as_a_door()
 	var plans: Array[EventPlan] = [field, cafe, door]
 	var way_on := FakeWayOn.new()
@@ -680,7 +682,7 @@ func _test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t: T
 	t.check(director != null and way_on.told_rule.is_valid(), "the director tells the way on it is handed the day's rule")
 	if not way_on.told_rule.is_valid():
 		return
-	var patrol := EventCatalogue.shipped().by_id("police_patrol").as_sent_ahead()
+	var patrol := Shipped.rows().by_id("police_patrol").as_sent_ahead()
 	var lane := -2.0 * TILE
 	var takes := func(from_tiles: float, to_tiles: float) -> bool:
 		var path := PackedVector2Array([north.call(from_tiles, lane), north.call(to_tiles, lane)])
@@ -703,7 +705,7 @@ func _test_a_sent_row_starts_clear_of_a_placed_plan(t: TestRunner) -> void:
 		t.check(false, "the dog walker is handed out with nothing standing")
 		return
 	var start := (open[1] as PackedVector2Array)[0]
-	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	var near: Array[EventPlan] = [EventPlan.new(cafe, start + Vector2(0.0, -TILE))]
 	t.check(_due(_director(map, "dog_walker", near)).is_empty(),
 			"a café a tile from where it starts refuses it")
@@ -728,8 +730,8 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	var blocking := EventPlan.new(lethal, _her() + Vector2(-1.5 * TILE, 0.0))
 	var plans: Array[EventPlan] = [blocking]
 	for _i in 12:
-		plans.append(EventPlan.new(EventCatalogue.shipped().by_id("cat_dash"), Vector2.INF))
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+		plans.append(EventPlan.new(Shipped.rows().by_id("cat_dash"), Vector2.INF))
+	var director := EventDirector.new(Shipped.rows(), map)
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
@@ -789,7 +791,7 @@ static func _walk_for(director: EventDirector, seconds: float) -> Array[EventPla
 
 ## A director over the street owing `plans` to her walk, handed `siting`.
 static func _director_with_a_siting(plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
-	var director := EventDirector.new(EventCatalogue.shipped(), _street())
+	var director := EventDirector.new(Shipped.rows(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
@@ -800,8 +802,8 @@ static func _director_with_a_siting(plans: Array[EventPlan], siting: FakeWalkSit
 ## than once a walking second (`EventDirector.ON_HER_WAY_LOOK`): none before she has walked
 ## `ON_HER_WAY_AFTER` seconds, then one look a second, each told where she is and her heading.
 func _test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t: TestRunner) -> void:
-	var fire := EventPlan.new(EventCatalogue.shipped().by_id("burning_building"), Vector2.INF)
-	var crew := EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"), Vector2.INF)
+	var fire := EventPlan.new(Shipped.rows().by_id("burning_building"), Vector2.INF)
+	var crew := EventPlan.new(Shipped.rows().by_id("poster_crew"), Vector2.INF)
 	var siting := FakeWalkSiting.new()
 	var director := _director_with_a_siting([fire, crew] as Array[EventPlan], siting)
 	_walk_for(director, EventDirector.ON_HER_WAY_AFTER - 1.0)
@@ -835,7 +837,7 @@ func _test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t: Test
 ## `ON_HER_WAY_TURNED_AWAY` seconds of walking, is asked again; one that has been in the world is
 ## never asked again.
 func _test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t: TestRunner) -> void:
-	var fire := EventPlan.new(EventCatalogue.shipped().by_id("burning_building"), Vector2.INF)
+	var fire := EventPlan.new(Shipped.rows().by_id("burning_building"), Vector2.INF)
 	var siting := FakeWalkSiting.new().set_place(fire.row_id(), _her() + Vector2.UP * 1500.0)
 	var director := _director_with_a_siting([fire] as Array[EventPlan], siting)
 	var moved := _walk_for(director, EventDirector.ON_HER_WAY_AFTER + 3.0)
@@ -860,8 +862,8 @@ func _test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t
 ## The next of a recurring row's copies waits while one is laid and not yet in the world, so the
 ## day's crews are spread along the walk.
 func _test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t: TestRunner) -> void:
-	var first := EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"), Vector2.INF)
-	var second := EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"), Vector2.INF)
+	var first := EventPlan.new(Shipped.rows().by_id("poster_crew"), Vector2.INF)
+	var second := EventPlan.new(Shipped.rows().by_id("poster_crew"), Vector2.INF)
 	var siting := FakeWalkSiting.new().set_place(first.row_id(), _her() + Vector2.UP * 1500.0)
 	var director := _director_with_a_siting([first, second] as Array[EventPlan], siting)
 	_walk_for(director, EventDirector.ON_HER_WAY_AFTER + 3.0)
@@ -908,7 +910,7 @@ func _test_a_place_rigged_without_the_setting_is_laid_past_the_band(t: TestRunne
 ## marbles and her walk is handed no place to lay.
 func _test_nothing_is_rigged_under_force(t: TestRunner) -> void:
 	var siting := FakeWalkSiting.new().set_place("homeless_yeller", _her() + Vector2.UP * 500.0)
-	var director := EventDirector.new(EventCatalogue.shipped(), _street())
+	var director := EventDirector.new(Shipped.rows(), _street())
 	director.use_way_on(FakeWayOn.new())
 	director.force("dog_walker", 1.0)
 	var rng := RandomNumberGenerator.new()
@@ -928,28 +930,28 @@ func _test_nothing_is_rigged_under_force(t: TestRunner) -> void:
 ## copy does, `BodySpec` holding a `GroundShape` no resource can store) has no shape. Rigged on a route here: the loudspeaker mast, whose row names no
 ## ground, and the car accident.
 func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
-	var director := EventDirector.new(EventCatalogue.shipped(), _street())
+	var director := EventDirector.new(Shipped.rows(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	director.start_day(DAY, _no_plans(), rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
-	var ids: Array[String] = [EventCatalogue.shipped().mast().id(), "car_accident"]
+	var ids: Array[String] = [Shipped.rows().mast().id(), "car_accident"]
 	director.rig_her_route(ids, 2)
 	for id in ids:
 		var routed := director.route_row(id)
 		t.check(routed != null, "'%s' is a row of her route's bag" % id)
 		if routed == null:
 			continue
-		t.check(routed.body() == EventCatalogue.shipped().by_id(id).body(),
+		t.check(routed.body() == Shipped.rows().by_id(id).body(),
 				"the copy of '%s' on her route is the row's own body" % id)
-		t.check(routed.ground_shape() == EventCatalogue.shipped().by_id(id).ground_shape(),
+		t.check(routed.ground_shape() == Shipped.rows().by_id(id).ground_shape(),
 				"and it stands on the row's own shape")
 
 ## **A scene rigs her route's bag** (`start_recipe_route()`, as a task scene's `setup.route_bag`
 ## does): she is owed the count the scene gives, whatever the bag holds, and the marble the
 ## scene put in the pre-bag is the first one drawn, before the ordinary marbles.
 func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
-	var director := EventDirector.new(EventCatalogue.shipped(), _street())
+	var director := EventDirector.new(Shipped.rows(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
@@ -966,10 +968,10 @@ func _test_a_rigged_route_is_owed_its_count_and_pre_bag(t: TestRunner) -> void:
 ## plans'.
 func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unplaced(
 		t: TestRunner) -> void:
-	var truck := EventCatalogue.shipped().by_id("military_convoy")
+	var truck := Shipped.rows().by_id("military_convoy")
 	var plans: Array[EventPlan] = [EventPlan.new(truck, Vector2.INF),
 			EventPlan.new(truck, Vector2.INF), EventPlan.new(truck, _her() + Vector2.UP * 900.0),
-			EventPlan.new(EventCatalogue.shipped().by_id("cat_dash"), Vector2.INF)]
+			EventPlan.new(Shipped.rows().by_id("cat_dash"), Vector2.INF)]
 	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
 		var sends := _started(day, plans, DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN)
 		t.check(sends.owed() == 2,
@@ -991,7 +993,7 @@ func _test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unpla
 ## `sends` says what it may send.
 static func _started(day: int, plans: Array[EventPlan], sends: DaySpec.DirectorSends,
 		share := 1.0) -> EventDirector:
-	var director := EventDirector.new(EventCatalogue.shipped(), _street())
+	var director := EventDirector.new(Shipped.rows(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
@@ -1002,7 +1004,7 @@ static func _started(day: int, plans: Array[EventPlan], sends: DaySpec.DirectorS
 ## handout** (`DaySpec.handout_wait_share()`, `EventDirector.start_day()`): on one stream, the
 ## wait a director is handed half of is half the wait of one handed all of it, to a tick.
 func _test_a_walk_lets_the_share_of_the_wait_it_names_pass_between_handouts(t: TestRunner) -> void:
-	var truck := EventCatalogue.shipped().by_id("military_convoy")
+	var truck := Shipped.rows().by_id("military_convoy")
 	var plans: Array[EventPlan] = [EventPlan.new(truck, Vector2.INF)]
 	var waits: Array[float] = []
 	for share: float in [1.0, 0.5]:
@@ -1050,7 +1052,7 @@ func _test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t: TestRunner) -> v
 ## A director on the street with no plans, its day `day` started on a stream of `seed_value`, as
 ## `spec` says what it may send.
 static func _walked_director(day: int, seed_value: int, spec: DaySpec) -> EventDirector:
-	var director := EventDirector.new(EventCatalogue.shipped(), _street())
+	var director := EventDirector.new(Shipped.rows(), _street())
 	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -1124,12 +1126,12 @@ const LESSON_ROWS := Vector2i(30, 40)
 ## A director on day 1 owing three moments from her route's bag, handed `route` (none for an
 ## ordinary day 1) before its day starts, as `EventsAhead.start_day()` hands it.
 static func _day_one(map: CityMap, route: TutorialRoute) -> EventDirector:
-	var director := EventDirector.new(EventCatalogue.shipped(), map)
+	var director := EventDirector.new(Shipped.rows(), map)
 	director.use_way_on(FakeWayOn.new())
 	director.use_tutorial_route(route)
 	var plans: Array[EventPlan] = []
 	for _i in 3:
-		plans.append(EventPlan.new(EventCatalogue.shipped().by_id("cat_dash"), Vector2.INF))
+		plans.append(EventPlan.new(Shipped.rows().by_id("cat_dash"), Vector2.INF))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	director.start_day(1, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

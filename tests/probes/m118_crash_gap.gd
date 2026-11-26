@@ -56,7 +56,7 @@ func run(t: TestRunner) -> void:
 	# other row in it is: the field integrated along a straight line through the centre, at each
 	# pace, less that pace's own decay. The crash is the one row where running is the cheaper of
 	# the two — see that table's own note.
-	var crash := EventCatalogue.shipped().by_id("car_accident")
+	var crash := Shipped.rows().by_id("car_accident")
 	var mean := crash.walk_through_cost() / (crash.heard_within() * 2.0 / Tuning.WALK_SPEED) \
 			+ Tuning.EXCITEMENT_DECAY_WALKING
 	print("COST TABLE car_accident: walk %+.1f, run %+.1f"
@@ -85,8 +85,8 @@ func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
 ## collision body, and `contribution_at()` is a pure query.
 func _accident_at(map: CityMap, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.shipped().by_id("car_accident"), at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).on(map))
+	instance.setup(Shipped.rows().by_id("car_accident"), at, PackedVector2Array(),
+			Vector2.RIGHT, EventSurroundings.new().reading(Shipped.rows()).on(map))
 	instance.restore(EventSave.aged(10.0))
 	return instance
 

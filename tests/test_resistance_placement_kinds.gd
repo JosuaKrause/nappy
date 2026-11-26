@@ -60,7 +60,7 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
 	var near_fronts: Array[Vector2i] = []
 	var far_fronts: Array[Vector2i] = []
 	for tile in EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.shipped().by_id("burning_building")):
+			Shipped.rows().by_id("burning_building")):
 		var distance := _city.map().tile_to_world(tile).distance_to(doorstep)
 		if distance < Tuning.EVENT_STREAM_RADIUS:
 			near_fronts.append(tile)
@@ -214,7 +214,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 	_build_city_in_a_new_run(t)
 	var size := float(Tuning.TILE_SIZE)
 	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.shipped().by_id("burning_building"))
+			Shipped.rows().by_id("burning_building"))
 	var on_a_door := 0
 	var wrong: Array[Vector2i] = []
 	var behind_tile := {}
@@ -286,7 +286,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 	var shell := rider.global_position
 	var shell_tile := _city.map().world_to_tile(shell)
 	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.shipped().by_id("burning_building"))
+			Shipped.rows().by_id("burning_building"))
 	t.check(shell_tile in fronts,
 			"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
 	var recorded := 0
@@ -378,8 +378,8 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
-			_city, null, RunCity.spawn_siting(_city))
+	director.setup(Shipped.rows(), _city.map(), _run, RunCity.events(_city),
+			_city.streets(), _city.fronts(), _city, null, RunCity.spawn_siting(_city))
 	director.watched = _city
 	var seen := {}
 	var on_started := func() -> void:
@@ -510,7 +510,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	for guard in guards:
 		t.check(not guard.is_gone() and is_instance_valid(guard),
 				"the mark's own guard stays too, not retired for the door")
-	t.check(_live(EventCatalogue.shipped().task_guard().id()).is_empty(),
+	t.check(_live(Shipped.rows().task_guard().id()).is_empty(),
 			"the door stands no guard of its own: its trap comes to her once she crosses")
 
 	# The door's task expiring (its deadline, or its rider gone) ends the task, not the day:
@@ -851,7 +851,7 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 				if not is_near and (away < 224.0 or away > 288.0):
 					continue
 				if map.is_closed(site) or map.is_held_at(site) or map.is_on_home_block(site) \
-						or not MastSites.is_eligible(EventCatalogue.shipped(), at, map):
+						or not MastSites.is_eligible(Shipped.rows(), at, map):
 					continue
 				if is_near:
 					near.append(site)
@@ -859,12 +859,12 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 					far.append(site)
 		var builder := GamePlanBuilder.over(map)
 		for a in near:
-			var first := builder.place_at(EventCatalogue.shipped().mast(), a,
+			var first := builder.place_at(Shipped.rows().mast(), a,
 					RandomNumberGenerator.new(), [] as Array[EventPlan])
 			if first == null:
 				continue
 			for b in far:
-				var second := builder.place_at(EventCatalogue.shipped().mast(), b,
+				var second := builder.place_at(Shipped.rows().mast(), b,
 						RandomNumberGenerator.new(), [first] as Array[EventPlan])
 				if second != null:
 					return [mark, first, second]
@@ -1064,8 +1064,8 @@ func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map().doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
-			_city, _library, null, RunCity.spawn_siting(_city))
+	happenings.setup(Shipped.rows(), _city.map(), _run, RunCity.events(_city),
+			_city.streets(), _city.fronts(), _city, _library, null, RunCity.spawn_siting(_city))
 	happenings.start_day(day)
 	return happenings
 
@@ -1162,7 +1162,7 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 ## the road and leaves nothing behind it. It comes once she nears the main road, or at
 ## `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
-	var convoy := EventCatalogue.shipped().by_id("military_convoy")
+	var convoy := Shipped.rows().by_id("military_convoy")
 	_build_city_in_a_new_run(t)
 	var state := _run.attempt_spend().block_arcs()
 	state.reset()

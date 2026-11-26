@@ -54,8 +54,9 @@ var _blackout_forced := false
 ## bubble that hints at the mark; none until then.
 var _the_mark := func() -> Vector2: return Vector2.INF
 
-## A builder of the run's catalogue `rows` (`EventCatalogue`), what every world's events and crowd
-## read their rows from: the composition root's own, built once at boot (`main.configure()`).
+## A builder of the run's catalogue `rows` (`EventCatalogue`), what every world's events and
+## crowd read their rows from: the composition root's own, built once at boot
+## (`main.configure()`).
 func _init(rows: EventCatalogue) -> void:
 	_rows = rows
 
@@ -225,7 +226,8 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 ## atlas, its frame timing, the drawn view, and whether they skip their drawing, drawn in
 ## `world`. The caller adds the map and what it moves by.
 func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
-	var surroundings := EventSurroundings.new().reading(_rows).drawn_in(world).tracing_to(_trace) \
+	var surroundings := EventSurroundings.new().reading(_rows).drawn_in(world) \
+			.tracing_to(_trace) \
 			.drawn_from(_atlas).shown_by(_drawn_view)
 	if _timing != null:
 		surroundings.timed_by(_timing)

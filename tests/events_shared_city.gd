@@ -37,7 +37,7 @@ func _map() -> CityMap:
 ## once per city, on the city as built, before any day repaints it. A suite that plans a city over
 ## many days asks once and hands the answer to every dawn it plans on that city.
 func _sites_of(map: CityMap) -> Array[MastSites.Site]:
-	return MastSites.compute(EventCatalogue.shipped(), map)
+	return MastSites.compute(Shipped.rows(), map)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

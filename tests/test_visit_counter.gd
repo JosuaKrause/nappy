@@ -670,7 +670,7 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 ## telegraphing, created warned the way `spawn_warned()` does it (`arrive_from_its_warning()`
 ## told, then `restore()`), and streamed back in mid-chase, which reports nothing a second time.
 func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().by_id("charging_dog")
+	var def := Shipped.rows().by_id("charging_dog")
 	t.check(def.pursues() and def.notice_within() <= 0.0,
 		"'charging_dog' is a pursuer that never waits, the case a resume could misread")
 	var began: Array[String] = []
@@ -682,7 +682,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	var placed_where := WhereSheIs.nowhere()
 	var placed := EventInstance.new(ToldEvents.on(EventBus))
 	placed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(placed_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(placed_where))
 	t.add_child(placed)
 	placed.set_process(false)
 	for i in int(ceil((def.telegraphs_for() + 0.5) / step)):
@@ -698,7 +698,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	var streamed_where := WhereSheIs.nowhere()
 	var streamed := EventInstance.new(ToldEvents.on(EventBus))
 	streamed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(streamed_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(streamed_where))
 	t.add_child(streamed)
 	streamed.set_process(false)
 	streamed.restore(EventSave.new(age, travelled))
@@ -711,7 +711,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	var warned_where := WhereSheIs.nowhere()
 	var warned := EventInstance.new(ToldEvents.on(EventBus))
 	warned.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(warned_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(warned_where))
 	t.add_child(warned)
 	warned.set_process(false)
 	warned.arrive_from_its_warning()
@@ -734,7 +734,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header().day()
-	var def := EventCatalogue.shipped().by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
+	var def := Shipped.rows().by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var dog_where := WhereSheIs.nowhere()
 	var dog := _charger(t, def, dog_where)
@@ -752,7 +752,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t: TestRunner) -> void:
 	dog.free()
 	counter.sent.clear()
 	var robber_where := WhereSheIs.nowhere()
-	var robber := _charger(t, EventCatalogue.shipped().by_id("alley_robbery"), robber_where)
+	var robber := _charger(t, Shipped.rows().by_id("alley_robbery"), robber_where)
 	_walk(robber, robber_where, Vector2(170.0, 0.0), 1.0 / 60.0)
 	t.check(counter.sent == ["nappy-day-%d-alley-robbery-warned" % day],
 		"the robber's warning is counted under his own name (%s)" % [counter.sent])
@@ -798,7 +798,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header().day()
-	var def := EventCatalogue.shipped().by_id("robber_giving_chase")
+	var def := Shipped.rows().by_id("robber_giving_chase")
 	var name := "nappy-day-%d-robber-giving-chase-" % day
 
 	var caught_where := WhereSheIs.nowhere()
@@ -848,7 +848,8 @@ func _test_the_lesson_dog_has_its_own_set(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header().day()
-	var def := EventCatalogue.shipped().lesson_of(EventCatalogue.shipped().by_id("charging_dog"))
+	var def := Shipped.rows().lesson_of(Shipped.rows()
+			.by_id("charging_dog"))
 	var lesson_where := WhereSheIs.nowhere()
 	var lesson := _charger(t, def, lesson_where)
 	_walk(lesson, lesson_where, Vector2(400.0, 0.0), def.telegraphs_for() + 0.5)
@@ -858,7 +859,7 @@ func _test_the_lesson_dog_has_its_own_set(t: TestRunner) -> void:
 		"it sends its own set, and none of the dog's (%s)" % [counter.sent])
 	lesson.free()
 	counter.sent.clear()
-	var dog := EventCatalogue.shipped().by_id("charging_dog")
+	var dog := Shipped.rows().by_id("charging_dog")
 	var later_where := WhereSheIs.nowhere()
 	var later := _charger(t, dog, later_where)
 	_walk(later, later_where, Vector2(400.0, 0.0), dog.telegraphs_for() + 0.5)
@@ -875,7 +876,8 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t: TestRunner) 
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header().day()
-	var def := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(Tuning.REGION_WALL_FIRST_DAY))
+	var def := Shipped.rows() \
+			.out_of_the_car(DaySpec.for_day(Tuning.REGION_WALL_FIRST_DAY))
 	var man_where := WhereSheIs.nowhere()
 	var man := _charger(t, def, man_where)
 	man.global_position = Vector2(150.0, 0.0)
@@ -892,7 +894,7 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t: TestRunner) 
 	man.free()
 	counter.sent.clear()
 	var guard_where := WhereSheIs.nowhere()
-	var guard := _charger(t, EventCatalogue.shipped().task_guard(), guard_where)
+	var guard := _charger(t, Shipped.rows().task_guard(), guard_where)
 	guard.notice_her_at(Vector2(300.0, 0.0), Tuning.WARNING_ALONE_MAX, true)
 	_walk(guard, guard_where, Vector2(300.0, 0.0), 0.5)
 	t.check(counter.sent == ["nappy-day-%d-task-guard-warned" % day],
@@ -912,13 +914,13 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header().day()
-	var def := EventCatalogue.shipped().by_id("masked_pursuer")
+	var def := Shipped.rows().by_id("masked_pursuer")
 	var name := "nappy-day-%d-masked-pursuer-" % day
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -400.0)])
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new(ToldEvents.on(EventBus))
 	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(man_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(man_where))
 	man.arrive_from_its_warning()
 	man.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(man)
@@ -939,7 +941,7 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var caught_where := WhereSheIs.nowhere()
 	var caught := EventInstance.new(ToldEvents.on(EventBus))
 	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(caught_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(caught_where))
 	caught.arrive_from_its_warning()
 	caught.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(caught)
@@ -961,7 +963,8 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t: TestRunner) -> void
 	var day := counter.run.header().day()
 	var name := "nappy-day-%d-robber-giving-chase-" % day
 	var robber_where := WhereSheIs.nowhere()
-	var robber := _charger(t, EventCatalogue.shipped().by_id("robber_giving_chase"), robber_where)
+	var robber := _charger(t, Shipped.rows().by_id("robber_giving_chase"),
+			robber_where)
 	_walk(robber, robber_where, Vector2(300.0, 0.0), 0.2)
 	robber.report_the_charge_cut_short()
 	robber.report_the_charge_cut_short()
@@ -972,7 +975,7 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t: TestRunner) -> void
 	robber.free()
 	counter.sent.clear()
 	var waiting_where := WhereSheIs.nowhere()
-	var waiting := _charger(t, EventCatalogue.shipped().by_id("alley_robbery"), waiting_where)
+	var waiting := _charger(t, Shipped.rows().by_id("alley_robbery"), waiting_where)
 	_walk(waiting, waiting_where, Vector2(500.0, 0.0), 0.2)
 	waiting.report_the_charge_cut_short()
 	t.check(counter.sent.is_empty(), "a charger that never charged has nothing to end (%s)" % [counter.sent])
@@ -983,7 +986,7 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t: TestRunner) -> void
 func _charger(t: Node, def: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().reading(EventCatalogue.shipped()).hearing(where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

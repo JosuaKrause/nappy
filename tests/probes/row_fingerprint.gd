@@ -78,10 +78,11 @@ func run(t: TestRunner) -> void:
 		for line in _dump(row):
 			print("RF %s %s" % [row.id(), line])
 	var count := rows.size()
-	var director := EventDirector.new(EventCatalogue.shipped(), null)
+	var director := EventDirector.new(Shipped.rows(), null)
 	for row in rows:
 		for level in range(1, EventCatalogue.heat_levels()):
-			_variant("%s@heat%d" % [row.id(), level], EventCatalogue.shipped().heated(row, level))
+			_variant("%s@heat%d" % [row.id(), level], Shipped.rows().heated(row,
+					level))
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_variant("%s@day%d" % [row.id(), day], row.for_day(day))
 		for level in range(0, EventCatalogue.heat_levels()):
@@ -98,18 +99,20 @@ func run(t: TestRunner) -> void:
 		# `EventDirector._with_ground()` is private and has no public road to its copy; a probe is not a
 		# suite, so it makes the call itself.
 		_variant("%s@ground" % row.id(), EventDirector._with_ground(row))
-	_variant("escape_roadblock", EventCatalogue.shipped().escape_roadblock())
-	_variant("building_fire", EventCatalogue.shipped().building_fire())
-	_variant("explosion_outside", EventCatalogue.shipped().explosion_outside())
-	_variant("lesson_dog", EventCatalogue.shipped().lesson_of(EventCatalogue.shipped().by_id("charging_dog")))
-	_variant("task_guard", EventCatalogue.shipped().task_guard())
-	_variant("task_guard_sent", EventCatalogue.shipped().task_guard_sent())
-	_variant("neighbor_heading_home", EventCatalogue.shipped().neighbor_heading_home())
+	_variant("escape_roadblock", Shipped.rows().escape_roadblock())
+	_variant("building_fire", Shipped.rows().building_fire())
+	_variant("explosion_outside", Shipped.rows().explosion_outside())
+	_variant("lesson_dog",
+			Shipped.rows().lesson_of(Shipped.rows().by_id("charging_dog")))
+	_variant("task_guard", Shipped.rows().task_guard())
+	_variant("task_guard_sent", Shipped.rows().task_guard_sent())
+	_variant("neighbor_heading_home", Shipped.rows().neighbor_heading_home())
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var spec := DaySpec.for_day(day)
-		_variant("on_foot@day%d" % day, EventCatalogue.shipped().on_foot_on(spec))
-		_variant("out_of_the_car@day%d" % day, EventCatalogue.shipped().out_of_the_car(spec))
-		_variant("out_of_the_car_goes@day%d" % day, EventCatalogue.shipped().out_of_the_car(spec, false))
+		_variant("on_foot@day%d" % day, Shipped.rows().on_foot_on(spec))
+		_variant("out_of_the_car@day%d" % day, Shipped.rows().out_of_the_car(spec))
+		_variant("out_of_the_car_goes@day%d" % day,
+				Shipped.rows().out_of_the_car(spec, false))
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		for day in DAYS:
@@ -118,13 +121,14 @@ func run(t: TestRunner) -> void:
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day, null)
 			var spec := DaySpec.for_day(day)
-			var region := RegionPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree)
+			var region := RegionPlanner.plan_day(Shipped.rows(), map, spec, tree)
 			var stood: Array[EventPlan] = []
 			stood.append_array(region.door_plans())
 			stood.append_array(region.wall_plans())
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("row_fingerprint seals:%d:%d" % [seed_value, day])
-			stood.append_array(SealPlanner.plan_day(EventCatalogue.shipped(), map, spec, tree, rng))
+			stood.append_array(SealPlanner.plan_day(Shipped.rows(), map, spec, tree,
+					rng))
 			var seen := {}
 			for plan in stood:
 				var text := "\n".join(_dump(plan.row()))

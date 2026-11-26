@@ -45,7 +45,7 @@ func _measure_sprinkle_rate() -> void:
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
 
-			var director := EventDirector.new(EventCatalogue.shipped(), map)
+			var director := EventDirector.new(Shipped.rows(), map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("m96:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng, DaySpec.DirectorSends.THE_DAYS_ROWS)

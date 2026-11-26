@@ -19,7 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_no_two_events_are_drawn_inside_each_other(t)
 
 func _plan(at: Vector2, path := PackedVector2Array()) -> EventPlan:
-	return EventPlan.new(EventCatalogue.shipped().by_id("busker"), at, path)
+	return EventPlan.new(Shipped.rows().by_id("busker"), at, path)
 
 ## The points that bound a plan: the corners of its route, or the one place it stands.
 func _bounds(plan: EventPlan) -> PackedVector2Array:
@@ -83,7 +83,7 @@ func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t: Te
 ## unit draws one of a row is `tests/test_events_scheduler.gd`'s.
 func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
-	var sites := MastSites.compute(EventCatalogue.shipped(), map)
+	var sites := MastSites.compute(Shipped.rows(), map)
 	var pairs := 0
 	for day: int in [1, 8, 14]:
 		var rng := RandomNumberGenerator.new()

@@ -79,7 +79,8 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	# (`EventSurroundings.on()`, then `EventManager.setup()`, as the escape's building is set up).
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var events := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(map).drawn_in(holder))
+	var events := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+			.on(map).drawn_in(holder))
 	events.add_child(holder)
 	events.setup(_run)
 	t.add_child(events)
@@ -128,7 +129,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 		var rig := _rig(t)
 		var director: DayDirector = rig["director"]
 		var events: EventManager = rig["events"]
-		var def := EventCatalogue.shipped().by_id("cyclist")
+		var def := Shipped.rows().by_id("cyclist")
 		var kid := events.spawn_extra(def, Vector2.ZERO)
 		# Warned of as the pelican, as the director's rider is (`spawn_warned()` makes the
 		# pelican of the roll its warning made).
@@ -172,7 +173,8 @@ func _test_a_loss_is_shown_with_what_caused_it(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var events: EventManager = rig["events"]
-	var cyclist := events.spawn_extra(EventCatalogue.shipped().by_id("cyclist"), Vector2(400.0, 0.0))
+	var cyclist := events.spawn_extra(Shipped.rows().by_id("cyclist"), Vector2(400.0,
+			0.0))
 	cyclist.source().accumulate_landed(6.0)
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
 	var behind := events.the_instance_behind("cyclist")
@@ -809,7 +811,7 @@ class _FakeEvents extends EventManager:
 	## The real manager's parts, idle over an empty world, so what this does not override answers as
 	## a manager with nothing planned.
 	func _init(asked: Array[String]) -> void:
-		super(EventSurroundings.new().reading(EventCatalogue.shipped()))
+		super(EventSurroundings.new().reading(Shipped.rows()))
 		_asked = asked
 
 	## Overrides EventManager.start_day.

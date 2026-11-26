@@ -108,8 +108,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(), _city.fronts(),
-			_city, null, RunCity.spawn_siting(_city))
+	director.setup(Shipped.rows(), _city.map(), _run, RunCity.events(_city),
+			_city.streets(), _city.fronts(), _city, null, RunCity.spawn_siting(_city))
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director.contact().complete_now()
@@ -130,7 +130,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	else:
 		happenings = ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(EventCatalogue.shipped(), _city.map(), _run, RunCity.events(_city), _city.streets(),
+		happenings.setup(Shipped.rows(), _city.map(), _run, RunCity.events(_city),
+				_city.streets(),
 				_city.fronts(), _city, _library, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
@@ -220,14 +221,16 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 	var park := CityGenerator.swing_park(map)
 	var swing := CordonInTheWorld.park_ground(map, park).get_center()
 	var navigator := Navigator.new(map)
-	var box := EventFootprints.footprint_of(EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW))
+	var box := EventFootprints.footprint_of(Shipped.rows()
+			.by_id(ParkCordon.OFFICER_ROW))
 	var distances: Array[float] = []
 	for scale: float in [1.0, 3.0]:
 		var view := VisibleView.new()
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT * scale,
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
 		var siting := SpawnSiting.new(map, navigator, func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(EventCatalogue.shipped(), map, navigator, null, world, null, park, siting)
+		var cordon := ParkCordon.new(Shipped.rows(), map, navigator, null, world,
+				null, park, siting)
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
 		var drawn := siting.ask_of_drawing(box)
@@ -262,7 +265,8 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 	var view := VisibleView.new()
 	var siting := SpawnSiting.new(map, navigator, func() -> VisibleView: return view)
 	var recording := RecordingAtlas.new()
-	var cordon := ParkCordon.new(EventCatalogue.shipped(), map, navigator, null, world, recording, park, siting)
+	var cordon := ParkCordon.new(Shipped.rows(), map, navigator, null, world,
+			recording, park, siting)
 	var waited := 0.0
 	while waited < PATIENCE and (CordonInTheWorld.tapes(world).is_empty() or CordonInTheWorld.posts(world).is_empty()):
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
@@ -341,7 +345,7 @@ func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t: TestRunne
 	var happenings: ResistanceHappenings = fixture.happenings
 	var her := [fixture.swing]
 	var shows := _camera_on(her)
-	var row := EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW)
+	var row := Shipped.rows().by_id(ParkCordon.OFFICER_ROW)
 	_tick(happenings, her[0], shows.is_valid())
 	var placed := CordonInTheWorld.officers(_city)
 	var unseen := 0
@@ -650,7 +654,8 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(EventCatalogue.shipped(), _city.map(), _city.navigator(), RunCity.events(_city),
+			var cordon := ParkCordon.new(Shipped.rows(), _city.map(),
+					_city.navigator(), RunCity.events(_city),
 					_city, _library, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
@@ -695,7 +700,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 		var park := CityGenerator.swing_park(_city.map())
 		var swing_rect := ClosurePlanner.calm_area_rect(_city.map(), park)
 		var area := _city.map().tile_rect_to_world(swing_rect)
-		person[0] = RunCity.events(_city).spawn_extra(EventCatalogue.shipped().by_id("busker"),
+		person[0] = RunCity.events(_city).spawn_extra(Shipped.rows().by_id("busker"),
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings
 	var busker: EventInstance = person[0]
@@ -712,8 +717,8 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 	if escort == null:
 		_end(fixture)
 		return
-	t.check(not shows.call(EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW), escort.global_position),
-			"from out of her sight")
+	t.check(not shows.call(Shipped.rows().by_id(ParkCordon.OFFICER_ROW),
+			escort.global_position), "from out of her sight")
 	var seen := {"through_tape": 0, "off_ground": 0, "crossed_at": Vector2.INF, "steps": 0,
 			"busker_left": false, "closed_with_them_inside": false, "gone_seen": false,
 			"escort_ahead": 0}
@@ -750,7 +755,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 			seen.closed_with_them_inside = _line().has_point(escort.global_position) \
 					or (walkers.has("busker") and _line().has_point(walkers.busker))
 		if escort.is_queued_for_deletion():
-			seen.gone_seen = shows.call(EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW),
+			seen.gone_seen = shows.call(Shipped.rows().by_id(ParkCordon.OFFICER_ROW),
 					escort.global_position)
 	t.check(seen.steps > 0 and seen.through_tape == 0,
 			"neither the busker nor his escort steps across tape that is up (%d of %d steps)"
@@ -778,7 +783,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 func _busker_in_the_park(pace := 0.0) -> EventInstance:
 	var park := CityGenerator.swing_park(_city.map())
 	var area := _city.map().tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map(), park))
-	var row := EventCatalogue.shipped().by_id("busker")
+	var row := Shipped.rows().by_id("busker")
 	if pace > 0.0:
 		var walking := row.redraft()
 		walking.leaves_at(pace)

@@ -51,7 +51,7 @@ on, and verifying escape with the actual Baby meter.
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
   the private `_notice_time()`; inbox #788 in minty-lemur). **Every charger's warning and notice
   radius come from one `ChargerTiming`** (curly-moose #803; minty-dolphin #834): the catalogue
-  builds its rows from the run's (`EventCatalogue.use_charger_timing()`, `--chargers`), a row
+  builds its rows from the run's (`EventCatalogue.for_run()`, `--chargers`), a row
   writes its radius and the run draws it at `ChargerTiming.notice()`, so a charger is never given
   a warning or a notice radius of its own; the stairwell masked man is the one exception. **Running while it warns counts for nothing**: `EventPursuit` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's

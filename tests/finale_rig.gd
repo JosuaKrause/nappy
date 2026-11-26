@@ -112,7 +112,8 @@ static func _plan_for(seed_value: int) -> Dictionary:
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
 	return {"map": map, "plan": walk,
-			"placements": DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, walk, rng, _city_spec(),
+			"placements": DayPlanner.plan_the_escape_city(Shipped.rows(), map, walk,
+			rng, _city_spec(),
 				GamePlanBuilder.over(map))}
 
 ## *"No overlapping routes"*: the choice is made once, at the door, and is the game's verb. The
@@ -363,16 +364,18 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 		if not map.is_on_home_block(candidate):
 			tile = candidate
 			break
-	var van := EventPlan.new(EventCatalogue.shipped().by_id("abduction"), map.tile_to_world(tile))
+	var van := EventPlan.new(Shipped.rows().by_id("abduction"),
+			map.tile_to_world(tile))
 	var held := ground.held_by(van)
 	t.check(held.size() == ground.solids_of(van).size() + 1,
 			"a van holds one piece more than its body: its reach")
 	var reach: WalkGround.Solid = held[held.size() - 1]
-	var lethal := EventCatalogue.shipped().by_id("abduction").lethal_reach()
+	var lethal := Shipped.rows().by_id("abduction").lethal_reach()
 	t.check(reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal - 2.0))
 			and not reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal + 2.0)),
 			"and that piece takes her centre exactly within %.0fpx" % lethal)
-	var band := EventPlan.new(EventCatalogue.shipped().escape_roadblock(), map.tile_to_world(tile))
+	var band := EventPlan.new(Shipped.rows().escape_roadblock(),
+			map.tile_to_world(tile))
 	var band_held := ground.held_by(band)
 	var pieces := ground.solids_of(band)
 	t.check(band_held.size() == pieces.size() + 1,
@@ -571,12 +574,13 @@ func _test_no_street_of_the_walk_stands_two_roadblocks(t: TestRunner) -> void:
 ## once he is gone, and when it is streamed back in as only the barrier; it stays solid throughout,
 ## and he still catches her if she walks on into his charge (`_test_luring_its_guard_off_is_the_way_past_a_roadblock`).
 func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
-	var escape := EventCatalogue.shipped().escape_roadblock()
-	var day := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var escape := Shipped.rows().escape_roadblock()
+	var day := Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			Tuning.RESISTANCE_GOAL)
 	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
 	t.check(escape.pursues() and escape.leaves_its_body() and escape.ends_the_day(),
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
-	t.check(EventCatalogue.shipped().by_id("roadblock").peak() == 0.0 and day.peak() == 0.0
+	t.check(Shipped.rows().by_id("roadblock").peak() == 0.0 and day.peak() == 0.0
 			and escape.peak() == 0.0, "the roadblock row, cold and hunting, has no field strength")
 	var step := 1.0 / 60.0
 	for def: EventDef in [escape, day]:
@@ -646,7 +650,8 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 ## after its guard was spent comes back with no far guard walking. Walked on the hunting roadblock,
 ## which is a day's and the escape's alike.
 func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
-	var def := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var def := Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			Tuning.RESISTANCE_GOAL)
 	var step := 1.0 / 60.0
 	var post := Vector2(400.0, 0.0)
 	var atlas := AtlasLibrary.new()
@@ -763,7 +768,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 		if map.world_to_tile(band_plan.placed_at()) == reviewed:
 			reviewed_plan = band_plan
 	if reviewed_plan == null:
-		reviewed_plan = EventPlan.new(EventCatalogue.shipped().escape_roadblock(),
+		reviewed_plan = EventPlan.new(Shipped.rows().escape_roadblock(),
 				map.tile_to_world(reviewed))
 	var group: Array[EventPlan] = [reviewed_plan]
 	var made := RoadblockRig.build(t, map, group)
@@ -833,10 +838,11 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	t.add_child(holder)
 	var open_ground := WorldMap.open_ground()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().reading(EventCatalogue.shipped()).on(open_ground).drawn_in(holder))
+	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+			.on(open_ground).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)
-	var band_plan := EventPlan.new(EventCatalogue.shipped().escape_roadblock(),
+	var band_plan := EventPlan.new(Shipped.rows().escape_roadblock(),
 			Vector2(1000.0, 1000.0))
 	manager.start_recipe([band_plan] as Array[EventPlan], DaySpec.for_day(1), 1,
 			band_plan.placed_at())
@@ -976,7 +982,7 @@ static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted:
 ## each band (she turned it, and he caught her).
 func _test_a_posted_guard_follows_her_round_the_corner(t: TestRunner) -> void:
 	var map := _a_street_that_ends_at_a_corner()
-	var def := EventCatalogue.shipped().escape_roadblock()
+	var def := Shipped.rows().escape_roadblock()
 	var lane := map.tile_to_world(Vector2i(_CORNER_STREET.end.x - 1, 0)).x
 	var corner := float(_CORNER_STREET.position.y * Tuning.TILE_SIZE)
 	for post_row: int in [_CORNER_STREET.position.y + 1, _CORNER_STREET.position.y + 2,
@@ -1177,7 +1183,7 @@ static func _escape_roadblocks(
 		placements: Array[EventPlan]) -> Array[EventPlan]:
 	var found: Array[EventPlan] = []
 	for placement in placements:
-		if placement.row() == EventCatalogue.shipped().escape_roadblock():
+		if placement.row() == Shipped.rows().escape_roadblock():
 			found.append(placement)
 	return found
 
@@ -1209,7 +1215,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 	if city != null:
 		var map: CityMap = city.map()
 		var plan := FinalePlanner.route(map)
-		var placements := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, plan,
+		var placements := DayPlanner.plan_the_escape_city(Shipped.rows(), map, plan,
 				run.calendar().day_rng(run.header().day(), "finale"), _city_spec(),
 				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
@@ -1350,7 +1356,8 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 		for roll in 4:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("mouths:%d:%d" % [day, roll])
-			for seal in SealPlanner.plan_day(EventCatalogue.shipped(), map_of_days, DaySpec.for_day(day), tree, rng):
+			for seal in SealPlanner.plan_day(Shipped.rows(), map_of_days,
+					DaySpec.for_day(day), tree, rng):
 				if map_of_days.tile_at(map_of_days.world_to_tile(seal.placed_at())) \
 						!= GameEnums.TileType.ALLEY:
 					continue
@@ -1417,8 +1424,8 @@ func _test_a_restart_plans_the_same_escape(t: TestRunner) -> void:
 	for attempt in 2:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[0]
-		plans.append(DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, FinalePlanner.route(map), rng, _city_spec(),
-				GamePlanBuilder.over(map)))
+		plans.append(DayPlanner.plan_the_escape_city(Shipped.rows(), map,
+				FinalePlanner.route(map), rng, _city_spec(), GamePlanBuilder.over(map)))
 	var first: Array[EventPlan] = []
 	first.assign(plans[0])
 	var second: Array[EventPlan] = []
@@ -1538,8 +1545,8 @@ static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var plan := FinalePlanner.route(map)
-	var seals := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, plan, rng, _city_spec(),
-			GamePlanBuilder.over(map), false)
+	var seals := DayPlanner.plan_the_escape_city(Shipped.rows(), map, plan, rng,
+			_city_spec(), GamePlanBuilder.over(map), false)
 	return {"plan": plan, "streets": plan.open_streets, "seals": seals, "rng": rng,
 			"state": rng.state}
 
@@ -1625,14 +1632,15 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var placements := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, FinalePlanner.route(map), rng,
-				_city_spec(), GamePlanBuilder.over(map))
+		var placements := DayPlanner.plan_the_escape_city(Shipped.rows(), map,
+				FinalePlanner.route(map), rng, _city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		t.check(map.is_walkable(map.world_to_tile(spawn)),
 				"seed %d: she is put down on walkable ground" % seed_value)
 		for placement: EventPlan in placements:
 			checked += 1
-			for def: EventDef in [placement.row(), EventCatalogue.shipped().by_id(placement.row().leaves_behind())]:
+			for def: EventDef in [placement.row(),
+					Shipped.rows().by_id(placement.row().leaves_behind())]:
 				if def == null or def.obstructs_within() <= 0.0:
 					continue
 				if placement.placed_at().distance_to(spawn) \
@@ -1673,8 +1681,8 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t: TestRunner) -> 
 		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var placements := DayPlanner.plan_the_escape_city(EventCatalogue.shipped(), map, FinalePlanner.route(map), rng,
-				_city_spec(), GamePlanBuilder.over(map))
+		var placements := DayPlanner.plan_the_escape_city(Shipped.rows(), map,
+				FinalePlanner.route(map), rng, _city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		for placement: EventPlan in placements:
 			if not placement.row().ends_the_day():
@@ -1802,8 +1810,9 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 ## street."* Both halves: the row names its successor, and what the successor obstructs is exactly
 ## half of the picture it draws — *anything that stands still is solid at the width it is drawn*.
 func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> void:
-	var burst := EventCatalogue.shipped().by_id("finale_explosion")
-	var crater: EventDef = EventCatalogue.shipped().by_id(burst.leaves_behind()) if burst != null else null
+	var burst := Shipped.rows().by_id("finale_explosion")
+	var crater: EventDef = Shipped.rows() \
+			.by_id(burst.leaves_behind()) if burst != null else null
 	t.check(burst != null and crater != null, "the burst names a crater row the catalogue holds")
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasTable.baked().native_size()` answers the
@@ -2009,7 +2018,8 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> v
 	EventBus.day_ended.connect(on_ended)
 	var her := Boot.player(main)
 	var city := Boot.city(main)
-	var guard := RunCity.events(city).spawn_extra(EventCatalogue.shipped().by_id("masked_pursuer"), her.global_position,
+	var guard := RunCity.events(city).spawn_extra(Shipped.rows()
+			.by_id("masked_pursuer"), her.global_position,
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
 	guard.set_process(false)
 	guard.restore(EventSave.new(0.01, 0.0, 0.0))
@@ -2154,7 +2164,7 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 	t.check(Tuning.act_for_day(an_act_iv_day) >= 3
 			and EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(an_act_iv_day) - 1] > 0,
 			"day %d is a day that owes its return something" % an_act_iv_day)
-	var bare := EventDirector.new(EventCatalogue.shipped(), map)
+	var bare := EventDirector.new(Shipped.rows(), map)
 	bare.owe_the_return(an_act_iv_day, 0)
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
@@ -2224,7 +2234,8 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t: TestRunner) -> v
 							% [seed_value, placement.row_id(), tile])
 			checked += 1
 		rng.seed = seed_value
-		for seal in SealPlanner.plan_day(EventCatalogue.shipped(), map, _city_spec(), plan, rng):
+		for seal in SealPlanner.plan_day(Shipped.rows(), map, _city_spec(), plan,
+				rng):
 			if trees.has(map.world_to_tile(seal.placed_at())):
 				in_a_tree += 1
 			checked += 1

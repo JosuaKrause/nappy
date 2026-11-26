@@ -165,11 +165,11 @@ func _test_the_cyclist_costs_what_he_did(t: TestRunner) -> void:
 ## rather than of any one day's rolls, so they are checked here rather than left to a playtest.
 func _test_nothing_chases_her_before_the_run_is_taught(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_TAUGHT_DAY):
-		for def in EventCatalogue.shipped().available_on(day):
+		for def in Shipped.rows().available_on(day):
 			t.check(not def.pursues(),
 					"day %d has nothing that has to be outrun ('%s')" % [day, def.id()])
 	var chasers := 0
-	for def in EventCatalogue.shipped().available_on(Tuning.RUN_TAUGHT_DAY):
+	for def in Shipped.rows().available_on(Tuning.RUN_TAUGHT_DAY):
 		chasers += 1 if def.pursues() else 0
 	t.check(chasers > 0, "and the day the run is taught has something to teach it with")
 
@@ -191,7 +191,7 @@ func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void
 				"walking through '%s' costs more than walking around it (%.1f)"
 				% [def.id(), _cost_to_walk_through(def)])
 	# And the specific one, stated as itself so the reason survives a rebalance.
-	var dog := EventCatalogue.shipped().by_id("dog_walker")
+	var dog := Shipped.rows().by_id("dog_walker")
 	t.check(_cost_to_walk_through(dog) > Tuning.EXCITEMENT_CALM_THRESHOLD * 0.4,
 			"a dog walker is a real reason to cross the street (%.1f of a %.0f freeze)"
 			% [_cost_to_walk_through(dog), Tuning.EXCITEMENT_CALM_THRESHOLD])
@@ -201,7 +201,7 @@ func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void
 ## first event that was physically in the way arrived on day 2.
 func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 	var blockers: Array[EventDef] = []
-	for def in EventCatalogue.shipped().available_on(1):
+	for def in Shipped.rows().available_on(1):
 		if def.obstructs_within() > 0.0 and def.stands_on(GameEnums.TileType.SIDEWALK):
 			blockers.append(def)
 	t.check(not blockers.is_empty(),
@@ -228,7 +228,7 @@ func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 ## `EventScheduler.role_for()` change routes through `SET_PIECE` or `FRICTION` instead —
 ## inherits the exemption without anybody adding a case for it.
 func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
-	var pursuer := EventCatalogue.shipped().by_id("alley_robbery")
+	var pursuer := Shipped.rows().by_id("alley_robbery")
 	t.check(pursuer.ends_the_day() and pursuer.pursues(), "alley_robbery is lethal and pursues")
 	var off_wall := EventPlan.new(pursuer, Vector2.ZERO)
 	off_wall.give_role(GameEnums.BlockerRole.FRICTION)
@@ -238,7 +238,7 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
 	# the `WALL` role — the exemption is that the row pursues (`EventDef.pursues()`), not "the
 	# role happens not to be WALL".
-	var stationary := EventCatalogue.shipped().by_id("reversing_lorry")
+	var stationary := Shipped.rows().by_id("reversing_lorry")
 	t.check(stationary.ends_the_day() and not stationary.pursues(),
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
 	var off_wall_stationary := EventPlan.new(stationary, Vector2.ZERO)
