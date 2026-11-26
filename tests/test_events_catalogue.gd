@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_roadblock_covers_its_own_sidewalk_and_the_road(t)
+	_test_a_closing_roadblock_covers_all_of_its_street(t)
 	_test_stationary_vehicles_have_a_side_and_an_end_picture(t)
 	_test_a_wide_scene_faces_its_street(t)
 	_test_a_crash_is_two_cars_solid_inside_the_street_it_closes(t)
@@ -141,6 +142,7 @@ const _DRAWN_ON_A_BUILDING: Array[String] = ["burning_building", "burnt_shell"]
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,
+	EventDef.Look.CLOSING_ROADBLOCK,
 	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
 	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,
@@ -252,6 +254,9 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## own side and the road's to the far kerb, the same 64px each way: the widest it may be and leave
 ## the far sidewalk whole.
 const _KERB_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
+## A row that stands on the middle of its street (`EventDef.stands_mid_street()`) has the whole
+## half street either way: the widest it may be, and it then closes the street.
+const _MIDDLE_SPREAD_CLEARANCE := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
 
 ## **A protest has to stay `FRICTION`, and its intensity sits close enough to the line that this
 ## is the check rather than a formality.** *(2026-09-20: "also protesters have very little
@@ -520,6 +525,8 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 			var clearance := INF
 			if tile_type == GameEnums.TileType.SIDEWALK:
 				clearance = _SIDEWALK_SPREAD_CLEARANCE
+			elif def.stands_mid_street() and tile_type == GameEnums.TileType.ROAD:
+				clearance = _MIDDLE_SPREAD_CLEARANCE
 			elif def.stands_at_its_kerb() and tile_type == GameEnums.TileType.ROAD:
 				clearance = _KERB_SPREAD_CLEARANCE
 			elif tile_type == GameEnums.TileType.ROAD or tile_type == GameEnums.TileType.CROSSING:
@@ -607,6 +614,44 @@ func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> vo
 				at_across += toward_far
 			t.check(open >= sidewalk,
 					"%s leaves the far sidewalk whole: %.0f of its %.0fpx open" % [name, open, sidewalk])
+
+## **The closing roadblock covers all 192px of its street.** On a hand-drawn street of each axis,
+## a closing roadblock put on either carriageway lane stands on the street's middle and is solid
+## from the frontage on one side to the frontage on the other, both sidewalks included.
+func _test_a_closing_roadblock_covers_all_of_its_street(t: TestRunner) -> void:
+	var row := EventCatalogue.by_id("closing_roadblock")
+	t.check(row != null and row.stands_mid_street()
+			and not row.stands_at_its_kerb(), "the catalogue carries a roadblock that closes its street")
+	if row == null:
+		return
+	var shape := row.ground_shape()
+	var map := CityMap.new()
+	var off_the_corridor := Tuning.STREET_WIDTH + 3
+	var street := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	for across_x: bool in [true, false]:
+		for offset: int in Tuning.STREET_WIDTH:
+			var tile := Vector2i(offset, off_the_corridor) if across_x \
+					else Vector2i(off_the_corridor, offset)
+			map.set_tile(tile, GameEnums.TileType.ROAD if CityMap.is_road_offset(offset)
+					else GameEnums.TileType.SIDEWALK)
+		var across := Vector2.RIGHT if across_x else Vector2.DOWN
+		for lane: int in [Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1]:
+			var tile := Vector2i(lane, off_the_corridor) if across_x \
+					else Vector2i(off_the_corridor, lane)
+			var placed := map.tile_to_world(tile)
+			var stance := BodyStance.of(map, row, placed, Vector2.RIGHT)
+			var stands := stance.center()
+			var axis := stance.pieces()[0].axis()
+			var name := "a closing roadblock in the lane at %.0fpx" % placed.dot(across)
+			t.check(is_equal_approx(stands.dot(across), street * 0.5),
+					"%s stands on the middle of its street (%.0f)" % [name, stands.dot(across)])
+			var open := 0
+			var at_across := 0.5
+			while at_across < street:
+				if not _solid_across(shape, stands, axis, placed, across, at_across):
+					open += 1
+				at_across += 1.0
+			t.check(open == 0, "%s leaves %d px of its street open" % [name, open])
 
 ## Whether `shape`, standing at `stands` with its spine along `axis`, is solid at the point on the
 ## line across the street through `placed` that lies `at_across` along `across`.

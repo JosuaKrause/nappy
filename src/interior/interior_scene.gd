@@ -385,6 +385,31 @@ func _flash_windows() -> void:
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
+## **The least gap between two flashes' starts, in seconds**, `0` for none, the building's own
+## timing. The city's flashes keep `FlashRhythm.LEAST_GAP`; `--building-flash-gap S` lets the
+## building be played with a gap of its own, so the two can be compared before the player decides
+## whether the building takes the city's limit (inbox #1787 in gentle-beaver). A flash that comes
+## sooner waits for the gap, a bang's included.
+var _flash_gap := 0.0
+## Seconds since the night began, on the physics tick: every flash's start is stated on it.
+var _flash_clock := 0.0
+## When the last flash began, on `_flash_clock`.
+var _last_flash_start := -INF
+## A flash that came inside the gap and waits for it to run, however many came.
+var _flash_waiting := false
+
+## Plays the building's flashes with at least `seconds` between two starts, `0` for none.
+func use_flash_gap(seconds: float) -> void:
+	_flash_gap = maxf(0.0, seconds)
+
+## A flash is asked for: it begins now, or as soon as the gap after the last one allows.
+func _ask_for_a_flash() -> void:
+	if _flash_clock - _last_flash_start >= _flash_gap:
+		_last_flash_start = _flash_clock
+		_flash_windows()
+	else:
+		_flash_waiting = true
+
 ## Whether a flash is on screen right now: the light of a hallway follows it (`_lighting_at()`).
 func _windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
@@ -394,7 +419,7 @@ func _windows_are_flashing() -> bool:
 ##
 ## Overrides WorldContext.bang_outside.
 func bang_outside() -> void:
-	_flash_windows()
+	_ask_for_a_flash()
 
 # ------------------------------------------------------------------ the night ---
 # *(2026-09-19: "the flashing lights in the window are too rare.")* Between the bangs she is charged
@@ -429,13 +454,17 @@ func stop_the_night() -> void:
 ## Counted on the physics tick, as everything that keeps the game's time does, so it freezes behind
 ## a pause screen.
 func _physics_process(delta: float) -> void:
+	_flash_clock += delta
+	if _flash_waiting and _flash_clock - _last_flash_start >= _flash_gap:
+		_flash_waiting = false
+		_ask_for_a_flash()
 	if not _night_running:
 		return
 	_until_the_next_distant_flash -= delta
 	if _until_the_next_distant_flash > 0.0:
 		return
 	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
-	_flash_windows()
+	_ask_for_a_flash()
 
 ## The wait a uniform draw `u` in `[0, 1)` gives: a scaled Kumaraswamy draw, short-biased and smooth,
 ## bounded by `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape

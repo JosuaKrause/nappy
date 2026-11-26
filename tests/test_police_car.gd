@@ -658,8 +658,8 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 		turned = turned or car.facing_now().dot(Vector2.RIGHT) < 0.999
 		if car.officers_owed() > 0:
 			officer = EventInstance.new()
-			officer.setup(EventCatalogue.out_of_the_car(DaySpec.for_day(6)),
-					car.door_for_its_officer(EventCatalogue.out_of_the_car(DaySpec.for_day(6))),
+			var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
+			officer.setup(out, car.where_its_officer_may_get_out(out, 0, 1)[0],
 					PackedVector2Array(), Vector2.RIGHT,
 					EventSurroundings.new().hearing(officer_where))
 			t.add_child(officer)

@@ -152,6 +152,10 @@ enum Look {
 	                  ## an explosion about to go off out of her sight. Nothing of it is drawn on
 	                  ## the street, where it is only ever heard (and lit); what it leaves there is
 	                  ## the crater, a row of its own.
+	# ---- the roadblock that shuts its whole street ----
+	CLOSING_ROADBLOCK, ## A lower barrier than `ROADBLOCK`'s, wall to wall, with a coil of razor
+	                   ## wire along its top and square red and cream blocks on its face: a
+	                   ## street shut, nobody past. Badged by one block under the wire.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -208,6 +212,7 @@ func _init(draft: EventDraft) -> void:
 	_departs_at = draft.drafted_departs_at()
 	_pavement_side = draft.drafted_lane()
 	_spans_the_street = draft.drafted_spans_the_street()
+	_closes_its_street = draft.drafted_closes_its_street()
 	_drawn_to_sack_piles = draft.drafted_is_drawn_to_sack_piles()
 	_role = draft.drafted_role()
 	_counts_charges_as = draft.drafted_charges_counted_as()
@@ -889,8 +894,15 @@ func detain_distance() -> float:
 
 ## Whether a placement of this row takes a whole section of its street rather than one sidewalk
 ## location (inbox #1185 in gentle-owl: "events that span the street get placed in a section (eg roadblock in the
-## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
+## middle of the street)"). The two roadblocks, the open and the closing one. Read through
+## `spans_the_street()`.
 var _spans_the_street: bool
+
+## Whether the row's band covers its whole street from the middle of it (`EventDraft.closing_its_street()`):
+## the closing roadblock, beside the open one that stands on its kerb and leaves the far sidewalk
+## whole ("there are two kinds of roadblocks. one that is open and one that is closing the street",
+## inbox #1491 in silky-lemur). Read through `stands_mid_street()`.
+var _closes_its_street: bool
 
 ## Whether the row stands by a garbage-sack pile when the ground lets it (`is_drawn_to_sack_piles()`):
 ## the alley mouse alone. Read through that method.
@@ -1688,7 +1700,8 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 ## Whether the row is a stationary solid body the pavement does not pin to an edge
 ## (`_pavement_side` `ANY`) and that does not span the street: the body a pavement band's middle is
 ## where it stands (`BodyStance.of()`). A row that spans the street stands at its kerb
-## instead (`stands_at_its_kerb()`); the two never both hold.
+## (`stands_at_its_kerb()`) or on the middle of its street (`stands_mid_street()`) instead; no
+## two of the three ever hold together.
 func stands_on_its_band_middle() -> bool:
 	return _is_an_unpinned_standing_body() and not _spans_the_street
 
@@ -1700,16 +1713,36 @@ func stands_on_its_band_middle() -> bool:
 ## stand where they are put. Read by `BodyStance.stands_without_a_map()`, the one place that
 ## moves a body there.
 func stands_at_its_kerb() -> bool:
-	return _is_an_unpinned_standing_body() and _spans_the_street
+	return _is_an_unpinned_standing_body() and _spans_the_street and not _closes_its_street
+
+## Whether the row's body stands on the middle of the street its lane is in
+## (`CityMap.street_middle_beside()`): a stationary unpinned body that spans the street and closes
+## it, the closing roadblock, whose band then covers both sidewalks. Read by
+## `BodyStance.stands_without_a_map()`.
+func stands_mid_street() -> bool:
+	return _is_an_unpinned_standing_body() and _spans_the_street and _closes_its_street
+
+## **Whether the row has no marble on the route** (`UnitFills`): it stands only in alleys
+## (`stands_only_in_alleys()`), and an alley the routes run down is ground she has no way around;
+## or it closes its whole street (`stands_mid_street()`, the closing roadblock), and every street
+## of her routes keeps a sidewalk open (`OneSidewalkOpenRule`), so no unit there could stand it
+## and a marble of it would only come back empty (inbox #1185 in gentle-owl: a view's bag holds
+## every event possible in that view). **The rule leads and this follows**: the rule refuses from
+## the band's geometry, and this restates the refusal for the bag, so a band narrowed to leave a
+## sidewalk open is a change to both. `tests/test_one_sidewalk_open_rule.gd` keeps them in step:
+## every catalogue row that stands mid street is refused alone on a street of her routes.
+func stands_off_the_route() -> bool:
+	return stands_only_in_alleys() or stands_mid_street()
 
 ## A stationary solid body that `_pavement_side` does not pin to an edge: the bodies that are moved
-## from where they are placed to where they stand, onto a band's middle or onto a kerb.
+## from where they are placed to where they stand, onto a band's middle, onto a kerb or onto the
+## middle of a street.
 func _is_an_unpinned_standing_body() -> bool:
 	return not _route.moves() and obstructs_within() > 0.0 and _pavement_side == Pavement.ANY
 
 ## Whether the row stands in alleys and on no other ground: the robber and the mouse. Such a row is
 ## refused an alley the day's routes run down (`RowGround.offers_for_role()`) and has no marble on
-## the route (`UnitFills`), since that alley is ground she has no way around
+## the route (`stands_off_the_route()`), since that alley is ground she has no way around
 ## rather than one she may choose to detour into. Stated over the ground the row lists rather than
 ## its id, so a row that shares the shape inherits the refusal.
 func stands_only_in_alleys() -> bool:

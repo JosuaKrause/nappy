@@ -1083,7 +1083,7 @@ class ReadReleaseTagsTests(unittest.TestCase):
         }
         subprocess.run(["git", *args], cwd=root, env=env, check=True, capture_output=True)
 
-    def test_reads_annotated_and_lightweight_v_tags_and_ignores_others(self) -> None:
+    def test_reads_annotated_and_lightweight_v_tags_and_ignores_others_and_candidates(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.run_git(root, "init", "-q")
@@ -1092,6 +1092,7 @@ class ReadReleaseTagsTests(unittest.TestCase):
             self.run_git(root, "tag", "other")
             self.run_git(root, "commit", "-q", "--allow-empty", "-m", "two")
             self.run_git(root, "tag", "-a", "v1.1.0", "-m", "release")
+            self.run_git(root, "tag", "-a", "v1.2.0-rc.1", "-m", "a release candidate opens no window")
             tags = dict(goatcounter.read_release_tags(root))
         self.assertEqual(sorted(tags), ["v1.0.0", "v1.1.0"])
         self.assertEqual(tags["v1.0.0"].astimezone(UTC), datetime(2026, 10, 3, 12, tzinfo=UTC))

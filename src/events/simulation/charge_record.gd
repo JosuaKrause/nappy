@@ -8,9 +8,7 @@ extends RefCounted
 ## *(inbox #764 in minty-lemur: a charging counter is independent of an ended day)*. Every path that
 ## ends a charge — the catch, the day's end closing what is still running, the charger giving up or
 ## leaving — asks this record, and the first to ask is the only one heard. A warning is said once,
-## and a charge begins once. Nothing that decides how the day plays reads it; the one cue that does
-## is the screen-edge badge of a charge begun out of her sight, put up as it begins
-## (`EventInstance._begin_the_charge()`).
+## and a charge begins once. Nothing that decides how the day plays reads it, and no cue does.
 
 ## The name the charge is counted under, asked at the moment it is said: a charger's name can be
 ## settled after it is made (the day-3 lesson's dog, day 13's task guard).

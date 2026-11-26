@@ -32,7 +32,7 @@ static func first_of(events: EventManager, vehicle: EventInstance) -> EventInsta
 	return men[0] if not men.is_empty() else null
 
 ## Whether the first point of `man`'s trail lies at a door of `vehicle`: within the reach
-## `EventInstance.door_for_its_officer()` stands a man out from its middle, and the spacing along
+## `EventInstance.where_its_officer_may_get_out()` stands a man out from its middle, and the spacing along
 ## its flank two men are put down apart.
 static func _was_put_down_at_a_door_of(man: EventInstance, vehicle: EventInstance) -> bool:
 	var trail: PackedVector2Array = man.save().state_of("EventOfficer").get("trail",
@@ -40,4 +40,4 @@ static func _was_put_down_at_a_door_of(man: EventInstance, vehicle: EventInstanc
 	if trail.is_empty() or vehicle.ground_shape() == null or man.ground_shape() == null:
 		return false
 	var out := vehicle.ground_shape().rounding_radius() + man.ground_shape().reach() + 1.0
-	return trail[0].distance_to(vehicle.global_position) <= out + EventsAhead.OFFICER_SPACING
+	return trail[0].distance_to(vehicle.global_position) <= out + EventInstance.OFFICER_SPACING

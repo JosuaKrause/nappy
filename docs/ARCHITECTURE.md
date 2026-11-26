@@ -740,7 +740,9 @@ tools/
   remove-checkerboard.py  extract painted pixels from a checkerboard-background PNG
   export-web.sh           headless Web export into build/web/ -- release by default, or `debug`
   serve-web.sh            export-web.sh debug, then serve build/web/ over plain HTTP and print the URL
-  release.sh              cut a version tag, which is what deploys
+  release.sh              cut a version tag, which is what deploys (`rc <part>`: a release candidate)
+  release-tags.py         the one reader of version tags, and what a deploy publishes
+  assemble-site.py        lay out the Pages site: the release at the root, the candidate under rc/
   codex-hooks.py          adapts Codex's hook payloads to the shared hooks in .claude/hooks/
   test_*.py               the unit tests pycheck.sh runs
 ```
@@ -827,7 +829,7 @@ flags": "on the published site behind debug=1 we'd want some of the debug flags 
 invincible, etc.) so debugging the live build is easier".)* `RunConfig.is_live_debug()` — a debug
 build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
 `?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?chargers=`, `?daylength=`,
-`?ending=`/`?blackout=1`, `?escapebag=`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
+`?ending=`/`?blackout=1`, `?escapebag=`, `?buildingflashgap=`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind

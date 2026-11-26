@@ -39,7 +39,7 @@ static func for_row(event: EventInstance, look: LookSpec, body: BodySpec,
 			return SpreadLook.new(event, look, body, drawer, skip_draw, drawn_view)
 		EventDef.Look.CAFE, EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT:
 			return RankLook.new(event, look, body, drawer, skip_draw, drawn_view)
-		EventDef.Look.ROADBLOCK:
+		EventDef.Look.ROADBLOCK, EventDef.Look.CLOSING_ROADBLOCK:
 			return RoadblockLook.new(event, look, body, drawer, skip_draw, drawn_view,
 					barrier_post)
 		EventDef.Look.BURNING_BUILDING:

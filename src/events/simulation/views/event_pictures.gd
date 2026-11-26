@@ -92,6 +92,11 @@ const CHECKPOINT_BLOCK := "events/checkpoint_block"
 const ROADBLOCK_SEGMENT := "events/roadblock_segment"
 const ROADBLOCK_SEGMENT_VERTICAL := "events/roadblock_segment_vertical"
 const ROADBLOCK_END := "events/roadblock_end"
+const CLOSING_ROADBLOCK_SEGMENT := "events/closing_roadblock_segment"
+const CLOSING_ROADBLOCK_SEGMENT_VERTICAL := "events/closing_roadblock_segment_vertical"
+const CLOSING_ROADBLOCK_END := "events/closing_roadblock_end"
+## The closing roadblock's screen-edge badge: one block of its barrier under the wire.
+const CLOSING_ROADBLOCK_BLOCK := "events/closing_roadblock_block"
 ## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
 ## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.ground_shape()` — the band's 64px
 ## capsule, which is still what the collision body and the cold picture are built from.
@@ -903,6 +908,7 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.POSTER_CREW: return POSTER_CREW
 		EventDef.Look.POSTER_CREW_SQUARE: return POSTER_CREW_SQUARE
 		EventDef.Look.ROADBLOCK: return CHECKPOINT_BLOCK
+		EventDef.Look.CLOSING_ROADBLOCK: return CLOSING_ROADBLOCK_BLOCK
 		EventDef.Look.UNMARKED_VAN: return UNMARKED_VAN
 		EventDef.Look.ROBBER: return ROBBER_LUNGING
 		EventDef.Look.RIOT_VAN: return RIOT_VAN
@@ -1033,6 +1039,11 @@ static func roadwork_segment_texture(spread_vertical: bool) -> String:
 static func roadblock_segment_texture(spread_vertical: bool) -> String:
 	return ROADBLOCK_SEGMENT_VERTICAL if spread_vertical else ROADBLOCK_SEGMENT
 
+## The closing roadblock's barrier, by the same projection rule: the end-on picture down a
+## north-south column, the broadside one otherwise.
+static func closing_roadblock_segment_texture(spread_vertical: bool) -> String:
+	return CLOSING_ROADBLOCK_SEGMENT_VERTICAL if spread_vertical else CLOSING_ROADBLOCK_SEGMENT
+
 ## The bob a moving event rides on: a stride's worth of lift, once per stride's worth of ground.
 ## Sized against a walking pace rather than a running one — 34px is roughly a step.
 const BOB_PER_PX := PI / 34.0
@@ -1162,6 +1173,11 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
 		EventDef.Look.ROADBLOCK:
 			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_SEGMENT_VERTICAL, ROADBLOCK_END])
+			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
+					GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.CLOSING_ROADBLOCK:
+			_collect(sources, [CLOSING_ROADBLOCK_SEGMENT, CLOSING_ROADBLOCK_SEGMENT_VERTICAL,
+					CLOSING_ROADBLOCK_END])
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.UNMARKED_VAN:

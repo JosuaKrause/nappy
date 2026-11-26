@@ -17,7 +17,7 @@ func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDr
 ## Overrides SpreadLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match _look.picture():
-		EventDef.Look.ROADBLOCK:
+		EventDef.Look.ROADBLOCK, EventDef.Look.CLOSING_ROADBLOCK:
 			_draw_roadblock(canvas)
 
 ## A guard still standing at his band (before he has left its body) is drawn facing out from his

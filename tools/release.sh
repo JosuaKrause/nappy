@@ -8,13 +8,20 @@
 #   tools/release.sh minor          # v1.2.3 -> v1.3.0, prints the plan and stops
 #   tools/release.sh patch          # v1.2.3 -> v1.2.4, prints the plan and stops
 #   tools/release.sh patch push     # actually tags and pushes, once every refusal below passes
+#   tools/release.sh rc minor       # v1.2.3 -> v1.3.0-rc.1 (or rc.N+1), prints the plan and stops
+#   tools/release.sh rc minor push  # tags and pushes the release candidate
+#
+# **A release candidate (RC) is `vX.Y.Z-rc.N`**: the release the part names, with a counter one
+# above the last candidate for that number. The deploy serves it at `/rc/` beside the release,
+# counting nothing (`.claude/skills/committing/references/releasing.md`). The arithmetic and the
+# grammar of both kinds of tag are `tools/release-tags.py`'s (`tools/lib_release_tags.py`), the one
+# reader every tool shares, so the latest *release* is what a part bumps and a candidate is never
+# taken for one. A candidate the deploy would never serve, because a higher one is out, is refused.
 #
 # Semver, with `major` reserved for a change that breaks or fundamentally alters the game -- the
 # argument nobody reaches for casually.
 #
-# **Read loosely, write strictly.** The latest tag may be a bare `v123` (understood as `v123.0.0`)
-# or `v123.45.6`; what this script writes is always `vMAJOR.MINOR.PATCH`, so the shape converges
-# after one release. With no version tag at all it starts from `v0.0.0`.
+# With no release tag at all it starts from `v0.0.0`.
 #
 # **Confirmation is a second argument, not a prompt.** `tools/telemetry.sh -p` already uses this
 # shape -- print what would happen, and only act when told `yes` (there, `push` here) -- because a
@@ -27,7 +34,7 @@
 #
 # **Nothing is tagged until the `test` check on the release commit is read as green.** A check that
 # cannot be read is not a green one: the script keeps polling, and refuses once the wait runs out.
-# That needs `gh`, so a machine without it is refused up front.
+# That needs `gh`, so a machine without it is refused up front, and the tag arithmetic needs `uv`.
 #
 # Every GitHub call (the origin fetch, the check-runs read, the tag push itself) runs through the
 # caller's own agent identity when one is set (tools/lib_agent_role.sh's `agent_run`, minting each
@@ -45,23 +52,36 @@ source "$PROJECT_DIR/tools/lib_agent_role.sh"
 
 usage() {
     cat <<'EOF'
-usage: tools/release.sh [--help|-h] <major|minor|patch> [push]
+usage: tools/release.sh [--help|-h] [rc] <major|minor|patch> [push]
 
-Bumps the latest version tag by the given part and prints the plan, including the notes
-tools/release-notes.py would publish for it. Add the literal word "push" to actually tag and
-push, once every refusal (dirty tree, wrong branch, main not level with origin/main, no gh,
-checks not green) passes. The push form waits for the `test` check on main's commit -- CI's last
-job, so it registers only after the others finish -- and tags nothing until that check is read as
-green; a check that cannot be read is retried, not trusted. Ctrl-C while it waits is safe.
+Bumps the latest release tag (vX.Y.Z) by the given part and prints the plan, including the notes
+tools/release-notes.py would publish for it. With "rc" first it plans a release candidate
+instead: vX.Y.Z-rc.N, the release the part names with a counter one above the last candidate for
+it, which the deploy serves at /rc/ beside the release and which counts nothing. Add the literal
+word "push" to actually tag and push, once every refusal (dirty tree, wrong branch, main not
+level with origin/main, no gh or uv, a commit already released -- for a candidate, a commit
+already carrying any version tag, or a candidate /rc/ would never serve because a higher one is
+out -- checks not green) passes. The push form waits for the `test`
+check on main's commit -- CI's last job, so it registers only after the others finish -- and tags
+nothing until that check is read as green; a check that cannot be read is retried, not trusted.
+Ctrl-C while it waits is safe.
 
   tools/release.sh patch
   tools/release.sh patch push
+  tools/release.sh rc minor
+  tools/release.sh rc minor push
 EOF
 }
 
 case "${1:-}" in
     --help|-h) usage; exit 0 ;;
 esac
+
+KIND=release
+if [[ "${1:-}" == rc ]]; then
+    KIND=candidate
+    shift
+fi
 
 if [[ $# -gt 2 ]]; then
     echo "unexpected extra argument(s): ${*:3}" >&2
@@ -109,6 +129,12 @@ if ! command -v gh >/dev/null 2>&1; then
     echo "a release needs gh to confirm the test check is green before it tags anything" >&2
     exit 1
 fi
+# The tag arithmetic is tools/release-tags.py's, the reader of tags every tool shares.
+if ! command -v uv >/dev/null 2>&1; then
+    echo "refusing: uv is not on PATH -- see .claude/skills/python-tooling/SKILL.md" >&2
+    exit 1
+fi
+TAGS=(uv run --quiet python "$PROJECT_DIR/tools/release-tags.py")
 
 agent_run git fetch origin main --quiet
 TARGET_SHA="$(git rev-parse origin/main)"
@@ -119,20 +145,13 @@ if [[ "$HEAD_SHA" != "$TARGET_SHA" ]]; then
     exit 1
 fi
 
-# The latest version tag, ordered with `sort -V` rather than a plain lexical sort, which would put
-# v1.10.0 before v1.9.0. Read loosely: a tag with fewer than three dot-separated parts is padded
-# with zeros below.
-LATEST="$(git tag -l 'v[0-9]*' | sort -V | tail -n1)"
-if [[ -z "$LATEST" ]]; then
-    CUR_MAJOR=0; CUR_MINOR=0; CUR_PATCH=0
-else
-    BODY="${LATEST#v}"
-    IFS='.' read -r CUR_MAJOR CUR_MINOR CUR_PATCH <<<"$BODY"
-    CUR_MAJOR="${CUR_MAJOR:-0}"
-    CUR_MINOR="${CUR_MINOR:-0}"
-    CUR_PATCH="${CUR_PATCH:-0}"
+# The latest release tag, ordered by its numbers (v1.10.0 after v1.9.0), never a candidate. A read
+# that fails is refused rather than read as "no release yet", which would restart at v0.0.0.
+if ! LATEST="$("${TAGS[@]}" latest)"; then
+    echo "refusing: could not read the latest release tag" >&2
+    exit 1
 fi
-CURRENT="v${CUR_MAJOR}.${CUR_MINOR}.${CUR_PATCH}"
+CURRENT="${LATEST:-v0.0.0}"
 
 # The refusal is on the commit, not the version: if TARGET_SHA is what LATEST already names, there
 # is nothing to publish. An annotated tag's own object is not the commit it points at, so this
@@ -141,7 +160,7 @@ CURRENT="v${CUR_MAJOR}.${CUR_MINOR}.${CUR_PATCH}"
 # without `-e`, a `git rev-parse` that fails leaves LATEST_SHA empty rather than stopping the
 # script, which would read as "not the same commit" and let a second release through -- so a
 # failure to resolve the tag is refused explicitly rather than left to fall through.
-if [[ -n "$LATEST" ]]; then
+if [[ "$KIND" == release && -n "$LATEST" ]]; then
     LATEST_SHA="$(git rev-parse "${LATEST}^{commit}" 2>/dev/null)"
     if [[ -z "$LATEST_SHA" ]]; then
         echo "refusing: could not resolve $LATEST to a commit" >&2
@@ -154,26 +173,57 @@ if [[ -n "$LATEST" ]]; then
     fi
 fi
 
-case "$PART" in
-    major) NEXT="v$((CUR_MAJOR + 1)).0.0" ;;
-    minor) NEXT="v${CUR_MAJOR}.$((CUR_MINOR + 1)).0" ;;
-    patch) NEXT="v${CUR_MAJOR}.${CUR_MINOR}.$((CUR_PATCH + 1))" ;;
-esac
+# A candidate on a commit that already carries a version tag -- a release, or a candidate before
+# it -- would publish a build that is already out, so it is refused whichever one it is. A release
+# on a candidate's commit is the ordinary way a candidate becomes the release, and passes.
+if [[ "$KIND" == candidate ]]; then
+    ALREADY="$(git tag --points-at "$TARGET_SHA" -l 'v[0-9]*' | paste -sd' ' -)"
+    if [[ -n "$ALREADY" ]]; then
+        echo "refusing: $TARGET_SHA already carries $ALREADY" >&2
+        echo "a candidate there publishes nothing new -- push a new commit to main first" >&2
+        exit 1
+    fi
+fi
+
+if [[ "$KIND" == candidate ]]; then
+    NEXT="$("${TAGS[@]}" next "$PART" --rc)"
+    COMMAND="rc $PART"
+else
+    NEXT="$("${TAGS[@]}" next "$PART")"
+    COMMAND="$PART"
+fi
+if [[ -z "$NEXT" ]]; then
+    echo "refusing: could not work out the next tag" >&2
+    exit 1
+fi
+
+# A candidate /rc/ would never serve publishes nothing: the deploy serves the highest candidate
+# still out (tools/lib_release_tags.py), so `rc patch` cut while a minor or major candidate is out
+# would only rebuild that one. Asked of `site` as if NEXT were already on TARGET_SHA, so the answer
+# is the deploy's own, and refused in the dry run as well.
+if [[ "$KIND" == candidate ]]; then
+    if ! SITE="$("${TAGS[@]}" site --as-if "$NEXT@$TARGET_SHA")"; then
+        echo "refusing: could not work out which candidate /rc/ would serve" >&2
+        exit 1
+    fi
+    SERVED="$(sed -n 's/^candidate=//p' <<<"$SITE")"
+    if [[ "$SERVED" != "$NEXT" ]]; then
+        echo "refusing: /rc/ would go on serving ${SERVED:-no candidate}, never $NEXT" >&2
+        echo "a higher candidate is out; cut the candidate for its release, or a higher one, instead" >&2
+        exit 1
+    fi
+fi
 
 echo "current: $CURRENT"
-echo "next:    $NEXT  ($PART)"
+echo "next:    $NEXT  ($COMMAND)"
 
 # `tools/release-notes.py` needs no tag to exist yet -- `--commit` gives it the commit NEXT would
 # point at, which is exactly TARGET_SHA -- so the dry run can preview the notes deploy.yml's own
 # release job would publish, cheaply and before anything is tagged. Read-only, so it runs
 # unwrapped even under an agent identity; only the tag and the push below are writes.
 echo ""
-if command -v uv >/dev/null 2>&1; then
-    echo "notes for $NEXT:"
-    uv run --quiet python "$PROJECT_DIR/tools/release-notes.py" "$NEXT" --commit "$TARGET_SHA"
-else
-    echo "notes:   uv not found -- see .claude/skills/python-tooling/SKILL.md" >&2
-fi
+echo "notes for $NEXT:"
+uv run --quiet python "$PROJECT_DIR/tools/release-notes.py" "$NEXT" --commit "$TARGET_SHA"
 
 # How the `test` check on the commit about to be tagged is doing, as one word in CHECK_STATE:
 # success, failure, pending (running, or not all of them finished), none (no test run has
@@ -260,7 +310,7 @@ if [[ $CONFIRMED -ne 1 ]]; then
         *) echo "the test check for the release target is not green yet ($CHECK_STATE); a real run would wait" >&2
            echo "for it, up to ${CHECK_WAIT_SECONDS}s, and tag nothing until it reads green." >&2 ;;
     esac
-    echo "dry run -- nothing tagged or pushed. Run 'tools/release.sh $PART push' to publish $NEXT." >&2
+    echo "dry run -- nothing tagged or pushed. Run 'tools/release.sh $COMMAND push' to publish $NEXT." >&2
     exit 0
 fi
 
@@ -311,4 +361,8 @@ if ! agent_run git push origin "$NEXT"; then
     echo "resolved, or drop it with 'git tag -d $NEXT'." >&2
     exit 1
 fi
-echo "pushed $NEXT -- deploy.yml will build and publish it"
+if [[ "$KIND" == candidate ]]; then
+    echo "pushed $NEXT -- deploy.yml will build it and publish it at /rc/, beside the release"
+else
+    echo "pushed $NEXT -- deploy.yml will build and publish it"
+fi

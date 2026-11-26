@@ -165,6 +165,10 @@ func _spread_pictures() -> PackedStringArray:
 		EventDef.Look.ROADBLOCK:
 			return PackedStringArray([EventPictures.roadblock_segment_texture(event.runs_vertically()),
 					EventPictures.ROADBLOCK_END])
+		EventDef.Look.CLOSING_ROADBLOCK:
+			return PackedStringArray([
+					EventPictures.closing_roadblock_segment_texture(event.runs_vertically()),
+					EventPictures.CLOSING_ROADBLOCK_END])
 	return PackedStringArray()
 
 ## The whole spread of the event's look on `canvas` (`_draw_spread()`).

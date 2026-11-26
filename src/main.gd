@@ -1060,6 +1060,7 @@ func _world_drawn() -> WorldContext:
 func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
 	_interior.use_atlas(_sitting.atlas())
+	_interior.use_flash_gap(config.building_flash_gap())
 	_interior.name = "Interior"
 	add_child(_interior)
 	_pauses_with_the_game(_interior)
@@ -2267,7 +2268,7 @@ func _take_the_sitting() -> void:
 	if not _save:
 		_save = _sitting.get_node_or_null(NodePath(GameSave.NODE_NAME)) as GameSave
 	if not _save:
-		_save = GameSave.new()
+		_save = GameSave.new(GameSave.player_path(BuildInfo.exported_version()))
 		_save.name = GameSave.NODE_NAME
 		_sitting.add_child(_save)
 	if not _run_log:

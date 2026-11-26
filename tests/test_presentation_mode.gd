@@ -55,6 +55,7 @@ func run(t: TestRunner) -> void:
 	_test_blackout_from_query(t)
 	_test_escape_bag_reads_the_command_line_and_the_open_page(t)
 	_test_escape_bag_refuses_anything_but_a_named_bag(t)
+	_test_building_flash_gap_reads_the_command_line_and_the_open_page(t)
 	_test_ground_mode_reads_the_command_line_and_the_open_page(t)
 	_test_ground_mode_is_ignored_on_a_release_page_without_debug(t)
 	_test_ground_mode_refuses_anything_but_its_three_numbers(t)
@@ -227,7 +228,7 @@ func _test_day_from_query_is_not_given_when_absent(t: TestRunner) -> void:
 ## share with a real player.
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t: TestRunner) -> void:
 	for key: String in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
-			"ending", "blackout", "escapebag", "groundmode", "framerecord"]:
+			"ending", "blackout", "escapebag", "buildingflashgap", "groundmode", "framerecord"]:
 		t.check(_page("?debug=1&%s=1" % key).used_a_web_debug_flag(),
 			"'%s' is one of the bundle's own parameters" % key)
 
@@ -316,6 +317,24 @@ func _test_blackout_from_query(t: TestRunner) -> void:
 	t.check(_page("?debug=1&blackout=1").asks_for_the_blackout(), "?blackout=1 forces the blackout")
 	t.check(not _page("?debug=1&blackout=0").asks_for_the_blackout(), "blackout=0 forces nothing")
 	t.check(not _page("?debug=1").asks_for_the_blackout(), "an absent parameter forces nothing")
+
+## `--building-flash-gap`/`?buildingflashgap=`: the command line, the page under the bundle's gate (a
+## release page without `?debug=1` plays no gap), and a value that is not a number of zero or more
+## refused whole.
+func _test_building_flash_gap_reads_the_command_line_and_the_open_page(t: TestRunner) -> void:
+	t.check(_debug_build([]).building_flash_gap() == 0.0, "no flag, no gap")
+	t.check(_debug_build(["--building-flash-gap", "0.4"]).building_flash_gap() == 0.4,
+			"the command line names the gap")
+	t.check(_debug_build(["--building-flash-gap", "0.4"], "?debug=1&buildingflashgap=1")
+			.building_flash_gap() == 0.4, "the command line wins over the page")
+	t.check(_debug_build([], "?debug=1&buildingflashgap=0.4").building_flash_gap() == 0.4,
+			"an open page names it")
+	t.check(_page("?buildingflashgap=0.4").building_flash_gap() == 0.0
+			and _page("?debug=1&buildingflashgap=0.4").building_flash_gap() == 0.4,
+			"a release page reads it only behind ?debug=1")
+	for bad: String in ["-1", "abc", ""]:
+		t.check(_debug_build(["--building-flash-gap", bad]).building_flash_gap() == 0.0,
+				"'%s' is refused and plays no gap" % bad)
 
 ## `--escape-bag`/`?escapebag=`: the command line, the page under the bundle's gate (a release page
 ## nobody asked `?debug=1` of answers the default), and the default when neither names a bag.

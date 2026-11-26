@@ -3167,16 +3167,17 @@ func _approach_key(roadblock: EventInstance) -> Vector2i:
 ## **Day 13's done task sets its guard on her, wherever he stands** *(inbox #651 follow-up, the
 ## player, of a guard still at another roadblock when she reaches hers: "as long as he starts
 ## pursuing when you hit the task it's fine")*. The moment she has touched the roadblock, a guard who
-## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and starts after her
-## from where he is: from the band with a clear line, as he would have; from the roadblock before,
-## from the ring past the band, or round a corner, the same. **He starts after her and walks round
-## buildings to her** (`EventInstance._chase_way`): where no clear line runs to her he follows the
-## walk to her, refreshed as she moves, so from another roadblock he comes all the way to her unless
-## she leaves him behind: he gains on a walker only 38px a second (his 130 against
-## `Tuning.WALK_SPEED`'s 92), so from across the city a walk away can outlast his
-## `Tuning.PURSUIT_TIME` chase; running still shakes him off, as it does any chase. He is
-## already in the world, so nothing appears: off screen he comes on from off screen, his badge up as
-## he closes on her (`DangerEdge`), and in view he is the guard she can already see. The chase keeps
+## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and, in her view,
+## starts after her from where he is: from the band with a clear line, as he would have; from the
+## ring past the band, or round a corner, the same. **He starts after her and walks round buildings
+## to her** (`EventInstance._chase_way`): where no clear line runs to her he follows the walk to her,
+## refreshed as she moves, unless she leaves him behind: he gains on a walker only 38px a second (his
+## 130 against `Tuning.WALK_SPEED`'s 92), so a long walk away can outlast his `Tuning.PURSUIT_TIME`
+## chase; running still shakes him off, as it does any chase. In her view he is the guard she can
+## already see, already in the world, so nothing appears; out of it, at the roadblock before or
+## anywhere else, he is never set on her where he stands, since a charger already in the world
+## carries no badge (velvet-marten #699, #705; bouncy-owl #1774), and is sent at her as an
+## off-screen charger instead (below). The chase keeps
 ## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along
 ## a clear line. A guard already after her, or whose chase is over, is left as he is.
 ##

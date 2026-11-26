@@ -41,7 +41,11 @@ The server sees the browser's user agent and derives a country from the address,
 does. GoatCounter sets no cookie and stores nothing on the device, which is why the page shows no
 consent banner, and a visitor is never followed across days or sites. **A page carrying
 `?debug=1` loads none of it**, so neither its visit nor anything played on it is counted
-(PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` itself ignores `localhost`,
+(PLAYTEST-132: "anything with debug doesn't get tracked"). **Nor does a release candidate**, the
+build of a `vX.Y.Z-rc.N` tag served at `/rc/` beside the release
+(`.claude/skills/committing/references/releasing.md`): `tools/export-web.sh` takes the
+`count.js` script off a candidate's page, so not even its visit is counted, and the game's own gate
+refuses its events as well (below), so a candidate's build served anywhere counts nothing. `count.js` itself ignores `localhost`,
 private network addresses, `file:`, a page inside a frame, a prerendered page and a browser that
 has opted out through GoatCounter's own `#toggle-goatcounter` (`skipgc` in its local storage), and
 flags a browser driven by WebDriver as a bot, which GoatCounter does not count, so
@@ -50,8 +54,9 @@ it: it switches off the run log, and the counter writes none.
 
 `tools/goatcounter.sh` reads the site back with its read-only API key in `GOATCOUNTER_TOKEN`: the
 events as a funnel, and the page visit among every path under `--raw`. `--by-release` splits the
-funnel (or `--encounters`) into one window per release, from the `v*` tags' dates in git, a day with
-several releases being one mixed window. Its `--site` option and the
+funnel (or `--encounters`) into one window per release, from the release tags' dates in git (a
+candidate's tag opens no window, since a candidate counts nothing), a day with several releases
+being one mixed window. Its `--site` option and the
 old site's key read that site's history.
 
 **The game counts how far a run gets, as anonymous GoatCounter events.**
@@ -312,20 +317,23 @@ The page hears the flow's `day_started` and, on the bus, `run_begun`, `day_ended
 hears the flow's `world_stood` and `day_planned` and the bus's `day_ended`. The HUD hears the
 flow's `day_started` alone.
 
-**The gate is stricter than the page load's own.** An event is sent only when every one of four
+**The gate is stricter than the page load's own.** An event is sent only when every one of five
 things holds: the build is running on the web (the engine's `OS.get_name() == "Web"`, given
 through `GoatCounterPlatform.is_on_the_web()`), it is not a debug build
-(`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), the
-page was not asked for `?debug=1`
+(`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), its
+version names no release candidate (`GoatCounterPlatform.build_version()`, in the game
+`BuildInfo.exported_version()`, the version the export baked, read by
+`BuildInfo.names_a_release_candidate()`: exactly
+`vX.Y.Z-rc.N`, the tag a candidate's export bakes), the page was not asked for `?debug=1`
 (`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at
 boot — nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. The counter asks the first, the second and the fourth of the machine through
+independent switch. The counter asks all but the `?debug=1` one of the machine through
 the `GoatCounterPlatform` it is handed (`main` hands `GoatCounterPlatform.of_the_engine()`, the
-engine's own answers; a suite hands a released web page's), and the third of the configuration.
-`GoatCounterOutbox.may_ever_send()` decides the three that never change, and
-`GoatCounterOutbox.send()` takes the fourth as its `present` argument, and
+engine's own answers; a suite hands a released web page's), and that one of the configuration.
+`GoatCounterOutbox.may_ever_send()` decides the four that never change, and
+`GoatCounterOutbox.send()` takes the last as its `present` argument, and
 `tests/test_visit_counter.gd` drives the truth table through both. The same `GoatCounterOutbox` holds
 the events asked for before `count.js` has loaded and counts them in order once it has, and is
 handed the evaluator of the page's script; the counter is handed its outbox and its platform with
@@ -1268,7 +1276,7 @@ build has nothing in `project.godot` to reach:
   **`readout_requested()` also gates `DevFlags.live_debug_requested()`**, the second, smaller
   bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
   `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-  `?escapebag=`, `?groundmode=` and `?framerecord=1` — so the
+  `?escapebag=`, `?buildingflashgap=`, `?groundmode=` and `?framerecord=1` — so the
   snapshot key and everything that drives input, takes a picture or writes a file are the only
   things still unreachable from a visitor's address bar, except the frame record's own file, which
   reaches the visitor only through the browser's download when they tap the page's button for it

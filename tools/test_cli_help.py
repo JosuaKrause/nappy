@@ -47,6 +47,8 @@ ENTRY_POINTS = (
     "migrate-queue.py",
     "convert-queue-edits.py",
     "release-notes.py",
+    "release-tags.py",
+    "assemble-site.py",
     "inbox.py",
     "agent-stats.py",
     "usage-report.py",

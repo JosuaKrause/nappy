@@ -15,6 +15,9 @@ description: Rules for adding or changing an event in the catalogue — the fair
 - **A new row owes a drawing of its own.** No two rows share a picture or a badge silhouette.
 - **Whether a row telegraphs its coming is the rule's question**, never switched to pass a contract.
 - **Nothing appears in her view and nothing vanishes while she is looking at it.**
+- **A charger is off screen or on screen** (velvet-marten #699, #705; bouncy-owl #1774): off screen,
+  a badge and then her view entered already charging; on screen, no badge ever, and a warning in
+  her view before any charge.
 - **Excitement is a pure query.** Nothing outside `Baby` feeds her excitement meter.
 - **A guarantee about a day is decided at dawn or by a unit's own draw (`UnitDraw`)**, never in the
   streaming.
@@ -121,6 +124,14 @@ created is derived from its telegraph. **No pursuer gives up on a walker** (oliv
 The design is `docs/EVENTS.md`, "Everything arrives from off screen"; the contract such a row is
 held to, what is created with its telegraph spent, and the one thing that is not warned first is
 `references/warned-first.md`.
+
+**There are two kinds of charge, and every charger is exactly one** (velvet-marten #699, #705;
+calm-kestrel #559; busy-quail #569; bouncy-owl #1774). **Off screen**: warned of by the badge, then
+in her view already charging, always. **On screen**: already in the world, no badge wherever its
+charge begins, and a warning in her view when she comes close, then a charge under its own rule.
+`docs/EVENTS.md`, "Every charger that does not arrive charging warns first", lists every charger
+with its kind; `references/warned-first.md` and `references/pursuits.md` hold what each kind asks
+of the code.
 
 ## The contract is per event and the player experiences the sum
 

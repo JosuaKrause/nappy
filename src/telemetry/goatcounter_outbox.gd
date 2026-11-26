@@ -21,19 +21,25 @@ var _pending: Array[String] = []
 func _init(evaluate: Callable) -> void:
 	_evaluate = evaluate
 
-## The three of the gate's four inputs (on the web, not a debug build, not `?debug=1` —
+## The four of the gate's five inputs (on the web, not a debug build, not `?debug=1` —
 ## `RunConfig.asks_for_the_readout()`, the same flag that keeps `count.js` itself off the page,
-## see `export_presets.cfg`'s `html/head_include`) that can never change their answer for the
-## rest of this page's life once asked — the build is not going to stop being a debug build, and
-## `?debug=1` does not disappear from a page nobody reloads. `present` is the one
+## see `export_presets.cfg`'s `html/head_include` — and a `version` that names no release
+## candidate, `BuildInfo.names_a_release_candidate()`) that can never change their answer for the
+## rest of this page's life once asked — the build is not going to stop being a debug build or a
+## candidate, and `?debug=1` does not disappear from a page nobody reloads. **A candidate counts
+## nothing**: its export already leaves `count.js` off its page (`tools/export-web.sh`), and this
+## refusal is the second of the two, so a candidate's build served where the counter does load
+## still sends nothing. `present` is the one
 ## input that legitimately answers differently a moment later, because `count.js` loads
 ## asynchronously (`export_presets.cfg`'s own `counter.async = true`) — so the counter asks this
 ## once, up front, to decide *whether an event is ever worth queuing at all* before it asks the
 ## time-varying half. **A reason that cannot change never populates the queue**: a debug build
 ## or a page carrying `?debug=1` holds nothing here and costs nothing beyond the one boolean
 ## check.
-static func may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: bool) -> bool:
-	return on_web and not is_debug_build and not debug_requested
+static func may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: bool,
+		version: String) -> bool:
+	return on_web and not is_debug_build and not debug_requested \
+			and not BuildInfo.names_a_release_candidate(version)
 
 ## Counts `name` when `present` holds, after whatever was queued before it, in the order it was
 ## asked for; queues it otherwise. `present` is a parameter rather than a read taken in here, the
