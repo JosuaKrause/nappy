@@ -3,7 +3,9 @@ extends RefCounted
 ## city suites' seeds and seeds 1 to 120, day 1 planned as `DayPlanner` plans it (the home's
 ## streets held, the seals standing, the tree grown with the tutorial route), and for each lesson
 ## whether its row stands on the route's units (`DawnTutorial`). It also counts what the dawn
-## draw left on the route's units past the first block, which should be nothing but the lessons.
+## draw left on the route's units past the first block, which should be nothing but the lessons,
+## and how near the yeller's beat comes to lesson (5)'s junction, the box she crosses at with cars
+## before his street, in tiles from the box's edge (YELLER lines).
 ##
 ## Not a suite: it prints rather than asserts. Run by name:
 ##
@@ -32,11 +34,25 @@ static func _lessons(route: TutorialRoute) -> Dictionary:
 		found[DawnTutorial.PACES_HER_SIDEWALK] = true
 	return found
 
+## Whole tiles between the nearest end of `beat`, the yeller's route, and the box of the junction
+## she comes onto his street at (lesson (5)'s): 0 for an end on the box or beside it.
+static func _beat_gap(map: CityMap, route: TutorialRoute, beat: PackedVector2Array) -> int:
+	var junction := route.arrives_at(route.lesson_street(TutorialRoute.Lesson.TIMING_THE_YELLER))
+	var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+	var nearest := 1 << 30
+	for point in beat:
+		var tile := map.world_to_tile(point)
+		var gap := maxi(maxi(box.position.x - 1 - tile.x, tile.x - box.end.x),
+				maxi(box.position.y - 1 - tile.y, tile.y - box.end.y))
+		nearest = mini(nearest, maxi(gap, 0))
+	return nearest
+
 func run(t: TestRunner) -> void:
 	var stood := {}
 	var routes := 0
 	var strays := 0
 	var missing: Array[String] = []
+	var beat_gaps := {}
 	for seed_value in _seeds():
 		var map := CityGenerator.generate(seed_value)
 		var state := CityState.new()
@@ -69,6 +85,9 @@ func run(t: TestRunner) -> void:
 			var location := dawn.locations().holding(tile, map.tile_at(tile))
 			if location and units.has(location.part_of()):
 				on_units[plan.row_id()] = int(on_units.get(plan.row_id(), 0)) + 1
+				if plan.row_id() == DawnTutorial.PACES_HER_SIDEWALK:
+					var gap := _beat_gap(map, route, plan.walks())
+					beat_gaps[gap] = int(beat_gaps.get(gap, 0)) + 1
 		var lessons := _lessons(route)
 		for row_id: String in lessons:
 			if on_units.has(row_id):
@@ -80,6 +99,7 @@ func run(t: TestRunner) -> void:
 				strays += 1
 				missing.append("%d: stray %s" % [seed_value, row_id])
 	print("LESSONS routes=%d stood=%s strays=%d" % [routes, stood, strays])
+	print("YELLER beats by tiles between the nearest end and lesson (5)'s box: %s" % beat_gaps)
 	for line in missing:
 		print("LESSONS missing ", line)
 	t.check(true, "a probe asserts nothing")

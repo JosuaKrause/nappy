@@ -2,9 +2,11 @@ extends RefCounted
 ## **Day 1's dog-walker decision is made twice before her door, on the tutorial route**
 ## *(PLAYTEST-05 6: the dog-walker decision has to be made at least twice on day one)*: she walks
 ## the route to the tutorial park and back, and meets lesson (3)'s dog walker on its street on her
-## way out, and the rig's second on her walk home, each close enough to pass (`within_its_reach()`).
-## The director sends both (`EventDirector._send_the_lessons_dog_walker()`) and the events create
-## each on the path it sent (`EventsAhead._send_down_her_line()`).
+## way out, and the rig's second on her walk home, each close enough to pass (`within_its_reach()`),
+## with her camera leading her as it does in play, since what is out of her sight is judged against
+## it. The director sends both (`EventDirector._send_the_lessons_dog_walker()`) and the events create
+## each on the path it sent (`EventsAhead._send_down_her_line()`); only a dog walker the director
+## sent counts, never one placed at dawn.
 ##
 ## **Combined, and on real cities, for a stated reason**: the guarantee is a day's, made by the
 ## tutorial route (`TutorialRoute`), the director's hold on it and the events' creation together,
@@ -25,16 +27,18 @@ func run(t: TestRunner) -> void:
 		var out_on_three := INF
 		var home := INF
 		for seen: Dictionary in met:
+			if not bool(seen.get("sent", false)):
+				continue
 			var nearest := float(seen["nearest"])
 			if seen["where"] == Rig.OUT_ON_THREE:
 				out_on_three = minf(out_on_three, nearest)
 			elif seen["where"] == Rig.HOME:
 				home = minf(home, nearest)
 		t.check(out_on_three <= reach,
-				"seed %d: she meets lesson (3)'s dog walker on its street on her way to the park (%s)"
+				"seed %d: she meets lesson (3)'s dog walker, sent, on its street on her way to the park (%s)"
 				% [seed_value, met])
 		t.check(home <= reach,
-				"seed %d: she meets a second dog walker on her walk home, before her door (%s)"
+				"seed %d: she meets a second sent dog walker on her walk home, before her door (%s)"
 				% [seed_value, met])
 	t.check(walked > 0, "there were tutorial routes to walk (%d)" % walked)
 

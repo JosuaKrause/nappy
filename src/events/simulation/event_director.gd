@@ -1008,8 +1008,9 @@ func _handed_from_the_route() -> void:
 ## day's plan through `site_what_is_on_her_way()` once it has a site. A row sent ahead of her that
 ## found no room is answered here on a later turn of the clock that finds it some, ahead of the next
 ## marble (`_send_what_waited()`). `view` is the camera's whole
-## view (`VisibleView`), which a row sent down a lane of the road is sited out of; null for a camera
-## on her.
+## view (`VisibleView`), which a row sent down a lane of the road and every row on foot that comes
+## toward her are sited out of, and which lesson (3)'s dog walker's reach is measured from
+## (`_down_the_lessons_street()`); null for a camera on her.
 func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null) -> Array:
 	if _tutorial and not _tutorial_park_reached \
 			and _tutorial.has_in_its_park(_map.world_to_tile(at)):
@@ -1105,8 +1106,10 @@ func _holds_the_tutorial_route(tile: Vector2i) -> bool:
 ## the street before it on, it comes down the line's sidewalk of lesson (3)'s street from its far end
 ## (`_down_the_lessons_street()`): a street a block long is shorter than the view is wide, so down
 ## her line from the street is often past its far end, where a T or a calm zone has no sidewalk. So
-## both are met on lesson (3)'s street and before her door *(PLAYTEST-05 6: the dog-walker decision
-## is made at least twice on day one)*. Nothing is spent while held.
+## both are met on lesson (3)'s street and before her door with the camera leading her as it does in
+## play, on every seed the record grassy-beaver-golden-puffin counts but the few it names
+## *(PLAYTEST-05 6: the dog-walker decision is made at least twice on day one)*. Nothing is spent
+## while held.
 func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
 		view: VisibleView) -> Array:
 	var tile := _map.world_to_tile(at)
@@ -1137,13 +1140,18 @@ func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
 ## **Lesson (3)'s dog walker coming down its street toward her**, from the far end of the line's
 ## sidewalk as she walks (`homeward` or not) to the end she comes onto it at and on past it as far
 ## again, cut to the ground it walks (`TutorialRoute.way_toward_her_along()`): the moment that far end
-## is just out of her sight (`PendingWarning.stands_out_of_sight()`) and no further from her than
-## `_lesson_walker_reach()`, so it is still on the street when she meets it; empty otherwise, or where
-## the path would come through a region door or a placed plan's room (`clear_to_send()`).
+## is just out of her sight (`PendingWarning.stands_out_of_sight()`) and no further from the view's
+## centre than `_lesson_walker_reach()`, so it is still on the street when she meets it; empty
+## otherwise, or where the path would come through a region door or a placed plan's room
+## (`clear_to_send()`). **The reach is the view's, not hers**: in play her camera leads her by its
+## look-ahead less its smoothing's lag (`Stroller.CAMERA_LOOK_AHEAD`), toward the corner, so a reach
+## measured from her closes the window between the far end leaving her reach and coming into sight.
 func _down_the_lessons_street(def: EventDef, at: Vector2, view: VisibleView,
 		homeward: bool) -> PackedVector2Array:
 	var way := _tutorial.way_toward_her_along(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, homeward)
-	if way.size() < 2 or way[0].distance_to(at) > _lesson_walker_reach() \
+	var centre := view.camera_view().get_center() \
+			if view and view.camera_view().has_area() else at
+	if way.size() < 2 or way[0].distance_to(centre) > _lesson_walker_reach() \
 			or not PendingWarning.stands_out_of_sight(_map, def, at, way[0], view):
 		return PackedVector2Array()
 	var path := _navigator.trim(PackedVector2Array([way[0], way[1] * 2.0 - way[0]]),
@@ -1153,10 +1161,10 @@ func _down_the_lessons_street(def: EventDef, at: Vector2, view: VisibleView,
 		return PackedVector2Array()
 	return path
 
-## **How far from her the far end of lesson (3)'s street may be when its dog walker sets off from
-## there**, in world px: the camera's half diagonal and two tiles, the nearest a point round the
-## corner she has still to turn is out of sight from. Further, and at its 32px/s it walks off its
-## street before she turns onto it, to be met on the street before.
+## **How far from the centre of her view the far end of lesson (3)'s street may be when its dog
+## walker sets off from there**, in world px: the camera's half diagonal and two tiles, the nearest a
+## point round the corner she has still to turn is out of sight from. Further, and at its 32px/s it
+## walks off its street before she turns onto it, to be met on the street before.
 static func _lesson_walker_reach() -> float:
 	return Tuning.VIEW_HALF_EXTENT.length() + Tuning.TILE_SIZE * 2.0
 
@@ -1196,7 +1204,8 @@ func _send_what_waited(at: Vector2, heading: Vector2, view: VisibleView) -> Arra
 ## `_toward_her()` is still what every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`, the sent
 ## `dog_walker`) gets; only the road-placed ones take the road-aware sibling. A row warned of first
 ## in the lane beside her (the convoy) is sited there (`_in_the_lane_beside_her()`). `view` is the
-## camera's whole view a row in a lane is sited out of, or null for a camera on her.
+## camera's whole view that a row in a lane and every row on foot that comes toward her are sited
+## out of, or null for a camera on her.
 ##
 ## **A region door keeps clear ground around itself, and a run sited in front of her is a placement
 ## like any other** (`clear_to_send()`). The whole path is asked, not its start: a cyclist coming

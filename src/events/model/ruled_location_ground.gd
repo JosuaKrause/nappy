@@ -98,6 +98,16 @@ func offer_on(def: EventDef, location: Location, tiles: Array[Vector2i],
 		return null
 	return _first_valid(def, location, tiles, among, _stream_of(def, location))
 
+## **`offer_on()` with a route along the street held to `within`** as well as to the location's run
+## (`Location.run()`, where this ground keeps routes on it): the route stops at the last tile inside
+## both, as at a closure. For a row whose beat its caller lays, day 1's yeller kept off the junction
+## she crosses at before his street (`DawnTutorial`); `within` with no area bounds nothing more.
+func offer_within(def: EventDef, location: Location, tiles: Array[Vector2i],
+		among: Array[EventPlan], within: Rect2i) -> EventPlan:
+	if tiles.is_empty():
+		return null
+	return _first_valid(def, location, tiles, among, _stream_of(def, location), within)
+
 ## The stream a location's candidates for `def` are built on: seeded by the day, the location and the
 ## row alone, so the same row at the same location has the same route and facing whenever it is
 ## asked, and by whoever asks (the unit's draw, her walk's siting).
@@ -109,13 +119,16 @@ func _stream_of(def: EventDef, location: Location) -> RandomNumberGenerator:
 ## **The event `def` would be at `location`**: a candidate built on each of `fits` in the order
 ## handed, on `rng`, asked of the day's rules among `among` (and what the day stands); the first with
 ## room all round, or with `roomiest` off the first no rule refuses, else the roomiest a rule leaves
-## valid, else null.
+## valid, else null. A route along the street stops at the edge of the location's run, where this
+## ground keeps routes on it, and of `within`, where that has area.
 func _first_valid(def: EventDef, location: Location, fits: Array[Vector2i],
-		among: Array[EventPlan], rng: RandomNumberGenerator) -> EventPlan:
+		among: Array[EventPlan], rng: RandomNumberGenerator, within := Rect2i()) -> EventPlan:
 	var role := EventScheduler.role_for(def, _day)
 	var reach_context := among.duplicate()
 	reach_context.append_array(_standing)
 	var run := location.run() if _keeps_routes_on_the_run else Rect2i()
+	if within.has_area():
+		run = run.intersection(within) if run.has_area() else within
 	var best: EventPlan = null
 	var best_room := -INF
 	for tile in fits:
