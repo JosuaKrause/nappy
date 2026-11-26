@@ -1196,7 +1196,8 @@ another pursuer on the other close the street with every line rule satisfied, so
 every body, not only the roadblock.
 
 **A roadblock is asked too**: the catalogue's `roadblock` is the open kind ("there are two kinds of
-roadblocks. one that is open and one that is closing the street", inbox #1491 in silky-lemur; the closing kind is `closing_roadblock`, below). It spans the street by design, and its
+roadblocks. one that is open and one that is closing the street", inbox #1491 in silky-lemur; the
+closing kind is `closing_roadblock`, below). It spans the street by design, and its
 band takes the sidewalk on its own side of the road and the road, standing on the kerb between
 them, and leaves the far sidewalk whole, so it is refused where a body already closes that far
 sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin; "okay
@@ -1212,12 +1213,16 @@ rule does not cover, and the task's own swap, which puts a roadblock across such
 the day placed none close by, is not judged by the day's rules, so neither loses one.
 
 **The closing roadblock is refused on her routes' streets by the same rule.** `closing_roadblock`
-stands on the middle of its street (`EventDef.stands_mid_street()`, `CityMap.street_middle_beside()`)
-with a band reaching 96px either way, all 192px of the street ("close the street fully", PLAYTEST-135
-7), so read at its middle (`EventPlan.body_at()`) it closes both sidewalks and the rule refuses it
-on any street of her routes where a sidewalk could be kept; the route rules refuse it where it
-would cut a route. It stands on the streets beside and off her routes, where a closed street costs
-her a detour and never the day, and day 13's roadblock phase and the task's swap keep the open kind.
+stands on the middle of its street (`EventDef.stands_mid_street()`,
+`CityMap.street_middle_beside()`) with a band reaching 96px either way, all 192px of the street
+("close the street fully", PLAYTEST-135 7), so read at its middle (`EventPlan.body_at()`) it closes
+both sidewalks and the rule refuses it on any street of her routes where a sidewalk could be kept;
+the route rules refuse it where it would cut a route. So the bags of her routes' streets hold no
+marble of it (`EventDef.stands_off_the_route()`, `UnitFills`), and what those streets place is
+what they place without it. It stands on the streets beside and off her routes, where a closed
+street costs her a detour and never the day, and it may stand on a street a seal or a closure
+already shuts, where it adds nothing to the route decision; day 13's roadblock phase and the task's
+swap keep the open kind.
 
 ### A pacing row is passed by waiting, or left at a crossing
 

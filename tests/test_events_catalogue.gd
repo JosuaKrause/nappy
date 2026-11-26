@@ -142,6 +142,7 @@ const _DRAWN_ON_A_BUILDING: Array[String] = ["burning_building", "burnt_shell"]
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,
+	EventDef.Look.CLOSING_ROADBLOCK,
 	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
 	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,
@@ -767,10 +768,6 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 		if def.picture() == EventDef.Look.NONE:
 			t.check(invisible.has(def.id()), "'%s' draws nothing on purpose" % def.id())
 			continue
-		if def.stands_mid_street():
-			# The closing roadblock is the open one's barrier at the width of the whole street.
-			t.check(owner_of.has(def.picture()), "'%s' draws its open sibling's barrier" % def.id())
-			continue
 		t.check(not owner_of.has(def.picture()),
 				"'%s' has a picture of its own (else shared with '%s')"
 				% [def.id(), owner_of.get(def.picture(), "")])
@@ -792,8 +789,6 @@ func _test_every_look_carries_its_own_silhouette(t: TestRunner) -> void:
 	var seen := {}
 	for def in CatalogueRows.every():
 		if def.picture() == EventDef.Look.NONE:
-			continue
-		if def.stands_mid_street():
 			continue
 		var icon := EventPictures.icon_for(def.picture())
 		t.check(not icon.is_empty(), "'%s' has a silhouette a badge could draw" % def.id())

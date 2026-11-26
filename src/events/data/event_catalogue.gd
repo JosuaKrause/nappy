@@ -1869,7 +1869,7 @@ static func _curfew_announce() -> EventDef:
 ## (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) catches a row whose field sits under the
 ## trigger; this one is the row that found it.
 static func _roadblock() -> EventDef:
-	var row := _roadblock_draft("roadblock", ROADBLOCK_REACH)
+	var row := _roadblock_draft("roadblock", ROADBLOCK_REACH, EventDef.Look.ROADBLOCK)
 	row.drawn(2.0, 6)
 	return row.build()
 
@@ -1877,8 +1877,10 @@ static func _roadblock() -> EventDef:
 ## standing on the middle of its street with a band that reaches `CLOSING_ROADBLOCK_REACH` either
 ## way, so it covers all 192px of the street and shuts both sidewalks ("there are two kinds of
 ## roadblocks. one that is open and one that is closing the street", inbox #1491 in silky-lemur;
-## "close the street fully", PLAYTEST-135 7). It draws the open one's picture at the width it
-## collides at, a wider barrier of the same concrete and not a thing of its own.
+## "close the street fully", PLAYTEST-135 7). It has a picture and a badge of its own
+## (`EventDef.Look.CLOSING_ROADBLOCK`): a lower barrier with a coil of razor wire along its top,
+## drawn wall to wall at the width it collides at, so the badge says which kind is coming before
+## either is in sight, whether she can get past it or has to go round.
 ##
 ## **It stands only where a closed street is allowed.** On a street her routes run down the
 ## one-sidewalk rule (`OneSidewalkOpenRule`) reads its band at the street's middle and refuses it,
@@ -1889,18 +1891,23 @@ static func _roadblock() -> EventDef:
 ## either side of the band at the street's middle (`EventFootprints.guard_post_offset()`).
 ##
 ## It is drawn half as often as the open one, so a street that is shut for her stays the rarer
-## kind.
+## kind, and it has no marble in the bags of her routes' streets (`EventDef.stands_off_the_route()`),
+## where the one-sidewalk rule would refuse every draw of it, so those bags place what they did
+## without it. Its `max_per_day` binds only a scene recipe's rows: the units draw it by its weight
+## alone, at most one to a unit (`MarbleDraw`), and no daily cap bounds how many a day stands.
 static func _closing_roadblock() -> EventDef:
-	var row := _roadblock_draft("closing_roadblock", CLOSING_ROADBLOCK_REACH)
+	var row := _roadblock_draft("closing_roadblock", CLOSING_ROADBLOCK_REACH,
+			EventDef.Look.CLOSING_ROADBLOCK)
 	row.closing_its_street()
 	row.drawn(1.0, 4)
 	return row.build()
 
 ## The roadblock row with a band reaching `reach` either way across its street from where its body
-## stands: everything but how often it is drawn, which each row's own builder says.
-static func _roadblock_draft(id: String, reach: float) -> EventDraft:
+## stands, drawn as `picture`: everything but how often it is drawn, which each row's own builder
+## says.
+static func _roadblock_draft(id: String, reach: float, picture: EventDef.Look) -> EventDraft:
 	var row := EventDraft.new(id)
-	row.look(LookSpec.of(EventDef.Look.ROADBLOCK))
+	row.look(LookSpec.of(picture))
 	row.body(BodySpec.solid(GroundShape.band(reach))
 			.walked_round()
 			.going_on()

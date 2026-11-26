@@ -157,6 +157,7 @@ func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,
+	EventDef.Look.CLOSING_ROADBLOCK,
 	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
 	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,

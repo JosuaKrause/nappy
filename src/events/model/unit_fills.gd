@@ -95,12 +95,13 @@ func _work_out(view: PlacementView.View, ground: PlacementGround.Kind) -> Dictio
 ## - **a wall that ends the day** is pulled past the rim: `deep()` times over off the route, once
 ##   nearer;
 ## - **anything else** (scenery) once everywhere;
-## - a row refused an alley the routes run down (`EventDef.stands_only_in_alleys()`) has no marble
-##   on the route.
+## - a row with no place on the route (`EventDef.stands_off_the_route()`: one refused an alley the
+##   routes run down, and the closing roadblock, which no street of her routes takes) has no
+##   marble there, so its share of the route's bag is not a share that comes back empty.
 func _in_view(def: EventDef, view: PlacementView.View, wall_share: float) -> float:
 	var on := view == PlacementView.View.ON_THE_ROUTE
 	var off := view == PlacementView.View.OFF_THE_ROUTE
-	if on and def.stands_only_in_alleys():
+	if on and def.stands_off_the_route():
 		return 0.0
 	var times := 1.0
 	match EventScheduler.role_for(def, _day):

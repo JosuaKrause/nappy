@@ -50,8 +50,9 @@ var _vanishes_into_its_hold := false
 ## cyclist, about one in 400 drawn as a pelican on the same bike. Only the picture changes.
 var _may_be_a_pelican := false
 
-## Which side or sides of a `Look.ROADBLOCK` band `RoadblockLook._draw_roadblock()` posts a standing
-## guard on: `-1`/`+1` in `guard_post_offset()`'s own reading of `side`, the same sign
+## Which side or sides of a roadblock's band (`Look.ROADBLOCK`, `Look.CLOSING_ROADBLOCK`)
+## `RoadblockLook._draw_roadblock()` posts a standing guard on: `-1`/`+1` in
+## `guard_post_offset()`'s own reading of `side`, the same sign
 ## `_guard_side_toward()` and `EventBarrierPost.chaser_side()` use. `[-1, 1]` (both) is every row's
 ## default: the catalogue `roadblock` and every wall body inherit it unless something overrides it.
 ##

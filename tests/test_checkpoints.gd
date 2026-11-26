@@ -517,6 +517,8 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 ## itself, `DoorClearanceRule.clear_of_the_doors()`, over a whole planned day rather than over one
 ## contrived placement: the ways a row gets onto the map are several (the dawn draw, a scripted
 ## row's dawn phase, the roadblock phase) and a check on one of them would say nothing about the rest.
+## Each plan is read where its body stands (`EventPlan.body_at()`), as the rule reads a candidate:
+## a roadblock placed in a carriageway lane stands on its kerb or on the middle of its street.
 ##
 ## **And the same day planned with no doors is what says the sweep is not vacuous**, and what
 ## measures the price of the rule at the same time. The second call is the identical call with the
@@ -548,14 +550,14 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 			for plan in guarded:
 				if not plan.is_placed():
 					continue
-				if not DoorClearanceRule.clear_of_the_doors(plan.placed_at(), plan.walks(), doors,
+				if not DoorClearanceRule.clear_of_the_doors(plan.body_at(), plan.walks(), doors,
 						plan.field_reach()):
 					inside += 1
 			var inside_before := 0
 			for plan in ungraded:
 				if not plan.is_placed():
 					continue
-				if not DoorClearanceRule.clear_of_the_doors(plan.placed_at(), plan.walks(), doors,
+				if not DoorClearanceRule.clear_of_the_doors(plan.body_at(), plan.walks(), doors,
 						plan.field_reach()):
 					inside_before += 1
 			t.check(inside == 0,
