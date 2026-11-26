@@ -594,7 +594,7 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## created its route is worked out as it goes (`EventInstance.go_on_by()`).
 func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -> void:
 	var lane := sited[0]
-	var going := (sited[sited.size() - 1] - lane).normalized()
+	var going := (sited[1] - lane).normalized()
 	if going == Vector2.ZERO:
 		return
 	var ends := PendingWarning.lane_ends(world.city_map(), going)

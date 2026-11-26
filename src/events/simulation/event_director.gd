@@ -1428,17 +1428,27 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ## her has no place out of sight. The caller waits and asks again.
 func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
-	var inward := _map.pavement_inward(_map.world_to_tile(at))
-	if inward == Vector2i.ZERO:
-		return PackedVector2Array()
+	var tile := _map.world_to_tile(at)
+	var inward := _map.pavement_inward(tile)
 	var vertical := inward.x != 0
+	if inward == Vector2i.ZERO:
+		if not _stands_on_a_corner(tile):
+			return PackedVector2Array()
+		vertical = absf(heading.y) > absf(heading.x)
 	var index := CrowdLanes.corridor_at(at.x if vertical else at.y)
 	if index < 0:
 		return PackedVector2Array()
-	var along := Vector2(inward.y, inward.x)
+	var along := Vector2.DOWN if vertical else Vector2.RIGHT
 	var component := heading.dot(along)
 	var going := -along * signf(component) if not is_zero_approx(component) else along
 	return _down_the_lane(at, going, index, def, view)
+
+## **Whether `tile` is a sidewalk corner of a junction box**: sidewalk in both corridors at once,
+## where `CityMap.pavement_inward()` has no single kerb to answer with. A walk crosses a box at
+## every junction it comes to, so she stands on one for a good share of any walk.
+func _stands_on_a_corner(tile: Vector2i) -> bool:
+	var offsets := _map.corridor_offsets(tile)
+	return _map.tile_at(tile) == GameEnums.TileType.SIDEWALK and offsets.x >= 0 and offsets.y >= 0
 
 ## The first leg of `def` in the lane of corridor `index` driving `going` (a unit along the street),
 ## from its place just out of sight up the lane (`PendingWarning.in_its_lane()`, against `view`, the
@@ -1500,14 +1510,36 @@ func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
 		going: Vector2) -> PackedVector2Array:
 	var vertical := absf(going.y) > absf(going.x)
 	var level := Vector2(place.x, her.y) if vertical else Vector2(her.x, place.y)
+	var way := way_on()
+	if def.is_warned_in_its_lane():
+		return _past_her_through_the_next_box(def, place, level, going, her)
 	var ends := PendingWarning.lane_ends(_map, going)
-	var far := past_the_next_box(level, going, ends) if def.is_warned_in_its_lane() \
-			else _past_her_by(level, going, place.distance_to(level), ends)
+	var far := _past_her_by(level, going, place.distance_to(level), ends)
 	if (far - level).dot(going) < 0.0:
 		return PackedVector2Array()
 	var leg := PackedVector2Array([place, far])
-	var way := way_on()
 	if not way.drives_clear(def, leg) or way.next_leg(def, far, going, her).is_empty():
+		return PackedVector2Array()
+	return leg
+
+## **The leg of a row warned of first in its lane** (the convoy): from `place` down the lane to
+## `level` (the point of the lane level with her) and on through the next junction box past her by
+## the way the day's `WayOn` leaves it, straight on or round the corner, so it follows a walk that
+## turns there (a walk that came round that corner has nothing straight on but the street it left);
+## empty where it could not drive that, or go on from where it leaves the box.
+func _past_her_through_the_next_box(def: EventDef, place: Vector2, level: Vector2,
+		going: Vector2, her: Vector2) -> PackedVector2Array:
+	if (level - place).dot(going) <= 0.0:
+		return PackedVector2Array()
+	var way := way_on()
+	var through := way.next_leg(def, level, going, her)
+	if through.size() < 2:
+		return PackedVector2Array()
+	var leg := PackedVector2Array([place])
+	leg.append_array(through)
+	var last := leg.size() - 1
+	var leaving := (leg[last] - leg[last - 1]).normalized()
+	if not way.drives_clear(def, leg) or way.next_leg(def, leg[last], leaving, her).is_empty():
 		return PackedVector2Array()
 	return leg
 
