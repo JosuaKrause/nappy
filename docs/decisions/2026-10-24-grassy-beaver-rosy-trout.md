@@ -97,13 +97,18 @@ closure planner refuses those streets too. **Nor were the rows**: the design's p
 than a route, lets rows stand on the walk, and the probe found pairs of them shutting it, which
 would turn the walk into a dead end of its own, so the rows keep a sidewalk there.
 
-## For the orchestrator
+## One city of thirty has no dead end at the doorstep
 
-**One city of thirty has no dead end at the doorstep on day 2** (seed 17), so the design's "only if
-that is rare does day 2's tree leave one off by construction" is not settled by this build. Day 2's
-tree leaves no side street at those junctions off it there, or each one it leaves off carries a
-seal that keeps a sidewalk open (a thinned pair or a car accident). Whether one in thirty is rare
-enough, or a dead end is built for it, is the orchestrator's to put to the player.
+**Seed 17 is settled: no dead end is built for it.** The design's rule builds a dead end into day 2's
+tree only if one is rare at the doorstep. 29 cities of 30 have one, which by the player's own
+definition (curly-moose #819) is not rare, so the rule says build nothing. Seed 17 still has dead
+ends on day 2, just not at its doorstep, and the player asked only for the lesson on day 2. Day 2's
+tree there leaves no side street at those junctions off it, or each one it leaves off carries a seal
+that keeps a sidewalk open (a thinned pair or a car accident).
+
+**The rule's reading change, measured.** Reading a body where it stands (`BodyStance.of_plan()`)
+instead of at its lane tile changed 8 of about 25,800 placements on days 1 to 14. All 8 are refusals
+on her route's streets that the old reading wrongly let through.
 
 ## Choices and readings
 
