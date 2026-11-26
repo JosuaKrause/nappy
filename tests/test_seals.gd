@@ -16,10 +16,21 @@ extends RefCounted
 ## main road — physically connected is not the same claim as winnable, and the old assertion had no
 ## way to tell the two apart. `_test_a_day_is_reachable_without_the_main_road` is the restatement;
 ## see its own doc for exactly what it proves and what it does not.
+##
+## **Why it builds generated cities and combines modules.** Its subject is a guarantee about the
+## day's composition, which no one module holds alone: a seal stands off the tree `RouteTree` grew,
+## beside the closures `ClosurePlanner` chose, and the day-1 cases add the route
+## `TutorialRoute.for_city()` chose, which decides where the tree grows and which side streets get
+## a seal. Whether nothing leaves that route past its first block is a question about all four
+## together on the ground a real city has (absent streets, their leftover pavement, alleys, street
+## trees), the cases where it has been found to fail, so the cases plan the day as the dawn does
+## (`_plan_day_one()`) on cities the generator made, over the city suites' seeds.
 
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const SEEDS := 6
 const BASE_SEED := 71717
+## No tile: what `_first_leak()` answers when the flood stays on the allowed ground.
+const NO_TILE := Vector2i(-1, -1)
 
 var _maps: Array[CityMap] = []
 
@@ -54,6 +65,10 @@ func run(t: TestRunner) -> void:
 	_test_no_seal_reaches_over_a_building(t)
 	_test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t)
 	_test_the_catalogue_sees_a_seal_at_a_route_junction(t)
+	_test_day_one_seals_each_side_street_at_its_mouth(t)
+	_test_day_one_walls_every_alley_mouth_on_a_lesson_street(t)
+	_test_nothing_leaves_the_tutorial_route_past_its_first_block(t)
+	_test_the_car_accident_seals_from_day_two(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -89,24 +104,38 @@ func _seal_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 var _tree_cache: Dictionary = {}
 var _seal_cache: Dictionary = {}
 
+var _tutorial_cache: Dictionary = {}
+
+## The run's tutorial route on a day whose spec walks it, null on every other day: what the game
+## hands the day's tree and seals (`main` works it out once from the city, `City` hands it on for
+## that day alone).
+func _tutorial_for(map: CityMap, day: int) -> TutorialRoute:
+	if not DaySpec.for_day(day).walks_the_tutorial():
+		return null
+	if not _tutorial_cache.has(map.city_seed()):
+		_tutorial_cache[map.city_seed()] = TutorialRoute.for_city(map)
+	return _tutorial_cache[map.city_seed()]
+
 func _tree_for(map: CityMap, day: int) -> RouteTree:
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _tree_cache.has(key):
 		_repaint_for(map, day)
-		_tree_cache[key] = RouteTree.for_day(map, day)
+		_tree_cache[key] = RouteTree.for_day(map, day, _tutorial_for(map, day))
 	return _tree_cache[key]
 
 func _seals_for(map: CityMap, day: int) -> Array[EventPlan]:
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _seal_cache.has(key):
 		var tree := _tree_for(map, day)
-		_seal_cache[key] = SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
+		_seal_cache[key] = SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day),
+				{}, null, _tutorial_for(map, day))
 	return _seal_cache[key]
 
 ## Every real, non-home, non-spine, off-tree street — what a day's seals are supposed to cover
-## exactly.
+## exactly — and on the day she walks the tutorial route every side street off it past its first
+## block, which is sealed at its mouth even where a branch runs along its far half.
 func _candidate_segments(map: CityMap, tree: RouteTree,
-		home: StreetNetwork.Segment) -> Dictionary:
+		home: StreetNetwork.Segment, tutorial: TutorialRoute = null) -> Dictionary:
 	var found := {}
 	for segment in map.street_network().segments():
 		var key := segment.key()
@@ -117,6 +146,10 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 		if map.is_main_road(not segment.horizontal, segment.a.x):
 			continue
 		found[key] = true
+	if tutorial:
+		for mouth in tutorial.side_street_mouths():
+			var segment: StreetNetwork.Segment = mouth[0]
+			found[segment.key()] = true
 	return found
 
 ## Every street a plan's position actually resolves to. A plan whose position is not on any
@@ -151,7 +184,7 @@ func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
-			var candidates := _candidate_segments(map, tree, home)
+			var candidates := _candidate_segments(map, tree, home, _tutorial_for(map, day))
 			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
 
@@ -189,9 +222,14 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
 			var planned := _seals_for(map, day)
+			# A seal at a side street's mouth off the tutorial route stands on the route's kept
+			# ground, which no branch takes, even where a branch runs along the street's far half.
+			var tutorial := _tutorial_for(map, day)
+			var kept: Dictionary = tutorial.kept_ground() if tutorial else {}
 			for plan in planned:
-				var segment := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
-				if not segment:
+				var tile := map.world_to_tile(plan.placed_at())
+				var segment := map.street_network().segment_containing(tile)
+				if not segment or kept.has(tile):
 					continue
 				t.check(not tree.is_on_the_tree(segment.key()),
 						"seed %d day %d: a seal stands on the corridor itself, at %s"
@@ -225,7 +263,7 @@ func _test_the_tree_itself_is_untouched(t: TestRunner) -> void:
 	for map in _maps:
 		var day := 5
 		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var before := tree.cells()
 		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var after := tree.cells()
@@ -365,6 +403,14 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 		for day: int in [1, 4, 7, 10, 14]:
 			var tree := _tree_for(map, day)
 			var planned := _seals_for(map, day)
+			# On day 1 an alley with a mouth on a lesson street is walled there whatever the tree
+			# says (`_test_day_one_walls_every_alley_mouth_on_a_lesson_street`).
+			var on_the_route := {}
+			var tutorial := _tutorial_for(map, day)
+			if tutorial:
+				for mouth in tutorial.alley_mouths():
+					var alley: Rect2i = mouth[0]
+					on_the_route[alley.position] = true
 			var off_street_tiles := {}
 			for plan in planned:
 				var tile := map.world_to_tile(plan.placed_at())
@@ -372,7 +418,8 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 					off_street_tiles[tile] = true
 
 			for rect in map.alley_lots():
-				if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+				if map.tile_at(rect.position) != GameEnums.TileType.ALLEY \
+						or on_the_route.has(rect.position):
 					continue
 				var vertical := rect.size.x < rect.size.y
 				var block := map.block_at(map.tile_rect_to_world(rect).get_center())
@@ -473,7 +520,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		var day := 6
 		_repaint_for(map, day)
 		var home := ClosurePlanner.home_street(map)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		if tree.branches().is_empty():
 			continue
 		# Sealing (and its thinning pass) is run for its side effect on
@@ -727,8 +774,9 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
-			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
+			var tree := RouteTree.for_day(map, day, _tutorial_for(map, day))
+			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day),
+					{}, null, _tutorial_for(map, day))
 			var felled := {}
 			for plan in planned:
 				if plan.row_id() != "fallen_tree":
@@ -810,7 +858,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 	for map in _maps:
 		for day: int in [1, 5, 9, 13]:
 			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, _tutorial_for(map, day))
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
@@ -836,7 +884,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			for rect in region_plan.door_alleys():
 				boundary[rect.position] = true
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
-					map.held_streets())
+					map.held_streets(), _tutorial_for(map, day))
 			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
 			standing.append_array(region_plan.wall_plans())
@@ -964,3 +1012,337 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 		if not joined:
 			return false
 	return true
+
+# ------------------------------------------------------------- the tutorial route ---
+
+## Day 1's seals and every plan they need, planned fresh in the order the dawn plans them (the
+## tree with the route, the region plan, the closures, the seals) so `CityMap.soft_sealed_tiles()`
+## and `closed_tile_set()` hold day 1's and nobody else's when the caller reads them. The caller
+## puts the map's closures back with `close_streets([])`.
+func _plan_day_one(map: CityMap, tutorial: TutorialRoute) -> Array[EventPlan]:
+	_repaint_for(map, 1)
+	var spec := DaySpec.for_day(1)
+	var tree := RouteTree.for_day(map, 1, tutorial)
+	var region_plan := RegionPlanner.plan_day(map, spec, tree)
+	var closure_rng := RandomNumberGenerator.new()
+	closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), 1])
+	map.close_streets(ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan))
+	return SealPlanner.plan_day(map, spec, tree, _seal_rng(map, 1), {}, null, tutorial)
+
+## Where along its street a tile stands, on the street's own along axis.
+func _along(segment: StreetNetwork.Segment, tile: Vector2i) -> int:
+	return tile.x if segment.horizontal else tile.y
+
+## The seal bodies standing on `segment` within half its length of its `at_a` mouth.
+func _bodies_at_mouth(map: CityMap, seals: Array[EventPlan], segment: StreetNetwork.Segment,
+		at_a: bool) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
+	var rect := segment.tile_rect()
+	var half: int = (rect.size.x if segment.horizontal else rect.size.y) / 2
+	var mouth := _along(segment, segment.mouth_rect(at_a).position)
+	for plan in seals:
+		var tile := map.world_to_tile(plan.body_at())
+		if not rect.has_point(tile):
+			continue
+		if absi(_along(segment, tile) - mouth) < half:
+			found.append(plan)
+	return found
+
+## The player's ask for day 1, past the tutorial route's first block: every side street sealed,
+## both its sidewalks blocked and the street open *(gentle-owl #1253, the player: "doesn't have to
+## be a full hard seal -- street can be open -- just both sidewalks need to be blocked")*. Each
+## side street's mouth on the route carries a whole soft pair (never thinned, never the delivery
+## van, lesson (4)'s row), or across a precinct the burst water main, standing far enough in that
+## no body, with her own beside it, reaches the route's junction box.
+func _test_day_one_seals_each_side_street_at_its_mouth(t: TestRunner) -> void:
+	var mouths := 0
+	for map in _maps:
+		var tutorial := _tutorial_for(map, 1)
+		t.check(tutorial != null, "seed %d: day 1 has a tutorial route" % map.city_seed())
+		if not tutorial:
+			continue
+		var seals := _plan_day_one(map, tutorial)
+		map.close_streets([] as Array[RoadClosure])
+		for mouth in tutorial.side_street_mouths():
+			var segment: StreetNetwork.Segment = mouth[0]
+			var at_a: bool = mouth[1]
+			mouths += 1
+			var bodies := _bodies_at_mouth(map, seals, segment, at_a)
+			var junction := segment.a if at_a else segment.b
+			var box := map.tile_rect_to_world(Rect2i(junction * CityMap.period(),
+					Vector2i(Tuning.STREET_WIDTH, Tuning.STREET_WIDTH)))
+			if TutorialRoute.is_a_precinct(map, segment):
+				var burst := 0
+				for plan in bodies:
+					burst += 1 if plan.row_id() == "burst_water_main" else 0
+				t.check(burst > 0,
+						"seed %d: the precinct side street %s carries the burst main at its mouth"
+						% [map.city_seed(), segment.key()])
+			else:
+				t.check(bodies.size() == 2,
+						"seed %d: side street %s carries a whole soft pair at its mouth (%d bodies)"
+						% [map.city_seed(), segment.key(), bodies.size()])
+			for plan in bodies:
+				t.check(plan.row_id() != "delivery_van",
+						"seed %d: no side street of the route is sealed with the delivery van (%s)"
+						% [map.city_seed(), segment.key()])
+				var at := plan.body_at()
+				var nearest := Vector2(clampf(at.x, box.position.x, box.end.x),
+						clampf(at.y, box.position.y, box.end.y))
+				t.check(at.distance_to(nearest) + 0.5
+						>= plan.blocking_radius() + Tuning.PLAYER_BODY_RADIUS,
+						"seed %d: the %s at %s's mouth keeps out of the route's junction box"
+						% [map.city_seed(), plan.row_id(), segment.key()])
+	t.check(mouths > 0, "there were side streets off the tutorial route to ask (%d)" % mouths)
+
+## Every through-alley mouth on a lesson street is walled on day 1, with no roll: the alley touches
+## the tree, so the ordinary rule would leave it open as a way off the route.
+func _test_day_one_walls_every_alley_mouth_on_a_lesson_street(t: TestRunner) -> void:
+	for map in _maps:
+		var tutorial := _tutorial_for(map, 1)
+		if not tutorial:
+			continue
+		var seals := _seals_for(map, 1)
+		for mouth in tutorial.alley_mouths():
+			var rect: Rect2i = mouth[0]
+			var at_start: bool = mouth[1]
+			var centre := map.tile_rect_to_world(SealPlanner.alley_mouth_rect(rect,
+					rect.size.x < rect.size.y, at_start)).get_center()
+			var walled := false
+			for plan in seals:
+				walled = walled or plan.placed_at().distance_to(centre) < 1.0
+			t.check(walled, "seed %d: the alley %s is walled at its mouth on a lesson street"
+					% [map.city_seed(), rect])
+
+## The seeds the day-1 guarantee is held over: the city suites' own (`tests/test_route_tree.gd`,
+## `tests/routes_closures_rig.gd` and this suite's), each as its own sweep builds them, so a
+## city the other suites plan is one this guarantee has flooded.
+static func _guarantee_seeds() -> Array[int]:
+	var found: Array[int] = []
+	for i in 6:
+		found.append(4400 + i * 31)
+	for i in 12:
+		found.append(5150 + i * 13)
+	for i in SEEDS:
+		found.append(BASE_SEED + i * 91)
+	return found
+
+## **The guarantee, on the full walkable tile graph** rather than the one `RouteTree` grows on, which
+## leaves out the main road and would pass a route that leaks along it. On day 1's plan (the tree,
+## the closures and the seals), every walkable tile is joined to its neighbours, the main road's
+## sidewalks, alleys, squares, courtyards and calm ground included; closed are the soft-sealed
+## sidewalk tiles, the closures, every tile whose centre a body's disc keeps her centre off, and
+## every carriageway tile between two junction boxes (a carriageway is crossed only in a junction
+## box, PLAYTEST-69). With the doorstep's street and its two junction boxes taken out, a flood from
+## the lesson streets reaches nothing but the lesson streets and their junction boxes, each side
+## street's stub short of its mouth seal (`SealPlanner.tutorial_mouth_stub()`), the pavement of a
+## street the city does not have, and the tutorial park, where it stops. And from the first
+## block, on the same graph, a calm area besides the tutorial park is reachable.
+##
+## **Each mouth seal is then taken away in turn**, its bodies and its soft-sealed tiles with any
+## day-1 closure on the same street, and the same flood must leak: a seal the guarantee would not
+## miss is one this check cannot see. On a side street with both ends on the route whose one seal
+## reaches over the other mouth's stub, the two are taken away together.
+func _test_nothing_leaves_the_tutorial_route_past_its_first_block(t: TestRunner) -> void:
+	var asked := 0
+	var removed := 0
+	for seed_value in _guarantee_seeds():
+		var map := CityGenerator.generate(seed_value)
+		var tutorial := _tutorial_for(map, 1)
+		t.check(tutorial != null, "seed %d: day 1 has a tutorial route" % seed_value)
+		if not tutorial:
+			continue
+		var seals := _plan_day_one(map, tutorial)
+		var closed: Dictionary = map.closed_tile_set().duplicate()
+		var soft: Dictionary = map.soft_sealed_tiles().duplicate()
+		map.close_streets([] as Array[RoadClosure])
+		var home := ClosurePlanner.home_street(map)
+		var doorstep := {}
+		for tile in map.rect_tiles(home.tile_rect()):
+			doorstep[tile] = true
+		for junction: Vector2i in [home.a, home.b]:
+			for tile in map.rect_tiles(Rect2i(junction * CityMap.period(),
+					Vector2i(Tuning.STREET_WIDTH, Tuning.STREET_WIDTH))):
+				doorstep[tile] = true
+		var park := Rect2i()
+		for area in ClosurePlanner.calm_areas(map):
+			if area.block == tutorial.park_block():
+				park = area.rect
+		var allowed := _allowed_on_day_one(map, tutorial, park)
+		# The route's walked ground: its lesson streets and junction boxes (the first box, the
+		# doorstep's, is taken out with the doorstep's street).
+		var sources: Array[Vector2i] = []
+		sources.assign(tutorial.walked_ground().keys())
+		var blocked := _blocked_on_day_one(map, closed, soft, seals)
+		var leak := _first_leak(map, sources, blocked, doorstep, park, allowed)
+		asked += 1
+		t.check(leak == NO_TILE,
+				"seed %d: nothing leaves the tutorial route past its first block (it reaches %s)"
+				% [seed_value, leak])
+		var mouths := tutorial.side_street_mouths()
+		var mouth_count := {}
+		for mouth in mouths:
+			var key: Vector3i = (mouth[0] as StreetNetwork.Segment).key()
+			mouth_count[key] = int(mouth_count.get(key, 0)) + 1
+		for mouth in mouths:
+			var segment: StreetNetwork.Segment = mouth[0]
+			var at_a: bool = mouth[1]
+			removed += 1
+			var both := false
+			var one_end: Array[bool] = [at_a]
+			var opened := _leak_without(map, sources, closed, soft, seals, segment, one_end,
+					doorstep, park, allowed)
+			# A side street with both ends on the route may be short enough that the seal at
+			# one mouth reaches over the other's stub too: the street is still sealed, and taking
+			# both away is what has to show.
+			if opened == NO_TILE and int(mouth_count[segment.key()]) == 2:
+				both = true
+				var both_ends: Array[bool] = [true, false]
+				opened = _leak_without(map, sources, closed, soft, seals, segment, both_ends,
+						doorstep, park, allowed)
+			t.check(opened != NO_TILE,
+					("seed %d: with the seal at %s's mouth taken away%s, and any closure on that "
+					+ "street, the route leaks") % [seed_value, segment.key(),
+					" (with the other mouth's)" if both else ""])
+		var from_home := map.rect_tiles(home.tile_rect())
+		var calm_elsewhere := false
+		for tile: Vector2i in _flood_day_one(map, from_home, blocked, {}, park):
+			if Tile.is_calm(map.tile_at(tile)) and not park.has_point(tile):
+				calm_elsewhere = true
+				break
+		t.check(calm_elsewhere,
+				"seed %d: a calm area besides the tutorial park is reachable from the first block"
+				% seed_value)
+	t.check(asked > 0, "there were tutorial routes to flood (%d)" % asked)
+	t.check(removed > 0, "there were mouth seals to take away (%d)" % removed)
+
+## The first tile the day-1 flood reaches outside `allowed` with the seals at `segment`'s mouths
+## `ends` (`true` for its `a` end) taken away, their bodies and their soft-sealed tiles, and with
+## any closure on `segment` lifted: a day-1 closure across the same street closes it as well as
+## a seal does, so it goes with the seal, or the seal's absence would be unseen behind it.
+func _leak_without(map: CityMap, sources: Array[Vector2i], closed: Dictionary, soft: Dictionary,
+		seals: Array[EventPlan], segment: StreetNetwork.Segment, ends: Array[bool],
+		out: Dictionary, park: Rect2i, allowed: Dictionary) -> Vector2i:
+	var unclosed: Dictionary = closed.duplicate()
+	for tile: Vector2i in closed:
+		if segment.tile_rect().has_point(tile):
+			unclosed.erase(tile)
+	var without: Dictionary = soft.duplicate()
+	for tile: Vector2i in soft:
+		for at_a in ends:
+			if _at_mouth(segment, at_a, tile):
+				without.erase(tile)
+	var kept: Array[EventPlan] = []
+	for plan in seals:
+		var at := map.world_to_tile(plan.body_at())
+		var taken := false
+		for at_a in ends:
+			taken = taken or _at_mouth(segment, at_a, at)
+		if not taken:
+			kept.append(plan)
+	return _first_leak(map, sources, _blocked_on_day_one(map, unclosed, without, kept), out, park,
+			allowed)
+
+## What the day-1 flood may reach: the route's walked ground, the tutorial park, each side street's
+## stub short of the row its mouth seal stands on, and the pavement of a street the city does not
+## have (`CityMap.has_street()`), a dead end allowed as such, with anything past it still asked.
+func _allowed_on_day_one(map: CityMap, tutorial: TutorialRoute, park: Rect2i) -> Dictionary:
+	var allowed := tutorial.walked_ground()
+	for tile in map.rect_tiles(park):
+		allowed[tile] = true
+	var trees := StreetTrees.footprint_tiles(map)
+	for mouth in tutorial.side_street_mouths():
+		var segment: StreetNetwork.Segment = mouth[0]
+		for tile in map.rect_tiles(SealPlanner.tutorial_mouth_stub(map, segment, bool(mouth[1]),
+				trees)):
+			allowed[tile] = true
+	for segment in map.street_network().segments():
+		if not map.has_street(segment.key()):
+			for tile in map.rect_tiles(segment.tile_rect()):
+				if not Tile.is_calm(map.tile_at(tile)):
+					allowed[tile] = true
+	return allowed
+
+## The tiles day 1 closes to her: `closed` and `soft` (the closures' and the soft seals' tiles),
+## and every tile whose centre a body of `seals` keeps her centre off.
+func _blocked_on_day_one(map: CityMap, closed: Dictionary, soft: Dictionary,
+		seals: Array[EventPlan]) -> Dictionary:
+	var blocked: Dictionary = closed.duplicate()
+	blocked.merge(soft)
+	for plan in seals:
+		var reach := plan.blocking_radius()
+		if reach <= 0.0:
+			continue
+		reach += Tuning.PLAYER_BODY_RADIUS
+		var centre := map.world_to_tile(plan.body_at())
+		var span := ceili(reach / Tuning.TILE_SIZE) + 1
+		for dx in range(-span, span + 1):
+			for dy in range(-span, span + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if map.tile_to_world(tile).distance_to(plan.body_at()) <= reach:
+					blocked[tile] = true
+	return blocked
+
+## Whether `tile` stands on `segment` within half its length of its `at_a` mouth, where that
+## mouth's seal stands.
+func _at_mouth(segment: StreetNetwork.Segment, at_a: bool, tile: Vector2i) -> bool:
+	var rect := segment.tile_rect()
+	if not rect.has_point(tile):
+		return false
+	var half: int = (rect.size.x if segment.horizontal else rect.size.y) / 2
+	return absi(_along(segment, tile) - _along(segment, segment.mouth_rect(at_a).position)) < half
+
+## The first tile the day-1 flood from `sources` reaches outside `allowed`, or `NO_TILE`: the
+## flood stops there, since one tile off the route is the whole answer.
+func _first_leak(map: CityMap, sources: Array[Vector2i], blocked: Dictionary, out: Dictionary,
+		park: Rect2i, allowed: Dictionary) -> Vector2i:
+	var reached := _flood_day_one(map, sources, blocked, out, park, allowed)
+	for tile: Vector2i in reached:
+		if not allowed.has(tile):
+			return tile
+	return NO_TILE
+
+## Every walkable tile reached from `sources`, joined four ways, never onto `blocked` or `out`,
+## crossing a carriageway only in a junction box, and stopping at the tutorial park's ground; with
+## `allowed` given, stopping as soon as it reaches a tile outside it.
+func _flood_day_one(map: CityMap, sources: Array[Vector2i], blocked: Dictionary, out: Dictionary,
+		park: Rect2i, allowed: Dictionary = {}) -> Dictionary:
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	for tile in sources:
+		if _floods_onto(map, tile, blocked, out) and not seen.has(tile):
+			seen[tile] = true
+			queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var tile := queue[head]
+		head += 1
+		if park.has_point(tile):
+			continue
+		for offset: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+			var next: Vector2i = tile + offset
+			if seen.has(next) or not _floods_onto(map, next, blocked, out):
+				continue
+			seen[next] = true
+			if not allowed.is_empty() and not allowed.has(next):
+				return seen
+			queue.append(next)
+	return seen
+
+func _floods_onto(map: CityMap, tile: Vector2i, blocked: Dictionary, out: Dictionary) -> bool:
+	if not map.in_bounds(tile) or not map.is_walkable(tile) or blocked.has(tile) or out.has(tile):
+		return false
+	return not (Tile.is_road(map.tile_at(tile)) and CityMap.junction_at(tile) == Vector2i(-1, -1))
+
+## The loud car accident seals no street on day 1 and does from day 2 *(minty-dolphin #834, the
+## player: "yes, let's keep things light on day 1. move it to day 2")*.
+func _test_the_car_accident_seals_from_day_two(t: TestRunner) -> void:
+	var later := 0
+	for map in _maps:
+		for plan in _seals_for(map, 1):
+			t.check(plan.row_id() != "car_accident",
+					"seed %d: no car accident seals a street on day 1" % map.city_seed())
+		for day: int in [2, 3]:
+			for plan in _seals_for(map, day):
+				later += 1 if plan.row_id() == "car_accident" else 0
+	t.check(later > 0, "a car accident seals a street on day 2 or 3 somewhere (%d bodies)" % later)

@@ -32,17 +32,26 @@ extends RefCounted
 ##   east box, pacing into the box, whose lens cuts the alley's mouth off the home street, is
 ##   refused, though no route runs along the home street and no route crosses either of its boxes;
 ##   with no home street named he stands, and further down his street he stands.
+## - **The home street's two sidewalks are not joined at its far end:** with the east street the
+##   home street and her route crossing the box from the north street's east sidewalk to the south
+##   street's, a man shouting pacing the box's west edge, whose lens takes one tile of its east
+##   edge, leaves the north half joined to the home street's north sidewalk and the south half to
+##   its south one: refused, though each of the home street's far ends is reached. One tile longer,
+##   his beat leaves the east edge whole, and he stands.
 
 const NONE: Array[EventPlan] = []
 const JUNCTION := Vector2i(3, 3)
 const WEST := Vector3i(2, 3, 0)
 const EAST := Vector3i(3, 3, 0)
 const SOUTH := Vector3i(3, 3, 1)
+const NORTH := Vector3i(3, 2, 1)
 ## The sidewalks the routes walk: the west street's south one, the south street's east one and
 ## the east street's south one.
 const WEST_SOUTH_SIDE := Rect2i(34, 46, 8, 2)
 const SOUTH_EAST_SIDE := Rect2i(46, 48, 2, 8)
 const EAST_SOUTH_SIDE := Rect2i(48, 46, 8, 2)
+## The north street's east sidewalk.
+const NORTH_EAST_SIDE := Rect2i(46, 34, 2, 8)
 
 var _map: CityMap
 
@@ -56,6 +65,7 @@ func run(t: TestRunner) -> void:
 	_test_a_box_no_street_uses_keeps_a_free_tile(t)
 	_test_the_box_keeps_its_way_into_a_mouth(t)
 	_test_the_home_street_is_part_of_her_line(t)
+	_test_the_home_streets_two_sidewalks_do_not_join_the_box(t)
 
 ## `id` standing at the middle of `tile`, walking a beat to `to` where one is given.
 func _standing(id: String, tile: Vector2i, to := Vector2i(-1, -1)) -> EventPlan:
@@ -189,6 +199,23 @@ func _test_the_home_street_is_part_of_her_line(t: TestRunner) -> void:
 	var down := EventPlan.new(EventCatalogue.by_id("homeless_yeller"), map.tile_to_world(further),
 			PackedVector2Array([map.tile_to_world(further), map.tile_to_world(Vector2i(56, 51))]))
 	t.check(rule.allows(down, further, NONE, NONE), "further down his street he stands")
+
+func _test_the_home_streets_two_sidewalks_do_not_join_the_box(t: TestRunner) -> void:
+	var corridor := FakeCorridor.new().set_routes([NORTH, SOUTH] as Array[Vector3i],
+			[JUNCTION] as Array[Vector2i], _tiles_of(NORTH_EAST_SIDE) + _tiles_of(SOUTH_EAST_SIDE)) \
+			.set_home_street(EAST)
+	var rule := RouteLineRule.new(_map, corridor)
+	var at := Vector2i(42, 46)
+	var man := _standing("homeless_yeller", at, Vector2i(42, 42))
+	t.check(man.denies(_map.tile_to_world(Vector2i(47, 44)), man.row().line_reach())
+			and not man.denies(_map.tile_to_world(Vector2i(47, 43)), man.row().line_reach())
+			and not man.denies(_map.tile_to_world(Vector2i(47, 45)), man.row().line_reach()),
+			"his lens takes the box's east edge at the home street's carriageway, not beside it")
+	t.check(not rule.allows(man, at, NONE, NONE),
+			"a man splitting the box between the home street's two sidewalks is refused")
+	var longer := _standing("homeless_yeller", Vector2i(42, 47), Vector2i(42, 42))
+	t.check(rule.allows(longer, Vector2i(42, 47), NONE, NONE),
+			"one tile longer, his beat leaves the box's east edge whole and he stands")
 
 func _tiles_of(rect: Rect2i) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []

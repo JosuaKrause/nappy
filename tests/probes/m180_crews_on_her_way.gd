@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 func _walk_one(t: TestRunner, city: City, run: RunState, seed_value: int, day: int,
 		walk_name: String) -> void:
 	run.posters().reset()
-	var tree := RouteTree.for_day(city.map(), day)
+	var tree := RouteTree.for_day(city.map(), day, null)
 	var no_closures: Array[RoadClosure] = []
 	city.streets().begin_day(tree, null, no_closures)
 	RunCity.poster_walls(city).dress_for(day, DaySpec.for_day(day))
@@ -144,7 +144,7 @@ const NEAR_HOME_CELLS := 8
 
 ## The day's longest route, walked from the doorstep out to its calm area and back again.
 func _out_and_back(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map(), day)
+	var tree := RouteTree.for_day(city.map(), day, null)
 	var route := _longest_route(tree)
 	if route.is_empty():
 		return PackedVector2Array()
@@ -159,7 +159,7 @@ func _out_and_back(city: City, day: int) -> PackedVector2Array:
 ## anything to be sited at all. What it asks is that the fire lands on the branch she ended up on
 ## rather than the one she started down.
 func _turns_back_at_the_first_junction(city: City, day: int) -> PackedVector2Array:
-	var tree := RouteTree.for_day(city.map(), day)
+	var tree := RouteTree.for_day(city.map(), day, null)
 	var first := _longest_route(tree)
 	var second := _a_different_route(tree, first)
 	if first.is_empty() or second.is_empty():

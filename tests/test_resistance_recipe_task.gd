@@ -103,7 +103,7 @@ func _day(t: TestRunner, day: int) -> Stand:
 	state.begin_day(stand.map.plans_by_block(), day)
 	stand.map.repaint(state)
 	var edges := stand.map.witness_only()
-	var tree := RouteTree.for_day(stand.map, day)
+	var tree := RouteTree.for_day(stand.map, day, null)
 	stand.map.restore_edges(edges)
 	var closures: Array[RoadClosure] = stand.map.recipe_road_closures().duplicate()
 	var streets := DayStreets.new()

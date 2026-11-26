@@ -207,7 +207,7 @@ func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 	for index in SEEDS.size():
 		var map := MapCache.of(SEEDS[index])
 		var spec := DaySpec.for_day(DAY)
-		var tree := RouteTree.for_day(map, DAY)
+		var tree := RouteTree.for_day(map, DAY, null)
 		var region := RegionPlanner.plan_day(map, spec, tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[index]

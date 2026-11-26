@@ -1146,7 +1146,7 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 ## window is a question about the day's population, not about this rule.
 func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> void:
 	var day := 3
-	var tree := RouteTree.for_day(_city.map(), day)
+	var tree := RouteTree.for_day(_city.map(), day, null)
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
 	SealPlanner.plan_day(_city.map(), DaySpec.for_day(day), tree, seal_rng)

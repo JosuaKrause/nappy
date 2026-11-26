@@ -31,13 +31,16 @@ var _sited_region: SpawnSiting.Region = null
 var _sited_from: RegionPlan = null
 ## Today's closed streets. The barriers and wreckage that say so are the city's.
 var _closures: Array[RoadClosure] = []
+## Today's tutorial route, on a day whose spec walks it, or null.
+var _tutorial: TutorialRoute = null
 
 # ------------------------------------------------------------------- writes ---
 
 ## Today's streets, as dawn grew them: the tree, the region plan grown from it and the closures
 ## placed off both. The plan is not edited once handed over (`siting_region()`).
 func begin_day(tree: RouteTree, plan: RegionPlan,
-		closures: Array[RoadClosure]) -> void:
+		closures: Array[RoadClosure], tutorial: TutorialRoute = null) -> void:
+	_tutorial = tutorial
 	_tree = tree
 	_region_plan = plan
 	_closures = closures
@@ -53,6 +56,12 @@ func replace_region_plan(plan: RegionPlan) -> void:
 ## Today's corridor. Grown at dawn, so it is null before the first day that closes streets.
 func route_tree() -> RouteTree:
 	return _tree
+
+## **Today's tutorial route**, on a day whose spec walks it (`DaySpec.walks_the_tutorial()`), and
+## null on every other day and in a city handed none: what the day's tree was grown with, and what
+## `DayPlanner` hands the seals.
+func tutorial_route() -> TutorialRoute:
+	return _tutorial
 
 ## Today's region wall and doors. Grown at dawn from `route_tree()`, so it is null until then —
 ## the same contract as `route_tree()`.

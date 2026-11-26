@@ -309,12 +309,16 @@ const EMPTY_MARBLE := ""
 ## Whether the region wall divides the city today, set by `for_day()` and read through
 ## `region_wall_stands()`.
 var _region_wall_stands := false
+## Whether the day walks day 1's tutorial route, set by `for_day()` and read through
+## `walks_the_tutorial()`.
+var _walks_the_tutorial := false
 
 ## One of the fourteen days, `day_length` seconds long.
 static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpec:
 	var spec := DaySpec.new()
 	spec._number = day
 	spec._length = day_length
+	spec._walks_the_tutorial = day == 1
 	spec._region_wall_stands = day >= Tuning.REGION_WALL_FIRST_DAY
 	if spec.region_wall_stands():
 		spec.wall_row_share = GATEHOUSE_DAY_WALL_ROW_SHARE
@@ -560,6 +564,12 @@ func seal_pictures() -> SealPictures:
 ## Whether the main road is sealed off the walk like any other street (`_seals_the_main_road`).
 func seals_off_the_main_road() -> bool:
 	return _seals_the_main_road
+
+## **Whether the day walks the tutorial route** (`TutorialRoute`): day 1, sealed off past its first
+## block (gentle-owl #1253). A setting of the day rather than a check of its number, so every
+## reader asks the spec; false for the escape's sections and an authored scene.
+func walks_the_tutorial() -> bool:
+	return _walks_the_tutorial
 
 ## Whether every street and through-alley off the walk is sealed, rather than a share of them
 ## (`_seals_every_street_off_the_walk`).

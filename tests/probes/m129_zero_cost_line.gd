@@ -336,7 +336,7 @@ func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	if _used_parks() == UsedParks.SHUT and not _used.is_empty():
 		map.set_spent_calm(_used)
 		map.repaint(state)
-	return RouteTree.for_day(map, day)
+	return RouteTree.for_day(map, day, null)
 
 ## The day's used calm areas, set by `_plan_the_day` and read by `_place_the_day`.
 var _used: Array[Vector2i] = []

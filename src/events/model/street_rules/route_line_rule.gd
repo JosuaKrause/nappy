@@ -90,9 +90,13 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## 3. **Each route street's far end** is the free tiles of its outermost open column away from the
 ##    box, on each of its sidewalks in the ground. A street with no open ground there (built over,
 ##    or absorbed into a park) asks nothing.
-## 4. **One flood from the first far end**, four ways over free tiles, has to reach a tile of the
-##    box, every other far end and a tile of every off-street mouth. With nothing to start from,
-##    the box keeps a free tile.
+## 4. **One piece of free ground**, four-connected, has to hold a tile of the box, of every far
+##    end and of every off-street mouth. It is looked for by a flood from each free tile of the
+##    first far end in turn, one piece at a time, never from all of them at once: a far end lies on
+##    two sidewalks wherever both are in the ground (the home street's, a street whose far
+##    sidewalk a man pacing it opens), and the two meet only across the carriageway at the next
+##    junction, which is no part of this piece, so a flood seeded on both would join two halves of
+##    the box that nothing here joins. With no far end at all, the box keeps a free tile.
 ##
 ## A pacing row may lean on the far sidewalk only on his own street: whoever closes that far
 ## sidewalk stands in a unit touching his, so the two are always judged together. A man on another
@@ -134,12 +138,28 @@ func _her_line_survives(piece: _Piece, candidate: EventPlan, around: Array[Event
 	if ends.is_empty():
 		return piece.box.any(func(tile: Vector2i) -> bool: return free.has(tile))
 
-	var reached := {}
-	var queue: Array[Vector2i] = []
-	for tile in ends[0].tiles:
-		if free.has(tile) and not reached.has(tile):
-			reached[tile] = true
-			queue.append(tile)
+	var seen := {}
+	for start in ends[0].tiles:
+		if not free.has(start) or seen.has(start):
+			continue
+		var reached := _ground_joined_to(start, free)
+		seen.merge(reached)
+		if not piece.box.any(func(tile: Vector2i) -> bool: return reached.has(tile)):
+			continue
+		var joins_every_end := true
+		for i in range(1, ends.size()):
+			if not ends[i].tiles.any(func(tile: Vector2i) -> bool: return reached.has(tile)):
+				joins_every_end = false
+				break
+		if joins_every_end:
+			return true
+	return false
+
+## The free tiles joined to `start` four ways over `free`, `start` among them: one piece of the
+## free ground.
+func _ground_joined_to(start: Vector2i, free: Dictionary) -> Dictionary:
+	var reached := {start: true}
+	var queue: Array[Vector2i] = [start]
 	var head := 0
 	while head < queue.size():
 		var at: Vector2i = queue[head]
@@ -149,12 +169,7 @@ func _her_line_survives(piece: _Piece, candidate: EventPlan, around: Array[Event
 			if free.has(next) and not reached.has(next):
 				reached[next] = true
 				queue.append(next)
-	if not piece.box.any(func(tile: Vector2i) -> bool: return reached.has(tile)):
-		return false
-	for i in range(1, ends.size()):
-		if not ends[i].tiles.any(func(tile: Vector2i) -> bool: return reached.has(tile)):
-			return false
-	return true
+	return reached
 
 ## Whether a pacing row among `standing` stands on `street`: where it was placed or a corner of its
 ## beat lies on the street's own tiles. A beat that runs from a side street into the box stands on
