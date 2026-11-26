@@ -996,6 +996,17 @@ goal into an artefact of how the two routes are found.
 route is an offer the day makes when the ground allows one. What must still hold absolutely is only
 that **some** calm is reachable.
 
+**On day 1 the tutorial park's branch is the tutorial route.** `RouteTree.for_day()` takes the
+day's tutorial route as a required argument, null on every day but the one whose spec walks it
+(`DaySpec.walks_the_tutorial()`). It adopts the route as the tutorial park's branch before any other
+grows, the shortest way from the park to the doorstep's street over the route's own ground, and
+grows every other branch on a graph without the route's kept ground (`TutorialRoute.kept_ground()`:
+the lesson streets, their junction boxes past the first, the half of each side street nearest the
+route and the park). The doorstep's street, the route's first block, stays open to every branch, so
+the day's other routes start there (gentle-owl #1253). The route is worked out once from the city
+in `main` and handed to `City`, which grows the tree with it at dawn and hands both on in
+`DayStreets`; nothing grows a second tree.
+
 ### The graph the corridor grows on is smaller than the city
 
 **The corridor is grown on `ReachabilityGrid` cells, and a cell knows nothing about kerbs.** Left to
@@ -1067,7 +1078,10 @@ end of one route street meeting the box, through the box, to the far end of ever
 every alley mouth or park cut a route runs into beside the box or a walked sidewalk. A row that
 leaves the box a free region and the sidewalk a free line is still refused if the two do not touch:
 a free region and a free line that do not meet leave her no line, and no rule that checks one piece
-sees it. **Checked
+sees it. A street whose two sidewalks are both in that ground (the home street, or a route street
+while a man paces it and she passes him across) has a far end on each, and the walk may start from
+either, but it has to join everything else inside the box and those sidewalks: the two meet only
+across the carriageway at the next junction, which is no part of this crossing. **Checked
 before the row is accepted, never repaired after**, the same shape the closure invariant has: the
 day is asked, one row at a time, whether the city it is joining still has a line through every
 crossing, so a closed one never exists even for a moment.
@@ -1573,7 +1587,8 @@ closures, off the same tree, and counted apart from the day's events: a seal is 
 where she may walk, not a piece of the catalogue's variety.
 
 **Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A
-**hard** seal — `barricade`, from act IV — stands several bodies across the street's whole width,
+**hard** seal (the barricade, the fallen tree, the burst water main, the car accident and the later
+acts' wreckage) stands as many bodies as its width needs across the street's whole width,
 sidewalk to sidewalk, so nothing gets past, the outer two flush with the street's edges so none
 reaches over the buildings either side (`SealPlanner.positions_across()`). A **soft** seal takes both pavements (`construction`,
 `cafe_tables`, `market_stall` or `delivery_van`, one on each side) and leaves the carriageway open:
@@ -1581,10 +1596,12 @@ the road is always still there, so a soft seal always costs time, never the day.
 job is to stand in the way costs route and nothing else** — `construction`, `delivery_van` and
 `barricade` carry no field at all, so they cost only the detour; `cafe_tables` and `market_stall`
 are genuine sources as well as bodies and still charge the meter, tightly, to whoever actually
-stands at the tables or the stall. Every day from day 1 has a working soft pair; the hard one only
-from act IV, since `barricade` is the only row today drawn as a citywide wall rather than a street
-event — the milestone that draws more pictures for both strengths costs nothing here but longer
-candidate lists.
+stands at the tables or the stall. Every day from day 1 has pictures of both strengths: the soft
+pairs, and the hard seals whose rows are scripted for act I (the fallen tree, on a street with
+trees of its own, and the burst water main), each picture offered from the first day its rows are
+(`EventDef.own_first_day()`). The car accident is an act-I row too and seals no street before
+day 2, its picture's own first day (`SealPlanner.Candidate`), so day 1 stays light
+(minty-dolphin #834). A picture added to the candidate list costs nothing here but a longer list.
 
 **The doorstep is exempt, for the same reason a closure never stands there**: the home is a notch
 with one exit, and a seal on its own street would seal her in on the first frame. **The join
@@ -1620,6 +1637,25 @@ across the off-tree ground rather than kept near the rim, the same way the thinn
 the alley-mouth chance is multiplied by the same share. The tree, the routing and the region plan
 are untouched: a street left unsealed is still off the tree, it is only no longer walled, and a
 barrier left out only adds ground she can reach.
+
+**On day 1 nothing leaves the tutorial route past its first block** (gentle-owl #1253). The day's
+tree has no other branch there ("How the corridor is built"), so every side street off the route
+past its first block is one this pass seals, and it seals each **at its mouth on the route** rather
+than mid-street, so a step into it meets the seal at once: a soft pair, never the delivery van,
+which blocks her sidewalk for the first crossing lesson, and never thinned; across a precinct side
+street, whose paved middle no sidewalk pair closes, the burst water main, since a seal need not be
+a soft one where a soft pair cannot close the street. The seal stands the first tile in from the
+junction box that keeps its bodies, and hers beside them, out of the box, past any street tree.
+Every through-alley mouth on a lesson street or a side street's mouth half is walled, with no
+roll. `TutorialRoute.for_city()` takes only a route these seals can close, checked before it is
+accepted: past the first junction no lesson street runs along or ends at the main road, none is a
+precinct, none borders the home block, or open ground other than the park on the last street, no
+open ground opens onto a side street's stub between the box and its seal, no junction box opens
+past the pavement left of a street the city does not have, which no seal stands on and no wall
+closes, and a second calm area stays reachable from the first block. `tests/test_seals.gd` holds
+the guarantee on the full walkable tile graph, the main road's sidewalks, the alleys and the open
+ground included, over the city suites' seeds, and takes each mouth seal away in turn to show the
+flood would see it missing.
 
 **A final pass thins the seals.** A small `SealPlanner.SEAL_THINNING_FRACTION` of the day's soft pairs
 lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to

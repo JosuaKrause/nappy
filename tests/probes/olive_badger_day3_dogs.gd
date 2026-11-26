@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
 		var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
-				.on(RouteTree.for_day(map, day)).plan().placements()
+				.on(RouteTree.for_day(map, day, null)).plan().placements()
 		var bought_a_dog := false
 		for plan in planned:
 			if plan.row_id() == DOG:

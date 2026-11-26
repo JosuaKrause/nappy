@@ -38,7 +38,9 @@ static func over(on: CityMap, day: int, spec: DaySpec = null) -> SceneWorld:
 	state.begin_day(on.plans_by_block(), day)
 	on.repaint(state)
 	var edges := on.witness_only()
-	var tree := RouteTree.for_day(on, day)
+	# Not about the tutorial route: day 1 here grows the ordinary tree, deliberately
+	# (test_seals holds the tutorial's).
+	var tree := RouteTree.for_day(on, day, null)
 	var plan := RegionPlanner.plan_day(on, walk, tree)
 	on.restore_edges(edges)
 	var closures: Array[RoadClosure] = on.recipe_road_closures().duplicate()

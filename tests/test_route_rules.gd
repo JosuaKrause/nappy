@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 	var state := CityState.new()
 	state.begin_day(_map.plans_by_block(), DAY)
 	_map.repaint(state)
-	_tree = RouteTree.for_day(_map, DAY)
+	_tree = RouteTree.for_day(_map, DAY, null)
 	_corridor = Corridor.of(_tree)
 	_test_a_body_closing_a_route_sidewalk_is_refused(t)
 	_test_a_body_closing_a_beats_opening_is_refused(t)

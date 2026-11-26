@@ -169,7 +169,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 	var day := Tuning.POWER_STATION_DAY
 	for map: CityMap in _maps_to_plan_days_on():
 		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var door_street := map.power_station_door_street()
 		t.check(door_street != null and tree.is_on_the_tree(door_street.key()),
 				"seed %d day %d: the corridor reaches the door's street" % [map.city_seed(), day])
@@ -230,7 +230,7 @@ func _test_no_other_day_is_bent_toward_it(t: TestRunner) -> void:
 	for map: CityMap in _maps_to_plan_days_on():
 		var day := Tuning.POWER_STATION_DAY
 		_repaint_for(map, day)
-		var with_spur := RouteTree.for_day(map, day)
+		var with_spur := RouteTree.for_day(map, day, null)
 		var without := RouteTree.grow(map, ClosurePlanner.home_street(map),
 				ClosurePlanner.calm_areas(map), map.blocked_segments(),
 				ReachabilityGrid.build(map, Mover.ground()), _routes_rng(map, day))
@@ -252,7 +252,7 @@ func _test_no_other_day_is_bent_toward_it(t: TestRunner) -> void:
 		var plain := RouteTree.grow(map, ClosurePlanner.home_street(map),
 				ClosurePlanner.calm_areas(map), map.blocked_segments(),
 				ReachabilityGrid.build(map, Mover.ground()), _routes_rng(map, before))
-		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
+		t.check(RouteTree.for_day(map, before, null).cells().size() == plain.cells().size(),
 				"seed %d day %d: an ordinary day's corridor has no spur" % [map.city_seed(), before])
 
 ## How many of the tree's nodes stand in each cell it covers.

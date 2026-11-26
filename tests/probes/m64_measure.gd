@@ -76,7 +76,7 @@ func _role_and_depth_sweep() -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("zz_m64:%d:%d" % [map.city_seed(), day])
@@ -183,7 +183,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			var areas := ClosurePlanner.calm_areas(map)
 			if not home or areas.size() < ClosurePlanner.MIN_CALM_AREAS_REACHABLE:
 				continue
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			day_count += 1
 
 			var rim := {}

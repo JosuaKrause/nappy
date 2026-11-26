@@ -39,7 +39,7 @@ func _measure_sprinkle_rate() -> void:
 		var met_this_run := 0
 		var offered_this_run := 0
 		for day in range(Tuning.RUN_TAUGHT_DAY + 1, Tuning.RUN_LENGTH_DAYS + 1):
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("m96:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \

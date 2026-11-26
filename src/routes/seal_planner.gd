@@ -58,6 +58,14 @@ extends RefCounted
 ## **The doorstep is exempt.** `ClosurePlanner.home_street(map)` is never sealed, for the same
 ## reason it is never closed: the home is a notch with one exit, so sealing it seals her in.
 ##
+## **On the day she walks the tutorial route, nothing leaves it past its first block**
+## (`DaySpec.walks_the_tutorial()`, `TutorialRoute`, handed in by `DayPlanner`): the day's tree has
+## no other branch there, so every side street off it is already one this pass seals, and it seals
+## each at its mouth on the route, never thinned (`_seal_a_mouth()`), and walls every through-alley
+## mouth on a lesson street (`_seal_alley_mouths()`). Both stand between the route and ground the
+## route's kept ground already cuts off from the first block, so the second calm area
+## `TutorialRoute.for_city()` checked before it accepted the route stays reachable.
+##
 ## **The main road is exempt too, and that is a decision rather than an oversight.** *(2026-09-03,
 ## playtest 22: "a path should never go alongside the main road — main road by itself can be
 ## considered a blocker — paths can only cross the main road".)* `RouteTree` now refuses to route
@@ -159,6 +167,10 @@ class Candidate extends RefCounted:
 	var id := ""
 	var strength := Strength.SOFT
 	var def_ids: Array[String] = []
+	## The first day the picture may seal a street, on top of its rows' own
+	## (`EventDef.own_first_day()`): a scripted row's first day is its act's, so a picture that
+	## waits past it says so here rather than in the row (`_eligible()`).
+	var first_day := 1
 
 ## The table's pictures. Built fresh by every call, so no caller holds another's table.
 static func candidates() -> Array[Candidate]:
@@ -185,7 +197,9 @@ static func _build_candidates() -> Array[Candidate]:
 		_candidate("market_pair", Strength.SOFT, ["market_stall", "market_stall"]),
 		_candidate("delivery_pair", Strength.SOFT, ["delivery_van", "delivery_van"]),
 		_candidate("fallen_tree_seal", Strength.HARD, ["fallen_tree"]),
-		_candidate("car_accident_seal", Strength.HARD, ["car_accident"]),
+		# From day 2 *(minty-dolphin #834, the player: "yes, let's keep things light on day 1. move it
+		# to day 2")*: the row is act I's and offered from the act's first day, so the picture waits.
+		_candidate("car_accident_seal", Strength.HARD, ["car_accident"], 2),
 		_candidate("skip_scaffolding_pair", Strength.SOFT, ["skip", "scaffolding"]),
 		_candidate("burst_main_seal", Strength.HARD, ["burst_water_main"]),
 		_candidate("moving_van_pair", Strength.SOFT, ["moving_van", "moving_van"]),
@@ -193,11 +207,13 @@ static func _build_candidates() -> Array[Candidate]:
 		_candidate("collapsed_frontage_seal", Strength.HARD, ["collapsed_frontage"]),
 	]
 
-static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Candidate:
+static func _candidate(id: String, strength: int, def_ids: Array[String],
+		first_day: int = 1) -> Candidate:
 	var found := Candidate.new()
 	found.id = id
 	found.strength = strength
 	found.def_ids = def_ids
+	found.first_day = first_day
 	return found
 
 # ------------------------------------------------------------------- planning ---
@@ -254,9 +270,15 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## also offered to a catalogue row. A soft seal is not marked: its carriageway is still walkable,
 ## and a café on it is the price of that route (`docs/TODO.md`, "Events spawn inside a fully
 ## blocked street"). Left null for a caller — a test, a rig — that only wants the placements.
+##
+## `tutorial` is today's tutorial route on the day she walks it (`DayStreets.tutorial_route()`,
+## handed on by `DayPlanner`), null on every other day: each side street off it past its first
+## block is sealed **at its mouth** on the route rather than mid-street, and every through-alley
+## mouth on a lesson street is walled, so no way leaves the route past its first block. See
+## `_seal_a_mouth()` and `_seal_alley_mouths()`.
 static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
-		held: HeldStreets = null) -> Array[EventPlan]:
+		held: HeldStreets = null, tutorial: TutorialRoute = null) -> Array[EventPlan]:
 	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles()` — is this function's
 	# own output and nobody else's, so it is cleared and rebuilt here exactly the way `planned`
 	# itself is, rather than trusting a caller to clear it first.
@@ -283,9 +305,30 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	# On a day the region wall stands, only a share of the streets below is sealed at all — see
 	# `_seals_this_street`. Asked once here so any other day draws nothing extra from `rng`.
 	var thinned := spec.region_wall_stands() and not spec.seals_off_every_other_street()
+	# The side streets off the tutorial route past its first block, each with the end (or both)
+	# that opens onto the route; empty on a day that does not walk it.
+	var mouths := _mouths_of(tutorial)
 	for segment in map.street_network().segments():
 		var key := segment.key()
-		if skip.has(key) or not may_seal(map, spec, route, segment):
+		if skip.has(key):
+			continue
+		# A side street's mouth is sealed even where a branch runs along the street's far half (a
+		# calm area that opens onto it): the mouth half is the route's kept ground, which no branch
+		# takes (`TutorialRoute.kept_ground()`), so the seal there stands off the tree.
+		if mouths.has(key) and _may_seal_off_the_walk(map, spec, route, segment):
+			var ends: Array = mouths[key]
+			for at_a: bool in ends:
+				var at_mouth := _seal_a_mouth(map, segment, at_a, pictures, day, rng, trees)
+				if not at_mouth:
+					continue
+				planned.append_array(at_mouth.bodies())
+				if at_mouth.candidate.strength == Strength.SOFT:
+					at_mouth.shut_the_sidewalk(map, true)
+					at_mouth.shut_the_sidewalk(map, false)
+				elif held != null:
+					held.hold(key, HeldStreets.Why.SEAL)
+			continue
+		if not may_seal(map, spec, route, segment):
 			continue
 		if thinned and not _seals_this_street(rng):
 			continue
@@ -301,8 +344,121 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 				held.hold(key, HeldStreets.Why.SEAL)
 	map.set_seal_tree_pits(emptied)
 	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
-	planned.append_array(_seal_alley_mouths(map, route, spec, rng, skip))
+	planned.append_array(_seal_alley_mouths(map, route, spec, rng, skip, tutorial))
 	return planned
+
+# --------------------------------------------------------- the tutorial route ---
+
+## The candidate that seals a **precinct** side street's mouth on the tutorial route: a precinct is
+## paved frontage to frontage, so a soft pair's two sidewalk bodies would leave its middle walkable,
+## and the burst water main is a day-1 picture that closes the whole width.
+const TUTORIAL_PRECINCT_SEAL_ID := "burst_main_seal"
+
+## The soft pairs a side street's mouth on the tutorial route is never sealed with: the delivery
+## van is the row that blocks her sidewalk for day 1's first crossing lesson, and a side street
+## sealed with it would blur that lesson. Every other soft pair offered that day may seal a mouth.
+const TUTORIAL_MOUTH_LEFT_OUT := ["delivery_pair"]
+
+## `tutorial`'s side streets past its first block (`TutorialRoute.side_street_mouths()`), by
+## segment key, each with the ends of it that open onto the route (`true` for its `a` end).
+static func _mouths_of(tutorial: TutorialRoute) -> Dictionary:
+	var found := {}
+	if tutorial == null:
+		return found
+	for mouth in tutorial.side_street_mouths():
+		var segment: StreetNetwork.Segment = mouth[0]
+		if not found.has(segment.key()):
+			found[segment.key()] = []
+		var ends: Array = found[segment.key()]
+		ends.append(bool(mouth[1]))
+	return found
+
+## **A side street's mouth on the tutorial route, sealed**, or null where no picture is offered.
+## The player asked that past the first block no valid route leaves the tutorial route, with both
+## sidewalks of a side street blocked and the street itself open *(gentle-owl #1253, the player:
+## "doesn't have to be a full hard seal -- street can be open -- just both sidewalks need to be
+## blocked -- no valid route goes off of the tutorial route past the first block")*:
+##
+## - **a soft pair**, drawn from the day's soft pictures less `TUTORIAL_MOUTH_LEFT_OUT`, on an
+##   ordinary side street. It is **never thinned**: a thinned pair would open the one way off the
+##   route the seal is there to close;
+## - **the burst water main** (`TUTORIAL_PRECINCT_SEAL_ID`) across a precinct side street, whose
+##   paved middle no sidewalk pair closes. A seal need not be a full hard seal, so where a soft
+##   one cannot close the street a hard one does.
+##
+## **At the mouth rather than mid-street**, so a step into a side street meets the seal at once
+## rather than a dead end a few seconds later, which is day 2's lesson. It stands as near the
+## route's junction box as it can while its body, and her own beside it, stay out of the box
+## (`_mouth_along_tile()`), so it never narrows the route's own line through the junction.
+static func _seal_a_mouth(map: CityMap, segment: StreetNetwork.Segment, at_a: bool,
+		pictures: Array[Candidate], day: int, rng: RandomNumberGenerator,
+		trees: Dictionary) -> SitedSeal:
+	var precinct := TutorialRoute.is_a_precinct(map, segment)
+	var eligible: Array[Candidate] = []
+	for candidate in pictures:
+		if offers(candidate, day, false) and _seals_a_tutorial_mouth(candidate, precinct):
+			eligible.append(candidate)
+	if eligible.is_empty():
+		return null
+	var picked := eligible[rng.randi_range(0, eligible.size() - 1)]
+	var along := _mouth_along_tile(segment, at_a, _reach_of(picked), trees)
+	return SitedSeal.new(segment, picked, along, _place(map, segment, picked, along))
+
+## Whether `candidate` may seal a side street's mouth on the tutorial route: the burst water main
+## across a precinct, a soft pair less `TUTORIAL_MOUTH_LEFT_OUT` anywhere else.
+static func _seals_a_tutorial_mouth(candidate: Candidate, precinct: bool) -> bool:
+	if precinct:
+		return candidate.id == TUTORIAL_PRECINCT_SEAL_ID
+	return candidate.strength == Strength.SOFT and not TUTORIAL_MOUTH_LEFT_OUT.has(candidate.id)
+
+## How far from a body's centre `candidate` keeps her centre: its widest row's
+## `obstructs_within()` and her own body.
+static func _reach_of(candidate: Candidate) -> float:
+	var reach := 0.0
+	for id in candidate.def_ids:
+		reach = maxf(reach, EventCatalogue.by_id(id).obstructs_within())
+	return reach + Tuning.PLAYER_BODY_RADIUS
+
+## **The stub of a side street off the tutorial route**: the tiles of `segment` from its `at_a`
+## mouth up to, not including, the row the deepest seal that may stand there stands on, so the
+## ground she can step into from the route's junction box before the seal. `TutorialRoute.for_city()`
+## refuses a route whose stubs open onto open ground, which would be a way off past the seal.
+## `trees` is `StreetTrees.footprint_tiles()`, which a seal steps past.
+static func tutorial_mouth_stub(map: CityMap, segment: StreetNetwork.Segment, at_a: bool,
+		trees: Dictionary) -> Rect2i:
+	var precinct := TutorialRoute.is_a_precinct(map, segment)
+	var reach := 0.0
+	for candidate in candidates():
+		if _seals_a_tutorial_mouth(candidate, precinct):
+			reach = maxf(reach, _reach_of(candidate))
+	var along := _mouth_along_tile(segment, at_a, reach, trees)
+	var mouth := segment.mouth_rect(at_a)
+	var depth := absi(along - (mouth.position.x if segment.horizontal else mouth.position.y))
+	if segment.horizontal:
+		return Rect2i(Vector2i(mouth.position.x if at_a else mouth.position.x - depth + 1,
+				mouth.position.y), Vector2i(depth, mouth.size.y))
+	return Rect2i(Vector2i(mouth.position.x, mouth.position.y if at_a
+			else mouth.position.y - depth + 1), Vector2i(mouth.size.x, depth))
+
+## Where along `segment` a seal at its `at_a` mouth stands, for a body keeping her centre
+## `reach` off its own: the first tile in from the junction box whose centre is `reach` or more
+## from the box, so the seal never narrows the route's own line through the junction, stepped
+## further in past any street tree (a seal never stands in one, `_seal_along_tile()`), within the
+## half of the street nearest the mouth, the route's kept ground (`TutorialRoute.kept_ground()`).
+static func _mouth_along_tile(segment: StreetNetwork.Segment, at_a: bool, reach: float,
+		trees: Dictionary) -> int:
+	var mouth := segment.mouth_rect(at_a).position
+	var base: int = mouth.x if segment.horizontal else mouth.y
+	var rect := segment.tile_rect()
+	var count: int = rect.size.x if segment.horizontal else rect.size.y
+	var inward := 1 if at_a else -1
+	# A tile's centre is half a tile in from its own edge.
+	var first := maxi(0, ceili(reach / float(Tuning.TILE_SIZE) - 0.5))
+	for step in range(first, count / 2):
+		var along := base + inward * step
+		if not _crosses_a_tree(segment, along, trees):
+			return along
+	return base + inward * first
 
 # ---------------------------------------------------------------- the escape ---
 
@@ -377,8 +533,14 @@ static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> b
 ## one. `plan_day()`'s `skip` and its gatehouse-day share are its own, on top of this.
 static func may_seal(map: CityMap, spec: DaySpec, route: RouteSource,
 		segment: StreetNetwork.Segment) -> bool:
+	return not route.walks_the_street(segment) and _may_seal_off_the_walk(map, spec, route, segment)
+
+## `may_seal()` but for the walk's own streets: a real street, not the one the walk starts in, and
+## not the main road unless the spec seals it.
+static func _may_seal_off_the_walk(map: CityMap, spec: DaySpec, route: RouteSource,
+		segment: StreetNetwork.Segment) -> bool:
 	var key := segment.key()
-	if not map.has_street(key) or route.walks_the_street(segment):
+	if not map.has_street(key):
 		return false
 	var home := route.street_it_starts_in()
 	if home and key == home.key():
@@ -430,6 +592,8 @@ static func offers(candidate: Candidate, day: int, street_has_trees: bool) -> bo
 	return _eligible(candidate, day)
 
 static func _eligible(candidate: Candidate, day: int) -> bool:
+	if day < candidate.first_day:
+		return false
 	for id in candidate.def_ids:
 		var def := EventCatalogue.by_id(id)
 		if not def or day < def.own_first_day():
@@ -805,8 +969,15 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 ## — *(playtest 25, finding 5: "the probability of blocking off alleys should be way lower")* —
 ## since walling every one of them, every day, is what made an alley read as closed off wholesale
 ## rather than as the occasional exception the design wants.
+##
+## **On the day she walks the tutorial route, every through-alley mouth on a lesson street is
+## walled, with no roll** (`TutorialRoute.alley_mouths()`): such an alley touches the tree, so
+## the ordinary rule leaves it open, and past the route's first block it would be a way off the
+## route no seal closes. Its other mouth is left as the day would leave it, which is open, since
+## the alley reaches the tree.
 static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
-		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventPlan]:
+		rng: RandomNumberGenerator, skip: Dictionary = {},
+		tutorial: TutorialRoute = null) -> Array[EventPlan]:
 	var planned: Array[EventPlan] = []
 	var day := spec.day_number()
 	var def_id := _alley_mouth_def(_pictures_for(spec), day)
@@ -819,6 +990,15 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 	var chance := ALLEY_MOUTH_SEAL_CHANCE
 	if spec.region_wall_stands():
 		chance *= GATEHOUSE_DAY_SEAL_SHARE
+	# The tutorial route's alley mouths on its lesson streets, by alley, each with which mouth.
+	var on_the_route := {}
+	if tutorial != null:
+		for mouth in tutorial.alley_mouths():
+			var alley: Rect2i = mouth[0]
+			if not on_the_route.has(alley.position):
+				on_the_route[alley.position] = []
+			var ends: Array = on_the_route[alley.position]
+			ends.append(bool(mouth[1]))
 	for rect in map.alley_lots():
 		# A through-alley can be built over by a later generation pass (`CityGenerator.
 		# _make_the_pair_solid`), which does not retract it from `CityMap.alley_lots()` — so the ground is
@@ -832,6 +1012,11 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 		if skip.has(rect.position):
 			continue
 		var vertical := rect.size.x < rect.size.y
+		if on_the_route.has(rect.position):
+			var walled: Array = on_the_route[rect.position]
+			for at_start: bool in walled:
+				planned.append(_alley_mouth_plan(map, rect, vertical, at_start, mouth_def))
+			continue
 		if route.reaches_the_alley(map, rect):
 			continue
 		# The roll is per qualifying alley, after the walk already decided which alleys are

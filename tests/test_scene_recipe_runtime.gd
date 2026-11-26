@@ -593,7 +593,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 ## among those before it.
 func _placeable_tiles(city: City, def: EventDef, day: int, count: int) -> Array[Vector2i]:
 	var map := city.map()
-	var corridor := Corridor.of(RouteTree.for_day(map, day))
+	var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 	var locations := DayLocations.lay_out(map, corridor)
 	var ground := EventScheduler.row_ground(map, corridor)
 	var offered := ground.tiles_for(def)

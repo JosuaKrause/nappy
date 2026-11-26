@@ -11,7 +11,7 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 - **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
 - **A quick note to the inbox can be written in the board's `## Quick notes` section**, which each recurring check captures into the inbox word for word and then clears (inbox #1626 in dappled-bison).
 - **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). A question, about a note or an issue the player opened included, goes on the board (inbox #1639 in gentle-penguin).
-- **A question the player's recorded words already answer is not asked**: the reading is built and stated.
+- **A question the player's recorded words already answer is not asked**: the reading is built and stated. **Every question is searched against those words before it goes up, and re-read when its work merges** ("Before a question goes up").
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
 - **A question that needs the player to run the game goes on the Review tab, never the Main tab**
   (inbox #1765 in gray-plover, inbox #1766 in gray-plover): comparing settings, playing a build, looking at a
@@ -220,6 +220,53 @@ refuses both.
 The next session reads the note, the queue and the records and not this conversation; the local
 restart prompt alone is not enough.
 
+## Before a question goes up
+
+**Every question is checked against the player's recorded words before it is posted, and again when
+the work it names merges.**
+
+1. **Search for the question's nouns, before writing it.** Run `tools/decisions.sh --in all <noun>`
+   and `rg -i <noun> docs/playtests/` for each noun the question turns on (the thing, the place,
+   the number), and read the note it comes from, its appended words and the settled questions on
+   the same work.
+2. **Write what the search found into the Context.** The closest of the player's words found, cited
+   as `CLAUDE.md` asks (`(woolly-penguin #759)`), or one line saying which nouns were searched
+   and that nothing in their words speaks to them. A Context with neither is not ready to post.
+3. **Class the question, and only one class goes on the Main tab:**
+   - **Answered by their words:** the reading is built and stated in the pull request's
+     description and the brief, never asked.
+   - **Needs the game:** it goes on the Review tab (the layout, above).
+   - **The orchestrator's or a builder's own call:** a size, a colour within the agreed
+     vocabulary, a mechanism, which assertion a suite holds. It is not asked, and stays in the
+     pull request's description.
+   - **Genuinely open:** their words do not answer it, it needs no run of the game, and it is
+     theirs to decide. Only these reach the Main tab.
+
+**An agent's "questions for the player" are put through the same steps and never relayed as
+written.** A builder's list of choices "for the player" is a list of candidates: the orchestrator
+searches each, classes each, and posts only the genuinely open ones, with the Context written
+from the search. A report that lists five choices becomes zero to five questions, never five.
+The same holds for a reviewer's or a measuring agent's "for the board".
+
+**A pick never drifts from the evidence without saying so.** My pick follows the closest recorded
+words and the lean of whoever measured; where it departs from either, the Context says that it
+does and why, and a pick that would reinterpret what the player asked for is not built until they
+answer (**Blocking, and no dialogs**). **A citation is never stretched**: it is cited for what
+the cited words say and no more, and where a reading goes beyond them, the Context says "my
+reading" beside it. A premise taken from the code and not from the design (that a thing is touched
+at its shadow, say) is checked against the design's records before it is written as fact.
+
+**At each merge, the open questions that name the merged work are re-read** with the merge's
+batch (**When it is read**). A question the merge answered, made obsolete or turned into a
+different question is removed or rewritten in that batch, so a board never asks about work that
+has landed as though it were still ahead. A Review-tab item for the merged work gets its commands
+checked against what merged.
+
+**One question per Review-tab item**, as on the Main tab: an item that bundles several settings or
+looks is split into one item each. **An answered question leaves the board in the turn it is
+answered**: it moves under `## Settled` or is removed after recording its outcome as Settling says, and never stays under
+`## Waiting on you` or on the Review tab with an answer typed under it.
+
 ## Answering
 
 - **General discussion is on the You line; the answer goes on the Me line under it** (inbox #830 in minty-dolphin).
@@ -297,6 +344,10 @@ The editor's traps that have each cost a failed call:
 These rules above are the filer's proposals and readings, not the player's words, and hold until
 the player corrects them. The citation is the player's word each one extends:
 
+- **The pre-post check of a question** ("Before a question goes up"): the player's remark is that
+  most board questions were there only because they were not checked first (inbox #1775 in
+  tiny-newt); the search step, the four classes, the filter on agents' questions, the re-read at a
+  merge and one question per Review item are the filer's proposal for fixing it.
 - **What a batch is** ("When it is read"): the orchestrator's next write for the player
   (inbox #986 in brisk-pelican), the recurring read included, so the Running and Recently done
   tables are current within about an hour (inbox #1619 in teal-dolphin).

@@ -89,6 +89,10 @@ Each "no" is a finding:
   say it should not, the defect is not the change's own: it goes where **orchestrating** says ("What
   the orchestrator keeps", the bullet on a defect a refactor step finds), filed as an entry of its
   own, and the review names it so the orchestrator files it.
+- **Is a question for the player one their words already answer?** A "question for the player" relayed as written from
+  the description or a report, or a choice put to the player that their recorded words already
+  answer, is a finding: the reviewer searches its nouns (`tools/decisions.sh --in all <noun>`)
+  and cites the closest words (**board**, "Before a question goes up").
 
 ## Then the code
 

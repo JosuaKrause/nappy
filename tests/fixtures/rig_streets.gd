@@ -10,5 +10,7 @@ extends RefCounted
 ## (`RouteTree.for_day()`), the region wall and doors grown from that tree
 ## (`RegionPlanner.plan_day()`) and no closures.
 static func begin(streets: DayStreets, map: CityMap, spec: DaySpec) -> void:
-	var tree := RouteTree.for_day(map, spec.day_number())
+	# A rig that starts a day without its dawn is not about the tutorial route: day 1 here
+	# grows the ordinary tree, deliberately (test_seals holds the tutorial's).
+	var tree := RouteTree.for_day(map, spec.day_number(), null)
 	streets.begin_day(tree, RegionPlanner.plan_day(map, spec, tree), [] as Array[RoadClosure])

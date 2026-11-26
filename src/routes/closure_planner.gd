@@ -94,9 +94,10 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## because which blocks are calm is the thing the invariant is stated over and a requisitioned park
 ## is not one.
 ##
-## `tree` is the day's corridor, and every closure is placed **off** it. The caller passes the one
-## it is going to plan the rest of the day against; when there is none to hand this grows the same
-## one, because `RouteTree.for_day` is a pure function of the city's seed and the day number.
+## `tree` is the day's corridor, and every closure is placed **off** it. The caller hands the one it
+## is going to plan the rest of the day against, required so that nothing grows a second tree: the
+## day's is grown once at dawn (`City._close_streets()`), with the day's tutorial route where the day
+## walks one, which a tree grown here could not know.
 ##
 ## `region_plan` is likewise the caller's own, or grown fresh the same way — `RegionPlanner.
 ## plan_day` is a pure function of the map, the day and the tree. Its walls and doors are refused
@@ -110,7 +111,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
-		tree: RouteTree = null, region_plan: RegionPlan = null,
+		tree: RouteTree, region_plan: RegionPlan = null,
 		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace)
 	var fenced := map.fenced_park_block()
@@ -139,7 +140,7 @@ static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerat
 		return chosen
 
 	var kinds := RoadClosure.kinds_on(day)
-	var corridor := tree if tree else RouteTree.for_day(map, day)
+	var corridor := tree
 	var regions := region_plan if region_plan else RegionPlanner.plan_day(map, spec, corridor)
 	# Built once and asked many times: the grid is the day's tiles, which do not move while
 	# candidates are tried — only the barrier tiles a candidate would add do.

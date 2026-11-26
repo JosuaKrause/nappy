@@ -263,7 +263,7 @@ func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
-	return RouteTree.for_day(map, day)
+	return RouteTree.for_day(map, day, null)
 
 func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

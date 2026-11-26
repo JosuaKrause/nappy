@@ -1,0 +1,11 @@
+<!-- Walk wide of the noise, just the noise: a loudspeaker giving off its sound, a sign for
+     noise rather than any one row's picture, since the hint fires for whichever noise source
+     would raise the amber caret over itself for her. No arrow round it.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="2.6" y="7.4" width="4.2" height="5.6" fill="#5b5763"/>
+  <polygon points="6.8,7.4 12,3.4 12,17 6.8,13" fill="#77727e"/>
+  <path d="M14.4 7 Q16.8 10.2 14.4 13.4" fill="none" stroke-width="1.5"/>
+  <path d="M17.4 4.6 Q21.4 10.2 17.4 15.8" fill="none" stroke-width="1.5"/>
+</svg>

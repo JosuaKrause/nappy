@@ -31,7 +31,8 @@ func run(t: TestRunner) -> void:
 			map.repaint(state)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day), rng):
+			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day),
+					RouteTree.for_day(map, day, null), rng):
 				_count(day_rows, map, ground, plan)
 		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
 		map.repaint(own_run.attempt_spend().block_arcs())

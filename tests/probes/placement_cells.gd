@@ -44,7 +44,7 @@ func run(t: TestRunner) -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var spec := DaySpec.for_day(day)
 			# The day's own closures, holds, region wall and seals, planned as the game plans them
 			# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies

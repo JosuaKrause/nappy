@@ -1,0 +1,15 @@
+<!-- The chalk mark, just the mark: the resistance's crossed circle in chalk as the game
+     draws it on the ground (chalk_mark.svg, same stroke colour and opacity), on a patch of the
+     alley's dark floor with its paving joints (alley.svg) so the faint chalk shows on the
+     bubble's paper and reads as drawn on the ground. No alley walls, no arrow.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="2.5" y="0.8" width="19" height="18.4" rx="1" fill="#3c3a42"/>
+  <path d="M2.9 6.6 H21.1 M2.9 14.4 H21.1 M8 1.2 V6.6 M16.5 6.6 V14.4 M6 14.4 V18.8 M18 14.4 V18.8" stroke="#343139" stroke-width="0.8"/>
+  <g fill="none" stroke="#eaeae0" stroke-opacity="0.78" stroke-width="1.5">
+    <circle cx="12" cy="10" r="6.8"/>
+    <path d="M7.7 12.5 L16.3 6.9 M8.3 6.9 L13.2 13.7"/>
+  </g>
+  <rect x="2.5" y="0.8" width="19" height="18.4" rx="1" fill="none"/>
+</svg>

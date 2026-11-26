@@ -1346,7 +1346,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(map_of_days.plans_by_block(), day)
 		map_of_days.repaint(state)
-		var tree := RouteTree.for_day(map_of_days, day)
+		var tree := RouteTree.for_day(map_of_days, day, null)
 		for roll in 4:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("mouths:%d:%d" % [day, roll])
@@ -1733,7 +1733,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 	# day's, hundreds strong.
 	t.check(RunCity.crowd(city).agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
 	var day := escape.run.header().day()
-	var corridor := Corridor.of(RouteTree.for_day(city.map(), day))
+	var corridor := Corridor.of(RouteTree.for_day(city.map(), day, null))
 	var plan := FinalePlanner.route(city.map())
 	var on_the_walk := {}
 	for segment in plan.open_streets:
@@ -1747,7 +1747,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 			"the first plan tints every kerb of the escape's streets and no other (%d wrong)"
 			% first.z)
 
-	city.tint_the_route(RouteTree.for_day(city.map(), day))
+	city.tint_the_route(RouteTree.for_day(city.map(), day, null))
 	var on_the_day := 0
 	for tile in _kerb_tiles(city, day):
 		if corridor.depth(tile) == 0 and city.scenery_ground_source(tile) \

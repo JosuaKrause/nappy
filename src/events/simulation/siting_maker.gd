@@ -16,7 +16,7 @@ func _init(the_world: EventWorld, walk: WalkEvents) -> void:
 	_world = the_world
 	_walk = walk
 
-## A siting for `day` over `tree` (the day's route tree; grown for the day where null), standing
+## A siting for `day` over `tree` (the day's route tree, which the caller hands), standing
 ## its rows on `ground` (what `EventsAhead._ground_of_the_walk()` answers): the walk's events, the
 ## city's plan builder and, where the city has poster walls, the fronts a crew may paste (only the
 ## city's buildings know their blank walls, and the walls paste every dawn, so the fronts are asked
@@ -30,8 +30,8 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 			_world.day_stream(day, "siting").seed)
 
 ## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge
-## builds candidates on. Builds, in order: the tree where none was handed
-## (`RouteTree.for_day()`); the corridor made of it; the calm she has not used
+## builds candidates on. Builds, in order: the corridor made of the day's tree, which its caller
+## hands (the day's own, from `DayStreets`, so nothing grows a second one); the calm she has not used
 ## (`CalmAreas.unused_ground()`, none for a walk with no calm); the day's rules
 ## (`StreetInvalidation`) over the map, the corridor, that calm and the walk's doors; the fit
 ## (`LocationFit`, of which the judge asks only `build()`); the judge, a `RuledLocationGround`
@@ -43,8 +43,7 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 ## (empty for a walk with no city).
 static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int) -> WalkSiting:
-	var the_tree := tree if tree else RouteTree.for_day(map, day)
-	var corridor := Corridor.of(the_tree)
+	var corridor := Corridor.of(tree)
 	var calm := walk.calm()
 	var leave_alone: Array[Rect2] = calm.unused_ground() if calm else ([] as Array[Rect2])
 	var rules := StreetInvalidation.new(map, corridor, leave_alone, walk.doors(), null)
@@ -55,5 +54,5 @@ static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 	var locations := walk.locations()
 	if not locations:
 		locations = DayLocations.lay_out(map, corridor)
-	return WalkSiting.new(map, the_tree, walk, locations, judge,
+	return WalkSiting.new(map, tree, walk, locations, judge,
 			SitedGround.new(map, ground, fronts))

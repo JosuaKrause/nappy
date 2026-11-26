@@ -1,0 +1,11 @@
+<!-- Back to the route, just the route: a piece of sidewalk edged in the straw yellow the
+     city blends into the route's curbstones (Palette.ROUTE_KERB_TINT). No pram.
+     hint_arrow.svg beside it points at the nearest tile of the route.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="7.5" y="0.5" width="9" height="19" fill="#8b8478"/>
+  <path d="M7.5 0.5 V19.5 M16.5 0.5 V19.5" stroke="#f2e07a" stroke-width="1.8"/>
+  <path d="M6.5 0.5 V19.5 M17.5 0.5 V19.5" stroke-width="0.8"/>
+  <path d="M8.6 5 H15.4 M8.6 10 H15.4 M8.6 15 H15.4" stroke="#7a7368" stroke-width="0.6"/>
+</svg>

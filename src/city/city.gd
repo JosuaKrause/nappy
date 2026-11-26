@@ -163,6 +163,9 @@ func navigator() -> Navigator:
 ## closures and the region a siting reads. Made with the city, written only by the city's dawn
 ## (`_close_streets()`, `start_recipe_day()`), and handed to whoever asks (`streets()`).
 var _streets := DayStreets.new()
+## Day 1's tutorial route, worked out once for the run's city in the composition root and handed in
+## before `build()` (`use_tutorial_route()`), or null for a city handed none.
+var _tutorial: TutorialRoute = null
 ## Where the city and the day's closures write their own account for the run log — handed in by
 ## `equip()` before `build()`, which hands it on to the fronts; silent until then.
 var _trace := RunTrace.new()
@@ -314,6 +317,12 @@ func atlas() -> AtlasLibrary:
 ## it reads itself.
 func use_ground_recipe(recipe: GroundRecipe) -> void:
 	_ground_recipe = recipe
+
+## Hands the city the run's tutorial route (`TutorialRoute.for_city()`), before `build()`: the
+## dawn of a day whose spec walks the tutorial grows the day's tree with it and hands it on in the
+## day's `DayStreets`. A city handed none (a rig, a suite not about the tutorial) carries none.
+func use_tutorial_route(route: TutorialRoute) -> void:
+	_tutorial = route
 
 ## The run the city stands in; `build()` refuses a city never handed one.
 func use_run(the_run: RunState) -> void:
@@ -1116,17 +1125,22 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 	_dress(state, day)
 	scenery.update(_home_scenery_view(), true)
 	var edges := _map.witness_only()
-	var tree := RouteTree.for_day(_map, day)
+	var walk := _tutorial_for(spec)
+	var tree := RouteTree.for_day(_map, day, walk)
 	var plan := RegionPlanner.plan_day(_map, spec, tree)
 	_map.restore_edges(edges)
 	var closures: Array[RoadClosure] = _map.recipe_road_closures().duplicate()
-	_streets.begin_day(tree, plan, closures)
+	_streets.begin_day(tree, plan, closures, walk)
 	_map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
 	if _map.has_stretch():
 		_run.posters().mark_pasted_through(day)
 	day_dressed.emit(day, spec)
+
+## The run's tutorial route on a day whose spec walks it, null on every other day.
+func _tutorial_for(spec: DaySpec) -> TutorialRoute:
+	return _tutorial if spec.walks_the_tutorial() else null
 
 ## The closed streets of the day `spec` describes. The whole street comes out of the network; the
 ## barriers stand at its two mouths, where they can be seen from the junction rather than found half
@@ -1139,7 +1153,8 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
 	# Tinted before the region plan or the closures, so a tree a closure has not yet touched is what
 	# the tint answers for.
-	var tree := RouteTree.for_day(_map, day)
+	var walk := _tutorial_for(spec)
+	var tree := RouteTree.for_day(_map, day, walk)
 	tint_the_route(tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
@@ -1148,7 +1163,7 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 			% [plan.wall_segments().size() + plan.door_segments().size(), plan.wall_segments().size(),
 			plan.door_segments().size(), RegionPlanner.regions_with_calm(_map)])
 	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, _trace)
-	_streets.begin_day(tree, plan, closures)
+	_streets.begin_day(tree, plan, closures, walk)
 	_map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
