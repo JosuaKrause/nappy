@@ -1,150 +1,130 @@
 {
-	"context": "asked for an animation burst at (91,84) | exc 0, sleep 2 | playing",
-	"duration_seconds": 3.004705,
+	"context": "asked for an animation burst at (82,84) | exc 0, sleep 0 | playing",
+	"duration_seconds": 3.02758,
 	"frames": [
 		{
-			"elapsed_seconds": 0.006048,
+			"elapsed_seconds": 0.007186,
 			"file": "frame-0001.png"
 		},
 		{
-			"elapsed_seconds": 0.095423,
+			"elapsed_seconds": 0.132079,
 			"file": "frame-0002.png"
 		},
 		{
-			"elapsed_seconds": 0.174171,
+			"elapsed_seconds": 0.233135,
 			"file": "frame-0003.png"
 		},
 		{
-			"elapsed_seconds": 0.261591,
+			"elapsed_seconds": 0.316754,
 			"file": "frame-0004.png"
 		},
 		{
-			"elapsed_seconds": 0.339839,
+			"elapsed_seconds": 0.418603,
 			"file": "frame-0005.png"
 		},
 		{
-			"elapsed_seconds": 0.427417,
+			"elapsed_seconds": 0.531461,
 			"file": "frame-0006.png"
 		},
 		{
-			"elapsed_seconds": 0.503464,
+			"elapsed_seconds": 0.697075,
 			"file": "frame-0007.png"
 		},
 		{
-			"elapsed_seconds": 0.589826,
+			"elapsed_seconds": 0.80512,
 			"file": "frame-0008.png"
 		},
 		{
-			"elapsed_seconds": 0.668198,
+			"elapsed_seconds": 0.896673,
 			"file": "frame-0009.png"
 		},
 		{
-			"elapsed_seconds": 0.75698,
+			"elapsed_seconds": 0.990093,
 			"file": "frame-0010.png"
 		},
 		{
-			"elapsed_seconds": 0.835293,
+			"elapsed_seconds": 1.086904,
 			"file": "frame-0011.png"
 		},
 		{
-			"elapsed_seconds": 0.924549,
+			"elapsed_seconds": 1.181591,
 			"file": "frame-0012.png"
 		},
 		{
-			"elapsed_seconds": 1.007328,
+			"elapsed_seconds": 1.27401,
 			"file": "frame-0013.png"
 		},
 		{
-			"elapsed_seconds": 1.090812,
+			"elapsed_seconds": 1.367903,
 			"file": "frame-0014.png"
 		},
 		{
-			"elapsed_seconds": 1.169838,
+			"elapsed_seconds": 1.45232,
 			"file": "frame-0015.png"
 		},
 		{
-			"elapsed_seconds": 1.25777,
+			"elapsed_seconds": 1.543778,
 			"file": "frame-0016.png"
 		},
 		{
-			"elapsed_seconds": 1.340796,
+			"elapsed_seconds": 1.636141,
 			"file": "frame-0017.png"
 		},
 		{
-			"elapsed_seconds": 1.433893,
+			"elapsed_seconds": 1.724933,
 			"file": "frame-0018.png"
 		},
 		{
-			"elapsed_seconds": 1.508482,
+			"elapsed_seconds": 1.828526,
 			"file": "frame-0019.png"
 		},
 		{
-			"elapsed_seconds": 1.597509,
+			"elapsed_seconds": 1.920883,
 			"file": "frame-0020.png"
 		},
 		{
-			"elapsed_seconds": 1.676523,
+			"elapsed_seconds": 2.019151,
 			"file": "frame-0021.png"
 		},
 		{
-			"elapsed_seconds": 1.764509,
+			"elapsed_seconds": 2.115962,
 			"file": "frame-0022.png"
 		},
 		{
-			"elapsed_seconds": 1.845343,
+			"elapsed_seconds": 2.210252,
 			"file": "frame-0023.png"
 		},
 		{
-			"elapsed_seconds": 1.931199,
+			"elapsed_seconds": 2.305264,
 			"file": "frame-0024.png"
 		},
 		{
-			"elapsed_seconds": 2.012275,
+			"elapsed_seconds": 2.39166,
 			"file": "frame-0025.png"
 		},
 		{
-			"elapsed_seconds": 2.099444,
+			"elapsed_seconds": 2.497257,
 			"file": "frame-0026.png"
 		},
 		{
-			"elapsed_seconds": 2.174699,
+			"elapsed_seconds": 2.590939,
 			"file": "frame-0027.png"
 		},
 		{
-			"elapsed_seconds": 2.264296,
+			"elapsed_seconds": 2.685039,
 			"file": "frame-0028.png"
 		},
 		{
-			"elapsed_seconds": 2.344732,
+			"elapsed_seconds": 2.779615,
 			"file": "frame-0029.png"
 		},
 		{
-			"elapsed_seconds": 2.432257,
+			"elapsed_seconds": 2.873563,
 			"file": "frame-0030.png"
 		},
 		{
-			"elapsed_seconds": 2.506257,
+			"elapsed_seconds": 2.968145,
 			"file": "frame-0031.png"
-		},
-		{
-			"elapsed_seconds": 2.596558,
-			"file": "frame-0032.png"
-		},
-		{
-			"elapsed_seconds": 2.678274,
-			"file": "frame-0033.png"
-		},
-		{
-			"elapsed_seconds": 2.764505,
-			"file": "frame-0034.png"
-		},
-		{
-			"elapsed_seconds": 2.845182,
-			"file": "frame-0035.png"
-		},
-		{
-			"elapsed_seconds": 2.931925,
-			"file": "frame-0036.png"
 		}
 	],
 	"reason": "duration",
