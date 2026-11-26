@@ -155,6 +155,18 @@ func alley_mouths() -> Array[Array]:
 				found.append([rect, at_start])
 	return found
 
+## **The units the route runs through past the first block**, as tile rects, which is how
+## `Location.part_of()` names a unit: each lesson street's, and the junction box at each end of
+## one, the box where the route leaves the doorstep's street included. What day 1's lessons are
+## stood among and every other location of is drawn empty (`DawnTutorial`).
+func units_past_the_first_block() -> Array[Rect2i]:
+	var units: Array[Rect2i] = []
+	for segment in _streets:
+		units.append(segment.tile_rect())
+	for junction in _junctions:
+		units.append(_box(junction))
+	return units
+
 func _ground_past_the_first_block() -> Dictionary:
 	var found := {}
 	for segment in _streets:
@@ -199,6 +211,63 @@ func lesson_street(lesson: Lesson) -> StreetNetwork.Segment:
 func is_on_lesson(lesson: Lesson, tile: Vector2i) -> bool:
 	var street := lesson_street(lesson)
 	return street != null and street.tile_rect().has_point(tile)
+
+## **Whether `tile` is on her way to `lesson`'s street or on it**, going to the park or
+## `homeward`: the street before it on that way (the doorstep's, for the first on her way out), the
+## junction box she comes onto it by, or the street itself. Where the director asks to send lesson
+## (3)'s dog walkers, which may set off before she turns the corner (`way_toward_her_along()`). False
+## for a crossing, or on a route too short for it.
+func is_coming_to_lesson(lesson: Lesson, tile: Vector2i, homeward := false) -> bool:
+	var index := _index_of(lesson)
+	if index < 0:
+		return false
+	if _streets[index].tile_rect().has_point(tile):
+		return true
+	var box := _box(_junctions[index + 1] if homeward else _junctions[index])
+	var before: StreetNetwork.Segment = null
+	if homeward:
+		before = _streets[index + 1] if index + 1 < _streets.size() else null
+	else:
+		before = _streets[index - 1] if index > 0 else _home
+	return box.has_point(tile) or (before != null and before.tile_rect().has_point(tile))
+
+## **Whether `tile` is on `lesson`'s street or on the route past it toward the park**: its street,
+## the junction box she comes onto it by from home, and every lesson street and junction box after
+## it. On her walk home the director holds its route bag here until lesson (3)'s street has sent her
+## its dog walker (`EventDirector`). False for a crossing, or on a route too short for it.
+func lies_toward_the_park(lesson: Lesson, tile: Vector2i) -> bool:
+	var index := _index_of(lesson)
+	if index < 0:
+		return false
+	for i in range(index, _streets.size()):
+		if _streets[i].tile_rect().has_point(tile):
+			return true
+	for i in range(index, _junctions.size()):
+		if _box(_junctions[i]).has_point(tile):
+			return true
+	return false
+
+## **The way along the line's sidewalk of `lesson`'s street toward her**, going to the park or
+## `homeward`, as two world points down the middle of that sidewalk: the end she has still to come
+## to, then the end she comes onto it at. A thing that walks it comes down her sidewalk toward her,
+## round the corner she has still to turn, where the line straight on from her has no ground past the
+## street's far end (a T, a calm zone, the map's edge). Empty for a crossing, or on a route too short
+## for it.
+func way_toward_her_along(lesson: Lesson, homeward := false) -> PackedVector2Array:
+	var street := lesson_street(lesson)
+	if street == null:
+		return PackedVector2Array()
+	var band := _map.tile_rect_to_world(line_sidewalk(street))
+	var middle := band.get_center()
+	var half := Vector2(band.size.x * 0.5 - Tuning.TILE_SIZE * 0.5, 0.0) if street.horizontal \
+			else Vector2(0.0, band.size.y * 0.5 - Tuning.TILE_SIZE * 0.5)
+	var from_home := _map.tile_rect_to_world(_box(arrives_at(street))).get_center()
+	var one := middle - half
+	var other := middle + half
+	var near := one if one.distance_squared_to(from_home) < other.distance_squared_to(from_home) \
+			else other
+	var far := other if near == one else one
+	return PackedVector2Array([near, far]) if homeward else PackedVector2Array([far, near])
 
 ## **The sidewalk she walks along `segment`**, a lesson street: the band of its tile rect
 ## (`Corridor.sidewalk_bands()`) the line keeps to, which the day's tree walks

@@ -271,7 +271,10 @@ stand:
   for a row sent ahead of her it is the orchestrator's reading of the player's answer on the board
   to sent-ahead-pace, "yes, that's correct" (inbox #1460 in silky-lemur), given to the board's proposal that the
   three come in place of some of what the director sends, at its unchanged clock: pace kept over
-  the rig's order.
+  the rig's order. **On a day that walks the tutorial route the two are the first two marbles**
+  (`DAY_ONE_DOG_WALKERS` within itself), and neither waits on the clock: the first is sent toward
+  her on lesson (3)'s street on her way to the park and the second on that street again on her walk
+  home ("Day 1's lessons on the tutorial route", below).
 
 - **After day 6's mark, a second man shouting's marble is one of the next two**
   (`ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT`, laid just ahead of her,
@@ -346,15 +349,17 @@ dog walker at a tile.
 - **The dog walker** is sent down her own sidewalk toward her, created at once just out of sight
   with no badge (`telegraphs_its_coming()` false on the copy: 32px/s is slower than a walk and it never ends the
   day, so the rule in "What telegraphs" gives it none), as the loose dog is; its route runs back down
-  her line and past her by the same distance. **It is created past its telegraph, at a point of its
+  her line and past her by the same distance. **It is created on the route the director sited it on**
+  (`EventsAhead._send_down_her_line()`), against the camera's whole view, never sited a second time:
+  a handout the director has spent always exists. **It is created past its telegraph, at a point of its
   bark drawn on the director's stream** (`EventDirector.age_it_is_sent_at()`): it is the row she would
   come upon, put just ahead of her, so the point of its bark that reaches her is as free as it is for
   one she walks up to, and a pass costs the row's price in `docs/COSTS.md` (its pass averaged over the
   bark) on every street. Where it is created is the edge of the view, nearer her walking north than
   south and furthest walking east or west, so a bark fixed by that distance would price it by the way
   the street runs. The loose dog's beat is fixed instead, at the loud of it on her, which is what its
-  own line in that table prices. **On day 1's tutorial route it is the one handout before the park**
-  ("Day 1's lessons on the tutorial route", below).
+  own line in that table prices. **On day 1's tutorial route it is the one handout while the route
+  is held** ("Day 1's lessons on the tutorial route", below).
 - **The police patrol** is sent down the carriageway lane that drives toward her
   (`_toward_her_on_the_road()`, above), created at once and standing, in its lane just out of sight
   up the road (`PendingWarning.in_its_lane()`, against the camera's whole view, its caret and the
@@ -1548,21 +1553,32 @@ crossing the road with cars, (6) timing the yeller, then the park (gentle-owl #1
   sidewalk. A noise whose cost reaches across the carriageway, as the leaf blower's does (165px),
   would take her line, which the day's rules refuse on any route (`RouteLineRule`). (4) is the
   delivery van, silent, so the lesson is the crossing. (6) is the yeller, his beat on her sidewalk,
-  timed rather than walked round. (3)'s dog walker is sent by the director (below). *Proposed, not
+  for her to time her pass; whether timing it costs less than walking past untimed is not measured. (3)'s dog walker is sent by the director (below). *Proposed, not
   asked for:* the rows and the streets (gentle-owl #1253, the orchestrator's sketch, which the
   player answered by lesson number).
 - **Judged as every phase's rows are.** Each row is offered its slot tile by tile on its own ground
   for the day and asked of the day's rules; a slot no tile of which they allow stands nothing, and
-  the run log says so. `tests/probes/grassy_beaver_lessons.gd` counts how often each lesson stands.
+  the run log says so. `tests/probes/grassy_beaver_lessons.gd` counts how often each lesson stands:
+  the yeller is refused on some routes, by `UnusedCalmRule` (his field reaches a calm area she has
+  not used from every tile of his slot) or `RouteLineRule`, and the van and the stall on fewer by
+  `RouteLineRule`, so on those days day 1 teaches fewer lessons (the record
+  grassy-beaver-golden-puffin has the counts).
 - **Nothing else on the route.** Every other location of the route's units past the first block,
   its lesson streets and their junction boxes, is drawn empty at dawn. *Proposed, not asked for:*
   the orchestrator's reading (gentle-owl #1253), open to the player's correction.
-- **The director holds its bag on the route before the park.** While she is on the route and has not
-  yet stood in the tutorial park, `EventDirector` hands out nothing but lesson (3)'s dog walker, sent
-  toward her the moment she is on its street; it is the first of day one's two rigged dog walkers
-  (PLAYTEST-05 6), and the second is the first handout once she has stood in the park, on her walk
-  home. Off the route the bag runs at its ordinary pace with what is left of the rig at its head.
-  *Proposed, not asked for:* the player's words name dawn placement only.
+- **The director holds its bag on the route, and lesson (3)'s street sends the two dog walkers.**
+  While she is on the route and has not yet stood in the tutorial park, and on her walk home until
+  the second dog walker has come, while she is on lesson (3)'s street or the route between it and
+  the park, `EventDirector` hands out nothing but day one's two rigged dog walkers (PLAYTEST-05 6):
+  the first toward her on lesson (3)'s street on her way out, the second on that street again on her
+  walk home. Each is sent down her line where that has room and otherwise down the line's sidewalk
+  of the street from its far end, set off as she nears the corner (a street a block long is shorter
+  than the view is wide, so down her line is often past its far end, where a T or a calm zone has no
+  sidewalk), and each is created on the path it was sent on. `tests/test_tutorial_dog_walkers.gd`
+  walks the city suites' seeds and holds both met close enough to pass before her door. Off the
+  route, and homeward of lesson (3)'s street, the bag runs at its ordinary pace. *Proposed, not
+  asked for:* the hold and the second dog walker's street; the player's words name dawn placement
+  only.
 - **Outside the bags, one day of fourteen**, the exception `DawnLesson` makes for the run lesson,
   made honestly: a lesson that comes only when the draw agrees is not a lesson. Nothing is drawn on
   a stream, so a retried day 1 replays the same lessons.

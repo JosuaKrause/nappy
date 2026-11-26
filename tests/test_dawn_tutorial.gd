@@ -6,22 +6,29 @@ extends RefCounted
 ## whole, the lessons judged by every rule of the day among the seals, then every unit drawn round
 ## them, which only the real planning reaches.
 
-## Seeds on which every lesson's slot has a tile the day's rules allow.
-const SEEDS: Array[int] = [4431, 5150]
+## The city suites' seeds of the 5150 family and 4431, planned whole; a lesson whose slot has no
+## tile the day's rules allow on a seed stands nowhere there (the record grassy-beaver-golden-puffin
+## counts how often, `tests/probes/grassy_beaver_lessons.gd`).
+static func _seeds() -> Array[int]:
+	var found: Array[int] = [4431]
+	for i in 12:
+		found.append(5150 + i * 13)
+	return found
+
+## How many of the seeds are planned a second time, for the replay.
+const REPLAYED := 2
 
 func run(t: TestRunner) -> void:
-	for seed_value in SEEDS:
-		_test_day_one_stands_the_lessons_and_nothing_else_on_the_route(t, seed_value)
-
-## The tiles of the route's units past the first block, as `Location.part_of()` names them, as a
-## set: each lesson street's rect and the junction box at each of its ends.
-static func _route_units(route: TutorialRoute) -> Dictionary:
-	var units := {}
-	for segment in route.lesson_streets():
-		units[segment.tile_rect()] = true
-		for junction: Vector2i in [segment.a, segment.b]:
-			units[Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)] = true
-	return units
+	var stood_on := {}
+	var seeds := _seeds()
+	for i in seeds.size():
+		_test_day_one_stands_the_lessons_and_nothing_else_on_the_route(t, seeds[i], i < REPLAYED,
+				stood_on)
+	for row_id: String in [DawnTutorial.NOISE_PASSED_WIDE, DawnTutorial.SHUTS_HER_SIDEWALK,
+			DawnTutorial.PACES_HER_SIDEWALK]:
+		t.check(int(stood_on.get(row_id, 0)) > 0,
+				"%s stands on its slot on some seed (%d of %d)"
+				% [row_id, int(stood_on.get(row_id, 0)), seeds.size()])
 
 static func _box_centre(junction: Vector2i) -> Vector2:
 	return Vector2(junction * CityMap.period()) + Vector2.ONE * (Tuning.STREET_WIDTH * 0.5)
@@ -55,30 +62,38 @@ static func _wanted(route: TutorialRoute) -> Array[Array]:
 static func _length(band: Rect2i) -> float:
 	return float(maxi(band.size.x, band.size.y))
 
-## **Day 1 planned whole stands each lesson's row on its slot and nothing else on the route's units
-## past the first block**, and a second planning of the same day stands them on the same tiles.
+## **Day 1 planned whole stands each lesson's row that stands at all on its slot, and nothing else on
+## the route's units past the first block**, and, `replayed`, a second planning of the same day
+## stands them on the same tiles. Counts each row that stood into `stood_on`.
 func _test_day_one_stands_the_lessons_and_nothing_else_on_the_route(t: TestRunner,
-		seed_value: int) -> void:
+		seed_value: int, replayed: bool, stood_on: Dictionary) -> void:
 	var first := _planned_day_one(seed_value)
-	var second := _planned_day_one(seed_value)
 	var wanted := _wanted(first[1] as TutorialRoute)
 	var stood: Dictionary = first[0]
 	t.check(wanted.size() == 3, "seed %d: the route lays all three rows' lessons" % seed_value)
+	var lessons := {}
 	for row: Array in wanted:
 		var row_id: String = row[0]
 		var band: Rect2i = row[1]
 		var anchor: Vector2 = row[2]
 		var reach: float = row[3]
-		var at: Vector2i = stood.get(row_id, Vector2i(-1, -1))
-		t.check(stood.has(row_id) and band.has_point(at),
-				"seed %d: %s stands on its sidewalk (%s)" % [seed_value, row_id, stood.get(row_id)])
-		t.check(stood.has(row_id) and (Vector2(at) - anchor).length() <= reach,
+		lessons[row_id] = true
+		if not stood.has(row_id):
+			continue
+		stood_on[row_id] = int(stood_on.get(row_id, 0)) + 1
+		var at: Vector2i = stood[row_id]
+		t.check(band.has_point(at),
+				"seed %d: %s stands on its sidewalk (%s)" % [seed_value, row_id, at])
+		t.check((Vector2(at) - anchor).length() <= reach,
 				"seed %d: %s stands within %.0f tiles of where its slot starts (%s)"
-				% [seed_value, row_id, reach, stood.get(row_id)])
-	t.check(stood.size() == wanted.size(),
-			"seed %d: nothing but the lessons stands on the route's units (%s)"
-			% [seed_value, stood.keys()])
-	t.check(stood == second[0], "seed %d: a retried day 1 stands the same lessons" % seed_value)
+				% [seed_value, row_id, reach, at])
+	for row_id: String in stood:
+		t.check(lessons.has(row_id),
+				"seed %d: nothing but the lessons stands on the route's units (%s)"
+				% [seed_value, row_id])
+	if replayed:
+		t.check(stood == _planned_day_one(seed_value)[0],
+				"seed %d: a retried day 1 stands the same lessons" % seed_value)
 
 ## Day 1 of `seed_value` planned as the game plans it, every unit drawn: `[row id -> the tile it
 ## stands on, for each plan on the route's units past the first block; the route]`.
@@ -98,7 +113,9 @@ static func _planned_day_one(seed_value: int) -> Array:
 	rng.seed = seed_value
 	var seals := SealPlanner.plan_day(map, spec, tree, rng, {}, map.held_streets(), route, null)
 	var dawn := GameDawn.of(spec, rng, map).on(tree).standing(seals).tutorial(route).planned()
-	var units := _route_units(route)
+	var units := {}
+	for unit in route.units_past_the_first_block():
+		units[unit] = true
 	var stood := {}
 	for plan in dawn.events().placements():
 		if not plan.is_placed():

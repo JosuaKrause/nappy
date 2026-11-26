@@ -228,6 +228,7 @@ func start_day(day: int, plans: Array[EventPlan],
 	_lesson = null
 	_tutorial_park_reached = false
 	_lessons_dog_walker_sent = false
+	_homeward_dog_walker_sent = false
 	_lessons_dog_walker_retry = 0.0
 	_rng = rng
 	_day = day
@@ -322,19 +323,19 @@ const DAY_ONE_DOG_WALKER := "dog_walker"
 var _tutorial: TutorialRoute = null
 ## Whether she has stood in the tutorial park today, which ends the hold on the route for the day.
 var _tutorial_park_reached := false
-## Whether lesson (3)'s dog walker has been sent today.
+## Whether lesson (3)'s dog walker has been sent today on her way to the park, and on her walk home.
 var _lessons_dog_walker_sent := false
+var _homeward_dog_walker_sent := false
 ## Seconds of walking before lesson (3)'s dog walker is asked again, after a try that found it no
 ## room.
 var _lessons_dog_walker_retry := 0.0
 
 ## **Hands the director day 1's tutorial route** for the day it starts next (`start_day()`), null
 ## on a day that does not walk one (`DayStreets.tutorial_route()`). On the day it is handed, the
-## director holds its route bag while she is on the route and has not yet stood in the tutorial
-## park, but for lesson (3)'s dog walker (`_send_the_lessons_dog_walker()`): the cat, the loose
-## dog and the rest would land between the lessons and blur them. *Proposed, not asked for:* the
-## player's words name dawn placement only (gentle-owl #1253); the hold is the design's pick,
-## open to the player's correction.
+## director holds its route bag on the route on her way to the park and on her walk home as far as
+## lesson (3)'s street, but for lesson (3)'s dog walkers (`_holds_the_tutorial_route()`). *Proposed,
+## not asked for:* the player's words name dawn placement only (gentle-owl #1253); the hold is the
+## design's pick, open to the player's correction.
 func use_tutorial_route(route: TutorialRoute) -> void:
 	_tutorial = route
 
@@ -349,10 +350,10 @@ func use_tutorial_route(route: TutorialRoute) -> void:
 ## other day, and nothing on a day whose bag holds no dog walker.
 ##
 ## **On a day that walks the tutorial route both come first**: the first is lesson (3)'s, sent
-## toward her on its street while every other handout is held on the route, and the second is then
-## the head of the bag, so it is the first handout once she has stood in the tutorial park, on her
-## walk home. Off the route the bag runs at its ordinary pace with what is left of the rig at its
-## head.
+## toward her on its street while every other handout is held on the route, and the second is sent
+## toward her on that street again on her walk home, once she has stood in the tutorial park
+## (`_send_the_lessons_dog_walker()`). Off the route the bag runs at its ordinary pace with what is
+## left of the rig at its head.
 func _rig_day_one(day: int, heat: int) -> void:
 	if day != 1 or not _route_rows.has(DAY_ONE_DOG_WALKER):
 		return
@@ -1023,7 +1024,7 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 	if speed < Tuning.AHEAD_MIN_SPEED:
 		return []
 	var heading := velocity / speed
-	if _tutorial and not _tutorial_park_reached and _tutorial.runs_over(_map.world_to_tile(at)):
+	if _holds_the_tutorial_route(_map.world_to_tile(at)):
 		return _send_the_lessons_dog_walker(delta, at, heading, view)
 	_next_in -= delta
 	if _next_in > 0.0:
@@ -1078,15 +1079,40 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 		_owed.append(_forced)
 	return [handed, path, sited[1], sited[2]]
 
-## **Lesson (3)'s dog walker, the one handout on the tutorial route before the park**: the rig's
-## first dog walker (`_rig_day_one()`), sent down her line toward her as any is
-## (`_sited()`) the moment she is on lesson (3)'s street rather than on the clock's turn, and
-## asked again every `SENT_RETRY` of walking while it has no room; answered as `due()` answers. Nothing else
-## is handed out on the route before she has stood in the park, and nothing is spent while held.
+## **Whether the director holds her route bag where she is, `tile`, on the tutorial route's day**:
+## on the route before she has stood in the tutorial park, and on her walk home until lesson (3)'s
+## street has sent her its second dog walker, while she is on that street or the route between it
+## and the park (`TutorialRoute.lies_toward_the_park()`). Held, the one handout is lesson (3)'s dog
+## walker (`_send_the_lessons_dog_walker()`); the cat, the loose dog and the rest would land between
+## the lessons and blur them. Off the route, and on it homeward of lesson (3)'s street, the bag runs
+## at its ordinary pace. *Proposed, not asked for:* the hold, and that it lasts on the walk home to
+## lesson (3)'s street, are the design's and the builder's picks, open to the player's correction.
+func _holds_the_tutorial_route(tile: Vector2i) -> bool:
+	if not _tutorial or not _tutorial.runs_over(tile):
+		return false
+	if not _tutorial_park_reached:
+		return true
+	return not _homeward_dog_walker_sent \
+			and _tutorial.lies_toward_the_park(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, tile)
+
+## **Lesson (3)'s dog walker, the one handout on the tutorial route while it is held**
+## (`_holds_the_tutorial_route()`): the rig's first dog walker (`_rig_day_one()`) sent toward her on
+## lesson (3)'s street on her way to the park, and the second on that street again on her walk home,
+## rather than on the clock's turn, each asked again every `SENT_RETRY` of walking while it has no
+## room; answered as `due()` answers, and created on the path answered
+## (`EventsAhead._send_down_her_line()`), so it is counted as sent only on a path it is created on.
+## On the street it is sent down her line as any is (`_sited()`). Where that has no room, and from
+## the street before it on, it comes down the line's sidewalk of lesson (3)'s street from its far end
+## (`_down_the_lessons_street()`): a street a block long is shorter than the view is wide, so down
+## her line from the street is often past its far end, where a T or a calm zone has no sidewalk. So
+## both are met on lesson (3)'s street and before her door *(PLAYTEST-05 6: the dog-walker decision
+## is made at least twice on day one)*. Nothing is spent while held.
 func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
 		view: VisibleView) -> Array:
-	if _lessons_dog_walker_sent or not _tutorial.is_on_lesson(
-			TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, _map.world_to_tile(at)):
+	var tile := _map.world_to_tile(at)
+	var homeward := _tutorial_park_reached
+	if (_homeward_dog_walker_sent if homeward else _lessons_dog_walker_sent) \
+			or not _tutorial.is_coming_to_lesson(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, tile, homeward):
 		return []
 	_lessons_dog_walker_retry -= delta
 	if _lessons_dog_walker_retry > 0.0 or _owed.is_empty() or _owed[0] != null:
@@ -1094,12 +1120,45 @@ func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
 	var next := _next_on_the_route()
 	if not next or next.id() != DAY_ONE_DOG_WALKER:
 		return []
-	var sited := _sited(next, at, heading, view)
+	var sited := [PackedVector2Array(), 0.0, null]
+	if _tutorial.is_on_lesson(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, tile):
+		sited = _sited(next, at, heading, view)
+	if (sited[0] as PackedVector2Array).is_empty():
+		sited = [_down_the_lessons_street(next, at, view, homeward), 0.0, null]
 	if (sited[0] as PackedVector2Array).is_empty():
 		_lessons_dog_walker_retry = SENT_RETRY
 		return []
-	_lessons_dog_walker_sent = true
+	if homeward:
+		_homeward_dog_walker_sent = true
+	else:
+		_lessons_dog_walker_sent = true
 	return [_hand_out(next, true), sited[0], sited[1], sited[2]]
+
+## **Lesson (3)'s dog walker coming down its street toward her**, from the far end of the line's
+## sidewalk as she walks (`homeward` or not) to the end she comes onto it at and on past it as far
+## again, cut to the ground it walks (`TutorialRoute.way_toward_her_along()`): the moment that far end
+## is just out of her sight (`PendingWarning.stands_out_of_sight()`) and no further from her than
+## `_lesson_walker_reach()`, so it is still on the street when she meets it; empty otherwise, or where
+## the path would come through a region door or a placed plan's room (`clear_to_send()`).
+func _down_the_lessons_street(def: EventDef, at: Vector2, view: VisibleView,
+		homeward: bool) -> PackedVector2Array:
+	var way := _tutorial.way_toward_her_along(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, homeward)
+	if way.size() < 2 or way[0].distance_to(at) > _lesson_walker_reach() \
+			or not PendingWarning.stands_out_of_sight(_map, def, at, way[0], view):
+		return PackedVector2Array()
+	var path := _navigator.trim(PackedVector2Array([way[0], way[1] * 2.0 - way[0]]),
+			EventInstance.mover_for(def))
+	if path.size() < 2 or path[0].distance_to(path[1]) < Tuning.TILE_SIZE \
+			or not clear_to_send(path, def):
+		return PackedVector2Array()
+	return path
+
+## **How far from her the far end of lesson (3)'s street may be when its dog walker sets off from
+## there**, in world px: the camera's half diagonal and two tiles, the nearest a point round the
+## corner she has still to turn is out of sight from. Further, and at its 32px/s it walks off its
+## street before she turns onto it, to be met on the street before.
+static func _lesson_walker_reach() -> float:
+	return Tuning.VIEW_HALF_EXTENT.length() + Tuning.TILE_SIZE * 2.0
 
 ## **How soon a turn of the clock that sent nothing is asked again**: a second of her walking, the
 ## cadence every siting that waits for ground is asked again on. A turn sends nothing where only rows
@@ -1155,7 +1214,7 @@ func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) ->
 	elif next.comes_toward_her():
 		path = _toward_her_on_the_road(at, heading, next, view) \
 				if next.keeps_to_the_carriageway() \
-				else _toward_her(at, heading, next)
+				else _toward_her(at, heading, next, view)
 	else:
 		var crossing := _crossing_with_its_crouch(at, heading, next)
 		path = crossing[0]
@@ -1335,11 +1394,16 @@ func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = nu
 ## ground — or the heading has no along-corridor component to send it down, the literal heading is
 ## used exactly as before.
 ##
+## **Out of sight is asked against `view`**, the camera's whole view, the one a row created at once
+## on this route is created against (`EventsAhead._send_down_her_line()` creates it here, never
+## sites it again), or the view round her where `view` is null.
+##
 ## Empty when there is no sidewalk or square at the place, or the route would leave the map. The
 ## caller waits and asks again.
-func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+func _toward_her(at: Vector2, heading: Vector2, def: EventDef,
+		view: VisibleView = null) -> PackedVector2Array:
 	var site_heading := _onto_her_side(at, heading)
-	var place := PendingWarning.down_her_line(_map, def, at, site_heading)
+	var place := PendingWarning.down_her_line(_map, def, at, site_heading, view)
 	if place == Vector2.INF:
 		return PackedVector2Array()
 	var path := _navigator.trim(PendingWarning.route_down_her_line(_map, place, at, site_heading),

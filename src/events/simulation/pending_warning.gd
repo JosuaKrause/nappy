@@ -136,13 +136,28 @@ static func down_her_line(map: CityMap, row: EventDef, her: Vector2, direction: 
 		for step in LATERAL_TILES + 1:
 			for side: float in [1.0, -1.0]:
 				var at := level + across * (float(step) * side)
-				if siting.allows(SpawnSiting.Rule.OPEN_TO_IT, asked, at) \
-						and row.stands_on(map.tile_at(map.world_to_tile(at))) \
-						and siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
+				if _may_stand(siting, asked, map, row, at):
 					return at
 				if step == 0:
 					break
 	return Vector2.INF
+
+## **Whether `row` may be created at `at`, with her at `her`**: the test `down_her_line()` holds each
+## place it tries to, asked of one given place (lesson (3)'s dog walker at the far end of its street,
+## `EventDirector`).
+static func stands_out_of_sight(map: CityMap, row: EventDef, her: Vector2, at: Vector2,
+		in_view: VisibleView = null) -> bool:
+	var siting := SpawnSiting.over(map, in_view)
+	var asked := siting.ask_in_sight(EventFootprints.footprint_of(row),
+			EventInstance.mover_for(row), her)
+	return _may_stand(siting, asked, map, row, at)
+
+## Ground `row` stands on today, open to it, and wholly out of her sight there.
+static func _may_stand(siting: SpawnSiting, asked: SpawnSiting.Ask, map: CityMap, row: EventDef,
+		at: Vector2) -> bool:
+	return siting.allows(SpawnSiting.Rule.OPEN_TO_IT, asked, at) \
+			and row.stands_on(map.tile_at(map.world_to_tile(at))) \
+			and siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at)
 
 ## The route a row that came down her line is created on: from its place along `direction` back
 ## toward her and on past her by the same distance, so it is still going somewhere when it reaches

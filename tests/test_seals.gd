@@ -1249,13 +1249,9 @@ func _leak_without(map: CityMap, sources: Array[Vector2i], closed: Dictionary, s
 ## street at among them.
 static func _route_ground(map: CityMap, tutorial: TutorialRoute) -> Dictionary:
 	var found := {}
-	for segment in tutorial.lesson_streets():
-		for tile in map.rect_tiles(segment.tile_rect()):
+	for unit in tutorial.units_past_the_first_block():
+		for tile in map.rect_tiles(unit):
 			found[tile] = true
-		for junction: Vector2i in [segment.a, segment.b]:
-			for tile in map.rect_tiles(Rect2i(junction * CityMap.period(),
-					Vector2i.ONE * Tuning.STREET_WIDTH)):
-				found[tile] = true
 	return found
 
 ## What the day-1 flood may reach: the route's walked ground (`_route_ground()`), the tutorial

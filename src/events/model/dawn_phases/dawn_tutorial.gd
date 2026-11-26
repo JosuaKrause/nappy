@@ -56,7 +56,9 @@ func run(context: DawnContext) -> void:
 		context.note("plan", "day %d's tutorial: %s %s" % [day, row_id,
 				("at " + RunTrace.tile(map.world_to_tile(plan.placed_at()))) if plan
 				else "has no tile of its slot the day's rules allow"])
-	var units := _route_units(route)
+	var units := {}
+	for unit in route.units_past_the_first_block():
+		units[unit] = true
 	for location in locations.open_locations():
 		if units.has(location.part_of()):
 			locations.record(location, null)
@@ -81,16 +83,6 @@ static func _lesson_slots(route: TutorialRoute) -> Dictionary:
 		slots[PACES_HER_SIDEWALK] = _ordered(route.line_sidewalk(paced),
 				_box_centre(route.arrives_at(paced)))
 	return slots
-
-## **The rects of the units the route runs through past the first block**, as `Location.part_of()`
-## names them, as a set: each lesson street's, and each junction box along the route.
-static func _route_units(route: TutorialRoute) -> Dictionary:
-	var units := {}
-	for segment in route.lesson_streets():
-		units[segment.tile_rect()] = true
-		for junction: Vector2i in [segment.a, segment.b]:
-			units[Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)] = true
-	return units
 
 ## Stands `def` on the first tile of `tiles` that is its ground for the day and that the day's
 ## rules allow, assigned to the location holding it; answers the plan, or null where none is.

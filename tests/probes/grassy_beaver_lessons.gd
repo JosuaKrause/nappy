@@ -32,16 +32,6 @@ static func _lessons(route: TutorialRoute) -> Dictionary:
 		found[DawnTutorial.PACES_HER_SIDEWALK] = true
 	return found
 
-## The rects of the route's units past the first block, as `Location.part_of()` names them: each
-## lesson street's and the junction box at each of its ends.
-static func _route_units(route: TutorialRoute) -> Dictionary:
-	var units := {}
-	for segment in route.lesson_streets():
-		units[segment.tile_rect()] = true
-		for junction: Vector2i in [segment.a, segment.b]:
-			units[Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)] = true
-	return units
-
 func run(t: TestRunner) -> void:
 	var stood := {}
 	var routes := 0
@@ -68,7 +58,9 @@ func run(t: TestRunner) -> void:
 		var seals := SealPlanner.plan_day(map, spec, tree, rng, {}, map.held_streets(), route,
 				null)
 		var dawn := GameDawn.of(spec, rng, map).on(tree).standing(seals).tutorial(route).planned()
-		var units := _route_units(route)
+		var units := {}
+		for unit in route.units_past_the_first_block():
+			units[unit] = true
 		var on_units := {}
 		for plan in dawn.events().placements():
 			if not plan.is_placed():
